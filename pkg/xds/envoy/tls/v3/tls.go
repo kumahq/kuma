@@ -5,23 +5,23 @@ import (
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/tls"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
 // CreateDownstreamTlsContext creates DownstreamTlsContext for incoming connections
 // It verifies that incoming connection has TLS certificate signed by Mesh CA with URI SAN of prefix spiffe://{mesh_name}/
 // It secures inbound listener with certificate of "identity_cert" that will be received from the SDS (it contains URI SANs of all inbounds).
-func CreateDownstreamTlsContext(downstreamMeshName string, mesh *core_mesh.MeshResource) (*envoy_tls.DownstreamTlsContext, error) {
-	if !mesh.MTLSEnabled() {
-		return nil, nil
+func CreateDownstreamTlsContext(downstreamMesh core_xds.CaRequest, mesh core_xds.IdentityCertRequest) (*envoy_tls.DownstreamTlsContext, error) {
+	var validationSANMatchers []*envoy_type_matcher.StringMatcher
+	meshNames := downstreamMesh.MeshName()
+	for _, meshName := range meshNames {
+		validationSANMatchers = append(validationSANMatchers, MeshSpiffeIDPrefixMatcher(meshName))
 	}
-	meshName := mesh.Meta.GetName()
-	validationSANMatcher := MeshSpiffeIDPrefixMatcher(downstreamMeshName)
-	commonTlsContext := createCommonTlsContext(meshName, downstreamMeshName, validationSANMatcher)
+
+	commonTlsContext := createCommonTlsContext(mesh, downstreamMesh, validationSANMatchers)
 	return &envoy_tls.DownstreamTlsContext{
 		CommonTlsContext:         commonTlsContext,
 		RequireClientCertificate: util_proto.Bool(true),
@@ -35,14 +35,17 @@ func CreateDownstreamTlsContext(downstreamMeshName string, mesh *core_mesh.MeshR
 // There is no way to correlate incoming request to "web" or "web-api" with outgoing request to "backend" to expose only one URI SAN.
 //
 // Pass "*" for upstreamService to validate that upstream service is a service that is part of the mesh (but not specific one)
-func CreateUpstreamTlsContext(meshName, upstreamMeshName string, upstreamService string, sni string) (*envoy_tls.UpstreamTlsContext, error) {
-	var validationSANMatcher *envoy_type_matcher.StringMatcher
-	if upstreamService == "*" {
-		validationSANMatcher = MeshSpiffeIDPrefixMatcher(upstreamMeshName)
-	} else {
-		validationSANMatcher = ServiceSpiffeIDMatcher(upstreamMeshName, upstreamService)
+func CreateUpstreamTlsContext(mesh core_xds.IdentityCertRequest, upstreamMesh core_xds.CaRequest, upstreamService string, sni string) (*envoy_tls.UpstreamTlsContext, error) {
+	var validationSANMatchers []*envoy_type_matcher.StringMatcher
+	meshNames := upstreamMesh.MeshName()
+	for _, meshName := range meshNames {
+		if upstreamService == "*" {
+			validationSANMatchers = append(validationSANMatchers, MeshSpiffeIDPrefixMatcher(meshName))
+		} else {
+			validationSANMatchers = append(validationSANMatchers, ServiceSpiffeIDMatcher(meshName, upstreamService))
+		}
 	}
-	commonTlsContext := createCommonTlsContext(meshName, upstreamMeshName, validationSANMatcher)
+	commonTlsContext := createCommonTlsContext(mesh, upstreamMesh, validationSANMatchers)
 	commonTlsContext.AlpnProtocols = xds_tls.KumaALPNProtocols
 	return &envoy_tls.UpstreamTlsContext{
 		CommonTlsContext: commonTlsContext,
@@ -50,15 +53,15 @@ func CreateUpstreamTlsContext(meshName, upstreamMeshName string, upstreamService
 	}, nil
 }
 
-func createCommonTlsContext(ownMeshName, targetMeshName string, validationSANMatcher *envoy_type_matcher.StringMatcher) *envoy_tls.CommonTlsContext {
-	meshCaSecret := NewSecretConfigSource(names.GetSecretName(xds_tls.MeshCaResource, "secret", targetMeshName))
-	identitySecret := NewSecretConfigSource(names.GetSecretName(xds_tls.IdentityCertResource, "secret", ownMeshName))
+func createCommonTlsContext(ownMesh core_xds.IdentityCertRequest, targetMeshCa core_xds.CaRequest, validationSANMatchers []*envoy_type_matcher.StringMatcher) *envoy_tls.CommonTlsContext {
+	meshCaSecret := NewSecretConfigSource(targetMeshCa.Name())
+	identitySecret := NewSecretConfigSource(ownMesh.Name())
 
 	return &envoy_tls.CommonTlsContext{
 		ValidationContextType: &envoy_tls.CommonTlsContext_CombinedValidationContext{
 			CombinedValidationContext: &envoy_tls.CommonTlsContext_CombinedCertificateValidationContext{
 				DefaultValidationContext: &envoy_tls.CertificateValidationContext{
-					MatchSubjectAltNames: []*envoy_type_matcher.StringMatcher{validationSANMatcher},
+					MatchSubjectAltNames: validationSANMatchers,
 				},
 				ValidationContextSdsSecretConfig: meshCaSecret,
 			},

@@ -63,7 +63,8 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 					},
 					Spec: &mesh_proto.Dataplane{},
 				},
-				APIVersion: envoy_common.APIV3,
+				SecretsTracker: core_xds.NewSecretsTracker("demo", []string{"demo"}),
+				APIVersion:     envoy_common.APIV3,
 			},
 		}),
 		Entry("Dataplane has Prometheus configuration while Mesh doesn't", testCase{
@@ -78,8 +79,9 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &core_xds.Proxy{
-				Id:         *core_xds.BuildProxyId("", "demo.backend-01"),
-				APIVersion: envoy_common.APIV3,
+				Id:             *core_xds.BuildProxyId("", "demo.backend-01"),
+				SecretsTracker: core_xds.NewSecretsTracker("demo", []string{"demo"}),
+				APIVersion:     envoy_common.APIV3,
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "backend-01",
@@ -124,8 +126,9 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &core_xds.Proxy{
-				Id:         *core_xds.BuildProxyId("", "demo.backend-01"),
-				APIVersion: envoy_common.APIV3,
+				Id:             *core_xds.BuildProxyId("", "demo.backend-01"),
+				SecretsTracker: core_xds.NewSecretsTracker("demo", []string{"demo"}),
+				APIVersion:     envoy_common.APIV3,
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "backend-01",
@@ -171,8 +174,9 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &core_xds.Proxy{
-				Id:         *core_xds.BuildProxyId("", "demo.backend-01"),
-				APIVersion: envoy_common.APIV3,
+				Id:             *core_xds.BuildProxyId("", "demo.backend-01"),
+				SecretsTracker: core_xds.NewSecretsTracker("demo", []string{"demo"}),
+				APIVersion:     envoy_common.APIV3,
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "backend-01",
@@ -246,8 +250,9 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &core_xds.Proxy{
-				Id:         *core_xds.BuildProxyId("", "demo.backend-01"),
-				APIVersion: envoy_common.APIV3,
+				Id:             *core_xds.BuildProxyId("", "demo.backend-01"),
+				SecretsTracker: core_xds.NewSecretsTracker("demo", []string{"demo"}),
+				APIVersion:     envoy_common.APIV3,
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "backend-01",
@@ -300,8 +305,9 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &core_xds.Proxy{
-				Id:         *core_xds.BuildProxyId("", "demo.backend-01"),
-				APIVersion: envoy_common.APIV3,
+				Id:             *core_xds.BuildProxyId("", "demo.backend-01"),
+				SecretsTracker: core_xds.NewSecretsTracker("demo", []string{"demo"}),
+				APIVersion:     envoy_common.APIV3,
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "backend-01",
@@ -350,8 +356,9 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &core_xds.Proxy{
-				Id:         *core_xds.BuildProxyId("", "demo.backend-01"),
-				APIVersion: envoy_common.APIV3,
+				Id:             *core_xds.BuildProxyId("", "demo.backend-01"),
+				SecretsTracker: core_xds.NewSecretsTracker("demo", []string{"demo"}),
+				APIVersion:     envoy_common.APIV3,
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "backend-01",
@@ -424,8 +431,9 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &core_xds.Proxy{
-				Id:         *core_xds.BuildProxyId("", "demo.backend-01"),
-				APIVersion: envoy_common.APIV3,
+				Id:             *core_xds.BuildProxyId("", "demo.backend-01"),
+				SecretsTracker: core_xds.NewSecretsTracker("demo", []string{"demo"}),
+				APIVersion:     envoy_common.APIV3,
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "backend-01",
@@ -489,8 +497,9 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &core_xds.Proxy{
-				Id:         *core_xds.BuildProxyId("", "demo.backend-01"),
-				APIVersion: envoy_common.APIV3,
+				Id:             *core_xds.BuildProxyId("", "demo.backend-01"),
+				SecretsTracker: core_xds.NewSecretsTracker("demo", []string{"demo"}),
+				APIVersion:     envoy_common.APIV3,
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "backend-01",
@@ -553,8 +562,9 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &core_xds.Proxy{
-				Id:         *core_xds.BuildProxyId("", "demo.backend-01"),
-				APIVersion: envoy_common.APIV3,
+				Id:             *core_xds.BuildProxyId("", "demo.backend-01"),
+				SecretsTracker: core_xds.NewSecretsTracker("demo", []string{"demo"}),
+				APIVersion:     envoy_common.APIV3,
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "backend-01",

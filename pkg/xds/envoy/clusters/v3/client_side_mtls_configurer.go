@@ -7,6 +7,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
@@ -15,9 +16,10 @@ import (
 )
 
 type ClientSideMTLSConfigurer struct {
+	SecretsTracker   core_xds.SecretsTracker
 	UpstreamMesh     *core_mesh.MeshResource
 	UpstreamService  string
-	LocalMesh        string
+	LocalMesh        *core_mesh.MeshResource
 	Tags             []envoy.Tags
 	UpstreamTLSReady bool
 }
@@ -25,7 +27,7 @@ type ClientSideMTLSConfigurer struct {
 var _ ClusterConfigurer = &ClientSideTLSConfigurer{}
 
 func (c *ClientSideMTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
-	if !c.UpstreamMesh.MTLSEnabled() {
+	if !c.UpstreamMesh.MTLSEnabled() || !c.LocalMesh.MTLSEnabled() {
 		return nil
 	}
 	if c.UpstreamMesh.GetEnabledCertificateAuthorityBackend().Mode == mesh_proto.CertificateAuthorityBackend_PERMISSIVE &&
@@ -73,7 +75,11 @@ func (c *ClientSideMTLSConfigurer) createTransportSocket(sni string) (*envoy_cor
 	if !c.UpstreamMesh.MTLSEnabled() {
 		return nil, nil
 	}
-	tlsContext, err := envoy_tls.CreateUpstreamTlsContext(c.LocalMesh, c.UpstreamMesh.GetMeta().GetName(), c.UpstreamService, sni)
+
+	ca := c.SecretsTracker.RequestCa(c.UpstreamMesh.GetMeta().GetName())
+	identity := c.SecretsTracker.RequestIdentityCert()
+
+	tlsContext, err := envoy_tls.CreateUpstreamTlsContext(identity, ca, c.UpstreamService, sni)
 	if err != nil {
 		return nil, err
 	}

@@ -11,27 +11,27 @@ import (
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
 )
 
+type caRequest struct {
+	mesh string
+}
+
+func (r *caRequest) MeshName() []string {
+	return []string{r.mesh}
+}
+
+func (r *caRequest) Name() string {
+	return "mesh_ca:secret:" + r.mesh
+}
+
+type identityRequest struct {
+	mesh string
+}
+
+func (r *identityRequest) Name() string {
+	return "identity_cert:secret:" + r.mesh
+}
+
 var _ = Describe("CreateDownstreamTlsContext()", func() {
-
-	Context("when mTLS is disabled on a given Mesh", func() {
-
-		It("should return `nil`", func() {
-			// given
-			mesh := &core_mesh.MeshResource{
-				Meta: &test_model.ResourceMeta{
-					Name: "default",
-				},
-			}
-
-			// when
-			snippet, err := v3.CreateDownstreamTlsContext(mesh.GetMeta().GetName(), mesh)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			Expect(snippet).To(BeNil())
-		})
-	})
-
 	Context("when mTLS is enabled on a given Mesh", func() {
 
 		type testCase struct {
@@ -59,7 +59,10 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 				}
 
 				// when
-				snippet, err := v3.CreateDownstreamTlsContext(mesh.GetMeta().GetName(), mesh)
+				snippet, err := v3.CreateDownstreamTlsContext(
+					&caRequest{mesh: mesh.GetMeta().GetName()},
+					&identityRequest{mesh: mesh.GetMeta().GetName()},
+				)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// when
@@ -107,7 +110,12 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 				mesh := "default"
 
 				// when
-				snippet, err := v3.CreateUpstreamTlsContext(mesh, mesh, given.upstreamService, "")
+				snippet, err := v3.CreateUpstreamTlsContext(
+					&identityRequest{mesh: mesh},
+					&caRequest{mesh: mesh},
+					given.upstreamService,
+					"",
+				)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// when

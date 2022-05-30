@@ -209,6 +209,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 					edsClusterBuilder.
 						Configure(envoy_clusters.EdsCluster(clusterName)).
 						Configure(envoy_clusters.ClientSideMTLS(
+							proxy.SecretsTracker,
 							ctx.Mesh.Resource,
 							mesh_proto.ZoneEgressServiceName,
 							tlsReady,
@@ -240,13 +241,17 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 					for _, otherMesh := range append(ctx.Mesh.Resources.OtherMeshes().Items, ctx.Mesh.Resource) {
 						if otherMesh.GetMeta().GetName() == upstreamMeshName {
 							edsClusterBuilder.Configure(
-								envoy_clusters.CrossMeshClientSideMTLS(ctx.Mesh.Resource.GetMeta().GetName(), otherMesh, serviceName, tlsReady, clusterTags),
+								envoy_clusters.CrossMeshClientSideMTLS(
+									proxy.SecretsTracker, ctx.Mesh.Resource, otherMesh, serviceName, tlsReady, clusterTags,
+								),
 							)
 							break
 						}
 					}
 				} else {
-					edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(ctx.Mesh.Resource, serviceName, tlsReady, clusterTags))
+					edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(
+						proxy.SecretsTracker,
+						ctx.Mesh.Resource, serviceName, tlsReady, clusterTags))
 				}
 			}
 

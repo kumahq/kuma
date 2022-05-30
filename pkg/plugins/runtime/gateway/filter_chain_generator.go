@@ -29,8 +29,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_secrets "github.com/kumahq/kuma/pkg/xds/envoy/secrets/v3"
 	envoy_tls_v3 "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
-	xds_generator "github.com/kumahq/kuma/pkg/xds/generator"
-	xds_secrets "github.com/kumahq/kuma/pkg/xds/secrets"
 )
 
 // TODO(jpeach) It's a lot to ask operators to tune these defaults,
@@ -148,22 +146,14 @@ func (g *HTTPSFilterChainGenerator) Generate(
 			// here but rather an SNI based on the kuma.io/service
 			builder.Configure(envoy_listeners.MatchApplicationProtocols("kuma"))
 
-			otherMeshes := ctx.Mesh.Resources.OtherMeshes().Items
-
-			// We include all mesh certificates concatenated together
-			identity, ca, err := ctx.ControlPlane.Secrets.GetForGatewayListener(ctx.Mesh.Resource, info.Proxy.Dataplane, otherMeshes)
-			if err != nil {
-				return nil, nil, errors.Wrap(err, "couldn't generate mesh cert for gateway")
-			}
-			if identity == nil {
+			if !ctx.Mesh.Resource.MTLSEnabled() {
 				return nil, nil, errors.New("mTLS must be enabled for crossMesh-enabled MeshGateways")
 			}
 
-			resources := xds_generator.CreateSecretResources(ctx.Mesh.Resource, identity, []xds_secrets.MeshCa{ca})
-
+			var err error
 			// We generate a downstream context using the envoy helpers
 			// and we don't want to match a SAN because it can be any mesh
-			downstream, err = envoy_tls_v3.CreateDownstreamTlsContext(ca.Mesh, ctx.Mesh.Resource)
+			downstream, err = envoy_tls_v3.CreateDownstreamTlsContext(info.Proxy.SecretsTracker.RequestAllInOneCa(), info.Proxy.SecretsTracker.RequestIdentityCert())
 			if err != nil {
 				return nil, nil, errors.Wrap(err, "couldn't generate downstream tls context for gateway")
 			}

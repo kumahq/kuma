@@ -29,10 +29,11 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
+			tracker := core_xds.NewSecretsTracker(given.mesh.GetMeta().GetName(), nil)
 			listener, err := NewListenerBuilder(envoy_common.APIV3).
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-					Configure(ServerSideMTLS(given.mesh)).
+					Configure(ServerSideMTLS(given.mesh, tracker)).
 					Configure(TcpProxy(given.statsName, given.clusters...)))).
 				Build()
 			// then

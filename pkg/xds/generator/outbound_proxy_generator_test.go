@@ -280,6 +280,15 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 				},
 			}
+
+			meshes := []string{given.ctx.Mesh.Resource.Meta.GetName()}
+			if given.ctx.Mesh.Resources.MeshLocalResources != nil {
+				meshResources := given.ctx.Mesh.Resources.MeshLocalResources[core_mesh.MeshType]
+				for _, mesh := range meshResources.GetItems() {
+					meshes = append(meshes, mesh.GetMeta().GetName())
+				}
+			}
+
 			proxy := &model.Proxy{
 				Id: *model.BuildProxyId("default", "side-car"),
 				Dataplane: &core_mesh.DataplaneResource{
@@ -290,7 +299,8 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 					Spec: dataplane,
 				},
-				APIVersion: envoy_common.APIV3,
+				SecretsTracker: model.NewSecretsTracker(given.ctx.Mesh.Resource.Meta.GetName(), meshes),
+				APIVersion:     envoy_common.APIV3,
 				Routing: model.Routing{
 					TrafficRoutes: model.RouteMap{
 						mesh_proto.OutboundInterface{
