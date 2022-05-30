@@ -10,7 +10,7 @@ Gateway:
 * only reconcile Gateway when GatewayClass is Ready [#4162](https://github.com/kumahq/kuma/pull/4162) @michaelbeaumont
 
 Observability:
-* hijack application metrics [#4286](https://github.com/kumahq/kuma/pull/4286) @lukidzi
+* hijack application metrics to enable scraping metrics from mTLSed applications without prometheus in the mesh [#4286](https://github.com/kumahq/kuma/pull/4286) @lukidzi
 * unified installation of `metrics/logging/tracing` into one command `observability` [#4308](https://github.com/kumahq/kuma/pull/4308) @lukidzi
 
 Helm:
@@ -31,6 +31,7 @@ DP:
 
 Other:
 * allow custom sidecar config [#4280](https://github.com/kumahq/kuma/pull/4280) @parkanzky
+* release for arm64 now publish correct arch image [#4276](https://github.com/kumahq/kuma/pull/4276) @lukidzi
 
 ### Other notable changes:
 
@@ -48,7 +49,7 @@ CP:
 * memory store cannot delete a parent [#4194](https://github.com/kumahq/kuma/pull/4194) @jakubdyszkiewicz
 * protocol check should be case-insensitive [#4248](https://github.com/kumahq/kuma/pull/4248) @lukidzi
 * remove dns server from control plane [#4192](https://github.com/kumahq/kuma/pull/4192) @lahabana
-* fix: automatically detect dns lookup family for cp cluster [#4275](https://github.com/kumahq/kuma/pull/4275) @slonka
+* automatically detect dns lookup family for cp cluster [#4275](https://github.com/kumahq/kuma/pull/4275) @slonka
 
 ZoneIngress:
 * graceful start of many ZoneIngresses [#4305](https://github.com/kumahq/kuma/pull/4305) @jakubdyszkiewicz
@@ -61,7 +62,6 @@ Kumactl:
 * remove flag '--experimental-meshgateway' [#4315](https://github.com/kumahq/kuma/pull/4315) @lobkovilya
 
 Other:
-* release for arm64 now publish correct arch image [#4276](https://github.com/kumahq/kuma/pull/4276) @lukidzi
 * support ARM Linux/Darwin for dev/tools [#4199](https://github.com/kumahq/kuma/pull/4199) @lukidzi
 
 ### Dependency upgrades:
@@ -73,17 +73,14 @@ Other:
 * upgrade kubectl to version with ARM support [#4180](https://github.com/kumahq/kuma/pull/4180) @lukidzi
 * upgrade protoc and regenerate files [#4169](https://github.com/kumahq/kuma/pull/4169) @lukidzi
 * bump github.com/golang-migrate/migrate/v4 from 4.15.1 to 4.15.2 [#4234](https://github.com/kumahq/kuma/pull/4234) @dependabot
-* bump github.com/gruntwork-io/terratest from 0.40.6 to 0.40.7 [#4178](https://github.com/kumahq/kuma/pull/4178) @dependabot
-* bump github.com/gruntwork-io/terratest from 0.40.7 to 0.40.8 [#4260](https://github.com/kumahq/kuma/pull/4260) @dependabot
-* bump github.com/gruntwork-io/terratest from 0.40.8 to 0.40.10 [#4322](https://github.com/kumahq/kuma/pull/4322) @dependabot
+* bump github.com/gruntwork-io/terratest from 0.40.6 to 0.40.10 [#4178](https://github.com/kumahq/kuma/pull/4178) [#4260](https://github.com/kumahq/kuma/pull/4260) [#4322](https://github.com/kumahq/kuma/pull/4322) @dependabot
 * bump github.com/lib/pq from 1.10.5 to 1.10.6 [#4299](https://github.com/kumahq/kuma/pull/4299) @dependabot
 * bump github.com/miekg/dns from 1.1.48 to 1.1.49 [#4291](https://github.com/kumahq/kuma/pull/4291) @dependabot
 * bump github.com/onsi/ginkgo/v2 from 2.1.3 to 2.1.4 [#4233](https://github.com/kumahq/kuma/pull/4233) @dependabot
 * bump github.com/prometheus/client_golang from 1.12.1 to 1.12.2 [#4290](https://github.com/kumahq/kuma/pull/4290) @dependabot
 * bump github.com/prometheus/common from 0.33.0 to 0.34.0 [#4235](https://github.com/kumahq/kuma/pull/4235) @dependabot
 * bump github.com/spf13/viper from 1.10.0 to 1.11.0 [#4177](https://github.com/kumahq/kuma/pull/4177) @dependabot
-* bump google.golang.org/grpc from 1.45.0 to 1.46.0 [#4213](https://github.com/kumahq/kuma/pull/4213) @dependabot
-* bump google.golang.org/grpc from 1.46.0 to 1.46.2 [#4289](https://github.com/kumahq/kuma/pull/4289) @dependabot
+* bump google.golang.org/grpc from 1.45.0 to 1.46.2 [#4213](https://github.com/kumahq/kuma/pull/4213) [#4289](https://github.com/kumahq/kuma/pull/4289) @dependabot
 * bump k8s.io/apiextensions-apiserver from 0.23.5 to 0.23.6 [#4216](https://github.com/kumahq/kuma/pull/4216) @dependabot
 
 ## [1.6.0]
