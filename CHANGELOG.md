@@ -4,14 +4,23 @@
 
 ### New features:
 
-Gateway:
-* add `GatewayClass.Spec.ParametersRef` support [#4157](https://github.com/kumahq/kuma/pull/4157) @michaelbeaumont
-* cp annotations from gateway to svc [#4327](https://github.com/kumahq/kuma/pull/4327) @johnharris85
-* only reconcile Gateway when GatewayClass is Ready [#4162](https://github.com/kumahq/kuma/pull/4162) @michaelbeaumont
+ContainerPatch:
+* allow custom configuration of Kubernetes' `kuma-init` and `kuma-sidecar` containers by introducing `ContainerPatch` CRD [#4280](https://github.com/kumahq/kuma/pull/4280) @parkanzky
 
 Observability:
 * hijack application metrics to enable scraping metrics from mTLSed applications without prometheus in the mesh [#4286](https://github.com/kumahq/kuma/pull/4286) @lukidzi
 * unified installation of `metrics/logging/tracing` into one command `observability` [#4308](https://github.com/kumahq/kuma/pull/4308) @lukidzi
+
+ARM64 support:
+* added arm build and release pipeline [#4231](https://github.com/kumahq/kuma/pull/4231) @lukidzi
+* release for arm64 now publish correct arch image [#4276](https://github.com/kumahq/kuma/pull/4276) @lukidzi
+* upgrade kubectl to version with ARM support [#4180](https://github.com/kumahq/kuma/pull/4180) @lukidzi
+* support ARM Linux/Darwin for dev/tools [#4199](https://github.com/kumahq/kuma/pull/4199) @lukidzi
+
+Gateway:
+* add `GatewayClass.Spec.ParametersRef` support [#4157](https://github.com/kumahq/kuma/pull/4157) @michaelbeaumont
+* cp annotations from gateway to svc [#4327](https://github.com/kumahq/kuma/pull/4327) @johnharris85
+* only reconcile Gateway when GatewayClass is Ready [#4162](https://github.com/kumahq/kuma/pull/4162) @michaelbeaumont
 
 Helm:
 * set host network var in helm/cp-deployment.yaml [#4209](https://github.com/kumahq/kuma/pull/4209) @SallyBlichWalkMe
@@ -28,10 +37,6 @@ CP:
 
 DP:
 * graceful shutdown of kuma-dp [#4229](https://github.com/kumahq/kuma/pull/4229) @jakubdyszkiewicz
-
-Other:
-* allow custom sidecar config [#4280](https://github.com/kumahq/kuma/pull/4280) @parkanzky
-* release for arm64 now publish correct arch image [#4276](https://github.com/kumahq/kuma/pull/4276) @lukidzi
 
 ### Other notable changes:
 
@@ -62,7 +67,6 @@ Kumactl:
 * remove flag '--experimental-meshgateway' [#4315](https://github.com/kumahq/kuma/pull/4315) @lobkovilya
 
 Other:
-* support ARM Linux/Darwin for dev/tools [#4199](https://github.com/kumahq/kuma/pull/4199) @lukidzi
 
 ### Dependency upgrades:
 
@@ -70,7 +74,6 @@ Other:
 * upgrade kuma-cni to 0.0.10 [#4313](https://github.com/kumahq/kuma/pull/4313) @lobkovilya
 * upgrade tproxy iptables to v0.2.2 [#4328](https://github.com/kumahq/kuma/pull/4328) @bartsmykla
 * upgrade GUI to the latest version [#4316](https://github.com/kumahq/kuma/pull/4316) [#4338](https://github.com/kumahq/kuma/pull/4338) @jakubdyszkiewicz, @lahabana
-* upgrade kubectl to version with ARM support [#4180](https://github.com/kumahq/kuma/pull/4180) @lukidzi
 * upgrade protoc and regenerate files [#4169](https://github.com/kumahq/kuma/pull/4169) @lukidzi
 * bump github.com/golang-migrate/migrate/v4 from 4.15.1 to 4.15.2 [#4234](https://github.com/kumahq/kuma/pull/4234) @dependabot
 * bump github.com/gruntwork-io/terratest from 0.40.6 to 0.40.10 [#4178](https://github.com/kumahq/kuma/pull/4178) [#4260](https://github.com/kumahq/kuma/pull/4260) [#4322](https://github.com/kumahq/kuma/pull/4322) @dependabot
