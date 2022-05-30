@@ -948,6 +948,10 @@ var MeshGatewayResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowToInspect: false,
 }
 
+func init() {
+	registry.RegisterType(MeshGatewayResourceTypeDescriptor)
+}
+
 const (
 	MeshGatewayRouteType model.ResourceType = "MeshGatewayRoute"
 )
@@ -1047,6 +1051,10 @@ var MeshGatewayRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "meshgatewayroute",
 	KumactlListArg: "meshgatewayroutes",
 	AllowToInspect: false,
+}
+
+func init() {
+	registry.RegisterType(MeshGatewayRouteResourceTypeDescriptor)
 }
 
 const (

@@ -83,16 +83,14 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 		// given
 		version := &mesh_proto.Version{
 			KumaDp: &mesh_proto.KumaDpVersion{
-				Version:          "0.0.1",
-				GitTag:           "v0.0.1",
-				GitCommit:        "91ce236824a9d875601679aa80c63783fb0e8725",
-				BuildDate:        "2019-08-07T11:26:06Z",
-				KumaCpCompatible: true,
+				Version:   "0.0.1",
+				GitTag:    "v0.0.1",
+				GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
+				BuildDate: "2019-08-07T11:26:06Z",
 			},
 			Envoy: &mesh_proto.EnvoyVersion{
-				Version:          "1.15.0",
-				Build:            "hash/1.15.0/RELEASE",
-				KumaDpCompatible: true,
+				Version: "1.15.0",
+				Build:   "hash/1.15.0/RELEASE",
 			},
 		}
 
@@ -110,6 +108,18 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 		metadata := xds.DataplaneMetadataFromXdsMetadata(node)
 
 		// then
-		Expect(metadata.Version).To(matchers.MatchProto(version))
+		// We don't want to validate KumaDpVersion.KumaCpCompatible
+		// as compatibility checks are currently checked in insights
+		// ref: https://github.com/kumahq/kuma/issues/4203
+		Expect(metadata.GetVersion().GetEnvoy()).
+			To(matchers.MatchProto(version.GetEnvoy()))
+		Expect(metadata.GetVersion().GetKumaDp().GetVersion()).
+			To(Equal(version.GetKumaDp().GetVersion()))
+		Expect(metadata.GetVersion().GetKumaDp().GetBuildDate()).
+			To(Equal(version.GetKumaDp().GetBuildDate()))
+		Expect(metadata.GetVersion().GetKumaDp().GetGitCommit()).
+			To(Equal(version.GetKumaDp().GetGitCommit()))
+		Expect(metadata.GetVersion().GetKumaDp().GetGitTag()).
+			To(Equal(version.GetKumaDp().GetGitTag()))
 	})
 })

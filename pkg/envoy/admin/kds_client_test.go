@@ -17,116 +17,173 @@ import (
 
 var _ = Describe("KDS client", func() {
 
-	streams := service.NewXdsConfigStreams()
-	client := admin.NewKDSEnvoyAdminClient(streams)
+	Context("Universal", func() {
 
-	zoneName := "zone-1"
-	var stream *mockStream
+		streams := service.NewXdsConfigStreams()
+		client := admin.NewKDSEnvoyAdminClient(streams, false)
 
-	BeforeEach(func() {
-		stream = &mockStream{
-			receivedRequests: make(chan *mesh_proto.XDSConfigRequest, 1),
-		}
-		streams.ZoneConnected(zoneName, stream)
-	})
+		zoneName := "zone-1"
+		var stream *mockStream
 
-	It("should execute config dump", func() {
-		// given
-		dpRes := core_mesh.NewDataplaneResource()
-		dpRes.SetMeta(&test_model.ResourceMeta{
-			Mesh: "default",
-			Name: "zone-1.dp-1",
+		BeforeEach(func() {
+			stream = &mockStream{
+				receivedRequests: make(chan *mesh_proto.XDSConfigRequest, 1),
+			}
+			streams.ZoneConnected(zoneName, stream)
 		})
-		configContent := []byte("config")
 
-		// when
-		respCh := make(chan []byte)
-		go func() {
-			defer GinkgoRecover()
-			resp, err := client.ConfigDump(context.Background(), dpRes)
-			Expect(err).To(Succeed())
-			respCh <- resp
-		}()
-
-		// and
-		request := <-stream.receivedRequests
-		Eventually(func() error {
-			return streams.ResponseReceived(zoneName, &mesh_proto.XDSConfigResponse{
-				RequestId: request.RequestId,
-				Result: &mesh_proto.XDSConfigResponse_Config{
-					Config: configContent,
-				},
+		It("should execute config dump", func() {
+			// given
+			dpRes := core_mesh.NewDataplaneResource()
+			dpRes.SetMeta(&test_model.ResourceMeta{
+				Mesh: "default",
+				Name: "zone-1.dp-1",
 			})
-		}, "10s", "100ms").Should(Succeed())
+			configContent := []byte("config")
 
-		// then
-		Eventually(respCh).Should(Receive(Equal(configContent)))
-	})
+			// when
+			respCh := make(chan []byte)
+			go func() {
+				defer GinkgoRecover()
+				resp, err := client.ConfigDump(context.Background(), dpRes)
+				Expect(err).To(Succeed())
+				respCh <- resp
+			}()
 
-	It("should fail when zone is not connected", func() {
-		// given
-		dpRes := core_mesh.NewDataplaneResource()
-		dpRes.SetMeta(&test_model.ResourceMeta{
-			Mesh: "default",
-			Name: "not-connected.dp-1",
+			// and
+			request := <-stream.receivedRequests
+			Expect(request.ResourceName).To(Equal("dp-1"))
+
+			Eventually(func() error {
+				return streams.ResponseReceived(zoneName, &mesh_proto.XDSConfigResponse{
+					RequestId: request.RequestId,
+					Result: &mesh_proto.XDSConfigResponse_Config{
+						Config: configContent,
+					},
+				})
+			}, "10s", "100ms").Should(Succeed())
+
+			// then
+			Eventually(respCh).Should(Receive(Equal(configContent)))
 		})
 
-		// when
-		_, err := client.ConfigDump(context.Background(), dpRes)
+		It("should fail when zone is not connected", func() {
+			// given
+			dpRes := core_mesh.NewDataplaneResource()
+			dpRes.SetMeta(&test_model.ResourceMeta{
+				Mesh: "default",
+				Name: "not-connected.dp-1",
+			})
 
-		// then
-		Expect(err).To(MatchError("could not send XDSConfigRequest: zone not-connected is not connected"))
-	})
-
-	It("should time out after X seconds", func() {
-		// given
-		dpRes := core_mesh.NewDataplaneResource()
-		dpRes.SetMeta(&test_model.ResourceMeta{
-			Mesh: "default",
-			Name: zoneName + ".dp-1",
-		})
-
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-		defer cancel()
-
-		// when
-		_, err := client.ConfigDump(ctx, dpRes)
-
-		// then
-		Expect(err).To(MatchError("timeout"))
-	})
-
-	It("should rethrow error from zone CP", func() {
-		// given
-		dpRes := core_mesh.NewDataplaneResource()
-		dpRes.SetMeta(&test_model.ResourceMeta{
-			Mesh: "default",
-			Name: zoneName + ".dp-1",
-		})
-
-		// when
-		errCh := make(chan error)
-		go func() {
-			defer GinkgoRecover()
+			// when
 			_, err := client.ConfigDump(context.Background(), dpRes)
-			errCh <- err
-		}()
 
-		// and
-		request := <-stream.receivedRequests
-		Eventually(func() error {
-			return streams.ResponseReceived(zoneName, &mesh_proto.XDSConfigResponse{
-				RequestId: request.RequestId,
-				Result: &mesh_proto.XDSConfigResponse_Error{
-					Error: "failed",
-				},
+			// then
+			Expect(err).To(MatchError("could not send XDSConfigRequest: zone not-connected is not connected"))
+		})
+
+		It("should time out after X seconds", func() {
+			// given
+			dpRes := core_mesh.NewDataplaneResource()
+			dpRes.SetMeta(&test_model.ResourceMeta{
+				Mesh: "default",
+				Name: zoneName + ".dp-1",
 			})
-		}, "10s", "100ms").Should(Succeed())
 
-		// then
-		Eventually(errCh).Should(Receive(MatchError("error response from Zone CP: failed")))
+			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+			defer cancel()
+
+			// when
+			_, err := client.ConfigDump(ctx, dpRes)
+
+			// then
+			Expect(err).To(MatchError("timeout"))
+		})
+
+		It("should rethrow error from zone CP", func() {
+			// given
+			dpRes := core_mesh.NewDataplaneResource()
+			dpRes.SetMeta(&test_model.ResourceMeta{
+				Mesh: "default",
+				Name: zoneName + ".dp-1",
+			})
+
+			// when
+			errCh := make(chan error)
+			go func() {
+				defer GinkgoRecover()
+				_, err := client.ConfigDump(context.Background(), dpRes)
+				errCh <- err
+			}()
+
+			// and
+			request := <-stream.receivedRequests
+			Expect(request.ResourceName).To(Equal("dp-1"))
+
+			Eventually(func() error {
+				return streams.ResponseReceived(zoneName, &mesh_proto.XDSConfigResponse{
+					RequestId: request.RequestId,
+					Result: &mesh_proto.XDSConfigResponse_Error{
+						Error: "failed",
+					},
+				})
+			}, "10s", "100ms").Should(Succeed())
+
+			// then
+			Eventually(errCh).Should(Receive(MatchError("error response from Zone CP: failed")))
+		})
 	})
 
+	Context("Kubernetes", func() {
+
+		streams := service.NewXdsConfigStreams()
+		client := admin.NewKDSEnvoyAdminClient(streams, true)
+
+		zoneName := "zone-1"
+		var stream *mockStream
+
+		BeforeEach(func() {
+			stream = &mockStream{
+				receivedRequests: make(chan *mesh_proto.XDSConfigRequest, 1),
+			}
+			streams.ZoneConnected(zoneName, stream)
+		})
+
+		It("should execute config dump", func() {
+			// given
+			dpRes := core_mesh.NewDataplaneResource()
+			dpRes.SetMeta(&test_model.ResourceMeta{
+				Mesh: "default",
+				Name: "zone-1.dp-1.my-namespace",
+			})
+			configContent := []byte("config")
+
+			// when
+			respCh := make(chan []byte)
+			go func() {
+				defer GinkgoRecover()
+				resp, err := client.ConfigDump(context.Background(), dpRes)
+				Expect(err).To(Succeed())
+				respCh <- resp
+			}()
+
+			// and
+			request := <-stream.receivedRequests
+			Expect(request.ResourceName).To(Equal("dp-1"))
+
+			Eventually(func() error {
+				return streams.ResponseReceived(zoneName, &mesh_proto.XDSConfigResponse{
+					RequestId: request.RequestId,
+					Result: &mesh_proto.XDSConfigResponse_Config{
+						Config: configContent,
+					},
+				})
+			}, "10s", "100ms").Should(Succeed())
+
+			// then
+			Eventually(respCh).Should(Receive(Equal(configContent)))
+		})
+	})
 })
 
 type mockStream struct {
