@@ -109,7 +109,9 @@ var _ = Describe("EgressGenerator", func() {
 
 			loader := fakeLoader{}
 
-			for _, meshResources := range meshResourcesMap {
+			var meshes []string
+			for meshName, meshResources := range meshResourcesMap {
+				meshes = append(meshes, meshName)
 				meshResources.EndpointMap = xds_topology.BuildRemoteEndpointMap(
 					meshResources.Mesh,
 					zoneName,
@@ -125,7 +127,7 @@ var _ = Describe("EgressGenerator", func() {
 			}
 
 			gen := egress.Generator{
-				Generators: []egress.ZoneEgressGenerator{
+				ZoneEgressGenerators: []egress.ZoneEgressGenerator{
 					&egress.InternalServicesGenerator{},
 					&egress.ExternalServicesGenerator{},
 				},

@@ -31,7 +31,7 @@ var TestSecretsInfo = &secrets.Info{
 type TestSecrets struct {
 }
 
-func get(meshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, []secrets.MeshCa, secrets.MeshCa, error) {
+func get(meshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, map[string]*core_xds.CaSecret, *core_xds.CaSecret, error) {
 	identitySecret := &core_xds.IdentitySecret{
 		PemCerts: [][]byte{
 			[]byte("CERT"),
@@ -39,25 +39,19 @@ func get(meshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, []secrets.
 		PemKey: []byte("KEY"),
 	}
 
-	var cas []secrets.MeshCa
+	cas := map[string]*core_xds.CaSecret{}
 	for _, mesh := range meshes {
-		cas = append(cas, secrets.MeshCa{
-			Mesh: mesh.GetMeta().GetName(),
-			CaSecret: &core_xds.CaSecret{
-				PemCerts: [][]byte{
-					[]byte("CA"),
-				},
+		cas[mesh.GetMeta().GetName()] = &core_xds.CaSecret{
+			PemCerts: [][]byte{
+				[]byte("CA"),
 			},
-		})
+		}
 	}
 
-	allInOne := secrets.MeshCa{
-		CaSecret: &core_xds.CaSecret{
-			PemCerts: [][]byte{
-				[]byte("combined"),
-			},
+	allInOne := &core_xds.CaSecret{
+		PemCerts: [][]byte{
+			[]byte("combined"),
 		},
-		Mesh: "allmeshes",
 	}
 
 	return identitySecret, cas, allInOne, nil
@@ -66,25 +60,26 @@ func get(meshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, []secrets.
 func (*TestSecrets) GetForZoneEgress(
 	_ *core_mesh.ZoneEgressResource,
 	mesh *core_mesh.MeshResource,
-) (*core_xds.IdentitySecret, []secrets.MeshCa, error) {
+) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
 	identity, cas, _, err := get([]*core_mesh.MeshResource{mesh})
-	return identity, cas, err
+
+	return identity, cas[mesh.GetMeta().GetName()], err
 }
 
 func (*TestSecrets) GetForDataPlane(
 	_ *core_mesh.DataplaneResource,
 	mesh *core_mesh.MeshResource,
 	meshes []*core_mesh.MeshResource,
-) (*core_xds.IdentitySecret, []secrets.MeshCa, error) {
+) (*core_xds.IdentitySecret, map[string]*core_xds.CaSecret, error) {
 	identity, cas, _, err := get(append([]*core_mesh.MeshResource{mesh}, meshes...))
 	return identity, cas, err
 }
 
-func (*TestSecrets) GetForGatewayListener(
+func (*TestSecrets) GetAllInOne(
 	mesh *core_mesh.MeshResource,
 	_ *core_mesh.DataplaneResource,
 	meshes []*core_mesh.MeshResource,
-) (*core_xds.IdentitySecret, secrets.MeshCa, error) {
+) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
 	identity, _, allInOne, err := get(append([]*core_mesh.MeshResource{mesh}, meshes...))
 	return identity, allInOne, err
 }

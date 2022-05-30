@@ -30,12 +30,9 @@ type MeshCa struct {
 }
 
 type Secrets interface {
-	GetForDataPlane(dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource, otherMeshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, []MeshCa, error)
-	// GetForGatewayListener creates an identity cert only dependent on the
-	// `Dataplane` tags, meaning the certificate cannot be used to distinguish
-	// between listeners.
-	GetForGatewayListener(mesh *core_mesh.MeshResource, dataplane *core_mesh.DataplaneResource, otherMeshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, MeshCa, error)
-	GetForZoneEgress(zoneEgress *core_mesh.ZoneEgressResource, mesh *core_mesh.MeshResource) (*core_xds.IdentitySecret, []MeshCa, error)
+	GetForDataPlane(dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource, otherMeshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, map[string]*core_xds.CaSecret, error)
+	GetForZoneEgress(zoneEgress *core_mesh.ZoneEgressResource, mesh *core_mesh.MeshResource) (*core_xds.IdentitySecret, *core_xds.CaSecret, error)
+	GetAllInOne(mesh *core_mesh.MeshResource, dataplane *core_mesh.DataplaneResource, otherMeshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, *core_xds.CaSecret, error)
 	Info(dpKey model.ResourceKey) *Info
 	Cleanup(dpKey model.ResourceKey)
 }
@@ -127,24 +124,24 @@ func (s *secrets) GetForDataPlane(
 	dataplane *core_mesh.DataplaneResource,
 	mesh *core_mesh.MeshResource,
 	otherMeshes []*core_mesh.MeshResource,
-) (*core_xds.IdentitySecret, []MeshCa, error) {
+) (*core_xds.IdentitySecret, map[string]*core_xds.CaSecret, error) {
 	identity, cas, _, err := s.get(dataplane, dataplane.Spec.TagSet(), mesh, otherMeshes)
 	return identity, cas, err
 }
 
-func (s *secrets) GetForGatewayListener(
+func (s *secrets) GetAllInOne(
 	mesh *core_mesh.MeshResource,
 	dataplane *core_mesh.DataplaneResource,
 	otherMeshes []*core_mesh.MeshResource,
-) (*core_xds.IdentitySecret, MeshCa, error) {
+) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
 	identity, _, allInOne, err := s.get(dataplane, dataplane.Spec.TagSet(), mesh, otherMeshes)
-	return identity, allInOne, err
+	return identity, allInOne.CaSecret, err
 }
 
 func (s *secrets) GetForZoneEgress(
 	zoneEgress *core_mesh.ZoneEgressResource,
 	mesh *core_mesh.MeshResource,
-) (*core_xds.IdentitySecret, []MeshCa, error) {
+) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
 	tags := mesh_proto.MultiValueTagSetFrom(map[string][]string{
 		mesh_proto.ServiceTag: {
 			mesh_proto.ZoneEgressServiceName,
@@ -152,7 +149,7 @@ func (s *secrets) GetForZoneEgress(
 	})
 
 	identity, cas, _, err := s.get(zoneEgress, tags, mesh, nil)
-	return identity, cas, err
+	return identity, cas[mesh.GetMeta().GetName()], err
 }
 
 func (s *secrets) get(
@@ -160,7 +157,7 @@ func (s *secrets) get(
 	tags mesh_proto.MultiValueTagSet,
 	mesh *core_mesh.MeshResource,
 	otherMeshes []*core_mesh.MeshResource,
-) (*core_xds.IdentitySecret, []MeshCa, MeshCa, error) {
+) (*core_xds.IdentitySecret, map[string]*core_xds.CaSecret, MeshCa, error) {
 	if !mesh.MTLSEnabled() {
 		return nil, nil, MeshCa{}, nil
 	}
@@ -191,14 +188,27 @@ func (s *secrets) get(
 		s.cachedCerts[resourceKey] = certs
 		s.Unlock()
 
-		return certs.identity, append([]MeshCa{certs.ownCa}, certs.otherCas...), certs.allInOneCa, nil
+		caMap := map[string]*core_xds.CaSecret{
+			meshName: certs.ownCa.CaSecret,
+		}
+		for _, otherCa := range certs.otherCas {
+			caMap[otherCa.Mesh] = otherCa.CaSecret
+		}
+		return certs.identity, caMap, certs.allInOneCa, nil
 	}
 
 	if certs == nil { // previous "if" should guarantee that the certs are always there
 		return nil, nil, MeshCa{}, errors.New("certificates were not generated")
 	}
 
-	return certs.identity, append([]MeshCa{certs.ownCa}, certs.otherCas...), certs.allInOneCa, nil
+	caMap := map[string]*core_xds.CaSecret{
+		meshName: certs.ownCa.CaSecret,
+	}
+	for _, otherCa := range certs.otherCas {
+		caMap[otherCa.Mesh] = otherCa.CaSecret
+	}
+
+	return certs.identity, caMap, certs.allInOneCa, nil
 }
 
 func (s *secrets) Cleanup(dpKey model.ResourceKey) {

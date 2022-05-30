@@ -7,6 +7,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/xds/generator"
+	generator_core "github.com/kumahq/kuma/pkg/xds/generator/core"
 	"github.com/kumahq/kuma/pkg/xds/template"
 )
 
@@ -66,15 +67,13 @@ const ProfileGatewayProxy = "gateway-proxy"
 
 // NewProxyProfile returns a new resource generator profile for builtin
 // gateway dataplanes.
-func NewProxyProfile(zone string) generator.ResourceGenerator {
-	return generator.CompositeResourceGenerator{
+func NewProxyProfile(zone string) generator_core.ResourceGenerator {
+	return generator_core.CompositeResourceGenerator{
 		generator.AdminProxyGenerator{},
 		generator.PrometheusEndpointGenerator{},
-		generator.SecretsProxyGenerator{},
 		generator.TracingProxyGenerator{},
 		generator.TransparentProxyGenerator{},
 		generator.DNSGenerator{},
-
 		Generator{
 			FilterChainGenerators: filterChainGenerators{
 				FilterChainGenerators: map[mesh_proto.MeshGateway_Listener_Protocol]FilterChainGenerator{
@@ -86,5 +85,6 @@ func NewProxyProfile(zone string) generator.ResourceGenerator {
 			},
 			Zone: zone,
 		},
+		generator.SecretsProxyGenerator{},
 	}
 }

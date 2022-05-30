@@ -138,7 +138,7 @@ var _ = Describe("Secrets", func() {
 			Expect(identity.PemCerts).ToNot(BeEmpty())
 			Expect(identity.PemKey).ToNot(BeEmpty())
 			Expect(ca).To(HaveLen(1))
-			Expect(ca[0].CaSecret.PemCerts).ToNot(BeEmpty())
+			Expect(ca["default"].PemCerts).ToNot(BeEmpty())
 
 			// and info is stored
 			info := secrets.Info(core_model.MetaToResourceKey(newDataplane().Meta))
@@ -169,7 +169,7 @@ var _ = Describe("Secrets", func() {
 			Expect(identity).To(Equal(newIdentity))
 			Expect(cas).To(HaveLen(1))
 			Expect(newCa).To(HaveLen(1))
-			Expect(cas[0]).To(Equal(newCa[0]))
+			Expect(cas["default"]).To(Equal(newCa["default"]))
 			Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(1.0))
 			Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
 		})
@@ -251,14 +251,13 @@ var _ = Describe("Secrets", func() {
 	Context("zone egress", func() {
 		It("should generate cert and emit statistic and info", func() {
 			// when
-			identity, cas, err := secrets.GetForZoneEgress(newZoneEgress(), newMesh())
+			identity, ca, err := secrets.GetForZoneEgress(newZoneEgress(), newMesh())
 
 			// then certs are generated
 			Expect(err).ToNot(HaveOccurred())
 			Expect(identity.PemCerts).ToNot(BeEmpty())
 			Expect(identity.PemKey).ToNot(BeEmpty())
-			Expect(cas).To(HaveLen(1))
-			Expect(cas[0].CaSecret.PemCerts).ToNot(BeEmpty())
+			Expect(ca.PemCerts).ToNot(BeEmpty())
 
 			// and info is stored
 			info := secrets.Info(core_model.MetaToResourceKey(newZoneEgress().Meta))

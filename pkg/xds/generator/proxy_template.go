@@ -8,6 +8,7 @@ import (
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	util_envoy "github.com/kumahq/kuma/pkg/util/envoy"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/generator/core"
 	"github.com/kumahq/kuma/pkg/xds/generator/egress"
 	"github.com/kumahq/kuma/pkg/xds/template"
 )
@@ -71,11 +72,10 @@ func (s *ProxyTemplateProfileSource) Generate(ctx xds_context.Context, proxy *mo
 	return g.Generate(ctx, proxy)
 }
 
-func NewDefaultProxyProfile() ResourceGenerator {
-	return CompositeResourceGenerator{
+func NewDefaultProxyProfile() core.ResourceGenerator {
+	return core.CompositeResourceGenerator{
 		AdminProxyGenerator{},
 		PrometheusEndpointGenerator{},
-		SecretsProxyGenerator{},
 		TransparentProxyGenerator{},
 		InboundProxyGenerator{},
 		OutboundProxyGenerator{},
@@ -83,17 +83,20 @@ func NewDefaultProxyProfile() ResourceGenerator {
 		TracingProxyGenerator{},
 		ProbeProxyGenerator{},
 		DNSGenerator{},
+		SecretsProxyGenerator{},
 	}
 }
 
-func NewEgressProxyProfile() ResourceGenerator {
-	return CompositeResourceGenerator{
+func NewEgressProxyProfile() core.ResourceGenerator {
+	return core.CompositeResourceGenerator{
 		AdminProxyGenerator{},
-		SecretsProxyGenerator{},
 		egress.Generator{
-			Generators: []egress.ZoneEgressGenerator{
+			ZoneEgressGenerators: []egress.ZoneEgressGenerator{
 				&egress.InternalServicesGenerator{},
 				&egress.ExternalServicesGenerator{},
+			},
+			Generators: []core.ResourceGenerator{
+				&SecretsProxyGenerator{},
 			},
 		},
 	}
@@ -110,15 +113,15 @@ var DefaultTemplateResolver template.ProxyTemplateResolver = &template.StaticPro
 	},
 }
 
-var predefinedProfiles = make(map[string]ResourceGenerator)
+var predefinedProfiles = make(map[string]core.ResourceGenerator)
 
 func init() {
 	RegisterProfile(core_mesh.ProfileDefaultProxy, NewDefaultProxyProfile())
-	RegisterProfile(IngressProxy, CompositeResourceGenerator{AdminProxyGenerator{}, IngressGenerator{}})
+	RegisterProfile(IngressProxy, core.CompositeResourceGenerator{AdminProxyGenerator{}, IngressGenerator{}})
 	RegisterProfile(egress.EgressProxy, NewEgressProxyProfile())
 }
 
-func RegisterProfile(profileName string, generator ResourceGenerator) {
+func RegisterProfile(profileName string, generator core.ResourceGenerator) {
 	predefinedProfiles[profileName] = generator
 	core_mesh.AvailableProfiles[profileName] = struct{}{}
 }
