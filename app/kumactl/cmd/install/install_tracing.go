@@ -23,7 +23,7 @@ func newInstallTracing(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Short: "Install Tracing backend in Kubernetes cluster (Jaeger)",
 		Long:  `Install Tracing backend in Kubernetes cluster (Jaeger) in its own namespace.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			cmd.ErrOrStderr().Write([]byte("we're migrating to `observability`, please use `install observability`"))
+			_, _ = cmd.ErrOrStderr().Write([]byte("we're migrating to `observability`, please use `install observability`"))
 			templateArgs := tracingTemplateArgs{
 				Namespace: args.Namespace,
 			}
