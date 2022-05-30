@@ -18,6 +18,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/util/exec"
 
 	"github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/utils"
@@ -286,8 +287,7 @@ func CollectResponseDirectly(
 //
 // See https://curl.se/docs/manpage.html#-w.
 type FailureResponse struct {
-	Errormsg string `json:"errormsg"`
-	Exitcode int    `json:"exitcode"`
+	Exitcode int `json:"exitcode"`
 
 	ResponseCode int    `json:"response_code"`
 	Method       string `json:"method"`
@@ -350,6 +350,11 @@ func CollectFailure(cluster framework.Cluster, source, destination string, fn ..
 		}
 
 		return response, errors.Errorf("empty JSON response from curl: %q", stdout)
+	}
+
+	exitErr := exec.CodeExitError{}
+	if errors.As(err, &exitErr) {
+		response.Exitcode = exitErr.Code
 	}
 
 	// 3. Finally, report the JSON status and no execution error

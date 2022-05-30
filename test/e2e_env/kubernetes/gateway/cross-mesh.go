@@ -8,88 +8,48 @@ import (
 
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
 func CrossMeshGatewayOnKubernetes() {
-	// ClientNamespace is a namespace to deploy gateway client
-	// applications. Mesh sidecar injection is not enabled there.
 	const gatewayClientNamespaceOtherMesh = "cross-mesh-kuma-client-other"
 	const gatewayClientNamespaceSameMesh = "cross-mesh-kuma-client"
 	const gatewayTestNamespace = "cross-mesh-kuma-test"
+	const gatewayClientOutsideMesh = "cross-mesh-kuma-client-outside"
 
-	const echoServer = "cross-mesh-echo-server"
-	const edgeGateway = "cross-mesh-edge-gateway"
+	const crossMeshHostname = "gateway.mesh"
+
+	echoServerName := func(mesh string) string {
+		return fmt.Sprintf("echo-server-%s", mesh)
+	}
+	echoServerService := func(mesh, namespace string) string {
+		return fmt.Sprintf("%s_%s_svc_80", echoServerName(mesh), namespace)
+	}
+
+	const crossMeshGatewayName = "cross-mesh-gateway"
+	const edgeGatewayName = "cross-mesh-edge-gateway"
 
 	const gatewayMesh = "cross-mesh-gateway"
 	const gatewayOtherMesh = "cross-mesh-other"
 
-	const gatewayPort = 8080
+	const crossMeshGatewayPort = 9080
+	const edgeGatewayPort = 9081
 
-	echoServerApp := testserver.Install(
-		testserver.WithMesh(gatewayMesh),
-		testserver.WithName(echoServer),
-		testserver.WithNamespace(gatewayTestNamespace),
-		testserver.WithArgs("echo", "--instance", "kubernetes"),
+	echoServerApp := func(mesh string) InstallFunc {
+		return testserver.Install(
+			testserver.WithMesh(mesh),
+			testserver.WithName(echoServerName(mesh)),
+			testserver.WithNamespace(gatewayTestNamespace),
+			testserver.WithArgs("echo", "--instance", mesh),
+		)
+	}
+
+	crossMeshGatewayYaml := mkGateway(
+		crossMeshGatewayName, gatewayTestNamespace, gatewayMesh, true, crossMeshHostname, echoServerService(gatewayMesh, gatewayTestNamespace), crossMeshGatewayPort,
 	)
-
-	meshGateway := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshGateway
-metadata:
-  name: %s
-mesh: %s
-spec:
-  selectors:
-  - match:
-      kuma.io/service: %s
-  conf:
-    listeners:
-    - port: %d
-      protocol: HTTP
-      crossMesh: true
-      hostname: gateway.mesh
-      tags:
-        hostname: gateway.mesh
-`, edgeGateway, gatewayMesh, edgeGateway, gatewayPort)
-
-	meshGatewayRoute := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshGatewayRoute
-metadata:
-  name: %s
-mesh: %s
-spec:
-  selectors:
-  - match:
-      kuma.io/service: %s
-  conf:
-    http:
-      rules:
-      - matches:
-        - path:
-            match: PREFIX
-            value: /
-        backends:
-        - destination:
-            kuma.io/service: %s_%s_svc_80 # Matches the echo-server we deployed.
-`, edgeGateway, gatewayMesh, edgeGateway, echoServer, gatewayTestNamespace)
-
-	meshGatewayInstance := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshGatewayInstance
-metadata:
-  name: %s
-  namespace: %s
-  annotations:
-    kuma.io/mesh: %s
-spec:
-  replicas: 1
-  serviceType: ClusterIP
-  tags:
-    kuma.io/service: %s
-`, edgeGateway, gatewayTestNamespace, gatewayMesh, edgeGateway)
+	edgeGatewayYaml := mkGateway(
+		edgeGatewayName, gatewayTestNamespace, gatewayOtherMesh, false, "", echoServerService(gatewayOtherMesh, gatewayTestNamespace), edgeGatewayPort,
+	)
 
 	BeforeAll(func() {
 		setup := NewClusterSetup().
@@ -98,12 +58,14 @@ spec:
 			Install(NamespaceWithSidecarInjection(gatewayTestNamespace)).
 			Install(NamespaceWithSidecarInjection(gatewayClientNamespaceOtherMesh)).
 			Install(NamespaceWithSidecarInjection(gatewayClientNamespaceSameMesh)).
-			Install(echoServerApp).
+			Install(Namespace(gatewayClientOutsideMesh)).
+			Install(echoServerApp(gatewayMesh)).
+			Install(echoServerApp(gatewayOtherMesh)).
 			Install(DemoClientK8s(gatewayOtherMesh, gatewayClientNamespaceOtherMesh)).
 			Install(DemoClientK8s(gatewayMesh, gatewayClientNamespaceSameMesh)).
-			Install(YamlK8s(meshGateway)).
-			Install(YamlK8s(meshGatewayRoute)).
-			Install(YamlK8s(meshGatewayInstance))
+			Install(DemoClientK8s(gatewayMesh, gatewayClientOutsideMesh)). // this will not be in the mesh
+			Install(YamlK8s(crossMeshGatewayYaml)).
+			Install(YamlK8s(edgeGatewayYaml))
 
 		Expect(setup.Setup(env.Cluster)).To(Succeed())
 	})
@@ -117,16 +79,38 @@ spec:
 	})
 
 	Context("when mTLS is enabled", func() {
-		It("should proxy simple HTTP requests from a different mesh", func() {
-			proxyRequestToGateway(env.Cluster, "kubernetes",
-				"gateway.mesh", gatewayPort,
-				client.FromKubernetesPod(gatewayClientNamespaceOtherMesh, "demo-client"))
+		It("should proxy HTTP requests from a different mesh", func() {
+			successfullyProxyRequestToGateway(
+				env.Cluster, gatewayMesh,
+				crossMeshHostname, crossMeshGatewayPort,
+				gatewayClientNamespaceOtherMesh,
+			)
 		})
 
-		It("should proxy simple HTTP requests from the same mesh", func() {
-			proxyRequestToGateway(env.Cluster, "kubernetes",
-				"gateway.mesh", gatewayPort,
-				client.FromKubernetesPod(gatewayClientNamespaceSameMesh, "demo-client"))
+		It("should proxy HTTP requests from the same mesh", func() {
+			successfullyProxyRequestToGateway(
+				env.Cluster, gatewayMesh,
+				crossMeshHostname, crossMeshGatewayPort,
+				gatewayClientNamespaceSameMesh,
+			)
+		})
+
+		It("doesn't allow HTTP requests from outside the mesh", func() {
+			gatewayAddr := gatewayAddress(crossMeshGatewayName, gatewayTestNamespace)
+			Consistently(failToProxyRequestToGateway(
+				env.Cluster,
+				gatewayAddr, crossMeshGatewayPort,
+				gatewayClientOutsideMesh,
+			), "10s", "1s").Should(Succeed())
+		})
+
+		Specify("HTTP requests to a non-crossMesh gateway should still be proxied", func() {
+			gatewayAddr := gatewayAddress(edgeGatewayName, gatewayTestNamespace)
+			successfullyProxyRequestToGateway(
+				env.Cluster, gatewayOtherMesh,
+				gatewayAddr, edgeGatewayPort,
+				gatewayClientNamespaceOtherMesh,
+			)
 		})
 	})
 }

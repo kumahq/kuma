@@ -1,4 +1,4 @@
-package auth_test
+package kubernetes_test
 
 import (
 	"encoding/json"
@@ -68,7 +68,7 @@ var _ = SynchronizedBeforeSuite(
 var _ = SynchronizedAfterSuite(func() {}, func() {})
 
 var _ = Describe("Virtual Probes", healthcheck.VirtualProbes, Ordered)
-var _ = Describe("Gateways", gateway.CrossMeshGatewayOnKubernetes, Ordered)
+var _ = Describe("Cross-mesh Gateways", gateway.CrossMeshGatewayOnKubernetes, Ordered)
 var _ = Describe("Graceful", graceful.Graceful, Ordered)
 var _ = Describe("Jobs", jobs.Jobs)
 var _ = Describe("Metrics", metrics.ApplicationsMetrics, Ordered)
