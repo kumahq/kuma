@@ -112,6 +112,15 @@ app: {{ include "kuma.name" . }}-control-plane
 {{- end }}
 
 {{/*
+control plane pod annotations
+*/}}
+{{- define "kuma.cpPodAnnotations" -}}
+{{ range $key, $value := $.Values.controlPlane.podAnnotations }}
+{{- $key }}: {{ $value -}}
+{{ end }}
+{{- end }}
+
+{{/*
 ingress labels
 */}}
 {{- define "kuma.ingressLabels" -}}
