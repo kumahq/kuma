@@ -1,4 +1,3 @@
-Command "tracing" is deprecated, We're migrating to `observability`, please use `install observability`
 
 ---
 apiVersion: v1

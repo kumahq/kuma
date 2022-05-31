@@ -38,7 +38,7 @@ var _ = Describe("kumactl install tracing", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(stderr.String()).To(BeEmpty())
+			Expect(stderr.String()).To(Equal("# `tracing` is deprecated, please use `install observability` to install logging, metrics and tracing"))
 
 			// and output matches golden files
 			actual := stdout.Bytes()

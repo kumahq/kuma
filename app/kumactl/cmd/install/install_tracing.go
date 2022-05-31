@@ -19,11 +19,11 @@ type tracingTemplateArgs struct {
 func newInstallTracing(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	args := pctx.InstallTracingContext.TemplateArgs
 	cmd := &cobra.Command{
-		Use:        "tracing",
-		Short:      "Install Tracing backend in Kubernetes cluster (Jaeger)",
-		Long:       `Install Tracing backend in Kubernetes cluster (Jaeger) in its own namespace.`,
-		Deprecated: "We're migrating to `observability`, please use `install observability`",
+		Use:   "tracing",
+		Short: "Install Tracing backend in Kubernetes cluster (Jaeger)",
+		Long:  `Install Tracing backend in Kubernetes cluster (Jaeger) in its own namespace.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			_, _ = cmd.ErrOrStderr().Write([]byte("# `tracing` is deprecated, please use `install observability` to install logging, metrics and tracing"))
 			templateArgs := tracingTemplateArgs{
 				Namespace: args.Namespace,
 			}

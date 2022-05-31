@@ -52,7 +52,7 @@ var _ = Describe("kumactl install metrics", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(stderr.String()).To(BeEmpty())
+			Expect(stderr.String()).To(Equal("# `metrics` is deprecated, please use `install observability` to install logging, metrics and tracing"))
 
 			// and output matches golden files
 			actual := stdout.Bytes()

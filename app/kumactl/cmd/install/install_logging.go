@@ -19,11 +19,11 @@ type loggingTemplateArgs struct {
 func newInstallLogging(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	args := pctx.InstallLoggingContext.TemplateArgs
 	cmd := &cobra.Command{
-		Use:        "logging",
-		Short:      "Install Logging backend in Kubernetes cluster (Loki)",
-		Long:       `Install Logging backend in Kubernetes cluster (Loki) in its own namespace.`,
-		Deprecated: "We're migrating to `observability`, please use `install observability`",
+		Use:   "logging",
+		Short: "Install Logging backend in Kubernetes cluster (Loki)",
+		Long:  `Install Logging backend in Kubernetes cluster (Loki) in its own namespace.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			_, _ = cmd.ErrOrStderr().Write([]byte("# `logging` is deprecated, please use `install observability` to install logging, metrics and tracing"))
 			templateArgs := loggingTemplateArgs{
 				Namespace: args.Namespace,
 			}
