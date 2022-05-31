@@ -167,11 +167,11 @@ var defaultConf = E2eConfig{
 	SuiteConfig: SuiteConfig{
 		Helm: HelmSuiteConfig{
 			Versions: []string{
-				"0.8.1",
+				"1.6.0",
 			},
 		},
 		Compatibility: CompatibilitySuiteConfig{
-			HelmVersion: "0.8.1",
+			HelmVersion: "1.6.0",
 		},
 	},
 	K8sType:                      KindK8sType,
