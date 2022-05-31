@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
 type Cluster struct {
@@ -19,7 +18,7 @@ type Cluster struct {
 	tags              Tags
 	isExternalService bool
 	lb                *mesh_proto.TrafficRoute_LoadBalancer
-	timeout           *core_mesh.TimeoutResource
+	timeout           *mesh_proto.Timeout_Conf
 }
 
 func (c *Cluster) Service() string                           { return c.service }
@@ -28,7 +27,7 @@ func (c *Cluster) Weight() uint32                            { return c.weight }
 func (c *Cluster) Tags() Tags                                { return c.tags }
 func (c *Cluster) IsExternalService() bool                   { return c.isExternalService }
 func (c *Cluster) LB() *mesh_proto.TrafficRoute_LoadBalancer { return c.lb }
-func (c *Cluster) Timeout() *core_mesh.TimeoutResource       { return c.timeout }
+func (c *Cluster) Timeout() *mesh_proto.Timeout_Conf         { return c.timeout }
 func (c *Cluster) Hash() string                              { return fmt.Sprintf("%s-%s", c.name, c.tags.String()) }
 
 func (c *Cluster) SetName(name string) {
@@ -93,7 +92,7 @@ func WithTags(tags Tags) NewClusterOpt {
 	})
 }
 
-func WithTimeout(timeout *core_mesh.TimeoutResource) NewClusterOpt {
+func WithTimeout(timeout *mesh_proto.Timeout_Conf) NewClusterOpt {
 	return newClusterOptFunc(func(cluster *Cluster) {
 		cluster.timeout = timeout
 	})

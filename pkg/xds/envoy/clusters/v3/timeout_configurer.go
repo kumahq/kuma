@@ -16,43 +16,43 @@ const defaultConnectTimeout = 10 * time.Second
 
 type TimeoutConfigurer struct {
 	Protocol core_mesh.Protocol
-	Timeout  *core_mesh.TimeoutResource
+	Conf     *mesh_proto.Timeout_Conf
 }
 
 var _ ClusterConfigurer = &TimeoutConfigurer{}
 
 func (t *TimeoutConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
-	var conf *mesh_proto.Timeout_Conf
+	cluster.ConnectTimeout = util_proto.Duration(t.Conf.GetConnectTimeoutOrDefault(defaultConnectTimeout))
 
-	// Protobuf nil-checking semantics returns defaults for a nil config.
-	if t.Timeout != nil {
-		conf = t.Timeout.Spec.GetConf()
-	}
-
-	cluster.ConnectTimeout = util_proto.Duration(conf.GetConnectTimeoutOrDefault(defaultConnectTimeout))
 	switch t.Protocol {
 	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
 		err := UpdateCommonHttpProtocolOptions(cluster, func(options *envoy_upstream_http.HttpProtocolOptions) {
-			if options.CommonHttpProtocolOptions == nil {
-				options.CommonHttpProtocolOptions = &envoy_core.HttpProtocolOptions{}
+			t.setIdleTimeout(options)
+			if msd := t.Conf.GetHttp().GetMaxStreamDuration().AsDuration(); msd != 0 {
+				options.CommonHttpProtocolOptions.MaxStreamDuration = util_proto.Duration(msd)
 			}
-			options.CommonHttpProtocolOptions.IdleTimeout = util_proto.Duration(conf.GetHttp().GetIdleTimeout().AsDuration())
 		})
 		if err != nil {
 			return err
 		}
 	case core_mesh.ProtocolGRPC:
-		if maxStreamDuration := conf.GetGrpc().GetMaxStreamDuration().AsDuration(); maxStreamDuration != 0 {
-			err := UpdateCommonHttpProtocolOptions(cluster, func(options *envoy_upstream_http.HttpProtocolOptions) {
-				if options.CommonHttpProtocolOptions == nil {
-					options.CommonHttpProtocolOptions = &envoy_core.HttpProtocolOptions{}
-				}
-				options.CommonHttpProtocolOptions.MaxStreamDuration = util_proto.Duration(maxStreamDuration)
-			})
-			if err != nil {
-				return err
+		err := UpdateCommonHttpProtocolOptions(cluster, func(options *envoy_upstream_http.HttpProtocolOptions) {
+			t.setIdleTimeout(options)
+			if msd := t.Conf.GetHTTPMaxStreamDuration(); msd != 0 {
+				options.CommonHttpProtocolOptions.MaxStreamDuration = util_proto.Duration(msd)
 			}
+		})
+		if err != nil {
+			return err
 		}
 	}
+
 	return nil
+}
+
+func (c *TimeoutConfigurer) setIdleTimeout(options *envoy_upstream_http.HttpProtocolOptions) {
+	if options.CommonHttpProtocolOptions == nil {
+		options.CommonHttpProtocolOptions = &envoy_core.HttpProtocolOptions{}
+	}
+	options.CommonHttpProtocolOptions.IdleTimeout = util_proto.Duration(c.Conf.GetHttp().GetIdleTimeout().AsDuration())
 }

@@ -26,18 +26,24 @@ func (c *TimeoutConfigurer) Configure(filterChain *envoy_listener.FilterChain) e
 		})
 	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
 		return UpdateHTTPConnectionManager(filterChain, func(manager *envoy_hcm.HttpConnectionManager) error {
-			manager.CommonHttpProtocolOptions = &envoy_config_core_v3.HttpProtocolOptions{
-				IdleTimeout: util_proto.Duration(0),
-			}
-			manager.StreamIdleTimeout = util_proto.Duration(0)
+			c.setIdleTimeout(manager)
+			manager.StreamIdleTimeout = util_proto.Duration(c.Conf.GetHttp().GetStreamIdleTimeout().AsDuration())
 			return nil
 		})
 	case core_mesh.ProtocolGRPC:
 		return UpdateHTTPConnectionManager(filterChain, func(manager *envoy_hcm.HttpConnectionManager) error {
-			manager.StreamIdleTimeout = util_proto.Duration(c.Conf.GetGrpc().GetStreamIdleTimeout().AsDuration())
+			c.setIdleTimeout(manager)
+			manager.StreamIdleTimeout = util_proto.Duration(c.Conf.GetHTTPStreamIdleTimeout())
 			return nil
 		})
 	default:
 		return errors.Errorf("unsupported protocol %s", c.Protocol)
 	}
+}
+
+func (c *TimeoutConfigurer) setIdleTimeout(manager *envoy_hcm.HttpConnectionManager) {
+	if manager.CommonHttpProtocolOptions == nil {
+		manager.CommonHttpProtocolOptions = &envoy_config_core_v3.HttpProtocolOptions{}
+	}
+	manager.CommonHttpProtocolOptions.IdleTimeout = util_proto.Duration(c.Conf.GetHttp().GetIdleTimeout().AsDuration())
 }

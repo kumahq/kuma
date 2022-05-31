@@ -19,7 +19,7 @@ resources:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         commonHttpProtocolOptions:
-          idleTimeout: 0s
+          idleTimeout: 7200s
         explicitHttpConfig:
           httpProtocolOptions: {}
 - name: localhost:8443
@@ -59,7 +59,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: localhost:8443
-          idleTimeout: 0s
+          idleTimeout: 7200s
           statPrefix: localhost_8443
     - filterChainMatch:
         transportProtocol: tls
@@ -73,7 +73,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: localhost:8443
-          idleTimeout: 0s
+          idleTimeout: 7200s
           statPrefix: localhost_8443
     - filterChainMatch:
         applicationProtocols:
@@ -89,7 +89,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: localhost:8443
-          idleTimeout: 0s
+          idleTimeout: 7200s
           statPrefix: localhost_8443
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -155,7 +155,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           commonHttpProtocolOptions:
-            idleTimeout: 0s
+            idleTimeout: 7200s
           forwardClientCertDetails: SANITIZE_SET
           httpFilters:
           - name: envoy.filters.http.fault
@@ -280,7 +280,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           commonHttpProtocolOptions:
-            idleTimeout: 0s
+            idleTimeout: 7200s
           forwardClientCertDetails: SANITIZE_SET
           httpFilters:
           - name: envoy.filters.http.fault
@@ -407,7 +407,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           commonHttpProtocolOptions:
-            idleTimeout: 0s
+            idleTimeout: 7200s
           forwardClientCertDetails: SANITIZE_SET
           httpFilters:
           - name: envoy.filters.http.fault
@@ -559,7 +559,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: localhost:8443
-          idleTimeout: 0s
+          idleTimeout: 7200s
           statPrefix: localhost_8443
     - filterChainMatch:
         transportProtocol: tls
@@ -573,7 +573,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: localhost:8443
-          idleTimeout: 0s
+          idleTimeout: 7200s
           statPrefix: localhost_8443
     - filterChainMatch:
         applicationProtocols:
@@ -589,7 +589,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: localhost:8443
-          idleTimeout: 0s
+          idleTimeout: 7200s
           statPrefix: localhost_8443
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -642,7 +642,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           commonHttpProtocolOptions:
-            idleTimeout: 0s
+            idleTimeout: 7200s
           forwardClientCertDetails: SANITIZE_SET
           httpFilters:
           - name: envoy.filters.http.router
@@ -679,7 +679,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           commonHttpProtocolOptions:
-            idleTimeout: 0s
+            idleTimeout: 7200s
           forwardClientCertDetails: SANITIZE_SET
           httpFilters:
           - name: envoy.filters.http.router
@@ -718,7 +718,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           commonHttpProtocolOptions:
-            idleTimeout: 0s
+            idleTimeout: 7200s
           forwardClientCertDetails: SANITIZE_SET
           httpFilters:
           - name: envoy.filters.http.router

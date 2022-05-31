@@ -14,6 +14,7 @@ resources:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         commonHttpProtocolOptions:
+          idleTimeout: 103s
           maxStreamDuration: 105s
         explicitHttpConfig:
           http2ProtocolOptions: {}
@@ -406,7 +407,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           commonHttpProtocolOptions:
-            idleTimeout: 0s
+            idleTimeout: 103s
           httpFilters:
           - name: envoy.filters.http.router
             typedConfig:
@@ -448,6 +449,8 @@ resources:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          commonHttpProtocolOptions:
+            idleTimeout: 103s
           httpFilters:
           - name: envoy.filters.http.grpc_stats
             typedConfig:

@@ -130,7 +130,7 @@ resources:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         commonHttpProtocolOptions:
-          idleTimeout: 0s
+          idleTimeout: 7200s
         explicitHttpConfig:
           httpProtocolOptions: {}
 - name: db
@@ -182,7 +182,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           commonHttpProtocolOptions:
-            idleTimeout: 0s
+            idleTimeout: 7200s
           forwardClientCertDetails: SANITIZE_SET
           httpFilters:
           - name: envoy.filters.http.router

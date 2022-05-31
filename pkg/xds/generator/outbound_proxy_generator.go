@@ -310,7 +310,10 @@ func (OutboundProxyGenerator) determineRoutes(
 		return nil
 	}
 
-	timeoutConf := proxy.Policies.Timeouts[oface]
+	var timeoutConf *mesh_proto.Timeout_Conf
+	if timeout := proxy.Policies.Timeouts[oface]; timeout != nil {
+		timeoutConf = timeout.Spec.GetConf()
+	}
 
 	// Return internal, external
 	clustersFromSplit := func(splits []*mesh_proto.TrafficRoute_Split) ([]envoy_common.Cluster, []envoy_common.Cluster) {
