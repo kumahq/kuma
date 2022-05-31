@@ -52,7 +52,7 @@ var _ = Describe("kumactl install metrics", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(stderr.String()).To(Equal("we're migrating to `observability`, please use `install observability`"))
+			Expect(stderr.String()).To(BeEmpty())
 
 			// and output matches golden files
 			actual := stdout.Bytes()

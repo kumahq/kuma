@@ -23,7 +23,7 @@ func newInstallLogging(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Short: "Install Logging backend in Kubernetes cluster (Loki)",
 		Long:  `Install Logging backend in Kubernetes cluster (Loki) in its own namespace.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			_, _ = cmd.ErrOrStderr().Write([]byte("we're migrating to `observability`, please use `install observability`"))
+			cmd.Deprecated = "we're migrating to `observability`, please use `install observability`"
 
 			templateArgs := loggingTemplateArgs{
 				Namespace: args.Namespace,

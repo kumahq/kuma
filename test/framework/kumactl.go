@@ -151,14 +151,6 @@ func (k *KumactlOptions) KumactlInstallCP(mode string, args ...string) (string, 
 		cmd...)
 }
 
-func (k *KumactlOptions) KumactlInstallMetrics() (string, error) {
-	return k.RunKumactlAndGetOutput("install", "metrics")
-}
-
-func (k *KumactlOptions) KumactlInstallTracing() (string, error) {
-	return k.RunKumactlAndGetOutput("install", "tracing")
-}
-
 func (k *KumactlOptions) KumactlInstallObservability() (string, error) {
 	return k.RunKumactlAndGetOutput("install", "observability")
 }
