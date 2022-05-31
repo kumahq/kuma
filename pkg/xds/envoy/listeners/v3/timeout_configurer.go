@@ -24,16 +24,10 @@ func (c *TimeoutConfigurer) Configure(filterChain *envoy_listener.FilterChain) e
 			proxy.IdleTimeout = util_proto.Duration(c.Conf.GetTcp().GetIdleTimeout().AsDuration())
 			return nil
 		})
-	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
+	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
 		return UpdateHTTPConnectionManager(filterChain, func(manager *envoy_hcm.HttpConnectionManager) error {
 			c.setIdleTimeout(manager)
-			manager.StreamIdleTimeout = util_proto.Duration(c.Conf.GetHttp().GetStreamIdleTimeout().AsDuration())
-			return nil
-		})
-	case core_mesh.ProtocolGRPC:
-		return UpdateHTTPConnectionManager(filterChain, func(manager *envoy_hcm.HttpConnectionManager) error {
-			c.setIdleTimeout(manager)
-			manager.StreamIdleTimeout = util_proto.Duration(c.Conf.GetHTTPStreamIdleTimeout())
+			c.setStreamIdleTimeout(manager)
 			return nil
 		})
 	default:
@@ -46,4 +40,18 @@ func (c *TimeoutConfigurer) setIdleTimeout(manager *envoy_hcm.HttpConnectionMana
 		manager.CommonHttpProtocolOptions = &envoy_config_core_v3.HttpProtocolOptions{}
 	}
 	manager.CommonHttpProtocolOptions.IdleTimeout = util_proto.Duration(c.Conf.GetHttp().GetIdleTimeout().AsDuration())
+}
+
+func (c *TimeoutConfigurer) setStreamIdleTimeout(manager *envoy_hcm.HttpConnectionManager) {
+	// backwards compatibility
+	if c.Protocol == core_mesh.ProtocolGRPC {
+		if sit := c.Conf.GetHttp().GetStreamIdleTimeout(); sit != nil {
+			manager.StreamIdleTimeout = sit
+		} else {
+			manager.StreamIdleTimeout = util_proto.Duration(c.Conf.GetGrpc().GetStreamIdleTimeout().AsDuration())
+		}
+		return
+	}
+
+	manager.StreamIdleTimeout = util_proto.Duration(c.Conf.GetHttp().GetStreamIdleTimeout().AsDuration())
 }
