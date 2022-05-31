@@ -155,9 +155,9 @@ var _ = Describe("kumactl config control-planes add", func() {
 			// when
 			err := rootCmd.Execute()
 			// then
-			Expect(err).To(MatchError(`CLI is for Kuma when control plane is OtherProduct, please use a CLI aligned with your control plane`))
+			Expect(err).To(MatchError(`this CLI is for Kuma but the control plane you're connected to is OtherProduct. Please use the CLI for your control plane`))
 			// and
-			Expect(outbuf.String()).To(Equal(`Error: CLI is for Kuma when control plane is OtherProduct, please use a CLI aligned with your control plane
+			Expect(outbuf.String()).To(Equal(`Error: this CLI is for Kuma but the control plane you're connected to is OtherProduct. Please use the CLI for your control plane
 `))
 		})
 	})
