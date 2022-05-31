@@ -3,6 +3,7 @@ package localityawarelb_multizone
 import (
 	"fmt"
 	"net"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -26,19 +27,6 @@ networking:
 routing:
   zoneEgress: %s
 `, mesh, zoneEgress)
-}
-
-func externalService(mesh string, ip string) string {
-	return fmt.Sprintf(`
-type: ExternalService
-mesh: "%s"
-name: external-service-in-both-zones
-tags:
-  kuma.io/service: external-service-in-both-zones
-  kuma.io/protocol: http
-networking:
-  address: "%s"
-`, mesh, net.JoinHostPort(ip, "8080"))
 }
 
 func zoneExternalService(mesh string, ip string, name string, zone string) string {
@@ -142,7 +130,7 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 		Expect(zone1.(*K8sCluster).StopZoneIngress()).To(Succeed())
 
 		// then service is unreachable
-		_, _, err := zone4.Exec("", "", "zone4-demo-client",
+		_, _, err := zone4.ExecWithCustomRetries("", "", "zone4-demo-client", 3, time.Second*3,
 			"curl", "--verbose", "--max-time", "3", "--fail", "external-service-in-zone1.mesh")
 		Expect(err).Should(HaveOccurred())
 	})
@@ -152,7 +140,7 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 		Expect(zone1.(*K8sCluster).StopZoneEgress()).To(Succeed())
 
 		// then service is unreachable
-		_, _, err := zone4.Exec("", "", "zone4-demo-client",
+		_, _, err := zone4.ExecWithCustomRetries("", "", "zone4-demo-client", 3, time.Second*3,
 			"curl", "--verbose", "--max-time", "3", "--fail", "external-service-in-zone1.mesh")
 		Expect(err).Should(HaveOccurred())
 	})

@@ -383,13 +383,17 @@ func (c *UniversalCluster) Exec(namespace, podName, appname string, cmd ...strin
 }
 
 func (c *UniversalCluster) ExecWithRetries(namespace, podName, appname string, cmd ...string) (string, string, error) {
+	return c.ExecWithCustomRetries(namespace, podName, appname, c.defaultRetries, c.defaultTimeout, cmd...)
+}
+
+func (c *UniversalCluster) ExecWithCustomRetries(namespace, podName, appname string, retries int, timeout time.Duration, cmd ...string) (string, string, error) {
 	var stdout string
 	var stderr string
 	_, err := retry.DoWithRetryE(
 		c.t,
 		fmt.Sprintf("Trying %s", strings.Join(cmd, " ")),
-		c.defaultRetries,
-		c.defaultTimeout,
+		retries,
+		timeout,
 		func() (string, error) {
 			app, ok := c.apps[appname]
 			if !ok {
