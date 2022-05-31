@@ -8,6 +8,7 @@ import (
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	generator_core "github.com/kumahq/kuma/pkg/xds/generator/core"
+	generator_secrets "github.com/kumahq/kuma/pkg/xds/generator/secrets"
 	"github.com/kumahq/kuma/pkg/xds/template"
 )
 
@@ -85,6 +86,6 @@ func NewProxyProfile(zone string) generator_core.ResourceGenerator {
 			},
 			Zone: zone,
 		},
-		generator.SecretsProxyGenerator{},
+		generator_secrets.Generator{},
 	}
 }

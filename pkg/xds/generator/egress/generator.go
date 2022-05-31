@@ -11,7 +11,7 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	generator_core "github.com/kumahq/kuma/pkg/xds/generator/core"
+	generator_secrets "github.com/kumahq/kuma/pkg/xds/generator/secrets"
 )
 
 const (
@@ -37,7 +37,7 @@ type Generator struct {
 	// These generators add to the listener builder
 	ZoneEgressGenerators []ZoneEgressGenerator
 	// These generators depend on the config being built
-	Generators []generator_core.ResourceGenerator
+	SecretGenerator *generator_secrets.Generator
 }
 
 func makeListenerBuilder(
@@ -108,20 +108,20 @@ func (g Generator) Generate(
 			})
 		}
 
-		for _, generator := range g.Generators {
-			rs, err := generator.Generate(ctx, proxy)
-			if err != nil {
-				err := errors.Wrapf(
-					err,
-					"%T failed to generate resources for zone egress %q",
-					generator,
-					proxy.Id,
-				)
-				return nil, err
-			}
-
-			resources.AddSet(rs)
+		rs, err := g.SecretGenerator.GenerateForZoneEgress(
+			ctx, proxy.Id, proxy.ZoneEgressProxy.ZoneEgressResource, secretsTracker, meshResources.Mesh,
+		)
+		if err != nil {
+			err := errors.Wrapf(
+				err,
+				"%T failed to generate resources for zone egress %q",
+				g.SecretGenerator,
+				proxy.Id,
+			)
+			return nil, err
 		}
+
+		resources.AddSet(rs)
 	}
 
 	return resources, nil

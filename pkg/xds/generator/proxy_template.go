@@ -10,6 +10,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/generator/core"
 	"github.com/kumahq/kuma/pkg/xds/generator/egress"
+	generator_secrets "github.com/kumahq/kuma/pkg/xds/generator/secrets"
 	"github.com/kumahq/kuma/pkg/xds/template"
 )
 
@@ -83,7 +84,7 @@ func NewDefaultProxyProfile() core.ResourceGenerator {
 		TracingProxyGenerator{},
 		ProbeProxyGenerator{},
 		DNSGenerator{},
-		SecretsProxyGenerator{},
+		generator_secrets.Generator{},
 	}
 }
 
@@ -95,9 +96,7 @@ func NewEgressProxyProfile() core.ResourceGenerator {
 				&egress.InternalServicesGenerator{},
 				&egress.ExternalServicesGenerator{},
 			},
-			Generators: []core.ResourceGenerator{
-				&SecretsProxyGenerator{},
-			},
+			SecretGenerator: &generator_secrets.Generator{},
 		},
 	}
 }

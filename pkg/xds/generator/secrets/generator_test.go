@@ -16,7 +16,7 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	generator_secrets "github.com/kumahq/kuma/pkg/xds/generator/secrets"
 )
 
 var _ = Describe("SecretsGenerator", func() {
@@ -33,7 +33,7 @@ var _ = Describe("SecretsGenerator", func() {
 	DescribeTable("should not generate Envoy xDS resources unless mTLS is present",
 		func(given testCase) {
 			// when
-			rs, err := (&generator.SecretsProxyGenerator{}).Generate(given.ctx, given.proxy)
+			rs, err := (&generator_secrets.Generator{}).Generate(given.ctx, given.proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -106,7 +106,7 @@ var _ = Describe("SecretsGenerator", func() {
 			if given.allInOneCa {
 				given.proxy.SecretsTracker.RequestAllInOneCa()
 			}
-			rs, err := (&generator.SecretsProxyGenerator{}).Generate(given.ctx, given.proxy)
+			rs, err := (&generator_secrets.Generator{}).Generate(given.ctx, given.proxy)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

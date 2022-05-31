@@ -214,3 +214,19 @@ resources:
         '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
     name: inbound:192.168.0.1:10002
     trafficDirection: INBOUND
+- name: identity_cert:secret:mesh-1
+  resource:
+    '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret
+    name: identity_cert:secret:mesh-1
+    tlsCertificate:
+      certificateChain:
+        inlineBytes: Q0VSVA==
+      privateKey:
+        inlineBytes: S0VZ
+- name: mesh_ca:secret:mesh-1
+  resource:
+    '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret
+    name: mesh_ca:secret:mesh-1
+    validationContext:
+      trustedCa:
+        inlineBytes: Q0E=
