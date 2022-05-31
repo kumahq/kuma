@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
@@ -99,7 +100,16 @@ func (c *K8sCluster) ExecWithOptions(options ExecOptions) (string, string, error
 // Exec executes a command in the specified container and return stdout,
 // stderr and error.
 func (c *K8sCluster) Exec(namespace, podName, containerName string, cmd ...string) (string, string, error) {
-	return c.execOnce(ExecOptions{
+	desc := fmt.Sprintf(
+		"kubectl exec -c %q -n %q %s -- %s",
+		containerName,
+		namespace,
+		podName,
+		strings.Join(cmd, " "),
+	)
+	logger.Log(c.t, desc)
+
+	stdout, stderr, err := c.execOnce(ExecOptions{
 		Command:            cmd,
 		Namespace:          namespace,
 		PodName:            podName,
@@ -108,6 +118,12 @@ func (c *K8sCluster) Exec(namespace, podName, containerName string, cmd ...strin
 		CaptureStderr:      true,
 		PreserveWhitespace: false,
 	})
+
+	if err != nil {
+		logger.Logf(c.t, "%s returned an error: %s.", desc, err.Error())
+	}
+
+	return stdout, stderr, err
 }
 
 // ExecWithRetries executes a command in the specified container and

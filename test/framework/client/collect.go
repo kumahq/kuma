@@ -300,7 +300,7 @@ type FailureResponse struct {
 // CollectFailure runs Curl to fetch a URL that is expected to fail. The
 // Curl JSON output is returned so the caller can inspect the failure to
 // see whether it was what was expected.
-func CollectFailure(cluster framework.Cluster, source, destination string, fn ...CollectResponsesOptsFn) (FailureResponse, error) {
+func CollectFailure(cluster framework.Cluster, container, destination string, fn ...CollectResponsesOptsFn) (FailureResponse, error) {
 	opts := collectOptions(destination, fn...)
 	cmd := collectCommand(opts, "curl",
 		"--request", opts.Method,
@@ -329,7 +329,7 @@ func CollectFailure(cluster framework.Cluster, source, destination string, fn ..
 		pod = pods[0].Name
 	}
 
-	stdout, _, err := cluster.Exec(opts.namespace, pod, source, cmd...)
+	stdout, _, err := cluster.Exec(opts.namespace, pod, container, cmd...)
 
 	// 1. If we fail to decode the JSON status, return the JSON error,
 	// but prefer the original error if we have it.
