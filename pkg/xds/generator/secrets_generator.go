@@ -47,11 +47,11 @@ func (g SecretsProxyGenerator) Generate(
 	log := core.Log.WithName("secrets-generator")
 	switch {
 	case proxy.Dataplane != nil:
-		log = log.WithValues("proxy", proxy.Dataplane.GetMeta().GetName())
+		log = log.WithValues("proxyName", proxy.Dataplane.GetMeta().GetName(), "mesh", ctx.Mesh.Resource.GetMeta().GetName(), "type", "Dataplane")
 	case proxy.ZoneIngressProxy != nil:
-		log = log.WithValues("zoneingress", proxy.ZoneIngress.GetMeta().GetName())
+		log = log.WithValues("proxyName", proxy.ZoneIngress.GetMeta().GetName(), "type", "ZoneIngress")
 	case proxy.ZoneEgressProxy != nil:
-		log = log.WithValues("zoneingress", proxy.ZoneEgressProxy.ZoneEgressResource.GetMeta().GetName())
+		log = log.WithValues("proxyName", proxy.ZoneEgressProxy.ZoneEgressResource.GetMeta().GetName(), "type", "ZoneEgress")
 	}
 
 	// We don't have a secrets tracker if we don't have a mesh (zone ingress/egress)

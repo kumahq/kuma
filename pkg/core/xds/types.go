@@ -143,6 +143,8 @@ type Proxy struct {
 	Routing     Routing
 	Policies    MatchedPolicies
 
+	// SecretsTracker allows us to track when a generator references a secret so
+	// we can be sure to include only those secrets later on.
 	SecretsTracker SecretsTracker
 
 	// ZoneEgressProxy is available only when XDS is generated for ZoneEgress data plane proxy.
@@ -192,6 +194,8 @@ func (r allInOneCaRequest) MeshName() []string {
 	return r.meshNames
 }
 
+// SecretsTracker provides a way to ask for a secret and keeps track of which are
+// used, so that they can later be generated and included in the resources.
 type SecretsTracker interface {
 	RequestIdentityCert() IdentityCertRequest
 	RequestCa(mesh string) CaRequest
