@@ -33,6 +33,10 @@ var DefaultTimeoutResource = func() model.Resource {
 	}
 }
 
+// DefaultInboundTimeout returns timeouts for the inbound side. This resource is not created
+// in the store. It's used directly in InboundProxyGenerator. In the future, it could be replaced
+// with a new InboundTimeout policy. The main idea around these values is to have them either
+// bigger than outbound side timeouts or disabled.
 var DefaultInboundTimeout = func() *mesh_proto.Timeout_Conf {
 	const factor = 2
 	upstream := DefaultTimeoutResource().(*core_mesh.TimeoutResource).Spec.GetConf()
@@ -43,9 +47,10 @@ var DefaultInboundTimeout = func() *mesh_proto.Timeout_Conf {
 			IdleTimeout: util_proto.Duration(factor * upstream.GetTcp().GetIdleTimeout().AsDuration()),
 		},
 		Http: &mesh_proto.Timeout_Conf_Http{
-			RequestTimeout:    util_proto.Duration(factor * upstream.GetHttp().GetRequestTimeout().AsDuration()),
+			RequestTimeout:    util_proto.Duration(0),
 			IdleTimeout:       util_proto.Duration(factor * upstream.GetHttp().GetIdleTimeout().AsDuration()),
 			StreamIdleTimeout: util_proto.Duration(0),
+			MaxStreamDuration: util_proto.Duration(0),
 		},
 	}
 }

@@ -97,7 +97,7 @@ type Timeout_Conf struct {
 	ConnectTimeout *durationpb.Duration `protobuf:"bytes,1,opt,name=connect_timeout,json=connectTimeout,proto3" json:"connect_timeout,omitempty"`
 	Tcp            *Timeout_Conf_Tcp    `protobuf:"bytes,2,opt,name=tcp,proto3" json:"tcp,omitempty"`
 	Http           *Timeout_Conf_Http   `protobuf:"bytes,3,opt,name=http,proto3" json:"http,omitempty"`
-	// Deprecated: set parameters through 'http' section
+	// Deprecated: set parameters through Http section
 	Grpc *Timeout_Conf_Grpc `protobuf:"bytes,4,opt,name=grpc,proto3" json:"grpc,omitempty"`
 }
 
@@ -300,9 +300,11 @@ type Timeout_Conf_Grpc struct {
 
 	// StreamIdleTimeout is the amount of time that the connection manager
 	// will allow a stream to exist with no upstream or downstream activity
+	// Deprecated: use Http.StreamIdleTimeout instead
 	StreamIdleTimeout *durationpb.Duration `protobuf:"bytes,1,opt,name=stream_idle_timeout,json=streamIdleTimeout,proto3" json:"stream_idle_timeout,omitempty"`
 	// MaxStreamDuration is the maximum time that a stream’s lifetime will
 	// span
+	// Deprecated: use Http.MaxStreamDuration instead
 	MaxStreamDuration *durationpb.Duration `protobuf:"bytes,2,opt,name=max_stream_duration,json=maxStreamDuration,proto3" json:"max_stream_duration,omitempty"`
 }
 

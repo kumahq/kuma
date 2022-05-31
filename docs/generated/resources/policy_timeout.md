@@ -52,17 +52,19 @@
     
     - `grpc` (optional)
     
-        Deprecated: set parameters through 'http' section
+        Deprecated: set parameters through Http section
     
         Child properties:    
         
         - `streamIdleTimeout` (optional)
         
             StreamIdleTimeout is the amount of time that the connection manager
-            will allow a stream to exist with no upstream or downstream activity    
+            will allow a stream to exist with no upstream or downstream activity
+            Deprecated: use Http.StreamIdleTimeout instead    
         
         - `maxStreamDuration` (optional)
         
             MaxStreamDuration is the maximum time that a stream’s lifetime will
             span
+            Deprecated: use Http.MaxStreamDuration instead
 
