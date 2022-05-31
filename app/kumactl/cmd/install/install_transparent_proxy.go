@@ -4,21 +4,20 @@
 package install
 
 import (
-	"bufio"
 	"fmt"
 	"net"
 	"os"
 	os_user "os/user"
-	"regexp"
 	"runtime"
 	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/kumahq/kuma-net/firewalld"
+
 	"github.com/kumahq/kuma/pkg/transparentproxy"
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
-	"github.com/kumahq/kuma/pkg/transparentproxy/firewalld"
 )
 
 type transparentProxyArgs struct {
@@ -258,51 +257,12 @@ func modifyIpTables(cmd *cobra.Command, args *transparentProxyArgs) error {
 	}
 
 	if args.StoreFirewalld {
-		err = storeFirewalld(cmd, args, output)
-		if err != nil {
+		if _, err := firewalld.NewIptablesTranslator().
+			WithDryRun(args.DryRun).
+			WithOutput(cmd.OutOrStdout()).
+			StoreRules(output); err != nil {
 			return err
 		}
-	}
-
-	return nil
-}
-
-func storeFirewalld(cmd *cobra.Command, args *transparentProxyArgs, output string) error {
-	translator := firewalld.NewFirewalldIptablesTranslator(args.DryRun)
-	parser := regexp.MustCompile(`\* (?P<table>\w*)`)
-	rules := map[string][]string{}
-
-	scanner := bufio.NewScanner(strings.NewReader(output))
-	table := ""
-
-	scanner.Split(bufio.ScanLines)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.Contains(line, "COMMIT") {
-			table = ""
-			continue
-		}
-
-		matches := parser.FindStringSubmatch(line)
-		if len(matches) > 1 {
-			table = matches[parser.SubexpIndex("table")]
-			continue
-		}
-
-		if table != "" {
-			rules[table] = append(rules[table], line)
-		}
-	}
-
-	translated, err := translator.StoreRules(rules)
-	if err != nil {
-		return err
-	}
-
-	if args.DryRun {
-		_, _ = cmd.OutOrStdout().Write([]byte("\n\n" + translated + "\n\n"))
-	} else {
-		_, _ = cmd.OutOrStdout().Write([]byte("iptables saved with firewalld."))
 	}
 
 	return nil

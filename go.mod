@@ -24,7 +24,7 @@ require (
 	github.com/gruntwork-io/terratest v0.40.10
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/kumahq/kuma-net v0.2.3
+	github.com/kumahq/kuma-net v0.3.0
 	github.com/kumahq/protoc-gen-kumadoc v0.2.0
 	github.com/lib/pq v1.10.6
 	github.com/miekg/dns v1.1.49
@@ -63,7 +63,7 @@ require (
 	k8s.io/client-go v0.24.0
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
 	sigs.k8s.io/controller-runtime v0.12.1
-	sigs.k8s.io/controller-tools v0.8.0
+	sigs.k8s.io/controller-tools v0.9.0
 	sigs.k8s.io/gateway-api v0.0.0-20220419161317-56fe9b6f3d84
 	sigs.k8s.io/testing_frameworks v0.1.2
 )
@@ -109,7 +109,7 @@ require (
 	github.com/go-openapi/jsonreference v0.19.5 // indirect
 	github.com/go-openapi/swag v0.19.14 // indirect
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
-	github.com/gobuffalo/flect v0.2.3 // indirect
+	github.com/gobuffalo/flect v0.2.5 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
