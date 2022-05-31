@@ -1,6 +1,7 @@
 # CHANGELOG
 
 ## [1.7.0]
+> Released on **[TBD]**
 
 ### New features:
 
@@ -86,7 +87,17 @@ Other:
 * bump google.golang.org/grpc from 1.45.0 to 1.46.2 [#4213](https://github.com/kumahq/kuma/pull/4213) [#4289](https://github.com/kumahq/kuma/pull/4289) @dependabot
 * bump k8s.io/apiextensions-apiserver from 0.23.5 to 0.23.6 [#4216](https://github.com/kumahq/kuma/pull/4216) @dependabot
 
+## [1.6.1]
+> Released on **[TBD]**
+
+### Fixes:
+
+CP:
+* do not change ip to ZoneEgress address (backport #4193) [#4195](https://github.com/kumahq/kuma/pull/4195)
+* memory store cannot delete a parent (backport #4194) [#4196](https://github.com/kumahq/kuma/pull/4196)
+
 ## [1.6.0]
+> Released on 2022/04/11
 
 ### New features:
 
@@ -166,6 +177,7 @@ Other:
 * perf(k8s): move outbounds from Dataplane to Config [3986](https://github.com/kumahq/kuma/pull/3986) @jakubdyszkiewicz
 
 ## [1.5.1]
+> Released on 2022/04/06
 
 * chore(k8s): replace cni registry (backport #4070) [4076](https://github.com/kumahq/kuma/pull/4076)
 * fix(kuma-cp): default policy creation (backport #4073) [4080](https://github.com/kumahq/kuma/pull/4080)
