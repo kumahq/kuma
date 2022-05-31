@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/multizone/env"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/healthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/inspect"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/localityawarelb"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/trafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/trafficroute"
 	. "github.com/kumahq/kuma/test/framework"
@@ -47,7 +48,9 @@ var _ = SynchronizedBeforeSuite(
 			Expect(env.KubeZone1.Install(Kuma(core.Zone,
 				WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 				WithIngress(),
+				WithIngressEnvoyAdminTunnel(),
 				WithEgress(),
+				WithEgressEnvoyAdminTunnel(),
 				WithGlobalAddress(env.Global.GetKuma().GetKDSServerAddress()),
 			))).To(Succeed())
 			wg.Done()
@@ -59,7 +62,9 @@ var _ = SynchronizedBeforeSuite(
 			Expect(env.KubeZone2.Install(Kuma(core.Zone,
 				WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 				WithIngress(),
+				WithIngressEnvoyAdminTunnel(),
 				WithEgress(),
+				WithEgressEnvoyAdminTunnel(),
 				WithGlobalAddress(env.Global.GetKuma().GetKDSServerAddress()),
 			))).To(Succeed())
 			wg.Done()
@@ -73,6 +78,8 @@ var _ = SynchronizedBeforeSuite(
 				Install(Kuma(core.Zone,
 					WithGlobalAddress(env.Global.GetKuma().GetKDSServerAddress()),
 					WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
+					WithEgressEnvoyAdminTunnel(),
+					WithIngressEnvoyAdminTunnel(),
 				)).
 				Install(IngressUniversal(env.Global.GetKuma().GenerateZoneIngressToken)).
 				Install(EgressUniversal(env.Global.GetKuma().GenerateZoneEgressToken)).
@@ -184,3 +191,4 @@ var _ = Describe("TrafficPermission", trafficpermission.TrafficPermission, Order
 var _ = Describe("TrafficRoute", trafficroute.TrafficRoute, Ordered)
 var _ = Describe("Healtcheck", healthcheck.ApplicationOnUniversalClientOnK8s, Ordered)
 var _ = Describe("Inspect", inspect.Inspect, Ordered)
+var _ = Describe("External Service locality aware", localityawarelb.ExternalServicesWithLocalityAwareLb, Ordered)
