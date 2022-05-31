@@ -3773,87 +3773,6 @@ _kumactl_install_gateway()
     noun_aliases=()
 }
 
-_kumactl_install_logging()
-{
-    last_command="kumactl_install_logging"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--namespace=")
-    two_word_flags+=("--namespace")
-    local_nonpersistent_flags+=("--namespace")
-    local_nonpersistent_flags+=("--namespace=")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_kumactl_install_metrics()
-{
-    last_command="kumactl_install_metrics"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--jaeger-address=")
-    two_word_flags+=("--jaeger-address")
-    local_nonpersistent_flags+=("--jaeger-address")
-    local_nonpersistent_flags+=("--jaeger-address=")
-    flags+=("--kuma-cp-address=")
-    two_word_flags+=("--kuma-cp-address")
-    local_nonpersistent_flags+=("--kuma-cp-address")
-    local_nonpersistent_flags+=("--kuma-cp-address=")
-    flags+=("--loki-address=")
-    two_word_flags+=("--loki-address")
-    local_nonpersistent_flags+=("--loki-address")
-    local_nonpersistent_flags+=("--loki-address=")
-    flags+=("--mesh=")
-    two_word_flags+=("--mesh")
-    two_word_flags+=("-m")
-    flags+=("--namespace=")
-    two_word_flags+=("--namespace")
-    local_nonpersistent_flags+=("--namespace")
-    local_nonpersistent_flags+=("--namespace=")
-    flags+=("--without-grafana")
-    local_nonpersistent_flags+=("--without-grafana")
-    flags+=("--without-prometheus")
-    local_nonpersistent_flags+=("--without-prometheus")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
 _kumactl_install_observability()
 {
     last_command="kumactl_install_observability"
@@ -3895,37 +3814,6 @@ _kumactl_install_observability()
     two_word_flags+=("--prometheus-address")
     local_nonpersistent_flags+=("--prometheus-address")
     local_nonpersistent_flags+=("--prometheus-address=")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_kumactl_install_tracing()
-{
-    last_command="kumactl_install_tracing"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--namespace=")
-    two_word_flags+=("--namespace")
-    local_nonpersistent_flags+=("--namespace")
-    local_nonpersistent_flags+=("--namespace=")
     flags+=("--api-timeout=")
     two_word_flags+=("--api-timeout")
     flags+=("--config-file=")
@@ -4035,10 +3923,7 @@ _kumactl_install()
     commands+=("crds")
     commands+=("demo")
     commands+=("gateway")
-    commands+=("logging")
-    commands+=("metrics")
     commands+=("observability")
-    commands+=("tracing")
     commands+=("transparent-proxy")
 
     flags=()

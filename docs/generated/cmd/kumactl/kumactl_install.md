@@ -28,9 +28,6 @@ Install various Kuma components.
 * [kumactl install crds](kumactl_install_crds.md)	 - Install Kuma Custom Resource Definitions on Kubernetes
 * [kumactl install demo](kumactl_install_demo.md)	 - Install Kuma demo on Kubernetes
 * [kumactl install gateway](kumactl_install_gateway.md)	 - Install ingress gateway on Kubernetes
-* [kumactl install logging](kumactl_install_logging.md)	 - Install Logging backend in Kubernetes cluster (Loki)
-* [kumactl install metrics](kumactl_install_metrics.md)	 - Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)
 * [kumactl install observability](kumactl_install_observability.md)	 - Install Observability (Metrics, Logging, Tracing) backend in Kubernetes cluster (Prometheus + Grafana + Loki + Jaeger + Zipkin)
-* [kumactl install tracing](kumactl_install_tracing.md)	 - Install Tracing backend in Kubernetes cluster (Jaeger)
 * [kumactl install transparent-proxy](kumactl_install_transparent-proxy.md)	 - Install Transparent Proxy pre-requisites on the host
 

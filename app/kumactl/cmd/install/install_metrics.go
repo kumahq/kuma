@@ -19,11 +19,11 @@ func newInstallMetrics(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	args := pctx.InstallMetricsContext.TemplateArgs
 
 	cmd := &cobra.Command{
-		Use:   "metrics",
-		Short: "Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)",
-		Long:  `Install Metrics backend in Kubernetes cluster (Prometheus + Grafana) in its own namespace.`,
+		Use:        "metrics",
+		Short:      "Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)",
+		Long:       `Install Metrics backend in Kubernetes cluster (Prometheus + Grafana) in its own namespace.`,
+		Deprecated: "We're migrating to `observability`, please use `install observability`",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			cmd.Deprecated = "we're migrating to `observability`, please use `install observability`"
 			installMetricsFS := kumactl_data.InstallDeprecatedMetricsFS()
 			templateFiles, err := data.ReadFiles(installMetricsFS)
 			if err != nil {
