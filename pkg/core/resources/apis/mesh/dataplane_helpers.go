@@ -124,9 +124,35 @@ func (d *DataplaneResource) GetPrometheusConfig(mesh *MeshResource) (*mesh_proto
 		if err := util_proto.ToTyped(d.Spec.Metrics.Conf, &dpCfg); err != nil {
 			return nil, err
 		}
+		d.mergeLists(&cfg, &dpCfg)
 		proto.Merge(&cfg, &dpCfg)
 	}
 	return &cfg, nil
+}
+
+// After proto.Merge called two lists are merged and we cannot be sure
+// of order of the elements and if the element is from the Mesh or from
+// the Dataplane resource.
+func (d *DataplaneResource) mergeLists(
+	meshCfg *mesh_proto.PrometheusMetricsBackendConfig,
+	dpCfg *mesh_proto.PrometheusMetricsBackendConfig,
+) {
+	aggregate := make(map[string]*mesh_proto.PrometheusAggregateMetricsConfig)
+	for _, conf := range meshCfg.Aggregate {
+		aggregate[conf.Name] = conf
+	}
+	// override Mesh aggregate configuration with Dataplane
+	for _, conf := range dpCfg.Aggregate {
+		aggregate[conf.Name] = conf
+	}
+	// contains all the elements for Dataplane configuration
+	var unduplicatedConfig []*mesh_proto.PrometheusAggregateMetricsConfig
+	for _, value := range aggregate {
+		unduplicatedConfig = append(unduplicatedConfig, value)
+	}
+	// we cannot set the same values because they are going to be appended
+	meshCfg.Aggregate = []*mesh_proto.PrometheusAggregateMetricsConfig{}
+	dpCfg.Aggregate = unduplicatedConfig
 }
 
 func (d *DataplaneResource) GetIP() string {

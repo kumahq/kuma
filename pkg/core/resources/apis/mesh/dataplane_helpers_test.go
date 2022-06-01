@@ -380,6 +380,49 @@ var _ = Describe("Dataplane", func() {
 					Path: "/even-more-non-standard-path",
 				},
 			}),
+			Entry("dataplane.mesh == mesh && dataplane.metrics.prometheus.conf.aggregate != nil && mesh.metrics.prometheus.conf.aggregate != nil", testCase{
+				dataplaneName: "backend-01",
+				dataplaneMesh: "demo",
+				dataplaneSpec: `
+                metrics:
+                  type: prometheus
+                  conf:
+                    port: 8765
+                    path: /even-more-non-standard-path
+                    aggregate:
+                    - name: app1
+                      port: 123
+                      path: "/stats"
+                      enabled: false
+`,
+				meshName: "demo",
+				meshSpec: `
+                metrics:
+                  enabledBackend: prometheus-1
+                  backends:
+                  - name: prometheus-1
+                    type: prometheus
+                    conf:
+                      port: 1234
+                      path: /non-standard-path
+                      aggregate:
+                      - name: app1
+                        port: 12345
+                        path: "/disabled"
+`,
+				expected: &mesh_proto.PrometheusMetricsBackendConfig{
+					Port: 8765,
+					Path: "/even-more-non-standard-path",
+					Aggregate: []*mesh_proto.PrometheusAggregateMetricsConfig{
+						{
+							Name:    "app1",
+							Port:    123,
+							Path:    "/stats",
+							Enabled: util_proto.Bool(false),
+						},
+					},
+				},
+			}),
 		)
 	})
 
