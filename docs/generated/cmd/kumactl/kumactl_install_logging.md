@@ -13,7 +13,8 @@ kumactl install logging [flags]
 ### Options
 
 ```
-  -h, --help   help for logging
+  -h, --help               help for logging
+      --namespace string   namespace to install logging to (default "kuma-logging")
 ```
 
 ### Options inherited from parent commands
