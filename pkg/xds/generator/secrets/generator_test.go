@@ -8,6 +8,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -15,33 +16,36 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	generator_secrets "github.com/kumahq/kuma/pkg/xds/generator/secrets"
 )
 
 var _ = Describe("SecretsGenerator", func() {
 
 	type testCase struct {
-		ctx      xds_context.Context
-		proxy    *core_xds.Proxy
-		expected string
+		ctx        xds_context.Context
+		proxy      *core_xds.Proxy
+		expected   string
+		identity   bool
+		usedCas    map[string]struct{}
+		allInOneCa bool
 	}
 
 	DescribeTable("should not generate Envoy xDS resources unless mTLS is present",
 		func(given testCase) {
-			// setup
-			gen := &generator.SecretsProxyGenerator{}
-
 			// when
-			rs, err := gen.Generate(given.ctx, given.proxy)
+			rs, err := (&generator_secrets.Generator{}).Generate(given.ctx, given.proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			Expect(rs.List()).To(BeEmpty())
 		},
-		Entry("Mesh has no mTLS configuration", testCase{
+		Entry("data plane proxy, Mesh has no mTLS configuration", testCase{
 			ctx: xds_context.Context{
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{},
+				},
+				ControlPlane: &xds_context.ControlPlaneContext{
+					Secrets: &xds.TestSecrets{},
 				},
 			},
 			proxy: &core_xds.Proxy{
@@ -52,13 +56,17 @@ var _ = Describe("SecretsGenerator", func() {
 						Mesh: "demo",
 					},
 				},
-				APIVersion: envoy_common.APIV3,
+				SecretsTracker: core_xds.NewSecretsTracker("", nil),
+				APIVersion:     envoy_common.APIV3,
 			},
 		}),
-		Entry("Mesh has no mTLS configuration", testCase{
+		Entry("zone egress, Mesh has no mTLS configuration", testCase{
 			ctx: xds_context.Context{
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{},
+				},
+				ControlPlane: &xds_context.ControlPlaneContext{
+					Secrets: &xds.TestSecrets{},
 				},
 			},
 			proxy: &core_xds.Proxy{
@@ -79,18 +87,26 @@ var _ = Describe("SecretsGenerator", func() {
 						},
 					},
 				},
-				APIVersion: envoy_common.APIV3,
+				SecretsTracker: core_xds.NewSecretsTracker("", nil),
+				APIVersion:     envoy_common.APIV3,
 			},
 		}),
 	)
 
 	DescribeTable("should generate Envoy xDS resources if secret backend is present",
 		func(given testCase) {
-			// given
-			gen := &generator.SecretsProxyGenerator{}
-
 			// when
-			rs, err := gen.Generate(given.ctx, given.proxy)
+			rs := core_xds.NewResourceSet()
+			if given.identity {
+				given.proxy.SecretsTracker.RequestIdentityCert()
+			}
+			for mesh := range given.usedCas {
+				given.proxy.SecretsTracker.RequestCa(mesh)
+			}
+			if given.allInOneCa {
+				given.proxy.SecretsTracker.RequestAllInOneCa()
+			}
+			rs, err := (&generator_secrets.Generator{}).Generate(given.ctx, given.proxy)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -128,11 +144,11 @@ var _ = Describe("SecretsGenerator", func() {
 				},
 			},
 			proxy: &core_xds.Proxy{
-				Id: *core_xds.BuildProxyId("", "demo.backend-01"),
+				Id: *core_xds.BuildProxyId("", "default.backend-01"),
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "backend-01",
-						Mesh: "demo",
+						Mesh: "default",
 					},
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
@@ -140,9 +156,107 @@ var _ = Describe("SecretsGenerator", func() {
 						},
 					},
 				},
-				APIVersion: envoy_common.APIV3,
+				SecretsTracker: core_xds.NewSecretsTracker("default", []string{"default"}),
+				APIVersion:     envoy_common.APIV3,
+			},
+			identity: true,
+			usedCas: map[string]struct{}{
+				"default": {},
 			},
 			expected: "envoy-config-zipkin.golden.yaml",
+		}),
+		Entry("should create multiple secrets when multiple meshes present (dataplane)", testCase{
+			ctx: xds_context.Context{
+				ControlPlane: &xds_context.ControlPlaneContext{
+					Secrets: &xds.TestSecrets{},
+				},
+				Mesh: xds_context.MeshContext{
+					Resource: &core_mesh.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "mesh-1",
+						},
+						Spec: &mesh_proto.Mesh{
+							Mtls: &mesh_proto.Mesh_Mtls{
+								EnabledBackend: "ca-1",
+								Backends: []*mesh_proto.CertificateAuthorityBackend{
+									{
+										Name: "ca-1",
+										Type: "builtin",
+									},
+								},
+							},
+						},
+					},
+					Resources: xds_context.Resources{
+						MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
+							core_mesh.MeshType: &core_mesh.MeshResourceList{
+								Items: []*core_mesh.MeshResource{{
+									Spec: &mesh_proto.Mesh{
+										Mtls: &mesh_proto.Mesh_Mtls{
+											EnabledBackend: "ca-1",
+											Backends: []*mesh_proto.CertificateAuthorityBackend{
+												{
+													Name: "ca-1",
+													Type: "builtin",
+												},
+											},
+										},
+									},
+									Meta: &test_model.ResourceMeta{
+										Name: "mesh-2",
+									},
+								}},
+							}},
+						CrossMeshResources: map[string]map[core_model.ResourceType]core_model.ResourceList{
+							"mesh-2": {
+								core_mesh.MeshGatewayType: &core_mesh.MeshGatewayResourceList{
+									Items: []*core_mesh.MeshGatewayResource{{
+										Meta: &test_model.ResourceMeta{
+											Name: "mesh2",
+										},
+										Spec: &mesh_proto.MeshGateway{
+											Conf: &mesh_proto.MeshGateway_Conf{
+												Listeners: []*mesh_proto.MeshGateway_Listener{{
+													Hostname: "gateway1.mesh",
+													Port:     80,
+													Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+													Tags: map[string]string{
+														"listener": "internal",
+													},
+												}, {
+													Hostname: "*",
+													Port:     80,
+													Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+													Tags: map[string]string{
+														"listener": "wildcard",
+													},
+												}},
+											},
+											Selectors: []*mesh_proto.Selector{{
+												Match: map[string]string{
+													mesh_proto.ServiceTag: "gateway",
+												},
+											}},
+											Tags: map[string]string{
+												"gateway": "prod",
+											},
+										},
+									}},
+								},
+							}},
+					}},
+			},
+			identity: true,
+			usedCas: map[string]struct{}{
+				"mesh-1": {},
+				"mesh-2": {},
+			},
+			proxy: &core_xds.Proxy{
+				Id:             *core_xds.BuildProxyId("", mesh_proto.ZoneEgressServiceName),
+				SecretsTracker: core_xds.NewSecretsTracker("mesh-1", []string{"mesh-1", "mesh-2"}),
+				APIVersion:     envoy_common.APIV3,
+			},
+			expected: "envoy-config-dataplane.golden.yaml",
 		}),
 		Entry("should create secrets when multiple meshes present (egress)", testCase{
 			ctx: xds_context.Context{
@@ -154,6 +268,11 @@ var _ = Describe("SecretsGenerator", func() {
 				Id:         *core_xds.BuildProxyId("", mesh_proto.ZoneEgressServiceName),
 				APIVersion: envoy_common.APIV3,
 				ZoneEgressProxy: &core_xds.ZoneEgressProxy{
+					ZoneEgressResource: &core_mesh.ZoneEgressResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "zone-egress",
+						},
+					},
 					MeshResourcesList: []*core_xds.MeshResources{
 						{
 							Mesh: &core_mesh.MeshResource{
@@ -210,6 +329,11 @@ var _ = Describe("SecretsGenerator", func() {
 						},
 					},
 				},
+				SecretsTracker: core_xds.NewSecretsTracker("mesh-2", []string{"mesh-1", "mesh-2"}),
+			},
+			identity: true,
+			usedCas: map[string]struct{}{
+				"mesh-2": {},
 			},
 			expected: "envoy-config-egress.golden.yaml",
 		}),

@@ -15,6 +15,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
@@ -103,12 +104,26 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	externalServices := resources.ExternalServices().Items
 	endpointMap := xds_topology.BuildEdsEndpointMap(mesh, m.zone, dataplanes, zoneIngresses, zoneEgresses, externalServices)
 
+	crossMeshEndpointMap := map[string]xds.EndpointMap{}
+	for otherMeshName, gateways := range resources.CrossMeshGateways(mesh) {
+		dataplanes := resources.gatewayDataplanesByMesh(otherMeshName)
+		if len(dataplanes.Items) == 0 {
+			continue
+		}
+		crossMeshEndpointMap[otherMeshName] = xds_topology.BuildCrossMeshEndpointMap(
+			mesh,
+			gateways.Gateways,
+			dataplanes,
+		)
+	}
+
 	return &MeshContext{
 		Hash:                newHash,
 		Resource:            mesh,
 		Resources:           resources,
 		DataplanesByName:    dataplanesByName,
 		EndpointMap:         endpointMap,
+		CrossMeshEndpoints:  crossMeshEndpointMap,
 		VIPDomains:          domains,
 		VIPOutbounds:        outbounds,
 		ServiceTLSReadiness: m.resolveTLSReadiness(mesh, resources.ServiceInsights()),
@@ -116,28 +131,99 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	}, nil
 }
 
+func (m *meshContextBuilder) fetchCrossMesh(
+	ctx context.Context, typ core_model.ResourceType, mesh string, resources *Resources, crossMeshPredicate func(core_model.Resource) bool,
+) error {
+	all, err := registry.Global().NewList(typ)
+	if err != nil {
+		return err
+	}
+
+	if err := m.rm.List(ctx, all); err != nil {
+		return err
+	}
+
+	local, err := registry.Global().NewList(typ)
+	if err != nil {
+		return err
+	}
+
+	for _, item := range all.GetItems() {
+		itemMesh := item.GetMeta().GetMesh()
+		if mesh == itemMesh {
+			if err := local.AddItem(item); err != nil {
+				return err
+			}
+			continue
+		}
+
+		if crossMeshPredicate != nil && !crossMeshPredicate(item) {
+			continue
+		}
+
+		other, found := resources.CrossMeshResources[itemMesh]
+		if !found {
+			other = map[core_model.ResourceType]core_model.ResourceList{}
+		}
+
+		others, found := other[typ]
+		if !found {
+			others, err = registry.Global().NewList(typ)
+			if err != nil {
+				return err
+			}
+		}
+
+		if err := others.AddItem(item); err != nil {
+			return err
+		}
+
+		other[typ] = others
+		resources.CrossMeshResources[itemMesh] = other
+	}
+
+	resources.MeshLocalResources[typ] = local
+
+	return nil
+}
+
 func (m *meshContextBuilder) fetchResources(ctx context.Context, mesh *core_mesh.MeshResource) (Resources, error) {
-	resources := Resources{}
+	resources := NewResources()
+	meshName := mesh.GetMeta().GetName()
 
 	for _, typ := range m.types {
 		switch typ {
+		case core_mesh.MeshType:
+			meshes := &core_mesh.MeshResourceList{}
+			if err := m.rm.List(ctx, meshes); err != nil {
+				return Resources{}, err
+			}
+			otherMeshes := &core_mesh.MeshResourceList{}
+			for _, someMesh := range meshes.Items {
+				if someMesh.GetMeta().GetName() != mesh.GetMeta().GetName() {
+					if err := otherMeshes.AddItem(someMesh); err != nil {
+						return Resources{}, err
+					}
+				}
+			}
+			resources.MeshLocalResources[typ] = otherMeshes
 		case core_mesh.ZoneIngressType:
 			zoneIngresses := &core_mesh.ZoneIngressResourceList{}
 			if err := m.rm.List(ctx, zoneIngresses); err != nil {
-				return nil, err
+				return Resources{}, err
 			}
-			resources[typ] = zoneIngresses
+			resources.MeshLocalResources[typ] = zoneIngresses
 		case core_mesh.ZoneEgressType:
 			zoneEgresses := &core_mesh.ZoneEgressResourceList{}
 			if err := m.rm.List(ctx, zoneEgresses); err != nil {
-				return nil, err
+				return Resources{}, err
 			}
-			resources[typ] = zoneEgresses
+			resources.MeshLocalResources[typ] = zoneEgresses
 		case system.ConfigType:
 			configs := &system.ConfigResourceList{}
 			var items []*system.ConfigResource
 			if err := m.rm.List(ctx, configs); err != nil {
-				return nil, err
+				return Resources{}, err
 			}
 			for _, config := range configs.Items {
 				if configInHash(config.Meta.GetName(), mesh.Meta.GetName()) {
@@ -145,7 +231,7 @@ func (m *meshContextBuilder) fetchResources(ctx context.Context, mesh *core_mesh
 				}
 			}
 			configs.Items = items
-			resources[typ] = configs
+			resources.MeshLocalResources[typ] = configs
 		case core_mesh.ServiceInsightType:
 			// ServiceInsights in XDS generation are only used to check whether the destination is ready to receive mTLS traffic.
 			// This information is only useful when mTLS is enabled with PERMISSIVE mode.
@@ -156,19 +242,29 @@ func (m *meshContextBuilder) fetchResources(ctx context.Context, mesh *core_mesh
 
 			insights := &core_mesh.ServiceInsightResourceList{}
 			if err := m.rm.List(ctx, insights, core_store.ListByMesh(mesh.Meta.GetName())); err != nil {
-				return nil, err
+				return Resources{}, err
 			}
 
-			resources[typ] = insights
+			resources.MeshLocalResources[typ] = insights
+		case core_mesh.MeshGatewayType:
+			if err := m.fetchCrossMesh(ctx, typ, meshName, &resources, nil); err != nil {
+				return Resources{}, err
+			}
+		case core_mesh.DataplaneType:
+			if err := m.fetchCrossMesh(ctx, typ, meshName, &resources, func(dp core_model.Resource) bool {
+				return dp.(*core_mesh.DataplaneResource).Spec.IsBuiltinGateway()
+			}); err != nil {
+				return Resources{}, err
+			}
 		default:
 			rlist, err := registry.Global().NewList(typ)
 			if err != nil {
-				return nil, err
+				return Resources{}, err
 			}
 			if err := m.rm.List(ctx, rlist, core_store.ListByMesh(mesh.Meta.GetName())); err != nil {
-				return nil, err
+				return Resources{}, err
 			}
-			resources[typ] = rlist
+			resources.MeshLocalResources[typ] = rlist
 		}
 	}
 	return resources, nil
@@ -186,8 +282,13 @@ func (m *meshContextBuilder) hash(mesh *core_mesh.MeshResource, resources Resour
 	allResources := []core_model.Resource{
 		mesh,
 	}
-	for _, rl := range resources {
+	for _, rl := range resources.MeshLocalResources {
 		allResources = append(allResources, rl.GetItems()...)
+	}
+	for _, ml := range resources.CrossMeshResources {
+		for _, rl := range ml {
+			allResources = append(allResources, rl.GetItems()...)
+		}
 	}
 	return sha256.Hash(m.hashResources(allResources...))
 }

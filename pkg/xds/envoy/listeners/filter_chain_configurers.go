@@ -40,15 +40,17 @@ func StaticEndpoints(virtualHostName string, paths []*envoy_common.StaticEndpoin
 	})
 }
 
-func ServerSideMTLS(mesh *core_mesh.MeshResource) FilterChainBuilderOpt {
+func ServerSideMTLS(mesh *core_mesh.MeshResource, secrets core_xds.SecretsTracker) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.ServerSideMTLSConfigurer{
-		Mesh: mesh,
+		Mesh:           mesh,
+		SecretsTracker: secrets,
 	})
 }
 
-func ServerSideMTLSWithCP(ctx xds_context.Context) FilterChainBuilderOpt {
+func ServerSideMTLSWithCP(ctx xds_context.Context, secrets core_xds.SecretsTracker) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.ServerSideMTLSWithCPConfigurer{
-		Ctx: ctx,
+		Ctx:            ctx,
+		SecretsTracker: secrets,
 	})
 }
 

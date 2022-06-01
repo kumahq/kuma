@@ -15,10 +15,12 @@ import (
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/pkg/test/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator/egress"
+	generator_secrets "github.com/kumahq/kuma/pkg/xds/generator/secrets"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
@@ -109,7 +111,9 @@ var _ = Describe("EgressGenerator", func() {
 
 			loader := fakeLoader{}
 
-			for _, meshResources := range meshResourcesMap {
+			var meshes []string
+			for meshName, meshResources := range meshResourcesMap {
+				meshes = append(meshes, meshName)
 				meshResources.EndpointMap = xds_topology.BuildRemoteEndpointMap(
 					meshResources.Mesh,
 					zoneName,
@@ -125,10 +129,11 @@ var _ = Describe("EgressGenerator", func() {
 			}
 
 			gen := egress.Generator{
-				Generators: []egress.ZoneEgressGenerator{
+				ZoneEgressGenerators: []egress.ZoneEgressGenerator{
 					&egress.InternalServicesGenerator{},
 					&egress.ExternalServicesGenerator{},
 				},
+				SecretGenerator: &generator_secrets.Generator{},
 			}
 
 			var meshResourcesList []*core_xds.MeshResources
@@ -147,7 +152,8 @@ var _ = Describe("EgressGenerator", func() {
 			}
 			ctx := xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{
-					Zone: zoneName,
+					Zone:    zoneName,
+					Secrets: &xds.TestSecrets{},
 				},
 			}
 
