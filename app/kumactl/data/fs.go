@@ -16,6 +16,14 @@ func InstallLoggingFS() fs.FS {
 	return fsys
 }
 
+func InstallDeprecatedLoggingFS() fs.FS {
+	fsys, err := fs.Sub(InstallData, "install/k8s-deprecated/logging")
+	if err != nil {
+		panic(err)
+	}
+	return fsys
+}
+
 func InstallMetricsFS() fs.FS {
 	fsys, err := fs.Sub(InstallData, "install/k8s/metrics")
 	if err != nil {
@@ -24,8 +32,24 @@ func InstallMetricsFS() fs.FS {
 	return fsys
 }
 
+func InstallDeprecatedMetricsFS() fs.FS {
+	fsys, err := fs.Sub(InstallData, "install/k8s-deprecated/metrics")
+	if err != nil {
+		panic(err)
+	}
+	return fsys
+}
+
 func InstallTracingFS() fs.FS {
 	fsys, err := fs.Sub(InstallData, "install/k8s/tracing")
+	if err != nil {
+		panic(err)
+	}
+	return fsys
+}
+
+func InstallDeprecatedTracingFS() fs.FS {
+	fsys, err := fs.Sub(InstallData, "install/k8s-deprecated/tracing")
 	if err != nil {
 		panic(err)
 	}
