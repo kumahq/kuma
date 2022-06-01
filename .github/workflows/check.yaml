@@ -10,13 +10,18 @@ on:
 
 
 jobs:
-  # This job checks all PR commits and the PR title using
+  # This job checks the PR title using
   # https://github.com/conventional-changelog/commitlint
-  # for whether they follow the conventional commit format at
+  # for the conventional commit format at
   # https://www.conventionalcommits.org/en/v1.0.0/
   # See also /.github/commitlint.config.js for more details
+  # We only need to check the PR title because it will end up being the
+  # (default) commit title when doing squash merges with Github.
+  # See
+  # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges#merge-message-for-a-squash-merge
+  # for more info. We have "Default to PR title for squash merge commits" enabled.
   commit-lint:
-    name: "Check commits and PR title"
+    name: "Check PR title"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -24,9 +29,6 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v2
       - run: npm install -g @commitlint/cli @commitlint/config-conventional
-      - name: "Check commits"
-        run: |
-          commitlint --config .github/commitlint.config.js --from="origin/${{ github.event.pull_request.base.ref }}"
       - name: "Check PR title"
         # Inject as env variable to escape properly
         env:
