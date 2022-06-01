@@ -9,11 +9,18 @@ import (
 func (g *MeshGatewayResource) Validate() error {
 	var err validators.ValidationError
 
+	var onlyOneSelector bool
+
+	for _, listener := range g.Spec.GetConf().GetListeners() {
+		onlyOneSelector = onlyOneSelector || listener.CrossMesh
+	}
+
 	err.Add(ValidateSelectors(
 		validators.RootedAt("selectors"),
 		g.Spec.GetSelectors(),
 		ValidateSelectorsOpts{
 			RequireAtLeastOneSelector: true,
+			RequireAtMostOneSelector:  onlyOneSelector,
 			ValidateTagsOpts: ValidateTagsOpts{
 				RequireAtLeastOneTag: true,
 				RequireService:       true,
@@ -78,12 +85,20 @@ func validateMeshGatewayConf(path validators.PathBuilder, conf *mesh_proto.MeshG
 			mesh_proto.MeshGateway_Listener_TLS:
 			err.AddViolationAt(path.Index(i).Field("protocol"), "protocol type is not supported")
 		case mesh_proto.MeshGateway_Listener_HTTPS:
-			if l.GetTls() == nil {
+			if l.GetCrossMesh() {
+				err.AddViolationAt(path.Index(i).Field("protocol"), "protocol is not supported with crossMesh")
+			} else if l.GetTls() == nil {
 				err.AddViolationAt(path.Index(i).Field("tls"), "cannot be empty")
 			}
 		}
 
-		if tls := l.GetTls(); tls != nil {
+		if l.GetCrossMesh() {
+			if l.GetHostname() == "" {
+				err.AddViolationAt(path.Index(i).Field("hostname"), "cannot be empty with crossMesh")
+			}
+		}
+
+		if tls := l.GetTls(); tls != nil && !l.GetCrossMesh() {
 			switch tls.GetMode() {
 			case mesh_proto.MeshGateway_TLS_NONE:
 				err.AddViolationAt(
@@ -108,6 +123,14 @@ func validateMeshGatewayConf(path validators.PathBuilder, conf *mesh_proto.MeshG
 						path.Index(i).Field("tls").Field("certificates"),
 						"cannot have more than 2 certificates")
 				}
+			}
+		}
+		if tls := l.GetTls(); tls != nil && l.GetCrossMesh() {
+			if tls.GetMode() != mesh_proto.MeshGateway_TLS_NONE ||
+				len(tls.GetCertificates()) > 0 {
+				err.AddViolationAt(
+					path.Index(i).Field("tls"),
+					"must be empty with crossMesh")
 			}
 		}
 

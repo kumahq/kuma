@@ -106,7 +106,7 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 			)).
 			Configure(envoy_listeners.FilterChain(
 				envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).Configure(
-					envoy_listeners.ServerSideMTLS(ctx.Mesh.Resource),
+					envoy_listeners.ServerSideMTLS(ctx.Mesh.Resource, proxy.SecretsTracker),
 					envoy_listeners.NetworkRBAC(prometheusListenerName, ctx.Mesh.Resource.MTLSEnabled(), proxy.Policies.TrafficPermissions[iface]),
 					envoy_listeners.StaticEndpoints(prometheusListenerName,
 						[]*envoy_common.StaticEndpointPath{

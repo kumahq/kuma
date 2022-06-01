@@ -39,6 +39,7 @@ type MeshContext struct {
 	Resources           Resources
 	DataplanesByName    map[string]*core_mesh.DataplaneResource
 	EndpointMap         xds.EndpointMap
+	CrossMeshEndpoints  map[xds.MeshName]xds.EndpointMap
 	VIPDomains          []xds.VIPDomains
 	VIPOutbounds        []*mesh_proto.Dataplane_Networking_Outbound
 	ServiceTLSReadiness map[string]bool

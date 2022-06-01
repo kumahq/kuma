@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
@@ -37,44 +38,45 @@ type ExecOptions struct {
 	Timeout time.Duration
 }
 
+// execOnce ignores retries.
+func (c *K8sCluster) execOnce(options ExecOptions) (string, string, error) {
+	const tty = false
+	config, err := k8s.LoadApiClientConfigE(c.kubeconfig, "")
+	Expect(err).NotTo(HaveOccurred())
+
+	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t, c.GetKubectlOptions())
+	Expect(err).NotTo(HaveOccurred())
+
+	req := clientset.CoreV1().RESTClient().Post().
+		Resource("pods").
+		Name(options.PodName).
+		Namespace(options.Namespace).
+		SubResource("exec").
+		Param("container", options.ContainerName)
+
+	req.VersionedParams(&kube_core.PodExecOptions{
+		Container: options.ContainerName,
+		Command:   options.Command,
+		Stdin:     true,
+		Stdout:    options.CaptureStdout,
+		Stderr:    options.CaptureStderr,
+		TTY:       tty,
+	}, scheme.ParameterCodec)
+
+	var stdout, stderr bytes.Buffer
+	err = executeK8s("POST", req.URL(), config, strings.NewReader(""), &stdout, &stderr, tty)
+
+	if options.PreserveWhitespace {
+		return stdout.String(), stderr.String(), err
+	}
+
+	return strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()), err
+}
+
 // ExecWithOptions executes a command in the specified container,
 // returning stdout, stderr and error. `options` allowed for
 // additional parameters to be passed.
 func (c *K8sCluster) ExecWithOptions(options ExecOptions) (string, string, error) {
-	kubectlExec := func() (string, string, error) {
-		const tty = false
-		config, err := k8s.LoadApiClientConfigE(c.kubeconfig, "")
-		Expect(err).NotTo(HaveOccurred())
-
-		clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t, c.GetKubectlOptions())
-		Expect(err).NotTo(HaveOccurred())
-
-		req := clientset.CoreV1().RESTClient().Post().
-			Resource("pods").
-			Name(options.PodName).
-			Namespace(options.Namespace).
-			SubResource("exec").
-			Param("container", options.ContainerName)
-
-		req.VersionedParams(&kube_core.PodExecOptions{
-			Container: options.ContainerName,
-			Command:   options.Command,
-			Stdin:     true,
-			Stdout:    options.CaptureStdout,
-			Stderr:    options.CaptureStderr,
-			TTY:       tty,
-		}, scheme.ParameterCodec)
-
-		var stdout, stderr bytes.Buffer
-		err = executeK8s("POST", req.URL(), config, strings.NewReader(""), &stdout, &stderr, tty)
-
-		if options.PreserveWhitespace {
-			return stdout.String(), stderr.String(), err
-		}
-
-		return strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()), err
-	}
-
 	var stdout string
 	var stderr string
 	_, err := retry.DoWithRetryE(
@@ -88,7 +90,7 @@ func (c *K8sCluster) ExecWithOptions(options ExecOptions) (string, string, error
 		options.Timeout,
 		func() (string, error) {
 			var err error
-			stdout, stderr, err = kubectlExec()
+			stdout, stderr, err = c.execOnce(options)
 			return "", err
 		},
 	)
@@ -98,7 +100,16 @@ func (c *K8sCluster) ExecWithOptions(options ExecOptions) (string, string, error
 // Exec executes a command in the specified container and return stdout,
 // stderr and error.
 func (c *K8sCluster) Exec(namespace, podName, containerName string, cmd ...string) (string, string, error) {
-	return c.ExecWithOptions(ExecOptions{
+	desc := fmt.Sprintf(
+		"kubectl exec -c %q -n %q %s -- %s",
+		containerName,
+		namespace,
+		podName,
+		strings.Join(cmd, " "),
+	)
+	logger.Log(c.t, desc)
+
+	stdout, stderr, err := c.execOnce(ExecOptions{
 		Command:            cmd,
 		Namespace:          namespace,
 		PodName:            podName,
@@ -106,8 +117,13 @@ func (c *K8sCluster) Exec(namespace, podName, containerName string, cmd ...strin
 		CaptureStdout:      true,
 		CaptureStderr:      true,
 		PreserveWhitespace: false,
-		Retries:            0,
 	})
+
+	if err != nil {
+		logger.Logf(c.t, "%s returned an error: %s.", desc, err.Error())
+	}
+
+	return stdout, stderr, err
 }
 
 // ExecWithRetries executes a command in the specified container and

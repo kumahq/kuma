@@ -24,8 +24,8 @@ func GenerateVirtualHost(
 		envoy_routes.DomainNames(host.Hostname),
 	)
 
-	// Ensure that we get TLS on HTTPS protocol listeners.
-	if info.Listener.Protocol == mesh_proto.MeshGateway_Listener_HTTPS {
+	// Ensure that we get TLS on HTTPS protocol listeners or crossMesh.
+	if info.Listener.Protocol == mesh_proto.MeshGateway_Listener_HTTPS || info.Listener.CrossMesh {
 		vh.Configure(
 			envoy_routes.RequireTLS(),
 			// Set HSTS header to 1 year.

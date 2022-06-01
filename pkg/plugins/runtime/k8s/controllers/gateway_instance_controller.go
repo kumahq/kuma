@@ -29,11 +29,11 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/containers"
 	ctrls_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/util"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
+	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 // GatewayInstanceReconciler reconciles a MeshGatewayInstance object.
@@ -107,7 +107,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 	if err := r.ResourceManager.List(ctx, gatewayList, store.ListByMesh(mesh)); err != nil {
 		return nil, err
 	}
-	gateway := match.Gateway(gatewayList, func(selector mesh_proto.TagSelector) bool {
+	gateway := xds_topology.SelectGateway(gatewayList, func(selector mesh_proto.TagSelector) bool {
 		return selector.Matches(gatewayInstance.Spec.Tags)
 	})
 
