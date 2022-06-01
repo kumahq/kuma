@@ -2,8 +2,10 @@ package gateway
 
 import (
 	"fmt"
+	"net"
 	"net/url"
 	"path"
+	"strconv"
 	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -16,10 +18,10 @@ import (
 	"github.com/kumahq/kuma/test/framework/client"
 )
 
-func successfullyProxyRequestToGateway(cluster Cluster, instance string, gateway string, port int, namespace string) {
-	Logf("expecting 200 response from %q", gateway)
-	target := fmt.Sprintf("http://%s:%d/%s",
-		gateway, port, path.Join("test", url.PathEscape(GinkgoT().Name())),
+func successfullyProxyRequestToGateway(cluster Cluster, instance string, gatewayAddr string, namespace string) {
+	Logf("expecting 200 response from %q", gatewayAddr)
+	target := fmt.Sprintf("http://%s/%s",
+		gatewayAddr, path.Join("test", url.PathEscape(GinkgoT().Name())),
 	)
 
 	response, err := client.CollectResponse(
@@ -31,11 +33,11 @@ func successfullyProxyRequestToGateway(cluster Cluster, instance string, gateway
 	Expect(response.Instance).To(Equal(instance))
 }
 
-func failToProxyRequestToGateway(cluster Cluster, gateway string, port int, namespace string) func(Gomega) {
+func failToProxyRequestToGateway(cluster Cluster, gatewayAddr string, namespace string) func(Gomega) {
 	return func(g Gomega) {
-		Logf("expecting failure from %q", gateway)
-		target := fmt.Sprintf("http://%s:%d/%s",
-			gateway, port, path.Join("test", url.PathEscape(GinkgoT().Name())),
+		Logf("expecting failure from %q", gatewayAddr)
+		target := fmt.Sprintf("http://%s/%s",
+			gatewayAddr, path.Join("test", url.PathEscape(GinkgoT().Name())),
 		)
 
 		response, err := client.CollectFailure(
@@ -107,18 +109,23 @@ spec:
 	return strings.Join([]string{meshGateway, route, instance}, "\n---\n")
 }
 
-func gatewayAddress(instanceName, instanceNamespace string) string {
+func gatewayAddress(instanceName, instanceNamespace string, port int) string {
 	services, err := k8s.ListServicesE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(instanceNamespace), metav1.ListOptions{})
 	Expect(err).ToNot(HaveOccurred())
+
+	var rawIP string
 
 	// Find the service that is owned by the named GatewayInstance.
 	for _, svc := range services {
 		for _, ref := range svc.GetOwnerReferences() {
 			if ref.Kind == "MeshGatewayInstance" && ref.Name == instanceName {
-				return svc.Spec.ClusterIP
+				rawIP = svc.Spec.ClusterIP
 			}
 		}
 	}
 
-	return "0.0.0.0"
+	ip := net.ParseIP(rawIP)
+	Expect(ip).ToNot(BeNil(), "invalid clusterIP for gateway")
+
+	return net.JoinHostPort(rawIP, strconv.Itoa(port))
 }
