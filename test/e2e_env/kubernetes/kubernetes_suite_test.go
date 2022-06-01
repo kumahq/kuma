@@ -1,4 +1,4 @@
-package auth_test
+package kubernetes_test
 
 import (
 	"encoding/json"
@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/container_patch"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/gateway"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/graceful"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/healthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/jobs"
@@ -67,6 +68,7 @@ var _ = SynchronizedBeforeSuite(
 var _ = SynchronizedAfterSuite(func() {}, func() {})
 
 var _ = Describe("Virtual Probes", healthcheck.VirtualProbes, Ordered)
+var _ = Describe("Cross-mesh Gateways", gateway.CrossMeshGatewayOnKubernetes, Ordered)
 var _ = Describe("Graceful", graceful.Graceful, Ordered)
 var _ = Describe("Jobs", jobs.Jobs)
 var _ = Describe("Metrics", metrics.ApplicationsMetrics, Ordered)

@@ -5,12 +5,23 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/pkg/core/xds"
 )
 
-type Resources map[core_model.ResourceType]core_model.ResourceList
+type Resources struct {
+	MeshLocalResources map[core_model.ResourceType]core_model.ResourceList
+	CrossMeshResources map[xds.MeshName]map[core_model.ResourceType]core_model.ResourceList
+}
+
+func NewResources() Resources {
+	return Resources{
+		MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{},
+		CrossMeshResources: map[xds.MeshName]map[core_model.ResourceType]core_model.ResourceList{},
+	}
+}
 
 func (r Resources) ListOrEmpty(resourceType core_model.ResourceType) core_model.ResourceList {
-	list, ok := r[resourceType]
+	list, ok := r.MeshLocalResources[resourceType]
 	if !ok {
 		list, err := registry.Global().NewList(resourceType)
 		if err != nil {
@@ -95,4 +106,57 @@ func (r Resources) ProxyTemplates() *core_mesh.ProxyTemplateResourceList {
 
 func (r Resources) Secrets() *system.SecretResourceList {
 	return r.ListOrEmpty(system.SecretType).(*system.SecretResourceList)
+}
+
+func (r Resources) OtherMeshes() *core_mesh.MeshResourceList {
+	return r.ListOrEmpty(core_mesh.MeshType).(*core_mesh.MeshResourceList)
+}
+
+type CrossMeshGateway struct {
+	Mesh     *core_mesh.MeshResource
+	Gateways *core_mesh.MeshGatewayResourceList
+}
+
+func (r Resources) CrossMeshGateways(mesh *core_mesh.MeshResource) map[xds.MeshName]CrossMeshGateway {
+	meshes := r.ListOrEmpty(core_mesh.MeshType).(*core_mesh.MeshResourceList)
+
+	gatewaysByMesh := map[xds.MeshName]CrossMeshGateway{}
+
+	for _, mesh := range meshes.Items {
+		meshName := mesh.GetMeta().GetName()
+		gateways := r.CrossMeshResources[meshName][core_mesh.MeshGatewayType]
+		if gateways != nil && len(gateways.GetItems()) > 0 {
+			gatewaysByMesh[meshName] = CrossMeshGateway{
+				Mesh:     mesh,
+				Gateways: gateways.(*core_mesh.MeshGatewayResourceList),
+			}
+		}
+	}
+
+	gatewaysByMesh[mesh.GetMeta().GetName()] = CrossMeshGateway{
+		Mesh:     mesh,
+		Gateways: r.Gateways(),
+	}
+
+	return gatewaysByMesh
+}
+
+func (r Resources) gatewayDataplanesByMesh(name xds.MeshName) *core_mesh.DataplaneResourceList {
+	gatewayDataplanes := &core_mesh.DataplaneResourceList{}
+
+	meshResources, ok := r.CrossMeshResources[name]
+	if !ok {
+		meshResources = r.MeshLocalResources
+	}
+
+	allDataplanes, ok := meshResources[core_mesh.DataplaneType]
+	if !ok {
+		return gatewayDataplanes
+	}
+
+	for _, dataplane := range allDataplanes.(*core_mesh.DataplaneResourceList).Items {
+		gatewayDataplanes.Items = append(gatewayDataplanes.Items, dataplane)
+	}
+
+	return gatewayDataplanes
 }

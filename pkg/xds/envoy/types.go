@@ -17,15 +17,20 @@ type Cluster struct {
 	name              string
 	weight            uint32
 	tags              Tags
+	mesh              string
 	isExternalService bool
 	lb                *mesh_proto.TrafficRoute_LoadBalancer
 	timeout           *core_mesh.TimeoutResource
 }
 
-func (c *Cluster) Service() string                           { return c.service }
-func (c *Cluster) Name() string                              { return c.name }
-func (c *Cluster) Weight() uint32                            { return c.weight }
-func (c *Cluster) Tags() Tags                                { return c.tags }
+func (c *Cluster) Service() string { return c.service }
+func (c *Cluster) Name() string    { return c.name }
+func (c *Cluster) Weight() uint32  { return c.weight }
+func (c *Cluster) Tags() Tags      { return c.tags }
+
+// Mesh returns a non-empty string only if the cluster is in a different mesh
+// from the context.
+func (c *Cluster) Mesh() string                              { return c.mesh }
 func (c *Cluster) IsExternalService() bool                   { return c.isExternalService }
 func (c *Cluster) LB() *mesh_proto.TrafficRoute_LoadBalancer { return c.lb }
 func (c *Cluster) Timeout() *core_mesh.TimeoutResource       { return c.timeout }
@@ -33,6 +38,10 @@ func (c *Cluster) Hash() string                              { return fmt.Sprint
 
 func (c *Cluster) SetName(name string) {
 	c.name = name
+}
+
+func (c *Cluster) SetMesh(mesh string) {
+	c.mesh = mesh
 }
 
 type NewClusterOpt interface {

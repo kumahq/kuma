@@ -10,6 +10,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/tls"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/context"
@@ -42,7 +43,13 @@ var _ = Describe("AdminProxyGenerator", func() {
 						KeyPEM:  []byte("LS0=="),
 					},
 				},
-				Mesh: context.MeshContext{},
+				Mesh: context.MeshContext{
+					Resource: &core_mesh.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "default",
+						},
+					},
+				},
 			}
 
 			proxy := &xds.Proxy{

@@ -5,18 +5,23 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
 )
 
 type ServerSideMTLSConfigurer struct {
-	Mesh *core_mesh.MeshResource
+	Mesh           *core_mesh.MeshResource
+	SecretsTracker core_xds.SecretsTracker
 }
 
 var _ FilterChainConfigurer = &ServerSideMTLSConfigurer{}
 
 func (c *ServerSideMTLSConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
-	tlsContext, err := tls.CreateDownstreamTlsContext(c.Mesh)
+	if !c.Mesh.MTLSEnabled() {
+		return nil
+	}
+	tlsContext, err := tls.CreateDownstreamTlsContext(c.SecretsTracker.RequestCa(c.Mesh.GetMeta().GetName()), c.SecretsTracker.RequestIdentityCert())
 	if err != nil {
 		return err
 	}

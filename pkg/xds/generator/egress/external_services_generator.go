@@ -38,6 +38,7 @@ func (g *ExternalServicesGenerator) Generate(
 		meshResources,
 		listenerBuilder,
 		services,
+		proxy.SecretsTracker,
 	)
 
 	cds, err := g.generateCDS(
@@ -132,6 +133,7 @@ func (g *ExternalServicesGenerator) addFilterChains(
 	meshResources *core_xds.MeshResources,
 	listenerBuilder *envoy_listeners.ListenerBuilder,
 	services map[string]bool,
+	secretsTracker core_xds.SecretsTracker,
 ) {
 	meshName := meshResources.Mesh.GetMeta().GetName()
 	sniUsed := map[string]bool{}
@@ -171,7 +173,7 @@ func (g *ExternalServicesGenerator) addFilterChains(
 			)
 
 			filterChainBuilder := envoy_listeners.NewFilterChainBuilder(apiVersion).Configure(
-				envoy_listeners.ServerSideMTLS(meshResources.Mesh),
+				envoy_listeners.ServerSideMTLS(meshResources.Mesh, secretsTracker),
 				envoy_listeners.MatchTransportProtocol("tls"),
 				envoy_listeners.MatchServerNames(sni),
 				envoy_listeners.NetworkRBAC(
