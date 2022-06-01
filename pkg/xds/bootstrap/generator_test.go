@@ -295,8 +295,9 @@ var _ = Describe("bootstrapGenerator", func() {
 				dp.Spec.Metrics = &mesh_proto.MetricsBackend{
 					Type: mesh_proto.MetricsPrometheusType,
 					Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
-						Aggregate: map[string]*mesh_proto.PrometheusAggregateMetricsConfig{
-							"app1": {
+						Aggregate: []*mesh_proto.PrometheusAggregateMetricsConfig{
+							{
+								Name: "app1",
 								Port: 123,
 								Path: "/stats",
 							},
@@ -442,12 +443,14 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 							Name: "prometheus-1",
 							Type: mesh_proto.MetricsPrometheusType,
 							Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
-								Aggregate: map[string]*mesh_proto.PrometheusAggregateMetricsConfig{
-									"opa": {
+								Aggregate: []*mesh_proto.PrometheusAggregateMetricsConfig{
+									{
+										Name: "opa",
 										Port: 123,
 										Path: "/mesh/config",
 									},
-									"dp-disabled": {
+									{
+										Name: "dp-disabled",
 										Port: 999,
 										Path: "/stats/default",
 									},
@@ -479,11 +482,13 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 				Metrics: &mesh_proto.MetricsBackend{
 					Type: mesh_proto.MetricsPrometheusType,
 					Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
-						Aggregate: map[string]*mesh_proto.PrometheusAggregateMetricsConfig{
-							"dp-disabled": {
+						Aggregate: []*mesh_proto.PrometheusAggregateMetricsConfig{
+							{
+								Name:    "dp-disabled",
 								Enabled: util_proto.Bool(false),
 							},
-							"app": {
+							{
+								Name: "app",
 								Port: 12,
 								Path: "/dp/override",
 							},
@@ -520,15 +525,18 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 		// and config is as expected
 		_, err = util_proto.ToYAML(bootstrapConfig)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(configParam.AggregateMetricsConfig["opa"]).To(Equal(AggregateMetricsConfig{
-			Path: "/mesh/config",
-			Port: 123,
+		Expect(configParam.AggregateMetricsConfig).To(ContainElements([]AggregateMetricsConfig{
+			{
+				Name: "opa",
+				Path: "/mesh/config",
+				Port: 123,
+			},
+			{
+				Name: "app",
+				Path: "/dp/override",
+				Port: 12,
+			},
 		}))
-		Expect(configParam.AggregateMetricsConfig["app"]).To(Equal(AggregateMetricsConfig{
-			Path: "/dp/override",
-			Port: 12,
-		}))
-		Expect(configParam.AggregateMetricsConfig["dp-disabled"]).To(Equal(AggregateMetricsConfig{}))
 	})
 
 	It("should take configuration from Mesh when service do not define", func() {
@@ -542,12 +550,14 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 							Name: "prometheus-1",
 							Type: mesh_proto.MetricsPrometheusType,
 							Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
-								Aggregate: map[string]*mesh_proto.PrometheusAggregateMetricsConfig{
-									"opa": {
+								Aggregate: []*mesh_proto.PrometheusAggregateMetricsConfig{
+									{
+										Name: "opa",
 										Port: 123,
 										Path: "/mesh/opa",
 									},
-									"app": {
+									{
+										Name: "app",
 										Port: 999,
 										Path: "/mesh/app",
 									},
@@ -606,13 +616,17 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 		// and config is as expected
 		_, err = util_proto.ToYAML(bootstrapConfig)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(configParam.AggregateMetricsConfig["opa"]).To(Equal(AggregateMetricsConfig{
-			Path: "/mesh/opa",
-			Port: 123,
-		}))
-		Expect(configParam.AggregateMetricsConfig["app"]).To(Equal(AggregateMetricsConfig{
-			Path: "/mesh/app",
-			Port: 999,
+		Expect(configParam.AggregateMetricsConfig).To(Equal([]AggregateMetricsConfig{
+			{
+				Name: "opa",
+				Path: "/mesh/opa",
+				Port: 123,
+			},
+			{
+				Name: "app",
+				Path: "/mesh/app",
+				Port: 999,
+			},
 		}))
 	})
 })

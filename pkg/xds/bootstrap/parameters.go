@@ -3,10 +3,11 @@ package bootstrap
 import "time"
 
 type KumaDpBootstrap struct {
-	AggregateMetricsConfig map[string]AggregateMetricsConfig
+	AggregateMetricsConfig []AggregateMetricsConfig
 }
 
 type AggregateMetricsConfig struct {
+	Name string
 	Path string
 	Port uint32
 }

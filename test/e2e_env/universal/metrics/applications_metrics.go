@@ -39,18 +39,18 @@ metrics:
       path: /metrics
       port: 1234
       aggregate:
-        path-stats:
-          path: "/path-stats"
-          port: 8080
-        mesh-default:
-          path: "/mesh-default"
-          port: 8080
-        service-to-override:
-          path: "/service-to-override"
-          port: 8080
-        not-working-service:
-          path: "/not-working-service"
-          port: 81`, mesh)
+      - name: path-stats
+        path: "/path-stats"
+        port: 8080
+      - name: mesh-default
+        path: "/mesh-default"
+        port: 8080
+      - name: service-to-override
+        path: "/service-to-override"
+        port: 8080
+      - name: not-working-service
+        path: "/not-working-service"
+        port: 81`, mesh)
 	return YamlUniversal(yaml)
 }
 
@@ -65,12 +65,12 @@ metrics:
     path: /stats
     port: 5555
     aggregate:
-      app:
-        path: "/my-app"
-        port: 8080
-      other-app:
-        path: "/other-app"
-        port: 8080`
+    - name: app
+      path: "/my-app"
+      port: 8080
+    - name: other-app
+      path: "/other-app"
+      port: 8080`
 
 	dpOverrideMeshAggregateConfig := `
 metrics:
@@ -78,14 +78,14 @@ metrics:
   conf:
     path: /metrics/overridden
     aggregate:
-      path-stats:
-        enabled: false
-      app:
-        path: "/my-app"
-        port: 8080
-      service-to-override:
-        path: "/overridden"
-        port: 8080`
+    - name: path-stats
+      enabled: false
+    - name: app
+      path: "/my-app"
+      port: 8080
+    - name: service-to-override
+      path: "/overridden"
+      port: 8080`
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
