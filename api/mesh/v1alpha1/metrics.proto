@@ -51,20 +51,23 @@ message PrometheusMetricsBackendConfig {
 
   // Map with the configuration of applications which metrics are going to be
   // scrapped by kuma-dp.
-  map<string, PrometheusAggregateMetricsConfig> aggregate = 5;
+  repeated PrometheusAggregateMetricsConfig aggregate = 5;
 }
 
 // PrometheusAggregateMetricsConfig defines endpoints that should be scrapped
 // by kuma-dp for prometheus metrics.
 // Any configuration change require sidecar restart.
 message PrometheusAggregateMetricsConfig {
+  // Name which identify given configuration.
+  string name = 1;
+
   // Port on which a service expose HTTP endpoint with Prometheus metrics.
-  uint32 port = 1;
+  uint32 port = 2;
 
   // Path on which a service expose HTTP endpoint with Prometheus metrics.
-  string path = 2;
+  string path = 3;
 
   // If false then the application won't be scrapped. If nil, then it is treated
   // as true and kuma-dp scrapes metrics from the service.
-  google.protobuf.BoolValue enabled = 3;
+  google.protobuf.BoolValue enabled = 4;
 }
