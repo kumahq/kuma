@@ -52,6 +52,7 @@ func CrossMeshGatewayOnUniversal() {
 			Install(MTLSMeshUniversal(gatewayOtherMesh)).
 			Install(DemoClientUniversal(demoClientName(gatewayMesh), gatewayMesh, WithTransparentProxy(true))).
 			Install(DemoClientUniversal(demoClientName(gatewayOtherMesh), gatewayOtherMesh, WithTransparentProxy(true))).
+			Install(DemoClientUniversal(demoClientName("outside"), "", WithoutDataplane())).
 			Install(echoServerApp(gatewayMesh)).
 			Install(echoServerApp(gatewayOtherMesh)).
 			Install(YamlUniversal(crossMeshGatewayYaml)).
@@ -84,6 +85,13 @@ func CrossMeshGatewayOnUniversal() {
 				env.Cluster, gatewayMesh, gatewayMesh,
 				gatewayAddr,
 			)
+		})
+
+		It("doesn't allow HTTP requests from outside the mesh", func() {
+			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
+			Consistently(failToProxyRequestToGateway(
+				env.Cluster, demoClientName("outside"), gatewayAddr, env.Cluster.GetApp(crossMeshGatewayName).GetIP(),
+			), "10s", "1s").Should(Succeed())
 		})
 
 		Specify("HTTP requests to a non-crossMesh gateway should still be proxied", func() {

@@ -32,6 +32,23 @@ func successfullyProxyRequestToGateway(cluster Cluster, mesh, instance, gatewayA
 	Expect(response.Instance).To(Equal(instance))
 }
 
+func failToProxyRequestToGateway(cluster Cluster, containerName, gatewayAddr, host string) func(Gomega) {
+	return func(g Gomega) {
+		Logf("expecting 200 response from %q", gatewayAddr)
+		target := fmt.Sprintf("http://%s/%s",
+			gatewayAddr, path.Join("test", url.PathEscape(GinkgoT().Name())),
+		)
+
+		response, err := client.CollectFailure(
+			cluster, containerName, target,
+			client.Resolve(gatewayAddr, host),
+		)
+
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(response.Exitcode).To(Or(Equal(56), Equal(7), Equal(28)))
+	}
+}
+
 func mkGateway(name, mesh string, crossMesh bool, hostname, backendService string, port int) string {
 	meshGateway := fmt.Sprintf(`
 type: MeshGateway
