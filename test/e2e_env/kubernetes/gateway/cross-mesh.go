@@ -2,6 +2,8 @@ package gateway
 
 import (
 	"fmt"
+	"net"
+	"strconv"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -80,35 +82,37 @@ func CrossMeshGatewayOnKubernetes() {
 
 	Context("when mTLS is enabled", func() {
 		It("should proxy HTTP requests from a different mesh", func() {
+			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
 			successfullyProxyRequestToGateway(
 				env.Cluster, gatewayMesh,
-				crossMeshHostname, crossMeshGatewayPort,
+				gatewayAddr,
 				gatewayClientNamespaceOtherMesh,
 			)
 		})
 
 		It("should proxy HTTP requests from the same mesh", func() {
+			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
 			successfullyProxyRequestToGateway(
 				env.Cluster, gatewayMesh,
-				crossMeshHostname, crossMeshGatewayPort,
+				gatewayAddr,
 				gatewayClientNamespaceSameMesh,
 			)
 		})
 
 		It("doesn't allow HTTP requests from outside the mesh", func() {
-			gatewayAddr := gatewayAddress(crossMeshGatewayName, gatewayTestNamespace)
+			gatewayAddr := gatewayAddress(crossMeshGatewayName, gatewayTestNamespace, crossMeshGatewayPort)
 			Consistently(failToProxyRequestToGateway(
 				env.Cluster,
-				gatewayAddr, crossMeshGatewayPort,
+				gatewayAddr,
 				gatewayClientOutsideMesh,
 			), "10s", "1s").Should(Succeed())
 		})
 
 		Specify("HTTP requests to a non-crossMesh gateway should still be proxied", func() {
-			gatewayAddr := gatewayAddress(edgeGatewayName, gatewayTestNamespace)
+			gatewayAddr := gatewayAddress(edgeGatewayName, gatewayTestNamespace, edgeGatewayPort)
 			successfullyProxyRequestToGateway(
 				env.Cluster, gatewayOtherMesh,
-				gatewayAddr, edgeGatewayPort,
+				gatewayAddr,
 				gatewayClientNamespaceOtherMesh,
 			)
 		})
