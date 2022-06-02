@@ -125,6 +125,16 @@ var _ = E2EBeforeSuite(func() {
 })
 
 func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
+	BeforeEach(func() {
+		Expect(global.GetKumactlOptions().
+			KumactlApplyFromString(meshMTLSOn(defaultMesh, "true")),
+		).To(Succeed())
+
+		k8sCluster := zone1.(*K8sCluster)
+
+		Expect(k8sCluster.StartZoneEgress()).To(Succeed())
+		Expect(k8sCluster.StartZoneIngress()).To(Succeed())
+	})
 	It("should fail request when ingress is down", func() {
 		// when ingress is down
 		Expect(zone1.(*K8sCluster).StopZoneIngress()).To(Succeed())
