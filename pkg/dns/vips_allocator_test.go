@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	dns_server "github.com/kumahq/kuma/pkg/config/dns-server"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -81,7 +82,12 @@ var _ = Describe("VIP Allocator", func() {
 		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("web")}, store.CreateByKey("dp-3", "mesh-2"))
 		Expect(err).ToNot(HaveOccurred())
 
-		allocator, err = dns.NewVIPsAllocator(rm, cm, true, "240.0.0.0/24")
+		config := dns_server.DNSServerConfig{
+			ServiceVipEnabled: true,
+			CIDR:              "240.0.0.0/24",
+			Domain:            "mesh",
+		}
+		allocator, err = dns.NewVIPsAllocator(rm, cm, config)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -143,7 +149,12 @@ var _ = Describe("VIP Allocator", func() {
 	It("should return error if failed to update VIP config", func() {
 		errConfigManager := &errConfigManager{ConfigManager: cm}
 		ctx := context.Background()
-		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, true, "240.0.0.0/24")
+		config := dns_server.DNSServerConfig{
+			ServiceVipEnabled: true,
+			CIDR:              "240.0.0.0/24",
+			Domain:            "mesh",
+		}
+		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, config)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = errAllocator.CreateOrUpdateVIPConfig(ctx, "mesh-1", NoModifications)
@@ -159,7 +170,12 @@ var _ = Describe("VIP Allocator", func() {
 
 	It("should try to update all meshes and return combined error", func() {
 		errConfigManager := &errConfigManager{ConfigManager: cm}
-		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, true, "240.0.0.0/24")
+		config := dns_server.DNSServerConfig{
+			ServiceVipEnabled: true,
+			CIDR:              "240.0.0.0/24",
+			Domain:            "mesh",
+		}
+		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, config)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = errAllocator.CreateOrUpdateVIPConfigs(context.Background())
@@ -223,7 +239,7 @@ var _ = DescribeTable("outboundView",
 		}
 
 		// When
-		serviceSet, err := dns.BuildVirtualOutboundMeshView(ctx, rm, !tc.whenSkipServiceVips, tc.whenMesh)
+		serviceSet, err := dns.BuildVirtualOutboundMeshView(ctx, rm, !tc.whenSkipServiceVips, "mesh", tc.whenMesh)
 
 		// Then
 		Expect(err).ToNot(HaveOccurred())
@@ -290,6 +306,13 @@ var _ = DescribeTable("outboundView",
 								"listener": "internal",
 							},
 						}, {
+							Port:      81,
+							CrossMesh: true,
+							Protocol:  mesh_proto.MeshGateway_Listener_HTTP,
+							Tags: map[string]string{
+								"listener": "internal2",
+							},
+						}, {
 							Hostname: "*",
 							Port:     80,
 							Protocol: mesh_proto.MeshGateway_Listener_HTTP,
@@ -310,7 +333,7 @@ var _ = DescribeTable("outboundView",
 			},
 		},
 		whenMesh:            "mesh1",
-		thenHostnameEntries: []vips.HostnameEntry{vips.NewFqdnEntry("gateway2.mesh")},
+		thenHostnameEntries: []vips.HostnameEntry{vips.NewFqdnEntry("gateway2.mesh"), vips.NewFqdnEntry("internal.gateway.mesh2.mesh")},
 		thenOutbounds: map[vips.HostnameEntry][]vips.OutboundEntry{
 			vips.NewFqdnEntry("gateway2.mesh"): {{
 				TagSet: map[string]string{
@@ -321,6 +344,16 @@ var _ = DescribeTable("outboundView",
 				},
 				Origin: "mesh-gateway:mesh2:gateway:gateway2.mesh",
 				Port:   80,
+			}},
+			vips.NewFqdnEntry("internal.gateway.mesh2.mesh"): {{
+				TagSet: map[string]string{
+					"listener":            "internal2",
+					"gateway":             "prod",
+					mesh_proto.ServiceTag: "gateway",
+					"kuma.io/mesh":        "mesh2",
+				},
+				Origin: "mesh-gateway:mesh2:gateway:internal.gateway.mesh2.mesh",
+				Port:   81,
 			}},
 		},
 	}),
