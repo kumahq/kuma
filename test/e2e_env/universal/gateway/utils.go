@@ -18,14 +18,15 @@ func demoClientName(mesh string) string {
 	return fmt.Sprintf("demo-client-%s", mesh)
 }
 
-func successfullyProxyRequestToGateway(cluster Cluster, mesh, instance, gatewayAddr string) {
+func successfullyProxyRequestToGateway(cluster Cluster, clientName, instance, gatewayAddr string, opt ...client.CollectResponsesOptsFn) {
 	Logf("expecting 200 response from %q", gatewayAddr)
 	target := fmt.Sprintf("http://%s/%s",
 		gatewayAddr, path.Join("test", url.PathEscape(GinkgoT().Name())),
 	)
 
 	response, err := client.CollectResponse(
-		cluster, demoClientName(mesh), target,
+		cluster, clientName, target,
+		opt...,
 	)
 
 	Expect(err).NotTo(HaveOccurred())
@@ -47,6 +48,38 @@ func failToProxyRequestToGateway(cluster Cluster, containerName, gatewayAddr, ho
 		g.Expect(err).ToNot(HaveOccurred())
 		g.Expect(response.Exitcode).To(Or(Equal(56), Equal(7), Equal(28)))
 	}
+}
+
+// DemoClientDataplaneWithOutbound is taken from DemoClientDataplane and adds
+// another outbound.
+func DemoClientDataplaneWithOutbound(name, mesh, outboundService, outboundMesh string, port int) string {
+	return fmt.Sprintf(`
+type: Dataplane
+mesh: %s
+name: {{ name }}
+networking:
+  address: {{ address }}
+  inbound:
+  - port: %s
+    servicePort: %s
+    tags:
+      kuma.io/service: %s
+      team: client-owners
+  outbound:
+  - port: 4000
+    tags:
+      kuma.io/service: echo-server_kuma-test_svc_%s
+  - port: 4001
+    tags:
+      kuma.io/service: echo-server_kuma-test_svc_%s
+  - port: 5000
+    tags:
+      kuma.io/service: external-service
+  - port: %d
+    tags:
+      kuma.io/service: %s
+      kuma.io/mesh: %s
+`, mesh, "13000", "3000", name, "80", "8080", port, outboundService, outboundMesh)
 }
 
 func mkGateway(name, mesh string, crossMesh bool, hostname, backendService string, port int) string {
