@@ -22,3 +22,12 @@ func (t *MeshGateway) DeepCopy() *MeshGateway {
 	t.DeepCopyInto(out)
 	return out
 }
+
+func (g *MeshGateway) IsCrossMesh() bool {
+	for _, l := range g.GetConf().GetListeners() {
+		if l.CrossMesh {
+			return true
+		}
+	}
+	return false
+}

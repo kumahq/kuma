@@ -9,11 +9,7 @@ import (
 func (g *MeshGatewayResource) Validate() error {
 	var err validators.ValidationError
 
-	var onlyOneSelector bool
-
-	for _, listener := range g.Spec.GetConf().GetListeners() {
-		onlyOneSelector = onlyOneSelector || listener.CrossMesh
-	}
+	onlyOneSelector := g.Spec.IsCrossMesh()
 
 	err.Add(ValidateSelectors(
 		validators.RootedAt("selectors"),
