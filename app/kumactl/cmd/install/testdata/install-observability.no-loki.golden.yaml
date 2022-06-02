@@ -5,7 +5,7 @@ kind: Namespace
 metadata:
   name: mesh-observability
   labels:
-    kuma.io/sidecar-injection: enabled
+    kuma.io/sidecar-injection: disabled
   annotations:
     kuma.io/mesh: default
 ---
@@ -11195,6 +11195,7 @@ spec:
     metadata:
       labels:
         app: grafana
+        kuma.io/sidecar-injection: enabled
       annotations:
         checksum/config: 4fbce6ca7985bb33289922e68acc9af246f301cf9650f061fbcd0155925665df
         checksum/dashboards-json-config: 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b
@@ -11339,6 +11340,7 @@ spec:
       labels:
         component: "server"
         app: prometheus
+        kuma.io/sidecar-injection: enabled
       annotations:
         kuma.io/direct-access-services: "*"
     spec:
@@ -11388,16 +11390,6 @@ spec:
         - name: storage-volume
           persistentVolumeClaim:
             claimName: prometheus-server
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: mesh-observability
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: mesh-observability
 ---
 # Based on https://github.com/jaegertracing/jaeger-kubernetes/blob/master/all-in-one/jaeger-all-in-one-template.yml
 
