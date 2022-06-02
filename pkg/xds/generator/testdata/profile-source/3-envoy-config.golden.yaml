@@ -206,7 +206,7 @@ resources:
           setCurrentClientCertDetails:
             uri: true
           statPrefix: localhost_8080
-          streamIdleTimeout: 0s
+          streamIdleTimeout: 3600s
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:

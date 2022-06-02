@@ -26,7 +26,7 @@ var DefaultTimeoutResource = func() model.Resource {
 				Http: &mesh_proto.Timeout_Conf_Http{
 					IdleTimeout:       util_proto.Duration(1 * time.Hour),
 					RequestTimeout:    util_proto.Duration(15 * time.Second),
-					StreamIdleTimeout: util_proto.Duration(5 * time.Minute),
+					StreamIdleTimeout: util_proto.Duration(30 * time.Minute),
 				},
 			},
 		},
@@ -49,7 +49,7 @@ var DefaultInboundTimeout = func() *mesh_proto.Timeout_Conf {
 		Http: &mesh_proto.Timeout_Conf_Http{
 			RequestTimeout:    util_proto.Duration(0),
 			IdleTimeout:       util_proto.Duration(factor * upstream.GetHttp().GetIdleTimeout().AsDuration()),
-			StreamIdleTimeout: util_proto.Duration(0),
+			StreamIdleTimeout: util_proto.Duration(factor * upstream.GetHttp().GetStreamIdleTimeout().AsDuration()),
 			MaxStreamDuration: util_proto.Duration(0),
 		},
 	}

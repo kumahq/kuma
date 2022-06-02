@@ -190,7 +190,7 @@ filterChains:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
       statPrefix: localhost_8080
-      streamIdleTimeout: 300s
+      streamIdleTimeout: 1800s
 name: outbound:192.168.0.1:8080
 trafficDirection: OUTBOUND`,
 		}),
@@ -279,7 +279,7 @@ filterChains:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
       statPrefix: localhost_8080
-      streamIdleTimeout: 300s
+      streamIdleTimeout: 1800s
 name: outbound:192.168.0.1:8080
 trafficDirection: OUTBOUND`,
 		}),
@@ -353,7 +353,7 @@ filterChains:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
       statPrefix: localhost_8080
-      streamIdleTimeout: 0s
+      streamIdleTimeout: 3600s
 name: inbound:192.168.0.1:8080
 trafficDirection: INBOUND
 `

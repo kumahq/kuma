@@ -254,7 +254,7 @@ resources:
           setCurrentClientCertDetails:
             uri: true
           statPrefix: localhost_8080
-          streamIdleTimeout: 0s
+          streamIdleTimeout: 3600s
     - filterChainMatch:
         transportProtocol: tls
       filters:
@@ -379,7 +379,7 @@ resources:
           setCurrentClientCertDetails:
             uri: true
           statPrefix: localhost_8080
-          streamIdleTimeout: 0s
+          streamIdleTimeout: 3600s
     - filterChainMatch:
         applicationProtocols:
         - kuma
@@ -506,7 +506,7 @@ resources:
           setCurrentClientCertDetails:
             uri: true
           statPrefix: localhost_8080
-          streamIdleTimeout: 0s
+          streamIdleTimeout: 3600s
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
@@ -666,7 +666,7 @@ resources:
           setCurrentClientCertDetails:
             uri: true
           statPrefix: localhost_8080
-          streamIdleTimeout: 0s
+          streamIdleTimeout: 3600s
     - filterChainMatch:
         transportProtocol: tls
       filters:
@@ -703,7 +703,7 @@ resources:
           setCurrentClientCertDetails:
             uri: true
           statPrefix: localhost_8080
-          streamIdleTimeout: 0s
+          streamIdleTimeout: 3600s
     - filterChainMatch:
         applicationProtocols:
         - kuma
@@ -742,7 +742,7 @@ resources:
           setCurrentClientCertDetails:
             uri: true
           statPrefix: localhost_8080
-          streamIdleTimeout: 0s
+          streamIdleTimeout: 3600s
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
