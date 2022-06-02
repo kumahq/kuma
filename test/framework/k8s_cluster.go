@@ -681,7 +681,7 @@ func (c *K8sCluster) StopZoneIngress() error {
 	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=0", fmt.Sprintf("deployment/%s", Config.ZoneIngressApp)); err != nil {
 		return err
 	}
-	c.closePortForwards()
+	c.closePortForwards(Config.ZoneIngressApp)
 	_, err := retry.DoWithRetryE(c.t,
 		"wait for zone ingress to be down",
 		c.defaultRetries,
@@ -720,7 +720,7 @@ func (c *K8sCluster) StopZoneEgress() error {
 	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=0", fmt.Sprintf("deployment/%s", Config.ZoneEgressApp)); err != nil {
 		return err
 	}
-	c.closePortForwards()
+	c.closePortForwards(Config.ZoneEgressApp)
 	_, err := retry.DoWithRetryE(c.t,
 		"wait for zone egress to be down",
 		c.defaultRetries,
@@ -823,10 +823,10 @@ func (c *K8sCluster) VerifyKuma() error {
 	return nil
 }
 
-func (c *K8sCluster) closePortForwards() {
-	c.portForwards[Config.ZoneIngressApp].apiServerTunnel.Close()
-	delete(c.portForwards, Config.ZoneIngressApp)
-	delete(c.envoyTunnels, Config.ZoneIngressApp)
+func (c *K8sCluster) closePortForwards(name string) {
+	c.portForwards[name].apiServerTunnel.Close()
+	delete(c.portForwards, name)
+	delete(c.envoyTunnels, name)
 }
 
 func (c *K8sCluster) deleteCRDs() (errs error) {
