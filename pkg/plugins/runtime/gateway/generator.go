@@ -105,7 +105,7 @@ func GatewayListenerInfoFromProxy(
 ) (
 	[]GatewayListenerInfo, error,
 ) {
-	gateway := xds_topology.SelectGateway(ctx.Resources.Gateways(), proxy.Dataplane.Spec.Matches)
+	gateway := xds_topology.SelectGateway(ctx.Resources.Gateways().Items, proxy.Dataplane.Spec.Matches)
 
 	if gateway == nil {
 		log.V(1).Info("no matching gateway for dataplane",

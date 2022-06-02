@@ -107,7 +107,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 	if err := r.ResourceManager.List(ctx, gatewayList, store.ListByMesh(mesh)); err != nil {
 		return nil, err
 	}
-	gateway := xds_topology.SelectGateway(gatewayList, func(selector mesh_proto.TagSelector) bool {
+	gateway := xds_topology.SelectGateway(gatewayList.Items, func(selector mesh_proto.TagSelector) bool {
 		return selector.Matches(gatewayInstance.Spec.Tags)
 	})
 
