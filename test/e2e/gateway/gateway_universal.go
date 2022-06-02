@@ -259,11 +259,12 @@ data: %s
 		})
 
 		It("should proxy simple HTTPS requests", func() {
+			addr := net.JoinHostPort("example.kuma.io", GatewayPort)
 			ProxySecureRequests(
 				cluster,
 				"universal",
-				net.JoinHostPort("example.kuma.io", GatewayPort),
-				client.Resolve("example.kuma.io", 8080, GatewayAddress("gateway-proxy")),
+				addr,
+				client.Resolve(addr, GatewayAddress("gateway-proxy")),
 			)
 
 			ProxySecureRequests(

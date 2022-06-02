@@ -400,23 +400,27 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 			}
 		}
 
-		token := opts.token
-		var err error
-		if token == "" {
-			token, err = cluster.GetKuma().GenerateDpToken(mesh, name)
-			if err != nil {
-				return err
+		if !opts.omitDataplane {
+			token := opts.token
+			var err error
+			if token == "" {
+				token, err = cluster.GetKuma().GenerateDpToken(mesh, name)
+				if err != nil {
+					return err
+				}
 			}
+			opt = append(opt, WithToken(token))
 		}
 
-		opt = append(opt,
+		opt = append(
+			opt,
 			WithName(name),
 			WithMesh(mesh),
 			WithAppname(AppModeDemoClient),
-			WithToken(token),
 			WithArgs(args),
 			WithYaml(appYaml),
-			WithIPv6(Config.IPV6))
+			WithIPv6(Config.IPV6),
+		)
 		return cluster.DeployApp(opt...)
 	}
 }
