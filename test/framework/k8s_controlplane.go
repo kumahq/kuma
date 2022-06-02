@@ -25,11 +25,6 @@ import (
 	bootstrap_k8s "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
 )
 
-type PortFwd struct {
-	apiServerTunnel   *k8s.Tunnel
-	ApiServerEndpoint string `json:"apiServerEndpoint"`
-}
-
 type K8sControlPlane struct {
 	t          testing.TestingT
 	mode       core.CpMode

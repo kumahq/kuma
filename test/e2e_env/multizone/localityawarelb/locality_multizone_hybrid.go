@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/test/e2e_env/multizone/env"
 	. "github.com/kumahq/kuma/test/framework"
@@ -186,27 +184,17 @@ func ExternalServicesWithLocalityAwareLb() {
 			mesh,
 			"external-service-in-uni-zone4",
 		)
-
 		filterIngress := "cluster.external-service-in-uni-zone4.upstream_rq_total"
 
 		Eventually(EgressStats(env.KubeZone1, filterEgress), "15s", "1s").Should(stats.BeEqualZero())
 		Eventually(IngressStats(env.UniZone1, filterIngress), "15s", "1s").Should(stats.BeEqualZero())
 		Eventually(EgressStats(env.UniZone1, filterEgress), "15s", "1s").Should(stats.BeEqualZero())
 
-		pods, err := k8s.ListPodsE(
-			env.KubeZone1.GetTesting(),
-			env.KubeZone1.GetKubectlOptions(namespace),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", "demo-client"),
-			},
-		)
+		podName, err := PodNameOfApp(env.KubeZone1, "demo-client", namespace)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(pods).To(HaveLen(1))
-
-		clientPod := pods[0]
 
 		// when request to external service in zone 1
-		_, stderr, err := env.KubeZone1.ExecWithRetries(namespace, clientPod.GetName(), "demo-client",
+		_, stderr, err := env.KubeZone1.ExecWithRetries(namespace, podName, "demo-client",
 			"curl", "--verbose", "--max-time", "3", "--fail", "external-service-in-uni-zone4.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))

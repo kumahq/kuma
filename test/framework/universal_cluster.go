@@ -21,6 +21,22 @@ import (
 	"github.com/kumahq/kuma/test/framework/ssh"
 )
 
+type UniversalNetworking struct {
+	IP            string `json:"ip"` // IP inside a docker network
+	ApiServerPort string `json:"apiServerPort"`
+	SshPort       string `json:"sshPort"`
+}
+
+func (u UniversalNetworking) BootstrapAddress() string {
+	return "https://" + net.JoinHostPort(u.IP, "5678")
+}
+
+type UniversalNetworkingState struct {
+	ZoneEgress  UniversalNetworking `json:"zoneEgress"`
+	ZoneIngress UniversalNetworking `json:"zoneIngress"`
+	KumaCp      UniversalNetworking `json:"kumaCp"`
+}
+
 type UniversalCluster struct {
 	t              testing.TestingT
 	name           string
@@ -33,6 +49,7 @@ type UniversalCluster struct {
 	opts           kumaDeploymentOptions
 
 	envoyTunnels map[string]envoy_admin.Tunnel
+	networking   map[string]UniversalNetworking
 }
 
 var _ Cluster = &UniversalCluster{}
@@ -47,6 +64,7 @@ func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalClust
 		defaultRetries: Config.DefaultClusterStartupRetries,
 		defaultTimeout: Config.DefaultClusterStartupTimeout,
 		envoyTunnels:   map[string]envoy_admin.Tunnel{},
+		networking:     map[string]UniversalNetworking{},
 	}
 }
 
@@ -144,7 +162,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 
 	c.apps[AppModeCP] = app
 
-	pf := UniversalCPNetworking{
+	pf := UniversalNetworking{
 		IP:            app.ip,
 		ApiServerPort: app.ports["5681"],
 		SshPort:       app.ports["22"],
@@ -436,29 +454,59 @@ func (c *UniversalCluster) DeleteDeployment(name string) error {
 	return nil
 }
 
-func (c *UniversalCluster) addEgressEnvoyTunnel() error {
-	app := c.apps[AppEgress]
+func (c *UniversalCluster) GetZoneIngressNetworking() UniversalNetworking {
+	return c.networking[Config.ZoneIngressApp]
+}
 
-	t, err := tunnel.NewUniversalEnvoyAdminTunnel(c.t, app.GetPublicPort(sshPort), c.verbose)
+func (c *UniversalCluster) GetZoneEgressNetworking() UniversalNetworking {
+	return c.networking[Config.ZoneEgressApp]
+}
+
+func (c *UniversalCluster) AddNetworking(networking UniversalNetworking, name string) error {
+	c.networking[name] = networking
+	err := c.createEnvoyTunnel(name)
 	if err != nil {
 		return err
 	}
+	return nil
+}
 
-	c.envoyTunnels[Config.ZoneEgressApp] = t
+func (c *UniversalCluster) addEgressEnvoyTunnel() error {
+	app := c.apps[AppEgress]
+	c.networking[Config.ZoneEgressApp] = UniversalNetworking{
+		IP:            "localhost",
+		ApiServerPort: app.GetPublicPort(sshPort),
+		SshPort:       sshPort,
+	}
 
+	err := c.createEnvoyTunnel(Config.ZoneEgressApp)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func (c *UniversalCluster) addIngressEnvoyTunnel() error {
 	app := c.apps[AppIngress]
+	c.networking[Config.ZoneIngressApp] = UniversalNetworking{
+		IP:            "localhost",
+		ApiServerPort: app.GetPublicPort(sshPort),
+		SshPort:       sshPort,
+	}
 
-	t, err := tunnel.NewUniversalEnvoyAdminTunnel(c.t, app.GetPublicPort(sshPort), c.verbose)
+	err := c.createEnvoyTunnel(Config.ZoneIngressApp)
 	if err != nil {
 		return err
 	}
+	return nil
+}
 
-	c.envoyTunnels[Config.ZoneIngressApp] = t
-
+func (c *UniversalCluster) createEnvoyTunnel(name string) error {
+	t, err := tunnel.NewUniversalEnvoyAdminTunnel(c.t, c.networking[name].ApiServerPort, c.verbose)
+	if err != nil {
+		return err
+	}
+	c.envoyTunnels[name] = t
 	return nil
 }
 

@@ -40,7 +40,7 @@ var _ = SynchronizedBeforeSuite(
 		if env.Cluster != nil {
 			return // cluster was already initiated with first function
 		}
-		networking := UniversalCPNetworking{}
+		networking := UniversalNetworking{}
 		Expect(json.Unmarshal(bytes, &networking)).To(Succeed())
 		env.Cluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
 		E2EDeferCleanup(env.Cluster.DismissCluster) // clean up any containers if needed
