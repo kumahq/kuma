@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path"
 	"strings"
 	"sync"
@@ -18,7 +19,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/util/exec"
+	k8s_exec "k8s.io/client-go/util/exec"
 
 	"github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/utils"
@@ -85,11 +86,11 @@ func WithPathPrefix(prefix string) CollectResponsesOptsFn {
 
 // Resolve sets the curl --resolve flag.
 // See https://curl.se/docs/manpage.html#--resolve.
-func Resolve(host string, port int, address string) CollectResponsesOptsFn {
+func Resolve(hostPort string, address string) CollectResponsesOptsFn {
 	return func(opts *CollectResponsesOpts) {
 		opts.Flags = append(opts.Flags,
 			"--resolve",
-			fmt.Sprintf("%s:%d:%s", host, port, address),
+			fmt.Sprintf("%s:%s", hostPort, address),
 		)
 	}
 }
@@ -352,9 +353,15 @@ func CollectFailure(cluster framework.Cluster, container, destination string, fn
 		return response, errors.Errorf("empty JSON response from curl: %q", stdout)
 	}
 
-	exitErr := exec.CodeExitError{}
+	// for k8s
+	k8sExitErr := k8s_exec.CodeExitError{}
+	if errors.As(err, &k8sExitErr) {
+		response.Exitcode = k8sExitErr.Code
+	}
+	// for universal
+	var exitErr *exec.ExitError
 	if errors.As(err, &exitErr) {
-		response.Exitcode = exitErr.Code
+		response.Exitcode = exitErr.ExitCode()
 	}
 
 	// 3. Finally, report the JSON status and no execution error
