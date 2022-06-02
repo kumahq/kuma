@@ -10,6 +10,7 @@ import (
 
 	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 )
 
 func CrossMeshGatewayOnUniversal() {
@@ -27,6 +28,11 @@ func CrossMeshGatewayOnUniversal() {
 
 	const crossMeshGatewayPort = 9080
 	const edgeGatewayPort = 9081
+
+	demoClientInMesh := demoClientName(gatewayMesh)
+	demoClientOtherMesh := demoClientName(gatewayOtherMesh)
+	demoClientOutsideMesh := demoClientName("outside")
+	demoClientNoTransparent := demoClientName(gatewayOtherMesh + "-no-transparent")
 
 	echoServerApp := func(mesh string) InstallFunc {
 		return TestServerUniversal(
@@ -47,12 +53,19 @@ func CrossMeshGatewayOnUniversal() {
 	edgeGatewayDataplane := mkGatewayDataplane(edgeGatewayName, gatewayOtherMesh)
 
 	BeforeAll(func() {
+		By("installing one cross-mesh gateway and one non-cross-mesh gateway")
 		setup := NewClusterSetup().
 			Install(MTLSMeshUniversal(gatewayMesh)).
 			Install(MTLSMeshUniversal(gatewayOtherMesh)).
-			Install(DemoClientUniversal(demoClientName(gatewayMesh), gatewayMesh, WithTransparentProxy(true))).
-			Install(DemoClientUniversal(demoClientName(gatewayOtherMesh), gatewayOtherMesh, WithTransparentProxy(true))).
-			Install(DemoClientUniversal(demoClientName("outside"), "", WithoutDataplane())).
+			Install(DemoClientUniversal(demoClientInMesh, gatewayMesh, WithTransparentProxy(true))).
+			Install(DemoClientUniversal(demoClientOtherMesh, gatewayOtherMesh, WithTransparentProxy(true))).
+			Install(DemoClientUniversal(demoClientOutsideMesh, "", WithoutDataplane())).
+			Install(DemoClientUniversal(
+				demoClientNoTransparent,
+				gatewayOtherMesh,
+				WithTransparentProxy(false),
+				WithYaml(DemoClientDataplaneWithOutbound(demoClientNoTransparent, gatewayOtherMesh, crossMeshGatewayName, gatewayMesh, crossMeshGatewayPort)),
+			)).
 			Install(echoServerApp(gatewayMesh)).
 			Install(echoServerApp(gatewayOtherMesh)).
 			Install(YamlUniversal(crossMeshGatewayYaml)).
@@ -74,7 +87,7 @@ func CrossMeshGatewayOnUniversal() {
 		It("should proxy HTTP requests from a different mesh", func() {
 			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
 			successfullyProxyRequestToGateway(
-				env.Cluster, gatewayOtherMesh, gatewayMesh,
+				env.Cluster, demoClientOtherMesh, gatewayMesh,
 				gatewayAddr,
 			)
 		})
@@ -82,7 +95,7 @@ func CrossMeshGatewayOnUniversal() {
 		It("should proxy HTTP requests from the same mesh", func() {
 			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
 			successfullyProxyRequestToGateway(
-				env.Cluster, gatewayMesh, gatewayMesh,
+				env.Cluster, demoClientInMesh, gatewayMesh,
 				gatewayAddr,
 			)
 		})
@@ -90,15 +103,23 @@ func CrossMeshGatewayOnUniversal() {
 		It("doesn't allow HTTP requests from outside the mesh", func() {
 			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
 			Consistently(failToProxyRequestToGateway(
-				env.Cluster, demoClientName("outside"), gatewayAddr, env.Cluster.GetApp(crossMeshGatewayName).GetIP(),
+				env.Cluster, demoClientOutsideMesh, gatewayAddr, env.Cluster.GetApp(crossMeshGatewayName).GetIP(),
 			), "10s", "1s").Should(Succeed())
 		})
 
 		Specify("HTTP requests to a non-crossMesh gateway should still be proxied", func() {
 			gatewayAddr := net.JoinHostPort(env.Cluster.GetApp(edgeGatewayName).GetIP(), strconv.Itoa(edgeGatewayPort))
 			successfullyProxyRequestToGateway(
-				env.Cluster, gatewayOtherMesh, gatewayOtherMesh,
+				env.Cluster, demoClientOtherMesh, gatewayOtherMesh,
 				gatewayAddr,
+			)
+		})
+
+		It("should be reachable without transparent proxy", func() {
+			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
+			successfullyProxyRequestToGateway(
+				env.Cluster, demoClientNoTransparent, gatewayMesh,
+				gatewayAddr, client.Resolve(gatewayAddr, "127.0.0.1"),
 			)
 		})
 	})
