@@ -122,7 +122,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 							Meta: mesh2Meta,
 						}},
 					}},
-				CrossMeshResources: map[string]map[core_model.ResourceType]core_model.ResourceList{
+				CrossMeshResources: map[string]xds_context.ResourceMap{
 					"mesh-2": {
 						core_mesh.MeshGatewayType: &core_mesh.MeshGatewayResourceList{
 							Items: []*core_mesh.MeshGatewayResource{{

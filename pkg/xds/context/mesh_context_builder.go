@@ -25,7 +25,7 @@ var logger = core.Log.WithName("xds").WithName("context")
 
 type meshContextBuilder struct {
 	rm              manager.ReadOnlyResourceManager
-	types           []core_model.ResourceType
+	typeSet         map[core_model.ResourceType]struct{}
 	ipFunc          lookup.LookupIPFunc
 	zone            string
 	vipsPersistence *vips.Persistence
@@ -49,9 +49,14 @@ func NewMeshContextBuilder(
 	vipsPersistence *vips.Persistence,
 	topLevelDomain string,
 ) MeshContextBuilder {
+	typeSet := map[core_model.ResourceType]struct{}{}
+	for _, typ := range types {
+		typeSet[typ] = struct{}{}
+	}
+
 	return &meshContextBuilder{
 		rm:              rm,
-		types:           types,
+		typeSet:         typeSet,
 		ipFunc:          ipFunc,
 		zone:            zone,
 		vipsPersistence: vipsPersistence,
@@ -105,15 +110,11 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	endpointMap := xds_topology.BuildEdsEndpointMap(mesh, m.zone, dataplanes, zoneIngresses, zoneEgresses, externalServices)
 
 	crossMeshEndpointMap := map[string]xds.EndpointMap{}
-	for otherMeshName, gateways := range resources.CrossMeshGateways(mesh) {
-		dataplanes := resources.gatewayDataplanesByMesh(otherMeshName)
-		if len(dataplanes.Items) == 0 {
-			continue
-		}
+	for otherMeshName, gateways := range resources.gatewaysAndDataplanesForMesh(mesh) {
 		crossMeshEndpointMap[otherMeshName] = xds_topology.BuildCrossMeshEndpointMap(
 			mesh,
 			gateways.Gateways,
-			dataplanes,
+			gateways.Dataplanes,
 		)
 	}
 
@@ -132,66 +133,71 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 }
 
 func (m *meshContextBuilder) fetchCrossMesh(
-	ctx context.Context, typ core_model.ResourceType, mesh string, resources *Resources, crossMeshPredicate func(core_model.Resource) bool,
+	ctx context.Context,
+	typ core_model.ResourceType,
+	localMesh string,
+	otherMeshes []string,
+	resources *Resources,
+	crossMeshPredicate func(xds.MeshName) bool,
+	crossMeshResourcePredicate func(core_model.Resource) bool,
 ) error {
-	all, err := registry.Global().NewList(typ)
-	if err != nil {
-		return err
-	}
-
-	if err := m.rm.List(ctx, all); err != nil {
-		return err
-	}
-
 	local, err := registry.Global().NewList(typ)
 	if err != nil {
 		return err
 	}
 
-	for _, item := range all.GetItems() {
-		itemMesh := item.GetMeta().GetMesh()
-		if mesh == itemMesh {
-			if err := local.AddItem(item); err != nil {
-				return err
-			}
+	if err := m.rm.List(ctx, local, core_store.ListByMesh(localMesh)); err != nil {
+		return err
+	}
+
+	resources.MeshLocalResources[typ] = local
+
+	for _, otherMesh := range otherMeshes {
+		if crossMeshPredicate != nil && !crossMeshPredicate(otherMesh) {
 			continue
 		}
 
-		if crossMeshPredicate != nil && !crossMeshPredicate(item) {
-			continue
+		allOtherMeshItems, err := registry.Global().NewList(typ)
+		if err != nil {
+			return err
+		}
+		if err := m.rm.List(ctx, allOtherMeshItems, core_store.ListByMesh(otherMesh)); err != nil {
+			return err
 		}
 
-		other, found := resources.CrossMeshResources[itemMesh]
+		other, found := resources.CrossMeshResources[otherMesh]
 		if !found {
 			other = map[core_model.ResourceType]core_model.ResourceList{}
 		}
 
-		others, found := other[typ]
-		if !found {
-			others, err = registry.Global().NewList(typ)
-			if err != nil {
+		otherMeshItems, err := registry.Global().NewList(typ)
+		if err != nil {
+			return err
+		}
+		for _, item := range allOtherMeshItems.GetItems() {
+			if crossMeshResourcePredicate != nil && !crossMeshResourcePredicate(item) {
+				continue
+			}
+			if err := otherMeshItems.AddItem(item); err != nil {
 				return err
 			}
 		}
 
-		if err := others.AddItem(item); err != nil {
-			return err
-		}
-
-		other[typ] = others
-		resources.CrossMeshResources[itemMesh] = other
+		other[typ] = otherMeshItems
+		resources.CrossMeshResources[otherMesh] = other
 	}
-
-	resources.MeshLocalResources[typ] = local
 
 	return nil
 }
 
 func (m *meshContextBuilder) fetchResources(ctx context.Context, mesh *core_mesh.MeshResource) (Resources, error) {
+	// fetchResources fetches in stages, first getting all resources that only
+	// depend on which mesh is in context. It uses those results to iterate over
+	// cross-mesh resources.
 	resources := NewResources()
 	meshName := mesh.GetMeta().GetName()
 
-	for _, typ := range m.types {
+	for typ := range m.typeSet {
 		switch typ {
 		case core_mesh.MeshType:
 			meshes := &core_mesh.MeshResourceList{}
@@ -246,16 +252,6 @@ func (m *meshContextBuilder) fetchResources(ctx context.Context, mesh *core_mesh
 			}
 
 			resources.MeshLocalResources[typ] = insights
-		case core_mesh.MeshGatewayType:
-			if err := m.fetchCrossMesh(ctx, typ, meshName, &resources, nil); err != nil {
-				return Resources{}, err
-			}
-		case core_mesh.DataplaneType:
-			if err := m.fetchCrossMesh(ctx, typ, meshName, &resources, func(dp core_model.Resource) bool {
-				return dp.(*core_mesh.DataplaneResource).Spec.IsBuiltinGateway()
-			}); err != nil {
-				return Resources{}, err
-			}
 		default:
 			rlist, err := registry.Global().NewList(typ)
 			if err != nil {
@@ -267,6 +263,41 @@ func (m *meshContextBuilder) fetchResources(ctx context.Context, mesh *core_mesh
 			resources.MeshLocalResources[typ] = rlist
 		}
 	}
+
+	var otherMeshNames []string
+	for _, mesh := range resources.MeshLocalResources.listOrEmpty(core_mesh.MeshType).GetItems() {
+		otherMeshNames = append(otherMeshNames, mesh.GetMeta().GetName())
+	}
+
+	if _, ok := m.typeSet[core_mesh.MeshGatewayType]; ok {
+		// For all meshes, get all cross mesh gateways
+		if err := m.fetchCrossMesh(
+			ctx, core_mesh.MeshGatewayType, meshName, otherMeshNames, &resources,
+			nil,
+			func(gateway core_model.Resource) bool {
+				return gateway.(*core_mesh.MeshGatewayResource).Spec.IsCrossMesh()
+			},
+		); err != nil {
+			return Resources{}, err
+		}
+	}
+	if _, ok := m.typeSet[core_mesh.DataplaneType]; ok {
+		// for all meshes with a cross mesh gateway, get all builtin gateway
+		// dataplanes
+		if err := m.fetchCrossMesh(
+			ctx, core_mesh.DataplaneType, meshName, otherMeshNames, &resources,
+			func(mesh string) bool {
+				meshGateways := resources.CrossMeshResources[mesh].listOrEmpty(core_mesh.MeshGatewayType)
+				return len(meshGateways.GetItems()) > 0
+			},
+			func(dataplane core_model.Resource) bool {
+				return dataplane.(*core_mesh.DataplaneResource).Spec.IsBuiltinGateway()
+			},
+		); err != nil {
+			return Resources{}, err
+		}
+	}
+
 	return resources, nil
 }
 
