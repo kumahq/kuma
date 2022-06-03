@@ -88,12 +88,6 @@ func validateMeshGatewayConf(path validators.PathBuilder, conf *mesh_proto.MeshG
 			}
 		}
 
-		if l.GetCrossMesh() {
-			if l.GetHostname() == "" {
-				err.AddViolationAt(path.Index(i).Field("hostname"), "cannot be empty with crossMesh")
-			}
-		}
-
 		if tls := l.GetTls(); tls != nil && !l.GetCrossMesh() {
 			switch tls.GetMode() {
 			case mesh_proto.MeshGateway_TLS_NONE:

@@ -134,7 +134,7 @@ type Config struct {
 	// Multizone Config
 	Multizone *multizone.MultizoneConfig `yaml:"multizone,omitempty"`
 	// DNS Server Config
-	DNSServer *dns_server.DNSServerConfig `yaml:"dnsServer,omitempty"`
+	DNSServer *dns_server.Config `yaml:"dnsServer,omitempty"`
 	// Diagnostics configuration
 	Diagnostics *diagnostics.DiagnosticsConfig `yaml:"diagnostics,omitempty"`
 	// Dataplane Server configuration
