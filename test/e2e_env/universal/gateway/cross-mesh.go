@@ -43,11 +43,11 @@ func CrossMeshGatewayOnUniversal() {
 		)
 	}
 
-	crossMeshGatewayYaml := mkGateway(
+	crossMeshGatewayYaml := MkGateway(
 		crossMeshGatewayName, gatewayMesh, true, crossMeshHostname, echoServerName(gatewayMesh), crossMeshGatewayPort,
 	)
 	crossMeshGatewayDataplane := mkGatewayDataplane(crossMeshGatewayName, gatewayMesh)
-	edgeGatewayYaml := mkGateway(
+	edgeGatewayYaml := MkGateway(
 		edgeGatewayName, gatewayOtherMesh, false, "", echoServerName(gatewayOtherMesh), edgeGatewayPort,
 	)
 	edgeGatewayDataplane := mkGatewayDataplane(edgeGatewayName, gatewayOtherMesh)
@@ -64,7 +64,7 @@ func CrossMeshGatewayOnUniversal() {
 				demoClientNoTransparent,
 				gatewayOtherMesh,
 				WithTransparentProxy(false),
-				WithYaml(DemoClientDataplaneWithOutbound(demoClientNoTransparent, gatewayOtherMesh, crossMeshGatewayName, gatewayMesh, crossMeshGatewayPort)),
+				WithYaml(demoClientDataplaneWithOutbound(demoClientNoTransparent, gatewayOtherMesh, crossMeshGatewayName, gatewayMesh, crossMeshGatewayPort)),
 			)).
 			Install(echoServerApp(gatewayMesh)).
 			Install(echoServerApp(gatewayOtherMesh)).

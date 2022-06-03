@@ -18,7 +18,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/client"
 )
 
-func successfullyProxyRequestToGateway(cluster Cluster, instance string, gatewayAddr string, namespace string) {
+func SuccessfullyProxyRequestToGateway(cluster Cluster, instance string, gatewayAddr string, namespace string) {
 	Logf("expecting 200 response from %q", gatewayAddr)
 	target := fmt.Sprintf("http://%s/%s",
 		gatewayAddr, path.Join("test", url.PathEscape(GinkgoT().Name())),
@@ -90,7 +90,10 @@ spec:
         - destination:
             kuma.io/service: %s # Matches the echo-server we deployed.
 `, name, mesh, name, backendService)
+	return strings.Join([]string{meshGateway, route}, "\n---\n")
+}
 
+func MkGatewayInstance(name, namespace, mesh string) string {
 	instance := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshGatewayInstance
@@ -106,7 +109,7 @@ spec:
     kuma.io/service: %s
 `, name, namespace, mesh, name)
 
-	return strings.Join([]string{meshGateway, route, instance}, "\n---\n")
+	return instance
 }
 
 func gatewayAddress(instanceName, instanceNamespace string, port int) string {
