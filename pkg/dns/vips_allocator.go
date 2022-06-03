@@ -33,7 +33,7 @@ type VIPsAllocator struct {
 // call method CreateOrUpdateVIPConfig manually or start VIPsAllocator as a component.
 // In the latter scenario it will call CreateOrUpdateVIPConfig every 'tickInterval'
 // for all meshes in the store.
-func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, configManager config_manager.ConfigManager, config dns_server.DNSServerConfig) (*VIPsAllocator, error) {
+func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, configManager config_manager.ConfigManager, config dns_server.Config) (*VIPsAllocator, error) {
 	return &VIPsAllocator{
 		rm:                rm,
 		persistence:       vips.NewPersistence(rm, configManager),

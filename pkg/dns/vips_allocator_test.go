@@ -53,7 +53,7 @@ func (e *errConfigManager) Update(ctx context.Context, r *config_model.ConfigRes
 	return errors.Errorf("error during update, mesh = %s", meshName)
 }
 
-var testConfig = dns_server.DNSServerConfig{
+var testConfig = dns_server.Config{
 	ServiceVipEnabled: true,
 	CIDR:              "240.0.0.0/24",
 	Domain:            "mesh",
