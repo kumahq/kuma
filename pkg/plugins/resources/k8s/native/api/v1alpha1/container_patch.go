@@ -12,7 +12,7 @@ import (
 //
 // +k8s:deepcopy-gen=true
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:scope=Namespaced
+// +kubebuilder:resource:categories=kuma,scope=Namespaced
 type ContainerPatch struct {
 	kube_meta.TypeMeta   `json:",inline"`
 	kube_meta.ObjectMeta `json:"metadata,omitempty"`

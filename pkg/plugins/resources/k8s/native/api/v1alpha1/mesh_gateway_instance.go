@@ -7,6 +7,7 @@ import (
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:resource:categories=kuma,scope=Namespaced
 
 // MeshGatewayInstance represents a managed instance of a dataplane proxy for a Kuma
 // Gateway.
