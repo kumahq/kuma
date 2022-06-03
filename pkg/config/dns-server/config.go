@@ -8,7 +8,7 @@ import (
 )
 
 // DNS Server configuration
-type DNSServerConfig struct {
+type Config struct {
 	// The domain that the server will resolve the services for
 	Domain string `yaml:"domain" envconfig:"kuma_dns_server_domain"`
 	// CIDR used to allocate virtual IPs from
@@ -17,10 +17,10 @@ type DNSServerConfig struct {
 	ServiceVipEnabled bool `yaml:"serviceVipEnabled" envconfig:"kuma_dns_server_service_vip_enabled"`
 }
 
-func (g *DNSServerConfig) Sanitize() {
+func (g *Config) Sanitize() {
 }
 
-func (g *DNSServerConfig) Validate() error {
+func (g *Config) Validate() error {
 	_, _, err := net.ParseCIDR(g.CIDR)
 	if err != nil {
 		return errors.New("Must provide a valid CIDR")
@@ -28,10 +28,10 @@ func (g *DNSServerConfig) Validate() error {
 	return nil
 }
 
-var _ config.Config = &DNSServerConfig{}
+var _ config.Config = &Config{}
 
-func DefaultDNSServerConfig() *DNSServerConfig {
-	return &DNSServerConfig{
+func DefaultDNSServerConfig() *Config {
+	return &Config{
 		ServiceVipEnabled: true,
 		Domain:            "mesh",
 		CIDR:              "240.0.0.0/4",
