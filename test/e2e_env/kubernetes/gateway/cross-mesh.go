@@ -49,8 +49,12 @@ func CrossMeshGatewayOnKubernetes() {
 	crossMeshGatewayYaml := mkGateway(
 		crossMeshGatewayName, gatewayTestNamespace, gatewayMesh, true, crossMeshHostname, echoServerService(gatewayMesh, gatewayTestNamespace), crossMeshGatewayPort,
 	)
+	crossMeshGatewayInstanceYaml := MkGatewayInstance(crossMeshGatewayName, gatewayTestNamespace, gatewayMesh)
 	edgeGatewayYaml := mkGateway(
 		edgeGatewayName, gatewayTestNamespace, gatewayOtherMesh, false, "", echoServerService(gatewayOtherMesh, gatewayTestNamespace), edgeGatewayPort,
+	)
+	edgeGatewayInstanceYaml := MkGatewayInstance(
+		edgeGatewayName, gatewayTestNamespace, gatewayOtherMesh,
 	)
 
 	BeforeAll(func() {
@@ -67,7 +71,9 @@ func CrossMeshGatewayOnKubernetes() {
 			Install(DemoClientK8s(gatewayMesh, gatewayClientNamespaceSameMesh)).
 			Install(DemoClientK8s(gatewayMesh, gatewayClientOutsideMesh)). // this will not be in the mesh
 			Install(YamlK8s(crossMeshGatewayYaml)).
-			Install(YamlK8s(edgeGatewayYaml))
+			Install(YamlK8s(crossMeshGatewayInstanceYaml)).
+			Install(YamlK8s(edgeGatewayYaml)).
+			Install(YamlK8s(edgeGatewayInstanceYaml))
 
 		Expect(setup.Setup(env.Cluster)).To(Succeed())
 	})
@@ -83,7 +89,7 @@ func CrossMeshGatewayOnKubernetes() {
 	Context("when mTLS is enabled", func() {
 		It("should proxy HTTP requests from a different mesh", func() {
 			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
-			successfullyProxyRequestToGateway(
+			SuccessfullyProxyRequestToGateway(
 				env.Cluster, gatewayMesh,
 				gatewayAddr,
 				gatewayClientNamespaceOtherMesh,
@@ -92,7 +98,7 @@ func CrossMeshGatewayOnKubernetes() {
 
 		It("should proxy HTTP requests from the same mesh", func() {
 			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
-			successfullyProxyRequestToGateway(
+			SuccessfullyProxyRequestToGateway(
 				env.Cluster, gatewayMesh,
 				gatewayAddr,
 				gatewayClientNamespaceSameMesh,
@@ -110,7 +116,7 @@ func CrossMeshGatewayOnKubernetes() {
 
 		Specify("HTTP requests to a non-crossMesh gateway should still be proxied", func() {
 			gatewayAddr := gatewayAddress(edgeGatewayName, gatewayTestNamespace, edgeGatewayPort)
-			successfullyProxyRequestToGateway(
+			SuccessfullyProxyRequestToGateway(
 				env.Cluster, gatewayOtherMesh,
 				gatewayAddr,
 				gatewayClientNamespaceOtherMesh,

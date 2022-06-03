@@ -50,9 +50,9 @@ func failToProxyRequestToGateway(cluster Cluster, containerName, gatewayAddr, ho
 	}
 }
 
-// DemoClientDataplaneWithOutbound is taken from DemoClientDataplane and adds
+// demoClientDataplaneWithOutbound is taken from DemoClientDataplane and adds
 // another outbound.
-func DemoClientDataplaneWithOutbound(name, mesh, outboundService, outboundMesh string, port int) string {
+func demoClientDataplaneWithOutbound(name, mesh, outboundService, outboundMesh string, port int) string {
 	return fmt.Sprintf(`
 type: Dataplane
 mesh: %s
@@ -82,7 +82,7 @@ networking:
 `, mesh, "13000", "3000", name, "80", "8080", port, outboundService, outboundMesh)
 }
 
-func mkGateway(name, mesh string, crossMesh bool, hostname, backendService string, port int) string {
+func MkGateway(name, mesh string, crossMesh bool, hostname, backendService string, port int) string {
 	meshGateway := fmt.Sprintf(`
 type: MeshGateway
 name: %s
