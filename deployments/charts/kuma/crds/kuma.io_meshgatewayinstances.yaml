@@ -9,6 +9,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: MeshGatewayInstance
     listKind: MeshGatewayInstanceList
     plural: meshgatewayinstances
