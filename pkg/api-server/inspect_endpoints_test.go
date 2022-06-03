@@ -23,7 +23,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -218,7 +217,6 @@ var _ = Describe("Inspect WS", func() {
 
 	DescribeTable("should return valid response",
 		func(given testCase) {
-			register.RegisterGatewayTypes()
 			// setup
 			resourceStore := memory.NewStore()
 			metrics, err := metrics.NewMetrics("Standalone")

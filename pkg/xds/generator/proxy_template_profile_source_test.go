@@ -106,7 +106,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 					},
 					Spec: dataplane,
 				},
-				APIVersion: envoy_common.APIV3,
+				SecretsTracker: core_xds.NewSecretsTracker("demo", []string{"demo"}),
+				APIVersion:     envoy_common.APIV3,
 				Routing: core_xds.Routing{
 					TrafficRoutes: core_xds.RouteMap{
 						mesh_proto.OutboundInterface{

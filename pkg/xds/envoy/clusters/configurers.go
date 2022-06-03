@@ -20,11 +20,26 @@ func CircuitBreaker(circuitBreaker *core_mesh.CircuitBreakerResource) ClusterBui
 	})
 }
 
-func ClientSideMTLS(mesh *core_mesh.MeshResource, upstreamService string, upstreamTLSReady bool, tags []envoy.Tags) ClusterBuilderOpt {
+func ClientSideMTLS(tracker core_xds.SecretsTracker, mesh *core_mesh.MeshResource, upstreamService string, upstreamTLSReady bool, tags []envoy.Tags) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.ClientSideMTLSConfigurer{
-			Mesh:             mesh,
+			SecretsTracker:   tracker,
+			UpstreamMesh:     mesh,
 			UpstreamService:  upstreamService,
+			LocalMesh:        mesh,
+			Tags:             tags,
+			UpstreamTLSReady: upstreamTLSReady,
+		})
+	})
+}
+
+func CrossMeshClientSideMTLS(tracker core_xds.SecretsTracker, localMesh *core_mesh.MeshResource, upstreamMesh *core_mesh.MeshResource, upstreamService string, upstreamTLSReady bool, tags []envoy.Tags) ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
+		config.AddV3(&v3.ClientSideMTLSConfigurer{
+			SecretsTracker:   tracker,
+			UpstreamMesh:     upstreamMesh,
+			UpstreamService:  upstreamService,
+			LocalMesh:        localMesh,
 			Tags:             tags,
 			UpstreamTLSReady: upstreamTLSReady,
 		})
@@ -32,11 +47,13 @@ func ClientSideMTLS(mesh *core_mesh.MeshResource, upstreamService string, upstre
 }
 
 // UnknownDestinationClientSideMTLS configures cluster with mTLS for a mesh but without extensive destination verification (only Mesh is verified)
-func UnknownDestinationClientSideMTLS(mesh *core_mesh.MeshResource) ClusterBuilderOpt {
+func UnknownDestinationClientSideMTLS(tracker core_xds.SecretsTracker, mesh *core_mesh.MeshResource) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.ClientSideMTLSConfigurer{
-			Mesh:             mesh,
+			SecretsTracker:   tracker,
+			UpstreamMesh:     mesh,
 			UpstreamService:  "*",
+			LocalMesh:        mesh,
 			Tags:             nil,
 			UpstreamTLSReady: true,
 		})

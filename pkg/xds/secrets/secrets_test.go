@@ -131,19 +131,20 @@ var _ = Describe("Secrets", func() {
 	Context("dataplane proxy", func() {
 		It("should generate cert and emit statistic and info", func() {
 			// when
-			identity, ca, err := secrets.GetForDataPlane(newDataplane(), newMesh())
+			identity, ca, err := secrets.GetForDataPlane(newDataplane(), newMesh(), nil)
 
 			// then certs are generated
 			Expect(err).ToNot(HaveOccurred())
 			Expect(identity.PemCerts).ToNot(BeEmpty())
 			Expect(identity.PemKey).ToNot(BeEmpty())
-			Expect(ca.PemCerts).ToNot(BeEmpty())
+			Expect(ca).To(HaveLen(1))
+			Expect(ca["default"].PemCerts).ToNot(BeEmpty())
 
 			// and info is stored
 			info := secrets.Info(core_model.MetaToResourceKey(newDataplane().Meta))
 			Expect(info.Generation).To(Equal(now))
 			Expect(info.Expiration.Unix()).To(Equal(now.Add(1 * time.Hour).Unix()))
-			Expect(info.MTLS.EnabledBackend).To(Equal("ca-1"))
+			Expect(info.OwnMesh.MTLS.EnabledBackend).To(Equal("ca-1"))
 			Expect(info.Tags).To(Equal(mesh_proto.MultiValueTagSet{
 				"kuma.io/service": map[string]bool{
 					"web": true,
@@ -157,23 +158,25 @@ var _ = Describe("Secrets", func() {
 
 		It("should not regenerate certs if nothing has changed", func() {
 			// given
-			identity, ca, err := secrets.GetForDataPlane(newDataplane(), newMesh())
+			identity, cas, err := secrets.GetForDataPlane(newDataplane(), newMesh(), nil)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			newIdentity, newCa, err := secrets.GetForDataPlane(newDataplane(), newMesh())
+			newIdentity, newCa, err := secrets.GetForDataPlane(newDataplane(), newMesh(), nil)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(identity).To(Equal(newIdentity))
-			Expect(ca).To(Equal(newCa))
+			Expect(cas).To(HaveLen(1))
+			Expect(newCa).To(HaveLen(1))
+			Expect(cas["default"]).To(Equal(newCa["default"]))
 			Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(1.0))
 			Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
 		})
 
 		Context("should regenerate certificate", func() {
 			BeforeEach(func() {
-				_, _, err := secrets.GetForDataPlane(newDataplane(), newMesh())
+				_, _, err := secrets.GetForDataPlane(newDataplane(), newMesh(), nil)
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -183,7 +186,7 @@ var _ = Describe("Secrets", func() {
 				mesh.Spec.Mtls.EnabledBackend = "ca-2"
 
 				// when
-				_, _, err := secrets.GetForDataPlane(newDataplane(), mesh)
+				_, _, err := secrets.GetForDataPlane(newDataplane(), mesh, nil)
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
@@ -197,7 +200,7 @@ var _ = Describe("Secrets", func() {
 				dataplane.Spec.Networking.Inbound[0].Tags["kuma.io/service"] = "web2"
 
 				// when
-				_, _, err := secrets.GetForDataPlane(dataplane, newMesh())
+				_, _, err := secrets.GetForDataPlane(dataplane, newMesh(), nil)
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
@@ -210,7 +213,7 @@ var _ = Describe("Secrets", func() {
 				now = now.Add(48*time.Minute + 1*time.Millisecond) // 4/5 of 60 minutes
 
 				// when
-				_, _, err := secrets.GetForDataPlane(newDataplane(), newMesh())
+				_, _, err := secrets.GetForDataPlane(newDataplane(), newMesh(), nil)
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
@@ -223,7 +226,7 @@ var _ = Describe("Secrets", func() {
 				secrets.Cleanup(core_model.MetaToResourceKey(newDataplane().Meta))
 
 				// when
-				_, _, err := secrets.GetForDataPlane(newDataplane(), newMesh())
+				_, _, err := secrets.GetForDataPlane(newDataplane(), newMesh(), nil)
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
@@ -234,7 +237,7 @@ var _ = Describe("Secrets", func() {
 
 		It("should cleanup certs", func() {
 			// given
-			_, _, err := secrets.GetForDataPlane(newDataplane(), newMesh())
+			_, _, err := secrets.GetForDataPlane(newDataplane(), newMesh(), nil)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -260,7 +263,7 @@ var _ = Describe("Secrets", func() {
 			info := secrets.Info(core_model.MetaToResourceKey(newZoneEgress().Meta))
 			Expect(info.Generation).To(Equal(now))
 			Expect(info.Expiration.Unix()).To(Equal(now.Add(1 * time.Hour).Unix()))
-			Expect(info.MTLS.EnabledBackend).To(Equal("ca-1"))
+			Expect(info.OwnMesh.MTLS.EnabledBackend).To(Equal("ca-1"))
 			Expect(info.Tags).To(Equal(mesh_proto.MultiValueTagSet{
 				"kuma.io/service": map[string]bool{
 					mesh_proto.ZoneEgressServiceName: true,

@@ -35,6 +35,7 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/cp-configmap.yaml") . | sha256sum }}
         checksum/tls-secrets: {{ include (print $.Template.BasePath "/cp-webhooks-and-secrets.yaml") . | sha256sum }}
+        {{- include "kuma.cpPodAnnotations" . | nindent 8 }}
       labels: {{ include "kuma.cpLabels" . | nindent 8 }}
     spec:
       {{- with .Values.controlPlane.affinity }}

@@ -12,6 +12,8 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/pkg/xds/envoy/names"
+	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
 // StreamID represents a stream opened by XDS
@@ -35,6 +37,8 @@ func (id *ProxyId) ToResourceKey() core_model.ResourceKey {
 
 // ServiceName is a convenience type alias to clarify the meaning of string value.
 type ServiceName = string
+
+type MeshName = string
 
 // RouteMap holds the most specific TrafficRoute for each outbound interface of a Dataplane.
 type RouteMap map[mesh_proto.OutboundInterface]*core_mesh.TrafficRouteResource
@@ -139,10 +143,115 @@ type Proxy struct {
 	Routing     Routing
 	Policies    MatchedPolicies
 
+	// SecretsTracker allows us to track when a generator references a secret so
+	// we can be sure to include only those secrets later on.
+	SecretsTracker SecretsTracker
+
 	// ZoneEgressProxy is available only when XDS is generated for ZoneEgress data plane proxy.
 	ZoneEgressProxy *ZoneEgressProxy
 	// ZoneIngressProxy is available only when XDS is generated for ZoneIngress data plane proxy.
 	ZoneIngressProxy *ZoneIngressProxy
+}
+
+type identityCertRequest struct {
+	meshName string
+}
+
+func (r identityCertRequest) Name() string {
+	return names.GetSecretName(xds_tls.IdentityCertResource, "secret", r.meshName)
+}
+
+type IdentityCertRequest interface {
+	Name() string
+}
+
+type CaRequest interface {
+	MeshName() []string
+	Name() string
+}
+
+type caRequest struct {
+	meshName string
+}
+
+type allInOneCaRequest struct {
+	meshNames []string
+}
+
+func (r caRequest) Name() string {
+	return names.GetSecretName(xds_tls.MeshCaResource, "secret", r.meshName)
+}
+
+func (r caRequest) MeshName() []string {
+	return []string{r.meshName}
+}
+
+func (r allInOneCaRequest) Name() string {
+	return names.GetSecretName(xds_tls.MeshCaResource, "secret", "all")
+}
+
+func (r allInOneCaRequest) MeshName() []string {
+	return r.meshNames
+}
+
+// SecretsTracker provides a way to ask for a secret and keeps track of which are
+// used, so that they can later be generated and included in the resources.
+type SecretsTracker interface {
+	RequestIdentityCert() IdentityCertRequest
+	RequestCa(mesh string) CaRequest
+	RequestAllInOneCa() CaRequest
+
+	UsedIdentity() bool
+	UsedCas() map[string]struct{}
+	UsedAllInOne() bool
+}
+
+type secretsTracker struct {
+	ownMesh   string
+	allMeshes []string
+
+	identity bool
+	meshes   map[string]struct{}
+	allInOne bool
+}
+
+func NewSecretsTracker(ownMesh string, allMeshes []string) SecretsTracker {
+	return &secretsTracker{
+		ownMesh:   ownMesh,
+		allMeshes: allMeshes,
+
+		meshes: map[string]struct{}{},
+	}
+}
+
+func (st *secretsTracker) RequestIdentityCert() IdentityCertRequest {
+	st.identity = true
+	return &identityCertRequest{
+		meshName: st.ownMesh,
+	}
+}
+
+func (st *secretsTracker) RequestCa(mesh string) CaRequest {
+	st.meshes[mesh] = struct{}{}
+	return &caRequest{
+		meshName: mesh,
+	}
+}
+
+func (st *secretsTracker) RequestAllInOneCa() CaRequest {
+	st.allInOne = true
+	return &allInOneCaRequest{
+		meshNames: st.allMeshes,
+	}
+}
+func (st *secretsTracker) UsedIdentity() bool {
+	return st.identity
+}
+func (st *secretsTracker) UsedCas() map[string]struct{} {
+	return st.meshes
+}
+func (st *secretsTracker) UsedAllInOne() bool {
+	return st.allInOne
 }
 
 type MeshResources struct {

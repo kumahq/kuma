@@ -6,8 +6,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
 	"github.com/kumahq/kuma/pkg/xds/generator"
+	generator_core "github.com/kumahq/kuma/pkg/xds/generator/core"
+	generator_secrets "github.com/kumahq/kuma/pkg/xds/generator/secrets"
 	"github.com/kumahq/kuma/pkg/xds/template"
 )
 
@@ -29,7 +30,6 @@ type plugin struct{}
 var _ core_plugins.BootstrapPlugin = &plugin{}
 
 func (p *plugin) BeforeBootstrap(context *core_plugins.MutablePluginContext, config core_plugins.PluginConfig) error {
-	register.RegisterGatewayTypes()
 	if context.Config().Environment == config_core.KubernetesEnvironment {
 		mesh_k8s.RegisterK8sGatewayTypes()
 
@@ -68,15 +68,13 @@ const ProfileGatewayProxy = "gateway-proxy"
 
 // NewProxyProfile returns a new resource generator profile for builtin
 // gateway dataplanes.
-func NewProxyProfile(zone string) generator.ResourceGenerator {
-	return generator.CompositeResourceGenerator{
+func NewProxyProfile(zone string) generator_core.ResourceGenerator {
+	return generator_core.CompositeResourceGenerator{
 		generator.AdminProxyGenerator{},
 		generator.PrometheusEndpointGenerator{},
-		generator.SecretsProxyGenerator{},
 		generator.TracingProxyGenerator{},
 		generator.TransparentProxyGenerator{},
 		generator.DNSGenerator{},
-
 		Generator{
 			FilterChainGenerators: filterChainGenerators{
 				FilterChainGenerators: map[mesh_proto.MeshGateway_Listener_Protocol]FilterChainGenerator{
@@ -88,5 +86,6 @@ func NewProxyProfile(zone string) generator.ResourceGenerator {
 			},
 			Zone: zone,
 		},
+		generator_secrets.Generator{},
 	}
 }

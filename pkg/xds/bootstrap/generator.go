@@ -199,16 +199,18 @@ func (b *bootstrapGenerator) getMetricsConfig(
 	if err != nil {
 		return err
 	}
+
 	if config != nil {
-		aggregateConfig := map[string]AggregateMetricsConfig{}
-		for key, appConfig := range config.GetAggregate() {
-			if appConfig.GetEnabled() != nil && !appConfig.GetEnabled().GetValue() {
+		aggregateConfig := []AggregateMetricsConfig{}
+		for _, config := range config.GetAggregate() {
+			if config.GetEnabled() != nil && !config.GetEnabled().GetValue() {
 				continue
 			}
-			aggregateConfig[key] = AggregateMetricsConfig{
-				Port: appConfig.Port,
-				Path: appConfig.Path,
-			}
+			aggregateConfig = append(aggregateConfig, AggregateMetricsConfig{
+				Name: config.Name,
+				Port: config.Port,
+				Path: config.Path,
+			})
 		}
 		kumaDpBootstrap.AggregateMetricsConfig = aggregateConfig
 	}

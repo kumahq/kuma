@@ -65,6 +65,9 @@ func (d *DataplaneResource) Validate() error {
 		}
 		err.Add(validateNetworking(d.Spec.GetNetworking()))
 		err.Add(validateProbes(d.Spec.GetProbes()))
+		if d.Spec.GetMetrics() != nil {
+			err.Add(validateMetricsBackend(d.Spec.GetMetrics()))
+		}
 	}
 
 	return err.OrNil()
@@ -111,6 +114,16 @@ func validateProbes(probes *mesh_proto.Dataplane_Probes) validators.ValidationEr
 		}
 	}
 	return err
+}
+
+func validateMetricsBackend(metrics *mesh_proto.MetricsBackend) validators.ValidationError {
+	var verr validators.ValidationError
+	if metrics.GetType() != mesh_proto.MetricsPrometheusType {
+		verr.AddViolationAt(validators.RootedAt("metrics").Field("type"), fmt.Sprintf("unknown backend type. Available backends: %q", mesh_proto.MetricsPrometheusType))
+	} else {
+		verr.AddErrorAt(validators.RootedAt("metrics").Field("conf"), validatePrometheusConfig(metrics.GetConf()))
+	}
+	return verr
 }
 
 func validateAddress(path validators.PathBuilder, address string) validators.ValidationError {

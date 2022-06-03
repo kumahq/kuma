@@ -36,6 +36,9 @@ controlPlane:
   # -- Number of replicas of the Kuma CP. Ignored when autoscaling is enabled
   replicas: 1
 
+  # -- Control Plane Pod Annotations
+  podAnnotations: {}
+
   # Horizontal Pod Autoscaling configuration
   autoscaling:
     # -- Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster

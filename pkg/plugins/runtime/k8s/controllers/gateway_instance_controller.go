@@ -26,13 +26,14 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/containers"
 	ctrls_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/util"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
+	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 // GatewayInstanceReconciler reconciles a MeshGatewayInstance object.
@@ -97,11 +98,16 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 ) (*kube_core.Service, error) {
 	gatewayList := &core_mesh.MeshGatewayResourceList{}
 
-	// XXX BUG: Needs to refer to specific mesh
-	if err := r.ResourceManager.List(ctx, gatewayList); err != nil {
+	ns := kube_core.Namespace{}
+	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: gatewayInstance.Namespace}, &ns); err != nil {
+		return nil, errors.Wrap(err, "unable to get Namespace of MeshGatewayInstance")
+	}
+
+	mesh := k8s_util.MeshOf(gatewayInstance, &ns)
+	if err := r.ResourceManager.List(ctx, gatewayList, store.ListByMesh(mesh)); err != nil {
 		return nil, err
 	}
-	gateway := match.Gateway(gatewayList, func(selector mesh_proto.TagSelector) bool {
+	gateway := xds_topology.SelectGateway(gatewayList.Items, func(selector mesh_proto.TagSelector) bool {
 		return selector.Matches(gatewayInstance.Spec.Tags)
 	})
 

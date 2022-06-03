@@ -11,23 +11,27 @@ import (
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
 )
 
+type caRequest struct {
+	mesh string
+}
+
+func (r *caRequest) MeshName() []string {
+	return []string{r.mesh}
+}
+
+func (r *caRequest) Name() string {
+	return "mesh_ca:secret:" + r.mesh
+}
+
+type identityRequest struct {
+	mesh string
+}
+
+func (r *identityRequest) Name() string {
+	return "identity_cert:secret:" + r.mesh
+}
+
 var _ = Describe("CreateDownstreamTlsContext()", func() {
-
-	Context("when mTLS is disabled on a given Mesh", func() {
-
-		It("should return `nil`", func() {
-			// given
-			mesh := core_mesh.NewMeshResource()
-
-			// when
-			snippet, err := v3.CreateDownstreamTlsContext(mesh)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			Expect(snippet).To(BeNil())
-		})
-	})
-
 	Context("when mTLS is enabled on a given Mesh", func() {
 
 		type testCase struct {
@@ -55,7 +59,10 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 				}
 
 				// when
-				snippet, err := v3.CreateDownstreamTlsContext(mesh)
+				snippet, err := v3.CreateDownstreamTlsContext(
+					&caRequest{mesh: mesh.GetMeta().GetName()},
+					&identityRequest{mesh: mesh.GetMeta().GetName()},
+				)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// when
@@ -90,21 +97,6 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 
 var _ = Describe("CreateUpstreamTlsContext()", func() {
 
-	Context("when mTLS is disabled on a given Mesh", func() {
-
-		It("should return `nil`", func() {
-			// given
-			mesh := core_mesh.NewMeshResource()
-
-			// when
-			snippet, err := v3.CreateUpstreamTlsContext(mesh, "backend", "backend")
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			Expect(snippet).To(BeNil())
-		})
-	})
-
 	Context("when mTLS is enabled on a given Mesh", func() {
 
 		type testCase struct {
@@ -115,25 +107,15 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 		DescribeTable("should generate proper Envoy config",
 			func(given testCase) {
 				// given
-				mesh := &core_mesh.MeshResource{
-					Meta: &test_model.ResourceMeta{
-						Name: "default",
-					},
-					Spec: &mesh_proto.Mesh{
-						Mtls: &mesh_proto.Mesh_Mtls{
-							EnabledBackend: "builtin",
-							Backends: []*mesh_proto.CertificateAuthorityBackend{
-								{
-									Name: "builtin",
-									Type: "builtin",
-								},
-							},
-						},
-					},
-				}
+				mesh := "default"
 
 				// when
-				snippet, err := v3.CreateUpstreamTlsContext(mesh, given.upstreamService, "")
+				snippet, err := v3.CreateUpstreamTlsContext(
+					&identityRequest{mesh: mesh},
+					&caRequest{mesh: mesh},
+					given.upstreamService,
+					"",
+				)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// when

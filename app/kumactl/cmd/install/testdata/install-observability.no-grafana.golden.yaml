@@ -5,7 +5,7 @@ kind: Namespace
 metadata:
   name: mesh-observability
   labels:
-    kuma.io/sidecar-injection: enabled
+    kuma.io/sidecar-injection: disabled
   annotations:
     kuma.io/mesh: default
 ---
@@ -590,6 +590,7 @@ spec:
       labels:
         component: "server"
         app: prometheus
+        kuma.io/sidecar-injection: enabled
       annotations:
         kuma.io/direct-access-services: "*"
     spec:
@@ -674,16 +675,6 @@ spec:
             {}
       securityContext:
         runAsUser: 65534
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: mesh-observability
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: mesh-observability
 ---
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
@@ -1129,20 +1120,6 @@ roleRef:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: loki-promtail
-  namespace: mesh-observability
-  labels:
-    app: promtail
-    release: loki
-rules:
-  - apiGroups:      ['extensions']
-    resources:      ['podsecuritypolicies']
-    verbs:          ['use']
-    resourceNames:  [loki-promtail]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
   name: loki
   namespace: mesh-observability
   labels:
@@ -1153,6 +1130,20 @@ rules:
     resources:      ['podsecuritypolicies']
     verbs:          ['use']
     resourceNames:  [loki]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: loki-promtail
+  namespace: mesh-observability
+  labels:
+    app: promtail
+    release: loki
+rules:
+  - apiGroups:      ['extensions']
+    resources:      ['podsecuritypolicies']
+    verbs:          ['use']
+    resourceNames:  [loki-promtail]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -1400,11 +1391,6 @@ spec:
             secretName: loki
         - name: storage
           emptyDir: {}
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: mesh-observability
 ---
 # Based on https://github.com/jaegertracing/jaeger-kubernetes/blob/master/all-in-one/jaeger-all-in-one-template.yml
 

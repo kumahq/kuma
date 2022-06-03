@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	dns_server "github.com/kumahq/kuma/pkg/config/dns-server"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -52,6 +53,12 @@ func (e *errConfigManager) Update(ctx context.Context, r *config_model.ConfigRes
 	return errors.Errorf("error during update, mesh = %s", meshName)
 }
 
+var testConfig = dns_server.Config{
+	ServiceVipEnabled: true,
+	CIDR:              "240.0.0.0/24",
+	Domain:            "mesh",
+}
+
 var _ = Describe("VIP Allocator", func() {
 	var rm manager.ResourceManager
 	var cm config_manager.ConfigManager
@@ -81,7 +88,7 @@ var _ = Describe("VIP Allocator", func() {
 		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("web")}, store.CreateByKey("dp-3", "mesh-2"))
 		Expect(err).ToNot(HaveOccurred())
 
-		allocator, err = dns.NewVIPsAllocator(rm, cm, true, "240.0.0.0/24")
+		allocator, err = dns.NewVIPsAllocator(rm, cm, testConfig)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -143,7 +150,7 @@ var _ = Describe("VIP Allocator", func() {
 	It("should return error if failed to update VIP config", func() {
 		errConfigManager := &errConfigManager{ConfigManager: cm}
 		ctx := context.Background()
-		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, true, "240.0.0.0/24")
+		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, testConfig)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = errAllocator.CreateOrUpdateVIPConfig(ctx, "mesh-1", NoModifications)
@@ -159,7 +166,7 @@ var _ = Describe("VIP Allocator", func() {
 
 	It("should try to update all meshes and return combined error", func() {
 		errConfigManager := &errConfigManager{ConfigManager: cm}
-		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, true, "240.0.0.0/24")
+		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, testConfig)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = errAllocator.CreateOrUpdateVIPConfigs(context.Background())
@@ -223,7 +230,7 @@ var _ = DescribeTable("outboundView",
 		}
 
 		// When
-		serviceSet, err := dns.BuildVirtualOutboundMeshView(ctx, rm, !tc.whenSkipServiceVips, tc.whenMesh)
+		serviceSet, err := dns.BuildVirtualOutboundMeshView(ctx, rm, !tc.whenSkipServiceVips, "mesh", tc.whenMesh)
 
 		// Then
 		Expect(err).ToNot(HaveOccurred())
@@ -245,6 +252,100 @@ var _ = DescribeTable("outboundView",
 			vips.NewServiceEntry("service1"): {
 				{TagSet: map[string]string{mesh_proto.ServiceTag: "service1"}, Origin: "service"},
 			},
+		},
+	}),
+	Entry("meshgateways of all meshes", outboundViewTestCase{
+		givenResources: map[model.ResourceKey]model.Resource{
+			model.WithMesh("mesh1", "gateway"): &mesh.MeshGatewayResource{
+				Spec: &mesh_proto.MeshGateway{
+					Conf: &mesh_proto.MeshGateway_Conf{
+						Listeners: []*mesh_proto.MeshGateway_Listener{{
+							Hostname: "gateway1.mesh",
+							Port:     80,
+							Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+							Tags: map[string]string{
+								"listener": "internal",
+							},
+						}, {
+							Hostname: "*",
+							Port:     80,
+							Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+							Tags: map[string]string{
+								"listener": "wildcard",
+							},
+						}},
+					},
+					Selectors: []*mesh_proto.Selector{{
+						Match: map[string]string{
+							mesh_proto.ServiceTag: "gateway",
+						},
+					}},
+					Tags: map[string]string{
+						"gateway": "prod",
+					},
+				},
+			},
+			model.WithMesh("mesh2", "gateway"): &mesh.MeshGatewayResource{
+				Spec: &mesh_proto.MeshGateway{
+					Conf: &mesh_proto.MeshGateway_Conf{
+						Listeners: []*mesh_proto.MeshGateway_Listener{{
+							Hostname:  "gateway2.mesh",
+							Port:      80,
+							CrossMesh: true,
+							Protocol:  mesh_proto.MeshGateway_Listener_HTTP,
+							Tags: map[string]string{
+								"listener": "internal",
+							},
+						}, {
+							Port:      81,
+							CrossMesh: true,
+							Protocol:  mesh_proto.MeshGateway_Listener_HTTP,
+							Tags: map[string]string{
+								"listener": "internal2",
+							},
+						}, {
+							Hostname: "*",
+							Port:     80,
+							Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+							Tags: map[string]string{
+								"listener": "wildcard",
+							},
+						}},
+					},
+					Selectors: []*mesh_proto.Selector{{
+						Match: map[string]string{
+							mesh_proto.ServiceTag: "gateway",
+						},
+					}},
+					Tags: map[string]string{
+						"gateway": "prod",
+					},
+				},
+			},
+		},
+		whenMesh:            "mesh1",
+		thenHostnameEntries: []vips.HostnameEntry{vips.NewFqdnEntry("gateway2.mesh"), vips.NewFqdnEntry("internal.gateway.mesh2.mesh")},
+		thenOutbounds: map[vips.HostnameEntry][]vips.OutboundEntry{
+			vips.NewFqdnEntry("gateway2.mesh"): {{
+				TagSet: map[string]string{
+					"listener":            "internal",
+					"gateway":             "prod",
+					mesh_proto.ServiceTag: "gateway",
+					"kuma.io/mesh":        "mesh2",
+				},
+				Origin: "mesh-gateway:mesh2:gateway:gateway2.mesh",
+				Port:   80,
+			}},
+			vips.NewFqdnEntry("internal.gateway.mesh2.mesh"): {{
+				TagSet: map[string]string{
+					"listener":            "internal2",
+					"gateway":             "prod",
+					mesh_proto.ServiceTag: "gateway",
+					"kuma.io/mesh":        "mesh2",
+				},
+				Origin: "mesh-gateway:mesh2:gateway:internal.gateway.mesh2.mesh",
+				Port:   81,
+			}},
 		},
 	}),
 	Entry("external service", outboundViewTestCase{

@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/auth"
 	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	"github.com/kumahq/kuma/test/e2e_env/universal/externalservices"
+	"github.com/kumahq/kuma/test/e2e_env/universal/gateway"
 	"github.com/kumahq/kuma/test/e2e_env/universal/healthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/universal/inspect"
 	"github.com/kumahq/kuma/test/e2e_env/universal/membership"
@@ -58,6 +59,7 @@ var _ = SynchronizedBeforeSuite(
 
 var _ = Describe("User Auth", auth.UserAuth)
 var _ = Describe("DP Auth", auth.DpAuth, Ordered)
+var _ = Describe("Cross-mesh Gateway", gateway.CrossMeshGatewayOnUniversal, Ordered)
 var _ = Describe("HealthCheck panic threshold", healthcheck.HealthCheckPanicThreshold, Ordered)
 var _ = Describe("HealthCheck", healthcheck.Policy)
 var _ = Describe("Service Probes", healthcheck.ServiceProbes, Ordered)
