@@ -53,6 +53,12 @@ func (e *errConfigManager) Update(ctx context.Context, r *config_model.ConfigRes
 	return errors.Errorf("error during update, mesh = %s", meshName)
 }
 
+var testConfig = dns_server.DNSServerConfig{
+	ServiceVipEnabled: true,
+	CIDR:              "240.0.0.0/24",
+	Domain:            "mesh",
+}
+
 var _ = Describe("VIP Allocator", func() {
 	var rm manager.ResourceManager
 	var cm config_manager.ConfigManager
@@ -82,12 +88,7 @@ var _ = Describe("VIP Allocator", func() {
 		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("web")}, store.CreateByKey("dp-3", "mesh-2"))
 		Expect(err).ToNot(HaveOccurred())
 
-		config := dns_server.DNSServerConfig{
-			ServiceVipEnabled: true,
-			CIDR:              "240.0.0.0/24",
-			Domain:            "mesh",
-		}
-		allocator, err = dns.NewVIPsAllocator(rm, cm, config)
+		allocator, err = dns.NewVIPsAllocator(rm, cm, testConfig)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -149,12 +150,7 @@ var _ = Describe("VIP Allocator", func() {
 	It("should return error if failed to update VIP config", func() {
 		errConfigManager := &errConfigManager{ConfigManager: cm}
 		ctx := context.Background()
-		config := dns_server.DNSServerConfig{
-			ServiceVipEnabled: true,
-			CIDR:              "240.0.0.0/24",
-			Domain:            "mesh",
-		}
-		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, config)
+		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, testConfig)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = errAllocator.CreateOrUpdateVIPConfig(ctx, "mesh-1", NoModifications)
@@ -170,12 +166,7 @@ var _ = Describe("VIP Allocator", func() {
 
 	It("should try to update all meshes and return combined error", func() {
 		errConfigManager := &errConfigManager{ConfigManager: cm}
-		config := dns_server.DNSServerConfig{
-			ServiceVipEnabled: true,
-			CIDR:              "240.0.0.0/24",
-			Domain:            "mesh",
-		}
-		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, config)
+		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, testConfig)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = errAllocator.CreateOrUpdateVIPConfigs(context.Background())
