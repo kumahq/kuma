@@ -69,6 +69,23 @@ conf:
     crossMesh: true
     protocol: HTTP`,
 		),
+		Entry("crossMesh with no hostname", `
+type: MeshGateway
+name: gateway
+mesh: default
+selectors:
+  - match:
+      kuma.io/service: gateway
+tags:
+  product: edge
+conf:
+  listeners:
+  - protocol: HTTP
+    port: 99
+    crossMesh: true
+    tags:
+      name: http`,
+		),
 	)
 
 	DescribeErrorCases(
@@ -308,28 +325,6 @@ conf:
     crossMesh: true
     tags:
       name: https
-`),
-
-		ErrorCase("crossMesh and no hostname",
-			validators.Violation{
-				Field:   "conf.listeners[0].hostname",
-				Message: "cannot be empty with crossMesh",
-			}, `
-type: MeshGateway
-name: gateway
-mesh: default
-selectors:
-  - match:
-      kuma.io/service: gateway
-tags:
-  product: edge
-conf:
-  listeners:
-  - protocol: HTTP
-    port: 99
-    crossMesh: true
-    tags:
-      name: http
 `),
 
 		ErrorCase("crossMesh and multiple services",
