@@ -33,7 +33,7 @@ func SuccessfullyProxyRequestToGateway(cluster Cluster, instance string, gateway
 	Expect(response.Instance).To(Equal(instance))
 }
 
-func failToProxyRequestToGateway(cluster Cluster, gatewayAddr string, namespace string) func(Gomega) {
+func FailToProxyRequestToGateway(cluster Cluster, gatewayAddr string, namespace string) func(Gomega) {
 	return func(g Gomega) {
 		Logf("expecting failure from %q", gatewayAddr)
 		target := fmt.Sprintf("http://%s/%s",
