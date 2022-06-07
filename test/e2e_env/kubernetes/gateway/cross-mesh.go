@@ -107,7 +107,7 @@ func CrossMeshGatewayOnKubernetes() {
 
 		It("doesn't allow HTTP requests from outside the mesh", func() {
 			gatewayAddr := gatewayAddress(crossMeshGatewayName, gatewayTestNamespace, crossMeshGatewayPort)
-			Consistently(failToProxyRequestToGateway(
+			Consistently(FailToProxyRequestToGateway(
 				env.Cluster,
 				gatewayAddr,
 				gatewayClientOutsideMesh,

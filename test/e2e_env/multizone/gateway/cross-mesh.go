@@ -115,5 +115,13 @@ func CrossMeshGatewayOnMultizone() {
 				gatewayClientNamespaceSameMesh,
 			)
 		})
+		It("doesn't proxy HTTP requests from another zone yet", func() {
+			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
+			Consistently(k8s_gateway.FailToProxyRequestToGateway(
+				env.KubeZone2,
+				gatewayAddr,
+				gatewayClientNamespaceOtherMesh,
+			), "10s", "1s").Should(Succeed())
+		})
 	})
 }
