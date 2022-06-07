@@ -9,6 +9,7 @@ import (
 
 	"github.com/kumahq/kuma/test/e2e_env/multizone/env"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
 )
 
@@ -83,7 +84,7 @@ func ExternalServicesWithLocalityAwareLb() {
 		})
 		Expect(WaitForMesh(mesh, env.Zones())).To(Succeed())
 
-		// Universal Zone 1
+		// Universal Zone 4
 		E2EDeferCleanup(func() {
 			Expect(env.UniZone1.DeleteMeshApps(mesh)).To(Succeed())
 		})
@@ -104,7 +105,7 @@ func ExternalServicesWithLocalityAwareLb() {
 			Setup(env.UniZone1),
 		).To(Succeed())
 
-		// Kubernetes Zone 2
+		// Kubernetes Zone 1
 		E2EDeferCleanup(func() {
 			Expect(env.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
 		})
@@ -165,10 +166,9 @@ func ExternalServicesWithLocalityAwareLb() {
 		Eventually(EgressStats(env.KubeZone1, filterEgress), "15s", "1s").Should(stats.BeEqualZero())
 
 		// when
-		stdout, _, err := env.UniZone1.ExecWithRetries("", "", "uni-zone4-demo-client",
-			"curl", "--verbose", "--max-time", "3", "--fail", "external-service-in-kube-zone1.mesh")
+		response, err := client.CollectResponse(env.UniZone1, "uni-zone4-demo-client", "external-service-in-kube-zone1.mesh")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(response.Instance).Should(Equal("external-service-in-kube-zone1"))
 
 		// then should route:
 		// app -> zone egress (zone4) -> zone ingress (zone1) -> zone egress (zone1) -> external service
@@ -190,14 +190,13 @@ func ExternalServicesWithLocalityAwareLb() {
 		Eventually(IngressStats(env.UniZone1, filterIngress), "15s", "1s").Should(stats.BeEqualZero())
 		Eventually(EgressStats(env.UniZone1, filterEgress), "15s", "1s").Should(stats.BeEqualZero())
 
-		podName, err := PodNameOfApp(env.KubeZone1, "demo-client", namespace)
-		Expect(err).ToNot(HaveOccurred())
-
 		// when request to external service in zone 1
-		_, stderr, err := env.KubeZone1.ExecWithRetries(namespace, podName, "demo-client",
-			"curl", "--verbose", "--max-time", "3", "--fail", "external-service-in-uni-zone4.mesh")
+		response, err := client.CollectResponse(
+			env.KubeZone1, "demo-client", "external-service-in-uni-zone4.mesh",
+			client.FromKubernetesPod(namespace, "demo-client"),
+		)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(response.Instance).To(Equal("external-service-in-uni-zone4"))
 
 		// then should route:
 		// app -> zone egress (zone1) -> zone ingress (zone4) -> zone egress (zone4) -> external service
@@ -222,10 +221,9 @@ func ExternalServicesWithLocalityAwareLb() {
 		}, "15s", "1s").Should(Succeed())
 
 		// when doing requests to external service with tag zone1
-		stdout, _, err := env.UniZone1.ExecWithRetries("", "", "uni-zone4-demo-client-no-egress",
-			"curl", "--verbose", "--max-time", "3", "--fail", "demo-es-in-uni-zone4.mesh")
+		response, err := client.CollectResponse(env.UniZone1, "uni-zone4-demo-client-no-egress", "demo-es-in-uni-zone4.mesh")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(response.Instance).Should(Equal("external-service-in-uni-zone4"))
 
 		// then there is no stat because external service is not exposed through egress
 		Eventually(func(g Gomega) {
