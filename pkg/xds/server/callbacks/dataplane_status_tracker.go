@@ -2,6 +2,7 @@ package callbacks
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	"github.com/golang/protobuf/proto"
@@ -79,7 +80,7 @@ func (c *dataplaneStatusTracker) OnStreamOpen(ctx context.Context, streamID int6
 	// save
 	c.streams[streamID] = state
 
-	statusTrackerLog.V(1).Info("OnStreamOpen", "context", ctx, "streamid", streamID, "type", typ, "subscription", subscription)
+	statusTrackerLog.V(1).Info("proxy connecting", "streamID", streamID, "type", typ, "subscriptionID", subscription.Id)
 	return nil
 }
 
@@ -101,7 +102,18 @@ func (c *dataplaneStatusTracker) OnStreamClosed(streamID int64) {
 	// trigger final flush
 	state.Close()
 
-	statusTrackerLog.V(1).Info("OnStreamClosed", "streamid", streamID, "subscription", subscription)
+	log := statusTrackerLog.WithValues(
+		"streamID", streamID,
+		"name", state.dataplaneId.Name,
+		"mesh", state.dataplaneId.Mesh,
+		"subscriptionID", state.subscription.Id,
+	)
+
+	if statusTrackerLog.V(1).Enabled() {
+		log = log.WithValues("subscription", subscription)
+	}
+
+	log.Info("proxy disconnected")
 }
 
 // OnStreamRequest is called once a request is received on a stream.
@@ -136,6 +148,20 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req util_xds.Di
 		// Infer the Dataplane ID.
 		if proxyId, err := core_xds.ParseProxyIdFromString(req.NodeId()); err == nil {
 			state.dataplaneId = proxyId.ToResourceKey()
+
+			log := statusTrackerLog.WithValues(
+				"proxyName", state.dataplaneId.Name,
+				"mesh", state.dataplaneId.Mesh,
+				"streamID", streamID,
+				"type", md.GetProxyType(),
+				"dpVersion", md.GetVersion().GetKumaDp().GetVersion(),
+				"subscriptionID", state.subscription.Id,
+			)
+			if statusTrackerLog.V(1).Enabled() {
+				log = log.WithValues("node", req.Node())
+			}
+			log.Info("proxy connected")
+
 			if md.GetVersion() != nil {
 				state.subscription.Version = md.GetVersion()
 			} else {
@@ -148,20 +174,40 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req util_xds.Di
 		}
 	}
 
-	// update Dataplane status
 	subscription := state.subscription
+	log := statusTrackerLog.WithValues(
+		"proxyName", state.dataplaneId.Name,
+		"mesh", state.dataplaneId.Mesh,
+		"streamID", streamID,
+		"type", shortEnvoyType(req.GetTypeUrl()),
+		"version", req.VersionInfo(),
+	)
+	if statusTrackerLog.V(1).Enabled() {
+		log = log.WithValues(
+			"resourceNames", req.GetResourceNames(),
+			"subscriptionID", subscription.Id,
+			"nonce", req.GetResponseNonce(),
+		)
+	}
+
+	// update Dataplane status
 	if req.GetResponseNonce() != "" {
 		subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(core.Now())
 		if req.HasErrors() {
+			log.Info("config rejected")
 			subscription.Status.Total.ResponsesRejected++
 			subscription.Status.StatsOf(req.GetTypeUrl()).ResponsesRejected++
 		} else {
+			log.Info("config accepted")
 			subscription.Status.Total.ResponsesAcknowledged++
 			subscription.Status.StatsOf(req.GetTypeUrl()).ResponsesAcknowledged++
 		}
+	} else {
+		if !statusTrackerLog.V(1).Enabled() { // it was already added, no need to add it twice
+			log = log.WithValues("resourceNames", req.GetResourceNames())
+		}
+		log.Info("config requested")
 	}
-
-	statusTrackerLog.V(1).Info("OnStreamRequest", "streamid", streamID, "request", req, "subscription", subscription)
 	return nil
 }
 
@@ -181,7 +227,32 @@ func (c *dataplaneStatusTracker) OnStreamResponse(streamID int64, req util_xds.D
 	subscription.Status.Total.ResponsesSent++
 	subscription.Status.StatsOf(resp.GetTypeUrl()).ResponsesSent++
 
-	statusTrackerLog.V(1).Info("OnStreamResponse", "streamid", streamID, "request", req, "response", resp, "subscription", subscription)
+	log := statusTrackerLog.WithValues(
+		"proxyName", state.dataplaneId.Name,
+		"mesh", state.dataplaneId.Mesh,
+		"streamID", streamID,
+		"type", shortEnvoyType(req.GetTypeUrl()),
+		"version", resp.VersionInfo(),
+		"requestedResourceNames", req.GetResourceNames(),
+		"resources", len(resp.GetResources()),
+	)
+	if statusTrackerLog.V(1).Enabled() {
+		log = log.WithValues(
+			"subscriptionID", subscription.Id,
+			"nonce", resp.GetNonce(),
+		)
+	}
+
+	log.Info("config sent")
+}
+
+// To keep logs short, we want to log "Listeners" instead of full qualified Envoy type url name
+func shortEnvoyType(typeURL string) string {
+	segments := strings.Split(typeURL, ".")
+	if len(segments) <= 1 {
+		return typeURL
+	}
+	return segments[len(segments)-1]
 }
 
 func (c *dataplaneStatusTracker) GetStatusAccessor(streamID int64) (SubscriptionStatusAccessor, bool) {
