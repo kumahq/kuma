@@ -7,6 +7,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
@@ -15,8 +16,10 @@ import (
 )
 
 type ClientSideMTLSConfigurer struct {
-	Mesh             *core_mesh.MeshResource
+	SecretsTracker   core_xds.SecretsTracker
+	UpstreamMesh     *core_mesh.MeshResource
 	UpstreamService  string
+	LocalMesh        *core_mesh.MeshResource
 	Tags             []envoy.Tags
 	UpstreamTLSReady bool
 }
@@ -24,15 +27,15 @@ type ClientSideMTLSConfigurer struct {
 var _ ClusterConfigurer = &ClientSideTLSConfigurer{}
 
 func (c *ClientSideMTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
-	if !c.Mesh.MTLSEnabled() {
+	if !c.UpstreamMesh.MTLSEnabled() || !c.LocalMesh.MTLSEnabled() {
 		return nil
 	}
-	if c.Mesh.GetEnabledCertificateAuthorityBackend().Mode == mesh_proto.CertificateAuthorityBackend_PERMISSIVE &&
+	if c.UpstreamMesh.GetEnabledCertificateAuthorityBackend().Mode == mesh_proto.CertificateAuthorityBackend_PERMISSIVE &&
 		!c.UpstreamTLSReady {
 		return nil
 	}
 
-	meshName := c.Mesh.GetMeta().GetName()
+	meshName := c.UpstreamMesh.GetMeta().GetName()
 	// there might be a situation when there are multiple sam tags passed here for example two outbound listeners with the same tags, therefore we need to distinguish between them.
 	distinctTags := envoy.DistinctTags(c.Tags)
 	switch {
@@ -43,7 +46,8 @@ func (c *ClientSideMTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) err
 		}
 		cluster.TransportSocket = transportSocket
 	case len(distinctTags) == 1:
-		transportSocket, err := c.createTransportSocket(tls.SNIFromTags(c.Tags[0].WithTags("mesh", meshName)))
+		sni := tls.SNIFromTags(c.Tags[0].WithTags("mesh", meshName))
+		transportSocket, err := c.createTransportSocket(sni)
 		if err != nil {
 			return err
 		}
@@ -68,7 +72,14 @@ func (c *ClientSideMTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) err
 }
 
 func (c *ClientSideMTLSConfigurer) createTransportSocket(sni string) (*envoy_core.TransportSocket, error) {
-	tlsContext, err := envoy_tls.CreateUpstreamTlsContext(c.Mesh, c.UpstreamService, sni)
+	if !c.UpstreamMesh.MTLSEnabled() {
+		return nil, nil
+	}
+
+	ca := c.SecretsTracker.RequestCa(c.UpstreamMesh.GetMeta().GetName())
+	identity := c.SecretsTracker.RequestIdentityCert()
+
+	tlsContext, err := envoy_tls.CreateUpstreamTlsContext(identity, ca, c.UpstreamService, sni)
 	if err != nil {
 		return nil, err
 	}

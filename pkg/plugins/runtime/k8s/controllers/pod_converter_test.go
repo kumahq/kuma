@@ -251,11 +251,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "19.services-for-pod.yaml",
 			dataplane:      "19.dataplane.yaml",
 		}),
-		Entry("20. Pod with configuration of prometheus metrics from other pods", testCase{
-			pod:            "20.pod.yaml",
-			servicesForPod: "20.services-for-pod.yaml",
-			dataplane:      "20.dataplane.yaml",
-		}),
 	)
 
 	DescribeTable("should convert Ingress Pod into an Ingress Dataplane YAML version",
@@ -651,7 +646,7 @@ var _ = Describe("MetricsAggregateFor(..)", func() {
 
 	type testCase struct {
 		annotations map[string]string
-		expected    map[string]*mesh_proto.PrometheusAggregateMetricsConfig
+		expected    []*mesh_proto.PrometheusAggregateMetricsConfig
 	}
 
 	DescribeTable("should create proper metrics configuration",
@@ -667,7 +662,8 @@ var _ = Describe("MetricsAggregateFor(..)", func() {
 			// expect
 			configuration, err := MetricsAggregateFor(pod)
 			Expect(err).To(BeNil())
-			Expect(configuration).To(Equal(given.expected))
+			Expect(configuration).To(HaveLen(len(given.expected)))
+			Expect(configuration).To(ContainElements(given.expected))
 		},
 		Entry("one service with double tag", testCase{
 			annotations: map[string]string{
@@ -675,8 +671,9 @@ var _ = Describe("MetricsAggregateFor(..)", func() {
 				"prometheus.metrics.kuma.io/aggregate-my-app-port":    "123",
 				"prometheus.metrics.kuma.io/aggregate-my-app-enabled": "false",
 			},
-			expected: map[string]*mesh_proto.PrometheusAggregateMetricsConfig{
-				"my-app": {
+			expected: []*mesh_proto.PrometheusAggregateMetricsConfig{
+				{
+					Name:    "my-app",
 					Path:    "/stats",
 					Port:    123,
 					Enabled: util_proto.Bool(false),
@@ -696,27 +693,32 @@ var _ = Describe("MetricsAggregateFor(..)", func() {
 				"prometheus.metrics.kuma.io/aggregate-disabled-enabled":  "false",
 				"prometheus.metrics.kuma.io/aggregate-default-path-port": "11111",
 			},
-			expected: map[string]*mesh_proto.PrometheusAggregateMetricsConfig{
-				"my-app": {
+			expected: []*mesh_proto.PrometheusAggregateMetricsConfig{
+				{
+					Name:    "my-app",
 					Path:    "/stats",
 					Port:    123,
 					Enabled: util_proto.Bool(true),
 				},
-				"my-app-2": {
+				{
+					Name:    "my-app-2",
 					Path:    "/stats/2",
 					Port:    1234,
 					Enabled: util_proto.Bool(true),
 				},
-				"sidecar": {
+				{
+					Name:    "sidecar",
 					Path:    "/metrics",
 					Port:    12345,
 					Enabled: util_proto.Bool(false),
 				},
-				"disabled": {
+				{
+					Name:    "disabled",
 					Enabled: util_proto.Bool(false),
 					Path:    "/metrics",
 				},
-				"default-path": {
+				{
+					Name:    "default-path",
 					Port:    11111,
 					Path:    "/metrics",
 					Enabled: util_proto.Bool(true),

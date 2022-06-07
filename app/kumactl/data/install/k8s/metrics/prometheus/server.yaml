@@ -428,6 +428,7 @@ spec:
       labels:
         component: "server"
         app: prometheus
+        kuma.io/sidecar-injection: enabled
       annotations:
         kuma.io/direct-access-services: "*"
     spec:

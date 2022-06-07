@@ -35,8 +35,7 @@ func addDNS(rt core_runtime.Runtime) error {
 	vipsAllocator, err := dns.NewVIPsAllocator(
 		rt.ReadOnlyResourceManager(),
 		rt.ConfigManager(),
-		rt.Config().DNSServer.ServiceVipEnabled,
-		rt.Config().DNSServer.CIDR,
+		*rt.Config().DNSServer,
 	)
 	if err != nil {
 		return err

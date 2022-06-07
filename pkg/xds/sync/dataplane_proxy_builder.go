@@ -15,7 +15,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core/xds"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/template"
@@ -31,7 +31,7 @@ type DataplaneProxyBuilder struct {
 	APIVersion envoy.APIVersion
 }
 
-func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, meshContext xds_context.MeshContext) (*xds.Proxy, error) {
+func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, meshContext xds_context.MeshContext) (*core_xds.Proxy, error) {
 	dp, found := meshContext.DataplanesByName[key.Name]
 	if !found {
 		return nil, core_store.ErrorResourceNotFound(core_mesh.DataplaneType, key.Name, key.Mesh)
@@ -49,18 +49,28 @@ func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, meshContext xd
 
 	matchedPolicies.TrafficRoutes = routing.TrafficRoutes
 
-	proxy := &xds.Proxy{
-		Id:         xds.FromResourceKey(key),
-		APIVersion: p.APIVersion,
-		Dataplane:  dp,
-		Metadata:   p.MetadataTracker.Metadata(key),
-		Routing:    *routing,
-		Policies:   *matchedPolicies,
+	meshName := meshContext.Resource.GetMeta().GetName()
+
+	allMeshNames := []string{meshName}
+	for _, mesh := range meshContext.Resources.OtherMeshes().Items {
+		allMeshNames = append(allMeshNames, mesh.GetMeta().GetName())
+	}
+
+	secretsTracker := core_xds.NewSecretsTracker(meshName, allMeshNames)
+
+	proxy := &core_xds.Proxy{
+		Id:             core_xds.FromResourceKey(key),
+		APIVersion:     p.APIVersion,
+		Dataplane:      dp,
+		Metadata:       p.MetadataTracker.Metadata(key),
+		Routing:        *routing,
+		Policies:       *matchedPolicies,
+		SecretsTracker: secretsTracker,
 	}
 	return proxy, nil
 }
 
-func (p *DataplaneProxyBuilder) resolveRouting(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource) (*xds.Routing, xds.DestinationMap, error) {
+func (p *DataplaneProxyBuilder) resolveRouting(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource) (*core_xds.Routing, core_xds.DestinationMap, error) {
 	matchedExternalServices, err := permissions.MatchExternalServicesTrafficPermissions(dataplane, meshContext.Resources.ExternalServices(), meshContext.Resources.TrafficPermissions())
 	if err != nil {
 		return nil, nil, err
@@ -85,7 +95,7 @@ func (p *DataplaneProxyBuilder) resolveRouting(meshContext xds_context.MeshConte
 		meshContext.DataSourceLoader,
 	)
 
-	routing := &xds.Routing{
+	routing := &core_xds.Routing{
 		TrafficRoutes:   routes,
 		OutboundTargets: outbound,
 	}
@@ -128,7 +138,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 	dataplane.Spec.Networking.Outbound = outbounds
 }
 
-func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource, outboundSelectors xds.DestinationMap) (*xds.MatchedPolicies, error) {
+func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource, outboundSelectors core_xds.DestinationMap) (*core_xds.MatchedPolicies, error) {
 	additionalInbounds, err := manager_dataplane.AdditionalInbounds(dataplane, meshContext.Resource)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not fetch additional inbounds")
@@ -137,7 +147,7 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 
 	resources := meshContext.Resources
 	ratelimits := ratelimits.BuildRateLimitMap(dataplane, inbounds, resources.RateLimits().Items)
-	matchedPolicies := &xds.MatchedPolicies{
+	matchedPolicies := &core_xds.MatchedPolicies{
 		TrafficPermissions: permissions.BuildTrafficPermissionMap(dataplane, inbounds, resources.TrafficPermissions().Items),
 		TrafficLogs:        logs.BuildTrafficLogMap(dataplane, resources.TrafficLogs().Items),
 		HealthChecks:       xds_topology.BuildHealthCheckMap(dataplane, outboundSelectors, resources.HealthChecks().Items),

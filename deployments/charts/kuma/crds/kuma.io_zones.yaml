@@ -9,6 +9,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: Zone
     listKind: ZoneList
     plural: zones

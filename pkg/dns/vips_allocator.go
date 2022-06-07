@@ -2,11 +2,14 @@ package dns
 
 import (
 	"context"
+	"fmt"
 	"net"
+	"strings"
 
 	"go.uber.org/multierr"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	dns_server "github.com/kumahq/kuma/pkg/config/dns-server"
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -23,18 +26,20 @@ type VIPsAllocator struct {
 	persistence       *vips.Persistence
 	cidr              string
 	serviceVipEnabled bool
+	dnsSuffix         string
 }
 
 // NewVIPsAllocator creates new object of VIPsAllocator. You can either
 // call method CreateOrUpdateVIPConfig manually or start VIPsAllocator as a component.
 // In the latter scenario it will call CreateOrUpdateVIPConfig every 'tickInterval'
 // for all meshes in the store.
-func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, configManager config_manager.ConfigManager, serviceVipEnabled bool, cidr string) (*VIPsAllocator, error) {
+func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, configManager config_manager.ConfigManager, config dns_server.Config) (*VIPsAllocator, error) {
 	return &VIPsAllocator{
 		rm:                rm,
 		persistence:       vips.NewPersistence(rm, configManager),
-		serviceVipEnabled: serviceVipEnabled,
-		cidr:              cidr,
+		serviceVipEnabled: config.ServiceVipEnabled,
+		cidr:              config.CIDR,
+		dnsSuffix:         config.Domain,
 	}, nil
 }
 
@@ -59,7 +64,7 @@ func (d *VIPsAllocator) CreateOrUpdateVIPConfig(ctx context.Context, mesh string
 		return err
 	}
 
-	newView, err := BuildVirtualOutboundMeshView(ctx, d.rm, d.serviceVipEnabled, mesh)
+	newView, err := BuildVirtualOutboundMeshView(ctx, d.rm, d.serviceVipEnabled, d.dnsSuffix, mesh)
 	if err != nil {
 		return err
 	}
@@ -79,7 +84,7 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(ctx context.Context, mesh strin
 		return err
 	}
 
-	newView, err := BuildVirtualOutboundMeshView(ctx, d.rm, d.serviceVipEnabled, mesh)
+	newView, err := BuildVirtualOutboundMeshView(ctx, d.rm, d.serviceVipEnabled, d.dnsSuffix, mesh)
 	if err != nil {
 		return err
 	}
@@ -124,11 +129,54 @@ func (d *VIPsAllocator) createOrUpdateMeshVIPConfig(
 	if len(changes) == 0 {
 		return nil
 	}
-	Log.Info("mesh vip changes", "mesh", mesh, "changes", changes)
+	Log.Info("mesh VIPs changed", "mesh", mesh, "changes", changes)
 	return d.persistence.Set(ctx, mesh, out)
 }
 
-func BuildVirtualOutboundMeshView(ctx context.Context, rm manager.ReadOnlyResourceManager, serviceVipEnabled bool, mesh string) (*vips.VirtualOutboundMeshView, error) {
+func generatedHostname(meta model.ResourceMeta, suffix string) string {
+	return fmt.Sprintf("internal.%s.%s.%s", meta.GetName(), meta.GetMesh(), suffix)
+}
+
+func addFromMeshGateway(outboundSet *vips.VirtualOutboundMeshView, dnsSuffix, mesh string, gateway *core_mesh.MeshGatewayResource) {
+	for i, listener := range gateway.Spec.Conf.Listeners {
+		// We only setup outbounds for cross mesh listeners and only ones with a
+		// concrete hostname.
+		if !listener.CrossMesh {
+			continue
+		}
+
+		hostname := listener.Hostname
+
+		if hostname == "" || strings.Contains(hostname, "*") {
+			hostname = generatedHostname(gateway.GetMeta(), dnsSuffix)
+		}
+
+		// We only allow one selector with a crossMesh listener
+		for _, selector := range gateway.Spec.Selectors {
+			tags := mesh_proto.Merge(
+				gateway.Spec.GetTags(),
+				listener.GetTags(),
+				map[string]string{
+					"kuma.io/mesh": mesh,
+				},
+				selector.GetMatch(),
+			)
+			origin := fmt.Sprintf("mesh-gateway:%s:%s:%s", mesh, gateway.GetMeta().GetName(), hostname)
+
+			entry := vips.OutboundEntry{
+				Port:   listener.Port,
+				TagSet: tags,
+				Origin: origin,
+			}
+			if err := outboundSet.Add(vips.NewFqdnEntry(hostname), entry); err != nil {
+				Log.WithValues("mesh", mesh, "gateway", gateway.GetMeta().GetName(), "listener", i).
+					Info("failed to add MeshGateway-generated outbound", "reason", err.Error())
+			}
+		}
+	}
+}
+
+func BuildVirtualOutboundMeshView(ctx context.Context, rm manager.ReadOnlyResourceManager, serviceVipEnabled bool, dnsSuffix string, mesh string) (*vips.VirtualOutboundMeshView, error) {
 	outboundSet := vips.NewEmptyVirtualOutboundView()
 
 	virtualOutbounds := core_mesh.VirtualOutboundResourceList{}
@@ -139,6 +187,7 @@ func BuildVirtualOutboundMeshView(ctx context.Context, rm manager.ReadOnlyResour
 	if err := rm.List(ctx, &dataplanes, store.ListByMesh(mesh)); err != nil {
 		return nil, err
 	}
+
 	var errs error
 	for _, dp := range dataplanes.Items {
 		for _, inbound := range dp.Spec.GetNetworking().GetInbound() {
@@ -183,6 +232,23 @@ func BuildVirtualOutboundMeshView(ctx context.Context, rm manager.ReadOnlyResour
 		}))
 		for _, vob := range Match(virtualOutbounds.Items, tags) {
 			addFromVirtualOutbound(outboundSet, vob, tags, es.Descriptor().Name, es.Meta.GetName())
+		}
+	}
+
+	meshList := core_mesh.MeshResourceList{}
+	if err := rm.List(ctx, &meshList); err != nil {
+		return nil, err
+	}
+
+	for _, mesh := range meshList.Items {
+		meshName := mesh.GetMeta().GetName()
+		gateways := core_mesh.MeshGatewayResourceList{}
+		if err := rm.List(ctx, &gateways, store.ListByMesh(meshName)); err != nil {
+			return nil, err
+		}
+
+		for _, gateway := range gateways.Items {
+			addFromMeshGateway(outboundSet, dnsSuffix, meshName, gateway)
 		}
 	}
 

@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path"
 	"strings"
 	"sync"
@@ -18,6 +19,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8s_exec "k8s.io/client-go/util/exec"
 
 	"github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/utils"
@@ -84,11 +86,11 @@ func WithPathPrefix(prefix string) CollectResponsesOptsFn {
 
 // Resolve sets the curl --resolve flag.
 // See https://curl.se/docs/manpage.html#--resolve.
-func Resolve(host string, port int, address string) CollectResponsesOptsFn {
+func Resolve(hostPort string, address string) CollectResponsesOptsFn {
 	return func(opts *CollectResponsesOpts) {
 		opts.Flags = append(opts.Flags,
 			"--resolve",
-			fmt.Sprintf("%s:%d:%s", host, port, address),
+			fmt.Sprintf("%s:%s", hostPort, address),
 		)
 	}
 }
@@ -286,8 +288,7 @@ func CollectResponseDirectly(
 //
 // See https://curl.se/docs/manpage.html#-w.
 type FailureResponse struct {
-	Errormsg string `json:"errormsg"`
-	Exitcode int    `json:"exitcode"`
+	Exitcode int `json:"exitcode"`
 
 	ResponseCode int    `json:"response_code"`
 	Method       string `json:"method"`
@@ -300,7 +301,7 @@ type FailureResponse struct {
 // CollectFailure runs Curl to fetch a URL that is expected to fail. The
 // Curl JSON output is returned so the caller can inspect the failure to
 // see whether it was what was expected.
-func CollectFailure(cluster framework.Cluster, source, destination string, fn ...CollectResponsesOptsFn) (FailureResponse, error) {
+func CollectFailure(cluster framework.Cluster, container, destination string, fn ...CollectResponsesOptsFn) (FailureResponse, error) {
 	opts := collectOptions(destination, fn...)
 	cmd := collectCommand(opts, "curl",
 		"--request", opts.Method,
@@ -329,7 +330,7 @@ func CollectFailure(cluster framework.Cluster, source, destination string, fn ..
 		pod = pods[0].Name
 	}
 
-	stdout, _, err := cluster.Exec(opts.namespace, pod, source, cmd...)
+	stdout, _, err := cluster.Exec(opts.namespace, pod, container, cmd...)
 
 	// 1. If we fail to decode the JSON status, return the JSON error,
 	// but prefer the original error if we have it.
@@ -350,6 +351,17 @@ func CollectFailure(cluster framework.Cluster, source, destination string, fn ..
 		}
 
 		return response, errors.Errorf("empty JSON response from curl: %q", stdout)
+	}
+
+	// for k8s
+	k8sExitErr := k8s_exec.CodeExitError{}
+	if errors.As(err, &k8sExitErr) {
+		response.Exitcode = k8sExitErr.Code
+	}
+	// for universal
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		response.Exitcode = exitErr.ExitCode()
 	}
 
 	// 3. Finally, report the JSON status and no execution error

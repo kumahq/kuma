@@ -29,18 +29,18 @@ spec:
           path: /metrics
           skipMTLS: true
           aggregate:
-            path-stats:
-              path: "/path-stats"
-              port: 80
-            mesh-default:
-              path: "/mesh-default"
-              port: 80
-            service-to-override:
-              path: "/service-to-override"
-              port: 80
-            not-working-service:
-              path: "/not-working-service"
-              port: 81`, name)
+          - name: path-stats
+            path: "/path-stats"
+            port: 80
+          - name: mesh-default
+            path: "/mesh-default"
+            port: 80
+          - name: service-to-override
+            path: "/service-to-override"
+            port: 80
+          - name: not-working-service
+            path: "/not-working-service"
+            port: 81`, name)
 	return YamlK8s(mesh)
 }
 

@@ -302,6 +302,18 @@ func (t SingleValueTagSet) Keys() []string {
 	return keys
 }
 
+func Merge(other ...SingleValueTagSet) SingleValueTagSet {
+	merged := SingleValueTagSet{}
+
+	for _, t := range other {
+		for k, v := range t {
+			merged[k] = v
+		}
+	}
+
+	return merged
+}
+
 func (t SingleValueTagSet) Exclude(key string) SingleValueTagSet {
 	rv := SingleValueTagSet{}
 	for k, v := range t {

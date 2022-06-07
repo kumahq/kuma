@@ -13,7 +13,8 @@ kumactl install tracing [flags]
 ### Options
 
 ```
-  -h, --help   help for tracing
+  -h, --help               help for tracing
+      --namespace string   namespace to install tracing to (default "kuma-tracing")
 ```
 
 ### Options inherited from parent commands

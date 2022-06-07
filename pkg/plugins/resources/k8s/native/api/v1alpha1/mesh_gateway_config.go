@@ -7,7 +7,7 @@ import (
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:scope=Cluster
+// +kubebuilder:resource:categories=kuma,scope=Cluster
 
 // MeshGatewayConfig holds the configuration of a MeshGateway. A
 // GatewayClass can refer to a MeshGatewayConfig via parametersRef.

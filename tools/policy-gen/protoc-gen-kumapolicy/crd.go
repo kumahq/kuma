@@ -38,9 +38,9 @@ import (
 
 // +kubebuilder:object:root=true
 {{- if .ScopeNamespace }}
-// +kubebuilder:resource:scope=Namespaced
+// +kubebuilder:resource:categories=kuma,scope=Namespaced
 {{- else }}
-// +kubebuilder:resource:scope=Cluster
+// +kubebuilder:resource:categories=kuma,scope=Cluster
 {{- end}}
 {{- if .StorageVersion }}
 // +kubebuilder:storageversion

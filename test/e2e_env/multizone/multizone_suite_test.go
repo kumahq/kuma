@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/env"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/gateway"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/healthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/inspect"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/localityawarelb"
@@ -20,7 +21,7 @@ import (
 )
 
 func TestE2E(t *testing.T) {
-	test.RunSpecs(t, "E2E Universal Suite")
+	test.RunSpecs(t, "E2E Multizone Suite")
 }
 
 type State struct {
@@ -217,8 +218,9 @@ var _ = SynchronizedBeforeSuite(
 	},
 )
 
+var _ = Describe("Cross-mesh Gateways", gateway.CrossMeshGatewayOnMultizone, Ordered)
+var _ = Describe("External Service locality aware", localityawarelb.ExternalServicesWithLocalityAwareLb, Ordered)
+var _ = Describe("Healthcheck", healthcheck.ApplicationOnUniversalClientOnK8s, Ordered)
+var _ = Describe("Inspect", inspect.Inspect, Ordered)
 var _ = Describe("TrafficPermission", trafficpermission.TrafficPermission, Ordered)
 var _ = Describe("TrafficRoute", trafficroute.TrafficRoute, Ordered)
-var _ = Describe("Healtcheck", healthcheck.ApplicationOnUniversalClientOnK8s, Ordered)
-var _ = Describe("Inspect", inspect.Inspect, Ordered)
-var _ = Describe("External Service locality aware", localityawarelb.ExternalServicesWithLocalityAwareLb, Ordered)
