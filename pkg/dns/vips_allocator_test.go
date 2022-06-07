@@ -88,7 +88,7 @@ var _ = Describe("VIP Allocator", func() {
 		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("web")}, store.CreateByKey("dp-3", "mesh-2"))
 		Expect(err).ToNot(HaveOccurred())
 
-		allocator, err = dns.NewVIPsAllocator(rm, cm, testConfig)
+		allocator, err = dns.NewVIPsAllocator(rm, cm, testConfig, "")
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -150,7 +150,7 @@ var _ = Describe("VIP Allocator", func() {
 	It("should return error if failed to update VIP config", func() {
 		errConfigManager := &errConfigManager{ConfigManager: cm}
 		ctx := context.Background()
-		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, testConfig)
+		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, testConfig, "")
 		Expect(err).ToNot(HaveOccurred())
 
 		err = errAllocator.CreateOrUpdateVIPConfig(ctx, "mesh-1", NoModifications)
@@ -166,7 +166,7 @@ var _ = Describe("VIP Allocator", func() {
 
 	It("should try to update all meshes and return combined error", func() {
 		errConfigManager := &errConfigManager{ConfigManager: cm}
-		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, testConfig)
+		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, testConfig, "")
 		Expect(err).ToNot(HaveOccurred())
 
 		err = errAllocator.CreateOrUpdateVIPConfigs(context.Background())
@@ -208,6 +208,7 @@ var _ = Describe("VIP Allocator", func() {
 
 type outboundViewTestCase struct {
 	givenResources      map[model.ResourceKey]model.Resource
+	whenZone            string
 	whenMesh            string
 	whenSkipServiceVips bool
 	thenHostnameEntries []vips.HostnameEntry
@@ -229,8 +230,15 @@ var _ = DescribeTable("outboundView",
 			Expect(rm.Create(ctx, res, store.CreateBy(k))).ToNot(HaveOccurred())
 		}
 
+		cfg := dns_server.Config{
+			Domain:            "mesh",
+			CIDR:              "240.0.0.0/24",
+			ServiceVipEnabled: !tc.whenSkipServiceVips,
+		}
 		// When
-		serviceSet, err := dns.BuildVirtualOutboundMeshView(ctx, rm, !tc.whenSkipServiceVips, "mesh", tc.whenMesh)
+		allocator, err := dns.NewVIPsAllocator(rm, nil, cfg, tc.whenZone)
+		Expect(err).NotTo(HaveOccurred())
+		serviceSet, err := allocator.BuildVirtualOutboundMeshView(ctx, tc.whenMesh)
 
 		// Then
 		Expect(err).ToNot(HaveOccurred())
@@ -376,6 +384,7 @@ var _ = DescribeTable("outboundView",
 		givenResources: map[model.ResourceKey]model.Resource{
 			model.WithMesh("default", "ingress-1"): &mesh.ZoneIngressResource{
 				Spec: &mesh_proto.ZoneIngress{
+					Zone:       "zone2",
 					Networking: &mesh_proto.ZoneIngress_Networking{Port: 1000, AdvertisedPort: 1000, AdvertisedAddress: "127.0.0.1", Address: "127.0.0.1"},
 					AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
 						{
@@ -404,6 +413,7 @@ var _ = DescribeTable("outboundView",
 			},
 		},
 		whenMesh:            "mesh",
+		whenZone:            "zone1",
 		thenHostnameEntries: []vips.HostnameEntry{vips.NewServiceEntry("srv1"), vips.NewServiceEntry("srv2")},
 		thenOutbounds: map[vips.HostnameEntry][]vips.OutboundEntry{
 			vips.NewServiceEntry("srv1"): {

@@ -32,10 +32,15 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 }
 
 func addDNS(rt core_runtime.Runtime) error {
+	zone := ""
+	if rt.Config().Multizone != nil && rt.Config().Multizone.Zone != nil {
+		zone = rt.Config().Multizone.Zone.Name
+	}
 	vipsAllocator, err := dns.NewVIPsAllocator(
 		rt.ReadOnlyResourceManager(),
 		rt.ConfigManager(),
 		*rt.Config().DNSServer,
+		zone,
 	)
 	if err != nil {
 		return err
