@@ -135,6 +135,52 @@ var _ = Describe("Remote Bootstrap", func() {
 				}
 			}()),
 
+		Entry("should read token from the file and include file path",
+			func() testCase {
+				cfg := kuma_dp.DefaultConfig()
+				cfg.Dataplane.Mesh = "demo"
+				cfg.Dataplane.Name = "sample"
+				cfg.Dataplane.AdminPort = config_types.MustPortRange(4321, 8765) // port range
+				cfg.DataplaneRuntime.TokenPath = "testdata/token"
+
+				return testCase{
+					config:               cfg,
+					sidecarConfiguration: &types.KumaSidecarConfiguration{},
+					dataplane: &rest.Resource{
+						Meta: rest.ResourceMeta{
+							Type: "Dataplane",
+							Mesh: "demo",
+							Name: "sample",
+						},
+					},
+					expectedBootstrapRequest: `
+                    {
+                      "mesh": "demo",
+                      "name": "sample",
+                      "proxyType": "dataplane",
+                      "adminPort": 4321,
+					  "dataplaneToken": "token1234",
+                      "dataplaneTokenPath": "testdata/token",
+                      "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}",
+                      "version": {
+                        "kumaDp": {
+                          "version": "0.0.1",
+                          "gitTag": "v0.0.1",
+                          "gitCommit": "91ce236824a9d875601679aa80c63783fb0e8725",
+                          "buildDate": "2019-08-07T11:26:06Z"
+                        },
+                        "envoy": {
+                          "version": "1.15.0",
+                          "build": "hash/1.15.0/RELEASE",
+                          "kumaDpCompatible": false
+                        }
+                      },
+                      "caCert": "",
+                      "dynamicMetadata": null
+                    }`,
+				}
+			}()),
+
 		Entry("should support port range with multiple ports (choose the lowest port)",
 			func() testCase {
 				cfg := kuma_dp.DefaultConfig()

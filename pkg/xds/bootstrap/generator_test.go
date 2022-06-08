@@ -362,6 +362,32 @@ var _ = Describe("bootstrapGenerator", func() {
 			expectedConfigFile: "generator.default-config.golden.yaml",
 			hdsEnabled:         true,
 		}),
+		Entry("default config with useTokenPath", testCase{
+			dpAuthEnabled: true,
+			config: func() *bootstrap_config.BootstrapServerConfig {
+				cfg := bootstrap_config.DefaultBootstrapServerConfig()
+				cfg.Params.XdsHost = "localhost"
+				cfg.Params.XdsPort = 5678
+				return cfg
+			},
+			dataplane: func() *core_mesh.DataplaneResource {
+				dp := defaultDataplane()
+				dp.Spec.Networking.Admin.Port = 1234
+				return dp
+			},
+			request: types.BootstrapRequest{
+				Mesh:               "mesh",
+				Name:               "name.namespace",
+				DataplaneToken:     "token",
+				Version:            defaultVersion,
+				DNSPort:            53001,
+				EmptyDNSPort:       53002,
+				DataplaneTokenPath: "/path/to/file",
+			},
+			expectedConfigFile: "generator.default-config-token-path.golden.yaml",
+			hdsEnabled:         true,
+			useTokenPath:       true,
+		}),
 	)
 
 	type errTestCase struct {
