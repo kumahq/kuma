@@ -9,7 +9,7 @@ Accepted MADR:
 
 Implemented MADR:
 
-None for the moment
+- [002-psat](002-past.md) The proposal how support projected service account token
 
 Deprecated MADR:
 
