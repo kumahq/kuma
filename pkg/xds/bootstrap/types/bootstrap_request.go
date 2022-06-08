@@ -1,14 +1,15 @@
 package types
 
 type BootstrapRequest struct {
-	Mesh              string  `json:"mesh"`
-	Name              string  `json:"name"`
-	ProxyType         string  `json:"proxyType"`
-	AdminPort         uint32  `json:"adminPort,omitempty"`
-	DataplaneToken    string  `json:"dataplaneToken,omitempty"`
-	DataplaneResource string  `json:"dataplaneResource,omitempty"`
-	Host              string  `json:"-"`
-	Version           Version `json:"version"`
+	Mesh               string  `json:"mesh"`
+	Name               string  `json:"name"`
+	ProxyType          string  `json:"proxyType"`
+	AdminPort          uint32  `json:"adminPort,omitempty"`
+	DataplaneToken     string  `json:"dataplaneToken,omitempty"`
+	DataplaneTokenPath string  `json:"dataplaneTokenPath,omitempty"`
+	DataplaneResource  string  `json:"dataplaneResource,omitempty"`
+	Host               string  `json:"-"`
+	Version            Version `json:"version"`
 	// CaCert is a PEM-encoded CA cert that DP uses to verify CP
 	CaCert          string            `json:"caCert"`
 	DynamicMetadata map[string]string `json:"dynamicMetadata"`

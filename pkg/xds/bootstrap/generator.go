@@ -22,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
+
 	// import Envoy protobuf definitions so (un)marshaling Envoy protobuf works in tests (normally it is imported in root.go)
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
@@ -35,6 +36,7 @@ func NewDefaultBootstrapGenerator(
 	config *bootstrap_config.BootstrapServerConfig,
 	dpServerCertFile string,
 	dpAuthEnabled bool,
+	dpUseTokenPath bool,
 	hdsEnabled bool,
 	defaultAdminPort uint32,
 ) (BootstrapGenerator, error) {
@@ -50,6 +52,7 @@ func NewDefaultBootstrapGenerator(
 		config:           config,
 		xdsCertFile:      dpServerCertFile,
 		dpAuthEnabled:    dpAuthEnabled,
+		dpUseTokenPath:   dpUseTokenPath,
 		hostsAndIps:      hostsAndIps,
 		hdsEnabled:       hdsEnabled,
 		defaultAdminPort: defaultAdminPort,
@@ -60,6 +63,7 @@ type bootstrapGenerator struct {
 	resManager       core_manager.ResourceManager
 	config           *bootstrap_config.BootstrapServerConfig
 	dpAuthEnabled    bool
+	dpUseTokenPath   bool
 	xdsCertFile      string
 	hostsAndIps      SANSet
 	hdsEnabled       bool
@@ -82,6 +86,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		XdsConnectTimeout:     b.config.Params.XdsConnectTimeout,
 		AccessLogPipe:         envoy_common.AccessLogSocketName(request.Name, request.Mesh),
 		DataplaneToken:        request.DataplaneToken,
+		DataplaneTokenPath:    request.DataplaneTokenPath,
 		DataplaneResource:     request.DataplaneResource,
 		KumaDpVersion:         request.Version.KumaDp.Version,
 		KumaDpGitTag:          request.Version.KumaDp.GitTag,
@@ -155,7 +160,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		return nil, kumaDpBootstrap, err
 	}
 
-	config, err := genConfig(params)
+	config, err := genConfig(params, b.dpUseTokenPath)
 	if err != nil {
 		return nil, kumaDpBootstrap, errors.Wrap(err, "failed creating bootstrap conf")
 	}
@@ -218,7 +223,7 @@ func (b *bootstrapGenerator) getMetricsConfig(
 }
 
 func (b *bootstrapGenerator) validateRequest(request types.BootstrapRequest) error {
-	if b.dpAuthEnabled && request.DataplaneToken == "" {
+	if b.dpAuthEnabled && request.DataplaneToken == "" && request.DataplaneTokenPath == "" {
 		return DpTokenRequired
 	}
 	if b.config.Params.XdsHost == "" { // XdsHost takes precedence over Host in the request, so validate only when it is not set

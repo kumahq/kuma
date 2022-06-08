@@ -130,10 +130,11 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, url *net_url.
 		ProxyType: cfg.Dataplane.ProxyType,
 		// if not set in config, the 0 will be sent which will result in providing default admin port
 		// that is set in the control plane bootstrap params
-		AdminPort:         cfg.Dataplane.AdminPort.Lowest(),
-		DataplaneToken:    token,
-		DataplaneResource: dataplaneResource,
-		CaCert:            cfg.ControlPlane.CaCert,
+		AdminPort:          cfg.Dataplane.AdminPort.Lowest(),
+		DataplaneToken:     token,
+		DataplaneTokenPath: cfg.DataplaneRuntime.TokenPath,
+		DataplaneResource:  dataplaneResource,
+		CaCert:             cfg.ControlPlane.CaCert,
 		Version: types.Version{
 			KumaDp: types.KumaDpVersion{
 				Version:   kuma_version.Build.Version,

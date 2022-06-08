@@ -37,6 +37,9 @@ type DpServerAuthConfig struct {
 	// Type of authentication. Available values: "serviceAccountToken", "dpToken", "none".
 	// If empty, autoconfigured based on the environment - "serviceAccountToken" on Kubernetes, "dpToken" on Universal.
 	Type string `yaml:"type" envconfig:"kuma_dp_server_auth_type"`
+	// UseTokenPath define if should use config for ads with path to token that can be reloaded.
+	// Default value: false
+	UseTokenPath bool `yaml:"useTokenPath" envconfig:"kuma_dp_server_auth_use_token_path"`
 }
 
 func (a *DpServerAuthConfig) Validate() error {
@@ -63,7 +66,8 @@ func DefaultDpServerConfig() *DpServerConfig {
 	return &DpServerConfig{
 		Port: 5678,
 		Auth: DpServerAuthConfig{
-			Type: "", // autoconfigured from the environment
+			Type:         "", // autoconfigured from the environment
+			UseTokenPath: false,
 		},
 		Hds: DefaultHdsConfig(),
 	}

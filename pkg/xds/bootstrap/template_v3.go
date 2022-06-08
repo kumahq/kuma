@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"fmt"
 	"net"
 	"strconv"
 
@@ -9,6 +10,7 @@ import (
 	envoy_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoy_grpc_credentials_v3 "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v3"
 	envoy_metrics_v3 "github.com/envoyproxy/go-control-plane/envoy/config/metrics/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
@@ -17,7 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
-func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, error) {
+func genConfig(parameters configParameters, useTokenPath bool) (*envoy_bootstrap_v3.Bootstrap, error) {
 	res := &envoy_bootstrap_v3.Bootstrap{
 		Node: &envoy_core_v3.Node{
 			Id:      parameters.Id,
@@ -94,15 +96,7 @@ func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, erro
 				ApiType:                   envoy_core_v3.ApiConfigSource_GRPC,
 				TransportApiVersion:       envoy_core_v3.ApiVersion_V3,
 				SetNodeOnFirstMessageOnly: true,
-				GrpcServices: []*envoy_core_v3.GrpcService{
-					{
-						TargetSpecifier: &envoy_core_v3.GrpcService_EnvoyGrpc_{
-							EnvoyGrpc: &envoy_core_v3.GrpcService_EnvoyGrpc{
-								ClusterName: "ads_cluster",
-							},
-						},
-					},
-				},
+				GrpcServices:              getGrpcServices(parameters, useTokenPath),
 			},
 		},
 		StaticResources: &envoy_bootstrap_v3.Bootstrap_StaticResources{
@@ -232,19 +226,12 @@ func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, erro
 			ApiType:                   envoy_core_v3.ApiConfigSource_GRPC,
 			TransportApiVersion:       envoy_core_v3.ApiVersion_V3,
 			SetNodeOnFirstMessageOnly: true,
-			GrpcServices: []*envoy_core_v3.GrpcService{
-				{
-					TargetSpecifier: &envoy_core_v3.GrpcService_EnvoyGrpc_{
-						EnvoyGrpc: &envoy_core_v3.GrpcService_EnvoyGrpc{
-							ClusterName: "ads_cluster",
-						},
-					},
-				},
-			},
+			GrpcServices:              getGrpcServices(parameters, useTokenPath),
 		}
 	}
 
-	if parameters.DataplaneToken != "" {
+	if useTokenPath && parameters.DataplaneTokenPath != "" {
+	} else if parameters.DataplaneToken != "" {
 		if res.HdsConfig != nil {
 			for _, n := range res.HdsConfig.GrpcServices {
 				n.InitialMetadata = []*envoy_core_v3.HeaderValue{
@@ -258,6 +245,7 @@ func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, erro
 			}
 		}
 	}
+
 	if parameters.DataplaneResource != "" {
 		res.Node.Metadata.Fields["dataplane.resource"] = util_proto.MustNewValueForStruct(parameters.DataplaneResource)
 	}
@@ -325,4 +313,58 @@ func clusterTypeFromHost(host string) envoy_cluster_v3.Cluster_DiscoveryType {
 		return envoy_cluster_v3.Cluster_STATIC
 	}
 	return envoy_cluster_v3.Cluster_STRICT_DNS
+}
+
+func getGrpcServices(params configParameters, useTokenPath bool) []*envoy_core_v3.GrpcService {
+	var grpcSerivces []*envoy_core_v3.GrpcService
+	if useTokenPath && params.DataplaneTokenPath != "" {
+		grpcSerivces = []*envoy_core_v3.GrpcService{
+			{
+				TargetSpecifier: &envoy_core_v3.GrpcService_GoogleGrpc_{
+					GoogleGrpc: &envoy_core_v3.GrpcService_GoogleGrpc{
+						TargetUri:  fmt.Sprintf("%s:%d", params.XdsHost, params.XdsPort),
+						StatPrefix: "ads",
+						CallCredentials: []*envoy_core_v3.GrpcService_GoogleGrpc_CallCredentials{
+							{
+								CredentialSpecifier: &envoy_core_v3.GrpcService_GoogleGrpc_CallCredentials_FromPlugin{
+									FromPlugin: &envoy_core_v3.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin{
+										Name: "envoy.grpc_credentials.file_based_metadata",
+										ConfigType: &envoy_core_v3.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_TypedConfig{
+											TypedConfig: util_proto.MustMarshalAny(&envoy_grpc_credentials_v3.FileBasedMetadataConfig{
+												SecretData: &envoy_core_v3.DataSource{
+													Specifier: &envoy_core_v3.DataSource_Filename{Filename: params.DataplaneTokenPath},
+												},
+											}),
+										},
+									},
+								},
+							},
+						},
+						ChannelCredentials: &envoy_core_v3.GrpcService_GoogleGrpc_ChannelCredentials{
+							CredentialSpecifier: &envoy_core_v3.GrpcService_GoogleGrpc_ChannelCredentials_SslCredentials{
+								SslCredentials: &envoy_core_v3.GrpcService_GoogleGrpc_SslCredentials{
+									RootCerts: &envoy_core_v3.DataSource{
+										Specifier: &envoy_core_v3.DataSource_InlineBytes{
+											InlineBytes: params.CertBytes,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+	} else {
+		grpcSerivces = []*envoy_core_v3.GrpcService{
+			{
+				TargetSpecifier: &envoy_core_v3.GrpcService_EnvoyGrpc_{
+					EnvoyGrpc: &envoy_core_v3.GrpcService_EnvoyGrpc{
+						ClusterName: "ads_cluster",
+					},
+				},
+			},
+		}
+	}
+	return grpcSerivces
 }
