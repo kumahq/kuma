@@ -151,8 +151,8 @@ func (k *KumactlOptions) KumactlInstallCP(mode string, args ...string) (string, 
 		cmd...)
 }
 
-func (k *KumactlOptions) KumactlInstallObservability() (string, error) {
-	return k.RunKumactlAndGetOutput("install", "observability")
+func (k *KumactlOptions) KumactlInstallObservability(namespace string) (string, error) {
+	return k.RunKumactlAndGetOutput("install", "observability", "--namespace", namespace)
 }
 
 func (k *KumactlOptions) KumactlConfigControlPlanesAdd(name, address, token string) error {
