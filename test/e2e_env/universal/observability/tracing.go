@@ -9,7 +9,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
 	obs "github.com/kumahq/kuma/test/framework/deployments/observability"
@@ -47,7 +46,6 @@ func Tracing() {
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(Kuma(core.Standalone)).
 			Install(obs.Install(obsDeployment)).
 			Install(MeshUniversal(mesh)).
 			Install(TestServerUniversal("test-server", mesh, WithArgs([]string{"echo", "--instance", "universal1"}))).
