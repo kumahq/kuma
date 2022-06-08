@@ -86,8 +86,9 @@ var _ = Describe("Envoy", func() {
 					DrainTime: 15 * time.Second,
 				},
 				DataplaneRuntime: kuma_dp.DataplaneRuntime{
-					BinaryPath: filepath.Join("testdata", "envoy-mock.exit-0.sh"),
-					ConfigDir:  configDir,
+					BinaryPath:    filepath.Join("testdata", "envoy-mock.exit-0.sh"),
+					ConfigDir:     configDir,
+					EnvoyLogLevel: "off",
 				},
 			}
 			expectedConfigFile := filepath.Join(configDir, "bootstrap.yaml")
@@ -145,9 +146,10 @@ var _ = Describe("Envoy", func() {
 					DrainTime: 15 * time.Second,
 				},
 				DataplaneRuntime: kuma_dp.DataplaneRuntime{
-					BinaryPath:  filepath.Join("testdata", "envoy-mock.exit-0.sh"),
-					ConfigDir:   configDir,
-					Concurrency: 9,
+					BinaryPath:    filepath.Join("testdata", "envoy-mock.exit-0.sh"),
+					ConfigDir:     configDir,
+					Concurrency:   9,
+					EnvoyLogLevel: "off",
 				},
 			}
 

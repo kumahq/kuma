@@ -3,7 +3,6 @@ package util
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
@@ -36,17 +35,9 @@ func ToEnvoyResources(rlist model.ResourceList) ([]envoy_types.Resource, error) 
 		}
 		rv = append(rv, &mesh_proto.KumaResource{
 			Meta: &mesh_proto.KumaResource_Meta{
-				Name: r.GetMeta().GetName(),
-				Mesh: r.GetMeta().GetMesh(),
-				// KDS ResourceMeta only contains name and mesh.
-				// The rest is managed by the receiver of resources anyways. See ResourceSyncer#Sync
-				//
-				// backwards compatibility with Kuma 1.4.x
-				// https://github.com/kumahq/kuma/issues/4007
-				// Right now we send creation and modification time because the old versions of Kuma CP expects them to be present.
-				CreationTime:     util_proto.MustTimestampProto(time.Unix(0, 0)),
-				ModificationTime: util_proto.MustTimestampProto(time.Unix(0, 0)),
-				Version:          "",
+				Name:    r.GetMeta().GetName(),
+				Mesh:    r.GetMeta().GetMesh(),
+				Version: "",
 			},
 			Spec: pbany,
 		})
@@ -57,8 +48,7 @@ func ToEnvoyResources(rlist model.ResourceList) ([]envoy_types.Resource, error) 
 func AddPrefixToNames(rs []model.Resource, prefix string) {
 	for _, r := range rs {
 		newName := fmt.Sprintf("%s.%s", prefix, r.GetMeta().GetName())
-		m := NewResourceMeta(newName, r.GetMeta().GetMesh(), r.GetMeta().GetVersion(),
-			r.GetMeta().GetCreationTime(), r.GetMeta().GetModificationTime())
+		m := NewResourceMeta(newName, r.GetMeta().GetMesh())
 		r.SetMeta(m)
 	}
 }
@@ -66,8 +56,7 @@ func AddPrefixToNames(rs []model.Resource, prefix string) {
 func AddSuffixToNames(rs []model.Resource, suffix string) {
 	for _, r := range rs {
 		newName := fmt.Sprintf("%s.%s", r.GetMeta().GetName(), suffix)
-		m := NewResourceMeta(newName, r.GetMeta().GetMesh(), r.GetMeta().GetVersion(),
-			r.GetMeta().GetCreationTime(), r.GetMeta().GetModificationTime())
+		m := NewResourceMeta(newName, r.GetMeta().GetMesh())
 		r.SetMeta(m)
 	}
 }

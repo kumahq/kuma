@@ -17,8 +17,6 @@ message KumaResource {
   message Meta {
     string name = 1;
     string mesh = 2;
-    google.protobuf.Timestamp creation_time = 3;
-    google.protobuf.Timestamp modification_time = 4;
     string version = 5;
   }
   Meta meta = 1;
