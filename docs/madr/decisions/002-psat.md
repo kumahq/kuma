@@ -6,7 +6,7 @@ Technical Story: https://github.com/kumahq/kuma/issues/4121
 
 ## Context and Problem Statement
 
-Kuma uses Kubernetes service account tokens (SAT) to identify data plane proxies to the control plane during bootstrapping. These tokens have no expiry. If the user wants to rotate the token, Kuma won't reload the newer token for authentication and will use the old one to reconnect. Currenlty, `kuma-dp` loads the token only once at the startup and do not detect token's change.
+Kuma uses Kubernetes service account tokens (SAT) to identify data plane proxies to the control plane during bootstrapping. These tokens have no expiry. If the user wants to rotate the token, Kuma won't reload the newer token for authentication and will use the old one to reconnect. Currently, `kuma-dp` loads the token only once at the startup and does not detect the token's change. That is the problem and we want to support the case where the token is rotated and later used for authentication with control-plane.
 
 ## Considered Options
 
