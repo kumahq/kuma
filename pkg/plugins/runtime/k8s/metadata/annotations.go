@@ -88,6 +88,10 @@ const (
 	// KumaContainerPatches is a comma-separated list of ContainerPatch names to be applied to injected containers on a given workload
 	KumaContainerPatches = "kuma.io/container-patches"
 
+	// KumaEnvoyLogLevel allows to control Envoy log level.
+	// Available values are: [trace][debug][info][warning|warn][error][critical][off]
+	KumaEnvoyLogLevel = "kuma.io/envoy-log-level"
+
 	// KumaMetricsPrometheusAggregatePath allows to specify which path for specific app should request for metrics
 	KumaMetricsPrometheusAggregatePath = "prometheus.metrics.kuma.io/aggregate-%s-path"
 	// KumaMetricsPrometheusAggregatePort allows to specify which port for specific app should request for metrics

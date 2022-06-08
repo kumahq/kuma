@@ -234,6 +234,12 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 			Value: "false",
 		}
 	}
+	if logLevel, exist := metadata.Annotations(podAnnotations).GetString(metadata.KumaEnvoyLogLevel); exist {
+		envVars["KUMA_DATAPLANE_RUNTIME_ENVOY_LOG_LEVEL"] = kube_core.EnvVar{
+			Name:  "KUMA_DATAPLANE_RUNTIME_ENVOY_LOG_LEVEL",
+			Value: logLevel,
+		}
+	}
 
 	// override defaults with cfg env vars
 	for envName, envVal := range i.ContainerConfig.EnvVars {
