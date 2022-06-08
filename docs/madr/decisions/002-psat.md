@@ -6,7 +6,7 @@ Technical Story: https://github.com/kumahq/kuma/issues/4121
 
 ## Context and Problem Statement
 
-Kuma uses Kubernetes service account tokens (SAT) to identify dataplanes to the control-plane during bootstrapping. These tokens have no expiry. In case the user wants to rotate the token kuma won't reload the newer token for authentication and use the old (invalid) to reconnect.
+Kuma uses Kubernetes service account tokens (SAT) to identify data plane proxies to the control plane during bootstrapping. These tokens have no expiry. If the user wants to rotate the token, Kuma won't reload the newer token for authentication and will use the old one to reconnect. Currenlty, `kuma-dp` loads the token only once at the startup and do not detect token's change.
 
 ## Considered Options
 
@@ -15,7 +15,7 @@ Kuma uses Kubernetes service account tokens (SAT) to identify dataplanes to the 
 
 ## Decision Outcome
 
-Chosen option: "Use GoogleGRPC configuration in Envoy", because it works and does not require additional implementation in Envoy which would do the same. At the beginning I wasn't sure if it works because of [issue](https://github.com/envoyproxy/envoy/issues/15380), but after validation, it seems that the problem described there doesn't occur anymore.
+Chosen option: "Use GoogleGRPC configuration in Envoy", because it works and does not require additional implementation in Envoy which would do the same. At the beginning we wasn't sure if it works because of [issue](https://github.com/envoyproxy/envoy/issues/15380), but after validation, it seems that the problem described there doesn't occur anymore.
 
 ### Doubts
 * should we add grpc connection timeout ? (if we are keeping the connection `forever/to the failure` we won't use token to reauthenticate)
@@ -33,7 +33,7 @@ Chosen option: "Use GoogleGRPC configuration in Envoy", because it works and doe
 
 ### Use GoogleGRPC configuration in Envoy
 
-`kuma-dp` allows providing a dataplane token or path to a file that has the token. When the user provides a path to the token, `kuma-dp` reads that token and adds it to the bootstrap request. To support rotation we are going to send both information to the `kuma-cp` in the bootstrap request (token and path). By default, we are going to use the current solution which uses `envoyGrpc` and `initial_metdata` for authentication. Configuration to enable using token rotation needs to be enabled in the control-plane by enabling `dpServer.auth.useTokenPath`. When the property is enabled, `kuma-cp` adds a path to the token to the configuration of an `Envoy`. In case there is no path the `Envoy` will receive a configuration that doesn't support reloading.
+`kuma-dp` allows providing a dataplane token or path to a file that has the token. When the user provides a path to the token, `kuma-dp` reads that token and adds it to the bootstrap request. To support rotation we are going to send both the token and path to the control plane in the bootstrap request. By default, we are going to use the current solution which uses `envoyGrpc` and `initial_metdata` for authentication. Token rotation needs to be enabled in the control-plane by setting `dpServer.auth.useTokenPath`. When the property is enabled, `kuma-cp` adds a path to the token to the Envoy configuration. In case there is no path, the `Envoy` will receive a configuration that doesn't support reloading.
 
 Envoy configuration:
 ```json
@@ -71,15 +71,22 @@ Envoy configuration:
    }
 ```
 
-* Good, because do not require implementation in Envoy
-* Good, because safe to switch from one to another model, in case of an error we can disable
-* Bad, because we adding some complexity with the flag (after some time we can remove and change as default)
+#### Advantages
+
+* Does not require implementation in Envoy
+* Safe to switch from one to another model, in case of an error we can disable
+
+#### Disadvantages
+
+* The flag adds some complexity (we can eventually deprecate and remove the flag)
 
 ### Implement support for reading tokens from files in EnvoyGRPC
 
 We would have to implement support for reading file values in EnvoyGRPC, which is already supported by GoogleGRPC.
 
-* Bad, because already supported by GoogleGRPC
+#### Disadvantages
+
+* Already supported by GoogleGRPC
 
 ## Links
 
