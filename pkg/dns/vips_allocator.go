@@ -129,7 +129,7 @@ func (d *VIPsAllocator) createOrUpdateMeshVIPConfig(
 	if len(changes) == 0 {
 		return nil
 	}
-	Log.Info("mesh vip changes", "mesh", mesh, "changes", changes)
+	Log.Info("mesh VIPs changed", "mesh", mesh, "changes", changes)
 	return d.persistence.Set(ctx, mesh, out)
 }
 

@@ -4,6 +4,7 @@ metadata:
   annotations:
     kuma.io/container-patches: container-patch-1
     kuma.io/envoy-admin-port: "9901"
+    kuma.io/envoy-log-level: trace
     kuma.io/mesh: default
     kuma.io/sidecar-drain-time: 10s
     kuma.io/sidecar-injected: "true"
@@ -73,6 +74,8 @@ spec:
       value: default
     - name: KUMA_DATAPLANE_NAME
       value: $(POD_NAME).$(POD_NAMESPACE)
+    - name: KUMA_DATAPLANE_RUNTIME_ENVOY_LOG_LEVEL
+      value: trace
     - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
       value: /var/run/secrets/kubernetes.io/serviceaccount/token
     - name: KUMA_DNS_ENABLED

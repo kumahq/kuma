@@ -47,7 +47,7 @@ func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 	}
 
 	l := r.Log.WithValues("mesh", mesh)
-	l.Info("updating VIPs")
+	l.V(1).Info("reconcile VIPs")
 
 	viewModificator := func(view *vips.VirtualOutboundMeshView) error {
 		return nil
@@ -79,7 +79,7 @@ func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 		return kube_ctrl.Result{}, err
 	}
 
-	l.Info("VIPs updated")
+	l.V(1).Info("VIPs reconciled")
 
 	return kube_ctrl.Result{}, nil
 }
