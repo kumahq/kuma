@@ -20,6 +20,7 @@ type Deployment interface {
 type deployOptions struct {
 	namespace      string
 	deploymentName string
+	components     []string
 }
 type deployOptionsFunc func(*deployOptions)
 
@@ -30,6 +31,23 @@ func From(deploymentName string, cluster framework.Cluster) Observability {
 func WithNamespace(namespace string) deployOptionsFunc {
 	return func(o *deployOptions) {
 		o.namespace = namespace
+	}
+}
+
+type Component string
+
+const (
+	JaegerComponent     Component = "jaeger"
+	PrometheusComponent Component = "prometheus"
+	GrafanaComponent    Component = "grafana"
+	LokiComponent       Component = "loki"
+)
+
+func WithComponents(components ...Component) deployOptionsFunc {
+	return func(o *deployOptions) {
+		for _, c := range components {
+			o.components = append(o.components, string(c))
+		}
 	}
 }
 
@@ -45,6 +63,7 @@ func Install(name string, optFns ...deployOptionsFunc) framework.InstallFunc {
 			deployment = &k8SDeployment{
 				namespace:      opts.namespace,
 				deploymentName: opts.deploymentName,
+				components:     opts.components,
 			}
 		case *framework.UniversalCluster:
 			deployment = &universalDeployment{

@@ -2,12 +2,9 @@ package observability
 
 import (
 	"fmt"
-	"reflect"
 
-	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
@@ -68,24 +65,18 @@ func Tracing() {
 		err = YamlUniversal(traceAll(mesh))(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		retry.DoWithRetry(env.Cluster.GetTesting(), "check traced services", DefaultRetries, DefaultTimeout, func() (string, error) {
+		Eventually(func() ([]string, error) {
 			// when client sends requests to server
 			_, _, err := env.Cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "3", "--fail", "test-server.mesh")
 			if err != nil {
-				return "", err
+				return nil, err
 			}
-
 			// then traces are published
-			services, err := obsClient.TracedServices()
-			if err != nil {
-				return "", err
-			}
-
-			expectedServices := []string{"demo-client", "jaeger-query", "test-server"}
-			if !reflect.DeepEqual(services, expectedServices) {
-				return "", errors.Errorf("services not traced. Expected %q, got %q", expectedServices, services)
-			}
-			return "", nil
-		})
+			return obsClient.TracedServices()
+		}, "30s", "1s").Should(Equal([]string{
+			"demo-client",
+			"jaeger-query",
+			"test-server",
+		}))
 	})
 }

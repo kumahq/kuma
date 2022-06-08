@@ -14,6 +14,7 @@ type k8SDeployment struct {
 	deploymentName  string
 	namespace       string
 	jaegerApiTunnel *k8s.Tunnel
+	components      []string
 }
 
 var _ Deployment = &k8SDeployment{}
@@ -32,7 +33,7 @@ func (t *k8SDeployment) Name() string {
 
 func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 	kumactl := framework.NewKumactlOptions(cluster.GetTesting(), cluster.GetKuma().GetName(), true)
-	yaml, err := kumactl.KumactlInstallObservability(t.namespace)
+	yaml, err := kumactl.KumactlInstallObservability(t.namespace, t.components)
 	if err != nil {
 		return err
 	}

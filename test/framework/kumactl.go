@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/gruntwork-io/terratest/modules/retry"
@@ -151,8 +152,12 @@ func (k *KumactlOptions) KumactlInstallCP(mode string, args ...string) (string, 
 		cmd...)
 }
 
-func (k *KumactlOptions) KumactlInstallObservability(namespace string) (string, error) {
-	return k.RunKumactlAndGetOutput("install", "observability", "--namespace", namespace)
+func (k *KumactlOptions) KumactlInstallObservability(namespace string, components []string) (string, error) {
+	args := []string{"install", "observability", "--namespace", namespace}
+	if len(components) != 0 {
+		args = append(args, "--components", strings.Join(components, ","))
+	}
+	return k.RunKumactlAndGetOutput(args...)
 }
 
 func (k *KumactlOptions) KumactlConfigControlPlanesAdd(name, address, token string) error {

@@ -2,14 +2,9 @@ package observability
 
 import (
 	"fmt"
-	"reflect"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
-	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
@@ -62,7 +57,7 @@ func Tracing() {
 			Install(MeshKubernetes(mesh)).
 			Install(DemoClientK8s(mesh, ns)).
 			Install(testserver.Install(testserver.WithMesh(mesh), testserver.WithNamespace(ns))).
-			Install(obs.Install(obsDeployment, obs.WithNamespace(obsNs))).
+			Install(obs.Install(obsDeployment, obs.WithNamespace(obsNs), obs.WithComponents(obs.JaegerComponent))).
 			Setup(env.Cluster)
 		obsClient = obs.From(obsDeployment, env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -81,42 +76,21 @@ func Tracing() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when client sends requests to server
-		pods, err := k8s.ListPodsE(
-			env.Cluster.GetTesting(),
-			env.Cluster.GetKubectlOptions(ns),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", "demo-client"),
-			},
-		)
+		clientPod, err := PodNameOfApp(env.Cluster, "demo-client", ns)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(pods).To(HaveLen(1))
 
-		clientPod := pods[0]
-
-		retry.DoWithRetry(env.Cluster.GetTesting(), "curl remote service",
-			DefaultRetries, DefaultTimeout,
-			func() (string, error) {
-				_, _, err := env.Cluster.ExecWithRetries(ns, clientPod.GetName(), "demo-client",
-					"curl", "-v", "-m", "3", "--fail", "test-server")
-				if err != nil {
-					return "", err
-				}
-
-				// then traces are published
-				services, err := obsClient.TracedServices()
-				if err != nil {
-					return "", err
-				}
-
-				expectedServices := []string{
-					fmt.Sprintf("demo-client_%s_svc", ns),
-					"jaeger-query",
-					fmt.Sprintf("test-server_%s_svc_80", ns),
-				}
-				if !reflect.DeepEqual(services, expectedServices) {
-					return "", errors.Errorf("services not traced. Expected %q, got %q", expectedServices, services)
-				}
-				return "ok", nil
-			})
+		Eventually(func() ([]string, error) {
+			_, _, err := env.Cluster.ExecWithRetries(ns, clientPod, "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "test-server")
+			if err != nil {
+				return nil, err
+			}
+			// then traces are published
+			return obsClient.TracedServices()
+		}, "30s", "1s").Should(Equal([]string{
+			fmt.Sprintf("demo-client_%s_svc", ns),
+			"jaeger-query",
+			fmt.Sprintf("test-server_%s_svc_80", ns),
+		}))
 	})
 }
