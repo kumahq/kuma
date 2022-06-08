@@ -15,7 +15,7 @@ Kuma uses Kubernetes service account tokens (SAT) to identify data plane proxies
 
 ## Decision Outcome
 
-Chosen option: "Use GoogleGRPC configuration in Envoy", because it works and does not require additional implementation in Envoy which would do the same. At the beginning we wasn't sure if it works because of [issue](https://github.com/envoyproxy/envoy/issues/15380), but after validation, it seems that the problem described there doesn't occur anymore.
+Chosen option: "Use GoogleGRPC configuration in Envoy", because it works and does not require additional implementation in Envoy which would do the same. At the beginning we weren't sure if it works because of [issue](https://github.com/envoyproxy/envoy/issues/15380), but after validation, it seems that the problem described there doesn't occur anymore.
 
 ### Doubts
 * should we add grpc connection timeout ? (if we are keeping the connection `forever/to the failure` we won't use token to reauthenticate)
