@@ -5,7 +5,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	model "github.com/kumahq/kuma/pkg/core/xds"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -25,16 +25,16 @@ const (
 type IngressGenerator struct {
 }
 
-func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
-	resources := model.NewResourceSet()
+func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+	resources := core_xds.NewResourceSet()
 
-	destinationsPerService := i.destinations(proxy.ZoneIngressProxy.TrafficRouteList, proxy.ZoneIngressProxy.GatewayRoutes, proxy.ZoneIngressProxy.MeshGateways)
+	destinationsPerService := i.destinations(proxy.ZoneIngressProxy)
 
 	listener, err := i.generateLDS(proxy, proxy.ZoneIngress, destinationsPerService, proxy.APIVersion)
 	if err != nil {
 		return nil, err
 	}
-	resources.Add(&model.Resource{
+	resources.Add(&core_xds.Resource{
 		Name:     listener.GetName(),
 		Origin:   OriginIngress,
 		Resource: listener,
@@ -64,14 +64,14 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 // This approach has a limitation: additional tags on outbound in Universal mode won't work across different zones.
 // Traffic is NOT decrypted here, therefore we don't need certificates and mTLS settings
 func (i IngressGenerator) generateLDS(
-	proxy *model.Proxy,
+	proxy *core_xds.Proxy,
 	ingress *core_mesh.ZoneIngressResource,
 	destinationsPerService map[string][]envoy_common.Tags,
 	apiVersion envoy_common.APIVersion,
 ) (envoy_common.NamedResource, error) {
 	inboundListenerName := envoy_names.GetInboundListenerName(proxy.ZoneIngress.Spec.GetNetworking().GetAddress(), proxy.ZoneIngress.Spec.GetNetworking().GetPort())
 	inboundListenerBuilder := envoy_listeners.NewListenerBuilder(apiVersion).
-		Configure(envoy_listeners.InboundListener(inboundListenerName, ingress.Spec.GetNetworking().GetAddress(), ingress.Spec.GetNetworking().GetPort(), model.SocketAddressProtocolTCP)).
+		Configure(envoy_listeners.InboundListener(inboundListenerName, ingress.Spec.GetNetworking().GetAddress(), ingress.Spec.GetNetworking().GetPort(), core_xds.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.TLSInspector())
 
 	if len(proxy.ZoneIngress.Spec.AvailableServices) == 0 {
@@ -112,10 +112,10 @@ func (i IngressGenerator) generateLDS(
 }
 
 func (_ IngressGenerator) destinations(
-	trs *core_mesh.TrafficRouteResourceList, gatewayRoutes *core_mesh.MeshGatewayRouteResourceList, gateways *core_mesh.MeshGatewayResourceList,
+	ingressProxy *core_xds.ZoneIngressProxy,
 ) map[string][]envoy_common.Tags {
 	destinations := map[string][]envoy_common.Tags{}
-	for _, tr := range trs.Items {
+	for _, tr := range ingressProxy.TrafficRouteList.Items {
 		for _, split := range tr.Spec.Conf.GetSplitWithDestination() {
 			service := split.Destination[mesh_proto.ServiceTag]
 			destinations[service] = append(destinations[service], split.Destination)
@@ -130,7 +130,7 @@ func (_ IngressGenerator) destinations(
 
 	var backends []*mesh_proto.MeshGatewayRoute_Backend
 
-	for _, route := range gatewayRoutes.Items {
+	for _, route := range ingressProxy.GatewayRoutes.Items {
 		for _, rule := range route.Spec.GetConf().GetHttp().GetRules() {
 			backends = append(backends, rule.Backends...)
 		}
@@ -150,7 +150,7 @@ func (_ IngressGenerator) destinations(
 		destinations[service] = append(destinations[service], backend.Destination)
 	}
 
-	for _, gateway := range gateways.Items {
+	for _, gateway := range ingressProxy.MeshGateways.Items {
 		for _, selector := range gateway.Selectors() {
 			service := selector.GetMatch()[mesh_proto.ServiceTag]
 			for _, listener := range gateway.Spec.GetConf().GetListeners() {
@@ -168,7 +168,7 @@ func (_ IngressGenerator) destinations(
 	return destinations
 }
 
-func (_ IngressGenerator) services(proxy *model.Proxy) []string {
+func (_ IngressGenerator) services(proxy *core_xds.Proxy) []string {
 	var services []string
 	for service := range proxy.Routing.OutboundTargets {
 		services = append(services, service)
@@ -181,7 +181,7 @@ func (i IngressGenerator) generateCDS(
 	services []string,
 	destinationsPerService map[string][]envoy_common.Tags,
 	apiVersion envoy_common.APIVersion,
-) (resources []*model.Resource, _ error) {
+) (resources []*core_xds.Resource, _ error) {
 	for _, service := range services {
 		tagSlice := envoy_common.TagsSlice(append(destinationsPerService[service], destinationsPerService[mesh_proto.MatchAllTag]...))
 		tagKeySlice := tagSlice.ToTagKeysSlice().Transform(envoy_common.Without(mesh_proto.ServiceTag), envoy_common.With("mesh"))
@@ -193,7 +193,7 @@ func (i IngressGenerator) generateCDS(
 		if err != nil {
 			return nil, err
 		}
-		resources = append(resources, &model.Resource{
+		resources = append(resources, &core_xds.Resource{
 			Name:     service,
 			Origin:   OriginIngress,
 			Resource: edsCluster,
@@ -203,17 +203,17 @@ func (i IngressGenerator) generateCDS(
 }
 
 func (_ IngressGenerator) generateEDS(
-	proxy *model.Proxy,
+	proxy *core_xds.Proxy,
 	services []string,
 	apiVersion envoy_common.APIVersion,
-) (resources []*model.Resource, err error) {
+) (resources []*core_xds.Resource, err error) {
 	for _, service := range services {
 		endpoints := proxy.Routing.OutboundTargets[service]
 		cla, err := envoy_endpoints.CreateClusterLoadAssignment(service, endpoints, apiVersion)
 		if err != nil {
 			return nil, err
 		}
-		resources = append(resources, &model.Resource{
+		resources = append(resources, &core_xds.Resource{
 			Name:     service,
 			Origin:   OriginIngress,
 			Resource: cla,
