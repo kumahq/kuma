@@ -65,19 +65,8 @@ by `make cleanup/policy/donothingpolicy`. Implement method `validate() error`:
    }
    ```
 
-5. Add import to `pkg/plugins/policies/imports.go`:
-   ```go
-   _ "github.com/kumahq/kuma/pkg/plugins/policies/donothingpolicy"
-   ```
-
-6. Add `AddToScheme` call to the `pkg/plugins/policies/scheme.go`:
-   ```go
-    if err := donothingpolicy.AddToScheme(s); err != nil {
-        return err
-    }
-   ```
-
-8. Update `cp-rbac.yaml` manually, automation is yet to come.
+5. Update `cp-rbac.yaml` manually, automation is yet to come.
+6. You can always not register a policy with `skip_registration` in the policy definition
 
 ## How to use
 

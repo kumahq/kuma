@@ -31,7 +31,9 @@ import (
 
 	"github.com/kumahq/kuma/pkg/plugins/policies/{{.KumactlSingular}}/api/{{.PolicyVersion}}"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
+	{{- if not .SkipRegistration }}
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
+	{{- end }}
 )
 
 {{- if not .SkipKubernetesWrappers }}

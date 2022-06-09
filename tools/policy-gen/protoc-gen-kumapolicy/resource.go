@@ -25,7 +25,6 @@ import (
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 )
 
 {{range .Resources}}
@@ -149,12 +148,6 @@ var {{.ResourceName}}TypeDescriptor = model.ResourceTypeDescriptor{
 		KumactlListArg: "{{.KumactlPlural}}",
 		AllowToInspect: {{.AllowToInspect}},
 	}
-
-{{- if not .SkipRegistration}}
-func init() {
-	registry.RegisterType({{.ResourceName}}TypeDescriptor)
-}
-{{- end}}
 {{end}}
 `))
 
