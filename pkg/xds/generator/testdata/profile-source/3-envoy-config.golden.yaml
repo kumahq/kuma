@@ -126,6 +126,13 @@ resources:
                 portValue: 8080
     name: localhost:8080
     type: STATIC
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        commonHttpProtocolOptions:
+          idleTimeout: 7200s
+        explicitHttpConfig:
+          httpProtocolOptions: {}
 - name: db
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
@@ -174,6 +181,8 @@ resources:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          commonHttpProtocolOptions:
+            idleTimeout: 7200s
           forwardClientCertDetails: SANITIZE_SET
           httpFilters:
           - name: envoy.filters.http.router
@@ -197,6 +206,7 @@ resources:
           setCurrentClientCertDetails:
             uri: true
           statPrefix: localhost_8080
+          streamIdleTimeout: 3600s
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
@@ -396,6 +406,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: db
+          idleTimeout: 0s
           statPrefix: db
     metadata:
       filterMetadata:
@@ -416,6 +427,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: elastic
+          idleTimeout: 0s
           statPrefix: elastic
     metadata:
       filterMetadata:
