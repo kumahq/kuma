@@ -1,0 +1,209 @@
+Clusters:
+  Resources:
+    api-service-6deccbd18c30bed3:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
+      connectTimeout: 10s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
+      name: api-service-6deccbd18c30bed3
+      outlierDetection:
+        enforcingConsecutive5xx: 0
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          commonTlsContext:
+            alpnProtocols:
+            - kuma
+            combinedValidationContext:
+              defaultValidationContext:
+                matchSubjectAltNames:
+                - exact: spiffe://default/api-service
+              validationContextSdsSecretConfig:
+                name: mesh_ca:secret:default
+                sdsConfig:
+                  ads: {}
+                  resourceApiVersion: V3
+            tlsCertificateSdsSecretConfigs:
+            - name: identity_cert:secret:default
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          sni: api-service{mesh=default}
+      type: EDS
+    echo-service-7ac4685ceb7ca5fc:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
+      connectTimeout: 10s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
+      name: echo-service-7ac4685ceb7ca5fc
+      outlierDetection:
+        enforcingConsecutive5xx: 0
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          commonTlsContext:
+            alpnProtocols:
+            - kuma
+            combinedValidationContext:
+              defaultValidationContext:
+                matchSubjectAltNames:
+                - exact: spiffe://default/echo-service
+              validationContextSdsSecretConfig:
+                name: mesh_ca:secret:default
+                sdsConfig:
+                  ads: {}
+                  resourceApiVersion: V3
+            tlsCertificateSdsSecretConfigs:
+            - name: identity_cert:secret:default
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          sni: echo-service{mesh=default}
+      type: EDS
+    external-httpbin-c7ae16fc6e6c5a95:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
+      connectTimeout: 10s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
+      name: external-httpbin-c7ae16fc6e6c5a95
+      outlierDetection:
+        enforcingConsecutive5xx: 0
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          commonTlsContext:
+            alpnProtocols:
+            - kuma
+            combinedValidationContext:
+              defaultValidationContext:
+                matchSubjectAltNames:
+                - exact: spiffe://default/external-httpbin
+              validationContextSdsSecretConfig:
+                name: mesh_ca:secret:default
+                sdsConfig:
+                  ads: {}
+                  resourceApiVersion: V3
+            tlsCertificateSdsSecretConfigs:
+            - name: identity_cert:secret:default
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          sni: external-httpbin{mesh=default}
+      type: EDS
+Endpoints:
+  Resources:
+    api-service-6deccbd18c30bed3:
+      clusterName: api-service-6deccbd18c30bed3
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.1.1
+                portValue: 20001
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+    echo-service-7ac4685ceb7ca5fc:
+      clusterName: echo-service-7ac4685ceb7ca5fc
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.1.6
+                portValue: 20006
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+    external-httpbin-c7ae16fc6e6c5a95:
+      clusterName: external-httpbin-c7ae16fc6e6c5a95
+Listeners:
+  Resources:
+    edge-gateway:TCP:8080:
+      address:
+        socketAddress:
+          address: 192.168.1.1
+          portValue: 8080
+      enableReusePort: true
+      filterChains:
+      - filters:
+        - name: envoy.filters.network.tcp_proxy
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+            maxConnectAttempts: 5
+            statPrefix: gateway-default
+            weightedClusters:
+              clusters:
+              - name: external-httpbin-c7ae16fc6e6c5a95
+              - name: api-service-6deccbd18c30bed3
+              - name: echo-service-7ac4685ceb7ca5fc
+      listenerFilters:
+      - name: envoy.filters.listener.tls_inspector
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+      name: edge-gateway:TCP:8080
+      perConnectionBufferLimitBytes: 32768
+      trafficDirection: INBOUND
+Routes:
+  Resources: {}
+Runtimes:
+  Resources: {}
+Secrets:
+  Resources:
+    identity_cert:secret:default:
+      name: identity_cert:secret:default
+      tlsCertificate:
+        certificateChain:
+          inlineBytes: Q0VSVA==
+        privateKey:
+          inlineBytes: S0VZ
+    mesh_ca:secret:default:
+      name: mesh_ca:secret:default
+      validationContext:
+        trustedCa:
+          inlineBytes: Q0E=

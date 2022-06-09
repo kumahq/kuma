@@ -20,6 +20,8 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	"github.com/kumahq/kuma/pkg/tls"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -379,4 +381,57 @@ func newSecretError(i int, msg string) error {
 	var err validators.ValidationError
 	err.AddViolationAt(validators.RootedAt("secret").Index(i), msg)
 	return err.OrNil()
+}
+
+// TCPFilterChainGenerator generates a filter chain for a TCP listener.
+type TCPFilterChainGenerator struct {
+}
+
+func (g *TCPFilterChainGenerator) Generate(
+	ctx xds_context.Context, info GatewayListenerInfo, hosts []GatewayHost,
+) (
+	*core_xds.ResourceSet, []*envoy_listeners.FilterChainBuilder, error,
+) {
+	log.V(1).Info("generating filter chain", "protocol", "TCP")
+
+	var clusters []envoy.Cluster
+	var allDests []route.Destination
+
+	for _, host := range info.HostInfos {
+		dests := routeDestinations(host.Entries)
+		allDests = append(allDests, dests...)
+
+		for _, dest := range dests {
+			cluster := envoy.NewCluster(
+				envoy.WithName(dest.Name),
+				envoy.WithService(dest.Destination[mesh_proto.ServiceTag]),
+				envoy.WithTags(dest.Destination),
+				envoy.WithWeight(dest.Weight),
+			)
+			clusters = append(clusters, cluster)
+		}
+	}
+
+	service := info.Proxy.Dataplane.Spec.GetIdentifyingService()
+
+	// We can only specify retries for the entire filter chain, not per cluster
+	var retryPolicy *core_mesh.RetryResource
+	if policy := match.BestConnectionPolicyForDestination(allDests, core_mesh.RetryType); policy != nil {
+		retryPolicy = policy.(*core_mesh.RetryResource)
+	}
+
+	builder := envoy_listeners.NewFilterChainBuilder(info.Proxy.APIVersion).Configure(
+		envoy_listeners.TcpProxy(service, clusters...),
+		envoy_listeners.NetworkAccessLog(
+			ctx.Mesh.Resource.Meta.GetName(),
+			envoy.TrafficDirectionInbound,
+			service,                // Source service is the gateway service.
+			mesh_proto.MatchAllTag, // Destination service could be anywhere, depending on the routes.
+			ctx.Mesh.GetLoggingBackend(info.Proxy.Policies.TrafficLogs[core_mesh.PassThroughService]),
+			info.Proxy,
+		),
+		envoy_listeners.MaxConnectAttempts(retryPolicy),
+	)
+
+	return nil, []*envoy_listeners.FilterChainBuilder{builder}, nil
 }
