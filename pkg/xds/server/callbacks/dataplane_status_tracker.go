@@ -104,7 +104,7 @@ func (c *dataplaneStatusTracker) OnStreamClosed(streamID int64) {
 
 	log := statusTrackerLog.WithValues(
 		"streamID", streamID,
-		"name", state.dataplaneId.Name,
+		"proxyName", state.dataplaneId.Name,
 		"mesh", state.dataplaneId.Mesh,
 		"subscriptionID", state.subscription.Id,
 	)
@@ -180,7 +180,7 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req util_xds.Di
 		"mesh", state.dataplaneId.Mesh,
 		"streamID", streamID,
 		"type", shortEnvoyType(req.GetTypeUrl()),
-		"version", req.VersionInfo(),
+		"resourceVersion", req.VersionInfo(),
 	)
 	if statusTrackerLog.V(1).Enabled() {
 		log = log.WithValues(
@@ -232,9 +232,9 @@ func (c *dataplaneStatusTracker) OnStreamResponse(streamID int64, req util_xds.D
 		"mesh", state.dataplaneId.Mesh,
 		"streamID", streamID,
 		"type", shortEnvoyType(req.GetTypeUrl()),
-		"version", resp.VersionInfo(),
+		"resourceVersion", resp.VersionInfo(),
 		"requestedResourceNames", req.GetResourceNames(),
-		"resources", len(resp.GetResources()),
+		"resourceCount", len(resp.GetResources()),
 	)
 	if statusTrackerLog.V(1).Enabled() {
 		log = log.WithValues(

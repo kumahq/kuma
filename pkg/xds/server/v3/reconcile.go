@@ -86,7 +86,7 @@ func (r *reconciler) Reconcile(ctx xds_context.Context, proxy *model.Proxy) erro
 		}
 
 		if err := snapshot.Consistent(); err != nil {
-			reconcileLog.Error(err, "inconsistent snapshot", "snapshot", snapshot, "proxy", proxy)
+			log.Error(err, "inconsistent snapshot", "snapshot", snapshot, "proxy", proxy)
 			return errors.Wrap(err, "inconsistent snapshot")
 		}
 		log.Info("config has changed", "versions", changed)
