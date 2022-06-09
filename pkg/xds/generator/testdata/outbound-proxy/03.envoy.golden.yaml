@@ -2,7 +2,7 @@ resources:
 - name: api-grpc
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 10s
+    connectTimeout: 100s
     edsClusterConfig:
       edsConfig:
         ads: {}
@@ -13,6 +13,9 @@ resources:
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        commonHttpProtocolOptions:
+          idleTimeout: 103s
+          maxStreamDuration: 105s
         explicitHttpConfig:
           http2ProtocolOptions: {}
 - name: api-http
@@ -41,7 +44,7 @@ resources:
 - name: api-http2
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 10s
+    connectTimeout: 100s
     edsClusterConfig:
       edsConfig:
         ads: {}
@@ -57,13 +60,13 @@ resources:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         commonHttpProtocolOptions:
-          idleTimeout: 0s
+          idleTimeout: 103s
         explicitHttpConfig:
           http2ProtocolOptions: {}
 - name: api-tcp
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 10s
+    connectTimeout: 100s
     edsClusterConfig:
       edsConfig:
         ads: {}
@@ -299,6 +302,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: backend
+          idleTimeout: 0s
           statPrefix: backend
     metadata:
       filterMetadata:
@@ -327,6 +331,8 @@ resources:
                   inlineString: |
                     [%START_TIME%] mesh1 "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-b3-traceid?x-datadog-traceid)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "gateway" "api-http" "10.0.0.1" "%UPSTREAM_HOST%"
               path: /var/log
+          commonHttpProtocolOptions:
+            idleTimeout: 0s
           httpFilters:
           - name: envoy.filters.http.router
             typedConfig:
@@ -349,6 +355,7 @@ resources:
                   cluster: api-http
                   timeout: 0s
           statPrefix: api-http
+          streamIdleTimeout: 0s
     metadata:
       filterMetadata:
         io.kuma.tags:
@@ -379,6 +386,7 @@ resources:
                   logstash:1234;[%START_TIME%] %RESPONSE_FLAGS% mesh1 10.0.0.1(gateway)->%UPSTREAM_HOST%(api-tcp) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
                 transportApiVersion: V3
           cluster: api-tcp
+          idleTimeout: 101s
           statPrefix: api-tcp
     metadata:
       filterMetadata:
@@ -398,6 +406,8 @@ resources:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          commonHttpProtocolOptions:
+            idleTimeout: 103s
           httpFilters:
           - name: envoy.filters.http.router
             typedConfig:
@@ -418,8 +428,9 @@ resources:
                   prefix: /
                 route:
                   cluster: api-http2
-                  timeout: 0s
+                  timeout: 102s
           statPrefix: api-http2
+          streamIdleTimeout: 0s
     metadata:
       filterMetadata:
         io.kuma.tags:
@@ -438,6 +449,8 @@ resources:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          commonHttpProtocolOptions:
+            idleTimeout: 103s
           httpFilters:
           - name: envoy.filters.http.grpc_stats
             typedConfig:
@@ -463,8 +476,9 @@ resources:
                   prefix: /
                 route:
                   cluster: api-grpc
-                  timeout: 0s
+                  timeout: 102s
           statPrefix: api-grpc
+          streamIdleTimeout: 104s
     metadata:
       filterMetadata:
         io.kuma.tags:
@@ -483,6 +497,7 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          idleTimeout: 0s
           statPrefix: db
           weightedClusters:
             clusters:

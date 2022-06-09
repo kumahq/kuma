@@ -59,6 +59,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: backend.kuma-system
+          idleTimeout: 0s
           statPrefix: backend_kuma-system
     metadata:
       filterMetadata:
@@ -79,6 +80,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: db-_0_
+          idleTimeout: 0s
           statPrefix: db_kuma-system
     metadata:
       filterMetadata:

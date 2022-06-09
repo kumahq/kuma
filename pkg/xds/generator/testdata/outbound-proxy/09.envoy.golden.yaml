@@ -76,6 +76,8 @@ resources:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          commonHttpProtocolOptions:
+            idleTimeout: 0s
           httpFilters:
           - name: envoy.filters.http.router
             typedConfig:
@@ -96,6 +98,7 @@ resources:
                 route:
                   cluster: api-http-_0__mesh2
                   timeout: 0s
+          streamIdleTimeout: 0s
     metadata:
       filterMetadata:
         io.kuma.tags: {}
