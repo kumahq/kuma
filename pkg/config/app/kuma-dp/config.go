@@ -139,6 +139,10 @@ type DataplaneRuntime struct {
 	ResourcePath string `yaml:"resourcePath,omitempty" envconfig:"kuma_dataplane_runtime_resource_path"`
 	// ResourceVars are the StringToString values that can fill the Resource template
 	ResourceVars map[string]string `yaml:"resourceVars,omitempty"`
+	// EnvoyLogLevel is a level on which Envoy will log.
+	// Available values are: [trace][debug][info][warning|warn][error][critical][off]
+	// By default it inherits Kuma DP logging level.
+	EnvoyLogLevel string `yaml:"envoyLogLevel,omitempty" envconfig:"kuma_dataplane_runtime_envoy_log_level"`
 }
 
 var _ config.Config = &Config{}

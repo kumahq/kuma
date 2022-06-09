@@ -9,7 +9,7 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-var defaultTimeoutResource = func() model.Resource {
+var DefaultTimeoutResource = func() model.Resource {
 	return &core_mesh.TimeoutResource{
 		Spec: &mesh_proto.Timeout{
 			Sources: []*mesh_proto.Selector{{
@@ -24,13 +24,33 @@ var defaultTimeoutResource = func() model.Resource {
 					IdleTimeout: util_proto.Duration(1 * time.Hour),
 				},
 				Http: &mesh_proto.Timeout_Conf_Http{
-					IdleTimeout:    util_proto.Duration(1 * time.Hour),
-					RequestTimeout: util_proto.Duration(15 * time.Second),
-				},
-				Grpc: &mesh_proto.Timeout_Conf_Grpc{
-					StreamIdleTimeout: util_proto.Duration(5 * time.Minute),
+					IdleTimeout:       util_proto.Duration(1 * time.Hour),
+					RequestTimeout:    util_proto.Duration(15 * time.Second),
+					StreamIdleTimeout: util_proto.Duration(30 * time.Minute),
 				},
 			},
+		},
+	}
+}
+
+// DefaultInboundTimeout returns timeouts for the inbound side. This resource is not created
+// in the store. It's used directly in InboundProxyGenerator. In the future, it could be replaced
+// with a new InboundTimeout policy. The main idea around these values is to have them either
+// bigger than outbound side timeouts or disabled.
+var DefaultInboundTimeout = func() *mesh_proto.Timeout_Conf {
+	const factor = 2
+	upstream := DefaultTimeoutResource().(*core_mesh.TimeoutResource).Spec.GetConf()
+
+	return &mesh_proto.Timeout_Conf{
+		ConnectTimeout: util_proto.Duration(factor * upstream.GetConnectTimeout().AsDuration()),
+		Tcp: &mesh_proto.Timeout_Conf_Tcp{
+			IdleTimeout: util_proto.Duration(factor * upstream.GetTcp().GetIdleTimeout().AsDuration()),
+		},
+		Http: &mesh_proto.Timeout_Conf_Http{
+			RequestTimeout:    util_proto.Duration(0),
+			IdleTimeout:       util_proto.Duration(factor * upstream.GetHttp().GetIdleTimeout().AsDuration()),
+			StreamIdleTimeout: util_proto.Duration(factor * upstream.GetHttp().GetStreamIdleTimeout().AsDuration()),
+			MaxStreamDuration: util_proto.Duration(0),
 		},
 	}
 }

@@ -14,7 +14,7 @@ type resourceMeta struct {
 	mesh string
 }
 
-func NewResourceMeta(name, mesh, version string, creationTime, modificationTime time.Time) model.ResourceMeta {
+func NewResourceMeta(name, mesh string) model.ResourceMeta {
 	return &resourceMeta{
 		name: name,
 		mesh: mesh,

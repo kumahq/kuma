@@ -62,6 +62,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: CircuitBreaker
     listKind: CircuitBreakerList
     plural: circuitbreakers
@@ -105,6 +107,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: ContainerPatch
     listKind: ContainerPatchList
     plural: containerpatches
@@ -213,6 +217,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: MeshGateway
     listKind: MeshGatewayList
     plural: meshgateways
@@ -256,6 +262,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: MeshInsight
     listKind: MeshInsightList
     plural: meshinsights
@@ -299,6 +307,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: ProxyTemplate
     listKind: ProxyTemplateList
     plural: proxytemplates
@@ -342,6 +352,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: RateLimit
     listKind: RateLimitList
     plural: ratelimits
@@ -385,6 +397,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: Retry
     listKind: RetryList
     plural: retries
@@ -428,6 +442,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: ServiceInsight
     listKind: ServiceInsightList
     plural: serviceinsights
@@ -471,6 +487,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: Timeout
     listKind: TimeoutList
     plural: timeouts
@@ -514,6 +532,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: TrafficLog
     listKind: TrafficLogList
     plural: trafficlogs
@@ -557,6 +577,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: TrafficPermission
     listKind: TrafficPermissionList
     plural: trafficpermissions
@@ -600,6 +622,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: TrafficRoute
     listKind: TrafficRouteList
     plural: trafficroutes
@@ -643,6 +667,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: DataplaneInsight
     listKind: DataplaneInsightList
     plural: dataplaneinsights
@@ -686,6 +712,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: TrafficTrace
     listKind: TrafficTraceList
     plural: traffictraces
@@ -729,6 +757,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: VirtualOutbound
     listKind: VirtualOutboundList
     plural: virtualoutbounds
@@ -772,6 +802,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: ZoneEgress
     listKind: ZoneEgressList
     plural: zoneegresses
@@ -815,6 +847,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: ZoneEgressInsight
     listKind: ZoneEgressInsightList
     plural: zoneegressinsights
@@ -858,6 +892,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: ZoneIngress
     listKind: ZoneIngressList
     plural: zoneingresses
@@ -901,6 +937,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: ZoneIngressInsight
     listKind: ZoneIngressInsightList
     plural: zoneingressinsights
@@ -945,6 +983,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: ZoneInsight
     listKind: ZoneInsightList
     plural: zoneinsights
@@ -988,6 +1028,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: Zone
     listKind: ZoneList
     plural: zones
@@ -1031,6 +1073,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: Dataplane
     listKind: DataplaneList
     plural: dataplanes
@@ -1074,6 +1118,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: ExternalService
     listKind: ExternalServiceList
     plural: externalservices
@@ -1117,6 +1163,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: FaultInjection
     listKind: FaultInjectionList
     plural: faultinjections
@@ -1160,6 +1208,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: HealthCheck
     listKind: HealthCheckList
     plural: healthchecks
@@ -1203,6 +1253,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: Mesh
     listKind: MeshList
     plural: meshes
@@ -1246,6 +1298,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: MeshGatewayInstance
     listKind: MeshGatewayInstanceList
     plural: meshgatewayinstances
@@ -1496,6 +1550,8 @@ metadata:
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: MeshGatewayRoute
     listKind: MeshGatewayRouteList
     plural: meshgatewayroutes

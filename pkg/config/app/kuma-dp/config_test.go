@@ -64,6 +64,7 @@ var _ = Describe("Config", func() {
 				"KUMA_DATAPLANE_RUNTIME_BINARY_PATH":                     "envoy.sh",
 				"KUMA_DATAPLANE_RUNTIME_CONFIG_DIR":                      "/var/run/envoy",
 				"KUMA_DATAPLANE_RUNTIME_TOKEN_PATH":                      "/tmp/token",
+				"KUMA_DATAPLANE_RUNTIME_ENVOY_LOG_LEVEL":                 "trace",
 				"KUMA_DNS_ENABLED":                                       "true",
 				"KUMA_DNS_CORE_DNS_PORT":                                 "5300",
 				"KUMA_DNS_CORE_DNS_EMPTY_PORT":                           "5301",
@@ -97,6 +98,7 @@ var _ = Describe("Config", func() {
 			Expect(cfg.DataplaneRuntime.BinaryPath).To(Equal("envoy.sh"))
 			Expect(cfg.DataplaneRuntime.ConfigDir).To(Equal("/var/run/envoy"))
 			Expect(cfg.DataplaneRuntime.TokenPath).To(Equal("/tmp/token"))
+			Expect(cfg.DataplaneRuntime.EnvoyLogLevel).To(Equal("trace"))
 			Expect(cfg.DNS.Enabled).To(BeTrue())
 			Expect(cfg.DNS.CoreDNSPort).To(Equal(uint32(5300)))
 			Expect(cfg.DNS.CoreDNSEmptyPort).To(Equal(uint32(5301)))

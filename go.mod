@@ -3,7 +3,7 @@ module github.com/kumahq/kuma
 go 1.18
 
 require (
-	cirello.io/pglock v1.8.0
+	cirello.io/pglock v1.9.0
 	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/Nordix/simple-ipam v1.0.0
@@ -21,7 +21,7 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/gruntwork-io/terratest v0.40.12
+	github.com/gruntwork-io/terratest v0.40.15
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kumahq/kuma-net v0.3.0
