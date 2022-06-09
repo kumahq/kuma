@@ -51,6 +51,12 @@ message Timeout {
       // IdleTimeout is the time at which a downstream or upstream connection
       // will be terminated if there are no active streams
       google.protobuf.Duration idle_timeout = 2;
+      // StreamIdleTimeout is the amount of time that the connection manager
+      // will allow a stream to exist with no upstream or downstream activity
+      google.protobuf.Duration stream_idle_timeout = 3;
+      // MaxStreamDuration is the maximum time that a stream’s lifetime will
+      // span
+      google.protobuf.Duration max_stream_duration = 4;
     }
     Http http = 3;
 
@@ -58,11 +64,14 @@ message Timeout {
     message Grpc {
       // StreamIdleTimeout is the amount of time that the connection manager
       // will allow a stream to exist with no upstream or downstream activity
+      // Deprecated: use Http.StreamIdleTimeout instead
       google.protobuf.Duration stream_idle_timeout = 1;
       // MaxStreamDuration is the maximum time that a stream’s lifetime will
       // span
+      // Deprecated: use Http.MaxStreamDuration instead
       google.protobuf.Duration max_stream_duration = 2;
     }
+    // Deprecated: set parameters through Http section
     Grpc grpc = 4;
   }
   Conf conf = 3 [ (doc.required) = true ];

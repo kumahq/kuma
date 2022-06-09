@@ -18,29 +18,40 @@ type TimeoutConfigurer struct {
 }
 
 func (c *TimeoutConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
-	if c.Conf == nil {
-		return nil
-	}
-
 	switch c.Protocol {
 	case core_mesh.ProtocolUnknown, core_mesh.ProtocolTCP, core_mesh.ProtocolKafka:
 		return UpdateTCPProxy(filterChain, func(proxy *envoy_tcp.TcpProxy) error {
 			proxy.IdleTimeout = util_proto.Duration(c.Conf.GetTcp().GetIdleTimeout().AsDuration())
 			return nil
 		})
-	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
+	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
 		return UpdateHTTPConnectionManager(filterChain, func(manager *envoy_hcm.HttpConnectionManager) error {
-			manager.CommonHttpProtocolOptions = &envoy_config_core_v3.HttpProtocolOptions{
-				IdleTimeout: util_proto.Duration(0),
-			}
-			return nil
-		})
-	case core_mesh.ProtocolGRPC:
-		return UpdateHTTPConnectionManager(filterChain, func(manager *envoy_hcm.HttpConnectionManager) error {
-			manager.StreamIdleTimeout = util_proto.Duration(c.Conf.GetGrpc().GetStreamIdleTimeout().AsDuration())
+			c.setIdleTimeout(manager)
+			c.setStreamIdleTimeout(manager)
 			return nil
 		})
 	default:
 		return errors.Errorf("unsupported protocol %s", c.Protocol)
 	}
+}
+
+func (c *TimeoutConfigurer) setIdleTimeout(manager *envoy_hcm.HttpConnectionManager) {
+	if manager.CommonHttpProtocolOptions == nil {
+		manager.CommonHttpProtocolOptions = &envoy_config_core_v3.HttpProtocolOptions{}
+	}
+	manager.CommonHttpProtocolOptions.IdleTimeout = util_proto.Duration(c.Conf.GetHttp().GetIdleTimeout().AsDuration())
+}
+
+func (c *TimeoutConfigurer) setStreamIdleTimeout(manager *envoy_hcm.HttpConnectionManager) {
+	// backwards compatibility
+	if c.Protocol == core_mesh.ProtocolGRPC {
+		if sit := c.Conf.GetHttp().GetStreamIdleTimeout(); sit != nil {
+			manager.StreamIdleTimeout = sit
+		} else {
+			manager.StreamIdleTimeout = util_proto.Duration(c.Conf.GetGrpc().GetStreamIdleTimeout().AsDuration())
+		}
+		return
+	}
+
+	manager.StreamIdleTimeout = util_proto.Duration(c.Conf.GetHttp().GetStreamIdleTimeout().AsDuration())
 }

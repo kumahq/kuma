@@ -196,7 +196,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 
 		for _, cluster := range service.Clusters() {
 			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
-				Configure(envoy_clusters.Timeout(protocol, cluster.Timeout())).
+				Configure(envoy_clusters.Timeout(cluster.Timeout(), protocol)).
 				Configure(envoy_clusters.CircuitBreaker(circuitBreaker)).
 				Configure(envoy_clusters.OutlierDetection(circuitBreaker)).
 				Configure(envoy_clusters.HealthCheck(protocol, healthCheck))
@@ -335,7 +335,10 @@ func (OutboundProxyGenerator) determineRoutes(
 		return nil
 	}
 
-	timeoutConf := proxy.Policies.Timeouts[oface]
+	var timeoutConf *mesh_proto.Timeout_Conf
+	if timeout := proxy.Policies.Timeouts[oface]; timeout != nil {
+		timeoutConf = timeout.Spec.GetConf()
+	}
 
 	// Return internal, external
 	clustersFromSplit := func(splits []*mesh_proto.TrafficRoute_Split) ([]envoy_common.Cluster, []envoy_common.Cluster) {
