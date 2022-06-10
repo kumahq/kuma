@@ -38,7 +38,6 @@ type DpServerAuthConfig struct {
 	// If empty, autoconfigured based on the environment - "serviceAccountToken" on Kubernetes, "dpToken" on Universal.
 	Type string `yaml:"type" envconfig:"kuma_dp_server_auth_type"`
 	// UseTokenPath define if should use config for ads with path to token that can be reloaded.
-	// Default value: false
 	UseTokenPath bool `yaml:"useTokenPath" envconfig:"kuma_dp_server_auth_use_token_path"`
 }
 

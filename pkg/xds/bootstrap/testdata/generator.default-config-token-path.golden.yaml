@@ -96,34 +96,6 @@ staticResources:
         keepaliveInterval: 10
         keepaliveProbes: 3
         keepaliveTime: 10
-  - connectTimeout: 1s
-    http2ProtocolOptions: {}
-    loadAssignment:
-      clusterName: ads_cluster
-      endpoints:
-      - lbEndpoints:
-        - endpoint:
-            address:
-              socketAddress:
-                address: localhost
-                portValue: 5678
-    name: ads_cluster
-    transportSocket:
-      name: envoy.transport_sockets.tls
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-        commonTlsContext:
-          tlsParams:
-            tlsMinimumProtocolVersion: TLSv1_2
-          validationContextSdsSecretConfig:
-            name: cp_validation_ctx
-        sni: localhost
-    type: STRICT_DNS
-    upstreamConnectionOptions:
-      tcpKeepalive:
-        keepaliveInterval: 10
-        keepaliveProbes: 3
-        keepaliveTime: 10
   secrets:
   - name: cp_validation_ctx
     validationContext:
