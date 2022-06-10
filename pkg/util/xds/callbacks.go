@@ -3,6 +3,7 @@ package xds
 import (
 	"context"
 
+	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -15,6 +16,7 @@ type DiscoveryRequest interface {
 	VersionInfo() string
 	GetTypeUrl() string
 	GetResponseNonce() string
+	GetResourceNames() []string
 	HasErrors() bool
 	ErrorMsg() string
 }
@@ -22,6 +24,9 @@ type DiscoveryRequest interface {
 // DiscoveryResponse defines interface over real Envoy's DiscoveryResponse.
 type DiscoveryResponse interface {
 	GetTypeUrl() string
+	VersionInfo() string
+	GetResources() []*anypb.Any
+	GetNonce() string
 }
 
 // Callbacks defines Callbacks for xDS streaming requests. The difference over real go-control-plane Callbacks is that it takes an DiscoveryRequest / DiscoveryResponse interface.
