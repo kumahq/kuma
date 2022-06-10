@@ -34,6 +34,7 @@ function dev_version {
 
     kuma_version=$("${SCRIPT_DIR}/version.sh")
     yq -i ".appVersion = \"${kuma_version}\"" "${dir}/Chart.yaml"
+    yq -i ".version = \"${kuma_version}\"" "${dir}/Chart.yaml"
 
     for chart in $(yq e '.dependencies[].name' "${dir}/Chart.yaml"); do
         if [ ! -d "${dir}/charts/${chart}" ]; then
@@ -42,9 +43,6 @@ function dev_version {
         yq -i e "del(.dependencies[] | select(.name == \"${chart}\"))" "${dir}/Chart.yaml"
     done
 
-    chart_version=$(yq '.version' "${dir}/Chart.yaml")
-
-    yq -i ".version = \"${chart_version}${chart_version}\"" "${dir}/Chart.yaml"
   done
 }
 
