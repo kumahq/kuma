@@ -7,7 +7,7 @@
 # 3) In non release branch use `0.0.0-dev+$shortHash`
 
 # Note: this format must be changed carefully, other scripts depend on it
-exactTag=$(git describe --exact-match --tags > /dev/null 2>&1)
+exactTag=$(git describe --exact-match --tags 2> /dev/null)
 if [[ ${exactTag} ]]; then # if we are on tag
   echo "${exactTag/^v//}"
   exit 0

@@ -35,8 +35,6 @@ function dev_version {
     kuma_version=$("${SCRIPT_DIR}/version.sh")
     yq -i ".appVersion = \"${kuma_version}\"" "${dir}/Chart.yaml"
 
-    IFS=- read -r _version_core version_extra <<< "${kuma_version}"
-
     for chart in $(yq e '.dependencies[].name' "${dir}/Chart.yaml"); do
         if [ ! -d "${dir}/charts/${chart}" ]; then
             continue
