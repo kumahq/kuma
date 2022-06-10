@@ -34,7 +34,7 @@ function download_envoy() {
 }
 
 if [[ -n "${ENVOY_VERSION}" ]]; then
-  BINARY_NAME="envoy-${ENVOY_VERSION}-${ENVOY_DISTRO}"
+  BINARY_NAME="envoy-${ENVOY_VERSION}-${ENVOY_DISTRO}-${GOARCH}"
   download_envoy "${BINARY_NAME}"
   exit 0
 fi
