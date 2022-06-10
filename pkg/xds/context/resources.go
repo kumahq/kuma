@@ -5,12 +5,13 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/pkg/core/xds"
 )
 
-type Resources map[core_model.ResourceType]core_model.ResourceList
+type ResourceMap map[core_model.ResourceType]core_model.ResourceList
 
-func (r Resources) ListOrEmpty(resourceType core_model.ResourceType) core_model.ResourceList {
-	list, ok := r[resourceType]
+func (rm ResourceMap) listOrEmpty(resourceType core_model.ResourceType) core_model.ResourceList {
+	list, ok := rm[resourceType]
 	if !ok {
 		list, err := registry.Global().NewList(resourceType)
 		if err != nil {
@@ -19,6 +20,22 @@ func (r Resources) ListOrEmpty(resourceType core_model.ResourceType) core_model.
 		return list
 	}
 	return list
+}
+
+type Resources struct {
+	MeshLocalResources ResourceMap
+	CrossMeshResources map[xds.MeshName]ResourceMap
+}
+
+func NewResources() Resources {
+	return Resources{
+		MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{},
+		CrossMeshResources: map[xds.MeshName]ResourceMap{},
+	}
+}
+
+func (r Resources) ListOrEmpty(resourceType core_model.ResourceType) core_model.ResourceList {
+	return r.MeshLocalResources.listOrEmpty(resourceType)
 }
 
 func (r Resources) ExternalServices() *core_mesh.ExternalServiceResourceList {
@@ -95,4 +112,45 @@ func (r Resources) ProxyTemplates() *core_mesh.ProxyTemplateResourceList {
 
 func (r Resources) Secrets() *system.SecretResourceList {
 	return r.ListOrEmpty(system.SecretType).(*system.SecretResourceList)
+}
+
+func (r Resources) OtherMeshes() *core_mesh.MeshResourceList {
+	return r.ListOrEmpty(core_mesh.MeshType).(*core_mesh.MeshResourceList)
+}
+
+type meshGatewayDataplanes struct {
+	Mesh       *core_mesh.MeshResource
+	Gateways   []*core_mesh.MeshGatewayResource
+	Dataplanes []*core_mesh.DataplaneResource
+}
+
+func (r Resources) gatewaysAndDataplanesForMesh(localMesh *core_mesh.MeshResource) map[xds.MeshName]meshGatewayDataplanes {
+	gatewaysByMesh := map[xds.MeshName]meshGatewayDataplanes{}
+
+	type meshResourcesTuple struct {
+		mesh      *core_mesh.MeshResource
+		resources ResourceMap
+	}
+	meshResourcesTuples := []meshResourcesTuple{{
+		mesh:      localMesh,
+		resources: r.MeshLocalResources,
+	}}
+
+	for _, mesh := range r.OtherMeshes().Items {
+		meshName := mesh.GetMeta().GetName()
+		meshResourcesTuples = append(meshResourcesTuples, meshResourcesTuple{
+			mesh:      mesh,
+			resources: r.CrossMeshResources[meshName],
+		})
+	}
+
+	for _, meshResourceTuple := range meshResourcesTuples {
+		gatewaysByMesh[meshResourceTuple.mesh.GetMeta().GetName()] = meshGatewayDataplanes{
+			Mesh:       meshResourceTuple.mesh,
+			Gateways:   meshResourceTuple.resources.listOrEmpty(core_mesh.MeshGatewayType).(*core_mesh.MeshGatewayResourceList).Items,
+			Dataplanes: meshResourceTuple.resources.listOrEmpty(core_mesh.DataplaneType).(*core_mesh.DataplaneResourceList).Items,
+		}
+	}
+
+	return gatewaysByMesh
 }

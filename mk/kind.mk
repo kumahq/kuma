@@ -146,8 +146,8 @@ kind/deploy/example-app:
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n $(EXAMPLE_NAMESPACE) -f dev/examples/k8s/example-app/example-app.yaml
 
 .PHONY: run/k8s
-run/k8s: ## Dev: Run Control Plane locally in Kubernetes mode
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(MAKE) crd/upgrade -C pkg/plugins/resources/k8s/native
+run/k8s: generate/builtin-crds ## Dev: Run Control Plane locally in Kubernetes mode
+	kubectl diff -f pkg/plugins/resources/k8s/native/config/crd/bases || kubectl apply -f pkg/plugins/resources/k8s/native/config/crd/bases
 	KUBECONFIG=$(KIND_KUBECONFIG) \
 	KUMA_ENVIRONMENT=kubernetes \
 	KUMA_STORE_TYPE=kubernetes \

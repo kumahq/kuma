@@ -352,9 +352,10 @@ type: system.kuma.io/secret
 		})
 
 		It("should proxy simple HTTPS requests", func() {
+			addr := net.JoinHostPort("example.kuma.io", GatewayPort)
 			ProxySecureRequests(cluster, "kubernetes",
-				net.JoinHostPort("example.kuma.io", GatewayPort),
-				client.Resolve("example.kuma.io", 8080, GatewayAddress("edge-gateway")),
+				addr,
+				client.Resolve(addr, GatewayAddress("edge-gateway")),
 				client.FromKubernetesPod(ClientNamespace, "gateway-client"),
 			)
 		})

@@ -142,7 +142,7 @@ var _ = Describe("kumactl config control-planes add", func() {
 		It("should fail on invalid api server", func() {
 			// setup
 			server, port := setupCpServer(func(writer http.ResponseWriter, req *http.Request) {
-				_, err := writer.Write([]byte("{}"))
+				_, err := writer.Write([]byte(`{"tagLine": "OtherProduct"}`))
 				Expect(err).ToNot(HaveOccurred())
 			})
 			defer server.Close()
@@ -155,9 +155,9 @@ var _ = Describe("kumactl config control-planes add", func() {
 			// when
 			err := rootCmd.Execute()
 			// then
-			Expect(err).To(MatchError(`provided address is not valid Kuma Control Plane API Server`))
+			Expect(err).To(MatchError(`this CLI is for Kuma but the control plane you're connected to is OtherProduct. Please use the CLI for your control plane`))
 			// and
-			Expect(outbuf.String()).To(Equal(`Error: provided address is not valid Kuma Control Plane API Server
+			Expect(outbuf.String()).To(Equal(`Error: this CLI is for Kuma but the control plane you're connected to is OtherProduct. Please use the CLI for your control plane
 `))
 		})
 	})

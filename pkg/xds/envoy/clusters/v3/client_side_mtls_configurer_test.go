@@ -6,6 +6,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
@@ -25,10 +26,11 @@ var _ = Describe("EdsClusterConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
+			tracker := core_xds.NewSecretsTracker(given.mesh.GetMeta().GetName(), nil)
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
 				Configure(clusters.EdsCluster(given.clusterName)).
-				Configure(clusters.ClientSideMTLS(given.mesh, given.clientService, true, given.tags)).
-				Configure(clusters.Timeout(core_mesh.ProtocolTCP, DefaultTimeout())).
+				Configure(clusters.ClientSideMTLS(tracker, given.mesh, given.clientService, true, given.tags)).
+				Configure(clusters.Timeout(DefaultTimeout(), core_mesh.ProtocolTCP)).
 				Build()
 
 			// then

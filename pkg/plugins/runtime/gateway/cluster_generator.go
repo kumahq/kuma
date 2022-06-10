@@ -126,7 +126,7 @@ func (c *ClusterGenerator) generateMeshCluster(
 	builder := newClusterBuilder(info.Proxy.APIVersion, protocol, dest).Configure(
 		clusters.EdsCluster(dest.Destination[mesh_proto.ServiceTag]),
 		clusters.LB(nil /* TODO(jpeach) uses default Round Robin*/),
-		clusters.ClientSideMTLS(mesh, upstreamServiceName, true, []envoy.Tags{dest.Destination}),
+		clusters.ClientSideMTLS(info.Proxy.SecretsTracker, mesh, upstreamServiceName, true, []envoy.Tags{dest.Destination}),
 	)
 
 	// TODO(jpeach) Envoy configures retries and fault injection with
@@ -172,7 +172,7 @@ func newClusterBuilder(
 	dest *route.Destination,
 ) *clusters.ClusterBuilder {
 	builder := clusters.NewClusterBuilder(version).Configure(
-		clusters.Timeout(protocol, timeoutPolicyFor(dest)),
+		clusters.Timeout(timeoutPolicyFor(dest).Spec.GetConf(), protocol),
 		clusters.CircuitBreaker(circuitBreakerPolicyFor(dest)),
 		clusters.OutlierDetection(circuitBreakerPolicyFor(dest)),
 		clusters.HealthCheck(protocol, healthCheckPolicyFor(dest)),

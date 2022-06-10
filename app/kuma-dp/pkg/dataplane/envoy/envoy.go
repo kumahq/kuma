@@ -21,7 +21,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	pkg_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/util/files"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
@@ -48,7 +47,6 @@ type Opts struct {
 	Stdout          io.Writer
 	Stderr          io.Writer
 	Quit            chan struct{}
-	LogLevel        pkg_log.LogLevel
 }
 
 func New(opts Opts) (*Envoy, error) {
@@ -116,7 +114,7 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 		// and we don't expect users to do "hot restart" manually.
 		// so, let's turn it off to simplify getting started experience.
 		"--disable-hot-restart",
-		"--log-level", e.opts.LogLevel.String(),
+		"--log-level", e.opts.Config.DataplaneRuntime.EnvoyLogLevel,
 	}
 
 	// If the concurrency is explicit, use that. On Linux, users

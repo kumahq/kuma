@@ -194,8 +194,6 @@ var _ = Describe("Dataplane", func() {
             mesh: default
             networking:
               address: 192.168.0.1
-              admin:
-                port: 9901
               inbound:
                 - port: 8080
                   servicePort: 7777
@@ -228,6 +226,58 @@ var _ = Describe("Dataplane", func() {
                   address: 192.168.0.1
                   tags:
                     kuma.io/service: redis`),
+		Entry("dataplane with metrics backend defined and unique aggregate entries", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              admin:
+                port: 8080
+              inbound:
+                - port: 8080
+                  servicePort: 7777
+                  address: 192.168.0.1
+                  tags:
+                    kuma.io/service: backend
+                    version: "1"
+              outbound:
+                - port: 3333
+                  address: 192.168.0.1
+                  tags:
+                    kuma.io/service: redis
+            metrics:
+              type: prometheus
+              conf:
+                aggregate:
+                - name: app
+                  port: 123
+                  path: "/stats"
+                - name: sidecar
+                  port: 999
+                  path: "/metrics"`),
+		Entry("dataplane with metrics backend type defined", `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  admin:
+                    port: 8080
+                  inbound:
+                    - port: 8080
+                      servicePort: 7777
+                      address: 192.168.0.1
+                      tags:
+                        kuma.io/service: backend
+                        version: "1"
+                  outbound:
+                    - port: 3333
+                      address: 192.168.0.1
+                      tags:
+                        kuma.io/service: redis
+                metrics:
+                  type: prometheus`),
 	)
 
 	type testCase struct {
@@ -1022,6 +1072,74 @@ var _ = Describe("Dataplane", func() {
                 violations:
                 - field: networking.admin.port
                   message: must differ from outbound`,
+		}),
+		Entry("dataplane with duplicate metrics entry", testCase{
+			dataplane: `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              inbound:
+                - port: 8080
+                  servicePort: 7777
+                  address: 192.168.0.1
+                  tags:
+                    kuma.io/service: backend
+                    version: "1"
+              outbound:
+                - port: 3333
+                  address: 192.168.0.1
+                  tags:
+                    kuma.io/service: redis
+            metrics:
+              type: prometheus
+              conf:
+                aggregate:
+                - name: app
+                  port: 123
+                  path: "/stats"
+                - name: app
+                  port: 999
+                  path: "/metrics"
+                - name: duplicate-app
+                  port: 12366
+                  path: "/duplicate"
+                - name: duplicate-app
+                  port: 12345
+                  path: "/other"  `,
+			expected: `
+                violations:
+                - field: metrics.conf.aggregate[1].name
+                  message: 'duplicate entry: app, values have to be unique'
+                - field: metrics.conf.aggregate[3].name
+                  message: 'duplicate entry: duplicate-app, values have to be unique'`,
+		}),
+		Entry("dataplane with not supported metrics type", testCase{
+			dataplane: `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              inbound:
+                - port: 8080
+                  servicePort: 7777
+                  address: 192.168.0.1
+                  tags:
+                    kuma.io/service: backend
+                    version: "1"
+              outbound:
+                - port: 3333
+                  address: 192.168.0.1
+                  tags:
+                    kuma.io/service: redis
+            metrics:
+              type: custom-backend`,
+			expected: `
+                violations:
+                - field: metrics.type
+                  message: 'unknown backend type. Available backends: "prometheus"'`,
 		}),
 	)
 

@@ -1,7 +1,8 @@
 ENVOY_IMPORTS := ./pkg/xds/envoy/imports.go
 PROTO_DIRS := ./pkg/config ./api
 
-CONTROLLER_GEN := go run -mod=mod sigs.k8s.io/controller-tools/cmd/controller-gen@master
+CONTROLLER_GEN := go run -mod=mod sigs.k8s.io/controller-tools/cmd/controller-gen
+RESOURCE_GEN := go run -mod=mod ./tools/resource-gen/main.go
 
 .PHONY: clean/proto
 clean/proto: ## Dev: Remove auto-generated Protobuf files
@@ -10,7 +11,7 @@ clean/proto: ## Dev: Remove auto-generated Protobuf files
 
 .PHONY: generate
 generate:  ## Dev: Run code generators
-generate: clean/proto generate/api protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 protoc/plugins resources/type generate/kubernetes
+generate: clean/proto generate/api protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 protoc/plugins resources/type generate/policies
 
 .PHONY: resources/type
 resources/type:
@@ -32,11 +33,15 @@ protoc/plugins:
 
 POLICIES_DIR := pkg/plugins/policies
 
-policies = $(foreach dir,$(shell find pkg/plugins/policies -maxdepth 1 -mindepth 1 -type d),$(notdir $(dir)))
+policies = $(foreach dir,$(shell find pkg/plugins/policies -maxdepth 1 -mindepth 1 -type d | grep -v core),$(notdir $(dir)))
 generate_policy_targets = $(addprefix generate/policy/,$(policies))
 cleanup_policy_targets = $(addprefix cleanup/policy/,$(policies))
 
-generate/policies: $(cleanup_policy_targets) $(generate_policy_targets)
+generate/policies: cleanup/crds $(cleanup_policy_targets) $(generate_policy_targets) generate/policy-import generate/builtin-crds
+
+cleanup/crds:
+	rm -f ./deployments/charts/kuma/crds/*
+	rm -f ./pkg/plugins/resources/k8s/native/test/config/crd/bases/*
 
 # deletes all files in policy directory except *.proto and validator.go
 cleanup/policy/%:
@@ -54,10 +59,13 @@ generate/schema/%: generate/controller-gen/%
 		tools/policy-gen/crd-extract-openapi.sh $* $$version ; \
 	done
 
+generate/policy-import:
+	tools/policy-gen/generate-policy-import.sh $(policies)
+
 generate/controller-gen/%: generate/kumapolicy-gen/%
 	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \
 		$(CONTROLLER_GEN) "crd:crdVersions=v1,ignoreUnexportedFields=true" paths="./$(POLICIES_DIR)/$*/k8s/..." output:crd:artifacts:config=$(POLICIES_DIR)/$*/k8s/crd && \
-		$(CONTROLLER_GEN) object paths=$(POLICIES_DIR)/$*/k8s/$$version/zz_generated.types.go ; \
+		$(CONTROLLER_GEN) object:headerFile=./tools/policy-gen/boilerplate.go.txt,year=$$(date +%Y) paths=$(POLICIES_DIR)/$*/k8s/$$version/zz_generated.types.go ; \
 	done
 
 generate/kumapolicy-gen/%: generate/dirs/%
@@ -79,6 +87,17 @@ generate/dirs/%:
 		mkdir -p $(POLICIES_DIR)/$*/k8s/crd ; \
 	done
 
+.PHONY: generate/builtin-crds
+generate/builtin-crds:
+	$(RESOURCE_GEN) -package mesh -generator crd > ./pkg/plugins/resources/k8s/native/api/v1alpha1/zz_generated.mesh.go
+	$(RESOURCE_GEN) -package system -generator crd > ./pkg/plugins/resources/k8s/native/api/v1alpha1/zz_generated.system.go
+	$(MAKE) OUT_CRD=./deployments/charts/kuma/crds IN_CRD=./pkg/plugins/resources/k8s/native/api/... crd/controller-gen
+	$(MAKE) OUT_CRD=./pkg/plugins/resources/k8s/native/test/config/crd/bases IN_CRD=./pkg/plugins/resources/k8s/native/test/api/sample/... crd/controller-gen
+
+.PHONY: crd/controller-gen
+crd/controller-gen:
+	$(CONTROLLER_GEN) "crd:crdVersions=v1" paths=$(IN_CRD) output:crd:artifacts:config=$(OUT_CRD)
+	$(CONTROLLER_GEN) object:headerFile=./tools/policy-gen/boilerplate.go.txt,year=$$(date +%Y) paths=$(IN_CRD)
 
 generate/helm/%:
 	tools/policy-gen/crd-helm-copy.sh $*
@@ -105,10 +124,6 @@ generate/envoy-imports:
 	echo 'import (' >> ${ENVOY_IMPORTS}
 	go list github.com/envoyproxy/go-control-plane/... | grep "github.com/envoyproxy/go-control-plane/envoy/" | awk '{printf "\t_ \"%s\"\n", $$1}' >> ${ENVOY_IMPORTS}
 	echo ')' >> ${ENVOY_IMPORTS}
-
-.PHONY: generate/kubernetes
-generate/kubernetes:
-	$(MAKE) -C pkg/plugins/resources/k8s/native generate
 
 .PHONY: generate/api
 generate/api: protoc/mesh protoc/mesh/v1alpha1 protoc/observability/v1 protoc/system/v1alpha1 ## Process Kuma API .proto definitions

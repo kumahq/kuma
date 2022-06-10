@@ -69,6 +69,13 @@ var _ = Describe("Mesh", func() {
                 conf:
                   port: 5670
                   path: /metrics
+                  aggregate:
+                  - name: application
+                    port: 1234
+                    path: "/stats"
+                  - name: sidecar
+                    port: 12345
+                    path: "/stats/sidecar"
             constraints:
               dataplaneProxy:
                 requirements:
@@ -538,6 +545,41 @@ var _ = Describe("Mesh", func() {
                 violations:
                 - field: mtls
                   message: has to be set when zoneEgress enabled`,
+			}),
+			Entry("metrics aggregate configuration contains duplicate entries", testCase{
+				mesh: `
+                metrics:
+                  backends:
+                  - name: backend-1
+                    type: prometheus
+                    conf:
+                      aggregate:
+                      - name: app
+                        path: "/stats/"
+                        port: 123
+                      - name: app
+                        path: "/stats" 
+                      - name: sidecar
+                        port: 12345
+                      - name: sidecar  
+                  - name: backend-2
+                    type: prometheus
+                    conf:
+                      aggregate:
+                      - name: app
+                        path: "/stats/"
+                        port: 123
+                      - name: app
+                        path: "/stats" 
+                `,
+				expected: `
+                violations:
+                - field: metrics.backends[0].conf.aggregate[1].name
+                  message: 'duplicate entry: app, values have to be unique'
+                - field: metrics.backends[0].conf.aggregate[3].name
+                  message: 'duplicate entry: sidecar, values have to be unique'
+                - field: metrics.backends[1].conf.aggregate[1].name
+                  message: 'duplicate entry: app, values have to be unique'`,
 			}),
 		)
 	})

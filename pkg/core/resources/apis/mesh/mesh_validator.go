@@ -246,11 +246,31 @@ func validateMetrics(metrics *mesh_proto.Metrics) validators.ValidationError {
 		}
 		if backend.GetType() != mesh_proto.MetricsPrometheusType {
 			verr.AddViolationAt(validators.RootedAt("backends").Index(i).Field("type"), fmt.Sprintf("unknown backend type. Available backends: %q", mesh_proto.MetricsPrometheusType))
+		} else {
+			verr.AddErrorAt(validators.RootedAt("backends").Index(i).Field("conf"), validatePrometheusConfig(backend.GetConf()))
 		}
 		usedNames[backend.Name] = true
 	}
 	if metrics.GetEnabledBackend() != "" && !usedNames[metrics.GetEnabledBackend()] {
 		verr.AddViolation("enabledBackend", "has to be set to one of the backends in the mesh")
+	}
+	return verr
+}
+
+func validatePrometheusConfig(cfgStr *structpb.Struct) validators.ValidationError {
+	var verr validators.ValidationError
+	cfg := mesh_proto.PrometheusMetricsBackendConfig{}
+	if err := proto.ToTyped(cfgStr, &cfg); err != nil {
+		verr.AddViolation("", fmt.Sprintf("could not parse config: %s", err.Error()))
+		return verr
+	}
+	usedName := make(map[string]bool)
+	for i, config := range cfg.GetAggregate() {
+		if _, ok := usedName[config.GetName()]; ok {
+			verr.AddViolationAt(validators.RootedAt("aggregate").Index(i).Field("name"), fmt.Sprintf("duplicate entry: %s, values have to be unique", config.GetName()))
+			continue
+		}
+		usedName[config.GetName()] = true
 	}
 	return verr
 }

@@ -31,16 +31,18 @@ import (
 
 	"github.com/kumahq/kuma/pkg/plugins/policies/{{.KumactlSingular}}/api/{{.PolicyVersion}}"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
+	{{- if not .SkipRegistration }}
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
+	{{- end }}
 )
 
 {{- if not .SkipKubernetesWrappers }}
 
 // +kubebuilder:object:root=true
 {{- if .ScopeNamespace }}
-// +kubebuilder:resource:scope=Namespaced
+// +kubebuilder:resource:categories=kuma,scope=Namespaced
 {{- else }}
-// +kubebuilder:resource:scope=Cluster
+// +kubebuilder:resource:categories=kuma,scope=Cluster
 {{- end}}
 {{- if .StorageVersion }}
 // +kubebuilder:storageversion

@@ -2,6 +2,7 @@ package generator
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 
@@ -175,7 +176,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 		Configure(envoy_listeners.OutboundListener(outboundListenerName, oface.DataplaneIP, oface.DataplanePort, model.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.FilterChain(filterChainBuilder)).
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
-		Configure(envoy_listeners.TagsMetadata(outbound.GetTagsIncludingLegacy())).
+		Configure(envoy_listeners.TagsMetadata(envoy_common.Tags(outbound.GetTagsIncludingLegacy()).WithoutTags("kuma.io/mesh"))).
 		Build()
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not generate listener %s for service %s", outboundListenerName, serviceName)
@@ -195,7 +196,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 
 		for _, cluster := range service.Clusters() {
 			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
-				Configure(envoy_clusters.Timeout(protocol, cluster.Timeout())).
+				Configure(envoy_clusters.Timeout(cluster.Timeout(), protocol)).
 				Configure(envoy_clusters.CircuitBreaker(circuitBreaker)).
 				Configure(envoy_clusters.OutlierDetection(circuitBreaker)).
 				Configure(envoy_clusters.HealthCheck(protocol, healthCheck))
@@ -208,6 +209,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 					edsClusterBuilder.
 						Configure(envoy_clusters.EdsCluster(clusterName)).
 						Configure(envoy_clusters.ClientSideMTLS(
+							proxy.SecretsTracker,
 							ctx.Mesh.Resource,
 							mesh_proto.ZoneEgressServiceName,
 							tlsReady,
@@ -233,8 +235,24 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 				edsClusterBuilder.
 					Configure(envoy_clusters.EdsCluster(clusterName)).
 					Configure(envoy_clusters.LB(cluster.LB())).
-					Configure(envoy_clusters.ClientSideMTLS(ctx.Mesh.Resource, serviceName, tlsReady, clusterTags)).
 					Configure(envoy_clusters.Http2())
+
+				if upstreamMeshName := cluster.Mesh(); upstreamMeshName != "" {
+					for _, otherMesh := range append(ctx.Mesh.Resources.OtherMeshes().Items, ctx.Mesh.Resource) {
+						if otherMesh.GetMeta().GetName() == upstreamMeshName {
+							edsClusterBuilder.Configure(
+								envoy_clusters.CrossMeshClientSideMTLS(
+									proxy.SecretsTracker, ctx.Mesh.Resource, otherMesh, serviceName, tlsReady, clusterTags,
+								),
+							)
+							break
+						}
+					}
+				} else {
+					edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(
+						proxy.SecretsTracker,
+						ctx.Mesh.Resource, serviceName, tlsReady, clusterTags))
+				}
 			}
 
 			edsCluster, err := edsClusterBuilder.Build()
@@ -267,7 +285,14 @@ func (OutboundProxyGenerator) generateEDS(
 		// We are not allowed to add endpoints with DNS names through EDS.
 		if !services[serviceName].HasExternalService() || ctx.Mesh.Resource.ZoneEgressEnabled() {
 			for _, cluster := range services[serviceName].Clusters() {
-				loadAssignment, err := ctx.ControlPlane.CLACache.GetCLA(context.Background(), ctx.Mesh.Resource.Meta.GetName(), ctx.Mesh.Hash, cluster, apiVersion, ctx.Mesh.EndpointMap)
+				var endpoints model.EndpointMap
+				if cluster.Mesh() != "" {
+					endpoints = ctx.Mesh.CrossMeshEndpoints[cluster.Mesh()]
+				} else {
+					endpoints = ctx.Mesh.EndpointMap
+				}
+
+				loadAssignment, err := ctx.ControlPlane.CLACache.GetCLA(context.Background(), ctx.Mesh.Resource.Meta.GetName(), ctx.Mesh.Hash, cluster, apiVersion, endpoints)
 				if err != nil {
 					return nil, errors.Wrapf(err, "could not get ClusterLoadAssignment for %s", serviceName)
 				}
@@ -310,7 +335,10 @@ func (OutboundProxyGenerator) determineRoutes(
 		return nil
 	}
 
-	timeoutConf := proxy.Policies.Timeouts[oface]
+	var timeoutConf *mesh_proto.Timeout_Conf
+	if timeout := proxy.Policies.Timeouts[oface]; timeout != nil {
+		timeoutConf = timeout.Spec.GetConf()
+	}
 
 	// Return internal, external
 	clustersFromSplit := func(splits []*mesh_proto.TrafficRoute_Split) ([]envoy_common.Cluster, []envoy_common.Cluster) {
@@ -324,8 +352,14 @@ func (OutboundProxyGenerator) determineRoutes(
 			}
 
 			name := service
+
 			if len(destination.GetDestination()) > 1 {
 				name = envoy_names.GetSplitClusterName(service, splitCounter.getAndIncrement())
+			}
+
+			if mesh, ok := destination.Destination["kuma.io/mesh"]; ok {
+				// The name should be distinct to the service & mesh combination
+				name = fmt.Sprintf("%s_%s", name, mesh)
 			}
 
 			// We assume that all the targets are either ExternalServices or not
@@ -339,11 +373,18 @@ func (OutboundProxyGenerator) determineRoutes(
 				envoy_common.WithService(service),
 				envoy_common.WithName(name),
 				envoy_common.WithWeight(destination.GetWeight().GetValue()),
-				envoy_common.WithTags(destination.Destination),
+				// The mesh tag is set here if this destination is generated
+				// from a MeshGateway virtual outbound and is not part of the
+				// service tags
+				envoy_common.WithTags(envoy_common.Tags(destination.Destination).WithoutTags("kuma.io/mesh")),
 				envoy_common.WithTimeout(timeoutConf),
 				envoy_common.WithLB(route.Spec.GetConf().GetLoadBalancer()),
 				envoy_common.WithExternalService(isExternalService),
 			)
+
+			if mesh, ok := destination.Destination["kuma.io/mesh"]; ok {
+				cluster.SetMesh(mesh)
+			}
 
 			if name, ok := clusterCache[cluster.Tags().String()]; ok {
 				cluster.SetName(name)

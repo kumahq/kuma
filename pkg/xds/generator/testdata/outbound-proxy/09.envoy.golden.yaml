@@ -1,0 +1,106 @@
+resources:
+- name: api-http-_0__mesh2
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 10s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: api-http-_0__mesh2
+    outlierDetection:
+      enforcingConsecutive5xx: 100
+      enforcingConsecutiveGatewayFailure: 0
+      enforcingConsecutiveLocalOriginFailure: 0
+      enforcingFailurePercentage: 0
+      enforcingSuccessRate: 0
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - kuma
+          combinedValidationContext:
+            defaultValidationContext:
+              matchSubjectAltNames:
+              - exact: spiffe://mesh2/api-http
+            validationContextSdsSecretConfig:
+              name: mesh_ca:secret:mesh2
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          tlsCertificateSdsSecretConfigs:
+          - name: identity_cert:secret:mesh1
+            sdsConfig:
+              ads: {}
+              resourceApiVersion: V3
+        sni: api-http{mesh=mesh2}
+    type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        commonHttpProtocolOptions:
+          idleTimeout: 0s
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
+- name: api-http-_0__mesh2
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: api-http-_0__mesh2
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.6
+              portValue: 8086
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/protocol: http
+              region: eu
+            envoy.transport_socket_match:
+              kuma.io/protocol: http
+              region: eu
+- name: outbound:127.0.0.1:30001
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 30001
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          commonHttpProtocolOptions:
+            idleTimeout: 0s
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            name: 'outbound:'
+            requestHeadersToAdd:
+            - header:
+                key: x-kuma-tags
+                value: '&kuma.io/service=web&'
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: api-http-_0__mesh2
+                  timeout: 0s
+          streamIdleTimeout: 0s
+    metadata:
+      filterMetadata:
+        io.kuma.tags: {}
+    name: outbound:127.0.0.1:30001
+    trafficDirection: OUTBOUND

@@ -154,6 +154,45 @@ func fillDataplaneOutbounds(
 	}
 }
 
+func BuildCrossMeshEndpointMap(
+	mesh *core_mesh.MeshResource,
+	gateways []*core_mesh.MeshGatewayResource,
+	dataplanes []*core_mesh.DataplaneResource,
+) core_xds.EndpointMap {
+	outbound := core_xds.EndpointMap{}
+	for _, dataplane := range dataplanes {
+		if !dataplane.Spec.IsBuiltinGateway() {
+			continue
+		}
+
+		gateway := SelectGateway(gateways, dataplane.Spec.Matches)
+		if gateway == nil {
+			continue
+		}
+
+		dpSpec := dataplane.Spec
+		dpNetworking := dpSpec.GetNetworking()
+
+		dpGateway := dpNetworking.GetGateway()
+		dpTags := dpGateway.GetTags()
+		serviceName := dpTags[mesh_proto.ServiceTag]
+
+		for _, listener := range gateway.Spec.GetConf().GetListeners() {
+			if !listener.CrossMesh {
+				continue
+			}
+			outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
+				Target:   dpNetworking.GetAddress(),
+				Port:     listener.GetPort(),
+				Tags:     mesh_proto.Merge(dpTags, gateway.Spec.GetTags(), listener.GetTags()),
+				Weight:   1,
+				Locality: localityFromTags(mesh, priorityLocal, dpTags),
+			})
+		}
+	}
+	return outbound
+}
+
 func buildCoordinates(address string, port uint32) string {
 	return net.JoinHostPort(
 		address,
