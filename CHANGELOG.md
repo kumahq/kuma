@@ -129,6 +129,10 @@ CP:
 * do not change ip to ZoneEgress address (backport #4193) [#4195](https://github.com/kumahq/kuma/pull/4195)
 * memory store cannot delete a parent (backport #4194) [#4196](https://github.com/kumahq/kuma/pull/4196)
 
+### Dependency upgrades:
+
+* upgrade envoy to 1.21.3 [#4457](https://github.com/kumahq/kuma/pull/4457) @lobkovilya
+
 ## [1.6.0]
 > Released on 2022/04/11
 
@@ -208,6 +212,13 @@ Other:
 * fix(proxytemplate): avoid validation error [3937](https://github.com/kumahq/kuma/pull/3937) @marcoferrer
 * fix(proxytemplate): execute hooks before proxy template modifications [4055](https://github.com/kumahq/kuma/pull/4055) @jakubdyszkiewicz
 * perf(k8s): move outbounds from Dataplane to Config [3986](https://github.com/kumahq/kuma/pull/3986) @jakubdyszkiewicz
+
+## [1.5.2]
+> Released on 2020/06/10
+
+### Dependency upgrades:
+
+* upgrade envoy to 1.21.3 [#4456](https://github.com/kumahq/kuma/pull/4456) @lobkovilya
 
 ## [1.5.1]
 > Released on 2022/04/06
