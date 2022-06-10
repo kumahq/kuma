@@ -104,19 +104,20 @@ func (cb *{{.ResourceType}}) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *{{.ResourceType}}) GetSpec() proto.Message {
+func (cb *{{.ResourceType}}) GetSpec() (proto.Message, error) {
 {{- if eq .ResourceType "DataplaneInsight" }}
 	spec := cb.Status
 {{- else}}
-	spec :=  cb.Spec
+	spec := cb.Spec
 {{- end}}
 	m := {{$pkg}}.{{.ProtoType}}{}
 
     if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *{{.ResourceType}}) SetSpec(spec proto.Message) {

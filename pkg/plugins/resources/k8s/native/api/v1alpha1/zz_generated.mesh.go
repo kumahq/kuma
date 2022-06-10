@@ -61,15 +61,16 @@ func (cb *CircuitBreaker) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *CircuitBreaker) GetSpec() proto.Message {
+func (cb *CircuitBreaker) GetSpec() (proto.Message, error) {
 	spec := cb.Spec
 	m := mesh_proto.CircuitBreaker{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *CircuitBreaker) SetSpec(spec proto.Message) {
@@ -156,15 +157,16 @@ func (cb *Dataplane) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *Dataplane) GetSpec() proto.Message {
+func (cb *Dataplane) GetSpec() (proto.Message, error) {
 	spec := cb.Spec
 	m := mesh_proto.Dataplane{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *Dataplane) SetSpec(spec proto.Message) {
@@ -251,15 +253,16 @@ func (cb *DataplaneInsight) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *DataplaneInsight) GetSpec() proto.Message {
+func (cb *DataplaneInsight) GetSpec() (proto.Message, error) {
 	spec := cb.Status
 	m := mesh_proto.DataplaneInsight{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *DataplaneInsight) SetSpec(spec proto.Message) {
@@ -348,15 +351,16 @@ func (cb *ExternalService) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *ExternalService) GetSpec() proto.Message {
+func (cb *ExternalService) GetSpec() (proto.Message, error) {
 	spec := cb.Spec
 	m := mesh_proto.ExternalService{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *ExternalService) SetSpec(spec proto.Message) {
@@ -443,15 +447,16 @@ func (cb *FaultInjection) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *FaultInjection) GetSpec() proto.Message {
+func (cb *FaultInjection) GetSpec() (proto.Message, error) {
 	spec := cb.Spec
 	m := mesh_proto.FaultInjection{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *FaultInjection) SetSpec(spec proto.Message) {
@@ -538,15 +543,16 @@ func (cb *HealthCheck) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *HealthCheck) GetSpec() proto.Message {
+func (cb *HealthCheck) GetSpec() (proto.Message, error) {
 	spec := cb.Spec
 	m := mesh_proto.HealthCheck{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *HealthCheck) SetSpec(spec proto.Message) {
@@ -633,15 +639,16 @@ func (cb *Mesh) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *Mesh) GetSpec() proto.Message {
+func (cb *Mesh) GetSpec() (proto.Message, error) {
 	spec := cb.Spec
 	m := mesh_proto.Mesh{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *Mesh) SetSpec(spec proto.Message) {
@@ -728,15 +735,16 @@ func (cb *MeshGateway) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *MeshGateway) GetSpec() proto.Message {
+func (cb *MeshGateway) GetSpec() (proto.Message, error) {
 	spec := cb.Spec
 	m := mesh_proto.MeshGateway{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *MeshGateway) SetSpec(spec proto.Message) {
@@ -823,15 +831,16 @@ func (cb *MeshGatewayRoute) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *MeshGatewayRoute) GetSpec() proto.Message {
+func (cb *MeshGatewayRoute) GetSpec() (proto.Message, error) {
 	spec := cb.Spec
 	m := mesh_proto.MeshGatewayRoute{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *MeshGatewayRoute) SetSpec(spec proto.Message) {
@@ -918,15 +927,16 @@ func (cb *MeshInsight) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *MeshInsight) GetSpec() proto.Message {
+func (cb *MeshInsight) GetSpec() (proto.Message, error) {
 	spec := cb.Spec
 	m := mesh_proto.MeshInsight{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *MeshInsight) SetSpec(spec proto.Message) {
@@ -1013,15 +1023,16 @@ func (cb *ProxyTemplate) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *ProxyTemplate) GetSpec() proto.Message {
+func (cb *ProxyTemplate) GetSpec() (proto.Message, error) {
 	spec := cb.Spec
 	m := mesh_proto.ProxyTemplate{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *ProxyTemplate) SetSpec(spec proto.Message) {
@@ -1108,15 +1119,16 @@ func (cb *RateLimit) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *RateLimit) GetSpec() proto.Message {
+func (cb *RateLimit) GetSpec() (proto.Message, error) {
 	spec := cb.Spec
 	m := mesh_proto.RateLimit{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *RateLimit) SetSpec(spec proto.Message) {
@@ -1203,15 +1215,16 @@ func (cb *Retry) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *Retry) GetSpec() proto.Message {
+func (cb *Retry) GetSpec() (proto.Message, error) {
 	spec := cb.Spec
 	m := mesh_proto.Retry{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *Retry) SetSpec(spec proto.Message) {
@@ -1298,15 +1311,16 @@ func (cb *ServiceInsight) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *ServiceInsight) GetSpec() proto.Message {
+func (cb *ServiceInsight) GetSpec() (proto.Message, error) {
 	spec := cb.Spec
 	m := mesh_proto.ServiceInsight{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *ServiceInsight) SetSpec(spec proto.Message) {
@@ -1393,15 +1407,16 @@ func (cb *Timeout) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *Timeout) GetSpec() proto.Message {
+func (cb *Timeout) GetSpec() (proto.Message, error) {
 	spec := cb.Spec
 	m := mesh_proto.Timeout{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *Timeout) SetSpec(spec proto.Message) {
@@ -1488,15 +1503,16 @@ func (cb *TrafficLog) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *TrafficLog) GetSpec() proto.Message {
+func (cb *TrafficLog) GetSpec() (proto.Message, error) {
 	spec := cb.Spec
 	m := mesh_proto.TrafficLog{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *TrafficLog) SetSpec(spec proto.Message) {
@@ -1583,15 +1599,16 @@ func (cb *TrafficPermission) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *TrafficPermission) GetSpec() proto.Message {
+func (cb *TrafficPermission) GetSpec() (proto.Message, error) {
 	spec := cb.Spec
 	m := mesh_proto.TrafficPermission{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *TrafficPermission) SetSpec(spec proto.Message) {
@@ -1678,15 +1695,16 @@ func (cb *TrafficRoute) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *TrafficRoute) GetSpec() proto.Message {
+func (cb *TrafficRoute) GetSpec() (proto.Message, error) {
 	spec := cb.Spec
 	m := mesh_proto.TrafficRoute{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *TrafficRoute) SetSpec(spec proto.Message) {
@@ -1773,15 +1791,16 @@ func (cb *TrafficTrace) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *TrafficTrace) GetSpec() proto.Message {
+func (cb *TrafficTrace) GetSpec() (proto.Message, error) {
 	spec := cb.Spec
 	m := mesh_proto.TrafficTrace{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *TrafficTrace) SetSpec(spec proto.Message) {
@@ -1868,15 +1887,16 @@ func (cb *VirtualOutbound) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *VirtualOutbound) GetSpec() proto.Message {
+func (cb *VirtualOutbound) GetSpec() (proto.Message, error) {
 	spec := cb.Spec
 	m := mesh_proto.VirtualOutbound{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *VirtualOutbound) SetSpec(spec proto.Message) {
@@ -1963,15 +1983,16 @@ func (cb *ZoneEgress) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *ZoneEgress) GetSpec() proto.Message {
+func (cb *ZoneEgress) GetSpec() (proto.Message, error) {
 	spec := cb.Spec
 	m := mesh_proto.ZoneEgress{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *ZoneEgress) SetSpec(spec proto.Message) {
@@ -2058,15 +2079,16 @@ func (cb *ZoneEgressInsight) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *ZoneEgressInsight) GetSpec() proto.Message {
+func (cb *ZoneEgressInsight) GetSpec() (proto.Message, error) {
 	spec := cb.Spec
 	m := mesh_proto.ZoneEgressInsight{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *ZoneEgressInsight) SetSpec(spec proto.Message) {
@@ -2153,15 +2175,16 @@ func (cb *ZoneIngress) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *ZoneIngress) GetSpec() proto.Message {
+func (cb *ZoneIngress) GetSpec() (proto.Message, error) {
 	spec := cb.Spec
 	m := mesh_proto.ZoneIngress{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *ZoneIngress) SetSpec(spec proto.Message) {
@@ -2248,15 +2271,16 @@ func (cb *ZoneIngressInsight) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *ZoneIngressInsight) GetSpec() proto.Message {
+func (cb *ZoneIngressInsight) GetSpec() (proto.Message, error) {
 	spec := cb.Spec
 	m := mesh_proto.ZoneIngressInsight{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *ZoneIngressInsight) SetSpec(spec proto.Message) {

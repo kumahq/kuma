@@ -50,8 +50,11 @@ func (c *SimpleConverter) ToKubernetesList(rl core_model.ResourceList) (k8s_mode
 
 func (c *SimpleConverter) ToCoreResource(obj k8s_model.KubernetesObject, out core_model.Resource) error {
 	out.SetMeta(&KubernetesMetaAdapter{ObjectMeta: *obj.GetObjectMeta(), Mesh: obj.GetMesh()})
-	err := out.SetSpec(obj.GetSpec())
-	return err
+	spec, err := obj.GetSpec()
+	if err != nil {
+		return err
+	}
+	return out.SetSpec(spec)
 }
 
 func (c *SimpleConverter) ToCoreList(in k8s_model.KubernetesList, out core_model.ResourceList, predicate k8s_common.ConverterPredicate) error {
