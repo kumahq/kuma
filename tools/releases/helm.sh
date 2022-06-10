@@ -46,15 +46,7 @@ function dev_version {
 
     chart_version=$(yq '.version' "${dir}/Chart.yaml")
 
-    # helm is semver-friendly, so we tweak the version.sh output a bit
-    short_hash=$(git rev-parse --short HEAD)
-
-    chart_version_extra=""
-    if [[ "${short_hash}" == "${version_extra}" ]]; then
-        chart_version_extra="+${version_extra}"
-    fi
-
-    yq -i ".version = \"${chart_version}${chart_version_extra}\"" "${dir}/Chart.yaml"
+    yq -i ".version = \"${chart_version}${chart_version}\"" "${dir}/Chart.yaml"
   done
 }
 
