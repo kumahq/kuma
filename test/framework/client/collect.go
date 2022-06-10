@@ -180,6 +180,40 @@ func collectCommand(opts CollectResponsesOpts, arg0 string, args ...string) []st
 	return cmd
 }
 
+func CollectTCPResponse(
+	cluster framework.Cluster,
+	container string,
+	destination string,
+	stdin string,
+	fn ...CollectResponsesOptsFn,
+) (string, error) {
+	opts := collectOptions(destination, fn...)
+	cmd := []string{"bash", "-c", fmt.Sprintf("echo '%s' | curl --max-time 3 %s", stdin, opts.ShellEscaped(opts.URL))}
+
+	var pod string
+	if opts.namespace != "" && opts.application != "" {
+		pods, err := k8s.ListPodsE(
+			cluster.GetTesting(),
+			cluster.GetKubectlOptions(opts.namespace),
+			metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("app=%s", opts.application),
+			},
+		)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to list pods")
+		}
+
+		pod = pods[0].Name
+	}
+
+	stdout, _, err := cluster.ExecWithRetries(opts.namespace, pod, container, cmd...)
+	if err != nil {
+		return "", err
+	}
+
+	return stdout, nil
+}
+
 func CollectResponse(
 	cluster framework.Cluster,
 	container string,

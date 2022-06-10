@@ -7,22 +7,22 @@ import (
 )
 
 type DeploymentOpts struct {
-	Name              string
-	Namespace         string
-	Mesh              string
-	ReachableServices []string
-	WithStatefulSet   bool
-	ServiceAccount    string
-	Args              []string
-	Replicas          int32
-	WaitingToBeReady  bool
-	PodAnnotations    map[string]string
+	Name               string
+	Namespace          string
+	Mesh               string
+	ReachableServices  []string
+	WithStatefulSet    bool
+	ServiceAccount     string
+	echoArgs           []string
+	healthcheckTCPArgs []string
+	Replicas           int32
+	WaitingToBeReady   bool
+	PodAnnotations     map[string]string
 }
 
 func DefaultDeploymentOpts() DeploymentOpts {
 	return DeploymentOpts{
 		Mesh:             "default",
-		Args:             []string{},
 		Name:             "test-server",
 		Namespace:        framework.TestNamespace,
 		Replicas:         1,
@@ -81,9 +81,15 @@ func WithoutWaitingToBeReady() DeploymentOptsFn {
 	}
 }
 
-func WithArgs(args ...string) DeploymentOptsFn {
+func WithEchoArgs(args ...string) DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
-		opts.Args = args
+		opts.echoArgs = args
+	}
+}
+
+func WithHealthCheckTCPArgs(args ...string) DeploymentOptsFn {
+	return func(opts *DeploymentOpts) {
+		opts.healthcheckTCPArgs = args
 	}
 }
 

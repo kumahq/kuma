@@ -97,7 +97,7 @@ networking:
 			Install(testserver.Install(
 				testserver.WithName("es-test-server"),
 				testserver.WithNamespace("default"),
-				testserver.WithArgs("echo", "--instance", "es-test-server"),
+				testserver.WithEchoArgs("echo", "--instance", "es-test-server"),
 			)).
 			Setup(zone1)).To(Succeed())
 
