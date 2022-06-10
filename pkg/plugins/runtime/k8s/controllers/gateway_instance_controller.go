@@ -327,9 +327,13 @@ func GatewayToInstanceMapper(l logr.Logger, client kube_client.Client) kube_hand
 	return func(obj kube_client.Object) []kube_reconcile.Request {
 		gateway := obj.(*mesh_k8s.MeshGateway)
 
+		spec, err := gateway.GetSpec()
+		if err != nil {
+			l.WithValues("gateway", obj.GetName()).Error(err, "failed to get core resource from MeshGateway")
+		}
+
 		var serviceNames []string
-		spec := gateway.GetSpec().(*mesh_proto.MeshGateway)
-		for _, selector := range spec.GetSelectors() {
+		for _, selector := range spec.(*mesh_proto.MeshGateway).GetSelectors() {
 			if tagValue, ok := selector.Match[mesh_proto.ServiceTag]; ok {
 				serviceNames = append(serviceNames, tagValue)
 			}

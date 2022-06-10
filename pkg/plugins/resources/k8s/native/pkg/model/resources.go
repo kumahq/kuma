@@ -21,7 +21,7 @@ type KubernetesObject interface {
 	SetObjectMeta(*metav1.ObjectMeta)
 	GetMesh() string
 	SetMesh(string)
-	GetSpec() proto.Message
+	GetSpec() (proto.Message, error)
 	SetSpec(proto.Message)
 	Scope() Scope
 }
