@@ -19,7 +19,8 @@ We need to have a mechanism to filter metrics.
 
 Chosen option:
 "Filter metrics dynamically on scrape request", because it follows Kuma philosophy of being as dynamic as possible.
-Additionally, as a followup we should implement "Customizable bootstrap", because it both enables static metrics and other advanced use cases. 
+Additionally, as a followup we should implement "Customizable bootstrap", because it both enables static metrics and other advanced use cases.
+This is a subject for another MADR that will take into account more use cases.
 
 ## Pros and Cons of the Options
 
@@ -42,7 +43,9 @@ spec:
         skipMTLS: false
         port: 5670
         path: /metrics
-        envoyFilterRegex: "envoy.cluster.*"
+        envoy:
+          filterRegex: "envoy.cluster.*"
+          usedOnly: false
 ```
 
 Implementation:
@@ -56,6 +59,11 @@ Then, metrics hijacker receives a request with query param and there are two opt
 * It passes it only to Envoy.
 * It passes it to Envoy and all the apps specified in aggregate.
 I think the first option is safer.
+
+Used only is a feature of Envoy to only publish metrics [that are used](https://www.envoyproxy.io/docs/envoy/latest/operations/admin#get--stats?usedonly).
+It's useful in the environments when you don't set reachable services,
+or you want to restrict drastically set of published metrics and you understand that you will be missing 0 values.
+However, this might be confusing when you start with Kuma and metrics, so I think it should be opt-in.
 
 #### Advantages
 * It's dynamic. You can see the result right away.
@@ -87,8 +95,8 @@ spec:
         path: /metrics
         tags: # tags that can be referred in Traffic Permission when metrics are secured by mTLS 
           kuma.io/service: dataplane-metrics
-        envoyFilter:
-          static:
+        envoy:
+          staticFilter:
             rejectAll: true|false
             inclusion:
             - match:
