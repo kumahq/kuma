@@ -17,7 +17,7 @@ shortHash=$(git rev-parse --short HEAD 2> /dev/null)
 currentBranch=$(git rev-parse --abbrev-ref HEAD 2> /dev/null)
 if [[ ${currentBranch} == release-* ]]; then
     releasePrefix=${currentBranch//release-/}
-    lastGitTag=$(git tag -l | grep -E "^${releasePrefix}\.[0-9]+$" | sort | tail -1)
+    lastGitTag=$(git tag -l | grep -E "^${releasePrefix}\.[0-9]+$" | sort -V | tail -1)
     if [[ ${lastGitTag} ]]; then
       IFS=. read -r major minor patch <<< "${lastGitTag}"
       echo "${major}.${minor}.$((++patch))-${shortHash}"
