@@ -326,10 +326,11 @@ func GatewayToInstanceMapper(l logr.Logger, client kube_client.Client) kube_hand
 
 	return func(obj kube_client.Object) []kube_reconcile.Request {
 		gateway := obj.(*mesh_k8s.MeshGateway)
+		l = l.WithValues("gateway", obj.GetName(), "mesh", gateway.Mesh)
 
 		spec, err := gateway.GetSpec()
 		if err != nil {
-			l.WithValues("gateway", obj.GetName()).Error(err, "failed to get core resource from MeshGateway")
+			l.Error(err, "failed to get core resource from MeshGateway")
 		}
 
 		var serviceNames []string
@@ -345,7 +346,7 @@ func GatewayToInstanceMapper(l logr.Logger, client kube_client.Client) kube_hand
 			if err := client.List(
 				context.Background(), instances, kube_client.MatchingFields{serviceKey: serviceName},
 			); err != nil {
-				l.WithValues("gateway", obj.GetName()).Error(err, "failed to fetch GatewayInstances")
+				l.Error(err, "failed to fetch GatewayInstances")
 			}
 
 			for _, instance := range instances.Items {
