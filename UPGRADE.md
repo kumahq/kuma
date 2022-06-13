@@ -8,8 +8,6 @@ does not have any particular instructions.
 
 ## Upcoming release
 
-<<<<<<< HEAD
-=======
 ## Upgrade to `1.7.x`
 
 ### Kumactl
@@ -18,7 +16,6 @@ does not have any particular instructions.
 
 ### DNS
 
->>>>>>> ca0da345a (chore: release v1.7.0, v1.6.1 and v1.5.2 (#4340))
 The `control-plane` no longer hosts a builtin DNS server. You should always rely on the embedded DNS in the dataplane proxy and VIPs can't be used without transparent proxy.
 
 ## Upgrade to `1.6.x`
