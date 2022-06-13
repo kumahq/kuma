@@ -8,6 +8,14 @@ does not have any particular instructions.
 
 ## Upcoming release
 
+## Upgrade to `1.7.x`
+
+### Kumactl
+
+* We're deprecating `kumactl install metrics/tracing/logging`, please use `kumactl install observability` instead
+
+### DNS
+
 The `control-plane` no longer hosts a builtin DNS server. You should always rely on the embedded DNS in the dataplane proxy and VIPs can't be used without transparent proxy.
 
 ## Upgrade to `1.6.x`
