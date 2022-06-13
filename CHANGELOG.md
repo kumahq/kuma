@@ -9,7 +9,7 @@ Cross Mesh Communication:
 * add cross-mesh `MeshGateway` listeners [#4274](https://github.com/kumahq/kuma/pull/4274)[#4405](https://github.com/kumahq/kuma/pull/4405) @michaelbeaumont
 
 ContainerPatch:
-* allow custom configuration of Kubernetes' `kuma-init` and `kuma-sidecar` containers by introducing `ContainerPatch` CRD [#4280](https://github.com/kumahq/kuma/pull/4280), [#4362](https://github.com/kumahq/kuma/pull/4362) / [#4366](https://github.com/kumahq/kuma/pull/4366), [#4369](https://github.com/kumahq/kuma/pull/4369) / [#4370](https://github.com/kumahq/kuma/pull/4370) @parkanzky, @bartsmykla
+* allow custom configuration of Kubernetes' `kuma-init` and `kuma-sidecar` containers by introducing `ContainerPatch` CRD [#4280](https://github.com/kumahq/kuma/pull/4280) [#4362](https://github.com/kumahq/kuma/pull/4362) / [#4366](https://github.com/kumahq/kuma/pull/4366) [#4369](https://github.com/kumahq/kuma/pull/4369) / [#4370](https://github.com/kumahq/kuma/pull/4370) @parkanzky, @bartsmykla
 
 Observability:
 * hijack application metrics to enable scraping metrics from mTLSed applications without prometheus in the mesh [#4286](https://github.com/kumahq/kuma/pull/4286) [#4388](https://github.com/kumahq/kuma/pull/4388)/[#4406](https://github.com/kumahq/kuma/pull/4406) @lukidzi
@@ -48,25 +48,25 @@ DP:
 ### Fixes:
 
 Gateway:
-* use MeshGatewayInstance mesh annotation when matching [#4361](https://github.com/kumahq/kuma/pull/4361)/[#4371](https://github.com/kumahq/kuma/pull/4371) @michaelbeaumont
+* use `MeshGatewayInstance` mesh annotation when matching [#4361](https://github.com/kumahq/kuma/pull/4361)/[#4371](https://github.com/kumahq/kuma/pull/4371) @michaelbeaumont
 
 Helm:
-* remove replica from cp-deployment.yaml when autoscaling enabled [#4447](https://github.com/kumahq/kuma/pull/4447)/[#4454](https://github.com/kumahq/kuma/pull/4454) @gustoliv
+* remove replica from `cp-deployment.yaml` when autoscaling enabled [#4447](https://github.com/kumahq/kuma/pull/4447)/[#4454](https://github.com/kumahq/kuma/pull/4454) @gustoliv
 
 CP:
-* fix '/config_dump' request if Global CP is on Kubernetes [#4363](https://github.com/kumahq/kuma/pull/4363)/[#4372](https://github.com/kumahq/kuma/pull/4372) @lobkovilya
+* fix `/config_dump` request if Global CP is on Kubernetes [#4363](https://github.com/kumahq/kuma/pull/4363)/[#4372](https://github.com/kumahq/kuma/pull/4372) @lobkovilya
 * add the latest version to compatibility matrix [#4232](https://github.com/kumahq/kuma/pull/4232) @parkanzky
 
 DP:
 * clarify error log message when kuma-dp is wrongly connecting to global-cp [#4269](https://github.com/kumahq/kuma/pull/4269) @slonka
 
 Kumactl:
-* fix transparent proxy --skip-conntrack-zone-split flag value [#4334](https://github.com/kumahq/kuma/pull/4334) @bartsmykla
+* fix transparent proxy `--skip-conntrack-zone-split` flag value [#4334](https://github.com/kumahq/kuma/pull/4334) @bartsmykla
 
 ### Other notable changes:
 
 Gateway:
-* add /finalizers permission for OwnerReferencesPermissionEnforcement plugin [#4239](https://github.com/kumahq/kuma/pull/4239) @michaelbeaumont
+* add `/finalizers` permission for `OwnerReferencesPermissionEnforcement` plugin [#4239](https://github.com/kumahq/kuma/pull/4239) @michaelbeaumont
 * don't match on ALPN in gateway (#4198) [#4272](https://github.com/kumahq/kuma/pull/4272) @wjrbetts
 
 Helm:
@@ -86,16 +86,16 @@ ZoneIngress:
 
 ZoneEgress:
 * resolve zone-ingress advertized address [#4219](https://github.com/kumahq/kuma/pull/4219) @lahabana
-* do not change ip to ZoneEgress address [#4193](https://github.com/kumahq/kuma/pull/4193) @lukidzi
+* do not change ip to `ZoneEgress`' address [#4193](https://github.com/kumahq/kuma/pull/4193) @lukidzi
 
 Kumactl:
-* remove flag '--experimental-meshgateway' [#4315](https://github.com/kumahq/kuma/pull/4315) @lobkovilya
+* remove flag `--experimental-meshgateway` [#4315](https://github.com/kumahq/kuma/pull/4315) @lobkovilya
 
 Timeout Policy:
 * deprecate 'timeout.grpc' section [#4365](https://github.com/kumahq/kuma/pull/4365)/[#4449](https://github.com/kumahq/kuma/pull/4449) @lobkovilya
 
 Other:
-* delete dns-server 5653 port from configuration and helm files [#4339](https://github.com/kumahq/kuma/pull/4339)/[#4345](https://github.com/kumahq/kuma/pull/4345) @lobkovilya
+* delete dns-server `5653` port from configuration and helm files [#4339](https://github.com/kumahq/kuma/pull/4339)/[#4345](https://github.com/kumahq/kuma/pull/4345) @lobkovilya
 * support kube-linter tools to analyze Kubernetes YAML files [#4294](https://github.com/kumahq/kuma/pull/4294) @mangoGoForward
 
 ### Dependency upgrades:
