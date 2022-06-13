@@ -55,6 +55,7 @@ Helm:
 
 CP:
 * fix '/config_dump' request if Global CP is on Kubernetes [#4363](https://github.com/kumahq/kuma/pull/4363)/[#4372](https://github.com/kumahq/kuma/pull/4372) @lobkovilya
+* add the latest version to compatibility matrix [#4232](https://github.com/kumahq/kuma/pull/4232) @parkanzky
 
 DP:
 * clarify error log message when kuma-dp is wrongly connecting to global-cp [#4269](https://github.com/kumahq/kuma/pull/4269) @slonka
