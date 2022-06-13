@@ -102,11 +102,11 @@ func (cb *{{.ResourceType}}) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *{{.ResourceType}}) GetSpec() proto.Message {
+func (cb *{{.ResourceType}}) GetSpec() (proto.Message, error) {
 {{- if eq .ResourceType "DataplaneInsight" }}
-	return cb.Status
+	return cb.Status, nil
 {{- else}}
-	return  cb.Spec
+	return cb.Spec, nil
 {{- end}}
 }
 

@@ -54,8 +54,8 @@ func (cb *DoNothingPolicy) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *DoNothingPolicy) GetSpec() proto.Message {
-	return cb.Spec
+func (cb *DoNothingPolicy) GetSpec() (proto.Message, error) {
+	return cb.Spec, nil
 }
 
 func (cb *DoNothingPolicy) SetSpec(spec proto.Message) {
