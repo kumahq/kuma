@@ -2022,8 +2022,6 @@ spec:
       annotations:
         checksum/config: 35abf3890114a5a98d5a79da70c2463b6fcf226e3fed80b47b4083056ac4e506
         checksum/tls-secrets: 2bb884540aa3f1284160eefd079bd32e623c0dc41b67ca862773e7cf184d6f65
-        
->>>>>>> ca0da345a (chore: release v1.7.0, v1.6.1 and v1.5.2 (#4340))
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
