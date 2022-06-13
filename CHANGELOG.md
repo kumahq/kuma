@@ -1,7 +1,7 @@
 # CHANGELOG
 
 ## [1.7.0]
-> Released on 2022/06/10
+> Released on 2022/06/13
 
 ### New features:
 
@@ -99,7 +99,7 @@ Other:
 
 ### Dependency upgrades:
 
-* upgrade envoy to 1.22.0 [#4288](https://github.com/kumahq/kuma/pull/4288) @lobkovilya
+* upgrade envoy to 1.22.1 [#4288](https://github.com/kumahq/kuma/pull/4288) [#4464](https://github.com/kumahq/kuma/pull/4464)/[#4465](https://github.com/kumahq/kuma/pull/4465) @lobkovilya
 * upgrade kuma-cni to 0.0.10 [#4313](https://github.com/kumahq/kuma/pull/4313) @lobkovilya
 * upgrade tproxy iptables to v0.2.2 [#4328](https://github.com/kumahq/kuma/pull/4328) @bartsmykla
 * upgrade GUI to the latest version [#4316](https://github.com/kumahq/kuma/pull/4316) [#4338](https://github.com/kumahq/kuma/pull/4338) [#4389](https://github.com/kumahq/kuma/pull/4389)/[#4390](https://github.com/kumahq/kuma/pull/4390) @jakubdyszkiewicz, @lahabana, @bartsmykla
