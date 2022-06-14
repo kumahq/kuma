@@ -11,11 +11,14 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/pkg/errors"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 func regexOf(regex string) *envoy_type_matcher.RegexMatcher {
@@ -323,7 +326,7 @@ func RouteActionRedirect(redirect *Redirection) RouteConfigurer {
 // RouteActionForward configures the route to forward traffic to the
 // given destinations, with the appropriate weights. This replaces any
 // previous action specification.
-func RouteActionForward(destinations []Destination) RouteConfigurer {
+func RouteActionForward(mesh *core_mesh.MeshResource, endpoints core_xds.EndpointMap, proxyTags mesh_proto.MultiValueTagSet, destinations []Destination) RouteConfigurer {
 	if len(destinations) == 0 {
 		return RouteConfigureFunc(nil)
 	}
@@ -345,9 +348,21 @@ func RouteActionForward(destinations []Destination) RouteConfigurer {
 
 		for n, d := range byName {
 			total += d.Weight
+
+			var requestHeadersToAdd []*envoy_config_core.HeaderValueOption
+
+			isMeshCluster := mesh.ZoneEgressEnabled() || !HasExternalServiceEndpoint(mesh, endpoints, d)
+
+			if isMeshCluster {
+				requestHeadersToAdd = []*envoy_config_core.HeaderValueOption{{
+					Header: &envoy_config_core.HeaderValue{Key: v3.TagsHeaderName, Value: tags.Serialize(proxyTags)},
+				}}
+			}
+
 			weights = append(weights, &envoy_config_route.WeightedCluster_ClusterWeight{
-				Name:   n,
-				Weight: util_proto.UInt32(d.Weight),
+				RequestHeadersToAdd: requestHeadersToAdd,
+				Name:                n,
+				Weight:              util_proto.UInt32(d.Weight),
 			})
 		}
 
