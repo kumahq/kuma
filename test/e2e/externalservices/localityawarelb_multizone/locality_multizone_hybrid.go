@@ -3,7 +3,6 @@ package localityawarelb_multizone
 import (
 	"fmt"
 	"net"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -136,37 +135,44 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 	})
 	It("should fail request when ingress is down", func() {
 		// when
-		stdout, _, err := zone4.ExecWithCustomRetries("", "", "zone4-demo-client", 3, time.Second*3,
-			"curl", "--verbose", "--max-time", "3", "--fail", "external-service-in-zone1.mesh")
-
-		// then
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Eventually(func() string {
+			stdout, _, err := zone4.Exec("", "", "zone4-demo-client",
+				"curl", "--verbose", "--max-time", "3", "--fail", "external-service-in-zone1.mesh")
+			if err != nil {
+				return ""
+			}
+			return stdout
+		}, "30s").Should(ContainSubstring("HTTP/1.1 200 OK"))
 
 		// when ingress is down
 		Expect(zone1.(*K8sCluster).StopZoneIngress()).To(Succeed())
 
 		// then service is unreachable
-		_, _, err = zone4.ExecWithCustomRetries("", "", "zone4-demo-client", 3, time.Second*3,
-			"curl", "--verbose", "--max-time", "3", "--fail", "external-service-in-zone1.mesh")
-		Expect(err).Should(HaveOccurred())
+		Eventually(func() error {
+			_, _, err := zone4.Exec("", "", "zone4-demo-client",
+				"curl", "--verbose", "--max-time", "3", "--fail", "external-service-in-zone1.mesh")
+			return err
+		}, "30s").Should(HaveOccurred())
 	})
 
 	It("should fail request when egress is down", func() {
-		// when
-		stdout, _, err := zone4.ExecWithCustomRetries("", "", "zone4-demo-client", 3, time.Second*3,
-			"curl", "--verbose", "--max-time", "3", "--fail", "external-service-in-zone1.mesh")
-
-		// then
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Eventually(func() string {
+			stdout, _, err := zone4.Exec("", "", "zone4-demo-client",
+				"curl", "--verbose", "--max-time", "3", "--fail", "external-service-in-zone1.mesh")
+			if err != nil {
+				return ""
+			}
+			return stdout
+		}, "30s").Should(ContainSubstring("HTTP/1.1 200 OK"))
 
 		// when egress is down
 		Expect(zone1.(*K8sCluster).StopZoneEgress()).To(Succeed())
 
 		// then service is unreachable
-		_, _, err = zone4.ExecWithCustomRetries("", "", "zone4-demo-client", 3, time.Second*3,
-			"curl", "--verbose", "--max-time", "3", "--fail", "external-service-in-zone1.mesh")
-		Expect(err).Should(HaveOccurred())
+		Eventually(func() error {
+			_, _, err := zone4.Exec("", "", "zone4-demo-client",
+				"curl", "--verbose", "--max-time", "3", "--fail", "external-service-in-zone1.mesh")
+			return err
+		}, "30s").Should(HaveOccurred())
 	})
 }
