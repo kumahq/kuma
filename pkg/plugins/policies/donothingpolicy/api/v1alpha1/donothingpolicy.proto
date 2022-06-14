@@ -24,6 +24,7 @@ message DoNothingPolicy {
   option (kuma.mesh.resource).ws.name = "donothingpolicy";
   option (kuma.mesh.resource).ws.plural = "donothingpolicies";
   option (kuma.mesh.resource).allow_to_inspect = true;
+  option (kuma.mesh.resource).skip_registration = true;
 
   // List of selectors to match dataplanes that are sources of traffic.
   repeated kuma.mesh.v1alpha1.Selector sources = 1 [ (doc.required) = true ];

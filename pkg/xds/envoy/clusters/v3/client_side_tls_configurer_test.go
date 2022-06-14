@@ -25,7 +25,7 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
 				Configure(clusters.EdsCluster(given.clusterName)).
 				Configure(clusters.ClientSideTLS(given.endpoints)).
-				Configure(clusters.Timeout(core_mesh.ProtocolTCP, DefaultTimeout())).
+				Configure(clusters.Timeout(DefaultTimeout(), core_mesh.ProtocolTCP)).
 				Build()
 
 			// then

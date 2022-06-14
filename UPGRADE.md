@@ -8,7 +8,33 @@ does not have any particular instructions.
 
 ## Upcoming release
 
+## Upgrade to `1.7.x`
+
+### Kumactl
+
+* We're deprecating `kumactl install metrics/tracing/logging`, please use `kumactl install observability` instead
+
+### DNS
+
 The `control-plane` no longer hosts a builtin DNS server. You should always rely on the embedded DNS in the dataplane proxy and VIPs can't be used without transparent proxy.
+
+### Timeout policy
+
+'grpc' section is deprecated.
+Timeouts for HTTP, HTTP2 and GRPC should be set in 'http' section:
+
+```yaml
+tcp: 
+  idleTimeout: 1h 
+http: # http, http2, grpc
+  requestTimeout: 15s 
+  idleTimeout: 1h
+  streamIdleTimeout: 30m
+  maxStreamDuration: 0s
+grpc: # DEPRECATED
+  streamIdleTimeout: 30m # DEPRECATED, use 'http.streamIdleTimeout'
+  maxStreamDuration: 0s # DEPRECATED, use 'http.maxStreamDuration'
+```
 
 ## Upgrade to `1.6.x`
 

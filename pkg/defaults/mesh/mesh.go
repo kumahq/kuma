@@ -33,7 +33,7 @@ func EnsureDefaultMeshResources(ctx context.Context, resManager manager.Resource
 	defaultResourceBuilders := map[string]func() model.Resource{
 		"allow-all":           defaultTrafficPermissionResource,
 		"route-all":           defaultTrafficRouteResource,
-		"timeout-all":         defaultTimeoutResource,
+		"timeout-all":         DefaultTimeoutResource,
 		"circuit-breaker-all": defaultCircuitBreakerResource,
 		"retry-all":           defaultRetryResource,
 	}

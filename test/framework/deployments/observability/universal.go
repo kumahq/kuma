@@ -1,4 +1,4 @@
-package tracing
+package observability
 
 import (
 	"fmt"
@@ -16,15 +16,16 @@ import (
 )
 
 type universalDeployment struct {
-	container string
-	ip        string
-	ports     map[uint32]uint32
+	deploymentName string
+	container      string
+	ip             string
+	ports          map[uint32]uint32
 }
 
 var _ Deployment = &universalDeployment{}
 
 func (u *universalDeployment) Name() string {
-	return DeploymentName
+	return u.deploymentName
 }
 
 func (u *universalDeployment) Deploy(cluster framework.Cluster) error {

@@ -39,10 +39,6 @@
         
             IdleTimeout is the time at which a downstream or upstream connection
             will be terminated if there are no active streams    
-    
-    - `grpc` (optional)
-    
-        Child properties:    
         
         - `streamIdleTimeout` (optional)
         
@@ -52,5 +48,23 @@
         - `maxStreamDuration` (optional)
         
             MaxStreamDuration is the maximum time that a stream’s lifetime will
+            span    
+    
+    - `grpc` (optional)
+    
+        Deprecated: set parameters through Http section
+    
+        Child properties:    
+        
+        - `streamIdleTimeout` (optional)
+        
+            StreamIdleTimeout is the amount of time that the connection manager
+            will allow a stream to exist with no upstream or downstream activity
+            Deprecated: use Http.StreamIdleTimeout instead    
+        
+        - `maxStreamDuration` (optional)
+        
+            MaxStreamDuration is the maximum time that a stream’s lifetime will
             span
+            Deprecated: use Http.MaxStreamDuration instead
 

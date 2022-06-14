@@ -7,6 +7,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	defaults_mesh "github.com/kumahq/kuma/pkg/defaults/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -37,8 +38,12 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 		// generate CDS resource
 		localClusterName := envoy_names.GetLocalClusterName(endpoint.WorkloadPort)
 		clusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
-			Configure(envoy_clusters.ProvidedEndpointCluster(localClusterName, false, core_xds.Endpoint{Target: endpoint.WorkloadIP, Port: endpoint.WorkloadPort}))
+			Configure(envoy_clusters.ProvidedEndpointCluster(localClusterName, false, core_xds.Endpoint{Target: endpoint.WorkloadIP, Port: endpoint.WorkloadPort})).
+			Configure(envoy_clusters.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
+
 		switch protocol {
+		case core_mesh.ProtocolHTTP:
+			clusterBuilder.Configure(envoy_clusters.Http())
 		case core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
 			clusterBuilder.Configure(envoy_clusters.Http2())
 		}
@@ -110,6 +115,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 					Configure(envoy_listeners.ServerSideMTLS(ctx.Mesh.Resource, proxy.SecretsTracker))
 			}
 			return filterChainBuilder.
+				Configure(envoy_listeners.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol)).
 				Configure(envoy_listeners.NetworkRBAC(inboundListenerName, ctx.Mesh.Resource.MTLSEnabled(),
 					proxy.Policies.TrafficPermissions[endpoint]))
 		}
