@@ -25,7 +25,7 @@ var _ = Describe("OutlierDetectionConfigurer", func() {
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
 				Configure(clusters.EdsCluster(given.clusterName)).
 				Configure(clusters.OutlierDetection(given.circuitBreaker)).
-				Configure(clusters.Timeout(core_mesh.ProtocolTCP, DefaultTimeout())).
+				Configure(clusters.Timeout(DefaultTimeout(), core_mesh.ProtocolTCP)).
 				Build()
 
 			// then

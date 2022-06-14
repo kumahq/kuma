@@ -28,15 +28,16 @@ func (pt *SampleTrafficRoute) SetMesh(mesh string) {
 	pt.Mesh = mesh
 }
 
-func (pt *SampleTrafficRoute) GetSpec() proto.Message {
+func (pt *SampleTrafficRoute) GetSpec() (proto.Message, error) {
 	spec := pt.Spec
 	m := sample_proto.TrafficRoute{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (pt *SampleTrafficRoute) SetSpec(spec proto.Message) {

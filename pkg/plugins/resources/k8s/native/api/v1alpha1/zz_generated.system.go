@@ -61,15 +61,16 @@ func (cb *Zone) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *Zone) GetSpec() proto.Message {
+func (cb *Zone) GetSpec() (proto.Message, error) {
 	spec := cb.Spec
 	m := system_proto.Zone{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *Zone) SetSpec(spec proto.Message) {
@@ -156,15 +157,16 @@ func (cb *ZoneInsight) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *ZoneInsight) GetSpec() proto.Message {
+func (cb *ZoneInsight) GetSpec() (proto.Message, error) {
 	spec := cb.Spec
 	m := system_proto.ZoneInsight{}
 
 	if spec == nil || len(spec.Raw) == 0 {
-		return &m
+		return &m, nil
 	}
 
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+	err := util_proto.FromJSON(spec.Raw, &m)
+	return &m, err
 }
 
 func (cb *ZoneInsight) SetSpec(spec proto.Message) {

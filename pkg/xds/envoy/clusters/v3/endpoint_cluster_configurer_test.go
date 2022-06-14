@@ -48,7 +48,7 @@ var _ = Describe("ProvidedEndpointClusterConfigurer", func() {
 					},
 				},
 			)).
-			Configure(clusters.Timeout(core_mesh.ProtocolTCP, DefaultTimeout())).
+			Configure(clusters.Timeout(DefaultTimeout(), core_mesh.ProtocolTCP)).
 			Build()
 
 		// then
@@ -93,7 +93,7 @@ var _ = Describe("ProvidedEndpointClusterConfigurer", func() {
 					},
 				},
 			)).
-			Configure(clusters.Timeout(core_mesh.ProtocolTCP, DefaultTimeout())).
+			Configure(clusters.Timeout(DefaultTimeout(), core_mesh.ProtocolTCP)).
 			Build()
 
 		// then
@@ -127,7 +127,7 @@ var _ = Describe("ProvidedEndpointClusterConfigurer", func() {
 		// when
 		cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
 			Configure(clusters.ProvidedEndpointCluster(clusterName, false, core_xds.Endpoint{Target: address, Port: port})).
-			Configure(clusters.Timeout(core_mesh.ProtocolTCP, DefaultTimeout())).
+			Configure(clusters.Timeout(DefaultTimeout(), core_mesh.ProtocolTCP)).
 			Build()
 
 		// then
@@ -159,7 +159,7 @@ var _ = Describe("ProvidedEndpointClusterConfigurer", func() {
 		// when
 		cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
 			Configure(clusters.ProvidedEndpointCluster(clusterName, false, core_xds.Endpoint{UnixDomainPath: path})).
-			Configure(clusters.Timeout(core_mesh.ProtocolTCP, DefaultTimeout())).
+			Configure(clusters.Timeout(DefaultTimeout(), core_mesh.ProtocolTCP)).
 			Build()
 
 		// then
