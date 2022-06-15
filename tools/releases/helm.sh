@@ -34,8 +34,7 @@ function dev_version {
 
     kuma_version=$("${SCRIPT_DIR}/version.sh")
     yq -i ".appVersion = \"${kuma_version}\"" "${dir}/Chart.yaml"
-
-    IFS=- read -r _version_core version_extra <<< "${kuma_version}"
+    yq -i ".version = \"${kuma_version}\"" "${dir}/Chart.yaml"
 
     for chart in $(yq e '.dependencies[].name' "${dir}/Chart.yaml"); do
         if [ ! -d "${dir}/charts/${chart}" ]; then
@@ -44,17 +43,6 @@ function dev_version {
         yq -i e "del(.dependencies[] | select(.name == \"${chart}\"))" "${dir}/Chart.yaml"
     done
 
-    chart_version=$(yq '.version' "${dir}/Chart.yaml")
-
-    # helm is semver-friendly, so we tweak the version.sh output a bit
-    short_hash=$(git rev-parse --short HEAD)
-
-    chart_version_extra=""
-    if [[ "${short_hash}" == "${version_extra}" ]]; then
-        chart_version_extra="+${version_extra}"
-    fi
-
-    yq -i ".version = \"${chart_version}${chart_version_extra}\"" "${dir}/Chart.yaml"
   done
 }
 
