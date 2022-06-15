@@ -421,6 +421,48 @@ var _ = DescribeTable("outboundView",
 			},
 		},
 	}),
+	Entry("zone ingress from own zone is ignored", outboundViewTestCase{
+		givenResources: map[model.ResourceKey]model.Resource{
+			model.WithMesh("mesh", "dp1"): &mesh.DataplaneResource{Spec: dp("service1", "service2")},
+			model.WithMesh("default", "ingress-1"): &mesh.ZoneIngressResource{
+				Spec: &mesh_proto.ZoneIngress{
+					Zone:       "zone1",
+					Networking: &mesh_proto.ZoneIngress_Networking{Port: 1000, AdvertisedPort: 1000, AdvertisedAddress: "127.0.0.1", Address: "127.0.0.1"},
+					AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
+						{
+							Mesh: "other-mesh",
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "srv1",
+							},
+							Instances: 2,
+						},
+						{
+							Mesh: "mesh",
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "srv1",
+							},
+							Instances: 2,
+						},
+						{
+							Mesh: "mesh",
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "srv2",
+							},
+							Instances: 2,
+						},
+					},
+				},
+			},
+		},
+		whenMesh:            "mesh",
+		whenZone:            "zone1",
+		thenHostnameEntries: []vips.HostnameEntry{vips.NewServiceEntry("service1"), vips.NewServiceEntry("service2")},
+		thenOutbounds: map[vips.HostnameEntry][]vips.OutboundEntry{
+			vips.NewServiceEntry("service1"): {
+				{TagSet: map[string]string{mesh_proto.ServiceTag: "service1"}, Origin: "service"},
+			},
+		},
+	}),
 	Entry("virtual outbound simple", outboundViewTestCase{
 		givenResources: map[model.ResourceKey]model.Resource{
 			model.WithMesh("mesh", "dp1-a"): &mesh.DataplaneResource{Spec: dpWithTags(map[string]string{mesh_proto.ServiceTag: "service1", "instance": "a", "port": "9000"})},
