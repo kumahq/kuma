@@ -59,7 +59,7 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 
 	resources := core_xds.NewResourceSet()
 
-	const statsPath = "/"
+	statsPath := "/" + buildEnvoyMetricsFilter(prometheusEndpoint)
 	metricsHijackerClusterName := envoy_names.GetMetricsHijackerClusterName()
 	cluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
 		Configure(envoy_clusters.ProvidedEndpointCluster(metricsHijackerClusterName, proxy.Dataplane.IsIPv6(),
@@ -147,4 +147,23 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 
 func secureMetrics(cfg *mesh_proto.PrometheusMetricsBackendConfig, mesh *core_mesh.MeshResource) bool {
 	return !cfg.SkipMTLS.GetValue() && mesh.MTLSEnabled()
+}
+
+func buildEnvoyMetricsFilter(config *mesh_proto.PrometheusMetricsBackendConfig) string {
+	var query string
+	if config.GetEnvoy() != nil {
+		if config.Envoy.GetFilterRegex() != "" {
+			query += "filter=" + config.Envoy.GetFilterRegex()
+		}
+		if query != "" {
+			query += "&"
+		}
+		if config.Envoy.GetUsedOnly().GetValue() {
+			query += "usedonly"
+		}
+	}
+	if query != "" {
+		return "?" + query
+	}
+	return ""
 }

@@ -52,6 +52,9 @@ message PrometheusMetricsBackendConfig {
   // Map with the configuration of applications which metrics are going to be
   // scrapped by kuma-dp.
   repeated PrometheusAggregateMetricsConfig aggregate = 5;
+
+  // Configuration of a filter for Envoy's metrics.
+  PrometheusEnvoyFilterConfig envoy = 6;
 }
 
 // PrometheusAggregateMetricsConfig defines endpoints that should be scrapped
@@ -70,4 +73,17 @@ message PrometheusAggregateMetricsConfig {
   // If false then the application won't be scrapped. If nil, then it is treated
   // as true and kuma-dp scrapes metrics from the service.
   google.protobuf.BoolValue enabled = 4;
+}
+
+// PrometheusEnvoyFilterConfig defines filters that should be passed to Envoy
+// for filtering.
+message PrometheusEnvoyFilterConfig {
+  // FilterRegex value that is going to be passed to Envoy for filtering
+  // Envoy metrics.
+  string filterRegex = 1;
+
+  // If true then return metrics that Envoy has updated (counters incremented
+  // at least once, gauges changed at least once, and histograms added to at
+  // least once). If nil, then it is treated as false.
+  google.protobuf.BoolValue usedOnly = 2;
 }

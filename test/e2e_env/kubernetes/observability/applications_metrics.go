@@ -12,7 +12,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
-func MeshKubernetesAndMetricsAggregate(name string) InstallFunc {
+func MeshAndMetricsAggregate(name string) InstallFunc {
 	mesh := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
@@ -27,6 +27,8 @@ spec:
         conf:
           port: 1234
           path: /metrics
+          envoy:
+            filterRegex: concurrency
           skipMTLS: true
           aggregate:
           - name: path-stats
@@ -44,7 +46,28 @@ spec:
 	return YamlK8s(mesh)
 }
 
-func MeshKubernetesAndMetricsEnabled(name string) InstallFunc {
+func MeshAndMetricsEnabled(name string) InstallFunc {
+	mesh := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: %s
+spec:
+  metrics:
+    enabledBackend: prom-1
+    backends:
+      - name: prom-1
+        type: prometheus
+        conf:
+          envoy:
+            filterRegex: concurrency
+          port: 1234
+          path: /metrics
+          skipMTLS: true`, name)
+	return YamlK8s(mesh)
+}
+
+func MeshAndEnvoyMetricsFilters(name string, usedOnly string) InstallFunc {
 	mesh := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
@@ -59,7 +82,14 @@ spec:
         conf:
           port: 1234
           path: /metrics
-          skipMTLS: true`, name)
+          envoy:
+            filterRegex: http2_act.*
+            usedOnly: %s
+          skipMTLS: true
+          aggregate:
+          - name: path-stats
+            path: "/path-stats"
+            port: 80`, name, usedOnly)
 	return YamlK8s(mesh)
 }
 
@@ -67,16 +97,23 @@ func ApplicationsMetrics() {
 	const namespace = "applications-metrics"
 	const mesh = "applications-metrics"
 	const meshNoAggregate = "applications-metrics-no-aggregeate"
+	const meshEnvoyFilter = "applications-metrics-envoy-filter"
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(MeshKubernetesAndMetricsAggregate(mesh)).
-			Install(MeshKubernetesAndMetricsEnabled(meshNoAggregate)).
+			Install(MeshAndMetricsAggregate(mesh)).
+			Install(MeshAndMetricsEnabled(meshNoAggregate)).
+			Install(MeshAndEnvoyMetricsFilters(meshEnvoyFilter, "false")).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(testserver.Install(
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(mesh),
 				testserver.WithName("test-server"),
+			)).
+			Install(testserver.Install(
+				testserver.WithNamespace(namespace),
+				testserver.WithMesh(meshEnvoyFilter),
+				testserver.WithName("test-server-filter"),
 			)).
 			Install(testserver.Install(
 				testserver.WithNamespace(namespace),
@@ -117,7 +154,7 @@ func ApplicationsMetrics() {
 
 		// when
 		stdout, _, err := env.Cluster.Exec(namespace, podName, "test-server",
-			"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(podIp, "1234")+"/metrics?filter=concurrency")
+			"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(podIp, "1234")+"/metrics")
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -139,7 +176,7 @@ func ApplicationsMetrics() {
 
 		// when
 		stdout, _, err := env.Cluster.Exec(namespace, podName, "test-server-override-mesh",
-			"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(podIp, "1234")+"/metrics?filter=concurrency")
+			"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(podIp, "1234")+"/metrics")
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -171,7 +208,7 @@ func ApplicationsMetrics() {
 
 		// when
 		stdout, _, err := env.Cluster.Exec(namespace, podName, "test-server-dp-metrics",
-			"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(podIp, "1234")+"/metrics?filter=concurrency")
+			"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(podIp, "1234")+"/metrics")
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -188,5 +225,42 @@ func ApplicationsMetrics() {
 		Expect(stdout).To(ContainSubstring("other-app"))
 		// metric from envoy
 		Expect(stdout).To(ContainSubstring("envoy_server_concurrency"))
+	})
+
+	It("should return envoy filtered metrics", func() {
+		// given
+		podName, err := PodNameOfApp(env.Cluster, "test-server-filter", namespace)
+		Expect(err).ToNot(HaveOccurred())
+		podIp, err := PodIPOfApp(env.Cluster, "test-server-filter", namespace)
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		stdout, _, err := env.Cluster.Exec(namespace, podName, "test-server-filter",
+			"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(podIp, "1234")+"/metrics")
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(stdout).ToNot(BeNil())
+
+		// other application metrics
+		Expect(stdout).To(ContainSubstring("path-stats"))
+		// metric from envoy
+		Expect(stdout).To(ContainSubstring("kuma_envoy_admin"))
+
+		// when enabled usedOnly
+		Expect(MeshAndEnvoyMetricsFilters(meshEnvoyFilter, "true")(env.Cluster)).To(Succeed())
+
+		// then
+		Eventually(func() string {
+			stdout, _, err = env.Cluster.Exec(namespace, podName, "test-server-filter",
+				"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(podIp, "1234")+"/metrics")
+			if err != nil {
+				return ""
+			}
+			return stdout
+		}, "30s", "1s").Should(And(
+			ContainSubstring("path-stats"),
+			Not(ContainSubstring("kuma_envoy_admin")),
+		))
 	})
 }

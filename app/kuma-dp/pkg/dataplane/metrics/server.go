@@ -26,11 +26,24 @@ var _ component.Component = &Hijacker{}
 
 type MetricsMutator func(in io.Reader, out io.Writer) error
 
+type QueryParametersAppender func(in *url.URL) string
+
+func NoQueryParametersAppender(url *url.URL) string {
+	return ""
+}
+
+func EnvoyQueryParametersAppender(url *url.URL) string {
+	queryParams := url.Query()
+	queryParams.Add("format", "prometheus")
+	return queryParams.Encode()
+}
+
 type ApplicationToScrape struct {
-	Name    string
-	Path    string
-	Port    uint32
-	Mutator MetricsMutator
+	Name          string
+	Path          string
+	Port          uint32
+	QueryAppender QueryParametersAppender
+	Mutator       MetricsMutator
 }
 
 type Hijacker struct {
@@ -95,17 +108,15 @@ func (s *Hijacker) Start(stop <-chan struct{}) error {
 	}
 }
 
-// The Envoy stats endpoint recognizes the "used_only" and "filter" query
-// parameters. We squash the path to enforce Prometheus metrics format, but
-// forward the query parameters so that the scraper can do partial scrapes.
-func rewriteMetricsURL(path string, port uint32, in *url.URL) string {
+// Depends on the specific application we do QueryParameters passing.
+// Currently, we only support QueryParameters for Envoy metrics.
+func rewriteMetricsURL(path string, port uint32, queryAppender QueryParametersAppender, in *url.URL) string {
 	u := url.URL{
 		Scheme:   "http",
 		Host:     fmt.Sprintf("127.0.0.1:%d", port),
 		Path:     path,
-		RawQuery: in.RawQuery,
+		RawQuery: queryAppender(in),
 	}
-
 	return u.String()
 }
 
@@ -135,7 +146,7 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Hijacker) getStats(url *url.URL, app ApplicationToScrape) []byte {
-	resp, err := s.httpClient.Get(rewriteMetricsURL(app.Path, app.Port, url))
+	resp, err := s.httpClient.Get(rewriteMetricsURL(app.Path, app.Port, app.QueryAppender, url))
 	if err != nil {
 		logger.Error(err, "failed call", "name", app.Name, "path", app.Path, "port", app.Port)
 		return nil

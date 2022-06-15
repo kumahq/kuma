@@ -69,6 +69,9 @@ var _ = Describe("Mesh", func() {
                 conf:
                   port: 5670
                   path: /metrics
+                  envoy:
+                    filterRegex: ^server[0-9]+
+                    usedOnly: true
                   aggregate:
                   - name: application
                     port: 1234
