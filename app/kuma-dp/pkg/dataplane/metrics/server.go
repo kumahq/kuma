@@ -28,7 +28,7 @@ type MetricsMutator func(in io.Reader, out io.Writer) error
 
 type QueryParametersAppender func(in *url.URL) string
 
-func NoQueryParametersAppender(url *url.URL) string {
+func EmptyQueryParametersAppender(url *url.URL) string {
 	return ""
 }
 
