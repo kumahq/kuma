@@ -44,6 +44,27 @@ Even though, Kuma policy matching cannot be compatible with Gateway API Policy A
 we don't rule out the possibility in the future. 
 
 Each Kuma policy has a single "TargetRef": 
+
+```protobuf
+message TargetRef {
+  // Kind of the referenced resource
+  // +kubebuilder:validation:Enum=Mesh;Service;ProxyGroup;Proxy;MeshGatewayRoute;HTTPRoute
+  string kind = 1;
+
+  // Name of the referenced resource
+  string name = 2;
+
+  message Inline {
+    // Tags allows to define a ProxyGroup
+    map<string, string> tags = 1;
+  }
+  // Inline allows to define resources in place if resource 'kind' is not supported by a store  
+  Inline inline = 3;
+}
+```
+
+for example:
+
 ```yaml
 type: UpstreamTimeout
 mesh: mesh-1
