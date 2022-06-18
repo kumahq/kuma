@@ -1,9 +1,10 @@
 package mads
 
 import (
+	"errors"
+	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
 	"github.com/kumahq/kuma/pkg/config"
@@ -53,16 +54,16 @@ func (c *MonitoringAssignmentServerConfig) Validate() (errs error) {
 	}
 
 	if 65535 < c.Port {
-		errs = multierr.Append(errs, errors.Errorf(".Port must be in the range [0, 65535]"))
+		errs = multierr.Append(errs, fmt.Errorf(".Port must be in the range [0, 65535]"))
 	}
 
 	if len(c.ApiVersions) == 0 {
-		errs = multierr.Append(errs, errors.Errorf(".ApiVersions must contain at least one version"))
+		errs = multierr.Append(errs, fmt.Errorf(".ApiVersions must contain at least one version"))
 	}
 
 	for _, apiVersion := range c.ApiVersions {
 		if apiVersion != mads.API_V1 {
-			errs = multierr.Append(errs, errors.Errorf(".ApiVersions contains invalid version %s", apiVersion))
+			errs = multierr.Append(errs, fmt.Errorf(".ApiVersions contains invalid version %s", apiVersion))
 		}
 	}
 

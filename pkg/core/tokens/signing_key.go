@@ -4,11 +4,10 @@ import (
 	"context"
 	"crypto/rsa"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -20,7 +19,7 @@ import (
 func NewSigningKey() ([]byte, error) {
 	key, err := util_rsa.GenerateKey(util_rsa.DefaultKeySize)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to generate RSA key")
+		return nil, fmt.Errorf("failed to generate RSA key: %w", err)
 	}
 	return util_rsa.FromPrivateKeyToPEMBytes(key)
 }
@@ -114,7 +113,7 @@ func getKeyBytes(
 			}
 		}
 
-		return nil, errors.Wrap(err, "could not retrieve signing key")
+		return nil, fmt.Errorf("could not retrieve signing key: %w", err)
 	}
 
 	return resource.Spec.GetData().GetValue(), nil

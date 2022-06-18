@@ -2,9 +2,8 @@ package tls
 
 import (
 	"crypto/x509"
+	"fmt"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 func VerifyOnlyCA(caPool *x509.CertPool) func([][]byte, [][]*x509.Certificate) error {
@@ -19,7 +18,7 @@ func VerifyOnlyCA(caPool *x509.CertPool) func([][]byte, [][]*x509.Certificate) e
 		for i, asn1Data := range rawCerts {
 			cert, err := x509.ParseCertificate(asn1Data)
 			if err != nil {
-				return errors.Wrap(err, "tls: failed to parse certificate from server")
+				return fmt.Errorf("tls: failed to parse certificate from server: %w", err)
 			}
 			certs[i] = cert
 		}

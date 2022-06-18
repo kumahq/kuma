@@ -4,11 +4,12 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
+	"fmt"
 	"net/url"
 	"os"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -25,9 +26,7 @@ import (
 	"github.com/kumahq/kuma/pkg/metrics"
 )
 
-var (
-	muxClientLog = core.Log.WithName("kds-mux-client")
-)
+var muxClientLog = core.Log.WithName("kds-mux-client")
 
 type client struct {
 	callbacks          Callbacks
@@ -80,11 +79,11 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	case "grpcs":
 		tlsConfig, err := tlsConfig(c.config.RootCAFile)
 		if err != nil {
-			return errors.Wrap(err, "could not ")
+			return fmt.Errorf("could not : %w", err)
 		}
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	default:
-		return errors.Errorf("unsupported scheme %q. Use one of %s", u.Scheme, []string{"grpc", "grpcs"})
+		return fmt.Errorf("unsupported scheme %q. Use one of %s", u.Scheme, []string{"grpc", "grpcs"})
 	}
 	conn, err := grpc.Dial(u.Host, dialOpts...)
 	if err != nil {
@@ -92,7 +91,7 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	}
 	defer func() {
 		if err := conn.Close(); err != nil {
-			errs = errors.Wrapf(err, "failed to close a connection")
+			errs = fmt.Errorf("failed to close a connection: %w", err)
 		}
 	}()
 
@@ -194,7 +193,7 @@ func tlsConfig(rootCaFile string) (*tls.Config, error) {
 	roots := x509.NewCertPool()
 	caCert, err := os.ReadFile(rootCaFile)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not read certificate %s", rootCaFile)
+		return nil, fmt.Errorf("could not read certificate %s: %w", rootCaFile, err)
 	}
 	ok := roots.AppendCertsFromPEM(caCert)
 	if !ok {

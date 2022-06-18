@@ -1,9 +1,8 @@
 package system
 
 import (
+	"fmt"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -23,7 +22,7 @@ func ValidateLocation(resourceType model.ResourceType, mode core.CpMode) error {
 }
 
 func InvalidLocationErr(resourceType model.ResourceType, supportedLocations ...core.CpMode) error {
-	return errors.Errorf("%s resource can only be applied on CP with mode: %v", resourceType, supportedLocations)
+	return fmt.Errorf("%s resource can only be applied on CP with mode: %v", resourceType, supportedLocations)
 }
 
 func IsInvalidLocationErr(err error) bool {

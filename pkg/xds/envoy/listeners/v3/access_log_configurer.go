@@ -8,7 +8,6 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	access_loggers_file "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	access_loggers_grpc "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
-	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -38,9 +37,8 @@ func convertLoggingBackend(mesh string, trafficDirection envoy.TrafficDirection,
 		formatString = backend.Format
 	}
 	format, err := accesslog.ParseFormat(formatString + "\n")
-
 	if err != nil {
-		return nil, errors.Wrapf(err, "invalid access log format string: %s", formatString)
+		return nil, fmt.Errorf("invalid access log format string: %s: %w", formatString, err)
 	}
 
 	variables := accesslog.InterpolationVariables{
@@ -54,7 +52,7 @@ func convertLoggingBackend(mesh string, trafficDirection envoy.TrafficDirection,
 
 	format, err = format.Interpolate(variables)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to interpolate access log format string with Kuma-specific variables: %s", formatString)
+		return nil, fmt.Errorf("failed to interpolate access log format string with Kuma-specific variables: %s: %w", formatString, err)
 	}
 
 	switch backend.GetType() {
@@ -63,14 +61,14 @@ func convertLoggingBackend(mesh string, trafficDirection envoy.TrafficDirection,
 	case mesh_proto.LoggingTcpType:
 		return tcpAccessLog(format, backend.Conf)
 	default: // should be caught by validator
-		return nil, errors.Errorf("could not convert LoggingBackend of type %T to AccessLog", backend.GetType())
+		return nil, fmt.Errorf("could not convert LoggingBackend of type %T to AccessLog", backend.GetType())
 	}
 }
 
 func tcpAccessLog(format *accesslog.AccessLogFormat, cfgStr *structpb.Struct) (*envoy_accesslog.AccessLog, error) {
 	cfg := mesh_proto.TcpLoggingBackendConfig{}
 	if err := proto.ToTyped(cfgStr, &cfg); err != nil {
-		return nil, errors.Wrap(err, "could not parse backend config")
+		return nil, fmt.Errorf("could not parse backend config: %w", err)
 	}
 
 	httpGrpcAccessLog := &access_loggers_grpc.HttpGrpcAccessLogConfig{
@@ -87,11 +85,11 @@ func tcpAccessLog(format *accesslog.AccessLogFormat, cfgStr *structpb.Struct) (*
 		},
 	}
 	if err := format.ConfigureHttpLog(httpGrpcAccessLog); err != nil {
-		return nil, errors.Wrapf(err, "failed to configure %T according to the format string: %s", httpGrpcAccessLog, format)
+		return nil, fmt.Errorf("failed to configure %T according to the format string: %s: %w", httpGrpcAccessLog, format, err)
 	}
 	marshaled, err := proto.MarshalAnyDeterministic(httpGrpcAccessLog)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not marshall %T", httpGrpcAccessLog)
+		return nil, fmt.Errorf("could not marshall %T: %w", httpGrpcAccessLog, err)
 	}
 	return &envoy_accesslog.AccessLog{
 		Name: "envoy.access_loggers.http_grpc",
@@ -104,7 +102,7 @@ func tcpAccessLog(format *accesslog.AccessLogFormat, cfgStr *structpb.Struct) (*
 func fileAccessLog(format *accesslog.AccessLogFormat, cfgStr *structpb.Struct) (*envoy_accesslog.AccessLog, error) {
 	cfg := mesh_proto.FileLoggingBackendConfig{}
 	if err := proto.ToTyped(cfgStr, &cfg); err != nil {
-		return nil, errors.Wrap(err, "could not parse backend config")
+		return nil, fmt.Errorf("could not parse backend config: %w", err)
 	}
 
 	fileAccessLog := &access_loggers_file.FileAccessLog{
@@ -123,7 +121,7 @@ func fileAccessLog(format *accesslog.AccessLogFormat, cfgStr *structpb.Struct) (
 	}
 	marshaled, err := proto.MarshalAnyDeterministic(fileAccessLog)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not marshall %T", fileAccessLog)
+		return nil, fmt.Errorf("could not marshall %T: %w", fileAccessLog, err)
 	}
 	return &envoy_accesslog.AccessLog{
 		Name: "envoy.access_loggers.file",

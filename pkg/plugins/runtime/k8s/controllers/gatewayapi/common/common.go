@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -23,6 +22,7 @@ func ServiceTagForGateway(name kube_types.NamespacedName) map[string]string {
 		mesh_proto.ServiceTag: fmt.Sprintf("%s_%s_gateway", name.Name, name.Namespace),
 	}
 }
+
 func GetGatewayClass(ctx context.Context, client kube_client.Client, name gatewayapi.ObjectName) (*gatewayapi.GatewayClass, error) {
 	class := &gatewayapi.GatewayClass{}
 	classObjectKey := kube_types.NamespacedName{Name: string(name)}
@@ -32,7 +32,7 @@ func GetGatewayClass(ctx context.Context, client kube_client.Client, name gatewa
 			return nil, nil
 		}
 
-		return nil, errors.Wrapf(err, "failed to get GatewayClass %s", classObjectKey)
+		return nil, fmt.Errorf("failed to get GatewayClass %s: %w", classObjectKey, err)
 	}
 
 	return class, nil

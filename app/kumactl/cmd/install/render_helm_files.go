@@ -7,7 +7,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/pkg/errors"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/chartutil"
@@ -46,18 +45,18 @@ func renderHelmFiles(
 ) ([]data.File, error) {
 	kumaChart, err := loadCharts(templates)
 	if err != nil {
-		return nil, errors.Errorf("Failed to load charts: %s", err)
+		return nil, fmt.Errorf("Failed to load charts: %s", err)
 	}
 
 	if err := chartutil.ProcessDependencies(kumaChart, overrideValues); err != nil {
-		return nil, errors.Errorf("Failed to process dependencies: %s", err)
+		return nil, fmt.Errorf("Failed to process dependencies: %s", err)
 	}
 
 	options := generateReleaseOptions(kumaChart.Metadata.Name, namespace)
 
 	valuesToRender, err := chartutil.ToRenderValues(kumaChart, overrideValues, options, nil)
 	if err != nil {
-		return nil, errors.Errorf("Failed to render values: %s", err)
+		return nil, fmt.Errorf("Failed to render values: %s", err)
 	}
 
 	var files map[string]string
@@ -67,7 +66,7 @@ func renderHelmFiles(
 		files, err = engine.RenderWithClient(kumaChart, valuesToRender, kubeClientConfig)
 	}
 	if err != nil {
-		return nil, errors.Errorf("Failed to render templates: %s", err)
+		return nil, fmt.Errorf("Failed to render templates: %s", err)
 	}
 	files["namespace.yaml"] = kumaSystemNamespace(namespace)
 

@@ -1,9 +1,8 @@
 package xds
 
 import (
+	"errors"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
 )

@@ -1,7 +1,7 @@
 package runtime
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
@@ -31,11 +31,11 @@ func (c *RuntimeConfig) Validate(env core.EnvironmentType) error {
 	switch env {
 	case core.KubernetesEnvironment:
 		if err := c.Kubernetes.Validate(); err != nil {
-			return errors.Wrap(err, "Kubernetes validation failed")
+			return fmt.Errorf("Kubernetes validation failed: %w", err)
 		}
 	case core.UniversalEnvironment:
 	default:
-		return errors.Errorf("unknown environment type %q", env)
+		return fmt.Errorf("unknown environment type %q", env)
 	}
 	return nil
 }

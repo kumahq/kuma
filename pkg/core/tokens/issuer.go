@@ -2,11 +2,11 @@ package tokens
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
 )
@@ -50,7 +50,7 @@ func (j *jwtTokenIssuer) Generate(ctx context.Context, claims Claims, validFor t
 	token.Header[KeyIDHeader] = strconv.Itoa(serialNumber)
 	tokenString, err := token.SignedString(signingKey)
 	if err != nil {
-		return "", errors.Wrap(err, "could not sign a token")
+		return "", fmt.Errorf("could not sign a token: %w", err)
 	}
 	return tokenString, nil
 }

@@ -3,10 +3,10 @@ package inspect
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -27,7 +27,7 @@ func newInspectZonesCmd(ctx *cmd.RootContext) *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			client, err := ctx.CurrentZoneOverviewClient()
 			if err != nil {
-				return errors.Wrap(err, "failed to create a zone client")
+				return fmt.Errorf("failed to create a zone client: %w", err)
 			}
 			overviews, err := client.List(context.Background())
 			if err != nil {
@@ -94,7 +94,7 @@ func printZoneOverviews(now time.Time, zoneOverviews *system.ZoneOverviewResourc
 						} `json:"store"`
 					}{}
 					if err := json.Unmarshal([]byte(lastSubscription.GetConfig()), &cfg); err != nil {
-						unmarshallErr = errors.Wrap(err, "could not unmarshal CP config")
+						unmarshallErr = fmt.Errorf("could not unmarshal CP config: %w", err)
 					} else {
 						backend = cfg.Store.Type
 					}

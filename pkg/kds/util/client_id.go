@@ -2,8 +2,8 @@ package util
 
 import (
 	"context"
+	"errors"
 
-	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
 )
 

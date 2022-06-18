@@ -1,11 +1,10 @@
 package files
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
-
-	"github.com/pkg/errors"
 )
 
 type LookupPathFn = func() (string, error)
@@ -56,5 +55,5 @@ func LookupBinaryPath(pathFns ...LookupPathFn) (string, error) {
 		}
 	}
 
-	return "", errors.Errorf("could not find binary in any of the following paths: %v", candidatePaths)
+	return "", fmt.Errorf("could not find binary in any of the following paths: %v", candidatePaths)
 }

@@ -2,10 +2,9 @@ package remote
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
@@ -84,7 +83,7 @@ func UnmarshalList(b []byte, rs model.ResourceList) error {
 	if rsr.Next != nil {
 		uri, err := url.ParseRequestURI(*rsr.Next)
 		if err != nil {
-			return errors.Wrap(err, "invalid next URL from the server")
+			return fmt.Errorf("invalid next URL from the server: %w", err)
 		}
 		offset := uri.Query().Get("offset")
 		// we do not preserve here the size of the page, but since it is used in kumactl

@@ -1,13 +1,13 @@
 package globaluniversal
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/pkg/config/core"
@@ -29,8 +29,10 @@ mtls:
 
 var global, zone1, zone2, zone3 Cluster
 
-const nonDefaultMesh = "non-default"
-const defaultMesh = "default"
+const (
+	nonDefaultMesh = "non-default"
+	defaultMesh    = "default"
+)
 
 var _ = E2EBeforeSuite(func() {
 	k8sClusters, err := NewK8sClusters(

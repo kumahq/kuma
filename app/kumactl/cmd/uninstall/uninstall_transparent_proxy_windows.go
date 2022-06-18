@@ -1,7 +1,8 @@
 package uninstall
 
 import (
-	"github.com/pkg/errors"
+	"errors"
+
 	"github.com/spf13/cobra"
 )
 

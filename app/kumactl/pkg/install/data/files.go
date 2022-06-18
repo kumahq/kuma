@@ -1,10 +1,9 @@
 package data
 
 import (
+	"fmt"
 	"io"
 	"io/fs"
-
-	"github.com/pkg/errors"
 )
 
 type FileList []File
@@ -29,7 +28,7 @@ func ReadFiles(fileSys fs.FS) (FileList, error) {
 		if !dir.IsDir() {
 			data, err := fs.ReadFile(fileSys, path)
 			if err != nil {
-				return errors.Wrapf(err, "Failed to read file: %s", path)
+				return fmt.Errorf("Failed to read file: %s: %w", path, err)
 			}
 			file := File{
 				Data:     data,

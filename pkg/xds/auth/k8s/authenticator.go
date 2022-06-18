@@ -2,9 +2,9 @@ package k8s
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	kube_auth "k8s.io/api/authentication/v1"
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -37,7 +37,7 @@ func (k *kubeAuthenticator) Authenticate(ctx context.Context, resource model.Res
 	case *core_mesh.ZoneEgressResource:
 		return k.authZoneEgress(ctx, resource, credential)
 	default:
-		return errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
+		return fmt.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}
 }
 
@@ -51,7 +51,7 @@ func (k *kubeAuthenticator) authDataplane(ctx context.Context, dataplane *core_m
 		return err
 	}
 	if err := k.verifyToken(ctx, credential, proxyNamespace, serviceAccountName); err != nil {
-		return errors.Wrap(err, "authentication failed")
+		return fmt.Errorf("authentication failed: %w", err)
 	}
 	return nil
 }
@@ -63,25 +63,25 @@ func (k *kubeAuthenticator) verifyToken(ctx context.Context, credential auth.Cre
 		},
 	}
 	if err := k.client.Create(ctx, tokenReview); err != nil {
-		return errors.Wrap(err, "call to TokenReview API failed")
+		return fmt.Errorf("call to TokenReview API failed: %w", err)
 	}
 	if !tokenReview.Status.Authenticated {
-		return errors.Errorf("token doesn't belong to a valid user")
+		return fmt.Errorf("token doesn't belong to a valid user")
 	}
 	userInfo := strings.Split(tokenReview.Status.User.Username, ":")
 	if len(userInfo) != 4 {
-		return errors.Errorf("username inside TokenReview response has unexpected format: %q", tokenReview.Status.User.Username)
+		return fmt.Errorf("username inside TokenReview response has unexpected format: %q", tokenReview.Status.User.Username)
 	}
 	if !(userInfo[0] == "system" && userInfo[1] == "serviceaccount") {
-		return errors.Errorf("user %q is not a service account", tokenReview.Status.User.Username)
+		return fmt.Errorf("user %q is not a service account", tokenReview.Status.User.Username)
 	}
 	namespace := userInfo[2]
 	if namespace != proxyNamespace {
-		return errors.Errorf("token belongs to a namespace %q different from proxyId %q", namespace, proxyNamespace)
+		return fmt.Errorf("token belongs to a namespace %q different from proxyId %q", namespace, proxyNamespace)
 	}
 	name := userInfo[3]
 	if name != serviceAccountName {
-		return errors.Errorf("service account name of the pod %q is different than token that was provided %q", serviceAccountName, name)
+		return fmt.Errorf("service account name of the pod %q is different than token that was provided %q", serviceAccountName, name)
 	}
 	return nil
 }
@@ -96,7 +96,7 @@ func (k *kubeAuthenticator) authZoneIngress(ctx context.Context, zoneIngress *co
 		return err
 	}
 	if err := k.verifyToken(ctx, credential, proxyNamespace, serviceAccountName); err != nil {
-		return errors.Wrap(err, "authentication failed")
+		return fmt.Errorf("authentication failed: %w", err)
 	}
 	return nil
 }
@@ -113,7 +113,7 @@ func (k *kubeAuthenticator) authZoneEgress(ctx context.Context, zoneEgress *core
 	}
 
 	if err := k.verifyToken(ctx, credential, proxyNamespace, serviceAccountName); err != nil {
-		return errors.Wrap(err, "authentication failed")
+		return fmt.Errorf("authentication failed: %w", err)
 	}
 
 	return nil
@@ -125,7 +125,7 @@ func (k *kubeAuthenticator) podServiceAccountName(ctx context.Context, podName, 
 		Namespace: podNamespace,
 		Name:      podName,
 	}, pod); err != nil {
-		return "", errors.Wrapf(err, "could not retrieve Pod %s/%s to verify identity of a dataplane proxy", podNamespace, podName)
+		return "", fmt.Errorf("could not retrieve Pod %s/%s to verify identity of a dataplane proxy: %w", podNamespace, podName, err)
 	}
 	if pod.Spec.ServiceAccountName != "" {
 		return pod.Spec.ServiceAccountName, nil

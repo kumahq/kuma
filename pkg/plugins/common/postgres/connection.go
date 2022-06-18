@@ -2,8 +2,7 @@ package postgres
 
 import (
 	"database/sql"
-
-	"github.com/pkg/errors"
+	"fmt"
 
 	config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 )
@@ -15,7 +14,7 @@ func ConnectToDb(cfg config.PostgresStoreConfig) (*sql.DB, error) {
 	}
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot create connection to DB")
+		return nil, fmt.Errorf("cannot create connection to DB: %w", err)
 	}
 
 	db.SetMaxOpenConns(cfg.MaxOpenConnections)
@@ -23,7 +22,7 @@ func ConnectToDb(cfg config.PostgresStoreConfig) (*sql.DB, error) {
 
 	// check connection to DB, Open() does not check it.
 	if err := db.Ping(); err != nil {
-		return nil, errors.Wrap(err, "cannot connect to DB")
+		return nil, fmt.Errorf("cannot connect to DB: %w", err)
 	}
 
 	return db, nil

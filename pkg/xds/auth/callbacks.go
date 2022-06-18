@@ -2,10 +2,10 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 	"google.golang.org/grpc/metadata"
 
@@ -76,7 +76,7 @@ func (a *authCallbacks) OnStreamClosed(streamID core_xds.StreamID) {
 func (a *authCallbacks) OnStreamRequest(streamID core_xds.StreamID, req util_xds.DiscoveryRequest) error {
 	if id, alreadyAuthenticated := a.authNodeId(streamID); alreadyAuthenticated {
 		if req.NodeId() != "" && req.NodeId() != id {
-			return errors.Errorf("stream was authenticated for ID %s. Received request is for node with ID %s. Node ID cannot be changed after stream is initialized", id, req.NodeId())
+			return fmt.Errorf("stream was authenticated for ID %s. Received request is for node with ID %s. Node ID cannot be changed after stream is initialized", id, req.NodeId())
 		}
 		return nil
 	}
@@ -108,11 +108,11 @@ func (a *authCallbacks) credential(streamID core_xds.StreamID) (Credential, erro
 
 	ctx, exists := a.contexts[streamID]
 	if !exists {
-		return "", errors.Errorf("there is no context for stream ID %d", streamID)
+		return "", fmt.Errorf("there is no context for stream ID %d", streamID)
 	}
 	credential, err := ExtractCredential(ctx)
 	if err != nil {
-		return "", errors.Wrap(err, "could not extract credential from DiscoveryRequest")
+		return "", fmt.Errorf("could not extract credential from DiscoveryRequest: %w", err)
 	}
 	return credential, err
 }
@@ -127,7 +127,7 @@ func (a *authCallbacks) authenticate(credential Credential, req util_xds.Discove
 	if resource == nil {
 		proxyId, err := core_xds.ParseProxyIdFromString(req.NodeId())
 		if err != nil {
-			return errors.Wrap(err, "request must have a valid Proxy ID")
+			return fmt.Errorf("request must have a valid Proxy ID: %w", err)
 		}
 
 		switch md.GetProxyType() {
@@ -138,14 +138,14 @@ func (a *authCallbacks) authenticate(credential Credential, req util_xds.Discove
 		case mesh_proto.DataplaneProxyType:
 			resource = core_mesh.NewDataplaneResource()
 		default:
-			return errors.Errorf("unsupported proxy type %q", md.GetProxyType())
+			return fmt.Errorf("unsupported proxy type %q", md.GetProxyType())
 		}
 
 		backoff := retry.WithMaxRetries(uint64(a.dpNotFoundRetry.MaxTimes), retry.NewConstant(a.dpNotFoundRetry.Backoff))
 		err = retry.Do(context.Background(), backoff, func(ctx context.Context) error {
 			err := a.resManager.Get(ctx, resource, core_store.GetBy(proxyId.ToResourceKey()))
 			if core_store.IsResourceNotFound(err) {
-				return retry.RetryableError(errors.Errorf(
+				return retry.RetryableError(fmt.Errorf(
 					"resource %q not found; create a %s in Kuma CP first or pass it as an argument to kuma-dp",
 					proxyId, resource.Descriptor().Name))
 			}
@@ -156,18 +156,20 @@ func (a *authCallbacks) authenticate(credential Credential, req util_xds.Discove
 		}
 	}
 
-	return errors.Wrap(a.authenticator.Authenticate(context.Background(), resource, credential),
-		"authentication failed")
+	if err := a.authenticator.Authenticate(context.Background(), resource, credential); err != nil {
+		return fmt.Errorf("authentication failed: %w", err)
+	}
+	return nil
 }
 
 func ExtractCredential(ctx context.Context) (Credential, error) {
 	metadata, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return "", errors.Errorf("request has no metadata")
+		return "", fmt.Errorf("request has no metadata")
 	}
 	if values, ok := metadata[authorization]; ok {
 		if len(values) != 1 {
-			return "", errors.Errorf("request must have exactly 1 %q header, got %d", authorization, len(values))
+			return "", fmt.Errorf("request must have exactly 1 %q header, got %d", authorization, len(values))
 		}
 		return values[0], nil
 	}

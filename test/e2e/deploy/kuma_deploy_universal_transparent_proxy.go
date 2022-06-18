@@ -1,12 +1,12 @@
 package deploy
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
@@ -46,7 +46,7 @@ func UniversalTransparentProxyDeployment() {
 				if strings.Contains(stdout, "HTTP/1.1 200 OK") {
 					return "Accessing service successful", nil
 				}
-				return "should retry", errors.Errorf("should retry")
+				return "should retry", fmt.Errorf("should retry")
 			})
 		retry.DoWithRetry(cluster.GetTesting(), "curl service with dots",
 			DefaultRetries, DefaultTimeout,
@@ -59,7 +59,7 @@ func UniversalTransparentProxyDeployment() {
 				if strings.Contains(stdout, "HTTP/1.1 200 OK") {
 					return "Accessing service successful", nil
 				}
-				return "should retry", errors.Errorf("should retry")
+				return "should retry", fmt.Errorf("should retry")
 			})
 	})
 
@@ -75,7 +75,7 @@ func UniversalTransparentProxyDeployment() {
 				if strings.Contains(stdout, "HTTP/1.1 200 OK") {
 					return "Accessing service successful", nil
 				}
-				return "should retry", errors.Errorf("should retry")
+				return "should retry", fmt.Errorf("should retry")
 			})
 
 		stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
@@ -95,7 +95,7 @@ func UniversalTransparentProxyDeployment() {
 				if strings.Contains(stdout, "HTTP/1.1 200 OK") {
 					return "Accessing service successful", nil
 				}
-				return "should retry", errors.Errorf("should retry")
+				return "should retry", fmt.Errorf("should retry")
 			})
 	})
 }

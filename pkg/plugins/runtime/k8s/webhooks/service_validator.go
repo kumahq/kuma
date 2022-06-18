@@ -2,6 +2,7 @@ package webhooks
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -27,7 +28,8 @@ func (v *ServiceValidator) Handle(ctx context.Context, req admission.Request) ad
 	}
 
 	if err := v.validate(svc); err != nil {
-		if verr, ok := err.(*validators.ValidationError); ok {
+		var verr *validators.ValidationError
+		if errors.As(err, &verr) {
 			return convertValidationErrorOf(*verr, svc, svc)
 		}
 		return admission.Denied(err.Error())

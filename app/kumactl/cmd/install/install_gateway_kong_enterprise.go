@@ -1,9 +1,9 @@
 package install
 
 import (
+	"fmt"
 	"os"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	install_context "github.com/kumahq/kuma/app/kumactl/cmd/install/context"
@@ -26,12 +26,12 @@ func newInstallGatewayKongEnterpriseCmd(ctx *install_context.InstallGatewayKongE
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			templateFiles, err := data.ReadFiles(kumactl_data.InstallGatewayKongEnterpriseFS())
 			if err != nil {
-				return errors.Wrap(err, "Failed to read template files")
+				return fmt.Errorf("Failed to read template files: %w", err)
 			}
 
 			licenseBytes, err := os.ReadFile(args.LicensePath)
 			if err != nil {
-				return errors.Wrap(err, "Failed to read license file")
+				return fmt.Errorf("Failed to read license file: %w", err)
 			}
 
 			templateArgs := templateArgs{
@@ -40,20 +40,19 @@ func newInstallGatewayKongEnterpriseCmd(ctx *install_context.InstallGatewayKongE
 			}
 
 			renderedFiles, err := renderFiles(templateFiles, templateArgs, simpleTemplateRenderer)
-
 			if err != nil {
-				return errors.Wrap(err, "Failed to render template files")
+				return fmt.Errorf("Failed to render template files: %w", err)
 			}
 
 			sortedResources, err := k8s.SortResourcesByKind(renderedFiles)
 			if err != nil {
-				return errors.Wrap(err, "Failed to sort resources by kind")
+				return fmt.Errorf("Failed to sort resources by kind: %w", err)
 			}
 
 			singleFile := data.JoinYAML(sortedResources)
 
 			if _, err := cmd.OutOrStdout().Write(singleFile.Data); err != nil {
-				return errors.Wrap(err, "Failed to output rendered resources")
+				return fmt.Errorf("Failed to output rendered resources: %w", err)
 			}
 
 			return nil

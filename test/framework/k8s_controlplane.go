@@ -13,7 +13,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
-	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -120,7 +119,7 @@ func (c *K8sControlPlane) GetKumaCPSvcs() []v1.Service {
 
 func (c *K8sControlPlane) VerifyKumaCtl() error {
 	if c.portFwd.ApiServerEndpoint == "" {
-		return errors.Errorf("API port not forwarded")
+		return fmt.Errorf("API port not forwarded")
 	}
 
 	output, err := c.kumactl.RunKumactlAndGetOutputV(c.verbose, "get", "dataplanes")
@@ -302,7 +301,7 @@ func (c *K8sControlPlane) UpdateObject(
 	codecs := serializer.NewCodecFactory(scheme)
 	info, ok := runtime.SerializerInfoForMediaType(codecs.SupportedMediaTypes(), runtime.ContentTypeYAML)
 	if !ok {
-		return errors.Errorf("no serializer for %q", runtime.ContentTypeYAML)
+		return fmt.Errorf("no serializer for %q", runtime.ContentTypeYAML)
 	}
 
 	_, err = retry.DoWithRetryableErrorsE(c.t, "update object", map[string]string{"Error from server \\(Conflict\\)": "object conflict"}, 5, time.Second, func() (string, error) {
@@ -342,7 +341,7 @@ func (c *K8sControlPlane) UpdateObject(
 	})
 
 	if err != nil {
-		return errors.Wrapf(err, "failed to update %s object %q", typeName, objectName)
+		return fmt.Errorf("failed to update %s object %q: %w", typeName, objectName, err)
 	}
 	return nil
 }

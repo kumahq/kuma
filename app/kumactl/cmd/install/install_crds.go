@@ -2,9 +2,9 @@ package install
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/ghodss/yaml"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8s_apixv1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
@@ -31,14 +31,14 @@ func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
 
 			wantCrdFiles, err := ctx.InstallCrdTemplateFiles(args)
 			if err != nil {
-				return errors.Wrap(err, "Failed to read CRD files")
+				return fmt.Errorf("Failed to read CRD files: %w", err)
 			}
 
 			if !args.OnlyMissing {
 				singleFile := data.JoinYAML(wantCrdFiles)
 
 				if _, err := cmd.OutOrStdout().Write(singleFile.Data); err != nil {
-					return errors.Wrap(err, "Failed to output rendered resources")
+					return fmt.Errorf("Failed to output rendered resources: %w", err)
 				}
 
 				return nil
@@ -46,22 +46,22 @@ func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
 
 			crdsToInstallMap, err := mapCrdNamesToFiles(wantCrdFiles)
 			if err != nil {
-				return errors.Wrap(err, "Failed mapping CRD files with CRD names")
+				return fmt.Errorf("Failed mapping CRD files with CRD names: %w", err)
 			}
 
 			kubeClientConfig, err := k8s.DefaultClientConfig("", "")
 			if err != nil {
-				return errors.Wrap(err, "Could not detect Kubernetes configuration")
+				return fmt.Errorf("Could not detect Kubernetes configuration: %w", err)
 			}
 
 			k8sClient, err := k8s_apixv1client.NewForConfig(kubeClientConfig)
 			if err != nil {
-				return errors.Wrap(err, "Failed obtaining Kubernetes client")
+				return fmt.Errorf("Failed obtaining Kubernetes client: %w", err)
 			}
 
 			crds, err := k8sClient.CustomResourceDefinitions().List(context.Background(), v1.ListOptions{})
 			if err != nil {
-				return errors.Wrap(err, "Failed obtaining CRDs from Kubernetes cluster")
+				return fmt.Errorf("Failed obtaining CRDs from Kubernetes cluster: %w", err)
 			}
 
 			for _, installedCrdName := range getCrdNamesFromList(crds) {
@@ -77,7 +77,7 @@ func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
 				singleFile := data.JoinYAML(crdsToInstall)
 
 				if _, err := cmd.OutOrStdout().Write(singleFile.Data); err != nil {
-					return errors.Wrap(err, "Failed to output rendered resources")
+					return fmt.Errorf("Failed to output rendered resources: %w", err)
 				}
 			}
 
@@ -108,7 +108,7 @@ func mapCrdNamesToFiles(files []data.File) (map[string]data.File, error) {
 		var crd apiextensionsv1.CustomResourceDefinition
 
 		if err := yaml.Unmarshal(file.Data, &crd); err != nil {
-			return nil, errors.Wrap(err, "Failed parsing file as CRD")
+			return nil, fmt.Errorf("Failed parsing file as CRD: %w", err)
 		}
 
 		result[crd.ObjectMeta.Name] = file

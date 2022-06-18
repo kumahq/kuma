@@ -5,6 +5,7 @@ package dnsserver
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -167,7 +168,8 @@ var _ = Describe("DNS Server", func() {
 			Expect(err).To(BeAssignableToTypeOf(&exec.ExitError{}))
 
 			// when
-			exitError := err.(*exec.ExitError)
+			var exitError *exec.ExitError
+			errors.As(err, &exitError)
 			// then
 			Expect(exitError.ProcessState.ExitCode()).To(Equal(1))
 		}))

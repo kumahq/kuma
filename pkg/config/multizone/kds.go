@@ -1,9 +1,10 @@
 package multizone
 
 import (
+	"errors"
+	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
 	"github.com/kumahq/kuma/pkg/config"
@@ -32,7 +33,7 @@ func (c *KdsServerConfig) Sanitize() {
 
 func (c *KdsServerConfig) Validate() (errs error) {
 	if c.GrpcPort > 65535 {
-		errs = multierr.Append(errs, errors.Errorf(".GrpcPort must be in the range [0, 65535]"))
+		errs = multierr.Append(errs, fmt.Errorf(".GrpcPort must be in the range [0, 65535]"))
 	}
 	if c.RefreshInterval <= 0 {
 		return errors.New(".RefreshInterval must be positive")

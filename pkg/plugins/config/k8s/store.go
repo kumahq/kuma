@@ -2,9 +2,10 @@ package k8s
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,10 +66,10 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	if opts.Owner != nil {
 		k8sOwner, err := s.converter.ToKubernetesObject(opts.Owner)
 		if err != nil {
-			return errors.Wrap(err, "failed to convert core model into k8s counterpart")
+			return fmt.Errorf("failed to convert core model into k8s counterpart: %w", err)
 		}
 		if err := controllerutil.SetOwnerReference(k8sOwner, cm, s.scheme); err != nil {
-			return errors.Wrap(err, "failed to set owner reference for object")
+			return fmt.Errorf("failed to set owner reference for object: %w", err)
 		}
 	}
 	if err := s.client.Create(ctx, cm); err != nil {
@@ -77,6 +78,7 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	r.SetMeta(&KubernetesMetaAdapter{cm.ObjectMeta})
 	return nil
 }
+
 func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs ...core_store.UpdateOptionsFunc) error {
 	configRes, ok := r.(*config_model.ConfigResource)
 	if !ok {
@@ -97,11 +99,12 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 		if kube_apierrs.IsConflict(err) {
 			return core_store.ErrorResourceConflict(r.Descriptor().Name, r.GetMeta().GetName(), r.GetMeta().GetMesh())
 		}
-		return errors.Wrap(err, "failed to update k8s resource")
+		return fmt.Errorf("failed to update k8s resource: %w", err)
 	}
 	r.SetMeta(&KubernetesMetaAdapter{cm.ObjectMeta})
 	return nil
 }
+
 func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs ...core_store.DeleteOptionsFunc) error {
 	configRes, ok := r.(*config_model.ConfigResource)
 	if !ok {
@@ -124,6 +127,7 @@ func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs 
 	}
 	return s.client.Delete(ctx, cm)
 }
+
 func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...core_store.GetOptionsFunc) error {
 	configRes, ok := r.(*config_model.ConfigResource)
 	if !ok {
@@ -135,12 +139,13 @@ func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...
 		if kube_apierrs.IsNotFound(err) {
 			return core_store.ErrorResourceNotFound(r.Descriptor().Name, opts.Name, opts.Mesh)
 		}
-		return errors.Wrap(err, "failed to get k8s Config")
+		return fmt.Errorf("failed to get k8s Config: %w", err)
 	}
 	configRes.Spec.Config = cm.Data[configMapKey]
 	r.SetMeta(&KubernetesMetaAdapter{cm.ObjectMeta})
 	return nil
 }
+
 func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, fs ...core_store.ListOptionsFunc) error {
 	configRes, ok := rs.(*config_model.ConfigResourceList)
 	if !ok {
@@ -149,7 +154,7 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 	cmlist := &kube_core.ConfigMapList{}
 
 	if err := s.client.List(ctx, cmlist, kube_client.InNamespace(s.namespace)); err != nil {
-		return errors.Wrap(err, "failed to list k8s internal config")
+		return fmt.Errorf("failed to list k8s internal config: %w", err)
 	}
 	for _, cm := range cmlist.Items {
 		configRes.Items = append(configRes.Items, &config_model.ConfigResource{

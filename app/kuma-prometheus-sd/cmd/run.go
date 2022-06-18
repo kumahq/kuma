@@ -1,9 +1,9 @@
 package cmd
 
 import (
+	"fmt"
 	"path/filepath"
 
-	"github.com/pkg/errors"
 	"github.com/prometheus/prometheus/documentation/examples/custom-sd/adapter"
 	"github.com/spf13/cobra"
 
@@ -16,9 +16,7 @@ import (
 	util_os "github.com/kumahq/kuma/pkg/util/os"
 )
 
-var (
-	runLog = prometheusSdLog.WithName("run")
-)
+var runLog = prometheusSdLog.WithName("run")
 
 func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 	cfg := kuma_promsd.DefaultConfig()
@@ -41,7 +39,7 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 
 			outputDir, _ := filepath.Split(cfg.Prometheus.OutputFile)
 			if err := util_os.TryWriteToDir(outputDir); err != nil {
-				return errors.Wrapf(err, "unable to write to directory %q", outputDir)
+				return fmt.Errorf("unable to write to directory %q: %w", outputDir, err)
 			}
 
 			ctx, _ := opts.SetupSignalHandler()

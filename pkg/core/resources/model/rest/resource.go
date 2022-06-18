@@ -3,10 +3,10 @@ package rest
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/golang/protobuf/jsonpb"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -76,8 +76,10 @@ type ResourceList struct {
 	Next  *string     `json:"next"`
 }
 
-var _ json.Marshaler = &Resource{}
-var _ json.Unmarshaler = &Resource{}
+var (
+	_ json.Marshaler   = &Resource{}
+	_ json.Unmarshaler = &Resource{}
+)
 
 func (r *Resource) MarshalJSON() ([]byte, error) {
 	var specBytes []byte
@@ -128,7 +130,7 @@ var _ json.Unmarshaler = &ResourceListReceiver{}
 
 func (rec *ResourceListReceiver) UnmarshalJSON(data []byte) error {
 	if rec.NewResource == nil {
-		return errors.Errorf("NewResource must not be nil")
+		return fmt.Errorf("NewResource must not be nil")
 	}
 	type List struct {
 		Total uint32             `json:"total"`

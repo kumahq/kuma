@@ -3,12 +3,13 @@ package k8s
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"os"
 	"strconv"
 	"time"
 
 	"github.com/operator-framework/operator-lib/leader"
-	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	kube_core "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -124,7 +125,7 @@ func createSecretClient(appCtx context.Context, scheme *kube_runtime.Scheme, sys
 		return []string{string(secret.Type)}
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "could not add index of Secret cache by field 'type'")
+		return nil, fmt.Errorf("could not add index of Secret cache by field 'type': %w", err)
 	}
 
 	// According to ControllerManager code, cache needs to start before all the Runnables (our Components)
@@ -153,7 +154,7 @@ func (p *plugin) AfterBootstrap(b *core_runtime.Builder, _ core_plugins.PluginCo
 	port := os.Getenv("KUBERNETES_SERVICE_PORT")
 	apiServerPort, err := strconv.ParseUint(port, 10, 32)
 	if err != nil {
-		return errors.Wrapf(err, "could not parse KUBERNETES_SERVICE_PORT environment variable")
+		return fmt.Errorf("could not parse KUBERNETES_SERVICE_PORT environment variable: %w", err)
 	}
 
 	b.XDSHooks().AddResourceSetHook(hooks.NewApiServerBypass(apiServerAddress, uint32(apiServerPort)))
@@ -191,7 +192,7 @@ func (kmw *kubeManagerWrapper) Add(runnable kube_manager.Runnable) error {
 func (kmw *kubeManagerWrapper) AddControllersToManager() error {
 	for _, c := range kmw.controllers {
 		if err := kmw.Manager.Add(c); err != nil {
-			return errors.Wrap(err, "add controller error")
+			return fmt.Errorf("add controller error: %w", err)
 		}
 	}
 	return nil
@@ -214,8 +215,10 @@ type leaderAnnotation struct {
 	LeaderTransitions    int    `json:"leaderTransistions"`
 }
 
-var blockerHolderId = "cp-leader-lock-transition"
-var oldLeaderConfigMapName = "kuma-cp-leader"
+var (
+	blockerHolderId        = "cp-leader-lock-transition"
+	oldLeaderConfigMapName = "kuma-cp-leader"
+)
 
 func makeOldLockAnnotation() string {
 	nowStr := time.Now().Format(time.RFC3339)
@@ -237,7 +240,7 @@ func makeOldLockAnnotation() string {
 func (cm *kubeComponentManager) startLeaderComponents() error {
 	for _, c := range cm.leaderComponents {
 		if err := cm.Manager.Add(&componentRunnableAdaptor{Component: c}); err != nil {
-			return errors.Wrap(err, "add component error")
+			return fmt.Errorf("add component error: %w", err)
 		}
 	}
 	return cm.kubeManagerWrapper.AddControllersToManager()
@@ -271,7 +274,7 @@ func (cm *kubeComponentManager) forceTakeOldLock(ctx context.Context) error {
 		UID:        pod.ObjectMeta.UID,
 	}
 
-	var mustWait = false
+	mustWait := false
 
 	for {
 		newLock := &kube_core.ConfigMap{
@@ -348,19 +351,21 @@ func (cm *kubeComponentManager) Start(done <-chan struct{}) error {
 		}
 
 		if err := leader.Become(ctx, "cp-leader"); err != nil {
-			return errors.Wrap(err, "leader lock failure")
+			return fmt.Errorf("leader lock failure: %w", err)
 		}
 
 		// This CP will now be leader. But first, destroy deprecated leader lock,
 		// forcing any old leaders to restart as non-leaders.
 		if err := cm.forceTakeOldLock(ctx); err != nil {
-			return errors.Wrap(err, "error attempting to clean up deprecated lock")
+			return fmt.Errorf("error attempting to clean up deprecated lock: %w", err)
 		}
 
 		return cm.startLeaderComponents()
 	})
-
-	return errors.Wrap(eg.Wait(), "error running Kubernetes Manager")
+	if err := eg.Wait(); err != nil {
+		return fmt.Errorf("error running Kubernetes Manager: %w", err)
+	}
+	return nil
 }
 
 // Extra check that component.Component implements LeaderElectionRunnable so the leader election works so we won't break leader election on K8S when refactoring component.Component
@@ -402,5 +407,7 @@ func (c componentRunnableAdaptor) NeedLeaderElection() bool {
 	return c.Component.NeedLeaderElection()
 }
 
-var _ kube_manager.LeaderElectionRunnable = &componentRunnableAdaptor{}
-var _ kube_manager.Runnable = &componentRunnableAdaptor{}
+var (
+	_ kube_manager.LeaderElectionRunnable = &componentRunnableAdaptor{}
+	_ kube_manager.Runnable               = &componentRunnableAdaptor{}
+)

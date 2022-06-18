@@ -1,9 +1,8 @@
 package cli
 
 import (
+	"errors"
 	"net/http"
-
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/plugins"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
@@ -14,8 +13,7 @@ const (
 	TokenKey = "token"
 )
 
-type TokenAuthnPlugin struct {
-}
+type TokenAuthnPlugin struct{}
 
 var _ plugins.AuthnPlugin = &TokenAuthnPlugin{}
 

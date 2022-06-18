@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -16,11 +15,9 @@ const (
 	NoMesh = ""
 )
 
-var (
-	// ResourceNameExtensionsUnsupported is a convenience constant
-	// that is meant to make source code more readable.
-	ResourceNameExtensionsUnsupported = ResourceNameExtensions(nil)
-)
+// ResourceNameExtensionsUnsupported is a convenience constant
+// that is meant to make source code more readable.
+var ResourceNameExtensionsUnsupported = ResourceNameExtensions(nil)
 
 func WithMesh(mesh string, name string) ResourceKey {
 	return ResourceKey{Mesh: mesh, Name: name}
@@ -97,7 +94,7 @@ func (d ResourceTypeDescriptor) NewObject() Resource {
 	resType := reflect.TypeOf(d.Resource).Elem()
 	resource := reflect.New(resType).Interface().(Resource)
 	if err := resource.SetSpec(newSpec); err != nil {
-		panic(errors.Wrap(err, "could not set spec on the new resource"))
+		panic(fmt.Errorf("could not set spec on the new resource: %w", err))
 	}
 	return resource
 }

@@ -2,10 +2,10 @@ package context
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"strings"
 
-	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -100,7 +100,7 @@ func MapInsightResourcesZeroGeneration(r model.Resource) (model.Resource, error)
 		newR := reflect.New(resType).Interface().(model.Resource)
 		newR.SetMeta(meta)
 		if err := newR.SetSpec(spec.(model.ResourceSpec)); err != nil {
-			panic(any(errors.Wrap(err, "error setting spec on resource")))
+			panic(any(fmt.Errorf("error setting spec on resource: %w", err)))
 		}
 
 		return newR, nil

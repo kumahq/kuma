@@ -2,9 +2,9 @@ package gatewayapi
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -54,7 +54,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 			// We don't know the mesh, but we don't need it to delete our
 			// object.
 			err := common.ReconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, core_model.NoMesh, &mesh_proto.MeshGatewayRoute{}, nil)
-			return kube_ctrl.Result{}, errors.Wrap(err, "could not delete owned GatewayRoute.kuma.io")
+			return kube_ctrl.Result{}, fmt.Errorf("could not delete owned GatewayRoute.kuma.io: %w", err)
 		}
 
 		return kube_ctrl.Result{}, err
@@ -62,24 +62,24 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 
 	ns := kube_core.Namespace{}
 	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: httpRoute.Namespace}, &ns); err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "unable to get Namespace of HTTPRoute")
+		return kube_ctrl.Result{}, fmt.Errorf("unable to get Namespace of HTTPRoute: %w", err)
 	}
 
 	mesh := k8s_util.MeshOf(httpRoute, &ns)
 
 	spec, conditions, err := r.gapiToKumaRoutes(ctx, mesh, httpRoute)
 	if err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "error generating GatewayRoute.kuma.io")
+		return kube_ctrl.Result{}, fmt.Errorf("error generating GatewayRoute.kuma.io: %w", err)
 	}
 
 	if spec != nil {
 		if err := common.ReconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, mesh, &mesh_proto.MeshGatewayRoute{}, spec); err != nil {
-			return kube_ctrl.Result{}, errors.Wrap(err, "could not reconcile owned GatewayRoute.kuma.io")
+			return kube_ctrl.Result{}, fmt.Errorf("could not reconcile owned GatewayRoute.kuma.io: %w", err)
 		}
 	}
 
 	if err := r.updateStatus(ctx, httpRoute, conditions); err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "unable to update HTTPRoute status")
+		return kube_ctrl.Result{}, fmt.Errorf("unable to update HTTPRoute status: %w", err)
 	}
 
 	return kube_ctrl.Result{}, nil
@@ -122,7 +122,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 	for i, ref := range route.Spec.ParentRefs {
 		refAttachment, err := attachment.EvaluateParentRefAttachment(ctx, r.Client, &routeNs, ref)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "unable to check parent ref %d", i)
+			return nil, nil, fmt.Errorf("unable to check parent ref %d: %w", i, err)
 		}
 
 		switch refAttachment {

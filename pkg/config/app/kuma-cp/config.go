@@ -1,9 +1,9 @@
 package kuma_cp
 
 import (
+	"errors"
+	"fmt"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
 	"github.com/kumahq/kuma/pkg/config/access"
@@ -47,7 +47,7 @@ func (m *Metrics) Sanitize() {
 
 func (m *Metrics) Validate() error {
 	if err := m.Dataplane.Validate(); err != nil {
-		return errors.Wrap(err, "Dataplane validation failed")
+		return fmt.Errorf("Dataplane validation failed: %w", err)
 	}
 	return nil
 }
@@ -207,78 +207,78 @@ var DefaultConfig = func() Config {
 
 func (c *Config) Validate() error {
 	if err := core.ValidateCpMode(c.Mode); err != nil {
-		return errors.Wrap(err, "Mode validation failed")
+		return fmt.Errorf("Mode validation failed: %w", err)
 	}
 	switch c.Mode {
 	case core.Global:
 		if err := c.GuiServer.Validate(); err != nil {
-			return errors.Wrap(err, "GuiServer validation failed")
+			return fmt.Errorf("GuiServer validation failed: %w", err)
 		}
 		if err := c.Multizone.Global.Validate(); err != nil {
-			return errors.Wrap(err, "Multizone Global validation failed")
+			return fmt.Errorf("Multizone Global validation failed: %w", err)
 		}
 	case core.Standalone:
 		if err := c.GuiServer.Validate(); err != nil {
-			return errors.Wrap(err, "GuiServer validation failed")
+			return fmt.Errorf("GuiServer validation failed: %w", err)
 		}
 		if err := c.XdsServer.Validate(); err != nil {
-			return errors.Wrap(err, "Xds Server validation failed")
+			return fmt.Errorf("Xds Server validation failed: %w", err)
 		}
 		if err := c.BootstrapServer.Validate(); err != nil {
-			return errors.Wrap(err, "Bootstrap Server validation failed")
+			return fmt.Errorf("Bootstrap Server validation failed: %w", err)
 		}
 		if err := c.MonitoringAssignmentServer.Validate(); err != nil {
-			return errors.Wrap(err, "Monitoring Assignment Server validation failed")
+			return fmt.Errorf("Monitoring Assignment Server validation failed: %w", err)
 		}
 		if c.Environment != core.KubernetesEnvironment && c.Environment != core.UniversalEnvironment {
-			return errors.Errorf("Environment should be either %s or %s", core.KubernetesEnvironment, core.UniversalEnvironment)
+			return fmt.Errorf("Environment should be either %s or %s", core.KubernetesEnvironment, core.UniversalEnvironment)
 		}
 		if err := c.Runtime.Validate(c.Environment); err != nil {
-			return errors.Wrap(err, "Runtime validation failed")
+			return fmt.Errorf("Runtime validation failed: %w", err)
 		}
 		if err := c.Metrics.Validate(); err != nil {
-			return errors.Wrap(err, "Metrics validation failed")
+			return fmt.Errorf("Metrics validation failed: %w", err)
 		}
 	case core.Zone:
 		if err := c.Multizone.Zone.Validate(); err != nil {
-			return errors.Wrap(err, "Multizone Zone validation failed")
+			return fmt.Errorf("Multizone Zone validation failed: %w", err)
 		}
 		if err := c.XdsServer.Validate(); err != nil {
-			return errors.Wrap(err, "Xds Server validation failed")
+			return fmt.Errorf("Xds Server validation failed: %w", err)
 		}
 		if err := c.BootstrapServer.Validate(); err != nil {
-			return errors.Wrap(err, "Bootstrap Server validation failed")
+			return fmt.Errorf("Bootstrap Server validation failed: %w", err)
 		}
 		if err := c.MonitoringAssignmentServer.Validate(); err != nil {
-			return errors.Wrap(err, "Monitoring Assignment Server validation failed")
+			return fmt.Errorf("Monitoring Assignment Server validation failed: %w", err)
 		}
 		if c.Environment != core.KubernetesEnvironment && c.Environment != core.UniversalEnvironment {
-			return errors.Errorf("Environment should be either %s or %s", core.KubernetesEnvironment, core.UniversalEnvironment)
+			return fmt.Errorf("Environment should be either %s or %s", core.KubernetesEnvironment, core.UniversalEnvironment)
 		}
 		if err := c.Runtime.Validate(c.Environment); err != nil {
-			return errors.Wrap(err, "Runtime validation failed")
+			return fmt.Errorf("Runtime validation failed: %w", err)
 		}
 		if err := c.Metrics.Validate(); err != nil {
-			return errors.Wrap(err, "Metrics validation failed")
+			return fmt.Errorf("Metrics validation failed: %w", err)
 		}
 	}
 	if err := c.Store.Validate(); err != nil {
-		return errors.Wrap(err, "Store validation failed")
+		return fmt.Errorf("Store validation failed: %w", err)
 	}
 	if err := c.ApiServer.Validate(); err != nil {
-		return errors.Wrap(err, "ApiServer validation failed")
+		return fmt.Errorf("ApiServer validation failed: %w", err)
 	}
 	if err := c.Defaults.Validate(); err != nil {
-		return errors.Wrap(err, "Defaults validation failed")
+		return fmt.Errorf("Defaults validation failed: %w", err)
 	}
 	if err := c.DNSServer.Validate(); err != nil {
-		return errors.Wrap(err, "DNSServer validation failed")
+		return fmt.Errorf("DNSServer validation failed: %w", err)
 	}
 	if err := c.Diagnostics.Validate(); err != nil {
-		return errors.Wrap(err, "Diagnostics validation failed")
+		return fmt.Errorf("Diagnostics validation failed: %w", err)
 	}
 	if err := c.Experimental.Validate(); err != nil {
-		return errors.Wrap(err, "Experimental validation failed")
+		return fmt.Errorf("Experimental validation failed: %w", err)
 	}
 	return nil
 }

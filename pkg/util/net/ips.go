@@ -4,15 +4,13 @@ import (
 	"fmt"
 	"net"
 	"sort"
-
-	"github.com/pkg/errors"
 )
 
 // GetAllIPs returns all IPs (IPv4 and IPv6) from the all network interfaces on the machine
 func GetAllIPs() ([]string, error) {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not list network interfaces")
+		return nil, fmt.Errorf("could not list network interfaces: %w", err)
 	}
 	var result []string
 	for _, address := range addrs {

@@ -1,9 +1,9 @@
 package generate
 
 import (
+	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
@@ -32,12 +32,12 @@ $ kumactl generate zone-ingress-token --zone zone-1 --valid-for 30d
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			client, err := pctx.CurrentZoneIngressTokenClient()
 			if err != nil {
-				return errors.Wrap(err, "failed to create zone ingress token client")
+				return fmt.Errorf("failed to create zone ingress token client: %w", err)
 			}
 
 			token, err := client.Generate(ctx.args.zone, ctx.args.validFor)
 			if err != nil {
-				return errors.Wrap(err, "failed to generate a zone ingress token")
+				return fmt.Errorf("failed to generate a zone ingress token: %w", err)
 			}
 			_, err = cmd.OutOrStdout().Write([]byte(token))
 			return err

@@ -1,11 +1,10 @@
 package postgres
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
 )
@@ -81,7 +80,7 @@ func (mode TLSMode) postgresMode() (string, error) {
 	case VerifyFull:
 		return "verify-full", nil
 	default:
-		return "", errors.Errorf("could not translate mode %q to postgres mode", mode)
+		return "", fmt.Errorf("could not translate mode %q to postgres mode", mode)
 	}
 }
 
@@ -110,7 +109,7 @@ func (s TLSPostgresStoreConfig) Validate() error {
 	case VerifyNone:
 	case Disable:
 	default:
-		return errors.Errorf("invalid mode: %s", s.Mode)
+		return fmt.Errorf("invalid mode: %s", s.Mode)
 	}
 	if s.KeyPath == "" && s.CertPath != "" {
 		return errors.New("KeyPath cannot be empty when CertPath is provided")
@@ -142,7 +141,7 @@ func (p *PostgresStoreConfig) Validate() error {
 		return errors.New("DbName should not be empty")
 	}
 	if err := p.TLS.Validate(); err != nil {
-		return errors.Wrap(err, "TLS validation failed")
+		return fmt.Errorf("TLS validation failed: %w", err)
 	}
 	if p.MinReconnectInterval >= p.MaxReconnectInterval {
 		return errors.New("MinReconnectInterval should be less than MaxReconnectInterval")

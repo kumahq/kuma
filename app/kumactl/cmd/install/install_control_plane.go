@@ -1,12 +1,12 @@
 package install
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"strings"
 
 	"github.com/ghodss/yaml"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"helm.sh/helm/v3/pkg/strvals"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -58,7 +58,7 @@ This command requires that the KUBECONFIG environment is set`,
 
 			templateFiles, err := ctx.InstallCpTemplateFiles(&args)
 			if err != nil {
-				return errors.Wrap(err, "Failed to read template files")
+				return fmt.Errorf("Failed to read template files: %w", err)
 			}
 			if args.DumpValues {
 				fList := templateFiles.Filter(func(file data.File) bool {
@@ -89,7 +89,7 @@ This command requires that the KUBECONFIG environment is set`,
 				}
 
 				if err := yaml.Unmarshal(bytes, &currentMap); err != nil {
-					return errors.Wrapf(err, "failed to parse %s", filePath)
+					return fmt.Errorf("failed to parse %s: %w", filePath, err)
 				}
 				// Merge with the previous map
 				vals = mergeMaps(vals, currentMap)
@@ -98,11 +98,11 @@ This command requires that the KUBECONFIG environment is set`,
 			// User specified a value via --set
 			for _, value := range args.Values {
 				if err := strvals.ParseInto(value, vals); err != nil {
-					return errors.Wrap(err, "failed parsing --set data")
+					return fmt.Errorf("failed parsing --set data: %w", err)
 				}
 			}
 			if err != nil {
-				return errors.Wrap(err, "Failed to evaluate helm values")
+				return fmt.Errorf("Failed to evaluate helm values: %w", err)
 			}
 
 			if args.UseNodePort && args.ControlPlane_mode == core.Global {
@@ -111,7 +111,7 @@ This command requires that the KUBECONFIG environment is set`,
 					v = fmt.Sprintf("%s.%s", ctx.HELMValuesPrefix, v)
 				}
 				if err := strvals.ParseInto(v, vals); err != nil {
-					return errors.Wrap(err, "Failed using NodePort")
+					return fmt.Errorf("Failed using NodePort: %w", err)
 				}
 			}
 
@@ -121,7 +121,7 @@ This command requires that the KUBECONFIG environment is set`,
 					v = fmt.Sprintf("%s.%s", ctx.HELMValuesPrefix, v)
 				}
 				if err := strvals.ParseInto(v, vals); err != nil {
-					return errors.Wrap(err, "Failed using NodePort for ingress")
+					return fmt.Errorf("Failed using NodePort for ingress: %w", err)
 				}
 			}
 
@@ -130,23 +130,23 @@ This command requires that the KUBECONFIG environment is set`,
 				var err error
 				kubeClientConfig, err = k8s.DefaultClientConfig("", "")
 				if err != nil {
-					return errors.Wrap(err, "could not detect Kubernetes configuration")
+					return fmt.Errorf("could not detect Kubernetes configuration: %w", err)
 				}
 			}
 			renderedFiles, err := renderHelmFiles(templateFiles, args.Namespace, vals, kubeClientConfig)
 			if err != nil {
-				return errors.Wrap(err, "Failed to render helm template files")
+				return fmt.Errorf("Failed to render helm template files: %w", err)
 			}
 
 			sortedResources, err := k8s.SortResourcesByKind(renderedFiles)
 			if err != nil {
-				return errors.Wrap(err, "Failed to sort resources by kind")
+				return fmt.Errorf("Failed to sort resources by kind: %w", err)
 			}
 
 			singleFile := data.JoinYAML(sortedResources)
 
 			if _, err := cmd.OutOrStdout().Write(singleFile.Data); err != nil {
-				return errors.Wrap(err, "Failed to output rendered resources")
+				return fmt.Errorf("Failed to output rendered resources: %w", err)
 			}
 
 			return nil

@@ -2,9 +2,8 @@ package bootstrap
 
 import (
 	"context"
+	"fmt"
 	"net"
-
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -248,11 +247,11 @@ func initializeResourceStore(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 		pluginName = core_plugins.Postgres
 		pluginConfig = cfg.Store.Postgres
 	default:
-		return errors.Errorf("unknown store type %s", cfg.Store.Type)
+		return fmt.Errorf("unknown store type %s", cfg.Store.Type)
 	}
 	plugin, err := core_plugins.Plugins().ResourceStore(pluginName)
 	if err != nil {
-		return errors.Wrapf(err, "could not retrieve store %s plugin", pluginName)
+		return fmt.Errorf("could not retrieve store %s plugin: %w", pluginName, err)
 	}
 
 	rs, err := plugin.NewResourceStore(builder, pluginConfig)
@@ -285,11 +284,11 @@ func initializeSecretStore(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 	case store.MemoryStore, store.PostgresStore:
 		pluginName = core_plugins.Universal
 	default:
-		return errors.Errorf("unknown store type %s", cfg.Store.Type)
+		return fmt.Errorf("unknown store type %s", cfg.Store.Type)
 	}
 	plugin, err := core_plugins.Plugins().SecretStore(pluginName)
 	if err != nil {
-		return errors.Wrapf(err, "could not retrieve secret store %s plugin", pluginName)
+		return fmt.Errorf("could not retrieve secret store %s plugin: %w", pluginName, err)
 	}
 	if ss, err := plugin.NewSecretStore(builder, pluginConfig); err != nil {
 		return err
@@ -308,11 +307,11 @@ func initializeConfigStore(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 	case store.MemoryStore, store.PostgresStore:
 		pluginName = core_plugins.Universal
 	default:
-		return errors.Errorf("unknown store type %s", cfg.Store.Type)
+		return fmt.Errorf("unknown store type %s", cfg.Store.Type)
 	}
 	plugin, err := core_plugins.Plugins().ConfigStore(pluginName)
 	if err != nil {
-		return errors.Wrapf(err, "could not retrieve secret store %s plugin", pluginName)
+		return fmt.Errorf("could not retrieve secret store %s plugin: %w", pluginName, err)
 	}
 	if cs, err := plugin.NewConfigStore(builder, pluginConfig); err != nil {
 		return err
@@ -326,7 +325,7 @@ func initializeCaManagers(builder *core_runtime.Builder) error {
 	for pluginName, caPlugin := range core_plugins.Plugins().CaPlugins() {
 		caManager, err := caPlugin.NewCaManager(builder, nil)
 		if err != nil {
-			return errors.Wrapf(err, "could not create CA manager for plugin %q", pluginName)
+			return fmt.Errorf("could not create CA manager for plugin %q: %w", pluginName, err)
 		}
 		builder.WithCaManager(string(pluginName), caManager)
 	}
@@ -337,11 +336,11 @@ func initializeAPIServerAuthenticator(builder *core_runtime.Builder) error {
 	authnType := builder.Config().ApiServer.Authn.Type
 	plugin, ok := core_plugins.Plugins().AuthnAPIServer()[core_plugins.PluginName(authnType)]
 	if !ok {
-		return errors.Errorf("there is not implementation of authn named %s", authnType)
+		return fmt.Errorf("there is not implementation of authn named %s", authnType)
 	}
 	authenticator, err := plugin.NewAuthenticator(builder)
 	if err != nil {
-		return errors.Wrapf(err, "could not initiate authenticator %s", authnType)
+		return fmt.Errorf("could not initiate authenticator %s: %w", authnType, err)
 	}
 	builder.WithAPIServerAuthenticator(authenticator)
 	return nil
@@ -416,7 +415,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	case store.MemoryStore, store.PostgresStore:
 		cipher = secret_cipher.TODO() // get back to encryption in universal case
 	default:
-		return errors.Errorf("unknown store type %s", cfg.Store.Type)
+		return fmt.Errorf("unknown store type %s", cfg.Store.Type)
 	}
 	var secretValidator secret_manager.SecretValidator
 	switch cfg.Mode {

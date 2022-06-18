@@ -2,10 +2,10 @@ package dns_test
 
 import (
 	"context"
+	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	dns_server "github.com/kumahq/kuma/pkg/config/dns-server"
@@ -50,7 +50,7 @@ type errConfigManager struct {
 
 func (e *errConfigManager) Update(ctx context.Context, r *config_model.ConfigResource, opts ...store.UpdateOptionsFunc) error {
 	meshName, _ := vips.MeshFromConfigKey(r.GetMeta().GetName())
-	return errors.Errorf("error during update, mesh = %s", meshName)
+	return fmt.Errorf("error during update, mesh = %s", meshName)
 }
 
 var testConfig = dns_server.Config{

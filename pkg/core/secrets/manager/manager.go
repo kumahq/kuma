@@ -2,9 +2,8 @@ package manager
 
 import (
 	"context"
+	"errors"
 	"time"
-
-	"github.com/pkg/errors"
 
 	secret_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"

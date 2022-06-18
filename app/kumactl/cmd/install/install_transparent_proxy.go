@@ -11,7 +11,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma-net/firewalld"
@@ -123,15 +122,15 @@ runuser -u kuma-dp -- \
 `,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if !args.DryRun && runtime.GOOS != "linux" {
-				return errors.Errorf("transparent proxy will work only on Linux OSes")
+				return fmt.Errorf("transparent proxy will work only on Linux OSes")
 			}
 
 			if args.User == "" && args.UID == "" {
-				return errors.Errorf("--kuma-dp-user or --kuma-dp-uid should be supplied")
+				return fmt.Errorf("--kuma-dp-user or --kuma-dp-uid should be supplied")
 			}
 
 			if args.RedirectAllDNSTraffic && args.RedirectDNS {
-				return errors.Errorf("one of --redirect-dns or --redirect-all-dns-traffic should be specified")
+				return fmt.Errorf("one of --redirect-dns or --redirect-all-dns-traffic should be specified")
 			}
 
 			if args.RedirectAllDNSTraffic {
@@ -139,11 +138,11 @@ runuser -u kuma-dp -- \
 			}
 
 			if args.RedirectDNS && !args.SkipResolvConf {
-				return errors.Errorf("please set --skip-resolv-conf when using --redirect-dns or --redirect-all-dns-traffic")
+				return fmt.Errorf("please set --skip-resolv-conf when using --redirect-dns or --redirect-all-dns-traffic")
 			}
 
 			if !args.SkipResolvConf && args.KumaCpIP.String() == defaultCpIP.String() {
-				return errors.Errorf("please supply a valid --kuma-cp-ip")
+				return fmt.Errorf("please supply a valid --kuma-cp-ip")
 			}
 
 			if err := modifyIpTables(cmd, &args); err != nil {
@@ -191,7 +190,7 @@ func findUidGid(uid, user string) (string, string, error) {
 	if u, err = os_user.LookupId(uid); err != nil {
 		if user != "" {
 			if u, err = os_user.Lookup(user); err != nil {
-				return "", "", errors.Errorf("--kuma-dp-user or --kuma-dp-uid should refer to a valid user on the host")
+				return "", "", fmt.Errorf("--kuma-dp-user or --kuma-dp-uid should refer to a valid user on the host")
 			}
 		} else {
 			u = &os_user.User{
@@ -212,7 +211,7 @@ func modifyIpTables(cmd *cobra.Command, args *transparentProxyArgs) error {
 		// best effort cleanup before we apply the rules (again?)
 		_, err := tp.Cleanup(args.DryRun, args.Verbose)
 		if err != nil {
-			return errors.Wrapf(err, "unable to invoke cleanup")
+			return fmt.Errorf("unable to invoke cleanup: %w", err)
 		}
 	} else {
 		tp = &transparentproxy.ExperimentalTransparentProxy{}
@@ -220,7 +219,7 @@ func modifyIpTables(cmd *cobra.Command, args *transparentProxyArgs) error {
 
 	uid, gid, err := findUidGid(args.UID, args.User)
 	if err != nil {
-		return errors.Wrapf(err, "unable to find the kuma-dp user")
+		return fmt.Errorf("unable to find the kuma-dp user: %w", err)
 	}
 
 	if !args.DryRun {
@@ -247,7 +246,7 @@ func modifyIpTables(cmd *cobra.Command, args *transparentProxyArgs) error {
 
 	output, err := tp.Setup(cfg)
 	if err != nil {
-		return errors.Wrap(err, "failed to setup transparent proxy")
+		return fmt.Errorf("failed to setup transparent proxy: %w", err)
 	}
 
 	if args.DryRun {
@@ -272,7 +271,7 @@ func modifyResolvConf(cmd *cobra.Command, args *transparentProxyArgs) error {
 	kumaCPLine := fmt.Sprintf("nameserver %s", args.KumaCpIP.String())
 	content, err := os.ReadFile("/etc/resolv.conf")
 	if err != nil {
-		return errors.Wrap(err, "unable to open /etc/resolv.conf")
+		return fmt.Errorf("unable to open /etc/resolv.conf: %w", err)
 	}
 	newcontent := fmt.Sprintf("%s\n%s", kumaCPLine, string(content))
 
@@ -285,11 +284,11 @@ func modifyResolvConf(cmd *cobra.Command, args *transparentProxyArgs) error {
 	if !strings.Contains(string(content), kumaCPLine) {
 		err = os.WriteFile("/etc/resolv.conf.kuma-backup", content, 0644)
 		if err != nil {
-			return errors.Wrap(err, "unable to open /etc/resolv.conf.kuma-backup")
+			return fmt.Errorf("unable to open /etc/resolv.conf.kuma-backup: %w", err)
 		}
 		err = os.WriteFile("/etc/resolv.conf", []byte(newcontent), 0644)
 		if err != nil {
-			return errors.Wrap(err, "unable to write /etc/resolv.conf")
+			return fmt.Errorf("unable to write /etc/resolv.conf: %w", err)
 		}
 	}
 

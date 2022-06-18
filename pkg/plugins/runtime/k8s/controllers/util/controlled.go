@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
 	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -28,19 +27,19 @@ func ManageControlledObject(
 	if err := client.List(
 		ctx, objectList, kube_client.InNamespace(owner.GetNamespace()), kube_client.MatchingFields{controllerKey: owner.GetName()},
 	); err != nil {
-		return nil, errors.Wrap(err, "unable to list objects")
+		return nil, fmt.Errorf("unable to list objects: %w", err)
 	}
 
 	items, err := kube_apimeta.ExtractList(objectList)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to extract list of runtime.Objects")
+		return nil, fmt.Errorf("unable to extract list of runtime.Objects: %w", err)
 	}
 
 	switch len(items) {
 	case 0:
 		obj, err := mutate(nil)
 		if err != nil {
-			return nil, errors.Wrap(err, "couldn't mutate object for creation")
+			return nil, fmt.Errorf("couldn't mutate object for creation: %w", err)
 		}
 
 		// We don't want to create anything
@@ -49,11 +48,11 @@ func ManageControlledObject(
 		}
 
 		if err := kube_controllerutil.SetControllerReference(owner, obj, client.Scheme()); err != nil {
-			return nil, errors.Wrap(err, "unable to set object's controller reference")
+			return nil, fmt.Errorf("unable to set object's controller reference: %w", err)
 		}
 
 		if err := client.Create(ctx, obj); err != nil {
-			return nil, errors.Wrap(err, "couldn't create object")
+			return nil, fmt.Errorf("couldn't create object: %w", err)
 		}
 		return obj, nil
 	case 1:
@@ -66,21 +65,21 @@ func ManageControlledObject(
 
 		obj, err := mutate(item)
 		if err != nil {
-			return nil, errors.Wrap(err, "couldn't mutate object for update")
+			return nil, fmt.Errorf("couldn't mutate object for update: %w", err)
 		}
 
 		// We want to delete our object
 		if obj == nil {
 			err := client.Delete(ctx, item)
-			return nil, errors.Wrap(err, "couldn't delete object")
+			return nil, fmt.Errorf("couldn't delete object: %w", err)
 		}
 
 		if err := kube_controllerutil.SetControllerReference(owner, obj, client.Scheme()); err != nil {
-			return nil, errors.Wrap(err, "unable to set object's controller reference")
+			return nil, fmt.Errorf("unable to set object's controller reference: %w", err)
 		}
 
 		if err := client.Patch(ctx, obj, kube_client.MergeFrom(original)); err != nil {
-			return nil, errors.Wrap(err, "couldn't patch object")
+			return nil, fmt.Errorf("couldn't patch object: %w", err)
 		}
 		return obj, nil
 	default:

@@ -1,7 +1,7 @@
 package testserver
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 
 	"github.com/kumahq/kuma/test/framework"
 )
@@ -93,8 +93,7 @@ func WithPodAnnotations(annotations map[string]string) DeploymentOptsFn {
 	}
 }
 
-type TestServer interface {
-}
+type TestServer interface{}
 
 type Deployment interface {
 	framework.Deployment

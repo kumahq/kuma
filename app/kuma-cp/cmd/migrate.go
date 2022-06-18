@@ -1,7 +1,9 @@
 package cmd
 
 import (
-	"github.com/pkg/errors"
+	"errors"
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma/pkg/config"
@@ -40,7 +42,7 @@ func newMigrateUpCmd() *cobra.Command {
 			}
 
 			if err := migrate(cfg); err != nil {
-				if err == core_plugins.AlreadyMigrated {
+				if errors.Is(err, core_plugins.AlreadyMigrated) {
 					cmd.Printf("DB has already been migrated for Kuma %s\n", version.Build.Version)
 				} else {
 					return err
@@ -70,11 +72,11 @@ func migrate(cfg kuma_cp.Config) error {
 		pluginName = core_plugins.Postgres
 		pluginConfig = cfg.Store.Postgres
 	default:
-		return errors.Errorf("unknown store type %s", cfg.Store.Type)
+		return fmt.Errorf("unknown store type %s", cfg.Store.Type)
 	}
 	plugin, err := core_plugins.Plugins().ResourceStore(pluginName)
 	if err != nil {
-		return errors.Wrapf(err, "could not retrieve store %s plugin", pluginName)
+		return fmt.Errorf("could not retrieve store %s plugin: %w", pluginName, err)
 	}
 	_, err = plugin.Migrate(nil, pluginConfig)
 	return err

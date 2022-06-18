@@ -1,10 +1,10 @@
 package k8s
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
-	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -57,7 +57,7 @@ func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conve
 	if cfg.CaCertFile != "" {
 		bytes, err := os.ReadFile(cfg.CaCertFile)
 		if err != nil {
-			return errors.Wrapf(err, "could not read provided CA cert file %s", cfg.CaCertFile)
+			return fmt.Errorf("could not read provided CA cert file %s: %w", cfg.CaCertFile, err)
 		}
 		caCert = string(bytes)
 	}
@@ -74,7 +74,7 @@ func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conve
 		ResourceManager: rt.ResourceManager(),
 	}
 	if err := gatewayInstanceReconciler.SetupWithManager(mgr); err != nil {
-		return errors.Wrap(err, "could not setup MeshGatewayInstance reconciler")
+		return fmt.Errorf("could not setup MeshGatewayInstance reconciler: %w", err)
 	}
 
 	if rt.Config().Experimental.GatewayAPI {
@@ -97,7 +97,7 @@ func addGatewayAPIReconcillers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, p
 		Log:    core.Log.WithName("controllers").WithName("gatewayapi").WithName("GatewayClass"),
 	}
 	if err := gatewayAPIGatewayClassReconciler.SetupWithManager(mgr); err != nil {
-		return errors.Wrap(err, "could not setup Gateway API GatewayClass reconciler")
+		return fmt.Errorf("could not setup Gateway API GatewayClass reconciler: %w", err)
 	}
 
 	gatewayAPIGatewayReconciler := &gatewayapi_controllers.GatewayReconciler{
@@ -110,7 +110,7 @@ func addGatewayAPIReconcillers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, p
 		ResourceManager: rt.ResourceManager(),
 	}
 	if err := gatewayAPIGatewayReconciler.SetupWithManager(mgr); err != nil {
-		return errors.Wrap(err, "could not setup Gateway API Gateway reconciler")
+		return fmt.Errorf("could not setup Gateway API Gateway reconciler: %w", err)
 	}
 
 	gatewayAPIHTTPRouteReconciler := &gatewayapi_controllers.HTTPRouteReconciler{
@@ -122,7 +122,7 @@ func addGatewayAPIReconcillers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, p
 		ResourceManager: rt.ResourceManager(),
 	}
 	if err := gatewayAPIHTTPRouteReconciler.SetupWithManager(mgr); err != nil {
-		return errors.Wrap(err, "could not setup Gateway API HTTPRoute reconciler")
+		return fmt.Errorf("could not setup Gateway API HTTPRoute reconciler: %w", err)
 	}
 
 	secretController := &gatewayapi_controllers.SecretController{
@@ -131,7 +131,7 @@ func addGatewayAPIReconcillers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, p
 		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
 	}
 	if err := secretController.SetupWithManager(mgr); err != nil {
-		return errors.Wrap(err, "could not setup Secret reconciler")
+		return fmt.Errorf("could not setup Secret reconciler: %w", err)
 	}
 
 	return nil

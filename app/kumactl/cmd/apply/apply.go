@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
@@ -80,24 +79,24 @@ $ kumactl apply -f https://example.com/resource.yaml
 					}
 					req, err := http.NewRequest("GET", ctx.args.file, nil)
 					if err != nil {
-						return errors.Wrap(err, "error creating new http request")
+						return fmt.Errorf("error creating new http request: %w", err)
 					}
 					resp, err := client.Do(req)
 					if err != nil {
-						return errors.Wrap(err, "error with GET http request")
+						return fmt.Errorf("error with GET http request: %w", err)
 					}
 					if resp.StatusCode != http.StatusOK {
-						return errors.Wrap(err, "error while retrieving URL")
+						return fmt.Errorf("error while retrieving URL: %w", err)
 					}
 					defer resp.Body.Close()
 					b, err = io.ReadAll(resp.Body)
 					if err != nil {
-						return errors.Wrap(err, "error while reading provided file")
+						return fmt.Errorf("error while reading provided file: %w", err)
 					}
 				} else {
 					b, err = os.ReadFile(ctx.args.file)
 					if err != nil {
-						return errors.Wrap(err, "error while reading provided file")
+						return fmt.Errorf("error while reading provided file: %w", err)
 					}
 				}
 			}
@@ -116,7 +115,7 @@ $ kumactl apply -f https://example.com/resource.yaml
 				}
 				res, err := rest_types.UnmarshallToCore(bytes)
 				if err != nil {
-					return errors.Wrap(err, "YAML contains invalid resource")
+					return fmt.Errorf("YAML contains invalid resource: %w", err)
 				}
 				if err := mesh.ValidateMeta(res.GetMeta().GetName(), res.GetMeta().GetMesh(), res.Descriptor().Scope); err.HasViolations() {
 					return err.OrNil()

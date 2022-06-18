@@ -2,9 +2,9 @@ package gateway
 
 import (
 	"context"
+	"fmt"
 
 	envoy_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -104,7 +104,7 @@ func (c *ClusterGenerator) GenerateClusters(ctx xds_context.Context, info Gatewa
 			ctx.Mesh.EndpointMap,
 		)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to build LoadAssignment for cluster %q", dest.Name)
+			return nil, fmt.Errorf("failed to build LoadAssignment for cluster %q: %w", dest.Name, err)
 		}
 
 		resources.Add(NewResource(dest.Name, loadAssignment))

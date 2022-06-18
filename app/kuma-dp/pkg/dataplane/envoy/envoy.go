@@ -14,7 +14,6 @@ import (
 	"time"
 
 	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
-	"github.com/pkg/errors"
 
 	command_utils "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/command"
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
@@ -25,9 +24,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
-var (
-	runLog = core.Log.WithName("kuma-dp").WithName("run").WithName("envoy")
-)
+var runLog = core.Log.WithName("kuma-dp").WithName("run").WithName("envoy")
 
 type BootstrapParams struct {
 	Dataplane       *rest.Resource
@@ -176,7 +173,7 @@ func (e *Envoy) DrainConnections() error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return errors.Errorf("expected 200 status code, got %d", resp.StatusCode)
+		return fmt.Errorf("expected 200 status code, got %d", resp.StatusCode)
 	}
 	return nil
 }
@@ -190,7 +187,7 @@ func GetEnvoyVersion(binaryPath string) (*EnvoyVersion, error) {
 	command := exec.Command(resolvedPath, arg)
 	output, err := command.Output()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to execute %s with arguments %q", resolvedPath, arg)
+		return nil, fmt.Errorf("failed to execute %s with arguments %q: %w", resolvedPath, arg, err)
 	}
 	build := strings.ReplaceAll(string(output), "\r\n", "\n")
 	build = strings.Trim(build, "\n")
@@ -200,7 +197,7 @@ func GetEnvoyVersion(binaryPath string) (*EnvoyVersion, error) {
 
 	parts := strings.Split(build, "/")
 	if len(parts) != 5 { // revision/build_version_number/revision_status/build_type/ssl_version
-		return nil, errors.Errorf("wrong Envoy build format: %s", build)
+		return nil, fmt.Errorf("wrong Envoy build format: %s", build)
 	}
 	return &EnvoyVersion{
 		Build:   build,

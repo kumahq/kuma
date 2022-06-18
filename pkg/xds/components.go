@@ -1,7 +1,7 @@
 package xds
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
@@ -14,10 +14,10 @@ func Setup(rt core_runtime.Runtime) error {
 		return nil
 	}
 	if err := server.RegisterXDS(rt); err != nil {
-		return errors.Wrap(err, "could not register XDS")
+		return fmt.Errorf("could not register XDS: %w", err)
 	}
 	if err := bootstrap.RegisterBootstrap(rt); err != nil {
-		return errors.Wrap(err, "could not register Bootstrap")
+		return fmt.Errorf("could not register Bootstrap: %w", err)
 	}
 	return nil
 }

@@ -1,8 +1,9 @@
 package gateway
 
 import (
+	"fmt"
+
 	"github.com/golang/protobuf/proto"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
@@ -24,7 +25,7 @@ func BuildResourceSet(b ResourceBuilder) (*xds.ResourceSet, error) {
 	}
 
 	if resource.GetName() == "" {
-		return nil, errors.Errorf("anonymous resource %T", resource)
+		return nil, fmt.Errorf("anonymous resource %T", resource)
 	}
 
 	set := xds.NewResourceSet()

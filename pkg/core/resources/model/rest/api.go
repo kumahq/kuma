@@ -3,8 +3,6 @@ package rest
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
-
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
@@ -61,7 +59,7 @@ type ApiDescriptor struct {
 func (m *ApiDescriptor) GetResourceApi(typ model.ResourceType) (ResourceApi, error) {
 	mapping, ok := m.Resources[typ]
 	if !ok {
-		return nil, errors.Errorf("unknown resource type: %q", typ)
+		return nil, fmt.Errorf("unknown resource type: %q", typ)
 	}
 	return mapping, nil
 }

@@ -2,10 +2,10 @@ package gatewayapi
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -38,7 +38,7 @@ func (r *SecretController) Reconcile(ctx context.Context, req kube_ctrl.Request)
 			}
 			return kube_ctrl.Result{}, nil
 		}
-		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to fetch Secret %s", req.NamespacedName.String())
+		return kube_ctrl.Result{}, fmt.Errorf("unable to fetch Secret %s: %w", req.NamespacedName.String(), err)
 	}
 
 	if secret.Type != kube_core.SecretTypeTLS {
@@ -61,7 +61,7 @@ func (r *SecretController) updateCopiedSecret(ctx context.Context, key types.Nam
 			r.Log.V(1).Info("secret was not copied, nothing to update", "key", key.String())
 			return nil
 		}
-		return errors.Wrapf(err, "unable to fetch Secret %s", key.String())
+		return fmt.Errorf("unable to fetch Secret %s: %w", key.String(), err)
 	}
 
 	bytes, err := convertSecret(originalSecret)

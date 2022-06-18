@@ -2,6 +2,7 @@ package insights
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -123,7 +124,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 	eventReader := r.eventFactory.New()
 	for {
 		event, err := eventReader.Recv(stop)
-		if err == events.ListenerStoppedErr {
+		if errors.Is(err, events.ListenerStoppedErr) {
 			return nil
 		}
 		if err != nil {

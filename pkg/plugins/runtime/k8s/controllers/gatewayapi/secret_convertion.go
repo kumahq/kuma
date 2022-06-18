@@ -5,7 +5,6 @@ import (
 	"encoding/pem"
 	"fmt"
 
-	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -66,7 +65,7 @@ func (r *GatewayReconciler) createSecretIfMissing(
 
 func convertSecret(secret *kube_core.Secret) ([]byte, error) {
 	if secret.Type != kube_core.SecretTypeTLS {
-		return nil, errors.Errorf("only secrets of type %q are supported", secret.Type)
+		return nil, fmt.Errorf("only secrets of type %q are supported", secret.Type)
 	}
 
 	privatePEM := pem.EncodeToMemory(&pem.Block{

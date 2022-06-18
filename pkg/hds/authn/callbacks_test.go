@@ -2,12 +2,13 @@ package authn_test
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_health_v3 "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -36,7 +37,7 @@ func (t *testAuthenticator) Authenticate(_ context.Context, resource model.Resou
 			return nil
 		}
 	default:
-		return errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
+		return fmt.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}
 
 	return errors.New("invalid credential")

@@ -1,7 +1,7 @@
 package printers
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/json"
@@ -11,9 +11,7 @@ import (
 
 type Table = table.Table
 
-var (
-	NewTablePrinter = table.NewPrinter
-)
+var NewTablePrinter = table.NewPrinter
 
 func NewGenericPrinter(format output.Format) (output.Printer, error) {
 	switch format {
@@ -22,6 +20,6 @@ func NewGenericPrinter(format output.Format) (output.Printer, error) {
 	case output.YAMLFormat:
 		return yaml.NewPrinter(), nil
 	default:
-		return nil, errors.Errorf("unknown output format %q", format)
+		return nil, fmt.Errorf("unknown output format %q", format)
 	}
 }

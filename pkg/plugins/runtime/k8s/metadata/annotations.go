@@ -1,10 +1,9 @@
 package metadata
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 // Annotations that can be used by the end users.
@@ -148,7 +147,7 @@ func (a Annotations) GetEnabled(key string) (bool, bool, error) {
 	case AnnotationDisabled, AnnotationFalse:
 		return false, true, nil
 	default:
-		return false, true, errors.Errorf("annotation \"%s\" has wrong value \"%s\"", key, value)
+		return false, true, fmt.Errorf("annotation \"%s\" has wrong value \"%s\"", key, value)
 	}
 }
 
@@ -159,7 +158,7 @@ func (a Annotations) GetUint32(key string) (uint32, bool, error) {
 	}
 	u, err := strconv.ParseUint(value, 10, 32)
 	if err != nil {
-		return 0, true, errors.Errorf("failed to parse annotation %q: %s", key, err.Error())
+		return 0, true, fmt.Errorf("failed to parse annotation %q: %s", key, err.Error())
 	}
 	return uint32(u), true, nil
 }
@@ -184,7 +183,7 @@ func (a Annotations) GetMap(key string) (map[string]string, error) {
 	for _, pair := range pairs {
 		kvSplit := strings.Split(pair, "=")
 		if len(kvSplit) != 2 {
-			return nil, errors.Errorf("invalid format. Map in %q has to be provided in the following format: key1=value1;key2=value2", key)
+			return nil, fmt.Errorf("invalid format. Map in %q has to be provided in the following format: key1=value1;key2=value2", key)
 		}
 		result[kvSplit[0]] = kvSplit[1]
 	}

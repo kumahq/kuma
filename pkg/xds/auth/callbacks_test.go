@@ -2,13 +2,14 @@ package auth_test
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -49,14 +50,13 @@ func (t *testAuthenticator) Authenticate(_ context.Context, resource core_model.
 			return nil
 		}
 	default:
-		return errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
+		return fmt.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}
 
 	return errors.New("invalid credential")
 }
 
 var _ = Describe("Auth Callbacks", func() {
-
 	var testAuth *testAuthenticator
 	var resManager core_manager.ResourceManager
 	var callbacks envoy_server.Callbacks

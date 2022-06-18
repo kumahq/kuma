@@ -4,10 +4,10 @@
 package uninstall
 
 import (
+	"fmt"
 	"os"
 	"runtime"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy"
@@ -29,14 +29,14 @@ func newUninstallTransparentProxy() *cobra.Command {
 		Long:  `Uninstall Transparent Proxy by restoring the hosts iptables and /etc/resolv.conf`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if !args.DryRun && runtime.GOOS != "linux" {
-				return errors.Errorf("transparent proxy will work only on Linux OSes")
+				return fmt.Errorf("transparent proxy will work only on Linux OSes")
 			}
 
 			tp := transparentproxy.DefaultTransparentProxy()
 
 			output, err := tp.Cleanup(args.DryRun, args.Verbose)
 			if err != nil {
-				return errors.Wrap(err, "Failed to cleanup transparent proxy")
+				return fmt.Errorf("Failed to cleanup transparent proxy: %w", err)
 			}
 
 			if args.DryRun {
@@ -47,13 +47,13 @@ func newUninstallTransparentProxy() *cobra.Command {
 			if _, err := os.Stat("/etc/resolv.conf.kuma-backup"); !os.IsNotExist(err) {
 				content, err := os.ReadFile("/etc/resolv.conf.kuma-backup")
 				if err != nil {
-					return errors.Wrap(err, "unable to open /etc/resolv.conf.kuma-backup")
+					return fmt.Errorf("unable to open /etc/resolv.conf.kuma-backup: %w", err)
 				}
 
 				if !args.DryRun {
 					err = os.WriteFile("/etc/resolv.conf", content, 0644)
 					if err != nil {
-						return errors.Wrap(err, "unable to write /etc/resolv.conf")
+						return fmt.Errorf("unable to write /etc/resolv.conf: %w", err)
 					}
 				}
 

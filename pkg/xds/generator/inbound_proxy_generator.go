@@ -1,7 +1,8 @@
 package generator
 
 import (
-	"github.com/pkg/errors"
+	"errors"
+	"fmt"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -21,8 +22,7 @@ import (
 // OriginInbound is a marker to indicate by which ProxyGenerator resources were generated.
 const OriginInbound = "inbound"
 
-type InboundProxyGenerator struct {
-}
+type InboundProxyGenerator struct{}
 
 func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
@@ -49,7 +49,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 		}
 		envoyCluster, err := clusterBuilder.Build()
 		if err != nil {
-			return nil, errors.Wrapf(err, "%s: could not generate cluster %s", validators.RootedAt("dataplane").Field("networking").Field("inbound").Index(i), localClusterName)
+			return nil, fmt.Errorf("%s: could not generate cluster %s: %w", validators.RootedAt("dataplane").Field("networking").Field("inbound").Index(i), localClusterName, err)
 		}
 		resources.Add(&core_xds.Resource{
 			Name:     localClusterName,
@@ -151,7 +151,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 
 		inboundListener, err := listenerBuilder.Build()
 		if err != nil {
-			return nil, errors.Wrapf(err, "%s: could not generate listener %s", validators.RootedAt("dataplane").Field("networking").Field("inbound").Index(i), inboundListenerName)
+			return nil, fmt.Errorf("%s: could not generate listener %s: %w", validators.RootedAt("dataplane").Field("networking").Field("inbound").Index(i), inboundListenerName, err)
 		}
 		resources.Add(&core_xds.Resource{
 			Name:     inboundListenerName,

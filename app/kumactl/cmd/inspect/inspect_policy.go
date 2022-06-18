@@ -6,7 +6,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -63,7 +62,7 @@ func newInspectPolicyCmd(policyDesc core_model.ResourceTypeDescriptor, pctx *cmd
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := pctx.CurrentPolicyInspectClient()
 			if err != nil {
-				return errors.Wrap(err, "failed to create a policy inspect client")
+				return fmt.Errorf("failed to create a policy inspect client: %w", err)
 			}
 			name := args[0]
 			entryList, err := client.Inspect(context.Background(), policyDesc, pctx.CurrentMesh(), name)

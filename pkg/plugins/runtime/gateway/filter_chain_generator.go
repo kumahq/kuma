@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/rsa"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -13,7 +14,6 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_extensions_transport_sockets_tls_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -46,18 +46,22 @@ const DefaultInitialConnectionWindowSize = 1024 * 1024
 
 // Timeout defaults.
 const DefaultRequestHeadersTimeout = 500 * time.Millisecond
-const DefaultStreamIdleTimeout = 5 * time.Second
-const DefaultIdleTimeout = 5 * time.Minute
+
+const (
+	DefaultStreamIdleTimeout = 5 * time.Second
+	DefaultIdleTimeout       = 5 * time.Minute
+)
 
 type keyType string
 
-const keyTypeNone = keyType("")
-const keyTypeECDSA = keyType("ecdsa")
-const keyTypeRSA = keyType("rsa")
+const (
+	keyTypeNone  = keyType("")
+	keyTypeECDSA = keyType("ecdsa")
+	keyTypeRSA   = keyType("rsa")
+)
 
 // HTTPFilterChainGenerator generates a filter chain for a HTTP listener.
-type HTTPFilterChainGenerator struct {
-}
+type HTTPFilterChainGenerator struct{}
 
 func (g *HTTPFilterChainGenerator) Generate(
 	ctx xds_context.Context, info GatewayListenerInfo, _ []GatewayHost,
@@ -72,8 +76,7 @@ func (g *HTTPFilterChainGenerator) Generate(
 }
 
 // HTTPSFilterChainGenerator generates a filter chain for an HTTPS listener.
-type HTTPSFilterChainGenerator struct {
-}
+type HTTPSFilterChainGenerator struct{}
 
 func (g *HTTPSFilterChainGenerator) Generate(
 	ctx xds_context.Context, info GatewayListenerInfo, hosts []GatewayHost,
@@ -113,11 +116,11 @@ func (g *HTTPSFilterChainGenerator) Generate(
 			for _, cert := range host.TLS.GetCertificates() {
 				secret, err := g.generateCertificateSecret(ctx.Mesh, host, cert)
 				if err != nil {
-					return nil, nil, errors.Wrap(err, "failed to generate TLS certificate")
+					return nil, nil, fmt.Errorf("failed to generate TLS certificate: %w", err)
 				}
 
 				if hostResources.Contains(secret.Name, secret) {
-					return nil, nil, errors.Errorf("duplicate TLS certificate %q", secret.Name)
+					return nil, nil, fmt.Errorf("duplicate TLS certificate %q", secret.Name)
 				}
 
 				resource := NewResource(secret.Name, secret)
@@ -135,11 +138,11 @@ func (g *HTTPSFilterChainGenerator) Generate(
 			)
 
 			// TODO(jpeach) add support for PASSTHROUGH mode.
-			return nil, nil, errors.Errorf("unsupported TLS mode %q", host.TLS.GetMode())
+			return nil, nil, fmt.Errorf("unsupported TLS mode %q", host.TLS.GetMode())
 
 		case mesh_proto.MeshGateway_TLS_NONE:
 			if !info.Listener.CrossMesh {
-				return nil, nil, errors.Errorf("unsupported TLS mode %q", mode)
+				return nil, nil, fmt.Errorf("unsupported TLS mode %q", mode)
 			}
 
 			// We don't match on the SNI here since it won't be the hostname
@@ -155,7 +158,7 @@ func (g *HTTPSFilterChainGenerator) Generate(
 			// and we don't want to match a SAN because it can be any mesh
 			downstream, err = envoy_tls_v3.CreateDownstreamTlsContext(info.Proxy.SecretsTracker.RequestAllInOneCa(), info.Proxy.SecretsTracker.RequestIdentityCert())
 			if err != nil {
-				return nil, nil, errors.Wrap(err, "couldn't generate downstream tls context for gateway")
+				return nil, nil, fmt.Errorf("couldn't generate downstream tls context for gateway: %w", err)
 			}
 
 			downstream.CommonTlsContext.GetCombinedValidationContext().DefaultValidationContext.MatchSubjectAltNames = nil
@@ -163,7 +166,7 @@ func (g *HTTPSFilterChainGenerator) Generate(
 			hostResources.AddSet(resources)
 
 		default:
-			return nil, nil, errors.Errorf("unsupported TLS mode %q", host.TLS.GetMode())
+			return nil, nil, fmt.Errorf("unsupported TLS mode %q", host.TLS.GetMode())
 		}
 
 		any, err := util_proto.MarshalAnyDeterministic(downstream)
@@ -222,7 +225,7 @@ func (g *HTTPSFilterChainGenerator) generateCertificateSecret(
 		// inline data.
 		tlsSecret.Name = names.GetSecretName("cert."+string(ktype), "inline", host.Hostname)
 	default:
-		return nil, errors.Errorf("unsupported datasource type %T", d)
+		return nil, fmt.Errorf("unsupported datasource type %T", d)
 	}
 
 	return tlsSecret, err

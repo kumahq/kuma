@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -22,8 +20,7 @@ var outboundLog = core.Log.WithName("outbound-proxy-generator")
 // OriginOutbound is a marker to indicate by which ProxyGenerator resources were generated.
 const OriginOutbound = "outbound"
 
-type OutboundProxyGenerator struct {
-}
+type OutboundProxyGenerator struct{}
 
 // Whenever `split` is specified in the TrafficRoute which has more than kuma.io/service tag
 // We generate a separate Envoy cluster with _X_ suffix. SplitCounter ensures that we have different X for every split in one Dataplane
@@ -179,7 +176,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 		Configure(envoy_listeners.TagsMetadata(envoy_common.Tags(outbound.GetTagsIncludingLegacy()).WithoutTags("kuma.io/mesh"))).
 		Build()
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not generate listener %s for service %s", outboundListenerName, serviceName)
+		return nil, fmt.Errorf("could not generate listener %s for service %s: %w", outboundListenerName, serviceName, err)
 	}
 	return listener, nil
 }
@@ -257,7 +254,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 
 			edsCluster, err := edsClusterBuilder.Build()
 			if err != nil {
-				return nil, errors.Wrapf(err, "build CDS for cluster %s failed", clusterName)
+				return nil, fmt.Errorf("build CDS for cluster %s failed: %w", clusterName, err)
 			}
 
 			resources.Add(&model.Resource{
@@ -294,7 +291,7 @@ func (OutboundProxyGenerator) generateEDS(
 
 				loadAssignment, err := ctx.ControlPlane.CLACache.GetCLA(context.Background(), ctx.Mesh.Resource.Meta.GetName(), ctx.Mesh.Hash, cluster, apiVersion, endpoints)
 				if err != nil {
-					return nil, errors.Wrapf(err, "could not get ClusterLoadAssignment for %s", serviceName)
+					return nil, fmt.Errorf("could not get ClusterLoadAssignment for %s: %w", serviceName, err)
 				}
 
 				resources.Add(&model.Resource{
@@ -402,7 +399,8 @@ func (OutboundProxyGenerator) determineRoutes(
 	}
 
 	appendRoute := func(routes envoy_common.Routes, match *mesh_proto.TrafficRoute_Http_Match, modify *mesh_proto.TrafficRoute_Http_Modify,
-		clusters []envoy_common.Cluster, rateLimit *core_mesh.RateLimitResource) envoy_common.Routes {
+		clusters []envoy_common.Cluster, rateLimit *core_mesh.RateLimitResource,
+	) envoy_common.Routes {
 		if len(clusters) == 0 {
 			return routes
 		}

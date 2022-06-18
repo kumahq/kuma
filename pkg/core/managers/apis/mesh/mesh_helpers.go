@@ -2,8 +2,7 @@ package mesh
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
+	"fmt"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
@@ -18,10 +17,10 @@ func EnsureCAs(ctx context.Context, caManagers core_ca.Managers, mesh *core_mesh
 	for typ, backends := range backendsForType {
 		caManager, exist := caManagers[typ]
 		if !exist { // this should be caught by validator earlier
-			return errors.Errorf("CA manager for type %s does not exist", typ)
+			return fmt.Errorf("CA manager for type %s does not exist", typ)
 		}
 		if err := caManager.EnsureBackends(ctx, meshName, backends); err != nil {
-			return errors.Wrapf(err, "could not ensure CA backends of type %s", typ)
+			return fmt.Errorf("could not ensure CA backends of type %s: %w", typ, err)
 		}
 	}
 	return nil

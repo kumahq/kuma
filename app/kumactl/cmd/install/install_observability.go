@@ -1,9 +1,9 @@
 package install
 
 import (
+	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma/app/kumactl/cmd/install/context"
@@ -47,7 +47,7 @@ func newInstallObservability(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			singleFile := data.JoinYAML(combinedResources)
 
 			if _, err := cmd.OutOrStdout().Write(singleFile.Data); err != nil {
-				return errors.Wrap(err, "Failed to output rendered resources")
+				return fmt.Errorf("Failed to output rendered resources: %w", err)
 			}
 			return nil
 		},
@@ -66,7 +66,7 @@ func getMetrics(args *context.ObservabilityTemplateArgs) ([]data.File, error) {
 	installMetricsFS := kumactl_data.InstallMetricsFS()
 	templateFiles, err := data.ReadFiles(installMetricsFS)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to read template files")
+		return nil, fmt.Errorf("Failed to read template files: %w", err)
 	}
 	yamlTemplateFiles := templateFiles.Filter(func(file data.File) bool {
 		return strings.HasSuffix(file.Name, ".yaml")
@@ -120,12 +120,12 @@ func getMetrics(args *context.ObservabilityTemplateArgs) ([]data.File, error) {
 	filter := getExcludePrefixesFilter(args)
 	renderedFiles, err := renderFilesWithFilter(yamlTemplateFiles, args, simpleTemplateRenderer, filter)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to render template files")
+		return nil, fmt.Errorf("Failed to render template files: %w", err)
 	}
 
 	sortedResources, err := k8s.SortResourcesByKind(renderedFiles)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to sort resources by kind")
+		return nil, fmt.Errorf("Failed to sort resources by kind: %w", err)
 	}
 	return sortedResources, nil
 }
@@ -133,18 +133,18 @@ func getMetrics(args *context.ObservabilityTemplateArgs) ([]data.File, error) {
 func getLogging(args *context.ObservabilityTemplateArgs) ([]data.File, error) {
 	templateFiles, err := data.ReadFiles(kumactl_data.InstallLoggingFS())
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to read template files")
+		return nil, fmt.Errorf("Failed to read template files: %w", err)
 	}
 
 	filter := getExcludePrefixesFilter(args)
 	renderedFiles, err := renderFilesWithFilter(templateFiles, args, simpleTemplateRenderer, filter)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to render template files")
+		return nil, fmt.Errorf("Failed to render template files: %w", err)
 	}
 
 	sortedResources, err := k8s.SortResourcesByKind(renderedFiles)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to sort resources by kind")
+		return nil, fmt.Errorf("Failed to sort resources by kind: %w", err)
 	}
 	return sortedResources, nil
 }
@@ -152,18 +152,18 @@ func getLogging(args *context.ObservabilityTemplateArgs) ([]data.File, error) {
 func getTracing(args *context.ObservabilityTemplateArgs) ([]data.File, error) {
 	templateFiles, err := data.ReadFiles(kumactl_data.InstallTracingFS())
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to read template files")
+		return nil, fmt.Errorf("Failed to read template files: %w", err)
 	}
 
 	filter := getExcludePrefixesFilter(args)
 	renderedFiles, err := renderFilesWithFilter(templateFiles, args, simpleTemplateRenderer, filter)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to render template files")
+		return nil, fmt.Errorf("Failed to render template files: %w", err)
 	}
 
 	sortedResources, err := k8s.SortResourcesByKind(renderedFiles)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to sort resources by kind")
+		return nil, fmt.Errorf("Failed to sort resources by kind: %w", err)
 	}
 	return sortedResources, nil
 }

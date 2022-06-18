@@ -7,7 +7,6 @@ import (
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/testing"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
@@ -32,13 +31,13 @@ func NewK8sEnvoyAdminTunnel(
 
 	localPort, err := utils.GetFreePort()
 	if err != nil {
-		return nil, errors.Wrapf(err, "getting free port for the new tunnel failed")
+		return nil, fmt.Errorf("getting free port for the new tunnel failed: %w", err)
 	}
 
 	tunnel := k8s.NewTunnel(kubectlOptions, resourceType, resourceName, localPort, port)
 
 	if err := tunnel.ForwardPortE(t); err != nil {
-		return nil, errors.Wrapf(err, "port forwarding for %d:%d failed", localPort, port)
+		return nil, fmt.Errorf("port forwarding for %d:%d failed: %w", localPort, port, err)
 	}
 
 	return &K8sTunnel{
@@ -57,7 +56,7 @@ func (t *K8sTunnel) GetStats(name string) (*stats.Stats, error) {
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		return nil, errors.Errorf(
+		return nil, fmt.Errorf(
 			"got response with unexpected status code: %+q, Expected: %+q",
 			response.Status,
 			http.StatusText(http.StatusOK),
@@ -82,7 +81,7 @@ func (t *K8sTunnel) ResetCounters() error {
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		return errors.Errorf(
+		return fmt.Errorf(
 			"got response with unexpected status code: %+q, Expected: %+q",
 			response.Status,
 			http.StatusText(http.StatusOK),

@@ -6,7 +6,6 @@ import (
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/testing"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
@@ -22,7 +21,7 @@ var _ Clusters = &K8sClusters{}
 
 func NewK8sClusters(clusterNames []string, verbose bool) (Clusters, error) {
 	if len(clusterNames) < 1 || len(clusterNames) > maxClusters {
-		return nil, errors.Errorf("Invalid cluster number. Should be in the range [1,3], but it is %d", len(clusterNames))
+		return nil, fmt.Errorf("Invalid cluster number. Should be in the range [1,3], but it is %d", len(clusterNames))
 	}
 
 	t := NewTestingT()
@@ -71,7 +70,7 @@ func (cs *K8sClusters) GetKumaCPLogs() (string, error) {
 func (cs *K8sClusters) DismissCluster() error {
 	for name, c := range cs.clusters {
 		if err := c.DismissCluster(); err != nil {
-			return errors.Wrapf(err, "Deploy Kuma on %s failed: %v", name, err)
+			return fmt.Errorf("Deploy Kuma on %s failed: %w", name, err)
 		}
 	}
 
@@ -98,7 +97,7 @@ func (cs *K8sClusters) GetCluster(name string) Cluster {
 func (cs *K8sClusters) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) error {
 	for name, c := range cs.clusters {
 		if err := c.DeployKuma(mode, opt...); err != nil {
-			return errors.Wrapf(err, "Deploy Kuma on %s failed: %v", name, err)
+			return fmt.Errorf("Deploy Kuma on %s failed: %w", name, err)
 		}
 	}
 
@@ -108,7 +107,7 @@ func (cs *K8sClusters) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption)
 func (cs *K8sClusters) UpgradeKuma(mode string, opt ...KumaDeploymentOption) error {
 	for name, c := range cs.clusters {
 		if err := c.UpgradeKuma(mode, opt...); err != nil {
-			return errors.Wrapf(err, "Upgrade Kuma on %s failed: %v", name, err)
+			return fmt.Errorf("Upgrade Kuma on %s failed: %w", name, err)
 		}
 	}
 
@@ -122,7 +121,7 @@ func (cs *K8sClusters) GetKuma() ControlPlane {
 func (cs *K8sClusters) VerifyKuma() error {
 	for name, c := range cs.clusters {
 		if err := c.VerifyKuma(); err != nil {
-			return errors.Wrapf(err, "Verify Kuma on %s failed: %v", name, err)
+			return fmt.Errorf("Verify Kuma on %s failed: %w", name, err)
 		}
 	}
 
@@ -140,7 +139,7 @@ func (cs *K8sClusters) DeleteKuma() error {
 	}
 
 	if len(failed) > 0 {
-		return errors.Errorf("Clusters failed to delete %v", failed)
+		return fmt.Errorf("Clusters failed to delete %v", failed)
 	}
 
 	return nil
@@ -153,7 +152,7 @@ func (cs *K8sClusters) GetKubectlOptions(namespace ...string) *k8s.KubectlOption
 func (cs *K8sClusters) CreateNamespace(namespace string) error {
 	for name, c := range cs.clusters {
 		if err := c.CreateNamespace(namespace); err != nil {
-			return errors.Wrapf(err, "Creating Namespace %s on %s failed: %v", namespace, name, err)
+			return fmt.Errorf("Creating Namespace %s on %s failed: %w", namespace, name, err)
 		}
 	}
 
@@ -163,7 +162,7 @@ func (cs *K8sClusters) CreateNamespace(namespace string) error {
 func (cs *K8sClusters) DeleteNamespace(namespace string) error {
 	for name, c := range cs.clusters {
 		if err := c.DeleteNamespace(namespace); err != nil {
-			return errors.Wrapf(err, "Delete Namespace %s on %s failed: %v", namespace, name, err)
+			return fmt.Errorf("Delete Namespace %s on %s failed: %w", namespace, name, err)
 		}
 	}
 
@@ -178,7 +177,7 @@ func (cs *K8sClusters) GetKumactlOptions() *KumactlOptions {
 func (cs *K8sClusters) DeployApp(opt ...AppDeploymentOption) error {
 	for name, c := range cs.clusters {
 		if err := c.DeployApp(opt...); err != nil {
-			return errors.Wrapf(err, "unable to deploy on %s", name)
+			return fmt.Errorf("unable to deploy on %s: %w", name, err)
 		}
 	}
 
@@ -188,7 +187,7 @@ func (cs *K8sClusters) DeployApp(opt ...AppDeploymentOption) error {
 func (cs *K8sClusters) DeleteApp(namespace, appname string) error {
 	for name, c := range cs.clusters {
 		if err := c.DeleteApp(namespace, appname); err != nil {
-			return errors.Wrapf(err, "Labeling Namespace %s on %s failed: %v", namespace, name, err)
+			return fmt.Errorf("Labeling Namespace %s on %s failed: %w", namespace, name, err)
 		}
 	}
 
@@ -206,7 +205,7 @@ func (cs *K8sClusters) Deployment(name string) Deployment {
 func (cs *K8sClusters) Deploy(deployment Deployment) error {
 	for name, c := range cs.clusters {
 		if err := c.Deploy(deployment); err != nil {
-			return errors.Wrapf(err, "deployment %s failed on %s cluster", deployment.Name(), name)
+			return fmt.Errorf("deployment %s failed on %s cluster: %w", deployment.Name(), name, err)
 		}
 	}
 	return nil
@@ -215,7 +214,7 @@ func (cs *K8sClusters) Deploy(deployment Deployment) error {
 func (cs *K8sClusters) DeleteDeployment(deploymentName string) error {
 	for name, c := range cs.clusters {
 		if err := c.DeleteDeployment(deploymentName); err != nil {
-			return errors.Wrapf(err, "delete deployment %s failed on %s cluster", deploymentName, name)
+			return fmt.Errorf("delete deployment %s failed on %s cluster: %w", deploymentName, name, err)
 		}
 	}
 	return nil

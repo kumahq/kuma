@@ -2,8 +2,7 @@ package clusterid
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
+	"fmt"
 
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
@@ -34,7 +33,7 @@ func (c *clusterIDCreator) create() error {
 		resource.Spec.Config = core.NewUUID()
 		log.Info("creating cluster ID", "clusterID", resource.Spec.Config)
 		if err := c.configManager.Create(context.Background(), resource, store.CreateByKey(config_manager.ClusterIdConfigKey, core_model.NoMesh)); err != nil {
-			return errors.Wrap(err, "could not create config")
+			return fmt.Errorf("could not create config: %w", err)
 		}
 	}
 

@@ -1,7 +1,7 @@
 package generator
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
 
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -14,8 +14,7 @@ import (
 // OriginSecrets is a marker to indicate by which ProxyGenerator resources were generated.
 const OriginSecrets = "secrets"
 
-type Generator struct {
-}
+type Generator struct{}
 
 var _ generator_core.ResourceGenerator = Generator{}
 
@@ -60,7 +59,7 @@ func (g Generator) GenerateForZoneEgress(
 
 	identity, ca, err := ctx.ControlPlane.Secrets.GetForZoneEgress(zoneEgressResource, mesh)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to generate ZoneEgress secrets")
+		return nil, fmt.Errorf("failed to generate ZoneEgress secrets: %w", err)
 	}
 
 	if usedIdentity {
@@ -98,7 +97,7 @@ func (g Generator) Generate(
 		otherMeshes := ctx.Mesh.Resources.OtherMeshes().Items
 		identity, allInOneCa, err := ctx.ControlPlane.Secrets.GetAllInOne(ctx.Mesh.Resource, proxy.Dataplane, otherMeshes)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to generate all in one CA")
+			return nil, fmt.Errorf("failed to generate all in one CA: %w", err)
 		}
 
 		resources.Add(CreateCaSecretResource(proxy.SecretsTracker.RequestAllInOneCa().Name(), allInOneCa))
@@ -109,9 +108,8 @@ func (g Generator) Generate(
 	if usedIdentity || len(usedCas) > 0 {
 		otherMeshes := ctx.Mesh.Resources.OtherMeshes().Items
 		identity, meshCas, err := ctx.ControlPlane.Secrets.GetForDataPlane(proxy.Dataplane, ctx.Mesh.Resource, otherMeshes)
-
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to generate dataplane identity cert and CAs")
+			return nil, fmt.Errorf("failed to generate dataplane identity cert and CAs: %w", err)
 		}
 
 		resources.Add(CreateIdentitySecretResource(proxy.SecretsTracker.RequestIdentityCert().Name(), identity))

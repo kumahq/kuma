@@ -1,11 +1,10 @@
 package gateway
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/permissions"
@@ -146,7 +145,7 @@ func GatewayListenerInfoFromProxy(
 		proxy.Dataplane, ctx.Resources.ExternalServices(), ctx.Resources.TrafficPermissions(),
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to find external services matched by traffic permissions")
+		return nil, fmt.Errorf("unable to find external services matched by traffic permissions: %w", err)
 	}
 
 	outboundEndpoints := xds_topology.BuildEndpointMap(
@@ -163,7 +162,7 @@ func GatewayListenerInfoFromProxy(
 		// Force all listeners on the same port to have the same protocol.
 		for i := range listeners {
 			if listeners[i].GetProtocol() != listeners[0].GetProtocol() {
-				return nil, errors.Errorf(
+				return nil, fmt.Errorf(
 					"cannot collapse listener protocols %s and %s on port %d",
 					listeners[i].GetProtocol(), listeners[0].GetProtocol(), port,
 				)
@@ -206,7 +205,7 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 
 	listenerInfos, err := GatewayListenerInfoFromProxy(ctx.Mesh, proxy, g.Zone)
 	if err != nil {
-		return nil, errors.Wrap(err, "error generating listener info from Proxy")
+		return nil, fmt.Errorf("error generating listener info from Proxy: %w", err)
 	}
 
 	for _, info := range listenerInfos {
@@ -256,7 +255,7 @@ func (g Generator) generateLDS(ctx xds_context.Context, info GatewayListenerInfo
 
 	res, err = BuildResourceSet(listenerBuilder)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build listener resource")
+		return nil, fmt.Errorf("failed to build listener resource: %w", err)
 	}
 	resources.AddSet(res)
 
@@ -271,7 +270,7 @@ func (g Generator) generateRDS(ctx xds_context.Context, info GatewayListenerInfo
 	for _, hostInfo := range hostInfos {
 		clusterRes, err := g.ClusterGenerator.GenerateClusters(ctx, info, hostInfo.Entries)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to generate clusters for dataplane %q", info.Proxy.Id)
+			return nil, fmt.Errorf("failed to generate clusters for dataplane %q: %w", info.Proxy.Id, err)
 		}
 		resources.AddSet(clusterRes)
 
@@ -284,7 +283,7 @@ func (g Generator) generateRDS(ctx xds_context.Context, info GatewayListenerInfo
 
 	res, err := BuildResourceSet(routeConfig)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build route configuration resource")
+		return nil, fmt.Errorf("failed to build route configuration resource: %w", err)
 	}
 	resources.AddSet(res)
 
@@ -323,7 +322,7 @@ func MakeGatewayListener(
 		}
 
 		if _, ok := hostsByName[hostname]; ok {
-			return listener, nil, errors.Errorf("duplicate hostname %q", hostname)
+			return listener, nil, fmt.Errorf("duplicate hostname %q", hostname)
 		}
 
 		host := GatewayHost{

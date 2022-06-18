@@ -1,7 +1,7 @@
 package egress
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -22,9 +22,7 @@ const (
 	OriginEgress = "egress"
 )
 
-var (
-	log = core.Log.WithName("xds").WithName("generator").WithName("egress")
-)
+var log = core.Log.WithName("xds").WithName("generator").WithName("egress")
 
 // ZoneEgressGenerator is responsible for generating xDS resources for
 // a single ZoneEgress.
@@ -81,12 +79,9 @@ func (g Generator) Generate(
 		for _, generator := range g.ZoneEgressGenerators {
 			rs, err := generator.Generate(ctx, proxy, listenerBuilder, meshResources)
 			if err != nil {
-				err := errors.Wrapf(
-					err,
-					"%T failed to generate resources for zone egress %q",
+				err := fmt.Errorf("%T failed to generate resources for zone egress %q: %w",
 					generator,
-					proxy.Id,
-				)
+					proxy.Id, err)
 				return nil, err
 			}
 
@@ -112,12 +107,9 @@ func (g Generator) Generate(
 			ctx, proxy.Id, proxy.ZoneEgressProxy.ZoneEgressResource, secretsTracker, meshResources.Mesh,
 		)
 		if err != nil {
-			err := errors.Wrapf(
-				err,
-				"%T failed to generate resources for zone egress %q",
+			err := fmt.Errorf("%T failed to generate resources for zone egress %q: %w",
 				g.SecretGenerator,
-				proxy.Id,
-			)
+				proxy.Id, err)
 			return nil, err
 		}
 

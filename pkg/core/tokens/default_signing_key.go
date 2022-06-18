@@ -2,10 +2,11 @@ package tokens
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
@@ -38,7 +39,7 @@ func (d *defaultSigningKeyComponent) Start(stop <-chan struct{}) error {
 		if err != nil {
 			// Retry this operation since on Kubernetes, secrets are validated.
 			// This code can execute before the control plane is ready therefore hooks can fail.
-			errChan <- errors.Wrap(err, "could not create the default signing key")
+			errChan <- fmt.Errorf("could not create the default signing key: %w", err)
 		}
 	}()
 	select {
@@ -55,7 +56,8 @@ func (d *defaultSigningKeyComponent) createDefaultSigningKeyIfNotExist(ctx conte
 		d.log.V(1).Info("signing key already exists. Skip creating.")
 		return nil
 	}
-	if _, ok := err.(*SigningKeyNotFound); !ok {
+	var signingKeyNotFound *SigningKeyNotFound
+	if !errors.As(err, &signingKeyNotFound) {
 		return err
 	}
 	d.log.Info("trying to create signing key")

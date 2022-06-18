@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/pkg/errors"
-
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
@@ -32,7 +30,7 @@ var _ MeshGatewayInspectClient = &httpMeshGatewayInspectClient{}
 func (h *httpMeshGatewayInspectClient) InspectDataplanes(ctx context.Context, mesh, name string) (api_server_types.GatewayDataplanesInspectEntryList, error) {
 	resUrl, err := url.Parse(fmt.Sprintf("/meshes/%s/meshgateways/%s/dataplanes", mesh, name))
 	if err != nil {
-		return api_server_types.GatewayDataplanesInspectEntryList{}, errors.Wrap(err, "could not construct the url")
+		return api_server_types.GatewayDataplanesInspectEntryList{}, fmt.Errorf("could not construct the url: %w", err)
 	}
 	req, err := http.NewRequest("GET", resUrl.String(), nil)
 	if err != nil {
@@ -43,7 +41,7 @@ func (h *httpMeshGatewayInspectClient) InspectDataplanes(ctx context.Context, me
 		return api_server_types.GatewayDataplanesInspectEntryList{}, err
 	}
 	if statusCode != 200 {
-		return api_server_types.GatewayDataplanesInspectEntryList{}, errors.Errorf("(%d): %s", statusCode, string(b))
+		return api_server_types.GatewayDataplanesInspectEntryList{}, fmt.Errorf("(%d): %s", statusCode, string(b))
 	}
 	response := &api_server_types.GatewayDataplanesInspectEntryList{}
 	if err := json.Unmarshal(b, &response); err != nil {

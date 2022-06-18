@@ -5,12 +5,13 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
-
-	"github.com/pkg/errors"
+	"fmt"
 )
 
-const rsaPrivateBlockType = "RSA PRIVATE KEY"
-const rsaPublicBlockType = "RSA PUBLIC KEY"
+const (
+	rsaPrivateBlockType = "RSA PRIVATE KEY"
+	rsaPublicBlockType  = "RSA PUBLIC KEY"
+)
 
 func FromPrivateKeyToPEMBytes(key *rsa.PrivateKey) ([]byte, error) {
 	block := pem.Block{
@@ -48,7 +49,7 @@ func FromPrivateKeyPEMBytesToPublicKeyPEMBytes(b []byte) ([]byte, error) {
 func FromPEMBytesToPrivateKey(b []byte) (*rsa.PrivateKey, error) {
 	block, _ := pem.Decode(b)
 	if block.Type != rsaPrivateBlockType {
-		return nil, errors.Errorf("invalid key encoding %q", block.Type)
+		return nil, fmt.Errorf("invalid key encoding %q", block.Type)
 	}
 	return x509.ParsePKCS1PrivateKey(block.Bytes)
 }
@@ -56,7 +57,7 @@ func FromPEMBytesToPrivateKey(b []byte) (*rsa.PrivateKey, error) {
 func FromPEMBytesToPublicKey(b []byte) (*rsa.PublicKey, error) {
 	block, _ := pem.Decode(b)
 	if block.Type != rsaPublicBlockType {
-		return nil, errors.Errorf("invalid key encoding %q", block.Type)
+		return nil, fmt.Errorf("invalid key encoding %q", block.Type)
 	}
 	return x509.ParsePKCS1PublicKey(block.Bytes)
 }

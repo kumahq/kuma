@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/pkg/errors"
-
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
@@ -34,7 +32,7 @@ var _ InspectEnvoyProxyClient = &httpInspectEnvoyProxyClient{}
 func (h *httpInspectEnvoyProxyClient) ConfigDump(ctx context.Context, rk core_model.ResourceKey) ([]byte, error) {
 	resUrl, err := h.buildURL(rk)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not construct the url")
+		return nil, fmt.Errorf("could not construct the url: %w", err)
 	}
 	req, err := http.NewRequest("GET", resUrl.String(), nil)
 	if err != nil {
@@ -45,7 +43,7 @@ func (h *httpInspectEnvoyProxyClient) ConfigDump(ctx context.Context, rk core_mo
 		return nil, err
 	}
 	if statusCode != 200 {
-		return nil, errors.Errorf("(%d): %s", statusCode, string(b))
+		return nil, fmt.Errorf("(%d): %s", statusCode, string(b))
 	}
 	return b, nil
 }

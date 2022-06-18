@@ -1,7 +1,7 @@
 package v1alpha1
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
 
 	"github.com/kumahq/kuma/api/generic"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -24,7 +24,7 @@ func (x *ZoneEgressInsight) UpdateSubscription(s generic.Subscription) error {
 	}
 	discoverySubscription, ok := s.(*DiscoverySubscription)
 	if !ok {
-		return errors.Errorf("invalid type %T for ZoneEgressInsight", s)
+		return fmt.Errorf("invalid type %T for ZoneEgressInsight", s)
 	}
 	i, old := x.GetSubscription(discoverySubscription.Id)
 	if old != nil {

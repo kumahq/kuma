@@ -1,9 +1,8 @@
 package events
 
 import (
+	"errors"
 	"sync"
-
-	"github.com/pkg/errors"
 )
 
 func NewEventBus() *EventBus {

@@ -1,9 +1,9 @@
 package errors
 
 import (
+	"errors"
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
@@ -12,13 +12,11 @@ import (
 func FormatErrorWrapper(fn func(*cobra.Command, []string) error) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		if err := fn(cmd, args); err != nil {
-			cause := errors.Cause(err)
-			switch typedErr := cause.(type) {
-			case *types.Error:
+			var typedErr *types.Error
+			if errors.As(err, &typedErr) {
 				return formatApiServerError(typedErr)
-			default:
-				return err
 			}
+			return err
 		}
 		return nil
 	}

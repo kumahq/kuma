@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/pkg/errors"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
@@ -41,7 +40,7 @@ func ReconcileLabelledObject(
 
 	ownedList, err := registry.NewList(ownedType)
 	if err != nil {
-		return errors.Wrapf(err, "could not create list of owned %T", ownedType)
+		return fmt.Errorf("could not create list of owned %T: %w", ownedType, err)
 	}
 
 	if err := client.List(ctx, ownedList, labels); err != nil {
@@ -75,14 +74,14 @@ func ReconcileLabelledObject(
 		existing.SetSpec(ownedSpec)
 
 		if err := client.Update(ctx, existing); err != nil {
-			return errors.Wrapf(err, "could not update owned %T", ownedType)
+			return fmt.Errorf("could not update owned %T: %w", ownedType, err)
 		}
 		return nil
 	}
 
 	owned, err := registry.NewObject(ownedType)
 	if err != nil {
-		return errors.Wrapf(err, "could not get new %T from registry", ownedType)
+		return fmt.Errorf("could not get new %T from registry: %w", ownedType, err)
 	}
 
 	owned.SetMesh(ownerMesh)
@@ -98,7 +97,7 @@ func ReconcileLabelledObject(
 	owned.SetSpec(ownedSpec)
 
 	if err := client.Create(ctx, owned); err != nil {
-		return errors.Wrapf(err, "could not create owned %T", ownedType)
+		return fmt.Errorf("could not create owned %T: %w", ownedType, err)
 	}
 
 	return nil

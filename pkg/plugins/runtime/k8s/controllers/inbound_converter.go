@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -127,7 +126,7 @@ func InboundInterfacesFor(zone string, pod *kube_core.Pod, services []*kube_core
 
 	if len(ifaces) == 0 {
 		if len(services) > 0 {
-			return nil, errors.Errorf("A service that selects pod %s was found, but it doesn't match any container ports.", pod.GetName())
+			return nil, fmt.Errorf("A service that selects pod %s was found, but it doesn't match any container ports.", pod.GetName())
 		}
 
 		ifaces = append(ifaces, inboundForServiceless(zone, pod)...)

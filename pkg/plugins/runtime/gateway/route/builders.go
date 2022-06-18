@@ -7,7 +7,6 @@ import (
 
 	envoy_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -66,7 +65,7 @@ func (f RouteMustConfigureFunc) Configure(r *envoy_config_route.Route) error {
 func DestinationClusterName(d *Destination, c *envoy_cluster_v3.Cluster) (string, error) {
 	serviceName := d.Destination[mesh_proto.ServiceTag]
 	if serviceName == "" {
-		return "", errors.Errorf("missing %s tag", mesh_proto.ServiceTag)
+		return "", fmt.Errorf("missing %s tag", mesh_proto.ServiceTag)
 	}
 
 	// If cluster is splitting the target service with selector tags,

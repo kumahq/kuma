@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/cmd"
@@ -30,7 +29,7 @@ func newInspectZoneIngressCmd(pctx *cmd.RootContext) *cobra.Command {
 
 			client, err := pctx.CurrentInspectEnvoyProxyClient(mesh.ZoneIngressResourceTypeDescriptor)
 			if err != nil {
-				return errors.Wrap(err, "failed to create a zoneingress inspect client")
+				return fmt.Errorf("failed to create a zoneingress inspect client: %w", err)
 			}
 			name := args[0]
 			bytes, err := client.ConfigDump(context.Background(), core_model.ResourceKey{Name: name, Mesh: core_model.NoMesh})

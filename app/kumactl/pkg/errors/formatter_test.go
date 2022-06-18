@@ -1,9 +1,11 @@
 package errors_test
 
 import (
+	"errors"
+	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	kumactl_errors "github.com/kumahq/kuma/app/kumactl/pkg/errors"
@@ -11,7 +13,6 @@ import (
 )
 
 var _ = Describe("Formatter test", func() {
-
 	type testCase struct {
 		err error
 		msg string
@@ -51,10 +52,10 @@ var _ = Describe("Formatter test", func() {
 * mesh: cannot be empty`,
 		}),
 		Entry("kuma api error even when it is wrapped", testCase{
-			err: errors.Wrap(&types.Error{
+			err: fmt.Errorf("failed: %w", &types.Error{
 				Title:   "Could not get the resource",
 				Details: "Internal Server Error",
-			}, "failed"),
+			}),
 			msg: `Could not get the resource (Internal Server Error)`,
 		}),
 		Entry("unknown error", testCase{
@@ -75,5 +76,4 @@ var _ = Describe("Formatter test", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 	})
-
 })

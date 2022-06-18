@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"fmt"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -11,14 +12,12 @@ import (
 	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 
 	. "github.com/kumahq/kuma/pkg/plugins/ca/provided"
 	util_tls "github.com/kumahq/kuma/pkg/tls"
 )
 
 var _ = Describe("ValidateCaCert()", func() {
-
 	It("should accept proper CA certificates", func() {
 		// when
 		cert, err := os.ReadFile(filepath.Join("testdata", "ca.pem"))
@@ -42,13 +41,13 @@ var _ = Describe("ValidateCaCert()", func() {
 	NewSelfSignedCert := func(newTemplate func() *x509.Certificate) (*util_tls.KeyPair, error) {
 		key, err := rsa.GenerateKey(rand.Reader, 2048)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to generate a private key")
+			return nil, fmt.Errorf("failed to generate a private key: %w", err)
 		}
 		template := newTemplate()
 		template.PublicKey = key.Public()
 		cert, err := x509.CreateCertificate(rand.Reader, template, template, key.Public(), key)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to sign X509 certificate")
+			return nil, fmt.Errorf("failed to sign X509 certificate: %w", err)
 		}
 		return util_tls.ToKeyPair(key, cert)
 	}

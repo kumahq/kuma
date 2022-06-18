@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"text/template"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/cmd"
@@ -62,7 +61,7 @@ func newInspectDataplaneCmd(pctx *cmd.RootContext) *cobra.Command {
 			if configDump {
 				client, err := pctx.CurrentInspectEnvoyProxyClient(mesh.DataplaneResourceTypeDescriptor)
 				if err != nil {
-					return errors.Wrap(err, "failed to create a dataplane inspect client")
+					return fmt.Errorf("failed to create a dataplane inspect client: %w", err)
 				}
 				bytes, err := client.ConfigDump(context.Background(), core_model.ResourceKey{Name: name, Mesh: pctx.CurrentMesh()})
 				if err != nil {
@@ -73,7 +72,7 @@ func newInspectDataplaneCmd(pctx *cmd.RootContext) *cobra.Command {
 			} else {
 				client, err := pctx.CurrentDataplaneInspectClient()
 				if err != nil {
-					return errors.Wrap(err, "failed to create a dataplane inspect client")
+					return fmt.Errorf("failed to create a dataplane inspect client: %w", err)
 				}
 				entryList, err := client.InspectPolicies(context.Background(), pctx.CurrentMesh(), name)
 				if err != nil {

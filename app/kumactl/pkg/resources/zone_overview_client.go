@@ -2,9 +2,8 @@ package resources
 
 import (
 	"context"
+	"fmt"
 	"net/http"
-
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/plugins/resources/remote"
@@ -35,7 +34,7 @@ func (d *httpZoneOverviewClient) List(ctx context.Context) (*system.ZoneOverview
 		return nil, err
 	}
 	if statusCode != 200 {
-		return nil, errors.Errorf("(%d): %s", statusCode, string(b))
+		return nil, fmt.Errorf("(%d): %s", statusCode, string(b))
 	}
 	overviews := system.ZoneOverviewResourceList{}
 	if err := remote.UnmarshalList(b, &overviews); err != nil {

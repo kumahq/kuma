@@ -3,8 +3,7 @@ package tokens
 import (
 	"context"
 	"crypto/rsa"
-
-	"github.com/pkg/errors"
+	"errors"
 
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 )

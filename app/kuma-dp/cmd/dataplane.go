@@ -1,10 +1,10 @@
 package cmd
 
 import (
+	"fmt"
 	"io"
 	"os"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
@@ -30,7 +30,7 @@ func readResource(cmd *cobra.Command, r *kuma_dp.DataplaneRuntime) (model.Resour
 		}
 	default:
 		if b, err = os.ReadFile(r.ResourcePath); err != nil {
-			return nil, errors.Wrap(err, "error while reading provided file")
+			return nil, fmt.Errorf("error while reading provided file: %w", err)
 		}
 	}
 

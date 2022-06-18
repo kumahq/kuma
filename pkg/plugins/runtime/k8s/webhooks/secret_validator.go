@@ -2,9 +2,10 @@ package webhooks
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 
-	"github.com/pkg/errors"
 	admissionv1 "k8s.io/api/admission/v1"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -59,7 +60,8 @@ func (v *SecretValidator) handleUpdate(ctx context.Context, req admission.Reques
 	}
 
 	if err := v.validate(ctx, secret, oldSecret); err != nil {
-		if verr, ok := err.(*validators.ValidationError); ok {
+		var verr *validators.ValidationError
+		if errors.As(err, &verr) {
 			return convertValidationErrorOf(*verr, secret, secret)
 		}
 		return admission.Denied(err.Error())
@@ -80,7 +82,8 @@ func (v *SecretValidator) handleDelete(ctx context.Context, req admission.Reques
 	}
 	if secret.Type == common_k8s.MeshSecretType {
 		if err := v.Validator.ValidateDelete(ctx, req.Name, meshOfSecret(secret)); err != nil {
-			if verr, ok := err.(*validators.ValidationError); ok {
+			var verr *validators.ValidationError
+			if errors.As(err, &verr) {
 				return convertValidationErrorOf(*verr, secret, secret)
 			}
 			return admission.Denied(err.Error())
@@ -112,7 +115,7 @@ func (v *SecretValidator) validateMeshSecret(ctx context.Context, verr *validato
 	}
 	if err := v.Client.Get(ctx, key, &mesh); err != nil {
 		if !kube_apierrs.IsNotFound(err) {
-			return errors.Wrap(err, "could not fetch mesh")
+			return fmt.Errorf("could not fetch mesh: %w", err)
 		}
 	}
 

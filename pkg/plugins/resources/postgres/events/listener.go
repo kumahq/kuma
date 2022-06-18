@@ -2,8 +2,7 @@ package events
 
 import (
 	"encoding/json"
-
-	"github.com/pkg/errors"
+	"errors"
 
 	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/kumahq/kuma/pkg/core"

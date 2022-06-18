@@ -2,9 +2,10 @@ package secrets
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
@@ -53,7 +54,7 @@ func (s *meshCaProvider) Get(ctx context.Context, mesh *core_mesh.MeshResource) 
 
 	caManager, exist := s.caManagers[backend.Type]
 	if !exist {
-		return nil, nil, errors.Errorf("CA manager of type %s not exist", backend.Type)
+		return nil, nil, fmt.Errorf("CA manager of type %s not exist", backend.Type)
 	}
 
 	var certs [][]byte
@@ -66,7 +67,7 @@ func (s *meshCaProvider) Get(ctx context.Context, mesh *core_mesh.MeshResource) 
 		certs, err = caManager.GetRootCert(ctx, mesh.GetMeta().GetName(), backend)
 	}()
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "could not get root certs")
+		return nil, nil, fmt.Errorf("could not get root certs: %w", err)
 	}
 
 	return &core_xds.CaSecret{

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
@@ -34,7 +33,7 @@ func NewGetResourcesCmd(pctx *kumactl_cmd.RootContext, desc model.ResourceTypeDe
 				currentMesh = ""
 			}
 			if err := rs.List(context.Background(), resources, core_store.ListByMesh(currentMesh), core_store.ListByPage(pctx.ListContext.Args.Size, pctx.ListContext.Args.Offset)); err != nil {
-				return errors.Wrapf(err, "failed to list "+string(desc.Name))
+				return fmt.Errorf("failed to list %s: %w", string(desc.Name), err)
 			}
 
 			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {

@@ -1,10 +1,11 @@
 package listeners
 
 import (
+	"errors"
+
 	envoy_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
-	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/kumahq/kuma/pkg/xds/envoy"

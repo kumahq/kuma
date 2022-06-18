@@ -1,7 +1,8 @@
 package k8s
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_client_scheme "k8s.io/client-go/kubernetes/scheme"
@@ -16,19 +17,19 @@ import (
 func NewScheme() (*kube_runtime.Scheme, error) {
 	s := kube_runtime.NewScheme()
 	if err := kube_client_scheme.AddToScheme(s); err != nil {
-		return nil, errors.Wrapf(err, "could not add client resources to scheme")
+		return nil, fmt.Errorf("could not add client resources to scheme: %w", err)
 	}
 	if err := mesh_k8s.AddToScheme(s); err != nil {
-		return nil, errors.Wrapf(err, "could not add %q to scheme", mesh_k8s.GroupVersion)
+		return nil, fmt.Errorf("could not add %q to scheme: %w", mesh_k8s.GroupVersion, err)
 	}
 	if err := k8scnicncfio.AddToScheme(s); err != nil {
-		return nil, errors.Wrapf(err, "could not add %q to scheme", k8scnicncfio.GroupVersion)
+		return nil, fmt.Errorf("could not add %q to scheme: %w", k8scnicncfio.GroupVersion, err)
 	}
 	if err := apiextensionsv1.AddToScheme(s); err != nil {
-		return nil, errors.Wrapf(err, "could not add %q to scheme", apiextensionsv1.SchemeGroupVersion)
+		return nil, fmt.Errorf("could not add %q to scheme: %w", apiextensionsv1.SchemeGroupVersion, err)
 	}
 	if err := gatewayapi.Install(s); err != nil {
-		return nil, errors.Wrapf(err, "could not add %q to scheme", gatewayapi.SchemeGroupVersion)
+		return nil, fmt.Errorf("could not add %q to scheme: %w", gatewayapi.SchemeGroupVersion, err)
 	}
 	if err := policies.AddToScheme(s); err != nil {
 		return nil, err

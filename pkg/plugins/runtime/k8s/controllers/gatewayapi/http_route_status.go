@@ -2,9 +2,9 @@ package gatewayapi
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
-	"github.com/pkg/errors"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -21,7 +21,7 @@ func (r *HTTPRouteReconciler) updateStatus(ctx context.Context, route *gatewayap
 		if kube_apierrs.IsNotFound(err) {
 			return nil
 		}
-		return errors.Wrap(err, "unable to update status subresource")
+		return fmt.Errorf("unable to update status subresource: %w", err)
 	}
 
 	return nil

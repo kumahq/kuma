@@ -2,9 +2,10 @@ package webhooks
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
-	"k8s.io/api/admission/v1"
+	v1 "k8s.io/api/admission/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
@@ -63,7 +64,8 @@ func (h *DataplaneValidator) ValidateCreate(ctx context.Context, req admission.R
 	}
 
 	if err := h.validator.ValidateCreate(ctx, core_model.MetaToResourceKey(coreRes.GetMeta()), coreRes, mesh); err != nil {
-		if kumaErr, ok := err.(*validators.ValidationError); ok {
+		var kumaErr *validators.ValidationError
+		if errors.As(err, &kumaErr) {
 			return convertSpecValidationError(kumaErr, k8sRes)
 		}
 		return admission.Denied(err.Error())
@@ -96,7 +98,8 @@ func (h *DataplaneValidator) ValidateUpdate(ctx context.Context, req admission.R
 	}
 
 	if err := h.validator.ValidateUpdate(ctx, coreRes, mesh); err != nil {
-		if kumaErr, ok := err.(*validators.ValidationError); ok {
+		var kumaErr *validators.ValidationError
+		if errors.As(err, &kumaErr) {
 			return convertSpecValidationError(kumaErr, k8sRes)
 		}
 		return admission.Denied(err.Error())

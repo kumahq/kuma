@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/spiffe/go-spiffe/spiffe"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -36,20 +35,20 @@ func WithExpirationTime(expiration time.Duration) CertOptsFn {
 func NewWorkloadCert(ca util_tls.KeyPair, mesh string, tags mesh_proto.MultiValueTagSet, certOpts ...CertOptsFn) (*util_tls.KeyPair, error) {
 	caPrivateKey, caCert, err := loadKeyPair(ca)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to load CA key pair")
+		return nil, fmt.Errorf("failed to load CA key pair: %w", err)
 	}
 
 	workloadKey, err := util_rsa.GenerateKey(util_rsa.DefaultKeySize)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to generate a private key")
+		return nil, fmt.Errorf("failed to generate a private key: %w", err)
 	}
 	template, err := newWorkloadTemplate(mesh, tags, workloadKey.Public(), certOpts...)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to generate X509 certificate template")
+		return nil, fmt.Errorf("failed to generate X509 certificate template: %w", err)
 	}
 	workloadCert, err := x509.CreateCertificate(rand.Reader, template, caCert, workloadKey.Public(), caPrivateKey)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to generate X509 certificate")
+		return nil, fmt.Errorf("failed to generate X509 certificate: %w", err)
 	}
 	return util_tls.ToKeyPair(workloadKey, workloadCert)
 }
@@ -68,7 +67,7 @@ func newWorkloadTemplate(trustDomain string, tags mesh_proto.MultiValueTagSet, p
 			uri := fmt.Sprintf("kuma://%s/%s", tag, value)
 			u, err := url.Parse(uri)
 			if err != nil {
-				return nil, errors.Wrap(err, "invalid Kuma URI")
+				return nil, fmt.Errorf("invalid Kuma URI: %w", err)
 			}
 			uris = append(uris, u)
 		}
@@ -125,11 +124,11 @@ func newSerialNumber() (*big.Int, error) {
 func loadKeyPair(pair util_tls.KeyPair) (crypto.PrivateKey, *x509.Certificate, error) {
 	root, err := tls.X509KeyPair(pair.CertPEM, pair.KeyPEM)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to parse TLS key pair")
+		return nil, nil, fmt.Errorf("failed to parse TLS key pair: %w", err)
 	}
 	rootCert, err := x509.ParseCertificate(root.Certificate[0])
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to parse X509 certificate")
+		return nil, nil, fmt.Errorf("failed to parse X509 certificate: %w", err)
 	}
 	return root.PrivateKey, rootCert, nil
 }

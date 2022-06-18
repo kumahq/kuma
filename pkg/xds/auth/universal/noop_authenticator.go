@@ -2,8 +2,7 @@ package universal
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
+	"fmt"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -14,8 +13,7 @@ func NewNoopAuthenticator() auth.Authenticator {
 	return &noopAuthenticator{}
 }
 
-type noopAuthenticator struct {
-}
+type noopAuthenticator struct{}
 
 var _ auth.Authenticator = &noopAuthenticator{}
 
@@ -28,6 +26,6 @@ func (u *noopAuthenticator) Authenticate(ctx context.Context, resource model.Res
 	case *core_mesh.ZoneEgressResource:
 		return nil
 	default:
-		return errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
+		return fmt.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}
 }

@@ -8,8 +8,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 const (
@@ -49,7 +47,7 @@ func (t ProxyType) IsValid() error {
 	case DataplaneProxyType, IngressProxyType, EgressProxyType:
 		return nil
 	}
-	return errors.Errorf("%s is not a valid proxy type", t)
+	return fmt.Errorf("%s is not a valid proxy type", t)
 }
 
 type InboundInterface struct {
@@ -125,7 +123,7 @@ func (n *Dataplane_Networking) GetInboundInterface(service string) (*InboundInte
 		iface := n.ToInboundInterface(inbound)
 		return &iface, nil
 	}
-	return nil, errors.Errorf("Dataplane has no Inbound Interface for service %q", service)
+	return nil, fmt.Errorf("Dataplane has no Inbound Interface for service %q", service)
 }
 
 func (n *Dataplane_Networking) GetInboundInterfaces() []InboundInterface {

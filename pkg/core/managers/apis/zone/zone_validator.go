@@ -2,8 +2,7 @@ package zone
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
+	"fmt"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -24,7 +23,7 @@ func (v *Validator) ValidateDelete(ctx context.Context, name string) error {
 			// there is no information about Online/Offline status
 			return nil
 		}
-		return errors.Wrap(err, "unable to get ZoneInsight")
+		return fmt.Errorf("unable to get ZoneInsight: %w", err)
 	}
 	if zi.Spec.IsOnline() {
 		validationErr.AddViolation("zone", "unable to delete Zone, Zone CP is still connected, please shut it down first")

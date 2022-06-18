@@ -2,9 +2,9 @@ package admin
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -44,13 +44,13 @@ func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.R
 		ResourceMesh: proxy.GetMeta().GetMesh(), // should be empty for ZoneIngress/ZoneEgress
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not send XDSConfigRequest")
+		return nil, fmt.Errorf("could not send XDSConfigRequest: %w", err)
 	}
 
 	defer k.streams.DeleteWatch(zone, reqId)
 	ch := make(chan *mesh_proto.XDSConfigResponse)
 	if err := k.streams.WatchResponse(zone, reqId, ch); err != nil {
-		return nil, errors.Wrapf(err, "could not watch the response")
+		return nil, fmt.Errorf("could not watch the response: %w", err)
 	}
 
 	select {
@@ -58,7 +58,7 @@ func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.R
 		return nil, errors.New("timeout")
 	case resp := <-ch:
 		if resp.GetError() != "" {
-			return nil, errors.Errorf("error response from Zone CP: %s", resp.GetError())
+			return nil, fmt.Errorf("error response from Zone CP: %s", resp.GetError())
 		}
 		return resp.GetConfig(), nil
 	}

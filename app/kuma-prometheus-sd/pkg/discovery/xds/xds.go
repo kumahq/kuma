@@ -2,9 +2,9 @@ package xds
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 
@@ -24,7 +24,7 @@ func NewDiscoverer(config common.DiscoveryConfig, log logr.Logger) (discovery.Di
 	case common.V1:
 		factory = v1.NewFactory()
 	default:
-		return nil, errors.Errorf("invalid MADS apiVersion %s", config.ApiVersion)
+		return nil, fmt.Errorf("invalid MADS apiVersion %s", config.ApiVersion)
 	}
 
 	return &discoverer{
@@ -49,7 +49,7 @@ func (d *discoverer) Run(ctx context.Context, ch chan<- []*targetgroup.Group) {
 					if err, ok := e.(error); ok {
 						errCh <- err
 					} else {
-						errCh <- errors.Errorf("%v", e)
+						errCh <- fmt.Errorf("%v", e)
 					}
 				}
 			}()

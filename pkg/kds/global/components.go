@@ -2,10 +2,9 @@ package global
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -29,9 +28,7 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-var (
-	kdsGlobalLog = core.Log.WithName("kds-global")
-)
+var kdsGlobalLog = core.Log.WithName("kds-global")
 
 func Setup(rt runtime.Runtime) (err error) {
 	if rt.Config().Mode != config_core.Global {
@@ -108,7 +105,7 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, kubeFactory resources
 				// KubernetesStore parses Name and considers substring after the last dot as a Namespace's Name.
 				kubeObject, err := kubeFactory.NewObject(rs.NewItem())
 				if err != nil {
-					return errors.Wrap(err, "could not convert object")
+					return fmt.Errorf("could not convert object: %w", err)
 				}
 				if kubeObject.Scope() == k8s_model.ScopeNamespace {
 					util.AddSuffixToNames(rs.GetItems(), "default")

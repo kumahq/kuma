@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -30,9 +31,7 @@ const (
 	grpcKeepAliveTime        = 15 * time.Second
 )
 
-var (
-	log = core.Log.WithName("mads-server")
-)
+var log = core.Log.WithName("mads-server")
 
 // muxServer is a runtime component.Component that
 // multiplexes all MADs resources over HTTP and gRPC
@@ -51,9 +50,7 @@ type GrpcService interface {
 	RegisterWithGrpcServer(server *grpc.Server)
 }
 
-var (
-	_ component.Component = &muxServer{}
-)
+var _ component.Component = &muxServer{}
 
 func (s *muxServer) createGRPCServer() *grpc.Server {
 	grpcOptions := []grpc.ServerOption{
@@ -123,8 +120,8 @@ func (s *muxServer) Start(stop <-chan struct{}) error {
 	go func() {
 		defer close(errChanGrpc)
 		if err := grpcS.Serve(grpcL); err != nil {
-			switch err {
-			case cmux.ErrServerClosed:
+			switch {
+			case errors.Is(err, cmux.ErrServerClosed):
 				log.Info("shutting down a GRPC Server")
 			default:
 				log.Error(err, "could not start an GRPC Server")
@@ -140,8 +137,8 @@ func (s *muxServer) Start(stop <-chan struct{}) error {
 	go func() {
 		defer close(errChanHttp)
 		if err := httpS.Serve(httpL); err != nil {
-			switch err {
-			case cmux.ErrServerClosed:
+			switch {
+			case errors.Is(err, cmux.ErrServerClosed):
 				log.Info("shutting down an HTTP Server")
 			default:
 				log.Error(err, "could not start an HTTP Server")

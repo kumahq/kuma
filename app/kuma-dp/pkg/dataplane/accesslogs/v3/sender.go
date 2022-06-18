@@ -1,11 +1,11 @@
 package v3
 
 import (
+	"fmt"
 	"net"
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -21,7 +21,7 @@ type sender struct {
 func (s *sender) Connect() error {
 	conn, err := net.DialTimeout("tcp", s.address, defaultConnectTimeout)
 	if err != nil {
-		return errors.Wrapf(err, "failed to connect to a TCP logging backend: %s", s.address)
+		return fmt.Errorf("failed to connect to a TCP logging backend: %s: %w", s.address, err)
 	}
 	s.log.Info("connected to TCP logging backend", "address", s.address)
 	s.conn = conn
@@ -30,7 +30,7 @@ func (s *sender) Connect() error {
 
 func (s *sender) Send(record string) error {
 	_, err := s.conn.Write([]byte(record))
-	return errors.Wrapf(err, "failed to send a log entry to a TCP logging backend: %s", s.address)
+	return fmt.Errorf("failed to send a log entry to a TCP logging backend: %s: %w", s.address, err)
 }
 
 func (s *sender) Close() error {

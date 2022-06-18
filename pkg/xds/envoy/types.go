@@ -1,12 +1,12 @@
 package envoy
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
 
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
-	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 )
@@ -119,10 +119,12 @@ func WithExternalService(isExternalService bool) NewClusterOpt {
 	})
 }
 
-type Tags map[string]string
-type TagsSlice []Tags
-type TagKeys []string
-type TagKeysSlice []TagKeys
+type (
+	Tags         map[string]string
+	TagsSlice    []Tags
+	TagKeys      []string
+	TagKeysSlice []TagKeys
+)
 
 func (t TagsSlice) ToTagKeysSlice() TagKeysSlice {
 	out := []TagKeys{}

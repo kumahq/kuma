@@ -2,9 +2,8 @@ package callbacks
 
 import (
 	"context"
+	"fmt"
 	"sync"
-
-	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -53,7 +52,7 @@ func (d *DataplaneLifecycle) register(ctx context.Context, streamID core_xds.Str
 		log.Info("registering dataplane")
 		if err := d.registerDataplane(ctx, dp); err != nil {
 			log.Info("cannot register dataplane", "reason", err.Error())
-			return errors.Wrap(err, "could not register dataplane passed in kuma-dp run")
+			return fmt.Errorf("could not register dataplane passed in kuma-dp run: %w", err)
 		}
 	case md.GetProxyType() == mesh_proto.IngressProxyType && md.GetZoneIngressResource() != nil:
 		zi := md.GetZoneIngressResource()
@@ -61,7 +60,7 @@ func (d *DataplaneLifecycle) register(ctx context.Context, streamID core_xds.Str
 		log.Info("registering zone ingress")
 		if err := d.registerZoneIngress(ctx, zi); err != nil {
 			log.Info("cannot register zone ingress", "reason", err.Error())
-			return errors.Wrap(err, "could not register zone ingress passed in kuma-dp run")
+			return fmt.Errorf("could not register zone ingress passed in kuma-dp run: %w", err)
 		}
 	case md.GetProxyType() == mesh_proto.EgressProxyType && md.GetZoneEgressResource() != nil:
 		zi := md.GetZoneEgressResource()
@@ -69,7 +68,7 @@ func (d *DataplaneLifecycle) register(ctx context.Context, streamID core_xds.Str
 		log.Info("registering zone egress")
 		if err := d.registerZoneEgress(ctx, zi); err != nil {
 			log.Info("cannot register zone egress", "reason", err.Error())
-			return errors.Wrap(err, "could not register zone egress passed in kuma-dp run")
+			return fmt.Errorf("could not register zone egress passed in kuma-dp run: %w", err)
 		}
 	default:
 		return nil
@@ -140,7 +139,7 @@ func (d *DataplaneLifecycle) registerDataplane(ctx context.Context, dp *core_mes
 	existing := core_mesh.NewDataplaneResource()
 	return manager.Upsert(d.resManager, key, existing, func(resource model.Resource) error {
 		if err := d.validateUpsert(ctx, existing); err != nil {
-			return errors.Wrap(err, "you are trying to override existing dataplane to which you don't have an access.")
+			return fmt.Errorf("you are trying to override existing dataplane to which you don't have an access.: %w", err)
 		}
 		return existing.SetSpec(dp.GetSpec())
 	})
@@ -171,7 +170,7 @@ func (d *DataplaneLifecycle) registerZoneIngress(ctx context.Context, zi *core_m
 	existing := core_mesh.NewZoneIngressResource()
 	return manager.Upsert(d.resManager, key, existing, func(resource model.Resource) error {
 		if err := d.validateUpsert(ctx, existing); err != nil {
-			return errors.Wrap(err, "you are trying to override existing zone ingress to which you don't have an access.")
+			return fmt.Errorf("you are trying to override existing zone ingress to which you don't have an access.: %w", err)
 		}
 		return existing.SetSpec(zi.GetSpec())
 	})
@@ -182,7 +181,7 @@ func (d *DataplaneLifecycle) registerZoneEgress(ctx context.Context, ze *core_me
 	existing := core_mesh.NewZoneEgressResource()
 	return manager.Upsert(d.resManager, key, existing, func(resource model.Resource) error {
 		if err := d.validateUpsert(ctx, existing); err != nil {
-			return errors.Wrap(err, "you are trying to override existing zone egress to which you don't have an access.")
+			return fmt.Errorf("you are trying to override existing zone egress to which you don't have an access.: %w", err)
 		}
 		return existing.SetSpec(ze.GetSpec())
 	})

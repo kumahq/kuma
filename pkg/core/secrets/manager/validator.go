@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/ca"
@@ -65,11 +63,11 @@ func (s *secretValidator) ValidateDelete(ctx context.Context, name string, mesh 
 func (s *secretValidator) secretUsedByMTLSBackend(name string, mesh string, backend *mesh_proto.CertificateAuthorityBackend) (bool, error) {
 	caManager := s.caManagers[backend.Type]
 	if caManager == nil { // this should be caught earlier by validator
-		return false, errors.Errorf("manager of type %q does not exist", backend.Type)
+		return false, fmt.Errorf("manager of type %q does not exist", backend.Type)
 	}
 	secrets, err := caManager.UsedSecrets(mesh, backend)
 	if err != nil {
-		return false, errors.Wrapf(err, "could not retrieve secrets in use by backend %q", backend.Name)
+		return false, fmt.Errorf("could not retrieve secrets in use by backend %q: %w", backend.Name, err)
 	}
 	for _, secret := range secrets {
 		if secret == name {

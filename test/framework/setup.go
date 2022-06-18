@@ -9,7 +9,6 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
-	"github.com/pkg/errors"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -250,7 +249,7 @@ func zoneRelatedResource(
 		case AppEgress:
 			return uniCluster.CreateZoneEgress(app, dpName, publicAddress, dpYAML, token, false)
 		default:
-			return errors.Errorf("unsupported appType: %s", appType)
+			return fmt.Errorf("unsupported appType: %s", appType)
 		}
 	}
 }
@@ -458,8 +457,7 @@ func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 
 		serviceProbe := ""
 		if opts.serviceProbe {
-			serviceProbe =
-				`    serviceProbe:
+			serviceProbe = `    serviceProbe:
       tcp: {}`
 		}
 

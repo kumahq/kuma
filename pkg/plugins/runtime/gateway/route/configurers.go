@@ -1,6 +1,8 @@
 package route
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -9,7 +11,6 @@ import (
 	envoy_config_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/golang/protobuf/ptypes/any"
-	"github.com/pkg/errors"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -273,7 +274,7 @@ func RoutePerFilterConfig(filterName string, filterConfig *any.Any) RouteConfigu
 		m := r.GetTypedPerFilterConfig()
 
 		if _, ok := m[filterName]; ok {
-			return errors.Errorf("duplicate %q per-filter config for %s",
+			return fmt.Errorf("duplicate %q per-filter config for %s",
 				filterConfig.GetTypeUrl(), filterName)
 		}
 
@@ -313,7 +314,7 @@ func RouteActionRedirect(redirect *Redirection) RouteConfigurer {
 		case 308:
 			r.GetRedirect().ResponseCode = envoy_config_route.RedirectAction_PERMANENT_REDIRECT
 		default:
-			return errors.Errorf("redirect status code %d is not supported", redirect.Status)
+			return fmt.Errorf("redirect status code %d is not supported", redirect.Status)
 		}
 
 		return nil
@@ -358,7 +359,8 @@ func RouteActionForward(destinations []Destination) RouteConfigurer {
 					WeightedClusters: &envoy_config_route.WeightedCluster{
 						Clusters:    weights,
 						TotalWeight: util_proto.UInt32(total),
-					}},
+					},
+				},
 			},
 		}
 
@@ -539,7 +541,7 @@ func VirtualHostRoute(route *RouteBuilder) envoy_routes.VirtualHostBuilderOpt {
 
 			routeProto, ok := resource.(*envoy_config_route.Route)
 			if !ok {
-				return errors.Errorf("attempt to attach %T as type %q",
+				return fmt.Errorf("attempt to attach %T as type %q",
 					resource, "envoy_config_route.Route")
 			}
 

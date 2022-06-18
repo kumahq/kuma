@@ -24,13 +24,12 @@ package testenvconfig
 
 import (
 	"encoding"
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 // varInfo maintains information about the configuration variable
@@ -93,8 +92,10 @@ func binaryUnmarshaler(field reflect.Value) (b encoding.BinaryUnmarshaler) {
 	return b
 }
 
-var gatherRegexp = regexp.MustCompile("([^A-Z]+|[A-Z]+[^A-Z]+|[A-Z]+)")
-var acronymRegexp = regexp.MustCompile("([A-Z]+)([A-Z][^A-Z]+)")
+var (
+	gatherRegexp  = regexp.MustCompile("([^A-Z]+|[A-Z]+[^A-Z]+|[A-Z]+)")
+	acronymRegexp = regexp.MustCompile("([A-Z]+)([A-Z][^A-Z]+)")
+)
 
 // GatherInfo gathers information about the specified struct
 func GatherInfo(prefix string, spec interface{}) ([]varInfo, error) {

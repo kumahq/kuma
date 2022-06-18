@@ -1,12 +1,12 @@
 package universal_standalone
 
 import (
+	"errors"
 	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
@@ -459,7 +459,7 @@ conf:
 					return err
 				}
 				if resp.Received.Path != "/new-rewrite-prefix" {
-					return errors.Errorf("expected %s, got %s", "/new-rewrite-prefix", resp.Received.Path)
+					return fmt.Errorf("expected %s, got %s", "/new-rewrite-prefix", resp.Received.Path)
 				}
 				return nil
 			}, "30s", "500ms").Should(Succeed())
@@ -470,7 +470,7 @@ conf:
 					return err
 				}
 				if resp.Received.Path != "/regex-test" {
-					return errors.Errorf("expected %s, got %s", "/regex-test", resp.Received.Path)
+					return fmt.Errorf("expected %s, got %s", "/regex-test", resp.Received.Path)
 				}
 				return nil
 			}, "30s", "500ms").Should(Succeed())
@@ -523,7 +523,7 @@ conf:
 				}
 				host := resp.Received.Headers["Host"]
 				if len(host) < 1 || host[0] != "modified-host" {
-					return errors.Errorf("expected %s, got %s", "modified-host", host)
+					return fmt.Errorf("expected %s, got %s", "modified-host", host)
 				}
 				return nil
 			}, "30s", "500ms").Should(Succeed())
@@ -535,7 +535,7 @@ conf:
 				}
 				host := resp.Received.Headers["Host"]
 				if len(host) < 1 || host[0] != "path" {
-					return errors.Errorf("expected %s, got %s", "path", host)
+					return fmt.Errorf("expected %s, got %s", "path", host)
 				}
 				return nil
 			}, "30s", "500ms").Should(Succeed())
@@ -586,14 +586,14 @@ conf:
 				}
 				header := resp.Received.Headers["X-Custom-Header"]
 				if len(header) < 1 || header[0] != "xyz" {
-					return errors.Errorf("expected %s, got %s", "xyz", header)
+					return fmt.Errorf("expected %s, got %s", "xyz", header)
 				}
 				if len(resp.Received.Headers["Header-To-Remove"]) > 0 {
 					return errors.New("expected 'Header-To-Remove' to not be present")
 				}
 				header = resp.Received.Headers["X-Multiple-Values"]
 				if len(header) < 2 || header[0] != "abc" || header[1] != "xyz" {
-					return errors.Errorf("expected %s, got %s", "abc,xyz", header)
+					return fmt.Errorf("expected %s, got %s", "abc,xyz", header)
 				}
 				return nil
 			}, "30s", "500ms").Should(Succeed())
@@ -606,7 +606,7 @@ conf:
 				}
 				header := resp.Received.Headers["X-Custom-Header"]
 				if len(header) < 1 || header[0] != "xyz" {
-					return errors.Errorf("expected %s, got %s", "xyz", header)
+					return fmt.Errorf("expected %s, got %s", "xyz", header)
 				}
 				return nil
 			}, "30s", "500ms").Should(Succeed())

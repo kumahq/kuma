@@ -9,7 +9,6 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 
 	config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
@@ -35,7 +34,7 @@ func NewStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig) (
 	}
 
 	if err := registerMetrics(metrics, db); err != nil {
-		return nil, errors.Wrapf(err, "could not register DB metrics")
+		return nil, fmt.Errorf("could not register DB metrics: %w", err)
 	}
 
 	return &postgresResourceStore{
@@ -48,7 +47,7 @@ func (r *postgresResourceStore) Create(_ context.Context, resource model.Resourc
 
 	bytes, err := proto.ToJSON(resource.GetSpec())
 	if err != nil {
-		return errors.Wrap(err, "failed to convert spec to json")
+		return fmt.Errorf("failed to convert spec to json: %w", err)
 	}
 
 	var ownerName *string
@@ -70,7 +69,7 @@ func (r *postgresResourceStore) Create(_ context.Context, resource model.Resourc
 		if strings.Contains(err.Error(), duplicateKeyErrorMsg) {
 			return store.ErrorResourceAlreadyExists(resource.Descriptor().Name, opts.Name, opts.Mesh)
 		}
-		return errors.Wrapf(err, "failed to execute query: %s", statement)
+		return fmt.Errorf("failed to execute query: %s: %w", statement, err)
 	}
 
 	resource.SetMeta(&resourceMetaObject{
@@ -94,7 +93,7 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 	version, err := strconv.Atoi(resource.GetMeta().GetVersion())
 	newVersion := version + 1
 	if err != nil {
-		return errors.Wrap(err, "failed to convert meta version to int")
+		return fmt.Errorf("failed to convert meta version to int: %w", err)
 	}
 	statement := `UPDATE resources SET spec=$1, version=$2, modification_time=$3 WHERE name=$4 AND mesh=$5 AND type=$6 AND version=$7;`
 	result, err := r.db.Exec(
@@ -108,7 +107,7 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 		version,
 	)
 	if err != nil {
-		return errors.Wrapf(err, "failed to execute query %s", statement)
+		return fmt.Errorf("failed to execute query %s: %w", statement, err)
 	}
 	if rows, _ := result.RowsAffected(); rows != 1 { // error ignored, postgres supports RowsAffected()
 		return store.ErrorResourceConflict(resource.Descriptor().Name, resource.GetMeta().GetName(), resource.GetMeta().GetMesh())
@@ -131,7 +130,7 @@ func (r *postgresResourceStore) Delete(_ context.Context, resource model.Resourc
 	statement := `DELETE FROM resources WHERE name=$1 AND type=$2 AND mesh=$3`
 	result, err := r.db.Exec(statement, opts.Name, resource.Descriptor().Name, opts.Mesh)
 	if err != nil {
-		return errors.Wrapf(err, "failed to execute query: %s", statement)
+		return fmt.Errorf("failed to execute query: %s: %w", statement, err)
 	}
 	if rows, _ := result.RowsAffected(); rows == 0 { // error ignored, postgres supports RowsAffected()
 		return store.ErrorResourceNotFound(resource.Descriptor().Name, opts.Name, opts.Mesh)
@@ -154,11 +153,11 @@ func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, 
 		return store.ErrorResourceNotFound(resource.Descriptor().Name, opts.Name, opts.Mesh)
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to execute query: %s", statement)
+		return fmt.Errorf("failed to execute query: %s: %w", statement, err)
 	}
 
 	if err := proto.FromJSON([]byte(spec), resource.GetSpec()); err != nil {
-		return errors.Wrap(err, "failed to convert json to spec")
+		return fmt.Errorf("failed to convert json to spec: %w", err)
 	}
 
 	meta := &resourceMetaObject{
@@ -192,7 +191,7 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 
 	rows, err := r.db.Query(statement, statementArgs...)
 	if err != nil {
-		return errors.Wrapf(err, "failed to execute query: %s", statement)
+		return fmt.Errorf("failed to execute query: %s: %w", statement, err)
 	}
 	defer rows.Close()
 
@@ -217,12 +216,12 @@ func rowToItem(resources model.ResourceList, rows *sql.Rows) (model.Resource, er
 	var version int
 	var creationTime, modificationTime time.Time
 	if err := rows.Scan(&name, &mesh, &spec, &version, &creationTime, &modificationTime); err != nil {
-		return nil, errors.Wrap(err, "failed to retrieve elements from query")
+		return nil, fmt.Errorf("failed to retrieve elements from query: %w", err)
 	}
 
 	item := resources.NewItem()
 	if err := proto.FromJSON([]byte(spec), item.GetSpec()); err != nil {
-		return nil, errors.Wrap(err, "failed to convert json to spec")
+		return nil, fmt.Errorf("failed to convert json to spec: %w", err)
 	}
 
 	meta := &resourceMetaObject{

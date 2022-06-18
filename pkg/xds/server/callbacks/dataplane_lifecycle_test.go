@@ -2,6 +2,7 @@ package callbacks_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -10,7 +11,6 @@ import (
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -36,7 +36,6 @@ func (s *staticAuthenticator) Authenticate(ctx context.Context, resource core_mo
 var _ xds_auth.Authenticator = &staticAuthenticator{}
 
 var _ = Describe("Dataplane Lifecycle", func() {
-
 	var authenticator *staticAuthenticator
 	var resManager core_manager.ResourceManager
 	var callbacks envoy_server.Callbacks
@@ -339,6 +338,5 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		}
 
 		wg.Wait()
-
 	})
 })

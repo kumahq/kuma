@@ -2,8 +2,7 @@ package provided
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
+	"fmt"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/ca"
@@ -62,7 +61,7 @@ func (p *providedCaManager) ValidateBackend(ctx context.Context, mesh string, ba
 func (p *providedCaManager) getCa(ctx context.Context, mesh string, backend *mesh_proto.CertificateAuthorityBackend) (ca.KeyPair, error) {
 	cfg := &config.ProvidedCertificateAuthorityConfig{}
 	if err := util_proto.ToTyped(backend.Conf, cfg); err != nil {
-		return ca.KeyPair{}, errors.Wrap(err, "could not convert backend config to ProvidedCertificateAuthorityConfig")
+		return ca.KeyPair{}, fmt.Errorf("could not convert backend config to ProvidedCertificateAuthorityConfig: %w", err)
 	}
 	key, err := p.dataSourceLoader.Load(ctx, mesh, cfg.Key)
 	if err != nil {
@@ -86,7 +85,7 @@ func (p *providedCaManager) EnsureBackends(ctx context.Context, mesh string, bac
 func (p *providedCaManager) UsedSecrets(mesh string, backend *mesh_proto.CertificateAuthorityBackend) ([]string, error) {
 	cfg := &config.ProvidedCertificateAuthorityConfig{}
 	if err := util_proto.ToTyped(backend.Conf, cfg); err != nil {
-		return nil, errors.Wrap(err, "could not convert backend config to ProvidedCertificateAuthorityConfig")
+		return nil, fmt.Errorf("could not convert backend config to ProvidedCertificateAuthorityConfig: %w", err)
 	}
 	var secrets []string
 	if cfg.GetCert().GetSecret() != "" {
@@ -101,7 +100,7 @@ func (p *providedCaManager) UsedSecrets(mesh string, backend *mesh_proto.Certifi
 func (p *providedCaManager) GetRootCert(ctx context.Context, mesh string, backend *mesh_proto.CertificateAuthorityBackend) ([]ca.Cert, error) {
 	meshCa, err := p.getCa(ctx, mesh, backend)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to load CA key pair for Mesh %q and backend %q", mesh, backend.Name)
+		return nil, fmt.Errorf("failed to load CA key pair for Mesh %q and backend %q: %w", mesh, backend.Name, err)
 	}
 	return []ca.Cert{meshCa.CertPEM}, nil
 }
@@ -109,7 +108,7 @@ func (p *providedCaManager) GetRootCert(ctx context.Context, mesh string, backen
 func (p *providedCaManager) GenerateDataplaneCert(ctx context.Context, mesh string, backend *mesh_proto.CertificateAuthorityBackend, tags mesh_proto.MultiValueTagSet) (ca.KeyPair, error) {
 	meshCa, err := p.getCa(ctx, mesh, backend)
 	if err != nil {
-		return ca.KeyPair{}, errors.Wrapf(err, "failed to load CA key pair for Mesh %q and backend %q", mesh, backend.Name)
+		return ca.KeyPair{}, fmt.Errorf("failed to load CA key pair for Mesh %q and backend %q: %w", mesh, backend.Name, err)
 	}
 
 	var opts []ca_issuer.CertOptsFn
@@ -122,7 +121,7 @@ func (p *providedCaManager) GenerateDataplaneCert(ctx context.Context, mesh stri
 	}
 	keyPair, err := ca_issuer.NewWorkloadCert(meshCa, mesh, tags, opts...)
 	if err != nil {
-		return ca.KeyPair{}, errors.Wrapf(err, "failed to generate a Workload Identity cert for tags %q in Mesh %q using backend %q", tags.String(), mesh, backend.Name)
+		return ca.KeyPair{}, fmt.Errorf("failed to generate a Workload Identity cert for tags %q in Mesh %q using backend %q: %w", tags.String(), mesh, backend.Name, err)
 	}
 	return *keyPair, nil
 }

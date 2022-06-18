@@ -1,7 +1,8 @@
 package config
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
@@ -19,7 +20,7 @@ func newConfigControlPlanesRemoveCmd(pctx *kumactl_cmd.RootContext) *cobra.Comma
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			cfg := pctx.Config()
 			if !cfg.RemoveControlPlane(args.name) {
-				return errors.Errorf("there is no Control Plane with name %q", args.name)
+				return fmt.Errorf("there is no Control Plane with name %q", args.name)
 			}
 			if err := pctx.SaveConfig(); err != nil {
 				return err

@@ -56,7 +56,12 @@ linters-settings:
       modules:
       - github.com/go-errors/errors:
           recommendations:
-          - github.com/pkg/errors
+          - fmt
+          - errors
+      - github.com/pkg/errors:
+          recommendations:
+          - fmt
+          - errors
   misspell:
     locale: US
     ignore-words:

@@ -1,9 +1,8 @@
 package gc
 
 import (
+	"fmt"
 	"time"
-
-	"github.com/pkg/errors"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -62,7 +61,7 @@ func setupFinalizer(rt runtime.Runtime) error {
 			system.ZoneInsightType,
 		}
 	default:
-		return errors.Errorf("unknown Kuma CP mode %s", rt.Config().Mode)
+		return fmt.Errorf("unknown Kuma CP mode %s", rt.Config().Mode)
 	}
 
 	finalizer, err := NewSubscriptionFinalizer(rt.ResourceManager(), newTicker, resourceTypes...)

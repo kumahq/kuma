@@ -2,8 +2,8 @@ package ratelimits
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -23,12 +23,12 @@ type RateLimitMatcher struct {
 func (m *RateLimitMatcher) Match(ctx context.Context, dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource) (core_xds.RateLimitsMap, error) {
 	ratelimits := &core_mesh.RateLimitResourceList{}
 	if err := m.ResourceManager.List(ctx, ratelimits, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
-		return core_xds.RateLimitsMap{}, errors.Wrap(err, "could not retrieve ratelimits")
+		return core_xds.RateLimitsMap{}, fmt.Errorf("could not retrieve ratelimits: %w", err)
 	}
 
 	additionalInbounds, err := manager_dataplane.AdditionalInbounds(dataplane, mesh)
 	if err != nil {
-		return core_xds.RateLimitsMap{}, errors.Wrap(err, "could not fetch additional inbounds")
+		return core_xds.RateLimitsMap{}, fmt.Errorf("could not fetch additional inbounds: %w", err)
 	}
 	inbounds := append(dataplane.Spec.GetNetworking().GetInbound(), additionalInbounds...)
 	return BuildRateLimitMap(dataplane, inbounds, splitPoliciesBySourceMatch(ratelimits.Items)), nil

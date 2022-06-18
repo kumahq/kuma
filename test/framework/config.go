@@ -6,8 +6,6 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/pkg/errors"
-
 	core_config "github.com/kumahq/kuma/pkg/config"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
@@ -72,7 +70,7 @@ func (c E2eConfig) Validate() error {
 	if Config.KumactlBin != "" {
 		_, err := os.Stat(Config.KumactlBin)
 		if os.IsNotExist(err) {
-			return errors.Wrapf(err, "unable to find kumactl at:%s", Config.KumactlBin)
+			return fmt.Errorf("unable to find kumactl at:%s: %w", Config.KumactlBin, err)
 		}
 	}
 	return nil

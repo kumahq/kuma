@@ -2,6 +2,7 @@ package v3
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -9,7 +10,6 @@ import (
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/xds"
@@ -120,7 +120,7 @@ func (r *resourceWarmingForcer) forceNewEndpointsVersion(nodeID string) error {
 	endpoints.Version = core.NewUUID()
 	snapshot.Resources[types.Endpoint] = endpoints
 	if err := r.cache.SetSnapshot(context.TODO(), nodeID, snapshot); err != nil {
-		return errors.Wrap(err, "could not set snapshot")
+		return fmt.Errorf("could not set snapshot: %w", err)
 	}
 	return nil
 }

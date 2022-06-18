@@ -3,9 +3,8 @@ package resources
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
-
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/api-server/types"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
@@ -35,7 +34,7 @@ func (d *httpApiServerClient) GetVersion(ctx context.Context) (*types.IndexRespo
 		return nil, err
 	}
 	if statusCode != 200 {
-		return nil, errors.Errorf("(%d): %s", statusCode, string(b))
+		return nil, fmt.Errorf("(%d): %s", statusCode, string(b))
 	}
 	version := types.IndexResponse{}
 	if err := json.Unmarshal(b, &version); err != nil {

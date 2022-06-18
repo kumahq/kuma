@@ -3,9 +3,9 @@
 package install
 
 import (
+	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma/app/kumactl/cmd/install/context"
@@ -27,7 +27,7 @@ func newInstallMetrics(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			installMetricsFS := kumactl_data.InstallDeprecatedMetricsFS()
 			templateFiles, err := data.ReadFiles(installMetricsFS)
 			if err != nil {
-				return errors.Wrap(err, "Failed to read template files")
+				return fmt.Errorf("Failed to read template files: %w", err)
 			}
 			yamlTemplateFiles := templateFiles.Filter(func(file data.File) bool {
 				return strings.HasSuffix(file.Name, ".yaml")
@@ -82,18 +82,18 @@ func newInstallMetrics(pctx *kumactl_cmd.RootContext) *cobra.Command {
 
 			renderedFiles, err := renderFilesWithFilter(yamlTemplateFiles, args, simpleTemplateRenderer, filter)
 			if err != nil {
-				return errors.Wrap(err, "Failed to render template files")
+				return fmt.Errorf("Failed to render template files: %w", err)
 			}
 
 			sortedResources, err := k8s.SortResourcesByKind(renderedFiles)
 			if err != nil {
-				return errors.Wrap(err, "Failed to sort resources by kind")
+				return fmt.Errorf("Failed to sort resources by kind: %w", err)
 			}
 
 			singleFile := data.JoinYAML(sortedResources)
 
 			if _, err := cmd.OutOrStdout().Write(singleFile.Data); err != nil {
-				return errors.Wrap(err, "Failed to output rendered resources")
+				return fmt.Errorf("Failed to output rendered resources: %w", err)
 			}
 			return nil
 		},

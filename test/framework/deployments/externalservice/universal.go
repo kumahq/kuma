@@ -9,7 +9,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/shell"
 	"github.com/gruntwork-io/terratest/modules/testing"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/ssh"
@@ -28,16 +27,22 @@ type universalDeployment struct {
 
 var _ Deployment = &universalDeployment{}
 
-var UniversalAppEchoServer = ExternalServiceCommand(80, "Echo 80")
-var UniversalAppEchoServer81 = ExternalServiceCommand(81, "Echo 81")
-var UniversalAppHttpsEchoServer = Command([]string{"ncat",
-	"-lk", "-p", "443",
-	"--ssl", "--ssl-cert", "/server-cert.pem", "--ssl-key", "/server-key.pem",
-	"--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n HTTPS Echo\n\"'"})
+var (
+	UniversalAppEchoServer      = ExternalServiceCommand(80, "Echo 80")
+	UniversalAppEchoServer81    = ExternalServiceCommand(81, "Echo 81")
+	UniversalAppHttpsEchoServer = Command([]string{
+		"ncat",
+		"-lk", "-p", "443",
+		"--ssl", "--ssl-cert", "/server-cert.pem", "--ssl-key", "/server-key.pem",
+		"--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n HTTPS Echo\n\"'",
+	})
+)
 
 var ExternalServiceCommand = func(port uint32, message string) Command {
-	return []string{"ncat", "-lk", "-p", fmt.Sprintf("%d", port), "--sh-exec",
-		fmt.Sprintf("'echo \"HTTP/1.1 200 OK\n\n%s\n\"'", message)}
+	return []string{
+		"ncat", "-lk", "-p", fmt.Sprintf("%d", port), "--sh-exec",
+		fmt.Sprintf("'echo \"HTTP/1.1 200 OK\n\n%s\n\"'", message),
+	}
 }
 
 func (u *universalDeployment) Name() string {
@@ -162,7 +167,7 @@ func (u *universalDeployment) Delete(cluster framework.Cluster) error {
 		func() (string, error) {
 			_, err := docker.StopE(cluster.GetTesting(), []string{u.container}, &docker.StopOptions{Time: 1})
 			if err == nil {
-				return "Container still running", errors.Errorf("Container still running")
+				return "Container still running", fmt.Errorf("Container still running")
 			}
 			return "Container stopped", nil
 		})

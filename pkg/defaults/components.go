@@ -2,10 +2,10 @@ package defaults
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 	"go.uber.org/multierr"
 
@@ -92,7 +92,7 @@ func (d *defaultsComponent) Start(stop <-chan struct{}) error {
 			if err != nil {
 				// Retry this operation since on Kubernetes Mesh needs to be validated and set default values.
 				// This code can execute before the control plane is ready therefore hooks can fail.
-				errChan <- errors.Wrap(err, "could not create the default Mesh")
+				errChan <- fmt.Errorf("could not create the default Mesh: %w", err)
 			}
 		}()
 	}

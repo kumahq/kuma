@@ -2,6 +2,7 @@ package manager
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -173,6 +174,6 @@ func MeshNotFound(meshName string) error {
 }
 
 func IsMeshNotFound(err error) bool {
-	_, ok := err.(*MeshNotFoundError)
-	return ok
+	var meshNotFoundError *MeshNotFoundError
+	return errors.As(err, &meshNotFoundError)
 }

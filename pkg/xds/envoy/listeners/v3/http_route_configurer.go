@@ -1,11 +1,12 @@
 package v3
 
 import (
+	"errors"
+
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	"github.com/pkg/errors"
 
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 )
@@ -62,8 +63,7 @@ func (c *HttpDynamicRouteConfigurer) Configure(filterChain *envoy_listener.Filte
 
 // HttpScopedRouteConfigurer configures a set of scoped routes into the
 // HttpConnectionManager in the filter chain.
-type HttpScopedRouteConfigurer struct {
-}
+type HttpScopedRouteConfigurer struct{}
 
 var _ FilterChainConfigurer = &HttpScopedRouteConfigurer{}
 

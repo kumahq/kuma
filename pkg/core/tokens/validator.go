@@ -2,10 +2,11 @@ package tokens
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/pkg/errors"
 
 	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
 )
@@ -43,20 +44,22 @@ func (j *jwtTokenValidator) ParseWithValidation(ctx context.Context, rawToken To
 		case jwt.SigningMethodRS256.Name:
 			return j.keyAccessor.GetPublicKey(ctx, serialNumber)
 		default:
-			return nil, errors.Errorf("unknown token alg. Allowed algs are %s and %s", jwt.SigningMethodHS256.Name, jwt.SigningMethodRS256.Name)
+			return nil, fmt.Errorf("unknown token alg. Allowed algs are %s and %s", jwt.SigningMethodHS256.Name, jwt.SigningMethodRS256.Name)
 		}
 	})
 	if err != nil {
-		if verr, ok := err.(*jwt.ValidationError); ok { // jwt.ValidationError does not implement Unwrap() to just use errors.As
-			if singingKeyErr, ok := verr.Inner.(*SigningKeyNotFound); ok {
+		var verr *jwt.ValidationError
+		if errors.As(err, &verr) { // jwt.ValidationError does not implement Unwrap() to just use errors.As
+			var singingKeyErr *SigningKeyNotFound
+			if errors.As(verr.Inner, &singingKeyErr) {
 				return singingKeyErr
 			}
 		}
 		if j.storeType == store_config.MemoryStore {
-			return errors.Wrap(err, "could not parse token. kuma-cp runs with an in-memory database and its state isn't preserved between restarts."+
-				" Keep in mind that an in-memory database cannot be used with multiple instances of the control plane")
+			return fmt.Errorf("could not parse token. kuma-cp runs with an in-memory database and its state isn't preserved between restarts."+
+				" Keep in mind that an in-memory database cannot be used with multiple instances of the control plane: %w", err)
 		}
-		return errors.Wrap(err, "could not parse token")
+		return fmt.Errorf("could not parse token: %w", err)
 	}
 	if !token.Valid {
 		return errors.New("token is not valid")
@@ -64,7 +67,7 @@ func (j *jwtTokenValidator) ParseWithValidation(ctx context.Context, rawToken To
 
 	revoked, err := j.revocations.IsRevoked(ctx, claims.ID())
 	if err != nil {
-		return errors.Wrap(err, "could not check if the token is revoked")
+		return fmt.Errorf("could not check if the token is revoked: %w", err)
 	}
 	if revoked {
 		return errors.New("token is revoked")

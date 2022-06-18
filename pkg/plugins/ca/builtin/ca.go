@@ -5,11 +5,11 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"fmt"
 	"math/big"
 	"net/url"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/spiffe/go-spiffe/spiffe"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -38,11 +38,11 @@ func newRootCa(mesh string, rsaBits int, certOpts ...certOptsFn) (*core_ca.KeyPa
 	}
 	key, err := util_rsa.GenerateKey(rsaBits)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to generate a private key")
+		return nil, fmt.Errorf("failed to generate a private key: %w", err)
 	}
 	cert, err := newCACert(key, mesh, certOpts...)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to generate X509 certificate")
+		return nil, fmt.Errorf("failed to generate X509 certificate: %w", err)
 	}
 	return util_tls.ToKeyPair(key, cert)
 }

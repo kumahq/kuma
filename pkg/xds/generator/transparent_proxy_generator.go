@@ -1,7 +1,7 @@
 package generator
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
@@ -24,8 +24,7 @@ const (
 	inPassThroughIPv6 = "::6"
 )
 
-type TransparentProxyGenerator struct {
-}
+type TransparentProxyGenerator struct{}
 
 func (tpg TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
@@ -55,7 +54,8 @@ func (tpg TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mo
 
 func (_ TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *model.Proxy,
 	outboundName, inboundName, allIP, inPassThroughIP string,
-	redirectPortOutbound, redirectPortInbound uint32) (*model.ResourceSet, error) {
+	redirectPortOutbound, redirectPortInbound uint32,
+) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
 
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
@@ -70,7 +70,7 @@ func (_ TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *mode
 			Configure(envoy_clusters.PassThroughCluster(outboundName)).
 			Build()
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not generate outbound cluster: %s", outboundName)
+			return nil, fmt.Errorf("could not generate outbound cluster: %s: %w", outboundName, err)
 		}
 	}
 
@@ -89,7 +89,7 @@ func (_ TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *mode
 		Configure(envoy_listeners.OriginalDstForwarder()).
 		Build()
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not generate listener: %s", outboundName)
+		return nil, fmt.Errorf("could not generate listener: %s: %w", outboundName, err)
 	}
 
 	inboundPassThroughCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
@@ -97,7 +97,7 @@ func (_ TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *mode
 		Configure(envoy_clusters.UpstreamBindConfig(inPassThroughIP, 0)).
 		Build()
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not generate cluster: %s", inboundName)
+		return nil, fmt.Errorf("could not generate cluster: %s: %w", inboundName, err)
 	}
 
 	inboundListener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
@@ -107,7 +107,7 @@ func (_ TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *mode
 		Configure(envoy_listeners.OriginalDstForwarder()).
 		Build()
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not generate listener: %s", inboundName)
+		return nil, fmt.Errorf("could not generate listener: %s: %w", inboundName, err)
 	}
 
 	resources.Add(&model.Resource{

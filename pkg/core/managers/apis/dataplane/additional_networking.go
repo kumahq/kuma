@@ -1,7 +1,7 @@
 package dataplane
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -22,7 +22,7 @@ func AdditionalInbounds(dataplane *core_mesh.DataplaneResource, mesh *core_mesh.
 func PrometheusInbound(dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource) (*mesh_proto.Dataplane_Networking_Inbound, error) {
 	cfg, err := dataplane.GetPrometheusConfig(mesh)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not parse prometheus config")
+		return nil, fmt.Errorf("could not parse prometheus config: %w", err)
 	} else if cfg != nil { // metrics are on
 		inbound := &mesh_proto.Dataplane_Networking_Inbound{
 			Address:     dataplane.Spec.GetNetworking().GetAddress(),

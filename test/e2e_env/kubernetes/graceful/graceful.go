@@ -11,7 +11,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/util/channels"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
@@ -142,7 +141,7 @@ spec:
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != 200 {
-			return errors.Errorf("status code: %d", resp.StatusCode)
+			return fmt.Errorf("status code: %d", resp.StatusCode)
 		}
 		_, err = io.Copy(ioutil.Discard, resp.Body)
 		return err

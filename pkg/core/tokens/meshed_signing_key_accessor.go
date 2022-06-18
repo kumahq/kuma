@@ -3,8 +3,7 @@ package tokens
 import (
 	"context"
 	"crypto/rsa"
-
-	"github.com/pkg/errors"
+	"fmt"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -52,7 +51,7 @@ func (s *meshedSigningKeyAccessor) getKeyBytes(ctx context.Context, serialNumber
 				Mesh:         s.mesh,
 			}
 		}
-		return nil, errors.Wrap(err, "could not retrieve signing key")
+		return nil, fmt.Errorf("could not retrieve signing key: %w", err)
 	}
 	return resource.Spec.GetData().GetValue(), nil
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,7 +43,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRule(
 	for _, match := range rule.Matches {
 		kumaMatch, err := gapiToKumaMatch(match)
 		if err != nil {
-			return mesh_proto.MeshGatewayRoute_HttpRoute_Rule{}, nil, errors.Wrap(err, "couldn't convert match")
+			return mesh_proto.MeshGatewayRoute_HttpRoute_Rule{}, nil, fmt.Errorf("couldn't convert match: %w", err)
 		}
 
 		matches = append(matches, kumaMatch)
@@ -87,7 +86,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRouteConf(
 	for _, rule := range route.Spec.Rules {
 		kumaRule, condition, err := r.gapiToKumaRule(ctx, mesh, route, rule)
 		if err != nil {
-			return nil, nil, errors.Wrap(err, "couldn't convert HTTPRoute to Kuma GatewayRoute")
+			return nil, nil, fmt.Errorf("couldn't convert HTTPRoute to Kuma GatewayRoute: %w", err)
 		}
 		if condition != nil {
 			return nil, []kube_meta.Condition{*condition}, nil
@@ -142,7 +141,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 	namespacedName := policyRef.NamespacedNameReferredTo()
 
 	if permitted, err := policy.IsReferencePermitted(ctx, r.Client, policyRef); err != nil {
-		return nil, nil, errors.Wrap(err, "couldn't determine if backend reference is permitted")
+		return nil, nil, fmt.Errorf("couldn't determine if backend reference is permitted: %w", err)
 	} else if !permitted {
 		return nil,
 			&kube_meta.Condition{

@@ -1,12 +1,12 @@
 package log
 
 import (
+	"fmt"
 	"io"
 	"os"
 
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -43,7 +43,7 @@ func ParseLogLevel(text string) (LogLevel, error) {
 	case "debug":
 		return DebugLevel, nil
 	default:
-		return OffLevel, errors.Errorf("unknown log level %q", text)
+		return OffLevel, fmt.Errorf("unknown log level %q", text)
 	}
 }
 
@@ -56,7 +56,8 @@ func NewLoggerWithRotation(level LogLevel, outputPath string, maxSize int, maxBa
 		Filename:   outputPath,
 		MaxSize:    maxSize,
 		MaxBackups: maxBackups,
-		MaxAge:     maxAge}, level)
+		MaxAge:     maxAge,
+	}, level)
 }
 
 func NewLoggerTo(destWriter io.Writer, level LogLevel) logr.Logger {

@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -13,7 +14,6 @@ import (
 	"time"
 
 	envoy_admin_v3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/ca"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -88,7 +88,7 @@ func (a *envoyAdminClient) buildHTTPClient(mesh, identifyingService string) (*ht
 							return nil
 						}
 					}
-					return errors.Errorf("could not find expected URI SAN %s", dpSpiffe)
+					return fmt.Errorf("could not find expected URI SAN %s", dpSpiffe)
 				},
 				// We disable builtin verification because
 				// 1) In first case, we don't have stable self-signed cert between instances of CP and we don't want to operate them.
@@ -119,7 +119,7 @@ func (a *envoyAdminClient) caCertPoolOfMeshMTLS(mesh string) (*x509.CertPool, er
 	}
 	caManager, ok := a.caManagers[backend.Type]
 	if !ok {
-		return nil, errors.Errorf("cannot find CA Manager for type %s", backend.Type)
+		return nil, fmt.Errorf("cannot find CA Manager for type %s", backend.Type)
 	}
 	rootCerts, err := caManager.GetRootCert(context.Background(), mesh, backend)
 	if err != nil {
@@ -159,12 +159,12 @@ func (a *envoyAdminClient) PostQuit(ctx context.Context, dataplane *core_mesh.Da
 		return nil // Envoy may not respond correctly for this request because it already started the shut-down process.
 	}
 	if err != nil {
-		return errors.Wrapf(err, "unable to send POST to %s", quitquitquit)
+		return fmt.Errorf("unable to send POST to %s: %w", quitquitquit, err)
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		return errors.Errorf("envoy response [%d %s] [%s]", response.StatusCode, response.Status, response.Body)
+		return fmt.Errorf("envoy response [%d %s] [%s]", response.StatusCode, response.Status, response.Body)
 	}
 
 	return nil
@@ -208,12 +208,12 @@ func (a *envoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.Reso
 
 	response, err := httpClient.Do(request)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to send GET to %s", "config_dump")
+		return nil, fmt.Errorf("unable to send GET to %s: %w", "config_dump", err)
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		return nil, errors.Errorf("envoy response [%d %s] [%s]", response.StatusCode, response.Status, response.Body)
+		return nil, fmt.Errorf("envoy response [%d %s] [%s]", response.StatusCode, response.Status, response.Body)
 	}
 
 	configDump, err := io.ReadAll(response.Body)

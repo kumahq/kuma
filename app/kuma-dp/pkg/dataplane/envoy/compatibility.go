@@ -1,8 +1,9 @@
 package envoy
 
 import (
+	"fmt"
+
 	"github.com/Masterminds/semver/v3"
-	"github.com/pkg/errors"
 )
 
 // EnvoyCompatibility is the description of envoy versions
@@ -15,13 +16,13 @@ var EnvoyCompatibility = "~1.21.1"
 func EnvoyVersionCompatible(envoyVersion string) (bool, error) {
 	ver, err := semver.NewVersion(envoyVersion)
 	if err != nil {
-		return false, errors.Wrapf(err, "unable to parse envoy version %s", envoyVersion)
+		return false, fmt.Errorf("unable to parse envoy version %s: %w", envoyVersion, err)
 	}
 
 	constraint, err := semver.NewConstraint(EnvoyCompatibility)
 	if err != nil {
 		// Programmer error
-		panic(errors.Wrapf(err, "Invalid envoy compatibility constraint %s", EnvoyCompatibility))
+		panic(fmt.Errorf("Invalid envoy compatibility constraint %s: %w", EnvoyCompatibility, err))
 	}
 
 	return constraint.Check(ver), nil

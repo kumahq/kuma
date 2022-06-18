@@ -7,18 +7,15 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"fmt"
 	"math/big"
 	"net"
 	"time"
 
-	"github.com/pkg/errors"
-
 	util_rsa "github.com/kumahq/kuma/pkg/util/rsa"
 )
 
-var (
-	DefaultValidityPeriod = 10 * 365 * 24 * time.Hour
-)
+var DefaultValidityPeriod = 10 * 365 * 24 * time.Hour
 
 type CertType string
 
@@ -42,7 +39,7 @@ var DefaultKeyType = RSAKeyType
 func NewSelfSignedCert(commonName string, certType CertType, keyType KeyType, hosts ...string) (KeyPair, error) {
 	key, err := keyType()
 	if err != nil {
-		return KeyPair{}, errors.Wrap(err, "failed to generate TLS key")
+		return KeyPair{}, fmt.Errorf("failed to generate TLS key: %w", err)
 	}
 
 	certBytes, err := generateCert(key, commonName, certType, hosts...)
@@ -68,7 +65,7 @@ func generateCert(signer crypto.Signer, commonName string, certType CertType, ho
 	}
 	certDerBytes, err := x509.CreateCertificate(rand.Reader, &csr, &csr, signer.Public(), signer)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to generate TLS certificate")
+		return nil, fmt.Errorf("failed to generate TLS certificate: %w", err)
 	}
 	return pemEncodeCert(certDerBytes)
 }
@@ -79,7 +76,7 @@ func newCert(commonName string, certType CertType, hosts ...string) (x509.Certif
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
-		return x509.Certificate{}, errors.Wrap(err, "failed to generate serial number")
+		return x509.Certificate{}, fmt.Errorf("failed to generate serial number: %w", err)
 	}
 	csr := x509.Certificate{
 		SerialNumber: serialNumber,
@@ -99,7 +96,7 @@ func newCert(commonName string, certType CertType, hosts ...string) (x509.Certif
 	case ClientCertType:
 		csr.ExtKeyUsage = append(csr.ExtKeyUsage, x509.ExtKeyUsageClientAuth)
 	default:
-		return x509.Certificate{}, errors.Errorf("invalid certificate type %q, expected either %q or %q",
+		return x509.Certificate{}, fmt.Errorf("invalid certificate type %q, expected either %q or %q",
 			certType, ServerCertType, ClientCertType)
 	}
 	for _, host := range hosts {

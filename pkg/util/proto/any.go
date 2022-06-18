@@ -1,12 +1,12 @@
 package proto
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
-	"github.com/pkg/errors"
 	proto2 "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 )
@@ -53,7 +53,7 @@ func MergeAnys(dst *any.Any, src *any.Any) (*any.Any, error) {
 		return src, nil
 	}
 	if src.TypeUrl != dst.TypeUrl {
-		return nil, errors.Errorf("type URL of dst %q is different than src %q", dst.TypeUrl, src.TypeUrl)
+		return nil, fmt.Errorf("type URL of dst %q is different than src %q", dst.TypeUrl, src.TypeUrl)
 	}
 
 	msgTypeName := strings.ReplaceAll(dst.TypeUrl, googleApis, "") // TypeURL in Any contains type.googleapis.com/ prefix, but in Proto registry it does not have this prefix.

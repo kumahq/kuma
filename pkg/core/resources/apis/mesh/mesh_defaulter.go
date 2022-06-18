@@ -1,7 +1,7 @@
 package mesh
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/proto"
@@ -13,7 +13,7 @@ func (mesh *MeshResource) Default() error {
 		if backend.GetType() == mesh_proto.MetricsPrometheusType {
 			cfg := mesh_proto.PrometheusMetricsBackendConfig{}
 			if err := proto.ToTyped(backend.GetConf(), &cfg); err != nil {
-				return errors.Wrap(err, "could not convert the backend")
+				return fmt.Errorf("could not convert the backend: %w", err)
 			}
 
 			if cfg.Port == 0 {
@@ -30,7 +30,7 @@ func (mesh *MeshResource) Default() error {
 
 			str, err := proto.ToStruct(&cfg)
 			if err != nil {
-				return errors.Wrap(err, "could not convert the backend")
+				return fmt.Errorf("could not convert the backend: %w", err)
 			}
 			mesh.Spec.Metrics.Backends[idx].Conf = str
 		}

@@ -2,8 +2,7 @@ package logs
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
+	"fmt"
 
 	"github.com/kumahq/kuma/pkg/core/policy"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -27,7 +26,7 @@ type TrafficLogsMatcher struct {
 func (m *TrafficLogsMatcher) Match(ctx context.Context, dataplane *core_mesh.DataplaneResource) (core_xds.TrafficLogMap, error) {
 	logs := &core_mesh.TrafficLogResourceList{}
 	if err := m.ResourceManager.List(ctx, logs, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
-		return nil, errors.Wrap(err, "could not retrieve traffic logs")
+		return nil, fmt.Errorf("could not retrieve traffic logs: %w", err)
 	}
 	return BuildTrafficLogMap(dataplane, logs.Items), nil
 }

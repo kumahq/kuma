@@ -2,8 +2,8 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/pkg/errors"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -32,7 +32,7 @@ func (r *MeshDefaultsReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 		if kube_apierrs.IsNotFound(err) {
 			return kube_ctrl.Result{}, nil
 		}
-		return kube_ctrl.Result{}, errors.Wrap(err, "could not get default mesh resources")
+		return kube_ctrl.Result{}, fmt.Errorf("could not get default mesh resources: %w", err)
 	}
 
 	// Before creating default policies for the mesh we want to ensure that this mesh wasn't processed before.
@@ -43,7 +43,7 @@ func (r *MeshDefaultsReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 	}
 
 	if err := defaults_mesh.EnsureDefaultMeshResources(ctx, r.ResourceManager, req.Name); err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "could not create default mesh resources")
+		return kube_ctrl.Result{}, fmt.Errorf("could not create default mesh resources: %w", err)
 	}
 
 	if mesh.GetMeta().(*k8s.KubernetesMetaAdapter).GetAnnotations() == nil {
@@ -51,7 +51,7 @@ func (r *MeshDefaultsReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 	}
 	mesh.GetMeta().(*k8s.KubernetesMetaAdapter).GetAnnotations()[common_k8s.K8sMeshDefaultsGenerated] = "true"
 	if err := r.ResourceManager.Update(ctx, mesh, store.ModifiedAt(core.Now())); err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "could not update default mesh resources")
+		return kube_ctrl.Result{}, fmt.Errorf("could not update default mesh resources: %w", err)
 	}
 	return kube_ctrl.Result{}, nil
 }

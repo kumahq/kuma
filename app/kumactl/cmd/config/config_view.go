@@ -1,7 +1,8 @@
 package config
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
@@ -18,7 +19,7 @@ func newConfigViewCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			cfg := pctx.Config()
 			contents, err := util_proto.ToYAML(cfg)
 			if err != nil {
-				return errors.Wrapf(err, "Cannot format configuration: %#v", cfg)
+				return fmt.Errorf("Cannot format configuration: %#v: %w", cfg, err)
 			}
 			cmd.Println(string(contents))
 			return nil

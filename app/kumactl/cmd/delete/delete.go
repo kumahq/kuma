@@ -2,10 +2,10 @@ package delete
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
@@ -36,10 +36,10 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 
 			desc, ok := byName[resourceTypeArg]
 			if !ok {
-				return errors.Errorf("unknown TYPE: %s. Allowed values: %s", resourceTypeArg, strings.Join(allNames, ", "))
+				return fmt.Errorf("unknown TYPE: %s. Allowed values: %s", resourceTypeArg, strings.Join(allNames, ", "))
 			}
 			if desc.ReadOnly {
-				return errors.Errorf("TYPE: %s is readOnly, can't use it for write action", resourceTypeArg)
+				return fmt.Errorf("TYPE: %s is readOnly, can't use it for write action", resourceTypeArg)
 			}
 
 			rs, err := pctx.CurrentResourceStore()
@@ -69,9 +69,9 @@ func deleteResource(name string, mesh string, desc model.ResourceTypeDescriptor,
 	deleteOptions := store.DeleteBy(model.ResourceKey{Mesh: mesh, Name: name})
 	if err := rs.Delete(context.Background(), resource, deleteOptions); err != nil {
 		if store.IsResourceNotFound(err) {
-			return errors.Errorf("there is no %s with name %q", desc.Name, name)
+			return fmt.Errorf("there is no %s with name %q", desc.Name, name)
 		}
-		return errors.Wrapf(err, "failed to delete %s with the name %q", desc.Name, name)
+		return fmt.Errorf("failed to delete %s with the name %q: %w", desc.Name, name, err)
 	}
 
 	return nil

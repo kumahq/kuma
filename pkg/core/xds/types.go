@@ -2,11 +2,11 @@ package xds
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -244,12 +244,15 @@ func (st *secretsTracker) RequestAllInOneCa() CaRequest {
 		meshNames: st.allMeshes,
 	}
 }
+
 func (st *secretsTracker) UsedIdentity() bool {
 	return st.identity
 }
+
 func (st *secretsTracker) UsedCas() map[string]struct{} {
 	return st.meshes
 }
+
 func (st *secretsTracker) UsedAllInOne() bool {
 	return st.allInOne
 }
@@ -363,7 +366,7 @@ func BuildProxyId(mesh, name string) *ProxyId {
 
 func ParseProxyIdFromString(id string) (*ProxyId, error) {
 	if id == "" {
-		return nil, errors.Errorf("Envoy ID must not be nil")
+		return nil, fmt.Errorf("Envoy ID must not be nil")
 	}
 	parts := strings.SplitN(id, ".", 2)
 	mesh := parts[0]

@@ -1,9 +1,9 @@
 package dp_server
 
 import (
+	"errors"
+	"fmt"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
 )
@@ -41,7 +41,7 @@ type DpServerAuthConfig struct {
 
 func (a *DpServerAuthConfig) Validate() error {
 	if a.Type != "" && a.Type != DpServerAuthNone && a.Type != DpServerAuthDpToken && a.Type != DpServerAuthServiceAccountToken {
-		return errors.Errorf("Type is invalid. Available values are: %q, %q, %q", DpServerAuthDpToken, DpServerAuthServiceAccountToken, DpServerAuthNone)
+		return fmt.Errorf("Type is invalid. Available values are: %q, %q, %q", DpServerAuthDpToken, DpServerAuthServiceAccountToken, DpServerAuthNone)
 	}
 	return nil
 }
@@ -54,7 +54,7 @@ func (a *DpServerConfig) Validate() error {
 		return errors.New("Port cannot be negative")
 	}
 	if err := a.Auth.Validate(); err != nil {
-		return errors.Wrap(err, "Auth is invalid")
+		return fmt.Errorf("Auth is invalid: %w", err)
 	}
 	return nil
 }
@@ -104,7 +104,7 @@ func (h *HdsConfig) Validate() error {
 		return errors.New("Interval must be greater than 0s")
 	}
 	if err := h.CheckDefaults.Validate(); err != nil {
-		return errors.Wrap(err, "Check is invalid")
+		return fmt.Errorf("Check is invalid: %w", err)
 	}
 	return nil
 }

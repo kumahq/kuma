@@ -1,9 +1,8 @@
 package service
 
 import (
+	"fmt"
 	"sync"
-
-	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 )
@@ -32,7 +31,7 @@ func (x *xdsConfigStreams) ResponseReceived(zone string, resp *mesh_proto.XDSCon
 	ch, ok := stream.watchForRequestId[resp.RequestId]
 	stream.Unlock()
 	if !ok {
-		return errors.Errorf("callback for request Id %s not found", resp.RequestId)
+		return fmt.Errorf("callback for request Id %s not found", resp.RequestId)
 	}
 	ch <- resp
 	return nil
@@ -58,7 +57,7 @@ func (x *xdsConfigStreams) zoneStream(zone string) (*xdsConfigStream, error) {
 	defer x.Unlock()
 	stream, ok := x.streamForZone[zone]
 	if !ok {
-		return nil, errors.Errorf("zone %s is not connected", zone)
+		return nil, fmt.Errorf("zone %s is not connected", zone)
 	}
 	return stream, nil
 }

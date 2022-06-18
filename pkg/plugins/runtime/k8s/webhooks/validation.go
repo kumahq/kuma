@@ -2,6 +2,7 @@ package webhooks
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -79,7 +80,8 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 		}
 
 		if err := coreRes.Validate(); err != nil {
-			if kumaErr, ok := err.(*validators.ValidationError); ok {
+			var kumaErr *validators.ValidationError
+			if errors.As(err, &kumaErr) {
 				// we assume that coreRes.Validate() returns validation errors of the spec
 				return convertSpecValidationError(kumaErr, k8sObj)
 			}

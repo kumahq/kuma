@@ -1,11 +1,12 @@
 package v3
 
 import (
+	"errors"
+	"fmt"
 	"io"
 	"sync/atomic"
 
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v3"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -49,7 +50,7 @@ func (s *accessLogServer) StreamAccessLogs(stream envoy_accesslog.AccessLogServi
 	for {
 		msg, err := stream.Recv()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				return nil
 			}
 			return err
@@ -62,7 +63,7 @@ func (s *accessLogServer) StreamAccessLogs(stream envoy_accesslog.AccessLogServi
 
 			handler, err = s.newHandler(log, msg)
 			if err != nil {
-				return errors.Wrap(err, "failed to initialize Access Logs stream")
+				return fmt.Errorf("failed to initialize Access Logs stream: %w", err)
 			}
 			defer handler.Close()
 		}

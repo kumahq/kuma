@@ -1,10 +1,11 @@
 package client
 
 import (
+	"errors"
+	"fmt"
 	"io"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 
 	model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
@@ -37,45 +38,45 @@ func (s *kdsSink) Receive() error {
 	for _, typ := range s.resourceTypes {
 		s.log.V(1).Info("sending DiscoveryRequest", "type", typ)
 		if err := s.kdsStream.DiscoveryRequest(typ); err != nil {
-			return errors.Wrap(err, "discovering failed")
+			return fmt.Errorf("discovering failed: %w", err)
 		}
 	}
 
 	for {
 		clusterID, rs, err := s.kdsStream.Receive()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				return nil
 			}
-			return errors.Wrap(err, "failed to receive a discovery response")
+			return fmt.Errorf("failed to receive a discovery response: %w", err)
 		}
 		s.log.V(1).Info("DiscoveryResponse received", "response", rs)
 
 		if s.callbacks == nil {
 			s.log.Info("no callback set, sending ACK", "type", string(rs.GetItemType()))
 			if err := s.kdsStream.ACK(string(rs.GetItemType())); err != nil {
-				if err == io.EOF {
+				if errors.Is(err, io.EOF) {
 					return nil
 				}
-				return errors.Wrap(err, "failed to ACK a discovery response")
+				return fmt.Errorf("failed to ACK a discovery response: %w", err)
 			}
 			continue
 		}
 		if err := s.callbacks.OnResourcesReceived(clusterID, rs); err != nil {
 			s.log.Info("error during callback received, sending NACK", "err", err)
 			if err := s.kdsStream.NACK(string(rs.GetItemType()), err); err != nil {
-				if err == io.EOF {
+				if errors.Is(err, io.EOF) {
 					return nil
 				}
-				return errors.Wrap(err, "failed to NACK a discovery response")
+				return fmt.Errorf("failed to NACK a discovery response: %w", err)
 			}
 		} else {
 			s.log.V(1).Info("sending ACK", "type", string(rs.GetItemType()))
 			if err := s.kdsStream.ACK(string(rs.GetItemType())); err != nil {
-				if err == io.EOF {
+				if errors.Is(err, io.EOF) {
 					return nil
 				}
-				return errors.Wrap(err, "failed to ACK a discovery response")
+				return fmt.Errorf("failed to ACK a discovery response: %w", err)
 			}
 		}
 	}

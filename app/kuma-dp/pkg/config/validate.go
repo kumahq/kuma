@@ -1,11 +1,12 @@
 package config
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"unicode"
 
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/pkg/errors"
 
 	util_files "github.com/kumahq/kuma/pkg/util/files"
 )
@@ -16,20 +17,20 @@ func ValidateTokenPath(path string) error {
 	}
 	empty, err := util_files.FileEmpty(path)
 	if err != nil {
-		return errors.Wrapf(err, "could not read file %s", path)
+		return fmt.Errorf("could not read file %s: %w", path, err)
 	}
 	if empty {
-		return errors.Errorf("token under file %s is empty", path)
+		return fmt.Errorf("token under file %s is empty", path)
 	}
 
 	rawToken, err := os.ReadFile(path)
 	if err != nil {
-		return errors.Wrapf(err, "could not read the token in the file %s", path)
+		return fmt.Errorf("could not read the token in the file %s: %w", path, err)
 	}
 
 	token, parts, err := new(jwt.Parser).ParseUnverified(string(rawToken), &jwt.MapClaims{})
 	if err != nil {
-		return errors.Wrap(err, "not valid JWT token. Can't parse it.")
+		return fmt.Errorf("not valid JWT token. Can't parse it.: %w", err)
 	}
 
 	if token.Method.Alg() == "" {

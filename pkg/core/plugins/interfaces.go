@@ -1,7 +1,7 @@
 package plugins
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
@@ -41,6 +41,7 @@ type BootstrapPlugin interface {
 
 // ResourceStorePlugin is responsible for instantiating a particular ResourceStore.
 type DbVersion = uint
+
 type ResourceStorePlugin interface {
 	Plugin
 	NewResourceStore(PluginContext, PluginConfig) (core_store.ResourceStore, error)

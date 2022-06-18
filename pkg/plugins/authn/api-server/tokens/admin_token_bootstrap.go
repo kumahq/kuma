@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -68,13 +67,13 @@ func (a *adminTokenBootstrap) generateTokenIfNotExist(ctx context.Context) error
 		return nil // already exists
 	}
 	if !core_store.IsResourceNotFound(err) {
-		return errors.Wrap(err, "could not check if token exist")
+		return fmt.Errorf("could not check if token exist: %w", err)
 	}
 
 	log.Info("Admin User Token not found. Generating.")
 	token, err := a.generateAdminToken(ctx)
 	if err != nil {
-		return errors.Wrap(err, "could not generate admin token")
+		return fmt.Errorf("could not generate admin token: %w", err)
 	}
 
 	log.Info("saving generated Admin User Token", "globalSecretName", AdminTokenKey.Name)

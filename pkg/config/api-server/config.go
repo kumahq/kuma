@@ -1,7 +1,8 @@
 package api_server
 
 import (
-	"github.com/pkg/errors"
+	"errors"
+	"fmt"
 
 	"github.com/kumahq/kuma/pkg/config"
 )
@@ -97,10 +98,10 @@ func (a *ApiServerConfig) Sanitize() {
 
 func (a *ApiServerConfig) Validate() error {
 	if err := a.HTTP.Validate(); err != nil {
-		return errors.Wrap(err, ".HTTP not valid")
+		return fmt.Errorf(".HTTP not valid: %w", err)
 	}
 	if err := a.HTTPS.Validate(); err != nil {
-		return errors.Wrap(err, ".HTTP not valid")
+		return fmt.Errorf(".HTTP not valid: %w", err)
 	}
 	return nil
 }

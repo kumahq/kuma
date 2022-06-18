@@ -5,7 +5,6 @@ import (
 	"net"
 	"os"
 
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
 	v3 "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs/v3"
@@ -45,11 +44,11 @@ func (s *accessLogServer) Start(stop <-chan struct{}) error {
 		newName := s.address + ".bak"
 		err := os.Rename(s.address, newName)
 		if err != nil {
-			return errors.Errorf("file %s exists and probably opened by another kuma-dp instance", s.address)
+			return fmt.Errorf("file %s exists and probably opened by another kuma-dp instance", s.address)
 		}
 		err = os.Remove(newName)
 		if err != nil {
-			return errors.Errorf("not able the delete the backup file %s", newName)
+			return fmt.Errorf("not able the delete the backup file %s", newName)
 		}
 	}
 

@@ -1,9 +1,9 @@
 package v1alpha1
 
 import (
+	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/kumahq/kuma/api/generic"
@@ -62,7 +62,7 @@ func (x *ZoneInsight) UpdateSubscription(s generic.Subscription) error {
 	}
 	kdsSubscription, ok := s.(*KDSSubscription)
 	if !ok {
-		return errors.Errorf("invalid type %T for ZoneInsight", s)
+		return fmt.Errorf("invalid type %T for ZoneInsight", s)
 	}
 	i, old := x.GetSubscription(kdsSubscription.Id)
 	if old != nil {

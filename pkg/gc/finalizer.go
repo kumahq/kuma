@@ -2,9 +2,8 @@ package gc
 
 import (
 	"context"
+	"fmt"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/api/generic"
 	"github.com/kumahq/kuma/pkg/core"
@@ -14,9 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
 
-var (
-	finalizerLog = core.Log.WithName("finalizer")
-)
+var finalizerLog = core.Log.WithName("finalizer")
 
 // Every Insight has a statusSink that periodically increments the 'generation' counter while Kuma CP <-> DPP
 // connection is active. This updates happens every <KumaCP.Config>.Metrics.Dataplane.IdleTimeout / 2.
@@ -52,7 +49,7 @@ func NewSubscriptionFinalizer(rm manager.ResourceManager, newTicker func() *time
 	insights := insightsByType{}
 	for _, typ := range types {
 		if !isInsightType(typ) {
-			return nil, errors.Errorf("%q type is not an Insight", typ)
+			return nil, fmt.Errorf("%q type is not an Insight", typ)
 		}
 		insights[typ] = map[core_model.ResourceKey]*descriptor{}
 	}

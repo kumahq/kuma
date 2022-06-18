@@ -1,9 +1,9 @@
 package store
 
 import (
+	"errors"
+	"fmt"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
 	"github.com/kumahq/kuma/pkg/config/plugins/resources/k8s"
@@ -57,20 +57,20 @@ func (s *StoreConfig) Validate() error {
 	switch s.Type {
 	case PostgresStore:
 		if err := s.Postgres.Validate(); err != nil {
-			return errors.Wrap(err, "Postgres validation failed")
+			return fmt.Errorf("Postgres validation failed: %w", err)
 		}
 	case KubernetesStore:
 		if err := s.Kubernetes.Validate(); err != nil {
-			return errors.Wrap(err, "Kubernetes validation failed")
+			return fmt.Errorf("Kubernetes validation failed: %w", err)
 		}
 		return nil
 	case MemoryStore:
 		return nil
 	default:
-		return errors.Errorf("Type should be either %s, %s or %s", PostgresStore, KubernetesStore, MemoryStore)
+		return fmt.Errorf("Type should be either %s, %s or %s", PostgresStore, KubernetesStore, MemoryStore)
 	}
 	if err := s.Cache.Validate(); err != nil {
-		return errors.Wrap(err, "Cache validation failed")
+		return fmt.Errorf("Cache validation failed: %w", err)
 	}
 	return nil
 }

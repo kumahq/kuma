@@ -1,9 +1,9 @@
 package k8s
 
 import (
+	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
 
@@ -252,13 +252,13 @@ func (c *KubernetesRuntimeConfig) Sanitize() {
 
 func (c *KubernetesRuntimeConfig) Validate() (errs error) {
 	if err := c.AdmissionServer.Validate(); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".AdmissionServer is not valid"))
+		errs = multierr.Append(errs, fmt.Errorf(".AdmissionServer is not valid: %w", err))
 	}
 	if err := c.Injector.Validate(); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".Injector is not valid"))
+		errs = multierr.Append(errs, fmt.Errorf(".Injector is not valid: %w", err))
 	}
 	if c.MarshalingCacheExpirationTime < 0 {
-		errs = multierr.Append(errs, errors.Errorf(".MarshalingCacheExpirationTime must be positive or equal to 0"))
+		errs = multierr.Append(errs, fmt.Errorf(".MarshalingCacheExpirationTime must be positive or equal to 0"))
 	}
 	return
 }
@@ -270,10 +270,10 @@ func (c *AdmissionServerConfig) Sanitize() {
 
 func (c *AdmissionServerConfig) Validate() (errs error) {
 	if 65535 < c.Port {
-		errs = multierr.Append(errs, errors.Errorf(".Port must be in the range [0, 65535]"))
+		errs = multierr.Append(errs, fmt.Errorf(".Port must be in the range [0, 65535]"))
 	}
 	if c.CertDir == "" {
-		errs = multierr.Append(errs, errors.Errorf(".CertDir should not be empty"))
+		errs = multierr.Append(errs, fmt.Errorf(".CertDir should not be empty"))
 	}
 	return
 }
@@ -287,10 +287,10 @@ func (i *Injector) Sanitize() {
 
 func (i *Injector) Validate() (errs error) {
 	if err := i.SidecarContainer.Validate(); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".SidecarContainer is not valid"))
+		errs = multierr.Append(errs, fmt.Errorf(".SidecarContainer is not valid: %w", err))
 	}
 	if err := i.InitContainer.Validate(); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".InitContainer is not valid"))
+		errs = multierr.Append(errs, fmt.Errorf(".InitContainer is not valid: %w", err))
 	}
 	return
 }
@@ -305,31 +305,31 @@ func (c *SidecarContainer) Sanitize() {
 
 func (c *SidecarContainer) Validate() (errs error) {
 	if c.Image == "" {
-		errs = multierr.Append(errs, errors.Errorf(".Image must be non-empty"))
+		errs = multierr.Append(errs, fmt.Errorf(".Image must be non-empty"))
 	}
 	if 65535 < c.RedirectPortInbound {
-		errs = multierr.Append(errs, errors.Errorf(".RedirectPortInbound must be in the range [0, 65535]"))
+		errs = multierr.Append(errs, fmt.Errorf(".RedirectPortInbound must be in the range [0, 65535]"))
 	}
 	if 0 != c.RedirectPortInboundV6 && 65535 < c.RedirectPortInboundV6 {
-		errs = multierr.Append(errs, errors.Errorf(".RedirectPortInboundV6 must be in the range [0, 65535]"))
+		errs = multierr.Append(errs, fmt.Errorf(".RedirectPortInboundV6 must be in the range [0, 65535]"))
 	}
 	if 65535 < c.RedirectPortOutbound {
-		errs = multierr.Append(errs, errors.Errorf(".RedirectPortOutbound must be in the range [0, 65535]"))
+		errs = multierr.Append(errs, fmt.Errorf(".RedirectPortOutbound must be in the range [0, 65535]"))
 	}
 	if 65535 < c.AdminPort {
-		errs = multierr.Append(errs, errors.Errorf(".AdminPort must be in the range [0, 65535]"))
+		errs = multierr.Append(errs, fmt.Errorf(".AdminPort must be in the range [0, 65535]"))
 	}
 	if c.DrainTime <= 0 {
-		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))
+		errs = multierr.Append(errs, fmt.Errorf(".DrainTime must be positive"))
 	}
 	if err := c.ReadinessProbe.Validate(); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".ReadinessProbe is not valid"))
+		errs = multierr.Append(errs, fmt.Errorf(".ReadinessProbe is not valid: %w", err))
 	}
 	if err := c.LivenessProbe.Validate(); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".LivenessProbe is not valid"))
+		errs = multierr.Append(errs, fmt.Errorf(".LivenessProbe is not valid: %w", err))
 	}
 	if err := c.Resources.Validate(); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".Resources is not valid"))
+		errs = multierr.Append(errs, fmt.Errorf(".Resources is not valid: %w", err))
 	}
 	return
 }
@@ -341,7 +341,7 @@ func (c *InitContainer) Sanitize() {
 
 func (c *InitContainer) Validate() (errs error) {
 	if c.Image == "" {
-		errs = multierr.Append(errs, errors.Errorf(".Image must be non-empty"))
+		errs = multierr.Append(errs, fmt.Errorf(".Image must be non-empty"))
 	}
 	return
 }
@@ -353,19 +353,19 @@ func (c *SidecarReadinessProbe) Sanitize() {
 
 func (c *SidecarReadinessProbe) Validate() (errs error) {
 	if c.InitialDelaySeconds < 1 {
-		errs = multierr.Append(errs, errors.Errorf(".InitialDelaySeconds must be >= 1"))
+		errs = multierr.Append(errs, fmt.Errorf(".InitialDelaySeconds must be >= 1"))
 	}
 	if c.TimeoutSeconds < 1 {
-		errs = multierr.Append(errs, errors.Errorf(".TimeoutSeconds must be >= 1"))
+		errs = multierr.Append(errs, fmt.Errorf(".TimeoutSeconds must be >= 1"))
 	}
 	if c.PeriodSeconds < 1 {
-		errs = multierr.Append(errs, errors.Errorf(".PeriodSeconds must be >= 1"))
+		errs = multierr.Append(errs, fmt.Errorf(".PeriodSeconds must be >= 1"))
 	}
 	if c.SuccessThreshold < 1 {
-		errs = multierr.Append(errs, errors.Errorf(".SuccessThreshold must be >= 1"))
+		errs = multierr.Append(errs, fmt.Errorf(".SuccessThreshold must be >= 1"))
 	}
 	if c.FailureThreshold < 1 {
-		errs = multierr.Append(errs, errors.Errorf(".FailureThreshold must be >= 1"))
+		errs = multierr.Append(errs, fmt.Errorf(".FailureThreshold must be >= 1"))
 	}
 	return
 }
@@ -377,16 +377,16 @@ func (c *SidecarLivenessProbe) Sanitize() {
 
 func (c *SidecarLivenessProbe) Validate() (errs error) {
 	if c.InitialDelaySeconds < 1 {
-		errs = multierr.Append(errs, errors.Errorf(".InitialDelaySeconds must be >= 1"))
+		errs = multierr.Append(errs, fmt.Errorf(".InitialDelaySeconds must be >= 1"))
 	}
 	if c.TimeoutSeconds < 1 {
-		errs = multierr.Append(errs, errors.Errorf(".TimeoutSeconds must be >= 1"))
+		errs = multierr.Append(errs, fmt.Errorf(".TimeoutSeconds must be >= 1"))
 	}
 	if c.PeriodSeconds < 1 {
-		errs = multierr.Append(errs, errors.Errorf(".PeriodSeconds must be >= 1"))
+		errs = multierr.Append(errs, fmt.Errorf(".PeriodSeconds must be >= 1"))
 	}
 	if c.FailureThreshold < 1 {
-		errs = multierr.Append(errs, errors.Errorf(".FailureThreshold must be >= 1"))
+		errs = multierr.Append(errs, fmt.Errorf(".FailureThreshold must be >= 1"))
 	}
 	return
 }
@@ -403,10 +403,10 @@ func (c *SidecarResourceRequests) Sanitize() {
 
 func (c *SidecarResources) Validate() (errs error) {
 	if err := c.Requests.Validate(); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".Requests is not valid"))
+		errs = multierr.Append(errs, fmt.Errorf(".Requests is not valid: %w", err))
 	}
 	if err := c.Limits.Validate(); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".Limits is not valid"))
+		errs = multierr.Append(errs, fmt.Errorf(".Limits is not valid: %w", err))
 	}
 	return
 }
@@ -415,10 +415,10 @@ var _ config.Config = &SidecarResourceRequests{}
 
 func (c *SidecarResourceRequests) Validate() (errs error) {
 	if _, err := kube_api.ParseQuantity(c.CPU); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".CPU is not valid"))
+		errs = multierr.Append(errs, fmt.Errorf(".CPU is not valid: %w", err))
 	}
 	if _, err := kube_api.ParseQuantity(c.Memory); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".Memory is not valid"))
+		errs = multierr.Append(errs, fmt.Errorf(".Memory is not valid: %w", err))
 	}
 	return
 }
@@ -430,10 +430,10 @@ func (c *SidecarResourceLimits) Sanitize() {
 
 func (c *SidecarResourceLimits) Validate() (errs error) {
 	if _, err := kube_api.ParseQuantity(c.CPU); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".CPU is not valid"))
+		errs = multierr.Append(errs, fmt.Errorf(".CPU is not valid: %w", err))
 	}
 	if _, err := kube_api.ParseQuantity(c.Memory); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".Memory is not valid"))
+		errs = multierr.Append(errs, fmt.Errorf(".Memory is not valid: %w", err))
 	}
 	return
 }
@@ -445,7 +445,7 @@ func (c *BuiltinDNS) Sanitize() {
 
 func (c *BuiltinDNS) Validate() (errs error) {
 	if 65535 < c.Port {
-		errs = multierr.Append(errs, errors.Errorf(".port must be in the range [0, 65535]"))
+		errs = multierr.Append(errs, fmt.Errorf(".port must be in the range [0, 65535]"))
 	}
 	return
 }

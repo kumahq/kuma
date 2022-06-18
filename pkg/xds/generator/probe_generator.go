@@ -1,9 +1,8 @@
 package generator
 
 import (
+	"fmt"
 	"net/url"
-
-	"github.com/pkg/errors"
 
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -18,8 +17,7 @@ const (
 	listenerName = "probe:listener"
 )
 
-type ProbeProxyGenerator struct {
-}
+type ProbeProxyGenerator struct{}
 
 func (g ProbeProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	probes := proxy.Dataplane.Spec.Probes
@@ -65,7 +63,7 @@ func (g ProbeProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Prox
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 		Build()
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not generate listener %s", listenerName)
+		return nil, fmt.Errorf("could not generate listener %s: %w", listenerName, err)
 	}
 
 	resources := model.NewResourceSet()

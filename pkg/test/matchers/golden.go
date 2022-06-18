@@ -1,12 +1,12 @@
 package matchers
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/test/golden"
 )
@@ -59,14 +59,14 @@ func (g *GoldenYAMLMatcher) Match(actual interface{}) (success bool, err error) 
 		if len(actualContent) > 0 && actualContent[len(actualContent)-1] != '\n' {
 			actualContent += "\n"
 		}
-		err := os.WriteFile(g.GoldenFilePath, []byte(actualContent), 0644)
+		err := os.WriteFile(g.GoldenFilePath, []byte(actualContent), 0o644)
 		if err != nil {
-			return false, errors.Wrap(err, "could not update golden file")
+			return false, fmt.Errorf("could not update golden file: %w", err)
 		}
 	}
 	expected, err := os.ReadFile(g.GoldenFilePath)
 	if err != nil {
-		return false, errors.Wrap(err, "could not read golden file")
+		return false, fmt.Errorf("could not read golden file: %w", err)
 	}
 
 	// Generate a new instance of the matcher for this match. Since
@@ -100,6 +100,6 @@ func (g *GoldenYAMLMatcher) actualString(actual interface{}) (string, error) {
 	case string:
 		return actual, nil
 	default:
-		return "", errors.Errorf("not supported type %T for MatchGolden", actual)
+		return "", fmt.Errorf("not supported type %T for MatchGolden", actual)
 	}
 }

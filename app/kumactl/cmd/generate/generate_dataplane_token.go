@@ -1,10 +1,10 @@
 package generate
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
@@ -44,7 +44,7 @@ $ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			client, err := pctx.CurrentDataplaneTokenClient()
 			if err != nil {
-				return errors.Wrap(err, "failed to create dataplane token client")
+				return fmt.Errorf("failed to create dataplane token client: %w", err)
 			}
 
 			tags := map[string][]string{}
@@ -54,7 +54,7 @@ $ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api
 			name := ctx.args.name
 			token, err := client.Generate(name, pctx.CurrentMesh(), tags, ctx.args.proxyType, ctx.args.validFor)
 			if err != nil {
-				return errors.Wrap(err, "failed to generate a dataplane token")
+				return fmt.Errorf("failed to generate a dataplane token: %w", err)
 			}
 			_, err = cmd.OutOrStdout().Write([]byte(token))
 			return err

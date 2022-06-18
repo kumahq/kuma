@@ -1,6 +1,8 @@
 package postgres
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -8,7 +10,6 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/httpfs"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 	postgres_cfg "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
@@ -23,7 +24,7 @@ func migrateDb(cfg postgres_cfg.PostgresStoreConfig) (core_plugins.DbVersion, er
 		return 0, err
 	}
 	if err := m.Up(); err != nil {
-		if err == migrate.ErrNoChange {
+		if errors.Is(err, migrate.ErrNoChange) {
 			ver, _, err := m.Version()
 			if err != nil {
 				return 0, err
@@ -39,9 +40,9 @@ func migrateDb(cfg postgres_cfg.PostgresStoreConfig) (core_plugins.DbVersion, er
 			if err != nil {
 				return 0, err
 			}
-			return 0, errors.Errorf("DB is migrated to newer version than Kuma. DB migration version %d. Kuma migration version %d. Run newer version of Kuma", dbVer, appVer)
+			return 0, fmt.Errorf("DB is migrated to newer version than Kuma. DB migration version %d. Kuma migration version %d. Run newer version of Kuma", dbVer, appVer)
 		}
-		return 0, errors.Wrap(err, "error while executing up migration")
+		return 0, fmt.Errorf("error while executing up migration: %w", err)
 	}
 	ver, _, err := m.Version()
 	if err != nil {
@@ -77,7 +78,7 @@ func isDbMigrated(cfg postgres_cfg.PostgresStoreConfig) (bool, error) {
 	}
 	dbVer, _, err := m.Version()
 	if err != nil {
-		if err == migrate.ErrNilVersion {
+		if errors.Is(err, migrate.ErrNilVersion) {
 			return false, nil
 		}
 		return false, err

@@ -2,9 +2,9 @@ package datasource
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os"
-
-	"github.com/pkg/errors"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -40,7 +40,7 @@ func (l *dynamicLoader) Load(ctx context.Context, mesh string, source *system_pr
 		return nil, errors.New("unsupported type of the DataSource")
 	}
 	if err != nil {
-		return nil, errors.Wrap(err, "could not load data")
+		return nil, fmt.Errorf("could not load data: %w", err)
 	}
 	return data, nil
 }

@@ -2,10 +2,11 @@ package v1
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 	"go.uber.org/multierr"
 
@@ -40,31 +41,31 @@ func (s *streamDiscoverer) Run(ctx context.Context, ch chan<- []*targetgroup.Gro
 	s.log.Info("creating a gRPC client for Monitoring Assignment Discovery Service (MADS) server ...")
 	client, err := mads_v1_client.New(s.config.ServerURL)
 	if err != nil {
-		return errors.Wrap(err, "failed to connect to gRPC server")
+		return fmt.Errorf("failed to connect to gRPC server: %w", err)
 	}
 	defer func() {
 		s.log.Info("closing a connection ...")
 		if err := client.Close(); err != nil {
-			errs = multierr.Append(errs, errors.Wrapf(err, "failed to close a connection"))
+			errs = multierr.Append(errs, fmt.Errorf("failed to close a connection: %w", err))
 		}
 	}()
 
 	s.log.Info("starting an xDS stream ...")
 	stream, err := client.StartStream()
 	if err != nil {
-		return errors.Wrap(err, "failed to start an xDS stream")
+		return fmt.Errorf("failed to start an xDS stream: %w", err)
 	}
 	defer func() {
 		s.log.Info("closing an xDS stream ...")
 		if err := stream.Close(); err != nil {
-			errs = multierr.Append(errs, errors.Wrapf(err, "failed to close an xDS stream"))
+			errs = multierr.Append(errs, fmt.Errorf("failed to close an xDS stream: %w", err))
 		}
 	}()
 
 	s.log.Info("sending first discovery request on a new xDS stream ...")
 	err = stream.RequestAssignments(s.config.ClientName)
 	if err != nil {
-		return errors.Wrap(err, "failed to send a discovery request")
+		return fmt.Errorf("failed to send a discovery request: %w", err)
 	}
 
 	for {
@@ -77,7 +78,7 @@ func (s *streamDiscoverer) Run(ctx context.Context, ch chan<- []*targetgroup.Gro
 		s.log.Info("waiting for a discovery response ...")
 		assignments, err := stream.WaitForAssignments()
 		if err != nil {
-			return errors.Wrap(err, "failed to receive a discovery response")
+			return fmt.Errorf("failed to receive a discovery response: %w", err)
 		}
 		s.log.Info("received monitoring assignments", "len", len(assignments))
 		s.log.V(1).Info("received monitoring assignments", "assignments", assignments)
@@ -85,10 +86,10 @@ func (s *streamDiscoverer) Run(ctx context.Context, ch chan<- []*targetgroup.Gro
 		s.handler.Handle(assignments, ch)
 
 		if err := stream.ACK(); err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
-			return errors.Wrap(err, "failed to ACK a discovery response")
+			return fmt.Errorf("failed to ACK a discovery response: %w", err)
 		}
 	}
 

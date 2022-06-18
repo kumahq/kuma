@@ -1,11 +1,12 @@
 package cmd
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -72,7 +73,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			if _, ok := proxyTypeMap[cfg.Dataplane.ProxyType]; !ok {
-				return errors.Errorf("invalid proxy type %q", cfg.Dataplane.ProxyType)
+				return fmt.Errorf("invalid proxy type %q", cfg.Dataplane.ProxyType)
 			}
 
 			if cfg.DataplaneRuntime.EnvoyLogLevel == "" {
@@ -88,7 +89,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			if proxyResource != nil {
 				if resType := proxyTypeMap[cfg.Dataplane.ProxyType]; resType != proxyResource.Descriptor().Name {
-					return errors.Errorf("invalid proxy resource type %q, expected %s",
+					return fmt.Errorf("invalid proxy resource type %q, expected %s",
 						proxyResource.Descriptor().Name, resType)
 				}
 
@@ -104,7 +105,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				// unless a user has explicitly opted out of Envoy Admin API, pick a free port from the range
 				adminPort, err := util_net.PickTCPPort("127.0.0.1", cfg.Dataplane.AdminPort.Lowest(), cfg.Dataplane.AdminPort.Highest())
 				if err != nil {
-					return errors.Wrapf(err, "unable to find a free port in the range %q for Envoy Admin API to listen on", cfg.Dataplane.AdminPort)
+					return fmt.Errorf("unable to find a free port in the range %q for Envoy Admin API to listen on: %w", cfg.Dataplane.AdminPort, err)
 				}
 				cfg.Dataplane.AdminPort = config_types.MustExactPort(adminPort)
 				runLog.Info("picked a free port for Envoy Admin API to listen on", "port", cfg.Dataplane.AdminPort)
@@ -130,7 +131,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			if cfg.DataplaneRuntime.Token != "" {
 				path := filepath.Join(cfg.DataplaneRuntime.ConfigDir, cfg.Dataplane.Name)
-				if err := writeFile(path, []byte(cfg.DataplaneRuntime.Token), 0600); err != nil {
+				if err := writeFile(path, []byte(cfg.DataplaneRuntime.Token), 0o600); err != nil {
 					runLog.Error(err, "unable to create file with dataplane token")
 					return err
 				}
@@ -139,14 +140,14 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			if cfg.DataplaneRuntime.TokenPath != "" {
 				if err := kumadp_config.ValidateTokenPath(cfg.DataplaneRuntime.TokenPath); err != nil {
-					return errors.Wrapf(err, "dataplane token is invalid, in Kubernetes you must mount a serviceAccount token, in universal you must start your proxy with a generated token.")
+					return fmt.Errorf("dataplane token is invalid, in Kubernetes you must mount a serviceAccount token, in universal you must start your proxy with a generated token.: %w", err)
 				}
 			}
 
 			if cfg.ControlPlane.CaCert == "" && cfg.ControlPlane.CaCertFile != "" {
 				cert, err := os.ReadFile(cfg.ControlPlane.CaCertFile)
 				if err != nil {
-					return errors.Wrapf(err, "could not read certificate file %s", cfg.ControlPlane.CaCertFile)
+					return fmt.Errorf("could not read certificate file %s: %w", cfg.ControlPlane.CaCertFile, err)
 				}
 				cfg.ControlPlane.CaCert = string(cert)
 			}
@@ -202,7 +203,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			envoyVersion, err := envoy.GetEnvoyVersion(opts.Config.DataplaneRuntime.BinaryPath)
 			if err != nil {
-				return errors.Wrap(err, "failed to get Envoy version")
+				return fmt.Errorf("failed to get Envoy version: %w", err)
 			}
 
 			if envoyVersion.KumaDpCompatible, err = envoy.EnvoyVersionCompatible(envoyVersion.Version); err != nil {
@@ -222,13 +223,13 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				DynamicMetadata: rootCtx.BootstrapDynamicMetadata,
 			})
 			if err != nil {
-				return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)
+				return fmt.Errorf("Failed to generate Envoy bootstrap config. %v", err)
 			}
 			runLog.Info("received bootstrap configuration", "adminPort", bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue())
 
 			opts.BootstrapConfig, err = proto.ToYAML(bootstrap)
 			if err != nil {
-				return errors.Errorf("could not convert to yaml. %v", err)
+				return fmt.Errorf("could not convert to yaml. %v", err)
 			}
 			opts.AdminPort = bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
 

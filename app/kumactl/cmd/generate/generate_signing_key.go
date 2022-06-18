@@ -2,8 +2,8 @@ package generate
 
 import (
 	"encoding/base64"
+	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/cmd"
@@ -38,7 +38,7 @@ type: system.kuma.io/global-secret
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			key, err := ctx.GenerateContext.NewSigningKey()
 			if err != nil {
-				return errors.Wrap(err, "could not generate signing key")
+				return fmt.Errorf("could not generate signing key: %w", err)
 			}
 			_, err = cmd.OutOrStdout().Write([]byte(base64.StdEncoding.EncodeToString(key)))
 			return err

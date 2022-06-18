@@ -3,6 +3,7 @@ package mux_test
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"runtime"
 	"strconv"
@@ -13,7 +14,6 @@ import (
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -89,7 +89,6 @@ func (t *testMultiplexStream) CheckInvariants() error {
 }
 
 var _ = Describe("Multiplex Session", func() {
-
 	Context("basic Send/Recv operations", func() {
 		var clientSession mux.Session
 		var serverSession mux.Session
@@ -172,7 +171,6 @@ var _ = Describe("Multiplex Session", func() {
 	}))
 
 	Context("concurrent operations", func() {
-
 		Context("Recv", func() {
 			var clientSession mux.Session
 			var serverSession mux.Session

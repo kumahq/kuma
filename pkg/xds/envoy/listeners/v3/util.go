@@ -1,6 +1,8 @@
 package v3
 
 import (
+	"errors"
+	"fmt"
 	"math"
 	"regexp"
 	"strconv"
@@ -9,7 +11,6 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -39,7 +40,7 @@ func UpdateFilterConfig(filterChain *envoy_listener.FilterChain, filterName stri
 	for i, filter := range filterChain.Filters {
 		if filter.Name == filterName {
 			if filter.GetTypedConfig() == nil {
-				return errors.Errorf("filters[%d]: config cannot be 'nil'", i)
+				return fmt.Errorf("filters[%d]: config cannot be 'nil'", i)
 			}
 
 			msg, err := filter.GetTypedConfig().UnmarshalNew()
@@ -64,7 +65,7 @@ func UpdateFilterConfig(filterChain *envoy_listener.FilterChain, filterName stri
 }
 
 func NewUnexpectedFilterConfigTypeError(actual, expected proto.Message) error {
-	return errors.Errorf("filter config has unexpected type: expected %T, got %T", expected, actual)
+	return fmt.Errorf("filter config has unexpected type: expected %T, got %T", expected, actual)
 }
 
 func ConvertPercentage(percentage *wrapperspb.DoubleValue) *envoy_type.FractionalPercent {

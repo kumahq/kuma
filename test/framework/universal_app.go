@@ -10,7 +10,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/test/framework/ssh"
 )
@@ -318,14 +317,14 @@ func (s *UniversalApp) GetIP() string {
 func (s *UniversalApp) Stop() error {
 	out, err := docker.StopE(s.t, []string{s.container}, &docker.StopOptions{Time: 1})
 	if err != nil {
-		return errors.Wrapf(err, "Returned %s", out)
+		return fmt.Errorf("Returned %s: %w", out, err)
 	}
 
 	retry.DoWithRetry(s.t, "stop "+s.container, DefaultRetries, DefaultTimeout,
 		func() (string, error) {
 			_, err := docker.StopE(s.t, []string{s.container}, &docker.StopOptions{Time: 1})
 			if err == nil {
-				return "Container still running", errors.Errorf("Container still running")
+				return "Container still running", fmt.Errorf("Container still running")
 			}
 			return "Container stopped", nil
 		})
@@ -505,7 +504,7 @@ func (s *UniversalApp) getIP(isipv6 bool) (string, error) {
 	cmd := ssh.NewApp(s.verbose, s.ports[sshPort], nil, []string{"getent", "ahosts", s.container[:12]})
 	err := cmd.Run()
 	if err != nil {
-		return "invalid", errors.Wrapf(err, "getent failed with %s", cmd.Err())
+		return "invalid", fmt.Errorf("getent failed with %s: %w", cmd.Err(), err)
 	}
 	lines := strings.Split(cmd.Out(), "\n")
 	// search for the requested IP
@@ -524,5 +523,5 @@ func (s *UniversalApp) getIP(isipv6 bool) (string, error) {
 	if isipv6 {
 		errString = "No IPv6 address found"
 	}
-	return "", errors.Errorf(errString)
+	return "", fmt.Errorf(errString)
 }

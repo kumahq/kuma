@@ -2,12 +2,13 @@ package multizone
 
 import (
 	"crypto/x509"
+	"errors"
+	"fmt"
 	"net/url"
 	"os"
 	"time"
 
 	"github.com/asaskevich/govalidator"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
 )
@@ -55,16 +56,16 @@ func (r *ZoneConfig) Sanitize() {
 
 func (r *ZoneConfig) Validate() error {
 	if r.Name == "" {
-		return errors.Errorf("Name is mandatory in Zone mode")
+		return fmt.Errorf("Name is mandatory in Zone mode")
 	} else if !govalidator.IsDNSName(r.Name) {
-		return errors.Errorf("Wrong zone name %s", r.Name)
+		return fmt.Errorf("Wrong zone name %s", r.Name)
 	}
 	if r.GlobalAddress == "" {
-		return errors.Errorf("GlobalAddress is mandatory in Zone mode")
+		return fmt.Errorf("GlobalAddress is mandatory in Zone mode")
 	}
 	u, err := url.Parse(r.GlobalAddress)
 	if err != nil {
-		return errors.Wrapf(err, "unable to parse zone GlobalAddress.")
+		return fmt.Errorf("unable to parse zone GlobalAddress.: %w", err)
 	}
 	switch u.Scheme {
 	case "grpc":
@@ -74,7 +75,7 @@ func (r *ZoneConfig) Validate() error {
 			roots := x509.NewCertPool()
 			caCert, err := os.ReadFile(rootCaFile)
 			if err != nil {
-				return errors.Wrapf(err, "could not read certificate %s", rootCaFile)
+				return fmt.Errorf("could not read certificate %s: %w", rootCaFile, err)
 			}
 			ok := roots.AppendCertsFromPEM(caCert)
 			if !ok {
@@ -82,7 +83,7 @@ func (r *ZoneConfig) Validate() error {
 			}
 		}
 	default:
-		return errors.Errorf("unsupported scheme %q in zone GlobalAddress. Use one of %s", u.Scheme, []string{"grpc", "grpcs"})
+		return fmt.Errorf("unsupported scheme %q in zone GlobalAddress. Use one of %s", u.Scheme, []string{"grpc", "grpcs"})
 	}
 	return r.KDS.Validate()
 }

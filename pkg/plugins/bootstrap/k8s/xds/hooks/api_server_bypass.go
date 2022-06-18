@@ -1,7 +1,7 @@
 package hooks
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -46,14 +46,14 @@ func (h ApiServerBypass) Modify(resources *core_xds.ResourceSet, ctx xds_context
 		Configure(envoy_listeners.OriginalDstForwarder()).
 		Build()
 	if err != nil {
-		return errors.Wrapf(err, "could not generate listener: %s", apiServerBypassHookResourcesName)
+		return fmt.Errorf("could not generate listener: %s: %w", apiServerBypassHookResourcesName, err)
 	}
 
 	cluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
 		Configure(envoy_clusters.PassThroughCluster(apiServerBypassHookResourcesName)).
 		Build()
 	if err != nil {
-		return errors.Wrapf(err, "could not generate cluster: %s", apiServerBypassHookResourcesName)
+		return fmt.Errorf("could not generate cluster: %s: %w", apiServerBypassHookResourcesName, err)
 	}
 
 	resources.Add(&core_xds.Resource{

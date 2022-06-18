@@ -1,13 +1,13 @@
 package framework
 
 import (
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/shell"
 	"github.com/gruntwork-io/terratest/modules/testing"
-	"github.com/pkg/errors"
 )
 
 func GetPublishedDockerPorts(
@@ -27,7 +27,7 @@ func GetPublishedDockerPorts(
 		}
 		addresses := strings.Split(out, "\n")
 		if len(addresses) < 1 {
-			return nil, errors.Errorf("there are no addresses for port %d", port)
+			return nil, fmt.Errorf("there are no addresses for port %d", port)
 		}
 		_, pubPortStr, err := net.SplitHostPort(addresses[0])
 		if err != nil {

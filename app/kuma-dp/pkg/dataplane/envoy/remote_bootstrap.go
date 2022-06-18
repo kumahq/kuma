@@ -6,6 +6,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	net_url "net/url"
@@ -13,7 +15,6 @@ import (
 	"strings"
 
 	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
-	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
@@ -38,7 +39,7 @@ var (
 )
 
 func InvalidRequestErr(msg string) error {
-	return errors.Errorf("Invalid request: %s", msg)
+	return fmt.Errorf("Invalid request: %s", msg)
 }
 
 func IsInvalidRequestErr(err error) bool {
@@ -79,8 +80,8 @@ func (b *remoteBootstrap) Generate(ctx context.Context, url string, cfg kuma_dp.
 			return err
 		}
 
-		switch err {
-		case DpNotFoundErr:
+		switch {
+		case errors.Is(err, DpNotFoundErr):
 			log.Info("Dataplane entity is not yet found in the Control Plane. If you are running on Kubernetes, CP is most likely still in the process of converting Pod to Dataplane. If it takes too long, check kuma-cp logs. Retrying.", "backoff", cfg.ControlPlane.Retry.Backoff)
 		default:
 			log.Info("could not fetch bootstrap configuration, make sure you are not trying to connect to global-cp. retrying (this could help only if you're connecting to zone-cp or standalone).", "backoff", cfg.ControlPlane.Retry.Backoff, "err", err.Error())
@@ -153,7 +154,7 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, url *net_url.
 	}
 	jsonBytes, err := json.Marshal(request)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not marshal request to json")
+		return nil, fmt.Errorf("could not marshal request to json: %w", err)
 	}
 	req, err := http.NewRequestWithContext(ctx, "POST", url.String(), bytes.NewReader(jsonBytes))
 	if err != nil {
@@ -163,13 +164,13 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, url *net_url.
 	req.Header.Set("content-type", "application/json")
 	resp, err := b.client.Do(req)
 	if err != nil {
-		return nil, errors.Wrap(err, "request to bootstrap server failed")
+		return nil, fmt.Errorf("request to bootstrap server failed: %w", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Unable to read the response with status code: %d. Make sure you are using https URL", resp.StatusCode)
+			return nil, fmt.Errorf("Unable to read the response with status code: %d. Make sure you are using https URL: %w", resp.StatusCode, err)
 		}
 		if resp.StatusCode == http.StatusNotFound && len(bodyBytes) == 0 {
 			return nil, DpNotFoundErr
@@ -180,11 +181,11 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, url *net_url.
 		if resp.StatusCode/100 == 4 {
 			return nil, InvalidRequestErr(string(bodyBytes))
 		}
-		return nil, errors.Errorf("unexpected status code: %d", resp.StatusCode)
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not read the body of the response")
+		return nil, fmt.Errorf("could not read the body of the response: %w", err)
 	}
 	return respBytes, nil
 }

@@ -2,9 +2,9 @@ package callbacks
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"sync"
-
-	"github.com/pkg/errors"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -87,7 +87,7 @@ func (d *xdsCallbacks) OnStreamRequest(streamID core_xds.StreamID, request util_
 
 	proxyId, err := core_xds.ParseProxyIdFromString(request.NodeId())
 	if err != nil {
-		return errors.Wrap(err, "invalid node ID")
+		return fmt.Errorf("invalid node ID: %w", err)
 	}
 	dpKey := proxyId.ToResourceKey()
 	metadata := core_xds.DataplaneMetadataFromXdsMetadata(request.Metadata())
@@ -135,8 +135,7 @@ func (d *xdsCallbacks) OnStreamOpen(ctx context.Context, streamID core_xds.Strea
 }
 
 // NoopDataplaneCallbacks are empty callbacks that helps to implement DataplaneCallbacks without need to implement every function.
-type NoopDataplaneCallbacks struct {
-}
+type NoopDataplaneCallbacks struct{}
 
 func (n *NoopDataplaneCallbacks) OnProxyReconnected(core_xds.StreamID, core_model.ResourceKey, context.Context, core_xds.DataplaneMetadata) error {
 	return nil

@@ -1,11 +1,11 @@
 package bootstrap
 
 import (
+	"errors"
+	"fmt"
 	"net"
 	"os"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
 )
@@ -23,7 +23,7 @@ func (b *BootstrapServerConfig) Sanitize() {
 
 func (b *BootstrapServerConfig) Validate() error {
 	if err := b.Params.Validate(); err != nil {
-		return errors.Wrap(err, "Params validation failed")
+		return fmt.Errorf("Params validation failed: %w", err)
 	}
 	return nil
 }

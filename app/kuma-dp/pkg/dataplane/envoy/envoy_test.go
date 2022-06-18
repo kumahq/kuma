@@ -5,6 +5,7 @@ package envoy_test
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -22,7 +23,6 @@ import (
 )
 
 var _ = Describe("Envoy", func() {
-
 	var configDir string
 
 	BeforeEach(func() {
@@ -214,7 +214,8 @@ var _ = Describe("Envoy", func() {
 			Expect(err).To(BeAssignableToTypeOf(&exec.ExitError{}))
 
 			// when
-			exitError := err.(*exec.ExitError)
+			var exitError *exec.ExitError
+			errors.As(err, &exitError)
 			// then
 			Expect(exitError.ProcessState.ExitCode()).To(Equal(1))
 		}))

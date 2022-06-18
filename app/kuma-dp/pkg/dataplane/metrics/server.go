@@ -12,8 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
-
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
@@ -54,11 +52,11 @@ func (s *Hijacker) Start(stop <-chan struct{}) error {
 		newName := s.socketPath + ".bak"
 		err := os.Rename(s.socketPath, newName)
 		if err != nil {
-			return errors.Errorf("file %s exists and probably opened by another kuma-dp instance", s.socketPath)
+			return fmt.Errorf("file %s exists and probably opened by another kuma-dp instance", s.socketPath)
 		}
 		err = os.Remove(newName)
 		if err != nil {
-			return errors.Errorf("not able the delete the backup file %s", newName)
+			return fmt.Errorf("not able the delete the backup file %s", newName)
 		}
 	}
 

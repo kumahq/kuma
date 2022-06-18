@@ -1,10 +1,10 @@
 package generate
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
@@ -12,10 +12,8 @@ import (
 	"github.com/kumahq/kuma/pkg/tls"
 )
 
-var (
-	// overridable by unit tests
-	NewSelfSignedCert = tls.NewSelfSignedCert
-)
+// overridable by unit tests
+var NewSelfSignedCert = tls.NewSelfSignedCert
 
 type generateCertificateContext struct {
 	*kumactl_cmd.RootContext
@@ -50,7 +48,7 @@ func NewGenerateCertificateCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 					return errors.New("at least one hostname must be given")
 				}
 			default:
-				return errors.Errorf("invalid certificate type %q", certType)
+				return fmt.Errorf("invalid certificate type %q", certType)
 			}
 
 			keyType := tls.DefaultKeyType
@@ -61,30 +59,30 @@ func NewGenerateCertificateCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			case "ecdsa":
 				keyType = tls.ECDSAKeyType
 			default:
-				return errors.Errorf("invalid key type %q", ctx.args.keyType)
+				return fmt.Errorf("invalid key type %q", ctx.args.keyType)
 			}
 
 			keyPair, err := NewSelfSignedCert(ctx.args.hostnames[0], certType, keyType, ctx.args.hostnames...)
 			if err != nil {
-				return errors.Wrap(err, "could not generate certificate")
+				return fmt.Errorf("could not generate certificate: %w", err)
 			}
 
 			if ctx.args.key == "-" {
 				_, err = cmd.OutOrStdout().Write(keyPair.KeyPEM)
 			} else {
-				err = os.WriteFile(ctx.args.key, keyPair.KeyPEM, 0400)
+				err = os.WriteFile(ctx.args.key, keyPair.KeyPEM, 0o400)
 			}
 			if err != nil {
-				return errors.Wrap(err, "could not write the key file")
+				return fmt.Errorf("could not write the key file: %w", err)
 			}
 
 			if ctx.args.cert == "-" {
 				_, err = cmd.OutOrStdout().Write(keyPair.CertPEM)
 			} else {
-				err = os.WriteFile(ctx.args.cert, keyPair.CertPEM, 0644)
+				err = os.WriteFile(ctx.args.cert, keyPair.CertPEM, 0o644)
 			}
 			if err != nil {
-				return errors.Wrap(err, "could not write the cert file")
+				return fmt.Errorf("could not write the cert file: %w", err)
 			}
 
 			if ctx.args.cert != "-" && ctx.args.key != "-" {

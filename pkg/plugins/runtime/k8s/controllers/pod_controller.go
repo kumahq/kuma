@@ -2,9 +2,9 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -81,7 +81,7 @@ func (r *PodReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (k
 	}
 	if exist && enabled {
 		if pod.Namespace != r.SystemNamespace {
-			return kube_ctrl.Result{}, errors.Errorf("Ingress can only be deployed in system namespace %q", r.SystemNamespace)
+			return kube_ctrl.Result{}, fmt.Errorf("Ingress can only be deployed in system namespace %q", r.SystemNamespace)
 		}
 		services, err := r.findMatchingServices(ctx, pod)
 		if err != nil {
@@ -101,7 +101,7 @@ func (r *PodReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (k
 	}
 	if egressExist && egressEnabled {
 		if pod.Namespace != r.SystemNamespace {
-			return kube_ctrl.Result{}, errors.Errorf("Egress can only be deployed in system namespace %q", r.SystemNamespace)
+			return kube_ctrl.Result{}, fmt.Errorf("Egress can only be deployed in system namespace %q", r.SystemNamespace)
 		}
 		services, err := r.findMatchingServices(ctx, pod)
 		if err != nil {
@@ -117,7 +117,7 @@ func (r *PodReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (k
 
 	ns := kube_core.Namespace{}
 	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: pod.Namespace}, &ns); err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "unable to get Namespace for Pod")
+		return kube_ctrl.Result{}, fmt.Errorf("unable to get Namespace for Pod: %w", err)
 	}
 
 	// If we are using a builtin gateway, we want to generate a builtin gateway
@@ -211,10 +211,10 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
 		if err := r.PodConverter.PodToDataplane(ctx, dataplane, pod, ns, services, others); err != nil {
-			return errors.Wrap(err, "unable to translate a Pod into a Dataplane")
+			return fmt.Errorf("unable to translate a Pod into a Dataplane: %w", err)
 		}
 		if err := kube_controllerutil.SetControllerReference(pod, dataplane, r.Scheme); err != nil {
-			return errors.Wrap(err, "unable to set Dataplane's controller reference to Pod")
+			return fmt.Errorf("unable to set Dataplane's controller reference to Pod: %w", err)
 		}
 		return nil
 	})
@@ -243,10 +243,10 @@ func (r *PodReconciler) createOrUpdateIngress(ctx context.Context, pod *kube_cor
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, ingress, func() error {
 		if err := r.PodConverter.PodToIngress(ctx, ingress, pod, services); err != nil {
-			return errors.Wrap(err, "unable to translate a Pod into a Ingress")
+			return fmt.Errorf("unable to translate a Pod into a Ingress: %w", err)
 		}
 		if err := kube_controllerutil.SetControllerReference(pod, ingress, r.Scheme); err != nil {
-			return errors.Wrap(err, "unable to set Ingress's controller reference to Pod")
+			return fmt.Errorf("unable to set Ingress's controller reference to Pod: %w", err)
 		}
 		return nil
 	})
@@ -275,10 +275,10 @@ func (r *PodReconciler) createOrUpdateEgress(ctx context.Context, pod *kube_core
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, egress, func() error {
 		if err := r.PodConverter.PodToEgress(egress, pod, services); err != nil {
-			return errors.Wrap(err, "unable to translate a Pod into a Egress")
+			return fmt.Errorf("unable to translate a Pod into a Egress: %w", err)
 		}
 		if err := kube_controllerutil.SetControllerReference(pod, egress, r.Scheme); err != nil {
-			return errors.Wrap(err, "unable to set Egress's controller reference to Pod")
+			return fmt.Errorf("unable to set Egress's controller reference to Pod: %w", err)
 		}
 		return nil
 	})
@@ -347,7 +347,7 @@ func ExternalServiceToPodsMapper(l logr.Logger, client kube_client.Client) kube_
 	return func(obj kube_client.Object) []kube_reconile.Request {
 		cause, ok := obj.(*mesh_k8s.ExternalService)
 		if !ok {
-			l.WithValues("externalService", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
+			l.WithValues("externalService", obj.GetName()).Error(fmt.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
 			return nil
 		}
 

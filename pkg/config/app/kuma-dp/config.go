@@ -1,10 +1,11 @@
 package kumadp
 
 import (
+	"errors"
+	"fmt"
 	"net/url"
 	"time"
 
-	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -149,23 +150,23 @@ var _ config.Config = &Config{}
 
 func (c *Config) Validate() (errs error) {
 	if err := c.ControlPlane.Validate(); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".ControlPlane is not valid"))
+		errs = multierr.Append(errs, fmt.Errorf(".ControlPlane is not valid: %w", err))
 	}
 	if c.DataplaneRuntime.Resource != "" || c.DataplaneRuntime.ResourcePath != "" {
 		if err := c.Dataplane.ValidateForTemplate(); err != nil {
-			errs = multierr.Append(errs, errors.Wrapf(err, ".Dataplane is not valid"))
+			errs = multierr.Append(errs, fmt.Errorf(".Dataplane is not valid: %w", err))
 		}
 	} else {
 		if err := c.Dataplane.Validate(); err != nil {
-			errs = multierr.Append(errs, errors.Wrapf(err, ".Dataplane is not valid"))
+			errs = multierr.Append(errs, fmt.Errorf(".Dataplane is not valid: %w", err))
 		}
 	}
 
 	if err := c.DataplaneRuntime.Validate(); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".DataplaneRuntime is not valid"))
+		errs = multierr.Append(errs, fmt.Errorf(".DataplaneRuntime is not valid: %w", err))
 	}
 	if err := c.DNS.Validate(); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".DNS is not valid"))
+		errs = multierr.Append(errs, fmt.Errorf(".DNS is not valid: %w", err))
 	}
 	return
 }
@@ -178,10 +179,10 @@ func (c *ControlPlane) Sanitize() {
 
 func (c *ControlPlane) Validate() (errs error) {
 	if _, err := url.Parse(c.URL); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".Url is not valid"))
+		errs = multierr.Append(errs, fmt.Errorf(".Url is not valid: %w", err))
 	}
 	if err := c.Retry.Validate(); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".Retry is not valid"))
+		errs = multierr.Append(errs, fmt.Errorf(".Retry is not valid: %w", err))
 	}
 	return
 }
@@ -197,24 +198,24 @@ func (d *Dataplane) Validate() (errs error) {
 	case mesh_proto.DataplaneProxyType, mesh_proto.IngressProxyType, mesh_proto.EgressProxyType:
 	default:
 		if err := proxyType.IsValid(); err != nil {
-			errs = multierr.Append(errs, errors.Wrap(err, ".ProxyType is not valid"))
+			errs = multierr.Append(errs, fmt.Errorf(".ProxyType is not valid: %w", err))
 		} else {
 			// Not all Dataplane types are allowed to be set directly in config.
-			errs = multierr.Append(errs, errors.Errorf(".ProxyType %q is not supported", proxyType))
+			errs = multierr.Append(errs, fmt.Errorf(".ProxyType %q is not supported", proxyType))
 		}
 	}
 
 	if d.Mesh == "" && proxyType != mesh_proto.IngressProxyType && proxyType != mesh_proto.EgressProxyType {
-		errs = multierr.Append(errs, errors.Errorf(".Mesh must be non-empty"))
+		errs = multierr.Append(errs, fmt.Errorf(".Mesh must be non-empty"))
 	}
 
 	if d.Name == "" {
-		errs = multierr.Append(errs, errors.Errorf(".Name must be non-empty"))
+		errs = multierr.Append(errs, fmt.Errorf(".Name must be non-empty"))
 	}
 
 	// Notice that d.AdminPort is always valid by design of PortRange
 	if d.DrainTime <= 0 {
-		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))
+		errs = multierr.Append(errs, fmt.Errorf(".DrainTime must be positive"))
 	}
 
 	return
@@ -223,7 +224,7 @@ func (d *Dataplane) Validate() (errs error) {
 func (d *Dataplane) ValidateForTemplate() (errs error) {
 	// Notice that d.AdminPort is always valid by design of PortRange
 	if d.DrainTime <= 0 {
-		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))
+		errs = multierr.Append(errs, fmt.Errorf(".DrainTime must be positive"))
 	}
 	return
 }
@@ -235,7 +236,7 @@ func (d *DataplaneRuntime) Sanitize() {
 
 func (d *DataplaneRuntime) Validate() (errs error) {
 	if d.BinaryPath == "" {
-		errs = multierr.Append(errs, errors.Errorf(".BinaryPath must be non-empty"))
+		errs = multierr.Append(errs, fmt.Errorf(".BinaryPath must be non-empty"))
 	}
 	return
 }
@@ -247,15 +248,15 @@ func (d *ApiServer) Sanitize() {
 
 func (d *ApiServer) Validate() (errs error) {
 	if d.URL == "" {
-		errs = multierr.Append(errs, errors.Errorf(".URL must be non-empty"))
+		errs = multierr.Append(errs, fmt.Errorf(".URL must be non-empty"))
 	}
 	if url, err := url.Parse(d.URL); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".URL must be a valid absolute URI"))
+		errs = multierr.Append(errs, fmt.Errorf(".URL must be a valid absolute URI: %w", err))
 	} else if !url.IsAbs() {
-		errs = multierr.Append(errs, errors.Errorf(".URL must be a valid absolute URI"))
+		errs = multierr.Append(errs, fmt.Errorf(".URL must be a valid absolute URI"))
 	}
 	if err := d.Retry.Validate(); err != nil {
-		errs = multierr.Append(errs, errors.Wrap(err, ".Retry is not valid"))
+		errs = multierr.Append(errs, fmt.Errorf(".Retry is not valid: %w", err))
 	}
 	return
 }

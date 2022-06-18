@@ -1,7 +1,7 @@
 package zone
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
 
 	"github.com/kumahq/kuma/pkg/config"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -25,9 +25,7 @@ import (
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 )
 
-var (
-	kdsZoneLog = core.Log.WithName("kds-zone")
-)
+var kdsZoneLog = core.Log.WithName("kds-zone")
 
 func Setup(rt core_runtime.Runtime) error {
 	if rt.Config().Mode != config_core.Zone {
@@ -48,11 +46,11 @@ func Setup(rt core_runtime.Runtime) error {
 	cfg := rt.Config()
 	cfgForDisplay, err := config.ConfigForDisplay(&cfg)
 	if err != nil {
-		return errors.Wrap(err, "could not construct config for display")
+		return fmt.Errorf("could not construct config for display: %w", err)
 	}
 	cfgJson, err := config.ToJson(cfgForDisplay)
 	if err != nil {
-		return errors.Wrap(err, "could not marshall config to json")
+		return fmt.Errorf("could not marshall config to json: %w", err)
 	}
 	onSessionStarted := mux.OnSessionStartedFunc(func(session mux.Session) error {
 		log := kdsZoneLog.WithValues("peer-id", session.PeerID())
@@ -93,7 +91,7 @@ func Callbacks(configToSync map[string]bool, syncer sync_store.ResourceSyncer, k
 				// System resources are not in the kubeFactory therefore we need explicit ifs for them
 				kubeObject, err := kubeFactory.NewObject(rs.NewItem())
 				if err != nil {
-					return errors.Wrap(err, "could not convert object")
+					return fmt.Errorf("could not convert object: %w", err)
 				}
 				if kubeObject.Scope() == k8s_model.ScopeNamespace {
 					util.AddSuffixToNames(rs.GetItems(), "default")

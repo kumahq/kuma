@@ -4,13 +4,13 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/protobuf/proto"
 
@@ -181,7 +181,7 @@ func (s *secrets) get(
 
 		certs, err := s.generateCerts(tags, mesh, otherMeshes, certs, updateKinds)
 		if err != nil {
-			return nil, nil, MeshCa{}, errors.Wrap(err, "could not generate certificates")
+			return nil, nil, MeshCa{}, fmt.Errorf("could not generate certificates: %w", err)
 		}
 
 		s.Lock()
@@ -287,7 +287,7 @@ func (s *secrets) generateCerts(
 
 		identitySecret, issuedBackend, err := s.identityProvider.Get(context.Background(), requester, mesh)
 		if err != nil {
-			return nil, errors.Wrap(err, "could not get Dataplane cert pair")
+			return nil, fmt.Errorf("could not get Dataplane cert pair: %w", err)
 		}
 
 		s.certGenerationsMetric.WithLabelValues(requester.Mesh).Inc()
@@ -295,7 +295,7 @@ func (s *secrets) generateCerts(
 		block, _ := pem.Decode(identitySecret.PemCerts[0])
 		cert, err := x509.ParseCertificate(block.Bytes)
 		if err != nil {
-			return nil, errors.Wrap(err, "could not extract info about certificate")
+			return nil, fmt.Errorf("could not extract info about certificate: %w", err)
 		}
 
 		info.Tags = tags
@@ -308,7 +308,7 @@ func (s *secrets) generateCerts(
 	if updateKinds.HasType(OwnMeshChange) {
 		caSecret, supportedBackends, err := s.caProvider.Get(context.Background(), mesh)
 		if err != nil {
-			return nil, errors.Wrap(err, "could not get mesh CA cert")
+			return nil, fmt.Errorf("could not get mesh CA cert: %w", err)
 		}
 
 		ownCa = MeshCa{
@@ -339,7 +339,7 @@ func (s *secrets) generateCerts(
 
 			otherCa, _, err := s.caProvider.Get(context.Background(), otherMesh)
 			if err != nil {
-				return nil, errors.Wrap(err, "could not get other mesh CA cert")
+				return nil, fmt.Errorf("could not get other mesh CA cert: %w", err)
 			}
 
 			meshName := otherMesh.GetMeta().GetName()

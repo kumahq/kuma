@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/test/framework"
@@ -16,8 +15,10 @@ type k8sDeployment struct {
 	ingressNamespace string
 }
 
-var DefaultNodePortHTTP = 30080
-var DefaultNodePortHTTPS = 30443
+var (
+	DefaultNodePortHTTP  = 30080
+	DefaultNodePortHTTPS = 30443
+)
 
 var _ Deployment = &k8sDeployment{}
 
@@ -94,7 +95,7 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 		},
 	)
 	if len(pods) != 1 {
-		return errors.Errorf("counting KIC pods. Got: %d. Expected: 1", len(pods))
+		return fmt.Errorf("counting KIC pods. Got: %d. Expected: 1", len(pods))
 	}
 
 	k8s.WaitUntilPodAvailable(cluster.GetTesting(),

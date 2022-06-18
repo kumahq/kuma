@@ -1,9 +1,9 @@
 package universal
 
 import (
+	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 )
 
@@ -24,7 +24,7 @@ func (u *UniversalRuntimeConfig) Sanitize() {
 
 func (u *UniversalRuntimeConfig) Validate() (errs error) {
 	if u.DataplaneCleanupAge <= 0 {
-		errs = multierr.Append(errs, errors.Errorf(".DataplaneCleanupAge must be positive"))
+		errs = multierr.Append(errs, fmt.Errorf(".DataplaneCleanupAge must be positive"))
 	}
 	return
 }

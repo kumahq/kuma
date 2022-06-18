@@ -1,10 +1,11 @@
 package cache
 
 import (
+	"errors"
+
 	envoy_service_health_v3 "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	"github.com/pkg/errors"
 
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )

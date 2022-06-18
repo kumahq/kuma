@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/pkg/errors"
-
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
@@ -33,7 +31,7 @@ type httpPolicyInspectClient struct {
 func (h *httpPolicyInspectClient) Inspect(ctx context.Context, policyDesc core_model.ResourceTypeDescriptor, mesh, name string) (*api_server_types.PolicyInspectEntryList, error) {
 	resUrl, err := url.Parse(fmt.Sprintf("/meshes/%s/%s/%s/dataplanes", mesh, policyDesc.WsPath, name))
 	if err != nil {
-		return nil, errors.Wrap(err, "could not construct the url")
+		return nil, fmt.Errorf("could not construct the url: %w", err)
 	}
 	req, err := http.NewRequest("GET", resUrl.String(), nil)
 	if err != nil {
@@ -44,7 +42,7 @@ func (h *httpPolicyInspectClient) Inspect(ctx context.Context, policyDesc core_m
 		return nil, err
 	}
 	if statusCode != 200 {
-		return nil, errors.Errorf("(%d): %s", statusCode, string(b))
+		return nil, fmt.Errorf("(%d): %s", statusCode, string(b))
 	}
 	entryList := &api_server_types.PolicyInspectEntryList{}
 	if err := json.Unmarshal(b, entryList); err != nil {

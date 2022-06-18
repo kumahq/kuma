@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -73,7 +72,7 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 
 	_, condition, err := getParametersRef(ctx, r.Client, class.Spec.ParametersRef)
 	if err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "unable to get parametersRef")
+		return kube_ctrl.Result{}, fmt.Errorf("unable to get parametersRef: %w", err)
 	}
 
 	if condition == nil {
@@ -95,7 +94,7 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 		if kube_apierrs.IsNotFound(err) {
 			return kube_ctrl.Result{}, nil
 		}
-		return kube_ctrl.Result{}, errors.Wrap(err, "unable to update status subresource")
+		return kube_ctrl.Result{}, fmt.Errorf("unable to update status subresource: %w", err)
 	}
 
 	return kube_ctrl.Result{}, nil
@@ -135,7 +134,7 @@ func getParametersRef(
 			return nil, &condition, nil
 		}
 
-		return nil, nil, errors.Wrapf(err, "unable to get MeshGatewayConfig %s", namespacedName.String())
+		return nil, nil, fmt.Errorf("unable to get MeshGatewayConfig %s: %w", namespacedName.String(), err)
 	}
 
 	return config, nil, nil
@@ -250,7 +249,8 @@ func (r *GatewayClassReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		// When something changes with Gateways, we want to reconcile
 		// GatewayClasses
 		Watches(&kube_source.Kind{
-			Type: &gatewayapi.Gateway{}},
+			Type: &gatewayapi.Gateway{},
+		},
 			kube_handler.EnqueueRequestsFromMapFunc(gatewayToClassMapper(r.Log, r.Client)),
 		).
 		Watches(

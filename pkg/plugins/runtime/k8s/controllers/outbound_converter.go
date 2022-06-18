@@ -2,10 +2,10 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -93,7 +93,7 @@ func isServiceLess(port uint32) bool {
 func k8sService(ctx context.Context, serviceTag string, client kube_client.Reader) (*kube_core.Service, uint32, error) {
 	name, ns, port, err := parseService(serviceTag)
 	if err != nil {
-		return nil, 0, errors.Wrapf(err, "failed to parse `service` host %q as FQDN", serviceTag)
+		return nil, 0, fmt.Errorf("failed to parse `service` host %q as FQDN: %w", serviceTag, err)
 	}
 	if isServiceLess(port) {
 		return nil, port, nil
@@ -102,7 +102,7 @@ func k8sService(ctx context.Context, serviceTag string, client kube_client.Reade
 	svc := &kube_core.Service{}
 	svcKey := kube_client.ObjectKey{Namespace: ns, Name: name}
 	if err := client.Get(ctx, svcKey, svc); err != nil {
-		return nil, 0, errors.Wrapf(err, "failed to get Service %q", svcKey)
+		return nil, 0, fmt.Errorf("failed to get Service %q: %w", svcKey, err)
 	}
 	return svc, port, nil
 }
@@ -122,7 +122,7 @@ func parseService(host string) (name string, namespace string, port uint32, err 
 		// one here to note that this service is actually
 		port = mesh_proto.TCPPortReserved
 	default:
-		return "", "", 0, errors.Errorf("service tag in unexpected format")
+		return "", "", 0, fmt.Errorf("service tag in unexpected format")
 	}
 
 	name, namespace = segments[0], segments[1]

@@ -2,9 +2,8 @@ package mesh
 
 import (
 	"context"
+	"fmt"
 	"time"
-
-	"github.com/pkg/errors"
 
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -112,7 +111,7 @@ func (m *meshManager) Delete(ctx context.Context, resource core_model.Resource, 
 	}
 	// delete all secrets
 	if err := m.otherManagers.DeleteAll(ctx, &system.SecretResourceList{}, core_store.DeleteAllByMesh(opts.Name)); err != nil {
-		return errors.Wrap(err, "could not delete associated secrets")
+		return fmt.Errorf("could not delete associated secrets: %w", err)
 	}
 	return notFoundErr
 }
@@ -152,7 +151,7 @@ func (m *meshManager) Update(ctx context.Context, resource core_model.Resource, 
 func (m *meshManager) mesh(resource core_model.Resource) (*core_mesh.MeshResource, error) {
 	mesh, ok := resource.(*core_mesh.MeshResource)
 	if !ok {
-		return nil, errors.Errorf("invalid resource type: expected=%T, got=%T", (*core_mesh.MeshResource)(nil), resource)
+		return nil, fmt.Errorf("invalid resource type: expected=%T, got=%T", (*core_mesh.MeshResource)(nil), resource)
 	}
 	return mesh, nil
 }
@@ -160,7 +159,7 @@ func (m *meshManager) mesh(resource core_model.Resource) (*core_mesh.MeshResourc
 func (m *meshManager) meshes(list core_model.ResourceList) (*core_mesh.MeshResourceList, error) {
 	meshes, ok := list.(*core_mesh.MeshResourceList)
 	if !ok {
-		return nil, errors.Errorf("invalid resource type: expected=%T, got=%T", (*core_mesh.MeshResourceList)(nil), list)
+		return nil, fmt.Errorf("invalid resource type: expected=%T, got=%T", (*core_mesh.MeshResourceList)(nil), list)
 	}
 	return meshes, nil
 }

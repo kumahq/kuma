@@ -1,9 +1,9 @@
 package istio
 
 import (
+	"fmt"
 	"os"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/istio/config"
@@ -59,7 +59,7 @@ func (tp *IstioTransparentProxy) Setup(cfg *config.TransparentProxyConfig) (stri
 	}()
 
 	if err := install.GetCommand().Execute(); err != nil {
-		return tp.getStdOutStdErr(), errors.Wrapf(err, "setting istio")
+		return tp.getStdOutStdErr(), fmt.Errorf("setting istio: %w", err)
 	}
 
 	return tp.getStdOutStdErr(), nil
@@ -83,7 +83,7 @@ func (tp *IstioTransparentProxy) Cleanup(dryRun, verbose bool) (string, error) {
 	}()
 
 	if err := uninstall.GetCommand().Execute(); err != nil {
-		return tp.getStdOutStdErr(), errors.Wrapf(err, "setting istio")
+		return tp.getStdOutStdErr(), fmt.Errorf("setting istio: %w", err)
 	}
 
 	return tp.getStdOutStdErr(), nil
@@ -91,7 +91,6 @@ func (tp *IstioTransparentProxy) Cleanup(dryRun, verbose bool) (string, error) {
 
 func (tp *IstioTransparentProxy) redirectStdOutStdErr() {
 	reader, writer, err := os.Pipe()
-
 	if err != nil {
 		panic(err)
 	}

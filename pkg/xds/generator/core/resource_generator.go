@@ -1,7 +1,7 @@
 package core
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
 
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -18,7 +18,7 @@ func (c CompositeResourceGenerator) Generate(ctx xds_context.Context, proxy *mod
 	for _, gen := range c {
 		rs, err := gen.Generate(ctx, proxy)
 		if err != nil {
-			return nil, errors.Wrapf(err, "%T failed", gen)
+			return nil, fmt.Errorf("%T failed: %w", gen, err)
 		}
 		resources.AddSet(rs)
 	}

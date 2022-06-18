@@ -1,7 +1,7 @@
 package events
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )

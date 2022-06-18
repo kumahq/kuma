@@ -6,8 +6,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -89,7 +87,7 @@ type Builder struct {
 func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*Builder, error) {
 	hostname, err := os.Hostname()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get hostname")
+		return nil, fmt.Errorf("could not get hostname: %w", err)
 	}
 	suffix := core.NewUUID()[0:4]
 	return &Builder{
@@ -236,61 +234,61 @@ func (b *Builder) WithExtraReportsFn(fn ExtraReportsFn) *Builder {
 
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
-		return nil, errors.Errorf("ComponentManager has not been configured")
+		return nil, fmt.Errorf("ComponentManager has not been configured")
 	}
 	if b.rs == nil {
-		return nil, errors.Errorf("ResourceStore has not been configured")
+		return nil, fmt.Errorf("ResourceStore has not been configured")
 	}
 	if b.rm == nil {
-		return nil, errors.Errorf("ResourceManager has not been configured")
+		return nil, fmt.Errorf("ResourceManager has not been configured")
 	}
 	if b.rom == nil {
-		return nil, errors.Errorf("ReadOnlyResourceManager has not been configured")
+		return nil, fmt.Errorf("ReadOnlyResourceManager has not been configured")
 	}
 	if b.dsl == nil {
-		return nil, errors.Errorf("DataSourceLoader has not been configured")
+		return nil, fmt.Errorf("DataSourceLoader has not been configured")
 	}
 	if b.ext == nil {
-		return nil, errors.Errorf("Extensions have been misconfigured")
+		return nil, fmt.Errorf("Extensions have been misconfigured")
 	}
 	if b.leadInfo == nil {
-		return nil, errors.Errorf("LeaderInfo has not been configured")
+		return nil, fmt.Errorf("LeaderInfo has not been configured")
 	}
 	if b.lif == nil {
-		return nil, errors.Errorf("LookupIP func has not been configured")
+		return nil, fmt.Errorf("LookupIP func has not been configured")
 	}
 	if b.eac == nil {
-		return nil, errors.Errorf("EnvoyAdminClient has not been configured")
+		return nil, fmt.Errorf("EnvoyAdminClient has not been configured")
 	}
 	if b.metrics == nil {
-		return nil, errors.Errorf("Metrics has not been configured")
+		return nil, fmt.Errorf("Metrics has not been configured")
 	}
 	if b.erf == nil {
-		return nil, errors.Errorf("EventReaderFactory has not been configured")
+		return nil, fmt.Errorf("EventReaderFactory has not been configured")
 	}
 	if b.apim == nil {
-		return nil, errors.Errorf("APIManager has not been configured")
+		return nil, fmt.Errorf("APIManager has not been configured")
 	}
 	if b.xdsh == nil {
-		return nil, errors.Errorf("XDSHooks has not been configured")
+		return nil, fmt.Errorf("XDSHooks has not been configured")
 	}
 	if b.cap == nil {
-		return nil, errors.Errorf("CAProvider has not been configured")
+		return nil, fmt.Errorf("CAProvider has not been configured")
 	}
 	if b.dps == nil {
-		return nil, errors.Errorf("DpServer has not been configured")
+		return nil, fmt.Errorf("DpServer has not been configured")
 	}
 	if b.kdsctx == nil {
-		return nil, errors.Errorf("KDSContext has not been configured")
+		return nil, fmt.Errorf("KDSContext has not been configured")
 	}
 	if b.rv == (ResourceValidators{}) {
-		return nil, errors.Errorf("ResourceValidators have not been configured")
+		return nil, fmt.Errorf("ResourceValidators have not been configured")
 	}
 	if b.au == nil {
-		return nil, errors.Errorf("API Server Authenticator has not been configured")
+		return nil, fmt.Errorf("API Server Authenticator has not been configured")
 	}
 	if b.acc == (Access{}) {
-		return nil, errors.Errorf("Access has not been configured")
+		return nil, fmt.Errorf("Access has not been configured")
 	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
@@ -327,75 +325,99 @@ func (b *Builder) Build() (Runtime, error) {
 func (b *Builder) ComponentManager() component.Manager {
 	return b.cm
 }
+
 func (b *Builder) ResourceStore() core_store.ResourceStore {
 	return b.rs
 }
+
 func (b *Builder) SecretStore() store.SecretStore {
 	return b.ss
 }
+
 func (b *Builder) ConfigStore() core_store.ResourceStore {
 	return b.cs
 }
+
 func (b *Builder) ResourceManager() core_manager.CustomizableResourceManager {
 	return b.rm
 }
+
 func (b *Builder) ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager {
 	return b.rom
 }
+
 func (b *Builder) CaManagers() core_ca.Managers {
 	return b.cam
 }
+
 func (b *Builder) Config() kuma_cp.Config {
 	return b.cfg
 }
+
 func (b *Builder) DataSourceLoader() datasource.Loader {
 	return b.dsl
 }
+
 func (b *Builder) Extensions() context.Context {
 	return b.ext
 }
+
 func (b *Builder) ConfigManager() config_manager.ConfigManager {
 	return b.configm
 }
+
 func (b *Builder) LeaderInfo() component.LeaderInfo {
 	return b.leadInfo
 }
+
 func (b *Builder) LookupIP() lookup.LookupIPFunc {
 	return b.lif
 }
+
 func (b *Builder) Metrics() metrics.Metrics {
 	return b.metrics
 }
+
 func (b *Builder) EventReaderFactory() events.ListenerFactory {
 	return b.erf
 }
+
 func (b *Builder) APIManager() api_server.APIManager {
 	return b.apim
 }
+
 func (b *Builder) XDSHooks() *xds_hooks.Hooks {
 	return b.xdsh
 }
+
 func (b *Builder) CAProvider() secrets.CaProvider {
 	return b.cap
 }
+
 func (b *Builder) DpServer() *dp_server.DpServer {
 	return b.dps
 }
+
 func (b *Builder) KDSContext() *kds_context.Context {
 	return b.kdsctx
 }
+
 func (b *Builder) ResourceValidators() ResourceValidators {
 	return b.rv
 }
+
 func (b *Builder) APIServerAuthenticator() authn.Authenticator {
 	return b.au
 }
+
 func (b *Builder) Access() Access {
 	return b.acc
 }
+
 func (b *Builder) AppCtx() context.Context {
 	return b.appCtx
 }
+
 func (b *Builder) ExtraReportsFn() ExtraReportsFn {
 	return b.extraReportsFn
 }

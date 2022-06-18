@@ -1,7 +1,7 @@
 package tokens
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
 
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	config_access "github.com/kumahq/kuma/pkg/config/access"
@@ -14,11 +14,12 @@ import (
 
 const PluginName = "tokens"
 
-type plugin struct {
-}
+type plugin struct{}
 
-var _ plugins.AuthnAPIServerPlugin = plugin{}
-var _ plugins.BootstrapPlugin = plugin{}
+var (
+	_ plugins.AuthnAPIServerPlugin = plugin{}
+	_ plugins.BootstrapPlugin      = plugin{}
+)
 
 // We declare AccessStrategies and not into Runtime because it's a plugin.
 var AccessStrategies = map[string]func(*plugins.MutablePluginContext) access.GenerateUserTokenAccess{
@@ -54,7 +55,7 @@ func (c plugin) AfterBootstrap(context *plugins.MutablePluginContext, config plu
 	}
 	accessFn, ok := AccessStrategies[context.Config().Access.Type]
 	if !ok {
-		return errors.Errorf("no Access strategy for type %q", context.Config().Access.Type)
+		return fmt.Errorf("no Access strategy for type %q", context.Config().Access.Type)
 	}
 	tokenIssuer := issuer.NewUserTokenIssuer(core_tokens.NewTokenIssuer(signingKeyManager))
 	if context.Config().ApiServer.Authn.Tokens.BootstrapAdminToken {

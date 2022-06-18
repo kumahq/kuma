@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/pkg/errors"
-
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -80,7 +78,7 @@ func (m *Persistence) Set(ctx context.Context, mesh string, vips *VirtualOutboun
 
 	jsonBytes, err := json.Marshal(vips.byHostname)
 	if err != nil {
-		return errors.Wrap(err, "unable to marshall VIP list")
+		return fmt.Errorf("unable to marshall VIP list: %w", err)
 	}
 	resource.Spec.Config = string(jsonBytes)
 

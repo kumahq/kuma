@@ -1,9 +1,9 @@
 package registry
 
 import (
+	"errors"
+	"fmt"
 	"reflect"
-
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
@@ -32,7 +32,7 @@ type typeRegistry struct {
 func (t *typeRegistry) DescriptorFor(resType model.ResourceType) (model.ResourceTypeDescriptor, error) {
 	typDesc, ok := t.descriptors[resType]
 	if !ok {
-		return model.ResourceTypeDescriptor{}, errors.Errorf("invalid resource type %q", resType)
+		return model.ResourceTypeDescriptor{}, fmt.Errorf("invalid resource type %q", resType)
 	}
 	return typDesc, nil
 }
@@ -70,7 +70,7 @@ func (t *typeRegistry) RegisterType(res model.ResourceTypeDescriptor) error {
 		return errors.New("spec in the object cannot be nil")
 	}
 	if previous, ok := t.descriptors[res.Name]; ok {
-		return errors.Errorf("duplicate registration of ResourceType under name %q: previous=%#v new=%#v", res.Name, previous, reflect.TypeOf(res.Resource).Elem().String())
+		return fmt.Errorf("duplicate registration of ResourceType under name %q: previous=%#v new=%#v", res.Name, previous, reflect.TypeOf(res.Resource).Elem().String())
 	}
 	t.descriptors[res.Name] = res
 	return nil
@@ -79,7 +79,7 @@ func (t *typeRegistry) RegisterType(res model.ResourceTypeDescriptor) error {
 func (t *typeRegistry) NewObject(resType model.ResourceType) (model.Resource, error) {
 	typDesc, ok := t.descriptors[resType]
 	if !ok {
-		return nil, errors.Errorf("invalid resource type %q", resType)
+		return nil, fmt.Errorf("invalid resource type %q", resType)
 	}
 	return typDesc.NewObject(), nil
 }
@@ -87,7 +87,7 @@ func (t *typeRegistry) NewObject(resType model.ResourceType) (model.Resource, er
 func (t *typeRegistry) NewList(resType model.ResourceType) (model.ResourceList, error) {
 	typDesc, ok := t.descriptors[resType]
 	if !ok {
-		return nil, errors.Errorf("invalid resource type %q", resType)
+		return nil, fmt.Errorf("invalid resource type %q", resType)
 	}
 	return typDesc.NewList(), nil
 }

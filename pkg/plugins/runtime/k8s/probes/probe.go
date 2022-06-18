@@ -1,11 +1,11 @@
 package probes
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -25,7 +25,7 @@ type KumaProbe kube_core.Probe
 // then method returns an error
 func (p KumaProbe) ToReal(virtualPort uint32) (KumaProbe, error) {
 	if p.Port() != virtualPort {
-		return KumaProbe{}, errors.Errorf("probe's port %d should be equal to virtual port %d", p.Port(), virtualPort)
+		return KumaProbe{}, fmt.Errorf("probe's port %d should be equal to virtual port %d", p.Port(), virtualPort)
 	}
 	segments := strings.Split(p.Path(), "/")
 	if len(segments) < 2 || segments[0] != "" {
@@ -33,7 +33,7 @@ func (p KumaProbe) ToReal(virtualPort uint32) (KumaProbe, error) {
 	}
 	vport, err := strconv.ParseInt(segments[1], 10, 32)
 	if err != nil {
-		return KumaProbe{}, errors.Errorf("invalid port value %s", segments[1])
+		return KumaProbe{}, fmt.Errorf("invalid port value %s", segments[1])
 	}
 	return KumaProbe{
 		ProbeHandler: kube_core.ProbeHandler{
@@ -47,7 +47,7 @@ func (p KumaProbe) ToReal(virtualPort uint32) (KumaProbe, error) {
 
 func (p KumaProbe) ToVirtual(virtualPort uint32) (KumaProbe, error) {
 	if p.Port() == virtualPort {
-		return KumaProbe{}, errors.Errorf("cannot override Pod's probes. Port for probe cannot "+
+		return KumaProbe{}, fmt.Errorf("cannot override Pod's probes. Port for probe cannot "+
 			"be set to %d. It is reserved for the dataplane that will serve pods without mTLS.", virtualPort)
 	}
 	probePath := p.Path()

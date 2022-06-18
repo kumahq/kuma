@@ -6,6 +6,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -15,7 +17,6 @@ import (
 	"strings"
 
 	"github.com/emicklei/go-restful"
-	"github.com/pkg/errors"
 	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
 
@@ -43,9 +44,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/server"
 )
 
-var (
-	log = core.Log.WithName("api-server")
-)
+var log = core.Log.WithName("api-server")
 
 type ApiServer struct {
 	mux    *http.ServeMux
@@ -126,11 +125,11 @@ func NewApiServer(
 	container.Add(ws)
 
 	if err := addIndexWsEndpoints(ws, getInstanceId, getClusterId, enableGUI); err != nil {
-		return nil, errors.Wrap(err, "could not create index webservice")
+		return nil, fmt.Errorf("could not create index webservice: %w", err)
 	}
 	configWs, err := configWs(cfg)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not create configuration webservice")
+		return nil, fmt.Errorf("could not create configuration webservice: %w", err)
 	}
 	container.Add(configWs)
 	container.Add(versionsWs())
@@ -274,8 +273,8 @@ func (a *ApiServer) startHttpServer(errChan chan error) *http.Server {
 	go func() {
 		err := server.ListenAndServe()
 		if err != nil {
-			switch err {
-			case http.ErrServerClosed:
+			switch {
+			case errors.Is(err, http.ErrServerClosed):
 				log.Info("shutting down server")
 			default:
 				log.Error(err, "could not start an HTTP Server")
@@ -306,8 +305,8 @@ func (a *ApiServer) startHttpsServer(errChan chan error) *http.Server {
 	go func() {
 		err := server.ListenAndServeTLS(a.config.HTTPS.TlsCertFile, a.config.HTTPS.TlsKeyFile)
 		if err != nil {
-			switch err {
-			case http.ErrServerClosed:
+			switch {
+			case errors.Is(err, http.ErrServerClosed):
 				log.Info("shutting down server")
 			default:
 				log.Error(err, "could not start an HTTPS Server")
@@ -340,10 +339,10 @@ func configureMTLS(certsDir string) (*tls.Config, error) {
 			path := filepath.Join(certsDir, file.Name())
 			caCert, err := os.ReadFile(path)
 			if err != nil {
-				return nil, errors.Wrapf(err, "could not read certificate %q", path)
+				return nil, fmt.Errorf("could not read certificate %q: %w", path, err)
 			}
 			if !clientCertPool.AppendCertsFromPEM(caCert) {
-				return nil, errors.Errorf("failed to load PEM client certificate from %q", path)
+				return nil, fmt.Errorf("failed to load PEM client certificate from %q", path)
 			}
 		}
 		tlsConfig.ClientCAs = clientCertPool

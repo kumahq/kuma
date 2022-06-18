@@ -1,7 +1,7 @@
 package clusterid
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
@@ -22,6 +22,6 @@ func Setup(rt core_runtime.Runtime) error {
 		}
 		return nil
 	default:
-		return errors.Errorf("unknown mode of the CP %s", rt.Config().Mode)
+		return fmt.Errorf("unknown mode of the CP %s", rt.Config().Mode)
 	}
 }

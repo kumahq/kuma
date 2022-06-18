@@ -1,8 +1,9 @@
 package v3
 
 import (
+	"fmt"
+
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v3"
-	"github.com/pkg/errors"
 
 	accesslog "github.com/kumahq/kuma/pkg/envoy/accesslog/v3"
 )
@@ -18,7 +19,7 @@ func (h *handler) Handle(msg *envoy_accesslog.StreamAccessLogsMessage) error {
 		for _, httpLogEntry := range logEntries.HttpLogs.GetLogEntry() {
 			record, err := h.format.FormatHttpLogEntry(httpLogEntry)
 			if err != nil {
-				return errors.Wrapf(err, "failed to format an HTTP log entry %v as %q", httpLogEntry, h.format)
+				return fmt.Errorf("failed to format an HTTP log entry %v as %q: %w", httpLogEntry, h.format, err)
 			}
 			if err := h.sender.Send(record); err != nil {
 				return err
@@ -28,14 +29,14 @@ func (h *handler) Handle(msg *envoy_accesslog.StreamAccessLogsMessage) error {
 		for _, tcpLogEntry := range logEntries.TcpLogs.GetLogEntry() {
 			record, err := h.format.FormatTcpLogEntry(tcpLogEntry)
 			if err != nil {
-				return errors.Wrapf(err, "failed to format a TCP log entry %v as %q", tcpLogEntry, h.format)
+				return fmt.Errorf("failed to format a TCP log entry %v as %q: %w", tcpLogEntry, h.format, err)
 			}
 			if err := h.sender.Send(record); err != nil {
 				return err
 			}
 		}
 	default:
-		return errors.Errorf("unknown type of log entries: %T", msg.GetLogEntries())
+		return fmt.Errorf("unknown type of log entries: %T", msg.GetLogEntries())
 	}
 	return nil
 }

@@ -10,7 +10,6 @@ import (
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
-	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -46,7 +45,7 @@ func New(serverURL string) (*Client, error) {
 			InsecureSkipVerify: true, // it's acceptable since we don't pass any secrets to the server
 		})))
 	default:
-		return nil, errors.Errorf("unsupported scheme %q. Use one of %s", url.Scheme, []string{"grpc", "grpcs"})
+		return nil, fmt.Errorf("unsupported scheme %q. Use one of %s", url.Scheme, []string{"grpc", "grpcs"})
 	}
 	conn, err := grpc.Dial(url.Host, dialOpts...)
 	if err != nil {

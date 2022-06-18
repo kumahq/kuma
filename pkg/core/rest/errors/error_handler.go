@@ -1,10 +1,10 @@
 package errors
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/emicklei/go-restful"
-	"github.com/pkg/errors"
 
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
 	"github.com/kumahq/kuma/pkg/core"
@@ -22,15 +22,19 @@ func HandleError(response *restful.Response, err error, title string) {
 		handleNotFound(title, response)
 	case store.IsResourcePreconditionFailed(err):
 		handlePreconditionFailed(title, response)
-	case err == store.ErrorInvalidOffset:
+	case errors.Is(err, store.ErrorInvalidOffset):
 		handleInvalidOffset(title, response)
 	case manager.IsMeshNotFound(err):
-		handleMeshNotFound(title, err.(*manager.MeshNotFoundError), response)
+		var meshNotFoundError *manager.MeshNotFoundError
+		errors.As(err, &meshNotFoundError)
+		handleMeshNotFound(title, meshNotFoundError, response)
 	case validators.IsValidationError(err):
-		handleValidationError(title, err.(*validators.ValidationError), response)
+		var validationError *validators.ValidationError
+		errors.As(err, &validationError)
+		handleValidationError(title, validationError, response)
 	case api_server_types.IsMaxPageSizeExceeded(err):
 		handleMaxPageSizeExceeded(title, err, response)
-	case err == api_server_types.InvalidPageSize:
+	case errors.Is(err, api_server_types.InvalidPageSize):
 		handleInvalidPageSize(title, response)
 	case tokens.IsSigningKeyNotFound(err):
 		handleSigningKeyNotFound(err, response)
@@ -38,10 +42,8 @@ func HandleError(response *restful.Response, err error, title string) {
 		var accessErr *access.AccessDeniedError
 		errors.As(err, &accessErr)
 		handleAccessDenied(accessErr, response)
-	case errors.Is(err, &Unauthenticated{}):
-		var unauthenticated *Unauthenticated
-		errors.As(err, &err)
-		handleUnauthenticated(unauthenticated, title, response)
+	case errors.Is(err, Unauthenticated):
+		handleUnauthenticated(title, response)
 	default:
 		handleUnknownError(err, title, response)
 	}
@@ -158,10 +160,10 @@ func handleAccessDenied(err *access.AccessDeniedError, response *restful.Respons
 	WriteError(response, 403, kumaErr)
 }
 
-func handleUnauthenticated(err *Unauthenticated, title string, response *restful.Response) {
+func handleUnauthenticated(title string, response *restful.Response) {
 	kumaErr := types.Error{
 		Title:   title,
-		Details: err.Error(),
+		Details: Unauthenticated.Error(),
 	}
 	WriteError(response, 401, kumaErr)
 }

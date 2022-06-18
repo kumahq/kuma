@@ -1,8 +1,7 @@
 package errors
 
-type Unauthenticated struct {
-}
+import (
+	"errors"
+)
 
-func (u *Unauthenticated) Error() string {
-	return "Unauthenticated"
-}
+var Unauthenticated = errors.New("Unauthenticated")

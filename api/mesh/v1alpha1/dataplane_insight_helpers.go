@@ -1,10 +1,9 @@
 package v1alpha1
 
 import (
+	"fmt"
 	"strings"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/api/generic"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -91,7 +90,7 @@ func (x *DataplaneInsight) UpdateSubscription(s generic.Subscription) error {
 	}
 	discoverySubscription, ok := s.(*DiscoverySubscription)
 	if !ok {
-		return errors.Errorf("invalid type %T for DataplaneInsight", s)
+		return fmt.Errorf("invalid type %T for DataplaneInsight", s)
 	}
 	i, old := x.GetSubscription(discoverySubscription.Id)
 	if old != nil {

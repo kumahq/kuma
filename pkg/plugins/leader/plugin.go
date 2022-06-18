@@ -1,10 +1,10 @@
 package leader
 
 import (
+	"fmt"
 	"time"
 
 	"cirello.io/pglock"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
@@ -19,7 +19,7 @@ func NewLeaderElector(b *core_runtime.Builder) (component.LeaderElector, error) 
 	case store.PostgresStore:
 		db, err := common_postgres.ConnectToDb(*b.Config().Store.Postgres)
 		if err != nil {
-			return nil, errors.Wrap(err, "could not connect to postgres")
+			return nil, fmt.Errorf("could not connect to postgres: %w", err)
 		}
 		client, err := pglock.New(db,
 			pglock.WithLeaseDuration(5*time.Second),
@@ -28,7 +28,7 @@ func NewLeaderElector(b *core_runtime.Builder) (component.LeaderElector, error) 
 			pglock.WithLogger(&leader_postgres.KumaPqLockLogger{}),
 		)
 		if err != nil {
-			return nil, errors.Wrap(err, "could not create postgres lock client")
+			return nil, fmt.Errorf("could not create postgres lock client: %w", err)
 		}
 		elector := leader_postgres.NewPostgresLeaderElector(client)
 		return elector, nil
@@ -36,6 +36,6 @@ func NewLeaderElector(b *core_runtime.Builder) (component.LeaderElector, error) 
 		return leader_memory.NewAlwaysLeaderElector(), nil
 	// In case of Kubernetes, Leader Elector is embedded in a Kubernetes ComponentManager
 	default:
-		return nil, errors.Errorf("no election leader for storage of type %s", b.Config().Store.Type)
+		return nil, fmt.Errorf("no election leader for storage of type %s", b.Config().Store.Type)
 	}
 }

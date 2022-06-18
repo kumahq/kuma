@@ -1,10 +1,10 @@
 package clusters
 
 import (
+	"errors"
 	"net"
 
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/xds"
 	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"

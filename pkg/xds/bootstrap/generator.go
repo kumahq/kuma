@@ -4,13 +4,13 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"os"
 	"sort"
 	"strings"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	bootstrap_config "github.com/kumahq/kuma/pkg/config/xds/bootstrap"
@@ -22,8 +22,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
-	// import Envoy protobuf definitions so (un)marshaling Envoy protobuf works in tests (normally it is imported in root.go)
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy" // import Envoy protobuf definitions so (un)marshaling Envoy protobuf works in tests (normally it is imported in root.go)
 )
 
 type BootstrapGenerator interface {
@@ -43,7 +42,7 @@ func NewDefaultBootstrapGenerator(
 		return nil, err
 	}
 	if config.Params.XdsHost != "" && !hostsAndIps[config.Params.XdsHost] {
-		return nil, errors.Errorf("hostname: %s set by KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST is not available in the DP Server certificate. Available hostnames: %q. Change the hostname or generate certificate with proper hostname.", config.Params.XdsHost, hostsAndIps.slice())
+		return nil, fmt.Errorf("hostname: %s set by KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST is not available in the DP Server certificate. Available hostnames: %q. Change the hostname or generate certificate with proper hostname.", config.Params.XdsHost, hostsAndIps.slice())
 	}
 	return &bootstrapGenerator{
 		resManager:       resManager,
@@ -148,7 +147,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		}
 
 	default:
-		return nil, kumaDpBootstrap, errors.Errorf("unknown proxy type %v", params.ProxyType)
+		return nil, kumaDpBootstrap, fmt.Errorf("unknown proxy type %v", params.ProxyType)
 	}
 	var err error
 	if params.CertBytes, err = b.caCert(request); err != nil {
@@ -157,10 +156,10 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 
 	config, err := genConfig(params)
 	if err != nil {
-		return nil, kumaDpBootstrap, errors.Wrap(err, "failed creating bootstrap conf")
+		return nil, kumaDpBootstrap, fmt.Errorf("failed creating bootstrap conf: %w", err)
 	}
 	if err = config.Validate(); err != nil {
-		return nil, kumaDpBootstrap, errors.Wrap(err, "Envoy bootstrap config is not valid")
+		return nil, kumaDpBootstrap, fmt.Errorf("Envoy bootstrap config is not valid: %w", err)
 	}
 	return config, kumaDpBootstrap, nil
 }
@@ -171,7 +170,7 @@ var NotCA = errors.New("A data plane proxy is trying to verify the control plane
 	"Provide CA that was used to sign a certificate used in the control plane by using 'kuma-dp run --ca-cert-file=file' or via KUMA_CONTROL_PLANE_CA_CERT_FILE")
 
 func SANMismatchErr(host string, sans []string) error {
-	return errors.Errorf("A data plane proxy is trying to connect to the control plane using %q address, but the certificate in the control plane has the following SANs %q. "+
+	return fmt.Errorf("A data plane proxy is trying to connect to the control plane using %q address, but the certificate in the control plane has the following SANs %q. "+
 		"Either change the --cp-address in kuma-dp to one of those or execute the following steps:\n"+
 		"1) Generate a new certificate with the address you are trying to use. It is recommended to use trusted Certificate Authority, but you can also generate self-signed certificates using 'kumactl generate tls-certificate --type=server --cp-hostname=%s'\n"+
 		"2) Set KUMA_GENERAL_TLS_CERT_FILE and KUMA_GENERAL_TLS_KEY_FILE or the equivalent in Kuma CP config file to the new certificate.\n"+
@@ -240,7 +239,7 @@ func (b *bootstrapGenerator) dataplaneFor(ctx context.Context, request types.Boo
 		}
 		dp, ok := res.(*core_mesh.DataplaneResource)
 		if !ok {
-			return nil, errors.Errorf("invalid resource")
+			return nil, fmt.Errorf("invalid resource")
 		}
 		if err := dp.Validate(); err != nil {
 			return nil, err
@@ -272,7 +271,7 @@ func (b *bootstrapGenerator) zoneIngressFor(ctx context.Context, request types.B
 		}
 		zoneIngress, ok := res.(*core_mesh.ZoneIngressResource)
 		if !ok {
-			return nil, errors.Errorf("invalid resource")
+			return nil, fmt.Errorf("invalid resource")
 		}
 		if err := zoneIngress.Validate(); err != nil {
 			return nil, err
@@ -295,7 +294,7 @@ func (b *bootstrapGenerator) zoneEgressFor(ctx context.Context, request types.Bo
 		}
 		zoneEgress, ok := res.(*core_mesh.ZoneEgressResource)
 		if !ok {
-			return nil, errors.Errorf("invalid resource")
+			return nil, fmt.Errorf("invalid resource")
 		}
 		if err := zoneEgress.Validate(); err != nil {
 			return nil, err
@@ -338,18 +337,18 @@ func (b *bootstrapGenerator) caCert(request types.BootstrapRequest) ([]byte, err
 		cert, err = os.ReadFile(b.xdsCertFile)
 		origin = "file " + b.xdsCertFile
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed getting cert from %s", origin)
+			return nil, fmt.Errorf("failed getting cert from %s: %w", origin, err)
 		}
 	default:
 		return nil, nil
 	}
 	pemCert, _ := pem.Decode(cert)
 	if pemCert == nil {
-		return nil, errors.Errorf("could not parse certificate from %s", origin)
+		return nil, fmt.Errorf("could not parse certificate from %s", origin)
 	}
 	x509Cert, err := x509.ParseCertificate(pemCert.Bytes)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not parse certificate %s", origin)
+		return nil, fmt.Errorf("could not parse certificate %s: %w", origin, err)
 	}
 	// checking just x509Cert.IsCA is not enough, because it's valid to generate CA without CA:TRUE basic constraint
 	if x509Cert.BasicConstraintsValid && !x509Cert.IsCA {
@@ -380,7 +379,7 @@ func (s SANSet) slice() []string {
 func hostsAndIPsFromCertFile(dpServerCertFile string) (SANSet, error) {
 	certBytes, err := os.ReadFile(dpServerCertFile)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not read certificate")
+		return nil, fmt.Errorf("could not read certificate: %w", err)
 	}
 	pemCert, _ := pem.Decode(certBytes)
 	if pemCert == nil {
@@ -388,7 +387,7 @@ func hostsAndIPsFromCertFile(dpServerCertFile string) (SANSet, error) {
 	}
 	cert, err := x509.ParseCertificate(pemCert.Bytes)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not parse certificate")
+		return nil, fmt.Errorf("could not parse certificate: %w", err)
 	}
 
 	hostsAndIps := map[string]bool{}

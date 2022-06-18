@@ -2,12 +2,12 @@ package server
 
 import (
 	"context"
+	"errors"
 	"sync/atomic"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -114,7 +114,7 @@ func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.H
 	}
 
 	responseChan := make(chan cache.Response, 1)
-	var node = &envoy_core.Node{}
+	node := &envoy_core.Node{}
 	for {
 		select {
 		case <-s.ctx.Done():

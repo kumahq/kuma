@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"time"
@@ -74,7 +75,8 @@ func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
 
 	discoveryRes, err := s.server.FetchMonitoringAssignments(ctx, discoveryReq)
 	if err != nil {
-		if _, ok := err.(*cache_types.SkipFetchError); ok {
+		var skipFetchError *cache_types.SkipFetchError
+		if errors.As(err, &skipFetchError) {
 			// No update necessary, send 304 Not Modified
 			s.log.V(1).Info("no update needed")
 			res.WriteHeader(http.StatusNotModified)

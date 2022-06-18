@@ -5,7 +5,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
@@ -24,9 +23,7 @@ const (
 	grpcKeepAliveTime        = 15 * time.Second
 )
 
-var (
-	muxServerLog = core.Log.WithName("kds-mux-server")
-)
+var muxServerLog = core.Log.WithName("kds-mux-server")
 
 type Filter interface {
 	InterceptSession(session Session) error
@@ -49,9 +46,7 @@ type server struct {
 	serviceServer *service.GlobalKDSServiceServer
 }
 
-var (
-	_ component.Component = &server{}
-)
+var _ component.Component = &server{}
 
 func NewServer(
 	callbacks Callbacks,
@@ -88,7 +83,7 @@ func (s *server) Start(stop <-chan struct{}) error {
 	if useTLS {
 		creds, err := credentials.NewServerTLSFromFile(s.config.TlsCertFile, s.config.TlsKeyFile)
 		if err != nil {
-			return errors.Wrap(err, "failed to load TLS certificate")
+			return fmt.Errorf("failed to load TLS certificate: %w", err)
 		}
 		grpcOptions = append(grpcOptions, grpc.Creds(creds))
 	}

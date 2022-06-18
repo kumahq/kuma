@@ -1,8 +1,9 @@
 package routes
 
 import (
+	"errors"
+
 	envoy_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"

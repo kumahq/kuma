@@ -8,7 +8,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/test/e2e_env/multizone/env"
 	. "github.com/kumahq/kuma/test/framework"
@@ -71,7 +70,7 @@ func ApplicationOnUniversalClientOnK8s() {
 					}
 				}
 				if len(instanceSet) != len(instances) {
-					return "", errors.Errorf("checked %d/%d instances", len(instanceSet), len(instances))
+					return "", fmt.Errorf("checked %d/%d instances", len(instanceSet), len(instances))
 				}
 				return "", nil
 			},

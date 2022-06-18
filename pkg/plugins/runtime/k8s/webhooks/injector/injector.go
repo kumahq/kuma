@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_errors "k8s.io/apimachinery/pkg/api/errors"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
@@ -46,7 +45,7 @@ func New(
 	if cfg.CaCertFile != "" {
 		bytes, err := os.ReadFile(cfg.CaCertFile)
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not read provided CA cert file %s", cfg.CaCertFile)
+			return nil, fmt.Errorf("could not read provided CA cert file %s: %w", cfg.CaCertFile, err)
 		}
 		caCert = string(bytes)
 	}
@@ -73,7 +72,7 @@ type KumaInjector struct {
 func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error {
 	ns, err := i.namespaceFor(ctx, pod)
 	if err != nil {
-		return errors.Wrap(err, "could not retrieve namespace for pod")
+		return fmt.Errorf("could not retrieve namespace for pod: %w", err)
 	}
 	logger := log.WithValues("pod", pod.GenerateName, "namespace", pod.Namespace)
 	if inject, err := i.needInject(pod, ns); err != nil {
@@ -103,7 +102,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 
 	mesh, err := i.meshFor(ctx, pod, ns)
 	if err != nil {
-		return errors.Wrap(err, "could not retrieve mesh for pod")
+		return fmt.Errorf("could not retrieve mesh for pod: %w", err)
 	}
 
 	// annotations
@@ -113,7 +112,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 
 	annotations, err := i.NewAnnotations(pod, mesh)
 	if err != nil {
-		return errors.Wrap(err, "could not generate annotations for pod")
+		return fmt.Errorf("could not generate annotations for pod: %w", err)
 	}
 	for key, value := range annotations {
 		pod.Annotations[key] = value
@@ -318,7 +317,7 @@ func (i *KumaInjector) applyCustomPatches(
 	logger.Info("applying a patches to the container", "patches", patches.names)
 	containerJson, err = mesh_k8s.ToJsonPatch(patches.patches).Apply(containerJson)
 	if err != nil {
-		return kube_core.Container{}, errors.Wrapf(err, "could not apply patches %q", patches.names)
+		return kube_core.Container{}, fmt.Errorf("could not apply patches %q: %w", patches.names, err)
 	}
 
 	err = json.Unmarshal(containerJson, &patchedContainer)
@@ -362,6 +361,7 @@ func (i *KumaInjector) NewSidecarContainer(
 
 	return container, nil
 }
+
 func (i *KumaInjector) NewVolumeMounts(pod *kube_core.Pod) ([]kube_core.VolumeMount, error) {
 	// If the user specifies a volume containing a service account token, we will mount and use that.
 	if volumeName, exists := metadata.Annotations(pod.Annotations).GetString(metadata.KumaSidecarTokenVolumeAnnotation); exists {
@@ -375,7 +375,7 @@ func (i *KumaInjector) NewVolumeMounts(pod *kube_core.Pod) ([]kube_core.VolumeMo
 				}}, nil
 			}
 		}
-		return nil, errors.Errorf("volume (%s) specified for %s but volume does not exist in pod spec", volumeName, metadata.KumaSidecarTokenVolumeAnnotation)
+		return nil, fmt.Errorf("volume (%s) specified for %s but volume does not exist in pod spec", volumeName, metadata.KumaSidecarTokenVolumeAnnotation)
 	}
 
 	// If not specified with the above annotation, instead query each container in the pod to find a
@@ -456,10 +456,10 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *core_mesh.MeshRe
 	}
 
 	if err := setVirtualProbesEnabledAnnotation(annotations, pod, i.cfg); err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("unable to set %s", metadata.KumaVirtualProbesAnnotation))
+		return nil, fmt.Errorf("unable to set %s: %w", metadata.KumaVirtualProbesAnnotation, err)
 	}
 	if err := setVirtualProbesPortAnnotation(annotations, pod, i.cfg); err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("unable to set %s", metadata.KumaVirtualProbesPortAnnotation))
+		return nil, fmt.Errorf("unable to set %s: %w", metadata.KumaVirtualProbesPortAnnotation, err)
 	}
 
 	if val, exist := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeInboundPorts); exist {

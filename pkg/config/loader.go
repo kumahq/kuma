@@ -1,10 +1,10 @@
 package config
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/kelseyhightower/envconfig"
-	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -22,19 +22,19 @@ func Load(file string, cfg Config) error {
 	}
 
 	if err := cfg.Validate(); err != nil {
-		return errors.Wrapf(err, "Invalid configuration")
+		return fmt.Errorf("Invalid configuration: %w", err)
 	}
 	return nil
 }
 
 func loadFromFile(file string, cfg Config) error {
 	if !fileExists(file) {
-		return errors.Errorf("Failed to access configuration file %q", file)
+		return fmt.Errorf("Failed to access configuration file %q", file)
 	}
 	if contents, err := os.ReadFile(file); err != nil {
-		return errors.Wrapf(err, "Failed to read configuration from file %q", file)
+		return fmt.Errorf("Failed to read configuration from file %q: %w", file, err)
 	} else if err := yaml.Unmarshal(contents, cfg); err != nil {
-		return errors.Wrapf(err, "Failed to parse configuration from file %q", file)
+		return fmt.Errorf("Failed to parse configuration from file %q: %w", file, err)
 	}
 	return nil
 }

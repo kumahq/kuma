@@ -1,7 +1,7 @@
 package k8s
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 
 	"github.com/kumahq/kuma/pkg/config"
 )

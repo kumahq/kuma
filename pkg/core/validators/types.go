@@ -1,6 +1,7 @@
 package validators
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -114,8 +115,8 @@ func MakeRequiredFieldErr(path PathBuilder) ValidationError {
 }
 
 func IsValidationError(err error) bool {
-	_, ok := err.(*ValidationError)
-	return ok
+	var validationError *ValidationError
+	return errors.As(err, &validationError)
 }
 
 type PathBuilder []string

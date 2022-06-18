@@ -1,11 +1,12 @@
 package topology
 
 import (
+	"errors"
+	"fmt"
 	"net"
 
 	"github.com/go-logr/logr"
 	"github.com/golang/protobuf/proto"
-	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
@@ -96,7 +97,7 @@ func lookupFirstIp(lookupIPFunc lookup.LookupIPFunc, address string) (string, er
 		return "", err
 	}
 	if len(ips) == 0 {
-		return "", errors.Errorf("can't resolve address %v", address)
+		return "", fmt.Errorf("can't resolve address %v", address)
 	}
 	// Pick the first lexicographic order ip (to make resolution deterministic
 	minIp := ""

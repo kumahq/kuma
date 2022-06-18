@@ -1,11 +1,10 @@
 package types
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 const (
@@ -130,11 +129,11 @@ func ParsePortRange(text string) (*PortRange, error) {
 	var err error
 	lowest, err = parsePortOrDefault(left, MinPort)
 	if err != nil {
-		return nil, errors.Wrapf(err, invalidPortRange(text))
+		return nil, fmt.Errorf("%s: %w", invalidPortRange(text), err)
 	}
 	highest, err = parsePortOrDefault(right, MaxPort)
 	if err != nil {
-		return nil, errors.Wrapf(err, invalidPortRange(text))
+		return nil, fmt.Errorf("%s: %w", invalidPortRange(text), err)
 	}
 	// convert into a range
 	r, err := NewPortRange(lowest, highest)

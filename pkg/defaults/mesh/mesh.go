@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/pkg/errors"
-
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -46,7 +44,7 @@ func EnsureDefaultMeshResources(ctx context.Context, resManager manager.Resource
 		resource := resourceBuilder()
 		err, created := ensureDefaultResource(ctx, resManager, resource, key)
 		if err != nil {
-			return errors.Wrapf(err, "could not create default %s %q", resource.Descriptor().Name, key.Name)
+			return fmt.Errorf("could not create default %s %q: %w", resource.Descriptor().Name, key.Name, err)
 		}
 
 		msg := fmt.Sprintf("default %s already exists", resource.Descriptor().Name)
@@ -59,7 +57,7 @@ func EnsureDefaultMeshResources(ctx context.Context, resManager manager.Resource
 
 	created, err := ensureDataplaneTokenSigningKey(ctx, resManager, meshName)
 	if err != nil {
-		return errors.Wrap(err, "could not create default Dataplane Token Signing Key")
+		return fmt.Errorf("could not create default Dataplane Token Signing Key: %w", err)
 	}
 	if created {
 		resKey := tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(meshName), tokens.DefaultSerialNumber, meshName)
@@ -76,10 +74,10 @@ func ensureDefaultResource(ctx context.Context, resManager manager.ResourceManag
 		return nil, false
 	}
 	if !store.IsResourceNotFound(err) {
-		return errors.Wrap(err, "could not retrieve a resource"), false
+		return fmt.Errorf("could not retrieve a resource: %w", err), false
 	}
 	if err := resManager.Create(ctx, res, store.CreateBy(resourceKey)); err != nil {
-		return errors.Wrap(err, "could not create a resource"), false
+		return fmt.Errorf("could not create a resource: %w", err), false
 	}
 	return nil, true
 }

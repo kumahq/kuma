@@ -2,13 +2,13 @@ package v3
 
 import (
 	"context"
+	"fmt"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/golang/protobuf/proto"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
 	model "github.com/kumahq/kuma/pkg/core/xds"
@@ -21,9 +21,7 @@ import (
 	xds_template "github.com/kumahq/kuma/pkg/xds/template"
 )
 
-var (
-	reconcileLog = core.Log.WithName("xds-server").WithName("reconcile")
-)
+var reconcileLog = core.Log.WithName("xds-server").WithName("reconcile")
 
 var _ xds_sync.SnapshotReconciler = &reconciler{}
 
@@ -56,7 +54,7 @@ func (r *reconciler) Reconcile(ctx xds_context.Context, proxy *model.Proxy) erro
 	node := &envoy_core.Node{Id: proxy.Id.String()}
 	snapshot, err := r.generator.GenerateSnapshot(ctx, proxy)
 	if err != nil {
-		return errors.Wrapf(err, "failed to generate a snapshot")
+		return fmt.Errorf("failed to generate a snapshot: %w", err)
 	}
 
 	// To avoid assigning a new version every time, compare with
@@ -80,14 +78,14 @@ func (r *reconciler) Reconcile(ctx xds_context.Context, proxy *model.Proxy) erro
 		for _, resources := range snapshot.Resources {
 			for name, resource := range resources.Items {
 				if err := validateResource(resource.Resource); err != nil {
-					return errors.Wrapf(err, "invalid resource %q", name)
+					return fmt.Errorf("invalid resource %q: %w", name, err)
 				}
 			}
 		}
 
 		if err := snapshot.Consistent(); err != nil {
 			log.Error(err, "inconsistent snapshot", "snapshot", snapshot, "proxy", proxy)
-			return errors.Wrap(err, "inconsistent snapshot")
+			return fmt.Errorf("inconsistent snapshot: %w", err)
 		}
 		log.Info("config has changed", "versions", changed)
 	} else {
@@ -95,7 +93,7 @@ func (r *reconciler) Reconcile(ctx xds_context.Context, proxy *model.Proxy) erro
 	}
 
 	if err := r.cacher.Cache(node, snapshot); err != nil {
-		return errors.Wrap(err, "failed to store snapshot")
+		return fmt.Errorf("failed to store snapshot: %w", err)
 	}
 
 	for _, version := range changed {
@@ -174,11 +172,11 @@ func (s *templateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, pr
 	}
 	for _, hook := range s.ResourceSetHooks {
 		if err := hook.Modify(rs, ctx, proxy); err != nil {
-			return envoy_cache.Snapshot{}, errors.Wrapf(err, "could not apply hook %T", hook)
+			return envoy_cache.Snapshot{}, fmt.Errorf("could not apply hook %T: %w", hook, err)
 		}
 	}
 	if err := modifications.Apply(rs, template.GetConf().GetModifications(), proxy.APIVersion); err != nil {
-		return envoy_cache.Snapshot{}, errors.Wrap(err, "could not apply modifications")
+		return envoy_cache.Snapshot{}, fmt.Errorf("could not apply modifications: %w", err)
 	}
 
 	version := "" // empty value is a sign to other components to generate the version automatically

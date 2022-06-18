@@ -2,13 +2,13 @@ package tracker
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
@@ -189,7 +189,7 @@ func (t *tracker) updateDataplane(streamID xds.StreamID, healthMap map[uint32]bo
 	defer t.RUnlock()
 	dataplaneKey, hasAssociation := t.streamsAssociation[streamID]
 	if !hasAssociation {
-		return errors.Errorf("no proxy for streamID = %d", streamID)
+		return fmt.Errorf("no proxy for streamID = %d", streamID)
 	}
 
 	dp := mesh.NewDataplaneResource()

@@ -1,9 +1,10 @@
 package v3
 
 import (
+	"fmt"
+
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -25,7 +26,7 @@ func (c *clusterModificator) apply(resources *core_xds.ResourceSet) error {
 	case mesh_proto.OpPatch:
 		c.patch(resources, clusterMod)
 	default:
-		return errors.Errorf("invalid operation: %s", c.Operation)
+		return fmt.Errorf("invalid operation: %s", c.Operation)
 	}
 	return nil
 }

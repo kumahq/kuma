@@ -2,9 +2,9 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -51,7 +51,7 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 		if kube_apierrs.IsNotFound(err) {
 			return kube_ctrl.Result{}, nil
 		}
-		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to fetch Namespace %s", req.NamespacedName.Name)
+		return kube_ctrl.Result{}, fmt.Errorf("unable to fetch Namespace %s: %w", req.NamespacedName.Name, err)
 	}
 
 	if ns.Status.Phase == kube_core.NamespaceTerminating {
@@ -62,14 +62,14 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 
 	injectedLabel, _, err := metadata.Annotations(ns.Labels).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
 	if err != nil {
-		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to check sidecar injection label on namespace %s", ns.Name)
+		return kube_ctrl.Result{}, fmt.Errorf("unable to check sidecar injection label on namespace %s: %w", ns.Name, err)
 	}
 	// support annotations for backwards compatibility
 	// https://github.com/kumahq/kuma/issues/4005
 	injectedAnnotation := false
 	injectedAnnotation, _, err = metadata.Annotations(ns.Annotations).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
 	if err != nil {
-		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to check sidecar injection annotation on namespace %s", ns.Name)
+		return kube_ctrl.Result{}, fmt.Errorf("unable to check sidecar injection annotation on namespace %s: %w", ns.Name, err)
 	}
 	injected := injectedLabel || injectedAnnotation
 	if injected {
@@ -90,7 +90,7 @@ func (r *NamespaceReconciler) hasNetworkAttachmentDefinition(ctx context.Context
 		if kube_apierrs.IsNotFound(err) {
 			return false, nil
 		}
-		return false, errors.Wrap(err, "could not get network-attachment-definitions.k8s.cni.cncf.io")
+		return false, fmt.Errorf("could not get network-attachment-definitions.k8s.cni.cncf.io: %w", err)
 	}
 
 	return true, nil
@@ -124,7 +124,7 @@ func (r *NamespaceReconciler) deleteNetworkAttachmentDefinition(ctx context.Cont
 	case kube_apierrs.IsNotFound(err): // it means that namespace never had Kuma injected
 		return nil
 	default:
-		return errors.Wrap(err, "could not fetch NetworkAttachmentDefinition")
+		return fmt.Errorf("could not fetch NetworkAttachmentDefinition: %w", err)
 	}
 }
 

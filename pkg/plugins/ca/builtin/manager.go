@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
@@ -44,7 +42,7 @@ func (b *builtinCaManager) EnsureBackends(ctx context.Context, mesh string, back
 		}
 
 		if err := b.create(ctx, mesh, backend); err != nil {
-			return errors.Wrapf(err, "failed to create CA for mesh %q and backend %q", mesh, backend.Name)
+			return fmt.Errorf("failed to create CA for mesh %q and backend %q: %w", mesh, backend.Name, err)
 		}
 	}
 	return nil
@@ -70,7 +68,7 @@ func (b *builtinCaManager) UsedSecrets(mesh string, backend *mesh_proto.Certific
 func (b *builtinCaManager) create(ctx context.Context, mesh string, backend *mesh_proto.CertificateAuthorityBackend) error {
 	cfg := &config.BuiltinCertificateAuthorityConfig{}
 	if err := util_proto.ToTyped(backend.Conf, cfg); err != nil {
-		return errors.Wrap(err, "could not convert backend config to BuiltinCertificateAuthorityConfig")
+		return fmt.Errorf("could not convert backend config to BuiltinCertificateAuthorityConfig: %w", err)
 	}
 
 	var opts []certOptsFn
@@ -83,7 +81,7 @@ func (b *builtinCaManager) create(ctx context.Context, mesh string, backend *mes
 	}
 	keyPair, err := newRootCa(mesh, int(cfg.GetCaCert().GetRSAbits().GetValue()), opts...)
 	if err != nil {
-		return errors.Wrapf(err, "failed to generate a Root CA cert for Mesh %q", mesh)
+		return fmt.Errorf("failed to generate a Root CA cert for Mesh %q: %w", mesh, err)
 	}
 
 	certSecret := &core_system.SecretResource{
@@ -123,7 +121,7 @@ func keySecretResKey(mesh string, backendName string) core_model.ResourceKey {
 func (b *builtinCaManager) GetRootCert(ctx context.Context, mesh string, backend *mesh_proto.CertificateAuthorityBackend) ([]core_ca.Cert, error) {
 	ca, err := b.getCa(ctx, mesh, backend.Name)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to load CA key pair for Mesh %q and backend %q", mesh, backend.Name)
+		return nil, fmt.Errorf("failed to load CA key pair for Mesh %q and backend %q: %w", mesh, backend.Name, err)
 	}
 	return []core_ca.Cert{ca.CertPEM}, nil
 }
@@ -131,7 +129,7 @@ func (b *builtinCaManager) GetRootCert(ctx context.Context, mesh string, backend
 func (b *builtinCaManager) GenerateDataplaneCert(ctx context.Context, mesh string, backend *mesh_proto.CertificateAuthorityBackend, tags mesh_proto.MultiValueTagSet) (core_ca.KeyPair, error) {
 	ca, err := b.getCa(ctx, mesh, backend.Name)
 	if err != nil {
-		return core_ca.KeyPair{}, errors.Wrapf(err, "failed to load CA key pair for Mesh %q and backend %q", mesh, backend.Name)
+		return core_ca.KeyPair{}, fmt.Errorf("failed to load CA key pair for Mesh %q and backend %q: %w", mesh, backend.Name, err)
 	}
 
 	var opts []ca_issuer.CertOptsFn
@@ -144,7 +142,7 @@ func (b *builtinCaManager) GenerateDataplaneCert(ctx context.Context, mesh strin
 	}
 	keyPair, err := ca_issuer.NewWorkloadCert(ca, mesh, tags, opts...)
 	if err != nil {
-		return core_ca.KeyPair{}, errors.Wrapf(err, "failed to generate a Workload Identity cert for tags %q in Mesh %q using backend %q", tags.String(), mesh, backend)
+		return core_ca.KeyPair{}, fmt.Errorf("failed to generate a Workload Identity cert for tags %q in Mesh %q using backend %q: %w", tags.String(), mesh, backend, err)
 	}
 	return *keyPair, nil
 }

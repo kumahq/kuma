@@ -8,7 +8,6 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
-	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -45,7 +44,7 @@ func New(serverURL string) (*Client, error) {
 			InsecureSkipVerify: true, // it's acceptable since we don't pass any secrets to the server
 		})))
 	default:
-		return nil, errors.Errorf("unsupported scheme %q. Use one of %s", url.Scheme, []string{"grpc", "grpcs"})
+		return nil, fmt.Errorf("unsupported scheme %q. Use one of %s", url.Scheme, []string{"grpc", "grpcs"})
 	}
 	conn, err := grpc.Dial(url.Host, dialOpts...)
 	if err != nil {
@@ -126,7 +125,7 @@ func (s *Stream) WaitForAssignments() ([]*observability_v1.MonitoringAssignment,
 	for i := range resp.Resources {
 		assignment := &observability_v1.MonitoringAssignment{}
 		if err := util_proto.UnmarshalAnyTo(resp.Resources[i], assignment); err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal MADS response: %v", resp)
+			return nil, fmt.Errorf("failed to unmarshal MADS response: %v: %w", resp, err)
 		}
 		assignments[i] = assignment
 	}

@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -87,7 +88,7 @@ func (b *BootstrapHandler) Handle(resp http.ResponseWriter, req *http.Request) {
 }
 
 func handleError(resp http.ResponseWriter, err error, logger logr.Logger) {
-	if err == DpTokenRequired || store.IsResourcePreconditionFailed(err) || validators.IsValidationError(err) {
+	if errors.Is(err, DpTokenRequired) || store.IsResourcePreconditionFailed(err) || validators.IsValidationError(err) {
 		resp.WriteHeader(http.StatusUnprocessableEntity)
 		_, err = resp.Write([]byte(err.Error()))
 		if err != nil {
@@ -95,7 +96,7 @@ func handleError(resp http.ResponseWriter, err error, logger logr.Logger) {
 		}
 		return
 	}
-	if ISSANMismatchErr(err) || err == NotCA {
+	if ISSANMismatchErr(err) || errors.Is(err, NotCA) {
 		resp.WriteHeader(http.StatusBadRequest)
 		if _, err := resp.Write([]byte(err.Error())); err != nil {
 			logger.Error(err, "Error while writing the response")

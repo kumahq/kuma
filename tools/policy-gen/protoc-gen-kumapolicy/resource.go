@@ -6,7 +6,6 @@ import (
 	"go/format"
 	"html/template"
 
-	"github.com/pkg/errors"
 	"google.golang.org/protobuf/compiler/protogen"
 
 	"github.com/kumahq/kuma/tools/resource-gen/genutils"
@@ -161,7 +160,7 @@ func generateResource(
 	}
 
 	if len(infos) > 1 {
-		return errors.Errorf("only one Kuma resource per proto file is allowed")
+		return fmt.Errorf("only one Kuma resource per proto file is allowed")
 	}
 
 	outBuf := bytes.Buffer{}

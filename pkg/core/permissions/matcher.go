@@ -2,8 +2,7 @@ package permissions
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
+	"fmt"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
@@ -21,12 +20,12 @@ type TrafficPermissionsMatcher struct {
 func (m *TrafficPermissionsMatcher) Match(ctx context.Context, dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource) (core_xds.TrafficPermissionMap, error) {
 	permissions := &core_mesh.TrafficPermissionResourceList{}
 	if err := m.ResourceManager.List(ctx, permissions, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
-		return nil, errors.Wrap(err, "could not retrieve traffic permissions")
+		return nil, fmt.Errorf("could not retrieve traffic permissions: %w", err)
 	}
 
 	additionalInbounds, err := manager_dataplane.AdditionalInbounds(dataplane, mesh)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not fetch additional inbounds")
+		return nil, fmt.Errorf("could not fetch additional inbounds: %w", err)
 	}
 	inbounds := append(dataplane.Spec.GetNetworking().GetInbound(), additionalInbounds...)
 	return BuildTrafficPermissionMap(dataplane, inbounds, permissions.Items), nil

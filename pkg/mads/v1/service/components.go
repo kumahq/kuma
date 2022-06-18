@@ -2,13 +2,13 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -28,7 +28,8 @@ func NewVersioner() util_xds_v3.SnapshotVersioner {
 }
 
 func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds_v3.SnapshotCache,
-	generator util_xds_v3.SnapshotGenerator, versioner util_xds_v3.SnapshotVersioner) mads_reconcile.Reconciler {
+	generator util_xds_v3.SnapshotGenerator, versioner util_xds_v3.SnapshotVersioner,
+) mads_reconcile.Reconciler {
 	return mads_reconcile.NewReconciler(hasher, cache, generator, versioner)
 }
 
@@ -41,7 +42,7 @@ func (r *restReconcilerCallbacks) OnFetchRequest(ctx context.Context, request ut
 
 	node, ok := nodei.(*envoy_core.Node)
 	if !ok {
-		return errors.Errorf("expecting a v3 Node, got: %v", nodei)
+		return fmt.Errorf("expecting a v3 Node, got: %v", nodei)
 	}
 
 	// only reconcile if there is not a valid response present
@@ -83,8 +84,7 @@ func NewXdsContext(log logr.Logger) (envoy_cache.NodeHash, util_xds_v3.SnapshotC
 	return hasher, util_xds_v3.NewSnapshotCache(false, hasher, logger)
 }
 
-type hasher struct {
-}
+type hasher struct{}
 
 func (_ hasher) ID(node *envoy_core.Node) string {
 	// in the very first implementation, we don't differentiate clients

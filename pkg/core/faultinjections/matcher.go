@@ -2,8 +2,7 @@ package faultinjections
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
+	"fmt"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
@@ -22,11 +21,11 @@ type FaultInjectionMatcher struct {
 func (f *FaultInjectionMatcher) Match(ctx context.Context, dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource) (core_xds.FaultInjectionMap, error) {
 	faultInjections := &core_mesh.FaultInjectionResourceList{}
 	if err := f.ResourceManager.List(ctx, faultInjections, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
-		return nil, errors.Wrap(err, "could not retrieve fault injections")
+		return nil, fmt.Errorf("could not retrieve fault injections: %w", err)
 	}
 	additionalInbounds, err := manager_dataplane.AdditionalInbounds(dataplane, mesh)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not fetch additional inbounds")
+		return nil, fmt.Errorf("could not fetch additional inbounds: %w", err)
 	}
 	inbounds := append(dataplane.Spec.GetNetworking().GetInbound(), additionalInbounds...)
 	return BuildFaultInjectionMap(dataplane, inbounds, faultInjections.Items), nil

@@ -11,7 +11,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/shell"
 	"github.com/gruntwork-io/terratest/modules/testing"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -42,7 +41,7 @@ func NewKumactlOptions(t testing.TestingT, cpname string, verbose bool) *Kumactl
 func (k *KumactlOptions) RunKumactl(args ...string) error {
 	out, err := k.RunKumactlAndGetOutput(args...)
 	if err != nil {
-		return errors.Wrapf(err, out)
+		return fmt.Errorf("%s: %w", out, err)
 	}
 	return nil
 }
@@ -176,7 +175,6 @@ func (k *KumactlOptions) KumactlConfigControlPlanesAdd(name, address, token stri
 				)
 			}
 			err := k.RunKumactl(args...)
-
 			if err != nil {
 				return "Unable to register Kuma CP. Try again.", err
 			}
@@ -195,18 +193,18 @@ func (k *KumactlOptions) KumactlUpdateObject(
 ) error {
 	out, err := k.RunKumactlAndGetOutput("get", typeName, objectName, "-o", "yaml")
 	if err != nil {
-		return errors.Wrapf(err, "failed to get %q object %q", typeName, objectName)
+		return fmt.Errorf("failed to get %q object %q: %w", typeName, objectName, err)
 	}
 
 	resource, err := rest.UnmarshallToCore([]byte(out))
 	if err != nil {
-		return errors.Wrapf(err, "failed to unmarshal %q object %q: %q", typeName, objectName, out)
+		return fmt.Errorf("failed to unmarshal %q object %q: %q: %w", typeName, objectName, out, err)
 	}
 
 	updated := rest.NewFromModel(update(resource))
 	json, err := updated.MarshalJSON()
 	if err != nil {
-		return errors.Wrapf(err, "failed to marshal JSON for %q object %q", typeName, objectName)
+		return fmt.Errorf("failed to marshal JSON for %q object %q: %w", typeName, objectName, err)
 	}
 
 	return k.KumactlApplyFromString(string(json))

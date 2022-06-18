@@ -2,9 +2,8 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"time"
-
-	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -84,7 +83,7 @@ func (s *xdsConfigDumpProcessor) executeConfigDump(ctx context.Context, req *mes
 
 	resWithAddr, ok := res.(core_model.ResourceWithAddress)
 	if !ok {
-		return nil, errors.Errorf("invalid type %T", resWithAddr)
+		return nil, fmt.Errorf("invalid type %T", resWithAddr)
 	}
 
 	return s.configDumpFn(ctx, resWithAddr)

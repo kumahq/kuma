@@ -2,9 +2,10 @@ package webhooks
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
-	"k8s.io/api/admission/v1"
+	v1 "k8s.io/api/admission/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	ratelimit_managers "github.com/kumahq/kuma/pkg/core/managers/apis/ratelimit"
@@ -61,7 +62,8 @@ func (h *RateLimitValidator) ValidateCreate(ctx context.Context, req admission.R
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 	if err := h.validator.ValidateCreate(ctx, k8sRes.Mesh, coreRes); err != nil {
-		if kumaErr, ok := err.(*validators.ValidationError); ok {
+		var kumaErr *validators.ValidationError
+		if errors.As(err, &kumaErr) {
 			return convertSpecValidationError(kumaErr, k8sRes)
 		}
 		return admission.Denied(err.Error())
@@ -89,7 +91,8 @@ func (h *RateLimitValidator) ValidateUpdate(ctx context.Context, req admission.R
 	}
 
 	if err := h.validator.ValidateUpdate(ctx, oldCoreRes, coreRes); err != nil {
-		if kumaErr, ok := err.(*validators.ValidationError); ok {
+		var kumaErr *validators.ValidationError
+		if errors.As(err, &kumaErr) {
 			return convertSpecValidationError(kumaErr, k8sRes)
 		}
 		return admission.Denied(err.Error())

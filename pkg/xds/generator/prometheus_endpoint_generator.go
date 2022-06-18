@@ -1,9 +1,8 @@
 package generator
 
 import (
+	"fmt"
 	"net"
-
-	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
@@ -27,13 +26,12 @@ const OriginPrometheus = "prometheus"
 // a port that is already in use by the application or other Envoy listeners.
 // In the latter case we prefer not generate Prometheus endpoint at all
 // rather than introduce undeterministic behavior.
-type PrometheusEndpointGenerator struct {
-}
+type PrometheusEndpointGenerator struct{}
 
 func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	prometheusEndpoint, err := proxy.Dataplane.GetPrometheusConfig(ctx.Mesh.Resource)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get prometheus endpoint")
+		return nil, fmt.Errorf("could not get prometheus endpoint: %w", err)
 	}
 	if prometheusEndpoint == nil {
 		// Prometheus metrics must be enabled Mesh-wide for Prometheus endpoint to be generated.
@@ -83,7 +81,7 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 
 	inbound, err := manager_dataplane.PrometheusInbound(proxy.Dataplane, ctx.Mesh.Resource)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get prometheus inbound interface")
+		return nil, fmt.Errorf("could not get prometheus inbound interface: %w", err)
 	}
 
 	iface := proxy.Dataplane.Spec.GetNetworking().ToInboundInterface(inbound)

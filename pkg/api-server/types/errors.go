@@ -1,13 +1,13 @@
 package types
 
 import (
+	"errors"
+	"fmt"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 func NewMaxPageSizeExceeded(pageSize, limit int) error {
-	return errors.Errorf("Invalid page size of %d. Maximum page size is %d", pageSize, limit)
+	return fmt.Errorf("Invalid page size of %d. Maximum page size is %d", pageSize, limit)
 }
 
 func IsMaxPageSizeExceeded(err error) bool {

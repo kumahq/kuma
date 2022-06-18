@@ -3,10 +3,10 @@ package http
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
+	"fmt"
 	"net/http"
 	"os"
-
-	"github.com/pkg/errors"
 )
 
 func ConfigureMTLS(httpClient *http.Client, caCert string, clientCert string, clientKey string) error {
@@ -19,7 +19,7 @@ func ConfigureMTLS(httpClient *http.Client, caCert string, clientCert string, cl
 	} else {
 		certBytes, err := os.ReadFile(caCert)
 		if err != nil {
-			return errors.Wrap(err, "could not read CA cert")
+			return fmt.Errorf("could not read CA cert: %w", err)
 		}
 		certPool := x509.NewCertPool()
 		if ok := certPool.AppendCertsFromPEM(certBytes); !ok {
@@ -31,7 +31,7 @@ func ConfigureMTLS(httpClient *http.Client, caCert string, clientCert string, cl
 	if clientKey != "" && clientCert != "" {
 		cert, err := tls.LoadX509KeyPair(clientCert, clientKey)
 		if err != nil {
-			return errors.Wrap(err, "could not create key pair from client cert and client key")
+			return fmt.Errorf("could not create key pair from client cert and client key: %w", err)
 		}
 		transport.TLSClientConfig.Certificates = []tls.Certificate{cert}
 	}

@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pkg/errors"
 	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -34,9 +33,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks/injector"
 )
 
-var (
-	log = core.Log.WithName("plugin").WithName("runtime").WithName("k8s")
-)
+var log = core.Log.WithName("plugin").WithName("runtime").WithName("k8s")
 
 var _ core_plugins.RuntimePlugin = &plugin{}
 
@@ -49,12 +46,12 @@ func init() {
 func (p *plugin) Customize(rt core_runtime.Runtime) error {
 	mgr, ok := k8s_extensions.FromManagerContext(rt.Extensions())
 	if !ok {
-		return errors.Errorf("k8s controller runtime Manager hasn't been configured")
+		return fmt.Errorf("k8s controller runtime Manager hasn't been configured")
 	}
 
 	converter, ok := k8s_extensions.FromResourceConverterContext(rt.Extensions())
 	if !ok {
-		return errors.Errorf("k8s resource converter hasn't been configured")
+		return fmt.Errorf("k8s resource converter hasn't been configured")
 	}
 
 	if err := addControllers(mgr, rt, converter); err != nil {
@@ -135,13 +132,13 @@ func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter
 		ResourceManager: rt.ResourceManager(),
 	}
 	if err := reconciler.SetupWithManager(mgr); err != nil {
-		return errors.Wrap(err, "could not setup mesh reconciller")
+		return fmt.Errorf("could not setup mesh reconciller: %w", err)
 	}
 	defaultsReconciller := &k8s_controllers.MeshDefaultsReconciler{
 		ResourceManager: rt.ResourceManager(),
 	}
 	if err := defaultsReconciller.SetupWithManager(mgr); err != nil {
-		return errors.Wrap(err, "could not setup mesh defaults reconciller")
+		return fmt.Errorf("could not setup mesh defaults reconciller: %w", err)
 	}
 	return nil
 }
@@ -240,7 +237,7 @@ func generateDefaulterPath(gvk kube_schema.GroupVersionKind) string {
 func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
 	composite, ok := k8s_extensions.FromCompositeValidatorContext(rt.Extensions())
 	if !ok {
-		return errors.Errorf("could not find composite validator in the extensions context")
+		return fmt.Errorf("could not find composite validator in the extensions context")
 	}
 
 	handler := k8s_webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), rt.Config().Mode, rt.Config().Runtime.Kubernetes.ServiceAccountName)
@@ -277,7 +274,7 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 
 	client, ok := k8s_extensions.FromSecretClientContext(rt.Extensions())
 	if !ok {
-		return errors.Errorf("secret client hasn't been configured")
+		return fmt.Errorf("secret client hasn't been configured")
 	}
 	secretValidator := &k8s_webhooks.SecretValidator{
 		Client:       client,
@@ -299,8 +296,7 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	return nil
 }
 
-type upstreamValidatorHandler struct {
-}
+type upstreamValidatorHandler struct{}
 
 func (g *upstreamValidatorHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	gapi_admission.ServeHTTP(writer, request)

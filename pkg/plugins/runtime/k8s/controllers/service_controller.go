@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_types "k8s.io/apimachinery/pkg/types"
@@ -34,7 +33,7 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		if kube_apierrs.IsNotFound(err) {
 			return kube_ctrl.Result{}, nil
 		}
-		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to fetch Service %s", req.NamespacedName.Name)
+		return kube_ctrl.Result{}, fmt.Errorf("unable to fetch Service %s: %w", req.NamespacedName.Name, err)
 	}
 
 	if svc.GetAnnotations()[metadata.KumaGatewayAnnotation] == metadata.AnnotationBuiltin {
@@ -46,19 +45,19 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		if kube_apierrs.IsNotFound(err) {
 			return kube_ctrl.Result{}, nil
 		}
-		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to fetch Service %s", req.NamespacedName.Name)
+		return kube_ctrl.Result{}, fmt.Errorf("unable to fetch Service %s: %w", req.NamespacedName.Name, err)
 	}
 
 	injectedLabel, _, err := metadata.Annotations(namespace.Labels).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
 	if err != nil {
-		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to check sidecar injection label on namespace %s", namespace.Name)
+		return kube_ctrl.Result{}, fmt.Errorf("unable to check sidecar injection label on namespace %s: %w", namespace.Name, err)
 	}
 	// support annotations for backwards compatibility
 	// https://github.com/kumahq/kuma/issues/4005
 	injectedAnnotation := false
 	injectedAnnotation, _, err = metadata.Annotations(namespace.Annotations).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
 	if err != nil {
-		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to check sidecar injection annotation on namespace %s", namespace.Name)
+		return kube_ctrl.Result{}, fmt.Errorf("unable to check sidecar injection annotation on namespace %s: %w", namespace.Name, err)
 	}
 	injected := injectedLabel || injectedAnnotation
 	if !injected {
@@ -73,7 +72,7 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 	}
 	ignored, _, err := annotations.GetEnabled(metadata.KumaIgnoreAnnotation)
 	if err != nil {
-		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to retrieve %s annotation for %s", metadata.KumaIgnoreAnnotation, svc.Name)
+		return kube_ctrl.Result{}, fmt.Errorf("unable to retrieve %s annotation for %s: %w", metadata.KumaIgnoreAnnotation, svc.Name, err)
 	}
 	if ignored {
 		return kube_ctrl.Result{}, nil
@@ -82,7 +81,7 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 	svc.Annotations = annotations
 
 	if err = r.Update(ctx, svc); err != nil {
-		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to update ingress service upstream annotation on service %s", svc.Name)
+		return kube_ctrl.Result{}, fmt.Errorf("unable to update ingress service upstream annotation on service %s: %w", svc.Name, err)
 	}
 
 	return kube_ctrl.Result{}, nil

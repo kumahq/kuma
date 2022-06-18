@@ -3,8 +3,8 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
-	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
@@ -46,7 +46,7 @@ func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Contex
 
 	dataplaneProto, err := r.PodConverter.BuiltinGatewayDataplane(pod, tags)
 	if err != nil {
-		return errors.Wrap(err, "unable to translate a Gateway Pod into a Dataplane")
+		return fmt.Errorf("unable to translate a Gateway Pod into a Dataplane: %w", err)
 	} else if dataplaneProto == nil {
 		// we don't want a dataplane, the existing object will be deleted
 		// through owner refs
@@ -57,11 +57,10 @@ func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Contex
 		dataplane.SetSpec(dataplaneProto)
 
 		if err := kube_controllerutil.SetControllerReference(pod, dataplane, r.Scheme); err != nil {
-			return errors.Wrap(err, "unable to set Dataplane's controller reference to Pod")
+			return fmt.Errorf("unable to set Dataplane's controller reference to Pod: %w", err)
 		}
 		return nil
 	})
-
 	if err != nil {
 		log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
 		log.Error(err, "unable to create/update Dataplane", "operationResult", operationResult)

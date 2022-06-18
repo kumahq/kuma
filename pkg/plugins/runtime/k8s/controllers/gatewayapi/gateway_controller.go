@@ -2,9 +2,9 @@ package gatewayapi
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
@@ -51,7 +51,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 			// We don't know the mesh, but we don't need it to delete our
 			// object.
 			err := common.ReconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, core_model.NoMesh, &mesh_proto.MeshGateway{}, nil)
-			return kube_ctrl.Result{}, errors.Wrap(err, "could not delete owned MeshGateway.kuma.io")
+			return kube_ctrl.Result{}, fmt.Errorf("could not delete owned MeshGateway.kuma.io: %w", err)
 		}
 
 		return kube_ctrl.Result{}, err
@@ -59,7 +59,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 
 	class, err := common.GetGatewayClass(ctx, r.Client, gateway.Spec.GatewayClassName)
 	if err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "unable to retrieve GatewayClass referenced by MeshGateway")
+		return kube_ctrl.Result{}, fmt.Errorf("unable to retrieve GatewayClass referenced by MeshGateway: %w", err)
 	}
 
 	if class.Spec.ControllerName != common.ControllerName {
@@ -72,29 +72,29 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 
 	ns := kube_core.Namespace{}
 	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: gateway.Namespace}, &ns); err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "unable to get Namespace of MeshGateway")
+		return kube_ctrl.Result{}, fmt.Errorf("unable to get Namespace of MeshGateway: %w", err)
 	}
 
 	mesh := k8s_util.MeshOf(gateway, &ns)
 	gatewaySpec, listenerConditions, err := r.gapiToKumaGateway(ctx, gateway, mesh)
 	if err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "error generating MeshGateway.kuma.io")
+		return kube_ctrl.Result{}, fmt.Errorf("error generating MeshGateway.kuma.io: %w", err)
 	}
 
 	var gatewayInstance *mesh_k8s.MeshGatewayInstance
 	if gatewaySpec != nil {
 		if err := common.ReconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, mesh, &mesh_proto.MeshGateway{}, gatewaySpec); err != nil {
-			return kube_ctrl.Result{}, errors.Wrap(err, "could not reconcile owned MeshGateway.kuma.io")
+			return kube_ctrl.Result{}, fmt.Errorf("could not reconcile owned MeshGateway.kuma.io: %w", err)
 		}
 
 		gatewayInstance, err = r.createOrUpdateInstance(ctx, r.Client, gateway, class)
 		if err != nil {
-			return kube_ctrl.Result{}, errors.Wrap(err, "unable to reconcile MeshGatewayInstance")
+			return kube_ctrl.Result{}, fmt.Errorf("unable to reconcile MeshGatewayInstance: %w", err)
 		}
 	}
 
 	if err := r.updateStatus(ctx, gateway, gatewayInstance, listenerConditions); err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "unable to update MeshGateway status")
+		return kube_ctrl.Result{}, fmt.Errorf("unable to update MeshGateway status: %w", err)
 	}
 
 	return kube_ctrl.Result{}, nil
@@ -115,7 +115,7 @@ func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, client k
 
 	ref, _, err := getParametersRef(ctx, client, class.Spec.ParametersRef)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to fetch parameters for GatewayClass")
+		return nil, fmt.Errorf("unable to fetch parameters for GatewayClass: %w", err)
 	}
 
 	if ref != nil {
@@ -133,9 +133,9 @@ func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, client k
 		}
 
 		err := kube_controllerutil.SetControllerReference(gateway, instance, r.Scheme)
-		return errors.Wrap(err, "unable to set MeshGatewayInstance's controller reference to MeshGateway")
+		return fmt.Errorf("unable to set MeshGatewayInstance's controller reference to MeshGateway: %w", err)
 	}); err != nil {
-		return nil, errors.Wrap(err, "couldn't create MeshGatewayInstance")
+		return nil, fmt.Errorf("couldn't create MeshGatewayInstance: %w", err)
 	}
 
 	return instance, nil

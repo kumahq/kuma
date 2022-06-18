@@ -4,11 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
-
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
@@ -59,7 +58,7 @@ func (s *remoteStore) Update(ctx context.Context, res model.Resource, fs ...stor
 func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest.ResourceMeta) error {
 	resourceApi, err := s.api.GetResourceApi(res.Descriptor().Name)
 	if err != nil {
-		return errors.Wrapf(err, "failed to construct URI to update a %q", res.Descriptor().Name)
+		return fmt.Errorf("failed to construct URI to update a %q: %w", res.Descriptor().Name, err)
 	}
 	restRes := rest.Resource{
 		Meta: meta,
@@ -80,9 +79,9 @@ func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest.
 	}
 	if statusCode != http.StatusOK && statusCode != http.StatusCreated {
 		if statusCode == http.StatusMethodNotAllowed {
-			return errors.Errorf("%s", string(b))
+			return fmt.Errorf("%s", string(b))
 		} else {
-			return errors.Errorf("(%d): %s", statusCode, string(b))
+			return fmt.Errorf("(%d): %s", statusCode, string(b))
 		}
 	}
 	res.SetMeta(remoteMeta{
@@ -97,7 +96,7 @@ func (s *remoteStore) Delete(ctx context.Context, res model.Resource, fs ...stor
 	opts := store.NewDeleteOptions(fs...)
 	resourceApi, err := s.api.GetResourceApi(res.Descriptor().Name)
 	if err != nil {
-		return errors.Wrapf(err, "failed to construct URI to delete a %q", res.Descriptor().Name)
+		return fmt.Errorf("failed to construct URI to delete a %q: %w", res.Descriptor().Name, err)
 	}
 	req, err := http.NewRequest("DELETE", resourceApi.Item(opts.Mesh, opts.Name), nil)
 	if err != nil {
@@ -112,9 +111,9 @@ func (s *remoteStore) Delete(ctx context.Context, res model.Resource, fs ...stor
 	}
 	if statusCode != http.StatusOK {
 		if statusCode == http.StatusMethodNotAllowed {
-			return errors.Errorf("%s", string(b))
+			return fmt.Errorf("%s", string(b))
 		} else {
-			return errors.Errorf("(%d): %s", statusCode, string(b))
+			return fmt.Errorf("(%d): %s", statusCode, string(b))
 		}
 	}
 	return nil
@@ -123,7 +122,7 @@ func (s *remoteStore) Delete(ctx context.Context, res model.Resource, fs ...stor
 func (s *remoteStore) Get(ctx context.Context, res model.Resource, fs ...store.GetOptionsFunc) error {
 	resourceApi, err := s.api.GetResourceApi(res.Descriptor().Name)
 	if err != nil {
-		return errors.Wrapf(err, "failed to construct URI to fetch a %q", res.Descriptor().Name)
+		return fmt.Errorf("failed to construct URI to fetch a %q: %w", res.Descriptor().Name, err)
 	}
 	opts := store.NewGetOptions(fs...)
 	req, err := http.NewRequest("GET", resourceApi.Item(opts.Mesh, opts.Name), nil)
@@ -138,7 +137,7 @@ func (s *remoteStore) Get(ctx context.Context, res model.Resource, fs ...store.G
 		return err
 	}
 	if statusCode != 200 {
-		return errors.Errorf("(%d): %s", statusCode, string(b))
+		return fmt.Errorf("(%d): %s", statusCode, string(b))
 	}
 	return Unmarshal(b, res)
 }
@@ -146,7 +145,7 @@ func (s *remoteStore) Get(ctx context.Context, res model.Resource, fs ...store.G
 func (s *remoteStore) List(ctx context.Context, rs model.ResourceList, fs ...store.ListOptionsFunc) error {
 	resourceApi, err := s.api.GetResourceApi(rs.GetItemType())
 	if err != nil {
-		return errors.Wrapf(err, "failed to construct URI to fetch a list of %q", rs.GetItemType())
+		return fmt.Errorf("failed to construct URI to fetch a list of %q: %w", rs.GetItemType(), err)
 	}
 	opts := store.NewListOptions(fs...)
 	req, err := http.NewRequest("GET", resourceApi.List(opts.Mesh), nil)
@@ -167,7 +166,7 @@ func (s *remoteStore) List(ctx context.Context, rs model.ResourceList, fs ...sto
 		return err
 	}
 	if statusCode != http.StatusOK {
-		return errors.Errorf("(%d): %s", statusCode, string(b))
+		return fmt.Errorf("(%d): %s", statusCode, string(b))
 	}
 	return UnmarshalList(b, rs)
 }

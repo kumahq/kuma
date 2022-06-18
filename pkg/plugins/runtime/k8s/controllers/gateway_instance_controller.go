@@ -3,11 +3,11 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strconv"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 	kube_apps "k8s.io/api/apps/v1"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -63,14 +63,14 @@ func (r *GatewayInstanceReconciler) Reconcile(ctx context.Context, req kube_ctrl
 
 	svc, err := r.createOrUpdateService(ctx, gatewayInstance)
 	if err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "unable to reconcile Service for Gateway")
+		return kube_ctrl.Result{}, fmt.Errorf("unable to reconcile Service for Gateway: %w", err)
 	}
 
 	var deployment *kube_apps.Deployment
 	if svc != nil {
 		deployment, err = r.createOrUpdateDeployment(ctx, gatewayInstance)
 		if err != nil {
-			return kube_ctrl.Result{}, errors.Wrap(err, "unable to reconcile Deployment for Gateway")
+			return kube_ctrl.Result{}, fmt.Errorf("unable to reconcile Deployment for Gateway: %w", err)
 		}
 	}
 
@@ -80,7 +80,7 @@ func (r *GatewayInstanceReconciler) Reconcile(ctx context.Context, req kube_ctrl
 		if kube_apierrs.IsNotFound(err) {
 			return kube_ctrl.Result{}, nil
 		}
-		return kube_ctrl.Result{}, errors.Wrap(err, "unable to patch MeshGatewayInstance status")
+		return kube_ctrl.Result{}, fmt.Errorf("unable to patch MeshGatewayInstance status: %w", err)
 	}
 
 	return kube_ctrl.Result{}, nil
@@ -100,7 +100,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 
 	ns := kube_core.Namespace{}
 	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: gatewayInstance.Namespace}, &ns); err != nil {
-		return nil, errors.Wrap(err, "unable to get Namespace of MeshGatewayInstance")
+		return nil, fmt.Errorf("unable to get Namespace of MeshGatewayInstance: %w", err)
 	}
 
 	mesh := k8s_util.MeshOf(gatewayInstance, &ns)
@@ -188,7 +188,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 ) (*kube_apps.Deployment, error) {
 	ns := kube_core.Namespace{}
 	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: gatewayInstance.Namespace}, &ns); err != nil {
-		return nil, errors.Wrap(err, "unable to get Namespace for MeshGatewayInstance")
+		return nil, fmt.Errorf("unable to get Namespace for MeshGatewayInstance: %w", err)
 	}
 
 	obj, err := ctrls_util.ManageControlledObject(
@@ -206,7 +206,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 
 			container, err := r.ProxyFactory.NewContainer(gatewayInstance, &ns)
 			if err != nil {
-				return nil, errors.Wrap(err, "unable to create gateway container")
+				return nil, fmt.Errorf("unable to create gateway container: %w", err)
 			}
 
 			if res := gatewayInstance.Spec.Resources; res != nil {
@@ -221,7 +221,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 
 			jsonTags, err := json.Marshal(gatewayInstance.Spec.Tags)
 			if err != nil {
-				return nil, errors.Wrap(err, "unable to marshal tags to JSON")
+				return nil, fmt.Errorf("unable to marshal tags to JSON: %w", err)
 			}
 
 			annotations := map[string]string{

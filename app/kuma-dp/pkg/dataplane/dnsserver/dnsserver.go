@@ -3,13 +3,12 @@ package dnsserver
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"os/exec"
 	"regexp"
 	"sync"
 	"text/template"
-
-	"github.com/pkg/errors"
 
 	command_utils "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/command"
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
@@ -18,9 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/files"
 )
 
-var (
-	runLog = core.Log.WithName("kuma-dp").WithName("run").WithName("dns-server")
-)
+var runLog = core.Log.WithName("kuma-dp").WithName("run").WithName("dns-server")
 
 type DNSServer struct {
 	opts *Opts
@@ -82,7 +79,7 @@ func (s *DNSServer) GetVersion() (string, error) {
 
 	match := regexp.MustCompile(`CoreDNS-(.*)`).FindSubmatch(output)
 	if len(match) < 2 {
-		return "", errors.Errorf("unexpected version output format: %s", output)
+		return "", fmt.Errorf("unexpected version output format: %s", output)
 	}
 
 	return string(match[1]), nil

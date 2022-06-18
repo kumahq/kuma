@@ -2,8 +2,7 @@ package dataplane
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
+	"fmt"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -82,7 +81,7 @@ func (m *dataplaneManager) Update(ctx context.Context, resource core_model.Resou
 func (m *dataplaneManager) dataplane(resource core_model.Resource) (*core_mesh.DataplaneResource, error) {
 	dp, ok := resource.(*core_mesh.DataplaneResource)
 	if !ok {
-		return nil, errors.Errorf("invalid resource type: expected=%T, got=%T", (*core_mesh.DataplaneResource)(nil), resource)
+		return nil, fmt.Errorf("invalid resource type: expected=%T, got=%T", (*core_mesh.DataplaneResource)(nil), resource)
 	}
 	return dp, nil
 }

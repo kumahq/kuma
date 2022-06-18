@@ -1,7 +1,7 @@
 package externalservice
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 
 	"github.com/kumahq/kuma/test/framework"
 )

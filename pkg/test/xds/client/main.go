@@ -7,7 +7,6 @@ import (
 	"time"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"go.uber.org/multierr"
 
@@ -98,55 +97,55 @@ func newRunCmd() *cobra.Command {
 					errCh <- func() (errs error) {
 						client, err := stream.New(args.xdsServerAddress)
 						if err != nil {
-							return errors.Wrap(err, "failed to connect to xDS server")
+							return fmt.Errorf("failed to connect to xDS server: %w", err)
 						}
 						defer func() {
 							nodeLog.Info("closing a connection ...")
 							if err := client.Close(); err != nil {
-								errs = multierr.Append(errs, errors.Wrapf(err, "failed to close a connection"))
+								errs = multierr.Append(errs, fmt.Errorf("failed to close a connection: %w", err))
 							}
 						}()
 
 						nodeLog.Info("opening an xDS stream ...")
 						stream, err := client.StartStream()
 						if err != nil {
-							return errors.Wrap(err, "failed to start an xDS stream")
+							return fmt.Errorf("failed to start an xDS stream: %w", err)
 						}
 						defer func() {
 							nodeLog.Info("closing an xDS stream ...")
 							if err := stream.Close(); err != nil {
-								errs = multierr.Append(errs, errors.Wrapf(err, "failed to close an xDS stream"))
+								errs = multierr.Append(errs, fmt.Errorf("failed to close an xDS stream: %w", err))
 							}
 						}()
 
 						nodeLog.Info("requesting Listeners")
 						e := stream.Request(id, envoy_resource.ListenerType, dp)
 						if e != nil {
-							return errors.Wrapf(e, "failed to request %q", envoy_resource.ListenerType)
+							return fmt.Errorf("failed to request %q: %w", envoy_resource.ListenerType, e)
 						}
 
 						nodeLog.Info("requesting Clusters")
 						e = stream.Request(id, envoy_resource.ClusterType, dp)
 						if e != nil {
-							return errors.Wrapf(e, "failed to request %q", envoy_resource.ClusterType)
+							return fmt.Errorf("failed to request %q: %w", envoy_resource.ClusterType, e)
 						}
 
 						nodeLog.Info("requesting Endpoints")
 						e = stream.Request(id, envoy_resource.EndpointType, dp)
 						if e != nil {
-							return errors.Wrapf(e, "failed to request %q", envoy_resource.EndpointType)
+							return fmt.Errorf("failed to request %q: %w", envoy_resource.EndpointType, e)
 						}
 
 						for {
 							nodeLog.Info("waiting for a discovery response ...")
 							resp, err := stream.WaitForResources()
 							if err != nil {
-								return errors.Wrap(err, "failed to receive a discovery response")
+								return fmt.Errorf("failed to receive a discovery response: %w", err)
 							}
 							nodeLog.Info("received xDS resources", "type", resp.TypeUrl, "version", resp.VersionInfo, "nonce", resp.Nonce, "resources", len(resp.Resources))
 
 							if err := stream.ACK(resp.TypeUrl); err != nil {
-								return errors.Wrap(err, "failed to ACK a discovery response")
+								return fmt.Errorf("failed to ACK a discovery response: %w", err)
 							}
 							nodeLog.Info("ACKed discovery response", "type", resp.TypeUrl, "version", resp.VersionInfo, "nonce", resp.Nonce)
 						}
@@ -155,8 +154,10 @@ func newRunCmd() *cobra.Command {
 			}
 
 			err := <-errCh
-
-			return errors.Wrap(err, "one of xDS clients (Envoy simulators) terminated with an error")
+			if err != nil {
+				return fmt.Errorf("one of xDS clients (Envoy simulators) terminated with an error: %w", err)
+			}
+			return nil
 		},
 	}
 	// flags

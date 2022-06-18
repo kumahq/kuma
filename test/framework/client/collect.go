@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -17,7 +18,6 @@ import (
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8s_exec "k8s.io/client-go/util/exec"
 
@@ -203,7 +203,7 @@ func CollectResponse(
 			},
 		)
 		if err != nil {
-			return types.EchoResponse{}, errors.Wrap(err, "failed to list pods")
+			return types.EchoResponse{}, fmt.Errorf("failed to list pods: %w", err)
 		}
 
 		pod = pods[0].Name
@@ -216,7 +216,7 @@ func CollectResponse(
 
 	response := &types.EchoResponse{}
 	if err := json.Unmarshal([]byte(stdout), response); err != nil {
-		return types.EchoResponse{}, errors.Wrapf(err, "failed to unmarshal response: %q", stdout)
+		return types.EchoResponse{}, fmt.Errorf("failed to unmarshal response: %q: %w", stdout, err)
 	}
 
 	return *response, nil
@@ -278,7 +278,7 @@ func CollectResponseDirectly(
 
 	response := types.EchoResponse{}
 	if err := json.Unmarshal(body, &response); err != nil {
-		return types.EchoResponse{}, errors.Wrapf(err, "failed to unmarshal response: %q", string(body))
+		return types.EchoResponse{}, fmt.Errorf("failed to unmarshal response: %q: %w", string(body), err)
 	}
 	return response, nil
 }
@@ -324,7 +324,7 @@ func CollectFailure(cluster framework.Cluster, container, destination string, fn
 			},
 		)
 		if err != nil {
-			return FailureResponse{}, errors.Wrap(err, "failed to list pods")
+			return FailureResponse{}, fmt.Errorf("failed to list pods: %w", err)
 		}
 
 		pod = pods[0].Name
@@ -350,7 +350,7 @@ func CollectFailure(cluster framework.Cluster, container, destination string, fn
 			return response, err
 		}
 
-		return response, errors.Errorf("empty JSON response from curl: %q", stdout)
+		return response, fmt.Errorf("empty JSON response from curl: %q", stdout)
 	}
 
 	// for k8s
