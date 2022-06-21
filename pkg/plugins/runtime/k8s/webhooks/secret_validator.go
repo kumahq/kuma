@@ -12,11 +12,11 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	common_k8s "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )
 
 type SecretValidator struct {
@@ -116,7 +116,7 @@ func (v *SecretValidator) validateMeshSecret(ctx context.Context, verr *validato
 	// block change of the mesh on the secret
 	if oldSecret != nil {
 		if meshOfSecret(secret) != meshOfSecret(oldSecret) {
-			verr.AddViolationAt(validators.RootedAt("metadata").Field("labels").Key(mesh_proto.MeshTag), "cannot change mesh of the Secret. Delete the Secret first and apply it again.")
+			verr.AddViolationAt(validators.RootedAt("metadata").Field("labels").Key(metadata.KumaMeshLabel), "cannot change mesh of the Secret. Delete the Secret first and apply it again.")
 		}
 	}
 	v.validateSecretData(verr, secret)
@@ -124,8 +124,8 @@ func (v *SecretValidator) validateMeshSecret(ctx context.Context, verr *validato
 }
 
 func (v *SecretValidator) validateGlobalSecret(verr *validators.ValidationError, secret *kube_core.Secret) {
-	if _, ok := secret.GetLabels()[mesh_proto.MeshTag]; ok {
-		verr.AddViolationAt(validators.RootedAt("metadata").Field("labels").Key(mesh_proto.MeshTag), "mesh cannot be set on global secret")
+	if _, ok := secret.GetLabels()[metadata.KumaMeshLabel]; ok {
+		verr.AddViolationAt(validators.RootedAt("metadata").Field("labels").Key(metadata.KumaMeshLabel), "mesh cannot be set on global secret")
 	}
 	v.validateSecretData(verr, secret)
 }
@@ -138,7 +138,7 @@ func (v *SecretValidator) validateSecretData(verr *validators.ValidationError, s
 }
 
 func meshOfSecret(secret *kube_core.Secret) string {
-	meshName := secret.GetLabels()[mesh_proto.MeshTag]
+	meshName := secret.GetLabels()[metadata.KumaMeshLabel]
 	if meshName == "" {
 		return "default"
 	}
