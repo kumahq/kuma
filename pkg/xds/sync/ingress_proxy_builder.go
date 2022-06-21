@@ -58,17 +58,12 @@ func (p *IngressProxyBuilder) Build(key core_model.ResourceKey) (*xds.Proxy, err
 		return nil, err
 	}
 
-	allMeshGateways := &core_mesh.MeshGatewayResourceList{}
-	if err := p.ReadOnlyResManager.List(ctx, allMeshGateways); err != nil {
-		return nil, err
-	}
-
-	routing := p.resolveRouting(zoneIngress, zoneEgressesList, allMeshDataplanes, availableExternalServices, allMeshGateways)
-
 	zoneIngressProxy, err := p.buildZoneIngressProxy(ctx)
 	if err != nil {
 		return nil, err
 	}
+
+	routing := p.resolveRouting(zoneIngress, zoneEgressesList, allMeshDataplanes, availableExternalServices, zoneIngressProxy.MeshGateways)
 
 	proxy := &xds.Proxy{
 		Id:               xds.FromResourceKey(key),

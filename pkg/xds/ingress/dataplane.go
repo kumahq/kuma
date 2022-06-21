@@ -162,7 +162,7 @@ func getIngressAvailableMeshGateways(mesh *core_mesh.MeshResource, meshGateways 
 			meshName := mesh.GetMeta().GetName()
 			tagSets.addInstanceOfTags(meshName, envoy.Tags(mesh_proto.Merge(
 				map[string]string{
-					mesh_proto.MeshTag: mesh.GetMeta().GetName(),
+					mesh_proto.MeshTag: meshName,
 				},
 				endpoint.Tags,
 			)))
