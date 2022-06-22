@@ -27,7 +27,7 @@ require (
 	github.com/kumahq/kuma-net v0.3.0
 	github.com/kumahq/protoc-gen-kumadoc v0.2.0
 	github.com/lib/pq v1.10.6
-	github.com/miekg/dns v1.1.49
+	github.com/miekg/dns v1.1.50
 	github.com/onsi/ginkgo/v2 v2.1.4
 	github.com/onsi/gomega v1.19.0
 	github.com/operator-framework/operator-lib v0.11.0
