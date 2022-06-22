@@ -214,6 +214,10 @@ Routes:
             weightedClusters:
               clusters:
               - name: echo-service-dbfe9218dfa3ba0c
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-multihost&'
                 weight: 1
               totalWeight: 1
       - domains:
@@ -234,6 +238,10 @@ Routes:
             weightedClusters:
               clusters:
               - name: echo-service-cff7b41a9764f367
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-multihost&'
                 weight: 1
               totalWeight: 1
       - domains:
@@ -254,6 +262,10 @@ Routes:
             weightedClusters:
               clusters:
               - name: echo-service-b5c2b60cba392c4e
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-multihost&'
                 weight: 1
               totalWeight: 1
 Runtimes:

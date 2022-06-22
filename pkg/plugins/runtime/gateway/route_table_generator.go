@@ -53,7 +53,7 @@ func GenerateVirtualHost(
 			route.RouteMatchExactHeader(":method", e.Match.Method),
 
 			route.RouteActionRedirect(e.Action.Redirect),
-			route.RouteActionForward(e.Action.Forward),
+			route.RouteActionForward(ctx.Mesh.Resource, info.OutboundEndpoints, info.Proxy.Dataplane.Spec.TagSet(), e.Action.Forward),
 		)
 
 		// Generate a retry policy for this route, if there is one.
