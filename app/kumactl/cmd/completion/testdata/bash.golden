@@ -51,7 +51,8 @@ __kumactl_handle_go_custom_completion()
     # Prepare the command to request completions for the program.
     # Calling ${words[0]} instead of directly kumactl allows to handle aliases
     args=("${words[@]:1}")
-    requestComp="${words[0]} __completeNoDesc ${args[*]}"
+    # Disable ActiveHelp which is not supported for bash completion v1
+    requestComp="KUMACTL_ACTIVE_HELP=0 ${words[0]} __completeNoDesc ${args[*]}"
 
     lastParam=${words[$((${#words[@]}-1))]}
     lastChar=${lastParam:$((${#lastParam}-1)):1}
@@ -77,7 +78,7 @@ __kumactl_handle_go_custom_completion()
         directive=0
     fi
     __kumactl_debug "${FUNCNAME[0]}: the completion directive is: ${directive}"
-    __kumactl_debug "${FUNCNAME[0]}: the completions are: ${out[*]}"
+    __kumactl_debug "${FUNCNAME[0]}: the completions are: ${out}"
 
     if [ $((directive & shellCompDirectiveError)) -ne 0 ]; then
         # Error code.  No completion.
@@ -103,7 +104,7 @@ __kumactl_handle_go_custom_completion()
         local fullFilter filter filteringCmd
         # Do not use quotes around the $out variable or else newline
         # characters will be kept.
-        for filter in ${out[*]}; do
+        for filter in ${out}; do
             fullFilter+="$filter|"
         done
 
@@ -114,7 +115,7 @@ __kumactl_handle_go_custom_completion()
         # File completion for directories only
         local subdir
         # Use printf to strip any trailing newline
-        subdir=$(printf "%s" "${out[0]}")
+        subdir=$(printf "%s" "${out}")
         if [ -n "$subdir" ]; then
             __kumactl_debug "Listing directories in $subdir"
             __kumactl_handle_subdirs_in_dir_flag "$subdir"
@@ -125,7 +126,7 @@ __kumactl_handle_go_custom_completion()
     else
         while IFS='' read -r comp; do
             COMPREPLY+=("$comp")
-        done < <(compgen -W "${out[*]}" -- "$cur")
+        done < <(compgen -W "${out}" -- "$cur")
     fi
 }
 
