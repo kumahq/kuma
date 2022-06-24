@@ -1,12 +1,12 @@
 package accesslogs
 
 import (
+	"bufio"
 	"fmt"
-	"net"
 	"os"
+	"syscall"
 
 	"github.com/pkg/errors"
-	"google.golang.org/grpc"
 
 	v3 "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs/v3"
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
@@ -20,7 +20,6 @@ var logger = core.Log.WithName("accesslogs-server")
 var _ component.Component = &accessLogServer{}
 
 type accessLogServer struct {
-	server  *grpc.Server
 	address string
 }
 
@@ -31,41 +30,32 @@ func (s *accessLogServer) NeedLeaderElection() bool {
 func NewAccessLogServer(dataplane kumadp.Dataplane) *accessLogServer {
 	address := envoy.AccessLogSocketName(dataplane.Name, dataplane.Mesh)
 	return &accessLogServer{
-		server:  grpc.NewServer(),
 		address: address,
 	}
 }
 
 func (s *accessLogServer) Start(stop <-chan struct{}) error {
-	v3.RegisterAccessLogServer(s.server)
-
-	_, err := os.Stat(s.address)
-	if err == nil {
-		// File is accessible try to rename it to verify it is not open
-		newName := s.address + ".bak"
-		err := os.Rename(s.address, newName)
-		if err != nil {
-			return errors.Errorf("file %s exists and probably opened by another kuma-dp instance", s.address)
-		}
-		err = os.Remove(newName)
-		if err != nil {
-			return errors.Errorf("not able the delete the backup file %s", newName)
-		}
-	}
-
-	lis, err := net.Listen("unix", s.address)
+	alStreamer := v3.NewAccessLogStreamer()
+	os.Remove(s.address)
+	err := syscall.Mkfifo(s.address, 0666)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "error creating fifo %s", s.address)
 	}
+	fd, err := os.OpenFile(s.address, os.O_CREATE, os.ModeNamedPipe)
+	if err != nil {
+		return errors.Wrapf(err, "error opening fifo %s", s.address)
+	}
+
+	reader := bufio.NewReader(fd)
 
 	defer func() {
-		lis.Close()
+		fd.Close()
 	}()
 
-	logger.Info("starting Access Log Server", "address", fmt.Sprintf("unix://%s", s.address))
+	logger.Info("starting Access Log Server", "pipefile", fmt.Sprintf("%s", s.address))
 	errCh := make(chan error, 1)
 	go func() {
-		if err := s.server.Serve(lis); err != nil {
+		if err := alStreamer.StreamAccessLogs(reader); err != nil {
 			errCh <- err
 		}
 	}()
@@ -74,7 +64,6 @@ func (s *accessLogServer) Start(stop <-chan struct{}) error {
 		return err
 	case <-stop:
 		logger.Info("stopping Access Log Server")
-		s.server.GracefulStop()
 		return nil
 	}
 }
