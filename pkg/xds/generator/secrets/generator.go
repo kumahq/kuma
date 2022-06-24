@@ -117,11 +117,16 @@ func (g Generator) Generate(
 		resources.Add(CreateIdentitySecretResource(proxy.SecretsTracker.RequestIdentityCert().Name(), identity))
 
 		var addedCas []string
-		for mesh, ca := range meshCas {
-			if _, ok := usedCas[mesh]; ok {
-				addedCas = append(addedCas, mesh)
+		for mesh := range usedCas {
+			if ca, ok := meshCas[mesh]; ok {
 				resources.Add(CreateCaSecretResource(proxy.SecretsTracker.RequestCa(mesh).Name(), ca))
+			} else {
+				// We need to add _something_ here so that Envoy syncs the
+				// config
+				emptyCa := &core_xds.CaSecret{}
+				resources.Add(CreateCaSecretResource(proxy.SecretsTracker.RequestCa(mesh).Name(), emptyCa))
 			}
+			addedCas = append(addedCas, mesh)
 		}
 		log.V(1).Info("added identity and mesh CAs resources", "cas", addedCas)
 	}
