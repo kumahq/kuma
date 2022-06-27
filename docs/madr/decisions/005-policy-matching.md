@@ -48,18 +48,14 @@ Each Kuma policy has a single "TargetRef":
 ```protobuf
 message TargetRef {
   // Kind of the referenced resource
-  // +kubebuilder:validation:Enum=Mesh;Service;ProxyGroup;Proxy;MeshGatewayRoute;HTTPRoute
+  // +kubebuilder:validation:Enum=Mesh;MeshSubset;Service;ServiceSubset;Proxy;MeshGatewayRoute;HTTPRoute
   string kind = 1;
 
   // Name of the referenced resource
   string name = 2;
 
-  message Inline {
-    // Tags allows to define a ProxyGroup
-    map<string, string> tags = 1;
-  }
-  // Inline allows to define resources in place if resource 'kind' is not supported by a store  
-  Inline inline = 3;
+  // Tags are used with MeshSubset and ServiceSubset to define a subset of proxies 
+  map<string, string> tags = 3;
 }
 ```
 
@@ -79,8 +75,9 @@ spec:
 
 "TargetRef" can attach policy to different objects:
 * Mesh
+* MeshSubset
 * Service
-* ProxyGroup
+* ServiceSubset
 * Proxy
 * MeshGatewayRoute 
 * HTTPRoute
@@ -120,17 +117,15 @@ spec:
   conf:
     from:
       - targetRef:
-          kind: ProxyGroup
-          inline:
-            tags:
-              kuma.io/zone: us-east
+          kind: MeshSubset
+          tags:
+            kuma.io/zone: us-east
         action: ALLOW
       - targetRef:
-          kind: ProxyGroup
-          inline:
-            tags:
-              kuma.io/service: backend
-              version: v2
+          kind: ServiceSubset
+          name: backend
+          tags:
+            version: v2
         action: ALLOW
       - targetRef:
           kind: Mesh 
@@ -229,7 +224,7 @@ and has a configuration for selected source:
 
 ```yaml
 from:
-  - targetRef: Mesh | Service | ProxyGroup
+  - targetRef: Mesh | MeshSubset | Service | ServiceSubset
     sourceConf: ...
 ```
 
@@ -248,10 +243,9 @@ Policy can select traffic from proxies with "kuma.io/zone: us-east" tag:
 ```yaml
 from:
   - targetRef:
-      kind: ProxyGroup
-      inline:
-        tags:
-          kuma.io/zone: us-east
+      kind: MeshSubset
+      tags:
+        kuma.io/zone: us-east
     sourceConf: ... # conf for traffic coming from "us-east" zone
 ```
 
@@ -272,11 +266,10 @@ Traffic from "backend" of v2 is selected by 3 targetRefs
 ```yaml
 to:
   - targetRef: 
-      kind: ProxyGroup
-      inline:
-        tags:
-          kuma.io/service: backend
-          version: v2
+      kind: ServiceSubset
+      name: backend
+      tags:
+        version: v2
     param1: value1
   - targetRef:
       kind: Service
@@ -298,9 +291,9 @@ param2: value3 # overrides 'value4' from 'targetRef{kind:Mesh}'
 ### Overlapping
 
 As already mentioned "targetRef" attaches policy to objects:
-Mesh, Service, ProxyGroup, Proxy, MeshGatewayRoute, HTTPRoute. 
-These objects are overlapping, i.e Mesh includes many Services,
-Service includes many ProxyGroups, etc.
+Mesh, MeshSubset, Service, ServiceSubset, Proxy, MeshGatewayRoute, HTTPRoute. 
+These objects are overlapping, i.e Mesh includes many MeshSubsets, MeshSubset includes many Services,
+Service includes many ServiceSubsets, etc.
 That's why policies attached to different objects are overlapping as well.
 
 #### Sorting
@@ -526,11 +519,10 @@ targetRef:
 conf:
   from:
     - targetRef:
-        kind: ProxyGroup
-        inline:
-          tags:
-            kuma.io/service: web
-            version: v1
+        kind: ServiceSubset
+        name: web
+        tags:
+          version: v1
       action: DENY
     - targetRef:
         kind: Mesh
@@ -546,11 +538,10 @@ matched for "backend" proxy:
 ```yaml
 from:
   - targetRef: # from backend-permissions
-      kind: ProxyGroup
-      inline:
-        tags:
-          kuma.io/service: web
-          version: v1
+      kind: ServiceSubset
+      name: web
+      tags:
+        version: v1
     action: DENY
   - targetRef: # from backend-permissions
       kind: Mesh
@@ -575,11 +566,10 @@ Select "from" sections that target "web" with "v1":
 ```yaml
 from:
   - targetRef: # from backend-permissions
-      kind: ProxyGroup
-      inline:
-        tags:
-          kuma.io/service: web
-          version: v1
+      kind: ServiceSubset
+      name: web
+      tags:
+        version: v1
     action: DENY
   - targetRef: # from backend-permissions
       kind: Mesh
