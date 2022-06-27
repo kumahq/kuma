@@ -129,35 +129,6 @@ _BAD_
 log.Info("starting...")
 ```
 
-8) Log before executing the action
-
-Logging before executing the significant action is important because if there is an error, it's easy to see the initial cause.
-Logging before and after action on INFO produces twice as many log for a single action.
-
-_GOOD_
-```go
-log.Info("executing action")
-if err := action(); err != nil {
-  return err
-}
-log.V(1).Info("action executed")
-```
-_BAD_
-```go
-log.Info("executing action")
-if err := action(); err != nil {
-  return err
-}
-log.Info("action executed") // twice as many logs
-
-...
-
-log.Info("action executed") // action is not yet executed!
-if err := action(); err != nil {
-  return err
-}
-```
-
 #### Levels
 
 We have 2 log levels. `INFO` which is `V(0)` and `DEBUG` which is `V(1)`.
