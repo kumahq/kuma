@@ -59,7 +59,7 @@ func (d *userTokenWebService) handleIdentityRequest(request *restful.Request, re
 
 	var validFor time.Duration
 	if idReq.ValidFor == "" {
-		verr.AddViolation("name", "cannot be empty")
+		verr.AddViolation("validFor", "cannot be empty")
 	} else {
 		dur, err := time.ParseDuration(idReq.ValidFor)
 		if err != nil {
