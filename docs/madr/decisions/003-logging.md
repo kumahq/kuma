@@ -17,7 +17,7 @@ Chosen option: "Adopting consistent logging standard", because it's the only opt
 ### Positive Consequences
 
 * Better UX for users.
-* Better troubleshooting means both users and maintainers spent less time debugging an issue.
+* Better troubleshooting means both users and maintainers spend less time debugging issues.
 
 ### Negative Consequences
 
@@ -78,7 +78,10 @@ if err != nil {
 }
 ```
 
-4) Use structured logging instead of `fmt.Sprintf`
+4) Use constant message and structured logging
+
+The first argument to the logger should be a constant message.
+
 _GOOD_
 ```go
 log.Info("dp connected", "name", dpName)
@@ -86,6 +89,7 @@ log.Info("dp connected", "name", dpName)
 _BAD_
 ```go
 log.Info(fmt.Sprintf("dp %s connected", dpName))
+log.Info(fn(dpName)))
 ```
 
 5) Carry the same context to multiple logs using WithValues
