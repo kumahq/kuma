@@ -16,8 +16,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
-const accessLogSink = "access_log_sink"
-
 type AccessLogConfigurer struct {
 	Mesh               string
 	TrafficDirection   envoy.TrafficDirection
