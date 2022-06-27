@@ -42,7 +42,7 @@ resources:
                   prefix: /even-more-non-standard-path
                 route:
                   cluster: kuma:metrics:hijacker
-                  prefixRewrite: /?filter=123.*&usedOnly
+                  prefixRewrite: /?filter=123.*&usedonly
           statPrefix: kuma_metrics_prometheus
     name: kuma:metrics:prometheus
     trafficDirection: INBOUND
