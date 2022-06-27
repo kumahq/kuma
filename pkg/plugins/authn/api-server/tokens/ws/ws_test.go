@@ -2,9 +2,12 @@ package ws_test
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/emicklei/go-restful"
@@ -34,6 +37,7 @@ var _ = Describe("Auth Tokens WS", func() {
 
 	var userTokenClient client.UserTokenClient
 	var userTokenValidator issuer.UserTokenValidator
+	var httpClient util_http.Client
 
 	BeforeEach(func() {
 		resManager := manager.NewResourceManager(memory.NewStore())
@@ -56,7 +60,8 @@ var _ = Describe("Auth Tokens WS", func() {
 
 		baseURL, err := url.Parse(srv.URL)
 		Expect(err).ToNot(HaveOccurred())
-		userTokenClient = client.NewHTTPUserTokenClient(util_http.ClientWithBaseURL(http.DefaultClient, baseURL, nil))
+		httpClient = util_http.ClientWithBaseURL(http.DefaultClient, baseURL, nil)
+		userTokenClient = client.NewHTTPUserTokenClient(httpClient)
 
 		// wait for the server
 		Eventually(func() error {
@@ -88,6 +93,35 @@ var _ = Describe("Auth Tokens WS", func() {
 			Causes: []error_types.Cause{
 				{
 					Field:   "name",
+					Message: "cannot be empty",
+				},
+			},
+		}))
+	})
+
+	It("should throw an validFor is not present", func() {
+		// given invalid request (cannot be implemented using UserTokenClient)
+		req, err := http.NewRequest("POST", "/tokens/user", strings.NewReader(`{"name": "xyz"}`))
+		req.Header.Add("content-type", "application/json")
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		resp, err := httpClient.Do(req)
+		defer resp.Body.Close()
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		respBytes, err := io.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		respErr := &error_types.Error{}
+		Expect(json.Unmarshal(respBytes, respErr)).To(Succeed())
+
+		Expect(respErr).To(Equal(&error_types.Error{
+			Title:   "Invalid request",
+			Details: "Resource is not valid",
+			Causes: []error_types.Cause{
+				{
+					Field:   "validFor",
 					Message: "cannot be empty",
 				},
 			},
