@@ -133,7 +133,6 @@ func NewApiServer(
 		return nil, errors.Wrap(err, "could not create configuration webservice")
 	}
 	container.Add(configWs)
-	container.Add(versionsWs())
 	container.Add(zonesWs(resManager))
 	container.Add(tokenWs(resManager, access))
 
