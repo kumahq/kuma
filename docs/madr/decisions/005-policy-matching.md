@@ -629,6 +629,84 @@ and merge into single configuration:
 action: ALLOW # from backend-permissions
 ```
 
+#### ProxyTemplate
+
+ProxyTemplate is neither inbound nor outbound policy, 
+so it doesn't have "from" or "to" arrays. 
+There are only "imports" and "modifications" arrays
+which override arrays from other levels.
+That's why no merging is available for this policy
+(and this is a good thing taking into account complexity):
+
+```yaml
+type: ProxyTemplate
+mesh: default
+name: pt-1
+spec:
+  targetRef:
+    kind: Service
+    name: backend
+  conf:
+    imports:
+      - default-proxy
+    modifications:
+      - cluster:
+          operation: add
+          value: |
+            name: test-cluster
+            connectTimeout: 5s
+            type: STATIC
+```
+
+Now if you create a ProxyTemplate for DPP with an empty `modifications` array,
+`test-cluster` won't be added:
+
+```yaml
+type: ProxyTemplate
+mesh: default
+name: pt-2
+spec:
+  targetRef:
+    kind: Proxy
+    name: my-special-backend-dpp
+  conf:
+    imports:
+      - default-proxy
+    modifications: [] # overrides "modifications" array from "pt-1"
+```
+
+#### TrafficLog
+
+Keep backends in the Mesh for now,
+move them into TrafficLogBackend policy in the future.
+
+Traffic log is a policy that contains both "to" and "from" arrays:
+```yaml
+type: TrafficLog
+mesh: mesh-1
+name: tl-1
+targetRef:
+  kind: Mesh
+conf:
+  to:
+    - targetRef:
+        kind: Service
+        name: web
+      backends:
+        - name: logstash
+  from:
+    - targetRef:
+        kind: Mesh
+      backends:
+        - name: file
+```
+
+This policy specifies the following behaviour:
+* all outgoing requests to "web" are logged to "logstash"
+* all incoming requests from all services in the mesh are logged to "file".
+
+When overlapping, "to" and "from" arrays are merged independently.
+
 ### Positive Consequences <!-- optional -->
 
 * Kuma model is closer to real world
