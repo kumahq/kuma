@@ -208,6 +208,10 @@ Routes:
             weightedClusters:
               clusters:
               - name: regex-query-match-3804d7b8516d7323
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
                 weight: 1
               totalWeight: 1
         - match:
@@ -228,6 +232,10 @@ Routes:
             weightedClusters:
               clusters:
               - name: exact-query-match-cc1370f58a3b5330
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
                 weight: 1
               totalWeight: 1
         - match:
@@ -248,6 +256,10 @@ Routes:
             weightedClusters:
               clusters:
               - name: exact-query-match-cc1370f58a3b5330
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
                 weight: 1
               totalWeight: 1
 Runtimes:

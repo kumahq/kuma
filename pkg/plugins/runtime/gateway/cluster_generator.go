@@ -39,10 +39,7 @@ func (c *ClusterGenerator) GenerateClusters(ctx xds_context.Context, info Gatewa
 		matched := match.ExternalService(info.ExternalServices.Items, mesh_proto.TagSelector(dest.Destination))
 		service := dest.Destination[mesh_proto.ServiceTag]
 
-		var firstEndpointExternalService bool
-		if endpoints := info.OutboundEndpoints[service]; len(endpoints) > 0 {
-			firstEndpointExternalService = endpoints[0].IsExternalService()
-		}
+		firstEndpointExternalService := route.HasExternalServiceEndpoint(ctx.Mesh.Resource, info.OutboundEndpoints, *dest)
 
 		// If there is Mesh property ZoneEgress enabled we want always to
 		// direct the traffic through them. The condition is, the mesh must
@@ -172,7 +169,7 @@ func newClusterBuilder(
 	dest *route.Destination,
 ) *clusters.ClusterBuilder {
 	builder := clusters.NewClusterBuilder(version).Configure(
-		clusters.Timeout(protocol, timeoutPolicyFor(dest)),
+		clusters.Timeout(timeoutPolicyFor(dest).Spec.GetConf(), protocol),
 		clusters.CircuitBreaker(circuitBreakerPolicyFor(dest)),
 		clusters.OutlierDetection(circuitBreakerPolicyFor(dest)),
 		clusters.HealthCheck(protocol, healthCheckPolicyFor(dest)),

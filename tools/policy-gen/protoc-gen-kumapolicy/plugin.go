@@ -15,21 +15,23 @@ var PluginGoTemplate = template.Must(template.New("plugin-go").Parse(`
 package {{ .Package }}
 
 {{ $pkg := .Package }}
+{{ $rName := .ResourceName }}
 
 import (
-	"k8s.io/apimachinery/pkg/runtime"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core"
 {{range $idx, $version := .Versions}}
-	"github.com/kumahq/kuma/pkg/plugins/policies/{{ $pkg }}/k8s/{{ $version }}"
+	api_{{ $version }} "github.com/kumahq/kuma/pkg/plugins/policies/{{ $pkg }}/api/{{ $version }}"
+	k8s_{{ $version }} "github.com/kumahq/kuma/pkg/plugins/policies/{{ $pkg }}/k8s/{{ $version }}"
 {{- end}}
 )
 
-func AddToScheme(s *runtime.Scheme) error {
-{{- range $idx, $version := .Versions}}
-	if err := {{ $version }}.AddToScheme(s); err != nil {
-		return err
-	}
-{{- end}}
-	return nil
+func init() {
+	{{- range $idx, $version := .Versions}}
+	core.Register(
+		api_{{ $version }}.{{ $rName }}TypeDescriptor,
+		k8s_{{ $version }}.AddToScheme,
+	)
+	{{- end}}
 }
 `))
 
@@ -60,13 +62,19 @@ func generatePluginFile(
 		versions = append(versions, string(f.GoPackageName))
 	}
 
+	if info.SkipRegistration {
+		// Don't generate the plugin file if it doesn't exists
+		return nil
+	}
 	outBuf := bytes.Buffer{}
 	if err := PluginGoTemplate.Execute(&outBuf, struct {
-		Package  string
-		Versions []string
+		Package      string
+		Versions     []string
+		ResourceName string
 	}{
-		Package:  info.KumactlSingular,
-		Versions: versions,
+		Package:      info.KumactlSingular,
+		ResourceName: info.ResourceName,
+		Versions:     versions,
 	}); err != nil {
 		return err
 	}

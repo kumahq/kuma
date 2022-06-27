@@ -16,7 +16,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/healthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/universal/inspect"
 	"github.com/kumahq/kuma/test/e2e_env/universal/membership"
-	"github.com/kumahq/kuma/test/e2e_env/universal/metrics"
+	"github.com/kumahq/kuma/test/e2e_env/universal/observability"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -65,5 +65,6 @@ var _ = Describe("HealthCheck", healthcheck.Policy)
 var _ = Describe("Service Probes", healthcheck.ServiceProbes, Ordered)
 var _ = Describe("External Services", externalservices.ExternalServiceHostHeader, Ordered)
 var _ = Describe("Inspect", inspect.Inspect, Ordered)
-var _ = Describe("Applications Metrics", metrics.ApplicationsMetrics, Ordered)
+var _ = Describe("Applications Metrics", observability.ApplicationsMetrics, Ordered)
+var _ = Describe("Tracing", observability.Tracing, Ordered)
 var _ = Describe("Membership", membership.Membership, Ordered)

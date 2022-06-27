@@ -21,7 +21,9 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels: {{ include "kuma.cpLabels" . | nindent 4 }}
 spec:
+  {{- if not .Values.controlPlane.autoscaling.enabled }}
   replicas: {{ .Values.controlPlane.replicas }}
+  {{- end }}
   strategy:
     rollingUpdate:
       maxSurge: 1

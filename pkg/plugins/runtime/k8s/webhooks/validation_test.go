@@ -656,5 +656,20 @@ var _ = Describe("Validation", func() {
 			},
 			operation: admissionv1.Delete,
 		}),
+		Entry("should pass validation on DELETE in Global CP by GC", testCase{
+			mode:        core.Global,
+			objTemplate: &mesh_proto.Dataplane{},
+			username:    "system:serviceaccount:kube-system:generic-garbage-collector",
+			resp: kube_admission.Response{
+				AdmissionResponse: admissionv1.AdmissionResponse{
+					UID:     "12345",
+					Allowed: true,
+					Result: &kube_meta.Status{
+						Code: 200,
+					},
+				},
+			},
+			operation: admissionv1.Delete,
+		}),
 	)
 })

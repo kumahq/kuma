@@ -69,6 +69,9 @@ func (r *reconciler) Reconcile(ctx xds_context.Context, proxy *model.Proxy) erro
 
 	snapshot, changed := autoVersion(previous, snapshot)
 
+	resKey := proxy.Id.ToResourceKey()
+	log := reconcileLog.WithValues("proxyName", resKey.Name, "mesh", resKey.Mesh)
+
 	// Validate the resources we reconciled before sending them
 	// to Envoy. This ensures that we have as much in-band error
 	// information as possible, which is especially useful for tests
@@ -83,9 +86,12 @@ func (r *reconciler) Reconcile(ctx xds_context.Context, proxy *model.Proxy) erro
 		}
 
 		if err := snapshot.Consistent(); err != nil {
-			reconcileLog.Error(err, "inconsistent snapshot", "snapshot", snapshot, "proxy", proxy)
+			log.Error(err, "inconsistent snapshot", "snapshot", snapshot, "proxy", proxy)
 			return errors.Wrap(err, "inconsistent snapshot")
 		}
+		log.Info("config has changed", "versions", changed)
+	} else {
+		log.V(1).Info("config is the same")
 	}
 
 	if err := r.cacher.Cache(node, snapshot); err != nil {

@@ -4,31 +4,12 @@ reusable:
 
   constants:
     - &go_version "1.18"
-    - &docker_version "20.10.7"
 
   docker_images:
     - &golang_image "cimg/go:1.18.0"
 
   vm_images:
     - &ubuntu_vm_image "ubuntu-2004:202111-01"
-
-  snippets:
-    # on branches master or release-*
-    work_branch_workflow_filter: &work_branch_workflow_filter
-      filters:
-        branches:
-          only:
-            - master
-            - /^release-.*/
-        tags:
-          ignore: /.*/
-    # on tags
-    tags_workflow_filter: &tags_workflow_filter
-      filters:
-        branches:
-          ignore: /.*/
-        tags:
-          only: /.*/
 
 # See https://circleci.com/docs/2.0/configuration-reference/#commands-requires-version-21.
 commands:
@@ -72,7 +53,7 @@ commands:
           echo 'export PATH=$HOME/go/bin:$PATH' >> $BASH_ENV
           # if GOPATH is not set, `golang-ci` fails with an obscure message
           # "ERRO Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
-          echo 'export GOPATH=$HOME/.go-kuma-go' >> $BASH_ENV
+          echo 'export GOPATH=$HOME/go' >> $BASH_ENV
     - run:
         name: "Update runc"
         # See https://github.com/rancher/k3d/issues/807 (runc's default version on the instance fails k3d)
@@ -175,16 +156,17 @@ jobs:
           - install_build_tools:
               go_arch: arm64
     - checkout
+    - restore_cache:
+        key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}
     - run:
         name: "Download Go modules"
         command: |
-          go mod download
+          go mod download -x
     # since execution of go commands might change contents of "go.sum", we have to save cache immediately
     - save_cache:
-        key: << parameters.executor >>-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+        key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}
         paths:
-        - "/go/pkg/mod"
-        - "/root/.go-kuma-go"
+        - "/home/circleci/go/pkg/mod"
 
   check:
     executor: golang
@@ -193,7 +175,7 @@ jobs:
     - restore_cache:
         keys:
         # prefer the exact match
-        - golang-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+        - golang_go.mod_{{ checksum "go.sum" }}
     - run:
         name: "Install all development tools"
         command: make dev/tools
@@ -224,7 +206,7 @@ jobs:
     - restore_cache:
         keys:
         # prefer the exact match
-        - vm-<< parameters.arch >>-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+        - vm-<< parameters.arch >>_go.mod_{{ checksum "go.sum" }}
     - run:
         name: "Install all development tools"
         command: |
@@ -309,7 +291,7 @@ jobs:
       - restore_cache:
           keys:
             # prefer the exact match
-            - vm-<< parameters.arch >>-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+            - vm-<< parameters.arch >>_go.mod_{{ checksum "go.sum" }}
       # Mount files from the upstream jobs
       - attach_workspace:
           at: build
@@ -380,7 +362,7 @@ jobs:
     - restore_cache:
         keys:
         # prefer the exact match
-        - golang-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+        - golang_go.mod_{{ checksum "go.sum" }}
     - run:
         name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp, kuma-prometheus-sd)
         command: make build
@@ -440,7 +422,13 @@ workflows:
     jobs:
       - dev:
           # Avoids running expensive workflow on PRs
-          <<: *work_branch_workflow_filter
+          filters: &expensive_workflow_filter # only run on tags, master and release-* branches
+            branches:
+              only:
+                - master
+                - /^release-.*/
+            tags:
+              only: /.*/
           name: dev-<< matrix.executor >>
           matrix:
             alias: dev
@@ -490,9 +478,19 @@ workflows:
           requires: [ build-<< matrix.arch >>, check ]
       - release:
           # publish artifacts speculatively for normal commits
-          <<: *work_branch_workflow_filter
+          filters: # only on master and release-* branches (never on PRs and tags)
+            branches:
+              only:
+                - master
+                - /^release-.*/
+            tags:
+              ignore: /.*/
           requires: [ build ]
       - release:
           # only publish tagged artifacts if everything passes
-          <<: *tags_workflow_filter
+          filters: # only on tags
+            branches:
+              ignore: /.*/
+            tags:
+              only: /.*/
           requires: [ dev, test, test/e2e, test/e2e-legacy ]

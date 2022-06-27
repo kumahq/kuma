@@ -132,8 +132,16 @@ func (d *discoveryRequest) ErrorMsg() string {
 	return d.GetErrorDetail().GetMessage()
 }
 
+func (d *discoveryRequest) ResourceNames() []string {
+	return d.GetResourceNames()
+}
+
 var _ xds.DiscoveryRequest = &discoveryRequest{}
 
 type discoveryResponse struct {
 	*envoy_sd.DiscoveryResponse
+}
+
+func (d *discoveryResponse) VersionInfo() string {
+	return d.GetVersionInfo()
 }

@@ -1289,6 +1289,76 @@ conf:
           kuma.io/service: external-httpbin
 `,
 		),
+
+		Entry("generates cross mesh gateway listeners",
+			"cross-mesh-gateway.yaml", `
+type: Mesh
+name: default
+mtls:
+  enabledBackend: ca-1
+  backends:
+  - name: ca-1
+    type: builtin
+`, `
+type: Mesh
+name: other
+mtls:
+  enabledBackend: ca-1
+  backends:
+  - name: ca-1
+    type: builtin
+`, `
+type: ExternalService
+mesh: default
+name: external-httpbin
+tags:
+  kuma.io/service: external-httpbin
+  kuma.io/protocol: http2
+networking:
+  address: httpbin.com:443
+  tls:
+    enabled: true
+`, `
+type: MeshGateway
+mesh: default
+name: edge-gateway
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  listeners:
+  - port: 8080
+    protocol: HTTP
+    crossMesh: true
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-default
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: "/ext"
+      backends:
+      - destination:
+          kuma.io/service: external-httpbin
+    - matches:
+      - path:
+          match: PREFIX
+          value: "/echo"
+      backends:
+      - destination:
+          kuma.io/service: echo-service
+`,
+		),
 	}
 
 	Context("with a HTTP gateway", func() {
