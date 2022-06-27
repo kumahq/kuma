@@ -7,6 +7,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -34,6 +35,9 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 			proxy := &core_xds.Proxy{
 				Id: *core_xds.BuildProxyId("web", "example"),
 				Dataplane: &core_mesh.DataplaneResource{
+					Meta: &model.ResourceMeta{
+						Name: "dataplane0",
+					},
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Address: "192.168.0.1",
@@ -162,25 +166,16 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
                 typedConfig:
                   '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                   accessLog:
-                  - name: envoy.access_loggers.http_grpc
+                  - name: envoy.access_loggers.file
                     typedConfig:
-                      '@type': type.googleapis.com/envoy.extensions.access_loggers.grpc.v3.HttpGrpcAccessLogConfig
-                      additionalRequestHeadersToLog:
-                      - origin
-                      - content-type
-                      additionalResponseHeadersToLog:
-                      - server
-                      additionalResponseTrailersToLog:
-                      - grpc-message
-                      commonConfig:
-                        grpcService:
-                          envoyGrpc:
-                            clusterName: access_log_sink
-                        logName: |+
-                          127.0.0.1:1234;[%START_TIME%] "%REQ(x-request-id)%" "%REQ(:authority)%" "%REQ(origin)%" "%REQ(content-type)%" "web" "backend" "192.168.0.1:0" "192.168.0.1" "%UPSTREAM_HOST%"
-                          "%RESP(server):5%" "%TRAILER(grpc-message):7%" "DYNAMIC_METADATA(namespace:object:key):9" "FILTER_STATE(filter.state.key):12"
+                      '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
+                      logFormat:
+                        textFormatSource:
+                          inlineString: |+
+                            127.0.0.1:1234;[%START_TIME%] "%REQ(x-request-id)%" "%REQ(:authority)%" "%REQ(origin)%" "%REQ(content-type)%" "web" "backend" "192.168.0.1:0" "192.168.0.1" "%UPSTREAM_HOST%"
+                            "%RESP(server):5%" "%TRAILER(grpc-message):7%" "DYNAMIC_METADATA(namespace:object:key):9" "FILTER_STATE(filter.state.key):12"
 
-                        transportApiVersion: V3
+                      path: /tmp/kuma-al-dataplane0-demo.sock
                   httpFilters:
                   - name: envoy.filters.http.router
                     typedConfig:
