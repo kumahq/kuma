@@ -53,8 +53,8 @@ message PrometheusMetricsBackendConfig {
   // scrapped by kuma-dp.
   repeated PrometheusAggregateMetricsConfig aggregate = 5;
 
-  // Configuration of a filter for Envoy's metrics.
-  PrometheusEnvoyFilterConfig envoy = 6;
+  // Configuration of Envoy's metrics.
+  PrometheusEnvoyConfig envoy = 6;
 }
 
 // PrometheusAggregateMetricsConfig defines endpoints that should be scrapped
@@ -75,9 +75,9 @@ message PrometheusAggregateMetricsConfig {
   google.protobuf.BoolValue enabled = 4;
 }
 
-// PrometheusEnvoyFilterConfig defines filters that should be passed to Envoy
+// PrometheusEnvoyConfig defines filters that should be passed to Envoy
 // for filtering.
-message PrometheusEnvoyFilterConfig {
+message PrometheusEnvoyConfig {
   // FilterRegex value that is going to be passed to Envoy for filtering
   // Envoy metrics.
   string filterRegex = 1;

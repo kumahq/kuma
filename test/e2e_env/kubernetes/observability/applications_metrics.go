@@ -80,8 +80,8 @@ spec:
       - name: prom-1
         type: prometheus
         conf:
-          port: 1234
-          path: /metrics
+          port: 5555
+          path: /metrics/stats
           envoy:
             filterRegex: http2_act.*
             usedOnly: %s
@@ -227,7 +227,7 @@ func ApplicationsMetrics() {
 		Expect(stdout).To(ContainSubstring("envoy_server_concurrency"))
 	})
 
-	It("should return envoy filtered metrics", func() {
+	It("should return filtered Envoy metrics and react for change of usedOnly parameter", func() {
 		// given
 		podName, err := PodNameOfApp(env.Cluster, "test-server-filter", namespace)
 		Expect(err).ToNot(HaveOccurred())
@@ -236,7 +236,7 @@ func ApplicationsMetrics() {
 
 		// when
 		stdout, _, err := env.Cluster.Exec(namespace, podName, "test-server-filter",
-			"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(podIp, "1234")+"/metrics")
+			"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(podIp, "5555")+"/metrics/stats")
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -247,13 +247,13 @@ func ApplicationsMetrics() {
 		// metric from envoy
 		Expect(stdout).To(ContainSubstring("kuma_envoy_admin"))
 
-		// when enabled usedOnly
+		// when usedOnly is enabled
 		Expect(MeshAndEnvoyMetricsFilters(meshEnvoyFilter, "true")(env.Cluster)).To(Succeed())
 
 		// then
 		Eventually(func() string {
 			stdout, _, err = env.Cluster.Exec(namespace, podName, "test-server-filter",
-				"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(podIp, "1234")+"/metrics")
+				"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(podIp, "5555")+"/metrics/stats")
 			if err != nil {
 				return ""
 			}

@@ -149,6 +149,8 @@ func secureMetrics(cfg *mesh_proto.PrometheusMetricsBackendConfig, mesh *core_me
 	return !cfg.SkipMTLS.GetValue() && mesh.MTLSEnabled()
 }
 
+// we cannot use url.Values{} because generated url looks 'usedonly='
+// which isn't supported by Envoy
 func buildEnvoyMetricsFilter(config *mesh_proto.PrometheusMetricsBackendConfig) string {
 	var query string
 	if config.GetEnvoy() != nil {

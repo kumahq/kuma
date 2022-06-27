@@ -312,7 +312,7 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 				Name:          item.Name,
 				Path:          item.Path,
 				Port:          item.Port,
-				QueryAppender: metrics.EmptyQueryParametersAppender,
+				QueryModifier: metrics.RemoveQueryParameters,
 			})
 		}
 	}
@@ -321,7 +321,7 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 		Name:          "envoy",
 		Path:          "/stats",
 		Port:          envoyAdminPort,
-		QueryAppender: metrics.EnvoyQueryParametersAppender,
+		QueryModifier: metrics.AddPrometheusFormat,
 		Mutator:       metrics.MergeClusters,
 	})
 	return applicationsToScrape

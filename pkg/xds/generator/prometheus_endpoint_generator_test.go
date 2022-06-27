@@ -347,7 +347,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 										Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 											Port: 1234,
 											Path: "/non-standard-path",
-											Envoy: &mesh_proto.PrometheusEnvoyFilterConfig{
+											Envoy: &mesh_proto.PrometheusEnvoyConfig{
 												FilterRegex: "123.*",
 												UsedOnly:    util_proto.Bool(true),
 											},

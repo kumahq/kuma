@@ -26,23 +26,22 @@ var _ component.Component = &Hijacker{}
 
 type MetricsMutator func(in io.Reader, out io.Writer) error
 
-type QueryParametersAppender func(in *url.URL) string
+type QueryParametersModifier func(queryParameters url.Values) string
 
-func EmptyQueryParametersAppender(url *url.URL) string {
+func RemoveQueryParameters(_ url.Values) string {
 	return ""
 }
 
-func EnvoyQueryParametersAppender(url *url.URL) string {
-	queryParams := url.Query()
-	queryParams.Add("format", "prometheus")
-	return queryParams.Encode()
+func AddPrometheusFormat(queryParameters url.Values) string {
+	queryParameters.Add("format", "prometheus")
+	return queryParameters.Encode()
 }
 
 type ApplicationToScrape struct {
 	Name          string
 	Path          string
 	Port          uint32
-	QueryAppender QueryParametersAppender
+	QueryModifier QueryParametersModifier
 	Mutator       MetricsMutator
 }
 
@@ -108,14 +107,14 @@ func (s *Hijacker) Start(stop <-chan struct{}) error {
 	}
 }
 
-// Depends on the specific application we do QueryParameters passing.
+// We pass QueryParameters only for the specific application.
 // Currently, we only support QueryParameters for Envoy metrics.
-func rewriteMetricsURL(path string, port uint32, queryAppender QueryParametersAppender, in *url.URL) string {
+func rewriteMetricsURL(path string, port uint32, queryModifier QueryParametersModifier, in *url.URL) string {
 	u := url.URL{
 		Scheme:   "http",
 		Host:     fmt.Sprintf("127.0.0.1:%d", port),
 		Path:     path,
-		RawQuery: queryAppender(in),
+		RawQuery: queryModifier(in.Query()),
 	}
 	return u.String()
 }
@@ -146,7 +145,7 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Hijacker) getStats(url *url.URL, app ApplicationToScrape) []byte {
-	resp, err := s.httpClient.Get(rewriteMetricsURL(app.Path, app.Port, app.QueryAppender, url))
+	resp, err := s.httpClient.Get(rewriteMetricsURL(app.Path, app.Port, app.QueryModifier, url))
 	if err != nil {
 		logger.Error(err, "failed call", "name", app.Name, "path", app.Path, "port", app.Port)
 		return nil
