@@ -52,6 +52,9 @@ type Info struct {
 
 	OwnMesh        MeshInfo
 	OtherMeshInfos []MeshInfo
+	// this marks our info as having failed last time to get the mesh CAs that
+	// we wanted and so we should retry next time we want certs.
+	failedOtherMeshes bool
 }
 
 func (c *Info) CertLifetime() time.Duration {
@@ -230,9 +233,9 @@ func (s *secrets) shouldGenerateCerts(info *Info, tags mesh_proto.MultiValueTagS
 		reason = "Mesh mTLS settings have changed"
 	}
 
-	if len(info.OtherMeshInfos) != len(otherMeshInfos) {
+	if len(info.OtherMeshInfos) != len(otherMeshInfos) || info.failedOtherMeshes {
 		updates.AddKind(OtherMeshChange)
-		reason = "Another mesh has been added or removed"
+		reason = "Another mesh has been added or removed or we must retry"
 	} else {
 		for i, mesh := range info.OtherMeshInfos {
 			if !proto.Equal(mesh.MTLS, otherMeshInfos[i].Spec.Mtls) {
@@ -327,6 +330,7 @@ func (s *secrets) generateCerts(
 		var names []string
 		otherCas = []MeshCa{}
 
+		failedOtherMeshes := false
 		for _, otherMesh := range otherMeshes {
 			otherMeshInfos = append(otherMeshInfos, MeshInfo{
 				MTLS: otherMesh.Spec.GetMtls(),
@@ -339,6 +343,7 @@ func (s *secrets) generateCerts(
 
 			otherCa, _, err := s.caProvider.Get(context.Background(), otherMesh)
 			if err != nil {
+				failedOtherMeshes = true
 				// The other CA is misconfigured but this can not affect
 				// generation in this mesh.
 				log.Error(err, "could not get other mesh CA cert")
@@ -367,6 +372,7 @@ func (s *secrets) generateCerts(
 			},
 		}
 
+		info.failedOtherMeshes = failedOtherMeshes
 		info.OtherMeshInfos = otherMeshInfos
 	}
 
