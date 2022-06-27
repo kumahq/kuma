@@ -78,16 +78,9 @@ func ExternalServicesWithLocalityAwareLb() {
 			Install(YamlUniversal(MeshMTLSOnAndZoneEgressAndNoPassthrough(mesh, "true"))).
 			Install(YamlUniversal(MeshMTLSOnAndZoneEgressAndNoPassthrough(meshNoZoneEgress, "false"))).
 			Setup(env.Global)).To(Succeed())
-
-		E2EDeferCleanup(func() {
-			Expect(env.Global.DeleteMesh(mesh)).To(Succeed())
-		})
 		Expect(WaitForMesh(mesh, env.Zones())).To(Succeed())
 
 		// Universal Zone 4
-		E2EDeferCleanup(func() {
-			Expect(env.UniZone1.DeleteMeshApps(mesh)).To(Succeed())
-		})
 		Expect(NewClusterSetup().
 			Install(DemoClientUniversal(
 				"uni-zone4-demo-client",
@@ -106,9 +99,6 @@ func ExternalServicesWithLocalityAwareLb() {
 		).To(Succeed())
 
 		// Kubernetes Zone 1
-		E2EDeferCleanup(func() {
-			Expect(env.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
-		})
 		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(DemoClientK8s(mesh, namespace)).
@@ -120,6 +110,14 @@ func ExternalServicesWithLocalityAwareLb() {
 			Install(YamlUniversal(externalService(mesh, env.UniZone1.GetApp("external-service-in-both-zones").GetIP()))).
 			Install(YamlUniversal(zoneExternalService(meshNoZoneEgress, env.UniZone1.GetApp("external-service-in-uni-zone4").GetIP(), "demo-es-in-uni-zone4", "kuma-4"))).
 			Setup(env.Global)).ToNot(HaveOccurred())
+	})
+
+	E2EAfterAll(func() {
+		Expect(env.UniZone1.DeleteMeshApps(mesh)).To(Succeed())
+		Expect(env.UniZone1.DeleteMeshApps(meshNoZoneEgress)).To(Succeed())
+		Expect(env.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(env.Global.DeleteMesh(mesh)).To(Succeed())
+		Expect(env.Global.DeleteMesh(meshNoZoneEgress)).To(Succeed())
 	})
 
 	BeforeEach(func() {
