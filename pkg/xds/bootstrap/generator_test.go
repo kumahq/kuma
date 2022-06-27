@@ -95,6 +95,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		config             func() *bootstrap_config.BootstrapServerConfig
 		dataplane          func() *core_mesh.DataplaneResource
 		dpAuthEnabled      bool
+		useTokenPath       bool
 		request            types.BootstrapRequest
 		expectedConfigFile string
 		hdsEnabled         bool
@@ -105,7 +106,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			err := resManager.Create(context.Background(), given.dataplane(), store.CreateByKey("name.namespace", "mesh"))
 			Expect(err).ToNot(HaveOccurred())
 
-			generator, err := NewDefaultBootstrapGenerator(resManager, given.config(), filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthEnabled, given.hdsEnabled, 0)
+			generator, err := NewDefaultBootstrapGenerator(resManager, given.config(), filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthEnabled, given.useTokenPath, given.hdsEnabled, 0)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -361,6 +362,32 @@ var _ = Describe("bootstrapGenerator", func() {
 			expectedConfigFile: "generator.default-config.golden.yaml",
 			hdsEnabled:         true,
 		}),
+		Entry("default config with useTokenPath", testCase{
+			dpAuthEnabled: true,
+			config: func() *bootstrap_config.BootstrapServerConfig {
+				cfg := bootstrap_config.DefaultBootstrapServerConfig()
+				cfg.Params.XdsHost = "localhost"
+				cfg.Params.XdsPort = 5678
+				return cfg
+			},
+			dataplane: func() *core_mesh.DataplaneResource {
+				dp := defaultDataplane()
+				dp.Spec.Networking.Admin.Port = 1234
+				return dp
+			},
+			request: types.BootstrapRequest{
+				Mesh:               "mesh",
+				Name:               "name.namespace",
+				DataplaneToken:     "token",
+				Version:            defaultVersion,
+				DNSPort:            53001,
+				EmptyDNSPort:       53002,
+				DataplaneTokenPath: "/path/to/file",
+			},
+			expectedConfigFile: "generator.default-config-token-path.golden.yaml",
+			hdsEnabled:         true,
+			useTokenPath:       true,
+		}),
 	)
 
 	type errTestCase struct {
@@ -375,7 +402,7 @@ var _ = Describe("bootstrapGenerator", func() {
 
 			cfg := bootstrap_config.DefaultBootstrapServerConfig()
 
-			generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false, true, 9901)
+			generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false, false, true, 9901)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -508,7 +535,7 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 		err = resManager.Create(context.Background(), dataplane, store.CreateByKey("name.namespace", "metrics"))
 		Expect(err).ToNot(HaveOccurred())
 
-		generator, err := NewDefaultBootstrapGenerator(resManager, config(), filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true, false, 0)
+		generator, err := NewDefaultBootstrapGenerator(resManager, config(), filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true, false, false, 0)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -599,7 +626,7 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 		err = resManager.Create(context.Background(), dataplane, store.CreateByKey("name.namespace", "metrics"))
 		Expect(err).ToNot(HaveOccurred())
 
-		generator, err := NewDefaultBootstrapGenerator(resManager, config(), filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true, false, 0)
+		generator, err := NewDefaultBootstrapGenerator(resManager, config(), filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true, false, false, 0)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
