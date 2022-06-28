@@ -2,7 +2,6 @@ package accesslogs
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"syscall"
 
@@ -52,7 +51,7 @@ func (s *accessLogServer) Start(stop <-chan struct{}) error {
 		fd.Close()
 	}()
 
-	logger.Info("starting Access Log Server", "pipefile", fmt.Sprintf("%s", s.address))
+	logger.Info("starting Access Log Server", "pipefile", s.address)
 	errCh := make(chan error, 1)
 	go func() {
 		if err := alStreamer.StreamAccessLogs(reader); err != nil {
