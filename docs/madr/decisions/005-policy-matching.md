@@ -95,15 +95,16 @@ spec:
   targetRef:
     kind: Service
     name: backend
-  conf:
-    to:
-      - targetRef:
-          kind: Service
-          name: payments
+  to:
+    - targetRef:
+        kind: Service
+        name: payments
+      conf:
         connectTimeout: 10s
-      - targetRef:
-          kind: Service
-          name: web-api
+    - targetRef:
+        kind: Service
+        name: web-api
+      conf:
         connectTimeout: 20s
 ```
 
@@ -116,21 +117,23 @@ spec:
   targetRef:
     kind: Service
     name: backend
-  conf:
-    from:
-      - targetRef:
-          kind: MeshSubset
-          tags:
-            kuma.io/zone: us-east
+  from:
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          kuma.io/zone: us-east
+      conf:
         action: ALLOW
-      - targetRef:
-          kind: ServiceSubset
-          name: backend
-          tags:
-            version: v2
+    - targetRef:
+        kind: ServiceSubset
+        name: backend
+        tags:
+          version: v2
+      conf:
         action: ALLOW
-      - targetRef:
-          kind: Mesh 
+    - targetRef:
+        kind: Mesh 
+      conf:
         action: DENY
 ```
 
@@ -145,7 +148,7 @@ and has an outbound configuration:
 ```yaml
 to:
   - targetRef: Mesh | Service | HTTPRoute
-    outboundConf: ...
+    conf: ...
 ```
 
 If a data plane proxy has 3 outbounds:
@@ -169,7 +172,7 @@ to:
   - targetRef:
       kind: Service
       name: web-api
-    outboundConf: ... # conf for "web-api" outbound
+    conf: ... # conf for "web-api" outbound
 ```
 
 policy can select all outbounds ("backend", "web-api" and "payments"):
@@ -178,7 +181,7 @@ policy can select all outbounds ("backend", "web-api" and "payments"):
 to:
   - targetRef:
       kind: Mesh
-    outboundConf: ... # conf for all outbounds
+    conf: ... # conf for all outbounds
 ```
 
 policy can select an HTTPRoute:
@@ -188,11 +191,11 @@ to:
   - targetRef:
       kind: HTTPRoute
       name: payments-get-info-v1-httproute
-    outboundConf: ... # conf for "/v1/getinfo/" route of "payments" outbound 
+    conf: ... # conf for "/v1/getinfo/" route of "payments" outbound 
 ```
 
-When several targetRefs select the same outbound, 
-outboundConfs are merged in the order they're presented in the "to" array:
+When several targetRefs select the same outbound,
+corresponding confs are merged in the order they're presented in the "to" array:
 
 "backend" outbound is selected by 3 targetRefs
 
@@ -200,22 +203,26 @@ outboundConfs are merged in the order they're presented in the "to" array:
 to:
   - targetRef: 
       kind: Mesh
-    param1: value1
+    conf:
+      param1: value1
   - targetRef: 
       kind: Service
       name: backend
-    param1: value2
-    param2: value3
+    conf:
+      param1: value2
+      param2: value3
   - targetRef: 
       kind: Mesh
-    param2: value4
+    conf:
+      param2: value4
 ```
 
 resulting configuration for "backend" outbound is:
 
 ```yaml
-param1: value1 # overrides 'value2' from 'targetRef{kind:Service,name:backend}' 
-param2: value3 # overrides 'value4' from 'targetRef{kind:Mesh}'
+conf:
+  param1: value1 # overrides 'value2' from 'targetRef{kind:Service,name:backend}' 
+  param2: value3 # overrides 'value4' from 'targetRef{kind:Mesh}'
 ```
 
 #### Inbound policy
@@ -227,7 +234,7 @@ and has a configuration for selected source:
 ```yaml
 from:
   - targetRef: Mesh | MeshSubset | Service | ServiceSubset
-    sourceConf: ...
+    conf: ...
 ```
 
 Policy can select traffic from "backend" service:
@@ -237,7 +244,7 @@ from:
   - targetRef:
       kind: Service
       name: backend
-    sourceConf: ... # conf for traffic coming from "backend" service
+    conf: ... # conf for traffic coming from "backend" service
 ```
 
 Policy can select traffic from proxies with "kuma.io/zone: us-east" tag:
@@ -248,7 +255,7 @@ from:
       kind: MeshSubset
       tags:
         kuma.io/zone: us-east
-    sourceConf: ... # conf for traffic coming from "us-east" zone
+    conf: ... # conf for traffic coming from "us-east" zone
 ```
 
 Policy can select traffic from all sources:
@@ -257,11 +264,11 @@ Policy can select traffic from all sources:
 from:
   - targetRef:
       kind: Mesh
-    sourceConf: ... # conf for all incoming traffic
+    conf: ... # conf for all incoming traffic
 ```
 
 When several targetRefs select the same source,
-sourceConfs are merged in the order they're presented in the "from" array:
+corresponding confs are merged in the order they're presented in the "from" array:
 
 Traffic from "backend" of v2 is selected by 3 targetRefs
 
@@ -272,22 +279,26 @@ to:
       name: backend
       tags:
         version: v2
-    param1: value1
+    conf:
+      param1: value1
   - targetRef:
       kind: Service
       name: backend
-    param1: value2
-    param2: value3
+    conf:
+      param1: value2
+      param2: value3
   - targetRef:
       kind: Mesh
-    param2: value4
+    conf:
+      param2: value4
 ```
 
 resulting configuration for "backend" outbound is:
 
 ```yaml
-param1: value1 # overrides 'value2' from 'targetRef{kind:Service,name:backend}' 
-param2: value3 # overrides 'value4' from 'targetRef{kind:Mesh}'
+conf:
+  param1: value1 # overrides 'value2' from 'targetRef{kind:Service,name:backend}' 
+  param2: value3 # overrides 'value4' from 'targetRef{kind:Mesh}'
 ```
 
 ### Overlapping
@@ -335,10 +346,10 @@ mesh: mesh-1
 name: 00-base-timeouts
 targetRef:
   kind: Mesh
-conf:
-  to:
-    - targetRef:
-        kind: Mesh
+to:
+  - targetRef:
+      kind: Mesh
+    conf:
       connectTimeout: 10s
       http:
         requestTimeout: 5s
@@ -354,11 +365,11 @@ mesh: mesh-1
 name: 01-consume-backend-timeouts
 targetRef:
   kind: Mesh
-conf:
-  to: 
-    - targetRef:
-        kind: Service
-        name: backend
+to: 
+  - targetRef:
+      kind: Service
+      name: backend
+    conf:
       connectTimeout: 20s
       http:
         idleTimeout: 0s
@@ -374,14 +385,15 @@ name: web-timeouts
 targetRef:
   kind: Service
   name: web
-conf:
-  to:
-    - targetRef:
-        kind: Mesh
+to:
+  - targetRef:
+      kind: Mesh
+    conf:
       connectTimeout: 5s
-    - targetRef:
-        kind: Service
-        name: backend
+  - targetRef:
+      kind: Service
+      name: backend
+    conf:
       http:
         requestTimeout: 15s
 ```
@@ -396,24 +408,28 @@ matched for "web" proxy:
 to:
   - targetRef: # from 'web-timeouts'
       kind: Mesh
-    connectTimeout: 5s
+    conf:
+      connectTimeout: 5s
   - targetRef: # from 'web-timeouts'
       kind: Service
       name: backend
-    http:
-      requestTimeout: 15s
+    conf:
+      http:
+        requestTimeout: 15s
   - targetRef: # from '01-consume-backend-timeouts'
       kind: Service
       name: backend
-    connectTimeout: 20s
-    http:
-      idleTimeout: 0s
+    conf:
+      connectTimeout: 20s
+      http:
+        idleTimeout: 0s
   - targetRef: # from '00-base-timeouts'
       kind: Mesh
-    connectTimeout: 10s
-    http:
-      requestTimeout: 5s
-      idleTimeout: 1h
+    conf:
+      connectTimeout: 10s
+      http:
+        requestTimeout: 5s
+        idleTimeout: 1h
 ```
 
 Now we'll look at each outbound individually.
@@ -425,33 +441,38 @@ that target "backend" outbound:
 to:
   - targetRef: # from 'web-timeouts'
       kind: Mesh
-    connectTimeout: 5s
+    conf:
+      connectTimeout: 5s
   - targetRef: # from 'web-timeouts'
       kind: Service
       name: backend
-    http:
-      requestTimeout: 15s
+    conf:
+      http:
+        requestTimeout: 15s
   - targetRef: # from '01-consume-backend-timeouts'
       kind: Service
       name: backend
-    connectTimeout: 20s
-    http:
-      idleTimeout: 0s
+    conf:
+      connectTimeout: 20s
+      http:
+        idleTimeout: 0s
   - targetRef: # from '00-base-timeouts'
       kind: Mesh
-    connectTimeout: 10s
-    http:
-      requestTimeout: 5s
-      idleTimeout: 1h
+    conf:
+      connectTimeout: 10s
+      http:
+        requestTimeout: 5s
+        idleTimeout: 1h
 ```
 
 and merge these into a single outbound conf for "backend" outbound:
 
 ```yaml
-connectTimeout: 5s # from 'web-timeouts'
-http:
-  requestTimeout: 15s # from 'web-timeouts'
-  idleTimeout: 0s # from '01-consume-backend-timeouts'
+conf:
+  connectTimeout: 5s # from 'web-timeouts'
+  http:
+    requestTimeout: 15s # from 'web-timeouts'
+    idleTimeout: 0s # from '01-consume-backend-timeouts'
 ```
 
 For another outbounds "payments" we have to do the same.
@@ -462,22 +483,25 @@ that target "payments" outbound:
 to:
   - targetRef: # from 'web-timeouts'
       kind: Mesh
-    connectTimeout: 5s
+    conf:
+      connectTimeout: 5s
   - targetRef: # from '00-base-timeouts'
       kind: Mesh
-    connectTimeout: 10s
-    http:
-      requestTimeout: 5s
-      idleTimeout: 1h
+    conf:
+      connectTimeout: 10s
+      http:
+        requestTimeout: 5s
+        idleTimeout: 1h
 ```
 
 and merge these into a single conf for "payment" outbound:
 
 ```yaml
-connectTimeout: 5s # from 'web-timeouts'
-http:
-  requestTimeout: 5s # from '00-base-timeouts'
-  idleTimeout: 1h # from '00-base-timeouts'
+conf:
+  connectTimeout: 5s # from 'web-timeouts'
+  http:
+    requestTimeout: 5s # from '00-base-timeouts'
+    idleTimeout: 1h # from '00-base-timeouts'
 ```
 
 #### MeshTrafficPermission
@@ -493,18 +517,20 @@ mesh: mesh-1
 name: allow-only-infra
 targetRef:
   kind: Mesh
-conf:
-  from:
-    - targetRef:
-        kind: Service
-        name: infra-monitoring
+from:
+  - targetRef:
+      kind: Service
+      name: infra-monitoring
+    conf:
       action: ALLOW
-    - targetRef:
-        kind: Service
-        name: infra-logger
+  - targetRef:
+      kind: Service
+      name: infra-logger
+    conf:
       action: ALLOW
-    - targetRef:
-        kind: Mesh
+  - targetRef:
+      kind: Mesh
+    conf:
       action: DENY
 ```
 
@@ -518,16 +544,17 @@ name: backend-permissions
 targetRef:
   kind: Service
   name: backend
-conf:
-  from:
-    - targetRef:
-        kind: ServiceSubset
-        name: web
-        tags:
-          version: v1
+from:
+  - targetRef:
+      kind: ServiceSubset
+      name: web
+      tags:
+        version: v1
+    conf:
       action: DENY
-    - targetRef:
-        kind: Mesh
+  - targetRef:
+      kind: Mesh
+    conf:
       action: ALLOW
 ```
 
@@ -544,21 +571,26 @@ from:
       name: web
       tags:
         version: v1
-    action: DENY
+    conf:
+      action: DENY
   - targetRef: # from backend-permissions
       kind: Mesh
-    action: ALLOW
+    conf:
+      action: ALLOW
   - targetRef: # from allow-only-infra
       kind: Service
       name: infra-monitoring
-    action: ALLOW
+    conf:
+      action: ALLOW
   - targetRef: # from allow-only-infra
       kind: Service
       name: infra-logger
-    action: ALLOW
+    conf:
+      action: ALLOW
   - targetRef: # from allow-only-infra
       kind: Mesh
-    action: DENY
+    conf:
+      action: DENY
 ```
 
 Now we'll look at each possible traffic source individually.
@@ -572,19 +604,23 @@ from:
       name: web
       tags:
         version: v1
-    action: DENY
+    conf:
+      action: DENY
   - targetRef: # from backend-permissions
       kind: Mesh
-    action: ALLOW
+    conf:
+      action: ALLOW
   - targetRef: # from allow-only-infra
       kind: Mesh
-    action: DENY
+    conf:
+      action: DENY
 ```
 
 and merge into single configuration:
 
 ```yaml
-action: DENY # from backend-permissions
+conf:
+  action: DENY # from backend-permissions
 ```
 
 Select "from" sections that target "infra-monitoring":
@@ -593,20 +629,24 @@ Select "from" sections that target "infra-monitoring":
 from:
   - targetRef: # from backend-permissions
       kind: Mesh
-    action: ALLOW
+    conf:
+      action: ALLOW
   - targetRef: # from allow-only-infra
       kind: Service
       name: infra-monitoring
-    action: ALLOW
+    conf:
+      action: ALLOW
   - targetRef: # from allow-only-infra
       kind: Mesh
-    action: DENY
+    conf:
+      action: DENY
 ```
 
 and merge into single configuration:
 
 ```yaml
-action: ALLOW # from backend-permissions
+conf:
+  action: ALLOW # from backend-permissions
 ```
 
 Select "from" sections that target "infra-logger":
@@ -615,20 +655,24 @@ Select "from" sections that target "infra-logger":
 from:
   - targetRef: # from backend-permissions
       kind: Mesh
-    action: ALLOW
+    conf:
+      action: ALLOW
   - targetRef: # from allow-only-infra
       kind: Service
       name: infra-logger
-    action: ALLOW
+    conf:
+      action: ALLOW
   - targetRef: # from allow-only-infra
       kind: Mesh
-    action: DENY
+    conf:
+      action: DENY
 ```
 
 and merge into single configuration:
 
 ```yaml
-action: ALLOW # from backend-permissions
+conf:
+  action: ALLOW # from backend-permissions
 ```
 
 #### ProxyTemplate
@@ -689,16 +733,17 @@ mesh: mesh-1
 name: tl-1
 targetRef:
   kind: Mesh
-conf:
-  to:
-    - targetRef:
-        kind: Service
-        name: web
+to:
+  - targetRef:
+      kind: Service
+      name: web
+    conf:
       backends:
         - name: logstash
-  from:
-    - targetRef:
-        kind: Mesh
+from:
+  - targetRef:
+      kind: Mesh
+    conf:
       backends:
         - name: file
 ```
