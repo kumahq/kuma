@@ -123,11 +123,9 @@ spec:
     name: backend
   from:
     - targetRef:
-        kind: MeshSubset
-        tags:
-          kuma.io/zone: us-east
+        kind: Mesh
       conf:
-        action: ALLOW
+        action: DENY
     - targetRef:
         kind: MeshServiceSubset
         name: backend
@@ -136,9 +134,11 @@ spec:
       conf:
         action: ALLOW
     - targetRef:
-        kind: Mesh 
+        kind: MeshSubset
+        tags:
+          kuma.io/zone: us-east
       conf:
-        action: DENY
+        action: ALLOW
 ```
 
 ### Applying
@@ -199,7 +199,8 @@ to:
 ```
 
 When several targetRefs select the same outbound,
-corresponding confs are merged in the order they're presented in the "to" array:
+corresponding confs are merged in the order they're presented in the "to" array 
+(bottom ones have more priority over the top ones):
 
 "backend" outbound is selected by 3 targetRefs
 
@@ -225,8 +226,8 @@ resulting configuration for "backend" outbound is:
 
 ```yaml
 conf:
-  param1: value1 # overrides 'value2' from 'targetRef{kind:MeshService,name:backend}' 
-  param2: value3 # overrides 'value4' from 'targetRef{kind:Mesh}'
+  param1: value2 # overrides 'value1' from 'targetRef{kind:Mesh}' 
+  param2: value4 # overrides 'value3' from 'targetRef{kind:MeshService,name:backend}'
 ```
 
 #### Inbound policy
@@ -301,8 +302,8 @@ resulting configuration for "backend" outbound is:
 
 ```yaml
 conf:
-  param1: value1 # overrides 'value2' from 'targetRef{kind:MeshService,name:backend}' 
-  param2: value3 # overrides 'value4' from 'targetRef{kind:Mesh}'
+  param1: value2 # overrides 'value1' from 'targetRef{kind:Mesh}'
+  param2: value4 # overrides 'value3' from 'targetRef{kind:MeshService,name:backend}'
 ```
 
 ### Overlapping
@@ -329,8 +330,7 @@ they'll be sorted in a lexicographic order (using policy name).
 #### Merging
 
 Most policies consist of either "to" or "from" arrays.
-For overlapping policies these arrays are concatenated.
-Elements from the lower level policies (with higher priority) end up at the top of the resulting array:
+For overlapping policies these arrays are concatenated according to sorting order.
 
 <img src="assets/matching_merging.png" width="800px" alt="TargetRefs overrides"/>
 
