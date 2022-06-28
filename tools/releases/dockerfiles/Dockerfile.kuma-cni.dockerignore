@@ -1,0 +1,5 @@
+*
+!app/cni/go.mod
+!app/cni/go.sum
+!app/cni/cmd
+!app/cni/pkg

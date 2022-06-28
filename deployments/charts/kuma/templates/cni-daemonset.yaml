@@ -50,8 +50,8 @@ spec:
       {{- end }}
       containers:
         - name: install-cni
-          image: "kuma/install-cni:11a644c7ffbdac38ca2507de8bba6166ed7e4952"
-          imagePullPolicy: Never
+          image: {{ include "kuma.formatImage" (dict "image" .Values.cni.image "root" $) | quote }}
+            imagePullPolicy: Always
           command: ["/install-cni"]
           env:
             # Name of the CNI config file to create.

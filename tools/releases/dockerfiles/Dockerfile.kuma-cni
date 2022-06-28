@@ -1,0 +1,24 @@
+# syntax=docker/dockerfile:1
+
+FROM golang:1.18-alpine
+
+LABEL description="Kuma CNI plugin installer."
+
+WORKDIR /cni
+
+COPY app/cni/go.mod ./
+COPY app/cni/go.sum ./
+RUN go mod download
+
+COPY app/cni/cmd ./cmd/
+COPY app/cni/pkg ./pkg/
+
+ENV CGO_ENABLED=0
+ENV GOOS=linux
+ENV GOARCH=amd64
+RUN go build -ldflags="-extldflags=-static" -o /opt/cni/bin/kuma-cni ./cmd/kuma-cni/
+RUN go build -ldflags="-extldflags=-static" -o /install-cni ./cmd/install/
+
+ENV PATH=$PATH:/opt/cni/bin
+WORKDIR /opt/cni/bin
+CMD [ "/install-cni" ]
