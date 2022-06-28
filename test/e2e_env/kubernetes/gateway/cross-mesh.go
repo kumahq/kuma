@@ -1,7 +1,6 @@
 package gateway
 
 import (
-	"context"
 	"encoding/base64"
 	"fmt"
 	"net"
@@ -11,7 +10,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
@@ -128,11 +126,8 @@ func CrossMeshGatewayOnKubernetes() {
 
 		Expect(setup.Setup(env.Cluster)).To(Succeed())
 
-		clientset, err := k8s.GetKubernetesClientFromOptionsE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions())
-		Expect(err).NotTo(HaveOccurred())
-
 		Expect(
-			clientset.CoreV1().Secrets(Config.KumaNamespace).Delete(context.Background(), "will-be-deleted", metav1.DeleteOptions{}),
+			k8s.RunKubectlE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(Config.KumaNamespace), "delete", "secret", "will-be-deleted"),
 		).To(Succeed())
 	})
 
