@@ -82,6 +82,8 @@ spec:
 * MeshGatewayRoute 
 * HTTPRoute
 
+"TargetRef" identifies a set of DPPs that will be affected by the policy.
+
 Traffic direction is expressed inside the "conf" section.
 
 If policy configures outbounds, then "conf" section contains "to" array:
