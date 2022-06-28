@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"encoding/pem"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -419,6 +420,8 @@ func (g *TCPFilterChainGenerator) Generate(
 	if policy := match.BestConnectionPolicyForDestination(allDests, core_mesh.RetryType); policy != nil {
 		retryPolicy = policy.(*core_mesh.RetryResource)
 	}
+
+	sort.Slice(clusters, func(i, j int) bool { return clusters[i].Name() < clusters[j].Name() })
 
 	builder := envoy_listeners.NewFilterChainBuilder(info.Proxy.APIVersion).Configure(
 		envoy_listeners.TcpProxy(service, clusters...),

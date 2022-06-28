@@ -179,9 +179,9 @@ Listeners:
             statPrefix: gateway-default
             weightedClusters:
               clusters:
-              - name: external-httpbin-c7ae16fc6e6c5a95
               - name: api-service-6deccbd18c30bed3
               - name: echo-service-7ac4685ceb7ca5fc
+              - name: external-httpbin-c7ae16fc6e6c5a95
       listenerFilters:
       - name: envoy.filters.listener.tls_inspector
         typedConfig:
