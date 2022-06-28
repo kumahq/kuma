@@ -131,10 +131,27 @@ log.Info("starting...")
 
 #### Levels
 
-We have 2 log levels. `INFO` which is `V(0)` and `DEBUG` which is `V(1)`.
-Logging on higher level is redundant since the log will end up in `DEBUG` level anyway.
+We have 3 log levels:
+* `ERROR` used like that `log.Error(err, "msg")`
+* `INFO` used like that `log.Info("msg")`
+* `DEBUG` used like that `log.V(1).Info("msg")`
+Logging on higher levels is redundant since the log will end up in `DEBUG` level anyway.
 
 What to log and how to pick a proper level for logs.
+
+**ERROR**
+ERROR should inform about failures of the system.
+
+_Examples:_
+* XDS reconciliation failed.
+* There is connection error to Postgres / Kubernetes API.
+
+Ideally, ERROR should be used for issues that require immediate attention.
+If you execute an action that can potentially fail, and you add retries,
+consider logging retry attempts on INFO and ERROR only after all retries failed.
+
+These logs are meant to be read by the user so try to make it human-readable.
+It should include both human-readable message and details for engineers to understand the cause of the problem.  
 
 **INFO**
 INFO should inform about significant events in the system.
