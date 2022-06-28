@@ -41,7 +41,11 @@ Chosen option: targetRef selector
 
 "TargetRef" selector is inspired by [Gateway API Policy Attachment](https://gateway-api.sigs.k8s.io/v1alpha2/references/policy-attachment/) specification. 
 Even though, Kuma policy matching cannot be compatible with Gateway API Policy Attachment spec at that moment,
-we don't rule out the possibility in the future. 
+we don't rule out the possibility in the future. The reasons Kuma targetRef is not compatible with Gateway API:
+* Kuma "targetRef" uses own proto message, instead of reusing [PolicyTargetReference](https://github.com/kubernetes-sigs/gateway-api/blob/master/apis/v1alpha2/policy_types.go).
+* Kuma "targetRef" doesn't have `namespace` and `group` fields.
+* Kuma "targetRef" can reference objects that are not present in the store (MeshSubset, Service, ServiceSubset).
+* Kuma "targetRef" has extra field `tags`.
 
 Each Kuma policy has a single "TargetRef": 
 
@@ -69,7 +73,7 @@ spec:
   targetRef:
     kind: Service
     name: backend
-  conf:
+  to:
     # timeouts configuration
 ```
 
