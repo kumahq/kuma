@@ -155,6 +155,39 @@ func fillDataplaneOutbounds(
 	}
 }
 
+func CrossMeshEndpointTags(
+	gateways []*core_mesh.MeshGatewayResource,
+	dataplanes []*core_mesh.DataplaneResource,
+) []mesh_proto.SingleValueTagSet {
+	endpoints := []mesh_proto.SingleValueTagSet{}
+
+	for _, dataplane := range dataplanes {
+		if !dataplane.Spec.IsBuiltinGateway() {
+			continue
+		}
+
+		gateway := SelectGateway(gateways, dataplane.Spec.Matches)
+		if gateway == nil {
+			continue
+		}
+
+		dpSpec := dataplane.Spec
+		dpNetworking := dpSpec.GetNetworking()
+
+		dpGateway := dpNetworking.GetGateway()
+		dpTags := dpGateway.GetTags()
+
+		for _, listener := range gateway.Spec.GetConf().GetListeners() {
+			if !listener.CrossMesh {
+				continue
+			}
+			endpoints = append(endpoints, mesh_proto.Merge(dpTags, gateway.Spec.GetTags(), listener.GetTags()))
+		}
+	}
+
+	return endpoints
+}
+
 func BuildCrossMeshEndpointMap(
 	mesh *core_mesh.MeshResource,
 	otherMesh *core_mesh.MeshResource,

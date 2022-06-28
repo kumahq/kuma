@@ -10,10 +10,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/xds"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/topology"
 )
@@ -67,15 +64,15 @@ func UpdateAvailableServices(
 	ctx context.Context,
 	rm manager.ResourceManager,
 	ingress *core_mesh.ZoneIngressResource,
-	others []*core_mesh.DataplaneResource,
+	otherDataplanes []*core_mesh.DataplaneResource,
 	meshGateways []*core_mesh.MeshGatewayResource,
 	externalServices []*core_mesh.ExternalServiceResource,
 ) error {
-	availableServices := GetIngressAvailableServices(others)
+	availableServices := GetIngressAvailableServices(otherDataplanes)
 	availableExternalServices := GetExternalAvailableServices(externalServices)
 	availableServices = append(availableServices, availableExternalServices...)
 
-	meshGatewayDataplanes, err := getMeshGateways(ctx, rm, others, meshGateways)
+	meshGatewayDataplanes, err := getMeshGateways(otherDataplanes, meshGateways)
 	if err != nil {
 		return err
 	}
@@ -111,13 +108,18 @@ func availableServicesEqual(services []*mesh_proto.ZoneIngress_AvailableService,
 	return true
 }
 
+// MeshGatewayDataplanes is a helper type to hold the MeshGateways and Dataplanes for a mesh.
+type MeshGatewayDataplanes struct {
+	Mesh       string
+	Gateways   []*core_mesh.MeshGatewayResource
+	Dataplanes []*core_mesh.DataplaneResource
+}
+
 func getMeshGateways(
-	ctx context.Context,
-	rm manager.ResourceManager,
 	dataplanes []*core_mesh.DataplaneResource,
 	meshGateways []*core_mesh.MeshGatewayResource,
-) ([]xds_context.MeshGatewayDataplanes, error) {
-	meshGatewayDataplanes := []xds_context.MeshGatewayDataplanes{}
+) ([]MeshGatewayDataplanes, error) {
+	meshGatewayDataplanes := []MeshGatewayDataplanes{}
 
 	meshGatewaysByMesh := map[xds.MeshName][]*core_mesh.MeshGatewayResource{}
 	for _, gateway := range meshGateways {
@@ -136,13 +138,9 @@ func getMeshGateways(
 
 	for meshName, meshGateways := range meshGatewaysByMesh {
 		dataplanes := dataplanesByMesh[meshName]
-		mesh := core_mesh.NewMeshResource()
-		if err := rm.Get(ctx, mesh, store.GetByKey(meshName, model.NoMesh)); err != nil {
-			return nil, err
-		}
 
-		meshGatewayDataplanes = append(meshGatewayDataplanes, xds_context.MeshGatewayDataplanes{
-			Mesh:       mesh,
+		meshGatewayDataplanes = append(meshGatewayDataplanes, MeshGatewayDataplanes{
+			Mesh:       meshName,
 			Gateways:   meshGateways,
 			Dataplanes: dataplanes,
 		})
@@ -151,23 +149,19 @@ func getMeshGateways(
 	return meshGatewayDataplanes, nil
 }
 
-func getIngressAvailableMeshGateways(mesh *core_mesh.MeshResource, meshGateways []*core_mesh.MeshGatewayResource, dataplanes []*core_mesh.DataplaneResource) []*mesh_proto.ZoneIngress_AvailableService {
-	// We just use this to get the meshGateways to add them to availableservices
-	endpointMap := topology.BuildCrossMeshEndpointMap(
-		mesh, nil, "", meshGateways, dataplanes, nil, nil,
-	)
+func getIngressAvailableMeshGateways(meshName string, meshGateways []*core_mesh.MeshGatewayResource, dataplanes []*core_mesh.DataplaneResource) []*mesh_proto.ZoneIngress_AvailableService {
+	endpoints := topology.CrossMeshEndpointTags(meshGateways, dataplanes)
+
 	tagSets := tagSets{}
-	for _, endpoints := range endpointMap {
-		for _, endpoint := range endpoints {
-			meshName := mesh.GetMeta().GetName()
-			tagSets.addInstanceOfTags(meshName, envoy.Tags(mesh_proto.Merge(
-				map[string]string{
-					mesh_proto.MeshTag: meshName,
-				},
-				endpoint.Tags,
-			)))
-		}
+	for _, endpointTags := range endpoints {
+		tagSets.addInstanceOfTags(meshName, envoy.Tags(mesh_proto.Merge(
+			map[string]string{
+				mesh_proto.MeshTag: meshName,
+			},
+			endpointTags,
+		)))
 	}
+
 	return tagSets.toAvailableServices()
 }
 

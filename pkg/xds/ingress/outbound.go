@@ -31,7 +31,7 @@ func BuildEndpointMap(
 			if !selectors.Matches(withMesh) {
 				continue
 			}
-			iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
+			iface := dataplane.Spec.GetNetworking().ToInboundInterface(inbound)
 			outbound[service] = append(outbound[service], core_xds.Endpoint{
 				Target: iface.DataplaneIP,
 				Port:   iface.DataplanePort,
@@ -48,7 +48,7 @@ func BuildEndpointMap(
 			dpTags := dpGateway.GetTags()
 			serviceName := dpTags[mesh_proto.ServiceTag]
 
-			for _, listener := range gateway.Spec.Conf.Listeners {
+			for _, listener := range gateway.Spec.GetConf().GetListeners() {
 				if !listener.CrossMesh {
 					continue
 				}
@@ -65,12 +65,12 @@ func BuildEndpointMap(
 	}
 
 	for _, es := range externalServices {
-		service := es.Spec.Tags[mesh_proto.ServiceTag]
+		service := es.Spec.GetTags()[mesh_proto.ServiceTag]
 		selectors, ok := destinations[service]
 		if !ok {
 			continue
 		}
-		withMesh := envoy.Tags(es.Spec.Tags).WithTags("mesh", es.GetMeta().GetMesh())
+		withMesh := envoy.Tags(es.Spec.GetTags()).WithTags("mesh", es.GetMeta().GetMesh())
 		if !selectors.Matches(withMesh) {
 			continue
 		}
