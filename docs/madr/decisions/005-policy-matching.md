@@ -44,7 +44,7 @@ Even though, Kuma policy matching cannot be compatible with Gateway API Policy A
 we don't rule out the possibility in the future. The reasons Kuma targetRef is not compatible with Gateway API:
 * Kuma "targetRef" uses own proto message, instead of reusing [PolicyTargetReference](https://github.com/kubernetes-sigs/gateway-api/blob/master/apis/v1alpha2/policy_types.go).
 * Kuma "targetRef" doesn't have `namespace` and `group` fields.
-* Kuma "targetRef" can reference objects that are not present in the store (MeshSubset, Service, ServiceSubset).
+* Kuma "targetRef" can reference objects that are not present in the store (MeshSubset, MeshService, MeshServiceSubset).
 * Kuma "targetRef" has extra field `tags`.
 
 Each Kuma policy has a single "TargetRef": 
@@ -52,13 +52,13 @@ Each Kuma policy has a single "TargetRef":
 ```protobuf
 message TargetRef {
   // Kind of the referenced resource
-  // +kubebuilder:validation:Enum=Mesh;MeshSubset;Service;ServiceSubset;Proxy;MeshGatewayRoute;HTTPRoute
+  // +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshService;MeshServiceSubset;Proxy;MeshGatewayRoute;MeshHTTPRoute
   string kind = 1;
 
   // Name of the referenced resource
   string name = 2;
 
-  // Tags are used with MeshSubset and ServiceSubset to define a subset of proxies 
+  // Tags are used with MeshSubset and MeshServiceSubset to define a subset of proxies 
   map<string, string> tags = 3;
 }
 ```
@@ -71,7 +71,7 @@ mesh: mesh-1
 name: timeouts
 spec:
   targetRef:
-    kind: Service
+    kind: MeshService
     name: backend
   to:
     # timeouts configuration
@@ -80,46 +80,46 @@ spec:
 "TargetRef" can attach policy to different objects:
 * Mesh
 * MeshSubset
-* Service
-* ServiceSubset
+* MeshService
+* MeshServiceSubset
 * Proxy
 * MeshGatewayRoute 
-* HTTPRoute
+* MeshHTTPRoute
 
 "TargetRef" identifies a set of DPPs that will be affected by the policy.
 
-Traffic direction is expressed inside the "conf" section.
+Traffic direction is expressed using "to" and "from" arrays. 
 
-If policy configures outbounds, then "conf" section contains "to" array:
+If policy configures outbounds, then configuration is specified in "to" array: 
 ```yaml
 type: UpstreamTimeout
 mesh: mesh-1
 name: timeouts
 spec:
   targetRef:
-    kind: Service
+    kind: MeshService
     name: backend
   to:
     - targetRef:
-        kind: Service
+        kind: MeshService
         name: payments
       conf:
         connectTimeout: 10s
     - targetRef:
-        kind: Service
+        kind: MeshService
         name: web-api
       conf:
         connectTimeout: 20s
 ```
 
-If policy configures inbounds, then "conf" section contains "from" array:
+If policy configures inbounds, then configuration is specified in "from" array: 
 ```yaml
 type: MeshTrafficPermission
 mesh: mesh-1
 name: permissions
 spec:
   targetRef:
-    kind: Service
+    kind: MeshService
     name: backend
   from:
     - targetRef:
@@ -129,7 +129,7 @@ spec:
       conf:
         action: ALLOW
     - targetRef:
-        kind: ServiceSubset
+        kind: MeshServiceSubset
         name: backend
         tags:
           version: v2
@@ -151,7 +151,7 @@ and has an outbound configuration:
 
 ```yaml
 to:
-  - targetRef: Mesh | Service | HTTPRoute
+  - targetRef: Mesh | MeshService | MeshHTTPRoute
     conf: ...
 ```
 
@@ -174,7 +174,7 @@ then policy can select a single "web-api" outbound:
 ```yaml
 to:
   - targetRef:
-      kind: Service
+      kind: MeshService
       name: web-api
     conf: ... # conf for "web-api" outbound
 ```
@@ -188,12 +188,12 @@ to:
     conf: ... # conf for all outbounds
 ```
 
-policy can select an HTTPRoute:
+policy can select an MeshHTTPRoute:
 
 ```yaml
 to:
   - targetRef:
-      kind: HTTPRoute
+      kind: MeshHTTPRoute
       name: payments-get-info-v1-httproute
     conf: ... # conf for "/v1/getinfo/" route of "payments" outbound 
 ```
@@ -210,7 +210,7 @@ to:
     conf:
       param1: value1
   - targetRef: 
-      kind: Service
+      kind: MeshService
       name: backend
     conf:
       param1: value2
@@ -225,7 +225,7 @@ resulting configuration for "backend" outbound is:
 
 ```yaml
 conf:
-  param1: value1 # overrides 'value2' from 'targetRef{kind:Service,name:backend}' 
+  param1: value1 # overrides 'value2' from 'targetRef{kind:MeshService,name:backend}' 
   param2: value3 # overrides 'value4' from 'targetRef{kind:Mesh}'
 ```
 
@@ -237,7 +237,7 @@ and has a configuration for selected source:
 
 ```yaml
 from:
-  - targetRef: Mesh | MeshSubset | Service | ServiceSubset
+  - targetRef: Mesh | MeshSubset | MeshService | MeshServiceSubset
     conf: ...
 ```
 
@@ -246,7 +246,7 @@ Policy can select traffic from "backend" service:
 ```yaml
 from:
   - targetRef:
-      kind: Service
+      kind: MeshService
       name: backend
     conf: ... # conf for traffic coming from "backend" service
 ```
@@ -279,14 +279,14 @@ Traffic from "backend" of v2 is selected by 3 targetRefs
 ```yaml
 to:
   - targetRef: 
-      kind: ServiceSubset
+      kind: MeshServiceSubset
       name: backend
       tags:
         version: v2
     conf:
       param1: value1
   - targetRef:
-      kind: Service
+      kind: MeshService
       name: backend
     conf:
       param1: value2
@@ -301,16 +301,16 @@ resulting configuration for "backend" outbound is:
 
 ```yaml
 conf:
-  param1: value1 # overrides 'value2' from 'targetRef{kind:Service,name:backend}' 
+  param1: value1 # overrides 'value2' from 'targetRef{kind:MeshService,name:backend}' 
   param2: value3 # overrides 'value4' from 'targetRef{kind:Mesh}'
 ```
 
 ### Overlapping
 
 As already mentioned "targetRef" attaches policy to objects:
-Mesh, MeshSubset, Service, ServiceSubset, Proxy, MeshGatewayRoute, HTTPRoute. 
-These objects are overlapping, i.e Mesh includes many MeshSubsets, MeshSubset includes many Services,
-Service includes many ServiceSubsets, etc.
+Mesh, MeshSubset, MeshService, MeshServiceSubset, Proxy, MeshGatewayRoute, MeshHTTPRoute. 
+These objects are overlapping, i.e Mesh includes many MeshSubsets, MeshSubset includes many MeshServices,
+MeshService includes many MeshServiceSubsets, etc.
 That's why policies attached to different objects are overlapping as well.
 
 #### Sorting
@@ -371,7 +371,7 @@ targetRef:
   kind: Mesh
 to: 
   - targetRef:
-      kind: Service
+      kind: MeshService
       name: backend
     conf:
       connectTimeout: 20s
@@ -387,7 +387,7 @@ type: UpstreamTimeout
 mesh: mesh-1
 name: web-timeouts
 targetRef:
-  kind: Service
+  kind: MeshService
   name: web
 to:
   - targetRef:
@@ -395,7 +395,7 @@ to:
     conf:
       connectTimeout: 5s
   - targetRef:
-      kind: Service
+      kind: MeshService
       name: backend
     conf:
       http:
@@ -415,13 +415,13 @@ to:
     conf:
       connectTimeout: 5s
   - targetRef: # from 'web-timeouts'
-      kind: Service
+      kind: MeshService
       name: backend
     conf:
       http:
         requestTimeout: 15s
   - targetRef: # from '01-consume-backend-timeouts'
-      kind: Service
+      kind: MeshService
       name: backend
     conf:
       connectTimeout: 20s
@@ -448,13 +448,13 @@ to:
     conf:
       connectTimeout: 5s
   - targetRef: # from 'web-timeouts'
-      kind: Service
+      kind: MeshService
       name: backend
     conf:
       http:
         requestTimeout: 15s
   - targetRef: # from '01-consume-backend-timeouts'
-      kind: Service
+      kind: MeshService
       name: backend
     conf:
       connectTimeout: 20s
@@ -523,12 +523,12 @@ targetRef:
   kind: Mesh
 from:
   - targetRef:
-      kind: Service
+      kind: MeshService
       name: infra-monitoring
     conf:
       action: ALLOW
   - targetRef:
-      kind: Service
+      kind: MeshService
       name: infra-logger
     conf:
       action: ALLOW
@@ -546,11 +546,11 @@ type: MeshTrafficPermission
 mesh: mesh-1
 name: backend-permissions
 targetRef:
-  kind: Service
+  kind: MeshService
   name: backend
 from:
   - targetRef:
-      kind: ServiceSubset
+      kind: MeshServiceSubset
       name: web
       tags:
         version: v1
@@ -571,7 +571,7 @@ matched for "backend" proxy:
 ```yaml
 from:
   - targetRef: # from backend-permissions
-      kind: ServiceSubset
+      kind: MeshServiceSubset
       name: web
       tags:
         version: v1
@@ -582,12 +582,12 @@ from:
     conf:
       action: ALLOW
   - targetRef: # from allow-only-infra
-      kind: Service
+      kind: MeshService
       name: infra-monitoring
     conf:
       action: ALLOW
   - targetRef: # from allow-only-infra
-      kind: Service
+      kind: MeshService
       name: infra-logger
     conf:
       action: ALLOW
@@ -604,7 +604,7 @@ Select "from" sections that target "web" with "v1":
 ```yaml
 from:
   - targetRef: # from backend-permissions
-      kind: ServiceSubset
+      kind: MeshServiceSubset
       name: web
       tags:
         version: v1
@@ -636,7 +636,7 @@ from:
     conf:
       action: ALLOW
   - targetRef: # from allow-only-infra
-      kind: Service
+      kind: MeshService
       name: infra-monitoring
     conf:
       action: ALLOW
@@ -662,7 +662,7 @@ from:
     conf:
       action: ALLOW
   - targetRef: # from allow-only-infra
-      kind: Service
+      kind: MeshService
       name: infra-logger
     conf:
       action: ALLOW
@@ -694,7 +694,7 @@ mesh: default
 name: pt-1
 spec:
   targetRef:
-    kind: Service
+    kind: MeshService
     name: backend
   conf:
     imports:
@@ -739,7 +739,7 @@ targetRef:
   kind: Mesh
 to:
   - targetRef:
-      kind: Service
+      kind: MeshService
       name: web
     conf:
       backends:
