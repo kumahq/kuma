@@ -707,6 +707,25 @@ This policy specifies the following behaviour:
 
 When overlapping, "to" and "from" arrays are merged independently.
 
+### Rolling out
+
+The change affects not only policy selectors, but also policy's configurations.
+That's why instead of changing existing policies, we're going to introduce a new set of policies.
+For each existing policy we'll provide a new policy with "targetRef" and "to/from" arrays:
+* TrafficPermission -> MeshTrafficPermission
+* TrafficRoute -> MeshTrafficRoute
+* CircuitBreaker -> MeshCircuitBreaker
+* HealthCheck -> MeshHealthCheck
+* FaultInjection -> MeshHTTPFault
+* Retry -> MeshRequestRetry
+* Timeout -> MeshUpstreamTimeout
+* RateLimit -> MeshRateLimit
+* TrafficTrace -> MeshTracing
+* TrafficLog -> MeshLogging
+* _ -> MeshMetrics
+* ProxyTemplate -> MeshEnvoyTemplate
+* VirtualOutbound -> MeshVirtualOutbound
+
 ### Positive Consequences <!-- optional -->
 
 * Kuma model is closer to real world
