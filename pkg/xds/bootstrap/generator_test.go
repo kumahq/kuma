@@ -3,6 +3,7 @@ package bootstrap_test
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -193,7 +194,7 @@ var _ = Describe("bootstrapGenerator", func() {
 					Params: &bootstrap_config.BootstrapParamsConfig{
 						AdminAddress:       "192.168.0.1", // by default, Envoy Admin interface should listen on loopback address
 						AdminPort:          9902,          // by default, turn off Admin interface of Envoy
-						AdminAccessLogPath: "/var/log",
+						AdminAccessLogPath: os.DevNull,
 						XdsHost:            "localhost",
 						XdsPort:            15678,
 						XdsConnectTimeout:  2 * time.Second,
@@ -202,9 +203,10 @@ var _ = Describe("bootstrapGenerator", func() {
 			},
 			dataplane: defaultDataplane,
 			request: types.BootstrapRequest{
-				Mesh:           "mesh",
-				Name:           "name.namespace",
-				DataplaneToken: "token",
+				Mesh:            "mesh",
+				Name:            "name.namespace",
+				DataplaneToken:  "token",
+				OperatingSystem: "windows",
 				DynamicMetadata: map[string]string{
 					"test": "value",
 				},
