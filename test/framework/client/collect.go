@@ -16,9 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/pkg/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8s_exec "k8s.io/client-go/util/exec"
 
 	"github.com/kumahq/kuma/test/framework"
@@ -192,18 +190,11 @@ func CollectTCPResponse(
 
 	var appPodName string
 	if opts.namespace != "" && opts.application != "" {
-		pods, err := k8s.ListPodsE(
-			cluster.GetTesting(),
-			cluster.GetKubectlOptions(opts.namespace),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", opts.application),
-			},
-		)
+		var err error
+		appPodName, err = framework.PodNameOfApp(cluster, opts.application, opts.namespace)
 		if err != nil {
-			return "", errors.Wrap(err, "failed to list pods")
+			return "", err
 		}
-
-		appPodName = pods[0].Name
 	}
 
 	stdout, _, err := cluster.ExecWithRetries(opts.namespace, appPodName, container, cmd...)
@@ -229,18 +220,11 @@ func CollectResponse(
 
 	var appPodName string
 	if opts.namespace != "" && opts.application != "" {
-		pods, err := k8s.ListPodsE(
-			cluster.GetTesting(),
-			cluster.GetKubectlOptions(opts.namespace),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", opts.application),
-			},
-		)
+		var err error
+		appPodName, err = framework.PodNameOfApp(cluster, opts.application, opts.namespace)
 		if err != nil {
-			return types.EchoResponse{}, errors.Wrap(err, "failed to list pods")
+			return types.EchoResponse{}, err
 		}
-
-		appPodName = pods[0].Name
 	}
 
 	stdout, _, err := cluster.ExecWithRetries(opts.namespace, appPodName, container, cmd...)
@@ -350,18 +334,11 @@ func CollectFailure(cluster framework.Cluster, container, destination string, fn
 
 	var appPodName string
 	if opts.namespace != "" && opts.application != "" {
-		pods, err := k8s.ListPodsE(
-			cluster.GetTesting(),
-			cluster.GetKubectlOptions(opts.namespace),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", opts.application),
-			},
-		)
+		var err error
+		appPodName, err = framework.PodNameOfApp(cluster, opts.application, opts.namespace)
 		if err != nil {
-			return FailureResponse{}, errors.Wrap(err, "failed to list pods")
+			return FailureResponse{}, err
 		}
-
-		appPodName = pods[0].Name
 	}
 
 	stdout, _, err := cluster.Exec(opts.namespace, appPodName, container, cmd...)
