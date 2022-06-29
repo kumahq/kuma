@@ -190,7 +190,7 @@ func CollectTCPResponse(
 	opts := collectOptions(destination, fn...)
 	cmd := []string{"bash", "-c", fmt.Sprintf("echo '%s' | curl --max-time 3 %s", stdin, opts.ShellEscaped(opts.URL))}
 
-	var pod string
+	var appPodName string
 	if opts.namespace != "" && opts.application != "" {
 		pods, err := k8s.ListPodsE(
 			cluster.GetTesting(),
@@ -203,10 +203,10 @@ func CollectTCPResponse(
 			return "", errors.Wrap(err, "failed to list pods")
 		}
 
-		pod = pods[0].Name
+		appPodName = pods[0].Name
 	}
 
-	stdout, _, err := cluster.ExecWithRetries(opts.namespace, pod, container, cmd...)
+	stdout, _, err := cluster.ExecWithRetries(opts.namespace, appPodName, container, cmd...)
 	if err != nil {
 		return "", err
 	}
@@ -227,7 +227,7 @@ func CollectResponse(
 		opts.ShellEscaped(opts.URL),
 	)
 
-	var pod string
+	var appPodName string
 	if opts.namespace != "" && opts.application != "" {
 		pods, err := k8s.ListPodsE(
 			cluster.GetTesting(),
@@ -240,10 +240,10 @@ func CollectResponse(
 			return types.EchoResponse{}, errors.Wrap(err, "failed to list pods")
 		}
 
-		pod = pods[0].Name
+		appPodName = pods[0].Name
 	}
 
-	stdout, _, err := cluster.ExecWithRetries(opts.namespace, pod, container, cmd...)
+	stdout, _, err := cluster.ExecWithRetries(opts.namespace, appPodName, container, cmd...)
 	if err != nil {
 		return types.EchoResponse{}, err
 	}
@@ -348,7 +348,7 @@ func CollectFailure(cluster framework.Cluster, container, destination string, fn
 		opts.ShellEscaped(opts.URL),
 	)
 
-	var pod string
+	var appPodName string
 	if opts.namespace != "" && opts.application != "" {
 		pods, err := k8s.ListPodsE(
 			cluster.GetTesting(),
@@ -361,10 +361,10 @@ func CollectFailure(cluster framework.Cluster, container, destination string, fn
 			return FailureResponse{}, errors.Wrap(err, "failed to list pods")
 		}
 
-		pod = pods[0].Name
+		appPodName = pods[0].Name
 	}
 
-	stdout, _, err := cluster.Exec(opts.namespace, pod, container, cmd...)
+	stdout, _, err := cluster.Exec(opts.namespace, appPodName, container, cmd...)
 
 	// 1. If we fail to decode the JSON status, return the JSON error,
 	// but prefer the original error if we have it.
