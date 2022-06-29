@@ -141,7 +141,7 @@ spec:
       kuma.io/service: edge-gateway
   conf:
     listeners:
-    - port: 8080
+    - port: 7080
       protocol: HTTP
       hostname: example.kuma.io
       tags:
@@ -215,7 +215,7 @@ spec:
 	JustBeforeEach(func() {
 		Expect(k8s.KubectlApplyFromStringE(
 			cluster.GetTesting(),
-			cluster.GetKubectlOptions(TestNamespace), `
+			cluster.GetKubectlOptions(TestNamespace), fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshGatewayInstance
 metadata:
@@ -223,9 +223,14 @@ metadata:
 spec:
   replicas: 1
   serviceType: ClusterIP
+  serviceTemplate:
+    spec:
+      ports:
+        - targetPort: 7080
+          port: %s
   tags:
     kuma.io/service: edge-gateway
-`),
+`, GatewayPort)),
 		).To(Succeed())
 	})
 
