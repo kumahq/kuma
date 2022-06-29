@@ -214,7 +214,6 @@ jobs:
     - run:
         name: "Run tests"
         command: |
-          export GINKGO_TEST_RESULTS_DIR=/tmp/ginkgo-test-results
           make << parameters.target >>
     - run:
         # Ref https://docs.codecov.com/docs/about-the-codecov-bash-uploader
@@ -231,12 +230,12 @@ jobs:
               curl --location --silent "${URL}/${VERSION}/SHA${i}SUM"
             )
           done
-          bash ./codecov -f "build/coverage/*.out"
+          bash ./codecov -f "build/reports/*.out"
     - store_artifacts:
-        path: build/coverage
-        destination: /coverage
+        path: build/reports
+        destination: /reports
     - store_test_results:
-        path: /tmp/ginkgo-test-results
+        path: build/reports
 
   e2e:
     parameters:
@@ -322,7 +321,6 @@ jobs:
       - run:
           name: "Run E2E tests"
           command: |
-            export GINKGO_TEST_RESULTS_DIR=/tmp/ginkgo-test-results
             if [[ "<< parameters.k8sVersion >>" == "kindIpv6" ]]; then
               export IPV6=true
               export KUMA_DEFAULT_RETRIES=60
@@ -333,7 +331,7 @@ jobs:
               export K3D=true
             fi
             if [[ "<< parameters.arch >>" == "arm64" ]]; then
-              export GINKGO_E2E_FLAGS="${GINKGO_FLAGS} --label-filter=\"!arm-not-supported\""
+              export GINKGO_E2E_TEST_FLAGS="--label-filter=\"!arm-not-supported\""
               export MAKE_PARAMETERS="-j1"
             else
               export MAKE_PARAMETERS="-j2"
@@ -345,7 +343,7 @@ jobs:
             env
             make ${MAKE_PARAMETERS} << parameters.target >>
       - store_test_results:
-          path: /tmp/ginkgo-test-results
+          path: build/reports
 
   build:
     parameters:

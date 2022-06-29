@@ -110,8 +110,10 @@ func (h *validatingHandler) decode(req admission.Request) (core_model.Resource, 
 
 // Note that this func does not validate ConfigMap and Secret since this webhook does not support those
 func (h *validatingHandler) isOperationAllowed(resType core_model.ResourceType, userInfo authenticationv1.UserInfo) admission.Response {
-	if userInfo.Username == h.cpServiceAccountName {
-		// Assume this means sync from another zone. Not security; protecting user from self.
+	if userInfo.Username == h.cpServiceAccountName ||
+		userInfo.Username == "system:serviceaccount:kube-system:generic-garbage-collector" {
+		// Assume this means sync from another zone or GC cleanup resources due to OwnerRef.
+		// Not security; protecting user from self.
 		return admission.Allowed("")
 	}
 

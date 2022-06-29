@@ -1,12 +1,8 @@
 package virtualoutbound
 
 import (
-	"fmt"
-
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
@@ -57,26 +53,18 @@ spec:
 		err := YamlK8s(virtualOutboundAll)(k8sCluster)
 		Expect(err).ToNot(HaveOccurred())
 		// when client sends requests to server
-		pods, err := k8s.ListPodsE(
-			k8sCluster.GetTesting(),
-			k8sCluster.GetKubectlOptions(TestNamespace),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", "demo-client"),
-			},
-		)
+		clientPodName, err := PodNameOfApp(k8sCluster, "demo-client", TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(pods).To(HaveLen(1))
 
-		clientPod := pods[0]
 		// Succeed with virtual-outbound
-		stdout, stderr, err := k8sCluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+		stdout, stderr, err := k8sCluster.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "test-server_kuma-test_svc_80.foo:8080")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).To(ContainSubstring(`"instance":"test-server`))
 
 		// Fails with built in vip (it's disabled in conf)
-		_, _, err = k8sCluster.Exec(TestNamespace, clientPod.GetName(), "demo-client",
+		_, _, err = k8sCluster.Exec(TestNamespace, clientPodName, "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "test-server_kuma-test_svc_80.mesh:80")
 		Expect(err).To(HaveOccurred())
 	})
@@ -105,25 +93,16 @@ spec:
 		err := YamlK8s(virtualOutboundAll)(k8sCluster)
 		Expect(err).ToNot(HaveOccurred())
 		// when client sends requests to server
-		pods, err := k8s.ListPodsE(
-			k8sCluster.GetTesting(),
-			k8sCluster.GetKubectlOptions(TestNamespace),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", "demo-client"),
-			},
-		)
+		clientPodName, err := PodNameOfApp(k8sCluster, "demo-client", TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(pods).To(HaveLen(1))
 
-		clientPod := pods[0]
-
-		stdout, stderr, err := k8sCluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+		stdout, stderr, err := k8sCluster.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "test-server_kuma-test_svc_80.test-server-0:8080")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).To(ContainSubstring(`"instance":"test-server-0"`))
 
-		stdout, stderr, err = k8sCluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+		stdout, stderr, err = k8sCluster.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "test-server_kuma-test_svc_80.test-server-1:8080")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))

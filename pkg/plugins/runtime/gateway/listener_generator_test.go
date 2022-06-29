@@ -201,6 +201,23 @@ conf:
     tags:
       name: any-hostname
 `),
+
+		Entry("should generate TCP listener",
+			"tcp-listener.yaml", `
+type: MeshGateway
+mesh: default
+name: default-gateway
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  listeners:
+  - port: 443
+    protocol: TCP
+    hostname: bar.example.com
+    tags:
+      name: example.com
+`),
 	)
 
 	DescribeTable("fail to generate xDS resources",

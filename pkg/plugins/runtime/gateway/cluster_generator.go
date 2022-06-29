@@ -35,14 +35,11 @@ func (c *ClusterGenerator) GenerateClusters(ctx xds_context.Context, info Gatewa
 	// an array of endpoint and checks whether the first entry is from
 	// an external service. Because the dataplane endpoints happen to be
 	// generated first, the mesh service will have priority.
-	for _, dest := range routeDestinations(routes) {
+	for _, dest := range routeDestinationsMutable(routes) {
 		matched := match.ExternalService(info.ExternalServices.Items, mesh_proto.TagSelector(dest.Destination))
 		service := dest.Destination[mesh_proto.ServiceTag]
 
-		var firstEndpointExternalService bool
-		if endpoints := info.OutboundEndpoints[service]; len(endpoints) > 0 {
-			firstEndpointExternalService = endpoints[0].IsExternalService()
-		}
+		firstEndpointExternalService := route.HasExternalServiceEndpoint(ctx.Mesh.Resource, info.OutboundEndpoints, *dest)
 
 		// If there is Mesh property ZoneEgress enabled we want always to
 		// direct the traffic through them. The condition is, the mesh must
@@ -121,7 +118,7 @@ func (c *ClusterGenerator) generateMeshCluster(
 ) (*core_xds.Resource, error) {
 	protocol := route.InferServiceProtocol([]core_xds.Endpoint{{
 		Tags: dest.Destination,
-	}})
+	}}, dest.RouteProtocol)
 
 	builder := newClusterBuilder(info.Proxy.APIVersion, protocol, dest).Configure(
 		clusters.EdsCluster(dest.Destination[mesh_proto.ServiceTag]),
@@ -155,7 +152,7 @@ func (c *ClusterGenerator) generateExternalCluster(
 		endpoints = append(endpoints, *ep)
 	}
 
-	protocol := route.InferServiceProtocol(endpoints)
+	protocol := route.InferServiceProtocol(endpoints, dest.RouteProtocol)
 
 	return buildClusterResource(
 		dest,
@@ -219,7 +216,17 @@ func buildClusterResource(dest *route.Destination, c *clusters.ClusterBuilder) (
 	}, nil
 }
 
-func routeDestinations(entries []route.Entry) []*route.Destination {
+func routeDestinations(entries []route.Entry) []route.Destination {
+	var destinations []route.Destination
+
+	for _, dest := range routeDestinationsMutable(entries) {
+		destinations = append(destinations, *dest)
+	}
+
+	return destinations
+}
+
+func routeDestinationsMutable(entries []route.Entry) []*route.Destination {
 	var destinations []*route.Destination
 
 	for _, e := range entries {

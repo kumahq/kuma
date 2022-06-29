@@ -176,6 +176,10 @@ Routes:
             weightedClusters:
               clusters:
               - name: external-httpbin-622a08eefce6a721
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
                 weight: 1
               totalWeight: 1
 Runtimes:

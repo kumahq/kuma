@@ -22,15 +22,19 @@ func init() {
 }
 
 func (t *ProxyTemplateResource) Validate() error {
+	return t.ValidateWithProfiles(AvailableProfiles)
+}
+
+func (t *ProxyTemplateResource) ValidateWithProfiles(profiles map[string]struct{}) error {
 	var verr validators.ValidationError
 	verr.Add(validateSelectors(t.Spec.Selectors))
-	verr.AddError("conf", validateConfig(t.Spec.Conf))
+	verr.AddError("conf", validateConfig(t.Spec.Conf, profiles))
 	return verr.OrNil()
 }
 
-func validateConfig(conf *mesh_proto.ProxyTemplate_Conf) validators.ValidationError {
+func validateConfig(conf *mesh_proto.ProxyTemplate_Conf, profiles map[string]struct{}) validators.ValidationError {
 	var verr validators.ValidationError
-	verr.Add(validateImports(conf.GetImports()))
+	verr.Add(validateImports(conf.GetImports(), profiles))
 	verr.Add(validateResources(conf.GetResources()))
 	for i, modification := range conf.GetModifications() {
 		verr.AddErrorAt(validators.RootedAt("modifications").Index(i), validateModification(modification))
@@ -190,21 +194,20 @@ func validateNetworkFilterModification(networkFilterMod *mesh_proto.ProxyTemplat
 	return verr
 }
 
-func validateImports(imports []string) validators.ValidationError {
+func validateImports(imports []string, availableProfiles map[string]struct{}) validators.ValidationError {
 	var verr validators.ValidationError
 	for i, imp := range imports {
 		if imp == "" {
 			verr.AddViolationAt(validators.RootedAt("imports").Index(i), "cannot be empty")
 			continue
 		}
-		if _, ok := AvailableProfiles[imp]; !ok {
+		if _, ok := availableProfiles[imp]; !ok {
 			var profiles []string
-			for profile := range AvailableProfiles {
+			for profile := range availableProfiles {
 				profiles = append(profiles, profile)
 			}
 			sort.StringSlice(profiles).Sort()
-			availableProfilesMsg := strings.Join(profiles, ",")
-			verr.AddViolationAt(validators.RootedAt("imports").Index(i), fmt.Sprintf("profile not found. Available profiles: %s", availableProfilesMsg))
+			verr.AddViolationAt(validators.RootedAt("imports").Index(i), fmt.Sprintf("profile not found. Available profiles: %s", strings.Join(profiles, ",")))
 		}
 	}
 	return verr

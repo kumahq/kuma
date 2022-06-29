@@ -176,7 +176,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 		Configure(envoy_listeners.OutboundListener(outboundListenerName, oface.DataplaneIP, oface.DataplanePort, model.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.FilterChain(filterChainBuilder)).
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
-		Configure(envoy_listeners.TagsMetadata(envoy_common.Tags(outbound.GetTagsIncludingLegacy()).WithoutTags("kuma.io/mesh"))).
+		Configure(envoy_listeners.TagsMetadata(envoy_common.Tags(outbound.GetTagsIncludingLegacy()).WithoutTags(mesh_proto.MeshTag))).
 		Build()
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not generate listener %s for service %s", outboundListenerName, serviceName)
@@ -357,7 +357,7 @@ func (OutboundProxyGenerator) determineRoutes(
 				name = envoy_names.GetSplitClusterName(service, splitCounter.getAndIncrement())
 			}
 
-			if mesh, ok := destination.Destination["kuma.io/mesh"]; ok {
+			if mesh, ok := destination.Destination[mesh_proto.MeshTag]; ok {
 				// The name should be distinct to the service & mesh combination
 				name = fmt.Sprintf("%s_%s", name, mesh)
 			}
@@ -376,13 +376,13 @@ func (OutboundProxyGenerator) determineRoutes(
 				// The mesh tag is set here if this destination is generated
 				// from a MeshGateway virtual outbound and is not part of the
 				// service tags
-				envoy_common.WithTags(envoy_common.Tags(destination.Destination).WithoutTags("kuma.io/mesh")),
+				envoy_common.WithTags(envoy_common.Tags(destination.Destination).WithoutTags(mesh_proto.MeshTag)),
 				envoy_common.WithTimeout(timeoutConf),
 				envoy_common.WithLB(route.Spec.GetConf().GetLoadBalancer()),
 				envoy_common.WithExternalService(isExternalService),
 			)
 
-			if mesh, ok := destination.Destination["kuma.io/mesh"]; ok {
+			if mesh, ok := destination.Destination[mesh_proto.MeshTag]; ok {
 				cluster.SetMesh(mesh)
 			}
 

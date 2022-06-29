@@ -19,7 +19,8 @@ const DefaultConnectionBuffer = 32 * 1024
 func SupportsProtocol(p mesh_proto.MeshGateway_Listener_Protocol) bool {
 	switch p {
 	case mesh_proto.MeshGateway_Listener_HTTP,
-		mesh_proto.MeshGateway_Listener_HTTPS:
+		mesh_proto.MeshGateway_Listener_HTTPS,
+		mesh_proto.MeshGateway_Listener_TCP:
 		return true
 	default:
 		return false

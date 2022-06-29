@@ -45,9 +45,9 @@ func ApplicationOnUniversalClientOnK8s() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 	E2EAfterAll(func() {
-		Expect(env.Global.DeleteMesh(meshName)).To(Succeed())
 		Expect(env.KubeZone1.DeleteNamespace(namespace)).To(Succeed())
 		Expect(env.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(env.Global.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should not load balance requests to unhealthy instance", func() {

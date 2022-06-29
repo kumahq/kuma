@@ -27,19 +27,21 @@ type VIPsAllocator struct {
 	cidr              string
 	serviceVipEnabled bool
 	dnsSuffix         string
+	zone              string
 }
 
 // NewVIPsAllocator creates new object of VIPsAllocator. You can either
 // call method CreateOrUpdateVIPConfig manually or start VIPsAllocator as a component.
 // In the latter scenario it will call CreateOrUpdateVIPConfig every 'tickInterval'
 // for all meshes in the store.
-func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, configManager config_manager.ConfigManager, config dns_server.Config) (*VIPsAllocator, error) {
+func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, configManager config_manager.ConfigManager, config dns_server.Config, zone string) (*VIPsAllocator, error) {
 	return &VIPsAllocator{
 		rm:                rm,
 		persistence:       vips.NewPersistence(rm, configManager),
 		serviceVipEnabled: config.ServiceVipEnabled,
 		cidr:              config.CIDR,
 		dnsSuffix:         config.Domain,
+		zone:              zone,
 	}, nil
 }
 
@@ -64,7 +66,7 @@ func (d *VIPsAllocator) CreateOrUpdateVIPConfig(ctx context.Context, mesh string
 		return err
 	}
 
-	newView, err := BuildVirtualOutboundMeshView(ctx, d.rm, d.serviceVipEnabled, d.dnsSuffix, mesh)
+	newView, err := d.BuildVirtualOutboundMeshView(ctx, mesh)
 	if err != nil {
 		return err
 	}
@@ -84,7 +86,7 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(ctx context.Context, mesh strin
 		return err
 	}
 
-	newView, err := BuildVirtualOutboundMeshView(ctx, d.rm, d.serviceVipEnabled, d.dnsSuffix, mesh)
+	newView, err := d.BuildVirtualOutboundMeshView(ctx, mesh)
 	if err != nil {
 		return err
 	}
@@ -157,7 +159,7 @@ func addFromMeshGateway(outboundSet *vips.VirtualOutboundMeshView, dnsSuffix, me
 				gateway.Spec.GetTags(),
 				listener.GetTags(),
 				map[string]string{
-					"kuma.io/mesh": mesh,
+					mesh_proto.MeshTag: mesh,
 				},
 				selector.GetMatch(),
 			)
@@ -176,22 +178,22 @@ func addFromMeshGateway(outboundSet *vips.VirtualOutboundMeshView, dnsSuffix, me
 	}
 }
 
-func BuildVirtualOutboundMeshView(ctx context.Context, rm manager.ReadOnlyResourceManager, serviceVipEnabled bool, dnsSuffix string, mesh string) (*vips.VirtualOutboundMeshView, error) {
+func (d *VIPsAllocator) BuildVirtualOutboundMeshView(ctx context.Context, mesh string) (*vips.VirtualOutboundMeshView, error) {
 	outboundSet := vips.NewEmptyVirtualOutboundView()
 
 	virtualOutbounds := core_mesh.VirtualOutboundResourceList{}
-	if err := rm.List(ctx, &virtualOutbounds, store.ListByMesh(mesh)); err != nil {
+	if err := d.rm.List(ctx, &virtualOutbounds, store.ListByMesh(mesh)); err != nil {
 		return nil, err
 	}
 	dataplanes := core_mesh.DataplaneResourceList{}
-	if err := rm.List(ctx, &dataplanes, store.ListByMesh(mesh)); err != nil {
+	if err := d.rm.List(ctx, &dataplanes, store.ListByMesh(mesh)); err != nil {
 		return nil, err
 	}
 
 	var errs error
 	for _, dp := range dataplanes.Items {
 		for _, inbound := range dp.Spec.GetNetworking().GetInbound() {
-			if serviceVipEnabled {
+			if d.serviceVipEnabled {
 				errs = multierr.Append(errs, addDefault(outboundSet, inbound.GetService(), 0))
 			}
 			for _, vob := range Match(virtualOutbounds.Items, inbound.Tags) {
@@ -201,13 +203,16 @@ func BuildVirtualOutboundMeshView(ctx context.Context, rm manager.ReadOnlyResour
 	}
 
 	zoneIngresses := core_mesh.ZoneIngressResourceList{}
-	if err := rm.List(ctx, &zoneIngresses); err != nil {
+	if err := d.rm.List(ctx, &zoneIngresses); err != nil {
 		return nil, err
 	}
 
 	for _, zi := range zoneIngresses.Items {
 		for _, service := range zi.Spec.GetAvailableServices() {
-			if service.Mesh == mesh && serviceVipEnabled {
+			if !zi.IsRemoteIngress(d.zone) {
+				continue
+			}
+			if service.Mesh == mesh && d.serviceVipEnabled {
 				errs = multierr.Append(errs, addDefault(outboundSet, service.GetTags()[mesh_proto.ServiceTag], 0))
 			}
 			for _, vob := range Match(virtualOutbounds.Items, service.Tags) {
@@ -217,12 +222,12 @@ func BuildVirtualOutboundMeshView(ctx context.Context, rm manager.ReadOnlyResour
 	}
 
 	externalServices := core_mesh.ExternalServiceResourceList{}
-	if err := rm.List(ctx, &externalServices, store.ListByMesh(mesh)); err != nil {
+	if err := d.rm.List(ctx, &externalServices, store.ListByMesh(mesh)); err != nil {
 		return nil, err
 	}
 	for _, es := range externalServices.Items {
 		tags := map[string]string{mesh_proto.ServiceTag: es.Spec.GetService()}
-		if serviceVipEnabled {
+		if d.serviceVipEnabled {
 			errs = multierr.Append(errs, addDefault(outboundSet, es.Spec.GetService(), es.Spec.GetPortUInt32()))
 		}
 		errs = multierr.Append(errs, outboundSet.Add(vips.NewHostEntry(es.Spec.GetHost()), vips.OutboundEntry{
@@ -236,19 +241,19 @@ func BuildVirtualOutboundMeshView(ctx context.Context, rm manager.ReadOnlyResour
 	}
 
 	meshList := core_mesh.MeshResourceList{}
-	if err := rm.List(ctx, &meshList); err != nil {
+	if err := d.rm.List(ctx, &meshList); err != nil {
 		return nil, err
 	}
 
 	for _, mesh := range meshList.Items {
 		meshName := mesh.GetMeta().GetName()
 		gateways := core_mesh.MeshGatewayResourceList{}
-		if err := rm.List(ctx, &gateways, store.ListByMesh(meshName)); err != nil {
+		if err := d.rm.List(ctx, &gateways, store.ListByMesh(meshName)); err != nil {
 			return nil, err
 		}
 
 		for _, gateway := range gateways.Items {
-			addFromMeshGateway(outboundSet, dnsSuffix, meshName, gateway)
+			addFromMeshGateway(outboundSet, d.dnsSuffix, meshName, gateway)
 		}
 	}
 

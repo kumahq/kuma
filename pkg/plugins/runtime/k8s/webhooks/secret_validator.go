@@ -16,10 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 	common_k8s "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-)
-
-const (
-	meshLabel = "kuma.io/mesh"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )
 
 type SecretValidator struct {
@@ -119,7 +116,7 @@ func (v *SecretValidator) validateMeshSecret(ctx context.Context, verr *validato
 	// block change of the mesh on the secret
 	if oldSecret != nil {
 		if meshOfSecret(secret) != meshOfSecret(oldSecret) {
-			verr.AddViolationAt(validators.RootedAt("metadata").Field("labels").Key(meshLabel), "cannot change mesh of the Secret. Delete the Secret first and apply it again.")
+			verr.AddViolationAt(validators.RootedAt("metadata").Field("labels").Key(metadata.KumaMeshLabel), "cannot change mesh of the Secret. Delete the Secret first and apply it again.")
 		}
 	}
 	v.validateSecretData(verr, secret)
@@ -127,8 +124,8 @@ func (v *SecretValidator) validateMeshSecret(ctx context.Context, verr *validato
 }
 
 func (v *SecretValidator) validateGlobalSecret(verr *validators.ValidationError, secret *kube_core.Secret) {
-	if _, ok := secret.GetLabels()[meshLabel]; ok {
-		verr.AddViolationAt(validators.RootedAt("metadata").Field("labels").Key(meshLabel), "mesh cannot be set on global secret")
+	if _, ok := secret.GetLabels()[metadata.KumaMeshLabel]; ok {
+		verr.AddViolationAt(validators.RootedAt("metadata").Field("labels").Key(metadata.KumaMeshLabel), "mesh cannot be set on global secret")
 	}
 	v.validateSecretData(verr, secret)
 }
@@ -141,7 +138,7 @@ func (v *SecretValidator) validateSecretData(verr *validators.ValidationError, s
 }
 
 func meshOfSecret(secret *kube_core.Secret) string {
-	meshName := secret.GetLabels()[meshLabel]
+	meshName := secret.GetLabels()[metadata.KumaMeshLabel]
 	if meshName == "" {
 		return "default"
 	}

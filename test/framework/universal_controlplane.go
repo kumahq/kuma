@@ -15,26 +15,16 @@ import (
 	"github.com/kumahq/kuma/test/framework/ssh"
 )
 
-type UniversalCPNetworking struct {
-	IP            string `json:"ip"` // IP inside a docker network
-	ApiServerPort string `json:"apiServerPort"`
-	SshPort       string `json:"sshPort"`
-}
-
-func (u UniversalCPNetworking) BootstrapAddress() string {
-	return "https://" + net.JoinHostPort(u.IP, "5678")
-}
-
 type UniversalControlPlane struct {
 	t            testing.TestingT
 	mode         core.CpMode
 	name         string
 	kumactl      *KumactlOptions
 	verbose      bool
-	cpNetworking UniversalCPNetworking
+	cpNetworking UniversalNetworking
 }
 
-func NewUniversalControlPlane(t testing.TestingT, mode core.CpMode, clusterName string, verbose bool, networking UniversalCPNetworking) (*UniversalControlPlane, error) {
+func NewUniversalControlPlane(t testing.TestingT, mode core.CpMode, clusterName string, verbose bool, networking UniversalNetworking) (*UniversalControlPlane, error) {
 	name := clusterName + "-" + mode
 	kumactl := NewKumactlOptions(t, name, verbose)
 	ucp := &UniversalControlPlane{
@@ -56,7 +46,7 @@ func NewUniversalControlPlane(t testing.TestingT, mode core.CpMode, clusterName 
 	return ucp, nil
 }
 
-func (c *UniversalControlPlane) Networking() UniversalCPNetworking {
+func (c *UniversalControlPlane) Networking() UniversalNetworking {
 	return c.cpNetworking
 }
 

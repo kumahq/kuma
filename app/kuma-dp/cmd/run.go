@@ -309,18 +309,20 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 	if kumaSidecarConfiguration != nil {
 		for _, item := range kumaSidecarConfiguration.Metrics.Aggregate {
 			applicationsToScrape = append(applicationsToScrape, metrics.ApplicationToScrape{
-				Name: item.Name,
-				Path: item.Path,
-				Port: item.Port,
+				Name:          item.Name,
+				Path:          item.Path,
+				Port:          item.Port,
+				QueryModifier: metrics.RemoveQueryParameters,
 			})
 		}
 	}
 	// by default add envoy configuration
 	applicationsToScrape = append(applicationsToScrape, metrics.ApplicationToScrape{
-		Name:    "envoy",
-		Path:    "/stats/prometheus",
-		Port:    envoyAdminPort,
-		Mutator: metrics.MergeClusters,
+		Name:          "envoy",
+		Path:          "/stats",
+		Port:          envoyAdminPort,
+		QueryModifier: metrics.AddPrometheusFormat,
+		Mutator:       metrics.MergeClusters,
 	})
 	return applicationsToScrape
 }

@@ -3,11 +3,8 @@ package k8s_api_bypass
 import (
 	"fmt"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
@@ -31,7 +28,7 @@ spec:
 `
 
 	var cluster *K8sCluster
-	var clientPod *v1.Pod
+	var clientPodName string
 
 	BeforeEach(func() {
 		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
@@ -48,17 +45,8 @@ spec:
 		err = YamlK8s(fmt.Sprintf(meshDefaultMtlsOn, "true"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		pods, err := k8s.ListPodsE(
-			cluster.GetTesting(),
-			cluster.GetKubectlOptions(TestNamespace),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", "demo-client"),
-			},
-		)
+		clientPodName, err = PodNameOfApp(cluster, "demo-client", TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(pods).To(HaveLen(1))
-
-		clientPod = &pods[0]
 	})
 
 	E2EAfterEach(func() {
@@ -83,7 +71,7 @@ spec:
 		cmd := fmt.Sprintf("curl -s --cacert %s --header %q -o /dev/null -w '%%{http_code}\\n' -m 3 --fail %s", caCert, header, url)
 
 		// given Mesh with passthrough enabled then communication with API Server works
-		stdout, _, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+		stdout, _, err := cluster.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
 			"bash", "-c", cmd)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(Equal("200"))
@@ -93,7 +81,7 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then communication with API Server still works
-		stdout, _, err = cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+		stdout, _, err = cluster.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
 			"bash", "-c", cmd)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(Equal("200"))

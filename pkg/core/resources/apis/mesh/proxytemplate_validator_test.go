@@ -22,7 +22,9 @@ var _ = Describe("ProxyTemplate", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
-				err = proxyTemplate.Validate()
+				err = proxyTemplate.ValidateWithProfiles(map[string]struct{}{
+					"default-proxy": {},
+				})
 				// then
 				Expect(err).ToNot(HaveOccurred())
 			},
@@ -318,7 +320,11 @@ var _ = Describe("ProxyTemplate", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
-				verr := proxyTemplate.Validate()
+				verr := proxyTemplate.ValidateWithProfiles(map[string]struct{}{
+					"default-proxy": {},
+					"egress-proxy":  {},
+					"ingress-proxy": {},
+				})
 				// and
 				actual, err := yaml.Marshal(verr)
 

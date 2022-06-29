@@ -127,7 +127,8 @@ func NetworkAccessLog(
 func HttpAccessLog(
 	mesh string,
 	trafficDirection envoy_common.TrafficDirection,
-	sourceService string, destinationService string,
+	sourceService string,
+	destinationService string,
 	backend *mesh_proto.LoggingBackend,
 	proxy *core_xds.Proxy,
 ) FilterChainBuilderOpt {
