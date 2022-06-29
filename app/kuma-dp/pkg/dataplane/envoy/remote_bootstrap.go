@@ -24,11 +24,15 @@ import (
 )
 
 type remoteBootstrap struct {
-	client *http.Client
+	client          *http.Client
+	operatingSystem string
 }
 
-func NewRemoteBootstrapGenerator(client *http.Client) BootstrapConfigFactoryFunc {
-	rb := remoteBootstrap{client: client}
+func NewRemoteBootstrapGenerator(client *http.Client, operatingSystem string) BootstrapConfigFactoryFunc {
+	rb := remoteBootstrap{
+		client:          client,
+		operatingSystem: operatingSystem,
+	}
 	return rb.Generate
 }
 
@@ -151,6 +155,7 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, url *net_url.
 		DynamicMetadata: params.DynamicMetadata,
 		DNSPort:         params.DNSPort,
 		EmptyDNSPort:    params.EmptyDNSPort,
+		OperatingSystem: b.operatingSystem,
 	}
 	jsonBytes, err := json.Marshal(request)
 	if err != nil {
