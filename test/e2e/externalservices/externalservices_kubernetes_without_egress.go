@@ -3,11 +3,8 @@ package externalservices
 import (
 	"fmt"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
@@ -53,7 +50,7 @@ spec:
 	es2 := "2"
 
 	var cluster Cluster
-	var clientPod *v1.Pod
+	var clientPodName string
 
 	BeforeEach(func() {
 		clusters, err := NewK8sClusters(
@@ -74,17 +71,8 @@ spec:
 		err = YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "false", "false"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		pods, err := k8s.ListPodsE(
-			cluster.GetTesting(),
-			cluster.GetKubectlOptions(TestNamespace),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", "demo-client"),
-			},
-		)
+		clientPodName, err = PodNameOfApp(cluster, "demo-client", TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(pods).To(HaveLen(1))
-
-		clientPod = &pods[0]
 	})
 
 	E2EAfterEach(func() {
@@ -99,7 +87,7 @@ spec:
 	})
 
 	trafficBlocked := func() error {
-		_, _, err := cluster.Exec(TestNamespace, clientPod.GetName(), "demo-client",
+		_, _, err := cluster.Exec(TestNamespace, clientPodName, "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace:10080")
 		return err
 	}
@@ -110,7 +98,7 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then communication outside of the Mesh works
-		_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+		_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace:10080")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
@@ -120,7 +108,7 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then communication outside of the Mesh works
-		_, stderr, err = cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+		_, stderr, err = cluster.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace:10080")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
@@ -152,7 +140,7 @@ spec:
 			"true"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		_, _, err = cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+		_, _, err = cluster.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "http://external-service.mesh:10080")
 		Expect(err).To(HaveOccurred())
 	})

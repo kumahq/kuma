@@ -3,11 +3,8 @@ package internalservices
 import (
 	"fmt"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	core_v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
@@ -133,20 +130,12 @@ var _ = E2EBeforeSuite(func() {
 
 func HybridUniversalGlobal() {
 	Context("when the client is from kubernetes cluster", func() {
-		var zone1ClientPod *core_v1.Pod
+		var zone1ClientPodName string
 
 		BeforeEach(func() {
-			pods, err := k8s.ListPodsE(
-				zone1.GetTesting(),
-				zone1.GetKubectlOptions(TestNamespace),
-				metav1.ListOptions{
-					LabelSelector: fmt.Sprintf("app=%s", "demo-client"),
-				},
-			)
+			podName, err := PodNameOfApp(zone1, "demo-client", TestNamespace)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(pods).To(HaveLen(1))
-
-			zone1ClientPod = &pods[0]
+			zone1ClientPodName = podName
 		})
 
 		JustBeforeEach(func() {
@@ -167,7 +156,7 @@ func HybridUniversalGlobal() {
 				g.Expect(zone1.GetZoneEgressEnvoyTunnel().GetStats(filter)).To(stats.BeEqualZero())
 			}, "30s", "1s").Should(Succeed())
 
-			_, stderr, err := zone1.ExecWithRetries(TestNamespace, zone1ClientPod.GetName(), "demo-client",
+			_, stderr, err := zone1.ExecWithRetries(TestNamespace, zone1ClientPodName, "demo-client",
 				"curl", "--verbose", "--max-time", "3", "--fail", "test-server_kuma-test_svc_80.mesh")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
@@ -190,7 +179,7 @@ func HybridUniversalGlobal() {
 					To(stats.BeEqualZero())
 			}, "30s", "1s").Should(Succeed())
 
-			_, stderr, err := zone1.ExecWithRetries(TestNamespace, zone1ClientPod.GetName(), "demo-client",
+			_, stderr, err := zone1.ExecWithRetries(TestNamespace, zone1ClientPodName, "demo-client",
 				"curl", "--verbose", "--max-time", "3", "--fail", "zone3-test-server.mesh")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
