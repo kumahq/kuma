@@ -37,6 +37,29 @@ networking:
       kuma.io/service: backend
       version: "v1"
 ---
+type: Dataplane
+mesh: default
+name: cross-mesh-gateway
+networking:
+  address: 192.168.0.3
+  gateway:
+    type: BUILTIN
+    tags:
+      kuma.io/service: cross-mesh-gateway
+---
+type: MeshGateway
+mesh: default
+name: cross-mesh-gateway
+selectors:
+- match:
+    kuma.io/service: cross-mesh-gateway
+conf:
+  listeners:
+  - port: 8080
+    protocol: HTTP
+    crossMesh: true
+    hostname: gateway.mesh
+---
 type: ZoneIngress
 name: zone-ingress-zone-1
 zone: zone-1

@@ -28,11 +28,19 @@ func GatewayOnKubernetes() {
 
 	const GatewayPort = "8080"
 
-	EchoServerApp := func(name string) InstallFunc {
+	echoServerApp := func(name string) InstallFunc {
 		return testserver.Install(
 			testserver.WithMesh("default"),
 			testserver.WithName(name),
-			testserver.WithArgs("echo", "--instance", "kubernetes"),
+			testserver.WithEchoArgs("echo", "--instance", "kubernetes"),
+		)
+	}
+
+	tcpServerApp := func(name string) InstallFunc {
+		return testserver.Install(
+			testserver.WithMesh("default"),
+			testserver.WithName(name),
+			testserver.WithHealthCheckTCPArgs("health-check", "tcp", "--port", "80"),
 		)
 	}
 
@@ -93,7 +101,8 @@ spec:
 			Install(Kuma(config_core.Standalone, opt...)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(Namespace(ClientNamespace)).
-			Install(EchoServerApp("echo-server")).
+			Install(echoServerApp("echo-server")).
+			Install(tcpServerApp("tcp-server")).
 			Install(GatewayClientApp("gateway-client")).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -137,6 +146,10 @@ spec:
       hostname: example.kuma.io
       tags:
         hostname: example.kuma.io
+    - port: 8081
+      protocol: TCP
+      tags:
+        protocol: tcp
 `),
 		).To(Succeed())
 
@@ -152,6 +165,7 @@ spec:
   selectors:
   - match:
       kuma.io/service: edge-gateway
+      hostname: example.kuma.io
   conf:
     http:
       rules:
@@ -162,6 +176,28 @@ spec:
         backends:
         - destination:
             kuma.io/service: echo-server_kuma-test_svc_80 # Matches the echo-server we deployed.
+`),
+		).To(Succeed())
+
+		Expect(k8s.KubectlApplyFromStringE(
+			cluster.GetTesting(),
+			cluster.GetKubectlOptions(TestNamespace), `
+apiVersion: kuma.io/v1alpha1
+kind: MeshGatewayRoute
+metadata:
+  name: edge-gateway-tcp
+mesh: default
+spec:
+  selectors:
+  - match:
+      kuma.io/service: edge-gateway
+      protocol: tcp
+  conf:
+    tcp:
+      rules:
+      - backends:
+        - destination:
+            kuma.io/service: tcp-server_kuma-test_svc_80 # Matches the echo-server we deployed.
 `),
 		).To(Succeed())
 
@@ -237,6 +273,13 @@ spec:
 				client.FromKubernetesPod(ClientNamespace, "gateway-client"))
 		})
 
+		It("should proxy TCP connections", func() {
+			ProxyTcpRequest(cluster, "request", "response",
+				net.JoinHostPort(GatewayAddress("edge-gateway"), "8081"),
+				client.FromKubernetesPod(ClientNamespace, "gateway-client"),
+			)
+		})
+
 		// In mTLS mode, only the presence of TrafficPermission rules allow services to receive
 		// traffic, so removing the permission should cause requests to fail. We use this to
 		// prove that mTLS is enabled
@@ -254,7 +297,7 @@ spec:
 				Install(testserver.Install(
 					testserver.WithName("es-test-server"),
 					testserver.WithNamespace(ClientNamespace), // reuse client namespace to not wait for delete separate namespace
-					testserver.WithArgs("echo", "--instance", "es-test-server"),
+					testserver.WithEchoArgs("echo", "--instance", "es-test-server"),
 				)).
 				Install(YamlK8s(`
 apiVersion: kuma.io/v1alpha1

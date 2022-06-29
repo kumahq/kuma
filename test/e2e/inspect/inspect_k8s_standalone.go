@@ -3,11 +3,8 @@ package inspect
 import (
 	"fmt"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	kube_core "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
@@ -15,21 +12,7 @@ import (
 
 func KubernetesStandalone() {
 	var cluster *K8sCluster
-	var demoClient *kube_core.Pod
-
-	GetPod := func(namespace, app string) *kube_core.Pod {
-		pods, err := k8s.ListPodsE(
-			cluster.GetTesting(),
-			cluster.GetKubectlOptions(namespace),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", app),
-			},
-		)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(pods).To(HaveLen(1))
-
-		return &pods[0]
-	}
+	var demoClientName string
 
 	BeforeEach(func() {
 		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
@@ -54,7 +37,9 @@ func KubernetesStandalone() {
 			g.Expect(dataplanes).Should(ContainElement(ContainSubstring("demo-client")))
 		}, "60s", "1s").Should(Succeed())
 
-		demoClient = GetPod(TestNamespace, "demo-client")
+		podName, err := PodNameOfApp(cluster, "demo-client", TestNamespace)
+		Expect(err).ToNot(HaveOccurred())
+		demoClientName = podName
 	})
 
 	E2EAfterEach(func() {
@@ -64,7 +49,7 @@ func KubernetesStandalone() {
 	})
 
 	It("should return envoy config_dump", func() {
-		dataplaneName := fmt.Sprintf("%s.%s", demoClient.GetName(), TestNamespace)
+		dataplaneName := fmt.Sprintf("%s.%s", demoClientName, TestNamespace)
 		stdout, err := cluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", dataplaneName, "--config-dump")
 		Expect(err).ToNot(HaveOccurred())
 

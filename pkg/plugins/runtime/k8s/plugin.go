@@ -182,10 +182,15 @@ func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common
 	if rt.Config().Mode == config_core.Global {
 		return nil
 	}
+	zone := ""
+	if rt.Config().Multizone != nil && rt.Config().Multizone.Zone != nil {
+		zone = rt.Config().Multizone.Zone.Name
+	}
 	vipsAllocator, err := dns.NewVIPsAllocator(
 		rt.ResourceManager(),
 		rt.ConfigManager(),
 		*rt.Config().DNSServer,
+		zone,
 	)
 	if err != nil {
 		return err

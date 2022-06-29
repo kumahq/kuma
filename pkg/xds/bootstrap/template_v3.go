@@ -9,6 +9,7 @@ import (
 	envoy_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoy_grpc_credentials_v3 "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v3"
 	envoy_metrics_v3 "github.com/envoyproxy/go-control-plane/envoy/config/metrics/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
@@ -17,7 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
-func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, error) {
+func genConfig(parameters configParameters, useTokenPath bool) (*envoy_bootstrap_v3.Bootstrap, error) {
 	res := &envoy_bootstrap_v3.Bootstrap{
 		Node: &envoy_core_v3.Node{
 			Id:      parameters.Id,
@@ -95,13 +96,7 @@ func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, erro
 				TransportApiVersion:       envoy_core_v3.ApiVersion_V3,
 				SetNodeOnFirstMessageOnly: true,
 				GrpcServices: []*envoy_core_v3.GrpcService{
-					{
-						TargetSpecifier: &envoy_core_v3.GrpcService_EnvoyGrpc_{
-							EnvoyGrpc: &envoy_core_v3.GrpcService_EnvoyGrpc{
-								ClusterName: "ads_cluster",
-							},
-						},
-					},
+					buildGrpcService(parameters, useTokenPath),
 				},
 			},
 		},
@@ -125,79 +120,7 @@ func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, erro
 					},
 				},
 			},
-			Clusters: []*envoy_cluster_v3.Cluster{
-				{
-					// TODO does timeout and keepAlive make sense on this as it uses unix domain sockets?
-					Name:                 "access_log_sink",
-					ConnectTimeout:       util_proto.Duration(parameters.XdsConnectTimeout),
-					Http2ProtocolOptions: &envoy_core_v3.Http2ProtocolOptions{},
-					LbPolicy:             envoy_cluster_v3.Cluster_ROUND_ROBIN,
-					UpstreamConnectionOptions: &envoy_cluster_v3.UpstreamConnectionOptions{
-						TcpKeepalive: &envoy_core_v3.TcpKeepalive{
-							KeepaliveProbes:   util_proto.UInt32(3),
-							KeepaliveTime:     util_proto.UInt32(10),
-							KeepaliveInterval: util_proto.UInt32(10),
-						},
-					},
-					ClusterDiscoveryType: &envoy_cluster_v3.Cluster_Type{Type: envoy_cluster_v3.Cluster_STATIC},
-					LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
-						ClusterName: "access_log_sink",
-						Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
-							{
-								LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
-									{
-										HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
-											Endpoint: &envoy_config_endpoint_v3.Endpoint{
-												Address: &envoy_core_v3.Address{
-													Address: &envoy_core_v3.Address_Pipe{Pipe: &envoy_core_v3.Pipe{Path: parameters.AccessLogPipe}},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				{
-					Name:                 "ads_cluster",
-					ConnectTimeout:       util_proto.Duration(parameters.XdsConnectTimeout),
-					Http2ProtocolOptions: &envoy_core_v3.Http2ProtocolOptions{},
-					LbPolicy:             envoy_cluster_v3.Cluster_ROUND_ROBIN,
-					UpstreamConnectionOptions: &envoy_cluster_v3.UpstreamConnectionOptions{
-						TcpKeepalive: &envoy_core_v3.TcpKeepalive{
-							KeepaliveProbes:   util_proto.UInt32(3),
-							KeepaliveTime:     util_proto.UInt32(10),
-							KeepaliveInterval: util_proto.UInt32(10),
-						},
-					},
-					ClusterDiscoveryType: &envoy_cluster_v3.Cluster_Type{Type: clusterTypeFromHost(parameters.XdsHost)},
-					DnsLookupFamily:      dnsLookupFamilyFromXdsHost(parameters.XdsHost, net.LookupIP),
-					LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
-						ClusterName: "ads_cluster",
-						Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
-							{
-								LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
-									{
-										HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
-											Endpoint: &envoy_config_endpoint_v3.Endpoint{
-												Address: &envoy_core_v3.Address{
-													Address: &envoy_core_v3.Address_SocketAddress{
-														SocketAddress: &envoy_core_v3.SocketAddress{
-															Address:       parameters.XdsHost,
-															PortSpecifier: &envoy_core_v3.SocketAddress_PortValue{PortValue: parameters.XdsPort},
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
+			Clusters: buildStaticClusters(parameters, useTokenPath),
 		},
 	}
 	for _, r := range res.StaticResources.Clusters {
@@ -233,18 +156,12 @@ func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, erro
 			TransportApiVersion:       envoy_core_v3.ApiVersion_V3,
 			SetNodeOnFirstMessageOnly: true,
 			GrpcServices: []*envoy_core_v3.GrpcService{
-				{
-					TargetSpecifier: &envoy_core_v3.GrpcService_EnvoyGrpc_{
-						EnvoyGrpc: &envoy_core_v3.GrpcService_EnvoyGrpc{
-							ClusterName: "ads_cluster",
-						},
-					},
-				},
+				buildGrpcService(parameters, useTokenPath),
 			},
 		}
 	}
 
-	if parameters.DataplaneToken != "" {
+	if (!useTokenPath || parameters.DataplaneTokenPath == "") && parameters.DataplaneToken != "" {
 		if res.HdsConfig != nil {
 			for _, n := range res.HdsConfig.GrpcServices {
 				n.InitialMetadata = []*envoy_core_v3.HeaderValue{
@@ -258,6 +175,7 @@ func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, erro
 			}
 		}
 	}
+
 	if parameters.DataplaneResource != "" {
 		res.Node.Metadata.Fields["dataplane.resource"] = util_proto.MustNewValueForStruct(parameters.DataplaneResource)
 	}
@@ -325,4 +243,136 @@ func clusterTypeFromHost(host string) envoy_cluster_v3.Cluster_DiscoveryType {
 		return envoy_cluster_v3.Cluster_STATIC
 	}
 	return envoy_cluster_v3.Cluster_STRICT_DNS
+}
+
+func buildGrpcService(params configParameters, useTokenPath bool) *envoy_core_v3.GrpcService {
+	if useTokenPath && params.DataplaneTokenPath != "" {
+		googleGrpcService := &envoy_core_v3.GrpcService{
+			TargetSpecifier: &envoy_core_v3.GrpcService_GoogleGrpc_{
+				GoogleGrpc: &envoy_core_v3.GrpcService_GoogleGrpc{
+					TargetUri:              net.JoinHostPort(params.XdsHost, strconv.FormatUint(uint64(params.XdsPort), 10)),
+					StatPrefix:             "ads",
+					CredentialsFactoryName: "envoy.grpc_credentials.file_based_metadata",
+					CallCredentials: []*envoy_core_v3.GrpcService_GoogleGrpc_CallCredentials{
+						{
+							CredentialSpecifier: &envoy_core_v3.GrpcService_GoogleGrpc_CallCredentials_FromPlugin{
+								FromPlugin: &envoy_core_v3.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin{
+									Name: "envoy.grpc_credentials.file_based_metadata",
+									ConfigType: &envoy_core_v3.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_TypedConfig{
+										TypedConfig: util_proto.MustMarshalAny(&envoy_grpc_credentials_v3.FileBasedMetadataConfig{
+											SecretData: &envoy_core_v3.DataSource{
+												Specifier: &envoy_core_v3.DataSource_Filename{Filename: params.DataplaneTokenPath},
+											},
+										}),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		if params.CertBytes != nil {
+			googleGrpcService.GetGoogleGrpc().ChannelCredentials = &envoy_core_v3.GrpcService_GoogleGrpc_ChannelCredentials{
+				CredentialSpecifier: &envoy_core_v3.GrpcService_GoogleGrpc_ChannelCredentials_SslCredentials{
+					SslCredentials: &envoy_core_v3.GrpcService_GoogleGrpc_SslCredentials{
+						RootCerts: &envoy_core_v3.DataSource{
+							Specifier: &envoy_core_v3.DataSource_InlineBytes{
+								InlineBytes: params.CertBytes,
+							},
+						},
+					},
+				},
+			}
+		}
+		return googleGrpcService
+	} else {
+		envoyGrpcSerivce := &envoy_core_v3.GrpcService{
+			TargetSpecifier: &envoy_core_v3.GrpcService_EnvoyGrpc_{
+				EnvoyGrpc: &envoy_core_v3.GrpcService_EnvoyGrpc{
+					ClusterName: "ads_cluster",
+				},
+			},
+		}
+		return envoyGrpcSerivce
+	}
+}
+
+func buildStaticClusters(parameters configParameters, useTokenPath bool) []*envoy_cluster_v3.Cluster {
+	clusters := []*envoy_cluster_v3.Cluster{
+		{
+			// TODO does timeout and keepAlive make sense on this as it uses unix domain sockets?
+			Name:                 "access_log_sink",
+			ConnectTimeout:       util_proto.Duration(parameters.XdsConnectTimeout),
+			Http2ProtocolOptions: &envoy_core_v3.Http2ProtocolOptions{},
+			LbPolicy:             envoy_cluster_v3.Cluster_ROUND_ROBIN,
+			UpstreamConnectionOptions: &envoy_cluster_v3.UpstreamConnectionOptions{
+				TcpKeepalive: &envoy_core_v3.TcpKeepalive{
+					KeepaliveProbes:   util_proto.UInt32(3),
+					KeepaliveTime:     util_proto.UInt32(10),
+					KeepaliveInterval: util_proto.UInt32(10),
+				},
+			},
+			ClusterDiscoveryType: &envoy_cluster_v3.Cluster_Type{Type: envoy_cluster_v3.Cluster_STATIC},
+			LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
+				ClusterName: "access_log_sink",
+				Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
+					{
+						LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
+							{
+								HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
+									Endpoint: &envoy_config_endpoint_v3.Endpoint{
+										Address: &envoy_core_v3.Address{
+											Address: &envoy_core_v3.Address_Pipe{Pipe: &envoy_core_v3.Pipe{Path: parameters.AccessLogPipe}},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	if parameters.DataplaneTokenPath == "" || !useTokenPath {
+		clusters = append(clusters, &envoy_cluster_v3.Cluster{
+			Name:                 "ads_cluster",
+			ConnectTimeout:       util_proto.Duration(parameters.XdsConnectTimeout),
+			Http2ProtocolOptions: &envoy_core_v3.Http2ProtocolOptions{},
+			LbPolicy:             envoy_cluster_v3.Cluster_ROUND_ROBIN,
+			UpstreamConnectionOptions: &envoy_cluster_v3.UpstreamConnectionOptions{
+				TcpKeepalive: &envoy_core_v3.TcpKeepalive{
+					KeepaliveProbes:   util_proto.UInt32(3),
+					KeepaliveTime:     util_proto.UInt32(10),
+					KeepaliveInterval: util_proto.UInt32(10),
+				},
+			},
+			ClusterDiscoveryType: &envoy_cluster_v3.Cluster_Type{Type: clusterTypeFromHost(parameters.XdsHost)},
+			DnsLookupFamily:      dnsLookupFamilyFromXdsHost(parameters.XdsHost, net.LookupIP),
+			LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
+				ClusterName: "ads_cluster",
+				Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
+					{
+						LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
+							{
+								HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
+									Endpoint: &envoy_config_endpoint_v3.Endpoint{
+										Address: &envoy_core_v3.Address{
+											Address: &envoy_core_v3.Address_SocketAddress{
+												SocketAddress: &envoy_core_v3.SocketAddress{
+													Address:       parameters.XdsHost,
+													PortSpecifier: &envoy_core_v3.SocketAddress_PortValue{PortValue: parameters.XdsPort},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		})
+	}
+	return clusters
 }

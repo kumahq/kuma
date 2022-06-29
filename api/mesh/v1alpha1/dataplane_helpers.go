@@ -20,6 +20,8 @@ const (
 	// Locality related tags
 	ZoneTag = "kuma.io/zone"
 
+	MeshTag = "kuma.io/mesh"
+
 	// Optional tag that has a reserved meaning in Kuma.
 	// If absent, Kuma will treat application's protocol as opaque TCP.
 	ProtocolTag = "kuma.io/protocol"

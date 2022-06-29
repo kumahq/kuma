@@ -57,12 +57,13 @@ func (p *IngressProxyBuilder) Build(key core_model.ResourceKey) (*xds.Proxy, err
 	if err != nil {
 		return nil, err
 	}
-	routing := p.resolveRouting(zoneIngress, zoneEgressesList, allMeshDataplanes, availableExternalServices)
 
 	zoneIngressProxy, err := p.buildZoneIngressProxy(ctx)
 	if err != nil {
 		return nil, err
 	}
+
+	routing := p.resolveRouting(zoneIngress, zoneEgressesList, allMeshDataplanes, availableExternalServices, zoneIngressProxy.MeshGateways)
 
 	proxy := &xds.Proxy{
 		Id:               xds.FromResourceKey(key),
@@ -88,9 +89,15 @@ func (p *IngressProxyBuilder) buildZoneIngressProxy(ctx context.Context) (*xds.Z
 		}
 	}
 
+	gateways := &core_mesh.MeshGatewayResourceList{}
+	if err := p.ReadOnlyResManager.List(ctx, gateways); err != nil {
+		return nil, err
+	}
+
 	return &xds.ZoneIngressProxy{
 		TrafficRouteList: routes,
 		GatewayRoutes:    gatewayRoutes,
+		MeshGateways:     gateways,
 	}, nil
 }
 
@@ -113,9 +120,12 @@ func (p *IngressProxyBuilder) resolveRouting(
 	zoneEgresses *core_mesh.ZoneEgressResourceList,
 	dataplanes *core_mesh.DataplaneResourceList,
 	externalServices *core_mesh.ExternalServiceResourceList,
+	meshGateways *core_mesh.MeshGatewayResourceList,
 ) *xds.Routing {
 	destinations := ingress.BuildDestinationMap(zoneIngress)
-	endpoints := ingress.BuildEndpointMap(destinations, dataplanes.Items, externalServices.Items, zoneEgresses.Items)
+	endpoints := ingress.BuildEndpointMap(
+		destinations, dataplanes.Items, externalServices.Items, zoneEgresses.Items, meshGateways.Items,
+	)
 
 	routing := &xds.Routing{
 		OutboundTargets: endpoints,
@@ -128,6 +138,10 @@ func (p *IngressProxyBuilder) updateIngress(ctx context.Context, zoneIngress *co
 	if err := p.ReadOnlyResManager.List(ctx, allMeshDataplanes); err != nil {
 		return err
 	}
+	allMeshGateways := &core_mesh.MeshGatewayResourceList{}
+	if err := p.ReadOnlyResManager.List(ctx, allMeshGateways); err != nil {
+		return err
+	}
 	allMeshDataplanes.Items = xds_topology.ResolveAddresses(syncLog, p.LookupIP, allMeshDataplanes.Items)
 
 	availableExternalServices, err := p.getIngressExternalServices(ctx)
@@ -138,7 +152,7 @@ func (p *IngressProxyBuilder) updateIngress(ctx context.Context, zoneIngress *co
 	// Update Ingress' Available Services
 	// This was placed as an operation of DataplaneWatchdog out of the convenience.
 	// Consider moving to the outside of this component (follow the pattern of updating VIP outbounds)
-	return ingress.UpdateAvailableServices(ctx, p.ResManager, zoneIngress, allMeshDataplanes.Items, availableExternalServices.Items)
+	return ingress.UpdateAvailableServices(ctx, p.ResManager, zoneIngress, allMeshDataplanes.Items, allMeshGateways.Items, availableExternalServices.Items)
 }
 
 func (p *IngressProxyBuilder) getIngressExternalServices(ctx context.Context) (*core_mesh.ExternalServiceResourceList, error) {

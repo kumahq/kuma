@@ -35,6 +35,7 @@ func NewDefaultBootstrapGenerator(
 	config *bootstrap_config.BootstrapServerConfig,
 	dpServerCertFile string,
 	dpAuthEnabled bool,
+	dpUseTokenPath bool,
 	hdsEnabled bool,
 	defaultAdminPort uint32,
 ) (BootstrapGenerator, error) {
@@ -50,6 +51,7 @@ func NewDefaultBootstrapGenerator(
 		config:           config,
 		xdsCertFile:      dpServerCertFile,
 		dpAuthEnabled:    dpAuthEnabled,
+		dpUseTokenPath:   dpUseTokenPath,
 		hostsAndIps:      hostsAndIps,
 		hdsEnabled:       hdsEnabled,
 		defaultAdminPort: defaultAdminPort,
@@ -60,6 +62,7 @@ type bootstrapGenerator struct {
 	resManager       core_manager.ResourceManager
 	config           *bootstrap_config.BootstrapServerConfig
 	dpAuthEnabled    bool
+	dpUseTokenPath   bool
 	xdsCertFile      string
 	hostsAndIps      SANSet
 	hdsEnabled       bool
@@ -76,12 +79,13 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 	params := configParameters{
 		Id:                    proxyId.String(),
 		AdminAddress:          b.config.Params.AdminAddress,
-		AdminAccessLogPath:    b.config.Params.AdminAccessLogPath,
+		AdminAccessLogPath:    b.adminAccessLogPath(request.OperatingSystem),
 		XdsHost:               b.xdsHost(request),
 		XdsPort:               b.config.Params.XdsPort,
 		XdsConnectTimeout:     b.config.Params.XdsConnectTimeout,
 		AccessLogPipe:         envoy_common.AccessLogSocketName(request.Name, request.Mesh),
 		DataplaneToken:        request.DataplaneToken,
+		DataplaneTokenPath:    request.DataplaneTokenPath,
 		DataplaneResource:     request.DataplaneResource,
 		KumaDpVersion:         request.Version.KumaDp.Version,
 		KumaDpGitTag:          request.Version.KumaDp.GitTag,
@@ -155,7 +159,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		return nil, kumaDpBootstrap, err
 	}
 
-	config, err := genConfig(params)
+	config, err := genConfig(params, b.dpUseTokenPath)
 	if err != nil {
 		return nil, kumaDpBootstrap, errors.Wrap(err, "failed creating bootstrap conf")
 	}
@@ -218,7 +222,7 @@ func (b *bootstrapGenerator) getMetricsConfig(
 }
 
 func (b *bootstrapGenerator) validateRequest(request types.BootstrapRequest) error {
-	if b.dpAuthEnabled && request.DataplaneToken == "" {
+	if b.dpAuthEnabled && request.DataplaneToken == "" && request.DataplaneTokenPath == "" {
 		return DpTokenRequired
 	}
 	if b.config.Params.XdsHost == "" { // XdsHost takes precedence over Host in the request, so validate only when it is not set
@@ -364,6 +368,18 @@ func (b *bootstrapGenerator) xdsHost(request types.BootstrapRequest) string {
 	} else {
 		return request.Host
 	}
+}
+
+func (b *bootstrapGenerator) adminAccessLogPath(operatingSystem string) string {
+	if operatingSystem == "" { // backwards compatibility
+		return b.config.Params.AdminAccessLogPath
+	}
+	if b.config.Params.AdminAccessLogPath == os.DevNull && operatingSystem == "windows" {
+		// when AdminAccessLogPath was not explicitly set and DPP OS is Windows we need to set window specific DevNull.
+		// otherwise when CP is on Linux, we would set /dev/null which is not corrent on Windows.
+		return "NUL"
+	}
+	return b.config.Params.AdminAccessLogPath
 }
 
 type SANSet map[string]bool

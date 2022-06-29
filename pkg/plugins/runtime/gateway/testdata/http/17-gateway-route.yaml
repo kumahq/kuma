@@ -232,6 +232,10 @@ Routes:
             weightedClusters:
               clusters:
               - name: api-service-19fcb7995aa98119
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
                 weight: 1
               totalWeight: 1
         - match:
@@ -248,6 +252,10 @@ Routes:
             weightedClusters:
               clusters:
               - name: api-service-19fcb7995aa98119
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
                 weight: 1
               totalWeight: 1
         - match:
@@ -269,6 +277,10 @@ Routes:
             weightedClusters:
               clusters:
               - name: echo-service-eb4ea372d99abf73
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
                 weight: 1
               totalWeight: 1
 Runtimes:

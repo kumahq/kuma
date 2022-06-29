@@ -102,7 +102,8 @@ var _ = Describe("Config WS", func() {
 		  },
 		  "dpServer": {
 			"auth": {
-			  "type": ""
+			  "type": "",
+			  "useTokenPath": false
 			},
 			"hds": {
 			  "checkDefaults": {
@@ -260,7 +261,8 @@ var _ = Describe("Config WS", func() {
             "tlsCertFile": "",
             "tlsKeyFile": "",
             "auth": {
-              "type": ""
+              "type": "",
+			  "useTokenPath": false
             },
             "hds": {
               "checkDefaults": {

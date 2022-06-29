@@ -1289,6 +1289,158 @@ conf:
           kuma.io/service: external-httpbin
 `,
 		),
+
+		Entry("generates cross mesh gateway listeners",
+			"cross-mesh-gateway.yaml", `
+type: Mesh
+name: default
+mtls:
+  enabledBackend: ca-1
+  backends:
+  - name: ca-1
+    type: builtin
+`, `
+type: Mesh
+name: other
+mtls:
+  enabledBackend: ca-1
+  backends:
+  - name: ca-1
+    type: builtin
+`, `
+type: ExternalService
+mesh: default
+name: external-httpbin
+tags:
+  kuma.io/service: external-httpbin
+  kuma.io/protocol: http2
+networking:
+  address: httpbin.com:443
+  tls:
+    enabled: true
+`, `
+type: MeshGateway
+mesh: default
+name: edge-gateway
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  listeners:
+  - port: 8080
+    protocol: HTTP
+    crossMesh: true
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-default
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: "/ext"
+      backends:
+      - destination:
+          kuma.io/service: external-httpbin
+    - matches:
+      - path:
+          match: PREFIX
+          value: "/echo"
+      backends:
+      - destination:
+          kuma.io/service: echo-service
+`,
+		),
+	}
+
+	tcpEntries := []TableEntry{
+		Entry("generates clusters for TCP",
+			"tcp-route.yaml", `
+type: Mesh
+name: default
+mtls:
+  enabledBackend: ca-1
+  backends:
+  - name: ca-1
+    type: builtin
+routing:
+  zoneEgress: true
+`, `
+type: MeshGateway
+mesh: default
+name: edge-gateway
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  listeners:
+  - port: 8080
+    protocol: TCP
+    tags:
+      port: http/8080
+`, `
+type: ExternalService
+mesh: default
+name: external-httpbin
+tags:
+  kuma.io/service: external-httpbin
+networking:
+  address: httpbin.com:443
+  tls:
+    enabled: true
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: external-or-api
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  tcp:
+    rules:
+    - backends:
+      - destination:
+          kuma.io/service: external-httpbin
+      - destination:
+          kuma.io/service: api-service
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  tcp:
+    rules:
+    - backends:
+      - destination:
+          kuma.io/service: echo-service
+`, `
+type: Timeout
+mesh: default
+name: echo-service
+sources:
+- match:
+    kuma.io/service: gateway-default
+destinations:
+- match:
+    kuma.io/service: '*'
+conf:
+  connect_timeout: 10s
+  http:
+    request_timeout: 10s
+    idle_timeout: 10s
+`,
+		),
 	}
 
 	Context("with a HTTP gateway", func() {
@@ -1344,4 +1496,24 @@ conf:
 		)
 	})
 
+	Context("with a TCP gateway", func() {
+		DescribeTable("generating xDS resources",
+			func(goldenFileName string, fixtureResources ...string) {
+				// given
+				for _, resource := range fixtureResources {
+					Expect(StoreInlineFixture(rt, []byte(resource))).To(Succeed())
+				}
+
+				// when
+				snap, err := Do()
+				Expect(err).To(Succeed())
+
+				// then
+				Expect(yaml.Marshal(MakeProtoSnapshot(snap))).
+					To(matchers.MatchGoldenYAML(path.Join("testdata", "tcp", goldenFileName)))
+
+			},
+			tcpEntries,
+		)
+	})
 })

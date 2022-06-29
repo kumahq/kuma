@@ -1,10 +1,13 @@
 package gateway
 
 import (
+	"encoding/base64"
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -12,6 +15,43 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
+
+func misconfiguredMTLSProvidedMeshKubernetes() InstallFunc {
+	mesh := `
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: misconfiguredmesh
+spec:
+  mtls:
+    enabledBackend: ca-1
+    backends:
+      - name: ca-1
+        type: provided
+        conf:
+          cert:
+            secret: will-be-deleted
+          key:
+            secret: will-be-deleted
+`
+	return YamlK8s(mesh)
+}
+
+func secret(payload string) InstallFunc {
+	secret := fmt.Sprintf(`
+apiVersion: v1
+kind: Secret
+metadata:
+  name: will-be-deleted
+  namespace: %s
+  labels:
+    kuma.io/mesh: misconfiguredmesh
+data:
+  value: %s
+type: system.kuma.io/secret
+`, Config.KumaNamespace, payload)
+	return YamlK8s(secret)
+}
 
 func CrossMeshGatewayOnKubernetes() {
 	const gatewayClientNamespaceOtherMesh = "cross-mesh-kuma-client-other"
@@ -42,7 +82,7 @@ func CrossMeshGatewayOnKubernetes() {
 			testserver.WithMesh(mesh),
 			testserver.WithName(echoServerName(mesh)),
 			testserver.WithNamespace(gatewayTestNamespace),
-			testserver.WithArgs("echo", "--instance", mesh),
+			testserver.WithEchoArgs("echo", "--instance", mesh),
 		)
 	}
 
@@ -58,9 +98,18 @@ func CrossMeshGatewayOnKubernetes() {
 	)
 
 	BeforeAll(func() {
+		cert, key, err := CreateCertsFor("example.kuma.io")
+		Expect(err).To(Succeed())
+
+		payload := base64.StdEncoding.EncodeToString([]byte(strings.Join([]string{key, cert}, "\n")))
+
 		setup := NewClusterSetup().
 			Install(MTLSMeshKubernetes(gatewayMesh)).
 			Install(MTLSMeshKubernetes(gatewayOtherMesh)).
+			Install(secret(payload)).
+			// We want to make sure meshes continue to work in the presence of a
+			// misconfigured mesh
+			Install(misconfiguredMTLSProvidedMeshKubernetes()).
 			Install(NamespaceWithSidecarInjection(gatewayTestNamespace)).
 			Install(NamespaceWithSidecarInjection(gatewayClientNamespaceOtherMesh)).
 			Install(NamespaceWithSidecarInjection(gatewayClientNamespaceSameMesh)).
@@ -76,6 +125,10 @@ func CrossMeshGatewayOnKubernetes() {
 			Install(YamlK8s(edgeGatewayInstanceYaml))
 
 		Expect(setup.Setup(env.Cluster)).To(Succeed())
+
+		Expect(
+			k8s.RunKubectlE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(Config.KumaNamespace), "delete", "secret", "will-be-deleted"),
+		).To(Succeed())
 	})
 
 	E2EAfterAll(func() {

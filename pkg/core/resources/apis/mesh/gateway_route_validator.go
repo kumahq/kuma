@@ -61,10 +61,6 @@ func validateMeshGatewayRouteTCP(
 	path validators.PathBuilder,
 	conf *mesh_proto.MeshGatewayRoute_TcpRoute,
 ) validators.ValidationError {
-	if conf != nil {
-		return validators.MakeUnimplementedFieldErr(path)
-	}
-
 	return validators.OK()
 }
 

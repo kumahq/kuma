@@ -54,7 +54,7 @@ func GenerateEnvoyRouteEntries(host GatewayHost) []route.Entry {
 
 	for _, route := range gatewayRoutes {
 		for _, rule := range route.Spec.GetConf().GetHttp().GetRules() {
-			entry := makeRouteEntry(route.GetMeta().GetName(), rule)
+			entry := makeHttpRouteEntry(route.GetMeta().GetName(), rule)
 
 			// The rule matches if any of the matches is successful (it has OR
 			// semantics). That means that we have to duplicate the route table
@@ -75,6 +75,11 @@ func GenerateEnvoyRouteEntries(host GatewayHost) []route.Entry {
 					entries = append(entries, routeEntry)
 				}
 			}
+		}
+		for _, rule := range route.Spec.GetConf().GetTcp().GetRules() {
+			entries = append(entries,
+				makeTcpRouteEntry(route.GetMeta().GetName(), rule),
+			)
 		}
 	}
 
@@ -119,16 +124,36 @@ func GenerateEnvoyRouteEntries(host GatewayHost) []route.Entry {
 	return PopulatePolicies(host, entries)
 }
 
-func makeRouteEntry(name string, rule *mesh_proto.MeshGatewayRoute_HttpRoute_Rule) route.Entry {
+func makeTcpRouteEntry(name string, rule *mesh_proto.MeshGatewayRoute_TcpRoute_Rule) route.Entry {
 	entry := route.Entry{
 		Route: name,
 	}
 
 	for _, b := range rule.GetBackends() {
 		target := route.Destination{
-			Destination: b.GetDestination(),
-			Weight:      b.GetWeight(),
-			Policies:    nil,
+			Destination:   b.GetDestination(),
+			Weight:        b.GetWeight(),
+			Policies:      nil,
+			RouteProtocol: core_mesh.ProtocolTCP,
+		}
+
+		entry.Action.Forward = append(entry.Action.Forward, target)
+	}
+
+	return entry
+}
+
+func makeHttpRouteEntry(name string, rule *mesh_proto.MeshGatewayRoute_HttpRoute_Rule) route.Entry {
+	entry := route.Entry{
+		Route: name,
+	}
+
+	for _, b := range rule.GetBackends() {
+		target := route.Destination{
+			Destination:   b.GetDestination(),
+			Weight:        b.GetWeight(),
+			Policies:      nil,
+			RouteProtocol: core_mesh.ProtocolHTTP,
 		}
 
 		entry.Action.Forward = append(entry.Action.Forward, target)
