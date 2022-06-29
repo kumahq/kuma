@@ -2021,9 +2021,9 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
         - name: install-cni
-          image: "docker.io/kumahq/install-cni:0.0.10"
-          imagePullPolicy: Always
-          command: ["/install-cni.sh"]
+          image: "docker.io/kumahq/kuma-cni:0.0.1"
+          imagePullPolicy: Never
+          command: ["/install-cni"]
           env:
             # Name of the CNI config file to create.
             - name: CNI_CONF_NAME

@@ -47,7 +47,8 @@ image/kuma-init: build/kumactl/linux-${GOARCH} ## Dev: Rebuild `kuma-init` Docke
 
 .PHONY: image/kuma-cni
 image/kuma-cni:
-	docker build -t $(KUMA_CNI_DOCKER_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --build-arg BASE_IMAGE_ARCH=${GOARCH} -f tools/releases/dockerfiles/Dockerfile.kuma-cni .
+	#docker build -t $(KUMA_CNI_DOCKER_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --build-arg BASE_IMAGE_ARCH=${GOARCH} -f tools/releases/dockerfiles/Dockerfile.kuma-cni .
+	docker build -t $(KUMA_CNI_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-cni .
 
 .PHONY: image/kuma-prometheus-sd
 image/kuma-prometheus-sd: build/kuma-prometheus-sd/linux-${GOARCH} ## Dev: Rebuild `kuma-prometheus-sd` Docker image
@@ -61,7 +62,7 @@ image/kuma-universal: build/linux-${GOARCH}
 images: $(IMAGES_TARGETS) ## Dev: Rebuild release and test Docker images
 
 .PHONY: images/release
-images/release: image/kuma-cp image/kuma-dp image/kumactl image/kuma-init image/kuma-prometheus-sd ## Dev: Rebuild release Docker images
+images/release: image/kuma-cp image/kuma-dp image/kumactl image/kuma-init image/kuma-cni image/kuma-prometheus-sd ## Dev: Rebuild release Docker images
 
 .PHONY: images/test
 images/test: image/kuma-universal ## Dev: Rebuild test Docker images

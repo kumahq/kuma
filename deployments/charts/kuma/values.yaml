@@ -313,12 +313,12 @@ cni:
     kubernetes.io/os: linux
 
   image:
-    # -- CNI image registry
-    registry: "docker.io"
     # -- CNI image repository
-    repository: "kumahq/install-cni"
+    registry: "kumahq"
+    repository: "kuma-cni"
     # -- CNI image tag
-    tag: "0.0.10"
+    pullPolicy: Never
+    tag:
 
   # -- Security context at the pod level for cni
   podSecurityContext: {}

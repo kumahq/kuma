@@ -102,6 +102,10 @@ k3d/deploy/helm: k3d/load
                 --set global.image.registry="$(DOCKER_REGISTRY)" \
                 --set global.image.tag="$(BUILD_INFO_VERSION)-${GOARCH}" \
                 --set cni.enabled=true \
+                --set cni.image.registry="$(DOCKER_REGISTRY)" \
+                --set cni.image.repository="kuma-cni" \
+                --set cni.image.tag="$(BUILD_INFO_VERSION)-${GOARCH}" \
+                --set cni.image.pullPolicy="never" \
                 --set cni.chained=true \
                 --set cni.netDir=/var/lib/rancher/k3s/agent/etc/cni/net.d/ \
                 --set cni.binDir=/bin/ \
