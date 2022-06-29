@@ -215,6 +215,12 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 			return nil, errors.New("no support for protocol")
 		}
 
+		cdsResources, err := g.generateCDS(ctx, info, info.HostInfos)
+		if err != nil {
+			return nil, err
+		}
+		resources.AddSet(cdsResources)
+
 		ldsResources, err := g.generateLDS(ctx, info, info.HostInfos)
 		if err != nil {
 			return nil, err
@@ -263,22 +269,38 @@ func (g Generator) generateLDS(ctx xds_context.Context, info GatewayListenerInfo
 	return resources, nil
 }
 
-func (g Generator) generateRDS(ctx xds_context.Context, info GatewayListenerInfo, hostInfos []GatewayHostInfo) (*core_xds.ResourceSet, error) {
+func (g Generator) generateCDS(ctx xds_context.Context, info GatewayListenerInfo, hostInfos []GatewayHostInfo) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
-	routeConfig := GenerateRouteConfig(info)
 
-	// Make a pass over the generators for each virtual host.
 	for _, hostInfo := range hostInfos {
 		clusterRes, err := g.ClusterGenerator.GenerateClusters(ctx, info, hostInfo.Entries)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to generate clusters for dataplane %q", info.Proxy.Id)
 		}
 		resources.AddSet(clusterRes)
+	}
 
+	return resources, nil
+}
+
+func (g Generator) generateRDS(ctx xds_context.Context, info GatewayListenerInfo, hostInfos []GatewayHostInfo) (*core_xds.ResourceSet, error) {
+	switch info.Listener.Protocol {
+	case mesh_proto.MeshGateway_Listener_HTTPS,
+		mesh_proto.MeshGateway_Listener_HTTP:
+	default:
+		return nil, nil
+	}
+
+	resources := core_xds.NewResourceSet()
+	routeConfig := GenerateRouteConfig(info)
+
+	// Make a pass over the generators for each virtual host.
+	for _, hostInfo := range hostInfos {
 		vh, err := GenerateVirtualHost(ctx, info, hostInfo.Host, hostInfo.Entries)
 		if err != nil {
 			return nil, err
 		}
+
 		routeConfig.Configure(envoy_routes.VirtualHost(vh))
 	}
 
@@ -334,7 +356,8 @@ func MakeGatewayListener(
 
 		switch listener.Protocol {
 		case mesh_proto.MeshGateway_Listener_HTTP,
-			mesh_proto.MeshGateway_Listener_HTTPS:
+			mesh_proto.MeshGateway_Listener_HTTPS,
+			mesh_proto.MeshGateway_Listener_TCP:
 			host.Routes = append(host.Routes,
 				match.Routes(meshContext.Resources.GatewayRoutes(), l.GetTags())...)
 		default:

@@ -7,12 +7,19 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
-func InferServiceProtocol(endpoints []core_xds.Endpoint) core_mesh.Protocol {
+func InferServiceProtocol(endpoints []core_xds.Endpoint, routeProtocol core_mesh.Protocol) core_mesh.Protocol {
 	protocol := generator.InferServiceProtocol(endpoints)
 
-	// HTTP is a better default than "unknown".
 	if protocol == core_mesh.ProtocolUnknown {
-		return core_mesh.ProtocolHTTP
+		switch routeProtocol {
+		case core_mesh.ProtocolHTTP:
+			return core_mesh.ProtocolHTTP
+		case core_mesh.ProtocolTCP:
+			return core_mesh.ProtocolTCP
+		default:
+			// HTTP is a better default than "unknown".
+			return core_mesh.ProtocolHTTP
+		}
 	}
 
 	return protocol
@@ -25,7 +32,7 @@ func InferForwardingProtocol(destinations []Destination) core_mesh.Protocol {
 		endpoints = append(endpoints, core_xds.Endpoint{Tags: d.Destination})
 	}
 
-	return InferServiceProtocol(endpoints)
+	return InferServiceProtocol(endpoints, core_mesh.ProtocolHTTP)
 }
 
 func HasExternalServiceEndpoint(mesh *core_mesh.MeshResource, endpoints core_xds.EndpointMap, d Destination) bool {

@@ -82,7 +82,7 @@ func CrossMeshGatewayOnKubernetes() {
 			testserver.WithMesh(mesh),
 			testserver.WithName(echoServerName(mesh)),
 			testserver.WithNamespace(gatewayTestNamespace),
-			testserver.WithArgs("echo", "--instance", mesh),
+			testserver.WithEchoArgs("echo", "--instance", mesh),
 		)
 	}
 

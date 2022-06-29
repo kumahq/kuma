@@ -22,6 +22,9 @@ func (k *k8SDeployment) Name() string {
 
 func (k *k8SDeployment) service() *corev1.Service {
 	appProtocol := "http"
+	if len(k.opts.healthcheckTCPArgs) > 0 {
+		appProtocol = "tcp"
+	}
 	return &corev1.Service{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Service",
@@ -34,7 +37,7 @@ func (k *k8SDeployment) service() *corev1.Service {
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
 				{
-					Name:        "http",
+					Name:        "main",
 					Port:        80,
 					AppProtocol: &appProtocol,
 				},
@@ -101,6 +104,52 @@ func (k *k8SDeployment) statefulSet() *appsv1.StatefulSet {
 }
 
 func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
+	var args []string
+	var liveness *corev1.Probe
+	var readiness *corev1.Probe
+	if len(k.opts.healthcheckTCPArgs) > 0 {
+		args = k.opts.healthcheckTCPArgs
+		liveness = &corev1.Probe{
+			ProbeHandler: corev1.ProbeHandler{
+				TCPSocket: &corev1.TCPSocketAction{
+					Port: intstr.FromInt(80),
+				},
+			},
+			InitialDelaySeconds: 3,
+			PeriodSeconds:       3,
+		}
+		readiness = &corev1.Probe{
+			ProbeHandler: corev1.ProbeHandler{
+				TCPSocket: &corev1.TCPSocketAction{
+					Port: intstr.FromInt(80),
+				},
+			},
+			InitialDelaySeconds: 3,
+			PeriodSeconds:       3,
+		}
+	} else {
+		args = append([]string{"echo", "--port", "80", "--probes"}, k.opts.echoArgs...)
+		liveness = &corev1.Probe{
+			ProbeHandler: corev1.ProbeHandler{
+				HTTPGet: &corev1.HTTPGetAction{
+					Path: `/probes?type=liveness`,
+					Port: intstr.FromInt(80),
+				},
+			},
+			InitialDelaySeconds: 3,
+			PeriodSeconds:       3,
+		}
+		readiness = &corev1.Probe{
+			ProbeHandler: corev1.ProbeHandler{
+				HTTPGet: &corev1.HTTPGetAction{
+					Path: `/probes?type=readiness`,
+					Port: intstr.FromInt(80),
+				},
+			},
+			InitialDelaySeconds: 3,
+			PeriodSeconds:       3,
+		}
+	}
 	spec := corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels:      map[string]string{"app": k.Name()},
@@ -112,32 +161,14 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 				{
 					Name:            k.Name(),
 					ImagePullPolicy: "IfNotPresent",
-					ReadinessProbe: &corev1.Probe{
-						ProbeHandler: corev1.ProbeHandler{
-							HTTPGet: &corev1.HTTPGetAction{
-								Path: `/probes?type=readiness`,
-								Port: intstr.FromInt(80),
-							},
-						},
-						InitialDelaySeconds: 3,
-						PeriodSeconds:       3,
-					},
-					LivenessProbe: &corev1.Probe{
-						ProbeHandler: corev1.ProbeHandler{
-							HTTPGet: &corev1.HTTPGetAction{
-								Path: `/probes?type=liveness`,
-								Port: intstr.FromInt(80),
-							},
-						},
-						InitialDelaySeconds: 3,
-						PeriodSeconds:       3,
-					},
-					Image: framework.Config.GetUniversalImage(),
+					ReadinessProbe:  readiness,
+					LivenessProbe:   liveness,
+					Image:           framework.Config.GetUniversalImage(),
 					Ports: []corev1.ContainerPort{
 						{ContainerPort: 80},
 					},
 					Command: []string{"test-server"},
-					Args:    append([]string{"echo", "--port", "80", "--probes"}, k.opts.Args...),
+					Args:    args,
 					Resources: corev1.ResourceRequirements{
 						Limits: corev1.ResourceList{
 							"cpu":    resource.MustParse("50m"),

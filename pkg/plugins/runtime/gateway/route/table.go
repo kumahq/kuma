@@ -1,6 +1,7 @@
 package route
 
 import (
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
@@ -89,8 +90,9 @@ type Redirection struct {
 
 // Destination is a forwarding target (aka Cluster).
 type Destination struct {
-	Destination envoy.Tags
-	Weight      uint32
+	Destination   envoy.Tags
+	Weight        uint32
+	RouteProtocol core_mesh.Protocol
 
 	// Name is the globally unique name for this destination instance.
 	// It takes into account not only the service that it targets, but
