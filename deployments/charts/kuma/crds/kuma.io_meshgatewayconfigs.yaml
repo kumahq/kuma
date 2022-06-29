@@ -88,6 +88,34 @@ spec:
                           Service.
                         type: object
                     type: object
+                  spec:
+                    description: Spec holds the spec for the generated Service.
+                    properties:
+                      ports:
+                        description: Ports can be set to map MeshGateway listener
+                          ports to Service ports.
+                        items:
+                          description: A MeshGatewayServicePort maps a MeshGateway
+                            listener port to a Service port.
+                          properties:
+                            port:
+                              description: Port is the Service port to map to.
+                              format: int32
+                              type: integer
+                            targetPort:
+                              description: TargetPort is the MeshGateway listener
+                                port to map from.
+                              format: int32
+                              type: integer
+                          required:
+                          - port
+                          - targetPort
+                          type: object
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - port
+                        x-kubernetes-list-type: map
+                    type: object
                 type: object
               serviceType:
                 default: LoadBalancer

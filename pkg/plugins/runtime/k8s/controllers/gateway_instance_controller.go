@@ -144,6 +144,14 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 					// if they have different hostnames
 					continue
 				}
+
+				servicePortPort := int32(listener.Port)
+				for _, mapping := range gatewayInstance.Spec.ServiceTemplate.Spec.Ports {
+					if mapping.TargetPort == int32(listener.Port) {
+						servicePortPort = mapping.Port
+					}
+				}
+
 				seenPorts[listener.Port] = struct{}{}
 
 				servicePort := kube_core.ServicePort{}
@@ -154,8 +162,8 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 
 				servicePort.Name = strconv.Itoa(int(listener.Port))
 				servicePort.Protocol = kube_core.ProtocolTCP
-				servicePort.Port = int32(listener.Port)
-				servicePort.TargetPort = intstr.FromInt(int(servicePort.Port))
+				servicePort.Port = servicePortPort
+				servicePort.TargetPort = intstr.FromInt(int(listener.Port))
 				if gatewayInstance.Spec.ServiceType == kube_core.ServiceTypeNodePort {
 					servicePort.NodePort = int32(listener.Port)
 				}

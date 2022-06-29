@@ -62,6 +62,9 @@ type MeshGatewayCommonConfig struct {
 type MeshGatewayServiceTemplate struct {
 	// Metadata holds metadata configuration for a Service.
 	Metadata MeshGatewayServiceMetadata `json:"metadata,omitempty"`
+
+	// Spec holds the spec for the generated Service.
+	Spec MeshGatewayServiceSpec `json:"spec,omitempty"`
 }
 
 // +k8s:deepcopy-gen=true
@@ -70,6 +73,31 @@ type MeshGatewayServiceTemplate struct {
 type MeshGatewayServiceMetadata struct {
 	// Annotations holds annotations to be set on a Service.
 	Annotations map[string]string `json:"annotations,omitempty"`
+}
+
+// +k8s:deepcopy-gen=true
+
+// MeshGatewayServiceSpec holds a Service spec.
+type MeshGatewayServiceSpec struct {
+	// Ports can be set to map MeshGateway listener ports to Service
+	// ports.
+	//
+	// +patchMergeKey=port
+	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=port
+	Ports []MeshGatewayServicePort `json:"ports,omitempty"`
+}
+
+// +k8s:deepcopy-gen=true
+
+// A MeshGatewayServicePort maps a MeshGateway listener port to a Service port.
+type MeshGatewayServicePort struct {
+	// TargetPort is the MeshGateway listener port to map from.
+	TargetPort int32 `json:"targetPort"`
+
+	// Port is the Service port to map to.
+	Port int32 `json:"port"`
 }
 
 // +k8s:deepcopy-gen=true
