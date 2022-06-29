@@ -174,4 +174,4 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 		},
 		entries,
 	)
-})
+}, Ordered)

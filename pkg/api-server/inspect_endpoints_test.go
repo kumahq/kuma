@@ -13,15 +13,12 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	config "github.com/kumahq/kuma/pkg/config/api-server"
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
+	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
 	"github.com/kumahq/kuma/pkg/test/matchers"
@@ -214,52 +211,44 @@ var _ = Describe("Inspect WS", func() {
 		resources  []core_model.Resource
 		global     bool
 	}
+	AfterEach(func() {
+		core.Now = time.Now
+	})
 
 	DescribeTable("should return valid response",
 		func(given testCase) {
 			// setup
-			resourceStore := memory.NewStore()
-			metrics, err := metrics.NewMetrics("Standalone")
-			Expect(err).ToNot(HaveOccurred())
-
 			core.Now = func() time.Time { return time.Time{} }
 
+			resourceStore := memory.NewStore()
 			rm := manager.NewResourceManager(resourceStore)
 			for _, resource := range given.resources {
-				err = rm.Create(context.Background(), resource,
+				err := rm.Create(context.Background(), resource,
 					store.CreateBy(core_model.MetaToResourceKey(resource.GetMeta())))
 				Expect(err).ToNot(HaveOccurred())
 			}
 
-			cfg := config.DefaultApiServerConfig()
-			apiServer := createTestApiServer(resourceStore, cfg, true, metrics, func(config *kuma_cp.Config) {
+			var apiServer *api_server.ApiServer
+			var stop = func() {}
+			Eventually(func() (err error) {
+				conf := NewTestApiServerConfigurer().WithStore(resourceStore)
 				if given.global {
-					config.Mode = config_core.Global
+					conf = conf.WithGlobal()
 				} else {
-					config.Mode = config_core.Zone
-					config.Multizone.Zone.Name = "local"
+					conf = conf.WithZone("local")
 				}
-			})
-
-			stop := make(chan struct{})
-			defer close(stop)
-			go func() {
-				defer GinkgoRecover()
-				err := apiServer.Start(stop)
-				Expect(err).ToNot(HaveOccurred())
-			}()
+				apiServer, stop, err = TryStartApiServer(conf)
+				return
+			}).Should(Succeed())
+			defer stop()
 
 			// when
-			var resp *http.Response
-			Eventually(func() error {
-				r, err := http.Get((&url.URL{
-					Scheme: "http",
-					Host:   apiServer.Address(),
-					Path:   given.path,
-				}).String())
-				resp = r
-				return err
-			}, "3s").ShouldNot(HaveOccurred())
+			resp, err := http.Get((&url.URL{
+				Scheme: "http",
+				Host:   apiServer.Address(),
+				Path:   given.path,
+			}).String())
+			Expect(err).ToNot(HaveOccurred())
 
 			// then
 			bytes, err := io.ReadAll(resp.Body)
@@ -1147,19 +1136,15 @@ var _ = Describe("Inspect WS", func() {
 
 	It("should change response if state changed", func() {
 		// setup
+		var apiServer *api_server.ApiServer
+		var stop = func() {}
 		resourceStore := memory.NewStore()
-		metrics, err := metrics.NewMetrics("Standalone")
-		Expect(err).ToNot(HaveOccurred())
 		rm := manager.NewResourceManager(resourceStore)
-		apiServer := createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics)
-
-		stop := make(chan struct{})
-		defer close(stop)
-		go func() {
-			defer GinkgoRecover()
-			err := apiServer.Start(stop)
-			Expect(err).ToNot(HaveOccurred())
-		}()
+		Eventually(func() (err error) {
+			apiServer, stop, err = TryStartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore))
+			return
+		}).Should(Succeed())
+		defer stop()
 
 		// when init the state
 		// TrafficPermission that selects 2 DPPs
@@ -1189,7 +1174,7 @@ var _ = Describe("Inspect WS", func() {
 				build(),
 		}
 		for _, resource := range initState {
-			err = rm.Create(context.Background(), resource,
+			err := rm.Create(context.Background(), resource,
 				store.CreateBy(core_model.MetaToResourceKey(resource.GetMeta())))
 			Expect(err).ToNot(HaveOccurred())
 		}

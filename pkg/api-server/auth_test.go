@@ -11,10 +11,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	api_server "github.com/kumahq/kuma/pkg/api-server"
 	config "github.com/kumahq/kuma/pkg/config/api-server"
-	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
-	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/tls"
 	http2 "github.com/kumahq/kuma/pkg/util/http"
 )
@@ -25,48 +24,39 @@ var _ = Describe("Auth test", func() {
 	var httpsClientWithoutCerts *http.Client
 	var httpPort uint32
 	var httpsPort uint32
-	var stop chan struct{}
+	var stop = func() {}
 	var externalIP string
 
 	BeforeEach(func() {
 		externalIP = getExternalIP()
 		Expect(externalIP).ToNot(BeEmpty())
 		certPath, keyPath := createCertsForIP(externalIP)
+		var apiServer *api_server.ApiServer
+		Eventually(func() (err error) {
+			apiServer, stop, err = TryStartApiServer(NewTestApiServerConfigurer().WithConfigMutator(func(cfg *config.ApiServerConfig) {
+				cfg.HTTPS.TlsCertFile = certPath
+				cfg.HTTPS.TlsKeyFile = keyPath
+				cfg.Authn.Type = certs.PluginName
+				cfg.Auth.ClientCertsDir = filepath.Join("..", "..", "test", "certs", "client")
+			}))
+			return
+		}).Should(Succeed())
 
-		resourceStore := memory.NewStore()
-		metrics, err := metrics.NewMetrics("Standalone")
-		Expect(err).ToNot(HaveOccurred())
-
-		cfg := config.DefaultApiServerConfig()
-		cfg.HTTPS.TlsCertFile = certPath
-		cfg.HTTPS.TlsKeyFile = keyPath
-		cfg.Authn.Type = certs.PluginName
-		cfg.Auth.ClientCertsDir = filepath.Join("..", "..", "test", "certs", "client")
-		apiServer := createTestApiServer(resourceStore, cfg, true, metrics)
+		cfg := apiServer.Config()
 		httpsPort = cfg.HTTPS.Port
 		httpPort = cfg.HTTP.Port
 
-		// start the server
-		stop = make(chan struct{})
-		go func() {
-			defer GinkgoRecover()
-			err := apiServer.Start(stop)
-			Expect(err).ToNot(HaveOccurred())
-		}()
-
 		// configure https clients
 		httpsClient = &http.Client{}
-		err = http2.ConfigureMTLS(
+		Expect(http2.ConfigureMTLS(
 			httpsClient,
 			certPath,
 			filepath.Join("..", "..", "test", "certs", "client", "client.pem"),
 			filepath.Join("..", "..", "test", "certs", "client", "client.key"),
-		)
-		Expect(err).ToNot(HaveOccurred())
+		)).To(Succeed())
 
 		httpsClientWithoutCerts = &http.Client{}
-		err = http2.ConfigureMTLS(httpsClientWithoutCerts, certPath, "", "")
-		Expect(err).ToNot(HaveOccurred())
+		Expect(http2.ConfigureMTLS(httpsClientWithoutCerts, certPath, "", "")).To(Succeed())
 
 		// wait for both http and https server
 		Eventually(func() bool {
@@ -83,7 +73,7 @@ var _ = Describe("Auth test", func() {
 	})
 
 	AfterEach(func() {
-		close(stop)
+		stop()
 	})
 
 	It("should be able to access secrets on localhost using HTTP", func() {

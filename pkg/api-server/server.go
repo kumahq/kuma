@@ -60,6 +60,10 @@ func (a *ApiServer) Address() string {
 	return net.JoinHostPort(a.config.HTTP.Interface, strconv.FormatUint(uint64(a.config.HTTP.Port), 10))
 }
 
+func (a *ApiServer) Config() api_server.ApiServerConfig {
+	return a.config
+}
+
 func init() {
 	// turn off escape & character so the link in "next" fields for resources is user friendly
 	restful.NewEncoder = func(w io.Writer) *json.Encoder {

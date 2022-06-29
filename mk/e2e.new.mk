@@ -91,7 +91,7 @@ test/e2e/k8s/stop: $(K8SCLUSTERS_STOP_TARGETS)
 test/e2e/debug: build/kumactl images test/e2e/k8s/start
 	$(E2E_ENV_VARS) \
 	GINKGO_EDITOR_INTEGRATION=true \
-		$(GINKGO_TEST_E2E) --fail-fast $(E2E_PKG_LIST)
+		$(GINKGO_TEST_E2E) --keep-going=false --fail-fast $(E2E_PKG_LIST)
 	$(MAKE) test/e2e/k8s/stop
 
 # test/e2e/debug-fast is an experimental target tested with K3D=true.
@@ -106,7 +106,7 @@ test/e2e/debug-fast:
 	$(MAKE) $(K8SCLUSTERS_WAIT_TARGETS) # there is no easy way of waiting for processes in the background so just wait for K8S clusters
 	$(E2E_ENV_VARS) \
 	GINKGO_EDITOR_INTEGRATION=true \
-		$(GINKGO_TEST_E2E) --fail-fast $(E2E_PKG_LIST)
+		$(GINKGO_TEST_E2E) --keep-going=false --fail-fast $(E2E_PKG_LIST)
 	$(MAKE) test/e2e/k8s/stop
 
 # test/e2e/debug-universal is the same target as 'test/e2e/debug' but builds only 'kuma-universal' image
@@ -115,13 +115,13 @@ test/e2e/debug-fast:
 test/e2e/debug-universal: build/kumactl images/test
 	$(E2E_ENV_VARS) \
 	GINKGO_EDITOR_INTEGRATION=true \
-		$(GINKGO_TEST_E2E) --fail-fast $(E2E_PKG_LIST)
+		$(GINKGO_TEST_E2E) --keep-going=false --fail-fast $(E2E_PKG_LIST)
 
 
 .PHONY: test/e2e
 test/e2e: $(E2E_DEPS_TARGETS)
 	$(MAKE) test/e2e/k8s/start
-	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop && exit $$ret)
+	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) --procs 1 $(E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop && exit $$ret)
 	$(MAKE) test/e2e/k8s/stop
 
 .PHONY: test/e2e-kubernetes
@@ -129,15 +129,15 @@ test/e2e-kubernetes: $(E2E_DEPS_TARGETS)
 	$(MAKE) test/e2e/k8s/start/cluster/kuma-1
 	$(MAKE) test/e2e/k8s/wait/kuma-1
 	$(MAKE) test/e2e/k8s/load/images/kuma-1
-	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) -p $(KUBE_E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop/cluster/kuma-1 && exit $$ret)
+	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(KUBE_E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop/cluster/kuma-1 && exit $$ret)
 	$(MAKE) test/e2e/k8s/stop/cluster/kuma-1
 
 .PHONY: test/e2e-universal
 test/e2e-universal: build/kumactl images/test k3d/network/create
-	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) -p $(UNIVERSAL_E2E_PKG_LIST)
+	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(UNIVERSAL_E2E_PKG_LIST)
 
 .PHONY: test/e2e-multizone
 test/e2e-multizone: $(E2E_DEPS_TARGETS)
 	$(MAKE) test/e2e/k8s/start
-	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) -p $(MULTIZONE_E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop/cluster/kuma-1 && exit $$ret)
+	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(MULTIZONE_E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop/cluster/kuma-1 && exit $$ret)
 	$(MAKE) test/e2e/k8s/stop

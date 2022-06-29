@@ -4,44 +4,31 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	api_server_config "github.com/kumahq/kuma/pkg/config/api-server"
-	"github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	api_server "github.com/kumahq/kuma/pkg/api-server"
 )
 
 var _ = Describe("Config WS", func() {
+	var stop = func() {}
+	var apiServer *api_server.ApiServer
+	BeforeEach(func() {
+		Eventually(func() (err error) {
+			apiServer, stop, err = TryStartApiServer(NewTestApiServerConfigurer())
+			return
+		}).Should(Succeed())
+	})
+	AfterEach(func() {
+		stop()
+	})
 
 	It("should return the config", func() {
-		// given
-		cfg := api_server_config.DefaultApiServerConfig()
-
-		// setup
-		resourceStore := memory.NewStore()
-		metrics, err := metrics.NewMetrics("Standalone")
-		Expect(err).ToNot(HaveOccurred())
-		apiServer := createTestApiServer(resourceStore, cfg, true, metrics)
-
-		stop := make(chan struct{})
-		go func() {
-			defer GinkgoRecover()
-			err := apiServer.Start(stop)
-			Expect(err).ToNot(HaveOccurred())
-		}()
-		port := strings.Split(apiServer.Address(), ":")[1]
-
-		// wait for the server
-		Eventually(func() error {
-			_, err := http.Get(fmt.Sprintf("http://localhost:%s/config", port))
-			return err
-		}, "3s").ShouldNot(HaveOccurred())
+		cfg := apiServer.Config()
 
 		// when
-		resp, err := http.Get(fmt.Sprintf("http://localhost:%s/config", port))
+		resp, err := http.Get(fmt.Sprintf("http://%s/config", apiServer.Address()))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -67,7 +54,7 @@ var _ = Describe("Config WS", func() {
 			"http": {
 			  "enabled": true,
 			  "interface": "0.0.0.0",
-			  "port": %s
+			  "port": %d
 			},
 			"https": {
 			  "enabled": true,
@@ -351,7 +338,7 @@ var _ = Describe("Config WS", func() {
             "kubeOutboundsAsVIPs": false
           }
         }
-		`, port, cfg.HTTPS.Port)
+		`, cfg.HTTP.Port, cfg.HTTPS.Port)
 		// when
 		Expect(body).To(MatchJSON(json))
 	})

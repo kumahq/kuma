@@ -11,17 +11,16 @@ COVERAGE_REPORT_HTML := $(REPORTS_DIR)/coverage.html
 # target guaranteed to link these tools into $CI_TOOLS_DIR.
 export KUBEBUILDER_ASSETS=$(CI_TOOLS_DIR)
 
-GINKGO_TEST_FLAGS += \
+GINKGO_TEST_FLAGS += -p --keep-going \
 	--keep-separate-reports \
-	--junit-report results.xml \
-	--json-report results.json
+	--junit-report results.xml
 
 ifneq ($(REPORTS_DIR), "")
 	GINKGO_TEST_FLAGS += --output-dir $(REPORTS_DIR)
 endif
 
 GINKGO_UNIT_TEST_FLAGS ?= \
-	--keep-going --skip-package ./test,./pkg/transparentproxy/istio/tools --race \
+	--skip-package ./test,./pkg/transparentproxy/istio/tools --race \
 	--cover --covermode atomic --coverpkg ./... --coverprofile $(COVERAGE_PROFILE_FILENAME)
 
 GINKGO_TEST:=$(GOPATH_BIN_DIR)/ginkgo $(GOFLAGS) $(LD_FLAGS) $(GINKGO_TEST_FLAGS)

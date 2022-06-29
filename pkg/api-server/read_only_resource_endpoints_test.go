@@ -10,7 +10,6 @@ import (
 	config "github.com/kumahq/kuma/pkg/config/api-server"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/resources/apis/sample"
@@ -20,35 +19,28 @@ var _ = Describe("Read only Resource Endpoints", func() {
 	var apiServer *api_server.ApiServer
 	var resourceStore store.ResourceStore
 	var client resourceApiClient
-	var stop chan struct{}
+	var stop = func() {}
 
 	const resourceName = "tr-1"
 	const mesh = "default-mesh"
 
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
-		cfg := config.DefaultApiServerConfig()
-		cfg.ReadOnly = true
-		metrics, err := metrics.NewMetrics("Standalone")
-		Expect(err).ToNot(HaveOccurred())
-		apiServer = createTestApiServer(resourceStore, cfg, true, metrics)
+		Eventually(func() (err error) {
+			apiServer, stop, err = TryStartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore).WithConfigMutator(func(serverConfig *config.ApiServerConfig) {
+				serverConfig.ReadOnly = true
+			}))
+			return
+		}).Should(Succeed())
 		client = resourceApiClient{
 			address: apiServer.Address(),
 			path:    "/meshes/" + mesh + "/sample-traffic-routes",
 		}
-		stop = make(chan struct{})
-		go func() {
-			defer GinkgoRecover()
-			err := apiServer.Start(stop)
-			Expect(err).ToNot(HaveOccurred())
-		}()
-		waitForServer(&client)
-
 		putSampleResourceIntoStore(resourceStore, resourceName, mesh)
 	})
 
 	AfterEach(func() {
-		close(stop)
+		stop()
 	})
 
 	Describe("On GET", func() {

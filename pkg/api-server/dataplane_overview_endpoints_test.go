@@ -12,11 +12,9 @@ import (
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api_server "github.com/kumahq/kuma/pkg/api-server"
-	config "github.com/kumahq/kuma/pkg/config/api-server"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -24,28 +22,18 @@ import (
 var _ = Describe("Dataplane Overview Endpoints", func() {
 	var apiServer *api_server.ApiServer
 	var resourceStore store.ResourceStore
-	var stop chan struct{}
+	var stop = func() {}
 	t1, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 	BeforeEach(func() {
 		resourceStore = store.NewPaginationStore(memory.NewStore())
-		metrics, err := metrics.NewMetrics("Standalone")
-		Expect(err).ToNot(HaveOccurred())
-		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics)
-		client := resourceApiClient{
-			address: apiServer.Address(),
-			path:    "/meshes",
-		}
-		stop = make(chan struct{})
-		go func() {
-			defer GinkgoRecover()
-			err := apiServer.Start(stop)
-			Expect(err).ToNot(HaveOccurred())
-		}()
-		waitForServer(&client)
+		Eventually(func() (err error) {
+			apiServer, stop, err = TryStartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore))
+			return
+		}).Should(Succeed())
 	})
 
 	AfterEach(func() {
-		close(stop)
+		stop()
 	})
 
 	BeforeEach(func() {
