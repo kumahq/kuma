@@ -4,11 +4,9 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
@@ -139,39 +137,21 @@ func KubernetesUniversalDeployment() {
 
 	It("should access allservices", func() {
 		// Zone 1
-		pods, err := k8s.ListPodsE(
-			zone1.GetTesting(),
-			zone1.GetKubectlOptions(TestNamespace),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", "demo-client"),
-			},
-		)
+		clientPodName, err := PodNameOfApp(zone1, "demo-client", TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(pods).To(HaveLen(1))
-
-		clientPod := pods[0]
 
 		// k8s access remote k8s service
-		_, stderr, err := zone1.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+		_, stderr, err := zone1.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "test-server_kuma-test_svc_80.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 
 		// Zone 2
-		pods, err = k8s.ListPodsE(
-			zone2.GetTesting(),
-			zone2.GetKubectlOptions(TestNamespace),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", "demo-client"),
-			},
-		)
+		clientPodName, err = PodNameOfApp(zone2, "demo-client", TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(pods).To(HaveLen(1))
-
-		clientPod = pods[0]
 
 		// k8s access remote universal service
-		_, stderr, err = zone2.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+		_, stderr, err = zone2.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
