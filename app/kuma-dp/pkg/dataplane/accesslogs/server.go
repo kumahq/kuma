@@ -35,8 +35,11 @@ func NewAccessLogServer(dataplane kumadp.Dataplane) *accessLogServer {
 
 func (s *accessLogServer) Start(stop <-chan struct{}) error {
 	alStreamer := v3.NewAccessLogStreamer()
-	os.Remove(s.address)
-	err := syscall.Mkfifo(s.address, 0666)
+	err := os.Remove(s.address)
+	if err != nil && !os.IsNotExist(err) {
+		return errors.Wrapf(err, "error removing existing fifo %s", s.address)
+	}
+	err = syscall.Mkfifo(s.address, 0666)
 	if err != nil {
 		return errors.Wrapf(err, "error creating fifo %s", s.address)
 	}
