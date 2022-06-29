@@ -118,14 +118,14 @@ func (r Resources) OtherMeshes() *core_mesh.MeshResourceList {
 	return r.ListOrEmpty(core_mesh.MeshType).(*core_mesh.MeshResourceList)
 }
 
-type meshGatewayDataplanes struct {
+type MeshGatewayDataplanes struct {
 	Mesh       *core_mesh.MeshResource
 	Gateways   []*core_mesh.MeshGatewayResource
 	Dataplanes []*core_mesh.DataplaneResource
 }
 
-func (r Resources) gatewaysAndDataplanesForMesh(localMesh *core_mesh.MeshResource) map[xds.MeshName]meshGatewayDataplanes {
-	gatewaysByMesh := map[xds.MeshName]meshGatewayDataplanes{}
+func (r Resources) gatewaysAndDataplanesForMesh(localMesh *core_mesh.MeshResource) map[xds.MeshName]MeshGatewayDataplanes {
+	gatewaysByMesh := map[xds.MeshName]MeshGatewayDataplanes{}
 
 	type meshResourcesTuple struct {
 		mesh      *core_mesh.MeshResource
@@ -145,7 +145,7 @@ func (r Resources) gatewaysAndDataplanesForMesh(localMesh *core_mesh.MeshResourc
 	}
 
 	for _, meshResourceTuple := range meshResourcesTuples {
-		gatewaysByMesh[meshResourceTuple.mesh.GetMeta().GetName()] = meshGatewayDataplanes{
+		gatewaysByMesh[meshResourceTuple.mesh.GetMeta().GetName()] = MeshGatewayDataplanes{
 			Mesh:       meshResourceTuple.mesh,
 			Gateways:   meshResourceTuple.resources.listOrEmpty(core_mesh.MeshGatewayType).(*core_mesh.MeshGatewayResourceList).Items,
 			Dataplanes: meshResourceTuple.resources.listOrEmpty(core_mesh.DataplaneType).(*core_mesh.DataplaneResourceList).Items,

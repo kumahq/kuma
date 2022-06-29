@@ -17,12 +17,8 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	common_k8s "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-)
-
-const (
-	// Every Kuma Secret will be annotated with kuma.io/mesh to be able to expose secrets only for given mesh
-	meshLabel = "kuma.io/mesh"
 )
 
 var _ secret_store.SecretStore = &KubernetesStore{}
@@ -54,7 +50,7 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	secret.Name = opts.Name
 	if r.Descriptor().Name == secret_model.SecretType {
 		labels := map[string]string{
-			meshLabel: opts.Mesh,
+			metadata.KumaMeshLabel: opts.Mesh,
 		}
 		secret.SetLabels(labels)
 	}
@@ -159,7 +155,7 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 			"type": common_k8s.MeshSecretType,
 		}
 		if opts.Mesh != "" {
-			labels[meshLabel] = opts.Mesh
+			labels[metadata.KumaMeshLabel] = opts.Mesh
 		}
 	case secret_model.GlobalSecretType:
 		fields = kube_client.MatchingFields{ // list only Kuma System secrets
@@ -194,7 +190,7 @@ func (m *KubernetesMetaAdapter) GetMesh() string {
 	if m.SecretType == common_k8s.GlobalSecretType {
 		return ""
 	}
-	mesh, exist := m.Labels[meshLabel]
+	mesh, exist := m.Labels[metadata.KumaMeshLabel]
 	if !exist {
 		mesh = core_model.DefaultMesh
 	}
@@ -234,7 +230,7 @@ func (c *SimpleConverter) ToKubernetesObject(r core_model.Resource) (*kube_core.
 		}
 		if r.GetMeta() != nil {
 			labels := map[string]string{
-				meshLabel: r.GetMeta().GetMesh(),
+				metadata.KumaMeshLabel: r.GetMeta().GetMesh(),
 			}
 			secret.SetLabels(labels)
 		}
