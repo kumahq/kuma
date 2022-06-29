@@ -41,6 +41,10 @@ func BuildEndpointMap(
 		}
 		if dataplane.Spec.IsBuiltinGateway() {
 			gateway := topology.SelectGateway(gateways, dataplane.Spec.Matches)
+			if gateway == nil {
+				continue
+			}
+
 			dpSpec := dataplane.Spec
 			dpNetworking := dpSpec.GetNetworking()
 
