@@ -1,6 +1,5 @@
 *
-!go.mod
-!go.sum
-!app/cni/cmd
-!app/cni/pkg
-!vendored
+!build/artifacts-linux-arm64/kuma-cni/
+!build/artifacts-linux-amd64/kuma-cni/
+!build/artifacts-linux-amd64/install-cni/
+!build/artifacts-linux-arm64/install-cni/
