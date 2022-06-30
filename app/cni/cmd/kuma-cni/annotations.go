@@ -2,15 +2,16 @@ package main
 
 import (
 	"fmt"
-	"go.uber.org/zap"
 	"strconv"
 	"strings"
+
+	"go.uber.org/zap"
 )
 
 const (
-	defaultProxyStatusPort = "9901"
-	defaultOutboundPort    = "15001"
-	defaultInboundPort     = "15006"
+	defaultProxyStatusPort     = "9901"
+	defaultOutboundPort        = "15001"
+	defaultInboundPort         = "15006"
 	defaultInboundPortV6       = "15010"
 	defaultBuiltinDNSPort      = "15053"
 	defaultNoRedirectUID       = "5678"

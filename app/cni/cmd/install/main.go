@@ -1,33 +1,35 @@
-package install
+package main
 
 import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/itchyny/gojq"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/natefinch/atomic"
-	"go.uber.org/zap"
 	"io/fs"
 	"io/ioutil"
-	"k8s.io/utils/env"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/itchyny/gojq"
+	"github.com/natefinch/atomic"
+	"go.uber.org/zap"
+	"k8s.io/utils/env"
+
+	"github.com/kumahq/kuma/pkg/core"
 )
 
 var (
 	log = core.Log.WithName("cni-install")
 )
 
-func rm_bin_files() {
+func removeBinFiles() {
 	// todo hook this up to cleanup
 	log.V(1).Info("removing existing binaries")
-	os.Remove("/host/opt/cni/bin/kuma-cni")
+	_ = os.Remove("/host/opt/cni/bin/kuma-cni")
 }
 
-func find_cni_conf_file(mountedCNINetDir string) string {
+func findCniConfFile(mountedCNINetDir string) string {
 	files, _ := filepath.Glob(mountedCNINetDir + "/*.conf")
 	file, found := lookForValidConfig(files)
 	if found {
@@ -58,7 +60,11 @@ func isFileAValidConfig(file string) bool {
 	var parsed map[string]interface{}
 	contents, _ := ioutil.ReadFile(file)
 	// this is probably going to be rewritten to not use `jq` at all
-	json.Unmarshal(contents, &parsed)
+	err := json.Unmarshal(contents, &parsed)
+	if err != nil {
+		log.Error(err, "could not unmarshal config file")
+		return false
+	}
 	query, _ := gojq.Parse(`has("type")`)
 	iterator := query.Run(parsed)
 	v, ok := iterator.Next()
@@ -77,7 +83,8 @@ func check_install(mountedCNINetDir string) {
 }
 
 func cleanup() {
-	// todo implement
+	removeBinFiles()
+	// todo: implement reverting config
 }
 
 func install() error {
@@ -86,10 +93,13 @@ func install() error {
 	cfgCheckInterval, _ := env.GetInt("CFGCHECK_INTERVAL", 1)
 	chainedCniPlugin, _ := env.GetBool("CHAINED_CNI_PLUGIN", true)
 	mountedCniNetDir := env.GetString("MOUNTED_CNI_NET_DIR", "/host/etc/cni/net.d")
-	cniConfName := env.GetString("CNI_CONF_NAME", find_cni_conf_file(mountedCniNetDir))
 	serviceAccountPath := "/var/run/secrets/kubernetes.io/serviceaccount"
+	cniConfName := env.GetString("CNI_CONF_NAME", findCniConfFile(mountedCniNetDir))
+	if cniConfName == "" {
+		cniConfName = "YYY-kuma-cni.conflist"
+	}
 
-	copyBinaries(cniConfName)
+	copyBinaries()
 	err := prepareKubeconfig(mountedCniNetDir, kubecfgName, serviceAccountPath)
 	if err != nil {
 		return err
@@ -263,10 +273,7 @@ current-context: kuma-cni-context
 `
 }
 
-func copyBinaries(cniConfName string) {
-	if cniConfName == "" {
-		cniConfName = "YYY-kuma-cni.conflist"
-	}
+func copyBinaries() {
 	dirs := []string{"/host/opt/cni/bin", "/host/secondary-bin-dir"}
 	// todo: if not written anywhere fail
 	for _, dir := range dirs {
@@ -275,12 +282,18 @@ func copyBinaries(cniConfName string) {
 			continue
 		}
 		file, err := os.Open("/opt/cni/bin/kuma-cni")
-		stat, err := os.Stat("/opt/cni/bin/kuma-cni")
-		log.V(1).Info("/opt/cni/bin/kuma-cni file permissions", zap.Int("permissions", int(stat.Mode())))
 		if err != nil {
 			log.Error(err, "can't open kuma-cni file")
 			os.Exit(1)
 		}
+
+		stat, err := os.Stat("/opt/cni/bin/kuma-cni")
+		if err != nil {
+			log.Error(err, "can't stat kuma-cni file")
+			os.Exit(1)
+		}
+
+		log.V(1).Info("/opt/cni/bin/kuma-cni file permissions", zap.Int("permissions", int(stat.Mode())))
 		destination := dir + "/kuma-cni"
 		err = atomic.WriteFile(destination, file)
 		if err != nil {
@@ -317,4 +330,5 @@ func main() {
 		log.Error(err, "error occurred")
 		return
 	}
+	cleanup()
 }

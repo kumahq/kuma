@@ -3,8 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kumahq/kuma/pkg/core"
-	"k8s.io/client-go/kubernetes"
 	"net"
 	"time"
 
@@ -13,6 +11,9 @@ import (
 	"github.com/containernetworking/cni/pkg/types/current"
 	"github.com/containernetworking/cni/pkg/version"
 	"go.uber.org/zap"
+	"k8s.io/client-go/kubernetes"
+
+	"github.com/kumahq/kuma/pkg/core"
 )
 
 const (

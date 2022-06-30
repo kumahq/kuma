@@ -1,12 +1,13 @@
-package install
+package main
 
 import (
+	"io/ioutil"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"io/ioutil"
 )
 
-var _ = Describe("TestTransformJsonConfig", func () {
+var _ = Describe("TestTransformJsonConfig", func() {
 	It("should properly manipulate CNI config", func() {
 		// given
 		kumaCniConfig := `{
