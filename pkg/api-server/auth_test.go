@@ -32,15 +32,12 @@ var _ = Describe("Auth test", func() {
 		Expect(externalIP).ToNot(BeEmpty())
 		certPath, keyPath := createCertsForIP(externalIP)
 		var apiServer *api_server.ApiServer
-		Eventually(func() (err error) {
-			apiServer, stop, err = TryStartApiServer(NewTestApiServerConfigurer().WithConfigMutator(func(cfg *config.ApiServerConfig) {
-				cfg.HTTPS.TlsCertFile = certPath
-				cfg.HTTPS.TlsKeyFile = keyPath
-				cfg.Authn.Type = certs.PluginName
-				cfg.Auth.ClientCertsDir = filepath.Join("..", "..", "test", "certs", "client")
-			}))
-			return
-		}).Should(Succeed())
+		apiServer, stop = StartApiServer(NewTestApiServerConfigurer().WithConfigMutator(func(cfg *config.ApiServerConfig) {
+			cfg.HTTPS.TlsCertFile = certPath
+			cfg.HTTPS.TlsKeyFile = keyPath
+			cfg.Authn.Type = certs.PluginName
+			cfg.Auth.ClientCertsDir = filepath.Join("..", "..", "test", "certs", "client")
+		}))
 
 		cfg := apiServer.Config()
 		httpsPort = cfg.HTTPS.Port

@@ -12,14 +12,9 @@ import (
 )
 
 var _ = Describe("Config WS", func() {
-	var stop = func() {}
+	var stop func()
 	var apiServer *api_server.ApiServer
-	BeforeEach(func() {
-		Eventually(func() (err error) {
-			apiServer, stop, err = TryStartApiServer(NewTestApiServerConfigurer())
-			return
-		}).Should(Succeed())
-	})
+	apiServer, stop = StartApiServer(NewTestApiServerConfigurer())
 	AfterEach(func() {
 		stop()
 	})

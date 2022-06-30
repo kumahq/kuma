@@ -229,17 +229,14 @@ var _ = Describe("Inspect WS", func() {
 			}
 
 			var apiServer *api_server.ApiServer
-			var stop = func() {}
-			Eventually(func() (err error) {
-				conf := NewTestApiServerConfigurer().WithStore(resourceStore)
-				if given.global {
-					conf = conf.WithGlobal()
-				} else {
-					conf = conf.WithZone("local")
-				}
-				apiServer, stop, err = TryStartApiServer(conf)
-				return
-			}).Should(Succeed())
+			var stop func()
+			conf := NewTestApiServerConfigurer().WithStore(resourceStore)
+			if given.global {
+				conf = conf.WithGlobal()
+			} else {
+				conf = conf.WithZone("local")
+			}
+			apiServer, stop = StartApiServer(conf)
 			defer stop()
 
 			// when
@@ -1137,13 +1134,10 @@ var _ = Describe("Inspect WS", func() {
 	It("should change response if state changed", func() {
 		// setup
 		var apiServer *api_server.ApiServer
-		var stop = func() {}
+		var stop func()
 		resourceStore := memory.NewStore()
 		rm := manager.NewResourceManager(resourceStore)
-		Eventually(func() (err error) {
-			apiServer, stop, err = TryStartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore))
-			return
-		}).Should(Succeed())
+		apiServer, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore))
 		defer stop()
 
 		// when init the state

@@ -26,11 +26,8 @@ var _ = Describe("GUI Server", func() {
 		DescribeTable("should expose file", func(given testCase) {
 			// given
 			var apiServer *api_server.ApiServer
-			var stop = func() {}
-			Eventually(func() (err error) {
-				apiServer, stop, err = TryStartApiServer(NewTestApiServerConfigurer().WithGui())
-				return
-			}).Should(Succeed())
+			var stop func()
+			apiServer, stop = StartApiServer(NewTestApiServerConfigurer().WithGui())
 			baseUrl = "http://" + apiServer.Address()
 			defer stop()
 
@@ -73,11 +70,8 @@ var _ = Describe("GUI Server", func() {
 			DescribeTable("should not expose file", func(given testCase) {
 				// given
 				var apiServer *api_server.ApiServer
-				var stop = func() {}
-				Eventually(func() (err error) {
-					apiServer, stop, err = TryStartApiServer(NewTestApiServerConfigurer())
-					return
-				}).Should(Succeed())
+				var stop func()
+				apiServer, stop = StartApiServer(NewTestApiServerConfigurer())
 				baseUrl = "http://" + apiServer.Address()
 				defer stop()
 

@@ -36,10 +36,7 @@ var _ = Describe("Resource Endpoints", func() {
 		m, err := core_metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
 		metrics = m
-		Eventually(func() (err error) {
-			apiServer, stop, err = TryStartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore).WithMetrics(m))
-			return
-		}).Should(Succeed())
+		apiServer, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore).WithMetrics(m))
 		client = resourceApiClient{
 			address: apiServer.Address(),
 			path:    "/meshes/" + mesh + "/sample-traffic-routes",

@@ -166,7 +166,19 @@ func (t *testApiServerConfigurer) WithConfigMutator(fn func(*config_api_server.A
 	return t
 }
 
-func TryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, func(), error) {
+func StartApiServer(t *testApiServerConfigurer) (apiServer *api_server.ApiServer, stop func()) {
+	Eventually(func() (err error) {
+		apiServer, stop, err = tryStartApiServer(t)
+		return
+	}).
+		WithTimeout(time.Second * 30).
+		WithPolling(time.Millisecond * 500).
+		WithOffset(1).
+		Should(Succeed())
+	return apiServer, stop
+}
+
+func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, func(), error) {
 	ctx, stop := context.WithCancel(context.Background())
 	// we have to manually search for port and put it into config. There is no way to retrieve port of running
 	// http.Server and we need it later for the client

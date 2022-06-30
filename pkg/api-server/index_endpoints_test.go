@@ -22,10 +22,7 @@ var _ = Describe("Index Endpoints", func() {
 	var apiServer *api_server.ApiServer
 	BeforeEach(func() {
 		backupBuildInfo = kuma_version.Build
-		Eventually(func() (err error) {
-			apiServer, stop, err = TryStartApiServer(NewTestApiServerConfigurer().WithGui())
-			return
-		}).Should(Succeed())
+		apiServer, stop = StartApiServer(NewTestApiServerConfigurer().WithGui())
 	})
 	AfterEach(func() {
 		stop()

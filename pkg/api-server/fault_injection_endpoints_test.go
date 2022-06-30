@@ -31,10 +31,7 @@ var _ = Describe("FaultInjection Endpoints", func() {
 			return now
 		}
 		resourceStore = memory.NewStore()
-		Eventually(func() (err error) {
-			apiServer, stop, err = TryStartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore))
-			return
-		}).Should(Succeed())
+		apiServer, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore))
 		client = resourceApiClient{
 			apiServer.Address(),
 			"/meshes/default/fault-injections",
