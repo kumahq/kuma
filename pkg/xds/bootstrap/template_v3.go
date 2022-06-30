@@ -15,10 +15,16 @@ import (
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	clusters_v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
 func genConfig(parameters configParameters, useTokenPath bool) (*envoy_bootstrap_v3.Bootstrap, error) {
+	staticClusters, err := buildStaticClusters(parameters, useTokenPath)
+	if err != nil {
+		return nil, err
+	}
+
 	res := &envoy_bootstrap_v3.Bootstrap{
 		Node: &envoy_core_v3.Node{
 			Id:      parameters.Id,
@@ -120,7 +126,7 @@ func genConfig(parameters configParameters, useTokenPath bool) (*envoy_bootstrap
 					},
 				},
 			},
-			Clusters: buildStaticClusters(parameters, useTokenPath),
+			Clusters: staticClusters,
 		},
 	}
 	for _, r := range res.StaticResources.Clusters {
@@ -298,33 +304,30 @@ func buildGrpcService(params configParameters, useTokenPath bool) *envoy_core_v3
 	}
 }
 
-func buildStaticClusters(parameters configParameters, useTokenPath bool) []*envoy_cluster_v3.Cluster {
-	clusters := []*envoy_cluster_v3.Cluster{
-		{
-			// TODO does timeout and keepAlive make sense on this as it uses unix domain sockets?
-			Name:                 "access_log_sink",
-			ConnectTimeout:       util_proto.Duration(parameters.XdsConnectTimeout),
-			Http2ProtocolOptions: &envoy_core_v3.Http2ProtocolOptions{},
-			LbPolicy:             envoy_cluster_v3.Cluster_ROUND_ROBIN,
-			UpstreamConnectionOptions: &envoy_cluster_v3.UpstreamConnectionOptions{
-				TcpKeepalive: &envoy_core_v3.TcpKeepalive{
-					KeepaliveProbes:   util_proto.UInt32(3),
-					KeepaliveTime:     util_proto.UInt32(10),
-					KeepaliveInterval: util_proto.UInt32(10),
-				},
+func buildStaticClusters(parameters configParameters, useTokenPath bool) ([]*envoy_cluster_v3.Cluster, error) {
+	accessLogSink := &envoy_cluster_v3.Cluster{
+		// TODO does timeout and keepAlive make sense on this as it uses unix domain sockets?
+		Name:           "access_log_sink",
+		ConnectTimeout: util_proto.Duration(parameters.XdsConnectTimeout),
+		LbPolicy:       envoy_cluster_v3.Cluster_ROUND_ROBIN,
+		UpstreamConnectionOptions: &envoy_cluster_v3.UpstreamConnectionOptions{
+			TcpKeepalive: &envoy_core_v3.TcpKeepalive{
+				KeepaliveProbes:   util_proto.UInt32(3),
+				KeepaliveTime:     util_proto.UInt32(10),
+				KeepaliveInterval: util_proto.UInt32(10),
 			},
-			ClusterDiscoveryType: &envoy_cluster_v3.Cluster_Type{Type: envoy_cluster_v3.Cluster_STATIC},
-			LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
-				ClusterName: "access_log_sink",
-				Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
-					{
-						LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
-							{
-								HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
-									Endpoint: &envoy_config_endpoint_v3.Endpoint{
-										Address: &envoy_core_v3.Address{
-											Address: &envoy_core_v3.Address_Pipe{Pipe: &envoy_core_v3.Pipe{Path: parameters.AccessLogPipe}},
-										},
+		},
+		ClusterDiscoveryType: &envoy_cluster_v3.Cluster_Type{Type: envoy_cluster_v3.Cluster_STATIC},
+		LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
+			ClusterName: "access_log_sink",
+			Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
+				{
+					LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
+						{
+							HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
+								Endpoint: &envoy_config_endpoint_v3.Endpoint{
+									Address: &envoy_core_v3.Address{
+										Address: &envoy_core_v3.Address_Pipe{Pipe: &envoy_core_v3.Pipe{Path: parameters.AccessLogPipe}},
 									},
 								},
 							},
@@ -334,12 +337,17 @@ func buildStaticClusters(parameters configParameters, useTokenPath bool) []*envo
 			},
 		},
 	}
+	if err := (&clusters_v3.Http2Configurer{}).Configure(accessLogSink); err != nil {
+		return nil, err
+	}
+
+	clusters := []*envoy_cluster_v3.Cluster{accessLogSink}
+
 	if parameters.DataplaneTokenPath == "" || !useTokenPath {
-		clusters = append(clusters, &envoy_cluster_v3.Cluster{
-			Name:                 "ads_cluster",
-			ConnectTimeout:       util_proto.Duration(parameters.XdsConnectTimeout),
-			Http2ProtocolOptions: &envoy_core_v3.Http2ProtocolOptions{},
-			LbPolicy:             envoy_cluster_v3.Cluster_ROUND_ROBIN,
+		adsCluster := &envoy_cluster_v3.Cluster{
+			Name:           "ads_cluster",
+			ConnectTimeout: util_proto.Duration(parameters.XdsConnectTimeout),
+			LbPolicy:       envoy_cluster_v3.Cluster_ROUND_ROBIN,
 			UpstreamConnectionOptions: &envoy_cluster_v3.UpstreamConnectionOptions{
 				TcpKeepalive: &envoy_core_v3.TcpKeepalive{
 					KeepaliveProbes:   util_proto.UInt32(3),
@@ -372,7 +380,12 @@ func buildStaticClusters(parameters configParameters, useTokenPath bool) []*envo
 					},
 				},
 			},
-		})
+		}
+		if err := (&clusters_v3.Http2Configurer{}).Configure(adsCluster); err != nil {
+			return nil, err
+		}
+
+		clusters = append(clusters, adsCluster)
 	}
-	return clusters
+	return clusters, nil
 }
