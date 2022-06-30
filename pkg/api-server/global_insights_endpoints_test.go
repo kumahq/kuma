@@ -10,20 +10,18 @@ import (
 	. "github.com/onsi/gomega"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
-	config "github.com/kumahq/kuma/pkg/config/api-server"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
 
 var _ = Describe("Global Insights Endpoints", func() {
 	var apiServer *api_server.ApiServer
 	var resourceStore store.ResourceStore
-	var stop chan struct{}
+	var stop = func() {}
 
 	BeforeEach(func() {
 		core.Now = func() time.Time {
@@ -32,29 +30,11 @@ var _ = Describe("Global Insights Endpoints", func() {
 		}
 
 		resourceStore = memory.NewStore()
-
-		metrics, err := metrics.NewMetrics("Standalone")
-		Expect(err).ToNot(HaveOccurred())
-
-		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics)
-
-		client := resourceApiClient{
-			address: apiServer.Address(),
-			path:    "/global-insights",
-		}
-
-		stop = make(chan struct{})
-
-		go func() {
-			defer GinkgoRecover()
-			Expect(apiServer.Start(stop)).To(Succeed())
-		}()
-
-		waitForServer(&client)
+		apiServer, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore))
 	})
 
 	AfterEach(func() {
-		close(stop)
+		stop()
 		core.Now = time.Now
 	})
 

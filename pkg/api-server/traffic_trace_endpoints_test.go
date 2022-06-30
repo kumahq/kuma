@@ -11,13 +11,11 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api_server "github.com/kumahq/kuma/pkg/api-server"
-	config "github.com/kumahq/kuma/pkg/config/api-server"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
 
@@ -25,7 +23,7 @@ var _ = Describe("TrafficTrace Endpoints", func() {
 	var apiServer *api_server.ApiServer
 	var resourceStore store.ResourceStore
 	var client resourceApiClient
-	var stop chan struct{}
+	var stop = func() {}
 
 	BeforeEach(func() {
 		core.Now = func() time.Time {
@@ -33,24 +31,15 @@ var _ = Describe("TrafficTrace Endpoints", func() {
 			return now
 		}
 		resourceStore = memory.NewStore()
-		metrics, err := metrics.NewMetrics("Standalone")
-		Expect(err).ToNot(HaveOccurred())
-		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics)
+		apiServer, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore))
 		client = resourceApiClient{
 			apiServer.Address(),
 			"/meshes/default/traffic-traces",
 		}
-		stop = make(chan struct{})
-		go func() {
-			defer GinkgoRecover()
-			err := apiServer.Start(stop)
-			Expect(err).ToNot(HaveOccurred())
-		}()
-		waitForServer(&client)
 	})
 
 	AfterEach(func() {
-		close(stop)
+		stop()
 		core.Now = time.Now
 	})
 

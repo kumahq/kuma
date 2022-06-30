@@ -17,7 +17,6 @@ import (
 )
 
 var _ = Describe("API Manager", func() {
-
 	It("should return the config", func() {
 		// given
 		cfg := api_server_config.DefaultApiServerConfig()
@@ -37,6 +36,7 @@ var _ = Describe("API Manager", func() {
 		apiServer := createTestApiServer(resourceStore, cfg, true, metrics, wsManager)
 
 		stop := make(chan struct{})
+		defer close(stop)
 		go func() {
 			defer GinkgoRecover()
 			err := apiServer.Start(stop)
@@ -60,6 +60,5 @@ var _ = Describe("API Manager", func() {
 
 		// when
 		Expect(string(body)).To(Equal("\"bar\"\n"))
-		close(stop)
 	})
 })

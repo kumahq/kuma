@@ -10,20 +10,22 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	config "github.com/kumahq/kuma/pkg/config/api-server"
-	"github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"github.com/kumahq/kuma/pkg/test"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
 var _ = Describe("Index Endpoints", func() {
 
+	var stop = func() {}
 	var backupBuildInfo kuma_version.BuildInfo
+	var apiServer *api_server.ApiServer
 	BeforeEach(func() {
 		backupBuildInfo = kuma_version.Build
+		apiServer, stop = StartApiServer(NewTestApiServerConfigurer().WithGui())
 	})
 	AfterEach(func() {
+		stop()
 		kuma_version.Build = backupBuildInfo
 	})
 
@@ -35,25 +37,8 @@ var _ = Describe("Index Endpoints", func() {
 			GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
 			BuildDate: "2019-08-07T11:26:06Z",
 		}
-
-		// setup
-		resourceStore := memory.NewStore()
-		metrics, err := metrics.NewMetrics("Standalone")
+		hostname, err := os.Hostname()
 		Expect(err).ToNot(HaveOccurred())
-		apiServer := createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics)
-
-		stop := make(chan struct{})
-		go func() {
-			defer GinkgoRecover()
-			err := apiServer.Start(stop)
-			Expect(err).ToNot(HaveOccurred())
-		}()
-
-		// wait for the server
-		Eventually(func() error {
-			_, err := http.Get("http://" + apiServer.Address())
-			return err
-		}, "3s").ShouldNot(HaveOccurred())
 
 		// when
 		resp, err := http.Get("http://" + apiServer.Address())
@@ -61,9 +46,6 @@ var _ = Describe("Index Endpoints", func() {
 
 		// then
 		body, err := io.ReadAll(resp.Body)
-		Expect(err).ToNot(HaveOccurred())
-
-		hostname, err := os.Hostname()
 		Expect(err).ToNot(HaveOccurred())
 
 		expected := fmt.Sprintf(`
