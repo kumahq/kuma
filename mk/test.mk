@@ -26,7 +26,11 @@ GINKGO_UNIT_TEST_FLAGS ?= \
 GINKGO_TEST:=$(GOPATH_BIN_DIR)/ginkgo $(GOFLAGS) $(LD_FLAGS) $(GINKGO_TEST_FLAGS)
 
 .PHONY: test
-test: ${COVERAGE_PROFILE} ## Dev: Run tests for all modules
+test:
+	TMPDIR=/tmp UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) go test $(GOFLAGS) $(LD_FLAGS) -race $$(go list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "pkg/transparentproxy/istio/tools")
+
+.PHONY: test-with-reports
+test-with-reports: ${COVERAGE_PROFILE} ## Dev: Run tests for all modules
 	TMPDIR=/tmp UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) $(GINKGO_TEST) $(GINKGO_UNIT_TEST_FLAGS) $(TEST_PKG_LIST)
 	$(MAKE) coverage
 
