@@ -11,7 +11,6 @@ COPY app/cni/go.sum ./
 RUN go mod download
 
 COPY app/cni/cmd ./cmd/
-COPY app/cni/pkg ./pkg/
 
 ENV CGO_ENABLED=0
 ENV GOOS=linux
