@@ -28,6 +28,20 @@ var OptEnableMeshMTLS = framework.WithMeshUpdate(
 	},
 )
 
+// ProxyTcpRequest tests that basic HTTP requests are proxied to the test-server
+// TCP health-check endpoint.
+func ProxyTcpRequest(cluster framework.Cluster, input, expectedResponse string, gateway string, opts ...client.CollectResponsesOptsFn) {
+	framework.Logf("expecting response from %q", gateway)
+	Eventually(func(g Gomega) {
+		target := fmt.Sprintf("telnet://%s", gateway)
+
+		response, err := client.CollectTCPResponse(cluster, "gateway-client", target, input, opts...)
+
+		g.Expect(err).To(Succeed())
+		g.Expect(response).To(Equal(expectedResponse))
+	}, "60s", "1s").Should(Succeed())
+}
+
 // ProxySimpleRequests tests that basic HTTP requests are proxied to the echo-server.
 func ProxySimpleRequests(cluster framework.Cluster, instance string, gateway string, opts ...client.CollectResponsesOptsFn) {
 	framework.Logf("expecting 200 response from %q", gateway)

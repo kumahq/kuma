@@ -19,10 +19,11 @@ import (
 
 var _ = Describe("IngressGenerator", func() {
 	type testCase struct {
-		dataplane       string
+		ingress         string
 		expected        string
 		outboundTargets core_xds.EndpointMap
 		trafficRoutes   *core_mesh.TrafficRouteResourceList
+		meshGateways    *core_mesh.MeshGatewayResourceList
 	}
 
 	DescribeTable("should generate Envoy xDS resources",
@@ -30,13 +31,16 @@ var _ = Describe("IngressGenerator", func() {
 			gen := generator.IngressGenerator{}
 
 			zoneIngress := &mesh_proto.ZoneIngress{}
-			Expect(util_proto.FromYAML([]byte(given.dataplane), zoneIngress)).To(Succeed())
+			Expect(util_proto.FromYAML([]byte(given.ingress), zoneIngress)).To(Succeed())
 
 			zoneIngressRes := &core_mesh.ZoneIngressResource{
 				Meta: &test_model.ResourceMeta{
 					Version: "1",
 				},
 				Spec: zoneIngress,
+			}
+			if given.meshGateways == nil {
+				given.meshGateways = &core_mesh.MeshGatewayResourceList{}
 			}
 			proxy := &core_xds.Proxy{
 				Id:          *core_xds.BuildProxyId("default", "ingress"),
@@ -48,6 +52,7 @@ var _ = Describe("IngressGenerator", func() {
 				ZoneIngressProxy: &core_xds.ZoneIngressProxy{
 					TrafficRouteList: given.trafficRoutes,
 					GatewayRoutes:    &core_mesh.MeshGatewayRouteResourceList{},
+					MeshGateways:     given.meshGateways,
 				},
 			}
 
@@ -69,7 +74,7 @@ var _ = Describe("IngressGenerator", func() {
 			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "ingress", given.expected)))
 		},
 		Entry("01. default trafficroute, single mesh", testCase{
-			dataplane: `
+			ingress: `
             networking:
               address: 10.0.0.1
               port: 10001
@@ -131,7 +136,7 @@ var _ = Describe("IngressGenerator", func() {
 			},
 		}),
 		Entry("02. default trafficroute, empty ingress", testCase{
-			dataplane: `
+			ingress: `
             networking:
               address: 10.0.0.1
               port: 10001
@@ -157,7 +162,7 @@ var _ = Describe("IngressGenerator", func() {
 			},
 		}),
 		Entry("03. trafficroute with many destinations", testCase{
-			dataplane: `
+			ingress: `
             networking:
               address: 10.0.0.1
               port: 10001
@@ -247,7 +252,7 @@ var _ = Describe("IngressGenerator", func() {
 			},
 		}),
 		Entry("04. several services in several meshes", testCase{
-			dataplane: `
+			ingress: `
             networking:
               address: 10.0.0.1
               port: 10001
@@ -442,7 +447,7 @@ var _ = Describe("IngressGenerator", func() {
 			},
 		}),
 		Entry("05. trafficroute repeated", testCase{
-			dataplane: `
+			ingress: `
             networking:
               address: 10.0.0.1
               port: 10001
@@ -491,6 +496,82 @@ var _ = Describe("IngressGenerator", func() {
 						},
 					},
 				},
+			},
+		}),
+		Entry("cross-mesh MeshGateway", testCase{
+			ingress: `
+            networking:
+              address: 10.0.0.1
+              port: 10001
+            availableServices:
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+              - mesh: mesh2
+                tags:
+                  kuma.io/mesh: mesh2
+                  kuma.io/service: mesh-gateway
+`,
+			expected: "meshgateway.envoy.golden.yaml",
+			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
+				"backend": {
+					{
+						Target: "192.168.0.1",
+						Port:   2521,
+						Tags: map[string]string{
+							"kuma.io/service": "backend",
+							"mesh":            "mesh1",
+						},
+						Weight: 1,
+					},
+				},
+				"mesh-gateway": {
+					{
+						Target: "192.168.0.2",
+						Port:   80,
+						Tags: map[string]string{
+							"kuma.io/service": "mesh-gateway",
+							"mesh":            "mesh2",
+						},
+						Weight: 1,
+					},
+				},
+			},
+			trafficRoutes: &core_mesh.TrafficRouteResourceList{
+				Items: []*core_mesh.TrafficRouteResource{
+					{
+						Spec: &mesh_proto.TrafficRoute{
+							Sources: []*mesh_proto.Selector{{
+								Match: mesh_proto.MatchAnyService(),
+							}},
+							Destinations: []*mesh_proto.Selector{{
+								Match: mesh_proto.MatchAnyService(),
+							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Destination: mesh_proto.MatchAnyService(),
+							},
+						},
+					},
+				},
+			},
+			meshGateways: &core_mesh.MeshGatewayResourceList{
+				Items: []*core_mesh.MeshGatewayResource{{
+					Meta: &test_model.ResourceMeta{Name: "mesh-gateway", Mesh: "mesh2"},
+					Spec: &mesh_proto.MeshGateway{
+						Selectors: []*mesh_proto.Selector{{
+							Match: mesh_proto.MatchService("mesh-gateway"),
+						}},
+						Conf: &mesh_proto.MeshGateway_Conf{
+							Listeners: []*mesh_proto.MeshGateway_Listener{
+								{
+									Protocol:  mesh_proto.MeshGateway_Listener_HTTP,
+									Port:      80,
+									CrossMesh: true,
+								},
+							},
+						},
+					},
+				}},
 			},
 		}),
 	)

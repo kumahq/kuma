@@ -80,6 +80,7 @@ func NewProxyProfile(zone string) generator_core.ResourceGenerator {
 				FilterChainGenerators: map[mesh_proto.MeshGateway_Listener_Protocol]FilterChainGenerator{
 					mesh_proto.MeshGateway_Listener_HTTP:  &HTTPFilterChainGenerator{},
 					mesh_proto.MeshGateway_Listener_HTTPS: &HTTPSFilterChainGenerator{},
+					mesh_proto.MeshGateway_Listener_TCP:   &TCPFilterChainGenerator{},
 				}},
 			ClusterGenerator: ClusterGenerator{
 				Zone: zone,

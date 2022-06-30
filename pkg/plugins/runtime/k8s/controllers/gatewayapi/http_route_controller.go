@@ -138,7 +138,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 
 			conditions[ref] = []kube_meta.Condition{
 				{
-					Type:    string(gatewayapi.ConditionRouteAccepted),
+					Type:    string(gatewayapi.RouteConditionAccepted),
 					Status:  kube_meta.ConditionFalse,
 					Reason:  "Refused", // kubernetes-sigs/gateway-api#972
 					Message: message,

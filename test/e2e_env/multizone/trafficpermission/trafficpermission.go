@@ -1,12 +1,9 @@
 package trafficpermission
 
 import (
-	"fmt"
-
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/env"
@@ -47,15 +44,8 @@ func TrafficPermission() {
 			Setup(env.KubeZone1)
 		Expect(err).ToNot(HaveOccurred())
 
-		pods, err := k8s.ListPodsE(
-			env.KubeZone1.GetTesting(),
-			env.KubeZone1.GetKubectlOptions(namespace),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", "demo-client"),
-			},
-		)
+		clientPodName, err = PodNameOfApp(env.KubeZone1, "demo-client", namespace)
 		Expect(err).ToNot(HaveOccurred())
-		clientPodName = pods[0].Name
 	})
 
 	BeforeEach(func() {

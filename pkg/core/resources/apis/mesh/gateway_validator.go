@@ -77,7 +77,6 @@ func validateMeshGatewayConf(path validators.PathBuilder, conf *mesh_proto.MeshG
 		case mesh_proto.MeshGateway_Listener_NONE:
 			err.AddViolationAt(path.Index(i).Field("protocol"), "cannot be empty")
 		case mesh_proto.MeshGateway_Listener_UDP,
-			mesh_proto.MeshGateway_Listener_TCP,
 			mesh_proto.MeshGateway_Listener_TLS:
 			err.AddViolationAt(path.Index(i).Field("protocol"), "protocol type is not supported")
 		case mesh_proto.MeshGateway_Listener_HTTPS:

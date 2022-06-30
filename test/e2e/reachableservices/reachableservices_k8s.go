@@ -1,12 +1,8 @@
 package reachableservices
 
 import (
-	"fmt"
-
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
@@ -55,20 +51,11 @@ spec:
 
 	It("should be able to connect only to reachable services", func() {
 		// given the client
-		pods, err := k8s.ListPodsE(
-			cluster.GetTesting(),
-			cluster.GetKubectlOptions(TestNamespace),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", "client-server"),
-			},
-		)
+		clientPodName, err := PodNameOfApp(cluster, "client-server", TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(pods).To(HaveLen(1))
-
-		clientPod := pods[0]
 
 		// when tries to connect to a reachable service
-		_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "client-server",
+		_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPodName, "client-server",
 			"curl", "-v", "-m", "3", "--fail", "first-test-server_kuma-test_svc_80.mesh")
 
 		// then
@@ -76,14 +63,14 @@ spec:
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 
 		// when trying to connect to non-reachable services via Kuma DNS
-		_, _, err = cluster.Exec(TestNamespace, clientPod.GetName(), "client-server",
+		_, _, err = cluster.Exec(TestNamespace, clientPodName, "client-server",
 			"curl", "-v", "second-test-server_kuma-test_svc_80.mesh")
 
 		// then it fails because Kuma DP has no such DNS
 		Expect(err).To(HaveOccurred())
 
 		// when trying to connect to non-reachable service via Kubernetes DNS
-		_, _, err = cluster.Exec(TestNamespace, clientPod.GetName(), "client-server",
+		_, _, err = cluster.Exec(TestNamespace, clientPodName, "client-server",
 			"curl", "-v", "second-test-server")
 
 		// then it fails because we don't encrypt traffic to unknown destination in the mesh

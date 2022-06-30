@@ -28,7 +28,6 @@ type ExecOptions struct {
 	PodName       string
 	ContainerName string
 
-	Stdin         io.Reader
 	CaptureStdout bool
 	CaptureStderr bool
 	// If false, whitespace in std{err,out} will be removed.

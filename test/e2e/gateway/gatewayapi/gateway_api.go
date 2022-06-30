@@ -62,18 +62,18 @@ spec:
 		Install(testserver.Install(
 			testserver.WithName("test-server-1"),
 			testserver.WithNamespace(TestNamespace),
-			testserver.WithArgs("echo", "--instance", "test-server-1"),
+			testserver.WithEchoArgs("echo", "--instance", "test-server-1"),
 		)).
 		Install(testserver.Install(
 			testserver.WithName("test-server-2"),
 			testserver.WithNamespace(TestNamespace),
-			testserver.WithArgs("echo", "--instance", "test-server-2"),
+			testserver.WithEchoArgs("echo", "--instance", "test-server-2"),
 		)).
 		Install(Namespace(ExternalServicesNamespace)).
 		Install(testserver.Install(
 			testserver.WithName("external-service"),
 			testserver.WithNamespace(ExternalServicesNamespace),
-			testserver.WithArgs("echo", "--instance", "external-service"),
+			testserver.WithEchoArgs("echo", "--instance", "external-service"),
 		)).
 		Install(YamlK8s(externalService)).
 		Install(YamlK8s(GatewayClass)).

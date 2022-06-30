@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
@@ -97,7 +95,7 @@ networking:
 			Install(testserver.Install(
 				testserver.WithName("es-test-server"),
 				testserver.WithNamespace("default"),
-				testserver.WithArgs("echo", "--instance", "es-test-server"),
+				testserver.WithEchoArgs("echo", "--instance", "es-test-server"),
 			)).
 			Setup(zone1)).To(Succeed())
 
@@ -145,17 +143,8 @@ networking:
 			"external-service-1",
 		)
 
-		pods, err := k8s.ListPodsE(
-			zone1.GetTesting(),
-			zone1.GetKubectlOptions(TestNamespace),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", "demo-client"),
-			},
-		)
+		clientPodName, err := PodNameOfApp(zone1, "demo-client", TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(pods).To(HaveLen(1))
-
-		clientPod := pods[0]
 
 		Eventually(func(g Gomega) {
 			stat, err := zone1.GetZoneEgressEnvoyTunnel().GetStats(filter)
@@ -163,7 +152,7 @@ networking:
 			g.Expect(stat).To(stats.BeEqualZero())
 		}, "30s", "1s").Should(Succeed())
 
-		_, stderr, err := zone1.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+		_, stderr, err := zone1.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
 			"curl", "--verbose", "--max-time", "3", "--fail", "external-service-1.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
@@ -204,19 +193,11 @@ networking:
 		// given k8s cluster
 		k8sCluster := zone1.(*K8sCluster)
 
-		pods, err := k8s.ListPodsE(
-			zone1.GetTesting(),
-			zone1.GetKubectlOptions(TestNamespace),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", "demo-client"),
-			},
-		)
+		clientPodName, err := PodNameOfApp(zone1, "demo-client", TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(pods).To(HaveLen(1))
 
-		clientPod := pods[0]
 		serviceUnreachable := func() error {
-			_, _, err := k8sCluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+			_, _, err := k8sCluster.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
 				"curl", "--verbose", "--max-time", "3", "--fail", "external-service-1.mesh")
 			return err
 		}

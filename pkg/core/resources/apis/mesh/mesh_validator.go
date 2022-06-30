@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"regexp"
 
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -262,6 +263,10 @@ func validatePrometheusConfig(cfgStr *structpb.Struct) validators.ValidationErro
 	cfg := mesh_proto.PrometheusMetricsBackendConfig{}
 	if err := proto.ToTyped(cfgStr, &cfg); err != nil {
 		verr.AddViolation("", fmt.Sprintf("could not parse config: %s", err.Error()))
+		return verr
+	}
+	if _, err := regexp.Compile(cfg.GetEnvoy().GetFilterRegex()); err != nil {
+		verr.AddViolationAt(validators.RootedAt("envoy").Field("filterRegex"), fmt.Sprintf("provided regexp isn't correct: %s", err.Error()))
 		return verr
 	}
 	usedName := make(map[string]bool)
