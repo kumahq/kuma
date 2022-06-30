@@ -6,8 +6,8 @@ LABEL description="Kuma CNI plugin installer."
 
 WORKDIR /cni
 
-COPY app/cni/go.mod ./
-COPY app/cni/go.sum ./
+COPY go.mod ./
+COPY go.sum ./
 RUN go mod download
 
 COPY app/cni/cmd ./cmd/
