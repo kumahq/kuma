@@ -2,23 +2,23 @@ package main
 
 import (
 	"fmt"
-	"github.com/kumahq/kuma-net/iptables/builder"
 	"io/ioutil"
+	"os"
+	"strconv"
 	"strings"
+
+	"github.com/kumahq/kuma-net/iptables/builder"
 
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/kumahq/kuma-net/iptables/config"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-
-	"os"
-	"strconv"
 )
 
 func convertToUint16(field string, value string) uint16 {
 	converted, err := strconv.ParseUint(value, 10, 16)
 	if err != nil {
-		log.Error("failed to convert to int16", zap.String(field, value), zap.Error(err))
+		log.Error(err, "failed to convert to int16", zap.String(field, value))
 		os.Exit(1)
 	}
 	return uint16(converted)
