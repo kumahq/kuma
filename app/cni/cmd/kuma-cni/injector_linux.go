@@ -8,11 +8,11 @@ import (
 	"strings"
 
 	"github.com/containernetworking/plugins/pkg/ns"
-	"github.com/kumahq/kuma-net/iptables/config"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/kumahq/kuma-net/iptables/builder"
+	"github.com/kumahq/kuma-net/iptables/config"
 )
 
 func convertToUint16(field string, value string) uint16 {
