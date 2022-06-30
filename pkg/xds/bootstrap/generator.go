@@ -76,7 +76,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 	params := configParameters{
 		Id:                    proxyId.String(),
 		AdminAddress:          b.config.Params.AdminAddress,
-		AdminAccessLogPath:    b.config.Params.AdminAccessLogPath,
+		AdminAccessLogPath:    b.adminAccessLogPath(request.OperatingSystem),
 		XdsHost:               b.xdsHost(request),
 		XdsPort:               b.config.Params.XdsPort,
 		XdsConnectTimeout:     b.config.Params.XdsConnectTimeout,
@@ -364,6 +364,18 @@ func (b *bootstrapGenerator) xdsHost(request types.BootstrapRequest) string {
 	} else {
 		return request.Host
 	}
+}
+
+func (b *bootstrapGenerator) adminAccessLogPath(operatingSystem string) string {
+	if operatingSystem == "" { // backwards compatibility
+		return b.config.Params.AdminAccessLogPath
+	}
+	if b.config.Params.AdminAccessLogPath == os.DevNull && operatingSystem == "windows" {
+		// when AdminAccessLogPath was not explicitly set and DPP OS is Windows we need to set window specific DevNull.
+		// otherwise when CP is on Linux, we would set /dev/null which is not corrent on Windows.
+		return "NUL"
+	}
+	return b.config.Params.AdminAccessLogPath
 }
 
 type SANSet map[string]bool

@@ -67,7 +67,7 @@ var _ = Describe("Remote Bootstrap", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		generator := NewRemoteBootstrapGenerator(http.DefaultClient)
+		generator := NewRemoteBootstrapGenerator(http.DefaultClient, "linux")
 
 		// when
 		params := BootstrapParams{
@@ -130,11 +130,11 @@ var _ = Describe("Remote Bootstrap", func() {
 					  "caCert": "",
 					  "dynamicMetadata": {
 					    "test": "value"
-					  }
+					  },
+					  "operatingSystem": "linux"
 					}`,
 				}
 			}()),
-
 		Entry("should support port range with multiple ports (choose the lowest port)",
 			func() testCase {
 				cfg := kuma_dp.DefaultConfig()
@@ -175,7 +175,8 @@ var _ = Describe("Remote Bootstrap", func() {
                         }
                       },
                       "caCert": "",
-                      "dynamicMetadata": null
+                      "dynamicMetadata": null,
+                      "operatingSystem": "linux"
                     }`,
 				}
 			}()),
@@ -218,7 +219,8 @@ var _ = Describe("Remote Bootstrap", func() {
                         }
                       },
                       "caCert": "",
-					  "dynamicMetadata": null
+					  "dynamicMetadata": null,
+					  "operatingSystem": "linux"
                     }`,
 				}
 			}()),
@@ -263,7 +265,7 @@ var _ = Describe("Remote Bootstrap", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		generator := NewRemoteBootstrapGenerator(http.DefaultClient)
+		generator := NewRemoteBootstrapGenerator(http.DefaultClient, "linux")
 
 		// when
 		cfg := kuma_dp.DefaultConfig()
@@ -322,7 +324,7 @@ var _ = Describe("Remote Bootstrap", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		generator := NewRemoteBootstrapGenerator(http.DefaultClient)
+		generator := NewRemoteBootstrapGenerator(http.DefaultClient, "linux")
 
 		// when
 		cfg := kuma_dp.DefaultConfig()
@@ -356,7 +358,7 @@ var _ = Describe("Remote Bootstrap", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		generator := NewRemoteBootstrapGenerator(http.DefaultClient)
+		generator := NewRemoteBootstrapGenerator(http.DefaultClient, "linux")
 
 		// when
 		config := kuma_dp.DefaultConfig()
