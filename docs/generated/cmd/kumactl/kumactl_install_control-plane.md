@@ -20,18 +20,18 @@ kumactl install control-plane [flags]
       --cni-enabled                                  install Kuma with CNI instead of proxy init container
       --cni-net-dir string                           set the CNI install directory (default "/etc/cni/multus/net.d")
       --cni-node-selector stringToString             node selector for CNI deployment (default [])
-      --cni-registry string                          registry for the image of the Kuma CNI component (default "docker.io/kumahq")
+      --cni-registry string                          registry for the image of the Kuma CNI component
       --cni-repository string                        repository for the image of the Kuma CNI component (default "install-cni")
       --cni-version string                           version of the image of the Kuma CNI component (default "0.0.10")
       --control-plane-node-selector stringToString   node selector for Kuma Control Plane (default [])
-      --control-plane-registry string                registry for the image of the Kuma Control Plane component (default "docker.io/kumahq")
+      --control-plane-registry string                registry for the image of the Kuma Control Plane component
       --control-plane-repository string              repository for the image of the Kuma Control Plane component (default "kuma-cp")
       --control-plane-service-name string            Service name of the Kuma Control Plane (default "kuma-control-plane")
       --control-plane-version string                 version of the image of the Kuma Control Plane component (default "unknown")
-      --dataplane-init-registry string               registry for the init image of the Kuma DataPlane component (default "docker.io/kumahq")
+      --dataplane-init-registry string               registry for the init image of the Kuma DataPlane component
       --dataplane-init-repository string             repository for the init image of the Kuma DataPlane component (default "kuma-init")
       --dataplane-init-version string                version of the init image of the Kuma DataPlane component (default "unknown")
-      --dataplane-registry string                    registry for the image of the Kuma DataPlane component (default "docker.io/kumahq")
+      --dataplane-registry string                    registry for the image of the Kuma DataPlane component
       --dataplane-repository string                  repository for the image of the Kuma DataPlane component (default "kuma-dp")
       --dataplane-version string                     version of the image of the Kuma DataPlane component (default "unknown")
       --dump-values                                  output all possible values for the configuration. This is similar to `helm show values <chart>
@@ -52,6 +52,7 @@ kumactl install control-plane [flags]
       --kds-global-address string                    URL of Global Kuma CP (example: grpcs://192.168.0.1:5685)
       --mode string                                  kuma cp modes: one of standalone|zone|global (default "standalone")
       --namespace string                             namespace to install Kuma Control Plane to (default "kuma-system")
+      --registry string                              registry for all images (default "docker.io/kumahq")
       --set helm template <chart> --set ...          set values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2), This is similar to helm template <chart> --set ... to use set-file or set-string just use helm instead
       --tls-api-server-client-certs-secret string    Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS
       --tls-api-server-secret string                 Secret that contains tls.crt, tls.key for protecting Kuma API on HTTPS
