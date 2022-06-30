@@ -7,12 +7,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/kumahq/kuma-net/iptables/builder"
-
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/kumahq/kuma-net/iptables/config"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+
+	"github.com/kumahq/kuma-net/iptables/builder"
 )
 
 func convertToUint16(field string, value string) uint16 {
@@ -29,7 +29,7 @@ func convertCommaSeparatedString(list string) []uint16 {
 	mapped := make([]uint16, len(splitted))
 
 	for i, value := range splitted {
-		mapped[i] = convertToUint16(string(i), value)
+		mapped[i] = convertToUint16(strconv.Itoa(i), value)
 	}
 
 	return mapped
