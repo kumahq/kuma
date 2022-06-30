@@ -1,0 +1,10 @@
+controlPlane:
+  extraLabels:
+    foo: baz
+  extraConfigMaps:
+  - name: extra-config
+    mountPath: /etc/extra-config
+    readOnly: true
+    values:
+      extra-config-key: |
+        extra-config-value
