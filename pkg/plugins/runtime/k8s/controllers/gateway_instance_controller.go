@@ -251,6 +251,12 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 						Value: "0",
 					}},
 				}
+			} else {
+				secContext := container.SecurityContext
+				if secContext.Capabilities == nil {
+					secContext.Capabilities = &kube_core.Capabilities{}
+				}
+				secContext.Capabilities.Add = append(secContext.Capabilities.Add, "NET_BIND_SERVICE")
 			}
 
 			podSpec := kube_core.PodSpec{
