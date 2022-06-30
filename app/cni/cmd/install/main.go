@@ -1,25 +1,29 @@
-package main
+package install
 
 import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"github.com/itchyny/gojq"
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/natefinch/atomic"
 	"go.uber.org/zap"
 	"io/fs"
 	"io/ioutil"
 	"k8s.io/utils/env"
-	"kuma.io/cni/pkg/logger"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 )
 
+var (
+	log = core.Log.WithName("cni-install")
+)
+
 func rm_bin_files() {
 	// todo hook this up to cleanup
-	logger.Default.Debug("removing existing binaries")
+	log.V(1).Info("removing existing binaries")
 	os.Remove("/host/opt/cni/bin/kuma-cni")
 }
 
@@ -61,7 +65,7 @@ func isFileAValidConfig(file string) bool {
 	if !ok {
 		return false
 	}
-	logger.Default.Info("checking file", zap.String("file", file))
+	log.Info("checking file", zap.String("file", file))
 	if v.(bool) == true {
 		return true
 	}
@@ -110,7 +114,7 @@ func prepareKumaCniConfig(mountedCniNetDir, hostCniNetDir, kubecfgName, serviceA
 	kubeconfigFilePath := hostCniNetDir + "/" + kubecfgName
 
 	config := strings.Replace(rawConfig, "__KUBECONFIG_FILEPATH__", kubeconfigFilePath, 1)
-	logger.Default.Debug("config after replace", zap.String("config", config))
+	log.V(1).Info("config after replace", zap.String("config", config))
 
 	serviceAccountToken, err := ioutil.ReadFile(serviceAccountPath + "/token")
 	if err != nil {
@@ -121,7 +125,7 @@ func prepareKumaCniConfig(mountedCniNetDir, hostCniNetDir, kubecfgName, serviceA
 	if chainedCniPlugin {
 		err := setupChainedPlugin(mountedCniNetDir, cniConfName, config)
 		if err != nil {
-			logger.Default.Error("unable to setup kuma cni as chained plugin", zap.Error(err))
+			log.Error(err, "unable to setup kuma cni as chained plugin")
 			return err
 		}
 	}
@@ -146,7 +150,7 @@ func setupChainedPlugin(mountedCniNetDir, cniConfName, kumaCniConfig string) err
 		if err != nil {
 			return err
 		}
-		logger.Default.Debug("resulting config", zap.String("config", string(marshaled)))
+		log.V(1).Info("resulting config", zap.String("config", string(marshaled)))
 
 		err = atomic.WriteFile(mountedCniNetDir+"/"+resolvedName, bytes.NewReader(marshaled))
 		if err != nil {
@@ -208,13 +212,13 @@ func prepareKubeconfig(mountedCniNetDir, kubecfgName, serviceAccountPath string)
 	if fileExists(serviceAccountTokenPath) {
 		kubernetesServiceHost := env.GetString("KUBERNETES_SERVICE_HOST", "")
 		if kubernetesServiceHost == "" {
-			logger.Default.Error("KUBERNETES_SERVICE_HOST env variable not set")
+			log.Info("KUBERNETES_SERVICE_HOST env variable not set")
 			os.Exit(1)
 		}
 
 		kubernetesServicePort := env.GetString("KUBERNETES_SERVICE_PORT", "")
 		if kubernetesServicePort == "" {
-			logger.Default.Error("KUBERNETES_SERVICE_PORT env variable not set")
+			log.Info("KUBERNETES_SERVICE_PORT env variable not set")
 			os.Exit(1)
 		}
 
@@ -267,32 +271,32 @@ func copyBinaries(cniConfName string) {
 	// todo: if not written anywhere fail
 	for _, dir := range dirs {
 		if !isDirWriteable(dir) {
-			logger.Default.Warn("directory is not writeable", zap.String("dir", dir))
+			log.Info("directory is not writeable", zap.String("dir", dir))
 			continue
 		}
 		file, err := os.Open("/opt/cni/bin/kuma-cni")
 		stat, err := os.Stat("/opt/cni/bin/kuma-cni")
-		logger.Default.Debug("/opt/cni/bin/kuma-cni file permissions", zap.Int("permissions", int(stat.Mode())))
+		log.V(1).Info("/opt/cni/bin/kuma-cni file permissions", zap.Int("permissions", int(stat.Mode())))
 		if err != nil {
-			logger.Default.Error("can't open kuma-cni file", zap.Error(err))
+			log.Error(err, "can't open kuma-cni file")
 			os.Exit(1)
 		}
 		destination := dir + "/kuma-cni"
 		err = atomic.WriteFile(destination, file)
 		if err != nil {
-			logger.Default.Error("can't atomically write kuma-cni file", zap.Error(err))
+			log.Error(err, "can't atomically write kuma-cni file")
 		}
 		err = os.Chmod(destination, stat.Mode()|0111)
 		if err != nil {
-			logger.Default.Error("can't chmod kuma-cni file", zap.Error(err))
+			log.Error(err, "can't chmod kuma-cni file")
 		}
 
 		if err != nil {
-			logger.Default.Error("can't atomically write cni file", zap.Error(err), zap.String("dir", dir))
+			log.Error(err, "can't atomically write cni file", zap.String("dir", dir))
 			os.Exit(1)
 		}
 
-		logger.Default.Info("wrote kuma CNI binaries", zap.String("dir", dir))
+		log.Info("wrote kuma CNI binaries", zap.String("dir", dir))
 	}
 }
 
@@ -310,7 +314,7 @@ func isDirWriteable(dir string) bool {
 func main() {
 	err := install()
 	if err != nil {
-		logger.Default.Error("error occurred", zap.Error(err))
+		log.Error(err, "error occurred")
 		return
 	}
 }

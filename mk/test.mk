@@ -49,3 +49,7 @@ test/kuma-dp: test ## Dev: Run `kuma-dp` tests only
 .PHONY: test/kumactl
 test/kumactl: PKG_LIST=./app/kumactl/... ./pkg/config/app/kumactl/...
 test/kumactl: test ## Dev: Run `kumactl` tests only
+
+.PHONY: test/cni
+test/cni: PKG_LIST=./app/cni/...
+test/cni: test ## Dev: Run `cni` tests only

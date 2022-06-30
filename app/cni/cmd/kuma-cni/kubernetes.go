@@ -6,7 +6,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	"kuma.io/cni/pkg/logger"
 )
 
 func newKubeClient(conf PluginConf) (*kubernetes.Clientset, error) {
@@ -17,11 +16,11 @@ func newKubeClient(conf PluginConf) (*kubernetes.Clientset, error) {
 	).ClientConfig()
 
 	if err != nil {
-		logger.Default.Error("failed setting up kubernetes client with kubeconfig", zap.String("kubeconfig", kubeconfig))
+		log.Error(err, "failed setting up kubernetes client with kubeconfig", zap.String("kubeconfig", kubeconfig))
 		return nil, err
 	}
 
-	logger.Default.Debug("set up kubernetes client with kubeconfig",
+	log.V(1).Info("set up kubernetes client with kubeconfig",
 		zap.String("kubeconfig", kubeconfig),
 		zap.Any("config", config),
 	)
@@ -32,9 +31,9 @@ func newKubeClient(conf PluginConf) (*kubernetes.Clientset, error) {
 // getK8sPodInfo returns information of a POD
 func getKubePodInfo(client *kubernetes.Clientset, podName, podNamespace string) (containers int, initContainers map[string]struct{}, annotations map[string]string, err error) {
 	pod, err := client.CoreV1().Pods(podNamespace).Get(context.Background(), podName, metav1.GetOptions{})
-	logger.Default.Debug("pod info", zap.Any("pod", pod))
+	log.V(1).Info("pod info", zap.Any("pod", pod))
 	if err != nil {
-		logger.Default.Error("can't get pod info", zap.Error(err))
+		log.Error(err, "can't get pod info")
 		return 0, nil, nil, err
 	}
 

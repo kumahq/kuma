@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kumahq/kuma/pkg/core"
 	"k8s.io/client-go/kubernetes"
-	"kuma.io/cni/pkg/logger"
 	"net"
 	"time"
 
@@ -18,6 +18,10 @@ import (
 const (
 	podRetrievalMaxRetries = 30
 	podRetrievalInterval   = 1 * time.Second
+)
+
+var (
+	log = core.Log.WithName("cni")
 )
 
 // Kubernetes a K8s specific struct to hold config
@@ -81,7 +85,7 @@ func parseConfig(stdin []byte) (*PluginConf, error) {
 func cmdAdd(args *skel.CmdArgs) error {
 	conf, err := parseConfig(args.StdinData)
 	if err != nil {
-		logger.Default.Error("kuma-cni cmdAdd parsing config %v", zap.Error(err))
+		log.Error(err, "error parsing kuma-cni cmdAdd config")
 		return err
 	}
 	logPrevResult(conf)
@@ -89,7 +93,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 	// Determine if running under k8s by checking the CNI args
 	k8sArgs := K8sArgs{}
 	if err := types.LoadArgs(args.Args, &k8sArgs); err != nil {
-		logger.Default.Error("kuma-cni cmdAdd loading args %v", zap.Error(err))
+		log.Error(err, "error loading kuma-cni cmdAdd args")
 		return err
 	}
 	logContainerInfo(args.Args, args.ContainerID, k8sArgs)
@@ -102,39 +106,39 @@ func cmdAdd(args *skel.CmdArgs) error {
 			if err != nil {
 				return err
 			}
-			logger.Default.Debug("created Kubernetes client", zap.Reflect("client", client))
+			log.V(1).Info("created Kubernetes client", zap.Reflect("client", client))
 			containers, initContainersMap, annotations, err := getPodInfoWithRetries(client, k8sArgs)
 			if err != nil {
 				return err
 			}
 			excludePod = checkInitContainerPresent(initContainersMap, k8sArgs, excludePod)
 
-			logger.Default.Debug("container count in a pod", zap.Int("count", containers))
+			log.V(1).Info("container count in a pod", zap.Int("count", containers))
 			if containers > 1 {
 				logAnnotations(args, k8sArgs, annotations)
 				excludePod = checkAnnotationPresent(annotations, excludePod)
 
 				if !excludePod {
 					if intermediateConfig, configErr := NewIntermediateConfig(annotations); configErr != nil {
-						logger.Default.Error("pod intermediateConfig failed due to bad params: %v", zap.Error(configErr))
+						log.Error(configErr, "pod intermediateConfig failed due to bad params")
 					} else {
 						// Get the constructor for the configured type of InterceptRuleMgr
 						if err := Inject(args.Netns, intermediateConfig); err != nil {
-							logger.Default.Error("running the program with (%v, %v) returned: %v", zap.Error(err))
+							log.Error(err, "could not inject rules into namespace")
 							return err
 						}
 					}
 				} else {
-					logger.Default.Info("internal pod excluded")
+					log.Info("internal pod excluded")
 				}
 			} else {
-				logger.Default.Info("not enough containers in pod")
+				log.Info("not enough containers in pod")
 			}
 		} else {
-			logger.Default.Info("pod excluded")
+			log.Info("pod excluded")
 		}
 	} else {
-		logger.Default.Info("no kubernetes data")
+		log.Info("no kubernetes data")
 	}
 
 	var result *current.Result
@@ -146,12 +150,12 @@ func cmdAdd(args *skel.CmdArgs) error {
 		// Pass through the result for the next plugin
 		result = conf.PrevResult
 	}
-	logger.Default.Info("Result: %v", zap.Any("result", result))
+	log.Info("Result: %v", zap.Any("result", result))
 	return types.PrintResult(result, conf.CNIVersion)
 }
 
 func logAnnotations(args *skel.CmdArgs, k8sArgs K8sArgs, annotations map[string]string) {
-	logger.Default.Debug("checking annotations prior to injecting redirect",
+	log.V(1).Info("checking annotations prior to injecting redirect",
 		zap.String("containerID", args.ContainerID),
 		zap.String("netns", args.Netns),
 		zap.String("pod", string(k8sArgs.K8S_POD_NAME)),
@@ -162,7 +166,7 @@ func logAnnotations(args *skel.CmdArgs, k8sArgs K8sArgs, annotations map[string]
 func checkAnnotationPresent(annotations map[string]string, excludePod bool) bool {
 	val, ok := annotations["kuma.io/sidecar-injected"]
 	if !ok || val != "true" {
-		logger.Default.Info("pod excluded due to lack of 'kuma.io/sidecar-injected: true' annotation")
+		log.Info("pod excluded due to lack of 'kuma.io/sidecar-injected: true' annotation")
 		excludePod = true
 	}
 	return excludePod
@@ -171,7 +175,7 @@ func checkAnnotationPresent(annotations map[string]string, excludePod bool) bool
 func checkInitContainerPresent(initContainersMap map[string]struct{}, k8sArgs K8sArgs, excludePod bool) bool {
 	// Check if kuma-init container is present; in that case exclude pod
 	if _, present := initContainersMap["kuma-init"]; present {
-		logger.Default.Debug("pod excluded due to being already injected with kuma-init container",
+		log.V(1).Info("pod excluded due to being already injected with kuma-init container",
 			zap.String("pod", string(k8sArgs.K8S_POD_NAME)),
 			zap.String("namespace", string(k8sArgs.K8S_POD_NAMESPACE)))
 		excludePod = true
@@ -189,11 +193,11 @@ func getPodInfoWithRetries(client *kubernetes.Clientset, k8sArgs K8sArgs) (int, 
 		if k8sErr == nil {
 			break
 		}
-		logger.Default.Warn("waiting for pod metadata", zap.Error(k8sErr), zap.Int("attempt", attempt))
+		log.Info("waiting for pod metadata", zap.Error(k8sErr), zap.Int("attempt", attempt))
 		time.Sleep(podRetrievalInterval)
 	}
 	if k8sErr != nil {
-		logger.Default.Error("failed to get pod data", zap.Error(k8sErr))
+		log.Error(k8sErr, "failed to get pod data")
 		return 0, nil, nil, k8sErr
 	}
 	return containers, initContainersMap, annotations, nil
@@ -211,9 +215,9 @@ func shouldExcludePod(excludedNamespaces []string, podNamespace types.Unmarshall
 }
 
 func logContainerInfo(args string, containerID string, k8sArgs K8sArgs) {
-	logger.Default.Info("getting identifiers with arguments: %s", zap.String("arguments", args))
-	logger.Default.Info("loaded k8s arguments: %v", zap.Any("k8s args", k8sArgs))
-	logger.Default.Info("container information",
+	log.Info("getting identifiers with arguments: %s", zap.String("arguments", args))
+	log.Info("loaded k8s arguments: %v", zap.Any("k8s args", k8sArgs))
+	log.Info("container information",
 		zap.String("containerID", containerID),
 		zap.String("pod", string(k8sArgs.K8S_POD_NAME)),
 		zap.String("namespace", string(k8sArgs.K8S_POD_NAMESPACE)))
@@ -227,27 +231,25 @@ func logPrevResult(conf *PluginConf) {
 		loggedPrevResult = conf.PrevResult
 	}
 
-	logger.Default.Debug("cmdAdd config parsed",
+	log.V(1).Info("cmdAdd config parsed",
 		zap.String("version", conf.CNIVersion),
 		zap.Reflect("prevResult", loggedPrevResult))
 }
 
 func cmdGet(args *skel.CmdArgs) error {
-	logger.Default.Info("cmdGet not implemented")
+	log.Info("cmdGet not implemented")
 	// TODO: implement
 	return nil
 }
 
 // cmdDel is called for DELETE requests
 func cmdDel(args *skel.CmdArgs) error {
-	logger.Default.Info("cmdDel not implemented")
+	log.Info("cmdDel not implemented")
 	// TODO: implement
 	return nil
 }
 
 func main() {
-	// TODO: init logger with the right level
-	defer logger.Default.Sync()
 	// TODO: implement plugin version
 	skel.PluginMain(cmdAdd, cmdGet, cmdDel, version.All, "kuma-cni")
 }

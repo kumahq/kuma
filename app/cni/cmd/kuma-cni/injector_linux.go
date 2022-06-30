@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/kumahq/kuma-net/iptables/builder"
 	"io/ioutil"
-	"kuma.io/cni/pkg/logger"
 	"strings"
 
 	"github.com/containernetworking/plugins/pkg/ns"
@@ -19,7 +18,7 @@ import (
 func convertToUint16(field string, value string) uint16 {
 	converted, err := strconv.ParseUint(value, 10, 16)
 	if err != nil {
-		logger.Default.Error("failed to convert to int16", zap.String(field, value), zap.Error(err))
+		log.Error("failed to convert to int16", zap.String(field, value), zap.Error(err))
 		os.Exit(1)
 	}
 	return uint16(converted)

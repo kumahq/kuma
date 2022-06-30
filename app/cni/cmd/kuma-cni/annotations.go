@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"go.uber.org/zap"
-	"kuma.io/cni/pkg/logger"
 	"strconv"
 	"strings"
 )
@@ -135,10 +134,9 @@ func mapAnnotation(annotations map[string]string, field *string, fieldName strin
 	isFound, val, valErr := getAnnotationOrDefault(fieldName, annotations)
 	*field = val
 	if valErr != nil {
-		logger.Default.Error("annotation value error",
+		log.Error(valErr, "annotation value error",
 			zap.String("name", fieldName),
-			zap.Bool("found", isFound),
-			zap.Error(valErr))
+			zap.Bool("found", isFound))
 		return valErr
 	}
 	return nil
