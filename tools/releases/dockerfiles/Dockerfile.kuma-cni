@@ -8,6 +8,7 @@ WORKDIR /cni
 
 COPY go.mod ./
 COPY go.sum ./
+COPY vendored ./vendored
 RUN go mod download
 
 COPY app/cni/cmd ./cmd/

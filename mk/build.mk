@@ -84,6 +84,10 @@ build/kuma-dp: ## Dev: Build `kuma-dp` binary
 build/kumactl: ## Dev: Build `kumactl` binary
 	$(Build_Go_Application) ./app/$(notdir $@)
 
+.PHONY: build/cni
+build/cni: ## Dev: Build `kumactl` binary
+	$(Build_Go_Application) -ldflags="-extldflags=-static" ./app/$(notdir $@)
+
 .PHONY: build/coredns
 build/coredns:
 ifeq (,$(wildcard $(BUILD_ARTIFACTS_DIR)/coredns/coredns))
