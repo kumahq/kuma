@@ -103,3 +103,19 @@ make -j k3d/restart
 ```
 
 To stop any existing Kuma K3D cluster, start a new K3D cluster, load images, deploy Kuma and Kuma counter demo. 
+
+### GKE
+
+You can test development versions by first pushing to `gcr.io`:
+
+```bash
+gcloud auth configure-docker
+make images/push DOCKER_REGISTRY=gcr.io/proj-123456
+```
+
+then setting up `kubectl` to connect to your cluster and installing Kuma:
+
+```bash
+gcloud container clusters get-credentials cluster-name
+kumactl install control-plane --registry=gcr.io/proj-123456 | kubectl apply -f -
+```
