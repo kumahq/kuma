@@ -68,7 +68,7 @@ require (
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
 	sigs.k8s.io/controller-runtime v0.12.2
 	sigs.k8s.io/controller-tools v0.9.0
-	sigs.k8s.io/gateway-api v0.0.0-20220419161317-56fe9b6f3d84
+	sigs.k8s.io/gateway-api v0.5.0-rc1
 	sigs.k8s.io/testing_frameworks v0.1.2
 )
 
@@ -173,6 +173,7 @@ require (
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
+	golang.org/x/exp v0.0.0-20220407100705-7b9b53b0aca4 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
@@ -193,6 +194,8 @@ require (
 )
 
 replace github.com/prometheus/prometheus => ./vendored/github.com/prometheus/prometheus
+
+replace sigs.k8s.io/gateway-api => github.com/kumahq/gateway-api v0.0.0-20220629153928-e35eac912468
 
 // The following replacement refers to the kuma-release-1.3 branch.
 //

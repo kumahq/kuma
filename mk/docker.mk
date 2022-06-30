@@ -5,20 +5,19 @@ DOCKER_REGISTRY ?= kumahq
 DOCKER_USERNAME ?=
 DOCKER_API_KEY ?=
 
-KUMA_CP_DOCKER_IMAGE_NAME ?= $(DOCKER_REGISTRY)/kuma-cp
-KUMA_DP_DOCKER_IMAGE_NAME ?= $(DOCKER_REGISTRY)/kuma-dp
-KUMACTL_DOCKER_IMAGE_NAME ?= $(DOCKER_REGISTRY)/kumactl
-KUMA_INIT_DOCKER_IMAGE_NAME ?= $(DOCKER_REGISTRY)/kuma-init
-KUMA_CNI_DOCKER_IMAGE_NAME ?= $(DOCKER_REGISTRY)/kuma-cni
-KUMA_PROMETHEUS_SD_DOCKER_IMAGE_NAME ?= $(DOCKER_REGISTRY)/kuma-prometheus-sd
+# If you want to build docker images with their own tags
+IMAGE_ARCH_TAG_ENABLED ?=
+define build_image
+$(DOCKER_REGISTRY)/$(1):$(BUILD_INFO_VERSION)$(if $(IMAGE_ARCH_TAG_ENABLED),-${GOARCH},)
+endef
 
-export KUMA_CP_DOCKER_IMAGE ?= $(KUMA_CP_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)-${GOARCH}
-export KUMA_DP_DOCKER_IMAGE ?= $(KUMA_DP_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)-${GOARCH}
-export KUMACTL_DOCKER_IMAGE ?= $(KUMACTL_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)-${GOARCH}
-export KUMA_INIT_DOCKER_IMAGE ?= $(KUMA_INIT_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)-${GOARCH}
-export KUMA_CNI_DOCKER_IMAGE ?= $(KUMA_CNI_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)-${GOARCH}
-export KUMA_PROMETHEUS_SD_DOCKER_IMAGE ?= $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)-${GOARCH}
-export KUMA_UNIVERSAL_DOCKER_IMAGE ?= $(DOCKER_REGISTRY)/kuma-universal:$(BUILD_INFO_VERSION)-${GOARCH}
+export KUMA_CP_DOCKER_IMAGE ?= $(call build_image,kuma-cp)
+export KUMA_DP_DOCKER_IMAGE ?= $(call build_image,kuma-dp)
+export KUMACTL_DOCKER_IMAGE ?= $(call build_image,kumactl)
+export KUMA_INIT_DOCKER_IMAGE ?= $(call build_image,kuma-init)
+export KUMA_CNI_DOCKER_IMAGE ?= $(call build_image,kuma-cni)
+export KUMA_PROMETHEUS_SD_DOCKER_IMAGE ?= $(call build_image,kuma-prometheus-sd)
+export KUMA_UNIVERSAL_DOCKER_IMAGE ?= $(call build_image,kuma-universal)
 KUMA_IMAGES ?= $(KUMA_CP_DOCKER_IMAGE) $(KUMA_DP_DOCKER_IMAGE) $(KUMACTL_DOCKER_IMAGE) $(KUMA_INIT_DOCKER_IMAGE) $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE) $(KUMA_UNIVERSAL_DOCKER_IMAGE) $(KUMA_CNI_DOCKER_IMAGE)
 
 IMAGES_TARGETS ?= images/release images/test
@@ -160,27 +159,3 @@ docker/tag/kuma-universal:
 docker/purge: ## Dev: Remove all Docker containers, images, networks and volumes
 	for c in `docker ps -q`; do docker kill $$c; done
 	docker system prune --all --volumes --force
-
-.PHONY: image/kuma-cp/push
-image/kuma-cp/push: image/kuma-cp
-	docker login -u $(DOCKER_USERNAME) -p $(DOCKER_API_KEY) $(DOCKER_REGISTRY)
-	docker tag $(KUMA_CP_DOCKER_IMAGE) $(DOCKER_REGISTRY)/kuma-cp:$(KUMA_VERSION)-${GOARCH}
-	docker push $(DOCKER_REGISTRY)/kuma-cp:$(KUMA_VERSION)-${GOARCH}
-	docker logout $(DOCKER_REGISTRY)
-
-.PHONY: image/kuma-dp/push
-image/kuma-dp/push: image/kuma-dp
-	docker login -u $(DOCKER_USERNAME) -p $(DOCKER_API_KEY) $(DOCKER_REGISTRY)
-	docker tag $(KUMA_DP_DOCKER_IMAGE) $(DOCKER_REGISTRY)/kuma-dp:$(KUMA_VERSION)-${GOARCH}
-	docker push $(DOCKER_REGISTRY)/kuma-dp:$(KUMA_VERSION)-${GOARCH}
-	docker logout $(DOCKER_REGISTRY)
-
-.PHONY: image/kumactl/push
-image/kumactl/push: image/kumactl
-	docker login -u $(DOCKER_USERNAME) -p $(DOCKER_API_KEY) $(DOCKER_REGISTRY)
-	docker tag $(KUMACTL_DOCKER_IMAGE) $(DOCKER_REGISTRY)/kumactl:$(KUMA_VERSION)-${GOARCH}
-	docker push $(DOCKER_REGISTRY)/kumactl:$(KUMA_VERSION)-${GOARCH}
-	docker logout $(DOCKER_REGISTRY)
-
-.PHONY: images/push
-images/push: image/kuma-cp/push image/kuma-dp/push image/kumactl/push
