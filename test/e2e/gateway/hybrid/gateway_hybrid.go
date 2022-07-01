@@ -37,7 +37,7 @@ var _ = E2EBeforeSuite(func() {
 		)).
 		Install(NamespaceWithSidecarInjection(TestNamespace)).
 		Install(testserver.Install(
-			testserver.WithArgs("echo", "--instance", Kuma1),
+			testserver.WithEchoArgs("echo", "--instance", Kuma1),
 		)).
 		Setup(k8sZone)).To(Succeed())
 

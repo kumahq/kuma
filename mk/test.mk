@@ -1,23 +1,37 @@
 UPDATE_GOLDEN_FILES ?=
-GO_TEST := TMPDIR=/tmp UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) go test $(GOFLAGS) $(LD_FLAGS)
-GO_TEST_OPTS ?=
-PKG_LIST ?= ./...
-VENDORED_PKGS = pkg/transparentproxy/istio/tools
-E2E_PKGS = test/e2e
+TEST_PKG_LIST ?= ./...
 
-BUILD_COVERAGE_DIR ?= $(BUILD_DIR)/coverage
-
-COVERAGE_PROFILE := $(BUILD_COVERAGE_DIR)/coverage.out
-COVERAGE_REPORT_HTML := $(BUILD_COVERAGE_DIR)/coverage.html
+REPORTS_DIR ?= ./build/reports
+COVERAGE_PROFILE_FILENAME := coverage.out
+COVERAGE_PROFILE := $(REPORTS_DIR)/$(COVERAGE_PROFILE_FILENAME)
+COVERAGE_REPORT_HTML := $(REPORTS_DIR)/coverage.html
 
 # This environment variable sets where the kubebuilder envtest framework looks
 # for etcd and other tools that is consumes. The `dev/install/kubebuilder` make
 # target guaranteed to link these tools into $CI_TOOLS_DIR.
 export KUBEBUILDER_ASSETS=$(CI_TOOLS_DIR)
 
+GINKGO_TEST_FLAGS += -p --keep-going \
+	--keep-separate-reports \
+	--junit-report results.xml
+
+ifneq ($(REPORTS_DIR), "")
+	GINKGO_TEST_FLAGS += --output-dir $(REPORTS_DIR)
+endif
+
+GINKGO_UNIT_TEST_FLAGS ?= \
+	--skip-package ./test,./pkg/transparentproxy/istio/tools --race \
+	--cover --covermode atomic --coverpkg ./... --coverprofile $(COVERAGE_PROFILE_FILENAME)
+
+GINKGO_TEST:=$(GOPATH_BIN_DIR)/ginkgo $(GOFLAGS) $(LD_FLAGS) $(GINKGO_TEST_FLAGS)
+
 .PHONY: test
-test: ${COVERAGE_PROFILE} ## Dev: Run tests for all modules
-	$(GO_TEST) $(GO_TEST_OPTS) -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" $$(go list $(PKG_LIST) | grep -E -v "$(E2E_PKGS)" | grep -E -v "$(VENDORED_PKGS)")
+test:
+	TMPDIR=/tmp UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) go test $(GOFLAGS) $(LD_FLAGS) -race $$(go list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "pkg/transparentproxy/istio/tools")
+
+.PHONY: test-with-reports
+test-with-reports: ${COVERAGE_PROFILE} ## Dev: Run tests for all modules
+	TMPDIR=/tmp UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) $(GINKGO_TEST) $(GINKGO_UNIT_TEST_FLAGS) $(TEST_PKG_LIST)
 	$(MAKE) coverage
 
 ${COVERAGE_PROFILE}:

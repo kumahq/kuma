@@ -58,7 +58,6 @@ node:
 staticResources:
   clusters:
   - connectTimeout: 1s
-    http2ProtocolOptions: {}
     loadAssignment:
       clusterName: access_log_sink
       endpoints:
@@ -69,13 +68,17 @@ staticResources:
                 path: /tmp/kuma-al-dp-1.default-default.sock
     name: access_log_sink
     type: STATIC
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
     upstreamConnectionOptions:
       tcpKeepalive:
         keepaliveInterval: 10
         keepaliveProbes: 3
         keepaliveTime: 10
   - connectTimeout: 1s
-    http2ProtocolOptions: {}
     loadAssignment:
       clusterName: ads_cluster
       endpoints:
@@ -97,6 +100,11 @@ staticResources:
             name: cp_validation_ctx
         sni: localhost
     type: STRICT_DNS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
     upstreamConnectionOptions:
       tcpKeepalive:
         keepaliveInterval: 10

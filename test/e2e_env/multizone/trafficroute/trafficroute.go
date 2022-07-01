@@ -55,6 +55,9 @@ func TrafficRoute() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// Universal Zone 2
+		E2EDeferCleanup(func() {
+			Expect(env.UniZone2.DeleteMeshApps(meshName)).To(Succeed())
+		})
 		err = NewClusterSetup().
 			Install(TestServerUniversal("dp-echo-2", meshName,
 				WithArgs([]string{"echo", "--instance", "echo-v2"}),

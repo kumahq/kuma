@@ -102,23 +102,37 @@ func generateOverrideValues(args interface{}, helmValuesPrefix string) map[strin
 	t := v.Type()
 	for i := 0; i < t.NumField(); i++ {
 		name := t.Field(i).Name
-		value := v.FieldByName(name).Interface()
+		value := v.FieldByName(name)
 		tag := t.Field(i).Tag.Get("helm")
 
-		splitTag := strings.Split(tag, ".")
-		tagCount := len(splitTag)
+		splitTag := strings.Split(tag, ",")
+		if len(splitTag) == 0 {
+			continue
+		}
+
+		var omitEmpty bool
+		for _, tagSplit := range splitTag[0:] {
+			omitEmpty = omitEmpty || tagSplit == "omitempty"
+		}
+
+		if omitEmpty && value.IsZero() {
+			continue
+		}
+
+		valuePath := strings.Split(splitTag[0], ".")
+		tagCount := len(valuePath)
 
 		root := overrideValues
 
 		for i := 0; i < tagCount-1; i++ {
-			n := splitTag[i]
+			n := valuePath[i]
 
 			if _, ok := root[n]; !ok {
 				root[n] = map[string]interface{}{}
 			}
 			root = root[n].(map[string]interface{})
 		}
-		root[splitTag[tagCount-1]] = adjustType(value)
+		root[valuePath[tagCount-1]] = adjustType(value.Interface())
 	}
 
 	if helmValuesPrefix != "" {

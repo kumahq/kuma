@@ -213,7 +213,7 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 		var unresolvableRefs []string
 		if l.TLS != nil {
 			for _, certRef := range l.TLS.CertificateRefs {
-				policyRef := policy.PolicyReferenceSecret(policy.FromGatewayIn(gateway.Namespace), *certRef)
+				policyRef := policy.PolicyReferenceSecret(policy.FromGatewayIn(gateway.Namespace), certRef)
 
 				permitted, err := policy.IsReferencePermitted(ctx, r.Client, policyRef)
 				if err != nil {

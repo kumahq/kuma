@@ -159,7 +159,7 @@ func addFromMeshGateway(outboundSet *vips.VirtualOutboundMeshView, dnsSuffix, me
 				gateway.Spec.GetTags(),
 				listener.GetTags(),
 				map[string]string{
-					"kuma.io/mesh": mesh,
+					mesh_proto.MeshTag: mesh,
 				},
 				selector.GetMatch(),
 			)

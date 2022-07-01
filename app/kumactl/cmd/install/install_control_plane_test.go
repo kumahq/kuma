@@ -124,6 +124,13 @@ var _ = Describe("kumactl install control-plane", func() {
 			},
 			goldenFile: "install-control-plane.overrides.golden.yaml",
 		}),
+		Entry("should generate Kubernetes resources with --registry", testCase{
+			extraArgs: []string{
+				"--registry", "gcr.io/octo",
+				"--dataplane-registry", "gcr.io/octo-dataplane",
+			},
+			goldenFile: "install-control-plane.registry.golden.yaml",
+		}),
 		Entry("should generate Kubernetes resources with CNI plugin", testCase{
 			extraArgs: []string{
 				"--cni-enabled",

@@ -596,6 +596,7 @@ experimental:
 				"KUMA_DP_SERVER_TLS_CERT_FILE":                                                             "/test/path",
 				"KUMA_DP_SERVER_TLS_KEY_FILE":                                                              "/test/path/key",
 				"KUMA_DP_SERVER_AUTH_TYPE":                                                                 "dpToken",
+				"KUMA_DP_SERVER_AUTH_USE_TOKEN_PATH":                                                       "true",
 				"KUMA_DP_SERVER_PORT":                                                                      "9876",
 				"KUMA_DP_SERVER_HDS_ENABLED":                                                               "false",
 				"KUMA_DP_SERVER_HDS_INTERVAL":                                                              "11s",

@@ -314,9 +314,9 @@ cni:
 
   image:
     # -- CNI image registry
-    registry: "docker.io"
+    registry: "docker.io/kumahq"
     # -- CNI image repository
-    repository: "kumahq/install-cni"
+    repository: "install-cni"
     # -- CNI image tag
     tag: "0.0.10"
 

@@ -58,6 +58,7 @@ Resources:
                 collectorEndpoint: /api/v2/spans
                 collectorEndpointVersion: HTTP_JSON
                 collectorHostname: jaeger-collector.kuma-tracing:9411
+          useRemoteAddress: true
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:

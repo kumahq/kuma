@@ -16,9 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/pkg/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8s_exec "k8s.io/client-go/util/exec"
 
 	"github.com/kumahq/kuma/test/framework"
@@ -180,6 +178,33 @@ func collectCommand(opts CollectResponsesOpts, arg0 string, args ...string) []st
 	return cmd
 }
 
+func CollectTCPResponse(
+	cluster framework.Cluster,
+	container string,
+	destination string,
+	stdin string,
+	fn ...CollectResponsesOptsFn,
+) (string, error) {
+	opts := collectOptions(destination, fn...)
+	cmd := []string{"bash", "-c", fmt.Sprintf("echo '%s' | curl --max-time 3 %s", stdin, opts.ShellEscaped(opts.URL))}
+
+	var appPodName string
+	if opts.namespace != "" && opts.application != "" {
+		var err error
+		appPodName, err = framework.PodNameOfApp(cluster, opts.application, opts.namespace)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	stdout, _, err := cluster.ExecWithRetries(opts.namespace, appPodName, container, cmd...)
+	if err != nil {
+		return "", err
+	}
+
+	return stdout, nil
+}
+
 func CollectResponse(
 	cluster framework.Cluster,
 	container string,
@@ -193,23 +218,16 @@ func CollectResponse(
 		opts.ShellEscaped(opts.URL),
 	)
 
-	var pod string
+	var appPodName string
 	if opts.namespace != "" && opts.application != "" {
-		pods, err := k8s.ListPodsE(
-			cluster.GetTesting(),
-			cluster.GetKubectlOptions(opts.namespace),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", opts.application),
-			},
-		)
+		var err error
+		appPodName, err = framework.PodNameOfApp(cluster, opts.application, opts.namespace)
 		if err != nil {
-			return types.EchoResponse{}, errors.Wrap(err, "failed to list pods")
+			return types.EchoResponse{}, err
 		}
-
-		pod = pods[0].Name
 	}
 
-	stdout, _, err := cluster.ExecWithRetries(opts.namespace, pod, container, cmd...)
+	stdout, _, err := cluster.ExecWithRetries(opts.namespace, appPodName, container, cmd...)
 	if err != nil {
 		return types.EchoResponse{}, err
 	}
@@ -314,23 +332,16 @@ func CollectFailure(cluster framework.Cluster, container, destination string, fn
 		opts.ShellEscaped(opts.URL),
 	)
 
-	var pod string
+	var appPodName string
 	if opts.namespace != "" && opts.application != "" {
-		pods, err := k8s.ListPodsE(
-			cluster.GetTesting(),
-			cluster.GetKubectlOptions(opts.namespace),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", opts.application),
-			},
-		)
+		var err error
+		appPodName, err = framework.PodNameOfApp(cluster, opts.application, opts.namespace)
 		if err != nil {
-			return FailureResponse{}, errors.Wrap(err, "failed to list pods")
+			return FailureResponse{}, err
 		}
-
-		pod = pods[0].Name
 	}
 
-	stdout, _, err := cluster.Exec(opts.namespace, pod, container, cmd...)
+	stdout, _, err := cluster.Exec(opts.namespace, appPodName, container, cmd...)
 
 	// 1. If we fail to decode the JSON status, return the JSON error,
 	// but prefer the original error if we have it.

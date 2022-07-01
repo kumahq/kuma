@@ -3,6 +3,7 @@ package cmd
 import (
 	"crypto/tls"
 	"net/http"
+	"runtime"
 	"time"
 
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
@@ -28,7 +29,7 @@ func DefaultRootContext() *RootContext {
 		BootstrapGenerator: envoy.NewRemoteBootstrapGenerator(&http.Client{
 			Timeout:   10 * time.Second,
 			Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
-		}),
+		}, runtime.GOOS),
 		Config:                   &config,
 		BootstrapDynamicMetadata: map[string]string{},
 	}

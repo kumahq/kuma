@@ -6,64 +6,33 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	config "github.com/kumahq/kuma/pkg/config/api-server"
-	"github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	api_server "github.com/kumahq/kuma/pkg/api-server"
 )
 
 var _ = Describe("GUI Server", func() {
 
-	var stop chan struct{}
 	var baseUrl string
 
-	setupServer := func(enabelGUI bool) {
-		// given
-		cfg := config.DefaultApiServerConfig()
-
-		// setup
-		resourceStore := memory.NewStore()
-		metrics, err := metrics.NewMetrics("Standalone")
-		Expect(err).ToNot(HaveOccurred())
-		apiServer := createTestApiServer(resourceStore, cfg, enabelGUI, metrics)
-
-		stop = make(chan struct{})
-		go func() {
-			defer GinkgoRecover()
-			err := apiServer.Start(stop)
-			Expect(err).ToNot(HaveOccurred())
-		}()
-		port := strings.Split(apiServer.Address(), ":")[1]
-
-		// wait for the server
-		Eventually(func() error {
-			_, err := http.Get(fmt.Sprintf("http://localhost:%s/config", port))
-			return err
-		}, "3s").ShouldNot(HaveOccurred())
-
-		baseUrl = "http://localhost:" + port
-	}
-
 	Describe("enabled", func() {
-
-		BeforeEach(func() { setupServer(true) })
-
-		AfterEach(func() {
-			close(stop)
-		})
 
 		type testCase struct {
 			urlPath      string
 			expectedFile string
 		}
 		DescribeTable("should expose file", func(given testCase) {
+			// given
+			var apiServer *api_server.ApiServer
+			var stop func()
+			apiServer, stop = StartApiServer(NewTestApiServerConfigurer().WithGui())
+			baseUrl = "http://" + apiServer.Address()
+			defer stop()
+
 			// when
 			resp, err := http.Get(fmt.Sprintf("%s%s", baseUrl, given.urlPath))
-
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -94,17 +63,18 @@ var _ = Describe("GUI Server", func() {
 
 	Describe("disabled",
 		func() {
-			BeforeEach(func() { setupServer(false) })
-
-			AfterEach(func() {
-				close(stop)
-			})
-
 			type testCase struct {
 				urlPath  string
 				expected string
 			}
 			DescribeTable("should not expose file", func(given testCase) {
+				// given
+				var apiServer *api_server.ApiServer
+				var stop func()
+				apiServer, stop = StartApiServer(NewTestApiServerConfigurer())
+				baseUrl = "http://" + apiServer.Address()
+				defer stop()
+
 				// when
 				resp, err := http.Get(fmt.Sprintf("%s%s", baseUrl, given.urlPath))
 
