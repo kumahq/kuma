@@ -94,7 +94,7 @@ func cleanup(mountedCniNetDir, cniConfName, kubeconfigName string, chainedCniPlu
 
 func revertConfig(mountedCniNetDir, cniConfName, kubeconfigName string, chainedCniPlugin bool) {
 	configPath := mountedCniNetDir + "/" + cniConfName
-	//kubeconfigPath := mountedCniNetDir + "/" + kubeconfigName
+	// kubeconfigPath := mountedCniNetDir + "/" + kubeconfigName
 
 	if fileExists(configPath) {
 		if chainedCniPlugin {
@@ -133,7 +133,7 @@ func revertConfig(mountedCniNetDir, cniConfName, kubeconfigName string, chainedC
 			}
 		}
 	}
-	//if fileExists(kubeconfigPath) {
+	// if fileExists(kubeconfigPath) {
 	//	err := os.Remove(kubeconfigPath)
 	//	if err != nil {
 	//		log.V(1).Error(err, "couldn't remove cni conf file")
