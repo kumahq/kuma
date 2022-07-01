@@ -6,6 +6,6 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 )
 
-func TestAllowedRoutes(t *testing.T) {
-	test.RunSpecs(t, "Gateway API AllowedRoutes support")
+func TestRouteAttachment(t *testing.T) {
+	test.RunSpecs(t, "Gateway API route attachment support")
 }
