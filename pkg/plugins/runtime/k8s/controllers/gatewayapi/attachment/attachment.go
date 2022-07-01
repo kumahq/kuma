@@ -2,6 +2,7 @@ package attachment
 
 import (
 	"context"
+	"strings"
 
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
@@ -144,11 +145,35 @@ func getParentRefGateway(
 	return gateway, nil
 }
 
+func hostnamesIntersect(routeHostnames []gatewayapi.Hostname, listenerHostnames []gatewayapi.Hostname) bool {
+	if len(routeHostnames) == 0 {
+		return true
+	}
+
+	for _, routeHostname := range routeHostnames {
+		for _, listenerHostname := range listenerHostnames {
+			if listenerHostname == "" {
+				return true
+			}
+			if routeHostname == listenerHostname {
+				return true
+			}
+			// If the gateway hostname is a wildcard and the route hostname
+			// matches the wildcard
+			if suffix := strings.TrimPrefix(string(listenerHostname), "*."); len(suffix) != len(listenerHostname) {
+				return strings.HasSuffix(string(routeHostname), suffix)
+			}
+		}
+	}
+	return false
+}
+
 // EvaluateParentRefAttachment reports whether a route in the given namespace can attach
 // via the given ParentRef.
 func EvaluateParentRefAttachment(
 	ctx context.Context,
 	client kube_client.Client,
+	routeHostnames []gatewayapi.Hostname,
 	routeNs *kube_core.Namespace,
 	ref gatewayapi.ParentReference,
 ) (Attachment, error) {
@@ -158,6 +183,22 @@ func EvaluateParentRefAttachment(
 	}
 	if gateway == nil {
 		return Unknown, nil
+	}
+
+	var listenerHostnames []gatewayapi.Hostname
+	for _, listener := range gateway.Spec.Listeners {
+		if ref.SectionName != nil && *ref.SectionName != listener.Name {
+			continue
+		}
+		listenerHostname := gatewayapi.Hostname("")
+		if listener.Hostname != nil {
+			listenerHostname = *listener.Hostname
+		}
+		listenerHostnames = append(listenerHostnames, listenerHostname)
+	}
+
+	if !hostnamesIntersect(routeHostnames, listenerHostnames) {
+		return Invalid, nil
 	}
 
 	return findRouteListenerAttachment(gateway, routeNs, ref.SectionName)

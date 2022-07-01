@@ -65,6 +65,9 @@ images/release: image/kuma-cp image/kuma-dp image/kumactl image/kuma-init image/
 .PHONY: images/test
 images/test: image/kuma-universal ## Dev: Rebuild test Docker images
 
+.PHONY: images/push
+images/push: image/push/kuma-cp image/push/kuma-dp image/push/kumactl image/push/kuma-init image/push/kuma-prometheus-sd
+
 ${BUILD_DOCKER_IMAGES_DIR}:
 	mkdir -p ${BUILD_DOCKER_IMAGES_DIR}
 
@@ -158,3 +161,23 @@ docker/tag/kuma-universal:
 docker/purge: ## Dev: Remove all Docker containers, images, networks and volumes
 	for c in `docker ps -q`; do docker kill $$c; done
 	docker system prune --all --volumes --force
+
+.PHONY: image/push/kuma-cp
+image/push/kuma-cp: image/kuma-cp
+	docker push $(KUMA_CP_DOCKER_IMAGE)
+
+.PHONY: image/push/kuma-dp
+image/push/kuma-dp: image/kuma-dp
+	docker push $(KUMA_DP_DOCKER_IMAGE)
+
+.PHONY: image/push/kumactl
+image/push/kumactl: image/kumactl
+	docker push $(KUMACTL_DOCKER_IMAGE)
+
+.PHONY: image/push/kuma-init
+image/push/kuma-init: image/kuma-init
+	docker push $(KUMA_INIT_DOCKER_IMAGE)
+
+.PHONY: image/push/kuma-prometheus-sd
+image/push/kuma-prometheus-sd: image/kuma-prometheus-sd
+	docker push $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE)

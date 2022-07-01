@@ -25,6 +25,94 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 })
 
+var _ = Describe("Hostname intersection support", func() {
+	var kubeClient kube_client.Client
+	var simpleRef gatewayapi.ParentReference
+	BeforeEach(func() {
+		kubeClient = kube_client_fake.NewClientBuilder().WithScheme(k8sScheme).WithObjects(
+			gatewayClass,
+			gateway,
+			gatewayMultipleListeners,
+			defaultRouteNs,
+			otherRouteNs,
+		).Build()
+	})
+
+	checkAttachment := func(expected attachment.Attachment) func([]gatewayapi.Hostname) {
+		return func(routeHostnames []gatewayapi.Hostname) {
+			res, err := attachment.EvaluateParentRefAttachment(
+				context.Background(),
+				kubeClient,
+				routeHostnames,
+				defaultRouteNs,
+				simpleRef,
+			)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res).To(Equal(expected))
+		}
+	}
+
+	Context("all listeners", func() {
+		BeforeEach(func() {
+			simpleRef = *gatewayRef.DeepCopy()
+			simpleRef.Name = gatewayapi.ObjectName(gatewayMultipleListeners.Name)
+		})
+
+		It("matches with all listeners", func() {
+			checkAttachment(attachment.Allowed)([]gatewayapi.Hostname{"other.local"})
+		})
+	})
+
+	Context("listener without hostname", func() {
+		BeforeEach(func() {
+			simpleRef = *gatewayRef.DeepCopy()
+			simpleRef.Name = gatewayapi.ObjectName(gatewayMultipleListeners.Name)
+			simpleRef.SectionName = &anyHostnameListenerName
+		})
+
+		DescribeTable("matches", checkAttachment(attachment.Allowed),
+			Entry("without route hostname", nil),
+			Entry("with some hostname", []gatewayapi.Hostname{"other.local"}),
+		)
+	})
+
+	Context("listener with simple hostname", func() {
+		BeforeEach(func() {
+			simpleRef = *gatewayRef.DeepCopy()
+			simpleRef.Name = gatewayapi.ObjectName(gatewayMultipleListeners.Name)
+			simpleRef.SectionName = &simpleHostnameListenerName
+		})
+
+		DescribeTable("matches", checkAttachment(attachment.Allowed),
+			Entry("on exact match", []gatewayapi.Hostname{"simple.local"}),
+			Entry("if one matches", []gatewayapi.Hostname{"other.local", "simple.local"}),
+		)
+
+		DescribeTable("doesn't match", checkAttachment(attachment.Invalid),
+			Entry("without intersection", []gatewayapi.Hostname{"other.local"}),
+		)
+	})
+
+	Context("listener with wildcard hostname", func() {
+		BeforeEach(func() {
+			simpleRef = *gatewayRef.DeepCopy()
+			simpleRef.Name = gatewayapi.ObjectName(gatewayMultipleListeners.Name)
+			simpleRef.SectionName = &wildcardListenerName
+		})
+
+		DescribeTable("matches", checkAttachment(attachment.Allowed),
+			Entry("with a complete hostname", []gatewayapi.Hostname{"something.wildcard.local"}),
+			Entry("with a complete hostname with extra subdomains", []gatewayapi.Hostname{"something.else.wildcard.local"}),
+			Entry("with a complete hostname with extra subdomain and wildcard", []gatewayapi.Hostname{"*.else.wildcard.local"}),
+			Entry("with a wildcard hostname", []gatewayapi.Hostname{"*.wildcard.local"}),
+		)
+
+		DescribeTable("doesn't match", checkAttachment(attachment.Invalid),
+			Entry("without intersection", []gatewayapi.Hostname{"other.local"}),
+		)
+	})
+})
+
 var _ = Describe("AllowedRoutes support", func() {
 	var kubeClient kube_client.Client
 	BeforeEach(func() {
@@ -49,6 +137,7 @@ var _ = Describe("AllowedRoutes support", func() {
 			res, err := attachment.EvaluateParentRefAttachment(
 				context.Background(),
 				kubeClient,
+				nil,
 				defaultRouteNs,
 				simpleRef,
 			)
@@ -60,6 +149,7 @@ var _ = Describe("AllowedRoutes support", func() {
 			res, err := attachment.EvaluateParentRefAttachment(
 				context.Background(),
 				kubeClient,
+				nil,
 				defaultRouteNs,
 				simpleRef,
 			)
@@ -74,6 +164,7 @@ var _ = Describe("AllowedRoutes support", func() {
 			res, err := attachment.EvaluateParentRefAttachment(
 				context.Background(),
 				kubeClient,
+				nil,
 				otherRouteNs,
 				simpleRef,
 			)
@@ -88,6 +179,7 @@ var _ = Describe("AllowedRoutes support", func() {
 			res, err := attachment.EvaluateParentRefAttachment(
 				context.Background(),
 				kubeClient,
+				nil,
 				otherRouteNs,
 				simpleRef,
 			)
@@ -108,6 +200,7 @@ var _ = Describe("AllowedRoutes support", func() {
 			res, err := attachment.EvaluateParentRefAttachment(
 				context.Background(),
 				kubeClient,
+				nil,
 				defaultRouteNs,
 				parentRef,
 			)
@@ -122,6 +215,7 @@ var _ = Describe("AllowedRoutes support", func() {
 			res, err := attachment.EvaluateParentRefAttachment(
 				context.Background(),
 				kubeClient,
+				nil,
 				otherRouteNs,
 				parentRef,
 			)
@@ -135,6 +229,7 @@ var _ = Describe("AllowedRoutes support", func() {
 			res, err := attachment.EvaluateParentRefAttachment(
 				context.Background(),
 				kubeClient,
+				nil,
 				otherRouteNs,
 				parentRef,
 			)
@@ -145,12 +240,14 @@ var _ = Describe("AllowedRoutes support", func() {
 })
 
 var (
-	defaultNs    = "default"
-	otherNs      = "other"
-	fromAll      = gatewayapi.NamespacesFromAll
-	fromSame     = gatewayapi.NamespacesFromSame
-	gatewayGroup = gatewayapi.Group(gatewayapi.GroupName)
-	gatewayKind  = gatewayapi.Kind("Gateway")
+	defaultNs       = "default"
+	otherNs         = "other"
+	fromAll         = gatewayapi.NamespacesFromAll
+	fromSame        = gatewayapi.NamespacesFromSame
+	gatewayGroup    = gatewayapi.Group(gatewayapi.GroupName)
+	gatewayKind     = gatewayapi.Kind("Gateway")
+	simpleHostname  = gatewayapi.Hostname("simple.local")
+	anyTestHostname = gatewayapi.Hostname("*.wildcard.local")
 
 	listenerReady = []kube_meta.Condition{
 		{
@@ -159,8 +256,9 @@ var (
 		},
 	}
 
-	simpleListenerName = gatewayapi.SectionName("simple")
-	simpleListener     = gatewayapi.Listener{
+	simpleListenerName      = gatewayapi.SectionName("simple")
+	anyHostnameListenerName = simpleListenerName
+	simpleListener          = gatewayapi.Listener{
 		Name:     simpleListenerName,
 		Port:     gatewayapi.PortNumber(80),
 		Protocol: gatewayapi.HTTPProtocolType,
@@ -170,11 +268,25 @@ var (
 			},
 		},
 	}
-	allNsListenerName = gatewayapi.SectionName("allNS")
-	allNsListener     = gatewayapi.Listener{
+	wildcardListenerName = gatewayapi.SectionName("wildcard")
+	wildcardListener     = gatewayapi.Listener{
+		Name:     wildcardListenerName,
+		Port:     gatewayapi.PortNumber(80),
+		Protocol: gatewayapi.HTTPProtocolType,
+		Hostname: &anyTestHostname,
+		AllowedRoutes: &gatewayapi.AllowedRoutes{
+			Namespaces: &gatewayapi.RouteNamespaces{
+				From: &fromSame,
+			},
+		},
+	}
+	allNsListenerName          = gatewayapi.SectionName("allNS")
+	simpleHostnameListenerName = allNsListenerName
+	allNsListener              = gatewayapi.Listener{
 		Name:     allNsListenerName,
 		Port:     gatewayapi.PortNumber(80),
 		Protocol: gatewayapi.HTTPProtocolType,
+		Hostname: &simpleHostname,
 		AllowedRoutes: &gatewayapi.AllowedRoutes{
 			Namespaces: &gatewayapi.RouteNamespaces{
 				From: &fromAll,
@@ -223,6 +335,7 @@ var (
 			GatewayClassName: "kuma",
 			Listeners: []gatewayapi.Listener{
 				simpleListener,
+				wildcardListener,
 				allNsListener,
 			},
 		},
@@ -230,6 +343,10 @@ var (
 			Listeners: []gatewayapi.ListenerStatus{
 				{
 					Name:       simpleListenerName,
+					Conditions: listenerReady,
+				},
+				{
+					Name:       wildcardListenerName,
 					Conditions: listenerReady,
 				},
 				{

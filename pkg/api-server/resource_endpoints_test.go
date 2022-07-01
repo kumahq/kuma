@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
-	config "github.com/kumahq/kuma/pkg/config/api-server"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
@@ -27,33 +26,25 @@ var _ = Describe("Resource Endpoints", func() {
 	var apiServer *api_server.ApiServer
 	var resourceStore store.ResourceStore
 	var client resourceApiClient
-	var stop chan struct{}
+	var stop = func() {}
 	var metrics core_metrics.Metrics
 
 	const mesh = "default"
 
 	BeforeEach(func() {
 		resourceStore = store.NewPaginationStore(memory.NewStore())
-		serverConfig := config.DefaultApiServerConfig()
 		m, err := core_metrics.NewMetrics("Standalone")
-		metrics = m
 		Expect(err).ToNot(HaveOccurred())
-		apiServer = createTestApiServer(resourceStore, serverConfig, true, metrics)
+		metrics = m
+		apiServer, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore).WithMetrics(m))
 		client = resourceApiClient{
 			address: apiServer.Address(),
 			path:    "/meshes/" + mesh + "/sample-traffic-routes",
 		}
-		stop = make(chan struct{})
-		go func() {
-			defer GinkgoRecover()
-			err := apiServer.Start(stop)
-			Expect(err).ToNot(HaveOccurred())
-		}()
-		waitForServer(&client)
 	})
 
 	AfterEach(func() {
-		close(stop)
+		stop()
 	})
 
 	BeforeEach(func() {

@@ -384,4 +384,4 @@ var _ = Describe("run", func() {
 		Expect(err.Error()).To(ContainSubstring("invalid proxy type"))
 	})
 
-})
+}, Ordered)

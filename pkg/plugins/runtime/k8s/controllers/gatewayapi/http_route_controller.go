@@ -120,7 +120,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 
 	// Convert GAPI parent refs into selectors
 	for i, ref := range route.Spec.ParentRefs {
-		refAttachment, err := attachment.EvaluateParentRefAttachment(ctx, r.Client, &routeNs, ref)
+		refAttachment, err := attachment.EvaluateParentRefAttachment(ctx, r.Client, route.Spec.Hostnames, &routeNs, ref)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "unable to check parent ref %d", i)
 		}

@@ -160,6 +160,7 @@ This command requires that the KUBECONFIG environment is set`,
 
 	cmd.Flags().Var(&componentVersion, "version", "version of Kuma Control Plane components")
 
+	cmd.Flags().StringVar(&args.Image_registry, "registry", args.Image_registry, "registry for all images")
 	cmd.Flags().StringVar(&args.ControlPlane_image_pullPolicy, "image-pull-policy", args.ControlPlane_image_pullPolicy, "image pull policy that applies to all components of the Kuma Control Plane")
 	cmd.Flags().StringVar(&args.ControlPlane_image_registry, "control-plane-registry", args.ControlPlane_image_registry, "registry for the image of the Kuma Control Plane component")
 	cmd.Flags().StringVar(&args.ControlPlane_image_repository, "control-plane-repository", args.ControlPlane_image_repository, "repository for the image of the Kuma Control Plane component")

@@ -191,4 +191,4 @@ var _ = Describe("PickTCPPort()", func() {
 		// and
 		Expect(actualPort).ToNot(Equal(uint32(0)))
 	})
-})
+}, Ordered)

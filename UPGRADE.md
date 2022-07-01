@@ -8,6 +8,13 @@ does not have any particular instructions.
 
 ## Upcoming release
 
+### Helm
+
+Under `cni.image`, the default values for `repository` and `registry` have been
+changed to agree with the other `image` values.
+
+## Upgrade to `1.7.x`
+
 ### CP
 
 * The `/versions` endpoint was removed. This is not something that was reliable enough and version compatibility
