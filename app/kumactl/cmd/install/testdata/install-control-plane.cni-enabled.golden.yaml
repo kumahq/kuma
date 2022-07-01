@@ -1999,7 +1999,7 @@ spec:
         # priority scheduling and that its resources are reserved
         # if it ever gets evicted.
         scheduler.alpha.kubernetes.io/critical-pod: ''
-        checksum/config: 33a6835c3050e759d879df0ef8a4c4ef8e9bc332bffec690b94a07e0789a25fd
+        checksum/config: 58a987b71c02c72aa261be5074aca3e9361a0f8b9e9f8b2bc504a815484f1057
     spec:
       nodeSelector:
       
