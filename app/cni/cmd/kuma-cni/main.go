@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	log = core.Log.WithName("cni")
+	log = core.NewLoggerWithRotation(2, "/tmp/kuma-cni.log", 100, 0, 0).WithName("kuma-cni")
 )
 
 // Kubernetes a K8s specific struct to hold config

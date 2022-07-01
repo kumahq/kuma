@@ -47,7 +47,7 @@ data:
       "kubernetes": {
           "kubeconfig": "__KUBECONFIG_FILEPATH__",
           "cni_bin_dir": "/var/lib/cni/bin",
-          "exclude_namespaces": [ "kube-system", "kuma-system" ]
+          "exclude_namespaces": [ "kube-system" ]
       }
     }
 ---

@@ -7,10 +7,13 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
+	"github.com/containernetworking/cni/libcni"
 	"github.com/itchyny/gojq"
 	"github.com/natefinch/atomic"
 	"go.uber.org/zap"
@@ -20,13 +23,15 @@ import (
 )
 
 var (
-	log = core.Log.WithName("cni-install")
+	log = core.NewLoggerWithRotation(2, "/tmp/install-cni.log", 100, 0, 0).WithName("install-cni")
 )
 
 func removeBinFiles() {
-	// todo hook this up to cleanup
 	log.V(1).Info("removing existing binaries")
-	_ = os.Remove("/host/opt/cni/bin/kuma-cni")
+	err := os.Remove("/host/opt/cni/bin/kuma-cni")
+	if err != nil {
+		log.V(1).Error(err, "couldn't remove cni bin file")
+	}
 }
 
 func findCniConfFile(mountedCNINetDir string) string {
@@ -82,9 +87,62 @@ func check_install(mountedCNINetDir string) {
 	// todo: implement
 }
 
-func cleanup() {
+func cleanup(mountedCniNetDir, cniConfName, kubeconfigName string, chainedCniPlugin bool) {
 	removeBinFiles()
-	// todo: implement reverting config
+	revertConfig(mountedCniNetDir, cniConfName, kubeconfigName, chainedCniPlugin)
+}
+
+func revertConfig(mountedCniNetDir, cniConfName, kubeconfigName string, chainedCniPlugin bool) {
+	configPath := mountedCniNetDir + "/" + cniConfName
+	kubeconfigPath := mountedCniNetDir + "/" + kubeconfigName
+
+	if fileExists(configPath) {
+		if chainedCniPlugin {
+			confList, err := libcni.LoadConfList(mountedCniNetDir, cniConfName)
+			if err != nil {
+				log.Error(err, "could not load conf")
+			}
+
+			found := -1
+			var newPlugins []*libcni.NetworkConfig
+			for i, plugin := range confList.Plugins {
+				if plugin.Network.Type == "kuma-cni" {
+					found = i
+				}
+			}
+
+			if found != -1 {
+				newPlugins = removeElementByIndex(confList.Plugins, found)
+			}
+
+			confList.Plugins = newPlugins
+
+			marshaled, err := json.MarshalIndent(confList, "", "  ")
+			if err != nil {
+				log.Error(err, "could not marshal new conf")
+			}
+
+			err = atomic.WriteFile(configPath, bytes.NewReader(marshaled))
+			if err != nil {
+				log.Error(err, "could not write new conf")
+			}
+		} else {
+			err := os.Remove(configPath)
+			if err != nil {
+				log.V(1).Error(err, "couldn't remove cni conf file")
+			}
+		}
+	}
+	if fileExists(kubeconfigPath) {
+		err := os.Remove(kubeconfigPath)
+		if err != nil {
+			log.V(1).Error(err, "couldn't remove cni conf file")
+		}
+	}
+}
+
+func removeElementByIndex[T any](slice []T, index int) []T {
+	return append(slice[:index], slice[index+1:]...)
 }
 
 func install() error {
@@ -98,6 +156,9 @@ func install() error {
 	if cniConfName == "" {
 		cniConfName = "YYY-kuma-cni.conflist"
 	}
+
+	defer cleanup(mountedCniNetDir, cniConfName, kubecfgName, chainedCniPlugin)
+	setupSignalCleanup(mountedCniNetDir, cniConfName, kubecfgName, chainedCniPlugin)
 
 	copyBinaries()
 	err := prepareKubeconfig(mountedCniNetDir, kubecfgName, serviceAccountPath)
@@ -324,11 +385,23 @@ func isDirWriteable(dir string) bool {
 	return os.Remove(f) == nil
 }
 
+func setupSignalCleanup(mountedCniNetDir, cniConfName, kubeconfigName string, chainedCniPlugin bool) {
+	sigc := make(chan os.Signal, 1)
+	signal.Notify(sigc,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
+	go func() {
+		_ = <-sigc
+		cleanup(mountedCniNetDir, cniConfName, kubeconfigName, chainedCniPlugin)
+	}()
+}
+
 func main() {
 	err := install()
 	if err != nil {
 		log.Error(err, "error occurred")
 		return
 	}
-	cleanup()
 }
