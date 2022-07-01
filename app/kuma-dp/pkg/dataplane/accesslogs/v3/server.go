@@ -14,16 +14,12 @@ import (
 var logger = core.Log.WithName("accesslogs-server")
 
 type accessLogStreamer struct {
-	newHandler logHandlerFactoryFunc
-
 	// streamCount for counting streams
 	streamCount int64
 }
 
 func NewAccessLogStreamer() *accessLogStreamer {
-	srv := &accessLogStreamer{
-		newHandler: defaultHandler,
-	}
+	srv := &accessLogStreamer{}
 	return srv
 }
 
@@ -42,8 +38,7 @@ func (s *accessLogStreamer) StreamAccessLogs(reader *bufio.Reader) (err error) {
 		}
 	}()
 
-	initialized := false
-	var handler logHandler
+	senders := map[string]logSender{}
 	for {
 		msg, err := reader.ReadBytes('\n')
 		if err != nil {
@@ -61,18 +56,19 @@ func (s *accessLogStreamer) StreamAccessLogs(reader *bufio.Reader) (err error) {
 			continue
 		}
 		address, accessLogMsg := string(parts[0]), parts[1]
+		sender, initialized := senders[address]
 
 		if !initialized {
-			initialized = true
-
-			handler, err = s.newHandler(log, address)
+			sender = defaultSender(log, address)
+			senders[address] = sender
+			err := sender.Connect()
 			if err != nil {
 				return errors.Wrap(err, "failed to initialize Access Logs stream")
 			}
-			defer handler.Close()
+			defer sender.Close()
 		}
 
-		if err := handler.Handle(accessLogMsg); err != nil {
+		if err := sender.Send(accessLogMsg); err != nil {
 			return err
 		}
 	}
