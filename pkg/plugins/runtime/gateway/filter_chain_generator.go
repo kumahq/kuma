@@ -271,6 +271,8 @@ func newFilterChain(ctx xds_context.MeshContext, info GatewayListenerInfo) *envo
 		envoy_listeners.StripHostPort(),
 		envoy_listeners.AddFilterChainConfigurer(
 			envoy_listeners_v3.HttpConnectionManagerMustConfigureFunc(func(hcm *envoy_hcm.HttpConnectionManager) {
+				hcm.UseRemoteAddress = util_proto.Bool(true)
+
 				hcm.RequestHeadersTimeout = util_proto.Duration(DefaultRequestHeadersTimeout)
 				hcm.StreamIdleTimeout = util_proto.Duration(DefaultStreamIdleTimeout)
 
