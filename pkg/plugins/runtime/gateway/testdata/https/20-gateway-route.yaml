@@ -185,6 +185,7 @@ Listeners:
             statPrefix: gateway-multihost
             streamIdleTimeout: 5s
             stripAnyHostPort: true
+            useRemoteAddress: true
         transportSocket:
           name: envoy.transport_sockets.tls
           typedConfig:
@@ -246,6 +247,7 @@ Listeners:
             statPrefix: gateway-multihost
             streamIdleTimeout: 5s
             stripAnyHostPort: true
+            useRemoteAddress: true
         transportSocket:
           name: envoy.transport_sockets.tls
           typedConfig:
@@ -307,6 +309,7 @@ Listeners:
             statPrefix: gateway-multihost
             streamIdleTimeout: 5s
             stripAnyHostPort: true
+            useRemoteAddress: true
         transportSocket:
           name: envoy.transport_sockets.tls
           typedConfig:
