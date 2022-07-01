@@ -242,14 +242,13 @@ from:
     conf: ...
 ```
 
-Policy can select traffic from "backend" service:
+Policy can select traffic from all sources:
 
 ```yaml
 from:
   - targetRef:
-      kind: MeshService
-      name: backend
-    conf: ... # conf for traffic coming from "backend" service
+      kind: Mesh
+    conf: ... # conf for all incoming traffic
 ```
 
 Policy can select traffic from proxies with "kuma.io/zone: us-east" tag:
@@ -263,17 +262,31 @@ from:
     conf: ... # conf for traffic coming from "us-east" zone
 ```
 
-Policy can select traffic from all sources:
+Policy can select traffic from "backend" service:
 
 ```yaml
 from:
   - targetRef:
-      kind: Mesh
-    conf: ... # conf for all incoming traffic
+      kind: MeshService
+      name: backend
+    conf: ... # conf for traffic coming from "backend" service
+```
+
+Policy can select traffic from instances of "backend" service that have version=v2:
+
+```yaml
+from:
+  - targetRef:
+      kind: MeshServiceSubset
+      name: backend
+      tags:
+        version: v2
+    conf: ... # conf for traffic coming from "backend" v2 service
 ```
 
 When several targetRefs select the same source,
-corresponding confs are merged in the order they're presented in the "from" array:
+corresponding confs are merged in the order they're presented in the "from" array
+(bottom ones have more priority over the top ones):
 
 Traffic from "backend" of v2 is selected by 3 targetRefs
 
@@ -335,6 +348,136 @@ For overlapping policies these arrays are concatenated according to sorting orde
 <img src="assets/matching_merging.png" width="800px" alt="TargetRefs overrides"/>
 
 After being merged resulting policy is applied according to rules defined in the [applying](#applying).
+
+### Rule-based view 
+
+Policies with "to" and "from" arrays work similar from the user's perspective:
+
+* Client sends a request, this request hits some "to"-items, 
+  Envoy executes a combined configuration from these matched "to"-items.
+* Server receives a request, this request hits some "from"-items, 
+  Envoy executes a combined configuration from these matched "from"-items.
+
+But in particular cases it is beneficial to use rule-based view of "to/from" arrays.
+Rule-based view implies that a request hits exactly one "to/from"-item (first matched) 
+and gets a sufficient configuration for Envoy. 
+
+Compare:
+
+raw list of rules:
+```yaml
+from:
+  - targetRef:
+      kind: MeshSubset
+      tags:
+        kuma.io/zone: us-east
+      conf:
+        param1: value1
+        param2: value2
+  - targetRef:
+      kind: MeshSubset
+      tags:
+        team: dev
+      conf:
+        param2: value3
+        param3: value4
+```
+
+rule-based view:
+```yaml
+rules:
+  - targetRef:
+      kind: MeshSubset
+      tags:
+        kuma.io/zone: us-east
+        team: dev
+      conf:
+        param1: value1
+        param2: value3
+        param3: value4
+  - targetRef:
+      kind: MeshSubset
+      tags:
+        kuma.io/zone: us-east
+      conf:
+        param1: value1
+        param2: value2
+  - targetRef:
+      kind: MeshSubset
+      tags:
+        team: dev
+      conf:
+        param2: value3
+        param3: value4
+```
+
+Rule-based view is useful:
+* when Kuma CP builds an Envoy configuration
+* when displaying info in GUI (or Inspect API), to show what config is used for the group of requests
+
+#### How to build rule-based view
+
+We can build rule-based view both for inbound and outbound policies. 
+The following algorithm uses inbound policy for explanation.
+
+##### Step 1
+
+Concatenate “from” arrays from Mesh, MeshSubset, MeshService, MeshServiceSubset, etc.  
+with respect to the specificity of these levels.
+
+##### Step 2
+
+Each “from”-item identifies a set of clients. These sets intersect. 
+We want to find a partition of the all-client set with the following conditions:
+   1. clients in each subset are identified by the same “from”-items
+   2. the number of subsets in partition should be minimal 
+   (without this condition, we could split the all-client set into single-element subsets, 
+   but that’s a huge overhead)
+
+In order to find such partition, we can find a pairwise intersection between sets identified by “from”-items.
+
+* `∩` – intersect
+* `+` – merge maps
+
+Intersection rules:
+
+1. `X ∩ X = X`
+2. `Mesh ∩ X = X`
+3. `MeshSubset(tags1) ∩ MeshSubset(tags2) = MeshSubset(tags1 + tags2)`
+4. `MeshSubset(tags1) ∩ MeshService(svc1) = MeshServiceSubset(svc1, tags1)`
+5. `MeshSubset(tags1) ∩ MeshServiceSubset(svc1, tags2) = MeshServiceSubset(svc1, tags1 + tags2)`
+6. `MeshService(svc1) ∩ MeshService(svc2) = Ø`
+7. `MeshService(svc1) ∩ MeshServiceSubset(svc1, tags2) = MeshServiceSubset(svc1, tags2)`
+8. `MeshService(svc1) ∩ MeshServiceSubset(svc2, tags2) = Ø`
+9. `MeshServiceSubset(svc1, tags1) ∩ MeshServiceSubset(svc1, tags2) = MeshServiceSubset(svc1, tags1 + tags2)`
+
+```go
+intersections = []
+for i, item := range fromArray {
+    for j := i; i < len(fromArray); j++ {
+        intersections = append(intersection, intersect(item, fromArray[j]))
+    }
+}
+
+allClientPartition = intersections.dedup().sort()
+```
+
+##### Step 3
+
+For each subset in the all-client partition find a list of “from”-items that identifies it. 
+Merge “from”-items in the order they appeared in “from” array.
+
+```go
+for i, clientSubset := range allClientPartition {
+    conf := {}
+    for j, fromItem := range fromArray {
+        if fromItem.identifies(clientSubset) {
+            mergeInto(conf, fromItem.Conf)
+        }
+    }
+    saveConfForSubset(clientSubset, conf)
+}
+```
 
 ### Examples
 
@@ -405,11 +548,25 @@ to:
 Now we want to figure
 what configuration we'll get on "web" data plane proxy.
 
-Merge all "to" sections from all policies
+Concatenate all "to" sections from all policies
 matched for "web" proxy:
 
 ```yaml
 to:
+  - targetRef: # from '00-base-timeouts'
+      kind: Mesh
+    conf:
+      connectTimeout: 10s
+      http:
+        requestTimeout: 5s
+        idleTimeout: 1h
+  - targetRef: # from '01-consume-backend-timeouts'
+      kind: MeshService
+      name: backend
+    conf:
+      connectTimeout: 20s
+      http:
+        idleTimeout: 0s
   - targetRef: # from 'web-timeouts'
       kind: Mesh
     conf:
@@ -420,20 +577,6 @@ to:
     conf:
       http:
         requestTimeout: 15s
-  - targetRef: # from '01-consume-backend-timeouts'
-      kind: MeshService
-      name: backend
-    conf:
-      connectTimeout: 20s
-      http:
-        idleTimeout: 0s
-  - targetRef: # from '00-base-timeouts'
-      kind: Mesh
-    conf:
-      connectTimeout: 10s
-      http:
-        requestTimeout: 5s
-        idleTimeout: 1h
 ```
 
 Now we'll look at each outbound individually.
@@ -443,6 +586,20 @@ that target "backend" outbound:
 
 ```yaml
 to:
+  - targetRef: # from '00-base-timeouts'
+      kind: Mesh
+    conf:
+      connectTimeout: 10s
+      http:
+        requestTimeout: 5s
+        idleTimeout: 1h
+  - targetRef: # from '01-consume-backend-timeouts'
+      kind: MeshService
+      name: backend
+    conf:
+      connectTimeout: 20s
+      http:
+        idleTimeout: 0s
   - targetRef: # from 'web-timeouts'
       kind: Mesh
     conf:
@@ -453,20 +610,6 @@ to:
     conf:
       http:
         requestTimeout: 15s
-  - targetRef: # from '01-consume-backend-timeouts'
-      kind: MeshService
-      name: backend
-    conf:
-      connectTimeout: 20s
-      http:
-        idleTimeout: 0s
-  - targetRef: # from '00-base-timeouts'
-      kind: Mesh
-    conf:
-      connectTimeout: 10s
-      http:
-        requestTimeout: 5s
-        idleTimeout: 1h
 ```
 
 and merge these into a single outbound conf for "backend" outbound:
@@ -485,10 +628,6 @@ that target "payments" outbound:
 
 ```yaml
 to:
-  - targetRef: # from 'web-timeouts'
-      kind: Mesh
-    conf:
-      connectTimeout: 5s
   - targetRef: # from '00-base-timeouts'
       kind: Mesh
     conf:
@@ -496,6 +635,10 @@ to:
       http:
         requestTimeout: 5s
         idleTimeout: 1h
+  - targetRef: # from 'web-timeouts'
+      kind: Mesh
+    conf:
+      connectTimeout: 5s
 ```
 
 and merge these into a single conf for "payment" outbound:
@@ -506,6 +649,27 @@ conf:
   http:
     requestTimeout: 5s # from '00-base-timeouts'
     idleTimeout: 1h # from '00-base-timeouts'
+```
+
+Rule-based view:
+
+```yaml
+rules:
+  - targetRef:
+      kind: MeshService
+      name: backend
+    conf:
+      connectTimeout: 5s
+      http:
+        requestTimeout: 15s
+        idleTimeout: 0s 
+  - targetRef:
+      kind: Mesh
+    conf:
+      connectTimeout: 5s
+      http:
+        requestTimeout: 5s
+        idleTimeout: 1h
 ```
 
 #### MeshTrafficPermission
@@ -523,6 +687,10 @@ targetRef:
   kind: Mesh
 from:
   - targetRef:
+      kind: Mesh
+    conf:
+      action: DENY
+  - targetRef:
       kind: MeshService
       name: infra-monitoring
     conf:
@@ -532,10 +700,6 @@ from:
       name: infra-logger
     conf:
       action: ALLOW
-  - targetRef:
-      kind: Mesh
-    conf:
-      action: DENY
 ```
 
 Service owner of "backend" changes behaviour to allow-by-default
@@ -550,16 +714,16 @@ targetRef:
   name: backend
 from:
   - targetRef:
+      kind: Mesh
+    conf:
+      action: ALLOW
+  - targetRef:
       kind: MeshServiceSubset
       name: web
       tags:
         version: v1
     conf:
       action: DENY
-  - targetRef:
-      kind: Mesh
-    conf:
-      action: ALLOW
 ```
 
 Now we want to figure
@@ -570,17 +734,10 @@ matched for "backend" proxy:
 
 ```yaml
 from:
-  - targetRef: # from backend-permissions
-      kind: MeshServiceSubset
-      name: web
-      tags:
-        version: v1
-    conf:
-      action: DENY
-  - targetRef: # from backend-permissions
+  - targetRef: # from allow-only-infra
       kind: Mesh
     conf:
-      action: ALLOW
+      action: DENY
   - targetRef: # from allow-only-infra
       kind: MeshService
       name: infra-monitoring
@@ -591,18 +748,10 @@ from:
       name: infra-logger
     conf:
       action: ALLOW
-  - targetRef: # from allow-only-infra
+  - targetRef: # from backend-permissions
       kind: Mesh
     conf:
-      action: DENY
-```
-
-Now we'll look at each possible traffic source individually.
-
-Select "from" sections that target "web" with "v1":
-
-```yaml
-from:
+      action: ALLOW
   - targetRef: # from backend-permissions
       kind: MeshServiceSubset
       name: web
@@ -610,73 +759,33 @@ from:
         version: v1
     conf:
       action: DENY
-  - targetRef: # from backend-permissions
-      kind: Mesh
-    conf:
-      action: ALLOW
-  - targetRef: # from allow-only-infra
-      kind: Mesh
+```
+
+Rule-based view:
+
+```yaml
+rules:
+  - targetRef:
+      kind: MeshServiceSubset
+      name: web
+      tags:
+        version: v1
     conf:
       action: DENY
-```
-
-and merge into single configuration:
-
-```yaml
-conf:
-  action: DENY # from backend-permissions
-```
-
-Select "from" sections that target "infra-monitoring":
-
-```yaml
-from:
-  - targetRef: # from backend-permissions
-      kind: Mesh
-    conf:
-      action: ALLOW
-  - targetRef: # from allow-only-infra
+  - targetRef:
       kind: MeshService
       name: infra-monitoring
     conf:
       action: ALLOW
-  - targetRef: # from allow-only-infra
-      kind: Mesh
-    conf:
-      action: DENY
-```
-
-and merge into single configuration:
-
-```yaml
-conf:
-  action: ALLOW # from backend-permissions
-```
-
-Select "from" sections that target "infra-logger":
-
-```yaml
-from:
-  - targetRef: # from backend-permissions
-      kind: Mesh
-    conf:
-      action: ALLOW
-  - targetRef: # from allow-only-infra
+  - targetRef:
       kind: MeshService
       name: infra-logger
     conf:
       action: ALLOW
-  - targetRef: # from allow-only-infra
+  - targetRef:
       kind: Mesh
     conf:
-      action: DENY
-```
-
-and merge into single configuration:
-
-```yaml
-conf:
-  action: ALLOW # from backend-permissions
+      action: ALLOW
 ```
 
 #### ProxyTemplate
