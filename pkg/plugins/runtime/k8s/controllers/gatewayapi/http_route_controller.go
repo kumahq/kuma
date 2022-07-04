@@ -138,21 +138,25 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 
 			conditions[ref] = routeConditions
 		default:
-			var message string
+			var reason, message string
 			switch refAttachment {
 			case attachment.NotPermitted:
-				message = "attachment to parent not permitted by AllowedRoutes"
+				reason = string(gatewayapi.RouteReasonNotAllowedByListeners)
+				message = ""
 			case attachment.Invalid:
+				// TODO how to handle this case?
+				reason = "Refused"
 				message = "listener not found, reference to parent is invalid"
 			case attachment.NoHostnameIntersection:
-				message = "hostnames do not intersect with parent listeners"
+				reason = string(gatewayapi.RouteReasonNoMatchingListenerHostname)
+				message = ""
 			}
 
 			conditions[ref] = []kube_meta.Condition{
 				{
 					Type:    string(gatewayapi.RouteConditionAccepted),
 					Status:  kube_meta.ConditionFalse,
-					Reason:  "Refused", // kubernetes-sigs/gateway-api#972
+					Reason:  reason,
 					Message: message,
 				},
 			}
