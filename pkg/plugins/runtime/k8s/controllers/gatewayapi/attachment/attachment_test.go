@@ -87,6 +87,7 @@ var _ = Describe("Hostname intersection support", func() {
 		DescribeTable("matches", checkAttachment(attachment.Allowed),
 			Entry("on exact match", []gatewayapi.Hostname{"simple.local"}),
 			Entry("if one matches", []gatewayapi.Hostname{"other.local", "simple.local"}),
+			Entry("if route wildcard matches", []gatewayapi.Hostname{"*.local"}),
 		)
 
 		DescribeTable("doesn't match", checkAttachment(attachment.NoHostnameIntersection),

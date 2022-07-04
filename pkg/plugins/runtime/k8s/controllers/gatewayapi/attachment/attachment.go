@@ -146,6 +146,15 @@ func getParentRefGateway(
 	return gateway, nil
 }
 
+func nameMatchesWildcardName(name, pat gatewayapi.Hostname) bool {
+	suffix := strings.TrimPrefix(string(pat), "*.")
+	if len(suffix) == len(pat) {
+		return false
+	}
+
+	return strings.HasSuffix(string(name), suffix) && suffix != string(name)
+}
+
 func hostnamesIntersect(routeHostnames []gatewayapi.Hostname, listenerHostnames []gatewayapi.Hostname) bool {
 	if len(routeHostnames) == 0 {
 		return true
@@ -159,10 +168,8 @@ func hostnamesIntersect(routeHostnames []gatewayapi.Hostname, listenerHostnames 
 			if routeHostname == listenerHostname {
 				return true
 			}
-			// If the gateway hostname is a wildcard and the route hostname
-			// matches the wildcard
-			suffix := strings.TrimPrefix(string(listenerHostname), "*.")
-			if len(suffix) != len(listenerHostname) && strings.HasSuffix(string(routeHostname), suffix) && suffix != string(routeHostname) {
+			// If one hostname is a wildcard and the other hostname matches the wildcard
+			if nameMatchesWildcardName(routeHostname, listenerHostname) || nameMatchesWildcardName(listenerHostname, routeHostname) {
 				return true
 			}
 		}
