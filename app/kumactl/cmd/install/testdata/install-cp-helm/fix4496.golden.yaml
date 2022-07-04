@@ -14,6 +14,18 @@ metadata:
   namespace: kuma-system
   labels: 
     app: kuma-control-plane
+    "foo": "bar"
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kuma-ingress
+  namespace: kuma-system
+  labels: 
+    app: kuma-ingress
+    "foo": "bar"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 ---
@@ -24,6 +36,7 @@ metadata:
   namespace: kuma-system
   labels: 
     app: kuma-control-plane
+    "foo": "bar"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 data:
@@ -1571,6 +1584,7 @@ metadata:
   name: kuma-control-plane
   labels: 
     app: kuma-control-plane
+    "foo": "bar"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 rules:
@@ -1734,6 +1748,10 @@ rules:
       - get
       - list
       - watch
+      - create
+      - update
+      - patch
+      - delete
   - apiGroups:
       - ""
     resources:
@@ -1784,6 +1802,7 @@ metadata:
   name: kuma-control-plane
   labels: 
     app: kuma-control-plane
+    "foo": "bar"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 roleRef:
@@ -1802,6 +1821,7 @@ metadata:
   namespace: kuma-system
   labels: 
     app: kuma-control-plane
+    "foo": "bar"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 rules:
@@ -1837,6 +1857,7 @@ metadata:
   namespace: kuma-system
   labels: 
     app: kuma-control-plane
+    "foo": "bar"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 roleRef:
@@ -1851,31 +1872,11 @@ subjects:
 apiVersion: v1
 kind: Service
 metadata:
-  name: kuma-global-zone-sync
-  namespace: kuma-system
-  annotations:
-  labels: 
-    app: kuma-control-plane
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
-spec:
-  type: LoadBalancer
-  ports:
-    - port: 5685
-      name: global-zone-sync
-  selector:
-    app: kuma-control-plane
-  
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
----
-apiVersion: v1
-kind: Service
-metadata:
   name: kuma-control-plane
   namespace: kuma-system
   labels: 
     app: kuma-control-plane
+    "foo": "bar"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
   annotations:
@@ -1893,8 +1894,34 @@ spec:
     - port: 443
       name: https-admission-server
       targetPort: 5443
+    - port: 5676
+      name: mads-server
+    - port: 5678
+      name: dp-server
   selector:
     app: kuma-control-plane
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kuma-ingress
+  namespace: kuma-system
+  labels: 
+    app: kuma-ingress
+    "foo": "bar"
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+  annotations:
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 10001
+      protocol: TCP
+      targetPort: 10001
+  selector:
+    app: kuma-ingress
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 ---
@@ -1905,6 +1932,7 @@ metadata:
   namespace: kuma-system
   labels: 
     app: kuma-control-plane
+    "foo": "bar"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 spec:
@@ -1921,11 +1949,12 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 3a05a95096ec7248d5e43d50e181064206f451b7714554d2b64c8f5a37118bed
-        checksum/tls-secrets: 2bb884540aa3f1284160eefd079bd32e623c0dc41b67ca862773e7cf184d6f65
+        checksum/config: e45d96f966cb326249f469fabe6c160db21dbd683dae966ad0a29bf204846554
+        checksum/tls-secrets: 801c30f50823ab4af5947a1248cad51373daa4e4560ea5be2fc63bde74e7c922
         
       labels: 
         app: kuma-control-plane
+        "foo": "bar"
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
     spec:
@@ -1978,7 +2007,11 @@ spec:
             - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
               value: "docker.io/kumahq/kuma-init:0.0.1"
             - name: KUMA_MODE
-              value: "global"
+              value: "zone"
+            - name: KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS
+              value: "grpcs://foo.com:3456"
+            - name: KUMA_MULTIZONE_ZONE_NAME
+              value: "east"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
               value: "/var/run/secrets/kuma.io/tls-cert"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
@@ -2012,6 +2045,7 @@ spec:
             - containerPort: 5681
             - containerPort: 5682
             - containerPort: 5443
+            - containerPort: 5678
           livenessProbe:
             httpGet:
               path: /healthy
@@ -2022,7 +2056,7 @@ spec:
               port: 5680
           resources:
             requests:
-              cpu: 500m
+              cpu: 100m
               memory: 256Mi
           
           volumeMounts:
@@ -2049,6 +2083,153 @@ spec:
           configMap:
             name: kuma-control-plane-config
 ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kuma-ingress
+  namespace: kuma-system
+  labels: 
+    app: kuma-ingress
+    "foo": "bar"
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+spec:
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kuma
+      app.kubernetes.io/instance: kuma
+      app: kuma-ingress
+  template:
+    metadata:
+      annotations:
+        kuma.io/ingress: enabled
+      labels: 
+        app: kuma-ingress
+        "foo": "bar"
+        app.kubernetes.io/name: kuma
+        app.kubernetes.io/instance: kuma
+        app.kubernetes.io/name: kuma
+        app.kubernetes.io/instance: kuma
+    spec:
+      affinity: 
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                  - 'kuma'
+                - key: app.kubernetes.io/instance
+                  operator: In
+                  values:
+                  - 'kuma'
+                - key: app
+                  operator: In
+                  values:
+                  - kuma-ingress
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+      serviceAccountName: kuma-ingress
+      nodeSelector:
+      
+        kubernetes.io/os: linux
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: ingress
+          image: "docker.io/kumahq/kuma-dp:0.0.1"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: KUMA_CONTROL_PLANE_URL
+              value: "https://kuma-control-plane.kuma-system:5678"
+            - name: KUMA_CONTROL_PLANE_CA_CERT_FILE
+              value: /var/run/secrets/kuma.io/tls-cert/ca.crt
+            - name: KUMA_DATAPLANE_NAME
+              value: $(POD_NAME).$(POD_NAMESPACE)
+            - name: KUMA_DATAPLANE_DRAIN_TIME
+              value: 30s
+            - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
+              value: /var/run/secrets/kubernetes.io/serviceaccount/token
+            - name: KUMA_DATAPLANE_PROXY_TYPE
+              value: "ingress"
+          args:
+            - run
+            - --log-level=info
+          ports:
+            - containerPort: 10001
+          livenessProbe:
+            httpGet:
+              path: "/ready"
+              port: 9901
+            failureThreshold: 12
+            initialDelaySeconds: 60
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: "/ready"
+              port: 9901
+            failureThreshold: 12
+            initialDelaySeconds: 1
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          resources: 
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+          
+          volumeMounts:
+            - name: kuma-tls-cert
+              mountPath: /var/run/secrets/kuma.io/tls-cert
+              readOnly: true
+      volumes:
+        - name: kuma-tls-cert
+          secret:
+            secretName: kuma-tls-cert
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kuma-control-plane
+  namespace: kuma-system
+  labels: 
+    app: kuma-control-plane
+    "foo": "bar"
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+spec:
+  ingressClassName: 
+  rules:
+  - host: 
+    http:
+      paths:
+      - path: /
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: kuma-control-plane
+            port:
+              number: 5681
+---
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
@@ -2056,6 +2237,7 @@ metadata:
   namespace: kuma-system
   labels: 
     app: kuma-control-plane
+    "foo": "bar"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 webhooks:
@@ -2184,6 +2366,7 @@ metadata:
   namespace: kuma-system
   labels: 
     app: kuma-control-plane
+    "foo": "bar"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 webhooks:
