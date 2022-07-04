@@ -26,6 +26,7 @@ const (
 	// Invalid means the route points to a nonexistent parent
 	// or is otherwise invalid
 	Invalid
+	NoHostnameIntersection
 	// Allowed means we could successfully attach
 	Allowed
 )
@@ -160,8 +161,9 @@ func hostnamesIntersect(routeHostnames []gatewayapi.Hostname, listenerHostnames 
 			}
 			// If the gateway hostname is a wildcard and the route hostname
 			// matches the wildcard
-			if suffix := strings.TrimPrefix(string(listenerHostname), "*."); len(suffix) != len(listenerHostname) {
-				return strings.HasSuffix(string(routeHostname), suffix)
+			suffix := strings.TrimPrefix(string(listenerHostname), "*.")
+			if len(suffix) != len(listenerHostname) && strings.HasSuffix(string(routeHostname), suffix) && suffix != string(routeHostname) {
+				return true
 			}
 		}
 	}
@@ -198,7 +200,7 @@ func EvaluateParentRefAttachment(
 	}
 
 	if !hostnamesIntersect(routeHostnames, listenerHostnames) {
-		return Invalid, nil
+		return NoHostnameIntersection, nil
 	}
 
 	return findRouteListenerAttachment(gateway, routeNs, ref.SectionName)

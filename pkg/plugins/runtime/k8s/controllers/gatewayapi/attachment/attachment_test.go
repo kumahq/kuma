@@ -58,9 +58,10 @@ var _ = Describe("Hostname intersection support", func() {
 			simpleRef.Name = gatewayapi.ObjectName(gatewayMultipleListeners.Name)
 		})
 
-		It("matches with all listeners", func() {
-			checkAttachment(attachment.Allowed)([]gatewayapi.Hostname{"other.local"})
-		})
+		DescribeTable("matches some listener", checkAttachment(attachment.Allowed),
+			Entry("exact match", []gatewayapi.Hostname{"other.local"}),
+			Entry("non matching wildcard", []gatewayapi.Hostname{"*.wildcard.io", "something.else.local"}),
+		)
 	})
 
 	Context("listener without hostname", func() {
@@ -88,7 +89,7 @@ var _ = Describe("Hostname intersection support", func() {
 			Entry("if one matches", []gatewayapi.Hostname{"other.local", "simple.local"}),
 		)
 
-		DescribeTable("doesn't match", checkAttachment(attachment.Invalid),
+		DescribeTable("doesn't match", checkAttachment(attachment.NoHostnameIntersection),
 			Entry("without intersection", []gatewayapi.Hostname{"other.local"}),
 		)
 	})
@@ -107,7 +108,8 @@ var _ = Describe("Hostname intersection support", func() {
 			Entry("with a wildcard hostname", []gatewayapi.Hostname{"*.wildcard.local"}),
 		)
 
-		DescribeTable("doesn't match", checkAttachment(attachment.Invalid),
+		DescribeTable("doesn't match", checkAttachment(attachment.NoHostnameIntersection),
+			Entry("wildcard suffix without subdomain", []gatewayapi.Hostname{"wildcard.local"}),
 			Entry("without intersection", []gatewayapi.Hostname{"other.local"}),
 		)
 	})
@@ -334,9 +336,9 @@ var (
 		Spec: gatewayapi.GatewaySpec{
 			GatewayClassName: "kuma",
 			Listeners: []gatewayapi.Listener{
-				simpleListener,
 				wildcardListener,
 				allNsListener,
+				simpleListener,
 			},
 		},
 		Status: gatewayapi.GatewayStatus{
