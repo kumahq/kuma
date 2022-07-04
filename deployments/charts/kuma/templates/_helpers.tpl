@@ -105,10 +105,10 @@ control plane labels
 */}}
 {{- define "kuma.cpLabels" -}}
 app: {{ include "kuma.name" . }}-control-plane
-{{ range $key, $value := $.Values.controlPlane.extraLabels }}
+{{- range $key, $value := $.Values.controlPlane.extraLabels }}
 {{ $key | quote }}: {{ $value | quote }}
-{{ end }}
-{{- include "kuma.labels" . }}
+{{- end }}
+{{ include "kuma.labels" . }}
 {{- end }}
 
 {{/*
@@ -116,10 +116,10 @@ ingress labels
 */}}
 {{- define "kuma.ingressLabels" -}}
 app: {{ include "kuma.name" . }}-ingress
-{{ range $key, $value := .Values.ingress.extraLabels }}
+{{- range $key, $value := .Values.ingress.extraLabels }}
 {{ $key | quote }}: {{ $value | quote }}
-{{ end }}
-{{- include "kuma.labels" . }}
+{{- end }}
+{{ include "kuma.labels" . }}
 {{- end }}
 
 {{/*
