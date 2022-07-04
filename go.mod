@@ -214,5 +214,3 @@ replace sigs.k8s.io/gateway-api => github.com/kumahq/gateway-api v0.0.0-20220629
 //	$ go mod edit -replace github.com/envoyproxy/go-control-plane=github.com/kumahq/go-control-plane@channel-increased-capacity
 //	$ GOPRIVATE=github.com/kumahq/go-control-plane go mod tidy
 replace github.com/envoyproxy/go-control-plane => github.com/kumahq/go-control-plane v0.9.10-0.20211022075049-d35edcf0813a
-
-replace github.com/gruntwork-io/terratest => github.com/slonka/terratest v0.40.17-podlogs-2
