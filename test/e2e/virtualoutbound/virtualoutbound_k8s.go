@@ -28,7 +28,9 @@ func VirtualOutboundOnK8s() {
 			Setup(k8sCluster)
 		if err != nil {
 			lines := int64(50)
-			k8s.GetPodLogs(t, k8sCluster.GetKubectlOptions(TestNamespace), "kuma-control-plane", &v1.PodLogOptions{TailLines: &lines})
+			logs := k8s.GetPodLogs(t, k8sCluster.GetKubectlOptions(TestNamespace), "kuma-control-plane", &v1.PodLogOptions{TailLines: &lines})
+			println("kuma-cp logs")
+			println(logs)
 		}
 		Expect(err).ToNot(HaveOccurred())
 	})
