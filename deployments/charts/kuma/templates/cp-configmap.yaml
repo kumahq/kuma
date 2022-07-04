@@ -1,9 +1,10 @@
+{{ $kumaCpLabels := include "kuma.cpLabels" . }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ include "kuma.name" . }}-control-plane-config
   namespace: {{ .Release.Namespace }}
-  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+  labels: {{ $kumaCpLabels | nindent 4 }}
 data:
   config.yaml: |
     # use this file to override default configuration of `kuma-cp`
@@ -22,7 +23,7 @@ kind: ConfigMap
 metadata:
   name: {{ $extraConfigMap.name }}
   namespace: {{ $releaseNamespace }}
-  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+  labels: {{ $kumaCpLabels | nindent 4 }}
 data:
   {{- range $fileName, $fileContents := $extraConfigMap.values }}
   {{- $fileName | nindent 2 }}: |

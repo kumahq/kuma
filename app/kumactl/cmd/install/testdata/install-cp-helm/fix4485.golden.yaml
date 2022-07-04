@@ -14,26 +14,7 @@ metadata:
   namespace: kuma-system
   labels: 
     app: kuma-control-plane
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: kuma-egress
-  namespace: kuma-system
-  labels: 
-    app: kuma-egress
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: kuma-ingress
-  namespace: kuma-system
-  labels: 
-    app: kuma-ingress
+    "foo": "baz"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 ---
@@ -44,6 +25,7 @@ metadata:
   namespace: kuma-system
   labels: 
     app: kuma-control-plane
+    "foo": "baz"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 data:
@@ -51,6 +33,20 @@ data:
     # use this file to override default configuration of `kuma-cp`
     #
     # see conf/kuma-cp.conf.yml for available settings
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: extra-config
+  namespace: kuma-system
+  labels: 
+    app: kuma-control-plane
+    "foo": "baz"
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+data:
+  extra-config-key: |
+    extra-config-value
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -1703,6 +1699,7 @@ metadata:
   name: kuma-control-plane
   labels: 
     app: kuma-control-plane
+    "foo": "baz"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 rules:
@@ -1866,10 +1863,6 @@ rules:
       - get
       - list
       - watch
-      - create
-      - update
-      - patch
-      - delete
   - apiGroups:
       - ""
     resources:
@@ -1920,6 +1913,7 @@ metadata:
   name: kuma-control-plane
   labels: 
     app: kuma-control-plane
+    "foo": "baz"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 roleRef:
@@ -1938,6 +1932,7 @@ metadata:
   namespace: kuma-system
   labels: 
     app: kuma-control-plane
+    "foo": "baz"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 rules:
@@ -1973,6 +1968,7 @@ metadata:
   namespace: kuma-system
   labels: 
     app: kuma-control-plane
+    "foo": "baz"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 roleRef:
@@ -1991,6 +1987,7 @@ metadata:
   namespace: kuma-system
   labels: 
     app: kuma-control-plane
+    "foo": "baz"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
   annotations:
@@ -2017,48 +2014,6 @@ spec:
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: kuma-egress
-  namespace: kuma-system
-  labels: 
-    app: kuma-egress
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
-  annotations:
-spec:
-  type: ClusterIP
-  ports:
-    - port: 10002
-      protocol: TCP
-      targetPort: 10002
-  selector:
-    app: kuma-egress
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: kuma-ingress
-  namespace: kuma-system
-  labels: 
-    app: kuma-ingress
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
-  annotations:
-spec:
-  type: LoadBalancer
-  ports:
-    - port: 10001
-      protocol: TCP
-      targetPort: 10001
-  selector:
-    app: kuma-ingress
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -2066,6 +2021,7 @@ metadata:
   namespace: kuma-system
   labels: 
     app: kuma-control-plane
+    "foo": "baz"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 spec:
@@ -2082,10 +2038,11 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 3a05a95096ec7248d5e43d50e181064206f451b7714554d2b64c8f5a37118bed
-        checksum/tls-secrets: 2bb884540aa3f1284160eefd079bd32e623c0dc41b67ca862773e7cf184d6f65
+        checksum/config: 7eef47ae35883ac31ecbedc53f5b6d1a91f8ba0a5b38f986e41ea565b64a64c3
+        checksum/tls-secrets: a8e93168e05431fe5a071dec8f036ee9502fba0ec2849425a9ffa53e7543f973
       labels: 
         app: kuma-control-plane
+        "foo": "baz"
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
     spec:
@@ -2138,11 +2095,7 @@ spec:
             - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
               value: "docker.io/kumahq/kuma-init:0.0.1"
             - name: KUMA_MODE
-              value: "zone"
-            - name: KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS
-              value: "grpcs://foo.com"
-            - name: KUMA_MULTIZONE_ZONE_NAME
-              value: "zone-1"
+              value: "standalone"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
               value: "/var/run/secrets/kuma.io/tls-cert"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
@@ -2206,6 +2159,9 @@ spec:
             - name: kuma-control-plane-config
               mountPath: /etc/kuma.io/kuma-control-plane
               readOnly: true
+            - name: extra-config
+              mountPath: /etc/extra-config
+              readOnly: true
       volumes:
         - name: general-tls-cert
           secret:
@@ -2213,246 +2169,9 @@ spec:
         - name: kuma-control-plane-config
           configMap:
             name: kuma-control-plane-config
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: kuma-egress
-  namespace: kuma-system
-  labels: 
-    app: kuma-egress
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
-spec:
-  strategy:
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-  replicas: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: kuma
-      app.kubernetes.io/instance: kuma
-      app: kuma-egress
-  template:
-    metadata:
-      annotations:
-        kuma.io/egress: enabled
-      labels: 
-        app: kuma-egress
-        app.kubernetes.io/name: kuma
-        app.kubernetes.io/instance: kuma
-        app.kubernetes.io/name: kuma
-        app.kubernetes.io/instance: kuma
-    spec:
-      affinity: 
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app.kubernetes.io/name
-                  operator: In
-                  values:
-                  - 'kuma'
-                - key: app.kubernetes.io/instance
-                  operator: In
-                  values:
-                  - 'kuma'
-                - key: app
-                  operator: In
-                  values:
-                  - kuma-egress
-              topologyKey: kubernetes.io/hostname
-            weight: 100
-      serviceAccountName: kuma-egress
-      nodeSelector:
-      
-        kubernetes.io/os: linux
-      containers:
-        - name: egress
-          image: "docker.io/kumahq/kuma-dp:0.0.1"
-          imagePullPolicy: IfNotPresent
-          env:
-            - name: POD_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-            - name: POD_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
-            - name: KUMA_CONTROL_PLANE_URL
-              value: "https://kuma-control-plane.kuma-system:5678"
-            - name: KUMA_CONTROL_PLANE_CA_CERT_FILE
-              value: /var/run/secrets/kuma.io/tls-cert/ca.crt
-            - name: KUMA_DATAPLANE_NAME
-              value: $(POD_NAME).$(POD_NAMESPACE)
-            - name: KUMA_DATAPLANE_DRAIN_TIME
-              value: 30s
-            - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
-              value: /var/run/secrets/kubernetes.io/serviceaccount/token
-            - name: KUMA_DATAPLANE_PROXY_TYPE
-              value: "egress"
-          args:
-            - run
-            - --log-level=info
-          ports:
-            - containerPort: 10002
-          livenessProbe:
-            httpGet:
-              path: "/ready"
-              port: 9901
-            failureThreshold: 12
-            initialDelaySeconds: 60
-            periodSeconds: 5
-            successThreshold: 1
-            timeoutSeconds: 3
-          readinessProbe:
-            httpGet:
-              path: "/ready"
-              port: 9901
-            failureThreshold: 12
-            initialDelaySeconds: 1
-            periodSeconds: 5
-            successThreshold: 1
-            timeoutSeconds: 3
-          resources:
-            requests:
-              cpu: 50m
-              memory: 64Mi
-            limits:
-              cpu: 1000m
-              memory: 512Mi
-          volumeMounts:
-            - name: kuma-tls-cert
-              mountPath: /var/run/secrets/kuma.io/tls-cert
-              readOnly: true
-      volumes:
-        - name: kuma-tls-cert
-          secret:
-            secretName: kuma-tls-cert
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: kuma-ingress
-  namespace: kuma-system
-  labels: 
-    app: kuma-ingress
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
-spec:
-  strategy:
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-  replicas: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: kuma
-      app.kubernetes.io/instance: kuma
-      app: kuma-ingress
-  template:
-    metadata:
-      annotations:
-        kuma.io/ingress: enabled
-      labels: 
-        app: kuma-ingress
-        app.kubernetes.io/name: kuma
-        app.kubernetes.io/instance: kuma
-        app.kubernetes.io/name: kuma
-        app.kubernetes.io/instance: kuma
-    spec:
-      affinity: 
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app.kubernetes.io/name
-                  operator: In
-                  values:
-                  - 'kuma'
-                - key: app.kubernetes.io/instance
-                  operator: In
-                  values:
-                  - 'kuma'
-                - key: app
-                  operator: In
-                  values:
-                  - kuma-ingress
-              topologyKey: kubernetes.io/hostname
-            weight: 100
-      serviceAccountName: kuma-ingress
-      nodeSelector:
-      
-        kubernetes.io/os: linux
-      terminationGracePeriodSeconds: 30
-      containers:
-        - name: ingress
-          image: "docker.io/kumahq/kuma-dp:0.0.1"
-          imagePullPolicy: IfNotPresent
-          env:
-            - name: POD_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-            - name: POD_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
-            - name: KUMA_CONTROL_PLANE_URL
-              value: "https://kuma-control-plane.kuma-system:5678"
-            - name: KUMA_CONTROL_PLANE_CA_CERT_FILE
-              value: /var/run/secrets/kuma.io/tls-cert/ca.crt
-            - name: KUMA_DATAPLANE_NAME
-              value: $(POD_NAME).$(POD_NAMESPACE)
-            - name: KUMA_DATAPLANE_DRAIN_TIME
-              value: 30s
-            - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
-              value: /var/run/secrets/kubernetes.io/serviceaccount/token
-            - name: KUMA_DATAPLANE_PROXY_TYPE
-              value: "ingress"
-          args:
-            - run
-            - --log-level=info
-          ports:
-            - containerPort: 10001
-          livenessProbe:
-            httpGet:
-              path: "/ready"
-              port: 9901
-            failureThreshold: 12
-            initialDelaySeconds: 60
-            periodSeconds: 5
-            successThreshold: 1
-            timeoutSeconds: 3
-          readinessProbe:
-            httpGet:
-              path: "/ready"
-              port: 9901
-            failureThreshold: 12
-            initialDelaySeconds: 1
-            periodSeconds: 5
-            successThreshold: 1
-            timeoutSeconds: 3
-          resources: 
-            limits:
-              cpu: 1000m
-              memory: 512Mi
-            requests:
-              cpu: 50m
-              memory: 64Mi
-          
-          volumeMounts:
-            - name: kuma-tls-cert
-              mountPath: /var/run/secrets/kuma.io/tls-cert
-              readOnly: true
-      volumes:
-        - name: kuma-tls-cert
-          secret:
-            secretName: kuma-tls-cert
+        - name: extra-config
+          configMap:
+            name: extra-config
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
@@ -2461,6 +2180,7 @@ metadata:
   namespace: kuma-system
   labels: 
     app: kuma-control-plane
+    "foo": "baz"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 webhooks:
@@ -2589,6 +2309,7 @@ metadata:
   namespace: kuma-system
   labels: 
     app: kuma-control-plane
+    "foo": "baz"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 webhooks:
