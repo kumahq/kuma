@@ -26,13 +26,11 @@ func VirtualOutboundOnK8s() {
 			Install(DemoClientK8s("default", TestNamespace)).
 			Install(testserver.Install(testserver.WithStatefulSet(true), testserver.WithReplicas(2))).
 			Setup(k8sCluster)
-		if err != nil {
-			lines := int64(50)
-			logs := k8s.GetPodLogs(t, k8sCluster.GetKubectlOptions(TestNamespace), "kuma-control-plane", &v1.PodLogOptions{TailLines: &lines})
-			println("kuma-cp logs")
-			println(logs)
-		}
-		Expect(err).ToNot(HaveOccurred())
+		lines := int64(50)
+		logs := k8s.GetPodLogs(t, k8sCluster.GetKubectlOptions(TestNamespace), "kuma-control-plane", &v1.PodLogOptions{TailLines: &lines})
+		println("kuma-cp logs")
+		println(logs)
+		Expect(err).ToNot(HaveOccurred(), k8s.GetPodLogs(t, k8sCluster.GetKubectlOptions(TestNamespace), "kuma-control-plane", &v1.PodLogOptions{TailLines: &lines}))
 	})
 
 	E2EAfterEach(func() {
