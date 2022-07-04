@@ -1,8 +1,10 @@
 package virtualoutbound
 
 import (
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	v1 "k8s.io/api/core/v1"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
@@ -13,7 +15,8 @@ func VirtualOutboundOnK8s() {
 	var k8sCluster Cluster
 
 	BeforeEach(func() {
-		k8sCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
+		t := NewTestingT()
+		k8sCluster = NewK8sCluster(t, Kuma1, Silent)
 
 		err := NewClusterSetup().
 			Install(Kuma(config_core.Standalone,
@@ -23,6 +26,10 @@ func VirtualOutboundOnK8s() {
 			Install(DemoClientK8s("default", TestNamespace)).
 			Install(testserver.Install(testserver.WithStatefulSet(true), testserver.WithReplicas(2))).
 			Setup(k8sCluster)
+		if err != nil {
+			lines := int64(50)
+			k8s.GetPodLogs(t, k8sCluster.GetKubectlOptions(TestNamespace), "kuma-control-plane", &v1.PodLogOptions{TailLines: &lines})
+		}
 		Expect(err).ToNot(HaveOccurred())
 	})
 
