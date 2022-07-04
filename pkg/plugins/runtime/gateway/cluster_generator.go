@@ -171,8 +171,13 @@ func newClusterBuilder(
 	protocol core_mesh.Protocol,
 	dest *route.Destination,
 ) *clusters.ClusterBuilder {
+	var timeout *mesh_proto.Timeout_Conf
+	if timeoutResource := timeoutPolicyFor(dest); timeoutResource != nil {
+		timeout = timeoutResource.Spec.GetConf()
+	}
+
 	builder := clusters.NewClusterBuilder(version).Configure(
-		clusters.Timeout(timeoutPolicyFor(dest).Spec.GetConf(), protocol),
+		clusters.Timeout(timeout, protocol),
 		clusters.CircuitBreaker(circuitBreakerPolicyFor(dest)),
 		clusters.OutlierDetection(circuitBreakerPolicyFor(dest)),
 		clusters.HealthCheck(protocol, healthCheckPolicyFor(dest)),
