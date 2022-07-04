@@ -1402,6 +1402,13 @@ spec:
                           Service.
                         type: object
                     type: object
+                  spec:
+                    description: Spec holds some customizable fields of a Service.
+                    properties:
+                      loadBalancerIP:
+                        description: LoadBalancerIP corresponds to ServiceSpec.LoadBalancerIP.
+                        type: string
+                    type: object
                 type: object
               serviceType:
                 default: LoadBalancer
@@ -1522,6 +1529,13 @@ spec:
                         description: Annotations holds annotations to be set on a
                           Service.
                         type: object
+                    type: object
+                  spec:
+                    description: Spec holds some customizable fields of a Service.
+                    properties:
+                      loadBalancerIP:
+                        description: LoadBalancerIP corresponds to ServiceSpec.LoadBalancerIP.
+                        type: string
                     type: object
                 type: object
               serviceType:
