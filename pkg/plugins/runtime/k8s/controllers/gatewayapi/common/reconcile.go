@@ -3,6 +3,7 @@ package common
 import (
 	"context"
 	"fmt"
+	"hash/fnv"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
@@ -16,6 +17,13 @@ import (
 )
 
 const ownerLabel = "gateways.kuma.io/gateway.networking.k8s.io-owner"
+
+func hashNamespacedName(name kube_types.NamespacedName) string {
+	hash := fnv.New128()
+	hash.Write([]byte(name.Namespace))
+	hash.Write([]byte(name.Name))
+	return fmt.Sprintf("%x", hash.Sum(nil))
+}
 
 // ReconcileLabelledObject manages a set of owned kuma objects based on
 // labels with the owner key.
@@ -34,7 +42,7 @@ func ReconcileLabelledObject(
 	// First we list which existing objects are owned by this owner.
 	// We expect either 0 or 1 and depending on whether routeSpec is nil
 	// we either create an object or update or delete the existing one.
-	ownerLabelValue := fmt.Sprintf("%s-%s", owner.Namespace, owner.Name)
+	ownerLabelValue := hashNamespacedName(owner)
 	labels := kube_client.MatchingLabels{
 		ownerLabel: ownerLabelValue,
 	}
@@ -89,7 +97,7 @@ func ReconcileLabelledObject(
 
 	owned.SetObjectMeta(
 		&kube_meta.ObjectMeta{
-			GenerateName: fmt.Sprintf("%s-", ownerLabelValue),
+			GenerateName: fmt.Sprintf("%s-%s-", owner.Namespace, owner.Name),
 			Labels: map[string]string{
 				ownerLabel: ownerLabelValue,
 			},
