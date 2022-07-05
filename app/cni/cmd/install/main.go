@@ -13,7 +13,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/containernetworking/cni/libcni"
 	"github.com/itchyny/gojq"
 	"github.com/natefinch/atomic"
 	"go.uber.org/zap"
@@ -89,40 +88,31 @@ func check_install(mountedCNINetDir string) {
 
 func cleanup(mountedCniNetDir, cniConfName, kubeconfigName string, chainedCniPlugin bool) {
 	removeBinFiles()
-	revertConfig(mountedCniNetDir, cniConfName, kubeconfigName, chainedCniPlugin)
+	revertConfig(mountedCniNetDir, cniConfName, chainedCniPlugin)
+	removeKubeconfig(mountedCniNetDir, kubeconfigName)
 }
 
-func revertConfig(mountedCniNetDir, cniConfName, kubeconfigName string, chainedCniPlugin bool) {
+func removeKubeconfig(mountedCniNetDir, kubecfgName string) {
+	kubeconfigPath := mountedCniNetDir + "/" + kubecfgName
+	if fileExists(kubeconfigPath) {
+		err := os.Remove(kubeconfigPath)
+		if err != nil {
+			log.V(1).Error(err, "couldn't remove cni conf file")
+		}
+	}
+}
+
+func revertConfig(mountedCniNetDir, cniConfName string, chainedCniPlugin bool) {
 	configPath := mountedCniNetDir + "/" + cniConfName
-	// kubeconfigPath := mountedCniNetDir + "/" + kubeconfigName
 
 	if fileExists(configPath) {
 		if chainedCniPlugin {
-			confList, err := libcni.LoadConfList(mountedCniNetDir, cniConfName)
+			contents, err := ioutil.ReadFile(configPath)
 			if err != nil {
-				log.Error(err, "could not load conf")
+				log.V(1).Error(err, "couldn't read cni conf file")
 			}
-
-			found := -1
-			var newPlugins []*libcni.NetworkConfig
-			for i, plugin := range confList.Plugins {
-				if plugin.Network.Type == "kuma-cni" {
-					found = i
-				}
-			}
-
-			if found != -1 {
-				newPlugins = removeElementByIndex(confList.Plugins, found)
-			}
-
-			confList.Plugins = newPlugins
-
-			marshaled, err := json.MarshalIndent(confList, "", "  ")
-			if err != nil {
-				log.Error(err, "could not marshal new conf")
-			}
-
-			err = atomic.WriteFile(configPath, bytes.NewReader(marshaled))
+			newContents := revertConfigContentsViaJq(contents)
+			err = atomic.WriteFile(configPath, bytes.NewReader(newContents))
 			if err != nil {
 				log.Error(err, "could not write new conf")
 			}
@@ -133,16 +123,30 @@ func revertConfig(mountedCniNetDir, cniConfName, kubeconfigName string, chainedC
 			}
 		}
 	}
-	// if fileExists(kubeconfigPath) {
-	//	err := os.Remove(kubeconfigPath)
-	//	if err != nil {
-	//		log.V(1).Error(err, "couldn't remove cni conf file")
-	//	}
-	//}
 }
 
-func removeElementByIndex[T any](slice []T, index int) []T {
-	return append(slice[:index], slice[index+1:]...)
+
+func revertConfigContentsViaJq(configBytes []byte) []byte {
+	queryString := `del( .plugins[]? | select(.type == "kuma-cni"))`
+	// this is probably going to be rewritten to not use `jq` at all
+	query, err := gojq.Parse(queryString)
+	if err != nil {
+		log.V(1).Error(err, "couldn't jq query")
+	}
+
+	var parsed map[string]interface{}
+	err = json.Unmarshal(configBytes, &parsed)
+	if err != nil {
+		log.V(1).Error(err, "couldn't parse CNI config")
+	}
+
+	result := query.Run(parsed)
+	modified, _ := result.Next()
+	marshaled, err := json.MarshalIndent(modified, "", "  ")
+	if err != nil {
+		log.V(1).Error(err, "couldn't marshal modified config")
+	}
+	return marshaled
 }
 
 func install() error {

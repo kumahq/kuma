@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("TestTransformJsonConfig", func() {
+var _ = Describe("testTransformJsonConfig", func() {
 	It("should properly manipulate CNI config", func() {
 		// given
 		kumaCniConfig := `{
@@ -29,5 +29,18 @@ var _ = Describe("TestTransformJsonConfig", func() {
 
 		// then
 		Expect(result).To(MatchJSON(expectedConfig))
+	})
+})
+
+var _ = Describe("revertConfig", func() {
+	It("should properly revert CNI config", func() {
+		changedConfig, _ := ioutil.ReadFile("data/expected/10-calico.conflist")
+		originalConfig, _ := ioutil.ReadFile("data/given/10-calico.conflist")
+
+		// when
+		result := revertConfigContentsViaJq(changedConfig)
+
+		// then
+		Expect(result).To(MatchJSON(originalConfig))
 	})
 })
