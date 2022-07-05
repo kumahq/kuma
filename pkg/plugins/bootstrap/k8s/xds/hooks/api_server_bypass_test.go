@@ -46,6 +46,7 @@ var _ = Describe("ApiServerBypass", func() {
 
 		// then
 		resp, err := rs.List().ToDeltaDiscoveryResponse()
+		Expect(err).ToNot(HaveOccurred())
 
 		actual, err := util_proto.ToYAML(resp)
 		Expect(err).ToNot(HaveOccurred())
