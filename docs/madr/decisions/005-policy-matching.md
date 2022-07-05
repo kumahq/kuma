@@ -124,6 +124,7 @@ spec:
   from:
     - targetRef:
         kind: Mesh
+        name: mesh-1
       conf:
         action: DENY
     - targetRef:
@@ -135,6 +136,7 @@ spec:
         action: ALLOW
     - targetRef:
         kind: MeshSubset
+        name: mesh-1
         tags:
           kuma.io/zone: us-east
       conf:
@@ -185,6 +187,7 @@ policy can select all outbounds ("backend", "web-api" and "payments"):
 to:
   - targetRef:
       kind: Mesh
+      name: mesh-1
     conf: ... # conf for all outbounds
 ```
 
@@ -208,6 +211,7 @@ corresponding confs are merged in the order they're presented in the "to" array
 to:
   - targetRef: 
       kind: Mesh
+      name: mesh-1
     conf:
       param1: value1
   - targetRef: 
@@ -218,6 +222,7 @@ to:
       param2: value3
   - targetRef: 
       kind: Mesh
+      name: mesh-1
     conf:
       param2: value4
 ```
@@ -248,6 +253,7 @@ Policy can select traffic from all sources:
 from:
   - targetRef:
       kind: Mesh
+      name: mesh-1
     conf: ... # conf for all incoming traffic
 ```
 
@@ -257,6 +263,7 @@ Policy can select traffic from proxies with "kuma.io/zone: us-east" tag:
 from:
   - targetRef:
       kind: MeshSubset
+      name: mesh-1
       tags:
         kuma.io/zone: us-east
     conf: ... # conf for traffic coming from "us-east" zone
@@ -307,6 +314,7 @@ to:
       param2: value3
   - targetRef:
       kind: Mesh
+      name: mesh-1
     conf:
       param2: value4
 ```
@@ -369,6 +377,7 @@ raw list of rules:
 from:
   - targetRef:
       kind: MeshSubset
+      name: mesh-1
       tags:
         kuma.io/zone: us-east
       conf:
@@ -376,6 +385,7 @@ from:
         param2: value2
   - targetRef:
       kind: MeshSubset
+      name: mesh-1
       tags:
         team: dev
       conf:
@@ -388,6 +398,7 @@ rule-based view:
 rules:
   - targetRef:
       kind: MeshSubset
+      name: mesh-1
       tags:
         kuma.io/zone: us-east
         team: dev
@@ -397,6 +408,7 @@ rules:
         param3: value4
   - targetRef:
       kind: MeshSubset
+      name: mesh-1
       tags:
         kuma.io/zone: us-east
       conf:
@@ -404,6 +416,7 @@ rules:
         param2: value2
   - targetRef:
       kind: MeshSubset
+      name: mesh-1
       tags:
         team: dev
       conf:
@@ -479,6 +492,112 @@ for i, clientSubset := range allClientPartition {
 }
 ```
 
+### Syntactic sugar
+
+Several things we can do to improve UX when writing your own policies.
+
+**Omit targetRef{kind:Mesh} on top-level**:
+
+Input:
+```yaml
+type: MeshTrafficPermission
+mesh: mesh-1
+spec:
+  from:
+    - targetRef:
+        kind: MeshService
+        name: super-legacy
+      conf:
+        action: DENY
+```
+
+Result:
+```yaml
+type: MeshTrafficPermission
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: Mesh
+    name: mesh-1
+  from:
+    - targetRef:
+        kind: MeshService
+        name: super-legacy
+      conf:
+        action: DENY
+```
+
+**Omit targetRef{kind:Mesh} in "to/from" arrays**:
+
+Input:
+```yaml
+type: MeshTrafficPermission
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: MeshService
+    name: backend
+  from:
+    - targetRef:
+        kind: MeshService
+        name: super-legacy
+      conf:
+        action: DENY
+    - conf:
+        action: ALLOW
+```
+
+Result:
+```yaml
+type: MeshTrafficPermission
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: MeshService
+    name: backend
+  from:
+    - targetRef:
+        kind: MeshService
+        name: super-legacy
+      conf:
+        action: DENY
+    - targetRef:
+        kind: Mesh
+        name: mesh-1
+      conf:
+        action: ALLOW
+```
+
+**Unfold conf to a "to/from" array with a single targetRef{kind:Mesh}**:
+
+Input:
+```yaml
+type: MeshTrafficPermission
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: MeshService
+    name: backend
+  conf:
+    action: ALLOW
+```
+
+Result:
+```yaml
+type: MeshTrafficPermission
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: MeshService
+    name: backend
+  from:
+    - targetRef:
+        kind: Mesh
+        name: mesh-1
+      conf:
+        action: ALLOW
+```
+
 ### Examples
 
 #### UpstreamTimeout
@@ -493,9 +612,11 @@ mesh: mesh-1
 name: 00-base-timeouts
 targetRef:
   kind: Mesh
+  name: mesh-1
 to:
   - targetRef:
       kind: Mesh
+      name: mesh-1
     conf:
       connectTimeout: 10s
       http:
@@ -512,6 +633,7 @@ mesh: mesh-1
 name: 01-consume-backend-timeouts
 targetRef:
   kind: Mesh
+  name: mesh-1
 to: 
   - targetRef:
       kind: MeshService
@@ -535,6 +657,7 @@ targetRef:
 to:
   - targetRef:
       kind: Mesh
+      name: mesh-1
     conf:
       connectTimeout: 5s
   - targetRef:
@@ -555,6 +678,7 @@ matched for "web" proxy:
 to:
   - targetRef: # from '00-base-timeouts'
       kind: Mesh
+      name: mesh-1
     conf:
       connectTimeout: 10s
       http:
@@ -569,6 +693,7 @@ to:
         idleTimeout: 0s
   - targetRef: # from 'web-timeouts'
       kind: Mesh
+      name: mesh-1
     conf:
       connectTimeout: 5s
   - targetRef: # from 'web-timeouts'
@@ -588,6 +713,7 @@ that target "backend" outbound:
 to:
   - targetRef: # from '00-base-timeouts'
       kind: Mesh
+      name: mesh-1
     conf:
       connectTimeout: 10s
       http:
@@ -602,6 +728,7 @@ to:
         idleTimeout: 0s
   - targetRef: # from 'web-timeouts'
       kind: Mesh
+      name: mesh-1
     conf:
       connectTimeout: 5s
   - targetRef: # from 'web-timeouts'
@@ -630,6 +757,7 @@ that target "payments" outbound:
 to:
   - targetRef: # from '00-base-timeouts'
       kind: Mesh
+      name: mesh-1
     conf:
       connectTimeout: 10s
       http:
@@ -637,6 +765,7 @@ to:
         idleTimeout: 1h
   - targetRef: # from 'web-timeouts'
       kind: Mesh
+      name: mesh-1
     conf:
       connectTimeout: 5s
 ```
@@ -665,6 +794,7 @@ rules:
         idleTimeout: 0s 
   - targetRef:
       kind: Mesh
+      name: mesh-1
     conf:
       connectTimeout: 5s
       http:
@@ -685,9 +815,11 @@ mesh: mesh-1
 name: allow-only-infra
 targetRef:
   kind: Mesh
+  name: mesh-1
 from:
   - targetRef:
       kind: Mesh
+      name: mesh-1
     conf:
       action: DENY
   - targetRef:
@@ -715,6 +847,7 @@ targetRef:
 from:
   - targetRef:
       kind: Mesh
+      name: mesh-1
     conf:
       action: ALLOW
   - targetRef:
@@ -736,6 +869,7 @@ matched for "backend" proxy:
 from:
   - targetRef: # from allow-only-infra
       kind: Mesh
+      name: mesh-1
     conf:
       action: DENY
   - targetRef: # from allow-only-infra
@@ -750,6 +884,7 @@ from:
       action: ALLOW
   - targetRef: # from backend-permissions
       kind: Mesh
+      name: mesh-1
     conf:
       action: ALLOW
   - targetRef: # from backend-permissions
@@ -784,6 +919,7 @@ rules:
       action: ALLOW
   - targetRef:
       kind: Mesh
+      name: mesh-1
     conf:
       action: ALLOW
 ```
@@ -846,6 +982,7 @@ mesh: mesh-1
 name: tl-1
 targetRef:
   kind: Mesh
+  name: mesh-1
 to:
   - targetRef:
       kind: MeshService
@@ -856,6 +993,7 @@ to:
 from:
   - targetRef:
       kind: Mesh
+      name: mesh-1
     conf:
       backends:
         - name: file
