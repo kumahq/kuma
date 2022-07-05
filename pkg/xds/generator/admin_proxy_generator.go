@@ -24,10 +24,6 @@ var staticTlsEndpointPaths = []*envoy_common.StaticEndpointPath{
 		Path:        "/",
 		RewritePath: "/",
 	},
-	{
-		Path:        "/config_dump",
-		RewritePath: "/config_dump",
-	},
 }
 
 // AdminProxyGenerator generates resources to expose some endpoints of Admin API on public interface.

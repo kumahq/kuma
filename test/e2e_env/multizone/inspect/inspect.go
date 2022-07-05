@@ -26,57 +26,146 @@ func Inspect() {
 		Expect(env.Global.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	Context("Dataplane", func() {
-		It("should execute config dump from Global CP", func() {
-			Eventually(func(g Gomega) {
-				out, err := env.Global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", "kuma-4.test-server", "--config-dump", "--mesh", meshName)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(out).Should(ContainSubstring(`"dataplane.proxyType": "dataplane"`))
-			}, "30s", "1s").Should(Succeed())
-		})
+	type testCase struct {
+		typ         string
+		expectedOut string
+	}
 
-		It("should execute config dump from Zone CP", func() {
-			Eventually(func(g Gomega) {
-				out, err := env.UniZone1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", "test-server", "--config-dump", "--mesh", meshName)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(out).Should(ContainSubstring(`"dataplane.proxyType": "dataplane"`))
-			}, "30s", "1s").Should(Succeed())
-		})
+	Context("Dataplane", func() {
+		DescribeTable("should execute envoy inspection from Global CP",
+			func(given testCase) {
+				Eventually(func(g Gomega) {
+					out, err := env.Global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", "kuma-4.test-server", "--type", given.typ, "--mesh", meshName)
+					g.Expect(err).ToNot(HaveOccurred())
+					g.Expect(out).Should(ContainSubstring(given.expectedOut))
+				}, "30s", "1s").Should(Succeed())
+			},
+			Entry("config dump", testCase{
+				typ:         "config-dump",
+				expectedOut: `"dataplane.proxyType": "dataplane"`,
+			}),
+			Entry("stats", testCase{
+				typ:         "stats",
+				expectedOut: `server.live: 1`,
+			}),
+			Entry("clusters", testCase{
+				typ:         "clusters",
+				expectedOut: `kuma:envoy:admin`,
+			}),
+		)
+
+		DescribeTable("should execute envoy inspection from Zone CP",
+			func(given testCase) {
+				Eventually(func(g Gomega) {
+					out, err := env.UniZone1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", "test-server", "--type", given.typ, "--mesh", meshName)
+					g.Expect(err).ToNot(HaveOccurred())
+					g.Expect(out).Should(ContainSubstring(given.expectedOut))
+				}, "30s", "1s").Should(Succeed())
+			},
+			Entry("config dump", testCase{
+				typ:         "config-dump",
+				expectedOut: `"dataplane.proxyType": "dataplane"`,
+			}),
+			Entry("stats", testCase{
+				typ:         "stats",
+				expectedOut: `server.live: 1`,
+			}),
+			Entry("clusters", testCase{
+				typ:         "clusters",
+				expectedOut: `kuma:envoy:admin`,
+			}),
+		)
 	})
 
 	Context("ZoneIngress", func() {
-		It("should execute config dump from Global CP", func() {
-			Eventually(func(g Gomega) {
-				out, err := env.Global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zoneingress", "kuma-4.ingress", "--config-dump")
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(out).Should(ContainSubstring(`"dataplane.proxyType": "ingress"`))
-			}, "30s", "1s").Should(Succeed())
-		})
+		DescribeTable("should execute envoy inspection from Global CP",
+			func(given testCase) {
+				Eventually(func(g Gomega) {
+					out, err := env.Global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zoneingress", "kuma-4.ingress", "--type", given.typ)
+					g.Expect(err).ToNot(HaveOccurred())
+					g.Expect(out).Should(ContainSubstring(given.expectedOut))
+				}, "30s", "1s").Should(Succeed())
+			},
+			Entry("config dump", testCase{
+				typ:         "config-dump",
+				expectedOut: `"dataplane.proxyType": "ingress"`,
+			}),
+			Entry("stats", testCase{
+				typ:         "stats",
+				expectedOut: `server.live: 1`,
+			}),
+			Entry("clusters", testCase{
+				typ:         "clusters",
+				expectedOut: `kuma:envoy:admin`,
+			}),
+		)
 
-		It("should execute config dump from Zone CP", func() {
-			Eventually(func(g Gomega) {
-				out, err := env.UniZone1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zoneingress", "ingress", "--config-dump")
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(out).Should(ContainSubstring(`"dataplane.proxyType": "ingress"`))
-			}, "30s", "1s").Should(Succeed())
-		})
+		DescribeTable("should execute envoy inspection from Zone CP",
+			func(given testCase) {
+				Eventually(func(g Gomega) {
+					out, err := env.UniZone1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zoneingress", "ingress", "--type", given.typ)
+					g.Expect(err).ToNot(HaveOccurred())
+					g.Expect(out).Should(ContainSubstring(given.expectedOut))
+				}, "30s", "1s").Should(Succeed())
+			},
+			Entry("config dump", testCase{
+				typ:         "config-dump",
+				expectedOut: `"dataplane.proxyType": "ingress"`,
+			}),
+			Entry("stats", testCase{
+				typ:         "stats",
+				expectedOut: `server.live: 1`,
+			}),
+			Entry("clusters", testCase{
+				typ:         "clusters",
+				expectedOut: `kuma:envoy:admin`,
+			}),
+		)
 	})
 
 	Context("ZoneEgress", func() {
-		It("should execute config dump from Global CP", func() {
-			Eventually(func(g Gomega) {
-				out, err := env.Global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zoneegress", "kuma-4.egress", "--config-dump")
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(out).Should(ContainSubstring(`"dataplane.proxyType": "egress"`))
-			}, "30s", "1s").Should(Succeed())
-		})
+		DescribeTable("should execute envoy inspection from Global CP",
+			func(given testCase) {
+				Eventually(func(g Gomega) {
+					out, err := env.Global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zoneegress", "kuma-4.egress", "--type", given.typ)
+					g.Expect(err).ToNot(HaveOccurred())
+					g.Expect(out).Should(ContainSubstring(given.expectedOut))
+				}, "30s", "1s").Should(Succeed())
+			},
+			Entry("config dump", testCase{
+				typ:         "config-dump",
+				expectedOut: `"dataplane.proxyType": "egress"`,
+			}),
+			Entry("stats", testCase{
+				typ:         "stats",
+				expectedOut: `server.live: 1`,
+			}),
+			Entry("clusters", testCase{
+				typ:         "clusters",
+				expectedOut: `kuma:envoy:admin`,
+			}),
+		)
 
-		It("should execute config dump from Zone CP", func() {
-			Eventually(func(g Gomega) {
-				out, err := env.UniZone1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zoneegress", "egress", "--config-dump")
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(out).Should(ContainSubstring(`"dataplane.proxyType": "egress"`))
-			}, "30s", "1s").Should(Succeed())
-		})
+		DescribeTable("should execute envoy inspection from Zone CP",
+			func(given testCase) {
+				Eventually(func(g Gomega) {
+					out, err := env.UniZone1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zoneegress", "egress", "--type", given.typ)
+					g.Expect(err).ToNot(HaveOccurred())
+					g.Expect(out).Should(ContainSubstring(given.expectedOut))
+				}, "30s", "1s").Should(Succeed())
+			},
+			Entry("config dump", testCase{
+				typ:         "config-dump",
+				expectedOut: `"dataplane.proxyType": "egress"`,
+			}),
+			Entry("stats", testCase{
+				typ:         "stats",
+				expectedOut: `server.live: 1`,
+			}),
+			Entry("clusters", testCase{
+				typ:         "clusters",
+				expectedOut: `kuma:envoy:admin`,
+			}),
+		)
 	})
 }

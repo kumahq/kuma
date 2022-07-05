@@ -30,13 +30,13 @@ var (
 )
 
 type client struct {
-	callbacks          Callbacks
-	globalURL          string
-	clientID           string
-	config             multizone.KdsClientConfig
-	metrics            metrics.Metrics
-	ctx                context.Context
-	xdsConfigProcessor service.XDSConfigProcessor
+	callbacks           Callbacks
+	globalURL           string
+	clientID            string
+	config              multizone.KdsClientConfig
+	metrics             metrics.Metrics
+	ctx                 context.Context
+	envoyAdminProcessor service.EnvoyAdminProcessor
 }
 
 func NewClient(
@@ -46,16 +46,16 @@ func NewClient(
 	callbacks Callbacks,
 	config multizone.KdsClientConfig,
 	metrics metrics.Metrics,
-	xdsConfigProcessor service.XDSConfigProcessor,
+	envoyAdminProcessor service.EnvoyAdminProcessor,
 ) component.Component {
 	return &client{
-		ctx:                ctx,
-		callbacks:          callbacks,
-		globalURL:          globalURL,
-		clientID:           clientID,
-		config:             config,
-		metrics:            metrics,
-		xdsConfigProcessor: xdsConfigProcessor,
+		ctx:                 ctx,
+		callbacks:           callbacks,
+		globalURL:           globalURL,
+		clientID:            clientID,
+		config:              config,
+		metrics:             metrics,
+		envoyAdminProcessor: envoyAdminProcessor,
 	}
 }
 
@@ -106,6 +106,8 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	errorCh := make(chan error)
 	go c.startKDSMultiplex(withKDSCtx, log, conn, stop, errorCh)
 	go c.startXDSConfigs(withKDSCtx, log, conn, stop, errorCh)
+	go c.startStats(withKDSCtx, log, conn, stop, errorCh)
+	go c.startClusters(withKDSCtx, log, conn, stop, errorCh)
 
 	select {
 	case <-stop:
@@ -148,31 +150,89 @@ func (c *client) startKDSMultiplex(ctx context.Context, log logr.Logger, conn *g
 	}
 }
 
-func (c *client) startXDSConfigs(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, stop <-chan struct{}, errorCh chan error) {
-	muxClient := mesh_proto.NewGlobalKDSServiceClient(conn)
-	log.Info("initializing XDS Configs stream for executing config dump on data plane proxies")
-	stream, err := muxClient.StreamXDSConfigs(ctx)
+func (c *client) startXDSConfigs(
+	ctx context.Context,
+	log logr.Logger,
+	conn *grpc.ClientConn,
+	stop <-chan struct{},
+	errorCh chan error,
+) {
+	client := mesh_proto.NewGlobalKDSServiceClient(conn)
+	log = log.WithValues("rpc", "XDS Configs")
+	log.Info("initializing rpc stream for executing config dump on data plane proxies")
+	stream, err := client.StreamXDSConfigs(ctx)
 	if err != nil {
 		errorCh <- err
 		return
 	}
 
 	processingErrorsCh := make(chan error)
-	go c.xdsConfigProcessor.StartProcessing(stream, processingErrorsCh)
+	go c.envoyAdminProcessor.StartProcessingXDSConfigs(stream, processingErrorsCh)
+	c.handleProcessingErrors(stream, log, stop, processingErrorsCh, errorCh)
+}
 
+func (c *client) startStats(
+	ctx context.Context,
+	log logr.Logger,
+	conn *grpc.ClientConn,
+	stop <-chan struct{},
+	errorCh chan error,
+) {
+	client := mesh_proto.NewGlobalKDSServiceClient(conn)
+	log = log.WithValues("rpc", "Stats")
+	log.Info("initializing rpc stream for executing stats on data plane proxies")
+	stream, err := client.StreamStats(ctx)
+	if err != nil {
+		errorCh <- err
+		return
+	}
+
+	processingErrorsCh := make(chan error)
+	go c.envoyAdminProcessor.StartProcessingStats(stream, processingErrorsCh)
+	c.handleProcessingErrors(stream, log, stop, processingErrorsCh, errorCh)
+}
+
+func (c *client) startClusters(
+	ctx context.Context,
+	log logr.Logger,
+	conn *grpc.ClientConn,
+	stop <-chan struct{},
+	errorCh chan error,
+) {
+	client := mesh_proto.NewGlobalKDSServiceClient(conn)
+	log = log.WithValues("rpc", "Clusters")
+	log.Info("initializing rpc stream for executing clusters on data plane proxies")
+	stream, err := client.StreamClusters(ctx)
+	if err != nil {
+		errorCh <- err
+		return
+	}
+
+	processingErrorsCh := make(chan error)
+	go c.envoyAdminProcessor.StartProcessingClusters(stream, processingErrorsCh)
+	c.handleProcessingErrors(stream, log, stop, processingErrorsCh, errorCh)
+}
+
+func (c *client) handleProcessingErrors(
+	stream grpc.ClientStream,
+	log logr.Logger,
+	stop <-chan struct{},
+	processingErrorsCh chan error,
+	errorCh chan error,
+) {
 	select {
 	case <-stop:
-		log.Info("XDSConfigDumps stream stopped", "reason", err)
+		log.Info("Envoy Admin rpc stream stopped")
 		if err := stream.CloseSend(); err != nil {
 			log.Error(err, "CloseSend returned an error")
 		}
-	case err = <-processingErrorsCh:
+	case err := <-processingErrorsCh:
 		if status.Code(err) == codes.Unimplemented {
-			log.Error(err, "XDSConfigDumps stream failed, because Global CP does not implement XDS Config. Upgrade Global CP.")
+			log.Error(err, "Envoy Admin rpc stream failed, because Global CP does not implement this rpc. Upgrade Global CP.")
 			// backwards compatibility. Do not rethrow error, so KDS multiplex can still operate.
 			return
 		}
-		log.Error(err, "XDSConfigDumps stream failed prematurely, will restart in background")
+		log.Error(err, "Envoy Admin rpc stream failed prematurely, will restart in background")
 		if err := stream.CloseSend(); err != nil {
 			log.Error(err, "CloseSend returned an error")
 		}
