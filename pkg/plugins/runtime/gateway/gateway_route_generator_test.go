@@ -1,6 +1,7 @@
 package gateway_test
 
 import (
+	"context"
 	"path"
 
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -8,13 +9,22 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/xds"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	xds_server "github.com/kumahq/kuma/pkg/xds/server/v3"
 )
+
+type WithoutResource struct {
+	Resource core_model.ResourceType
+	Mesh     string
+	Name     string
+}
 
 var _ = Describe("Gateway Route", func() {
 	var rt runtime.Runtime
@@ -1289,18 +1299,56 @@ conf:
           kuma.io/service: external-httpbin
 `,
 		),
+
+		Entry("works with no Timeout policy",
+			"no-timeout.yaml", `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: EXACT
+          value: /
+      backends:
+      - destination:
+          kuma.io/service: echo-service
+`,
+			WithoutResource{
+				Resource: core_mesh.TimeoutType,
+				Mesh:     "default",
+				Name:     "timeout-all-default",
+			},
+		),
 	}
 
+	handleArg := func(arg interface{}) {
+		switch val := arg.(type) {
+		case WithoutResource:
+			obj, err := registry.Global().NewObject(val.Resource)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(rt.ResourceManager().Delete(
+				context.Background(), obj, store.DeleteByKey(val.Name, val.Mesh),
+			)).To(Succeed())
+		case string:
+			Expect(StoreInlineFixture(rt, []byte(val))).To(Succeed())
+		}
+	}
 	Context("with a HTTP gateway", func() {
 		JustBeforeEach(func() {
 			Expect(StoreNamedFixture(rt, "gateway-http-multihost.yaml")).To(Succeed())
 			Expect(StoreNamedFixture(rt, "gateway-http-default.yaml")).To(Succeed())
 		})
 		DescribeTable("generating xDS resources",
-			func(goldenFileName string, fixtureResources ...string) {
+			func(goldenFileName string, args ...interface{}) {
 				// given
-				for _, resource := range fixtureResources {
-					Expect(StoreInlineFixture(rt, []byte(resource))).To(Succeed())
+				for _, arg := range args {
+					handleArg(arg)
 				}
 
 				// when
@@ -1325,10 +1373,10 @@ conf:
 			Expect(StoreNamedFixture(rt, "secret-https-default.yaml")).To(Succeed())
 		})
 		DescribeTable("generating xDS resources",
-			func(goldenFileName string, fixtureResources ...string) {
+			func(goldenFileName string, args ...interface{}) {
 				// given
-				for _, resource := range fixtureResources {
-					Expect(StoreInlineFixture(rt, []byte(resource))).To(Succeed())
+				for _, arg := range args {
+					handleArg(arg)
 				}
 
 				// when
