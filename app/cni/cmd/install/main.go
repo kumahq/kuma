@@ -125,7 +125,6 @@ func revertConfig(mountedCniNetDir, cniConfName string, chainedCniPlugin bool) {
 	}
 }
 
-
 func revertConfigContentsViaJq(configBytes []byte) []byte {
 	queryString := `del( .plugins[]? | select(.type == "kuma-cni"))`
 	// this is probably going to be rewritten to not use `jq` at all
