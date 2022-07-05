@@ -37,9 +37,15 @@ func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, _ *envoy_core.
 		return nil, err
 	}
 
+	meshGateways, err := s.getMeshGateways(ctx, meshes)
+	if err != nil {
+		return nil, err
+	}
+
 	args := generator.Args{
-		Meshes:     meshes,
-		Dataplanes: dataplanes,
+		Meshes:       meshes,
+		Dataplanes:   dataplanes,
+		MeshGateways: meshGateways,
 	}
 
 	resources, err := s.resourceGenerator.Generate(args)
@@ -75,4 +81,16 @@ func (s *snapshotGenerator) getDataplanes(ctx context.Context, meshes []*core_me
 		dataplanes = append(dataplanes, dataplaneList.Items...)
 	}
 	return dataplanes, nil
+}
+
+func (s *snapshotGenerator) getMeshGateways(ctx context.Context, meshes []*core_mesh.MeshResource) ([]*core_mesh.MeshGatewayResource, error) {
+	meshGateways := make([]*core_mesh.MeshGatewayResource, 0)
+	for _, mesh := range meshes {
+		meshGatewayList := &core_mesh.MeshGatewayResourceList{}
+		if err := s.resourceManager.List(ctx, meshGatewayList, core_store.ListByMesh(mesh.Meta.GetName())); err != nil {
+			return nil, err
+		}
+		meshGateways = append(meshGateways, meshGatewayList.Items...)
+	}
+	return meshGateways, nil
 }

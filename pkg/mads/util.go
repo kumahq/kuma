@@ -10,6 +10,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 func IndexMeshes(meshes []*core_mesh.MeshResource) map[string]*core_mesh.MeshResource {
@@ -32,7 +33,7 @@ func MultiValue(values []string) string {
 	return "," + strings.Join(values, ",") + ","
 }
 
-func DataplaneLabels(dataplane *core_mesh.DataplaneResource) map[string]string {
+func DataplaneLabels(dataplane *core_mesh.DataplaneResource, meshGateways []*core_mesh.MeshGatewayResource) map[string]string {
 	labels := map[string]string{}
 	// first, we copy user-defined tags
 	tags := dataplane.Spec.TagSet()
@@ -55,6 +56,16 @@ func DataplaneLabels(dataplane *core_mesh.DataplaneResource) map[string]string {
 	for key, value := range dataplane.GetMeta().GetNameExtensions() {
 		labels[prom_util.SanitizeLabelName(key)] = value
 	}
+
+	if dataplane.Spec.IsBuiltinGateway() {
+		gateway := topology.SelectGateway(meshGateways, dataplane.Spec.Matches)
+		name := ""
+		if gateway != nil {
+			name = gateway.GetMeta().GetName()
+		}
+		labels["kuma_io_mesh_gateway"] = name
+	}
+
 	return labels
 }
 
