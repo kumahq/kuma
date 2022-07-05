@@ -496,7 +496,40 @@ for i, clientSubset := range allClientPartition {
 
 Several things we can do to improve UX when writing your own policies.
 
-**Omit targetRef{kind:Mesh} on top-level**:
+**Omit "name" in targetRef{kind:Mesh}**:
+
+Input:
+```yaml
+type: MeshTrafficPermission
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Service
+        name: super-legacy
+      conf:
+        action: DENY
+```
+
+Result:
+```yaml
+type: MeshTrafficPermission
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: Mesh
+    name: mesh-1
+  from:
+    - targetRef:
+        kind: Service
+        name: super-legacy
+      conf:
+        action: DENY
+```
+
+**Omit targetRef{kind:Mesh} on the top-level**:
 
 Input:
 ```yaml
@@ -561,36 +594,6 @@ spec:
         name: super-legacy
       conf:
         action: DENY
-    - targetRef:
-        kind: Mesh
-        name: mesh-1
-      conf:
-        action: ALLOW
-```
-
-**Unfold conf to a "to/from" array with a single targetRef{kind:Mesh}**:
-
-Input:
-```yaml
-type: MeshTrafficPermission
-mesh: mesh-1
-spec:
-  targetRef:
-    kind: MeshService
-    name: backend
-  conf:
-    action: ALLOW
-```
-
-Result:
-```yaml
-type: MeshTrafficPermission
-mesh: mesh-1
-spec:
-  targetRef:
-    kind: MeshService
-    name: backend
-  from:
     - targetRef:
         kind: Mesh
         name: mesh-1
