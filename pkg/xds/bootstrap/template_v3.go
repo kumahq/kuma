@@ -5,14 +5,17 @@ import (
 	"strconv"
 
 	"github.com/asaskevich/govalidator"
+	envoy_accesslog_v3 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoy_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_grpc_credentials_v3 "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v3"
 	envoy_metrics_v3 "github.com/envoyproxy/go-control-plane/envoy/config/metrics/v3"
+	access_loggers_file "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	"github.com/pkg/errors"
 
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	clusters_v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
@@ -188,7 +191,6 @@ func genConfig(parameters configParameters, useTokenPath bool) (*envoy_bootstrap
 	if parameters.AdminPort != 0 {
 		res.Node.Metadata.Fields["dataplane.admin.port"] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.AdminPort)))
 		res.Admin = &envoy_bootstrap_v3.Admin{
-			AccessLogPath: parameters.AdminAccessLogPath,
 			Address: &envoy_core_v3.Address{
 				Address: &envoy_core_v3.Address_SocketAddress{
 					SocketAddress: &envoy_core_v3.SocketAddress{
@@ -200,6 +202,23 @@ func genConfig(parameters configParameters, useTokenPath bool) (*envoy_bootstrap
 					},
 				},
 			},
+		}
+		if parameters.AdminAccessLogPath != "" {
+			fileAccessLog := &access_loggers_file.FileAccessLog{
+				Path: parameters.AdminAccessLogPath,
+			}
+			var marshaled, err = util_proto.MarshalAnyDeterministic(fileAccessLog)
+			if err != nil {
+				return nil, errors.Wrapf(err, "could not marshall %T", fileAccessLog)
+			}
+			res.Admin.AccessLog = []*envoy_accesslog_v3.AccessLog{
+				{
+					Name: "envoy.access_loggers.file",
+					ConfigType: &envoy_accesslog_v3.AccessLog_TypedConfig{
+						TypedConfig: marshaled,
+					},
+				},
+			}
 		}
 	}
 	if parameters.DNSPort != 0 {
