@@ -541,7 +541,9 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						{DataplaneIP: "127.0.0.1", DataplanePort: 40004}: {Spec: timeout},
 					},
 				},
-				Metadata: &model.DataplaneMetadata{},
+				Metadata: &model.DataplaneMetadata{
+					Features: model.Features{"feature-tcp-accesslog-via-named-pipe": true},
+				},
 			}
 
 			// when

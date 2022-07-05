@@ -7,14 +7,19 @@ import (
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	access_loggers_file "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
+	access_loggers_grpc "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	accesslog "github.com/kumahq/kuma/pkg/envoy/accesslog/v3"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
+
+var log = core.Log.WithName("access-log-configurer")
 
 type AccessLogConfigurer struct {
 	Mesh               string
@@ -61,12 +66,18 @@ func convertLoggingBackend(mesh string, trafficDirection envoy.TrafficDirection,
 		}
 		return fileAccessLog(format.String(), cfg.Path)
 	case mesh_proto.LoggingTcpType:
-		cfg := mesh_proto.TcpLoggingBackendConfig{}
-		if err := proto.ToTyped(backend.Conf, &cfg); err != nil {
-			return nil, errors.Wrap(err, "could not parse backend config")
+		if proxy.Metadata.Features.HasFeature(core_xds.FeatureTCPAccessLogViaNamedPipe) {
+			log.Info("kuma-dp has named pipe feature flag")
+			cfg := mesh_proto.TcpLoggingBackendConfig{}
+			if err := proto.ToTyped(backend.Conf, &cfg); err != nil {
+				return nil, errors.Wrap(err, "could not parse backend config")
+			}
+			path := envoy.AccessLogSocketName(proxy.Dataplane.Meta.GetName(), mesh)
+			return fileAccessLog(fmt.Sprintf("%s;%s", cfg.Address, format.String()), path)
+		} else {
+			log.Info("kuma-dp does not support accesslog via named pipe; falling back on grpc stream")
+			return legacyTcpAccessLog(format, backend.Conf)
 		}
-		path := envoy.AccessLogSocketName(proxy.Dataplane.Meta.GetName(), mesh)
-		return fileAccessLog(fmt.Sprintf("%s;%s", cfg.Address, format.String()), path)
 	default: // should be caught by validator
 		return nil, errors.Errorf("could not convert LoggingBackend of type %T to AccessLog", backend.GetType())
 	}
@@ -94,6 +105,44 @@ func fileAccessLog(format string, path string) (*envoy_accesslog.AccessLog, erro
 	}
 	return &envoy_accesslog.AccessLog{
 		Name: "envoy.access_loggers.file",
+		ConfigType: &envoy_accesslog.AccessLog_TypedConfig{
+			TypedConfig: marshaled,
+		},
+	}, nil
+}
+
+// legacyTcpAccessLog supports deprecated TCP logging via GRPC intermediate IPC. Once DP
+// versions which require this are no longer supported, this and all the supporting
+// parsing / formatting code will be removed.
+func legacyTcpAccessLog(format *accesslog.AccessLogFormat, cfgStr *structpb.Struct) (*envoy_accesslog.AccessLog, error) {
+	const accessLogSink = "access_log_sink"
+	cfg := mesh_proto.TcpLoggingBackendConfig{}
+	if err := proto.ToTyped(cfgStr, &cfg); err != nil {
+		return nil, errors.Wrap(err, "could not parse backend config")
+	}
+
+	httpGrpcAccessLog := &access_loggers_grpc.HttpGrpcAccessLogConfig{
+		CommonConfig: &access_loggers_grpc.CommonGrpcAccessLogConfig{
+			LogName:             fmt.Sprintf("%s;%s", cfg.Address, format.String()),
+			TransportApiVersion: envoy_core.ApiVersion_V3,
+			GrpcService: &envoy_core.GrpcService{
+				TargetSpecifier: &envoy_core.GrpcService_EnvoyGrpc_{
+					EnvoyGrpc: &envoy_core.GrpcService_EnvoyGrpc{
+						ClusterName: accessLogSink,
+					},
+				},
+			},
+		},
+	}
+	if err := format.ConfigureHttpLog(httpGrpcAccessLog); err != nil {
+		return nil, errors.Wrapf(err, "failed to configure %T according to the format string: %s", httpGrpcAccessLog, format)
+	}
+	marshaled, err := proto.MarshalAnyDeterministic(httpGrpcAccessLog)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not marshall %T", httpGrpcAccessLog)
+	}
+	return &envoy_accesslog.AccessLog{
+		Name: "envoy.access_loggers.http_grpc",
 		ConfigType: &envoy_accesslog.AccessLog_TypedConfig{
 			TypedConfig: marshaled,
 		},

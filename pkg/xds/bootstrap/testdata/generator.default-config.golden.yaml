@@ -46,6 +46,7 @@ node:
     dataplane.dns.empty.port: "53002"
     dataplane.dns.port: "53001"
     dataplane.proxyType: dataplane
+    features: []
     version:
       dependencies: {}
       envoy:

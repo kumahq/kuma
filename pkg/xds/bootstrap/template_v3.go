@@ -25,6 +25,11 @@ func genConfig(parameters configParameters, useTokenPath bool) (*envoy_bootstrap
 		return nil, err
 	}
 
+	features := []interface{}{}
+	for _, feature := range parameters.Features {
+		features = append(features, feature)
+	}
+
 	res := &envoy_bootstrap_v3.Bootstrap{
 		Node: &envoy_core_v3.Node{
 			Id:      parameters.Id,
@@ -44,6 +49,7 @@ func genConfig(parameters configParameters, useTokenPath bool) (*envoy_bootstrap
 					},
 					"dependencies": map[string]interface{}{},
 				},
+				"features": features,
 			}),
 		},
 		LayeredRuntime: &envoy_bootstrap_v3.LayeredRuntime{

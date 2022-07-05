@@ -34,6 +34,9 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 			destinationService := "backend"
 			proxy := &core_xds.Proxy{
 				Id: *core_xds.BuildProxyId("web", "example"),
+				Metadata: &core_xds.DataplaneMetadata{
+					Features: core_xds.Features{core_xds.FeatureTCPAccessLogViaNamedPipe: true},
+				},
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &model.ResourceMeta{
 						Name: "dataplane0",
