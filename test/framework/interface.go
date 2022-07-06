@@ -46,6 +46,7 @@ type kumaDeploymentOptions struct {
 	zoneEgress                  bool
 	zoneEgressEnvoyAdminTunnel  bool
 	cni                         bool
+	cniExperimental             bool
 	cpReplicas                  int
 	hdsDisabled                 bool
 	runPostgresMigration        bool
@@ -286,6 +287,13 @@ func WithEgress() KumaDeploymentOption {
 func WithCNI() KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.cni = true
+	})
+}
+
+func WithExperimentalCNI() KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.cni = true
+		o.cniExperimental = true
 	})
 }
 

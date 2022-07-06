@@ -323,6 +323,10 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		argsMap["--cni-conf-name"] = Config.CNIConf.ConfName
 	}
 
+	if c.opts.cniExperimental {
+		argsMap["--cni-experimental"] = ""
+	}
+
 	if Config.XDSApiVersion != "" {
 		argsMap["--env-var"] = "KUMA_BOOTSTRAP_SERVER_API_VERSION=" + Config.XDSApiVersion
 	}
@@ -387,6 +391,10 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		values["cni.netDir"] = Config.CNIConf.NetDir
 		values["cni.binDir"] = Config.CNIConf.BinDir
 		values["cni.confName"] = Config.CNIConf.ConfName
+	}
+
+	if c.opts.cniExperimental {
+		values["experimental.cni"] = "true"
 	}
 
 	if Config.CIDR != "" {

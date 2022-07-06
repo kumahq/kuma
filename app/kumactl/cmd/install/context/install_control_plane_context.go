@@ -33,6 +33,7 @@ type InstallControlPlaneArgs struct {
 	DataPlane_initImage_tag                      string            `helm:"dataPlane.initImage.tag"`
 	ControlPlane_kdsGlobalAddress                string            `helm:"controlPlane.kdsGlobalAddress"`
 	Cni_enabled                                  bool              `helm:"cni.enabled"`
+	Cni_experimental                             bool              `helm:"experimental.cni"`
 	Cni_chained                                  bool              `helm:"cni.chained"`
 	Cni_net_dir                                  string            `helm:"cni.netDir"`
 	Cni_bin_dir                                  string            `helm:"cni.binDir"`
@@ -95,13 +96,14 @@ func DefaultInstallCpContext() InstallCpContext {
 			DataPlane_initImage_repository:          "kuma-init",
 			DataPlane_initImage_tag:                 kuma_version.Build.Version,
 			Cni_enabled:                             false,
+			Cni_experimental:                        false,
 			Cni_chained:                             false,
 			Cni_net_dir:                             "/etc/cni/multus/net.d",
 			Cni_bin_dir:                             "/var/lib/cni/bin",
 			Cni_conf_name:                           "kuma-cni.conf",
-			Cni_image_registry:                      "docker.io/kumahq",
-			Cni_image_repository:                    "kuma-cni",
-			Cni_image_tag:                           kuma_version.Build.Version,
+			Cni_image_registry:                      "",
+			Cni_image_repository:                    "install-cni",
+			Cni_image_tag:                           "0.0.10",
 			ControlPlane_mode:                       core.Standalone,
 			ControlPlane_zone:                       "",
 			ControlPlane_globalZoneSyncService_type: "LoadBalancer",

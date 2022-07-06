@@ -313,11 +313,16 @@ cni:
     kubernetes.io/os: linux
 
   image:
+    # -- CNI image registry
+    registry: "docker.io/kumahq"
     # -- CNI image repository
+    repository: "install-cni"
+    # -- CNI image tag
+    tag: "0.0.10"
+
+  imageExperimental:
     registry: "kumahq"
     repository: "kuma-cni"
-    # -- CNI image tag
-    pullPolicy: Never
     tag:
 
   # -- Security context at the pod level for cni
@@ -645,3 +650,5 @@ hooks:
 experimental:
   # -- If true, it installs experimental Gateway API support
   gatewayAPI: false
+  # -- If true, it installs experimental new version of the CNI
+  cni: false
