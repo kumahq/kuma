@@ -68,7 +68,7 @@ var _ = Describe("Merge", func() {
 			input:    "./testdata/counter-with-labels.in",
 			expected: "./testdata/counter-with-labels.out",
 		}),
-		Entry("should merge clusters for Counter", testCase{
+		Entry("should merge clusters for sparse Counter", testCase{
 			input:    "./testdata/counter-sparse.in",
 			expected: "./testdata/counter-sparse.out",
 		}),
