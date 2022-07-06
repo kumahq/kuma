@@ -326,7 +326,7 @@ func kubeconfigTemplate(protocol, host, port, token, caData string) string {
 
 	serverUrl := url.URL{
 		Scheme: protocol,
-		Host: safeHost + ":" + port,
+		Host:   safeHost + ":" + port,
 	}
 
 	return `# Kubeconfig file for kuma CNI plugin.
