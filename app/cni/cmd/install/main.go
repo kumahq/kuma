@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io/fs"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/itchyny/gojq"
 	"github.com/natefinch/atomic"
 	"go.uber.org/zap"
@@ -175,7 +177,7 @@ func install() error {
 
 	shouldSleep, _ := env.GetBool("SLEEP", true)
 
-	for shouldSleep == true {
+	for shouldSleep {
 		time.Sleep(time.Duration(cfgCheckInterval) * time.Second)
 		check_install(mountedCniNetDir)
 	}
@@ -302,9 +304,9 @@ func prepareKubeconfig(mountedCniNetDir, kubecfgName, serviceAccountPath string)
 			return err
 		}
 		kubernetesServiceProtocol := env.GetString("KUBERNETES_SERVICE_PROTOCOL", "https")
-		tlsConfig := "certificate-authority-data: " + base64.StdEncoding.EncodeToString(kubeCa)
+		caData := base64.StdEncoding.EncodeToString(kubeCa)
 
-		kubeconfig := kubeconfigTemplate(kubernetesServiceProtocol, kubernetesServiceHost, kubernetesServicePort, string(serviceAccountToken), tlsConfig)
+		kubeconfig := kubeconfigTemplate(kubernetesServiceProtocol, kubernetesServiceHost, kubernetesServicePort, string(serviceAccountToken), caData)
 		err = atomic.WriteFile(mountedCniNetDir+"/"+kubecfgName, strings.NewReader(kubeconfig))
 		if err != nil {
 			return err
@@ -314,16 +316,27 @@ func prepareKubeconfig(mountedCniNetDir, kubecfgName, serviceAccountPath string)
 	return nil
 }
 
-func kubeconfigTemplate(protocol, host, port, token, tlsConfig string) string {
-	return `
-# Kubeconfig file for kuma CNI plugin.
+func kubeconfigTemplate(protocol, host, port, token, caData string) string {
+	safeHost := host
+	if govalidator.IsIPv6(host) {
+		if !(strings.HasPrefix(host, "[") && strings.HasSuffix(host, "]")) {
+			safeHost = "[" + host + "]"
+		}
+	}
+
+	serverUrl := url.URL{
+		Scheme: protocol,
+		Host: safeHost + ":" + port,
+	}
+
+	return `# Kubeconfig file for kuma CNI plugin.
 apiVersion: v1
 kind: Config
 clusters:
 - name: local
   cluster:
-    server: ` + protocol + `://` + host + `:` + port + `
-    ` + tlsConfig + `
+    server: ` + serverUrl.String() + `
+    certificate-authority-data: ` + caData + `
 users:
 - name: kuma-cni
   user:
@@ -333,8 +346,7 @@ contexts:
   context:
     cluster: local
     user: kuma-cni
-current-context: kuma-cni-context
-`
+current-context: kuma-cni-context`
 }
 
 func copyBinaries() {
@@ -389,14 +401,14 @@ func isDirWriteable(dir string) bool {
 }
 
 func setupSignalCleanup(mountedCniNetDir, cniConfName, kubeconfigName string, chainedCniPlugin bool) {
-	sigc := make(chan os.Signal, 1)
-	signal.Notify(sigc,
+	osSignals := make(chan os.Signal, 1)
+	signal.Notify(osSignals,
 		syscall.SIGHUP,
 		syscall.SIGINT,
 		syscall.SIGTERM,
 		syscall.SIGQUIT)
 	go func() {
-		_ = <-sigc
+		_ = <-osSignals
 		cleanup(mountedCniNetDir, cniConfName, kubeconfigName, chainedCniPlugin)
 	}()
 }
