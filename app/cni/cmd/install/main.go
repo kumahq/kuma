@@ -298,7 +298,7 @@ func prepareKubeconfig(mountedCniNetDir, kubecfgName, serviceAccountPath string)
 	if fileExists(serviceAccountTokenPath) {
 		kubernetesServiceHost := env.GetString("KUBERNETES_SERVICE_HOST", "")
 		if kubernetesServiceHost == "" {
-			return errors.New("KUBERNETES_SERVICE_HOST env variable not set" )
+			return errors.New("KUBERNETES_SERVICE_HOST env variable not set")
 		}
 
 		kubernetesServicePort := env.GetString("KUBERNETES_SERVICE_PORT", "")
