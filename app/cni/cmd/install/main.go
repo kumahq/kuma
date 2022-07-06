@@ -364,10 +364,12 @@ func copyBinaries() error {
 	for _, dir := range dirs {
 		if !isDirWriteable(dir) {
 			log.Info("directory is not writeable", "dir", dir)
+			continue
 		}
 		file, err := os.Open(kumaCniBinaryPath)
 		if err != nil {
 			log.Error(err, "can't open kuma-cni file")
+			continue
 		}
 
 		stat, err := os.Stat(kumaCniBinaryPath)

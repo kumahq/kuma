@@ -7,9 +7,10 @@ import (
 	"strings"
 
 	"github.com/containernetworking/plugins/pkg/ns"
+	"github.com/pkg/errors"
+
 	"github.com/kumahq/kuma-net/iptables/builder"
 	"github.com/kumahq/kuma-net/iptables/config"
-	"github.com/pkg/errors"
 )
 
 func convertToUint16(field string, value string) (uint16, error) {
