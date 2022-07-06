@@ -3,6 +3,7 @@ package matchers
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
@@ -27,6 +28,15 @@ func MatchGoldenEqual(goldenFilePath ...string) types.GomegaMatcher {
 	return MatchGolden(func(expected interface{}) types.GomegaMatcher {
 		if expectedBytes, ok := expected.([]byte); ok {
 			expected = string(expectedBytes)
+		}
+		return gomega.Equal(expected)
+	}, goldenFilePath...)
+}
+
+func MatchGoldenText(goldenFilePath ...string) types.GomegaMatcher {
+	return MatchGolden(func(expected interface{}) types.GomegaMatcher {
+		if expectedBytes, ok := expected.([]byte); ok {
+			expected = strings.TrimSpace(string(expectedBytes))
 		}
 		return gomega.Equal(expected)
 	}, goldenFilePath...)
