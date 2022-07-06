@@ -56,7 +56,7 @@ func Inspect() {
 					"--mesh", meshName)
 			g.Expect(err).ToNot(HaveOccurred())
 
-			g.Expect(output).To(ContainSubstring(`kuma:envoy:admin`))
+			g.Expect(output).To(ContainSubstring(`kuma:envoy:admin::`))
 		}, "30s", "1s").Should(Succeed())
 	})
 }
