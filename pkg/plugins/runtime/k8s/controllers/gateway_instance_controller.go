@@ -166,6 +166,10 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 			service.Spec.Ports = ports
 			service.Spec.Type = gatewayInstance.Spec.ServiceType
 
+			if ip := gatewayInstance.Spec.ServiceTemplate.Spec.LoadBalancerIP; ip != "" {
+				service.Spec.LoadBalancerIP = ip
+			}
+
 			return service, nil
 		},
 	)
