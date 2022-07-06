@@ -17,10 +17,16 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/itchyny/gojq"
 	"github.com/natefinch/atomic"
-	"go.uber.org/zap"
+	"github.com/pkg/errors"
 	"k8s.io/utils/env"
 
 	"github.com/kumahq/kuma/pkg/core"
+)
+
+const (
+	kumaCniBinaryPath = "/opt/cni/bin/kuma-cni"
+	primaryBinDir     = "/host/opt/cni/bin"
+	secondaryBinDir   = "/host/secondary-bin-dir"
 )
 
 var (
@@ -77,7 +83,7 @@ func isFileAValidConfig(file string) bool {
 	if !ok {
 		return false
 	}
-	log.Info("checking file", zap.String("file", file))
+	log.Info("checking file", "file", file)
 	if v.(bool) == true {
 		return true
 	}
@@ -161,15 +167,19 @@ func install() error {
 	if cniConfName == "" {
 		cniConfName = "YYY-kuma-cni.conflist"
 	}
-
 	defer cleanup(mountedCniNetDir, cniConfName, kubecfgName, chainedCniPlugin)
 	setupSignalCleanup(mountedCniNetDir, cniConfName, kubecfgName, chainedCniPlugin)
 
-	copyBinaries()
-	err := prepareKubeconfig(mountedCniNetDir, kubecfgName, serviceAccountPath)
+	err := copyBinaries()
 	if err != nil {
 		return err
 	}
+
+	err = prepareKubeconfig(mountedCniNetDir, kubecfgName, serviceAccountPath)
+	if err != nil {
+		return err
+	}
+
 	err = prepareKumaCniConfig(mountedCniNetDir, hostCniNetDir, kubecfgName, serviceAccountPath, cniConfName, chainedCniPlugin)
 	if err != nil {
 		return err
@@ -190,7 +200,7 @@ func prepareKumaCniConfig(mountedCniNetDir, hostCniNetDir, kubecfgName, serviceA
 	kubeconfigFilePath := hostCniNetDir + "/" + kubecfgName
 
 	config := strings.Replace(rawConfig, "__KUBECONFIG_FILEPATH__", kubeconfigFilePath, 1)
-	log.V(1).Info("config after replace", zap.String("config", config))
+	log.V(1).Info("config after replace", "config", config)
 
 	serviceAccountToken, err := ioutil.ReadFile(serviceAccountPath + "/token")
 	if err != nil {
@@ -226,7 +236,7 @@ func setupChainedPlugin(mountedCniNetDir, cniConfName, kumaCniConfig string) err
 		if err != nil {
 			return err
 		}
-		log.V(1).Info("resulting config", zap.String("config", string(marshaled)))
+		log.V(1).Info("resulting config", "config", string(marshaled))
 
 		err = atomic.WriteFile(mountedCniNetDir+"/"+resolvedName, bytes.NewReader(marshaled))
 		if err != nil {
@@ -288,14 +298,12 @@ func prepareKubeconfig(mountedCniNetDir, kubecfgName, serviceAccountPath string)
 	if fileExists(serviceAccountTokenPath) {
 		kubernetesServiceHost := env.GetString("KUBERNETES_SERVICE_HOST", "")
 		if kubernetesServiceHost == "" {
-			log.Info("KUBERNETES_SERVICE_HOST env variable not set")
-			os.Exit(1)
+			return errors.New("KUBERNETES_SERVICE_HOST env variable not set" )
 		}
 
 		kubernetesServicePort := env.GetString("KUBERNETES_SERVICE_PORT", "")
 		if kubernetesServicePort == "" {
-			log.Info("KUBERNETES_SERVICE_PORT env variable not set")
-			os.Exit(1)
+			return errors.New("KUBERNETES_SERVICE_PORT env variable not set")
 		}
 
 		kubeCaFile := env.GetString("KUBE_CA_FILE", serviceAccountPath+"/ca.crt")
@@ -349,44 +357,48 @@ contexts:
 current-context: kuma-cni-context`
 }
 
-func copyBinaries() {
-	dirs := []string{"/host/opt/cni/bin", "/host/secondary-bin-dir"}
-	// todo: if not written anywhere fail
+func copyBinaries() error {
+	dirs := []string{primaryBinDir, secondaryBinDir}
+	writtenOnce := false
+	var err error
 	for _, dir := range dirs {
 		if !isDirWriteable(dir) {
-			log.Info("directory is not writeable", zap.String("dir", dir))
-			continue
+			log.Info("directory is not writeable", "dir", dir)
 		}
-		file, err := os.Open("/opt/cni/bin/kuma-cni")
+		file, err := os.Open(kumaCniBinaryPath)
 		if err != nil {
 			log.Error(err, "can't open kuma-cni file")
-			os.Exit(1)
 		}
 
-		stat, err := os.Stat("/opt/cni/bin/kuma-cni")
+		stat, err := os.Stat(kumaCniBinaryPath)
 		if err != nil {
 			log.Error(err, "can't stat kuma-cni file")
-			os.Exit(1)
 		}
 
-		log.V(1).Info("/opt/cni/bin/kuma-cni file permissions", zap.Int("permissions", int(stat.Mode())))
+		log.V(1).Info("cni binary file permissions", "permissions", int(stat.Mode()), "path", kumaCniBinaryPath)
 		destination := dir + "/kuma-cni"
 		err = atomic.WriteFile(destination, file)
 		if err != nil {
 			log.Error(err, "can't atomically write kuma-cni file")
 		}
+
 		err = os.Chmod(destination, stat.Mode()|0111)
 		if err != nil {
 			log.Error(err, "can't chmod kuma-cni file")
 		}
 
 		if err != nil {
-			log.Error(err, "can't atomically write cni file", zap.String("dir", dir))
-			os.Exit(1)
+			log.Error(err, "can't atomically write cni file", "dir", dir)
 		}
 
-		log.Info("wrote kuma CNI binaries", zap.String("dir", dir))
+		log.Info("wrote kuma CNI binaries", "dir", dir)
+		writtenOnce = true
 	}
+
+	if !writtenOnce {
+		return err
+	}
+	return nil
 }
 
 // isDirWriteable checks if dir is writable by writing and removing a file
@@ -416,7 +428,7 @@ func setupSignalCleanup(mountedCniNetDir, cniConfName, kubeconfigName string, ch
 func main() {
 	err := install()
 	if err != nil {
-		log.Error(err, "error occurred")
-		return
+		log.Error(err, "error occurred during cni istallation")
+		os.Exit(1)
 	}
 }

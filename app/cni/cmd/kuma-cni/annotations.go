@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-
-	"go.uber.org/zap"
 )
 
 const (
@@ -132,13 +130,13 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 }
 
 func mapAnnotation(annotations map[string]string, field *string, fieldName string) error {
-	isFound, val, valErr := getAnnotationOrDefault(fieldName, annotations)
+	isFound, val, err := getAnnotationOrDefault(fieldName, annotations)
 	*field = val
-	if valErr != nil {
-		log.Error(valErr, "annotation value error",
-			zap.String("name", fieldName),
-			zap.Bool("found", isFound))
-		return valErr
+	if err != nil {
+		log.Error(err, "annotation value error",
+			"name", fieldName,
+			"found", isFound)
+		return err
 	}
 	return nil
 }

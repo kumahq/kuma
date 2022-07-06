@@ -3,36 +3,36 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"strconv"
 	"strings"
 
 	"github.com/containernetworking/plugins/pkg/ns"
-	"github.com/pkg/errors"
-	"go.uber.org/zap"
-
 	"github.com/kumahq/kuma-net/iptables/builder"
 	"github.com/kumahq/kuma-net/iptables/config"
+	"github.com/pkg/errors"
 )
 
-func convertToUint16(field string, value string) uint16 {
+func convertToUint16(field string, value string) (uint16, error) {
 	converted, err := strconv.ParseUint(value, 10, 16)
 	if err != nil {
-		log.Error(err, "failed to convert to int16", zap.String(field, value))
-		os.Exit(1)
+		return 0, errors.Wrapf(err, "could not convert field %v", field)
 	}
-	return uint16(converted)
+	return uint16(converted), nil
 }
 
-func convertCommaSeparatedString(list string) []uint16 {
-	splitted := strings.Split(list, ",")
-	mapped := make([]uint16, len(splitted))
+func convertCommaSeparatedString(list string) ([]uint16, error) {
+	split := strings.Split(list, ",")
+	mapped := make([]uint16, len(split))
 
-	for i, value := range splitted {
-		mapped[i] = convertToUint16(strconv.Itoa(i), value)
+	for i, value := range split {
+		converted, err := convertToUint16(strconv.Itoa(i), value)
+		if err != nil {
+			return nil, err
+		}
+		mapped[i] = converted
 	}
 
-	return mapped
+	return mapped, nil
 }
 
 func Inject(netns string, intermediateConfig *IntermediateConfig) error {
@@ -49,7 +49,7 @@ func Inject(netns string, intermediateConfig *IntermediateConfig) error {
 	defer namespace.Close()
 
 	if err = namespace.Do(func(_ ns.NetNS) error {
-		_, err := builder.RestoreIPTables(cfg)
+		_, err := builder.RestoreIPTables(*cfg)
 		if err != nil {
 			return err
 		}
@@ -61,7 +61,15 @@ func Inject(netns string, intermediateConfig *IntermediateConfig) error {
 	return nil
 }
 
-func mapToConfig(intermediateConfig *IntermediateConfig) (config.Config, error) {
+func mapToConfig(intermediateConfig *IntermediateConfig) (*config.Config, error) {
+	port, err := convertToUint16("inbound port", intermediateConfig.targetPort)
+	if err != nil {
+		return nil, err
+	}
+	excludePorts, err := convertCommaSeparatedString(intermediateConfig.excludeOutboundPorts)
+	if err != nil {
+		return nil, err
+	}
 	cfg := config.Config{
 		RuntimeOutput: ioutil.Discard,
 		Owner: config.Owner{
@@ -69,36 +77,52 @@ func mapToConfig(intermediateConfig *IntermediateConfig) (config.Config, error) 
 		},
 		Redirect: config.Redirect{
 			Outbound: config.TrafficFlow{
-				Port:         convertToUint16("inbound port", intermediateConfig.targetPort),
-				ExcludePorts: convertCommaSeparatedString(intermediateConfig.excludeOutboundPorts),
+				Port:         port,
+				ExcludePorts: excludePorts,
 			},
 		},
 	}
 
 	isGateway, err := GetEnabled(intermediateConfig.isGateway)
 	if err != nil {
-		return config.Config{}, err
+		return nil, err
 	}
 	redirectInbound := !isGateway
 	if redirectInbound {
+		inboundPort, err := convertToUint16("inbound port", intermediateConfig.inboundPort)
+		if err != nil {
+			return nil, err
+		}
+		inboundPortV6, err := convertToUint16("inbound port ipv6", intermediateConfig.inboundPortV6)
+		if err != nil {
+			return nil, err
+		}
+		excludedPorts, err := convertCommaSeparatedString(intermediateConfig.excludeInboundPorts)
+		if err != nil {
+			return nil, err
+		}
 		cfg.Redirect.Inbound = config.TrafficFlow{
-			Port:         convertToUint16("inbound port", intermediateConfig.inboundPort),
-			PortIPv6:     convertToUint16("inbount port ipv6", intermediateConfig.inboundPortV6),
-			ExcludePorts: convertCommaSeparatedString(intermediateConfig.excludeInboundPorts),
+			Port:         inboundPort,
+			PortIPv6:     inboundPortV6,
+			ExcludePorts: excludedPorts,
 		}
 	}
 
 	useBuiltinDNS, err := GetEnabled(intermediateConfig.builtinDNS)
 	if err != nil {
-		return config.Config{}, err
+		return nil, err
 	}
 	if useBuiltinDNS {
+		builtinDnsPort, err := convertToUint16("builtin dns port", intermediateConfig.builtinDNSPort)
+		if err != nil {
+			return nil, err
+		}
 		cfg.Redirect.DNS = config.DNS{
 			Enabled: true,
-			Port:    convertToUint16("buildin dns port", intermediateConfig.builtinDNSPort),
+			Port:    builtinDnsPort,
 		}
 	}
-	return cfg, nil
+	return &cfg, nil
 }
 
 func GetEnabled(value string) (bool, error) {
@@ -108,6 +132,6 @@ func GetEnabled(value string) (bool, error) {
 	case "disabled", "false":
 		return false, nil
 	default:
-		return false, errors.Errorf("wrong value \"%s\", available values are: \"enabled\", \"disabled\"", value)
+		return false, errors.Errorf(`wrong value "%s", available values are: "enabled", "disabled"`, value)
 	}
 }

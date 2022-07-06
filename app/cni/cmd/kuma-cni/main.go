@@ -10,7 +10,6 @@ import (
 	"github.com/containernetworking/cni/pkg/types"
 	"github.com/containernetworking/cni/pkg/types/current"
 	"github.com/containernetworking/cni/pkg/version"
-	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -107,14 +106,14 @@ func cmdAdd(args *skel.CmdArgs) error {
 			if err != nil {
 				return err
 			}
-			log.V(1).Info("created Kubernetes client", zap.Reflect("client", client))
+			log.V(1).Info("created Kubernetes client", "client", client)
 			containers, initContainersMap, annotations, err := getPodInfoWithRetries(client, k8sArgs)
 			if err != nil {
 				return err
 			}
 			excludePod = checkInitContainerPresent(initContainersMap, k8sArgs, excludePod)
 
-			log.V(1).Info("container count in a pod", zap.Int("count", containers))
+			log.V(1).Info("container count in a pod", "count", containers)
 			if containers > 1 {
 				logAnnotations(args, k8sArgs, annotations)
 				excludePod = checkAnnotationPresent(annotations, excludePod)
@@ -151,17 +150,17 @@ func cmdAdd(args *skel.CmdArgs) error {
 		// Pass through the result for the next plugin
 		result = conf.PrevResult
 	}
-	log.Info("Result: %v", zap.Any("result", result))
+	log.Info("Result: %v", "result", result)
 	return types.PrintResult(result, conf.CNIVersion)
 }
 
 func logAnnotations(args *skel.CmdArgs, k8sArgs K8sArgs, annotations map[string]string) {
 	log.V(1).Info("checking annotations prior to injecting redirect",
-		zap.String("containerID", args.ContainerID),
-		zap.String("netns", args.Netns),
-		zap.String("pod", string(k8sArgs.K8S_POD_NAME)),
-		zap.String("namespace", string(k8sArgs.K8S_POD_NAMESPACE)),
-		zap.Reflect("annotations", annotations))
+		"containerID", args.ContainerID,
+		"netns", args.Netns,
+		"pod", string(k8sArgs.K8S_POD_NAME),
+		"namespace", string(k8sArgs.K8S_POD_NAMESPACE),
+		"annotations", annotations)
 }
 
 func checkAnnotationPresent(annotations map[string]string, excludePod bool) bool {
@@ -177,8 +176,8 @@ func checkInitContainerPresent(initContainersMap map[string]struct{}, k8sArgs K8
 	// Check if kuma-init container is present; in that case exclude pod
 	if _, present := initContainersMap["kuma-init"]; present {
 		log.V(1).Info("pod excluded due to being already injected with kuma-init container",
-			zap.String("pod", string(k8sArgs.K8S_POD_NAME)),
-			zap.String("namespace", string(k8sArgs.K8S_POD_NAMESPACE)))
+			"pod", string(k8sArgs.K8S_POD_NAME),
+			"namespace", string(k8sArgs.K8S_POD_NAMESPACE))
 		excludePod = true
 	}
 	return excludePod
@@ -194,7 +193,7 @@ func getPodInfoWithRetries(client *kubernetes.Clientset, k8sArgs K8sArgs) (int, 
 		if k8sErr == nil {
 			break
 		}
-		log.Info("waiting for pod metadata", zap.Error(k8sErr), zap.Int("attempt", attempt))
+		log.Error(k8sErr, "waiting for pod metadata", "attempt", attempt)
 		time.Sleep(podRetrievalInterval)
 	}
 	if k8sErr != nil {
@@ -216,12 +215,12 @@ func shouldExcludePod(excludedNamespaces []string, podNamespace types.Unmarshall
 }
 
 func logContainerInfo(args string, containerID string, k8sArgs K8sArgs) {
-	log.Info("getting identifiers with arguments: %s", zap.String("arguments", args))
-	log.Info("loaded k8s arguments: %v", zap.Any("k8s args", k8sArgs))
+	log.Info("getting identifiers with arguments: %s", "arguments", args)
+	log.Info("loaded k8s arguments: %v", "k8s args", k8sArgs)
 	log.Info("container information",
-		zap.String("containerID", containerID),
-		zap.String("pod", string(k8sArgs.K8S_POD_NAME)),
-		zap.String("namespace", string(k8sArgs.K8S_POD_NAMESPACE)))
+		"containerID", containerID,
+		"pod", string(k8sArgs.K8S_POD_NAME),
+		"namespace", string(k8sArgs.K8S_POD_NAMESPACE))
 }
 
 func logPrevResult(conf *PluginConf) {
@@ -233,8 +232,8 @@ func logPrevResult(conf *PluginConf) {
 	}
 
 	log.V(1).Info("cmdAdd config parsed",
-		zap.String("version", conf.CNIVersion),
-		zap.Reflect("prevResult", loggedPrevResult))
+		"version", conf.CNIVersion,
+		"prevResult", loggedPrevResult)
 }
 
 func cmdGet(args *skel.CmdArgs) error {
