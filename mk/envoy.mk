@@ -1,8 +1,4 @@
-KUMA_DIR ?= .
-
 BUILD_ENVOY_FROM_SOURCES ?= false
-
-ENVOY_VERSION = $(shell ${KUMA_DIR}/tools/envoy/version.sh)
 
 ifeq ($(GOOS),linux)
 	ENVOY_DISTRO ?= alpine
