@@ -1,4 +1,4 @@
-package envoy
+package envoy_test
 
 import (
 	"testing"
