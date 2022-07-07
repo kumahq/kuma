@@ -78,13 +78,13 @@ spec:
 ```
 
 "TargetRef" can attach policy to different objects:
-* Mesh
-* MeshSubset
-* MeshService
-* MeshServiceSubset
-* Proxy
-* MeshGatewayRoute 
-* MeshHTTPRoute
+* Mesh - policy affects all DPPs in the Mesh
+* MeshSubset – policy affect only a subset of DPPs in the Mesh (select subset using "tags")
+* MeshService – policy affects only DPPs of the specified service (select resource using "name")
+* MeshServiceSubset – policy affects only a subset of DPPs of the specified service (select service subset using "name" and "tags")
+* Proxy – policy affects only a specified DPP (select resource using "name")
+* MeshGatewayRoute – policy affects only a specified MeshGatewayRoute (select route using "name")
+* MeshHTTPRoute – policy affects only a specified MeshHTTPRoute (select resource using "name")
 
 "TargetRef" identifies a set of DPPs that will be affected by the policy.
 
