@@ -70,8 +70,7 @@ conf:
     requests: 1
     interval: 10s
 `, meshName)
-		err := YamlUniversal(specificRateLimitPolicy)(env.Cluster)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(env.Cluster.Install(YamlUniversal(specificRateLimitPolicy))).To(Succeed())
 
 		By("demo-client specific RateLimit works")
 		Eventually(func() bool {
@@ -114,8 +113,8 @@ conf:
 `, meshName)
 
 		By("Exposing external service and specific rate limit")
-		Expect(YamlUniversal(externalService)(env.Cluster)).To(Succeed())
-		Expect(YamlUniversal(specificRateLimitPolicy)(env.Cluster)).To(Succeed())
+		Expect(env.Cluster.Install(YamlUniversal(externalService))).To(Succeed())
+		Expect(env.Cluster.Install(YamlUniversal(specificRateLimitPolicy))).To(Succeed())
 
 		By("demo-client specific RateLimit works")
 		Eventually(func() bool {

@@ -81,8 +81,7 @@ conf:
 		Expect(time.Since(start)).To(BeNumerically(">", time.Second*5))
 
 		By("apply a new policy")
-		err = NewClusterSetup().Install(YamlUniversal(timeout)).Setup(env.Cluster)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(env.Cluster.Install(YamlUniversal(timeout))).To(Succeed())
 
 		By("eventually requests timeout consistently")
 		Eventually(func() string {

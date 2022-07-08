@@ -84,8 +84,7 @@ conf:
 		})
 
 		By("Adding a faulty dataplane")
-		err := YamlUniversal(echoServerDataplane)(env.Cluster)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(env.Cluster.Install(YamlUniversal(echoServerDataplane))).To(Succeed())
 
 		By("Check some errors happen")
 		var errs []error
@@ -100,7 +99,7 @@ conf:
 		Expect(errs).ToNot(BeEmpty())
 
 		By("Apply a retry policy")
-		Expect(YamlUniversal(retryPolicy)(env.Cluster)).To(Succeed())
+		Expect(env.Cluster.Install(YamlUniversal(retryPolicy))).To(Succeed())
 
 		By("Eventually all requests succeed consistently")
 		Eventually(func() error {
