@@ -86,7 +86,6 @@ func ProvidedEndpointCluster(name string, hasIPv6 bool, endpoints ...core_xds.En
 			HasIPv6:   hasIPv6,
 		})
 		config.AddV3(&v3.AltStatNameConfigurer{})
-		config.AddV3(&v3.TimeoutConfigurer{})
 	})
 }
 
@@ -154,7 +153,6 @@ func PassThroughCluster(name string) ClusterBuilderOpt {
 			Name: name,
 		})
 		config.AddV3(&v3.AltStatNameConfigurer{})
-		config.AddV3(&v3.TimeoutConfigurer{})
 	})
 }
 

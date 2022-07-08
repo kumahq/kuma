@@ -55,6 +55,7 @@ func (t TracingProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 	res, err := clusters.NewClusterBuilder(proxy.APIVersion).
 		Configure(clusters.ProvidedEndpointCluster(clusterName, proxy.Dataplane.IsIPv6(), *endpoint)).
 		Configure(clusters.ClientSideTLS([]core_xds.Endpoint{*endpoint})).
+		Configure(clusters.DefaultTimeout()).
 		Build()
 	if err != nil {
 		return nil, err

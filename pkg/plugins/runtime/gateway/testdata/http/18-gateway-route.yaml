@@ -1,13 +1,13 @@
 Clusters:
   Resources:
-    external-httpbin-2528f53d03636b9d:
+    external-httpbin-4a2cc28cd5e983f1:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
           maxPendingRequests: 1024
           maxRequests: 1024
           maxRetries: 3
-      connectTimeout: 10s
+      connectTimeout: 5s
       dnsLookupFamily: V4_ONLY
       loadAssignment:
         clusterName: external-httpbin
@@ -25,7 +25,7 @@ Clusters:
                   kuma.io/protocol: http
                 envoy.transport_socket_match:
                   kuma.io/protocol: http
-      name: external-httpbin-2528f53d03636b9d
+      name: external-httpbin-4a2cc28cd5e983f1
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -125,7 +125,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: external-httpbin-2528f53d03636b9d
+              - name: external-httpbin-4a2cc28cd5e983f1
                 weight: 1
               totalWeight: 1
 Runtimes:
