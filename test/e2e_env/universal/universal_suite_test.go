@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/inspect"
 	"github.com/kumahq/kuma/test/e2e_env/universal/membership"
 	"github.com/kumahq/kuma/test/e2e_env/universal/observability"
+	"github.com/kumahq/kuma/test/e2e_env/universal/trafficlog"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -68,3 +69,4 @@ var _ = Describe("Inspect", inspect.Inspect, Ordered)
 var _ = Describe("Applications Metrics", observability.ApplicationsMetrics, Ordered)
 var _ = Describe("Tracing", observability.Tracing, Ordered)
 var _ = Describe("Membership", membership.Membership, Ordered)
+var _ = Describe("Traffic Logging", trafficlog.TCPLogging, Ordered)

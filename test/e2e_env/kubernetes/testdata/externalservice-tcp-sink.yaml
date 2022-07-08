@@ -1,0 +1,52 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: externalservice-namespace
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: externalservice-tcp-sink
+  namespace: externalservice-namespace
+spec:
+  ports:
+    - port: 9999
+      name: netcat
+  selector:
+    app: externalservice-tcp-sink
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: externalservice-tcp-sink
+  namespace: externalservice-namespace
+  labels:
+    app: externalservice-tcp-sink
+spec:
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: externalservice-tcp-sink
+  template:
+    metadata:
+      labels:
+        app: externalservice-tcp-sink
+    spec:
+      containers:
+        - name: tcp-sink
+          image: chilcano/netcat:jessie
+          command: ["/bin/bash"]
+          args: ["-c", "/bin/netcat -lk -p 9999 > /nc.out"]
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9999
+          resources:
+            limits:
+              cpu: 50m
+              memory: 128Mi
