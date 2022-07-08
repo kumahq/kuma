@@ -3,6 +3,7 @@ package auth_test
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -17,10 +18,17 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/inspect"
 	"github.com/kumahq/kuma/test/e2e_env/universal/membership"
 	"github.com/kumahq/kuma/test/e2e_env/universal/observability"
+	"github.com/kumahq/kuma/test/e2e_env/universal/ratelimit"
+	"github.com/kumahq/kuma/test/e2e_env/universal/retry"
+	"github.com/kumahq/kuma/test/e2e_env/universal/timeout"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
 func TestE2E(t *testing.T) {
+	SetDefaultConsistentlyDuration(time.Second * 5)
+	SetDefaultConsistentlyPollingInterval(time.Millisecond * 200)
+	SetDefaultEventuallyPollingInterval(time.Millisecond * 500)
+	SetDefaultEventuallyTimeout(time.Second * 10)
 	test.RunSpecs(t, "E2E Universal Suite")
 }
 
@@ -68,3 +76,6 @@ var _ = Describe("Inspect", inspect.Inspect, Ordered)
 var _ = Describe("Applications Metrics", observability.ApplicationsMetrics, Ordered)
 var _ = Describe("Tracing", observability.Tracing, Ordered)
 var _ = Describe("Membership", membership.Membership, Ordered)
+var _ = Describe("Timeout", timeout.Policy, Ordered)
+var _ = Describe("Retry", retry.Policy, Ordered)
+var _ = Describe("RateLimit", ratelimit.Policy, Ordered)
