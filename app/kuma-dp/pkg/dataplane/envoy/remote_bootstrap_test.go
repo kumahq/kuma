@@ -18,7 +18,6 @@ import (
 
 	. "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
-	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
@@ -91,7 +90,6 @@ var _ = Describe("Remote Bootstrap", func() {
 				cfg := kuma_dp.DefaultConfig()
 				cfg.Dataplane.Mesh = "demo"
 				cfg.Dataplane.Name = "sample"
-				cfg.Dataplane.AdminPort = config_types.MustExactPort(4321) // exact port
 				cfg.DataplaneRuntime.Token = "token"
 
 				return testCase{
@@ -112,7 +110,6 @@ var _ = Describe("Remote Bootstrap", func() {
 					  "mesh": "demo",
 					  "name": "sample",
 					  "proxyType": "dataplane",
-					  "adminPort": 4321,
 					  "dataplaneToken": "token",
 					  "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}",
 					  "version": {
@@ -143,7 +140,6 @@ var _ = Describe("Remote Bootstrap", func() {
 				cfg := kuma_dp.DefaultConfig()
 				cfg.Dataplane.Mesh = "demo"
 				cfg.Dataplane.Name = "sample"
-				cfg.Dataplane.AdminPort = config_types.MustPortRange(4321, 8765) // port range
 				cfg.DataplaneRuntime.TokenPath = "testdata/token"
 
 				return testCase{
@@ -161,7 +157,6 @@ var _ = Describe("Remote Bootstrap", func() {
                       "mesh": "demo",
                       "name": "sample",
                       "proxyType": "dataplane",
-                      "adminPort": 4321,
 					  "dataplaneToken": "token1234",
                       "dataplaneTokenPath": "testdata/token",
                       "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}",
@@ -191,7 +186,6 @@ var _ = Describe("Remote Bootstrap", func() {
 				cfg := kuma_dp.DefaultConfig()
 				cfg.Dataplane.Mesh = "demo"
 				cfg.Dataplane.Name = "sample"
-				cfg.Dataplane.AdminPort = config_types.MustPortRange(4321, 8765) // port range
 				cfg.DataplaneRuntime.Token = "token"
 
 				return testCase{
@@ -209,7 +203,6 @@ var _ = Describe("Remote Bootstrap", func() {
                       "mesh": "demo",
                       "name": "sample",
                       "proxyType": "dataplane",
-                      "adminPort": 4321,
                       "dataplaneToken": "token",
                       "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}",
                       "version": {
@@ -237,7 +230,6 @@ var _ = Describe("Remote Bootstrap", func() {
 				cfg := kuma_dp.DefaultConfig()
 				cfg.Dataplane.Mesh = "demo"
 				cfg.Dataplane.Name = "sample"
-				cfg.Dataplane.AdminPort = config_types.PortRange{} // empty port range
 				cfg.DataplaneRuntime.Token = "token"
 
 				return testCase{
