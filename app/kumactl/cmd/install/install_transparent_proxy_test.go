@@ -24,8 +24,9 @@ var _ = Describe("kumactl install tracing", func() {
 	})
 
 	type testCase struct {
-		extraArgs  []string
-		goldenFile string
+		extraArgs    []string
+		goldenFile   string
+		errorMessage string
 	}
 
 	DescribeTable("should install transparent proxy",
@@ -41,7 +42,7 @@ var _ = Describe("kumactl install tracing", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(stderr.String()).To(BeEmpty())
+			Expect(stderr.String()).To(Equal(given.errorMessage))
 
 			// when
 			regex, err := os.ReadFile(filepath.Join("testdata", given.goldenFile))
@@ -68,29 +69,6 @@ var _ = Describe("kumactl install tracing", func() {
 			},
 			goldenFile: "install-transparent-proxy.defaults.golden.txt",
 		}),
-		Entry("should generate defaults with user id and DNS redirected", testCase{
-			extraArgs: []string{
-				"--kuma-dp-uid", "0",
-				"--kuma-cp-ip", "1.2.3.4",
-				"--skip-resolv-conf",
-				"--redirect-all-dns-traffic",
-				"--redirect-dns-port", "12345",
-				"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT",
-			},
-			goldenFile: "install-transparent-proxy.dns.golden.txt",
-		}),
-		Entry("should generate defaults with user id and DNS redirected without conntrack zone splitting", testCase{
-			extraArgs: []string{
-				"--kuma-dp-uid", "0",
-				"--kuma-cp-ip", "1.2.3.4",
-				"--skip-resolv-conf",
-				"--redirect-all-dns-traffic",
-				"--redirect-dns-port", "12345",
-				"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT",
-				"--skip-dns-conntrack-zone-split",
-			},
-			goldenFile: "install-transparent-proxy.dns.golden.txt",
-		}),
 		Entry("should generate defaults with overrides", testCase{
 			extraArgs: []string{
 				"--kuma-dp-user", "root",
@@ -102,6 +80,31 @@ var _ = Describe("kumactl install tracing", func() {
 				"--exclude-inbound-ports", "1000,1001",
 			},
 			goldenFile: "install-transparent-proxy.overrides.golden.txt",
+		}),
+		Entry("should generate defaults with user id and DNS redirected", testCase{
+			extraArgs: []string{
+				"--kuma-dp-uid", "0",
+				"--kuma-cp-ip", "1.2.3.4",
+				"--skip-resolv-conf",
+				"--redirect-all-dns-traffic",
+				"--redirect-dns-port", "12345",
+				"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT",
+			},
+			goldenFile:   "install-transparent-proxy.dns.golden.txt",
+			errorMessage: "# `--redirect-dns-upstream-target-chain` is deprecated, you should avoid using it",
+		}),
+		Entry("should generate defaults with user id and DNS redirected without conntrack zone splitting", testCase{
+			extraArgs: []string{
+				"--kuma-dp-uid", "0",
+				"--kuma-cp-ip", "1.2.3.4",
+				"--skip-resolv-conf",
+				"--redirect-all-dns-traffic",
+				"--redirect-dns-port", "12345",
+				"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT",
+				"--skip-dns-conntrack-zone-split",
+			},
+			goldenFile:   "install-transparent-proxy.dns.golden.txt",
+			errorMessage: "# `--redirect-dns-upstream-target-chain` is deprecated, you should avoid using it",
 		}),
 	)
 
@@ -118,7 +121,7 @@ var _ = Describe("kumactl install tracing", func() {
 			// then
 			Expect(err).To(HaveOccurred())
 			// and
-			Expect(stderr.String()).To(ContainSubstring("one of --redirect-dns or --redirect-all-dns-traffic should be specified"))
+			Expect(stderr.String()).To(ContainSubstring(given.errorMessage))
 		},
 		Entry("should generate defaults with username", testCase{
 			extraArgs: []string{
@@ -126,7 +129,8 @@ var _ = Describe("kumactl install tracing", func() {
 				"--redirect-dns",
 				"--redirect-all-dns-traffic",
 			},
-			goldenFile: "install-transparent-proxy.defaults.golden.txt",
+			goldenFile:   "install-transparent-proxy.defaults.golden.txt",
+			errorMessage: "one of --redirect-dns or --redirect-all-dns-traffic should be specified",
 		}),
 	)
 })
