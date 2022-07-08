@@ -2,7 +2,7 @@ resources:
 - name: es2-_0_
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 10s
+    connectTimeout: 100s
     loadAssignment:
       clusterName: es2-_0_
       endpoints:
@@ -25,7 +25,7 @@ resources:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         commonHttpProtocolOptions:
-          idleTimeout: 0s
+          idleTimeout: 103s
         explicitHttpConfig:
           http2ProtocolOptions: {}
 - name: outbound:127.0.0.1:18082
@@ -42,7 +42,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           commonHttpProtocolOptions:
-            idleTimeout: 0s
+            idleTimeout: 103s
           httpFilters:
           - name: envoy.filters.http.router
             typedConfig:
@@ -64,7 +64,7 @@ resources:
                 route:
                   autoHostRewrite: true
                   cluster: es2-_0_
-                  timeout: 0s
+                  timeout: 102s
           statPrefix: es2
           streamIdleTimeout: 0s
     metadata:

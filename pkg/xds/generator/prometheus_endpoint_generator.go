@@ -67,6 +67,7 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 				UnixDomainPath: envoy_common.MetricsHijackerSocketName(proxy.Dataplane.Meta.GetName(), proxy.Dataplane.Meta.GetMesh()),
 			},
 		)).
+		Configure(envoy_clusters.DefaultTimeout()).
 		Build()
 	if err != nil {
 		return nil, err

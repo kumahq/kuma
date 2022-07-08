@@ -51,6 +51,7 @@ func (h ApiServerBypass) Modify(resources *core_xds.ResourceSet, ctx xds_context
 
 	cluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
 		Configure(envoy_clusters.PassThroughCluster(apiServerBypassHookResourcesName)).
+		Configure(envoy_clusters.DefaultTimeout()).
 		Build()
 	if err != nil {
 		return errors.Wrapf(err, "could not generate cluster: %s", apiServerBypassHookResourcesName)
