@@ -202,10 +202,10 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				return errors.Wrap(err, "failed to get Envoy version")
 			}
 
-			if envoyVersion.KumaDpCompatible, err = envoy.EnvoyVersionCompatible(envoyVersion.Version); err != nil {
+			if envoyVersion.KumaDpCompatible, err = envoy.VersionCompatible("~"+kuma_version.Envoy, envoyVersion.Version); err != nil {
 				runLog.Error(err, "cannot determine envoy version compatibility")
 			} else if !envoyVersion.KumaDpCompatible {
-				runLog.Info("Envoy version incompatible", "expected", envoy.EnvoyCompatibility, "current", envoyVersion.Version)
+				runLog.Info("Envoy version incompatible", "expected", kuma_version.Envoy, "current", envoyVersion.Version)
 			}
 
 			runLog.Info("fetched Envoy version", "version", envoyVersion)

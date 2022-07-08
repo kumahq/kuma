@@ -1,10 +1,4 @@
-KUMA_DIR ?= .
-
 BUILD_ENVOY_FROM_SOURCES ?= false
-
-ENVOY_TAG ?= v1.22.1 # commit hash or git tag
-# Remember to update pkg/version/compatibility.go
-ENVOY_VERSION = $(shell ${KUMA_DIR}/tools/envoy/version.sh ${ENVOY_TAG})
 
 ifeq ($(GOOS),linux)
 	ENVOY_DISTRO ?= alpine
@@ -44,7 +38,7 @@ build/artifacts-linux-arm64/envoy/envoy:
 
 build/artifacts-${GOOS}-${GOARCH}/envoy/envoy-${ENVOY_VERSION}-${ENVOY_DISTRO}:
 ifeq ($(BUILD_ENVOY_FROM_SOURCES),true)
-	ENVOY_TAG=${ENVOY_TAG} \
+	ENVOY_TAG=$(ENVOY_TAG) \
 	SOURCE_DIR=${SOURCE_DIR} \
 	KUMA_DIR=${KUMA_DIR} \
 	BAZEL_BUILD_EXTRA_OPTIONS=${BAZEL_BUILD_EXTRA_OPTIONS} \
