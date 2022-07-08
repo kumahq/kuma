@@ -1,4 +1,4 @@
-package envoy
+package envoy_test
 
 import (
 	"context"
@@ -16,6 +16,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	. "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"

@@ -1,3 +1,5 @@
+KUMA_DIR ?= .
+ENVOY_VERSION = $(shell ${KUMA_DIR}/tools/envoy/version.sh)
 GINKGO_VERSION := v2.1.3
 GOLANGCI_LINT_VERSION := v1.45.2
 GOLANG_PROTOBUF_VERSION := v1.5.2
