@@ -1,4 +1,4 @@
-package envoy
+package envoy_test
 
 import (
 	"os"
@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 )
 
@@ -40,7 +41,7 @@ var _ = Describe("Bootstrap File", func() {
 			}
 
 			// when
-			filename, err := GenerateBootstrapFile(runtime, []byte(config))
+			filename, err := envoy.GenerateBootstrapFile(runtime, []byte(config))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and

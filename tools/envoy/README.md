@@ -9,6 +9,10 @@ source code.
 
 ### Usage
 
+Changing default envoy version:
+
+Update the ENVOY_TAG in version.sh
+
 Download the latest supported Envoy binary for your host OS: 
 ```shell
 $ make build/envoy
