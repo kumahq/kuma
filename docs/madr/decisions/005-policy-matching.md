@@ -52,7 +52,7 @@ Each Kuma policy has a single "TargetRef":
 ```protobuf
 message TargetRef {
   // Kind of the referenced resource
-  // +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshService;MeshServiceSubset;Proxy;MeshGatewayRoute;MeshHTTPRoute
+  // +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshService;MeshServiceSubset;MeshGatewayRoute;MeshHTTPRoute
   string kind = 1;
 
   // Name of the referenced resource
@@ -82,11 +82,10 @@ spec:
 * MeshSubset – policy affect only a subset of DPPs in the Mesh (select subset using "tags")
 * MeshService – policy affects only DPPs of the specified service (select resource using "name")
 * MeshServiceSubset – policy affects only a subset of DPPs of the specified service (select service subset using "name" and "tags")
-* Proxy – policy affects only a specified DPP (select resource using "name")
 * MeshGatewayRoute – policy affects only a specified MeshGatewayRoute (select route using "name")
-* MeshHTTPRoute – policy affects only a specified MeshHTTPRoute (select resource using "name")
+* MeshHTTPRoute – policy affects only a specified MeshHTTPRoute (select resource using "name"), MeshHTTPRoute is not implemented at that moment
 
-"TargetRef" identifies a set of DPPs that will be affected by the policy.
+The top-level "TargetRef" identifies a set of DPPs that will be affected by the policy.
 
 Traffic direction is expressed using "to" and "from" arrays. 
 
@@ -142,6 +141,9 @@ spec:
       conf:
         action: ALLOW
 ```
+
+Also, there are policies that configure both inbounds and outbounds (like TrafficLog). 
+And there are policies that configure none of this (like ProxyTemplate).
 
 ### Applying
 
@@ -291,14 +293,14 @@ from:
     conf: ... # conf for traffic coming from "backend" v2 service
 ```
 
-When several targetRefs select the same source,
+Just like with outbound policies, when several targetRefs select the same source,
 corresponding confs are merged in the order they're presented in the "from" array
 (bottom ones have more priority over the top ones):
 
 Traffic from "backend" of v2 is selected by 3 targetRefs
 
 ```yaml
-to:
+from:
   - targetRef: 
       kind: MeshServiceSubset
       name: backend
@@ -330,7 +332,7 @@ conf:
 ### Overlapping
 
 As already mentioned "targetRef" attaches policy to objects:
-Mesh, MeshSubset, MeshService, MeshServiceSubset, Proxy, MeshGatewayRoute, MeshHTTPRoute. 
+Mesh, MeshSubset, MeshService, MeshServiceSubset, MeshGatewayRoute, MeshHTTPRoute. 
 These objects are overlapping, i.e Mesh includes many MeshSubsets, MeshSubset includes many MeshServices,
 MeshService includes many MeshServiceSubsets, etc.
 That's why policies attached to different objects are overlapping as well.
@@ -351,7 +353,7 @@ they'll be sorted in a lexicographic order (using policy name).
 #### Merging
 
 Most policies consist of either "to" or "from" arrays.
-For overlapping policies these arrays are concatenated according to sorting order.
+For overlapping policies these arrays are concatenated according to the sorting order.
 
 <img src="assets/matching_merging.png" width="800px" alt="TargetRefs overrides"/>
 
@@ -965,8 +967,10 @@ mesh: default
 name: pt-2
 spec:
   targetRef:
-    kind: Proxy
-    name: my-special-backend-dpp
+    kind: MeshServiceSubset
+    name: backend
+    tags:
+      instance: my-special-backend-dpp
   conf:
     imports:
       - default-proxy
