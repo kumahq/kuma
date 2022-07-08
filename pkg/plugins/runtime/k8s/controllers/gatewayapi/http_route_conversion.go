@@ -109,14 +109,14 @@ func (r *HTTPRouteReconciler) gapiToKumaRouteConf(
 		{
 			Type:   string(gatewayapi.RouteConditionResolvedRefs),
 			Status: kube_meta.ConditionTrue,
-			Reason: string(gatewayapi.RouteConditionResolvedRefs),
+			Reason: string(gatewayapi.RouteReasonResolvedRefs),
 		},
 		// TODO: reflect the true state from the actual gateway of this
 		// route
 		{
 			Type:   string(gatewayapi.RouteConditionAccepted),
 			Status: kube_meta.ConditionTrue,
-			Reason: string(gatewayapi.RouteConditionAccepted),
+			Reason: string(gatewayapi.RouteReasonAccepted),
 		},
 	}
 

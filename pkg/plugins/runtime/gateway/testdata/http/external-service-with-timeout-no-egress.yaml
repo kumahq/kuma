@@ -1,13 +1,13 @@
 Clusters:
   Resources:
-    external-httpbin-e70841077c6e3aa5:
+    external-httpbin-f452fc958912174e:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
           maxPendingRequests: 1024
           maxRequests: 1024
           maxRetries: 3
-      connectTimeout: 5s
+      connectTimeout: 113s
       dnsLookupFamily: V4_ONLY
       loadAssignment:
         clusterName: external-httpbin
@@ -27,7 +27,7 @@ Clusters:
                 envoy.transport_socket_match:
                   kuma.io/external-service-name: external-httpbin
                   kuma.io/protocol: http2
-      name: external-httpbin-e70841077c6e3aa5
+      name: external-httpbin-f452fc958912174e
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -49,7 +49,8 @@ Clusters:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
-            idleTimeout: 3600s
+            idleTimeout: 115s
+            maxStreamDuration: 117s
           explicitHttpConfig:
             http2ProtocolOptions: {}
 Endpoints:
@@ -121,11 +122,11 @@ Routes:
       validateClusters: false
       virtualHosts:
       - domains:
-        - echo.example.com
-        name: echo.example.com
+        - '*'
+        name: '*'
         routes:
         - match:
-            prefix: /
+            path: /ext
           route:
             retryPolicy:
               numRetries: 5
@@ -134,10 +135,26 @@ Routes:
                 baseInterval: 0.025s
                 maxInterval: 0.250s
               retryOn: gateway-error,connect-failure,refused-stream
-            timeout: 15s
+            timeout: 114s
             weightedClusters:
               clusters:
-              - name: external-httpbin-e70841077c6e3aa5
+              - name: external-httpbin-f452fc958912174e
+                weight: 1
+              totalWeight: 1
+        - match:
+            prefix: /ext/
+          route:
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 114s
+            weightedClusters:
+              clusters:
+              - name: external-httpbin-f452fc958912174e
                 weight: 1
               totalWeight: 1
 Runtimes:
