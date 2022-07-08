@@ -36,12 +36,14 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: circuitbreakers.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: CircuitBreaker
     listKind: CircuitBreakerList
     plural: circuitbreakers
@@ -74,23 +76,19 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: containerpatches.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: ContainerPatch
     listKind: ContainerPatchList
     plural: containerpatches
@@ -188,23 +186,19 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: meshgateways.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: MeshGateway
     listKind: MeshGatewayList
     plural: meshgateways
@@ -237,23 +231,19 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: meshinsights.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: MeshInsight
     listKind: MeshInsightList
     plural: meshinsights
@@ -286,23 +276,19 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: proxytemplates.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: ProxyTemplate
     listKind: ProxyTemplateList
     plural: proxytemplates
@@ -335,23 +321,19 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: ratelimits.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: RateLimit
     listKind: RateLimitList
     plural: ratelimits
@@ -384,23 +366,19 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: retries.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: Retry
     listKind: RetryList
     plural: retries
@@ -433,23 +411,19 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: serviceinsights.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: ServiceInsight
     listKind: ServiceInsightList
     plural: serviceinsights
@@ -482,23 +456,19 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: timeouts.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: Timeout
     listKind: TimeoutList
     plural: timeouts
@@ -531,23 +501,19 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: trafficlogs.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: TrafficLog
     listKind: TrafficLogList
     plural: trafficlogs
@@ -580,23 +546,19 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: trafficpermissions.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: TrafficPermission
     listKind: TrafficPermissionList
     plural: trafficpermissions
@@ -629,23 +591,19 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: trafficroutes.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: TrafficRoute
     listKind: TrafficRouteList
     plural: trafficroutes
@@ -678,23 +636,19 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: dataplaneinsights.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: DataplaneInsight
     listKind: DataplaneInsightList
     plural: dataplaneinsights
@@ -727,23 +681,19 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: traffictraces.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: TrafficTrace
     listKind: TrafficTraceList
     plural: traffictraces
@@ -776,23 +726,19 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: virtualoutbounds.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: VirtualOutbound
     listKind: VirtualOutboundList
     plural: virtualoutbounds
@@ -825,23 +771,19 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: zoneegresses.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: ZoneEgress
     listKind: ZoneEgressList
     plural: zoneegresses
@@ -874,23 +816,19 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: zoneegressinsights.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: ZoneEgressInsight
     listKind: ZoneEgressInsightList
     plural: zoneegressinsights
@@ -923,23 +861,19 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: zoneingresses.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: ZoneIngress
     listKind: ZoneIngressList
     plural: zoneingresses
@@ -972,23 +906,19 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: zoneingressinsights.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: ZoneIngressInsight
     listKind: ZoneIngressInsightList
     plural: zoneingressinsights
@@ -1022,23 +952,19 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: zoneinsights.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: ZoneInsight
     listKind: ZoneInsightList
     plural: zoneinsights
@@ -1071,23 +997,19 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: zones.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: Zone
     listKind: ZoneList
     plural: zones
@@ -1120,23 +1042,19 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: dataplanes.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: Dataplane
     listKind: DataplaneList
     plural: dataplanes
@@ -1169,23 +1087,19 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: externalservices.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: ExternalService
     listKind: ExternalServiceList
     plural: externalservices
@@ -1218,23 +1132,19 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: faultinjections.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: FaultInjection
     listKind: FaultInjectionList
     plural: faultinjections
@@ -1267,23 +1177,19 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: healthchecks.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: HealthCheck
     listKind: HealthCheckList
     plural: healthchecks
@@ -1316,23 +1222,19 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: meshes.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: Mesh
     listKind: MeshList
     plural: meshes
@@ -1365,23 +1267,19 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: meshgatewayinstances.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: MeshGatewayInstance
     listKind: MeshGatewayInstanceList
     plural: meshgatewayinstances
@@ -1458,6 +1356,13 @@ spec:
                         description: Annotations holds annotations to be set on a
                           Service.
                         type: object
+                    type: object
+                  spec:
+                    description: Spec holds some customizable fields of a Service.
+                    properties:
+                      loadBalancerIP:
+                        description: LoadBalancerIP corresponds to ServiceSpec.LoadBalancerIP.
+                        type: string
                     type: object
                 type: object
               serviceType:
@@ -1621,23 +1526,19 @@ spec:
     storage: true
     subresources:
       status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: meshgatewayroutes.kuma.io
 spec:
   group: kuma.io
   names:
+    categories:
+    - kuma
     kind: MeshGatewayRoute
     listKind: MeshGatewayRouteList
     plural: meshgatewayroutes
@@ -1670,12 +1571,6 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -2025,6 +1920,7 @@ spec:
       annotations:
         checksum/config: 3a05a95096ec7248d5e43d50e181064206f451b7714554d2b64c8f5a37118bed
         checksum/tls-secrets: 2bb884540aa3f1284160eefd079bd32e623c0dc41b67ca862773e7cf184d6f65
+        
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -2059,7 +1955,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: control-plane
-          image: "docker.io/kumahq/kuma-cp:0.0.1"
+          image: "gcr.io/octo/kuma-cp:0.0.1"
           imagePullPolicy: IfNotPresent
           env:
             - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
@@ -2067,7 +1963,7 @@ spec:
             - name: KUMA_API_SERVER_READ_ONLY
               value: "true"
             - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
-              value: "true"
+              value: "false"
             - name: KUMA_DP_SERVER_HDS_ENABLED
               value: "false"
             - name: KUMA_ENVIRONMENT
@@ -2077,7 +1973,7 @@ spec:
             - name: KUMA_GENERAL_TLS_KEY_FILE
               value: "/var/run/secrets/kuma.io/tls-cert/tls.key"
             - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
-              value: "docker.io/kumahq/kuma-init:0.0.1"
+              value: "gcr.io/octo/kuma-init:0.0.1"
             - name: KUMA_MODE
               value: "standalone"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
@@ -2091,7 +1987,7 @@ spec:
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
               value: "false"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
-              value: "docker.io/kumahq/kuma-dp:0.0.1"
+              value: "gcr.io/octo-dataplane/kuma-dp:0.0.1"
             - name: KUMA_RUNTIME_KUBERNETES_SERVICE_ACCOUNT_NAME
               value: "system:serviceaccount:kuma-system:kuma-control-plane"
             - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
