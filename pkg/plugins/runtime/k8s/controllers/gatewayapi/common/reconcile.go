@@ -23,7 +23,7 @@ func hashNamespacedName(name kube_types.NamespacedName) string {
 	hash.Write([]byte(name.Namespace))
 	hash.Write([]byte(name.Name))
 	// our hash is 8 characters and our label can be 63
-	return fmt.Sprintf("%.54s-%x", name.String(), hash.Sum(nil))
+	return fmt.Sprintf("%.54s-%x", fmt.Sprintf("%s_%s", name.Namespace, name.Name), hash.Sum(nil))
 }
 
 // ReconcileLabelledObject manages a set of owned kuma objects based on
