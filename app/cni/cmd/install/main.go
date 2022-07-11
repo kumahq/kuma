@@ -24,9 +24,10 @@ import (
 )
 
 const (
-	kumaCniBinaryPath = "/opt/cni/bin/kuma-cni"
-	primaryBinDir     = "/host/opt/cni/bin"
-	secondaryBinDir   = "/host/secondary-bin-dir"
+	kumaCniBinaryPath  = "/opt/cni/bin/kuma-cni"
+	primaryBinDir      = "/host/opt/cni/bin"
+	secondaryBinDir    = "/host/secondary-bin-dir"
+	serviceAccountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
 )
 
 var (
@@ -41,26 +42,33 @@ func removeBinFiles() {
 	}
 }
 
-func findCniConfFile(mountedCNINetDir string) string {
-	files, _ := filepath.Glob(mountedCNINetDir + "/*.conf")
+func findCniConfFile(mountedCNINetDir string) (string, error) {
+	files, err := filepath.Glob(mountedCNINetDir + "/*.conf")
+	if err != nil {
+		return "", err
+	}
+
 	file, found := lookForValidConfig(files)
 	if found {
-		return file
+		return file, nil
 	}
 
-	files, _ = filepath.Glob(mountedCNINetDir + "/*.conflist")
+	files, err = filepath.Glob(mountedCNINetDir + "/*.conflist")
+	if err != nil {
+		return "", err
+	}
 	file, found = lookForValidConfig(files)
 	if found {
-		return file
+		return file, nil
 	}
 
-	// probably should return an error
-	return ""
+	// use default
+	return "", nil
 }
 
 func lookForValidConfig(files []string) (string, bool) {
 	for _, file := range files {
-		found := isFileAValidConfig(file)
+		found := isValidConfigFile(file)
 		if found {
 			return file, true
 		}
@@ -68,7 +76,7 @@ func lookForValidConfig(files []string) (string, bool) {
 	return "", false
 }
 
-func isFileAValidConfig(file string) bool {
+func isValidConfigFile(file string) bool {
 	var parsed map[string]interface{}
 	contents, _ := ioutil.ReadFile(file)
 	// this is probably going to be rewritten to not use `jq` at all
@@ -100,8 +108,8 @@ func cleanup(mountedCniNetDir, cniConfName, kubeconfigName string, chainedCniPlu
 	removeKubeconfig(mountedCniNetDir, kubeconfigName)
 }
 
-func removeKubeconfig(mountedCniNetDir, kubecfgName string) {
-	kubeconfigPath := mountedCniNetDir + "/" + kubecfgName
+func removeKubeconfig(mountedCniNetDir, kubeconfigName string) {
+	kubeconfigPath := mountedCniNetDir + "/" + kubeconfigName
 	if fileExists(kubeconfigPath) {
 		err := os.Remove(kubeconfigPath)
 		if err != nil {
@@ -158,34 +166,41 @@ func revertConfigContentsViaJq(configBytes []byte) []byte {
 
 func install() error {
 	hostCniNetDir := env.GetString("CNI_NET_DIR", "/etc/cni/net.d")
-	kubecfgName := env.GetString("KUBECFG_FILE_NAME", "ZZZ-kuma-cni-kubeconfig")
+	kubeconfigName := env.GetString("KUBECFG_FILE_NAME", "ZZZ-kuma-cni-kubeconfig")
 	cfgCheckInterval, _ := env.GetInt("CFGCHECK_INTERVAL", 1)
 	chainedCniPlugin, _ := env.GetBool("CHAINED_CNI_PLUGIN", true)
 	mountedCniNetDir := env.GetString("MOUNTED_CNI_NET_DIR", "/host/etc/cni/net.d")
-	serviceAccountPath := "/var/run/secrets/kubernetes.io/serviceaccount"
-	cniConfName := env.GetString("CNI_CONF_NAME", findCniConfFile(mountedCniNetDir))
+
+	cniConfFile, err := findCniConfFile(mountedCniNetDir)
+	if err != nil {
+		return err
+	}
+	cniConfName := env.GetString("CNI_CONF_NAME", cniConfFile)
 	if cniConfName == "" {
 		cniConfName = "YYY-kuma-cni.conflist"
 	}
-	defer cleanup(mountedCniNetDir, cniConfName, kubecfgName, chainedCniPlugin)
-	setupSignalCleanup(mountedCniNetDir, cniConfName, kubecfgName, chainedCniPlugin)
+	defer cleanup(mountedCniNetDir, cniConfName, kubeconfigName, chainedCniPlugin)
+	setupSignalCleanup(mountedCniNetDir, cniConfName, kubeconfigName, chainedCniPlugin)
 
-	err := copyBinaries()
+	err = copyBinaries()
 	if err != nil {
 		return err
 	}
 
-	err = prepareKubeconfig(mountedCniNetDir, kubecfgName, serviceAccountPath)
+	err = prepareKubeconfig(mountedCniNetDir, kubeconfigName, serviceAccountPath)
 	if err != nil {
 		return err
 	}
 
-	err = prepareKumaCniConfig(mountedCniNetDir, hostCniNetDir, kubecfgName, serviceAccountPath, cniConfName, chainedCniPlugin)
+	err = prepareKumaCniConfig(mountedCniNetDir, hostCniNetDir, kubeconfigName, serviceAccountPath, cniConfName, chainedCniPlugin)
 	if err != nil {
 		return err
 	}
 
-	shouldSleep, _ := env.GetBool("SLEEP", true)
+	shouldSleep, err := env.GetBool("SLEEP", true)
+	if err != nil {
+		shouldSleep = true // sleep by default
+	}
 
 	for shouldSleep {
 		time.Sleep(time.Duration(cfgCheckInterval) * time.Second)
@@ -195,9 +210,9 @@ func install() error {
 	return nil
 }
 
-func prepareKumaCniConfig(mountedCniNetDir, hostCniNetDir, kubecfgName, serviceAccountPath, cniConfName string, chainedCniPlugin bool) error {
+func prepareKumaCniConfig(mountedCniNetDir, hostCniNetDir, kubeconfigName, serviceAccountPath, cniConfName string, chainedCniPlugin bool) error {
 	rawConfig := env.GetString("CNI_NETWORK_CONFIG", "")
-	kubeconfigFilePath := hostCniNetDir + "/" + kubecfgName
+	kubeconfigFilePath := hostCniNetDir + "/" + kubeconfigName
 
 	config := strings.Replace(rawConfig, "__KUBECONFIG_FILEPATH__", kubeconfigFilePath, 1)
 	log.V(1).Info("config after replace", "config", config)
@@ -288,7 +303,7 @@ func fileExists(path string) bool {
 	return err == nil
 }
 
-func prepareKubeconfig(mountedCniNetDir, kubecfgName, serviceAccountPath string) error {
+func prepareKubeconfig(mountedCniNetDir, kubeconfigName, serviceAccountPath string) error {
 	serviceAccountTokenPath := serviceAccountPath + "/token"
 	serviceAccountToken, err := ioutil.ReadFile(serviceAccountTokenPath)
 	if err != nil {
@@ -315,7 +330,7 @@ func prepareKubeconfig(mountedCniNetDir, kubecfgName, serviceAccountPath string)
 		caData := base64.StdEncoding.EncodeToString(kubeCa)
 
 		kubeconfig := kubeconfigTemplate(kubernetesServiceProtocol, kubernetesServiceHost, kubernetesServicePort, string(serviceAccountToken), caData)
-		err = atomic.WriteFile(mountedCniNetDir+"/"+kubecfgName, strings.NewReader(kubeconfig))
+		err = atomic.WriteFile(mountedCniNetDir+"/"+kubeconfigName, strings.NewReader(kubeconfig))
 		if err != nil {
 			return err
 		}
@@ -430,7 +445,7 @@ func setupSignalCleanup(mountedCniNetDir, cniConfName, kubeconfigName string, ch
 func main() {
 	err := install()
 	if err != nil {
-		log.Error(err, "error occurred during cni istallation")
+		log.Error(err, "error occurred during cni installation")
 		os.Exit(1)
 	}
 }
