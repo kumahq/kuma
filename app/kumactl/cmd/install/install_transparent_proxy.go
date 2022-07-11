@@ -146,10 +146,6 @@ runuser -u kuma-dp -- \
 				return errors.Errorf("please supply a valid --kuma-cp-ip")
 			}
 
-			if args.DNSUpstreamTargetChain != "RETURN" {
-				_, _ = cmd.ErrOrStderr().Write([]byte("# `--redirect-dns-upstream-target-chain` is deprecated, you should avoid using it"))
-			}
-
 			if err := modifyIpTables(cmd, &args); err != nil {
 				return err
 			}
