@@ -62,6 +62,9 @@ type MeshGatewayCommonConfig struct {
 type MeshGatewayServiceTemplate struct {
 	// Metadata holds metadata configuration for a Service.
 	Metadata MeshGatewayServiceMetadata `json:"metadata,omitempty"`
+
+	// Spec holds some customizable fields of a Service.
+	Spec MeshGatewayServiceSpec `json:"spec,omitempty"`
 }
 
 // +k8s:deepcopy-gen=true
@@ -70,6 +73,15 @@ type MeshGatewayServiceTemplate struct {
 type MeshGatewayServiceMetadata struct {
 	// Annotations holds annotations to be set on a Service.
 	Annotations map[string]string `json:"annotations,omitempty"`
+}
+
+// +k8s:deepcopy-gen=true
+
+// MeshGatewayServiceSpec holds customizable fields of a Service spec.
+type MeshGatewayServiceSpec struct {
+	// LoadBalancerIP corresponds to ServiceSpec.LoadBalancerIP.
+	// +optional
+	LoadBalancerIP string `json:"loadBalancerIP,omitempty"`
 }
 
 // +k8s:deepcopy-gen=true

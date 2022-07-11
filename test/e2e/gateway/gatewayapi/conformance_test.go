@@ -85,8 +85,7 @@ func TestConformance(t *testing.T) {
 	var passingTests []suite.ConformanceTest
 	for _, test := range tests.ConformanceTests {
 		switch test.ShortName {
-		case tests.HTTPRouteDisallowedKind.ShortName, // TODO: we only support HTTPRoute so it's not yet possible to test this
-			tests.HTTPRouteHostnameIntersection.ShortName: // TODO parents aren't correct/routes aren't accepted
+		case tests.HTTPRouteDisallowedKind.ShortName: // TODO: we only support HTTPRoute so it's not yet possible to test this
 			continue
 		}
 		passingTests = append(passingTests, test)

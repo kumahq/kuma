@@ -11,6 +11,7 @@ var (
 	gitTag    = "unknown"
 	gitCommit = "unknown"
 	buildDate = "unknown"
+	Envoy     = "unknown"
 )
 
 type BuildInfo struct {

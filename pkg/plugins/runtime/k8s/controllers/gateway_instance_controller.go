@@ -17,6 +17,7 @@ import (
 	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	kube_version "k8s.io/apimachinery/pkg/version"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
@@ -38,6 +39,7 @@ import (
 
 // GatewayInstanceReconciler reconciles a MeshGatewayInstance object.
 type GatewayInstanceReconciler struct {
+	K8sVersion *kube_version.Info
 	kube_client.Client
 	Log logr.Logger
 
@@ -166,6 +168,10 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 			service.Spec.Ports = ports
 			service.Spec.Type = gatewayInstance.Spec.ServiceType
 
+			if ip := gatewayInstance.Spec.ServiceTemplate.Spec.LoadBalancerIP; ip != "" {
+				service.Spec.LoadBalancerIP = ip
+			}
+
 			return service, nil
 		},
 	)
@@ -178,6 +184,27 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 	}
 
 	return obj.(*kube_core.Service), nil
+}
+
+func isUnprivilegedPortStartSysctlSupported(v kube_version.Info) (bool, error) {
+	major, err := strconv.Atoi(v.Major)
+	if err != nil {
+		return false, err
+	}
+
+	minor, err := strconv.Atoi(v.Minor)
+	if err != nil {
+		return false, err
+	}
+
+	switch {
+	case major > 1:
+		return true, nil
+	case major == 1:
+		return minor >= 22, nil
+	default:
+		return false, nil
+	}
 }
 
 // createOrUpdateDeployment can either return an error, a created Deployment or
@@ -215,8 +242,30 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 
 			container.Name = k8s_util.KumaGatewayContainerName
 
+			unprivilegedPortStartSupported, err := isUnprivilegedPortStartSysctlSupported(*r.K8sVersion)
+			if err != nil {
+				r.Log.Info("couldn't determine Sysctl `net.ipv4.ip_unprivileged_port_start` support", "error", err)
+			}
+
+			var securityContext *kube_core.PodSecurityContext
+			if unprivilegedPortStartSupported {
+				securityContext = &kube_core.PodSecurityContext{
+					Sysctls: []kube_core.Sysctl{{
+						Name:  "net.ipv4.ip_unprivileged_port_start",
+						Value: "0",
+					}},
+				}
+			} else {
+				secContext := container.SecurityContext
+				if secContext.Capabilities == nil {
+					secContext.Capabilities = &kube_core.Capabilities{}
+				}
+				secContext.Capabilities.Add = append(secContext.Capabilities.Add, "NET_BIND_SERVICE")
+			}
+
 			podSpec := kube_core.PodSpec{
-				Containers: []kube_core.Container{container},
+				SecurityContext: securityContext,
+				Containers:      []kube_core.Container{container},
 			}
 
 			jsonTags, err := json.Marshal(gatewayInstance.Spec.Tags)
