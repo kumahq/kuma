@@ -61,7 +61,7 @@ jobs:
           PKG_FILENAME=$(find .cr-release-packages -type f -printf "%f\n")
           echo "::set-output name=filename::${PKG_FILENAME}"
       - name: Upload packaged chart
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ steps.package.outputs.filename }}
           path: .cr-release-packages/${{ steps.package.outputs.filename }}
