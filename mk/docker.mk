@@ -66,7 +66,7 @@ images/release: image/kuma-cp image/kuma-dp image/kumactl image/kuma-init image/
 images/test: image/kuma-universal ## Dev: Rebuild test Docker images
 
 .PHONY: images/push
-images/push: image/push/kuma-cp image/push/kuma-dp image/push/kumactl image/push/kuma-init image/push/kuma-prometheus-sd
+images/push: image/push/kuma-cp image/push/kuma-dp image/push/kumactl image/push/kuma-init image/push/kuma-prometheus-sd image/kuma-cni
 
 ${BUILD_DOCKER_IMAGES_DIR}:
 	mkdir -p ${BUILD_DOCKER_IMAGES_DIR}
