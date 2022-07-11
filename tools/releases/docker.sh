@@ -7,7 +7,7 @@ source "${SCRIPT_DIR}/../common.sh"
 
 KUMA_DOCKER_REPO="${KUMA_DOCKER_REPO:-docker.io}"
 KUMA_DOCKER_REPO_ORG="${KUMA_DOCKER_REPO_ORG:-${KUMA_DOCKER_REPO}/kumahq}"
-KUMA_COMPONENTS="${KUMA_COMPONENTS:-kuma-cp kuma-dp kumactl kuma-init kuma-prometheus-sd}"
+KUMA_COMPONENTS="${KUMA_COMPONENTS:-kuma-cp kuma-dp kumactl kuma-init kuma-prometheus-sd kuma-cni}"
 ENVOY_VERSION=$("${SCRIPT_DIR}/../envoy/version.sh")
 BUILD_ARCH="${BUILD_ARCH:-amd64 arm64}"
 
