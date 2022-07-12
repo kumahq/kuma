@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/inspect"
 	"github.com/kumahq/kuma/test/e2e_env/universal/matching"
 	"github.com/kumahq/kuma/test/e2e_env/universal/membership"
+	"github.com/kumahq/kuma/test/e2e_env/universal/mtls"
 	"github.com/kumahq/kuma/test/e2e_env/universal/observability"
 	"github.com/kumahq/kuma/test/e2e_env/universal/proxytemplate"
 	"github.com/kumahq/kuma/test/e2e_env/universal/ratelimit"
@@ -83,3 +84,4 @@ var _ = Describe("Retry", retry.Policy, Ordered)
 var _ = Describe("RateLimit", ratelimit.Policy, Ordered)
 var _ = Describe("ProxyTemplate", proxytemplate.ProxyTemplate, Ordered)
 var _ = Describe("Matching", matching.Matching, Ordered)
+var _ = Describe("Mtls", mtls.Policy, Ordered)
