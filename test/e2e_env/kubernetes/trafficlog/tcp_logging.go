@@ -54,22 +54,21 @@ spec:
 `, meshName)
 		BeforeAll(func() {
 			err := NewClusterSetup().
+				Install(YamlK8s(loggingBackend)).
+				Install(YamlK8s(trafficLog)).
 				Install(NamespaceWithSidecarInjection(namespace)).
-				Install(MeshKubernetes(meshName)).
 				Install(testserver.Install(
 					testserver.WithNamespace(namespace),
 					testserver.WithMesh(meshName),
 					testserver.WithName(testServer))).
 				Install(DemoClientK8s(meshName, namespace)).
 				Install(externalservice.Install(externalservice.TcpSink, []string{})).
-				Install(YamlK8s(loggingBackend)).
-				Install(YamlK8s(trafficLog)).
 				Setup(env.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		E2EAfterAll(func() {
-			Expect(env.Cluster.DeleteDeployment("externalservice-tcp-sink")).To(Succeed())
+			Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
 			Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 		})
 
@@ -78,6 +77,7 @@ spec:
 			var err error
 			var stdout string
 			clientPodName, err := PodNameOfApp(env.Cluster, "demo-client", namespace)
+			Expect(err).ToNot(HaveOccurred())
 			tcpSinkPodName, err := PodNameOfApp(env.Cluster, "externalservice-tcp-sink", tcpSinkNamespace)
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(func() error {
@@ -98,7 +98,6 @@ spec:
 				startTimeStr, src, dst = parts[0], parts[1], parts[2]
 				return nil
 			}, "30s", "1ms").ShouldNot(HaveOccurred())
-			Expect(err).ToNot(HaveOccurred())
 			startTimeInt, err := strconv.Atoi(startTimeStr)
 			Expect(err).ToNot(HaveOccurred())
 			startTime := time.Unix(int64(startTimeInt), 0)

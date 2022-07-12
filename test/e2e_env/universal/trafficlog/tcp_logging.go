@@ -44,18 +44,16 @@ destinations:
 `, meshName)
 		BeforeAll(func() {
 			err := NewClusterSetup().
-				Install(MeshUniversal(meshName)).
+				Install(YamlUniversal(loggingBackend)).
+				Install(YamlUniversal(trafficLog)).
 				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "universal-1"}))).
 				Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 				Install(externalservice.Install(externalservice.TcpSink, externalservice.UniversalTCPSink)).
-				Install(YamlUniversal(loggingBackend)).
-				Install(YamlUniversal(trafficLog)).
 				Setup(env.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		E2EAfterAll(func() {
-			Expect(env.Cluster.DeleteDeployment("externalservice-tcp-sink")).To(Succeed())
 			Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
 			Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 		})
@@ -82,7 +80,6 @@ destinations:
 				startTimeStr, src, dst = parts[0], parts[1], parts[2]
 				return nil
 			}, "30s", "1ms").ShouldNot(HaveOccurred())
-			Expect(err).ToNot(HaveOccurred())
 			startTimeInt, err := strconv.Atoi(startTimeStr)
 			Expect(err).ToNot(HaveOccurred())
 			startTime := time.Unix(int64(startTimeInt), 0)
