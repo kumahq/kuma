@@ -74,7 +74,6 @@ func lookForValidConfig(files []string, checkerFn func(string) bool) (string, bo
 	return "", false
 }
 
-
 func cleanup(mountedCniNetDir, cniConfName, kubeconfigName string, chainedCniPlugin bool) {
 	removeBinFiles()
 	err := revertConfig(mountedCniNetDir, cniConfName, chainedCniPlugin)
