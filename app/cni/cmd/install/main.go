@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/base64"
-	"encoding/json"
 	"io/fs"
 	"io/ioutil"
 	"net/url"
@@ -15,7 +14,6 @@ import (
 	"time"
 
 	"github.com/asaskevich/govalidator"
-	"github.com/itchyny/gojq"
 	"github.com/natefinch/atomic"
 	"github.com/pkg/errors"
 	"k8s.io/utils/env"
@@ -82,7 +80,10 @@ func check_install(mountedCNINetDir string) {
 
 func cleanup(mountedCniNetDir, cniConfName, kubeconfigName string, chainedCniPlugin bool) {
 	removeBinFiles()
-	revertConfig(mountedCniNetDir, cniConfName, chainedCniPlugin)
+	err := revertConfig(mountedCniNetDir, cniConfName, chainedCniPlugin)
+	if err != nil {
+		log.Error(err, "could not revert config")
+	}
 	removeKubeconfig(mountedCniNetDir, kubeconfigName)
 }
 
@@ -96,50 +97,32 @@ func removeKubeconfig(mountedCniNetDir, kubeconfigName string) {
 	}
 }
 
-func revertConfig(mountedCniNetDir, cniConfName string, chainedCniPlugin bool) {
+func revertConfig(mountedCniNetDir, cniConfName string, chainedCniPlugin bool) error {
 	configPath := mountedCniNetDir + "/" + cniConfName
 
 	if fileExists(configPath) {
 		if chainedCniPlugin {
 			contents, err := ioutil.ReadFile(configPath)
 			if err != nil {
-				log.V(1).Error(err, "couldn't read cni conf file")
+				return errors.Wrap(err, "couldn't read cni conf file")
 			}
-			newContents := revertConfigContentsViaJq(contents)
+			newContents, err := revertConfigContents(contents)
+			if err != nil {
+				return errors.Wrap(err, "could not revert config contents")
+			}
 			err = atomic.WriteFile(configPath, bytes.NewReader(newContents))
 			if err != nil {
-				log.Error(err, "could not write new conf")
+				return errors.Wrap(err, "could not write new conf")
 			}
 		} else {
 			err := os.Remove(configPath)
 			if err != nil {
-				log.V(1).Error(err, "couldn't remove cni conf file")
+				return errors.Wrap(err, "couldn't remove cni conf file")
 			}
 		}
 	}
-}
 
-func revertConfigContentsViaJq(configBytes []byte) []byte {
-	queryString := `del( .plugins[]? | select(.type == "kuma-cni"))`
-	// this is probably going to be rewritten to not use `jq` at all
-	query, err := gojq.Parse(queryString)
-	if err != nil {
-		log.V(1).Error(err, "couldn't jq query")
-	}
-
-	var parsed map[string]interface{}
-	err = json.Unmarshal(configBytes, &parsed)
-	if err != nil {
-		log.V(1).Error(err, "couldn't parse CNI config")
-	}
-
-	result := query.Run(parsed)
-	modified, _ := result.Next()
-	marshaled, err := json.MarshalIndent(modified, "", "  ")
-	if err != nil {
-		log.V(1).Error(err, "couldn't marshal modified config")
-	}
-	return marshaled
+	return nil
 }
 
 func install() error {

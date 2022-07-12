@@ -47,15 +47,29 @@ var _ = Describe("testTransformJsonConfig", func() {
 })
 
 var _ = Describe("revertConfig", func() {
-	It("should properly revert CNI config", func() {
+	It("should properly revert CNI conflist", func() {
 		// given
 		changedConfig, _ := ioutil.ReadFile("testdata/10-calico.conflist.golden")
 		originalConfig, _ := ioutil.ReadFile("testdata/10-calico.conflist")
 
 		// when
-		result := revertConfigContentsViaJq(changedConfig)
+		result, err := revertConfigContents(changedConfig)
 
 		// then
+		Expect(err).To(Not(HaveOccurred()))
+		Expect(result).To(MatchJSON(originalConfig))
+	})
+
+	It("should properly revert CNI conf", func() {
+		// given
+		changedConfig, _ := ioutil.ReadFile("testdata/10-flannel.conf.golden")
+		originalConfig, _ := ioutil.ReadFile("testdata/10-flannel-clean.conf.golden")
+
+		// when
+		result, err := revertConfigContents(changedConfig)
+
+		// then
+		Expect(err).To(Not(HaveOccurred()))
 		Expect(result).To(MatchJSON(originalConfig))
 	})
 })

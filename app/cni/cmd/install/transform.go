@@ -26,40 +26,80 @@ func transformJsonConfig(kumaCniConfig string, hostCniConfig []byte) ([]byte, er
 		}
 		return json.MarshalIndent(newConfig, "", "  ")
 	} else {
-		plugins, ok := parsed["plugins"]
-		if !ok {
-			return nil, errors.New("config does not have 'plugins' field")
+		pluginsArray, err := getPluginsArray(parsed)
+		if err != nil {
+			return nil, err
 		}
 
-		pluginsArray, ok := plugins.([]interface{})
-		if !ok {
-			return nil, errors.New("config's 'plugins' field is not an array")
+		pluginsArray, err = removeKumaCniConfig(pluginsArray)
+		if err != nil {
+			return nil, err
 		}
 
-		kumaCniConfigIndex := -1
-		for i, p := range pluginsArray {
-			plugin, ok := p.(map[string]interface{})
-			if !ok {
-				return nil, errors.New("plugin is not an object")
-			}
-
-			pluginType, ok := plugin["type"]
-			if !ok {
-				continue
-			}
-
-			if pluginType == "kuma-cni" {
-				kumaCniConfigIndex = i
-			}
-		}
-
-		if kumaCniConfigIndex > 0 {
-			pluginsArray = append(pluginsArray[:kumaCniConfigIndex], pluginsArray[kumaCniConfigIndex+1:]...)
-		}
 		pluginsArray = append(pluginsArray, kumaCniConfigParsed)
 
 		parsed["plugins"] = pluginsArray
 	}
+
+	marshaled, err := json.MarshalIndent(parsed, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	return marshaled, nil
+}
+
+func getPluginsArray(parsed map[string]interface{}) ([]interface{}, error) {
+	plugins, ok := parsed["plugins"]
+	if !ok {
+		return nil, errors.New("config does not have 'plugins' field")
+	}
+
+	pluginsArray, ok := plugins.([]interface{})
+	if !ok {
+		return nil, errors.New("config's 'plugins' field is not an array")
+	}
+
+	return pluginsArray, nil
+}
+
+func removeKumaCniConfig(pluginsArray []interface{}) ([]interface{}, error) {
+	kumaCniConfigIndex := -1
+	for i, p := range pluginsArray {
+		plugin, ok := p.(map[string]interface{})
+		if !ok {
+			return nil, errors.New("plugin is not an object")
+		}
+
+		pluginType, ok := plugin["type"]
+		if !ok {
+			continue
+		}
+
+		if pluginType == "kuma-cni" {
+			kumaCniConfigIndex = i
+		}
+	}
+	if kumaCniConfigIndex > 0 {
+		pluginsArray = append(pluginsArray[:kumaCniConfigIndex], pluginsArray[kumaCniConfigIndex+1:]...)
+	}
+	return pluginsArray, nil
+}
+
+func revertConfigContents(configBytes []byte) ([]byte, error) {
+	var parsed, err = parseBytesToHashMap(configBytes)
+	if err != nil {
+		return nil, err
+	}
+	pluginsArray, err := getPluginsArray(parsed)
+	if err != nil {
+		return nil, err
+	}
+	pluginsArray, err = removeKumaCniConfig(pluginsArray)
+	if err != nil {
+		return nil, err
+	}
+
+	parsed["plugins"] = pluginsArray
 
 	marshaled, err := json.MarshalIndent(parsed, "", "  ")
 	if err != nil {
