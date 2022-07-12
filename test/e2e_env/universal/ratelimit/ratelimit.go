@@ -9,7 +9,6 @@ import (
 
 	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
 )
 
 func Policy() {
@@ -40,7 +39,7 @@ conf:
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "universal-1"}))).
 			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
 			Install(DemoClientUniversal("web", meshName, WithTransparentProxy(true))).
-			Install(externalservice.Install("rate-limit", externalservice.UniversalEchoServer(88, false))).
+			Install(TestServerExternalServiceUniversal("rate-limit", meshName, 80, false)).
 			Setup(env.Cluster)).To(Succeed())
 	})
 	E2EAfterAll(func() {

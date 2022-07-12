@@ -180,41 +180,30 @@ networking:
 `
 )
 
-var defaultDockerOptions = docker.RunOptions{
-	Command: nil,
-	Detach:  true,
-	// Entrypoint:           "",
-	EnvironmentVariables: nil,
-	Init:                 false,
-	// Name:                 "",
-	Privileged: false,
-	Remove:     true,
-	Tty:        false,
-	// User:                 "",
-	Volumes:      nil,
-	OtherOptions: []string{},
-	Logger:       nil,
-}
-
 type UniversalApp struct {
-	t           testing.TestingT
-	mainApp     *ssh.App
-	mainAppEnv  map[string]string
-	mainAppArgs []string
-	dpApp       *ssh.App
-	ports       map[string]string
-	container   string
-	ip          string
-	verbose     bool
-	mesh        string
+	t             testing.TestingT
+	mainApp       *ssh.App
+	mainAppEnv    map[string]string
+	mainAppArgs   []string
+	dpApp         *ssh.App
+	ports         map[string]string
+	container     string
+	containerName string
+	ip            string
+	verbose       bool
+	mesh          string
 }
 
-func NewUniversalApp(t testing.TestingT, clusterName, dpName, mesh string, mode AppMode, isipv6, verbose bool, caps []string) (*UniversalApp, error) {
+func NewUniversalApp(t testing.TestingT, clusterName, dpName, mesh string, mode AppMode, isipv6, verbose bool, caps []string, volumes []string, containerName string) (*UniversalApp, error) {
 	app := &UniversalApp{
-		t:       t,
-		ports:   map[string]string{},
-		verbose: verbose,
-		mesh:    mesh,
+		t:             t,
+		ports:         map[string]string{},
+		verbose:       verbose,
+		mesh:          mesh,
+		containerName: fmt.Sprintf("%s_%s_%s", clusterName, dpName, random.UniqueId()),
+	}
+	if containerName != "" {
+		app.containerName = containerName
 	}
 
 	app.allocatePublicPortsFor("22")
@@ -227,20 +216,26 @@ func NewUniversalApp(t testing.TestingT, clusterName, dpName, mesh string, mode 
 		app.allocatePublicPortsFor("9901")
 	}
 
-	opts := defaultDockerOptions
-	opts.OtherOptions = append(opts.OtherOptions, "--name", clusterName+"_"+dpName+"_"+random.UniqueId())
-	for _, cap := range caps {
-		opts.OtherOptions = append(opts.OtherOptions, "--cap-add", cap)
+	dockerExtraOptions := []string{
+		"--network", "kind",
 	}
-	opts.OtherOptions = append(opts.OtherOptions, "--network", "kind")
+	dockerExtraOptions = append(dockerExtraOptions, app.publishPortsForDocker(isipv6)...)
 	if !isipv6 {
 		// For now supporting mixed environments with IPv4 and IPv6 addresses is challenging, specifically with
 		// builtin DNS. This is due to our mix of CoreDNS and Envoy DNS architecture.
 		// Here we make sure the IPv6 address is not allocated to the container unless explicitly requested.
-		opts.OtherOptions = append(opts.OtherOptions, "--sysctl", "net.ipv6.conf.all.disable_ipv6=1")
+		dockerExtraOptions = append(dockerExtraOptions, "--sysctl", "net.ipv6.conf.all.disable_ipv6=1")
 	}
-	opts.OtherOptions = append(opts.OtherOptions, app.publishPortsForDocker(isipv6)...)
-	container, err := docker.RunAndGetIDE(t, Config.GetUniversalImage(), &opts)
+	for _, c := range caps {
+		dockerExtraOptions = append(dockerExtraOptions, "--cap-add", c)
+	}
+	container, err := docker.RunAndGetIDE(t, Config.GetUniversalImage(), &docker.RunOptions{
+		Detach:       true,
+		Remove:       true,
+		Name:         app.containerName,
+		Volumes:      volumes,
+		OtherOptions: dockerExtraOptions,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -309,6 +304,10 @@ func (s *UniversalApp) publishPortsForDocker(isipv6 bool) (args []string) {
 
 func (s *UniversalApp) GetPublicPort(port string) string {
 	return s.ports[port]
+}
+
+func (s *UniversalApp) GetContainerName() string {
+	return s.containerName
 }
 
 func (s *UniversalApp) GetIP() string {
