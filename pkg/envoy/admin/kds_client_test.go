@@ -97,7 +97,7 @@ var _ = Describe("KDS client", func() {
 			_, err := client.ConfigDump(ctx, dpRes)
 
 			// then
-			Expect(err).To(MatchError("timeout"))
+			Expect(err).To(MatchError(context.DeadlineExceeded))
 		})
 
 		It("should rethrow error from zone CP", func() {

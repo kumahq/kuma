@@ -179,7 +179,7 @@ func (c *client) startStats(
 	errorCh chan error,
 ) {
 	client := mesh_proto.NewGlobalKDSServiceClient(conn)
-	log = log.WithValues("rpc", "Stats")
+	log = log.WithValues("rpc", "stats")
 	log.Info("initializing rpc stream for executing stats on data plane proxies")
 	stream, err := client.StreamStats(ctx)
 	if err != nil {
@@ -200,7 +200,7 @@ func (c *client) startClusters(
 	errorCh chan error,
 ) {
 	client := mesh_proto.NewGlobalKDSServiceClient(conn)
-	log = log.WithValues("rpc", "Clusters")
+	log = log.WithValues("rpc", "clusters")
 	log.Info("initializing rpc stream for executing clusters on data plane proxies")
 	stream, err := client.StreamClusters(ctx)
 	if err != nil {

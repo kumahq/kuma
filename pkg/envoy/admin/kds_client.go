@@ -56,7 +56,7 @@ func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.R
 
 	select {
 	case <-ctx.Done():
-		return nil, errors.New("timeout")
+		return nil, ctx.Err()
 	case resp := <-ch:
 		configResp, ok := resp.(*mesh_proto.XDSConfigResponse)
 		if !ok {
@@ -93,7 +93,7 @@ func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.Resour
 
 	select {
 	case <-ctx.Done():
-		return nil, errors.New("timeout")
+		return nil, ctx.Err()
 	case resp := <-ch:
 		statsResp, ok := resp.(*mesh_proto.StatsResponse)
 		if !ok {
@@ -130,7 +130,7 @@ func (k *kdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.Res
 
 	select {
 	case <-ctx.Done():
-		return nil, errors.New("timeout")
+		return nil, ctx.Err()
 	case resp := <-ch:
 		clustersResp, ok := resp.(*mesh_proto.ClustersResponse)
 		if !ok {
