@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -83,6 +84,7 @@ func parseConfig(stdin []byte) (*PluginConf, error) {
 
 // cmdAdd is called for ADD requests
 func cmdAdd(args *skel.CmdArgs) error {
+	ctx := context.Background()
 	conf, err := parseConfig(args.StdinData)
 	if err != nil {
 		log.Error(err, "error parsing kuma-cni cmdAdd config")
@@ -107,7 +109,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 				return err
 			}
 			log.V(1).Info("created Kubernetes client", "client", client)
-			containers, initContainersMap, annotations, err := getPodInfoWithRetries(client, k8sArgs)
+			containers, initContainersMap, annotations, err := getPodInfoWithRetries(ctx, client, k8sArgs)
 			if err != nil {
 				return err
 			}
@@ -183,13 +185,13 @@ func checkInitContainerPresent(initContainersMap map[string]struct{}, k8sArgs K8
 	return excludePod
 }
 
-func getPodInfoWithRetries(client *kubernetes.Clientset, k8sArgs K8sArgs) (int, map[string]struct{}, map[string]string, error) {
+func getPodInfoWithRetries(ctx context.Context, client *kubernetes.Clientset, k8sArgs K8sArgs) (int, map[string]struct{}, map[string]string, error) {
 	var containers int
 	var initContainersMap map[string]struct{}
 	var annotations map[string]string
 	var k8sErr error
 	for attempt := 1; attempt <= podRetrievalMaxRetries; attempt++ {
-		containers, initContainersMap, annotations, k8sErr = getKubePodInfo(client, string(k8sArgs.K8S_POD_NAME), string(k8sArgs.K8S_POD_NAMESPACE))
+		containers, initContainersMap, annotations, k8sErr = getKubePodInfo(ctx, client, string(k8sArgs.K8S_POD_NAME), string(k8sArgs.K8S_POD_NAMESPACE))
 		if k8sErr == nil {
 			break
 		}
