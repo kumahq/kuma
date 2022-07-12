@@ -1,43 +1,41 @@
 package matching
 
 import (
+	"fmt"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-func Universal() {
-	var universal Cluster
+func Matching() {
+	const mesh = "matching"
 
-	BeforeEach(func() {
-		clusters, err := NewUniversalClusters([]string{Kuma1}, Silent)
-		Expect(err).ToNot(HaveOccurred())
-
-		universal = clusters.GetCluster(Kuma1)
-
-		err = NewClusterSetup().
-			Install(Kuma(core.Standalone)).
-			Install(DemoClientUniversal("demo-client-1", "default", WithTransparentProxy(true))).
-			Install(DemoClientUniversal("demo-client-2", "default", WithTransparentProxy(true))).
-			Install(TestServerUniversal("test-server", "default",
+	BeforeAll(func() {
+		err := NewClusterSetup().
+			Install(MeshUniversal(mesh)).
+			Install(DemoClientUniversal("demo-client-1", mesh, WithTransparentProxy(true))).
+			Install(DemoClientUniversal("demo-client-2", mesh, WithTransparentProxy(true))).
+			Install(TestServerUniversal("test-server", mesh,
+				WithTransparentProxy(true),
 				WithArgs([]string{"echo", "--instance", "echo-v1"})),
 			).
-			Setup(universal)
+			Setup(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	E2EAfterEach(func() {
-		Expect(universal.DismissCluster()).To(Succeed())
+	E2EAfterAll(func() {
+		Expect(env.Cluster.DeleteMeshApps(mesh)).To(Succeed())
+		Expect(env.Cluster.DeleteMesh(mesh)).To(Succeed())
 	})
 
 	It("should both fault injections with the same destination proxy", FlakeAttempts(3), func() {
-		Expect(YamlUniversal(`
+		Expect(YamlUniversal(fmt.Sprintf(`
 type: FaultInjection
-mesh: default
+mesh: %s
 name: fi1
 sources:
    - match:
@@ -49,11 +47,11 @@ destinations:
 conf:
    abort:
      httpStatus: 401
-     percentage: 100`)(universal)).To(Succeed())
+     percentage: 100`, mesh))(env.Cluster)).To(Succeed())
 
-		Expect(YamlUniversal(`
+		Expect(YamlUniversal(fmt.Sprintf(`
 type: FaultInjection
-mesh: default
+mesh: %s
 name: fi2
 sources:
    - match:
@@ -65,10 +63,10 @@ destinations:
 conf:
    abort:
      httpStatus: 402
-     percentage: 100`)(universal)).To(Succeed())
+     percentage: 100`, mesh))(env.Cluster)).To(Succeed())
 
 		Eventually(func() bool {
-			stdout, _, err := universal.Exec("", "", "demo-client-1", "curl", "-v", "test-server.mesh")
+			stdout, _, err := env.Cluster.Exec("", "", "demo-client-1", "curl", "-v", "test-server.mesh")
 			if err != nil {
 				return false
 			}
@@ -76,7 +74,7 @@ conf:
 		}, "60s", "1s").Should(BeTrue())
 
 		Eventually(func() bool {
-			stdout, _, err := universal.Exec("", "", "demo-client-2", "curl", "-v", "test-server.mesh")
+			stdout, _, err := env.Cluster.Exec("", "", "demo-client-2", "curl", "-v", "test-server.mesh")
 			if err != nil {
 				return false
 			}
