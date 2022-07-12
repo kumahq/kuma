@@ -3,7 +3,6 @@ package mtls
 import (
 	"fmt"
 	"net"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -15,9 +14,6 @@ import (
 func Policy() {
 	var meshNames []string
 
-	BeforeAll(func() {
-
-	})
 	E2EAfterAll(func() {
 		for _, m := range meshNames {
 			Expect(env.Cluster.DeleteMeshApps(m)).To(Succeed())
@@ -153,7 +149,7 @@ mtls:
 
 		createMeshMTLS(meshName, "PERMISSIVE")
 
-		Consistently(clientToServer, "20s", "100ms").Should(Succeed())
+		Consistently(clientToServer, "10s", "250ms").Should(Succeed())
 	})
 
 	DescribeTable("should support mTLS",
@@ -166,15 +162,11 @@ mtls:
 			Expect(err).ToNot(HaveOccurred())
 			// Default default traffic-permission
 			var items []string
-			for i := 0; i < 20; i++ {
+			Eventually(func(g Gomega) {
 				items, err = env.Cluster.GetKumactlOptions().KumactlList("traffic-permissions", meshName)
-				Expect(err).ToNot(HaveOccurred())
-				if len(items) != 0 {
-					break
-				}
-				time.Sleep(time.Second)
-			}
-			Expect(items).To(HaveLen(1))
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(items).To(HaveLen(1))
+			}).Should(Succeed())
 			err = env.Cluster.GetKumactlOptions().KumactlDelete("traffic-permission", items[0], meshName)
 			Expect(err).ToNot(HaveOccurred())
 			// Cleanup after test
