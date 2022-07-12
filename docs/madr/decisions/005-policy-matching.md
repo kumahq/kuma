@@ -205,7 +205,7 @@ to:
 
 When several targetRefs select the same outbound,
 corresponding confs are merged in the order they're presented in the "to" array 
-(bottom ones have more priority over the top ones):
+(bottom ones have higher priority over the top ones):
 
 "backend" outbound is selected by 3 targetRefs
 
