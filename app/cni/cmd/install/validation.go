@@ -1,7 +1,7 @@
 package main
 
 func isValidConfFile(file string) bool {
-	parsed, err := parseToHashMap(file)
+	parsed, err := parseFileToHashMap(file)
 	if err != nil {
 		log.Error(err, "could not unmarshal config file")
 		return false
@@ -17,7 +17,7 @@ func isValidConfFile(file string) bool {
 }
 
 func isValidConflistFile(file string) bool {
-	parsed, err := parseToHashMap(file)
+	parsed, err := parseFileToHashMap(file)
 	if err != nil {
 		log.Error(err, "could not unmarshal config file")
 		return false

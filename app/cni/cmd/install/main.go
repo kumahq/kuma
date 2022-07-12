@@ -76,17 +76,6 @@ func lookForValidConfig(files []string, checkerFn func(string) bool) (string, bo
 	return "", false
 }
 
-func parseToHashMap(file string) (map[string]interface{}, error) {
-	var parsed map[string]interface{}
-	contents, _ := ioutil.ReadFile(file)
-	// this is probably going to be rewritten to not use `jq` at all
-	err := json.Unmarshal(contents, &parsed)
-	if err != nil {
-		return nil, err
-	}
-	return parsed, nil
-}
-
 func check_install(mountedCNINetDir string) {
 	// todo: implement
 }
@@ -250,41 +239,6 @@ func setupChainedPlugin(mountedCniNetDir, cniConfName, kumaCniConfig string) err
 		return nil
 	}
 	return nil
-}
-
-func transformJsonConfig(kumaCniConfig string, hostCniConfig []byte) ([]byte, error) {
-	queryString := `if has("type") then
-   .plugins = [.]
-   | del(.plugins[0].cniVersion)
-   | to_entries
-   | map(select(.key=="plugins"))
-   | from_entries
-   | .plugins += [` + kumaCniConfig + `]
-   | .name = "k8s-pod-network"
-   | .cniVersion = "0.3.0"
-else
-  del(.plugins[]? | select(.type == "kuma-cni"))
-  | .plugins += [` + kumaCniConfig + `]
-end`
-	// this is probably going to be rewritten to not use `jq` at all
-	query, err := gojq.Parse(queryString)
-	if err != nil {
-		return nil, err
-	}
-
-	var parsed map[string]interface{}
-	err = json.Unmarshal(hostCniConfig, &parsed)
-	if err != nil {
-		return nil, err
-	}
-
-	result := query.Run(parsed)
-	modified, _ := result.Next()
-	marshaled, err := json.MarshalIndent(modified, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-	return marshaled, nil
 }
 
 func fileExists(path string) bool {
