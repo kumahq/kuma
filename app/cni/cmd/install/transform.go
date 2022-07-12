@@ -63,11 +63,22 @@ func getPluginsArray(parsed map[string]interface{}) ([]interface{}, error) {
 }
 
 func removeKumaCniConfig(pluginsArray []interface{}) ([]interface{}, error) {
+	kumaCniConfigIndex, err := findKumaCniConfigIndex(pluginsArray)
+	if err != nil {
+		return nil, err
+	}
+	if kumaCniConfigIndex >= 0 {
+		pluginsArray = append(pluginsArray[:kumaCniConfigIndex], pluginsArray[kumaCniConfigIndex+1:]...)
+	}
+	return pluginsArray, nil
+}
+
+func findKumaCniConfigIndex(pluginsArray []interface{}) (int, error) {
 	kumaCniConfigIndex := -1
 	for i, p := range pluginsArray {
 		plugin, ok := p.(map[string]interface{})
 		if !ok {
-			return nil, errors.New("plugin is not an object")
+			return -1, errors.New("plugin is not an object")
 		}
 
 		pluginType, ok := plugin["type"]
@@ -79,10 +90,8 @@ func removeKumaCniConfig(pluginsArray []interface{}) ([]interface{}, error) {
 			kumaCniConfigIndex = i
 		}
 	}
-	if kumaCniConfigIndex > 0 {
-		pluginsArray = append(pluginsArray[:kumaCniConfigIndex], pluginsArray[kumaCniConfigIndex+1:]...)
-	}
-	return pluginsArray, nil
+
+	return kumaCniConfigIndex, nil
 }
 
 func revertConfigContents(configBytes []byte) ([]byte, error) {

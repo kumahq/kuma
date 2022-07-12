@@ -32,6 +32,25 @@ var _ = Describe("validation", func() {
 
 			Expect(result).To(Equal(false))
 		})
+	})
 
+	Context("checkInstall", func() {
+		It("should return true when a file is a conflist file with kuma-cni installed", func() {
+			result := checkInstall("testdata/10-flannel.conf.golden", true)
+
+			Expect(result).To(Equal(true))
+		})
+
+		It("should return true when a file is a conf file with kuma-cni", func() {
+			result := checkInstall("testdata/10-kuma-cni.conf", false)
+
+			Expect(result).To(Equal(true))
+		})
+
+		It("should return false when a file does not have kuma cni installed", func() {
+			result := checkInstall("testdata/10-flannel.conf", false)
+
+			Expect(result).To(Equal(false))
+		})
 	})
 })

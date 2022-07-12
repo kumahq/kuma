@@ -32,3 +32,40 @@ func isValidConflistFile(file string) bool {
 
 	return false
 }
+
+func checkInstall(cniConfPath string, isPluginChained bool) bool {
+	if fileExists(cniConfPath) {
+		parsed, err := parseFileToHashMap(cniConfPath)
+		if err != nil {
+			return false
+		}
+		if isPluginChained {
+			if isValidConflistFile(cniConfPath) {
+				plugins, err := getPluginsArray(parsed)
+				if err != nil {
+					return false
+				}
+				index, err := findKumaCniConfigIndex(plugins)
+				if err != nil {
+					return false
+				}
+
+				if index >= 0 {
+					return true
+				}
+			}
+		} else {
+			if isValidConfFile(cniConfPath) {
+				pluginType, ok := parsed["type"]
+				if !ok {
+					return false
+				}
+				if pluginType == "kuma-cni" {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
+}

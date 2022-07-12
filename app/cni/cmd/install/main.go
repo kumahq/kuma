@@ -74,9 +74,6 @@ func lookForValidConfig(files []string, checkerFn func(string) bool) (string, bo
 	return "", false
 }
 
-func check_install(mountedCNINetDir string) {
-	// todo: implement
-}
 
 func cleanup(mountedCniNetDir, cniConfName, kubeconfigName string, chainedCniPlugin bool) {
 	removeBinFiles()
@@ -165,7 +162,7 @@ func install() error {
 
 	for shouldSleep {
 		time.Sleep(time.Duration(cfgCheckInterval) * time.Second)
-		check_install(mountedCniNetDir)
+		checkInstall(mountedCniNetDir+"/"+cniConfName, chainedCniPlugin)
 	}
 
 	return nil
