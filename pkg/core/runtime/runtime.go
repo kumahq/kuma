@@ -78,7 +78,7 @@ type Access struct {
 	ResourceAccess       resources_access.ResourceAccess
 	DataplaneTokenAccess tokens_access.DataplaneTokenAccess
 	ZoneTokenAccess      zone_access.ZoneTokenAccess
-	ConfigDumpAccess     access.ConfigDumpAccess
+	EnvoyAdminAccess     access.EnvoyAdminAccess
 }
 
 type ResourceValidators struct {

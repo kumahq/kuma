@@ -2,11 +2,19 @@ package access
 
 import "github.com/kumahq/kuma/pkg/core/user"
 
-type NoopConfigDumpAccess struct {
+type NoopEnvoyAdminAccess struct {
 }
 
-var _ ConfigDumpAccess = NoopConfigDumpAccess{}
+var _ EnvoyAdminAccess = NoopEnvoyAdminAccess{}
 
-func (n NoopConfigDumpAccess) ValidateViewConfigDump(_ user.User) error {
+func (n NoopEnvoyAdminAccess) ValidateViewConfigDump(_ user.User) error {
+	return nil
+}
+
+func (n NoopEnvoyAdminAccess) ValidateViewStats(user user.User) error {
+	return nil
+}
+
+func (n NoopEnvoyAdminAccess) ValidateViewClusters(user user.User) error {
 	return nil
 }

@@ -79,7 +79,12 @@ func Setup(rt core_runtime.Runtime) error {
 		onSessionStarted,
 		*rt.Config().Multizone.Zone.KDS,
 		rt.Metrics(),
-		service.NewXDSConfigProcessor(rt.ReadOnlyResourceManager(), rt.EnvoyAdminClient().ConfigDump),
+		service.NewEnvoyAdminProcessor(
+			rt.ReadOnlyResourceManager(),
+			rt.EnvoyAdminClient().ConfigDump,
+			rt.EnvoyAdminClient().Stats,
+			rt.EnvoyAdminClient().Clusters,
+		),
 	)
 	return rt.Add(component.NewResilientComponent(kdsZoneLog.WithName("kds-mux-client"), muxClient))
 }

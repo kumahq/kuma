@@ -15,6 +15,8 @@ import (
 
 type InspectEnvoyProxyClient interface {
 	ConfigDump(ctx context.Context, rk core_model.ResourceKey) ([]byte, error)
+	Stats(ctx context.Context, rk core_model.ResourceKey) ([]byte, error)
+	Clusters(ctx context.Context, rk core_model.ResourceKey) ([]byte, error)
 }
 
 func NewInspectEnvoyProxyClient(resDesc core_model.ResourceTypeDescriptor, client util_http.Client) InspectEnvoyProxyClient {
@@ -32,7 +34,19 @@ type httpInspectEnvoyProxyClient struct {
 var _ InspectEnvoyProxyClient = &httpInspectEnvoyProxyClient{}
 
 func (h *httpInspectEnvoyProxyClient) ConfigDump(ctx context.Context, rk core_model.ResourceKey) ([]byte, error) {
-	resUrl, err := h.buildURL(rk)
+	return h.executeInspectRequest(ctx, rk, "xds")
+}
+
+func (h *httpInspectEnvoyProxyClient) Stats(ctx context.Context, rk core_model.ResourceKey) ([]byte, error) {
+	return h.executeInspectRequest(ctx, rk, "stats")
+}
+
+func (h *httpInspectEnvoyProxyClient) Clusters(ctx context.Context, rk core_model.ResourceKey) ([]byte, error) {
+	return h.executeInspectRequest(ctx, rk, "clusters")
+}
+
+func (h *httpInspectEnvoyProxyClient) executeInspectRequest(ctx context.Context, rk core_model.ResourceKey, inspectionPath string) ([]byte, error) {
+	resUrl, err := h.buildURL(rk, inspectionPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not construct the url")
 	}
@@ -50,7 +64,7 @@ func (h *httpInspectEnvoyProxyClient) ConfigDump(ctx context.Context, rk core_mo
 	return b, nil
 }
 
-func (h *httpInspectEnvoyProxyClient) buildURL(rk core_model.ResourceKey) (*url.URL, error) {
+func (h *httpInspectEnvoyProxyClient) buildURL(rk core_model.ResourceKey, inspectionPath string) (*url.URL, error) {
 	var prefix string
 	if h.resDesc.Scope == core_model.ScopeMesh {
 		prefix = fmt.Sprintf("/meshes/%s", rk.Mesh)
@@ -60,5 +74,5 @@ func (h *httpInspectEnvoyProxyClient) buildURL(rk core_model.ResourceKey) (*url.
 	if h.resDesc.Name == mesh.ZoneIngressType {
 		plural = "zoneingresses"
 	}
-	return url.Parse(fmt.Sprintf("%s/%s/%s/xds", prefix, plural, rk.Name))
+	return url.Parse(fmt.Sprintf("%s/%s/%s/%s", prefix, plural, rk.Name, inspectionPath))
 }

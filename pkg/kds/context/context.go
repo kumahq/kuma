@@ -42,7 +42,7 @@ type Context struct {
 	GlobalResourceMapper reconcile.ResourceMapper
 	ZoneResourceMapper   reconcile.ResourceMapper
 
-	XdsConfigStreams service.XDSConfigStreams
+	EnvoyAdminRPCs service.EnvoyAdminRPCs
 }
 
 func DefaultContext(manager manager.ResourceManager, zone string) *Context {
@@ -59,7 +59,7 @@ func DefaultContext(manager manager.ResourceManager, zone string) *Context {
 		Configs:              configs,
 		GlobalResourceMapper: MapZoneTokenSigningKeyGlobalToPublicKey(ctx, manager),
 		ZoneResourceMapper:   MapInsightResourcesZeroGeneration,
-		XdsConfigStreams:     service.NewXdsConfigStreams(),
+		EnvoyAdminRPCs:       service.NewEnvoyAdminRPCs(),
 	}
 }
 
