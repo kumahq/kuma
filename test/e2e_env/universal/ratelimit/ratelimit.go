@@ -40,7 +40,7 @@ conf:
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "universal-1"}))).
 			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
 			Install(DemoClientUniversal("web", meshName, WithTransparentProxy(true))).
-			Install(externalservice.Install(externalservice.HttpServer, externalservice.UniversalAppEchoServer81)).
+			Install(externalservice.Install("rate-limit", externalservice.UniversalEchoServer(88, false))).
 			Setup(env.Cluster)).To(Succeed())
 	})
 	E2EAfterAll(func() {
@@ -92,7 +92,7 @@ tags:
   kuma.io/service: external-service
   kuma.io/protocol: http
 networking:
-  address: "%s_externalservice-http-server:81"
+  address: "%s_externalservice-rate-limit:88"
 `, meshName, env.Cluster.Name())
 		specificRateLimitPolicy := fmt.Sprintf(`
 type: RateLimit
