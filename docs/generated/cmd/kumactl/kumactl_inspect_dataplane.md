@@ -16,6 +16,7 @@ kumactl inspect dataplane NAME [flags]
       --config-dump   if set then the command returns envoy config dump for provided dataplane
   -h, --help          help for dataplane
   -m, --mesh string   mesh to use (default "default")
+      --type string   inspection type: one of policies|config-dump|stats|clusters (default "policies")
 ```
 
 ### Options inherited from parent commands

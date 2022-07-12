@@ -7,8 +7,8 @@ metadata:
   {{- with .Values.controlPlane.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
-  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
   {{- end }}
+  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
 spec:
   ingressClassName: {{ .Values.controlPlane.ingress.ingressClassName }}
   rules:

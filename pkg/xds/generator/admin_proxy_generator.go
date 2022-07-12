@@ -24,10 +24,6 @@ var staticTlsEndpointPaths = []*envoy_common.StaticEndpointPath{
 		Path:        "/",
 		RewritePath: "/",
 	},
-	{
-		Path:        "/config_dump",
-		RewritePath: "/config_dump",
-	},
 }
 
 // AdminProxyGenerator generates resources to expose some endpoints of Admin API on public interface.
@@ -52,6 +48,7 @@ func (g AdminProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.P
 	envoyAdminClusterName := envoy_names.GetEnvoyAdminClusterName()
 	cluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
 		Configure(envoy_clusters.ProvidedEndpointCluster(envoyAdminClusterName, false, core_xds.Endpoint{Target: adminAddress, Port: adminPort})).
+		Configure(envoy_clusters.DefaultTimeout()).
 		Build()
 	if err != nil {
 		return nil, err

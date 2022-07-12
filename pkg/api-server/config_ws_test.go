@@ -325,6 +325,14 @@ var _ = Describe("Config WS", func() {
               "viewConfigDump": {
                 "users": [ ],
                 "groups": ["mesh-system:unauthenticated","mesh-system:authenticated"]
+              },
+              "viewStats": {
+                "users": [ ],
+                "groups": ["mesh-system:unauthenticated","mesh-system:authenticated"]
+              },
+              "viewClusters": {
+                "users": [ ],
+                "groups": ["mesh-system:unauthenticated","mesh-system:authenticated"]
               }
             }
           },

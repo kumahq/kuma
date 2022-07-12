@@ -85,7 +85,8 @@ func (*ExternalServicesGenerator) generateCDS(
 				isIPV6,
 				endpoints...,
 			)).
-			Configure(envoy_clusters.ClientSideTLS(endpoints))
+			Configure(envoy_clusters.ClientSideTLS(endpoints)).
+			Configure(envoy_clusters.DefaultTimeout())
 
 		switch endpoints[0].Tags[mesh_proto.ProtocolTag] {
 		case core_mesh.ProtocolHTTP:

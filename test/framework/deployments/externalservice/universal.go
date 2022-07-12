@@ -28,8 +28,18 @@ type UniversalDeployment struct {
 
 var _ Deployment = &UniversalDeployment{}
 
+var UniversalEchoServer = func(port int, tls bool) Command {
+	args := []string{
+		"test-server", "echo",
+		"--instance", fmt.Sprintf("echo-%d", port),
+		"--port", fmt.Sprintf("%d", port),
+	}
+	if tls {
+		args = append(args, "--crt", "/server-cert.pem", "--key", "/server-key.pem", "--tls")
+	}
+	return args
+}
 var UniversalAppEchoServer = ExternalServiceCommand(80, "Echo 80")
-var UniversalAppEchoServer81 = ExternalServiceCommand(81, "Echo 81")
 var UniversalAppHttpsEchoServer = Command([]string{"ncat",
 	"-lk", "-p", "443",
 	"--ssl", "--ssl-cert", "/server-cert.pem", "--ssl-key", "/server-key.pem",

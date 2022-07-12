@@ -1,3 +1,5 @@
+KUMA_DIR ?= .
+ENVOY_VERSION = $(shell ${KUMA_DIR}/tools/envoy/version.sh)
 GINKGO_VERSION := v2.1.3
 GOLANGCI_LINT_VERSION := v1.45.2
 GOLANG_PROTOBUF_VERSION := v1.5.2
@@ -341,3 +343,11 @@ dev/envrc: $(KUBECONFIG_DIR)/kind-kuma-current ## Generate .envrc
 	done >> .envrc
 	@echo 'export KUBEBUILDER_ASSETS=$${CI_TOOLS_DIR}' >> .envrc
 	@direnv allow
+
+.PHONY: dev/sync-demo
+dev/sync-demo:
+	rm app/kumactl/data/install/k8s/demo/demo.yaml
+	curl -s https://raw.githubusercontent.com/kumahq/kuma-counter-demo/master/demo.yaml | \
+		sed 's/"local"/"{{ .Zone }}"/g' | \
+		sed 's/\([^/]\)kuma-demo/\1{{ .Namespace }}/g' \
+		> app/kumactl/data/install/k8s/demo/demo.yaml

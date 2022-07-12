@@ -1,0 +1,75 @@
+Clusters:
+  Resources:
+    external-httpbin-8bd356c79796cec2:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
+      connectTimeout: 12s
+      dnsLookupFamily: V4_ONLY
+      loadAssignment:
+        clusterName: external-httpbin
+        endpoints:
+        - lbEndpoints:
+          - endpoint:
+              address:
+                socketAddress:
+                  address: httpbin.com
+                  portValue: 443
+            loadBalancingWeight: 1
+            metadata:
+              filterMetadata:
+                envoy.lb:
+                  kuma.io/external-service-name: external-httpbin
+                envoy.transport_socket_match:
+                  kuma.io/external-service-name: external-httpbin
+      name: external-httpbin-8bd356c79796cec2
+      outlierDetection:
+        enforcingConsecutive5xx: 0
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
+      transportSocketMatches:
+      - match:
+          kuma.io/external-service-name: external-httpbin
+        name: httpbin.com
+        transportSocket:
+          name: envoy.transport_sockets.tls
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+            sni: httpbin.com
+      type: STRICT_DNS
+Endpoints:
+  Resources: {}
+Listeners:
+  Resources:
+    edge-gateway:TCP:8080:
+      address:
+        socketAddress:
+          address: 192.168.1.1
+          portValue: 8080
+      enableReusePort: true
+      filterChains:
+      - filters:
+        - name: envoy.filters.network.tcp_proxy
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+            cluster: external-httpbin-8bd356c79796cec2
+            maxConnectAttempts: 5
+            statPrefix: gateway-default
+      listenerFilters:
+      - name: envoy.filters.listener.tls_inspector
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+      name: edge-gateway:TCP:8080
+      perConnectionBufferLimitBytes: 32768
+      trafficDirection: INBOUND
+Routes:
+  Resources: {}
+Runtimes:
+  Resources: {}
+Secrets:
+  Resources: {}

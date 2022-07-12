@@ -13,8 +13,8 @@ kumactl inspect zoneingress NAME [flags]
 ### Options
 
 ```
-      --config-dump   if set then the command returns envoy config dump for provided dataplane
   -h, --help          help for zoneingress
+      --type string   inspection type: one of config-dump|stats|clusters (default "config-dump")
 ```
 
 ### Options inherited from parent commands
