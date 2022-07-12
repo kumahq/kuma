@@ -81,3 +81,4 @@ current-context: kuma-cni-context`
 		Expect(resultWithBrackets).To(Equal(expected))
 	})
 })
+

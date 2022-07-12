@@ -48,7 +48,7 @@ func findCniConfFile(mountedCNINetDir string) (string, error) {
 		return "", err
 	}
 
-	file, found := lookForValidConfig(files)
+	file, found := lookForValidConfig(files, isValidConfFile)
 	if found {
 		return file, nil
 	}
@@ -57,7 +57,7 @@ func findCniConfFile(mountedCNINetDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	file, found = lookForValidConfig(files)
+	file, found = lookForValidConfig(files, isValidConflistFile)
 	if found {
 		return file, nil
 	}
@@ -66,9 +66,9 @@ func findCniConfFile(mountedCNINetDir string) (string, error) {
 	return "", nil
 }
 
-func lookForValidConfig(files []string) (string, bool) {
+func lookForValidConfig(files []string, checkerFn func(string) bool) (string, bool) {
 	for _, file := range files {
-		found := isValidConfigFile(file)
+		found := checkerFn(file)
 		if found {
 			return file, true
 		}
@@ -76,26 +76,15 @@ func lookForValidConfig(files []string) (string, bool) {
 	return "", false
 }
 
-func isValidConfigFile(file string) bool {
+func parseToHashMap(file string) (map[string]interface{}, error) {
 	var parsed map[string]interface{}
 	contents, _ := ioutil.ReadFile(file)
 	// this is probably going to be rewritten to not use `jq` at all
 	err := json.Unmarshal(contents, &parsed)
 	if err != nil {
-		log.Error(err, "could not unmarshal config file")
-		return false
+		return nil, err
 	}
-	query, _ := gojq.Parse(`has("type")`)
-	iterator := query.Run(parsed)
-	v, ok := iterator.Next()
-	if !ok {
-		return false
-	}
-	log.Info("checking file", "file", file)
-	if v.(bool) == true {
-		return true
-	}
-	return false
+	return parsed, nil
 }
 
 func check_install(mountedCNINetDir string) {
