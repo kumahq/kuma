@@ -325,7 +325,7 @@ resulting configuration for "backend" outbound is:
 
 ```yaml
 conf:
-  param1: value2 # overrides 'value1' from 'targetRef{kind:Mesh}'
+  param1: value2 # overrides 'value1' from 'targetRef{kind:MeshServiceSubset,name:backend,tags:version=v2}'
   param2: value4 # overrides 'value3' from 'targetRef{kind:MeshService,name:backend}'
 ```
 
