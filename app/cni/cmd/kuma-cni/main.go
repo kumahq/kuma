@@ -103,7 +103,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 	}
 	logContainerInfo(args.Args, args.ContainerID, k8sArgs)
 
-	if string(k8sArgs.K8S_POD_NAMESPACE) == "" || string(k8sArgs.K8S_POD_NAME) != "" {
+	if string(k8sArgs.K8S_POD_NAMESPACE) == "" || string(k8sArgs.K8S_POD_NAME) == "" {
 		log.Info("no kubernetes data")
 		return prepareResult(conf)
 	}
