@@ -103,8 +103,9 @@ conf:
 
 		By("Eventually all requests succeed consistently")
 		Eventually(func() error {
+			// -m 8 to wait for 8 seconds to beat the default 5s connect timeout
 			stdout, _, err := env.Cluster.Exec("", "", "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
+				"curl", "-v", "-m", "8", "--fail", "test-server.mesh")
 			if err != nil {
 				return err
 			}
