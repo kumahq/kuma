@@ -118,13 +118,13 @@ spec:
 				Install(YamlK8s(trafficLog.String())).
 				Install(NamespaceWithSidecarInjection(trafficNamespace)).
 				Install(Namespace(tcpSinkNamespace)).
+				Install(DemoClientK8s(meshName, trafficNamespace)).
+				Install(YamlK8s(tcpSink.String())).
+				Install(WaitPodsAvailable(tcpSinkNamespace, tcpSinkAppName)).
 				Install(testserver.Install(
 					testserver.WithNamespace(trafficNamespace),
 					testserver.WithMesh(meshName),
 					testserver.WithName(testServer))).
-				Install(DemoClientK8s(meshName, trafficNamespace)).
-				Install(YamlK8s(tcpSink.String())).
-				Install(WaitPodsAvailable(tcpSinkNamespace, tcpSinkAppName)).
 				Setup(env.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
