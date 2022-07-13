@@ -11,8 +11,12 @@ import (
 	"github.com/containernetworking/cni/pkg/types"
 	"github.com/containernetworking/cni/pkg/types/current"
 	"github.com/containernetworking/cni/pkg/version"
+	"github.com/pkg/errors"
+	"github.com/sethvargo/go-retry"
 
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
 const (
@@ -38,7 +42,7 @@ type PluginConf struct {
 	PrevResult    *current.Result         `json:"-"`
 
 	// plugin-specific fields
-	LogLevel   string     `json:"log_level"`
+	LogLevel   string     `json:"log_level"` // this was not accessed anywhere in the previous CNI, should I just get rid of it or hook it up?
 	Kubernetes Kubernetes `json:"kubernetes"`
 }
 
@@ -109,24 +113,26 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return prepareResult(conf)
 	}
 
-	containers, initContainersMap, annotations, err := getPodInfoWithRetries(ctx, conf, k8sArgs)
+	containerCount, initContainersMap, annotations, err := getPodInfoWithRetries(ctx, conf, k8sArgs)
 	if err != nil {
 		log.Info("error getting pod info")
 		return err
 	}
 
-	if isInitContainerPresent(initContainersMap, k8sArgs) {
-		log.Info("pod excluded - init container present")
+	if isInitContainerPresent(initContainersMap) {
+		log.Info("pod excluded due to being already injected with kuma-init container",
+			"pod", string(k8sArgs.K8S_POD_NAME),
+			"namespace", string(k8sArgs.K8S_POD_NAMESPACE))
 		return prepareResult(conf)
 	}
 
-	if containers < 2 {
+	if containerCount < 2 {
 		log.Info("not enough containers in pod")
 		return prepareResult(conf)
 	}
 
 	logAnnotations(args, k8sArgs, annotations)
-	if isSidecarInjectedAnnotationAbsent(annotations) {
+	if excludeByMissingSidecarInjectedAnnotation(annotations) {
 		log.Info("no sidecar injected annotation")
 		return prepareResult(conf)
 	}
@@ -165,9 +171,9 @@ func logAnnotations(args *skel.CmdArgs, k8sArgs K8sArgs, annotations map[string]
 		"annotations", annotations)
 }
 
-func isSidecarInjectedAnnotationAbsent(annotations map[string]string) bool {
+func excludeByMissingSidecarInjectedAnnotation(annotations map[string]string) bool {
 	excludePod := false
-	val, ok := annotations["kuma.io/sidecar-injected"]
+	val, ok := annotations[metadata.KumaSidecarInjectedAnnotation]
 	if !ok || val != "true" {
 		log.V(1).Info("pod excluded due to lack of 'kuma.io/sidecar-injected: true' annotation")
 		excludePod = true
@@ -175,13 +181,10 @@ func isSidecarInjectedAnnotationAbsent(annotations map[string]string) bool {
 	return excludePod
 }
 
-func isInitContainerPresent(initContainersMap map[string]struct{}, k8sArgs K8sArgs) bool {
+func isInitContainerPresent(initContainersMap map[string]struct{}) bool {
 	excludePod := false
 	// Check if kuma-init container is present; in that case exclude pod
-	if _, present := initContainersMap["kuma-init"]; present {
-		log.V(1).Info("pod excluded due to being already injected with kuma-init container",
-			"pod", string(k8sArgs.K8S_POD_NAME),
-			"namespace", string(k8sArgs.K8S_POD_NAMESPACE))
+	if _, present := initContainersMap[util.KumaInitContainerName]; present {
 		excludePod = true
 	}
 	return excludePod
@@ -190,7 +193,7 @@ func isInitContainerPresent(initContainersMap map[string]struct{}, k8sArgs K8sAr
 func getPodInfoWithRetries(ctx context.Context, conf *PluginConf, k8sArgs K8sArgs) (int, map[string]struct{}, map[string]string, error) {
 	client, err := newKubeClient(*conf)
 	if err != nil {
-		return 0, nil, nil, err
+		return 0, nil, nil, errors.Wrap(err, "could not create kube client")
 	}
 	log.V(1).Info("created Kubernetes client", "client", client)
 
@@ -198,19 +201,21 @@ func getPodInfoWithRetries(ctx context.Context, conf *PluginConf, k8sArgs K8sArg
 	var initContainersMap map[string]struct{}
 	var annotations map[string]string
 	var k8sErr error
-	for attempt := 1; attempt <= podRetrievalMaxRetries; attempt++ {
+
+	backoff := retry.WithMaxRetries(podRetrievalMaxRetries, retry.NewConstant(podRetrievalInterval))
+	err = retry.Do(ctx, backoff, func(ctx context.Context) error {
 		containerCount, initContainersMap, annotations, k8sErr = getKubePodInfo(ctx, client, string(k8sArgs.K8S_POD_NAME), string(k8sArgs.K8S_POD_NAMESPACE))
-		log.V(1).Info("container count in a pod", "count", containerCount)
-		if k8sErr == nil {
-			break
+		if k8sErr != nil {
+			return retry.RetryableError(k8sErr)
 		}
-		log.Error(k8sErr, "waiting for pod metadata", "attempt", attempt)
-		time.Sleep(podRetrievalInterval)
+		log.V(1).Info("container count in a pod", "count", containerCount)
+		return nil
+	})
+	if err != nil {
+		log.Error(k8sErr, "failed to get pod data", "retries", podRetrievalMaxRetries)
+		return 0, nil, nil, err
 	}
-	if k8sErr != nil {
-		log.Error(k8sErr, "failed to get pod data")
-		return 0, nil, nil, k8sErr
-	}
+
 	return containerCount, initContainersMap, annotations, nil
 }
 
