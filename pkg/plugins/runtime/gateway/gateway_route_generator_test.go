@@ -1325,6 +1325,74 @@ conf:
 				Name:     "timeout-all-default",
 			},
 		),
+
+		Entry("timeout policy works with external services without egress",
+			"external-service-with-timeout-no-egress.yaml", `
+type: Mesh
+name: default
+mtls:
+  enabledBackend: ca-1
+  backends:
+  - name: ca-1
+    type: builtin
+`, `
+type: ExternalService
+mesh: default
+name: external-httpbin
+tags:
+  kuma.io/service: external-httpbin
+  kuma.io/protocol: http2
+networking:
+  address: httpbin.com:443
+  tls:
+    enabled: true
+`, `
+type: MeshGateway
+mesh: default
+name: edge-gateway
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  listeners:
+  - port: 8080
+    protocol: HTTP
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: "/ext"
+      backends:
+      - destination:
+          kuma.io/service: external-httpbin
+`, `
+type: Timeout
+mesh: default
+name: es-timeouts
+sources:
+- match:
+    kuma.io/service: gateway-default
+destinations:
+- match:
+    kuma.io/service: external-httpbin
+conf:
+  connect_timeout: 113s
+  http:
+    request_timeout: 114s
+    idle_timeout: 115s
+    stream_idle_timeout: 116s
+    max_stream_duration: 117s
+`,
+		),
 	}
 
 	handleArg := func(arg interface{}) {
@@ -1391,5 +1459,4 @@ conf:
 			entries,
 		)
 	})
-
 })
