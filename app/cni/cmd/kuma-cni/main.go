@@ -11,7 +11,6 @@ import (
 	"github.com/containernetworking/cni/pkg/types"
 	"github.com/containernetworking/cni/pkg/types/current"
 	"github.com/containernetworking/cni/pkg/version"
-	"k8s.io/client-go/kubernetes"
 
 	"github.com/kumahq/kuma/pkg/core"
 )
@@ -100,49 +99,50 @@ func cmdAdd(args *skel.CmdArgs) error {
 	}
 	logContainerInfo(args.Args, args.ContainerID, k8sArgs)
 
-	// TODO: this whole nested mess needs to be rewritten
-	if string(k8sArgs.K8S_POD_NAMESPACE) != "" && string(k8sArgs.K8S_POD_NAME) != "" {
-		excludePod := shouldExcludePod(conf.Kubernetes.ExcludeNamespaces, k8sArgs.K8S_POD_NAMESPACE)
-		if !excludePod {
-			client, err := newKubeClient(*conf)
-			if err != nil {
-				return err
-			}
-			log.V(1).Info("created Kubernetes client", "client", client)
-			containers, initContainersMap, annotations, err := getPodInfoWithRetries(ctx, client, k8sArgs)
-			if err != nil {
-				return err
-			}
-			excludePod = checkInitContainerPresent(initContainersMap, k8sArgs, excludePod)
-
-			log.V(1).Info("container count in a pod", "count", containers)
-			if containers > 1 {
-				logAnnotations(args, k8sArgs, annotations)
-				excludePod = checkAnnotationPresent(annotations, excludePod)
-
-				if !excludePod {
-					if intermediateConfig, configErr := NewIntermediateConfig(annotations); configErr != nil {
-						log.Error(configErr, "pod intermediateConfig failed due to bad params")
-					} else {
-						// Get the constructor for the configured type of InterceptRuleMgr
-						if err := Inject(args.Netns, intermediateConfig); err != nil {
-							log.Error(err, "could not inject rules into namespace")
-							return err
-						}
-					}
-				} else {
-					log.Info("internal pod excluded")
-				}
-			} else {
-				log.Info("not enough containers in pod")
-			}
-		} else {
-			log.Info("pod excluded")
-		}
-	} else {
+	if string(k8sArgs.K8S_POD_NAMESPACE) == "" || string(k8sArgs.K8S_POD_NAME) != "" {
 		log.Info("no kubernetes data")
+		return prepareResult(conf)
 	}
 
+	if shouldExcludePod(conf.Kubernetes.ExcludeNamespaces, k8sArgs.K8S_POD_NAMESPACE) {
+		log.Info("pod excluded")
+		return prepareResult(conf)
+	}
+
+	containers, initContainersMap, annotations, err := getPodInfoWithRetries(ctx, conf, k8sArgs)
+	if err != nil {
+		log.Info("error getting pod info")
+		return err
+	}
+
+	if isInitContainerPresent(initContainersMap, k8sArgs) {
+		log.Info("pod excluded - init container present")
+		return prepareResult(conf)
+	}
+
+	if containers < 2 {
+		log.Info("not enough containers in pod")
+		return prepareResult(conf)
+	}
+
+	logAnnotations(args, k8sArgs, annotations)
+	if isSidecarInjectedAnnotationAbsent(annotations) {
+		log.Info("no sidecar injected annotation")
+		return prepareResult(conf)
+	}
+
+	if intermediateConfig, configErr := NewIntermediateConfig(annotations); configErr != nil {
+		log.Error(configErr, "pod intermediateConfig failed due to bad params")
+	} else {
+		if err := Inject(args.Netns, intermediateConfig); err != nil {
+			log.Error(err, "could not inject rules into namespace")
+			return err
+		}
+	}
+	return prepareResult(conf)
+}
+
+func prepareResult(conf *PluginConf) error {
 	var result *current.Result
 	if conf.PrevResult == nil {
 		result = &current.Result{
@@ -165,16 +165,18 @@ func logAnnotations(args *skel.CmdArgs, k8sArgs K8sArgs, annotations map[string]
 		"annotations", annotations)
 }
 
-func checkAnnotationPresent(annotations map[string]string, excludePod bool) bool {
+func isSidecarInjectedAnnotationAbsent(annotations map[string]string) bool {
+	excludePod := false
 	val, ok := annotations["kuma.io/sidecar-injected"]
 	if !ok || val != "true" {
-		log.Info("pod excluded due to lack of 'kuma.io/sidecar-injected: true' annotation")
+		log.V(1).Info("pod excluded due to lack of 'kuma.io/sidecar-injected: true' annotation")
 		excludePod = true
 	}
 	return excludePod
 }
 
-func checkInitContainerPresent(initContainersMap map[string]struct{}, k8sArgs K8sArgs, excludePod bool) bool {
+func isInitContainerPresent(initContainersMap map[string]struct{}, k8sArgs K8sArgs) bool {
+	excludePod := false
 	// Check if kuma-init container is present; in that case exclude pod
 	if _, present := initContainersMap["kuma-init"]; present {
 		log.V(1).Info("pod excluded due to being already injected with kuma-init container",
@@ -185,13 +187,20 @@ func checkInitContainerPresent(initContainersMap map[string]struct{}, k8sArgs K8
 	return excludePod
 }
 
-func getPodInfoWithRetries(ctx context.Context, client *kubernetes.Clientset, k8sArgs K8sArgs) (int, map[string]struct{}, map[string]string, error) {
-	var containers int
+func getPodInfoWithRetries(ctx context.Context, conf *PluginConf, k8sArgs K8sArgs) (int, map[string]struct{}, map[string]string, error) {
+	client, err := newKubeClient(*conf)
+	if err != nil {
+		return 0, nil, nil, err
+	}
+	log.V(1).Info("created Kubernetes client", "client", client)
+
+	var containerCount int
 	var initContainersMap map[string]struct{}
 	var annotations map[string]string
 	var k8sErr error
 	for attempt := 1; attempt <= podRetrievalMaxRetries; attempt++ {
-		containers, initContainersMap, annotations, k8sErr = getKubePodInfo(ctx, client, string(k8sArgs.K8S_POD_NAME), string(k8sArgs.K8S_POD_NAMESPACE))
+		containerCount, initContainersMap, annotations, k8sErr = getKubePodInfo(ctx, client, string(k8sArgs.K8S_POD_NAME), string(k8sArgs.K8S_POD_NAMESPACE))
+		log.V(1).Info("container count in a pod", "count", containerCount)
 		if k8sErr == nil {
 			break
 		}
@@ -202,7 +211,7 @@ func getPodInfoWithRetries(ctx context.Context, client *kubernetes.Clientset, k8
 		log.Error(k8sErr, "failed to get pod data")
 		return 0, nil, nil, k8sErr
 	}
-	return containers, initContainersMap, annotations, nil
+	return containerCount, initContainersMap, annotations, nil
 }
 
 func shouldExcludePod(excludedNamespaces []string, podNamespace types.UnmarshallableString) bool {

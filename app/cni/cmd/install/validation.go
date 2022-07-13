@@ -1,5 +1,9 @@
 package main
 
+import (
+	"github.com/pkg/errors"
+)
+
 func isValidConfFile(file string) bool {
 	parsed, err := parseFileToHashMap(file)
 	if err != nil {
@@ -33,39 +37,45 @@ func isValidConflistFile(file string) bool {
 	return false
 }
 
-func checkInstall(cniConfPath string, isPluginChained bool) bool {
-	if fileExists(cniConfPath) {
-		parsed, err := parseFileToHashMap(cniConfPath)
-		if err != nil {
-			return false
-		}
-		if isPluginChained {
-			if isValidConflistFile(cniConfPath) {
-				plugins, err := getPluginsArray(parsed)
-				if err != nil {
-					return false
-				}
-				index, err := findKumaCniConfigIndex(plugins)
-				if err != nil {
-					return false
-				}
-
-				if index >= 0 {
-					return true
-				}
-			}
-		} else {
-			if isValidConfFile(cniConfPath) {
-				pluginType, ok := parsed["type"]
-				if !ok {
-					return false
-				}
-				if pluginType == "kuma-cni" {
-					return true
-				}
-			}
-		}
+func checkInstall(cniConfPath string, isPluginChained bool) error {
+	if !fileExists(cniConfPath) {
+		return errors.New("cni config file does not exist")
 	}
 
-	return false
+	parsed, err := parseFileToHashMap(cniConfPath)
+	if err != nil {
+		return err
+	}
+
+	if isPluginChained {
+		if !isValidConflistFile(cniConfPath) {
+			return errors.New("chained plugin requires a valid conflist file")
+		}
+		plugins, err := getPluginsArray(parsed)
+		if err != nil {
+			return err
+		}
+		index, err := findKumaCniConfigIndex(plugins)
+		if err != nil {
+			return err
+		}
+		if index >= 0 {
+			return nil
+		} else {
+			return errors.New("chained plugin config file does not contain kuma-cni plugin")
+		}
+	} else {
+		if !isValidConfFile(cniConfPath) {
+			return errors.New("chained plugin requires a valid conflist file")
+		}
+		pluginType, ok := parsed["type"]
+		if !ok {
+			return errors.New("cni config was modified and does not have a type")
+		}
+		if pluginType == "kuma-cni" {
+			return nil
+		} else {
+			return errors.New("config file does not contain kuma-cni configuration")
+		}
+	}
 }

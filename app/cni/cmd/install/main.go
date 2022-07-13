@@ -96,25 +96,28 @@ func removeKubeconfig(mountedCniNetDir, kubeconfigName string) {
 func revertConfig(mountedCniNetDir, cniConfName string, chainedCniPlugin bool) error {
 	configPath := mountedCniNetDir + "/" + cniConfName
 
-	if fileExists(configPath) {
-		if chainedCniPlugin {
-			contents, err := ioutil.ReadFile(configPath)
-			if err != nil {
-				return errors.Wrap(err, "couldn't read cni conf file")
-			}
-			newContents, err := revertConfigContents(contents)
-			if err != nil {
-				return errors.Wrap(err, "could not revert config contents")
-			}
-			err = atomic.WriteFile(configPath, bytes.NewReader(newContents))
-			if err != nil {
-				return errors.Wrap(err, "could not write new conf")
-			}
-		} else {
-			err := os.Remove(configPath)
-			if err != nil {
-				return errors.Wrap(err, "couldn't remove cni conf file")
-			}
+	if !fileExists(configPath) {
+		log.Info("no need to revert config - file does not exist", "configPath", configPath)
+		return nil
+	}
+
+	if chainedCniPlugin {
+		contents, err := ioutil.ReadFile(configPath)
+		if err != nil {
+			return errors.Wrap(err, "couldn't read cni conf file")
+		}
+		newContents, err := revertConfigContents(contents)
+		if err != nil {
+			return errors.Wrap(err, "could not revert config contents")
+		}
+		err = atomic.WriteFile(configPath, bytes.NewReader(newContents))
+		if err != nil {
+			return errors.Wrap(err, "could not write new conf")
+		}
+	} else {
+		err := os.Remove(configPath)
+		if err != nil {
+			return errors.Wrap(err, "couldn't remove cni conf file")
 		}
 	}
 
@@ -161,7 +164,10 @@ func install() error {
 
 	for shouldSleep {
 		time.Sleep(time.Duration(cfgCheckInterval) * time.Second)
-		checkInstall(mountedCniNetDir+"/"+cniConfName, chainedCniPlugin)
+		err := checkInstall(mountedCniNetDir+"/"+cniConfName, chainedCniPlugin)
+		if err != nil {
+			return errors.Wrap(err, "checking installation failed. exiting")
+		}
 	}
 
 	return nil
@@ -341,7 +347,7 @@ func copyBinaries() error {
 }
 
 // isDirWriteable checks if dir is writable by writing and removing a file
-// to dir. It returns nil if dir is writable.
+// to dir. It returns true if dir is writable.
 func isDirWriteable(dir string) bool {
 	f := filepath.Join(dir, ".touch")
 	perm := 0600

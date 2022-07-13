@@ -320,9 +320,13 @@ cni:
     # -- CNI image tag
     tag: "0.0.10"
 
+  # -- use new Kuma CNI image (experimental)
   imageExperimental:
+    # -- experimental CNI image registry
     registry: "kumahq"
+    # -- experimental CNI image repository
     repository: "kuma-cni"
+    # -- experimental CNI image tag
     tag:
 
   # -- Security context at the pod level for cni
