@@ -75,6 +75,7 @@ var _ = Describe("Admin Resource Access", func() {
 		err := resourceAccess.ValidateUpdate(
 			model.ResourceKey{Name: "xyz"},
 			&system_proto.Secret{},
+			&system_proto.Secret{},
 			system.NewSecretResource().Descriptor(),
 			user.Admin,
 		)
@@ -87,6 +88,7 @@ var _ = Describe("Admin Resource Access", func() {
 		// when
 		err := resourceAccess.ValidateUpdate(
 			model.ResourceKey{Name: "xyz"},
+			&system_proto.Secret{},
 			&system_proto.Secret{},
 			system.NewSecretResource().Descriptor(),
 			user.User{Name: "john doe", Groups: []string{"users"}},

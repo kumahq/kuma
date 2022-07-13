@@ -30,15 +30,15 @@ func NewAdminResourceAccess(cfg config_access.AdminResourcesStaticAccessConfig) 
 
 var _ ResourceAccess = &adminResourceAccess{}
 
-func (a *adminResourceAccess) ValidateCreate(key model.ResourceKey, spec model.ResourceSpec, descriptor model.ResourceTypeDescriptor, user user.User) error {
+func (a *adminResourceAccess) ValidateCreate(_ model.ResourceKey, _ model.ResourceSpec, descriptor model.ResourceTypeDescriptor, user user.User) error {
 	return a.validateAdminAccess(user, descriptor)
 }
 
-func (a *adminResourceAccess) ValidateUpdate(key model.ResourceKey, spec model.ResourceSpec, descriptor model.ResourceTypeDescriptor, user user.User) error {
+func (a *adminResourceAccess) ValidateUpdate(_ model.ResourceKey, _ model.ResourceSpec, _ model.ResourceSpec, descriptor model.ResourceTypeDescriptor, user user.User) error {
 	return a.validateAdminAccess(user, descriptor)
 }
 
-func (a *adminResourceAccess) ValidateDelete(key model.ResourceKey, spec model.ResourceSpec, descriptor model.ResourceTypeDescriptor, user user.User) error {
+func (a *adminResourceAccess) ValidateDelete(_ model.ResourceKey, _ model.ResourceSpec, descriptor model.ResourceTypeDescriptor, user user.User) error {
 	return a.validateAdminAccess(user, descriptor)
 }
 
@@ -46,7 +46,7 @@ func (a *adminResourceAccess) ValidateList(descriptor model.ResourceTypeDescript
 	return a.validateAdminAccess(user, descriptor)
 }
 
-func (a *adminResourceAccess) ValidateGet(key model.ResourceKey, descriptor model.ResourceTypeDescriptor, user user.User) error {
+func (a *adminResourceAccess) ValidateGet(_ model.ResourceKey, descriptor model.ResourceTypeDescriptor, user user.User) error {
 	return a.validateAdminAccess(user, descriptor)
 }
 
