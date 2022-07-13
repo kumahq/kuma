@@ -51,6 +51,7 @@ type GatewayHost struct {
 	Routes   []model.Resource
 	Policies map[model.ResourceType][]match.RankedPolicy
 	TLS      *mesh_proto.MeshGateway_TLS_Conf
+	Tags     mesh_proto.TagSelector
 }
 
 type GatewayListener struct {
@@ -273,7 +274,7 @@ func (g Generator) generateCDS(ctx xds_context.Context, info GatewayListenerInfo
 	resources := core_xds.NewResourceSet()
 
 	for _, hostInfo := range hostInfos {
-		clusterRes, err := g.ClusterGenerator.GenerateClusters(ctx, info, hostInfo.Entries)
+		clusterRes, err := g.ClusterGenerator.GenerateClusters(ctx, info, hostInfo)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to generate clusters for dataplane %q", info.Proxy.Id)
 		}
@@ -352,6 +353,7 @@ func MakeGatewayListener(
 			Hostname: hostname,
 			Policies: map[model.ResourceType][]match.RankedPolicy{},
 			TLS:      l.GetTls(),
+			Tags:     l.Tags,
 		}
 
 		switch listener.Protocol {

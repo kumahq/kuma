@@ -1,6 +1,6 @@
 Clusters:
   Resources:
-    exact-header-match-f6b57a6b55557c81:
+    exact-header-match-9f720dd4e289b673:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -12,7 +12,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: exact-header-match-f6b57a6b55557c81
+      name: exact-header-match-9f720dd4e289b673
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -27,7 +27,7 @@ Clusters:
             idleTimeout: 3600s
           explicitHttpConfig:
             httpProtocolOptions: {}
-    regex-header-match-ad0dd92f37b8a38d:
+    exact-header-match-d7c910a2e5559eda:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -39,7 +39,34 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: regex-header-match-ad0dd92f37b8a38d
+      name: exact-header-match-d7c910a2e5559eda
+      outlierDetection:
+        enforcingConsecutive5xx: 0
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
+      type: EDS
+      typedExtensionProtocolOptions:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          commonHttpProtocolOptions:
+            idleTimeout: 3600s
+          explicitHttpConfig:
+            httpProtocolOptions: {}
+    regex-header-match-70561bb2da83c870:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
+      connectTimeout: 5s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
+      name: regex-header-match-70561bb2da83c870
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -56,8 +83,8 @@ Clusters:
             httpProtocolOptions: {}
 Endpoints:
   Resources:
-    exact-header-match-f6b57a6b55557c81:
-      clusterName: exact-header-match-f6b57a6b55557c81
+    exact-header-match-9f720dd4e289b673:
+      clusterName: exact-header-match-9f720dd4e289b673
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -72,8 +99,24 @@ Endpoints:
                 kuma.io/protocol: http
               envoy.transport_socket_match:
                 kuma.io/protocol: http
-    regex-header-match-ad0dd92f37b8a38d:
-      clusterName: regex-header-match-ad0dd92f37b8a38d
+    exact-header-match-d7c910a2e5559eda:
+      clusterName: exact-header-match-d7c910a2e5559eda
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.1.7
+                portValue: 20007
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+    regex-header-match-70561bb2da83c870:
+      clusterName: regex-header-match-70561bb2da83c870
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -206,7 +249,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: regex-header-match-ad0dd92f37b8a38d
+              - name: regex-header-match-70561bb2da83c870
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags
@@ -229,7 +272,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: exact-header-match-f6b57a6b55557c81
+              - name: exact-header-match-9f720dd4e289b673
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags
@@ -252,7 +295,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: exact-header-match-f6b57a6b55557c81
+              - name: exact-header-match-9f720dd4e289b673
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags

@@ -1,6 +1,6 @@
 Clusters:
   Resources:
-    echo-exact-ad4e3a31db1bf217:
+    echo-exact-0c6c646106bd51f3:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -12,7 +12,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: echo-exact-ad4e3a31db1bf217
+      name: echo-exact-0c6c646106bd51f3
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -27,7 +27,7 @@ Clusters:
             idleTimeout: 3600s
           explicitHttpConfig:
             httpProtocolOptions: {}
-    echo-prefix-d0e5ba63b0c9b9f0:
+    echo-prefix-1d3cd70bb04bf6e2:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -39,7 +39,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: echo-prefix-d0e5ba63b0c9b9f0
+      name: echo-prefix-1d3cd70bb04bf6e2
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -54,7 +54,7 @@ Clusters:
             idleTimeout: 3600s
           explicitHttpConfig:
             httpProtocolOptions: {}
-    echo-regex-627905e7b1c2eb33:
+    echo-prefix-fb233dfa49dbd8d9:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -66,7 +66,34 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: echo-regex-627905e7b1c2eb33
+      name: echo-prefix-fb233dfa49dbd8d9
+      outlierDetection:
+        enforcingConsecutive5xx: 0
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
+      type: EDS
+      typedExtensionProtocolOptions:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          commonHttpProtocolOptions:
+            idleTimeout: 3600s
+          explicitHttpConfig:
+            httpProtocolOptions: {}
+    echo-regex-197ed2f99640f307:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
+      connectTimeout: 5s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
+      name: echo-regex-197ed2f99640f307
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -83,8 +110,8 @@ Clusters:
             httpProtocolOptions: {}
 Endpoints:
   Resources:
-    echo-exact-ad4e3a31db1bf217:
-      clusterName: echo-exact-ad4e3a31db1bf217
+    echo-exact-0c6c646106bd51f3:
+      clusterName: echo-exact-0c6c646106bd51f3
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -99,8 +126,8 @@ Endpoints:
                 kuma.io/protocol: http
               envoy.transport_socket_match:
                 kuma.io/protocol: http
-    echo-prefix-d0e5ba63b0c9b9f0:
-      clusterName: echo-prefix-d0e5ba63b0c9b9f0
+    echo-prefix-1d3cd70bb04bf6e2:
+      clusterName: echo-prefix-1d3cd70bb04bf6e2
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -115,8 +142,24 @@ Endpoints:
                 kuma.io/protocol: http
               envoy.transport_socket_match:
                 kuma.io/protocol: http
-    echo-regex-627905e7b1c2eb33:
-      clusterName: echo-regex-627905e7b1c2eb33
+    echo-prefix-fb233dfa49dbd8d9:
+      clusterName: echo-prefix-fb233dfa49dbd8d9
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.1.4
+                portValue: 20004
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+    echo-regex-197ed2f99640f307:
+      clusterName: echo-regex-197ed2f99640f307
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -214,7 +257,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: echo-exact-ad4e3a31db1bf217
+              - name: echo-exact-0c6c646106bd51f3
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags
@@ -234,7 +277,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: echo-prefix-d0e5ba63b0c9b9f0
+              - name: echo-prefix-1d3cd70bb04bf6e2
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags
@@ -254,7 +297,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: echo-prefix-d0e5ba63b0c9b9f0
+              - name: echo-prefix-1d3cd70bb04bf6e2
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags
@@ -276,7 +319,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: echo-regex-627905e7b1c2eb33
+              - name: echo-regex-197ed2f99640f307
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags

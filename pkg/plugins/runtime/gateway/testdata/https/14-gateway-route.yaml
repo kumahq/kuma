@@ -1,6 +1,6 @@
 Clusters:
   Resources:
-    echo-service-5a416c39037aa8f6:
+    echo-service-6ab423c47cdb0767:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -12,7 +12,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: echo-service-5a416c39037aa8f6
+      name: echo-service-6ab423c47cdb0767
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -29,8 +29,8 @@ Clusters:
             httpProtocolOptions: {}
 Endpoints:
   Resources:
-    echo-service-5a416c39037aa8f6:
-      clusterName: echo-service-5a416c39037aa8f6
+    echo-service-6ab423c47cdb0767:
+      clusterName: echo-service-6ab423c47cdb0767
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -158,7 +158,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: echo-service-5a416c39037aa8f6
+              - name: echo-service-6ab423c47cdb0767
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags

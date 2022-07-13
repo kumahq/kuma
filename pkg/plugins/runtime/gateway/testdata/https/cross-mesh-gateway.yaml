@@ -1,6 +1,6 @@
 Clusters:
   Resources:
-    echo-service-b1e19f953add857b:
+    echo-service-bfae5b64a0fe8b74:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -12,7 +12,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: echo-service-b1e19f953add857b
+      name: echo-service-bfae5b64a0fe8b74
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -49,7 +49,7 @@ Clusters:
             idleTimeout: 3600s
           explicitHttpConfig:
             httpProtocolOptions: {}
-    external-httpbin-e70841077c6e3aa5:
+    external-httpbin-823fa8131cdd67fa:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -76,7 +76,7 @@ Clusters:
                 envoy.transport_socket_match:
                   kuma.io/external-service-name: external-httpbin
                   kuma.io/protocol: http2
-      name: external-httpbin-e70841077c6e3aa5
+      name: external-httpbin-823fa8131cdd67fa
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -103,8 +103,8 @@ Clusters:
             http2ProtocolOptions: {}
 Endpoints:
   Resources:
-    echo-service-b1e19f953add857b:
-      clusterName: echo-service-b1e19f953add857b
+    echo-service-bfae5b64a0fe8b74:
+      clusterName: echo-service-bfae5b64a0fe8b74
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -230,7 +230,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: echo-service-b1e19f953add857b
+              - name: echo-service-bfae5b64a0fe8b74
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags
@@ -250,7 +250,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: external-httpbin-e70841077c6e3aa5
+              - name: external-httpbin-823fa8131cdd67fa
                 weight: 1
               totalWeight: 1
         - match:
@@ -266,7 +266,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: echo-service-b1e19f953add857b
+              - name: echo-service-bfae5b64a0fe8b74
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags
@@ -286,7 +286,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: external-httpbin-e70841077c6e3aa5
+              - name: external-httpbin-823fa8131cdd67fa
                 weight: 1
               totalWeight: 1
 Runtimes:

@@ -1,6 +1,6 @@
 Clusters:
   Resources:
-    api-service-f8ae3d759cc477a6:
+    api-service-4508437668c35ed8:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -12,7 +12,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: api-service-f8ae3d759cc477a6
+      name: api-service-4508437668c35ed8
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -27,7 +27,7 @@ Clusters:
             idleTimeout: 3600s
           explicitHttpConfig:
             httpProtocolOptions: {}
-    echo-mirror-712ce3acc3cececc:
+    api-service-bb145fed7e9ae110:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -39,7 +39,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: echo-mirror-712ce3acc3cececc
+      name: api-service-bb145fed7e9ae110
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -54,7 +54,7 @@ Clusters:
             idleTimeout: 3600s
           explicitHttpConfig:
             httpProtocolOptions: {}
-    echo-service-5a416c39037aa8f6:
+    echo-mirror-3dd740a2de879d4c:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -66,7 +66,34 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: echo-service-5a416c39037aa8f6
+      name: echo-mirror-3dd740a2de879d4c
+      outlierDetection:
+        enforcingConsecutive5xx: 0
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
+      type: EDS
+      typedExtensionProtocolOptions:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          commonHttpProtocolOptions:
+            idleTimeout: 3600s
+          explicitHttpConfig:
+            httpProtocolOptions: {}
+    echo-service-6ab423c47cdb0767:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
+      connectTimeout: 5s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
+      name: echo-service-6ab423c47cdb0767
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -83,8 +110,8 @@ Clusters:
             httpProtocolOptions: {}
 Endpoints:
   Resources:
-    api-service-f8ae3d759cc477a6:
-      clusterName: api-service-f8ae3d759cc477a6
+    api-service-4508437668c35ed8:
+      clusterName: api-service-4508437668c35ed8
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -99,8 +126,24 @@ Endpoints:
                 kuma.io/protocol: http
               envoy.transport_socket_match:
                 kuma.io/protocol: http
-    echo-mirror-712ce3acc3cececc:
-      clusterName: echo-mirror-712ce3acc3cececc
+    api-service-bb145fed7e9ae110:
+      clusterName: api-service-bb145fed7e9ae110
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.1.1
+                portValue: 20001
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+    echo-mirror-3dd740a2de879d4c:
+      clusterName: echo-mirror-3dd740a2de879d4c
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -115,8 +158,8 @@ Endpoints:
                 kuma.io/protocol: http
               envoy.transport_socket_match:
                 kuma.io/protocol: http
-    echo-service-5a416c39037aa8f6:
-      clusterName: echo-service-5a416c39037aa8f6
+    echo-service-6ab423c47cdb0767:
+      clusterName: echo-service-6ab423c47cdb0767
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -214,7 +257,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: api-service-f8ae3d759cc477a6
+              - name: api-service-bb145fed7e9ae110
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags
@@ -250,7 +293,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: api-service-f8ae3d759cc477a6
+              - name: api-service-bb145fed7e9ae110
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags
@@ -277,7 +320,7 @@ Routes:
             prefix: /
           route:
             requestMirrorPolicies:
-            - cluster: echo-mirror-712ce3acc3cececc
+            - cluster: echo-mirror-3dd740a2de879d4c
               runtimeFraction:
                 defaultValue:
                   numerator: 1
@@ -291,7 +334,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: echo-service-5a416c39037aa8f6
+              - name: echo-service-6ab423c47cdb0767
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags
