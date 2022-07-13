@@ -1,9 +1,10 @@
 package trafficlog
 
 import (
-	"fmt"
+	"bytes"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -12,63 +13,125 @@ import (
 
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
 func TCPLogging() {
 	Describe("TrafficLog Logging to TCP", func() {
 		meshName := "trafficlog-tcp-logging"
-		namespace := "trafficlog-tcp-logging"
-		tcpSinkNamespace := "externalservice-namespace"
+		trafficNamespace := "trafficlog-tcp-logging"
+		tcpSinkNamespace := "tcp-sink-namespace"
+		tcpSinkAppName := "tcp-sink"
 		testServer := "test-server"
-		loggingBackend := fmt.Sprintf(`
+
+		args := struct {
+			MeshName           string
+			TrafficNamespace   string
+			TcpSinkNamespace   string
+			TcpSinkAppName     string
+			KumaUniversalImage string
+		}{
+			meshName, trafficNamespace, tcpSinkNamespace,
+			tcpSinkAppName, Config.GetUniversalImage(),
+		}
+
+		loggingBackend := &bytes.Buffer{}
+		tmpl := template.Must(template.New("loggingBackend").Parse(`
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
 metadata:
-  name: %s
-`, meshName) + `spec:
+  name: {{ .MeshName }}
+spec:
   logging:
     defaultBackend: netcat
     backends:
-    - name: netcat
-      format: '%START_TIME(%s)%,%KUMA_SOURCE_SERVICE%,%KUMA_DESTINATION_SERVICE%'
-      type: tcp
-      conf:
-        address: externalservice-tcp-sink.externalservice-namespace.svc.cluster.local:9999
-`
+      - name: netcat
+        format: '%START_TIME(%s)%,%KUMA_SOURCE_SERVICE%,%KUMA_DESTINATION_SERVICE%'
+        type: tcp
+        conf:
+          address: {{.TcpSinkAppName}}.{{.TcpSinkNamespace}}.svc.cluster.local:9999
+`))
+		Expect(tmpl.Execute(loggingBackend, &args)).To(Succeed())
 
-		trafficLog := fmt.Sprintf(`
+		trafficLog := &bytes.Buffer{}
+		tmpl = template.Must(template.New("trafficLog").Parse(`
 apiVersion: kuma.io/v1alpha1
 kind: TrafficLog
-mesh: %s
+mesh: {{ .MeshName }}
 metadata:
   name: all-traffic
 spec:
   sources:
-  - match:
-      kuma.io/service: "*"
+    - match:
+        kuma.io/service: "*"
   destinations:
-   - match:
-      kuma.io/service: "*"
-`, meshName)
+    - match:
+        kuma.io/service: "*"
+`))
+		Expect(tmpl.Execute(trafficLog, &args)).To(Succeed())
+
+		tcpSink := &bytes.Buffer{}
+		tmpl = template.Must(template.New("tcpSink").Parse(`
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{.TcpSinkAppName}}
+  namespace: {{.TcpSinkNamespace}}
+spec:
+  ports:
+    - port: 9999
+      name: netcat
+  selector:
+    app: {{.TcpSinkAppName}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{.TcpSinkAppName}}
+  namespace: {{.TcpSinkNamespace}}
+  labels:
+    app: {{.TcpSinkAppName}}
+spec:
+  selector:
+    matchLabels:
+      app: {{.TcpSinkAppName}}
+  template:
+    metadata:
+      labels:
+        app: {{.TcpSinkAppName}}
+    spec:
+      containers:
+        - name: {{.TcpSinkAppName}}
+          image: {{.KumaUniversalImage}}
+          command: ["/bin/bash"]
+          args: ["-c", "/bin/netcat -lk -p 9999 > /nc.out"]
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9999
+`))
+
+		Expect(tmpl.Execute(tcpSink, &args)).To(Succeed())
+
 		BeforeAll(func() {
 			err := NewClusterSetup().
-				Install(YamlK8s(loggingBackend)).
-				Install(YamlK8s(trafficLog)).
-				Install(NamespaceWithSidecarInjection(namespace)).
+				Install(YamlK8s(loggingBackend.String())).
+				Install(YamlK8s(trafficLog.String())).
+				Install(NamespaceWithSidecarInjection(trafficNamespace)).
+				Install(Namespace(tcpSinkNamespace)).
 				Install(testserver.Install(
-					testserver.WithNamespace(namespace),
+					testserver.WithNamespace(trafficNamespace),
 					testserver.WithMesh(meshName),
 					testserver.WithName(testServer))).
-				Install(DemoClientK8s(meshName, namespace)).
-				Install(externalservice.Install(externalservice.TcpSink, []string{})).
+				Install(DemoClientK8s(meshName, trafficNamespace)).
+				Install(YamlK8s(tcpSink.String())).
+				Install(WaitPodsAvailable(tcpSinkNamespace, tcpSinkAppName)).
 				Setup(env.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		E2EAfterAll(func() {
-			Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+			Expect(env.Cluster.TriggerDeleteNamespace(trafficNamespace)).To(Succeed())
+			Expect(env.Cluster.TriggerDeleteNamespace(tcpSinkNamespace)).To(Succeed())
 			Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 		})
 
@@ -76,12 +139,12 @@ spec:
 			var startTimeStr, src, dst string
 			var err error
 			var stdout string
-			clientPodName, err := PodNameOfApp(env.Cluster, "demo-client", namespace)
+			clientPodName, err := PodNameOfApp(env.Cluster, "demo-client", trafficNamespace)
 			Expect(err).ToNot(HaveOccurred())
-			tcpSinkPodName, err := PodNameOfApp(env.Cluster, "externalservice-tcp-sink", tcpSinkNamespace)
+			tcpSinkPodName, err := PodNameOfApp(env.Cluster, tcpSinkAppName, tcpSinkNamespace)
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(func() error {
-				_, _, err = env.Cluster.ExecWithRetries(namespace, clientPodName,
+				_, _, err = env.Cluster.ExecWithRetries(trafficNamespace, clientPodName,
 					AppModeDemoClient, "curl", "-v", "--fail", "test-server")
 				if err != nil {
 					return err
