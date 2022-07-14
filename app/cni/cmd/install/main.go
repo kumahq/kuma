@@ -95,7 +95,7 @@ func install(ic *InstallerConfig) error {
 		return err
 	}
 
-	if err := prepareKubeconfig(ic, serviceAccountPath); err != nil {
+	if err := prepareKubeconfig(ic.MountedCniNetDir, ic.KubeconfigName, serviceAccountPath); err != nil {
 		return err
 	}
 

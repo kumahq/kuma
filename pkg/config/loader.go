@@ -8,7 +8,6 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/util/files"
 )
 
 func Load(file string, cfg Config) error {
@@ -29,7 +28,7 @@ func Load(file string, cfg Config) error {
 }
 
 func loadFromFile(file string, cfg Config) error {
-	if !files.FileExists(file) {
+	if !fileExists(file) {
 		return errors.Errorf("Failed to access configuration file %q", file)
 	}
 	if contents, err := os.ReadFile(file); err != nil {
@@ -42,4 +41,9 @@ func loadFromFile(file string, cfg Config) error {
 
 func loadFromEnv(config Config) error {
 	return envconfig.Process("", config)
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }
