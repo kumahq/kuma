@@ -6,6 +6,18 @@ import (
 	"github.com/kumahq/kuma/pkg/util/files"
 )
 
+func lookForValidConfig(files []string, checkerFn func(string) error) (string, bool) {
+	for _, file := range files {
+		err := checkerFn(file)
+		if err != nil {
+			log.Error(err, "error occurred testing config file", "file", file)
+		} else {
+			return file, true
+		}
+	}
+	return "", false
+}
+
 func isValidConfFile(file string) error {
 	parsed, err := parseFileToHashMap(file)
 	if err != nil {

@@ -2,20 +2,15 @@ package main
 
 import (
 	"bytes"
-	"encoding/base64"
 	"io/ioutil"
-	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"syscall"
 	"time"
 
-	"github.com/asaskevich/govalidator"
 	"github.com/natefinch/atomic"
 	"github.com/pkg/errors"
-	"k8s.io/utils/env"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/util/files"
@@ -32,31 +27,36 @@ var (
 	log = core.NewLoggerWithRotation(2, "/tmp/install-cni.log", 100, 0, 0).WithName("install-cni")
 )
 
-func removeBinFiles() {
-	log.V(1).Info("removing existing binaries")
-	err := os.Remove("/host/opt/cni/bin/kuma-cni")
-	if err != nil {
-		log.V(1).Error(err, "couldn't remove cni bin file")
-	}
+func removeBinFiles() error {
+	return os.Remove("/host/opt/cni/bin/kuma-cni")
 }
 
 func cleanup(ic *InstallerConfig) {
-	removeBinFiles()
-	err := revertConfig(ic.MountedCniNetDir, ic.CniConfName, ic.ChainedCniPlugin)
-	if err != nil {
+	log.Info("starting cleanup")
+	if err := removeBinFiles(); err != nil {
+		log.Error(err, "could not remove cni bin file")
+	}
+	log.V(1).Info("removed existing binaries")
+	if err := revertConfig(ic.MountedCniNetDir, ic.CniConfName, ic.ChainedCniPlugin); err != nil {
 		log.Error(err, "could not revert config")
 	}
-	removeKubeconfig(ic.MountedCniNetDir, ic.KubeconfigName)
+	log.V(1).Info("reverted config")
+	if err := removeKubeconfig(ic.MountedCniNetDir, ic.KubeconfigName); err != nil {
+		log.Error(err, "could not remove kubeconfig")
+	}
+	log.V(1).Info("removed kubeconfig")
+	log.Info("finished cleanup")
 }
 
-func removeKubeconfig(mountedCniNetDir, kubeconfigName string) {
+func removeKubeconfig(mountedCniNetDir, kubeconfigName string) error {
 	kubeconfigPath := mountedCniNetDir + "/" + kubeconfigName
 	if files.FileExists(kubeconfigPath) {
 		err := os.Remove(kubeconfigPath)
 		if err != nil {
-			log.V(1).Error(err, "couldn't remove cni conf file")
+			return errors.Wrap(err, "couldn't remove kubeconfig file")
 		}
 	}
+	return nil
 }
 
 func revertConfig(mountedCniNetDir, cniConfName string, chainedCniPlugin bool) error {
@@ -95,35 +95,12 @@ func install(ic *InstallerConfig) error {
 		return err
 	}
 
-	if err := prepareKubeconfig(ic.MountedCniNetDir, ic.KubeconfigName, serviceAccountPath); err != nil {
+	if err := prepareKubeconfig(ic, serviceAccountPath); err != nil {
 		return err
 	}
 
 	if err := prepareKumaCniConfig(ic, serviceAccountPath); err != nil {
 		return err
-	}
-
-	return nil
-}
-
-func prepareKumaCniConfig(ic *InstallerConfig, serviceAccountPath string) error {
-	rawConfig := env.GetString("CNI_NETWORK_CONFIG", "")
-	kubeconfigFilePath := ic.HostCniNetDir + "/" + ic.KubeconfigName
-
-	config := strings.Replace(rawConfig, "__KUBECONFIG_FILEPATH__", kubeconfigFilePath, 1)
-	log.V(1).Info("config after replace", "config", config)
-
-	serviceAccountToken, err := ioutil.ReadFile(serviceAccountPath + "/token")
-	if err != nil {
-		return err
-	}
-	config = strings.Replace(config, "__SERVICEACCOUNT_TOKEN__", string(serviceAccountToken), 1)
-
-	if ic.ChainedCniPlugin {
-		err := setupChainedPlugin(ic.MountedCniNetDir, ic.CniConfName, config)
-		if err != nil {
-			return errors.Wrap(err, "unable to setup kuma cni as chained plugin")
-		}
 	}
 
 	return nil
@@ -156,77 +133,6 @@ func setupChainedPlugin(mountedCniNetDir, cniConfName, kumaCniConfig string) err
 		return nil
 	}
 	return nil
-}
-
-func prepareKubeconfig(mountedCniNetDir, kubeconfigName, serviceAccountPath string) error {
-	kubeconfigPath := mountedCniNetDir + "/" + kubeconfigName
-	serviceAccountTokenPath := serviceAccountPath + "/token"
-	serviceAccountToken, err := ioutil.ReadFile(serviceAccountTokenPath)
-	if err != nil {
-		return err
-	}
-
-	if files.FileExists(serviceAccountTokenPath) {
-		kubernetesServiceHost := env.GetString("KUBERNETES_SERVICE_HOST", "")
-		if kubernetesServiceHost == "" {
-			return errors.New("KUBERNETES_SERVICE_HOST env variable not set")
-		}
-
-		kubernetesServicePort := env.GetString("KUBERNETES_SERVICE_PORT", "")
-		if kubernetesServicePort == "" {
-			return errors.New("KUBERNETES_SERVICE_PORT env variable not set")
-		}
-
-		kubeCaFile := env.GetString("KUBE_CA_FILE", serviceAccountPath+"/ca.crt")
-		kubeCa, err := ioutil.ReadFile(kubeCaFile)
-		if err != nil {
-			return err
-		}
-		kubernetesServiceProtocol := env.GetString("KUBERNETES_SERVICE_PROTOCOL", "https")
-		caData := base64.StdEncoding.EncodeToString(kubeCa)
-
-		kubeconfig := kubeconfigTemplate(kubernetesServiceProtocol, kubernetesServiceHost, kubernetesServicePort, string(serviceAccountToken), caData)
-		log.Info("writing kubeconfig", "path", kubeconfigPath)
-		err = atomic.WriteFile(kubeconfigPath, strings.NewReader(kubeconfig))
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func kubeconfigTemplate(protocol, host, port, token, caData string) string {
-	safeHost := host
-	if govalidator.IsIPv6(host) {
-		if !(strings.HasPrefix(host, "[") && strings.HasSuffix(host, "]")) {
-			safeHost = "[" + host + "]"
-		}
-	}
-
-	serverUrl := url.URL{
-		Scheme: protocol,
-		Host:   safeHost + ":" + port,
-	}
-
-	return `# Kubeconfig file for kuma CNI plugin.
-apiVersion: v1
-kind: Config
-clusters:
-- name: local
-  cluster:
-    server: ` + serverUrl.String() + `
-    certificate-authority-data: ` + caData + `
-users:
-- name: kuma-cni
-  user:
-    token: ` + token + `
-contexts:
-- name: kuma-cni-context
-  context:
-    cluster: local
-    user: kuma-cni
-current-context: kuma-cni-context`
 }
 
 func copyBinaries() error {
@@ -298,18 +204,18 @@ func setupSignalCleanup(ic *InstallerConfig) {
 }
 
 func main() {
-	ic, err := loadInstallerConfig()
+	installerConfig, err := loadInstallerConfig()
 	if err != nil {
 		log.Error(err, "error occurred during config loading")
 		os.Exit(1)
 	}
-	err = install(ic)
+	err = install(installerConfig)
 	if err != nil {
 		log.Error(err, "error occurred during cni installation")
 		os.Exit(1)
 	}
 
-	if err := runLoop(ic); err != nil {
+	if err := runLoop(installerConfig); err != nil {
 		log.Error(err, "checking installation failed - exiting")
 		os.Exit(1)
 	}

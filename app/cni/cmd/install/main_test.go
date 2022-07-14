@@ -26,8 +26,15 @@ current-context: kuma-cni-context`
 
 var _ = Describe("kubeconfigTemplate", func() {
 	It("should work properly with unescaped IPv6 addresses", func() {
+		// given
+		ic := InstallerConfig{
+			KubernetesServiceProtocol: "https",
+			KubernetesServiceHost:     "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+			KubernetesServicePort:     "3000",
+		}
+
 		// when
-		result := kubeconfigTemplate("https", "2001:0db8:85a3:0000:0000:8a2e:0370:7334", "3000", "token", "YWJjCg==")
+		result := kubeconfigTemplate(&ic, "token", "YWJjCg==")
 
 		// then
 		Expect(result).To(Equal(expected))
@@ -35,8 +42,15 @@ var _ = Describe("kubeconfigTemplate", func() {
 	})
 
 	It("should work properly with escaped IPv6 addresses", func() {
+		// given
+		ic := InstallerConfig{
+			KubernetesServiceProtocol: "https",
+			KubernetesServiceHost:     "[2001:0db8:85a3:0000:0000:8a2e:0370:7334]",
+			KubernetesServicePort:     "3000",
+		}
+
 		// when
-		resultWithBrackets := kubeconfigTemplate("https", "[2001:0db8:85a3:0000:0000:8a2e:0370:7334]", "3000", "token", "YWJjCg==")
+		resultWithBrackets := kubeconfigTemplate(&ic, "token", "YWJjCg==")
 
 		// then
 		Expect(resultWithBrackets).To(Equal(expected))
