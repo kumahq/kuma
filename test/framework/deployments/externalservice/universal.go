@@ -15,7 +15,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/ssh"
 )
 
-type universalDeployment struct {
+type UniversalDeployment struct {
 	container string
 	ip        string
 	ports     map[uint32]uint32
@@ -26,23 +26,36 @@ type universalDeployment struct {
 	verbose   bool
 }
 
-var _ Deployment = &universalDeployment{}
+var _ Deployment = &UniversalDeployment{}
+
+var UniversalEchoServer = func(port int, tls bool) Command {
+	args := []string{
+		"test-server", "echo",
+		"--instance", fmt.Sprintf("echo-%d", port),
+		"--port", fmt.Sprintf("%d", port),
+	}
+	if tls {
+		args = append(args, "--crt", "/server-cert.pem", "--key", "/server-key.pem", "--tls")
+	}
+	return args
+}
 var UniversalAppEchoServer = ExternalServiceCommand(80, "Echo 80")
 var UniversalAppHttpsEchoServer = Command([]string{"ncat",
 	"-lk", "-p", "443",
 	"--ssl", "--ssl-cert", "/server-cert.pem", "--ssl-key", "/server-key.pem",
 	"--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n HTTPS Echo\n\"'"})
+var UniversalTCPSink = Command([]string{"ncat", "-lk", "9999", ">", "/nc.out"})
 
 var ExternalServiceCommand = func(port uint32, message string) Command {
 	return []string{"ncat", "-lk", "-p", fmt.Sprintf("%d", port), "--sh-exec",
 		fmt.Sprintf("'echo \"HTTP/1.1 200 OK\n\n%s\n\"'", message)}
 }
 
-func (u *universalDeployment) Name() string {
+func (u *UniversalDeployment) Name() string {
 	return DeploymentName + u.name
 }
 
-func (u *universalDeployment) Deploy(cluster framework.Cluster) error {
+func (u *UniversalDeployment) Deploy(cluster framework.Cluster) error {
 	if err := u.allocatePublicPortsFor(22); err != nil {
 		return err
 	}
@@ -105,6 +118,13 @@ func (u *universalDeployment) Deploy(cluster framework.Cluster) error {
 	return nil
 }
 
+func (u *UniversalDeployment) Exec(cmd ...string) (string, string, error) {
+	port := strconv.Itoa(int(u.ports[22]))
+	sshApp := ssh.NewApp(u.verbose, port, nil, cmd)
+	err := sshApp.Run()
+	return sshApp.Out(), sshApp.Err(), err
+}
+
 func getIP(t testing.TestingT, container string) (string, error) {
 	cmd := shell.Command{
 		Command: "docker",
@@ -128,21 +148,21 @@ func getName(t testing.TestingT, container string) (string, error) {
 	return out[1:], nil
 }
 
-func (j *universalDeployment) allocatePublicPortsFor(ports ...uint32) error {
+func (j *UniversalDeployment) allocatePublicPortsFor(ports ...uint32) error {
 	for _, port := range ports {
 		j.ports[port] = 0
 	}
 	return nil
 }
 
-func (j *universalDeployment) publishPortsForDocker() (args []string) {
+func (j *UniversalDeployment) publishPortsForDocker() (args []string) {
 	for port := range j.ports {
 		args = append(args, "--publish="+strconv.Itoa(int(port)))
 	}
 	return
 }
 
-func (j *universalDeployment) updatePublishedPorts(t testing.TestingT) error {
+func (j *UniversalDeployment) updatePublishedPorts(t testing.TestingT) error {
 	var ports []uint32
 	for port := range j.ports {
 		ports = append(ports, port)
@@ -155,7 +175,7 @@ func (j *universalDeployment) updatePublishedPorts(t testing.TestingT) error {
 	return nil
 }
 
-func (u *universalDeployment) Delete(cluster framework.Cluster) error {
+func (u *UniversalDeployment) Delete(cluster framework.Cluster) error {
 	retry.DoWithRetry(cluster.GetTesting(), "stop "+u.container, framework.DefaultRetries, framework.DefaultTimeout,
 		func() (string, error) {
 			_, err := docker.StopE(cluster.GetTesting(), []string{u.container}, &docker.StopOptions{Time: 1})
@@ -167,10 +187,15 @@ func (u *universalDeployment) Delete(cluster framework.Cluster) error {
 	return nil
 }
 
-func (u *universalDeployment) GetExternalAppAddress() string {
+func (u *UniversalDeployment) GetExternalAppAddress() string {
 	return u.ip
 }
 
-func (u *universalDeployment) GetCert() string {
+func (u *UniversalDeployment) GetExternalPort(internalPort uint32) (uint32, bool) {
+	port, ok := u.ports[internalPort]
+	return port, ok
+}
+
+func (u *UniversalDeployment) GetCert() string {
 	return u.cert
 }

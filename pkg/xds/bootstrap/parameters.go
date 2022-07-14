@@ -38,4 +38,5 @@ type configParameters struct {
 	DNSPort               uint32
 	EmptyDNSPort          uint32
 	ProxyType             string
+	Features              []string
 }

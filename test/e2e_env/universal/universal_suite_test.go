@@ -24,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/ratelimit"
 	"github.com/kumahq/kuma/test/e2e_env/universal/retry"
 	"github.com/kumahq/kuma/test/e2e_env/universal/timeout"
+	"github.com/kumahq/kuma/test/e2e_env/universal/trafficlog"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -79,6 +80,7 @@ var _ = Describe("Inspect", inspect.Inspect, Ordered)
 var _ = Describe("Applications Metrics", observability.ApplicationsMetrics, Ordered)
 var _ = Describe("Tracing", observability.Tracing, Ordered)
 var _ = Describe("Membership", membership.Membership, Ordered)
+var _ = Describe("Traffic Logging", trafficlog.TCPLogging, Ordered)
 var _ = Describe("Timeout", timeout.Policy, Ordered)
 var _ = Describe("Retry", retry.Policy, Ordered)
 var _ = Describe("RateLimit", ratelimit.Policy, Ordered)

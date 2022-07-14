@@ -28,8 +28,8 @@ func (s *sender) Connect() error {
 	return nil
 }
 
-func (s *sender) Send(record string) error {
-	_, err := s.conn.Write([]byte(record))
+func (s *sender) Send(record []byte) error {
+	_, err := s.conn.Write(record)
 	return errors.Wrapf(err, "failed to send a log entry to a TCP logging backend: %s", s.address)
 }
 

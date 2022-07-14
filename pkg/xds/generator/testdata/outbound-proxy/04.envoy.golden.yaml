@@ -411,16 +411,14 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           accessLog:
-          - name: envoy.access_loggers.http_grpc
+          - name: envoy.access_loggers.file
             typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.access_loggers.grpc.v3.HttpGrpcAccessLogConfig
-              commonConfig:
-                grpcService:
-                  envoyGrpc:
-                    clusterName: access_log_sink
-                logName: |
-                  logstash:1234;[%START_TIME%] %RESPONSE_FLAGS% mesh1 10.0.0.1(web)->%UPSTREAM_HOST%(api-tcp) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
-                transportApiVersion: V3
+              '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
+              logFormat:
+                textFormatSource:
+                  inlineString: |
+                    logstash:1234;[%START_TIME%] %RESPONSE_FLAGS% mesh1 10.0.0.1(web)->%UPSTREAM_HOST%(api-tcp) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
+              path: /tmp/kuma-al-dp-1-mesh1.sock
           cluster: api-tcp
           idleTimeout: 101s
           statPrefix: api-tcp
