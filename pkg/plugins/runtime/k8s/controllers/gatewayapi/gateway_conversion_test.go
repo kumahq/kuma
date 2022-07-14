@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	k8s_gatewayapi "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi"
 )

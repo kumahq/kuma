@@ -8,7 +8,7 @@ import (
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
-	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
 )

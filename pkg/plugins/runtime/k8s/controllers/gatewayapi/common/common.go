@@ -8,7 +8,7 @@ import (
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
-	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 )

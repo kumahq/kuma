@@ -17,7 +17,7 @@ func GatewayAPICRDs(cluster Cluster) error {
 	return k8s.RunKubectlE(
 		cluster.GetTesting(),
 		cluster.GetKubectlOptions(),
-		"apply", "-k", "github.com/kubernetes-sigs/gateway-api/config/crd?ref=v0.4.3")
+		"apply", "-f", "https://github.com/kubernetes-sigs/gateway-api/releases/download/v0.5.0/standard-install.yaml")
 }
 
 const GatewayClass = `
