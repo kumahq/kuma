@@ -63,22 +63,22 @@ func parseConfig(stdin []byte) (*PluginConf, error) {
 	conf := PluginConf{}
 
 	if err := json.Unmarshal(stdin, &conf); err != nil {
-		return nil, fmt.Errorf("failed to parse network configuration: %v", err)
+		return nil, errors.Wrapf(err, "could not parse network configuration")
 	}
 
 	if conf.RawPrevResult != nil {
 		resultBytes, err := json.Marshal(conf.RawPrevResult)
 		if err != nil {
-			return nil, fmt.Errorf("could not serialize prevResult: %v", err)
+			return nil, errors.Wrapf(err, "could not serialize prevResult")
 		}
 		res, err := version.NewResult(conf.CNIVersion, resultBytes)
 		if err != nil {
-			return nil, fmt.Errorf("could not parse prevResult: %v", err)
+			return nil, errors.Wrapf(err, "could not parse prevResult")
 		}
 		conf.RawPrevResult = nil
 		conf.PrevResult, err = current.NewResultFromResult(res)
 		if err != nil {
-			return nil, fmt.Errorf("could not convert result to current version: %v", err)
+			return nil, errors.Wrapf(err, "could not convert result to current version")
 		}
 	}
 
