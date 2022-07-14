@@ -14,11 +14,11 @@ func DpAuth() {
 	const meshName = "dp-auth"
 
 	BeforeAll(func() {
-		E2EDeferCleanup(func() {
-			Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-			Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
-		})
 		Expect(env.Cluster.Install(MeshUniversal(meshName))).To(Succeed())
+	})
+	E2EAfterAll(func() {
+		Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should not be able to override someone else Dataplane", func() {

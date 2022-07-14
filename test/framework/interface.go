@@ -108,6 +108,9 @@ type appDeploymentOptions struct {
 	serviceProbe          bool
 	reachableServices     []string
 	appendDataplaneConfig string
+
+	dockerVolumes       []string
+	dockerContainerName string
 }
 
 func (d *appDeploymentOptions) apply(opts ...AppDeploymentOption) {
@@ -458,6 +461,18 @@ func WithConcurrency(concurrency int) AppDeploymentOption {
 func WithReachableServices(services ...string) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.reachableServices = services
+	})
+}
+
+func WithDockerVolumes(volumes ...string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.dockerVolumes = append(o.dockerVolumes, volumes...)
+	})
+}
+
+func WithDockerContainerName(name string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.dockerContainerName = name
 	})
 }
 

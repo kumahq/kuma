@@ -26,57 +26,113 @@ func Inspect() {
 		Expect(env.Global.DeleteMesh(meshName)).To(Succeed())
 	})
 
+	type testCase struct {
+		cluster     func() Cluster
+		args        []string
+		typ         string
+		expectedOut string
+	}
+
 	Context("Dataplane", func() {
-		It("should execute config dump from Global CP", func() {
-			Eventually(func(g Gomega) {
-				out, err := env.Global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", "kuma-4.test-server", "--config-dump", "--mesh", meshName)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(out).Should(ContainSubstring(`"dataplane.proxyType": "dataplane"`))
-			}, "30s", "1s").Should(Succeed())
-		})
-
-		It("should execute config dump from Zone CP", func() {
-			Eventually(func(g Gomega) {
-				out, err := env.UniZone1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", "test-server", "--config-dump", "--mesh", meshName)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(out).Should(ContainSubstring(`"dataplane.proxyType": "dataplane"`))
-			}, "30s", "1s").Should(Succeed())
-		})
-	})
-
-	Context("ZoneIngress", func() {
-		It("should execute config dump from Global CP", func() {
-			Eventually(func(g Gomega) {
-				out, err := env.Global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zoneingress", "kuma-4.ingress", "--config-dump")
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(out).Should(ContainSubstring(`"dataplane.proxyType": "ingress"`))
-			}, "30s", "1s").Should(Succeed())
-		})
-
-		It("should execute config dump from Zone CP", func() {
-			Eventually(func(g Gomega) {
-				out, err := env.UniZone1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zoneingress", "ingress", "--config-dump")
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(out).Should(ContainSubstring(`"dataplane.proxyType": "ingress"`))
-			}, "30s", "1s").Should(Succeed())
-		})
-	})
-
-	Context("ZoneEgress", func() {
-		It("should execute config dump from Global CP", func() {
-			Eventually(func(g Gomega) {
-				out, err := env.Global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zoneegress", "kuma-4.egress", "--config-dump")
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(out).Should(ContainSubstring(`"dataplane.proxyType": "egress"`))
-			}, "30s", "1s").Should(Succeed())
-		})
-
-		It("should execute config dump from Zone CP", func() {
-			Eventually(func(g Gomega) {
-				out, err := env.UniZone1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zoneegress", "egress", "--config-dump")
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(out).Should(ContainSubstring(`"dataplane.proxyType": "egress"`))
-			}, "30s", "1s").Should(Succeed())
-		})
+		DescribeTable("should execute envoy inspection",
+			func(given testCase) {
+				Eventually(func(g Gomega) {
+					args := append([]string{"inspect"}, given.args...)
+					out, err := given.cluster().GetKumactlOptions().RunKumactlAndGetOutput(args...)
+					g.Expect(err).ToNot(HaveOccurred())
+					g.Expect(out).Should(ContainSubstring(given.expectedOut))
+				}, "30s", "1s").Should(Succeed())
+			},
+			Entry("of config dump for a dataplane using Global CP", testCase{
+				cluster:     env.GlobalCluster,
+				args:        []string{"dataplane", "kuma-4.test-server", "--type", "config-dump", "--mesh", meshName},
+				expectedOut: `"dataplane.proxyType": "dataplane"`,
+			}),
+			Entry("of stats for a dataplane using Global CP", testCase{
+				cluster:     env.GlobalCluster,
+				args:        []string{"dataplane", "kuma-4.test-server", "--type", "stats", "--mesh", meshName},
+				expectedOut: `server.live: 1`,
+			}),
+			Entry("of clusters for a dataplane using Global CP", testCase{
+				cluster:     env.GlobalCluster,
+				args:        []string{"dataplane", "kuma-4.test-server", "--type", "clusters", "--mesh", meshName},
+				expectedOut: `kuma:envoy:admin::`,
+			}),
+			Entry("of config dump for a dataplane using Zone CP", testCase{
+				cluster:     env.UniZone1Cluster,
+				args:        []string{"dataplane", "test-server", "--type", "config-dump", "--mesh", meshName},
+				expectedOut: `"dataplane.proxyType": "dataplane"`,
+			}),
+			Entry("of stats for a dataplane using Zone CP", testCase{
+				cluster:     env.UniZone1Cluster,
+				args:        []string{"dataplane", "test-server", "--type", "stats", "--mesh", meshName},
+				expectedOut: `server.live: 1`,
+			}),
+			Entry("of clusters for a dataplane using Zone CP", testCase{
+				cluster:     env.UniZone1Cluster,
+				args:        []string{"dataplane", "test-server", "--type", "clusters", "--mesh", meshName},
+				expectedOut: `kuma:envoy:admin::`,
+			}),
+			Entry("of config dump for a zoneingress using Global CP", testCase{
+				cluster:     env.GlobalCluster,
+				args:        []string{"zoneingress", "kuma-4.ingress", "--type", "config-dump"},
+				expectedOut: `"dataplane.proxyType": "ingress"`,
+			}),
+			Entry("of stats for a zoneingress using Global CP", testCase{
+				cluster:     env.GlobalCluster,
+				args:        []string{"zoneingress", "kuma-4.ingress", "--type", "stats"},
+				expectedOut: `server.live: 1`,
+			}),
+			Entry("of clusters for a zoneingress using Global CP", testCase{
+				cluster:     env.GlobalCluster,
+				args:        []string{"zoneingress", "kuma-4.ingress", "--type", "clusters"},
+				expectedOut: `kuma:envoy:admin::`,
+			}),
+			Entry("of config dump for a zoneingress using Zone CP", testCase{
+				cluster:     env.UniZone1Cluster,
+				args:        []string{"zoneingress", "ingress", "--type", "config-dump"},
+				expectedOut: `"dataplane.proxyType": "ingress"`,
+			}),
+			Entry("of stats for a zoneingress using Global CP", testCase{
+				cluster:     env.UniZone1Cluster,
+				args:        []string{"zoneingress", "ingress", "--type", "stats"},
+				expectedOut: `server.live: 1`,
+			}),
+			Entry("of clusters for a zoneingress using Global CP", testCase{
+				cluster:     env.UniZone1Cluster,
+				args:        []string{"zoneingress", "ingress", "--type", "clusters"},
+				expectedOut: `kuma:envoy:admin::`,
+			}),
+			Entry("of config dump for a zoneegress using Global CP", testCase{
+				cluster:     env.GlobalCluster,
+				args:        []string{"zoneegress", "kuma-4.egress", "--type", "config-dump"},
+				expectedOut: `"dataplane.proxyType": "egress"`,
+			}),
+			Entry("of stats for a zoneegress using Global CP", testCase{
+				cluster:     env.GlobalCluster,
+				args:        []string{"zoneegress", "kuma-4.egress", "--type", "stats"},
+				expectedOut: `server.live: 1`,
+			}),
+			Entry("of clusters for a zoneegress using Global CP", testCase{
+				cluster:     env.GlobalCluster,
+				args:        []string{"zoneegress", "kuma-4.egress", "--type", "clusters"},
+				expectedOut: `kuma:envoy:admin::`,
+			}),
+			Entry("of config dump for a zoneegress using Zone CP", testCase{
+				cluster:     env.UniZone1Cluster,
+				args:        []string{"zoneegress", "egress", "--type", "config-dump"},
+				expectedOut: `"dataplane.proxyType": "egress"`,
+			}),
+			Entry("of stats for a zoneegress using Global CP", testCase{
+				cluster:     env.UniZone1Cluster,
+				args:        []string{"zoneegress", "egress", "--type", "stats"},
+				expectedOut: `server.live: 1`,
+			}),
+			Entry("of clusters for a zoneegress using Global CP", testCase{
+				cluster:     env.UniZone1Cluster,
+				args:        []string{"zoneegress", "egress", "--type", "clusters"},
+				expectedOut: `kuma:envoy:admin::`,
+			}),
+		)
 	})
 }

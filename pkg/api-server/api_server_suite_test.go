@@ -229,7 +229,11 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, func(
 		runtime.Access{
 			ResourceAccess:       resources_access.NewAdminResourceAccess(cfg.Access.Static.AdminResources),
 			DataplaneTokenAccess: nil,
-			ConfigDumpAccess:     access.NewStaticConfigDumpAccess(cfg.Access.Static.ViewConfigDump),
+			EnvoyAdminAccess: access.NewStaticEnvoyAdminAccess(
+				cfg.Access.Static.ViewConfigDump,
+				cfg.Access.Static.ViewStats,
+				cfg.Access.Static.ViewClusters,
+			),
 		},
 		&test_runtime.DummyEnvoyAdminClient{},
 	)
