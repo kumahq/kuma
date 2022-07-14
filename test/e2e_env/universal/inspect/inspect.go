@@ -12,16 +12,15 @@ func Inspect() {
 	meshName := "inspect"
 
 	BeforeAll(func() {
-		E2EDeferCleanup(func() {
-			Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-			Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
-		})
-
 		err := NewClusterSetup().
 			Install(MeshUniversal(meshName)).
 			Install(DemoClientUniversal(AppModeDemoClient, meshName)).
 			Setup(env.Cluster)
 		Expect(err).To(BeNil())
+	})
+	E2EAfterAll(func() {
+		Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should return envoy config_dump", func() {

@@ -2,12 +2,10 @@ package retry
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
@@ -64,16 +62,11 @@ conf:
 `, meshName)
 
 		By("Checking requests succeed")
-		Eventually(func() error {
+		Eventually(func(g Gomega) {
 			stdout, _, err := env.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
-			if err != nil {
-				return err
-			}
-			if strings.Contains(stdout, "HTTP/1.1 200 OK") {
-				return nil
-			}
-			return errors.Errorf("should retry")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		}).Should(Succeed())
 		Consistently(func(g Gomega) {
 			// -m 8 to wait for 8 seconds to beat the default 5s connect timeout
@@ -102,17 +95,11 @@ conf:
 		Expect(env.Cluster.Install(YamlUniversal(retryPolicy))).To(Succeed())
 
 		By("Eventually all requests succeed consistently")
-		Eventually(func() error {
-			// -m 8 to wait for 8 seconds to beat the default 5s connect timeout
+		Eventually(func(g Gomega) {
 			stdout, _, err := env.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "-m", "8", "--fail", "test-server.mesh")
-			if err != nil {
-				return err
-			}
-			if strings.Contains(stdout, "HTTP/1.1 200 OK") {
-				return nil
-			}
-			return errors.Errorf("should retry")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		}).Should(Succeed())
 		Consistently(func(g Gomega) {
 			// -m 8 to wait for 8 seconds to beat the default 5s connect timeout

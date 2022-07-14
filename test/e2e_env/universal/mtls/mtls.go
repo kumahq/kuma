@@ -12,17 +12,15 @@ import (
 )
 
 func Policy() {
-	var meshNames []string
-
-	E2EAfterAll(func() {
-		for _, m := range meshNames {
-			Expect(env.Cluster.DeleteMeshApps(m)).To(Succeed())
-			Expect(env.Cluster.DeleteMesh(m)).To(Succeed())
+	var meshName string
+	E2EAfterEach(func() {
+		if meshName != "" {
+			Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+			Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+			meshName = ""
 		}
 	})
-
 	createMeshMTLS := func(name, mode string) {
-		meshNames = append(meshNames, name)
 		meshYaml := fmt.Sprintf(
 			`
 type: Mesh
@@ -56,10 +54,7 @@ mtls:
 			cmd = append(cmd, opts...)
 			cmd = append(cmd, addr)
 			_, _, err := env.Cluster.Exec("", "", "demo-client", cmd...)
-			if err != nil {
-				return fmt.Errorf("request from client to %s failed", addr)
-			}
-			return nil
+			return err
 		}
 	}
 
@@ -77,21 +72,22 @@ mtls:
 	}
 
 	It("should support STRICT mTLS mode", func() {
-		createMeshMTLS("strict-test", "STRICT")
+		meshName = "strict-test"
+		createMeshMTLS(meshName, "STRICT")
 
-		runTestServer("strict-test", false)
+		runTestServer(meshName, false)
 
-		runDemoClient("strict-test")
+		runDemoClient(meshName)
 
 		// check the inside-mesh communication
-		Eventually(clientToServer).Should(Succeed())
+		Eventually(clientToServer, "20s", "250ms").Should(Succeed())
 
 		// check the outside-mesh communication
 		Eventually(clientToServerDirect).ShouldNot(Succeed())
 	})
 
 	It("should support PERMISSIVE mTLS mode", func() {
-		meshName := "mtls-permissive"
+		meshName = "mtls-permissive"
 		createMeshMTLS(meshName, "PERMISSIVE")
 
 		runTestServer(meshName, false)
@@ -99,25 +95,25 @@ mtls:
 		runDemoClient(meshName)
 
 		// check the inside-mesh communication
-		Eventually(clientToServer).Should(Succeed())
+		Eventually(clientToServer, "20s", "250ms").Should(Succeed())
 
 		// check the outside-mesh communication (using direct IP:PORT allows bypassing outbound listeners)
 		Eventually(clientToServerDirect).Should(Succeed())
 	})
 
 	It("should support mTLS if connection already TLS", func() {
-		meshName := "mtls-strict-tls"
+		meshName = "mtls-strict-tls"
 		createMeshMTLS(meshName, "STRICT")
 
 		runTestServer(meshName, true)
 
 		runDemoClient(meshName)
 
-		Eventually(clientToServerTLS).Should(Succeed())
+		Eventually(clientToServerTLS, "20s", "250ms").Should(Succeed())
 	})
 
 	It("should support PERMISSIVE mTLS mode if the client is using TLS", func() {
-		meshName := "mtls-permissive-tls"
+		meshName = "mtls-permissive-tls"
 		createMeshMTLS(meshName, "PERMISSIVE")
 
 		runTestServer(meshName, true)
@@ -125,14 +121,14 @@ mtls:
 		runDemoClient(meshName)
 
 		// check the inside-mesh communication with mTLS over TLS
-		Eventually(clientToServerTLS).Should(Succeed())
+		Eventually(clientToServerTLS, "20s", "250ms").Should(Succeed())
 
 		// check the outside-mesh communication with mTLS over TLS
 		Eventually(clientToServerTLSDirect).Should(Succeed())
 	})
 
 	It("should support enabling PERMISSIVE mTLS mode with no failed requests", func() {
-		meshName := "mtls-permissive-transition"
+		meshName = "mtls-permissive-transition"
 		Expect(env.Cluster.Install(MeshUniversal(meshName))).To(Succeed())
 		// Disable retries so that we see every failed request
 		kumactl := env.Cluster.GetKumactlOptions()
@@ -145,7 +141,7 @@ mtls:
 
 		runTestServer(meshName, false)
 
-		Eventually(clientToServer).Should(Succeed())
+		Eventually(clientToServer, "20s", "250ms").Should(Succeed())
 
 		createMeshMTLS(meshName, "PERMISSIVE")
 

@@ -49,11 +49,6 @@ networking:
 	}
 
 	BeforeAll(func() {
-		E2EDeferCleanup(func() {
-			Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-			Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
-		})
-
 		err := NewClusterSetup().
 			Install(MeshUniversal(meshName)).
 			Install(YamlUniversal(healthCheck)).
@@ -73,6 +68,11 @@ networking:
 
 		err = DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
+	})
+
+	E2EAfterAll(func() {
+		Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should switch to panic mode and dismiss all requests", func() {

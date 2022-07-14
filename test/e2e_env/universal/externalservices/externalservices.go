@@ -3,6 +3,7 @@ package externalservices
 import (
 	"encoding/base64"
 	"fmt"
+	"net"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
 )
 
 func Policy() {
@@ -31,29 +31,33 @@ networking:
 	externalService := fmt.Sprintf(`
 type: ExternalService
 mesh: "%s"
-name: external-service-%%s
+name: %%s
 tags:
-  kuma.io/service: external-service-%%s
+  kuma.io/service: %%s
   kuma.io/protocol: http
 networking:
-  address: %%s
+  address: "%%s"
   tls:
     enabled: %%t
     caCert:
       inline: "%%s"
 `, meshName)
-	es1 := "1"
-	es2 := "2"
+	var esHttpHostPort string
+	var esHttp2HostPort string
+	var esHttpsHostPort string
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(YamlUniversal(meshDefaulMtlsOn)).
-			Install(externalservice.Install("http", externalservice.UniversalEchoServer(80, false))).
-			Install(externalservice.Install("https", externalservice.UniversalEchoServer(443, true))).
-			Install(externalservice.Install("http-80-81", externalservice.UniversalEchoServer(80, false), externalservice.UniversalEchoServer(81, false))).
+			Install(TestServerExternalServiceUniversal("es-http", meshName, 80, false)).
+			Install(TestServerExternalServiceUniversal("es-https", meshName, 443, true)).
+			Install(TestServerExternalServiceUniversal("es-http-2", meshName, 81, false)).
 			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
 			Setup(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
+		esHttpHostPort = net.JoinHostPort(env.Cluster.GetApp("es-http").GetContainerName(), "80")
+		esHttp2HostPort = net.JoinHostPort(env.Cluster.GetApp("es-http-2").GetContainerName(), "81")
+		esHttpsHostPort = net.JoinHostPort(env.Cluster.GetApp("es-https").GetContainerName(), "443")
 	})
 
 	E2EAfterAll(func() {
@@ -73,50 +77,50 @@ networking:
 
 	It("should route to external-service", func() {
 		err := env.Cluster.Install(YamlUniversal(fmt.Sprintf(externalService,
-			es1, es1,
-			"kuma-3_externalservice-http:80",
+			"ext-srv-1", "ext-srv-1",
+			esHttpHostPort,
 			false, "")))
 		Expect(err).ToNot(HaveOccurred())
 
-		checkSuccessfulRequest("external-service-1.mesh", And(
+		checkSuccessfulRequest("ext-srv-1.mesh", And(
 			Not(ContainSubstring("HTTPS")),
 			// Should rewrite host header
-			ContainSubstring(`"Host":["kuma-3_externalservice-http"]`),
+			ContainSubstring(`"Host":["es-http.external-service-base"]`),
 		))
-		checkSuccessfulRequest("kuma-3_externalservice-http:80", Not(ContainSubstring("HTTPS")))
+		checkSuccessfulRequest(esHttpHostPort, Not(ContainSubstring("HTTPS")))
 	})
 
 	It("should route to external-service with same hostname but different ports", func() {
 		err := env.Cluster.Install(YamlUniversal(fmt.Sprintf(externalService,
-			es1, es1,
-			"kuma-3_externalservice-http-80-81:80",
+			"ext-srv-1", "ext-srv-1",
+			esHttpHostPort,
 			false, "")))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = env.Cluster.Install(YamlUniversal(fmt.Sprintf(externalService,
-			es2, es2,
-			"kuma-3_externalservice-http-80-81:81",
+			"ext-srv-2", "ext-srv-2",
+			esHttp2HostPort,
 			false, "")))
 		Expect(err).ToNot(HaveOccurred())
 
 		// when access the first external service with .mesh
-		checkSuccessfulRequest("external-service-1.mesh",
-			And(Not(ContainSubstring("HTTPS")), ContainSubstring("echo-80")))
-		checkSuccessfulRequest("kuma-3_externalservice-http-80-81:80",
-			And(Not(ContainSubstring("HTTPS")), ContainSubstring("echo-80")))
+		checkSuccessfulRequest("ext-srv-1.mesh",
+			And(Not(ContainSubstring("HTTPS")), ContainSubstring("es-http")))
+		checkSuccessfulRequest(esHttpHostPort,
+			And(Not(ContainSubstring("HTTPS")), ContainSubstring("es-http")))
 
-		checkSuccessfulRequest("external-service-2.mesh",
-			And(Not(ContainSubstring("HTTPS")), ContainSubstring("echo-81")))
-		checkSuccessfulRequest("kuma-3_externalservice-http-80-81:81",
-			And(Not(ContainSubstring("HTTPS")), ContainSubstring("echo-81")))
+		checkSuccessfulRequest("ext-srv-2.mesh",
+			And(Not(ContainSubstring("HTTPS")), ContainSubstring("es-http-2")))
+		checkSuccessfulRequest(esHttp2HostPort,
+			And(Not(ContainSubstring("HTTPS")), ContainSubstring("es-http-2")))
 	})
 
 	It("should route to external-service over tls", func() {
 		// when set invalid certificate
 		otherCert := "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURMRENDQWhTZ0F3SUJBZ0lRSGRQaHhPZlhnV3VOeG9GbFYvRXdxVEFOQmdrcWhraUc5dzBCQVFzRkFEQVAKTVEwd0N3WURWUVFERXdScmRXMWhNQjRYRFRJd01Ea3hOakV5TWpnME5Gb1hEVE13TURreE5ERXlNamcwTkZvdwpEekVOTUFzR0ExVUVBeE1FYTNWdFlUQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQURnZ0VQQURDQ0FRb0NnZ0VCCkFPWkdiV2hTbFFTUnhGTnQ1cC8yV0NLRnlIWjNDdXdOZ3lMRVA3blM0Wlh5a3hzRmJZU3VWM2JJZ0Y3YlQvdXEKYTVRaXJlK0M2MGd1aEZicExjUGgyWjZVZmdJZDY5R2xRekhNVlljbUxHalZRdXlBdDRGTU1rVGZWRWw1STRPYQorMml0M0J2aWhWa0toVXo4eTVSUjVLYnFKZkdwNFoyMEZoNmZ0dG9DRmJlT0RtdkJzWUpGbVVRUytpZm95TVkvClAzUjAzU3U3ZzVpSXZuejd0bWt5ZG9OQzhuR1JEemRENUM4Zkp2clZJMVVYNkpSR3lMS3Q0NW9RWHQxbXhLMTAKNUthTjJ6TlYyV3RIc2FKcDlid3JQSCtKaVpHZVp5dnVoNVV3ckxkSENtcUs3c205VG9kR3p0VVpZMFZ6QWM0cQprWVZpWFk4Z1VqZk5tK2NRclBPMWtOOENBd0VBQWFPQmd6Q0JnREFPQmdOVkhROEJBZjhFQkFNQ0FxUXdIUVlEClZSMGxCQll3RkFZSUt3WUJCUVVIQXdFR0NDc0dBUVVGQndNQk1BOEdBMVVkRXdFQi93UUZNQU1CQWY4d0hRWUQKVlIwT0JCWUVGR01EQlBQaUJGSjNtdjJvQTlDVHFqZW1GVFYyTUI4R0ExVWRFUVFZTUJhQ0NXeHZZMkZzYUc5egpkSUlKYkc5allXeG9iM04wTUEwR0NTcUdTSWIzRFFFQkN3VUFBNElCQVFDLzE3UXdlT3BHZGIxTUVCSjhYUEc3CjNzSy91dG9XTFgxdGpmOFN1MURnYTZDRFQvZVRXSFpyV1JmODFLT1ZZMDdkbGU1U1JJREsxUWhmYkdHdEZQK1QKdlprcm9vdXNJOVVTMmFDV2xrZUNaV0dUbnF2TG1Eb091anFhZ0RvS1JSdWs0bVFkdE5Ob254aUwvd1p0VEZLaQorMWlOalVWYkxXaURYZEJMeG9SSVZkTE96cWIvTU54d0VsVXlhVERBa29wUXlPV2FURGtZUHJHbWFXamNzZlBHCmFPS293MHplK3pIVkZxVEhiam5DcUVWM2huc1V5UlV3c0JsbjkrakRKWGd3Wk0vdE1sVkpyWkNoMFNsZTlZNVoKTU9CMGZDZjZzVE1OUlRHZzVMcGw2dUlZTS81SU5wbUhWTW8zbjdNQlNucEVEQVVTMmJmL3VvNWdJaXE2WENkcAotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg=="
 		err := env.Cluster.Install(YamlUniversal(fmt.Sprintf(externalService,
-			es2, es2,
-			"kuma-3_externalservice-https:443",
+			"ext-srv-tls", "ext-srv-tls",
+			esHttpsHostPort,
 			true,
 			otherCert)))
 		Expect(err).ToNot(HaveOccurred())
@@ -124,23 +128,24 @@ networking:
 		// then accessing the secured external service fails
 		Consistently(func() error {
 			_, _, err = env.Cluster.Exec("", "", "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "http://kuma-3_externalservice-https:443")
+				"curl", "-v", "-m", "3", "--fail", "http://"+esHttpsHostPort)
 			return err
 		}).Should(HaveOccurred())
 
 		// when set proper certificate
-		externalServiceCaCert := externalservice.From(env.Cluster, "https").GetCert()
-		Expect(externalServiceCaCert).ToNot(BeEmpty())
+		cert, _, err := env.Cluster.Exec("", "", "es-https", "cat /certs/cert.pem")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(cert).ToNot(BeEmpty())
 
 		err = env.Cluster.Install(YamlUniversal(fmt.Sprintf(externalService,
-			es2, es2,
-			"kuma-3_externalservice-https:443",
+			"ext-srv-tls", "ext-srv-tls",
+			esHttpsHostPort,
 			true,
-			base64.StdEncoding.EncodeToString([]byte(externalServiceCaCert)))))
+			base64.StdEncoding.EncodeToString([]byte(cert)))))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then accessing the secured external service succeeds
-		checkSuccessfulRequest("http://kuma-3_externalservice-https:443", Not(ContainSubstring("HTTPS")))
+		checkSuccessfulRequest("http://"+esHttpsHostPort, Not(ContainSubstring("HTTPS")))
 	})
 
 	// certauth.idrix.fr is a site for testing mTLS authentication

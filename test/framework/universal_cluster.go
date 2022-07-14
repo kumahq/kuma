@@ -143,7 +143,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		cmd = append(cmd, "--config-file", "/kuma/kuma-cp.conf")
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppModeCP, "", AppModeCP, c.opts.isipv6, true, []string{})
+	app, err := NewUniversalApp(c.t, c.name, AppModeCP, "", AppModeCP, c.opts.isipv6, true, []string{}, nil, "")
 	if err != nil {
 		return err
 	}
@@ -276,7 +276,7 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 
 	Logf("IPV6 is %v", opts.isipv6)
 
-	app, err := NewUniversalApp(c.t, c.name, opts.name, opts.mesh, AppMode(appname), opts.isipv6, *opts.verbose, caps)
+	app, err := NewUniversalApp(c.t, c.name, opts.name, opts.mesh, AppMode(appname), opts.isipv6, *opts.verbose, caps, opts.dockerVolumes, opts.dockerContainerName)
 	if err != nil {
 		return err
 	}
