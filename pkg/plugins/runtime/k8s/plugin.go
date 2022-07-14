@@ -287,9 +287,9 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	mgr.GetWebhookServer().Register("/validate-v1-secret", &kube_webhook.Admission{Handler: secretValidator})
 
 	if gatewayAPICRDsPresent(mgr) {
-		gatewayValidator := k8s_webhooks.NewGatewayAPIMultizoneValidator(rt.Config().Mode)
-		mgr.GetWebhookServer().Register("/validate-v1alpha2-gateway", gatewayValidator)
-		mgr.GetWebhookServer().Register("/validate-v1alpha2-gateway-upstream", &upstreamValidatorHandler{})
+		gatewayClassValidator := k8s_webhooks.NewGatewayAPIMultizoneValidator(rt.Config().Mode)
+		mgr.GetWebhookServer().Register("/validate-gatewayclass", gatewayClassValidator)
+		mgr.GetWebhookServer().Register("/validate-v1beta1-gateway-upstream", &upstreamValidatorHandler{})
 	}
 
 	composite.AddValidator(&k8s_webhooks.ContainerPatchValidator{
