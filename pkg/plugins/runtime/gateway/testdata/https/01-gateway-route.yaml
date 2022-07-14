@@ -1,32 +1,5 @@
 Clusters:
   Resources:
-    echo-service-6ab423c47cdb0767:
-      circuitBreakers:
-        thresholds:
-        - maxConnections: 1024
-          maxPendingRequests: 1024
-          maxRequests: 1024
-          maxRetries: 3
-      connectTimeout: 5s
-      edsClusterConfig:
-        edsConfig:
-          ads: {}
-          resourceApiVersion: V3
-      name: echo-service-6ab423c47cdb0767
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
-      type: EDS
-      typedExtensionProtocolOptions:
-        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-          commonHttpProtocolOptions:
-            idleTimeout: 3600s
-          explicitHttpConfig:
-            httpProtocolOptions: {}
     echo-service-9f149ed9e14091ca:
       circuitBreakers:
         thresholds:
@@ -56,22 +29,6 @@ Clusters:
             httpProtocolOptions: {}
 Endpoints:
   Resources:
-    echo-service-6ab423c47cdb0767:
-      clusterName: echo-service-6ab423c47cdb0767
-      endpoints:
-      - lbEndpoints:
-        - endpoint:
-            address:
-              socketAddress:
-                address: 192.168.1.6
-                portValue: 20006
-          loadBalancingWeight: 1
-          metadata:
-            filterMetadata:
-              envoy.lb:
-                kuma.io/protocol: http
-              envoy.transport_socket_match:
-                kuma.io/protocol: http
     echo-service-9f149ed9e14091ca:
       clusterName: echo-service-9f149ed9e14091ca
       endpoints:
@@ -195,7 +152,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: echo-service-6ab423c47cdb0767
+              - name: echo-service-9f149ed9e14091ca
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags

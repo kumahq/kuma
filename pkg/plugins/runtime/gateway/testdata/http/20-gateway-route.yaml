@@ -27,33 +27,6 @@ Clusters:
             idleTimeout: 10s
           explicitHttpConfig:
             httpProtocolOptions: {}
-    echo-service-09d7c1c6ad2a108d:
-      circuitBreakers:
-        thresholds:
-        - maxConnections: 1024
-          maxPendingRequests: 1024
-          maxRequests: 1024
-          maxRetries: 3
-      connectTimeout: 20s
-      edsClusterConfig:
-        edsConfig:
-          ads: {}
-          resourceApiVersion: V3
-      name: echo-service-09d7c1c6ad2a108d
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
-      type: EDS
-      typedExtensionProtocolOptions:
-        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-          commonHttpProtocolOptions:
-            idleTimeout: 20s
-          explicitHttpConfig:
-            httpProtocolOptions: {}
     echo-service-11405a82852416ac:
       circuitBreakers:
         thresholds:
@@ -81,6 +54,33 @@ Clusters:
             idleTimeout: 30s
           explicitHttpConfig:
             httpProtocolOptions: {}
+    echo-service-ff1f8bb571f3bfa4:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
+      connectTimeout: 20s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
+      name: echo-service-ff1f8bb571f3bfa4
+      outlierDetection:
+        enforcingConsecutive5xx: 0
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
+      type: EDS
+      typedExtensionProtocolOptions:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          commonHttpProtocolOptions:
+            idleTimeout: 20s
+          explicitHttpConfig:
+            httpProtocolOptions: {}
 Endpoints:
   Resources:
     echo-service-4d89cd662308223d:
@@ -99,8 +99,8 @@ Endpoints:
                 kuma.io/protocol: http
               envoy.transport_socket_match:
                 kuma.io/protocol: http
-    echo-service-09d7c1c6ad2a108d:
-      clusterName: echo-service-09d7c1c6ad2a108d
+    echo-service-11405a82852416ac:
+      clusterName: echo-service-11405a82852416ac
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -115,8 +115,8 @@ Endpoints:
                 kuma.io/protocol: http
               envoy.transport_socket_match:
                 kuma.io/protocol: http
-    echo-service-11405a82852416ac:
-      clusterName: echo-service-11405a82852416ac
+    echo-service-ff1f8bb571f3bfa4:
+      clusterName: echo-service-ff1f8bb571f3bfa4
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -214,7 +214,7 @@ Routes:
             timeout: 20s
             weightedClusters:
               clusters:
-              - name: echo-service-09d7c1c6ad2a108d
+              - name: echo-service-ff1f8bb571f3bfa4
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags

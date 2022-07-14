@@ -1,6 +1,6 @@
 Clusters:
   Resources:
-    api-service-54505e76023cc1cc:
+    api-service-ebbb1519109a5d70:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -12,7 +12,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: api-service-54505e76023cc1cc
+      name: api-service-ebbb1519109a5d70
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -27,7 +27,7 @@ Clusters:
             idleTimeout: 3600s
           explicitHttpConfig:
             httpProtocolOptions: {}
-    echo-service-c641ec6d56895d4f:
+    echo-service-b70526a3f546ce4f:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -39,7 +39,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: echo-service-c641ec6d56895d4f
+      name: echo-service-b70526a3f546ce4f
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -56,8 +56,8 @@ Clusters:
             httpProtocolOptions: {}
 Endpoints:
   Resources:
-    api-service-54505e76023cc1cc:
-      clusterName: api-service-54505e76023cc1cc
+    api-service-ebbb1519109a5d70:
+      clusterName: api-service-ebbb1519109a5d70
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -72,8 +72,8 @@ Endpoints:
                 kuma.io/protocol: http
               envoy.transport_socket_match:
                 kuma.io/protocol: http
-    echo-service-c641ec6d56895d4f:
-      clusterName: echo-service-c641ec6d56895d4f
+    echo-service-b70526a3f546ce4f:
+      clusterName: echo-service-b70526a3f546ce4f
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -171,7 +171,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: api-service-54505e76023cc1cc
+              - name: api-service-ebbb1519109a5d70
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags
@@ -191,7 +191,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: echo-service-c641ec6d56895d4f
+              - name: echo-service-b70526a3f546ce4f
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags

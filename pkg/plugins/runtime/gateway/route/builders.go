@@ -93,6 +93,8 @@ func DestinationClusterName(
 	for k := range identifyingTags {
 		keys = append(keys, k)
 	}
+	sort.Strings(keys)
+
 	// identifyingTags contains listener, meshGateway and Dataplane tags
 	for _, k := range keys {
 		h.Write([]byte(k))

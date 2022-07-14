@@ -27,7 +27,7 @@ Clusters:
             idleTimeout: 10s
           explicitHttpConfig:
             httpProtocolOptions: {}
-    echo-service-4e9f279944b992f7:
+    echo-service-11405a82852416ac:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -39,7 +39,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: echo-service-4e9f279944b992f7
+      name: echo-service-11405a82852416ac
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -99,8 +99,8 @@ Endpoints:
                 kuma.io/protocol: http
               envoy.transport_socket_match:
                 kuma.io/protocol: http
-    echo-service-4e9f279944b992f7:
-      clusterName: echo-service-4e9f279944b992f7
+    echo-service-11405a82852416ac:
+      clusterName: echo-service-11405a82852416ac
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -394,7 +394,7 @@ Routes:
             timeout: 30s
             weightedClusters:
               clusters:
-              - name: echo-service-4e9f279944b992f7
+              - name: echo-service-11405a82852416ac
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags

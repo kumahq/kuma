@@ -27,7 +27,7 @@ Clusters:
             idleTimeout: 3600s
           explicitHttpConfig:
             httpProtocolOptions: {}
-    regex-query-match-1c308de0249548d3:
+    regex-query-match-2c070f45017d23a5:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -39,7 +39,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: regex-query-match-1c308de0249548d3
+      name: regex-query-match-2c070f45017d23a5
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -72,8 +72,8 @@ Endpoints:
                 kuma.io/protocol: http
               envoy.transport_socket_match:
                 kuma.io/protocol: http
-    regex-query-match-1c308de0249548d3:
-      clusterName: regex-query-match-1c308de0249548d3
+    regex-query-match-2c070f45017d23a5:
+      clusterName: regex-query-match-2c070f45017d23a5
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -182,7 +182,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: regex-query-match-1c308de0249548d3
+              - name: regex-query-match-2c070f45017d23a5
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags

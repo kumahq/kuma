@@ -54,33 +54,6 @@ Clusters:
             idleTimeout: 3600s
           explicitHttpConfig:
             httpProtocolOptions: {}
-    echo-prefix-fb233dfa49dbd8d9:
-      circuitBreakers:
-        thresholds:
-        - maxConnections: 1024
-          maxPendingRequests: 1024
-          maxRequests: 1024
-          maxRetries: 3
-      connectTimeout: 5s
-      edsClusterConfig:
-        edsConfig:
-          ads: {}
-          resourceApiVersion: V3
-      name: echo-prefix-fb233dfa49dbd8d9
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
-      type: EDS
-      typedExtensionProtocolOptions:
-        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-          commonHttpProtocolOptions:
-            idleTimeout: 3600s
-          explicitHttpConfig:
-            httpProtocolOptions: {}
     echo-regex-197ed2f99640f307:
       circuitBreakers:
         thresholds:
@@ -128,22 +101,6 @@ Endpoints:
                 kuma.io/protocol: http
     echo-prefix-1d3cd70bb04bf6e2:
       clusterName: echo-prefix-1d3cd70bb04bf6e2
-      endpoints:
-      - lbEndpoints:
-        - endpoint:
-            address:
-              socketAddress:
-                address: 192.168.1.4
-                portValue: 20004
-          loadBalancingWeight: 1
-          metadata:
-            filterMetadata:
-              envoy.lb:
-                kuma.io/protocol: http
-              envoy.transport_socket_match:
-                kuma.io/protocol: http
-    echo-prefix-fb233dfa49dbd8d9:
-      clusterName: echo-prefix-fb233dfa49dbd8d9
       endpoints:
       - lbEndpoints:
         - endpoint:

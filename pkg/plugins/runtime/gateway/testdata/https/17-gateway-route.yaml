@@ -33,39 +33,6 @@ Clusters:
             idleTimeout: 3600s
           explicitHttpConfig:
             httpProtocolOptions: {}
-    api-service-bb145fed7e9ae110:
-      circuitBreakers:
-        thresholds:
-        - maxConnections: 1024
-          maxPendingRequests: 1024
-          maxRequests: 1024
-          maxRetries: 3
-      connectTimeout: 5s
-      edsClusterConfig:
-        edsConfig:
-          ads: {}
-          resourceApiVersion: V3
-      healthChecks:
-      - healthyThreshold: 2
-        interval: 20s
-        tcpHealthCheck: {}
-        timeout: 20s
-        unhealthyThreshold: 2
-      name: api-service-bb145fed7e9ae110
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
-      type: EDS
-      typedExtensionProtocolOptions:
-        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-          commonHttpProtocolOptions:
-            idleTimeout: 3600s
-          explicitHttpConfig:
-            httpProtocolOptions: {}
     echo-mirror-3dd740a2de879d4c:
       circuitBreakers:
         thresholds:
@@ -136,22 +103,6 @@ Endpoints:
   Resources:
     api-service-4508437668c35ed8:
       clusterName: api-service-4508437668c35ed8
-      endpoints:
-      - lbEndpoints:
-        - endpoint:
-            address:
-              socketAddress:
-                address: 192.168.1.1
-                portValue: 20001
-          loadBalancingWeight: 1
-          metadata:
-            filterMetadata:
-              envoy.lb:
-                kuma.io/protocol: http
-              envoy.transport_socket_match:
-                kuma.io/protocol: http
-    api-service-bb145fed7e9ae110:
-      clusterName: api-service-bb145fed7e9ae110
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -307,7 +258,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: api-service-bb145fed7e9ae110
+              - name: api-service-4508437668c35ed8
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags
@@ -327,7 +278,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: api-service-bb145fed7e9ae110
+              - name: api-service-4508437668c35ed8
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags
