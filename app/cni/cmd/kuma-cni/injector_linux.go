@@ -49,10 +49,11 @@ func Inject(netns string, logger logr.Logger, intermediateConfig *IntermediateCo
 	defer namespace.Close()
 
 	err = namespace.Do(func(_ ns.NetNS) error {
-		_, err := builder.RestoreIPTables(*cfg)
+		rules, err := builder.RestoreIPTables(*cfg)
 		if err != nil {
 			return err
 		}
+		logger.V(1).Info("generated iptables rules", "rules", rules)
 		logger.Info("iptables rules applied")
 		return nil
 	})

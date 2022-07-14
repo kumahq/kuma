@@ -88,9 +88,10 @@ A Helm chart for the Kuma Control Plane
 | cni.image.registry | string | `"docker.io/kumahq"` | CNI image registry |
 | cni.image.repository | string | `"install-cni"` | CNI image repository |
 | cni.image.tag | string | `"0.0.10"` | CNI image tag |
-| cni.imageExperimental.registry | string | `"kumahq"` |  |
-| cni.imageExperimental.repository | string | `"kuma-cni"` |  |
-| cni.imageExperimental.tag | string | `nil` |  |
+| cni.imageExperimental | object | `{"registry":"kumahq","repository":"kuma-cni","tag":null}` | use new CNI image (experimental) |
+| cni.imageExperimental.registry | string | `"kumahq"` | CNI experimental image registry |
+| cni.imageExperimental.repository | string | `"kuma-cni"` | CNI experimental image repository |
+| cni.imageExperimental.tag | string | `nil` | CNI experimental image tag - defaults to .Chart.AppVersion |
 | cni.podSecurityContext | object | `{}` | Security context at the pod level for cni |
 | cni.containerSecurityContext | object | `{}` | Security context at the container level for cni |
 | dataPlane.image.repository | string | `"kuma-dp"` | The Kuma DP image repository |
