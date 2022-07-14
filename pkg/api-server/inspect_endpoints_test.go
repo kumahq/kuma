@@ -10,6 +10,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/types"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -208,6 +209,7 @@ var _ = Describe("Inspect WS", func() {
 	type testCase struct {
 		path       string
 		goldenFile string
+		matcher    types.GomegaMatcher
 		resources  []core_model.Resource
 		global     bool
 	}
@@ -250,10 +252,11 @@ var _ = Describe("Inspect WS", func() {
 			// then
 			bytes, err := io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", given.goldenFile)))
+			Expect(bytes).To(given.matcher)
 		},
 		Entry("inspect dataplane", testCase{
 			path:       "/meshes/default/dataplanes/backend-1/policies",
+			matcher:    matchers.MatchGoldenJSON(path.Join("testdata", "inspect_dataplane.json")),
 			goldenFile: "inspect_dataplane.json",
 			resources: []core_model.Resource{
 				newMesh("default"),
@@ -326,6 +329,7 @@ var _ = Describe("Inspect WS", func() {
 		}),
 		Entry("inspect dataplane, empty response", testCase{
 			path:       "/meshes/default/dataplanes/backend-1/policies",
+			matcher:    matchers.MatchGoldenJSON(path.Join("testdata", "inspect_dataplane_empty-response.json")),
 			goldenFile: "inspect_dataplane_empty-response.json",
 			resources: []core_model.Resource{
 				newMesh("default"),
@@ -341,6 +345,7 @@ var _ = Describe("Inspect WS", func() {
 		}),
 		Entry("inspect gateway dataplane", testCase{
 			path:       "/meshes/default/dataplanes/gateway-1/policies",
+			matcher:    matchers.MatchGoldenJSON(path.Join("testdata", "inspect_gateway_dataplane.json")),
 			goldenFile: "inspect_gateway_dataplane.json",
 			resources: []core_model.Resource{
 				newMesh("default"),
@@ -450,6 +455,7 @@ var _ = Describe("Inspect WS", func() {
 		}),
 		Entry("inspect meshgateway dataplanes", testCase{
 			path:       "/meshes/default/meshgateways/gateway/dataplanes",
+			matcher:    matchers.MatchGoldenJSON(path.Join("testdata", "inspect_gateway_dataplanes.json")),
 			goldenFile: "inspect_gateway_dataplanes.json",
 			resources: []core_model.Resource{
 				newMesh("default"),
@@ -487,6 +493,7 @@ var _ = Describe("Inspect WS", func() {
 		}),
 		Entry("inspect meshgatewayroute dataplanes", testCase{
 			path:       "/meshes/default/meshgatewayroutes/gatewayroute/dataplanes",
+			matcher:    matchers.MatchGoldenJSON(path.Join("testdata", "inspect_gatewayroutes_dataplanes.json")),
 			goldenFile: "inspect_gatewayroutes_dataplanes.json",
 			resources: []core_model.Resource{
 				newMesh("default"),
@@ -555,6 +562,7 @@ var _ = Describe("Inspect WS", func() {
 		}),
 		Entry("inspect traffic permission", testCase{
 			path:       "/meshes/default/traffic-permissions/tp-1/dataplanes",
+			matcher:    matchers.MatchGoldenJSON(path.Join("testdata", "inspect_traffic-permission.json")),
 			goldenFile: "inspect_traffic-permission.json",
 			resources: []core_model.Resource{
 				newMesh("default"),
@@ -595,6 +603,7 @@ var _ = Describe("Inspect WS", func() {
 		}),
 		Entry("inspect fault injection", testCase{
 			path:       "/meshes/mesh-1/fault-injections/fi-1/dataplanes",
+			matcher:    matchers.MatchGoldenJSON(path.Join("testdata", "inspect_fault-injection.json")),
 			goldenFile: "inspect_fault-injection.json",
 			resources: []core_model.Resource{
 				newMesh("mesh-1"),
@@ -629,6 +638,7 @@ var _ = Describe("Inspect WS", func() {
 		}),
 		Entry("inspect rate limit", testCase{
 			path:       "/meshes/mesh-1/rate-limits/rl-1/dataplanes",
+			matcher:    matchers.MatchGoldenJSON(path.Join("testdata", "inspect_rate-limit.json")),
 			goldenFile: "inspect_rate-limit.json",
 			resources: []core_model.Resource{
 				newMesh("mesh-1"),
@@ -669,6 +679,7 @@ var _ = Describe("Inspect WS", func() {
 		}),
 		Entry("inspect traffic log", testCase{
 			path:       "/meshes/mesh-1/traffic-logs/tl-1/dataplanes",
+			matcher:    matchers.MatchGoldenJSON(path.Join("testdata", "inspect_traffic-log.json")),
 			goldenFile: "inspect_traffic-log.json",
 			resources: []core_model.Resource{
 				newMesh("mesh-1"),
@@ -700,6 +711,7 @@ var _ = Describe("Inspect WS", func() {
 		}),
 		Entry("inspect health check", testCase{
 			path:       "/meshes/mesh-1/health-checks/hc-1/dataplanes",
+			matcher:    matchers.MatchGoldenJSON(path.Join("testdata", "inspect_health-check.json")),
 			goldenFile: "inspect_health-check.json",
 			resources: []core_model.Resource{
 				newMesh("mesh-1"),
@@ -731,6 +743,7 @@ var _ = Describe("Inspect WS", func() {
 		}),
 		Entry("inspect circuit breaker", testCase{
 			path:       "/meshes/mesh-1/circuit-breakers/cb-1/dataplanes",
+			matcher:    matchers.MatchGoldenJSON(path.Join("testdata", "inspect_circuit-breaker.json")),
 			goldenFile: "inspect_circuit-breaker.json",
 			resources: []core_model.Resource{
 				newMesh("mesh-1"),
@@ -762,6 +775,7 @@ var _ = Describe("Inspect WS", func() {
 		}),
 		Entry("inspect retry", testCase{
 			path:       "/meshes/mesh-1/retries/r-1/dataplanes",
+			matcher:    matchers.MatchGoldenJSON(path.Join("testdata", "inspect_retry.json")),
 			goldenFile: "inspect_retry.json",
 			resources: []core_model.Resource{
 				newMesh("mesh-1"),
@@ -859,6 +873,7 @@ var _ = Describe("Inspect WS", func() {
 		}),
 		Entry("inspect timeout", testCase{
 			path:       "/meshes/mesh-1/timeouts/t-1/dataplanes",
+			matcher:    matchers.MatchGoldenJSON(path.Join("testdata", "inspect_timeout.json")),
 			goldenFile: "inspect_timeout.json",
 			resources: []core_model.Resource{
 				newMesh("mesh-1"),
@@ -890,6 +905,7 @@ var _ = Describe("Inspect WS", func() {
 		}),
 		Entry("inspect traffic route", testCase{
 			path:       "/meshes/mesh-1/traffic-routes/t-1/dataplanes",
+			matcher:    matchers.MatchGoldenJSON(path.Join("testdata", "inspect_traffic-route.json")),
 			goldenFile: "inspect_traffic-route.json",
 			resources: []core_model.Resource{
 				newMesh("mesh-1"),
@@ -917,6 +933,7 @@ var _ = Describe("Inspect WS", func() {
 		}),
 		Entry("inspect traffic trace", testCase{
 			path:       "/meshes/mesh-1/traffic-traces/tt-1/dataplanes",
+			matcher:    matchers.MatchGoldenJSON(path.Join("testdata", "inspect_traffic-trace.json")),
 			goldenFile: "inspect_traffic-trace.json",
 			resources: []core_model.Resource{
 				newMesh("mesh-1"),
@@ -1001,6 +1018,7 @@ var _ = Describe("Inspect WS", func() {
 		}),
 		Entry("inspect proxytemplate", testCase{
 			path:       "/meshes/mesh-1/proxytemplates/tt-1/dataplanes",
+			matcher:    matchers.MatchGoldenJSON(path.Join("testdata", "inspect_proxytemplate.json")),
 			goldenFile: "inspect_proxytemplate.json",
 			resources: []core_model.Resource{
 				newMesh("mesh-1"),
@@ -1034,6 +1052,7 @@ var _ = Describe("Inspect WS", func() {
 		}),
 		Entry("inspect traffic trace, empty response", testCase{
 			path:       "/meshes/mesh-1/traffic-traces/tt-1/dataplanes",
+			matcher:    matchers.MatchGoldenJSON(path.Join("testdata", "inspect_traffic-trace_empty-response.json")),
 			goldenFile: "inspect_traffic-trace_empty-response.json",
 			resources: []core_model.Resource{
 				newMesh("mesh-1"),
@@ -1048,6 +1067,7 @@ var _ = Describe("Inspect WS", func() {
 		}),
 		Entry("inspect xds for dataplane", testCase{
 			path:       "/meshes/mesh-1/dataplanes/backend-1/xds",
+			matcher:    matchers.MatchGoldenJSON(path.Join("testdata", "inspect_xds_dataplane.json")),
 			goldenFile: "inspect_xds_dataplane.json",
 			resources: []core_model.Resource{
 				newMesh("mesh-1"),
@@ -1063,6 +1083,7 @@ var _ = Describe("Inspect WS", func() {
 		}),
 		Entry("inspect xds for local zone ingress", testCase{
 			path:       "/zoneingresses/zi-1/xds",
+			matcher:    matchers.MatchGoldenJSON(path.Join("testdata", "inspect_xds_local_zoneingress.json")),
 			goldenFile: "inspect_xds_local_zoneingress.json",
 			resources: []core_model.Resource{
 				newZoneIngress().
@@ -1076,6 +1097,7 @@ var _ = Describe("Inspect WS", func() {
 		}),
 		Entry("inspect xds for zone ingress from another zone", testCase{
 			path:       "/zoneingresses/zi-1/xds",
+			matcher:    matchers.MatchGoldenJSON(path.Join("testdata", "inspect_xds_remote_zoneingress.json")),
 			goldenFile: "inspect_xds_remote_zoneingress.json",
 			resources: []core_model.Resource{
 				newZoneIngress().
@@ -1090,6 +1112,7 @@ var _ = Describe("Inspect WS", func() {
 		Entry("inspect xds for zone ingress on global", testCase{
 			global:     true,
 			path:       "/zoneingresses/zi-1/xds",
+			matcher:    matchers.MatchGoldenJSON(path.Join("testdata", "inspect_xds_local_zoneingress.json")),
 			goldenFile: "inspect_xds_local_zoneingress.json",
 			resources: []core_model.Resource{
 				newZoneIngress().
@@ -1104,6 +1127,7 @@ var _ = Describe("Inspect WS", func() {
 		Entry("inspect xds for dataplane on global", testCase{
 			global:     true,
 			path:       "/meshes/mesh-1/dataplanes/backend-1/xds",
+			matcher:    matchers.MatchGoldenJSON(path.Join("testdata", "inspect_xds_dataplane.json")),
 			goldenFile: "inspect_xds_dataplane.json",
 			resources: []core_model.Resource{
 				newMesh("mesh-1"),
@@ -1119,6 +1143,7 @@ var _ = Describe("Inspect WS", func() {
 		}),
 		Entry("inspect xds for zone egress", testCase{
 			path:       "/zoneegresses/ze-1/xds",
+			matcher:    matchers.MatchGoldenJSON(path.Join("testdata", "inspect_xds_zoneegress.json")),
 			goldenFile: "inspect_xds_zoneegress.json",
 			resources: []core_model.Resource{
 				newZoneEgress().
@@ -1126,6 +1151,38 @@ var _ = Describe("Inspect WS", func() {
 					address("4.4.4.4").
 					port(8080).
 					admin(4321).
+					build(),
+			},
+		}),
+		Entry("inspect stats for dataplane", testCase{
+			path:       "/meshes/mesh-1/dataplanes/backend-1/stats",
+			matcher:    matchers.MatchGoldenText(path.Join("testdata", "inspect_stats_dataplane.out")),
+			goldenFile: "inspect_stats_dataplane.json",
+			resources: []core_model.Resource{
+				newMesh("mesh-1"),
+				newDataplane().
+					meta("backend-1", "mesh-1").
+					admin(3301).
+					inbound80to81("backend", "192.168.0.1").
+					outbound8080("redis", "192.168.0.2").
+					outbound8080("gateway", "192.168.0.3").
+					outbound8080("web", "192.168.0.4").
+					build(),
+			},
+		}),
+		Entry("inspect clusters for dataplane", testCase{
+			path:       "/meshes/mesh-1/dataplanes/backend-1/clusters",
+			matcher:    matchers.MatchGoldenText(path.Join("testdata", "inspect_clusters_dataplane.out")),
+			goldenFile: "inspect_clusters_dataplane.json",
+			resources: []core_model.Resource{
+				newMesh("mesh-1"),
+				newDataplane().
+					meta("backend-1", "mesh-1").
+					admin(3301).
+					inbound80to81("backend", "192.168.0.1").
+					outbound8080("redis", "192.168.0.2").
+					outbound8080("gateway", "192.168.0.3").
+					outbound8080("web", "192.168.0.4").
 					build(),
 			},
 		}),

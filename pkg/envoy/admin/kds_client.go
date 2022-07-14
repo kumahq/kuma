@@ -11,16 +11,17 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/kds/service"
+	util_grpc "github.com/kumahq/kuma/pkg/util/grpc"
 )
 
 type kdsEnvoyAdminClient struct {
-	streams  service.XDSConfigStreams
+	rpcs     service.EnvoyAdminRPCs
 	k8sStore bool
 }
 
-func NewKDSEnvoyAdminClient(streams service.XDSConfigStreams, k8sStore bool) EnvoyAdminClient {
+func NewKDSEnvoyAdminClient(rpcs service.EnvoyAdminRPCs, k8sStore bool) EnvoyAdminClient {
 	return &kdsEnvoyAdminClient{
-		streams:  streams,
+		rpcs:     rpcs,
 		k8sStore: k8sStore,
 	}
 }
@@ -37,7 +38,7 @@ func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.R
 		return nil, err
 	}
 	reqId := core.NewUUID()
-	err = k.streams.Send(zone, &mesh_proto.XDSConfigRequest{
+	err = k.rpcs.XDSConfigDump.Send(zone, &mesh_proto.XDSConfigRequest{
 		RequestId:    reqId,
 		ResourceType: string(proxy.Descriptor().Name),
 		ResourceName: nameInZone,                // send the name which without the added prefix
@@ -47,20 +48,98 @@ func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.R
 		return nil, errors.Wrapf(err, "could not send XDSConfigRequest")
 	}
 
-	defer k.streams.DeleteWatch(zone, reqId)
-	ch := make(chan *mesh_proto.XDSConfigResponse)
-	if err := k.streams.WatchResponse(zone, reqId, ch); err != nil {
+	defer k.rpcs.XDSConfigDump.DeleteWatch(zone, reqId)
+	ch := make(chan util_grpc.ReverseUnaryMessage)
+	if err := k.rpcs.XDSConfigDump.WatchResponse(zone, reqId, ch); err != nil {
 		return nil, errors.Wrapf(err, "could not watch the response")
 	}
 
 	select {
 	case <-ctx.Done():
-		return nil, errors.New("timeout")
+		return nil, ctx.Err()
 	case resp := <-ch:
-		if resp.GetError() != "" {
-			return nil, errors.Errorf("error response from Zone CP: %s", resp.GetError())
+		configResp, ok := resp.(*mesh_proto.XDSConfigResponse)
+		if !ok {
+			return nil, errors.New("invalid request type")
 		}
-		return resp.GetConfig(), nil
+		if configResp.GetError() != "" {
+			return nil, errors.Errorf("error response from Zone CP: %s", configResp.GetError())
+		}
+		return configResp.GetConfig(), nil
+	}
+}
+
+func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+	zone, nameInZone, err := resNameInZone(proxy.GetMeta().GetName(), k.k8sStore)
+	if err != nil {
+		return nil, err
+	}
+	reqId := core.NewUUID()
+	err = k.rpcs.Stats.Send(zone, &mesh_proto.StatsRequest{
+		RequestId:    reqId,
+		ResourceType: string(proxy.Descriptor().Name),
+		ResourceName: nameInZone,                // send the name which without the added prefix
+		ResourceMesh: proxy.GetMeta().GetMesh(), // should be empty for ZoneIngress/ZoneEgress
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not send StatsRequest")
+	}
+
+	defer k.rpcs.Stats.DeleteWatch(zone, reqId)
+	ch := make(chan util_grpc.ReverseUnaryMessage)
+	if err := k.rpcs.Stats.WatchResponse(zone, reqId, ch); err != nil {
+		return nil, errors.Wrapf(err, "could not watch the response")
+	}
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case resp := <-ch:
+		statsResp, ok := resp.(*mesh_proto.StatsResponse)
+		if !ok {
+			return nil, errors.New("invalid request type")
+		}
+		if statsResp.GetError() != "" {
+			return nil, errors.Errorf("error response from Zone CP: %s", statsResp.GetError())
+		}
+		return statsResp.GetStats(), nil
+	}
+}
+
+func (k *kdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+	zone, nameInZone, err := resNameInZone(proxy.GetMeta().GetName(), k.k8sStore)
+	if err != nil {
+		return nil, err
+	}
+	reqId := core.NewUUID()
+	err = k.rpcs.Clusters.Send(zone, &mesh_proto.ClustersRequest{
+		RequestId:    reqId,
+		ResourceType: string(proxy.Descriptor().Name),
+		ResourceName: nameInZone,                // send the name which without the added prefix
+		ResourceMesh: proxy.GetMeta().GetMesh(), // should be empty for ZoneIngress/ZoneEgress
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not send ClustersRequest")
+	}
+
+	defer k.rpcs.Clusters.DeleteWatch(zone, reqId)
+	ch := make(chan util_grpc.ReverseUnaryMessage)
+	if err := k.rpcs.Clusters.WatchResponse(zone, reqId, ch); err != nil {
+		return nil, errors.Wrapf(err, "could not watch the response")
+	}
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case resp := <-ch:
+		clustersResp, ok := resp.(*mesh_proto.ClustersResponse)
+		if !ok {
+			return nil, errors.New("invalid request type")
+		}
+		if clustersResp.GetError() != "" {
+			return nil, errors.Errorf("error response from Zone CP: %s", clustersResp.GetError())
+		}
+		return clustersResp.GetClusters(), nil
 	}
 }
 

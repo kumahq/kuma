@@ -32,6 +32,14 @@ func DefaultAccessConfig() AccessConfig {
 				Users:  []string{},
 				Groups: []string{"mesh-system:unauthenticated", "mesh-system:authenticated"},
 			},
+			ViewStats: ViewStatsStaticAccessConfig{
+				Users:  []string{},
+				Groups: []string{"mesh-system:unauthenticated", "mesh-system:authenticated"},
+			},
+			ViewClusters: ViewClustersStaticAccessConfig{
+				Users:  []string{},
+				Groups: []string{"mesh-system:unauthenticated", "mesh-system:authenticated"},
+			},
 		},
 	}
 }
@@ -68,6 +76,10 @@ type StaticAccessConfig struct {
 	GenerateZoneToken GenerateZoneTokenStaticAccessConfig `yaml:"generateZoneToken"`
 	// ViewConfigDump defines an access to getting envoy config dump
 	ViewConfigDump ViewConfigDumpStaticAccessConfig `yaml:"viewConfigDump"`
+	// ViewStats defines an access to getting envoy stats
+	ViewStats ViewStatsStaticAccessConfig `yaml:"viewStats"`
+	// ViewClusters defines an access to getting envoy clusters
+	ViewClusters ViewClustersStaticAccessConfig `yaml:"viewClusters"`
 }
 
 type AdminResourcesStaticAccessConfig struct {
@@ -103,4 +115,18 @@ type ViewConfigDumpStaticAccessConfig struct {
 	Users []string `yaml:"users" envconfig:"KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_USERS"`
 	// List of groups that are allowed to get envoy config dump
 	Groups []string `yaml:"groups" envconfig:"KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_GROUPS"`
+}
+
+type ViewStatsStaticAccessConfig struct {
+	// List of users that are allowed to get envoy config stats
+	Users []string `yaml:"users" envconfig:"KUMA_ACCESS_STATIC_VIEW_STATS_USERS"`
+	// List of groups that are allowed to get envoy config stats
+	Groups []string `yaml:"groups" envconfig:"KUMA_ACCESS_STATIC_VIEW_STATS_GROUPS"`
+}
+
+type ViewClustersStaticAccessConfig struct {
+	// List of users that are allowed to get envoy config clusters
+	Users []string `yaml:"users" envconfig:"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_USERS"`
+	// List of groups that are allowed to get envoy config clusters
+	Groups []string `yaml:"groups" envconfig:"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_GROUPS"`
 }

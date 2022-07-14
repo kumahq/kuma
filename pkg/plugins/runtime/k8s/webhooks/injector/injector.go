@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
@@ -316,7 +317,11 @@ func (i *KumaInjector) applyCustomPatches(
 		return kube_core.Container{}, err
 	}
 	logger.Info("applying a patches to the container", "patches", patches.names)
-	containerJson, err = mesh_k8s.ToJsonPatch(patches.patches).Apply(containerJson)
+
+	patchOptions := jsonpatch.NewApplyOptions()
+	patchOptions.EnsurePathExistsOnAdd = true
+
+	containerJson, err = mesh_k8s.ToJsonPatch(patches.patches).ApplyWithOptions(containerJson, patchOptions)
 	if err != nil {
 		return kube_core.Container{}, errors.Wrapf(err, "could not apply patches %q", patches.names)
 	}

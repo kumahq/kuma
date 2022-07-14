@@ -1,37 +1,41 @@
 package proxytemplate
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	config_core "github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 )
 
-var universalCluster Cluster
+func ProxyTemplate() {
+	const mesh = "proxy-template"
 
-var _ = E2EBeforeSuite(func() {
-	universalCluster = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
+	BeforeAll(func() {
+		err := NewClusterSetup().
+			Install(MeshUniversal(mesh)).
+			Install(TestServerUniversal("test-server", mesh,
+				WithTransparentProxy(true),
+				WithArgs([]string{"echo", "--instance", "echo-v1"}),
+				WithServiceName("test-server"),
+			)).
+			Install(DemoClientUniversal(AppModeDemoClient, mesh, WithTransparentProxy(true))).
+			Setup(env.Cluster)
+		Expect(err).ToNot(HaveOccurred())
+	})
+	E2EAfterAll(func() {
+		Expect(env.Cluster.DeleteMeshApps(mesh)).To(Succeed())
+		Expect(env.Cluster.DeleteMesh(mesh)).To(Succeed())
+	})
 
-	err := NewClusterSetup().
-		Install(Kuma(config_core.Standalone)).
-		Install(TestServerUniversal("test-server", "default", WithArgs([]string{"echo", "--instance", "echo-v1"}))).
-		Install(DemoClientUniversal(AppModeDemoClient, "default", WithTransparentProxy(true))).
-		Setup(universalCluster)
-	Expect(err).ToNot(HaveOccurred())
-})
-
-var _ = E2EAfterSuite(func() {
-	Expect(universalCluster.DismissCluster()).To(Succeed())
-})
-
-func ProxyTemplateUniversal() {
 	It("should add a header using Lua filter", func() {
 		// given
-		proxyTemplate := `
+		proxyTemplate := fmt.Sprintf(`
 type: ProxyTemplate
-mesh: default
+mesh: %s
 name: backend-lua-filter
 selectors:
   - match:
@@ -55,15 +59,15 @@ conf:
               function envoy_on_request(request_handle)
                 request_handle:headers():add("X-Header", "test")
               end
-`
+`, mesh)
 
 		// when
-		err := YamlUniversal(proxyTemplate)(universalCluster)
+		err := YamlUniversal(proxyTemplate)(env.Cluster)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(func(g Gomega) {
-			responses, err := client.CollectResponses(universalCluster, "demo-client", "test-server.mesh")
+			responses, err := client.CollectResponses(env.Cluster, "demo-client", "test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses[0].Received.Headers["X-Header"]).To(ContainElements("test"))
 		}, "30s", "1s").Should(Succeed())

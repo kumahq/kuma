@@ -29,6 +29,15 @@ service GlobalKDSService {
   // to leverage existing connection from Zone CP to Global CP.
   rpc StreamXDSConfigs(stream XDSConfigResponse)
       returns (stream XDSConfigRequest);
+  // StreamStats is logically a service exposed by Zone CP so Global CP can
+  // execute kuma-dp stats requests. It is however represented by bi-directional
+  // streaming to leverage existing connection from Zone CP to Global CP.
+  rpc StreamStats(stream StatsResponse) returns (stream StatsRequest);
+  // StreamStats is logically a service exposed by Zone CP so Global CP can
+  // execute kuma-dp clusters request. It is however represented by
+  // bi-directional streaming to leverage existing connection from Zone CP to
+  // Global CP.
+  rpc StreamClusters(stream ClustersResponse) returns (stream ClustersRequest);
 }
 
 // XDSConfigRequest is a request for XDS Config Dump that is executed on Zone
@@ -56,7 +65,69 @@ message XDSConfigResponse {
   oneof result {
     // Error that was captured by the Zone CP when executing XDS Config Dump.
     string error = 2;
-    // The XDS Config that is a successful result of XDS Config DUMP execution.
+    // The XDS Config that is a successful result of XDS Config dump execution.
     bytes config = 3;
+  }
+}
+
+// StatsRequest is a request for kuma-dp stats that is executed on Zone CP.
+message StatsRequest {
+  // RequestID is a UUID of a request so we can correlate requests with response
+  // on one stream.
+  string request_id = 1;
+
+  // Type of resource (Dataplane, ZoneIngress, ZoneEgress)
+  string resource_type = 2;
+  // Name of the resource on which we execute kuma-dp stats request.
+  string resource_name = 3;
+  // Mesh of the resource on which we execute kuma-dp stats request.
+  // Should be empty for ZoneIngress, ZoneEgress.
+  string resource_mesh = 4;
+}
+
+// StatsResponse is a response containing result of kuma-dp stats execution on
+// Zone CP.
+message StatsResponse {
+  // RequestID is a UUID that was set by the Global CP.
+  string request_id = 1;
+
+  oneof result {
+    // Error that was captured by the Zone CP when executing kuma-dp stats
+    // request.
+    string error = 2;
+    // The stats content that is a successful result of kuma-dp stats execution.
+    bytes stats = 3;
+  }
+}
+
+// ClustersRequest is a request for kuma-dp clusters that is executed on Zone
+// CP.
+message ClustersRequest {
+  // RequestID is a UUID of a request so we can correlate requests with response
+  // on one stream.
+  string request_id = 1;
+
+  // Type of resource (Dataplane, ZoneIngress, ZoneEgress)
+  string resource_type = 2;
+  // Name of the resource on which we execute kuma-dp clusters request.
+  string resource_name = 3;
+  // Mesh of the resource on which we execute kuma-dp clusters request.
+  // Should be empty for ZoneIngress, ZoneEgress.
+  string resource_mesh = 4;
+}
+
+// ClustersResponse is a response containing result of kuma-dp clusters
+// execution on Zone CP.
+message ClustersResponse {
+  // RequestID is a UUID that was set by the Global CP.
+  string request_id = 1;
+
+  oneof result {
+    // Error that was captured by the Zone CP when executing kuma-dp clusters
+    // request.
+    string error = 2;
+    // The clusters content that is a successful result of kuma-dp clusters
+    // execution.
+    bytes clusters = 3;
   }
 }

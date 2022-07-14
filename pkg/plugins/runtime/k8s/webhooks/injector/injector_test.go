@@ -53,6 +53,9 @@ spec:
     - op: add
       path: /securityContext/privileged
       value: "false"
+    - op: add
+      path: "/volumeMounts/-"
+      value: '{ "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount/", "name": "{{ template \"kong.serviceAccountTokenName\" . }}", "readOnly": true }'
   initPatch:
     - op: remove
       path: /securityContext/runAsUser`

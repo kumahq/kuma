@@ -27,9 +27,7 @@ type universalDeployment struct {
 }
 
 var _ Deployment = &universalDeployment{}
-
 var UniversalAppEchoServer = ExternalServiceCommand(80, "Echo 80")
-var UniversalAppEchoServer81 = ExternalServiceCommand(81, "Echo 81")
 var UniversalAppHttpsEchoServer = Command([]string{"ncat",
 	"-lk", "-p", "443",
 	"--ssl", "--ssl-cert", "/server-cert.pem", "--ssl-key", "/server-key.pem",
