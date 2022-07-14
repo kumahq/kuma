@@ -216,7 +216,6 @@ func buildClusterResource(
 
 	name, err := route.DestinationClusterName(
 		dest,
-		cluster,
 		identifyingTags,
 	)
 	if err != nil {

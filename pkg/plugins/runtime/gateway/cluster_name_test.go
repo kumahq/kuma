@@ -1,7 +1,6 @@
 package gateway_test
 
 import (
-	envoy_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -22,8 +21,7 @@ var _ = Describe("Cluster name", func() {
 			d.Destination[tags[i]] = tags[i+1]
 		}
 
-		c := envoy_cluster_v3.Cluster{}
-		name, err := route.DestinationClusterName(&d, &c, map[string]string{})
+		name, err := route.DestinationClusterName(&d, map[string]string{})
 		Expect(err).To(Succeed())
 
 		return name
@@ -37,7 +35,6 @@ var _ = Describe("Cluster name", func() {
 					"kuma.io/zone": "one",
 				},
 			},
-			&envoy_cluster_v3.Cluster{},
 			map[string]string{},
 		)
 
@@ -83,14 +80,13 @@ var _ = Describe("Cluster name", func() {
 		))))
 	})
 
-	It("should generate different names for different config", func() {
+	It("should generate different names for different tags", func() {
 		n1, err := route.DestinationClusterName(
 			&route.Destination{
 				Destination: map[string]string{
 					"kuma.io/service": "one",
 				},
 			},
-			&envoy_cluster_v3.Cluster{RespectDnsTtl: true},
 			map[string]string{
 				"tag1": "value1",
 				"tag2": "value2",
@@ -104,7 +100,6 @@ var _ = Describe("Cluster name", func() {
 					"kuma.io/service": "one",
 				},
 			},
-			&envoy_cluster_v3.Cluster{},
 			map[string]string{
 				"tag1": "value3",
 				"abc":  "value2",

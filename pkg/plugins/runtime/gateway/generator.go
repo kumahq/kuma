@@ -51,7 +51,8 @@ type GatewayHost struct {
 	Routes   []model.Resource
 	Policies map[model.ResourceType][]match.RankedPolicy
 	TLS      *mesh_proto.MeshGateway_TLS_Conf
-	Tags     mesh_proto.TagSelector
+	// Contains MeshGateway, Listener and Dataplane object tags
+	Tags mesh_proto.TagSelector
 }
 
 type GatewayListener struct {

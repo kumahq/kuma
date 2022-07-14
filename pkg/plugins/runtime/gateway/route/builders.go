@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sort"
 
-	envoy_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/pkg/errors"
 
@@ -64,7 +63,6 @@ func (f RouteMustConfigureFunc) Configure(r *envoy_config_route.Route) error {
 // destination. The destination must contain at least a service tag.
 func DestinationClusterName(
 	d *Destination,
-	c *envoy_cluster_v3.Cluster,
 	identifyingTags map[string]string,
 ) (string, error) {
 	serviceName := d.Destination[mesh_proto.ServiceTag]
