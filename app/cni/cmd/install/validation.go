@@ -2,6 +2,8 @@ package main
 
 import (
 	"github.com/pkg/errors"
+
+	"github.com/kumahq/kuma/pkg/util/files"
 )
 
 func isValidConfFile(file string) bool {
@@ -38,7 +40,7 @@ func isValidConflistFile(file string) bool {
 }
 
 func checkInstall(cniConfPath string, isPluginChained bool) error {
-	if !fileExists(cniConfPath) {
+	if !files.FileExists(cniConfPath) {
 		return errors.New("cni config file does not exist")
 	}
 

@@ -19,6 +19,7 @@ import (
 	"k8s.io/utils/env"
 
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/util/files"
 )
 
 const (
@@ -51,7 +52,7 @@ func cleanup(ic *InstallerConfig) {
 
 func removeKubeconfig(mountedCniNetDir, kubeconfigName string) {
 	kubeconfigPath := mountedCniNetDir + "/" + kubeconfigName
-	if fileExists(kubeconfigPath) {
+	if files.FileExists(kubeconfigPath) {
 		err := os.Remove(kubeconfigPath)
 		if err != nil {
 			log.V(1).Error(err, "couldn't remove cni conf file")
@@ -62,7 +63,7 @@ func removeKubeconfig(mountedCniNetDir, kubeconfigName string) {
 func revertConfig(mountedCniNetDir, cniConfName string, chainedCniPlugin bool) error {
 	configPath := mountedCniNetDir + "/" + cniConfName
 
-	if !fileExists(configPath) {
+	if !files.FileExists(configPath) {
 		log.Info("no need to revert config - file does not exist", "configPath", configPath)
 		return nil
 	}
@@ -91,9 +92,6 @@ func revertConfig(mountedCniNetDir, cniConfName string, chainedCniPlugin bool) e
 }
 
 func install(ic *InstallerConfig) error {
-	defer cleanup(ic)
-	setupSignalCleanup(ic)
-
 	err := copyBinaries()
 	if err != nil {
 		return err
@@ -109,13 +107,6 @@ func install(ic *InstallerConfig) error {
 		return err
 	}
 
-	for ic.ShouldSleep {
-		time.Sleep(time.Duration(ic.CfgCheckInterval) * time.Second)
-		err := checkInstall(ic.MountedCniNetDir+"/"+ic.CniConfName, ic.ChainedCniPlugin)
-		if err != nil {
-			return errors.Wrap(err, "checking installation failed. exiting")
-		}
-	}
 
 	return nil
 }
@@ -136,8 +127,7 @@ func prepareKumaCniConfig(ic *InstallerConfig, serviceAccountPath string) error 
 	if ic.ChainedCniPlugin {
 		err := setupChainedPlugin(ic.MountedCniNetDir, ic.CniConfName, config)
 		if err != nil {
-			log.Error(err, "unable to setup kuma cni as chained plugin")
-			return err
+			return errors.Wrap(err, "unable to setup kuma cni as chained plugin")
 		}
 	}
 
@@ -147,11 +137,11 @@ func prepareKumaCniConfig(ic *InstallerConfig, serviceAccountPath string) error 
 func setupChainedPlugin(mountedCniNetDir, cniConfName, kumaCniConfig string) error {
 	resolvedName := cniConfName
 	extension := filepath.Ext(cniConfName)
-	if !fileExists(mountedCniNetDir+"/"+cniConfName) && extension == ".conf" && fileExists(mountedCniNetDir+"/"+cniConfName+"list") {
+	if !files.FileExists(mountedCniNetDir+"/"+cniConfName) && extension == ".conf" && files.FileExists(mountedCniNetDir+"/"+cniConfName+"list") {
 		resolvedName = cniConfName + "list"
 	}
 
-	if fileExists(mountedCniNetDir + "/" + resolvedName) {
+	if files.FileExists(mountedCniNetDir + "/" + resolvedName) {
 		hostCniConfig, err := ioutil.ReadFile(mountedCniNetDir + "/" + resolvedName)
 		if err != nil {
 			return err
@@ -173,11 +163,6 @@ func setupChainedPlugin(mountedCniNetDir, cniConfName, kumaCniConfig string) err
 	return nil
 }
 
-func fileExists(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil
-}
-
 func prepareKubeconfig(mountedCniNetDir, kubeconfigName, serviceAccountPath string) error {
 	kubeconfigPath := mountedCniNetDir + "/" + kubeconfigName
 	serviceAccountTokenPath := serviceAccountPath + "/token"
@@ -186,7 +171,7 @@ func prepareKubeconfig(mountedCniNetDir, kubeconfigName, serviceAccountPath stri
 		return err
 	}
 
-	if fileExists(serviceAccountTokenPath) {
+	if files.FileExists(serviceAccountTokenPath) {
 		kubernetesServiceHost := env.GetString("KUBERNETES_SERVICE_HOST", "")
 		if kubernetesServiceHost == "" {
 			return errors.New("KUBERNETES_SERVICE_HOST env variable not set")
@@ -329,14 +314,26 @@ func setupSignalCleanup(ic *InstallerConfig) {
 }
 
 func main() {
-	installerConfig, err := loadInstallerConfig()
+	ic, err := loadInstallerConfig()
 	if err != nil {
 		log.Error(err, "error occurred during config loading")
 		os.Exit(1)
 	}
-	err = install(installerConfig)
+	err = install(ic)
+	defer cleanup(ic)
+	setupSignalCleanup(ic)
+
 	if err != nil {
 		log.Error(err, "error occurred during cni installation")
 		os.Exit(1)
+	}
+
+	for ic.ShouldSleep {
+		time.Sleep(time.Duration(ic.CfgCheckInterval) * time.Second)
+		err := checkInstall(ic.MountedCniNetDir+"/"+ic.CniConfName, ic.ChainedCniPlugin)
+		if err != nil {
+			log.Error(err, "checking installation failed - exiting")
+			os.Exit(1)
+		}
 	}
 }
