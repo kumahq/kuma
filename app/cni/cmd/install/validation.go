@@ -6,37 +6,34 @@ import (
 	"github.com/kumahq/kuma/pkg/util/files"
 )
 
-func isValidConfFile(file string) bool {
+func isValidConfFile(file string) error {
 	parsed, err := parseFileToHashMap(file)
 	if err != nil {
-		log.Error(err, "could not unmarshal config file")
-		return false
+		return errors.Wrap(err, "could not unmarshal conf file")
 	}
 
 	configType, ok := parsed["type"]
 	if ok {
 		log.V(1).Info("config valid", "file", file, "type", configType)
-		return true
+		return nil
 	}
-	log.V(1).Info("config not valid", "file", file)
-	return false
+	return errors.Errorf(`config file %v not valid - does not contain "type" field`, file)
 }
 
-func isValidConflistFile(file string) bool {
+func isValidConflistFile(file string) error {
 	parsed, err := parseFileToHashMap(file)
 	if err != nil {
-		log.Error(err, "could not unmarshal config file")
-		return false
+		return errors.Wrap(err, "could not unmarshal conflist file")
 	}
 
 	configName, hasName := parsed["name"]
 	plugins, hasPlugins := parsed["plugins"]
 	if hasName && hasPlugins {
 		log.V(1).Info("config valid", "file", file, "name", configName, "plugins", plugins)
-		return true
+		return nil
 	}
 
-	return false
+	return errors.Errorf(`config file %v not valid - does not contain "name" and "plugin" fields`, file)
 }
 
 func checkInstall(cniConfPath string, isPluginChained bool) error {
@@ -50,8 +47,9 @@ func checkInstall(cniConfPath string, isPluginChained bool) error {
 	}
 
 	if isPluginChained {
-		if !isValidConflistFile(cniConfPath) {
-			return errors.New("chained plugin requires a valid conflist file")
+		err := isValidConflistFile(cniConfPath)
+		if err != nil {
+			return errors.Wrap(err, "chained plugin requires a valid conflist file")
 		}
 		plugins, err := getPluginsArray(parsed)
 		if err != nil {
@@ -67,8 +65,9 @@ func checkInstall(cniConfPath string, isPluginChained bool) error {
 			return errors.New("chained plugin config file does not contain kuma-cni plugin")
 		}
 	} else {
-		if !isValidConfFile(cniConfPath) {
-			return errors.New("chained plugin requires a valid conflist file")
+		err := isValidConfFile(cniConfPath)
+		if err != nil {
+			return errors.Wrap(err, "standalone plugin requires a valid conf file")
 		}
 		pluginType, ok := parsed["type"]
 		if !ok {

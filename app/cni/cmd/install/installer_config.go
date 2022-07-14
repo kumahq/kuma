@@ -35,10 +35,12 @@ func (i InstallerConfig) Validate() error {
 	return nil
 }
 
-func lookForValidConfig(files []string, checkerFn func(string) bool) (string, bool) {
+func lookForValidConfig(files []string, checkerFn func(string) error) (string, bool) {
 	for _, file := range files {
-		found := checkerFn(file)
-		if found {
+		err := checkerFn(file)
+		if err != nil {
+			log.Error(err, "error occurred testing config file", "file", file)
+		} else {
 			return file, true
 		}
 	}

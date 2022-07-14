@@ -1,7 +1,11 @@
 package main
 
-import "errors"
+import (
+	"errors"
 
-func Inject(netns string, intermediateConfig *IntermediateConfig) error {
+	"github.com/go-logr/logr"
+)
+
+func Inject(netns string, logger logr.Logger, intermediateConfig *IntermediateConfig) error {
 	return errors.New("only implemented on linux")
 }

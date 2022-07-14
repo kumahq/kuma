@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"strconv"
 	"strings"
 
 	"github.com/containernetworking/plugins/pkg/ns"
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma-net/iptables/builder"
@@ -36,7 +36,7 @@ func convertCommaSeparatedString(list string) ([]uint16, error) {
 	return mapped, nil
 }
 
-func Inject(netns string, intermediateConfig *IntermediateConfig) error {
+func Inject(netns string, logger logr.Logger, intermediateConfig *IntermediateConfig) error {
 	cfg, err := mapToConfig(intermediateConfig)
 	if err != nil {
 		return err
@@ -44,22 +44,20 @@ func Inject(netns string, intermediateConfig *IntermediateConfig) error {
 
 	namespace, err := ns.GetNS(netns)
 	if err != nil {
-		err = fmt.Errorf("failed to open namespace %q: %s", namespace, err)
-		return err
+		return errors.Wrap(err, "failed to open namespace")
 	}
 	defer namespace.Close()
 
-	if err = namespace.Do(func(_ ns.NetNS) error {
+	err = namespace.Do(func(_ ns.NetNS) error {
 		_, err := builder.RestoreIPTables(*cfg)
 		if err != nil {
 			return err
 		}
+		logger.Info("iptables rules applied")
 		return nil
-	}); err != nil {
-		return err
-	}
+	})
 
-	return nil
+	return err
 }
 
 func mapToConfig(intermediateConfig *IntermediateConfig) (*config.Config, error) {

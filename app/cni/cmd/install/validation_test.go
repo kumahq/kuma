@@ -7,30 +7,30 @@ import (
 
 var _ = Describe("validation", func() {
 	Context("isValidConflistFile", func() {
-		It("should return true when a file is a valid conflist file", func() {
-			result := isValidConflistFile("testdata/10-calico.conflist")
+		It("should return no error when a file is a valid conflist file", func() {
+			err := isValidConflistFile("testdata/10-calico.conflist")
 
-			Expect(result).To(Equal(true))
+			Expect(err).To(Not(HaveOccurred()))
 		})
 
-		It("should return false when a file is an invalid conflist file", func() {
-			result := isValidConflistFile("testdata/10-flannel.conf")
+		It("should return error when a file is an invalid conflist file", func() {
+			err := isValidConflistFile("testdata/10-flannel.conf")
 
-			Expect(result).To(Equal(false))
+			Expect(err).To(HaveOccurred())
 		})
 	})
 
 	Context("isValidConfFile", func() {
-		It("should return true when a file is a valid conf file", func() {
-			result := isValidConfFile("testdata/10-flannel.conf")
+		It("should return no error when a file is a valid conf file", func() {
+			err := isValidConfFile("testdata/10-flannel.conf")
 
-			Expect(result).To(Equal(true))
+			Expect(err).To(Not(HaveOccurred()))
 		})
 
 		It("should return false when a file is an invalid conf file", func() {
-			result := isValidConfFile("testdata/10-calico.conflist")
+			err := isValidConfFile("testdata/10-calico.conflist")
 
-			Expect(result).To(Equal(false))
+			Expect(err).To(HaveOccurred())
 		})
 	})
 

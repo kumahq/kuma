@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/base64"
-	"io/fs"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -92,21 +91,17 @@ func revertConfig(mountedCniNetDir, cniConfName string, chainedCniPlugin bool) e
 }
 
 func install(ic *InstallerConfig) error {
-	err := copyBinaries()
-	if err != nil {
+	if err := copyBinaries(); err != nil {
 		return err
 	}
 
-	err = prepareKubeconfig(ic.MountedCniNetDir, ic.KubeconfigName, serviceAccountPath)
-	if err != nil {
+	if err := prepareKubeconfig(ic.MountedCniNetDir, ic.KubeconfigName, serviceAccountPath); err != nil {
 		return err
 	}
 
-	err = prepareKumaCniConfig(ic, serviceAccountPath)
-	if err != nil {
+	if err := prepareKumaCniConfig(ic, serviceAccountPath); err != nil {
 		return err
 	}
-
 
 	return nil
 }
@@ -257,7 +252,7 @@ func copyBinaries() error {
 }
 
 func tryWritingToDir(dir string) error {
-	if err := isDirWriteable(dir); err != nil {
+	if err := files.IsDirWriteable(dir); err != nil {
 		return errors.Wrap(err, "directory is not writeable")
 	}
 	file, err := os.Open(kumaCniBinaryPath)
@@ -289,17 +284,6 @@ func tryWritingToDir(dir string) error {
 	return nil
 }
 
-// isDirWriteable checks if dir is writable by writing and removing a file
-// to dir. It returns true if dir is writable.
-func isDirWriteable(dir string) error {
-	f := filepath.Join(dir, ".touch")
-	perm := 0600
-	if err := ioutil.WriteFile(f, []byte(""), fs.FileMode(perm)); err != nil {
-		return err
-	}
-	return os.Remove(f)
-}
-
 func setupSignalCleanup(ic *InstallerConfig) {
 	osSignals := make(chan os.Signal, 1)
 	signal.Notify(osSignals,
@@ -320,20 +304,28 @@ func main() {
 		os.Exit(1)
 	}
 	err = install(ic)
-	defer cleanup(ic)
-	setupSignalCleanup(ic)
-
 	if err != nil {
 		log.Error(err, "error occurred during cni installation")
 		os.Exit(1)
 	}
 
+	if err := runLoop(ic); err != nil {
+		log.Error(err, "checking installation failed - exiting")
+		os.Exit(1)
+	}
+}
+
+func runLoop(ic *InstallerConfig) error {
+	defer cleanup(ic)
+	setupSignalCleanup(ic)
+
 	for ic.ShouldSleep {
 		time.Sleep(time.Duration(ic.CfgCheckInterval) * time.Second)
 		err := checkInstall(ic.MountedCniNetDir+"/"+ic.CniConfName, ic.ChainedCniPlugin)
 		if err != nil {
-			log.Error(err, "checking installation failed - exiting")
-			os.Exit(1)
+			return err
 		}
 	}
+
+	return nil
 }

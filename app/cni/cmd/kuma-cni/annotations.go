@@ -1,9 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 const (
@@ -62,7 +63,7 @@ func splitPorts(portsString string) []string {
 func parsePort(portStr string) (uint16, error) {
 	port, err := strconv.ParseUint(strings.TrimSpace(portStr), 10, 16)
 	if err != nil {
-		return 0, fmt.Errorf("failed parsing port %q: %v", portStr, err)
+		return 0, errors.Wrapf(err, "failed parsing port %q", portStr)
 	}
 	return uint16(port), nil
 }
@@ -84,40 +85,41 @@ func parsePorts(portsString string) ([]int, error) {
 
 func validatePortList(ports string) error {
 	if _, err := parsePorts(ports); err != nil {
-		return fmt.Errorf("portList %q invalid: %v", ports, err)
+		return errors.Wrapf(err, "portList %q", ports)
 	}
 	return nil
 }
 
-func getAnnotationOrDefault(name string, annotations map[string]string) (isFound bool, val string, err error) {
+func getAnnotationOrDefault(name string, annotations map[string]string) (val string, err error) {
 	if _, ok := annotationRegistry[name]; !ok {
-		return false, "", fmt.Errorf("no registered annotation with name=%s", name)
+		return "", errors.Errorf("no registered annotation with name %s", name)
 	}
-	// use annotation value if present
 	if val, found := annotations[annotationRegistry[name].key]; found {
 		if err := annotationRegistry[name].validator(val); err != nil {
-			return true, annotationRegistry[name].defaultVal, err
+			log.V(1).Info("error accessing annotation - using default", "name", name)
+			return annotationRegistry[name].defaultVal, err
 		}
-		return true, val, nil
+		log.V(1).Info("annotation found", "name", name)
+		return val, nil
 	}
-	// no annotation found so use default value
-	return false, annotationRegistry[name].defaultVal, nil
+	log.V(1).Info("annotation not found - using default", "name", name)
+	return annotationRegistry[name].defaultVal, nil
 }
 
 // NewIntermediateConfig returns a new IntermediateConfig Object constructed from a list of ports and annotations
 func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, error) {
-	redir := &IntermediateConfig{}
-	redir.noRedirectUID = defaultNoRedirectUID
+	intermediateConfig := &IntermediateConfig{}
+	intermediateConfig.noRedirectUID = defaultNoRedirectUID
 
 	allFields := map[string]*string{
-		"outboundPort":         &redir.targetPort,
-		"inboundPort":          &redir.inboundPort,
-		"inboundPortV6":        &redir.inboundPortV6,
-		"excludeInboundPorts":  &redir.excludeInboundPorts,
-		"excludeOutboundPorts": &redir.excludeOutboundPorts,
-		"isGateway":            &redir.isGateway,
-		"builtinDNS":           &redir.builtinDNS,
-		"builtinDNSPort":       &redir.builtinDNSPort,
+		"outboundPort":         &intermediateConfig.targetPort,
+		"inboundPort":          &intermediateConfig.inboundPort,
+		"inboundPortV6":        &intermediateConfig.inboundPortV6,
+		"excludeInboundPorts":  &intermediateConfig.excludeInboundPorts,
+		"excludeOutboundPorts": &intermediateConfig.excludeOutboundPorts,
+		"isGateway":            &intermediateConfig.isGateway,
+		"builtinDNS":           &intermediateConfig.builtinDNS,
+		"builtinDNSPort":       &intermediateConfig.builtinDNSPort,
 	}
 
 	for fieldName, fieldPointer := range allFields {
@@ -126,16 +128,13 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 		}
 	}
 
-	return redir, nil
+	return intermediateConfig, nil
 }
 
 func mapAnnotation(annotations map[string]string, field *string, fieldName string) error {
-	isFound, val, err := getAnnotationOrDefault(fieldName, annotations)
+	val, err := getAnnotationOrDefault(fieldName, annotations)
 	*field = val
 	if err != nil {
-		log.Error(err, "annotation value error",
-			"name", fieldName,
-			"found", isFound)
 		return err
 	}
 	return nil
