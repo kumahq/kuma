@@ -87,7 +87,10 @@ func TestConformance(t *testing.T) {
 	var passingTests []suite.ConformanceTest
 	for _, test := range tests.ConformanceTests {
 		switch test.ShortName {
-		case tests.HTTPRouteDisallowedKind.ShortName: // TODO: we only support HTTPRoute so it's not yet possible to test this
+		case tests.HTTPRouteDisallowedKind.ShortName, // TODO: we only support HTTPRoute so it's not yet possible to test this
+			tests.HTTPRouteInvalidCrossNamespaceBackendRef.ShortName,
+			tests.HTTPRouteInvalidBackendRefUnknownKind.ShortName,
+			tests.HTTPRouteInvalidNonExistentBackendRef.ShortName:
 			continue
 		}
 		passingTests = append(passingTests, test)
