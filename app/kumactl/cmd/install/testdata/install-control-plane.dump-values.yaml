@@ -320,6 +320,15 @@ cni:
     # -- CNI image tag
     tag: "0.0.10"
 
+  # -- use new CNI image (experimental)
+  imageExperimental:
+    # -- CNI experimental image registry
+    registry: "kumahq"
+    # -- CNI experimental image repository
+    repository: "kuma-cni"
+    # -- CNI experimental image tag - defaults to .Chart.AppVersion
+    tag:
+
   # -- Security context at the pod level for cni
   podSecurityContext: {}
 #    # The values below are examples. More values can be added as needed, since the field resolves as free form.
@@ -645,3 +654,5 @@ hooks:
 experimental:
   # -- If true, it installs experimental Gateway API support
   gatewayAPI: false
+  # -- If true, it installs experimental new version of the CNI
+  cni: false
