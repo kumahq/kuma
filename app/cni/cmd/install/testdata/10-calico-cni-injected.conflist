@@ -1,39 +1,39 @@
 {
-  "name": "k8s-pod-network",
   "cniVersion": "0.3.0",
+  "name": "k8s-pod-network",
   "plugins": [
     {
-      "type": "calico",
       "etcd_endpoints": "http://10.0.0.1:2379",
-      "log_level": "info",
-      "mtu": 1500,
       "ipam": {
         "type": "calico-ipam"
       },
+      "kubernetes": {
+        "kubeconfig": "/etc/cni/net.d/calico-kubeconfig"
+      },
+      "log_level": "info",
+      "mtu": 1500,
       "policy": {
         "type": "k8s"
       },
-      "kubernetes": {
-        "kubeconfig": "/etc/cni/net.d/calico-kubeconfig"
-      }
+      "type": "calico"
     },
     {
-      "type": "portmap",
-      "snat": true,
       "capabilities": {
         "portMappings": true
-      }
+      },
+      "snat": true,
+      "type": "portmap"
     },
     {
-      "type": "kuma-cni",
-      "log_level": "info",
       "kubernetes": {
-        "kubeconfig": "/etc/cni/net.d/ZZZ-kuma-cni-kubeconfig",
         "cni_bin_dir": "/opt/cni/bin",
         "exclude_namespaces": [
           "kuma-system"
-        ]
-      }
+        ],
+        "kubeconfig": "/etc/cni/net.d/ZZZ-kuma-cni-kubeconfig"
+      },
+      "log_level": "info",
+      "type": "kuma-cni"
     }
   ]
 }
