@@ -52,6 +52,7 @@ var _ = Describe("prepareKubeconfig", func() {
 		ic := InstallerConfig{
 			KubernetesServiceHost: "localhost",
 			KubernetesServicePort: "3000",
+			KubernetesServiceProtocol: "https",
 			MountedCniNetDir:      path.Join("testdata", "prepare-kubeconfig"),
 			KubeconfigName:        "ZZZ-kuma-cni-kubeconfig",
 		}
