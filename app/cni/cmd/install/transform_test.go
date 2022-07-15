@@ -10,18 +10,6 @@ import (
 	"github.com/kumahq/kuma/pkg/test/matchers"
 )
 
-const kumaCniConfig = `{
-		  "type": "kuma-cni",
-		  "log_level": "info",
-		  "kubernetes": {
-			"kubeconfig": "/etc/cni/net.d/ZZZ-kuma-cni-kubeconfig",
-			"cni_bin_dir": "/opt/cni/bin",
-			"exclude_namespaces": [
-			  "kuma-system"
-			]
-		  }
-		}`
-
 var _ = Describe("testTransformJsonConfig", func() {
 	It("should properly manipulate CNI conflist file", func() {
 		// given

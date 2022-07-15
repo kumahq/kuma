@@ -46,7 +46,7 @@ var _ = Describe("findCniConfFile", func() {
 })
 
 var _ = Describe("prepareKubeconfig", func() {
-	It("should find conf file in a flat dir", func() {
+	It("should successfully prepare kubeconfig file", func() {
 		// given
 		mockServiceAccountPath := path.Join("testdata", "prepare-kubeconfig")
 		ic := InstallerConfig{
@@ -64,5 +64,49 @@ var _ = Describe("prepareKubeconfig", func() {
 		// and
 		kubeconfig, _ := ioutil.ReadFile(path.Join("testdata", "prepare-kubeconfig", "ZZZ-kuma-cni-kubeconfig"))
 		Expect(kubeconfig).To(matchers.MatchGoldenEqual(path.Join("testdata", "prepare-kubeconfig", "ZZZ-kuma-cni-kubeconfig.golden")))
+	})
+})
+
+var _ = Describe("prepareKumaCniConfig", func() {
+	It("should successfully prepare chained kuma cni file", func() {
+		// given
+		mockServiceAccountPath := path.Join("testdata", "prepare-chained-kuma-config")
+		ic := InstallerConfig{
+			CniNetworkConfig: kumaCniConfigTemplate,
+			MountedCniNetDir: path.Join("testdata", "prepare-chained-kuma-config"),
+			KubeconfigName:   "ZZZ-kuma-cni-kubeconfig",
+			CniConfName:      "10-calico.conflist",
+			ChainedCniPlugin: true,
+		}
+
+		// when
+		err := prepareKumaCniConfig(&ic, mockServiceAccountPath)
+
+		// then
+		Expect(err).To(Not(HaveOccurred()))
+		// and
+		kubeconfig, _ := ioutil.ReadFile(path.Join("testdata", "prepare-chained-kuma-config", "10-calico.conflist"))
+		Expect(kubeconfig).To(matchers.MatchGoldenEqual(path.Join("testdata", "prepare-chained-kuma-config", "10-calico.conflist.golden")))
+	})
+
+	It("should successfully prepare standalone kuma cni file", func() {
+		// given
+		mockServiceAccountPath := path.Join("testdata", "prepare-standalone-kuma-config")
+		ic := InstallerConfig{
+			CniNetworkConfig: kumaCniConfigTemplate,
+			MountedCniNetDir: path.Join("testdata", "prepare-standalone-kuma-config"),
+			KubeconfigName:   "ZZZ-kuma-cni-kubeconfig",
+			CniConfName:      "kuma-cni.conf",
+			ChainedCniPlugin: false,
+		}
+
+		// when
+		err := prepareKumaCniConfig(&ic, mockServiceAccountPath)
+
+		// then
+		Expect(err).To(Not(HaveOccurred()))
+		// and
+		kubeconfig, _ := ioutil.ReadFile(path.Join("testdata", "prepare-standalone-kuma-config", "kuma-cni.conf"))
+		Expect(kubeconfig).To(matchers.MatchGoldenEqual(path.Join("testdata", "prepare-standalone-kuma-config", "kuma-cni.conf.golden")))
 	})
 })

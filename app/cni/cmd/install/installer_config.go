@@ -9,7 +9,6 @@ import (
 
 	"github.com/natefinch/atomic"
 	"github.com/pkg/errors"
-	"k8s.io/utils/env"
 
 	"github.com/kumahq/kuma/pkg/config"
 	"github.com/kumahq/kuma/pkg/util/files"
@@ -139,25 +138,25 @@ current-context: kuma-cni-context`
 }
 
 func prepareKumaCniConfig(ic *InstallerConfig, serviceAccountPath string) error {
-	rawConfig := env.GetString("CNI_NETWORK_CONFIG", "")
+	rawConfig := ic.CniNetworkConfig
 	kubeconfigFilePath := ic.HostCniNetDir + "/" + ic.KubeconfigName
 
-	config := strings.Replace(rawConfig, "__KUBECONFIG_FILEPATH__", kubeconfigFilePath, 1)
-	log.V(1).Info("config after replace", "config", config)
+	cniConfig := strings.Replace(rawConfig, "__KUBECONFIG_FILEPATH__", kubeconfigFilePath, 1)
+	log.V(1).Info("cni config after replace", "cni config", cniConfig)
 
 	serviceAccountToken, err := ioutil.ReadFile(serviceAccountPath + "/token")
 	if err != nil {
 		return err
 	}
-	config = strings.Replace(config, "__SERVICEACCOUNT_TOKEN__", string(serviceAccountToken), 1)
+	cniConfig = strings.Replace(cniConfig, "__SERVICEACCOUNT_TOKEN__", string(serviceAccountToken), 1)
 
 	if ic.ChainedCniPlugin {
-		err := setupChainedPlugin(ic.MountedCniNetDir, ic.CniConfName, config)
+		err := setupChainedPlugin(ic.MountedCniNetDir, ic.CniConfName, cniConfig)
 		if err != nil {
 			return errors.Wrap(err, "unable to setup kuma cni as chained plugin")
 		}
 	} else {
-		err := atomic.WriteFile(ic.MountedCniNetDir+"/"+ic.CniConfName, strings.NewReader(config))
+		err := atomic.WriteFile(ic.MountedCniNetDir+"/"+ic.CniConfName, strings.NewReader(cniConfig))
 		if err != nil {
 			return err
 		}
