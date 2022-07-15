@@ -67,7 +67,7 @@ require (
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
 	sigs.k8s.io/controller-runtime v0.12.3
 	sigs.k8s.io/controller-tools v0.9.2
-	sigs.k8s.io/gateway-api v0.5.0-rc1
+	sigs.k8s.io/gateway-api v0.5.0
 	sigs.k8s.io/testing_frameworks v0.1.2
 )
 
@@ -198,7 +198,7 @@ require (
 
 replace github.com/prometheus/prometheus => ./vendored/github.com/prometheus/prometheus
 
-replace sigs.k8s.io/gateway-api => github.com/kumahq/gateway-api v0.0.0-20220629153928-e35eac912468
+replace sigs.k8s.io/gateway-api => github.com/kumahq/gateway-api v0.0.0-20220714082056-fbb05ce01577
 
 // The following replacement refers to the kuma-release-1.3 branch.
 //

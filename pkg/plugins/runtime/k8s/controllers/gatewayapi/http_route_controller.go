@@ -15,7 +15,7 @@ import (
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
-	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
