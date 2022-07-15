@@ -134,6 +134,7 @@ func setupChainedPlugin(mountedCniNetDir, cniConfName, kumaCniConfig string) err
 	}
 	log.V(1).Info("resulting config", "config", string(marshaled))
 
+	log.Info("chaining Kuma CNI config. Updating CNI config file", "file", mountedCniNetDir+"/"+resolvedName)
 	err = atomic.WriteFile(mountedCniNetDir+"/"+resolvedName, bytes.NewReader(marshaled))
 	return err
 }
