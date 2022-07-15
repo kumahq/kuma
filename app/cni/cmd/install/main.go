@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
+	"path"
 	"path/filepath"
 	"syscall"
 	"time"
@@ -117,12 +118,12 @@ func setupChainedPlugin(mountedCniNetDir, cniConfName, kumaCniConfig string) err
 		resolvedName = cniConfName + "list"
 	}
 
-	if !files.FileExists(mountedCniNetDir + "/" + resolvedName) {
-		log.Info("existing CNI config not found. Kuma CNI won't be chained", "file", mountedCniNetDir+"/"+resolvedName)
-		return nil
+	cniConfPath := path.Join(mountedCniNetDir, resolvedName)
+	if !files.FileExists(cniConfPath) {
+		return errors.Errorf("CNI config %v not found. Kuma CNI won't be chained", cniConfPath)
 	}
 
-	hostCniConfig, err := ioutil.ReadFile(mountedCniNetDir + "/" + resolvedName)
+	hostCniConfig, err := ioutil.ReadFile(cniConfPath)
 	if err != nil {
 		return err
 	}

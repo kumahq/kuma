@@ -41,7 +41,7 @@ func (i InstallerConfig) Validate() error {
 		return errors.New("CFGCHECK_INTERVAL env variable needs to be greater than 0")
 	}
 
-	// should I check that dirs exist?
+	// TODO: improve validation
 
 	return nil
 }
