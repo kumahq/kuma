@@ -133,9 +133,9 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 
 func mapAnnotation(annotations map[string]string, field *string, fieldName string) error {
 	val, err := getAnnotationOrDefault(fieldName, annotations)
-	*field = val
 	if err != nil {
 		return err
 	}
+	*field = val
 	return nil
 }

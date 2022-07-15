@@ -133,7 +133,9 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return prepareResult(conf, logger)
 	}
 
-	logAnnotations(logger, args, annotations)
+	logger.V(1).Info("checking annotations prior to injecting redirect",
+		"netns", args.Netns,
+		"annotations", annotations)
 	if excludeByMissingSidecarInjectedAnnotation(annotations) {
 		logger.Info("pod excluded due to lack of 'kuma.io/sidecar-injected: true' annotation")
 		return prepareResult(conf, logger)
@@ -162,12 +164,6 @@ func prepareResult(conf *PluginConf, logger logr.Logger) error {
 	}
 	logger.Info("result", "result", result)
 	return types.PrintResult(result, conf.CNIVersion)
-}
-
-func logAnnotations(logger logr.Logger, args *skel.CmdArgs, annotations map[string]string) {
-	logger.V(1).Info("checking annotations prior to injecting redirect",
-		"netns", args.Netns,
-		"annotations", annotations)
 }
 
 func excludeByMissingSidecarInjectedAnnotation(annotations map[string]string) bool {

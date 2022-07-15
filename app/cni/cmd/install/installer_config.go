@@ -156,6 +156,11 @@ func prepareKumaCniConfig(ic *InstallerConfig, serviceAccountPath string) error 
 		if err != nil {
 			return errors.Wrap(err, "unable to setup kuma cni as chained plugin")
 		}
+	} else {
+		err := atomic.WriteFile(ic.MountedCniNetDir+"/"+ic.CniConfName, strings.NewReader(config))
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -172,10 +177,12 @@ func loadInstallerConfig() (*InstallerConfig, error) {
 	if installerConfig.CniConfName == "" {
 		cniConfFile, err := findCniConfFile(installerConfig.MountedCniNetDir)
 		if err != nil {
-			log.Error(err, "could not find cni conf file using default")
+			log.Info("could not find cni conf file using default")
 			installerConfig.CniConfName = defaultKumaCniConfName
+		} else {
+			log.Info("found CNI config file", "file", cniConfFile)
+			installerConfig.CniConfName = cniConfFile
 		}
-		installerConfig.CniConfName = cniConfFile
 	}
 
 	return &installerConfig, nil

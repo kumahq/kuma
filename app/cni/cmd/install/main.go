@@ -11,6 +11,7 @@ import (
 
 	"github.com/natefinch/atomic"
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/util/files"
@@ -35,16 +36,19 @@ func cleanup(ic *InstallerConfig) {
 	log.Info("starting cleanup")
 	if err := removeBinFiles(); err != nil {
 		log.Error(err, "could not remove cni bin file")
+	} else {
+		log.V(1).Info("removed existing binaries")
 	}
-	log.V(1).Info("removed existing binaries")
 	if err := revertConfig(ic.MountedCniNetDir, ic.CniConfName, ic.ChainedCniPlugin); err != nil {
 		log.Error(err, "could not revert config")
+	} else {
+		log.V(1).Info("reverted config")
 	}
-	log.V(1).Info("reverted config")
 	if err := removeKubeconfig(ic.MountedCniNetDir, ic.KubeconfigName); err != nil {
 		log.Error(err, "could not remove kubeconfig")
+	} else {
+		log.V(1).Info("removed kubeconfig")
 	}
-	log.V(1).Info("removed kubeconfig")
 	log.Info("finished cleanup")
 }
 
@@ -92,15 +96,15 @@ func revertConfig(mountedCniNetDir, cniConfName string, chainedCniPlugin bool) e
 
 func install(ic *InstallerConfig) error {
 	if err := copyBinaries(); err != nil {
-		return err
+		return errors.Wrap(err, "could not copy binary files")
 	}
 
 	if err := prepareKubeconfig(ic.MountedCniNetDir, ic.KubeconfigName, serviceAccountPath); err != nil {
-		return err
+		return errors.Wrap(err, "could not prepare kubeconfig")
 	}
 
 	if err := prepareKumaCniConfig(ic, serviceAccountPath); err != nil {
-		return err
+		return errors.Wrap(err, "could not prepare kuma cni config")
 	}
 
 	return nil
@@ -113,26 +117,24 @@ func setupChainedPlugin(mountedCniNetDir, cniConfName, kumaCniConfig string) err
 		resolvedName = cniConfName + "list"
 	}
 
-	if files.FileExists(mountedCniNetDir + "/" + resolvedName) {
-		hostCniConfig, err := ioutil.ReadFile(mountedCniNetDir + "/" + resolvedName)
-		if err != nil {
-			return err
-		}
-
-		marshaled, err := transformJsonConfig(kumaCniConfig, hostCniConfig)
-		if err != nil {
-			return err
-		}
-		log.V(1).Info("resulting config", "config", string(marshaled))
-
-		err = atomic.WriteFile(mountedCniNetDir+"/"+resolvedName, bytes.NewReader(marshaled))
-		if err != nil {
-			return err
-		}
-
+	if !files.FileExists(mountedCniNetDir + "/" + resolvedName) {
+		log.Info("existing CNI config not found. Kuma CNI won't be chained", "file", mountedCniNetDir + "/" + resolvedName)
 		return nil
 	}
-	return nil
+
+	hostCniConfig, err := ioutil.ReadFile(mountedCniNetDir + "/" + resolvedName)
+	if err != nil {
+		 return err
+	}
+
+	marshaled, err := transformJsonConfig(kumaCniConfig, hostCniConfig)
+	if err != nil {
+		 return err
+	}
+	log.V(1).Info("resulting config", "config", string(marshaled))
+
+	err = atomic.WriteFile(mountedCniNetDir+"/"+resolvedName, bytes.NewReader(marshaled))
+	return err
 }
 
 func copyBinaries() error {
@@ -142,8 +144,8 @@ func copyBinaries() error {
 	for _, dir := range dirs {
 		err := tryWritingToDir(dir)
 		if err != nil {
-			allErrors = errors.Wrapf(err, "could not write to dir %v", dir)
-			log.Error(err, "writing to dir failed", "dir", dir)
+			allErrors = multierr.Append(allErrors, err)
+			log.Info("writing to dir failed", "dir", dir)
 			continue
 		}
 
