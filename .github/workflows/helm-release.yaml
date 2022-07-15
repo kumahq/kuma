@@ -43,7 +43,8 @@ jobs:
         run:
           curl -L "https://github.com/helm/chart-releaser/releases/download/v${CR_VERSION}/chart-releaser_${CR_VERSION}_linux_amd64.tar.gz"
           | sudo tar xvz --directory /usr/bin cr
-      - name: Update chart versions
+      - name: Update chart versions on push
+        if: github.event_name == 'push'
         run: |
           git config user.name "${GH_USER}"
           git config user.email "${GH_EMAIL}"
@@ -51,8 +52,7 @@ jobs:
           ./tools/releases/helm.sh --dev-version
 
           git add -u deployments/charts
-          # This commit never ends up in the repo
-          git commit -m "ci(helm): update versions"
+          git commit -m "ci(helm): update versions for dev version"
       - name: Package chart
         id: package
         run: |
