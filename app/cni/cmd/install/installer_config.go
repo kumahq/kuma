@@ -166,7 +166,6 @@ func prepareKumaCniConfig(ic *InstallerConfig, serviceAccountPath string) error 
 	return nil
 }
 
-
 func loadInstallerConfig() (*InstallerConfig, error) {
 	var installerConfig InstallerConfig
 	err := config.Load("", &installerConfig)

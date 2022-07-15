@@ -118,18 +118,18 @@ func setupChainedPlugin(mountedCniNetDir, cniConfName, kumaCniConfig string) err
 	}
 
 	if !files.FileExists(mountedCniNetDir + "/" + resolvedName) {
-		log.Info("existing CNI config not found. Kuma CNI won't be chained", "file", mountedCniNetDir + "/" + resolvedName)
+		log.Info("existing CNI config not found. Kuma CNI won't be chained", "file", mountedCniNetDir+"/"+resolvedName)
 		return nil
 	}
 
 	hostCniConfig, err := ioutil.ReadFile(mountedCniNetDir + "/" + resolvedName)
 	if err != nil {
-		 return err
+		return err
 	}
 
 	marshaled, err := transformJsonConfig(kumaCniConfig, hostCniConfig)
 	if err != nil {
-		 return err
+		return err
 	}
 	log.V(1).Info("resulting config", "config", string(marshaled))
 
