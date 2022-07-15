@@ -31,6 +31,7 @@ node:
   id: mesh.name.namespace
   metadata:
     dataplane.proxyType: dataplane
+    features: []
     version:
       dependencies: {}
       envoy:

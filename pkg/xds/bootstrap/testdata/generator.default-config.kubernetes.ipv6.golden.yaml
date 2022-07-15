@@ -38,6 +38,7 @@ node:
   metadata:
     dataplane.admin.port: "1234"
     dataplane.proxyType: dataplane
+    features: []
     version:
       dependencies: {}
       envoy:
