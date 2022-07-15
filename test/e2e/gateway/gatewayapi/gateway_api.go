@@ -21,7 +21,7 @@ func GatewayAPICRDs(cluster Cluster) error {
 }
 
 const GatewayClass = `
-apiVersion: gateway.networking.k8s.io/v1alpha2
+apiVersion: gateway.networking.k8s.io/v1beta1
 kind: GatewayClass
 metadata:
   name: kuma
@@ -169,7 +169,7 @@ spec:
 
 	Context("HTTP Gateway", Ordered, func() {
 		gateway := `
-apiVersion: gateway.networking.k8s.io/v1alpha2
+apiVersion: gateway.networking.k8s.io/v1beta1
 kind: Gateway
 metadata:
   name: kuma
@@ -194,7 +194,7 @@ spec:
 		It("should route the traffic to test-server by path", func() {
 			// given
 			route := `
-apiVersion: gateway.networking.k8s.io/v1alpha2
+apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
   name: test-server-paths
@@ -240,7 +240,7 @@ spec:
 		It("should route the traffic to test-server by header", func() {
 			// given
 			routes := `
-apiVersion: gateway.networking.k8s.io/v1alpha2
+apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
   name: test-server-1
