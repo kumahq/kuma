@@ -201,7 +201,7 @@ func newClusterBuilder(
 // qualified name for the cluster. Because the connection policies applied
 // to a cluster can be different depending on the listener and the hostname,
 // we can't just build a cluster using the service name and tags, we have to
-// take the full configuration into account.
+// take listener tags into account.
 func buildClusterResource(
 	dest *route.Destination,
 	c *clusters.ClusterBuilder,
