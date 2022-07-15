@@ -63,7 +63,7 @@ var _ = Describe("prepareKubeconfig", func() {
 		Expect(err).To(Not(HaveOccurred()))
 		// and
 		kubeconfig, _ := ioutil.ReadFile(path.Join("testdata", "prepare-kubeconfig", "ZZZ-kuma-cni-kubeconfig"))
-		Expect(kubeconfig).To(matchers.MatchGoldenEqual(path.Join("testdata", "prepare-kubeconfig", "ZZZ-kuma-cni-kubeconfig.golden")))
+		Expect(kubeconfig).To(matchers.MatchGoldenYAML(path.Join("testdata", "prepare-kubeconfig", "ZZZ-kuma-cni-kubeconfig.golden")))
 	})
 })
 
