@@ -202,8 +202,8 @@ func getPodInfoWithRetries(ctx context.Context, conf *PluginConf, k8sArgs K8sArg
 			log.Error(k8sErr, "error getting pod info", "retries", podRetrievalMaxRetries)
 			return retry.RetryableError(k8sErr)
 		}
-		log.V(1).Info("container count in a pod",
-			"count", containerCount,
+		log.V(1).Info("pod container info",
+			"count count", containerCount,
 			"initContainers", initContainersMap,
 			"annotations", annotations,
 		)

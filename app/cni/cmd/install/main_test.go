@@ -33,12 +33,4 @@ var _ = Describe("kubeconfigTemplate", func() {
 		Expect(result).To(Equal(expectedKubeconfig))
 
 	})
-
-	It("should work properly with escaped IPv6 addresses", func() {
-		// when
-		resultWithBrackets := kubeconfigTemplate("https", "[2001:0db8:85a3:0000:0000:8a2e:0370:7334]", "3000", "token", "YWJjCg==")
-
-		// then
-		Expect(resultWithBrackets).To(Equal(expectedKubeconfig))
-	})
 })

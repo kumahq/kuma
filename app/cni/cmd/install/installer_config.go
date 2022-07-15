@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/base64"
 	"io/ioutil"
+	"net"
 	"net/url"
 	"path/filepath"
 	"strings"
@@ -11,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
-	"github.com/kumahq/kuma/pkg/util/files"
 )
 
 const (
@@ -78,43 +78,38 @@ func prepareKubeconfig(ic *InstallerConfig, serviceAccountPath string) error {
 		return err
 	}
 
-	if files.FileExists(serviceAccountTokenPath) {
-		if ic.KubernetesServiceHost == "" {
-			return errors.New("KUBERNETES_SERVICE_HOST env variable not set")
-		}
+	if ic.KubernetesServiceHost == "" {
+		return errors.New("KUBERNETES_SERVICE_HOST env variable not set")
+	}
 
-		if ic.KubernetesServicePort == "" {
-			return errors.New("KUBERNETES_SERVICE_PORT env variable not set")
-		}
+	if ic.KubernetesServicePort == "" {
+		return errors.New("KUBERNETES_SERVICE_PORT env variable not set")
+	}
 
-		if ic.KubernetesCaFile == "" {
-			ic.KubernetesCaFile = serviceAccountPath + "/ca.crt"
-		}
+	if ic.KubernetesCaFile == "" {
+		ic.KubernetesCaFile = serviceAccountPath + "/ca.crt"
+	}
 
-		kubeCa, err := ioutil.ReadFile(ic.KubernetesCaFile)
-		if err != nil {
-			return err
-		}
-		caData := base64.StdEncoding.EncodeToString(kubeCa)
+	kubeCa, err := ioutil.ReadFile(ic.KubernetesCaFile)
+	if err != nil {
+		return err
+	}
+	caData := base64.StdEncoding.EncodeToString(kubeCa)
 
-		kubeconfig := kubeconfigTemplate(ic.KubernetesServiceProtocol, ic.KubernetesServiceHost, ic.KubernetesServicePort, string(serviceAccountToken), caData)
-		log.Info("writing kubernetes config", "path", kubeconfigPath)
-		err = atomic.WriteFile(kubeconfigPath, strings.NewReader(kubeconfig))
-		if err != nil {
-			return err
-		}
-	} else {
-		log.Info("not creating kubeconfig file - service account token does not exist")
+	kubeconfig := kubeconfigTemplate(ic.KubernetesServiceProtocol, ic.KubernetesServiceHost, ic.KubernetesServicePort, string(serviceAccountToken), caData)
+	log.Info("writing kubernetes config", "path", kubeconfigPath)
+	err = atomic.WriteFile(kubeconfigPath, strings.NewReader(kubeconfig))
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
 func kubeconfigTemplate(protocol, host, port, token, caData string) string {
-	safeHost := guardIpv6Host(host)
 	serverUrl := url.URL{
 		Scheme: protocol,
-		Host:   safeHost + ":" + port,
+		Host:   net.JoinHostPort(host, port),
 	}
 
 	return `# Kubeconfig file for kuma CNI plugin.
