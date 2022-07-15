@@ -50,11 +50,11 @@ var _ = Describe("prepareKubeconfig", func() {
 		// given
 		mockServiceAccountPath := path.Join("testdata", "prepare-kubeconfig")
 		ic := InstallerConfig{
-			KubernetesServiceHost: "localhost",
-			KubernetesServicePort: "3000",
+			KubernetesServiceHost:     "localhost",
+			KubernetesServicePort:     "3000",
 			KubernetesServiceProtocol: "https",
-			MountedCniNetDir:      path.Join("testdata", "prepare-kubeconfig"),
-			KubeconfigName:        "ZZZ-kuma-cni-kubeconfig",
+			MountedCniNetDir:          path.Join("testdata", "prepare-kubeconfig"),
+			KubeconfigName:            "ZZZ-kuma-cni-kubeconfig",
 		}
 
 		// when
