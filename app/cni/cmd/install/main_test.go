@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-const expected = `# Kubeconfig file for kuma CNI plugin.
+const expectedKubeconfig = `# Kubeconfig file for kuma CNI plugin.
 apiVersion: v1
 kind: Config
 clusters:
@@ -30,7 +30,7 @@ var _ = Describe("kubeconfigTemplate", func() {
 		result := kubeconfigTemplate("https", "2001:0db8:85a3:0000:0000:8a2e:0370:7334", "3000", "token", "YWJjCg==")
 
 		// then
-		Expect(result).To(Equal(expected))
+		Expect(result).To(Equal(expectedKubeconfig))
 
 	})
 
@@ -39,6 +39,6 @@ var _ = Describe("kubeconfigTemplate", func() {
 		resultWithBrackets := kubeconfigTemplate("https", "[2001:0db8:85a3:0000:0000:8a2e:0370:7334]", "3000", "token", "YWJjCg==")
 
 		// then
-		Expect(resultWithBrackets).To(Equal(expected))
+		Expect(resultWithBrackets).To(Equal(expectedKubeconfig))
 	})
 })

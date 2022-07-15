@@ -51,7 +51,7 @@ func findCniConfFile(mountedCNINetDir string) (string, error) {
 
 	file, found := lookForValidConfig(matches, isValidConfFile)
 	if found {
-		return file, nil
+		return filepath.Base(file), nil
 	}
 
 	matches, err = filepath.Glob(mountedCNINetDir + "/*.conflist")
@@ -60,7 +60,7 @@ func findCniConfFile(mountedCNINetDir string) (string, error) {
 	}
 	file, found = lookForValidConfig(matches, isValidConflistFile)
 	if found {
-		return file, nil
+		return filepath.Base(file), nil
 	}
 
 	// use default
@@ -100,6 +100,8 @@ func prepareKubeconfig(mountedCniNetDir, kubeconfigName, serviceAccountPath stri
 		if err != nil {
 			return err
 		}
+	} else {
+		log.Info("not creating kubeconfig file - service account token does not exist")
 	}
 
 	return nil

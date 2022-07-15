@@ -10,7 +10,7 @@ func lookForValidConfig(files []string, checkerFn func(string) error) (string, b
 	for _, file := range files {
 		err := checkerFn(file)
 		if err != nil {
-			log.Error(err, "error occurred testing config file", "file", file)
+			log.Info("error occurred testing config file", "file", file)
 		} else {
 			return file, true
 		}
