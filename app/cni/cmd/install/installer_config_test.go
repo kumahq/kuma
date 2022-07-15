@@ -86,7 +86,7 @@ var _ = Describe("prepareKumaCniConfig", func() {
 		Expect(err).To(Not(HaveOccurred()))
 		// and
 		kubeconfig, _ := ioutil.ReadFile(path.Join("testdata", "prepare-chained-kuma-config", "10-calico.conflist"))
-		Expect(kubeconfig).To(matchers.MatchGoldenEqual(path.Join("testdata", "prepare-chained-kuma-config", "10-calico.conflist.golden")))
+		Expect(kubeconfig).To(matchers.MatchGoldenJSON(path.Join("testdata", "prepare-chained-kuma-config", "10-calico.conflist.golden")))
 	})
 
 	It("should successfully prepare standalone kuma cni file", func() {
@@ -107,6 +107,6 @@ var _ = Describe("prepareKumaCniConfig", func() {
 		Expect(err).To(Not(HaveOccurred()))
 		// and
 		kubeconfig, _ := ioutil.ReadFile(path.Join("testdata", "prepare-standalone-kuma-config", "kuma-cni.conf"))
-		Expect(kubeconfig).To(matchers.MatchGoldenEqual(path.Join("testdata", "prepare-standalone-kuma-config", "kuma-cni.conf.golden")))
+		Expect(kubeconfig).To(matchers.MatchGoldenJSON(path.Join("testdata", "prepare-standalone-kuma-config", "kuma-cni.conf.golden")))
 	})
 })
