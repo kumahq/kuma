@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/asaskevich/govalidator"
 	"github.com/natefinch/atomic"
 	"github.com/pkg/errors"
 	"k8s.io/utils/env"
@@ -21,13 +20,18 @@ const (
 )
 
 type InstallerConfig struct {
-	HostCniNetDir    string `envconfig:"cni_net_dir" default:"/etc/cni/net.d"`
-	KubeconfigName   string `envconfig:"kubecfg_file_name" default:"ZZZ-kuma-cni-kubeconfig"`
-	CfgCheckInterval int    `envconfig:"cfgcheck_interval" default:"1"`
-	ChainedCniPlugin bool   `envconfig:"chained_cni_plugin" default:"true"`
-	MountedCniNetDir string `envconfig:"mounted_cni_net_dir" default:"/host/etc/cni/net.d"`
-	ShouldSleep      bool   `envconfig:"sleep" default:"true"`
-	CniConfName      string `envconfig:"cni_conf_name" default:""`
+	CfgCheckInterval          int    `envconfig:"cfgcheck_interval" default:"1"`
+	ChainedCniPlugin          bool   `envconfig:"chained_cni_plugin" default:"true"`
+	CniConfName               string `envconfig:"cni_conf_name" default:""`
+	CniNetworkConfig          string `envconfig:"cni_network_config" default:""`
+	HostCniNetDir             string `envconfig:"cni_net_dir" default:"/etc/cni/net.d"`
+	KubeconfigName            string `envconfig:"kubecfg_file_name" default:"ZZZ-kuma-cni-kubeconfig"`
+	KubernetesCaFile          string `envconfig:"kube_ca_file"`
+	KubernetesServiceHost     string `envconfig:"kubernetes_service_host"`
+	KubernetesServicePort     string `envconfig:"kubernetes_service_port"`
+	KubernetesServiceProtocol string `envconfig:"kubernetes_service_protocol" default:"https"`
+	MountedCniNetDir          string `envconfig:"mounted_cni_net_dir" default:"/host/etc/cni/net.d"`
+	ShouldSleep               bool   `envconfig:"sleep" default:"true"`
 }
 
 func (i InstallerConfig) Sanitize() {
@@ -67,8 +71,8 @@ func findCniConfFile(mountedCNINetDir string) (string, error) {
 	return "", errors.New("cni conf file not found - use default")
 }
 
-func prepareKubeconfig(mountedCniNetDir, kubeconfigName, serviceAccountPath string) error {
-	kubeconfigPath := mountedCniNetDir + "/" + kubeconfigName
+func prepareKubeconfig(ic *InstallerConfig, serviceAccountPath string) error {
+	kubeconfigPath := ic.MountedCniNetDir + "/" + ic.KubeconfigName
 	serviceAccountTokenPath := serviceAccountPath + "/token"
 	serviceAccountToken, err := ioutil.ReadFile(serviceAccountTokenPath)
 	if err != nil {
@@ -76,26 +80,26 @@ func prepareKubeconfig(mountedCniNetDir, kubeconfigName, serviceAccountPath stri
 	}
 
 	if files.FileExists(serviceAccountTokenPath) {
-		kubernetesServiceHost := env.GetString("KUBERNETES_SERVICE_HOST", "")
-		if kubernetesServiceHost == "" {
+		if ic.KubernetesServiceHost == "" {
 			return errors.New("KUBERNETES_SERVICE_HOST env variable not set")
 		}
 
-		kubernetesServicePort := env.GetString("KUBERNETES_SERVICE_PORT", "")
-		if kubernetesServicePort == "" {
+		if ic.KubernetesServicePort == "" {
 			return errors.New("KUBERNETES_SERVICE_PORT env variable not set")
 		}
 
-		kubeCaFile := env.GetString("KUBE_CA_FILE", serviceAccountPath+"/ca.crt")
-		kubeCa, err := ioutil.ReadFile(kubeCaFile)
+		if ic.KubernetesCaFile == "" {
+			ic.KubernetesCaFile = serviceAccountPath + "/ca.crt"
+		}
+
+		kubeCa, err := ioutil.ReadFile(ic.KubernetesCaFile)
 		if err != nil {
 			return err
 		}
-		kubernetesServiceProtocol := env.GetString("KUBERNETES_SERVICE_PROTOCOL", "https")
 		caData := base64.StdEncoding.EncodeToString(kubeCa)
 
-		kubeconfig := kubeconfigTemplate(kubernetesServiceProtocol, kubernetesServiceHost, kubernetesServicePort, string(serviceAccountToken), caData)
-		log.Info("writing kubeconfig", "path", kubeconfigPath)
+		kubeconfig := kubeconfigTemplate(ic.KubernetesServiceProtocol, ic.KubernetesServiceHost, ic.KubernetesServicePort, string(serviceAccountToken), caData)
+		log.Info("writing kubernetes config", "path", kubeconfigPath)
 		err = atomic.WriteFile(kubeconfigPath, strings.NewReader(kubeconfig))
 		if err != nil {
 			return err
@@ -108,13 +112,7 @@ func prepareKubeconfig(mountedCniNetDir, kubeconfigName, serviceAccountPath stri
 }
 
 func kubeconfigTemplate(protocol, host, port, token, caData string) string {
-	safeHost := host
-	if govalidator.IsIPv6(host) {
-		if !(strings.HasPrefix(host, "[") && strings.HasSuffix(host, "]")) {
-			safeHost = "[" + host + "]"
-		}
-	}
-
+	safeHost := guardIpv6Host(host)
 	serverUrl := url.URL{
 		Scheme: protocol,
 		Host:   safeHost + ":" + port,

@@ -99,7 +99,7 @@ func install(ic *InstallerConfig) error {
 		return errors.Wrap(err, "could not copy binary files")
 	}
 
-	if err := prepareKubeconfig(ic.MountedCniNetDir, ic.KubeconfigName, serviceAccountPath); err != nil {
+	if err := prepareKubeconfig(ic, serviceAccountPath); err != nil {
 		return errors.Wrap(err, "could not prepare kubeconfig")
 	}
 
