@@ -2350,23 +2350,22 @@ webhooks:
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
-  labels:
-    app: kuma-control-plane
-    app.kubernetes.io/instance: kuma
-    app.kubernetes.io/name: kuma
   name: kuma-validating-webhook-configuration
   namespace: kuma-system
+  labels: 
+    app: kuma-control-plane
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
 webhooks:
-  - admissionReviewVersions:
-      - v1
+  - name: validator.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1"]
+    failurePolicy: Fail
     clientConfig:
       caBundle: XYZ
       service:
-        name: kuma-control-plane
         namespace: kuma-system
+        name: kuma-control-plane
         path: /validate-kuma-io-v1alpha1
-    failurePolicy: Fail
-    name: validator.kuma-admission.kuma.io
     rules:
       - apiGroups:
           - kuma.io
@@ -2396,17 +2395,18 @@ webhooks:
           - virtualoutbounds
           - zones
           - containerpatches
+    
+      
     sideEffects: None
-  - admissionReviewVersions:
-      - v1
+  - name: service.validator.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1"]
+    failurePolicy: Ignore
     clientConfig:
       caBundle: XYZ
       service:
-        name: kuma-control-plane
         namespace: kuma-system
+        name: kuma-control-plane
         path: /validate-v1-service
-    failurePolicy: Ignore
-    name: service.validator.kuma-admission.kuma.io
     rules:
       - apiGroups:
           - ""
@@ -2418,19 +2418,18 @@ webhooks:
         resources:
           - services
     sideEffects: None
-  - admissionReviewVersions:
-      - v1
-    clientConfig:
-      caBundle: XYZ
-      service:
-        name: kuma-control-plane
-        namespace: kuma-system
-        path: /validate-v1-secret
-    failurePolicy: Ignore
-    name: secret.validator.kuma-admission.kuma.io
+  - name: secret.validator.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1"]
     namespaceSelector:
       matchLabels:
         kuma.io/system-namespace: "true"
+    failurePolicy: Ignore
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /validate-v1-secret
     rules:
       - apiGroups:
           - ""
@@ -2443,47 +2442,23 @@ webhooks:
         resources:
           - secrets
     sideEffects: None
-  - admissionReviewVersions:
-      - v1
-    clientConfig:
-      caBundle: XYZ
-      service:
-        name: kuma-control-plane
-        namespace: kuma-system
-        path: /validate-v1alpha2-gateway
+  - name: gateway.validator.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1"]
     failurePolicy: Ignore
-    name: gateway.validator.kuma-admission.kuma.io
-    rules:
-      - apiGroups:
-          - gateway.networking.k8s.io
-        apiVersions:
-          - v1alpha2
-        operations:
-          - CREATE
-        resources:
-          - gatewayclasses
-    sideEffects: None
-  - admissionReviewVersions:
-      - v1
     clientConfig:
       caBundle: XYZ
       service:
-        name: kuma-control-plane
         namespace: kuma-system
-        path: /validate-v1alpha2-gateway-upstream
-    failurePolicy: Fail
-    matchPolicy: Equivalent
-    name: validate.gateway.networking.k8s.io
+        name: kuma-control-plane
+        path: /validate-gatewayclass
     rules:
       - apiGroups:
-          - gateway.networking.k8s.io
+          - "gateway.networking.k8s.io"
         apiVersions:
           - v1alpha2
+          - v1beta1
         operations:
           - CREATE
-          - UPDATE
         resources:
-          - gateways
           - gatewayclasses
-          - httproutes
     sideEffects: None
