@@ -207,7 +207,7 @@ func setupSignalCleanup(ic *InstallerConfig) {
 	}()
 }
 
-func main() {
+func Run() {
 	installerConfig, err := loadInstallerConfig()
 	if err != nil {
 		log.Error(err, "error occurred during config loading")
@@ -223,10 +223,6 @@ func main() {
 		log.Error(err, "checking installation failed - exiting")
 		os.Exit(1)
 	}
-}
-
-func Run() {
-	main()
 }
 
 func runLoop(ic *InstallerConfig) error {
