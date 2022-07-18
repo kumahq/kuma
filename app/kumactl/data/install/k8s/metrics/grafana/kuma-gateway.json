@@ -105,7 +105,7 @@
       "pluginVersion": "7.4.3",
       "targets": [
         {
-          "expr": "sum(envoy_server_live{kuma_io_mesh_gateway=~\".*$meshgateway.*\"}) by (dataplane)",
+          "expr": "sum(envoy_server_live{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\"}) by (dataplane)",
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -213,7 +213,7 @@
       "pluginVersion": "7.4.3",
       "targets": [
         {
-          "expr": "sum(rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_traffic=\"true\"}[1m]))",
+          "expr": "sum(rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_mesh_traffic=\"true\"}[1m]))",
           "hide": false,
           "interval": "",
           "legendFormat": "",
@@ -278,7 +278,7 @@
       "pluginVersion": "7.4.3",
       "targets": [
         {
-          "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_traffic=\"true\"}[1m]))",
+          "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_mesh_traffic=\"true\"}[1m]))",
           "hide": false,
           "interval": "",
           "legendFormat": "",
@@ -357,21 +357,21 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "max(histogram_quantile(0.99, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",kuma_io_mesh_traffic=\"true\"}[1m])))",
+          "expr": "max(histogram_quantile(0.99, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",kuma_io_mesh_traffic=\"true\"}[1m])))",
           "hide": false,
           "interval": "",
           "legendFormat": "p99",
           "refId": "A"
         },
         {
-          "expr": "max(histogram_quantile(0.95, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",kuma_io_mesh_traffic=\"true\"}[1m])))",
+          "expr": "max(histogram_quantile(0.95, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",kuma_io_mesh_traffic=\"true\"}[1m])))",
           "hide": false,
           "interval": "",
           "legendFormat": "p95",
           "refId": "C"
         },
         {
-          "expr": "max(histogram_quantile(0.50, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",kuma_io_mesh_traffic=\"true\"}[1m])))",
+          "expr": "max(histogram_quantile(0.50, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",kuma_io_mesh_traffic=\"true\"}[1m])))",
           "hide": false,
           "interval": "",
           "legendFormat": "p50",
@@ -469,14 +469,14 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_traffic=\"true\"}[1m]))",
+          "expr": "sum(rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_mesh_traffic=\"true\"}[1m]))",
           "hide": false,
           "interval": "",
           "legendFormat": "Incoming",
           "refId": "C"
         },
         {
-          "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_traffic=\"true\"}[1m]))",
+          "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_mesh_traffic=\"true\"}[1m]))",
           "hide": false,
           "interval": "",
           "legendFormat": "Outgoing",
@@ -574,7 +574,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(envoy_cluster_internal_upstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_traffic=\"true\"}[1m])) by (envoy_response_code_class)",
+          "expr": "sum(rate(envoy_cluster_internal_upstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_mesh_traffic=\"true\"}[1m])) by (envoy_response_code_class)",
           "hide": false,
           "interval": "",
           "legendFormat": "{{envoy_response_code_class}}xx",
@@ -686,7 +686,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "max(sum(rate(container_cpu_usage_seconds_total[1m])) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_mesh_gateway=~\".*$meshgateway.*\"}) by (dataplane) /\nmax(sum(kube_pod_container_resource_limits_cpu_cores) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_mesh_gateway=~\".*$meshgateway.*\"}) by (dataplane)",
+          "expr": "max(sum(rate(container_cpu_usage_seconds_total[1m])) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\"}) by (dataplane) /\nmax(sum(kube_pod_container_resource_limits_cpu_cores) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\"}) by (dataplane)",
           "hide": false,
           "interval": "",
           "legendFormat": "{{ dataplane }}",
@@ -784,7 +784,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "max(sum(container_memory_working_set_bytes{image!=\"\"}) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_mesh_gateway=~\".*$meshgateway.*\"}) by (dataplane)",
+          "expr": "max(sum(container_memory_working_set_bytes{image!=\"\"}) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\"}) by (dataplane)",
           "hide": false,
           "interval": "",
           "legendFormat": "{{ dataplane }}",
@@ -882,7 +882,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "max(sum(container_memory_working_set_bytes) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_mesh_gateway=~\".*$meshgateway.*\"}) by (dataplane) / max(sum(kube_pod_container_resource_limits_memory_bytes) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_mesh_gateway=~\".*$meshgateway.*\"}) by (dataplane)",
+          "expr": "max(sum(container_memory_working_set_bytes) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\"}) by (dataplane) / max(sum(kube_pod_container_resource_limits_memory_bytes) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\"}) by (dataplane)",
           "hide": false,
           "interval": "",
           "legendFormat": "{{ dataplane }}",
