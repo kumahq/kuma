@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"net/http"
 	"sort"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -12,6 +13,8 @@ import (
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 )
+
+const emptyGatewayMsg = "This is a Kuma MeshGateway. No routes match this MeshGateway!"
 
 // GenerateVirtualHost generates xDS resources for the current route table.
 func GenerateVirtualHost(
@@ -36,6 +39,16 @@ func GenerateVirtualHost(
 		)
 	}
 
+	if len(routes) == 0 {
+		routeBuilder := route.RouteBuilder{}
+
+		routeBuilder.Configure(route.RouteMatchExactPath("*"))
+		routeBuilder.Configure(route.RouteActionDirectResponse(http.StatusNotFound, emptyGatewayMsg))
+		vh.Configure(route.VirtualHostRoute(&routeBuilder))
+
+		return vh, nil
+	}
+
 	// TODO(jpeach) match the FaultInjection policy for this virtual host.
 
 	// TODO(jpeach) apply additional virtual host configuration.
@@ -45,7 +58,6 @@ func GenerateVirtualHost(
 
 	for _, e := range routes {
 		routeBuilder := route.RouteBuilder{}
-
 		routeBuilder.Configure(
 			route.RouteMatchExactPath(e.Match.ExactPath),
 			route.RouteMatchPrefixPath(e.Match.PrefixPath),

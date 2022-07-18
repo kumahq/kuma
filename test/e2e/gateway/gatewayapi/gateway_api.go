@@ -195,6 +195,21 @@ spec:
 			address = net.JoinHostPort(GatewayIP(), "8080")
 		})
 
+		It("should send default static payload for no route", func() {
+			Eventually(func(g Gomega) {
+				// when
+				stdout, _, err := cluster.ExecWithRetries("", "", "",
+					"curl", "-v", "-m", "3", "--fail", "http://"+address)
+
+				// then
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stdout).ToNot(BeNil())
+
+				g.Expect(stdout).To(ContainSubstring("HTTP/1.1 404 Not Found"))
+				g.Expect(stdout).To(ContainSubstring("This is a Kuma MeshGateway. No routes match this MeshGateway!"))
+			}, "30s", "1s").Should(Succeed())
+		})
+
 		It("should route the traffic to test-server by path", func() {
 			// given
 			route := `
@@ -372,6 +387,21 @@ spec:
 			Expect(YamlK8s(secret)(cluster)).To(Succeed())
 			Expect(YamlK8s(gateway)(cluster)).To(Succeed())
 			ip = GatewayIP()
+		})
+
+		It("should send default static payload for no route", func() {
+			Eventually(func(g Gomega) {
+				// when
+				stdout, _, err := cluster.ExecWithRetries("", "", "",
+					"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(ip, "8091"))
+
+				// then
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stdout).ToNot(BeNil())
+
+				g.Expect(stdout).To(ContainSubstring("HTTP/1.1 404 Not Found"))
+				g.Expect(stdout).To(ContainSubstring("This is a Kuma MeshGateway. No routes match this MeshGateway!"))
+			}, "30s", "1s").Should(Succeed())
 		})
 
 		It("should route the traffic using TLS", func() {

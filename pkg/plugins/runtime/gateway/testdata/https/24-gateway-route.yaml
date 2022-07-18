@@ -225,6 +225,13 @@ Routes:
       - domains:
         - '*'
         name: '*'
+        routes:
+        - directResponse:
+            body:
+              inlineString: This is a Kuma MeshGateway. No routes match this MeshGateway!
+            status: 404
+          match:
+            path: '*'
 Runtimes:
   Resources: {}
 Secrets:
