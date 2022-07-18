@@ -192,6 +192,19 @@ func makeHttpRouteEntry(name string, rule *mesh_proto.MeshGatewayRoute_HttpRoute
 
 			entry.RequestHeaders.Delete = append(
 				entry.RequestHeaders.Delete, h.GetRemove()...)
+		} else if h := f.GetRewrite(); h != nil {
+			rewrite := route.Rewrite{}
+
+			if p := h.GetPath(); p != nil {
+				switch t := p.(type) {
+				case *mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplaceFull_:
+					rewrite.ReplaceFullPath = &t.ReplaceFull
+				case *mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplacePrefixMatch_:
+					rewrite.ReplacePrefixMatch = &t.ReplacePrefixMatch
+				}
+			}
+
+			entry.Rewrite = &rewrite
 		}
 	}
 

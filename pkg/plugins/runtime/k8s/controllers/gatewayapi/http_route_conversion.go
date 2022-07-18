@@ -59,14 +59,14 @@ func (r *HTTPRouteReconciler) gapiToKumaRule(
 	var filters []*mesh_proto.MeshGatewayRoute_HttpRoute_Filter
 
 	for _, filter := range rule.Filters {
-		kumaFilter, filterCondition, err := r.gapiToKumaFilter(ctx, mesh, route.Namespace, filter)
+		kumaFilters, filterCondition, err := r.gapiToKumaFilters(ctx, mesh, route.Namespace, filter)
 		if err != nil {
 			return nil, condition, err
 		}
 		if filterCondition != nil {
 			condition = filterCondition
 		} else {
-			filters = append(filters, kumaFilter)
+			filters = append(filters, kumaFilters...)
 		}
 	}
 
@@ -296,10 +296,10 @@ func gapiToKumaMatch(match gatewayapi.HTTPRouteMatch) (*mesh_proto.MeshGatewayRo
 	return kumaMatch, nil
 }
 
-func (r *HTTPRouteReconciler) gapiToKumaFilter(
+func (r *HTTPRouteReconciler) gapiToKumaFilters(
 	ctx context.Context, mesh string, namespace string, filter gatewayapi.HTTPRouteFilter,
-) (*mesh_proto.MeshGatewayRoute_HttpRoute_Filter, *ResolvedRefsConditionFalse, error) {
-	var kumaFilter *mesh_proto.MeshGatewayRoute_HttpRoute_Filter
+) ([]*mesh_proto.MeshGatewayRoute_HttpRoute_Filter, *ResolvedRefsConditionFalse, error) {
+	var kumaFilters []*mesh_proto.MeshGatewayRoute_HttpRoute_Filter
 
 	var condition *ResolvedRefsConditionFalse
 
@@ -319,11 +319,11 @@ func (r *HTTPRouteReconciler) gapiToKumaFilter(
 
 		requestHeader.Remove = filter.Remove
 
-		kumaFilter = &mesh_proto.MeshGatewayRoute_HttpRoute_Filter{
+		kumaFilters = append(kumaFilters, &mesh_proto.MeshGatewayRoute_HttpRoute_Filter{
 			Filter: &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_RequestHeader_{
 				RequestHeader: &requestHeader,
 			},
-		}
+		})
 	case gatewayapi.HTTPRouteFilterRequestMirror:
 		filter := filter.RequestMirror
 
@@ -342,13 +342,33 @@ func (r *HTTPRouteReconciler) gapiToKumaFilter(
 			Percentage: util_proto.Double(100),
 		}
 
-		kumaFilter = &mesh_proto.MeshGatewayRoute_HttpRoute_Filter{
+		kumaFilters = append(kumaFilters, &mesh_proto.MeshGatewayRoute_HttpRoute_Filter{
 			Filter: &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Mirror_{
 				Mirror: &mirror,
 			},
-		}
+		})
 	case gatewayapi.HTTPRouteFilterRequestRedirect:
 		filter := filter.RequestRedirect
+
+		if p := filter.Path; p != nil {
+			rewrite := mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite{}
+
+			switch p.Type {
+			case gatewayapi.FullPathHTTPPathModifier:
+				rewrite.Path = &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplaceFull_{
+					ReplaceFull: *p.ReplaceFullPath,
+				}
+			case gatewayapi.PrefixMatchHTTPPathModifier:
+				rewrite.Path = &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplacePrefixMatch_{
+					ReplacePrefixMatch: *p.ReplacePrefixMatch,
+				}
+			}
+			kumaFilters = append(kumaFilters, &mesh_proto.MeshGatewayRoute_HttpRoute_Filter{
+				Filter: &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_{
+					Rewrite: &rewrite,
+				},
+			})
+		}
 
 		redirect := mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Redirect{}
 
@@ -368,14 +388,50 @@ func (r *HTTPRouteReconciler) gapiToKumaFilter(
 			redirect.StatusCode = uint32(*sc)
 		}
 
-		kumaFilter = &mesh_proto.MeshGatewayRoute_HttpRoute_Filter{
+		kumaFilters = append(kumaFilters, &mesh_proto.MeshGatewayRoute_HttpRoute_Filter{
 			Filter: &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Redirect_{
 				Redirect: &redirect,
 			},
+		})
+	case gatewayapi.HTTPRouteFilterURLRewrite:
+		filter := filter.URLRewrite
+
+		if filter.Hostname != nil {
+			var requestHeader mesh_proto.MeshGatewayRoute_HttpRoute_Filter_RequestHeader
+			requestHeader.Set = append(requestHeader.Set, &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_RequestHeader_Header{
+				Name:  "Host",
+				Value: string(*filter.Hostname),
+			})
+			kumaFilters = append(kumaFilters, &mesh_proto.MeshGatewayRoute_HttpRoute_Filter{
+				Filter: &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_RequestHeader_{
+					RequestHeader: &requestHeader,
+				},
+			})
+		}
+
+		if p := filter.Path; p != nil {
+			rewrite := mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite{}
+
+			switch p.Type {
+			case gatewayapi.FullPathHTTPPathModifier:
+				rewrite.Path = &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplaceFull_{
+					ReplaceFull: *p.ReplaceFullPath,
+				}
+			case gatewayapi.PrefixMatchHTTPPathModifier:
+				rewrite.Path = &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplacePrefixMatch_{
+					ReplacePrefixMatch: *p.ReplacePrefixMatch,
+				}
+			}
+
+			kumaFilters = append(kumaFilters, &mesh_proto.MeshGatewayRoute_HttpRoute_Filter{
+				Filter: &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_{
+					Rewrite: &rewrite,
+				},
+			})
 		}
 	default:
 		return nil, nil, fmt.Errorf("unsupported filter type %q", filter.Type)
 	}
 
-	return kumaFilter, condition, nil
+	return kumaFilters, condition, nil
 }

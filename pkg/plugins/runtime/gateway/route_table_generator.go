@@ -124,6 +124,8 @@ func GenerateVirtualHost(
 			routeBuilder.Configure(route.RouteMirror(m.Percentage, m.Forward))
 		}
 
+		routeBuilder.Configure(route.RouteRewrite(e.Rewrite))
+
 		vh.Configure(route.VirtualHostRoute(&routeBuilder))
 	}
 

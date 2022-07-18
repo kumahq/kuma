@@ -245,10 +245,21 @@ message MeshGatewayRoute {
         ];
       };
 
+      message Rewrite {
+        message ReplaceFull { string path = 1; }
+        message ReplacePrefixMatch { string path = 1; }
+
+        oneof path {
+          string replace_full = 1;
+          string replace_prefix_match = 2;
+        }
+      }
+
       oneof filter {
         RequestHeader request_header = 1;
         Mirror mirror = 2;
         Redirect redirect = 3;
+        Rewrite rewrite = 4;
       }
     };
 
