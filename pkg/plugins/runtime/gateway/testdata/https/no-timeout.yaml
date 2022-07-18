@@ -1,6 +1,6 @@
 Clusters:
   Resources:
-    echo-service-fedb984f12d264d6:
+    echo-service-9f149ed9e14091ca:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -12,7 +12,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: echo-service-fedb984f12d264d6
+      name: echo-service-9f149ed9e14091ca
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -29,8 +29,8 @@ Clusters:
             httpProtocolOptions: {}
 Endpoints:
   Resources:
-    echo-service-fedb984f12d264d6:
-      clusterName: echo-service-fedb984f12d264d6
+    echo-service-9f149ed9e14091ca:
+      clusterName: echo-service-9f149ed9e14091ca
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -153,7 +153,7 @@ Routes:
               retryOn: gateway-error,connect-failure,refused-stream
             weightedClusters:
               clusters:
-              - name: echo-service-fedb984f12d264d6
+              - name: echo-service-9f149ed9e14091ca
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags

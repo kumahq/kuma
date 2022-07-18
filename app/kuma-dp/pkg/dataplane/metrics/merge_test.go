@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 
-	envoy_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -97,7 +96,9 @@ var _ = Describe("Detect mergable clusters", func() {
 					mesh_proto.ZoneTag:    "foo-zone",
 				},
 			},
-			&envoy_cluster_v3.Cluster{},
+			map[string]string{
+				"custom": "tag",
+			},
 		)
 		Expect(err).To(Succeed())
 		Expect(clusterName).ToNot(BeEmpty())

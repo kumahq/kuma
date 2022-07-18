@@ -1,6 +1,6 @@
 Clusters:
   Resources:
-    external-httpbin-f452fc958912174e:
+    external-httpbin-823fa8131cdd67fa:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -27,7 +27,7 @@ Clusters:
                 envoy.transport_socket_match:
                   kuma.io/external-service-name: external-httpbin
                   kuma.io/protocol: http2
-      name: external-httpbin-f452fc958912174e
+      name: external-httpbin-823fa8131cdd67fa
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -138,7 +138,7 @@ Routes:
             timeout: 114s
             weightedClusters:
               clusters:
-              - name: external-httpbin-f452fc958912174e
+              - name: external-httpbin-823fa8131cdd67fa
                 weight: 1
               totalWeight: 1
         - match:
@@ -154,7 +154,7 @@ Routes:
             timeout: 114s
             weightedClusters:
               clusters:
-              - name: external-httpbin-f452fc958912174e
+              - name: external-httpbin-823fa8131cdd67fa
                 weight: 1
               totalWeight: 1
 Runtimes:
