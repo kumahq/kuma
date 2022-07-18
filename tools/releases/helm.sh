@@ -13,17 +13,17 @@ CHARTS_PACKAGE_PATH=".cr-release-packages"
 CHARTS_INDEX_FILE="index.yaml"
 GH_PAGES_BRANCH="gh-pages"
 
-# dev_version updates Chart.yaml with:
+# This updates Chart.yaml with:
 #  appVersion equal to the kuma version
 #  version:
-#    with the git commit suffix, if the kuma version has a git commit suffix
-#    otherwise it leaves version alone, assuming it's been chosen intentionally
-#  dependencies:
+#    using version.sh logic
+#  dependencies (with non-empty first argument):
 #    for any dependency $chart where charts/$chart exists, it deletes $chart from
 #    .dependencies so that the embedded $chart is used and not the one fetched
 #    from the repository. `cr` fetches explicit dependencies and they take
 #    precedence over embedded files.
-function dev_version {
+function update_version {
+  dev=${1}
   for dir in "${CHARTS_DIR}"/*; do
     if [ ! -d "${dir}" ]; then
       continue
@@ -36,13 +36,14 @@ function dev_version {
     yq -i ".appVersion = \"${kuma_version}\"" "${dir}/Chart.yaml"
     yq -i ".version = \"${kuma_version}\"" "${dir}/Chart.yaml"
 
-    for chart in $(yq e '.dependencies[].name' "${dir}/Chart.yaml"); do
-        if [ ! -d "${dir}/charts/${chart}" ]; then
-            continue
-        fi
-        yq -i e "del(.dependencies[] | select(.name == \"${chart}\"))" "${dir}/Chart.yaml"
-    done
-
+    if [ -n "${dev}" ]; then
+      for chart in $(yq e '.dependencies[].name' "${dir}/Chart.yaml"); do
+          if [ ! -d "${dir}/charts/${chart}" ]; then
+              continue
+          fi
+          yq -i e "del(.dependencies[] | select(.name == \"${chart}\"))" "${dir}/Chart.yaml"
+      done
+    fi
   done
 }
 
@@ -106,7 +107,7 @@ function release {
 
 
 function usage {
-  echo "Usage: $0 [--package|--release]"
+  echo "Usage: $0 [--package|--release|--update-version [--dev]]"
   exit 0
 }
 
@@ -124,8 +125,11 @@ function main {
       --release)
         op="release"
         ;;
-      --dev-version)
-        op="dev-version"
+      --update-version)
+        op="update-version"
+        ;;
+      --dev)
+        dev="true"
         ;;
       *)
         usage
@@ -139,12 +143,12 @@ function main {
     package)
       package
       ;;
-    dev-version)
+    update-version)
       if ! command -v yq >/dev/null || ! [[ $(command yq --version) =~ "mikefarah" ]]; then
         msg_err "mikefarah/yq not installed"
       fi
 
-      dev_version
+      update_version "${dev}"
       ;;
     release)
       if [ -z "${GH_TOKEN}" ] || [ -z "${GH_USER}" ] || [ -z "${GH_EMAIL}" ]; then
