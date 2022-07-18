@@ -1,4 +1,4 @@
-package main
+package cni
 
 import (
 	. "github.com/onsi/ginkgo/v2"
