@@ -37,6 +37,7 @@ type PodRedirect struct {
 	RedirectPortInboundV6              uint32
 	UID                                string
 	ExperimentalTransparentProxyEngine bool
+	TransparentProxyEbpf               bool
 }
 
 func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
@@ -84,6 +85,11 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 	podRedirect.UID, _ = metadata.Annotations(pod.Annotations).GetString(metadata.KumaSidecarUID)
 
 	podRedirect.ExperimentalTransparentProxyEngine, _, err = metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaTransparentProxyingExperimentalEngine)
+	if err != nil {
+		return nil, err
+	}
+
+	podRedirect.TransparentProxyEbpf, _, err = metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaTransparentProxyingEbpf)
 	if err != nil {
 		return nil, err
 	}
@@ -139,6 +145,10 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 
 	if pr.ExperimentalTransparentProxyEngine {
 		result = append(result, "--experimental-transparent-proxy-engine")
+	}
+
+	if pr.TransparentProxyEbpf {
+		result = append(result, "--ebpf")
 	}
 
 	return result

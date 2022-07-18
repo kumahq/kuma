@@ -1,10 +1,16 @@
 ARG BASE_IMAGE_ARCH=amd64
+
+FROM merbridge/merbridge:latest as merbridge
+
+RUN make compile MESH_MODE=kuma DEBUG=1 USE_RECONNECT=1
+
 FROM --platform=linux/$BASE_IMAGE_ARCH ubuntu:focal
 
 ARG ARCH
 
 RUN apt-get update && \
-    apt-get -y install iptables iproute2 && \
+    apt-get -y install iptables iproute2 \
+      make sudo && \
     rm -rf /var/lib/apt/lists/*
 
 ADD /build/artifacts-linux-$ARCH/kumactl/kumactl /usr/bin
@@ -14,6 +20,10 @@ COPY /tools/releases/templates/LICENSE \
     /kuma/
 
 COPY /tools/releases/templates/NOTICE-kumactl /kuma/NOTICE
+
+# ebpf
+COPY --from=merbridge /app/bpf/*.o /app/bpf/Makefile /kuma/ebpf/
+COPY --from=merbridge /usr/local/sbin/bpftool /usr/bin/bpftool
 
 RUN adduser --system --disabled-password --group kumactl --uid 5678
 

@@ -52,6 +52,7 @@ var _ = Describe("kubernetes", func() {
 						metadata.KumaTransparentProxyingInboundPortAnnotation:   "25204",
 						metadata.KumaTransparentProxyingInboundPortAnnotationV6: "25206",
 						metadata.KumaSidecarUID:                                 "12345",
+						metadata.KumaTransparentProxyingEbpf:                    metadata.AnnotationEnabled,
 					},
 				},
 			},
@@ -67,6 +68,7 @@ var _ = Describe("kubernetes", func() {
 				"--skip-resolv-conf",
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "25053",
+				"--ebpf",
 			},
 		}),
 

@@ -3,8 +3,6 @@ package transparentproxy
 import (
 	"net"
 	"os/exec"
-	"strconv"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -18,21 +16,6 @@ import (
 var _ TransparentProxy = &ExperimentalTransparentProxy{}
 
 type ExperimentalTransparentProxy struct{}
-
-func splitPorts(ports string) ([]uint16, error) {
-	var result []uint16
-
-	for _, port := range strings.Split(ports, ",") {
-		p, err := strconv.ParseUint(port, 10, 16)
-		if err != nil {
-			return nil, errors.Wrapf(err, "port (%s), is not valid uint16", port)
-		}
-
-		result = append(result, uint16(p))
-	}
-
-	return result, nil
-}
 
 func hasLocalIPv6() (bool, error) {
 	addrs, err := net.InterfaceAddrs()
@@ -68,49 +51,33 @@ func shouldEnableIPv6() (bool, error) {
 }
 
 func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyConfig) (string, error) {
-	redirectInboundPort, err := strconv.ParseUint(tpConfig.RedirectPortInBound, 10, 16)
+	redirectInboundPort, err := ParsePort(tpConfig.RedirectPortInBound)
 	if err != nil {
-		return "", errors.Wrapf(
-			err,
-			"inbound redirect port (%s), is not valid uint16",
-			tpConfig.RedirectPortInBound,
-		)
+		return "", errors.Wrap(err, "parsing inbound redirect port failed")
 	}
 
-	var redirectInboundPortIPv6 uint64
+	var redirectInboundPortIPv6 uint16
 
 	if tpConfig.RedirectPortInBoundV6 != "" {
-		redirectInboundPortIPv6, err = strconv.ParseUint(tpConfig.RedirectPortInBoundV6, 10, 16)
+		redirectInboundPortIPv6, err = ParsePort(tpConfig.RedirectPortInBoundV6)
 		if err != nil {
-			return "", errors.Wrapf(
-				err,
-				"inbound redirect port IPv6 (%s), is not valid uint16",
-				tpConfig.RedirectPortInBound,
-			)
+			return "", errors.Wrap(err, "parsing inbound redirect port IPv6 failed")
 		}
 	}
 
-	redirectOutboundPort, err := strconv.ParseUint(tpConfig.RedirectPortOutBound, 10, 16)
+	redirectOutboundPort, err := ParsePort(tpConfig.RedirectPortOutBound)
 	if err != nil {
-		return "", errors.Wrapf(
-			err,
-			"outbound redirect port (%s), is not valid uint16",
-			tpConfig.RedirectPortOutBound,
-		)
+		return "", errors.Wrap(err, "parsing outbound redirect port failed")
 	}
 
-	agentDNSListenerPort, err := strconv.ParseUint(tpConfig.AgentDNSListenerPort, 10, 16)
+	agentDNSListenerPort, err := ParsePort(tpConfig.AgentDNSListenerPort)
 	if err != nil {
-		return "", errors.Wrapf(
-			err,
-			"outbound redirect port (%s), is not valid uint16",
-			tpConfig.RedirectPortOutBound,
-		)
+		return "", errors.Wrap(err, "parsing agent DNS listener port failed")
 	}
 
 	var excludeInboundPorts []uint16
 	if tpConfig.ExcludeInboundPorts != "" {
-		excludeInboundPorts, err = splitPorts(tpConfig.ExcludeInboundPorts)
+		excludeInboundPorts, err = SplitPorts(tpConfig.ExcludeInboundPorts)
 		if err != nil {
 			return "", errors.Wrap(err, "cannot parse inbound ports to exclude")
 		}
@@ -118,7 +85,7 @@ func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyC
 
 	var excludeOutboundPorts []uint16
 	if tpConfig.ExcludeOutboundPorts != "" {
-		excludeOutboundPorts, err = splitPorts(tpConfig.ExcludeOutboundPorts)
+		excludeOutboundPorts, err = SplitPorts(tpConfig.ExcludeOutboundPorts)
 		if err != nil {
 			return "", errors.Wrap(err, "cannot parse outbound ports to exclude")
 		}
@@ -136,17 +103,17 @@ func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyC
 		Redirect: kumanet_config.Redirect{
 			NamePrefix: "KUMA_",
 			Inbound: kumanet_config.TrafficFlow{
-				Port:         uint16(redirectInboundPort),
-				PortIPv6:     uint16(redirectInboundPortIPv6),
+				Port:         redirectInboundPort,
+				PortIPv6:     redirectInboundPortIPv6,
 				ExcludePorts: excludeInboundPorts,
 			},
 			Outbound: kumanet_config.TrafficFlow{
-				Port:         uint16(redirectOutboundPort),
+				Port:         redirectOutboundPort,
 				ExcludePorts: excludeOutboundPorts,
 			},
 			DNS: kumanet_config.DNS{
 				Enabled:            tpConfig.RedirectAllDNSTraffic,
-				Port:               uint16(agentDNSListenerPort),
+				Port:               agentDNSListenerPort,
 				ConntrackZoneSplit: !tpConfig.SkipDNSConntrackZoneSplit,
 			},
 		},

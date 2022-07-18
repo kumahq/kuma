@@ -8,6 +8,7 @@ require (
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/Nordix/simple-ipam v1.0.0
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
+	github.com/cilium/ebpf v0.7.0
 	github.com/cncf/xds/go v0.0.0-20211130200136-a8f946100490
 	github.com/containernetworking/cni v0.8.1
 	github.com/containernetworking/plugins v0.9.1

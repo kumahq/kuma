@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/cilium/ebpf"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -40,6 +41,9 @@ type transparentProxyArgs struct {
 	KumaCpIP                           net.IP
 	SkipDNSConntrackZoneSplit          bool
 	ExperimentalTransparentProxyEngine bool
+	Ebpf                               bool
+	EbpfFilesPath                      string
+	EbpfInstanceIPEnvVarName           string
 }
 
 var defaultCpIP = net.IPv4(0, 0, 0, 0)
@@ -65,6 +69,9 @@ func newInstallTransparentProxy() *cobra.Command {
 		KumaCpIP:                           defaultCpIP,
 		SkipDNSConntrackZoneSplit:          false,
 		ExperimentalTransparentProxyEngine: false,
+		Ebpf:                               false,
+		EbpfFilesPath:                      "/kuma/ebpf",
+		EbpfInstanceIPEnvVarName:           "INSTANCE_IP",
 	}
 	cmd := &cobra.Command{
 		Use:   "transparent-proxy",
@@ -150,8 +157,14 @@ runuser -u kuma-dp -- \
 				_, _ = cmd.ErrOrStderr().Write([]byte("# `--redirect-dns-upstream-target-chain` is deprecated, please avoid using it"))
 			}
 
-			if err := modifyIpTables(cmd, &args); err != nil {
-				return err
+			if args.Ebpf {
+				if err := configureEbpf(cmd, &args); err != nil {
+					return err
+				}
+			} else {
+				if err := modifyIpTables(cmd, &args); err != nil {
+					return err
+				}
 			}
 
 			if !args.SkipResolvConf {
@@ -185,7 +198,104 @@ runuser -u kuma-dp -- \
 	cmd.Flags().BoolVar(&args.SkipDNSConntrackZoneSplit, "skip-dns-conntrack-zone-split", args.SkipDNSConntrackZoneSplit, "skip applying conntrack zone splitting iptables rules")
 	cmd.Flags().BoolVar(&args.ExperimentalTransparentProxyEngine, "experimental-transparent-proxy-engine", args.ExperimentalTransparentProxyEngine, "use experimental transparent proxy engine")
 
+	// ebpf
+	cmd.Flags().BoolVar(&args.Ebpf, "ebpf", args.Ebpf, "use ebpf instead of iptables to install transparent proxy")
+	cmd.Flags().StringVar(&args.EbpfFilesPath, "ebpf-files-path", args.EbpfFilesPath, "path where compiled ebpf programs and other necessary for ebpf mode files can be found")
+	cmd.Flags().StringVar(&args.EbpfInstanceIPEnvVarName, "ebpf-instance-ip-env-var-name", args.EbpfInstanceIPEnvVarName, "the name of environmental variable which will contain the IP address of the instance (pod/vm) where transparent proxy will be installed")
+
 	return cmd
+}
+
+func configureEbpf(cmd *cobra.Command, args *transparentProxyArgs) error {
+	if os.Getuid() != 0 {
+		return fmt.Errorf("root user in required for this process or container")
+	}
+
+	if err := transparentproxy.RunMake("init-bpffs", args.EbpfFilesPath, cmd.OutOrStdout(), cmd.OutOrStderr()); err != nil {
+		return fmt.Errorf("initializing BPF file system failed: %v", err)
+	}
+
+	if err := transparentproxy.RunMake("load", args.EbpfFilesPath, cmd.OutOrStdout(), cmd.OutOrStderr()); err != nil {
+		return fmt.Errorf("loading BPF programs failed: %v", err)
+	}
+
+	localPodIPsMap, err := ebpf.LoadPinnedMap(transparentproxy.LocalPodIPSPinnedMapPath, &ebpf.LoadPinOptions{})
+	if err != nil {
+		return fmt.Errorf("loading pinned local_pod_ips map failed: %v", err)
+	}
+
+	instanceIP := os.Getenv(args.EbpfInstanceIPEnvVarName)
+
+	ip, err := transparentproxy.IpStrToUint32(instanceIP)
+	if err != nil {
+		return err
+	}
+
+	// exclude inbound ports
+
+	redirectInboundPort, err := transparentproxy.ParsePort(args.RedirectPortInBound)
+	if err != nil {
+		return fmt.Errorf("parsing redirect inbound port failed: %v", err)
+	}
+
+	redirectInboundV6Port, err := transparentproxy.ParsePort(args.RedirectPortInBoundV6)
+	if err != nil {
+		return fmt.Errorf("parsing redirect inbound IPv6 port failed: %v", err)
+	}
+
+	redirectOutboundPort, err := transparentproxy.ParsePort(args.RedirectPortOutBound)
+	if err != nil {
+		return fmt.Errorf("parsing redirect outbound port failed: %v", err)
+	}
+
+	excludeInPorts := [transparentproxy.MaxItemLen]uint16{
+		redirectOutboundPort,
+		redirectInboundPort,
+		redirectInboundV6Port,
+	}
+
+	excludeInboundPorts, err := transparentproxy.SplitPorts(args.ExcludeInboundPorts)
+	if err != nil {
+		return fmt.Errorf("parsing exclude inbound ports failed: %v", err)
+	}
+
+	allowedAmountOfExcludeInPorts := transparentproxy.MaxItemLen - len(excludeInPorts)
+
+	if len(excludeInboundPorts) > allowedAmountOfExcludeInPorts {
+		return fmt.Errorf("maximal allowed amound of exclude inbound ports (%d) exceeded (%d): %s",
+			allowedAmountOfExcludeInPorts, len(excludeInboundPorts), args.ExcludeInboundPorts)
+	}
+
+	// exclude outbound ports
+
+	excludeOutPorts := [transparentproxy.MaxItemLen]uint16{}
+
+	excludeOutboundPorts, err := transparentproxy.SplitPorts(args.ExcludeOutboundPorts)
+	if err != nil {
+		return fmt.Errorf("parsing exclude outbound ports failed: %v", err)
+	}
+
+	allowedAmountOfExcludeOutPorts := transparentproxy.MaxItemLen - len(excludeOutPorts)
+
+	if len(excludeOutboundPorts) > allowedAmountOfExcludeOutPorts {
+		return fmt.Errorf("maximal allowed amound of exclude outbound ports (%d) exceeded (%d): %s",
+			allowedAmountOfExcludeInPorts, len(excludeOutboundPorts), args.ExcludeOutboundPorts)
+	}
+
+	if err := localPodIPsMap.Update(ip, &transparentproxy.PodConfig{
+		ExcludeInPorts:  excludeInPorts,
+		ExcludeOutPorts: excludeOutPorts,
+	}, ebpf.UpdateAny); err != nil {
+		return fmt.Errorf("updating pinned local_pod_ips map with current instance IP (%s) failed: %v", instanceIP, err)
+	}
+
+	_, _ = cmd.OutOrStdout().Write([]byte(fmt.Sprintf("local_pod_ips map was updated with current instance IP: %s\n\n", instanceIP)))
+
+	if err := transparentproxy.RunMake("attach", args.EbpfFilesPath, cmd.OutOrStdout(), cmd.OutOrStderr()); err != nil {
+		return fmt.Errorf("attaching BPF programs failed: %v", err)
+	}
+
+	return nil
 }
 
 func findUidGid(uid, user string) (string, string, error) {

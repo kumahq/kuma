@@ -100,6 +100,9 @@ const (
 	KumaMetricsPrometheusAggregateEnabled = "prometheus.metrics.kuma.io/aggregate-%s-enabled"
 	// KumaMetricsPrometheusAggregatePattern allows to retrieve all the apps for which need to get port/path configuration
 	KumaMetricsPrometheusAggregatePattern = "^prometheus.metrics.kuma.io/aggregate-([a-zA-Z0-9-]+)-(port|path|enabled)$"
+
+	// KumaTransparentProxyingEbpf enables transparent proxying using ebpf.
+	KumaTransparentProxyingEbpf = "kuma.io/transparent-proxying-ebpf"
 )
 
 // Annotations that are being automatically set by the Kuma Sidecar Injector.
