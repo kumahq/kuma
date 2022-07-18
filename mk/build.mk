@@ -33,7 +33,7 @@ COREDNS_TMP_DIRECTORY ?= $(BUILD_DIR)/coredns
 COREDNS_PLUGIN_CFG_PATH ?= $(TOP)/tools/builds/coredns/templates/plugin.cfg
 
 # List of binaries that we have release build rules for.
-BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl kuma-prometheus-sd coredns envoy
+BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl kuma-prometheus-sd coredns envoy kuma-cni install-cni
 
 # List of binaries that we have test build roles for.
 BUILD_TEST_BINARIES := test-server
