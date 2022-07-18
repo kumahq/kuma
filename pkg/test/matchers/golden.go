@@ -3,7 +3,6 @@ package matchers
 import (
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
@@ -20,10 +19,6 @@ func MatchGoldenJSON(goldenFilePath ...string) types.GomegaMatcher {
 	return MatchGolden(gomega.MatchJSON, goldenFilePath...)
 }
 
-func MatchGoldenXML(goldenFilePath ...string) types.GomegaMatcher {
-	return MatchGolden(gomega.MatchXML, goldenFilePath...)
-}
-
 func MatchGoldenEqual(goldenFilePath ...string) types.GomegaMatcher {
 	return MatchGolden(func(expected interface{}) types.GomegaMatcher {
 		if expectedBytes, ok := expected.([]byte); ok {
@@ -33,34 +28,25 @@ func MatchGoldenEqual(goldenFilePath ...string) types.GomegaMatcher {
 	}, goldenFilePath...)
 }
 
-func MatchGoldenText(goldenFilePath ...string) types.GomegaMatcher {
-	return MatchGolden(func(expected interface{}) types.GomegaMatcher {
-		if expectedBytes, ok := expected.([]byte); ok {
-			expected = strings.TrimSpace(string(expectedBytes))
-		}
-		return gomega.Equal(expected)
-	}, goldenFilePath...)
-}
-
 type MatcherFn = func(expected interface{}) types.GomegaMatcher
 
 // MatchGolden matches Golden file overriding it with actual content if UPDATE_GOLDEN_FILES is set to true
 func MatchGolden(matcherFn MatcherFn, goldenFilePath ...string) types.GomegaMatcher {
-	return &GoldenYAMLMatcher{
+	return &GoldenMatcher{
 		MatcherFactory: matcherFn,
 		GoldenFilePath: filepath.Join(goldenFilePath...),
 	}
 }
 
-type GoldenYAMLMatcher struct {
+type GoldenMatcher struct {
 	MatcherFactory MatcherFn
 	Matcher        types.GomegaMatcher
 	GoldenFilePath string
 }
 
-var _ types.GomegaMatcher = &GoldenYAMLMatcher{}
+var _ types.GomegaMatcher = &GoldenMatcher{}
 
-func (g *GoldenYAMLMatcher) Match(actual interface{}) (success bool, err error) {
+func (g *GoldenMatcher) Match(actual interface{}) (success bool, err error) {
 	actualContent, err := g.actualString(actual)
 	if err != nil {
 		return false, err
@@ -87,7 +73,7 @@ func (g *GoldenYAMLMatcher) Match(actual interface{}) (success bool, err error) 
 	return g.Matcher.Match(actualContent)
 }
 
-func (g *GoldenYAMLMatcher) FailureMessage(actual interface{}) (message string) {
+func (g *GoldenMatcher) FailureMessage(actual interface{}) (message string) {
 	actualContent, err := g.actualString(actual)
 	if err != nil {
 		return err.Error()
@@ -95,7 +81,7 @@ func (g *GoldenYAMLMatcher) FailureMessage(actual interface{}) (message string) 
 	return golden.RerunMsg + "\n\n" + g.Matcher.FailureMessage(actualContent)
 }
 
-func (g *GoldenYAMLMatcher) NegatedFailureMessage(actual interface{}) (message string) {
+func (g *GoldenMatcher) NegatedFailureMessage(actual interface{}) (message string) {
 	actualContent, err := g.actualString(actual)
 	if err != nil {
 		return err.Error()
@@ -103,7 +89,7 @@ func (g *GoldenYAMLMatcher) NegatedFailureMessage(actual interface{}) (message s
 	return g.Matcher.NegatedFailureMessage(actualContent)
 }
 
-func (g *GoldenYAMLMatcher) actualString(actual interface{}) (string, error) {
+func (g *GoldenMatcher) actualString(actual interface{}) (string, error) {
 	switch actual := actual.(type) {
 	case []byte:
 		return string(actual), nil
