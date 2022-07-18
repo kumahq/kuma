@@ -2,6 +2,7 @@ package gatewayapi
 
 import (
 	"net"
+	"runtime"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
@@ -34,6 +35,9 @@ var cluster *K8sCluster
 var _ = E2EBeforeSuite(func() {
 	if Config.IPV6 {
 		return // KIND which is used for IPV6 tests does not support load balancer that is used in this test.
+	}
+	if runtime.GOARCH == "arm64" {
+		Skip("The webhook doesn't provide an arm64 image")
 	}
 
 	cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
