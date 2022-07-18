@@ -179,7 +179,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 	} else if !permitted {
 		return nil,
 			&ResolvedRefsConditionFalse{
-				Reason:  RefNotPermitted,
+				Reason:  string(gatewayapi.RouteReasonRefNotPermitted),
 				Message: fmt.Sprintf("reference to %s %q not permitted by any ReferencePolicy", gk, namespacedName),
 			},
 			nil
@@ -188,16 +188,6 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 	switch {
 	case gk.Kind == "Service" && gk.Group == "":
 		// References to Services are required by GAPI to include a port
-		// TODO remove when https://github.com/kubernetes-sigs/gateway-api/pull/944
-		// is released
-		if ref.Port == nil {
-			return nil,
-				&ResolvedRefsConditionFalse{
-					Reason:  RefInvalid,
-					Message: "backend reference must include port",
-				},
-				nil
-		}
 		port := int32(*ref.Port)
 
 		svc := &kube_core.Service{}
@@ -205,7 +195,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 			if kube_apierrs.IsNotFound(err) {
 				return nil,
 					&ResolvedRefsConditionFalse{
-						Reason:  ObjectNotFound,
+						Reason:  string(gatewayapi.RouteReasonBackendNotFound),
 						Message: fmt.Sprintf("backend reference references a non-existent Service %q", namespacedName.String()),
 					},
 					nil
@@ -222,7 +212,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 			if store.IsResourceNotFound(err) {
 				return nil,
 					&ResolvedRefsConditionFalse{
-						Reason:  ObjectNotFound,
+						Reason:  string(gatewayapi.RouteReasonBackendNotFound),
 						Message: fmt.Sprintf("backend reference references a non-existent ExternalService %q", namespacedName.Name),
 					},
 					nil
@@ -237,7 +227,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 
 	return nil,
 		&ResolvedRefsConditionFalse{
-			Reason:  ObjectTypeUnknownOrInvalid,
+			Reason:  string(gatewayapi.RouteReasonInvalidKind),
 			Message: "backend reference must be Service or externalservice.kuma.io",
 		},
 		nil
