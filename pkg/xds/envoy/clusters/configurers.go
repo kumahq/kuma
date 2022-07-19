@@ -147,6 +147,14 @@ func DefaultTimeout() ClusterBuilderOpt {
 	})
 }
 
+func CleanupInterval(interval int64) ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
+		config.AddV3(&v3.CleanupIntervalConfigurer{
+			Interval: interval,
+		})
+	})
+}
+
 func PassThroughCluster(name string) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.PassThroughClusterConfigurer{

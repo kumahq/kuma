@@ -27,6 +27,8 @@ var _ config.Config = &Defaults{}
 
 type Defaults struct {
 	SkipMeshCreation bool `yaml:"skipMeshCreation" envconfig:"kuma_defaults_skip_mesh_creation"`
+	// If true, instead of providing inbound clusters with address of localhost, generates cluster with ORIGINAL_DST
+	EnableInboundPassthrough bool `yaml:"enableInboundPassthrough" envconfig:"KUMA_DEFAULTS_ENABLE_INBOUND_PASSTHROUGH"`
 }
 
 func (d *Defaults) Sanitize() {
@@ -172,7 +174,8 @@ var DefaultConfig = func() Config {
 		BootstrapServer:            bootstrap.DefaultBootstrapServerConfig(),
 		Runtime:                    runtime.DefaultRuntimeConfig(),
 		Defaults: &Defaults{
-			SkipMeshCreation: false,
+			SkipMeshCreation:         false,
+			EnableInboundPassthrough: true,
 		},
 		Metrics: &Metrics{
 			Dataplane: &DataplaneMetrics{

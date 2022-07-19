@@ -23,10 +23,11 @@ type ConnectionInfo struct {
 // ControlPlaneContext contains shared global data and components that are required for generating XDS
 // This data is the same regardless of a data plane proxy and mesh we are generating the data for.
 type ControlPlaneContext struct {
-	AdminProxyKeyPair *tls.KeyPair
-	CLACache          xds.CLACache
-	Secrets           secrets.Secrets
-	Zone              string
+	AdminProxyKeyPair        *tls.KeyPair
+	CLACache                 xds.CLACache
+	Secrets                  secrets.Secrets
+	Zone                     string
+	EnableInboundPassthrough bool
 }
 
 // MeshContext contains shared data within one mesh that is required for generating XDS config.
@@ -80,6 +81,7 @@ func BuildControlPlaneContext(
 	claCache xds.CLACache,
 	secrets secrets.Secrets,
 	zone string,
+	enableInboundPassthrough bool,
 ) (*ControlPlaneContext, error) {
 	adminKeyPair, err := tls.NewSelfSignedCert("admin", tls.ServerCertType, tls.DefaultKeyType, "localhost")
 	if err != nil {
@@ -87,9 +89,10 @@ func BuildControlPlaneContext(
 	}
 
 	return &ControlPlaneContext{
-		AdminProxyKeyPair: &adminKeyPair,
-		CLACache:          claCache,
-		Secrets:           secrets,
-		Zone:              zone,
+		AdminProxyKeyPair:        &adminKeyPair,
+		CLACache:                 claCache,
+		Secrets:                  secrets,
+		Zone:                     zone,
+		EnableInboundPassthrough: enableInboundPassthrough,
 	}, nil
 }

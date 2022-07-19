@@ -71,7 +71,8 @@ var _ = Describe("Config WS", func() {
 			}
 		  },
 		  "defaults": {
-			"skipMeshCreation": false
+			"skipMeshCreation": false,
+			"enableInboundPassthrough": true
 		  },
 		  "diagnostics": {
 			"debugEndpoints": false,

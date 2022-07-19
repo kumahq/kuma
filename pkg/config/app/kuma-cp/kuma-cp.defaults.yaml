@@ -271,6 +271,7 @@ runtime:
 # Default Kuma entities configuration
 defaults:
   skipMeshCreation: false # ENV: KUMA_DEFAULTS_SKIP_MESH_CREATION
+  enableInboundPassthrough: true # ENV: KUMA_DEFAULTS_ENABLE_INBOUND_PASSTHROUGH
 
 # Metrics configuration
 metrics:

@@ -119,7 +119,7 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 	)
 	Expect(err).To(Succeed())
 
-	control, err := xds_context.BuildControlPlaneContext(cache, secrets, rt.Config().Multizone.Zone.Name)
+	control, err := xds_context.BuildControlPlaneContext(cache, secrets, rt.Config().Multizone.Zone.Name, rt.Config().Defaults.EnableInboundPassthrough)
 	Expect(err).To(Succeed())
 
 	meshCtxBuilder := xds_context.NewMeshContextBuilder(
