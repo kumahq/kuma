@@ -133,7 +133,7 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	for _, app := range s.applicationsToScrape {
 		go func(app ApplicationToScrape) {
 			defer wg.Done()
-			out <- s.getStats(req.URL, app, ctx)
+			out <- s.getStats(ctx, req.URL, app)
 		}(app)
 	}
 
@@ -152,9 +152,13 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (s *Hijacker) getStats(url *url.URL, app ApplicationToScrape, context context.Context) []byte {
-	req, _ := http.NewRequest("GET", rewriteMetricsURL(app.Path, app.Port, app.QueryModifier, url), nil)
-	req = req.WithContext(context)
+func (s *Hijacker) getStats(ctx context.Context, url *url.URL, app ApplicationToScrape) []byte {
+	req, err := http.NewRequest("GET", rewriteMetricsURL(app.Path, app.Port, app.QueryModifier, url), nil)
+	if err != nil {
+		logger.Error(err, "failed to create request")
+		return nil
+	}
+	req = req.WithContext(ctx)
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		logger.Error(err, "failed call", "name", app.Name, "path", app.Path, "port", app.Port)
