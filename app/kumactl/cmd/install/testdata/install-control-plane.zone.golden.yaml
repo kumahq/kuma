@@ -1609,7 +1609,7 @@ rules:
     resources:
       - gatewayclasses
       - gateways
-      - referencepolicies
+      - referencegrants
       - httproutes
     verbs:
       - create
