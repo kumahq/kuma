@@ -1,6 +1,8 @@
 package generator
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -36,17 +38,21 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 		protocol := core_mesh.ParseProtocol(iface.GetProtocol())
 
 		// generate CDS resource
-		localClusterName := envoy_names.GetLocalClusterName(endpoint.WorkloadPort)
+		localClusterName := fmt.Sprintf("inbound:%d", endpoint.WorkloadPort)
 		clusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
-			Configure(envoy_clusters.ProvidedEndpointCluster(localClusterName, false, core_xds.Endpoint{Target: endpoint.WorkloadIP, Port: endpoint.WorkloadPort})).
-			Configure(envoy_clusters.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
+			Configure(envoy_clusters.PassThroughCluster(localClusterName)).
+			Configure(envoy_clusters.UpstreamBindConfig("127.0.0.6", 0)).
+			Configure(envoy_clusters.DefaultTimeout())
+		// envoy_clusters.NewClusterBuilder(proxy.APIVersion).
+		// Configure(envoy_clusters.ProvidedEndpointCluster(localClusterName, false, core_xds.Endpoint{Target: endpoint.WorkloadIP, Port: endpoint.WorkloadPort})).
+		// Configure(envoy_clusters.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
 
-		switch protocol {
-		case core_mesh.ProtocolHTTP:
-			clusterBuilder.Configure(envoy_clusters.Http())
-		case core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
-			clusterBuilder.Configure(envoy_clusters.Http2())
-		}
+		// switch protocol {
+		// case core_mesh.ProtocolHTTP:
+		// 	clusterBuilder.Configure(envoy_clusters.Http())
+		// case core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+		// 	clusterBuilder.Configure(envoy_clusters.Http2())
+		// }
 		envoyCluster, err := clusterBuilder.Build()
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s: could not generate cluster %s", validators.RootedAt("dataplane").Field("networking").Field("inbound").Index(i), localClusterName)
