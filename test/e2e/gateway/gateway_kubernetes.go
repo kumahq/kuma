@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net"
-	"net/url"
 	"path"
 	"strings"
 	"text/template"
@@ -291,7 +290,7 @@ spec:
 
 		It("should rewrite HTTP requests", func() {
 			expectedPath := path.Join("/test", GinkgoT().Name())
-			targetPath := path.Join("prefix", "/test", url.PathEscape(GinkgoT().Name()))
+			targetPath := path.Join("prefix", "/test", GinkgoT().Name())
 			expectedHostname := "other.example.kuma.io"
 			ProxyHTTPRequests(cluster, "kubernetes",
 				net.JoinHostPort(GatewayAddress("edge-gateway"), GatewayPort),
