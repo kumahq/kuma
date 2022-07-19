@@ -101,6 +101,7 @@ func validateMeshGatewayRouteHTTPRule(
 	conf *mesh_proto.MeshGatewayRoute_HttpRoute_Rule,
 ) validators.ValidationError {
 	var hasRedirect bool
+	var hasPrefixMatch bool
 
 	if len(conf.GetMatches()) < 1 {
 		return validators.MakeRequiredFieldErr(path.Field("matches"))
@@ -110,6 +111,10 @@ func validateMeshGatewayRouteHTTPRule(
 
 	for i, m := range conf.GetMatches() {
 		err.Add(validateMeshGatewayRouteHTTPMatch(path.Field("matches").Index(i), m))
+
+		if p := m.GetPath(); p != nil && p.GetMatch() == mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_PREFIX {
+			hasPrefixMatch = true
+		}
 	}
 
 	for i, f := range conf.GetFilters() {
@@ -117,7 +122,7 @@ func validateMeshGatewayRouteHTTPRule(
 			hasRedirect = true
 		}
 
-		err.Add(validateMeshGatewayRouteHTTPFilter(path.Field("filters").Index(i), f))
+		err.Add(validateMeshGatewayRouteHTTPFilter(path.Field("filters").Index(i), f, hasPrefixMatch))
 	}
 
 	// It doesn't make sense to redirect and also mirror or rewrite request headers.
@@ -199,6 +204,7 @@ func validateMeshGatewayRouteHTTPMatch(
 func validateMeshGatewayRouteHTTPFilter(
 	path validators.PathBuilder,
 	conf *mesh_proto.MeshGatewayRoute_HttpRoute_Filter,
+	hasPrefixMatch bool,
 ) validators.ValidationError {
 	var err validators.ValidationError
 
@@ -265,6 +271,13 @@ func validateMeshGatewayRouteHTTPFilter(
 			path.Field("backend"),
 			m.GetBackend(),
 		))
+	}
+
+	if m := conf.GetRewrite(); m != nil {
+		path := path.Field("rewrite")
+		if _, ok := m.GetPath().(*mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplacePrefixMatch); ok && !hasPrefixMatch {
+			err.AddViolationAt(path.Field("replacePrefixMatch"), "cannot be used without a match on path prefix")
+		}
 	}
 
 	return err
