@@ -21,22 +21,28 @@ import (
 
 func (r *HTTPRouteReconciler) gapiToKumaRule(
 	ctx context.Context, mesh string, route *gatewayapi.HTTPRoute, rule gatewayapi.HTTPRouteRule,
-) (mesh_proto.MeshGatewayRoute_HttpRoute_Rule, *kube_meta.Condition, error) {
+) (*mesh_proto.MeshGatewayRoute_HttpRoute_Rule, *ResolvedRefsConditionFalse, error) {
 	var backends []*mesh_proto.MeshGatewayRoute_Backend
+
+	var condition *ResolvedRefsConditionFalse
 
 	for _, backend := range rule.BackendRefs {
 		ref := backend.BackendObjectReference
 
-		destination, condition, err := r.gapiToKumaRef(ctx, mesh, route.Namespace, ref)
-		if err != nil || condition != nil {
-			return mesh_proto.MeshGatewayRoute_HttpRoute_Rule{}, condition, err
+		destination, refCondition, err := r.gapiToKumaRef(ctx, mesh, route.Namespace, ref)
+		if err != nil {
+			return nil, condition, err
 		}
 
-		backends = append(backends, &mesh_proto.MeshGatewayRoute_Backend{
-			// Weight has a default of 1
-			Weight:      uint32(*backend.Weight),
-			Destination: destination,
-		})
+		if refCondition != nil {
+			condition = refCondition
+		} else {
+			backends = append(backends, &mesh_proto.MeshGatewayRoute_Backend{
+				// Weight has a default of 1
+				Weight:      uint32(*backend.Weight),
+				Destination: destination,
+			})
+		}
 	}
 
 	var matches []*mesh_proto.MeshGatewayRoute_HttpRoute_Match
@@ -44,7 +50,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRule(
 	for _, match := range rule.Matches {
 		kumaMatch, err := gapiToKumaMatch(match)
 		if err != nil {
-			return mesh_proto.MeshGatewayRoute_HttpRoute_Rule{}, nil, errors.Wrap(err, "couldn't convert match")
+			return nil, nil, errors.Wrap(err, "couldn't convert match")
 		}
 
 		matches = append(matches, kumaMatch)
@@ -53,19 +59,27 @@ func (r *HTTPRouteReconciler) gapiToKumaRule(
 	var filters []*mesh_proto.MeshGatewayRoute_HttpRoute_Filter
 
 	for _, filter := range rule.Filters {
-		kumaFilter, condition, err := r.gapiToKumaFilter(ctx, mesh, route.Namespace, filter)
-		if err != nil || condition != nil {
-			return mesh_proto.MeshGatewayRoute_HttpRoute_Rule{}, condition, err
+		kumaFilter, filterCondition, err := r.gapiToKumaFilter(ctx, mesh, route.Namespace, filter)
+		if err != nil {
+			return nil, condition, err
 		}
-
-		filters = append(filters, kumaFilter)
+		if filterCondition != nil {
+			condition = filterCondition
+		} else {
+			filters = append(filters, kumaFilter)
+		}
 	}
 
-	return mesh_proto.MeshGatewayRoute_HttpRoute_Rule{
-		Matches:  matches,
-		Filters:  filters,
-		Backends: backends,
-	}, nil, nil
+	var kumaRule *mesh_proto.MeshGatewayRoute_HttpRoute_Rule
+	if len(backends) > 0 {
+		// TODO Make sure this results in a 500
+		kumaRule = &mesh_proto.MeshGatewayRoute_HttpRoute_Rule{
+			Matches:  matches,
+			Filters:  filters,
+			Backends: backends,
+		}
+	}
+	return kumaRule, condition, nil
 }
 
 // gapiToKumaRouteConf converts the route into a route spec and returns any
@@ -82,35 +96,25 @@ func (r *HTTPRouteReconciler) gapiToKumaRouteConf(
 		hostnames = append(hostnames, string(hn))
 	}
 
+	var resolvedRefFalse *ResolvedRefsConditionFalse
 	var rules []*mesh_proto.MeshGatewayRoute_HttpRoute_Rule
 
 	for _, rule := range route.Spec.Rules {
-		kumaRule, condition, err := r.gapiToKumaRule(ctx, mesh, route, rule)
+		kumaRule, ruleCondition, err := r.gapiToKumaRule(ctx, mesh, route, rule)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "couldn't convert HTTPRoute to Kuma GatewayRoute")
 		}
-		if condition != nil {
-			return nil, []kube_meta.Condition{*condition}, nil
+
+		if ruleCondition != nil {
+			resolvedRefFalse = ruleCondition
 		}
 
-		rules = append(rules, &kumaRule)
-	}
-
-	routeConf := mesh_proto.MeshGatewayRoute_Conf{
-		Route: &mesh_proto.MeshGatewayRoute_Conf_Http{
-			Http: &mesh_proto.MeshGatewayRoute_HttpRoute{
-				Hostnames: hostnames,
-				Rules:     rules,
-			},
-		},
+		if kumaRule != nil {
+			rules = append(rules, kumaRule)
+		}
 	}
 
 	conditions := []kube_meta.Condition{
-		{
-			Type:   string(gatewayapi.RouteConditionResolvedRefs),
-			Status: kube_meta.ConditionTrue,
-			Reason: string(gatewayapi.RouteReasonResolvedRefs),
-		},
 		// TODO: reflect the true state from the actual gateway of this
 		// route
 		{
@@ -120,7 +124,31 @@ func (r *HTTPRouteReconciler) gapiToKumaRouteConf(
 		},
 	}
 
-	return &routeConf, conditions, nil
+	resolvedRefCondition := kube_meta.Condition{
+		Type:   string(gatewayapi.RouteConditionResolvedRefs),
+		Status: kube_meta.ConditionTrue,
+		Reason: string(gatewayapi.RouteReasonResolvedRefs),
+	}
+	if resolvedRefFalse != nil {
+		resolvedRefCondition.Status = kube_meta.ConditionFalse
+		resolvedRefCondition.Reason = resolvedRefFalse.Reason
+		resolvedRefCondition.Message = resolvedRefFalse.Message
+	}
+	conditions = append(conditions, resolvedRefCondition)
+
+	var routeConf *mesh_proto.MeshGatewayRoute_Conf
+	if len(rules) > 0 {
+		routeConf = &mesh_proto.MeshGatewayRoute_Conf{
+			Route: &mesh_proto.MeshGatewayRoute_Conf_Http{
+				Http: &mesh_proto.MeshGatewayRoute_HttpRoute{
+					Hostnames: hostnames,
+					Rules:     rules,
+				},
+			},
+		}
+	}
+
+	return routeConf, conditions, nil
 }
 
 func k8sToKumaHeader(header gatewayapi.HTTPHeader) *mesh_proto.MeshGatewayRoute_HttpRoute_Filter_RequestHeader_Header {
@@ -130,12 +158,17 @@ func k8sToKumaHeader(header gatewayapi.HTTPHeader) *mesh_proto.MeshGatewayRoute_
 	}
 }
 
+type ResolvedRefsConditionFalse struct {
+	Reason  string
+	Message string
+}
+
 // gapiToKumaRef checks a reference and tries to resolve if it's supported by
 // Kuma. It returns a condition with Reason/Message if it fails or an error for
 // unexpected errors.
 func (r *HTTPRouteReconciler) gapiToKumaRef(
 	ctx context.Context, mesh string, objectNamespace string, ref gatewayapi.BackendObjectReference,
-) (map[string]string, *kube_meta.Condition, error) {
+) (map[string]string, *ResolvedRefsConditionFalse, error) {
 	policyRef := policy.PolicyReferenceBackend(policy.FromHTTPRouteIn(objectNamespace), ref)
 
 	gk := policyRef.GroupKindReferredTo()
@@ -145,10 +178,8 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 		return nil, nil, errors.Wrap(err, "couldn't determine if backend reference is permitted")
 	} else if !permitted {
 		return nil,
-			&kube_meta.Condition{
-				Type:    string(gatewayapi.RouteConditionResolvedRefs),
-				Status:  kube_meta.ConditionFalse,
-				Reason:  RefNotPermitted,
+			&ResolvedRefsConditionFalse{
+				Reason:  string(gatewayapi.RouteReasonRefNotPermitted),
 				Message: fmt.Sprintf("reference to %s %q not permitted by any ReferencePolicy", gk, namespacedName),
 			},
 			nil
@@ -157,28 +188,14 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 	switch {
 	case gk.Kind == "Service" && gk.Group == "":
 		// References to Services are required by GAPI to include a port
-		// TODO remove when https://github.com/kubernetes-sigs/gateway-api/pull/944
-		// is released
-		if ref.Port == nil {
-			return nil,
-				&kube_meta.Condition{
-					Type:    string(gatewayapi.RouteConditionResolvedRefs),
-					Status:  kube_meta.ConditionFalse,
-					Reason:  RefInvalid,
-					Message: "backend reference must include port",
-				},
-				nil
-		}
 		port := int32(*ref.Port)
 
 		svc := &kube_core.Service{}
 		if err := r.Client.Get(ctx, namespacedName, svc); err != nil {
 			if kube_apierrs.IsNotFound(err) {
 				return nil,
-					&kube_meta.Condition{
-						Type:    string(gatewayapi.RouteConditionResolvedRefs),
-						Status:  kube_meta.ConditionFalse,
-						Reason:  ObjectNotFound,
+					&ResolvedRefsConditionFalse{
+						Reason:  string(gatewayapi.RouteReasonBackendNotFound),
 						Message: fmt.Sprintf("backend reference references a non-existent Service %q", namespacedName.String()),
 					},
 					nil
@@ -194,10 +211,8 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 		if err := r.ResourceManager.Get(ctx, resource, store.GetByKey(namespacedName.Name, mesh)); err != nil {
 			if store.IsResourceNotFound(err) {
 				return nil,
-					&kube_meta.Condition{
-						Type:    string(gatewayapi.RouteConditionResolvedRefs),
-						Status:  kube_meta.ConditionFalse,
-						Reason:  ObjectNotFound,
+					&ResolvedRefsConditionFalse{
+						Reason:  string(gatewayapi.RouteReasonBackendNotFound),
 						Message: fmt.Sprintf("backend reference references a non-existent ExternalService %q", namespacedName.Name),
 					},
 					nil
@@ -211,10 +226,8 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 	}
 
 	return nil,
-		&kube_meta.Condition{
-			Type:    string(gatewayapi.RouteConditionResolvedRefs),
-			Status:  kube_meta.ConditionFalse,
-			Reason:  ObjectTypeUnknownOrInvalid,
+		&ResolvedRefsConditionFalse{
+			Reason:  string(gatewayapi.RouteReasonInvalidKind),
 			Message: "backend reference must be Service or externalservice.kuma.io",
 		},
 		nil
@@ -285,8 +298,10 @@ func gapiToKumaMatch(match gatewayapi.HTTPRouteMatch) (*mesh_proto.MeshGatewayRo
 
 func (r *HTTPRouteReconciler) gapiToKumaFilter(
 	ctx context.Context, mesh string, namespace string, filter gatewayapi.HTTPRouteFilter,
-) (*mesh_proto.MeshGatewayRoute_HttpRoute_Filter, *kube_meta.Condition, error) {
-	var kumaFilter mesh_proto.MeshGatewayRoute_HttpRoute_Filter
+) (*mesh_proto.MeshGatewayRoute_HttpRoute_Filter, *ResolvedRefsConditionFalse, error) {
+	var kumaFilter *mesh_proto.MeshGatewayRoute_HttpRoute_Filter
+
+	var condition *ResolvedRefsConditionFalse
 
 	switch filter.Type {
 	case gatewayapi.HTTPRouteFilterRequestHeaderModifier:
@@ -304,15 +319,20 @@ func (r *HTTPRouteReconciler) gapiToKumaFilter(
 
 		requestHeader.Remove = filter.Remove
 
-		kumaFilter.Filter = &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_RequestHeader_{
-			RequestHeader: &requestHeader,
+		kumaFilter = &mesh_proto.MeshGatewayRoute_HttpRoute_Filter{
+			Filter: &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_RequestHeader_{
+				RequestHeader: &requestHeader,
+			},
 		}
 	case gatewayapi.HTTPRouteFilterRequestMirror:
 		filter := filter.RequestMirror
 
-		destinationRef, condition, err := r.gapiToKumaRef(ctx, mesh, namespace, filter.BackendRef)
-		if err != nil || condition != nil {
-			return nil, condition, err
+		destinationRef, refCondition, err := r.gapiToKumaRef(ctx, mesh, namespace, filter.BackendRef)
+		if err != nil {
+			return nil, nil, err
+		}
+		if refCondition != nil {
+			condition = refCondition
 		}
 
 		mirror := mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Mirror{
@@ -322,8 +342,10 @@ func (r *HTTPRouteReconciler) gapiToKumaFilter(
 			Percentage: util_proto.Double(100),
 		}
 
-		kumaFilter.Filter = &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Mirror_{
-			Mirror: &mirror,
+		kumaFilter = &mesh_proto.MeshGatewayRoute_HttpRoute_Filter{
+			Filter: &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Mirror_{
+				Mirror: &mirror,
+			},
 		}
 	case gatewayapi.HTTPRouteFilterRequestRedirect:
 		filter := filter.RequestRedirect
@@ -346,12 +368,14 @@ func (r *HTTPRouteReconciler) gapiToKumaFilter(
 			redirect.StatusCode = uint32(*sc)
 		}
 
-		kumaFilter.Filter = &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Redirect_{
-			Redirect: &redirect,
+		kumaFilter = &mesh_proto.MeshGatewayRoute_HttpRoute_Filter{
+			Filter: &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Redirect_{
+				Redirect: &redirect,
+			},
 		}
 	default:
 		return nil, nil, fmt.Errorf("unsupported filter type %q", filter.Type)
 	}
 
-	return &kumaFilter, nil, nil
+	return kumaFilter, condition, nil
 }

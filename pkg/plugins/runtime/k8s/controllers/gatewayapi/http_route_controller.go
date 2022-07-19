@@ -37,13 +37,6 @@ type HTTPRouteReconciler struct {
 	ResourceManager manager.ResourceManager
 }
 
-const (
-	ObjectTypeUnknownOrInvalid = "ObjectTypeUnknownOrInvalid"
-	ObjectNotFound             = "ObjectNotFound"
-	RefInvalid                 = "RefInvalid"
-	RefNotPermitted            = "RefNotPermitted"
-)
-
 // Reconcile handles transforming a gateway-api HTTPRoute into a Kuma
 // GatewayRoute and managing the status of the gateway-api objects.
 func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
