@@ -11,6 +11,8 @@ import (
 
 	"github.com/kumahq/kuma-net/iptables/builder"
 	"github.com/kumahq/kuma-net/iptables/config"
+
+	"github.com/kumahq/kuma/pkg/transparentproxy"
 )
 
 func convertToUint16(field string, value string) (uint16, error) {
@@ -93,6 +95,12 @@ func mapToConfig(intermediateConfig *IntermediateConfig) (*config.Config, error)
 		if err != nil {
 			return nil, err
 		}
+		enableIpV6, err := transparentproxy.ShouldEnableIPv6()
+		if err != nil {
+			return nil, err
+		}
+		cfg.IPv6 = enableIpV6
+
 		inboundPortV6, err := convertToUint16("inbound port ipv6", intermediateConfig.inboundPortV6)
 		if err != nil {
 			return nil, err
