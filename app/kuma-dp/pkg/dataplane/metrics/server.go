@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"os"
 	"sync"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -54,7 +53,7 @@ type Hijacker struct {
 func New(dataplane kumadp.Dataplane, applicationsToScrape []ApplicationToScrape) *Hijacker {
 	return &Hijacker{
 		socketPath:           envoy.MetricsHijackerSocketName(dataplane.Name, dataplane.Mesh),
-		httpClient:           http.Client{Timeout: 10 * time.Second},
+		httpClient:           http.Client{},
 		applicationsToScrape: applicationsToScrape,
 	}
 }
@@ -120,32 +119,43 @@ func rewriteMetricsURL(path string, port uint32, queryModifier QueryParametersMo
 }
 
 func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
 	out := make(chan []byte, len(s.applicationsToScrape))
 	var wg sync.WaitGroup
+	done := make(chan []byte)
 	wg.Add(len(s.applicationsToScrape))
 	go func() {
 		wg.Wait()
+		close(done)
 		close(out)
 	}()
 
 	for _, app := range s.applicationsToScrape {
 		go func(app ApplicationToScrape) {
 			defer wg.Done()
-			out <- s.getStats(req.URL, app)
+			out <- s.getStats(req.URL, app, ctx)
 		}(app)
 	}
-	for resp := range out {
-		if _, err := writer.Write(resp); err != nil {
-			logger.Error(err, "error while writing the response")
-		}
-		if _, err := writer.Write([]byte("\n")); err != nil {
-			logger.Error(err, "error while writing the response")
+
+	select {
+	case <-ctx.Done():
+		return
+	case <-done:
+		for resp := range out {
+			if _, err := writer.Write(resp); err != nil {
+				logger.Error(err, "error while writing the response")
+			}
+			if _, err := writer.Write([]byte("\n")); err != nil {
+				logger.Error(err, "error while writing the response")
+			}
 		}
 	}
 }
 
-func (s *Hijacker) getStats(url *url.URL, app ApplicationToScrape) []byte {
-	resp, err := s.httpClient.Get(rewriteMetricsURL(app.Path, app.Port, app.QueryModifier, url))
+func (s *Hijacker) getStats(url *url.URL, app ApplicationToScrape, context context.Context) []byte {
+	req, _ := http.NewRequest("GET", rewriteMetricsURL(app.Path, app.Port, app.QueryModifier, url), nil)
+	req = req.WithContext(context)
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		logger.Error(err, "failed call", "name", app.Name, "path", app.Path, "port", app.Port)
 		return nil
