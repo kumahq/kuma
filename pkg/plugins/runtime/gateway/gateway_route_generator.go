@@ -197,9 +197,9 @@ func makeHttpRouteEntry(name string, rule *mesh_proto.MeshGatewayRoute_HttpRoute
 
 			if p := h.GetPath(); p != nil {
 				switch t := p.(type) {
-				case *mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplaceFull_:
+				case *mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplaceFull:
 					rewrite.ReplaceFullPath = &t.ReplaceFull
-				case *mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplacePrefixMatch_:
+				case *mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplacePrefixMatch:
 					rewrite.ReplacePrefixMatch = &t.ReplacePrefixMatch
 				}
 			}

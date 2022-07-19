@@ -355,11 +355,11 @@ func (r *HTTPRouteReconciler) gapiToKumaFilters(
 
 			switch p.Type {
 			case gatewayapi.FullPathHTTPPathModifier:
-				rewrite.Path = &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplaceFull_{
+				rewrite.Path = &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplaceFull{
 					ReplaceFull: *p.ReplaceFullPath,
 				}
 			case gatewayapi.PrefixMatchHTTPPathModifier:
-				rewrite.Path = &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplacePrefixMatch_{
+				rewrite.Path = &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplacePrefixMatch{
 					ReplacePrefixMatch: *p.ReplacePrefixMatch,
 				}
 			}
@@ -414,11 +414,11 @@ func (r *HTTPRouteReconciler) gapiToKumaFilters(
 
 			switch p.Type {
 			case gatewayapi.FullPathHTTPPathModifier:
-				rewrite.Path = &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplaceFull_{
+				rewrite.Path = &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplaceFull{
 					ReplaceFull: *p.ReplaceFullPath,
 				}
 			case gatewayapi.PrefixMatchHTTPPathModifier:
-				rewrite.Path = &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplacePrefixMatch_{
+				rewrite.Path = &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplacePrefixMatch{
 					ReplacePrefixMatch: *p.ReplacePrefixMatch,
 				}
 			}

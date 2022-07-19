@@ -246,9 +246,6 @@ message MeshGatewayRoute {
       };
 
       message Rewrite {
-        message ReplaceFull { string path = 1; }
-        message ReplacePrefixMatch { string path = 1; }
-
         oneof path {
           string replace_full = 1;
           string replace_prefix_match = 2;
