@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -20,6 +21,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/util/proto"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	xds_auth "github.com/kumahq/kuma/pkg/xds/auth"
 	. "github.com/kumahq/kuma/pkg/xds/server/callbacks"
@@ -37,6 +39,8 @@ var _ xds_auth.Authenticator = &staticAuthenticator{}
 
 var _ = Describe("Dataplane Lifecycle", func() {
 
+	const cpInstanceID = "xyz"
+
 	var authenticator *staticAuthenticator
 	var resManager core_manager.ResourceManager
 	var callbacks envoy_server.Callbacks
@@ -49,7 +53,8 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		resManager = core_manager.NewResourceManager(store)
 		ctx, cancel = context.WithCancel(context.Background())
 
-		callbacks = util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(NewDataplaneLifecycle(ctx, resManager, authenticator)))
+		dpLifecycle := NewDataplaneLifecycle(ctx, resManager, authenticator, 0*time.Second, cpInstanceID)
+		callbacks = util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(dpLifecycle))
 
 		err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
@@ -340,5 +345,69 @@ var _ = Describe("Dataplane Lifecycle", func() {
 
 		wg.Wait()
 
+	})
+
+	It("should not unregister proxy when it is connected to other instances", func() {
+		// given a DP registered by callbacks
+		req := envoy_sd.DiscoveryRequest{
+			Node: &envoy_core.Node{
+				Id: "default.backend-01",
+				Metadata: &structpb.Struct{
+					Fields: map[string]*structpb.Value{
+						"dataplane.resource": {
+							Kind: &structpb.Value_StringValue{
+								StringValue: `
+                                {
+                                  "type": "Dataplane",
+                                  "mesh": "default",
+                                  "name": "backend-01",
+                                  "networking": {
+                                    "address": "127.0.0.1",
+                                    "inbound": [
+                                      {
+                                        "port": 22022,
+                                        "servicePort": 8443,
+                                        "tags": {
+                                          "kuma.io/service": "backend"
+                                        }
+                                      },
+                                    ]
+                                  }
+                                }
+                                `,
+							},
+						},
+					},
+				},
+			},
+		}
+
+		key := core_model.ResourceKey{
+			Mesh: "default",
+			Name: "backend-01",
+		}
+
+		const streamId = 123
+		err := callbacks.OnStreamRequest(streamId, &req)
+		Expect(err).ToNot(HaveOccurred())
+
+		// and insight that indicates that DP has connected to another instance of CP. For example
+		// 1) Envoy dropped the XDS connection to instance-1
+		// 2) Envoy reconnected to instance-2
+		// 3) instance-1 noticed that the connection is dropped.
+		insight := core_mesh.NewDataplaneInsightResource()
+		insight.Spec.Subscriptions = append(insight.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
+			Id:                     "",
+			ControlPlaneInstanceId: "not-a" + cpInstanceID,
+			ConnectTime:            proto.MustTimestampProto(time.Now()),
+		})
+		Expect(resManager.Create(context.Background(), insight, core_store.CreateBy(key))).To(Succeed())
+
+		// when
+		callbacks.OnStreamClosed(streamId)
+
+		// then DP is not deleted because Kuma DP is connected to another instance
+		err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetBy(key))
+		Expect(err).ToNot(HaveOccurred())
 	})
 })

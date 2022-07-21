@@ -16,6 +16,9 @@ type XdsServerConfig struct {
 	DataplaneConfigurationRefreshInterval time.Duration `yaml:"dataplaneConfigurationRefreshInterval" envconfig:"kuma_xds_server_dataplane_configuration_refresh_interval"`
 	// Interval for flushing status of Dataplanes connected to the Control Plane
 	DataplaneStatusFlushInterval time.Duration `yaml:"dataplaneStatusFlushInterval" envconfig:"kuma_xds_server_dataplane_status_flush_interval"`
+	// DataplaneDeregistrationDelay is a delay between proxy terminating a connection and the CP trying to deregister the proxy.
+	// It is used only in universal mode when you use direct lifecycle.
+	DataplaneDeregistrationDelay time.Duration `yaml:"dataplaneDeregistrationDelay" envconfig:"kuma_xds_dataplane_deregistration_delay"`
 	// Backoff that is executed when Control Plane is sending the response that was previously rejected by Dataplane
 	NACKBackoff time.Duration `yaml:"nackBackoff" envconfig:"kuma_xds_server_nack_backoff"`
 }
@@ -37,6 +40,7 @@ func DefaultXdsServerConfig() *XdsServerConfig {
 	return &XdsServerConfig{
 		DataplaneConfigurationRefreshInterval: 1 * time.Second,
 		DataplaneStatusFlushInterval:          10 * time.Second,
+		DataplaneDeregistrationDelay:          10 * time.Second,
 		NACKBackoff:                           5 * time.Second,
 	}
 }
