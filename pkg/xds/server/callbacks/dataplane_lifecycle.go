@@ -231,6 +231,9 @@ func (d *DataplaneLifecycle) deregisterProxy(
 			log.Info("no need to deregister proxy. It has already connected to another instance", "newCpInstanceID", sub.ControlPlaneInstanceId)
 			return nil
 		}
+	} else {
+		// If insight is missing it most likely means that it was not yet created, so DP just connected and now leaving the mesh.
+		log.V(1).Info("insight is missing. Safe to deregister the proxy")
 	}
 	log.Info("deregister proxy")
 	return d.resManager.Delete(context.Background(), obj, store.DeleteBy(key))
