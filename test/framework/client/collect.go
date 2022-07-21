@@ -152,7 +152,7 @@ func FromKubernetesPod(namespace string, application string) CollectResponsesOpt
 	}
 }
 
-func collectOptions(requestURL string, options ...CollectResponsesOptsFn) CollectResponsesOpts {
+func CollectOptions(requestURL string, options ...CollectResponsesOptsFn) CollectResponsesOpts {
 	opts := DefaultCollectResponsesOpts()
 	opts.URL = requestURL
 
@@ -185,7 +185,7 @@ func CollectTCPResponse(
 	stdin string,
 	fn ...CollectResponsesOptsFn,
 ) (string, error) {
-	opts := collectOptions(destination, fn...)
+	opts := CollectOptions(destination, fn...)
 	cmd := []string{"bash", "-c", fmt.Sprintf("echo '%s' | curl --max-time 3 %s", stdin, opts.ShellEscaped(opts.URL))}
 
 	var appPodName string
@@ -211,7 +211,7 @@ func CollectResponse(
 	destination string,
 	fn ...CollectResponsesOptsFn,
 ) (types.EchoResponse, error) {
-	opts := collectOptions(destination, fn...)
+	opts := CollectOptions(destination, fn...)
 	cmd := collectCommand(opts, "curl",
 		"--request", opts.Method,
 		"--max-time", "3",
@@ -245,7 +245,7 @@ func CollectResponseDirectly(
 	destination string,
 	fn ...CollectResponsesOptsFn,
 ) (types.EchoResponse, error) {
-	opts := collectOptions(destination, fn...)
+	opts := CollectOptions(destination, fn...)
 
 	req, err := http.NewRequest(opts.Method, opts.URL, nil)
 	if err != nil {
@@ -320,7 +320,7 @@ type FailureResponse struct {
 // Curl JSON output is returned so the caller can inspect the failure to
 // see whether it was what was expected.
 func CollectFailure(cluster framework.Cluster, container, destination string, fn ...CollectResponsesOptsFn) (FailureResponse, error) {
-	opts := collectOptions(destination, fn...)
+	opts := CollectOptions(destination, fn...)
 	cmd := collectCommand(opts, "curl",
 		"--request", opts.Method,
 		"--max-time", "3",
@@ -381,7 +381,7 @@ func CollectFailure(cluster framework.Cluster, container, destination string, fn
 }
 
 func CollectResponses(cluster framework.Cluster, source, destination string, fn ...CollectResponsesOptsFn) ([]types.EchoResponse, error) {
-	opts := collectOptions(destination, fn...)
+	opts := CollectOptions(destination, fn...)
 
 	mut := sync.Mutex{}
 	var responses []types.EchoResponse
