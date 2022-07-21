@@ -55,9 +55,8 @@ type GQLCommit struct {
 }
 
 type GQLRefTarget struct {
-	CommitUrl string    `json:"commitUrl"`
-	Name      string    `json:"name"`
-	Target    GQLCommit `json:"target"`
+	CommitUrl string `json:"commitUrl"`
+	Oid       string `json:"oid"`
 }
 
 type GQLClient struct {
@@ -97,31 +96,23 @@ query($name: String!, $owner: String!, $branch: String!, $since: GitTimestamp!) 
 	return res.Data.Repository.Object.History.Nodes, nil
 }
 
-func (c GQLClient) commitByRef(owner, name, tag string) (GQLCommit, error) {
+func (c GQLClient) commitByRef(owner, name, tag string) (string, error) {
 	res, err := c.graphqlQuery(`
 query ($owner: String!, $name: String!, $ref: String!) {
   repository(name: $name, owner: $owner) {
     ref(qualifiedName: $ref) {
       target {
         commitUrl
-        ... on Tag {
-          name
-          target {
-            ... on Commit {
-              oid
-              message
-            }
-          }
-        }
+        oid
       }
     }
   }
 }
 `, map[string]interface{}{"owner": owner, "name": name, "ref": fmt.Sprintf("refs/tags/%s", tag)})
 	if err != nil {
-		return GQLCommit{}, err
+		return "", err
 	}
-	return res.Data.Repository.Ref.Target.Target, nil
+	return res.Data.Repository.Ref.Target.Oid, nil
 }
 
 func (c GQLClient) graphqlQuery(query string, variables map[string]interface{}) (out GQLOutput, err error) {
