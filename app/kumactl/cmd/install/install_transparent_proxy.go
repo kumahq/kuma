@@ -42,8 +42,9 @@ type transparentProxyArgs struct {
 	SkipDNSConntrackZoneSplit          bool
 	ExperimentalTransparentProxyEngine bool
 	Ebpf                               bool
-	EbpfFilesPath                      string
+	EbpfProgramsSourcePath             string
 	EbpfInstanceIPEnvVarName           string
+	EbpfBPFFSPath                      string
 }
 
 var defaultCpIP = net.IPv4(0, 0, 0, 0)
@@ -70,8 +71,9 @@ func newInstallTransparentProxy() *cobra.Command {
 		SkipDNSConntrackZoneSplit:          false,
 		ExperimentalTransparentProxyEngine: false,
 		Ebpf:                               false,
-		EbpfFilesPath:                      "/kuma/ebpf",
+		EbpfProgramsSourcePath:             "/kuma/ebpf",
 		EbpfInstanceIPEnvVarName:           "INSTANCE_IP",
+		EbpfBPFFSPath:                      "/run/kuma/bpf",
 	}
 	cmd := &cobra.Command{
 		Use:   "transparent-proxy",
@@ -200,8 +202,9 @@ runuser -u kuma-dp -- \
 
 	// ebpf
 	cmd.Flags().BoolVar(&args.Ebpf, "ebpf", args.Ebpf, "use ebpf instead of iptables to install transparent proxy")
-	cmd.Flags().StringVar(&args.EbpfFilesPath, "ebpf-files-path", args.EbpfFilesPath, "path where compiled ebpf programs and other necessary for ebpf mode files can be found")
+	cmd.Flags().StringVar(&args.EbpfProgramsSourcePath, "ebpf-programs-source-path", args.EbpfProgramsSourcePath, "path where compiled ebpf programs and other necessary for ebpf mode files can be found")
 	cmd.Flags().StringVar(&args.EbpfInstanceIPEnvVarName, "ebpf-instance-ip-env-var-name", args.EbpfInstanceIPEnvVarName, "the name of environmental variable which will contain the IP address of the instance (pod/vm) where transparent proxy will be installed")
+	cmd.Flags().StringVar(&args.EbpfBPFFSPath, "ebpf-bpffs-path", args.EbpfBPFFSPath, "the path of the BPF filesystem")
 
 	return cmd
 }
@@ -211,15 +214,63 @@ func configureEbpf(cmd *cobra.Command, args *transparentProxyArgs) error {
 		return fmt.Errorf("root user in required for this process or container")
 	}
 
-	if err := transparentproxy.RunMake("init-bpffs", args.EbpfFilesPath, cmd.OutOrStdout(), cmd.OutOrStderr()); err != nil {
-		return fmt.Errorf("initializing BPF file system failed: %v", err)
+	if err := transparentproxy.InitBPFFSMaybe(args.EbpfBPFFSPath); err != nil {
+		return fmt.Errorf("initializing bpf filesystem failed: %v", err)
 	}
 
-	if err := transparentproxy.RunMake("load", args.EbpfFilesPath, cmd.OutOrStdout(), cmd.OutOrStderr()); err != nil {
-		return fmt.Errorf("loading BPF programs failed: %v", err)
+	ebpfPrograms := []*transparentproxy.EbpfProgram{
+		{
+			SourcePath:       args.EbpfProgramsSourcePath,
+			BpfFsPath:        args.EbpfBPFFSPath,
+			PinName:          "connect",
+			MakeLoadTarget:   "load-connect",
+			MakeAttachTarget: "attach-connect",
+		},
+		{
+			SourcePath:       args.EbpfProgramsSourcePath,
+			BpfFsPath:        args.EbpfBPFFSPath,
+			PinName:          "sockops",
+			MakeLoadTarget:   "load-sockops",
+			MakeAttachTarget: "attach-sockops",
+		},
+		{
+			SourcePath:       args.EbpfProgramsSourcePath,
+			BpfFsPath:        args.EbpfBPFFSPath,
+			PinName:          "get_sockopts",
+			MakeLoadTarget:   "load-getsock",
+			MakeAttachTarget: "attach-getsock",
+		},
+		{
+			SourcePath:       args.EbpfProgramsSourcePath,
+			BpfFsPath:        args.EbpfBPFFSPath,
+			PinName:          "redir",
+			MakeLoadTarget:   "load-redir",
+			MakeAttachTarget: "attach-redir",
+		},
+		{
+			SourcePath:       args.EbpfProgramsSourcePath,
+			BpfFsPath:        args.EbpfBPFFSPath,
+			PinName:          "sendmsg",
+			MakeLoadTarget:   "load-sendmsg",
+			MakeAttachTarget: "attach-sendmsg",
+		},
+		{
+			SourcePath:       args.EbpfProgramsSourcePath,
+			BpfFsPath:        args.EbpfBPFFSPath,
+			PinName:          "recvmsg",
+			MakeLoadTarget:   "load-recvmsg",
+			MakeAttachTarget: "attach-recvmsg",
+		},
 	}
 
-	localPodIPsMap, err := ebpf.LoadPinnedMap(transparentproxy.LocalPodIPSPinnedMapPath, &ebpf.LoadPinOptions{})
+	if err := transparentproxy.LoadAndAttachEbpfPrograms(ebpfPrograms, cmd.OutOrStdout(), cmd.OutOrStderr()); err != nil {
+		return err
+	}
+
+	localPodIPsMap, err := ebpf.LoadPinnedMap(
+		args.EbpfBPFFSPath+transparentproxy.LocalPodIPSPinnedMapPathRelativeToBPFFS,
+		&ebpf.LoadPinOptions{},
+	)
 	if err != nil {
 		return fmt.Errorf("loading pinned local_pod_ips map failed: %v", err)
 	}
@@ -290,10 +341,6 @@ func configureEbpf(cmd *cobra.Command, args *transparentProxyArgs) error {
 	}
 
 	_, _ = cmd.OutOrStdout().Write([]byte(fmt.Sprintf("local_pod_ips map was updated with current instance IP: %s\n\n", instanceIP)))
-
-	if err := transparentproxy.RunMake("attach", args.EbpfFilesPath, cmd.OutOrStdout(), cmd.OutOrStderr()); err != nil {
-		return fmt.Errorf("attaching BPF programs failed: %v", err)
-	}
 
 	return nil
 }

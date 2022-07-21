@@ -95,7 +95,7 @@ monitoringAssignmentServer:
   port: 5676 # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_PORT
   # Which MADS API versions to serve
   apiVersions: # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_API_VERSIONS
-    - v1
+  - v1
   # Interval for re-generating monitoring assignments for clients connected to the Control Plane.
   assignmentRefreshInterval: 1s # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL
   # The default timeout for a single fetch-based discovery request, if not specified
@@ -150,7 +150,7 @@ apiServer:
   readOnly: false # ENV: KUMA_API_SERVER_READ_ONLY
   # Allowed domains for Cross-Origin Resource Sharing. The value can be either domain or regexp
   corsAllowedDomains:
-    - ".*" # ENV: KUMA_API_SERVER_CORS_ALLOWED_DOMAINS
+  - ".*" # ENV: KUMA_API_SERVER_CORS_ALLOWED_DOMAINS
 
 # Environment-specific configuration
 runtime:
@@ -262,6 +262,17 @@ runtime:
         enabled: true # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED
         # Redirect port for DNS
         port: 15053 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_PORT
+      # EBPF defines configuration for the ebpf, when transparent proxy is marked to be
+      # installed using ebpf instead of iptables
+      ebpf:
+        # Install transparent proxy using ebpf
+        enabled: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_ENABLED
+        # Name of the environmental variable which will include IP address of the pod
+        instanceIPEnvVarName: INSTANCE_IP # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_INSTANCE_IP_ENV_VAR_NAME
+        # Path where BPF file system will be mounted for pinning ebpf programs and maps
+        bpffsPath: /run/kuma/bpf # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_BPFFS_PATH
+        # Path where compiled eBPF programs are placed
+        programsSourcePath: /kuma/ebpf # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH
     marshalingCacheExpirationTime: 5m # ENV: KUMA_RUNTIME_KUBERNETES_MARSHALING_CACHE_EXPIRATION_TIME
   # Universal-specific configuration
   universal:
@@ -407,42 +418,42 @@ access:
     # AdminResources defines an access to admin resources (Secret/GlobalSecret)
     adminResources:
       # List of users that are allowed to access admin resources
-      users: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_ADMIN_RESOURCES_USERS
+      users: [ "mesh-system:admin" ] # ENV: KUMA_ACCESS_STATIC_ADMIN_RESOURCES_USERS
       # List of groups that are allowed to access admin resources
-      groups: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_ADMIN_RESOURCES_GROUPS
+      groups: [ "mesh-system:admin" ] # ENV: KUMA_ACCESS_STATIC_ADMIN_RESOURCES_GROUPS
     # GenerateDPToken defines an access to generating dataplane token
     generateDpToken:
       # List of users that are allowed to generate dataplane token
-      users: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GENERATE_DP_TOKEN_USERS
+      users: [ "mesh-system:admin" ] # ENV: KUMA_ACCESS_STATIC_GENERATE_DP_TOKEN_USERS
       # List of groups that are allowed to generate dataplane token
-      groups: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GENERATE_DP_TOKEN_GROUPS
+      groups: [ "mesh-system:admin" ] # ENV: KUMA_ACCESS_STATIC_GENERATE_DP_TOKEN_GROUPS
     # GenerateUserToken defines an access to generating user token
     generateUserToken:
       # List of users that are allowed to generate user token
-      users: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_USERS
+      users: [ "mesh-system:admin" ] # ENV: KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_USERS
       # List of groups that are allowed to generate user token
-      groups: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_GROUPS
+      groups: [ "mesh-system:admin" ] # ENV: KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_GROUPS
     # GenerateZoneToken defines an access to generating zone token
     generateZoneToken:
       # List of users that are allowed to generate zone token
-      users: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GENERATE_ZONE_TOKEN_USERS
+      users: [ "mesh-system:admin" ] # ENV: KUMA_ACCESS_STATIC_GENERATE_ZONE_TOKEN_USERS
       # List of groups that are allowed to generate zone token
-      groups: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GENERATE_ZONE_TOKEN_GROUPS
+      groups: [ "mesh-system:admin" ] # ENV: KUMA_ACCESS_STATIC_GENERATE_ZONE_TOKEN_GROUPS
     viewConfigDump:
       # List of users that are allowed to get envoy config dump
       users: [ ] # ENV: KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_USERS
       # List of groups that are allowed to get envoy config dump
-      groups: ["mesh-system:unauthenticated","mesh-system:authenticated"] # ENV: KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_GROUPS
+      groups: [ "mesh-system:unauthenticated","mesh-system:authenticated" ] # ENV: KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_GROUPS
     viewStats:
       # List of users that are allowed to get envoy stats
       users: [ ] # ENV: KUMA_ACCESS_STATIC_VIEW_STATS_USERS
       # List of groups that are allowed to get envoy stats
-      groups: ["mesh-system:unauthenticated","mesh-system:authenticated"] # ENV: KUMA_ACCESS_STATIC_VIEW_STATS_GROUPS
+      groups: [ "mesh-system:unauthenticated","mesh-system:authenticated" ] # ENV: KUMA_ACCESS_STATIC_VIEW_STATS_GROUPS
     viewClusters:
       # List of users that are allowed to get envoy clusters
       users: [ ] # ENV: KUMA_ACCESS_STATIC_VIEW_CLUSTERS_USERS
       # List of groups that are allowed to get envoy clusters
-      groups: ["mesh-system:unauthenticated","mesh-system:authenticated"] # ENV: KUMA_ACCESS_STATIC_VIEW_CLUSTERS_GROUPS
+      groups: [ "mesh-system:unauthenticated","mesh-system:authenticated" ] # ENV: KUMA_ACCESS_STATIC_VIEW_CLUSTERS_GROUPS
 
 # Configuration of experimental features of Kuma
 experimental:

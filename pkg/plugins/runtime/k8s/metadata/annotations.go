@@ -100,9 +100,6 @@ const (
 	KumaMetricsPrometheusAggregateEnabled = "prometheus.metrics.kuma.io/aggregate-%s-enabled"
 	// KumaMetricsPrometheusAggregatePattern allows to retrieve all the apps for which need to get port/path configuration
 	KumaMetricsPrometheusAggregatePattern = "^prometheus.metrics.kuma.io/aggregate-([a-zA-Z0-9-]+)-(port|path|enabled)$"
-
-	// KumaTransparentProxyingEbpf enables transparent proxying using ebpf.
-	KumaTransparentProxyingEbpf = "kuma.io/transparent-proxying-ebpf"
 )
 
 // Annotations that are being automatically set by the Kuma Sidecar Injector.
@@ -118,6 +115,10 @@ const (
 	KumaTransparentProxyingReachableServicesAnnotation = "kuma.io/transparent-proxying-reachable-services"
 	CNCFNetworkAnnotation                              = "k8s.v1.cni.cncf.io/networks"
 	KumaCNI                                            = "kuma-cni"
+	KumaTransparentProxyingEbpf                        = "kuma.io/transparent-proxying-ebpf"
+	KumaTransparentProxyingEbpfBPFFSPath               = "kuma.io/transparent-proxying-ebpf-bpf-fs-path"
+	KumaTransparentProxyingEbpfInstanceIPEnvVarName    = "kuma.io/transparent-proxying-ebpf-instance-ip-env-var-name"
+	KumaTransparentProxyingEbpfProgramsSourcePath      = "kuma.io/transparent-proxying-ebpf-programs-source-path"
 )
 
 // Annotations related to the gateway

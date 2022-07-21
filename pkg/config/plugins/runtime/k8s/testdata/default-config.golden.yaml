@@ -47,6 +47,11 @@ injector:
   builtinDNS:
     enabled: true
     port: 15053
+  ebpf:
+    enabled: false
+    instanceIPEnvVarName: INSTANCE_IP
+    bpffsPath: /run/kuma/bpf
+    programsSourcePath: /kuma/ebpf
 marshalingCacheExpirationTime: 5m0s
 serviceAccountName: system:serviceaccount:kuma-system:kuma-control-plane
 controlPlaneServiceName: kuma-control-plane

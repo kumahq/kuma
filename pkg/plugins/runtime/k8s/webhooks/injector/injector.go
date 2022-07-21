@@ -121,7 +121,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		pod.Annotations[key] = value
 	}
 
-	if enabled, _, _ := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaTransparentProxyingEbpf); enabled {
+	if i.cfg.EBPF.Enabled {
 		pod.Spec.Volumes = append(pod.Spec.Volumes, kube_core.Volume{
 			Name: "sys-fs-cgroup",
 			VolumeSource: kube_core.VolumeSource{
@@ -130,10 +130,10 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 				},
 			},
 		}, kube_core.Volume{
-			Name: "sys-fs-bpf",
+			Name: "bpf-fs",
 			VolumeSource: kube_core.VolumeSource{
 				HostPath: &kube_core.HostPathVolumeSource{
-					Path: "/sys/fs/bpf",
+					Path: i.cfg.EBPF.BPFFSPath,
 				},
 			},
 		})
@@ -431,27 +431,54 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 		return kube_core.Container{}, err
 	}
 
-	limitCPU := *kube_api.NewScaledQuantity(100, kube_api.Milli)
-	limitMemory := *kube_api.NewScaledQuantity(50, kube_api.Mega)
-	requestCPU := *kube_api.NewScaledQuantity(10, kube_api.Milli)
-	requestMemory := *kube_api.NewScaledQuantity(10, kube_api.Mega)
-	capabilities := &kube_core.Capabilities{
-		Add: []kube_core.Capability{"NET_ADMIN", "NET_RAW"},
+	container := kube_core.Container{
+		Name:            k8s_util.KumaInitContainerName,
+		Image:           i.cfg.InitContainer.Image,
+		ImagePullPolicy: kube_core.PullIfNotPresent,
+		Command:         []string{"/usr/bin/kumactl", "install", "transparent-proxy"},
+		Args:            podRedirect.AsKumactlCommandLine(),
+		SecurityContext: &kube_core.SecurityContext{
+			RunAsUser:  new(int64), // way to get pointer to int64(0)
+			RunAsGroup: new(int64),
+			Capabilities: &kube_core.Capabilities{
+				Add: []kube_core.Capability{"NET_ADMIN", "NET_RAW"},
+			},
+		},
+		Resources: kube_core.ResourceRequirements{
+			Limits: kube_core.ResourceList{
+				kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(100, kube_api.Milli),
+				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(50, kube_api.Mega),
+			},
+			Requests: kube_core.ResourceList{
+				kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(10, kube_api.Milli),
+				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(10, kube_api.Mega),
+			},
+		},
 	}
-	privileged := false
-	var envVars []kube_core.EnvVar
-	var volumeMounts []kube_core.VolumeMount
 
-	if podRedirect.TransparentProxyEbpf {
-		limitCPU = *kube_api.NewScaledQuantity(300, kube_api.Milli)
-		limitMemory = *kube_api.NewScaledQuantity(200, kube_api.Mega)
-		requestCPU = *kube_api.NewScaledQuantity(100, kube_api.Milli)
-		requestMemory = *kube_api.NewScaledQuantity(200, kube_api.Mega)
-		capabilities = &kube_core.Capabilities{}
-		privileged = true
-		envVars = []kube_core.EnvVar{
+	if podRedirect.TransparentProxyEnableEbpf {
+		// container.SecurityContext.Privileged expects to have a reference
+		// to the bool value
+		tru := true
+		bidirectional := kube_core.MountPropagationBidirectional
+
+		container.Resources = kube_core.ResourceRequirements{
+			Limits: kube_core.ResourceList{
+				kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(300, kube_api.Milli),
+				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(200, kube_api.Mega),
+			},
+			Requests: kube_core.ResourceList{
+				kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(100, kube_api.Milli),
+				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(200, kube_api.Mega),
+			},
+		}
+
+		container.SecurityContext.Capabilities = &kube_core.Capabilities{}
+		container.SecurityContext.Privileged = &tru
+
+		container.Env = []kube_core.EnvVar{
 			{
-				Name: "INSTANCE_IP",
+				Name: i.cfg.EBPF.InstanceIPEnvVarName,
 				ValueFrom: &kube_core.EnvVarSource{
 					FieldRef: &kube_core.ObjectFieldSelector{
 						FieldPath: "status.podIP",
@@ -459,38 +486,14 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 				},
 			},
 		}
-		bidirectional := kube_core.MountPropagationBidirectional
-		volumeMounts = []kube_core.VolumeMount{
+
+		container.VolumeMounts = []kube_core.VolumeMount{
 			{Name: "sys-fs-cgroup", MountPath: "/sys/fs/cgroup"},
-			{Name: "sys-fs-bpf", MountPath: "/sys/fs/bpf", MountPropagation: &bidirectional},
+			{Name: "bpf-fs", MountPath: i.cfg.EBPF.BPFFSPath, MountPropagation: &bidirectional},
 		}
 	}
 
-	return kube_core.Container{
-		Name:            k8s_util.KumaInitContainerName,
-		Image:           i.cfg.InitContainer.Image,
-		ImagePullPolicy: kube_core.PullIfNotPresent,
-		Command:         []string{"/usr/bin/kumactl", "install", "transparent-proxy"},
-		Args:            podRedirect.AsKumactlCommandLine(),
-		SecurityContext: &kube_core.SecurityContext{
-			RunAsUser:    new(int64), // way to get pointer to int64(0)
-			RunAsGroup:   new(int64),
-			Capabilities: capabilities,
-			Privileged:   &privileged,
-		},
-		Resources: kube_core.ResourceRequirements{
-			Limits: kube_core.ResourceList{
-				kube_core.ResourceCPU:    limitCPU,
-				kube_core.ResourceMemory: limitMemory,
-			},
-			Requests: kube_core.ResourceList{
-				kube_core.ResourceCPU:    requestCPU,
-				kube_core.ResourceMemory: requestMemory,
-			},
-		},
-		Env:          envVars,
-		VolumeMounts: volumeMounts,
-	}, nil
+	return container, nil
 }
 
 func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *core_mesh.MeshResource) (map[string]string, error) {
@@ -505,6 +508,13 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *core_mesh.MeshRe
 	}
 	if i.cfg.CNIEnabled {
 		annotations[metadata.CNCFNetworkAnnotation] = metadata.KumaCNI
+	}
+
+	if i.cfg.EBPF.Enabled {
+		annotations[metadata.KumaTransparentProxyingEbpf] = metadata.AnnotationEnabled
+		annotations[metadata.KumaTransparentProxyingEbpfBPFFSPath] = i.cfg.EBPF.BPFFSPath
+		annotations[metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName] = i.cfg.EBPF.InstanceIPEnvVarName
+		annotations[metadata.KumaTransparentProxyingEbpfProgramsSourcePath] = i.cfg.EBPF.ProgramsSourcePath
 	}
 
 	if i.cfg.BuiltinDNS.Enabled {
