@@ -51,7 +51,7 @@ spec:
       containers:
         - name: install-cni
           {{- if .Values.experimental.cni }}
-          image: {{ include "kuma.formatImage" (dict "image" .Values.cni.imageExperimental "root" $) | quote }}
+          image: {{ include "kuma.formatImage" (dict "image" .Values.cni.experimental.image "root" $) | quote }}
           imagePullPolicy: IfNotPresent
           command: ["/install-cni"]
           {{- else }}
@@ -74,6 +74,8 @@ spec:
             # If true, deploy as a chained CNI plugin, otherwise deploy as a standalone CNI
             - name: CHAINED_CNI_PLUGIN
               value: "{{ .Values.cni.chained }}"
+            - name: SLEEP_BEFORE_RUN_SECONDS
+              value: "{{ .Values.cni.experimental.sleepBeforeRunSeconds }}"
           volumeMounts:
             - mountPath: /host/opt/cni/bin
               name: cni-bin-dir

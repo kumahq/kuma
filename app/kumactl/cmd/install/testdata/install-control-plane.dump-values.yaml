@@ -321,7 +321,7 @@ cni:
     tag: "0.0.10"
 
   # -- use new CNI image (experimental)
-  imageExperimental:
+  experimental.image:
     # -- CNI experimental image repository
     repository: "kuma-cni"
     # -- CNI experimental image tag - defaults to .Chart.AppVersion

@@ -321,11 +321,13 @@ cni:
     tag: "0.0.10"
 
   # -- use new CNI image (experimental)
-  imageExperimental:
-    # -- CNI experimental image repository
-    repository: "kuma-cni"
-    # -- CNI experimental image tag - defaults to .Chart.AppVersion
-    tag:
+  experimental:
+    sleepBeforeRunSeconds: 0
+    image:
+      # -- CNI experimental image repository
+      repository: "kuma-cni"
+      # -- CNI experimental image tag - defaults to .Chart.AppVersion
+      tag:
 
   # -- Security context at the pod level for cni
   podSecurityContext: {}

@@ -31,6 +31,7 @@ type InstallerConfig struct {
 	KubernetesServiceProtocol string `envconfig:"kubernetes_service_protocol" default:"https"`
 	MountedCniNetDir          string `envconfig:"mounted_cni_net_dir" default:"/host/etc/cni/net.d"`
 	ShouldSleep               bool   `envconfig:"sleep" default:"true"`
+	SleepBeforeRunSeconds     int32  `envconfig:"sleep_before_run_seconds" default:"0"`
 }
 
 func (i InstallerConfig) Sanitize() {

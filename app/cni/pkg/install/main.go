@@ -213,6 +213,11 @@ func Run() {
 		log.Error(err, "error occurred during config loading")
 		os.Exit(1)
 	}
+
+	if installerConfig.SleepBeforeRunSeconds > 0 {
+		time.Sleep(time.Second * time.Duration(installerConfig.SleepBeforeRunSeconds))
+	}
+
 	err = install(installerConfig)
 	if err != nil {
 		log.Error(err, "error occurred during cni installation")
