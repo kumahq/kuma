@@ -54,17 +54,22 @@ type dpStream struct {
 var _ util_xds.Callbacks = &xdsCallbacks{}
 
 func (d *xdsCallbacks) OnStreamClosed(streamID core_xds.StreamID) {
+	var lastStreamDpKey *core_model.ResourceKey
 	d.Lock()
-	defer d.Unlock()
 	dpStream := d.dpStreams[streamID]
 	if dpKey := dpStream.dp; dpKey != nil {
 		d.activeStreams[*dpKey]--
 		if d.activeStreams[*dpKey] == 0 {
-			d.callbacks.OnProxyDisconnected(streamID, *dpKey)
+			lastStreamDpKey = dpKey
 			delete(d.activeStreams, *dpKey)
 		}
 	}
 	delete(d.dpStreams, streamID)
+	d.Unlock()
+	if lastStreamDpKey != nil {
+		// execute callback after lock is freed, so heavy callback implementation won't block every callback for every DPP.
+		d.callbacks.OnProxyDisconnected(streamID, *lastStreamDpKey)
+	}
 }
 
 func (d *xdsCallbacks) OnStreamRequest(streamID core_xds.StreamID, request util_xds.DiscoveryRequest) error {
