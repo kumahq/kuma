@@ -69,22 +69,22 @@ compile-clean:
 
 # Map
 load-map-cookie_original_dst:
-	bpftool map create $(PROG_MOUNT_PATH)/cookie_original_dst type lru_hash key 8 value 12 entries 65535 name cookie_original_dst
+	[ -f $(PROG_MOUNT_PATH)/cookie_original_dst ] || bpftool map create $(PROG_MOUNT_PATH)/cookie_original_dst type lru_hash key 8 value 12 entries 65535 name cookie_original_dst
 
 load-map-local_pod_ips:
-	bpftool map create $(TC_PINNING_PATH)/local_pod_ips type hash key 4 value 244 entries 1024 name local_pod_ips
+	[ -f $(TC_PINNING_PATH)/local_pod_ips ] || bpftool map create $(TC_PINNING_PATH)/local_pod_ips type hash key 4 value 244 entries 1024 name local_pod_ips
 
 load-map-process_ip:
-	bpftool map create $(PROG_MOUNT_PATH)/process_ip type lru_hash key 4 value 4 entries 1024 name process_ip
+	[ -f $(PROG_MOUNT_PATH)/process_ip ] || bpftool map create $(PROG_MOUNT_PATH)/process_ip type lru_hash key 4 value 4 entries 1024 name process_ip
 
 load-map-mark_pod_ips_map:
-	bpftool map create $(PROG_MOUNT_PATH)/mark_pod_ips_map type hash key 4 value 4 entries 65535 name mark_pod_ips_map
+	[ -f $(PROG_MOUNT_PATH)/mark_pod_ips_map ] || bpftool map create $(PROG_MOUNT_PATH)/mark_pod_ips_map type hash key 4 value 4 entries 65535 name mark_pod_ips_map
 
 load-map-pair_original_dst:
-	bpftool map create $(TC_PINNING_PATH)/pair_original_dst type lru_hash key 12 value 12 entries 65535 name pair_original_dst
+	[ -f $(TC_PINNING_PATH)/pair_original_dst ] || bpftool map create $(TC_PINNING_PATH)/pair_original_dst type lru_hash key 12 value 12 entries 65535 name pair_original_dst
 
 load-map-sock_pair_map:
-	bpftool map create $(PROG_MOUNT_PATH)/sock_pair_map type sockhash key 12 value 4 entries 65535 name sock_pair_map
+	[ -f $(PROG_MOUNT_PATH)/sock_pair_map ] || bpftool map create $(PROG_MOUNT_PATH)/sock_pair_map type sockhash key 12 value 4 entries 65535 name sock_pair_map
 
 
 clean-maps:
