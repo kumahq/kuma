@@ -34,7 +34,7 @@ func hasLocalIPv6() (bool, error) {
 	return false, nil
 }
 
-func shouldEnableIPv6() (bool, error) {
+func ShouldEnableIPv6() (bool, error) {
 	hasIPv6Address, err := hasLocalIPv6()
 	if !hasIPv6Address || err != nil {
 		return false, err
@@ -91,7 +91,7 @@ func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyC
 		}
 	}
 
-	ipv6, err := shouldEnableIPv6()
+	ipv6, err := ShouldEnableIPv6()
 	if err != nil {
 		return "", errors.Wrap(err, "cannot verify if IPv6 should be enabled")
 	}

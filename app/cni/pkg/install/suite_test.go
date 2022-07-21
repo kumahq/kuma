@@ -1,4 +1,4 @@
-package main_test
+package install_test
 
 import (
 	"testing"

@@ -1,6 +1,6 @@
 Clusters:
   Resources:
-    external-httpbin-8bd356c79796cec2:
+    external-httpbin-8490df2e58a77ae0:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -25,7 +25,7 @@ Clusters:
                   kuma.io/external-service-name: external-httpbin
                 envoy.transport_socket_match:
                   kuma.io/external-service-name: external-httpbin
-      name: external-httpbin-8bd356c79796cec2
+      name: external-httpbin-8490df2e58a77ae0
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -57,7 +57,7 @@ Listeners:
         - name: envoy.filters.network.tcp_proxy
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-            cluster: external-httpbin-8bd356c79796cec2
+            cluster: external-httpbin-8490df2e58a77ae0
             maxConnectAttempts: 5
             statPrefix: gateway-default
       listenerFilters:

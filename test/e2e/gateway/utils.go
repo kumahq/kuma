@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
@@ -42,20 +43,39 @@ func ProxyTcpRequest(cluster framework.Cluster, input, expectedResponse string, 
 	}, "60s", "1s").Should(Succeed())
 }
 
-// ProxySimpleRequests tests that basic HTTP requests are proxied to the echo-server.
 func ProxySimpleRequests(cluster framework.Cluster, instance string, gateway string, opts ...client.CollectResponsesOptsFn) {
+	targetPath := path.Join("test", GinkgoT().Name())
+	ProxyHTTPRequests(cluster, instance, gateway, targetPath, "", "example.kuma.io", opts...)
+}
+
+// ProxySimpleRequests tests that basic HTTP requests are proxied to the echo-server.
+func ProxyHTTPRequests(cluster framework.Cluster, instance, gateway, targetPath, expectedPath, expectedHostname string, opts ...client.CollectResponsesOptsFn) {
 	framework.Logf("expecting 200 response from %q", gateway)
+	if len(expectedPath) > 0 && !strings.HasPrefix(expectedPath, "/") {
+		expectedPath = fmt.Sprintf("/%s", expectedPath)
+	}
 	Eventually(func(g Gomega) {
-		target := fmt.Sprintf("http://%s/%s",
-			gateway, path.Join("test", url.PathEscape(GinkgoT().Name())),
-		)
+		var escaped []string
+		for _, segment := range strings.Split(targetPath, "/") {
+			escaped = append(escaped, url.PathEscape(segment))
+		}
+
+		target := fmt.Sprintf("http://%s/%s", gateway, path.Join(escaped...))
 
 		opts = append(opts, client.WithHeader("Host", "example.kuma.io"))
 		response, err := client.CollectResponse(cluster, "gateway-client", target, opts...)
 
-		g.Expect(err).To(Succeed())
+		if expectedPath == "" {
+			expected := client.CollectOptions(target, opts...)
+			parsed, err := url.Parse(expected.URL)
+			g.Expect(err).NotTo(HaveOccurred())
+			expectedPath = parsed.Path
+		}
+
+		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(response.Instance).To(Equal(instance))
-		g.Expect(response.Received.Headers["Host"]).To(ContainElement("example.kuma.io"))
+		g.Expect(response.Received.Headers["Host"]).To(ContainElement(expectedHostname))
+		g.Expect(response.Received.Path).To(HavePrefix(expectedPath))
 	}, "60s", "1s").Should(Succeed())
 }
 

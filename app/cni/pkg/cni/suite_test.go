@@ -1,4 +1,4 @@
-package main_test
+package cni_test
 
 import (
 	"testing"

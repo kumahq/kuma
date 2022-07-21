@@ -1,6 +1,6 @@
 Clusters:
   Resources:
-    exact-service-09493d2d54b2a972:
+    exact-service-6c25eaca226749f3:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -12,7 +12,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: exact-service-09493d2d54b2a972
+      name: exact-service-6c25eaca226749f3
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -27,7 +27,7 @@ Clusters:
             idleTimeout: 3600s
           explicitHttpConfig:
             httpProtocolOptions: {}
-    prefix-service-5061ee504b81a555:
+    prefix-service-bfa07e23a84b267b:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -39,7 +39,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: prefix-service-5061ee504b81a555
+      name: prefix-service-bfa07e23a84b267b
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -56,8 +56,8 @@ Clusters:
             httpProtocolOptions: {}
 Endpoints:
   Resources:
-    exact-service-09493d2d54b2a972:
-      clusterName: exact-service-09493d2d54b2a972
+    exact-service-6c25eaca226749f3:
+      clusterName: exact-service-6c25eaca226749f3
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -72,8 +72,8 @@ Endpoints:
                 kuma.io/protocol: http
               envoy.transport_socket_match:
                 kuma.io/protocol: http
-    prefix-service-5061ee504b81a555:
-      clusterName: prefix-service-5061ee504b81a555
+    prefix-service-bfa07e23a84b267b:
+      clusterName: prefix-service-bfa07e23a84b267b
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -171,7 +171,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: exact-service-09493d2d54b2a972
+              - name: exact-service-6c25eaca226749f3
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags
@@ -191,7 +191,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: prefix-service-5061ee504b81a555
+              - name: prefix-service-bfa07e23a84b267b
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags

@@ -1,6 +1,6 @@
 Clusters:
   Resources:
-    echo-mirror-eb192462fe75ad40:
+    echo-mirror-90205ae37cc0294e:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -12,7 +12,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: echo-mirror-eb192462fe75ad40
+      name: echo-mirror-90205ae37cc0294e
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -27,7 +27,7 @@ Clusters:
             idleTimeout: 3600s
           explicitHttpConfig:
             httpProtocolOptions: {}
-    echo-service-5a416c39037aa8f6:
+    echo-service-9f149ed9e14091ca:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -39,7 +39,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: echo-service-5a416c39037aa8f6
+      name: echo-service-9f149ed9e14091ca
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -56,10 +56,10 @@ Clusters:
             httpProtocolOptions: {}
 Endpoints:
   Resources:
-    echo-mirror-eb192462fe75ad40:
-      clusterName: echo-mirror-eb192462fe75ad40
-    echo-service-5a416c39037aa8f6:
-      clusterName: echo-service-5a416c39037aa8f6
+    echo-mirror-90205ae37cc0294e:
+      clusterName: echo-mirror-90205ae37cc0294e
+    echo-service-9f149ed9e14091ca:
+      clusterName: echo-service-9f149ed9e14091ca
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -148,7 +148,7 @@ Routes:
             path: /
           route:
             requestMirrorPolicies:
-            - cluster: echo-mirror-eb192462fe75ad40
+            - cluster: echo-mirror-90205ae37cc0294e
               runtimeFraction:
                 defaultValue:
                   denominator: TEN_THOUSAND
@@ -163,7 +163,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: echo-service-5a416c39037aa8f6
+              - name: echo-service-9f149ed9e14091ca
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags
