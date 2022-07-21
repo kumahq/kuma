@@ -18,6 +18,8 @@ type XdsServerConfig struct {
 	DataplaneStatusFlushInterval time.Duration `yaml:"dataplaneStatusFlushInterval" envconfig:"kuma_xds_server_dataplane_status_flush_interval"`
 	// DataplaneDeregistrationDelay is a delay between proxy terminating a connection and the CP trying to deregister the proxy.
 	// It is used only in universal mode when you use direct lifecycle.
+	// Disabling this may cause race conditions that one instance of CP removes proxy object
+	// while proxy is connected to another instance of the CP.
 	DataplaneDeregistrationDelay time.Duration `yaml:"dataplaneDeregistrationDelay" envconfig:"kuma_xds_dataplane_deregistration_delay"`
 	// Backoff that is executed when Control Plane is sending the response that was previously rejected by Dataplane
 	NACKBackoff time.Duration `yaml:"nackBackoff" envconfig:"kuma_xds_server_nack_backoff"`

@@ -111,6 +111,8 @@ xdsServer:
   nackBackoff: 5s # ENV: KUMA_XDS_SERVER_NACK_BACKOFF
   # A delay between proxy terminating a connection and the CP trying to deregister the proxy.
   # It is used only in universal mode when you use direct lifecycle.
+  # Disabling this may cause race conditions that one instance of CP removes proxy object
+  # while proxy is connected to another instance of the CP.
   dataplaneDeregistrationDelay: 10s # ENV: KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY
 
 # API Server configuration
