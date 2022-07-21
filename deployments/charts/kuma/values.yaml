@@ -150,7 +150,7 @@ controlPlane:
 
   # -- Whether to automountServiceAccountToken for cp. Optionally set to false
   automountServiceAccountToken: true
-  
+
   # -- Optionally override the resource spec
   # @default -- the resources will be chosen based on the mode
   resources:
@@ -322,8 +322,6 @@ cni:
 
   # -- use new CNI image (experimental)
   imageExperimental:
-    # -- CNI experimental image registry
-    registry: "kumahq"
     # -- CNI experimental image repository
     repository: "kuma-cni"
     # -- CNI experimental image tag - defaults to .Chart.AppVersion
