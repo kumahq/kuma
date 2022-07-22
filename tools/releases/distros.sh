@@ -53,7 +53,8 @@ function create_kumactl_tarball() {
   make GOOS="$system" GOARCH="$arch" build/kumactl
 
   local dest_dir=build/$RELEASE_NAME-$arch
-  local kuma_dir=$dest_dir/$RELEASE_NAME-$KUMA_VERSION
+  local kuma_subdir="$RELEASE_NAME-$KUMA_VERSION"
+  local kuma_dir=$dest_dir/$kuma_subdir
 
   rm -rf "$dest_dir"
   mkdir "$dest_dir"
@@ -68,7 +69,7 @@ function create_kumactl_tarball() {
 
   archive_path=$(archive_path "$arch" "$system")
 
-  tar -czf "${archive_path}" -C "$dest_dir" .
+  tar -czf "${archive_path}" -C "$dest_dir" "$kuma_subdir"
 }
 
 function create_tarball() {
@@ -83,7 +84,8 @@ function create_tarball() {
   make GOOS="$system" GOARCH="$arch" build
 
   local dest_dir=build/$RELEASE_NAME-$distro-$arch
-  local kuma_dir=$dest_dir/$RELEASE_NAME-$KUMA_VERSION
+  local kuma_subdir="$RELEASE_NAME-$KUMA_VERSION"
+  local kuma_dir=$dest_dir/$kuma_subdir
 
   rm -rf "$dest_dir"
   mkdir "$dest_dir"
@@ -107,7 +109,7 @@ function create_tarball() {
 
   archive_path=$(archive_path "$arch" "$system" "$distro")
 
-  tar -czf "${archive_path}" -C "$dest_dir" .
+  tar -czf "${archive_path}" -C "$dest_dir" "$kuma_subdir"
 }
 
 function package() {
