@@ -139,13 +139,13 @@ func ApplicationsMetrics() {
 			Setup(env.Cluster)
 		Expect(err).To(Succeed())
 	})
-	// E2EAfterAll(func() {
-	// 	Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-	// 	Expect(env.Cluster.DeleteMesh(mesh))
-	// 	Expect(env.Cluster.DeleteMesh(meshNoAggregate))
-	// })
+	E2EAfterAll(func() {
+		Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(env.Cluster.DeleteMesh(mesh))
+		Expect(env.Cluster.DeleteMesh(meshNoAggregate))
+	})
 
-	FIt("should scrape metrics defined in mesh and not fail when defined service doesn't exist", func() {
+	It("should scrape metrics defined in mesh and not fail when defined service doesn't exist", func() {
 		// given
 		podName, err := PodNameOfApp(env.Cluster, "test-server", namespace)
 		Expect(err).ToNot(HaveOccurred())

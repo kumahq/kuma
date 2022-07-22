@@ -32,9 +32,16 @@ func BuildEndpointMap(
 				continue
 			}
 			iface := dataplane.Spec.GetNetworking().ToInboundInterface(inbound)
+			var inboundPort uint32
+			if dataplane.Spec.Networking.GetTransparentProxying() != nil &&
+				dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInbound() != 0 {
+				inboundPort = iface.WorkloadPort
+			} else {
+				inboundPort = iface.DataplanePort
+			}
 			outbound[service] = append(outbound[service], core_xds.Endpoint{
 				Target: iface.DataplaneIP,
-				Port:   iface.DataplanePort,
+				Port:   inboundPort,
 				Tags:   withMesh,
 				Weight: 1,
 			})

@@ -41,7 +41,7 @@ var _ = Describe("ProbeGenerator", func() {
 			}
 
 			// when
-			rs, err := gen.Generate(xds_context.Context{}, proxy)
+			rs, err := gen.Generate(xds_context.Context{ControlPlane: &xds_context.ControlPlaneContext{}}, proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 

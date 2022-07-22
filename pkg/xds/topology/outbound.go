@@ -140,7 +140,13 @@ func fillDataplaneOutbounds(
 			serviceName := inboundTags[mesh_proto.ServiceTag]
 			inboundInterface := dpNetworking.ToInboundInterface(inbound)
 			inboundAddress := inboundInterface.DataplaneAdvertisedIP
-			inboundPort := inboundInterface.DataplanePort
+			var inboundPort uint32
+			if dpSpec.Networking.TransparentProxying != nil &&
+				dpSpec.Networking.GetTransparentProxying().GetRedirectPortInbound() != 0 {
+				inboundPort = inboundInterface.WorkloadPort
+			} else {
+				inboundPort = inboundInterface.DataplanePort
+			}
 
 			// TODO(yskopets): do we need to dedup?
 			// TODO(yskopets): sort ?

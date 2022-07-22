@@ -291,6 +291,57 @@ resources:
     name: outbound:passthrough:ipv4
     trafficDirection: OUTBOUND
     useOriginalDst: true
+- name: probe:listener
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.1
+        portValue: 9000
+    bindToPort: false
+    enableReusePort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            virtualHosts:
+            - domains:
+              - '*'
+              name: probe
+              routes:
+              - match:
+                  headers:
+                  - exactMatch: GET
+                    name: :method
+                  path: /80/probes
+                route:
+                  cluster: localhost:80
+                  regexRewrite:
+                    pattern:
+                      googleRe2: {}
+                      regex: .*
+                    substitution: /probes
+              - match:
+                  headers:
+                  - exactMatch: GET
+                    name: :method
+                  path: /80/probes
+                route:
+                  cluster: localhost:80
+                  regexRewrite:
+                    pattern:
+                      googleRe2: {}
+                      regex: .*
+                    substitution: /probes
+          statPrefix: probe_listener
+    name: probe:listener
+    trafficDirection: INBOUND
 - name: identity_cert:secret:demo
   resource:
     '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret

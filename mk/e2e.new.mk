@@ -129,8 +129,8 @@ test/e2e-kubernetes: $(E2E_DEPS_TARGETS)
 	$(MAKE) test/e2e/k8s/start/cluster/kuma-1
 	$(MAKE) test/e2e/k8s/wait/kuma-1
 	$(MAKE) test/e2e/k8s/load/images/kuma-1
-	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(KUBE_E2E_PKG_LIST) 
-	
+	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(KUBE_E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop/cluster/kuma-1 && exit $$ret)
+	$(MAKE) test/e2e/k8s/stop/cluster/kuma-1
 
 .PHONY: test/e2e-universal
 test/e2e-universal: build/kumactl images/test k3d/network/create

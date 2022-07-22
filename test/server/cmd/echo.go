@@ -13,6 +13,7 @@ import (
 
 func newEchoHTTPCmd() *cobra.Command {
 	args := struct {
+		ip       string
 		port     uint32
 		instance string
 		tls      bool
@@ -78,12 +79,13 @@ func newEchoHTTPCmd() *cobra.Command {
 				})
 			}
 			if args.tls {
-				return http.ListenAndServeTLS(fmt.Sprintf(":%d", args.port), args.crtFile, args.keyFile, nil)
+				return http.ListenAndServeTLS(fmt.Sprintf("%s:%d", args.ip, args.port), args.crtFile, args.keyFile, nil)
 			}
-			return http.ListenAndServe(fmt.Sprintf(":%d", args.port), nil)
+			return http.ListenAndServe(fmt.Sprintf("%s:%d", args.ip, args.port), nil)
 		},
 	}
 	cmd.PersistentFlags().Uint32Var(&args.port, "port", 10011, "port server is listening on")
+	cmd.PersistentFlags().StringVar(&args.ip, "ip", "0.0.0.0", "ip server is listening on")
 	r, err := os.Hostname()
 	if r == "" || err != nil {
 		r = "unknown"

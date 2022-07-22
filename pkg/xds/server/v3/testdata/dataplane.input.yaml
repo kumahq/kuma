@@ -22,3 +22,12 @@ networking:
       servicePort: 8443
       tags:
         kuma.io/service: backend-4
+probes:
+  endpoints:
+  - inboundPath: /probes?type=liveness
+    inboundPort: 80
+    path: /80/probes?type=liveness
+  - inboundPath: /probes?type=readiness
+    inboundPort: 80
+    path: /80/probes?type=readiness
+  port: 9000
