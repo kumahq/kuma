@@ -19,8 +19,8 @@ var _ = Describe("KDS client", func() {
 
 	Context("Universal", func() {
 
-		streams := service.NewXdsConfigStreams()
-		client := admin.NewKDSEnvoyAdminClient(streams, false)
+		rpcs := service.NewEnvoyAdminRPCs()
+		client := admin.NewKDSEnvoyAdminClient(rpcs, false)
 
 		zoneName := "zone-1"
 		var stream *mockStream
@@ -29,7 +29,7 @@ var _ = Describe("KDS client", func() {
 			stream = &mockStream{
 				receivedRequests: make(chan *mesh_proto.XDSConfigRequest, 1),
 			}
-			streams.ZoneConnected(zoneName, stream)
+			rpcs.XDSConfigDump.ClientConnected(zoneName, stream)
 		})
 
 		It("should execute config dump", func() {
@@ -55,7 +55,7 @@ var _ = Describe("KDS client", func() {
 			Expect(request.ResourceName).To(Equal("dp-1"))
 
 			Eventually(func() error {
-				return streams.ResponseReceived(zoneName, &mesh_proto.XDSConfigResponse{
+				return rpcs.XDSConfigDump.ResponseReceived(zoneName, &mesh_proto.XDSConfigResponse{
 					RequestId: request.RequestId,
 					Result: &mesh_proto.XDSConfigResponse_Config{
 						Config: configContent,
@@ -79,7 +79,7 @@ var _ = Describe("KDS client", func() {
 			_, err := client.ConfigDump(context.Background(), dpRes)
 
 			// then
-			Expect(err).To(MatchError("could not send XDSConfigRequest: zone not-connected is not connected"))
+			Expect(err).To(MatchError("could not send XDSConfigRequest: client not-connected is not connected"))
 		})
 
 		It("should time out after X seconds", func() {
@@ -97,7 +97,7 @@ var _ = Describe("KDS client", func() {
 			_, err := client.ConfigDump(ctx, dpRes)
 
 			// then
-			Expect(err).To(MatchError("timeout"))
+			Expect(err).To(MatchError(context.DeadlineExceeded))
 		})
 
 		It("should rethrow error from zone CP", func() {
@@ -121,7 +121,7 @@ var _ = Describe("KDS client", func() {
 			Expect(request.ResourceName).To(Equal("dp-1"))
 
 			Eventually(func() error {
-				return streams.ResponseReceived(zoneName, &mesh_proto.XDSConfigResponse{
+				return rpcs.XDSConfigDump.ResponseReceived(zoneName, &mesh_proto.XDSConfigResponse{
 					RequestId: request.RequestId,
 					Result: &mesh_proto.XDSConfigResponse_Error{
 						Error: "failed",
@@ -136,7 +136,7 @@ var _ = Describe("KDS client", func() {
 
 	Context("Kubernetes", func() {
 
-		streams := service.NewXdsConfigStreams()
+		streams := service.NewEnvoyAdminRPCs()
 		client := admin.NewKDSEnvoyAdminClient(streams, true)
 
 		zoneName := "zone-1"
@@ -146,7 +146,7 @@ var _ = Describe("KDS client", func() {
 			stream = &mockStream{
 				receivedRequests: make(chan *mesh_proto.XDSConfigRequest, 1),
 			}
-			streams.ZoneConnected(zoneName, stream)
+			streams.XDSConfigDump.ClientConnected(zoneName, stream)
 		})
 
 		It("should execute config dump", func() {
@@ -172,7 +172,7 @@ var _ = Describe("KDS client", func() {
 			Expect(request.ResourceName).To(Equal("dp-1"))
 
 			Eventually(func() error {
-				return streams.ResponseReceived(zoneName, &mesh_proto.XDSConfigResponse{
+				return streams.XDSConfigDump.ResponseReceived(zoneName, &mesh_proto.XDSConfigResponse{
 					RequestId: request.RequestId,
 					Result: &mesh_proto.XDSConfigResponse_Config{
 						Config: configContent,
@@ -193,6 +193,11 @@ type mockStream struct {
 
 func (m *mockStream) Send(request *mesh_proto.XDSConfigRequest) error {
 	m.receivedRequests <- request
+	return nil
+}
+
+func (m *mockStream) SendMsg(request interface{}) error {
+	m.receivedRequests <- request.(*mesh_proto.XDSConfigRequest)
 	return nil
 }
 

@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net"
+	"path"
 	"strings"
 	"text/template"
 
@@ -172,6 +173,20 @@ spec:
       - matches:
         - path:
             match: PREFIX
+            value: /prefix/
+        filters:
+        - requestHeader:
+            set:
+              - name: Host
+                value: other.example.kuma.io
+        - rewrite:
+            replacePrefixMatch: "/"
+        backends:
+        - destination:
+            kuma.io/service: echo-server_kuma-test_svc_80 # Matches the echo-server we deployed.
+      - matches:
+        - path:
+            match: PREFIX
             value: /
         backends:
         - destination:
@@ -270,6 +285,16 @@ spec:
 		It("should proxy simple HTTP requests", func() {
 			ProxySimpleRequests(cluster, "kubernetes",
 				net.JoinHostPort(GatewayAddress("edge-gateway"), GatewayPort),
+				client.FromKubernetesPod(ClientNamespace, "gateway-client"))
+		})
+
+		It("should rewrite HTTP requests", func() {
+			expectedPath := path.Join("/test", GinkgoT().Name())
+			targetPath := path.Join("prefix", "/test", GinkgoT().Name())
+			expectedHostname := "other.example.kuma.io"
+			ProxyHTTPRequests(cluster, "kubernetes",
+				net.JoinHostPort(GatewayAddress("edge-gateway"), GatewayPort),
+				targetPath, expectedPath, expectedHostname,
 				client.FromKubernetesPod(ClientNamespace, "gateway-client"))
 		})
 

@@ -8,14 +8,15 @@ import (
 	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
-	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gatewayapi_alpha "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
 type PolicyReference struct {
-	from        gatewayapi.ReferenceGrantFrom
-	toNamespace gatewayapi.Namespace
+	from        gatewayapi_alpha.ReferenceGrantFrom
+	toNamespace gatewayapi_alpha.Namespace
 	// always set when created via the exported functions
-	to gatewayapi.ReferenceGrantTo
+	to gatewayapi_alpha.ReferenceGrantTo
 }
 
 func (pr *PolicyReference) NamespacedNameReferredTo() kube_types.NamespacedName {
@@ -26,49 +27,51 @@ func (pr *PolicyReference) GroupKindReferredTo() kube_schema.GroupKind {
 	return kube_schema.GroupKind{Kind: string(pr.to.Kind), Group: string(pr.to.Group)}
 }
 
-func FromGatewayIn(namespace string) gatewayapi.ReferenceGrantFrom {
-	return gatewayapi.ReferenceGrantFrom{
-		Kind:      gatewayapi.Kind("Gateway"),
-		Group:     gatewayapi.Group(gatewayapi.GroupName),
-		Namespace: gatewayapi.Namespace(namespace),
+func FromGatewayIn(namespace string) gatewayapi_alpha.ReferenceGrantFrom {
+	return gatewayapi_alpha.ReferenceGrantFrom{
+		Kind:      gatewayapi_alpha.Kind("Gateway"),
+		Group:     gatewayapi_alpha.Group(gatewayapi.GroupName),
+		Namespace: gatewayapi_alpha.Namespace(namespace),
 	}
 }
 
-func FromHTTPRouteIn(namespace string) gatewayapi.ReferenceGrantFrom {
-	return gatewayapi.ReferenceGrantFrom{
-		Kind:      gatewayapi.Kind("HTTPRoute"),
-		Group:     gatewayapi.Group(gatewayapi.GroupName),
-		Namespace: gatewayapi.Namespace(namespace),
+func FromHTTPRouteIn(namespace string) gatewayapi_alpha.ReferenceGrantFrom {
+	return gatewayapi_alpha.ReferenceGrantFrom{
+		Kind:      gatewayapi_alpha.Kind("HTTPRoute"),
+		Group:     gatewayapi_alpha.Group(gatewayapi.GroupName),
+		Namespace: gatewayapi_alpha.Namespace(namespace),
 	}
 }
 
-func PolicyReferenceBackend(from gatewayapi.ReferenceGrantFrom, to gatewayapi.BackendObjectReference) PolicyReference {
+func PolicyReferenceBackend(from gatewayapi_alpha.ReferenceGrantFrom, to gatewayapi.BackendObjectReference) PolicyReference {
 	ns := from.Namespace
 	if to.Namespace != nil {
-		ns = *to.Namespace
+		ns = gatewayapi_alpha.Namespace(*to.Namespace)
 	}
+	name := gatewayapi_alpha.ObjectName(to.Name)
 	return PolicyReference{
 		from: from,
-		to: gatewayapi.ReferenceGrantTo{
-			Kind:  *to.Kind,
-			Group: *to.Group,
-			Name:  &to.Name,
+		to: gatewayapi_alpha.ReferenceGrantTo{
+			Kind:  gatewayapi_alpha.Kind(*to.Kind),
+			Group: gatewayapi_alpha.Group(*to.Group),
+			Name:  &name,
 		},
 		toNamespace: ns,
 	}
 }
 
-func PolicyReferenceSecret(from gatewayapi.ReferenceGrantFrom, to gatewayapi.SecretObjectReference) PolicyReference {
+func PolicyReferenceSecret(from gatewayapi_alpha.ReferenceGrantFrom, to gatewayapi.SecretObjectReference) PolicyReference {
 	ns := from.Namespace
 	if to.Namespace != nil {
-		ns = *to.Namespace
+		ns = gatewayapi_alpha.Namespace(*to.Namespace)
 	}
+	name := gatewayapi_alpha.ObjectName(to.Name)
 	return PolicyReference{
 		from: from,
-		to: gatewayapi.ReferenceGrantTo{
-			Kind:  *to.Kind,
-			Group: *to.Group,
-			Name:  &to.Name,
+		to: gatewayapi_alpha.ReferenceGrantTo{
+			Kind:  gatewayapi_alpha.Kind(*to.Kind),
+			Group: gatewayapi_alpha.Group(*to.Group),
+			Name:  &name,
 		},
 		toNamespace: ns,
 	}
@@ -85,7 +88,7 @@ func IsReferencePermitted(
 		return true, nil
 	}
 
-	policies := &gatewayapi.ReferenceGrantList{}
+	policies := &gatewayapi_alpha.ReferenceGrantList{}
 	if err := client.List(ctx, policies, kube_client.InNamespace(reference.toNamespace)); err != nil {
 		return false, errors.Wrap(err, "failed to list ReferencePolicies")
 	}
@@ -103,7 +106,7 @@ func IsReferencePermitted(
 	return false, nil
 }
 
-func someFromMatches(from gatewayapi.ReferenceGrantFrom, permitted []gatewayapi.ReferenceGrantFrom) bool {
+func someFromMatches(from gatewayapi_alpha.ReferenceGrantFrom, permitted []gatewayapi_alpha.ReferenceGrantFrom) bool {
 	for _, permittedFrom := range permitted {
 		if reflect.DeepEqual(permittedFrom, from) {
 			return true
@@ -112,7 +115,7 @@ func someFromMatches(from gatewayapi.ReferenceGrantFrom, permitted []gatewayapi.
 	return false
 }
 
-func someToMatches(to gatewayapi.ReferenceGrantTo, permitted []gatewayapi.ReferenceGrantTo) bool {
+func someToMatches(to gatewayapi_alpha.ReferenceGrantTo, permitted []gatewayapi_alpha.ReferenceGrantTo) bool {
 	for _, permittedTo := range permitted {
 		if permittedTo.Group == to.Group &&
 			permittedTo.Kind == to.Kind &&

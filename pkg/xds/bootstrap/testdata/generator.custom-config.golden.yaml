@@ -75,6 +75,7 @@ node:
       }
     dynamicMetadata:
       test: value
+    features: []
     version:
       dependencies: {}
       envoy:

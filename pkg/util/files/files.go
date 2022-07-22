@@ -1,6 +1,11 @@
 package files
 
-import "os"
+import (
+	"io/fs"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+)
 
 func FileExists(path string) bool {
 	_, err := os.Stat(path)
@@ -13,4 +18,15 @@ func FileEmpty(path string) (bool, error) {
 		return true, err
 	}
 	return file.Size() == 0, nil
+}
+
+// IsDirWriteable checks if dir is writable by writing and removing a file
+// to dir. It returns nil if dir is writable.
+func IsDirWriteable(dir string) error {
+	f := filepath.Join(dir, ".touch")
+	perm := 0600
+	if err := ioutil.WriteFile(f, []byte(""), fs.FileMode(perm)); err != nil {
+		return err
+	}
+	return os.Remove(f)
 }

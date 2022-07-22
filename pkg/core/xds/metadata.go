@@ -27,6 +27,7 @@ const (
 	fieldDataplaneProxyType         = "dataplane.proxyType"
 	fieldVersion                    = "version"
 	FieldPrefixDependenciesVersion  = "version.dependencies"
+	fieldFeatures                   = "features"
 )
 
 // DataplaneMetadata represents environment-specific part of a dataplane configuration.
@@ -51,6 +52,7 @@ type DataplaneMetadata struct {
 	DynamicMetadata map[string]string
 	ProxyType       mesh_proto.ProxyType
 	Version         *mesh_proto.Version
+	Features        Features
 }
 
 // GetDataplaneResource returns the underlying DataplaneResource, if present.
@@ -160,6 +162,13 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 				"resource", r.Descriptor().Name,
 				"field", fieldDataplaneDataplaneResource,
 				"value", value)
+		}
+	}
+
+	if listValue := xdsMetadata.Fields[fieldFeatures]; listValue != nil {
+		metadata.Features = Features{}
+		for _, feature := range listValue.GetListValue().GetValues() {
+			metadata.Features[feature.GetStringValue()] = true
 		}
 	}
 

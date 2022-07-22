@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"sort"
 
-	envoy_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
@@ -63,7 +61,10 @@ func (f RouteMustConfigureFunc) Configure(r *envoy_config_route.Route) error {
 
 // DestinationClusterName generates a unique cluster name for the
 // destination. The destination must contain at least a service tag.
-func DestinationClusterName(d *Destination, c *envoy_cluster_v3.Cluster) (string, error) {
+func DestinationClusterName(
+	d *Destination,
+	identifyingTags map[string]string,
+) (string, error) {
 	serviceName := d.Destination[mesh_proto.ServiceTag]
 	if serviceName == "" {
 		return "", errors.Errorf("missing %s tag", mesh_proto.ServiceTag)
@@ -80,18 +81,23 @@ func DestinationClusterName(d *Destination, c *envoy_cluster_v3.Cluster) (string
 
 	h := sha256.New()
 
+	// destination tags from route
 	for _, k := range keys {
 		h.Write([]byte(k))
 		h.Write([]byte(d.Destination[k]))
 	}
 
-	any, err := util_proto.MarshalAnyDeterministic(c)
-	if err != nil {
-		return "", err
+	keys = []string{}
+	for k := range identifyingTags {
+		keys = append(keys, k)
 	}
+	sort.Strings(keys)
 
-	h.Write([]byte(any.GetTypeUrl()))
-	h.Write(any.GetValue())
+	// identifyingTags contains listener, meshGateway and Dataplane tags
+	for _, k := range keys {
+		h.Write([]byte(k))
+		h.Write([]byte(identifyingTags[k]))
+	}
 
 	// The qualifier is 16 hex digits. Unscientifically balancing the length
 	// of the hex against the likelihood of collisions.

@@ -36,23 +36,28 @@ jobs:
       filename: ${{ steps.package.outputs.filename }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Install chart-releaser
         run:
           curl -L "https://github.com/helm/chart-releaser/releases/download/v${CR_VERSION}/chart-releaser_${CR_VERSION}_linux_amd64.tar.gz"
           | sudo tar xvz --directory /usr/bin cr
-      - name: Update chart versions on push
-        if: github.event_name == 'push'
+      - name: Update chart versions
         run: |
           git config user.name "${GH_USER}"
           git config user.email "${GH_EMAIL}"
 
-          ./tools/releases/helm.sh --dev-version
+          args="--update-version"
+          if [[ ${{ github.event_name }} == "push" ]]; then
+            args="${args} --dev"
+          fi
+
+          ./tools/releases/helm.sh ${args}
 
           git add -u deployments/charts
-          git commit -m "ci(helm): update versions for dev version"
+          # This commit never ends up in the repo
+          git commit -m "ci(helm): update versions"
       - name: Package chart
         id: package
         run: |
@@ -61,7 +66,7 @@ jobs:
           PKG_FILENAME=$(find .cr-release-packages -type f -printf "%f\n")
           echo "::set-output name=filename::${PKG_FILENAME}"
       - name: Upload packaged chart
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ steps.package.outputs.filename }}
           path: .cr-release-packages/${{ steps.package.outputs.filename }}
@@ -75,7 +80,7 @@ jobs:
     if: github.event.inputs.release == 'true'
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Install chart-releaser
@@ -83,7 +88,7 @@ jobs:
           curl -L "https://github.com/helm/chart-releaser/releases/download/v${CR_VERSION}/chart-releaser_${CR_VERSION}_linux_amd64.tar.gz"
           | sudo tar xvz --directory /usr/bin cr
       - name: Download packaged chart
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: ${{ needs.package.outputs.filename }}
           path: .cr-release-packages

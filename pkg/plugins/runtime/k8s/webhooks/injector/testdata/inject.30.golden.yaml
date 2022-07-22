@@ -112,6 +112,10 @@ spec:
       privileged: false
       runAsGroup: 5678
       runAsUser: 5678
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount/
+      name: '{{ template "kong.serviceAccountTokenName" . }}'
+      readOnly: true
   initContainers:
   - args:
     - --redirect-outbound-port

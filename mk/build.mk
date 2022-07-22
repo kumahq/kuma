@@ -33,7 +33,7 @@ COREDNS_TMP_DIRECTORY ?= $(BUILD_DIR)/coredns
 COREDNS_PLUGIN_CFG_PATH ?= $(TOP)/tools/builds/coredns/templates/plugin.cfg
 
 # List of binaries that we have release build rules for.
-BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl kuma-prometheus-sd coredns envoy
+BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl kuma-prometheus-sd coredns envoy kuma-cni install-cni
 
 # List of binaries that we have test build roles for.
 BUILD_TEST_BINARIES := test-server
@@ -86,6 +86,14 @@ build/kuma-dp: ## Dev: Build `kuma-dp` binary
 build/kumactl: ## Dev: Build `kumactl` binary
 	$(Build_Go_Application) ./app/$(notdir $@)
 
+.PHONY: build/kuma-cni
+build/kuma-cni: ## Dev: Build `kumactl` binary
+	$(Build_Go_Application) -ldflags="-extldflags=-static" ./app/cni/cmd/kuma-cni
+
+.PHONY: build/install-cni
+build/install-cni: ## Dev: Build `kumactl` binary
+	$(Build_Go_Application) -ldflags="-extldflags=-static" ./app/cni/cmd/install
+
 .PHONY: build/coredns
 build/coredns:
 ifeq (,$(wildcard $(BUILD_ARTIFACTS_DIR)/coredns/coredns))
@@ -108,6 +116,22 @@ build/kuma-prometheus-sd: ## Dev: Build `kuma-prometheus-sd` binary
 .PHONY: build/test-server
 build/test-server: ## Dev: Build `test-server` binary
 	$(Build_Go_Application) ./test/server
+
+.PHONY: build/kuma-cni/linux-amd64
+build/kuma-cni/linux-amd64:
+	GOOS=linux GOARCH=amd64 $(MAKE) build/kuma-cni
+
+.PHONY: build/kuma-cni/linux-arm64
+build/kuma-cni/linux-arm64:
+	GOOS=linux GOARCH=arm64 $(MAKE) build/kuma-cni
+
+.PHONY: build/install-cni/linux-amd64
+build/install-cni/linux-amd64:
+	GOOS=linux GOARCH=amd64 $(MAKE) build/install-cni
+
+.PHONY: build/install-cni/linux-arm64
+build/install-cni/linux-arm64:
+	GOOS=linux GOARCH=arm64 $(MAKE) build/install-cni
 
 .PHONY: build/kuma-cp/linux-amd64
 build/kuma-cp/linux-amd64:

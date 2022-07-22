@@ -434,6 +434,16 @@ access:
       users: [ ] # ENV: KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_USERS
       # List of groups that are allowed to get envoy config dump
       groups: ["mesh-system:unauthenticated","mesh-system:authenticated"] # ENV: KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_GROUPS
+    viewStats:
+      # List of users that are allowed to get envoy stats
+      users: [ ] # ENV: KUMA_ACCESS_STATIC_VIEW_STATS_USERS
+      # List of groups that are allowed to get envoy stats
+      groups: ["mesh-system:unauthenticated","mesh-system:authenticated"] # ENV: KUMA_ACCESS_STATIC_VIEW_STATS_GROUPS
+    viewClusters:
+      # List of users that are allowed to get envoy clusters
+      users: [ ] # ENV: KUMA_ACCESS_STATIC_VIEW_CLUSTERS_USERS
+      # List of groups that are allowed to get envoy clusters
+      groups: ["mesh-system:unauthenticated","mesh-system:authenticated"] # ENV: KUMA_ACCESS_STATIC_VIEW_CLUSTERS_GROUPS
 
 # Configuration of experimental features of Kuma
 experimental:

@@ -16,6 +16,7 @@ type BootstrapRequest struct {
 	DNSPort         uint32            `json:"dnsPort,omitempty"`
 	EmptyDNSPort    uint32            `json:"emptyDnsPort,omitempty"`
 	OperatingSystem string            `json:"operatingSystem"`
+	Features        []string          `json:"features"`
 }
 
 type Version struct {

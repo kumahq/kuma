@@ -172,17 +172,18 @@ func (r *resourceEndpoints) createResource(ctx context.Context, name string, mes
 }
 
 func (r *resourceEndpoints) updateResource(ctx context.Context, res model.Resource, restRes rest.Resource, response *restful.Response) {
-	_ = res.SetSpec(restRes.Spec)
-
 	if err := r.resourceAccess.ValidateUpdate(
 		model.ResourceKey{Mesh: res.GetMeta().GetMesh(), Name: res.GetMeta().GetName()},
 		res.GetSpec(),
+		restRes.Spec,
 		r.descriptor,
 		user.FromCtx(ctx),
 	); err != nil {
 		rest_errors.HandleError(response, err, "Access Denied")
 		return
 	}
+
+	_ = res.SetSpec(restRes.Spec)
 
 	if err := r.resManager.Update(ctx, res); err != nil {
 		rest_errors.HandleError(response, err, "Could not update a resource")

@@ -323,6 +323,42 @@ func RouteActionRedirect(redirect *Redirection) RouteConfigurer {
 	})
 }
 
+func RouteRewrite(rewrite *Rewrite) RouteConfigurer {
+	if rewrite == nil {
+		return RouteConfigureFunc(nil)
+	}
+
+	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+		if r.GetAction() == nil {
+			return errors.New("cannot configure rewrite before the route action")
+		}
+
+		action := r.GetRoute()
+
+		if action == nil {
+			return errors.New("cannot configure rewrite on a non-forwarding route")
+		}
+
+		if rewrite.ReplaceFullPath != nil {
+			action.RegexRewrite = &envoy_type_matcher.RegexMatchAndSubstitute{
+				Pattern: &envoy_type_matcher.RegexMatcher{
+					EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
+						GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
+					},
+					Regex: `.*`,
+				},
+				Substitution: *rewrite.ReplaceFullPath,
+			}
+		}
+
+		if rewrite.ReplacePrefixMatch != nil {
+			action.PrefixRewrite = *rewrite.ReplacePrefixMatch
+		}
+
+		return nil
+	})
+}
+
 // RouteActionForward configures the route to forward traffic to the
 // given destinations, with the appropriate weights. This replaces any
 // previous action specification.

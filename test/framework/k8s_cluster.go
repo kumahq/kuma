@@ -222,8 +222,8 @@ func (c *K8sCluster) WaitNamespaceCreate(namespace string) {
 func (c *K8sCluster) WaitNamespaceDelete(namespace string) {
 	retry.DoWithRetry(c.t,
 		fmt.Sprintf("Wait for %s Namespace to terminate.", namespace),
-		2*c.defaultRetries,
-		2*c.defaultTimeout,
+		c.defaultRetries,
+		5*c.defaultTimeout,
 		func() (string, error) {
 			_, err := k8s.GetNamespaceE(c.t,
 				c.GetKubectlOptions(),
@@ -323,6 +323,10 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		argsMap["--cni-conf-name"] = Config.CNIConf.ConfName
 	}
 
+	if c.opts.cniExperimental {
+		argsMap["--cni-experimental"] = ""
+	}
+
 	if Config.XDSApiVersion != "" {
 		argsMap["--env-var"] = "KUMA_BOOTSTRAP_SERVER_API_VERSION=" + Config.XDSApiVersion
 	}
@@ -387,6 +391,10 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		values["cni.netDir"] = Config.CNIConf.NetDir
 		values["cni.binDir"] = Config.CNIConf.BinDir
 		values["cni.confName"] = Config.CNIConf.ConfName
+	}
+
+	if c.opts.cniExperimental {
+		values["experimental.cni"] = "true"
 	}
 
 	if Config.CIDR != "" {

@@ -2,6 +2,7 @@ package gatewayapi
 
 import (
 	"net"
+	"runtime"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
@@ -17,11 +18,11 @@ func GatewayAPICRDs(cluster Cluster) error {
 	return k8s.RunKubectlE(
 		cluster.GetTesting(),
 		cluster.GetKubectlOptions(),
-		"apply", "-k", "github.com/kubernetes-sigs/gateway-api/config/crd?ref=v0.4.3")
+		"apply", "-f", "https://github.com/kubernetes-sigs/gateway-api/releases/download/v0.5.0/experimental-install.yaml")
 }
 
 const GatewayClass = `
-apiVersion: gateway.networking.k8s.io/v1alpha2
+apiVersion: gateway.networking.k8s.io/v1beta1
 kind: GatewayClass
 metadata:
   name: kuma
@@ -34,6 +35,9 @@ var cluster *K8sCluster
 var _ = E2EBeforeSuite(func() {
 	if Config.IPV6 {
 		return // KIND which is used for IPV6 tests does not support load balancer that is used in this test.
+	}
+	if runtime.GOARCH == "arm64" {
+		Skip("The webhook doesn't provide an arm64 image")
 	}
 
 	cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
@@ -169,7 +173,7 @@ spec:
 
 	Context("HTTP Gateway", Ordered, func() {
 		gateway := `
-apiVersion: gateway.networking.k8s.io/v1alpha2
+apiVersion: gateway.networking.k8s.io/v1beta1
 kind: Gateway
 metadata:
   name: kuma
@@ -194,7 +198,7 @@ spec:
 		It("should route the traffic to test-server by path", func() {
 			// given
 			route := `
-apiVersion: gateway.networking.k8s.io/v1alpha2
+apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
   name: test-server-paths
@@ -240,7 +244,7 @@ spec:
 		It("should route the traffic to test-server by header", func() {
 			// given
 			routes := `
-apiVersion: gateway.networking.k8s.io/v1alpha2
+apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
   name: test-server-1

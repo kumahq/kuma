@@ -12,6 +12,9 @@ envoy_cluster_assignment_stale{envoy_cluster_name="localhost_3000"} 17
 envoy_cluster_assignment_stale{envoy_cluster_name="outbound_passthrough_ipv4"} 18
 envoy_cluster_assignment_stale{envoy_cluster_name="outbound_passthrough_ipv6"} 19
 
+# TYPE envoy_http_downstream_rq_total counter
+envoy_http_downstream_rq_total{envoy_http_conn_manager_prefix="default_gateway"} 10
+
 # TYPE envoy_cluster_assignment_timeout_received counter
 envoy_cluster_assignment_timeout_received{envoy_cluster_name="access_log_sink"} 1
 envoy_cluster_assignment_timeout_received{envoy_cluster_name="ads_cluster"} 2

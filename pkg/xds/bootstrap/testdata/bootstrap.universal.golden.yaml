@@ -37,6 +37,7 @@ node:
   id: default.dp-1
   metadata:
     dataplane.proxyType: dataplane
+    features: []
     version:
       dependencies: {}
       envoy:

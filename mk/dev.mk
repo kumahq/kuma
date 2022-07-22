@@ -343,3 +343,11 @@ dev/envrc: $(KUBECONFIG_DIR)/kind-kuma-current ## Generate .envrc
 	done >> .envrc
 	@echo 'export KUBEBUILDER_ASSETS=$${CI_TOOLS_DIR}' >> .envrc
 	@direnv allow
+
+.PHONY: dev/sync-demo
+dev/sync-demo:
+	rm app/kumactl/data/install/k8s/demo/demo.yaml
+	curl -s https://raw.githubusercontent.com/kumahq/kuma-counter-demo/master/demo.yaml | \
+		sed 's/"local"/"{{ .Zone }}"/g' | \
+		sed 's/\([^/]\)kuma-demo/\1{{ .Namespace }}/g' \
+		> app/kumactl/data/install/k8s/demo/demo.yaml

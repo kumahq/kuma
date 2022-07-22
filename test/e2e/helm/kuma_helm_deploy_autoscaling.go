@@ -19,7 +19,7 @@ func ControlPlaneAutoscalingWithHelmChart() {
 
 	var cluster Cluster
 
-	BeforeEach(func() {
+	var setup = func(withCni KumaDeploymentOption) {
 		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent).
 			WithTimeout(6 * time.Second).
 			WithRetries(60)
@@ -34,25 +34,31 @@ func ControlPlaneAutoscalingWithHelmChart() {
 				WithHelmReleaseName(releaseName),
 				WithHelmOpt("controlPlane.autoscaling.enabled", "true"),
 				WithHelmOpt("controlPlane.autoscaling.minReplicas", strconv.Itoa(minReplicas)),
-				WithCNI(),
+				withCni,
 			)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
-	})
+	}
 
 	E2EAfterEach(func() {
 		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
-	It("Should scale to the minimum replicas", func() {
-		// given a kuma deployment with autoscaling and min replicas
-		k8sCluster := cluster.(*K8sCluster)
+	DescribeTable(
+		"Should scale to the minimum replicas",
+		func(withCni KumaDeploymentOption) {
+			setup(withCni)
+			// given a kuma deployment with autoscaling and min replicas
+			k8sCluster := cluster.(*K8sCluster)
 
-		// when waiting for autoscaling
-		err := k8sCluster.WaitApp(Config.KumaServiceName, Config.KumaNamespace, minReplicas)
+			// when waiting for autoscaling
+			err := k8sCluster.WaitApp(Config.KumaServiceName, Config.KumaNamespace, minReplicas)
 
-		// then the min replicas should come up
-		Expect(err).ToNot(HaveOccurred())
-	})
+			// then the min replicas should come up
+			Expect(err).ToNot(HaveOccurred())
+		},
+		Entry("with default cni", WithCNI()),
+		Entry("with new cni (experimental)", WithExperimentalCNI()),
+	)
 }

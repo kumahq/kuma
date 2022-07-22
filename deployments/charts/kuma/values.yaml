@@ -150,7 +150,7 @@ controlPlane:
 
   # -- Whether to automountServiceAccountToken for cp. Optionally set to false
   automountServiceAccountToken: true
-  
+
   # -- Optionally override the resource spec
   # @default -- the resources will be chosen based on the mode
   resources:
@@ -319,6 +319,13 @@ cni:
     repository: "install-cni"
     # -- CNI image tag
     tag: "0.0.10"
+
+  # -- use new CNI image (experimental)
+  imageExperimental:
+    # -- CNI experimental image repository
+    repository: "kuma-cni"
+    # -- CNI experimental image tag - defaults to .Chart.AppVersion
+    tag:
 
   # -- Security context at the pod level for cni
   podSecurityContext: {}
@@ -645,3 +652,5 @@ hooks:
 experimental:
   # -- If true, it installs experimental Gateway API support
   gatewayAPI: false
+  # -- If true, it installs experimental new version of the CNI
+  cni: false
