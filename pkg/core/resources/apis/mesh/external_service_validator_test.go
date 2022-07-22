@@ -304,6 +304,32 @@ var _ = Describe("ExternalService", func() {
                 - field: tags["invalidTagValue"]
                   message: tag value must consist of alphanumeric characters, dots, dashes and underscores`,
 		}),
+		Entry("tls: empty inline cert", testCase{
+			dataplane: `
+                type: ExternalService
+                name: es-1
+                mesh: default
+                tags:
+                  kuma.io/service: backend
+                networking:
+                  address: 192.168.0.1:8080
+                  tls:
+                    enabled: true
+                    caCert:
+                      inline: ""
+                    clientCert:
+                      inlineString: ""
+                    clientKey:
+                      secret: ""`,
+			expected: `
+                violations:
+                - field: networking.tls.caCert
+                  message: data source cannot be empty
+                - field: networking.tls.clientCert
+                  message: data source cannot be empty
+                - field: networking.tls.clientKey
+                  message: data source cannot be empty`,
+		}),
 	)
 
 })
