@@ -1,11 +1,20 @@
 ARG BASE_IMAGE_ARCH=amd64
-FROM --platform=linux/$BASE_IMAGE_ARCH gcr.io/distroless/base-debian11:debug-nonroot
 
+FROM debian:11 as envoy
 ARG ENVOY_VERSION
 ARG ARCH
 
+ADD /build/artifacts-linux-$ARCH/envoy/envoy-$ENVOY_VERSION-alpine /envoy
+
+RUN apt-get update && \
+    apt-get install -y libcap2-bin
+RUN setcap cap_net_bind_service+ep /envoy
+
+FROM --platform=linux/$BASE_IMAGE_ARCH gcr.io/distroless/base-debian11:debug-nonroot
+ARG ARCH
+
 ADD /build/artifacts-linux-$ARCH/kuma-dp/kuma-dp /usr/bin
-ADD /build/artifacts-linux-$ARCH/envoy/envoy-$ENVOY_VERSION-alpine /usr/bin/envoy
+COPY --from=envoy /envoy /usr/bin/envoy
 ADD /build/artifacts-linux-$ARCH/coredns/coredns /usr/bin
 
 COPY /tools/releases/templates/LICENSE \

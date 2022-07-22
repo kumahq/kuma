@@ -18,6 +18,7 @@ kumactl install control-plane [flags]
       --cni-chained                                  enable chained CNI installation
       --cni-conf-name string                         set the CNI configuration name (default "kuma-cni.conf")
       --cni-enabled                                  install Kuma with CNI instead of proxy init container
+      --cni-experimental                             install Kuma with new version of the CNI (experimental)
       --cni-net-dir string                           set the CNI install directory (default "/etc/cni/multus/net.d")
       --cni-node-selector stringToString             node selector for CNI deployment (default [])
       --cni-registry string                          registry for the image of the Kuma CNI component

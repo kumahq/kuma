@@ -1738,7 +1738,7 @@ rules:
     resources:
       - gatewayclasses
       - gateways
-      - referencepolicies
+      - referencegrants
       - httproutes
     verbs:
       - create
@@ -1970,6 +1970,13 @@ rules:
       - update
       - patch
       - delete
+  # leader-for-life election deletes Pods in some circumstances
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -2046,7 +2053,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 7608e20e60bbf732fc10719c710ef4e8e5d2221f20ff0dbf699ae918a9b70571
-        checksum/tls-secrets: 78f7b1202ca56b0acf49a07b083b7f10856688cc0290963e18cd00ea2b2b1e0c
+        checksum/tls-secrets: 7cbeeca05a4c162980aef211b2f97ff07e1eb5b7155f4d2c9981b0c1a4e16e54
         
       labels: 
         app: kuma-control-plane
@@ -2440,37 +2447,15 @@ webhooks:
       service:
         namespace: kuma
         name: kuma-ctrl-plane
-        path: /validate-v1alpha2-gateway
+        path: /validate-gatewayclass
     rules:
       - apiGroups:
           - "gateway.networking.k8s.io"
         apiVersions:
           - v1alpha2
+          - v1beta1
         operations:
           - CREATE
         resources:
           - gatewayclasses
-    sideEffects: None
-  - name: validate.gateway.networking.k8s.io
-    admissionReviewVersions: ["v1"]
-    failurePolicy: Fail
-    matchPolicy: Equivalent
-    clientConfig:
-      caBundle: XYZ
-      service:
-        namespace: kuma
-        name: kuma-ctrl-plane
-        path: /validate-v1alpha2-gateway-upstream
-    rules:
-      - apiGroups:
-          - "gateway.networking.k8s.io"
-        apiVersions:
-          - v1alpha2
-        operations:
-          - CREATE
-          - UPDATE
-        resources:
-          - gateways
-          - gatewayclasses
-          - httproutes
     sideEffects: None

@@ -54,7 +54,7 @@ spec:
             - name: tcp
               containerPort: 6379
           lifecycle:
-            preStop:
+            preStop: # delay shutdown to support graceful mesh leave
               exec:
                 command: ["/bin/sleep", "30"]
             postStart:
@@ -78,7 +78,7 @@ spec:
     spec:
       containers:
         - name: demo-app
-          image: "thefosk/kuma-demo"
+          image: "kumahq/kuma-demo"
           env:
             - name: REDIS_HOST
               value: "redis.kuma-demo.svc.cluster.local"

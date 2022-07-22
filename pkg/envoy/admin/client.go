@@ -27,6 +27,9 @@ import (
 
 type EnvoyAdminClient interface {
 	PostQuit(ctx context.Context, dataplane *core_mesh.DataplaneResource) error
+
+	Stats(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error)
+	Clusters(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error)
 	ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error)
 }
 
@@ -170,7 +173,33 @@ func (a *envoyAdminClient) PostQuit(ctx context.Context, dataplane *core_mesh.Da
 	return nil
 }
 
+func (a *envoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+	return a.executeRequest(ctx, proxy, "stats")
+}
+
+func (a *envoyAdminClient) Clusters(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+	return a.executeRequest(ctx, proxy, "clusters")
+}
+
 func (a *envoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+	configDump, err := a.executeRequest(ctx, proxy, "config_dump")
+	if err != nil {
+		return nil, err
+	}
+
+	cd := &envoy_admin_v3.ConfigDump{}
+	if err := util_proto.FromJSON(configDump, cd); err != nil {
+		return nil, err
+	}
+
+	if err := Sanitize(cd); err != nil {
+		return nil, err
+	}
+
+	return util_proto.ToJSONIndent(cd, " ")
+}
+
+func (a *envoyAdminClient) executeRequest(ctx context.Context, proxy core_model.ResourceWithAddress, path string) ([]byte, error) {
 	var httpClient *http.Client
 	var err error
 	u := &url.URL{}
@@ -200,7 +229,7 @@ func (a *envoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.Reso
 	}
 
 	u.Host = proxy.AdminAddress(a.defaultAdminPort)
-	u.Path = "config_dump"
+	u.Path = path
 	request, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
 	if err != nil {
 		return nil, err
@@ -216,19 +245,9 @@ func (a *envoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.Reso
 		return nil, errors.Errorf("envoy response [%d %s] [%s]", response.StatusCode, response.Status, response.Body)
 	}
 
-	configDump, err := io.ReadAll(response.Body)
+	resp, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, err
 	}
-
-	cd := &envoy_admin_v3.ConfigDump{}
-	if err := util_proto.FromJSON(configDump, cd); err != nil {
-		return nil, err
-	}
-
-	if err := Sanitize(cd); err != nil {
-		return nil, err
-	}
-
-	return util_proto.ToJSONIndent(cd, " ")
+	return resp, nil
 }

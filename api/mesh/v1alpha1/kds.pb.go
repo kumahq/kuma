@@ -246,13 +246,359 @@ type XDSConfigResponse_Error struct {
 }
 
 type XDSConfigResponse_Config struct {
-	// The XDS Config that is a successful result of XDS Config DUMP execution.
+	// The XDS Config that is a successful result of XDS Config dump execution.
 	Config []byte `protobuf:"bytes,3,opt,name=config,proto3,oneof"`
 }
 
 func (*XDSConfigResponse_Error) isXDSConfigResponse_Result() {}
 
 func (*XDSConfigResponse_Config) isXDSConfigResponse_Result() {}
+
+// StatsRequest is a request for kuma-dp stats that is executed on Zone CP.
+type StatsRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// RequestID is a UUID of a request so we can correlate requests with response
+	// on one stream.
+	RequestId string `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	// Type of resource (Dataplane, ZoneIngress, ZoneEgress)
+	ResourceType string `protobuf:"bytes,2,opt,name=resource_type,json=resourceType,proto3" json:"resource_type,omitempty"`
+	// Name of the resource on which we execute kuma-dp stats request.
+	ResourceName string `protobuf:"bytes,3,opt,name=resource_name,json=resourceName,proto3" json:"resource_name,omitempty"`
+	// Mesh of the resource on which we execute kuma-dp stats request.
+	// Should be empty for ZoneIngress, ZoneEgress.
+	ResourceMesh string `protobuf:"bytes,4,opt,name=resource_mesh,json=resourceMesh,proto3" json:"resource_mesh,omitempty"`
+}
+
+func (x *StatsRequest) Reset() {
+	*x = StatsRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_mesh_v1alpha1_kds_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *StatsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StatsRequest) ProtoMessage() {}
+
+func (x *StatsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_mesh_v1alpha1_kds_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StatsRequest.ProtoReflect.Descriptor instead.
+func (*StatsRequest) Descriptor() ([]byte, []int) {
+	return file_mesh_v1alpha1_kds_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *StatsRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *StatsRequest) GetResourceType() string {
+	if x != nil {
+		return x.ResourceType
+	}
+	return ""
+}
+
+func (x *StatsRequest) GetResourceName() string {
+	if x != nil {
+		return x.ResourceName
+	}
+	return ""
+}
+
+func (x *StatsRequest) GetResourceMesh() string {
+	if x != nil {
+		return x.ResourceMesh
+	}
+	return ""
+}
+
+// StatsResponse is a response containing result of kuma-dp stats execution on
+// Zone CP.
+type StatsResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// RequestID is a UUID that was set by the Global CP.
+	RequestId string `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	// Types that are assignable to Result:
+	//	*StatsResponse_Error
+	//	*StatsResponse_Stats
+	Result isStatsResponse_Result `protobuf_oneof:"result"`
+}
+
+func (x *StatsResponse) Reset() {
+	*x = StatsResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_mesh_v1alpha1_kds_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *StatsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StatsResponse) ProtoMessage() {}
+
+func (x *StatsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_mesh_v1alpha1_kds_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StatsResponse.ProtoReflect.Descriptor instead.
+func (*StatsResponse) Descriptor() ([]byte, []int) {
+	return file_mesh_v1alpha1_kds_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *StatsResponse) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (m *StatsResponse) GetResult() isStatsResponse_Result {
+	if m != nil {
+		return m.Result
+	}
+	return nil
+}
+
+func (x *StatsResponse) GetError() string {
+	if x, ok := x.GetResult().(*StatsResponse_Error); ok {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *StatsResponse) GetStats() []byte {
+	if x, ok := x.GetResult().(*StatsResponse_Stats); ok {
+		return x.Stats
+	}
+	return nil
+}
+
+type isStatsResponse_Result interface {
+	isStatsResponse_Result()
+}
+
+type StatsResponse_Error struct {
+	// Error that was captured by the Zone CP when executing kuma-dp stats
+	// request.
+	Error string `protobuf:"bytes,2,opt,name=error,proto3,oneof"`
+}
+
+type StatsResponse_Stats struct {
+	// The stats content that is a successful result of kuma-dp stats execution.
+	Stats []byte `protobuf:"bytes,3,opt,name=stats,proto3,oneof"`
+}
+
+func (*StatsResponse_Error) isStatsResponse_Result() {}
+
+func (*StatsResponse_Stats) isStatsResponse_Result() {}
+
+// ClustersRequest is a request for kuma-dp clusters that is executed on Zone
+// CP.
+type ClustersRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// RequestID is a UUID of a request so we can correlate requests with response
+	// on one stream.
+	RequestId string `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	// Type of resource (Dataplane, ZoneIngress, ZoneEgress)
+	ResourceType string `protobuf:"bytes,2,opt,name=resource_type,json=resourceType,proto3" json:"resource_type,omitempty"`
+	// Name of the resource on which we execute kuma-dp clusters request.
+	ResourceName string `protobuf:"bytes,3,opt,name=resource_name,json=resourceName,proto3" json:"resource_name,omitempty"`
+	// Mesh of the resource on which we execute kuma-dp clusters request.
+	// Should be empty for ZoneIngress, ZoneEgress.
+	ResourceMesh string `protobuf:"bytes,4,opt,name=resource_mesh,json=resourceMesh,proto3" json:"resource_mesh,omitempty"`
+}
+
+func (x *ClustersRequest) Reset() {
+	*x = ClustersRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_mesh_v1alpha1_kds_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ClustersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClustersRequest) ProtoMessage() {}
+
+func (x *ClustersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_mesh_v1alpha1_kds_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClustersRequest.ProtoReflect.Descriptor instead.
+func (*ClustersRequest) Descriptor() ([]byte, []int) {
+	return file_mesh_v1alpha1_kds_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *ClustersRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *ClustersRequest) GetResourceType() string {
+	if x != nil {
+		return x.ResourceType
+	}
+	return ""
+}
+
+func (x *ClustersRequest) GetResourceName() string {
+	if x != nil {
+		return x.ResourceName
+	}
+	return ""
+}
+
+func (x *ClustersRequest) GetResourceMesh() string {
+	if x != nil {
+		return x.ResourceMesh
+	}
+	return ""
+}
+
+// ClustersResponse is a response containing result of kuma-dp clusters
+// execution on Zone CP.
+type ClustersResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// RequestID is a UUID that was set by the Global CP.
+	RequestId string `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	// Types that are assignable to Result:
+	//	*ClustersResponse_Error
+	//	*ClustersResponse_Clusters
+	Result isClustersResponse_Result `protobuf_oneof:"result"`
+}
+
+func (x *ClustersResponse) Reset() {
+	*x = ClustersResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_mesh_v1alpha1_kds_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ClustersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClustersResponse) ProtoMessage() {}
+
+func (x *ClustersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_mesh_v1alpha1_kds_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClustersResponse.ProtoReflect.Descriptor instead.
+func (*ClustersResponse) Descriptor() ([]byte, []int) {
+	return file_mesh_v1alpha1_kds_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ClustersResponse) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (m *ClustersResponse) GetResult() isClustersResponse_Result {
+	if m != nil {
+		return m.Result
+	}
+	return nil
+}
+
+func (x *ClustersResponse) GetError() string {
+	if x, ok := x.GetResult().(*ClustersResponse_Error); ok {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *ClustersResponse) GetClusters() []byte {
+	if x, ok := x.GetResult().(*ClustersResponse_Clusters); ok {
+		return x.Clusters
+	}
+	return nil
+}
+
+type isClustersResponse_Result interface {
+	isClustersResponse_Result()
+}
+
+type ClustersResponse_Error struct {
+	// Error that was captured by the Zone CP when executing kuma-dp clusters
+	// request.
+	Error string `protobuf:"bytes,2,opt,name=error,proto3,oneof"`
+}
+
+type ClustersResponse_Clusters struct {
+	// The clusters content that is a successful result of kuma-dp clusters
+	// execution.
+	Clusters []byte `protobuf:"bytes,3,opt,name=clusters,proto3,oneof"`
+}
+
+func (*ClustersResponse_Error) isClustersResponse_Result() {}
+
+func (*ClustersResponse_Clusters) isClustersResponse_Result() {}
 
 type KumaResource_Meta struct {
 	state         protoimpl.MessageState
@@ -267,7 +613,7 @@ type KumaResource_Meta struct {
 func (x *KumaResource_Meta) Reset() {
 	*x = KumaResource_Meta{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_kds_proto_msgTypes[3]
+		mi := &file_mesh_v1alpha1_kds_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -280,7 +626,7 @@ func (x *KumaResource_Meta) String() string {
 func (*KumaResource_Meta) ProtoMessage() {}
 
 func (x *KumaResource_Meta) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_kds_proto_msgTypes[3]
+	mi := &file_mesh_v1alpha1_kds_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -358,27 +704,72 @@ var file_mesh_v1alpha1_kds_proto_rawDesc = []byte{
 	0x65, 0x72, 0x72, 0x6f, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x05, 0x65,
 	0x72, 0x72, 0x6f, 0x72, 0x12, 0x18, 0x0a, 0x06, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x18, 0x03,
 	0x20, 0x01, 0x28, 0x0c, 0x48, 0x00, 0x52, 0x06, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x42, 0x08,
-	0x0a, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x32, 0x8e, 0x01, 0x0a, 0x14, 0x4b, 0x75, 0x6d,
-	0x61, 0x44, 0x69, 0x73, 0x63, 0x6f, 0x76, 0x65, 0x72, 0x79, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63,
-	0x65, 0x12, 0x76, 0x0a, 0x13, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x4b, 0x75, 0x6d, 0x61, 0x52,
-	0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x73, 0x12, 0x2c, 0x2e, 0x65, 0x6e, 0x76, 0x6f, 0x79,
-	0x2e, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x64, 0x69, 0x73, 0x63, 0x6f, 0x76, 0x65,
-	0x72, 0x79, 0x2e, 0x76, 0x33, 0x2e, 0x44, 0x69, 0x73, 0x63, 0x6f, 0x76, 0x65, 0x72, 0x79, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2d, 0x2e, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x2e, 0x73,
+	0x0a, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x22, 0x9c, 0x01, 0x0a, 0x0c, 0x53, 0x74, 0x61,
+	0x74, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1d, 0x0a, 0x0a, 0x72, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x72,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x49, 0x64, 0x12, 0x23, 0x0a, 0x0d, 0x72, 0x65, 0x73, 0x6f,
+	0x75, 0x72, 0x63, 0x65, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x0c, 0x72, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x54, 0x79, 0x70, 0x65, 0x12, 0x23, 0x0a,
+	0x0d, 0x72, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x03,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x72, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x4e, 0x61,
+	0x6d, 0x65, 0x12, 0x23, 0x0a, 0x0d, 0x72, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x5f, 0x6d,
+	0x65, 0x73, 0x68, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x72, 0x65, 0x73, 0x6f, 0x75,
+	0x72, 0x63, 0x65, 0x4d, 0x65, 0x73, 0x68, 0x22, 0x68, 0x0a, 0x0d, 0x53, 0x74, 0x61, 0x74, 0x73,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1d, 0x0a, 0x0a, 0x72, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x72, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x49, 0x64, 0x12, 0x16, 0x0a, 0x05, 0x65, 0x72, 0x72, 0x6f, 0x72,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x05, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x12,
+	0x16, 0x0a, 0x05, 0x73, 0x74, 0x61, 0x74, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0c, 0x48, 0x00,
+	0x52, 0x05, 0x73, 0x74, 0x61, 0x74, 0x73, 0x42, 0x08, 0x0a, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c,
+	0x74, 0x22, 0x9f, 0x01, 0x0a, 0x0f, 0x43, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x73, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1d, 0x0a, 0x0a, 0x72, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x72, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x49, 0x64, 0x12, 0x23, 0x0a, 0x0d, 0x72, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65,
+	0x5f, 0x74, 0x79, 0x70, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x72, 0x65, 0x73,
+	0x6f, 0x75, 0x72, 0x63, 0x65, 0x54, 0x79, 0x70, 0x65, 0x12, 0x23, 0x0a, 0x0d, 0x72, 0x65, 0x73,
+	0x6f, 0x75, 0x72, 0x63, 0x65, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x0c, 0x72, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x23,
+	0x0a, 0x0d, 0x72, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x5f, 0x6d, 0x65, 0x73, 0x68, 0x18,
+	0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x72, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x4d,
+	0x65, 0x73, 0x68, 0x22, 0x71, 0x0a, 0x10, 0x43, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x73, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1d, 0x0a, 0x0a, 0x72, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x72, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x49, 0x64, 0x12, 0x16, 0x0a, 0x05, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x05, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x12, 0x1c,
+	0x0a, 0x08, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0c,
+	0x48, 0x00, 0x52, 0x08, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x73, 0x42, 0x08, 0x0a, 0x06,
+	0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x32, 0x8e, 0x01, 0x0a, 0x14, 0x4b, 0x75, 0x6d, 0x61, 0x44,
+	0x69, 0x73, 0x63, 0x6f, 0x76, 0x65, 0x72, 0x79, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12,
+	0x76, 0x0a, 0x13, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x4b, 0x75, 0x6d, 0x61, 0x52, 0x65, 0x73,
+	0x6f, 0x75, 0x72, 0x63, 0x65, 0x73, 0x12, 0x2c, 0x2e, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x2e, 0x73,
 	0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x64, 0x69, 0x73, 0x63, 0x6f, 0x76, 0x65, 0x72, 0x79,
-	0x2e, 0x76, 0x33, 0x2e, 0x44, 0x69, 0x73, 0x63, 0x6f, 0x76, 0x65, 0x72, 0x79, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x28, 0x01, 0x30, 0x01, 0x32, 0x77, 0x0a, 0x10, 0x47, 0x6c, 0x6f,
-	0x62, 0x61, 0x6c, 0x4b, 0x44, 0x53, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x63, 0x0a,
-	0x10, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x58, 0x44, 0x53, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67,
-	0x73, 0x12, 0x25, 0x2e, 0x6b, 0x75, 0x6d, 0x61, 0x2e, 0x6d, 0x65, 0x73, 0x68, 0x2e, 0x76, 0x31,
-	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x58, 0x44, 0x53, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67,
-	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x1a, 0x24, 0x2e, 0x6b, 0x75, 0x6d, 0x61, 0x2e,
-	0x6d, 0x65, 0x73, 0x68, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x58, 0x44,
-	0x53, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x28, 0x01,
-	0x30, 0x01, 0x42, 0x2a, 0x5a, 0x28, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d,
-	0x2f, 0x6b, 0x75, 0x6d, 0x61, 0x68, 0x71, 0x2f, 0x6b, 0x75, 0x6d, 0x61, 0x2f, 0x61, 0x70, 0x69,
-	0x2f, 0x6d, 0x65, 0x73, 0x68, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x62, 0x06,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x2e, 0x76, 0x33, 0x2e, 0x44, 0x69, 0x73, 0x63, 0x6f, 0x76, 0x65, 0x72, 0x79, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x1a, 0x2d, 0x2e, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x2e, 0x73, 0x65, 0x72,
+	0x76, 0x69, 0x63, 0x65, 0x2e, 0x64, 0x69, 0x73, 0x63, 0x6f, 0x76, 0x65, 0x72, 0x79, 0x2e, 0x76,
+	0x33, 0x2e, 0x44, 0x69, 0x73, 0x63, 0x6f, 0x76, 0x65, 0x72, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x28, 0x01, 0x30, 0x01, 0x32, 0xb0, 0x02, 0x0a, 0x10, 0x47, 0x6c, 0x6f, 0x62,
+	0x61, 0x6c, 0x4b, 0x44, 0x53, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x63, 0x0a, 0x10,
+	0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x58, 0x44, 0x53, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73,
+	0x12, 0x25, 0x2e, 0x6b, 0x75, 0x6d, 0x61, 0x2e, 0x6d, 0x65, 0x73, 0x68, 0x2e, 0x76, 0x31, 0x61,
+	0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x58, 0x44, 0x53, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x1a, 0x24, 0x2e, 0x6b, 0x75, 0x6d, 0x61, 0x2e, 0x6d,
+	0x65, 0x73, 0x68, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x58, 0x44, 0x53,
+	0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x28, 0x01, 0x30,
+	0x01, 0x12, 0x56, 0x0a, 0x0b, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x53, 0x74, 0x61, 0x74, 0x73,
+	0x12, 0x21, 0x2e, 0x6b, 0x75, 0x6d, 0x61, 0x2e, 0x6d, 0x65, 0x73, 0x68, 0x2e, 0x76, 0x31, 0x61,
+	0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x53, 0x74, 0x61, 0x74, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x1a, 0x20, 0x2e, 0x6b, 0x75, 0x6d, 0x61, 0x2e, 0x6d, 0x65, 0x73, 0x68, 0x2e,
+	0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x53, 0x74, 0x61, 0x74, 0x73, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x28, 0x01, 0x30, 0x01, 0x12, 0x5f, 0x0a, 0x0e, 0x53, 0x74, 0x72,
+	0x65, 0x61, 0x6d, 0x43, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x73, 0x12, 0x24, 0x2e, 0x6b, 0x75,
+	0x6d, 0x61, 0x2e, 0x6d, 0x65, 0x73, 0x68, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31,
+	0x2e, 0x43, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x1a, 0x23, 0x2e, 0x6b, 0x75, 0x6d, 0x61, 0x2e, 0x6d, 0x65, 0x73, 0x68, 0x2e, 0x76, 0x31,
+	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x43, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x73, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x28, 0x01, 0x30, 0x01, 0x42, 0x2a, 0x5a, 0x28, 0x67, 0x69,
+	0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x6b, 0x75, 0x6d, 0x61, 0x68, 0x71, 0x2f,
+	0x6b, 0x75, 0x6d, 0x61, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x6d, 0x65, 0x73, 0x68, 0x2f, 0x76, 0x31,
+	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -393,28 +784,36 @@ func file_mesh_v1alpha1_kds_proto_rawDescGZIP() []byte {
 	return file_mesh_v1alpha1_kds_proto_rawDescData
 }
 
-var file_mesh_v1alpha1_kds_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_mesh_v1alpha1_kds_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_mesh_v1alpha1_kds_proto_goTypes = []interface{}{
 	(*KumaResource)(nil),         // 0: kuma.mesh.v1alpha1.KumaResource
 	(*XDSConfigRequest)(nil),     // 1: kuma.mesh.v1alpha1.XDSConfigRequest
 	(*XDSConfigResponse)(nil),    // 2: kuma.mesh.v1alpha1.XDSConfigResponse
-	(*KumaResource_Meta)(nil),    // 3: kuma.mesh.v1alpha1.KumaResource.Meta
-	(*anypb.Any)(nil),            // 4: google.protobuf.Any
-	(*v3.DiscoveryRequest)(nil),  // 5: envoy.service.discovery.v3.DiscoveryRequest
-	(*v3.DiscoveryResponse)(nil), // 6: envoy.service.discovery.v3.DiscoveryResponse
+	(*StatsRequest)(nil),         // 3: kuma.mesh.v1alpha1.StatsRequest
+	(*StatsResponse)(nil),        // 4: kuma.mesh.v1alpha1.StatsResponse
+	(*ClustersRequest)(nil),      // 5: kuma.mesh.v1alpha1.ClustersRequest
+	(*ClustersResponse)(nil),     // 6: kuma.mesh.v1alpha1.ClustersResponse
+	(*KumaResource_Meta)(nil),    // 7: kuma.mesh.v1alpha1.KumaResource.Meta
+	(*anypb.Any)(nil),            // 8: google.protobuf.Any
+	(*v3.DiscoveryRequest)(nil),  // 9: envoy.service.discovery.v3.DiscoveryRequest
+	(*v3.DiscoveryResponse)(nil), // 10: envoy.service.discovery.v3.DiscoveryResponse
 }
 var file_mesh_v1alpha1_kds_proto_depIdxs = []int32{
-	3, // 0: kuma.mesh.v1alpha1.KumaResource.meta:type_name -> kuma.mesh.v1alpha1.KumaResource.Meta
-	4, // 1: kuma.mesh.v1alpha1.KumaResource.spec:type_name -> google.protobuf.Any
-	5, // 2: kuma.mesh.v1alpha1.KumaDiscoveryService.StreamKumaResources:input_type -> envoy.service.discovery.v3.DiscoveryRequest
-	2, // 3: kuma.mesh.v1alpha1.GlobalKDSService.StreamXDSConfigs:input_type -> kuma.mesh.v1alpha1.XDSConfigResponse
-	6, // 4: kuma.mesh.v1alpha1.KumaDiscoveryService.StreamKumaResources:output_type -> envoy.service.discovery.v3.DiscoveryResponse
-	1, // 5: kuma.mesh.v1alpha1.GlobalKDSService.StreamXDSConfigs:output_type -> kuma.mesh.v1alpha1.XDSConfigRequest
-	4, // [4:6] is the sub-list for method output_type
-	2, // [2:4] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	7,  // 0: kuma.mesh.v1alpha1.KumaResource.meta:type_name -> kuma.mesh.v1alpha1.KumaResource.Meta
+	8,  // 1: kuma.mesh.v1alpha1.KumaResource.spec:type_name -> google.protobuf.Any
+	9,  // 2: kuma.mesh.v1alpha1.KumaDiscoveryService.StreamKumaResources:input_type -> envoy.service.discovery.v3.DiscoveryRequest
+	2,  // 3: kuma.mesh.v1alpha1.GlobalKDSService.StreamXDSConfigs:input_type -> kuma.mesh.v1alpha1.XDSConfigResponse
+	4,  // 4: kuma.mesh.v1alpha1.GlobalKDSService.StreamStats:input_type -> kuma.mesh.v1alpha1.StatsResponse
+	6,  // 5: kuma.mesh.v1alpha1.GlobalKDSService.StreamClusters:input_type -> kuma.mesh.v1alpha1.ClustersResponse
+	10, // 6: kuma.mesh.v1alpha1.KumaDiscoveryService.StreamKumaResources:output_type -> envoy.service.discovery.v3.DiscoveryResponse
+	1,  // 7: kuma.mesh.v1alpha1.GlobalKDSService.StreamXDSConfigs:output_type -> kuma.mesh.v1alpha1.XDSConfigRequest
+	3,  // 8: kuma.mesh.v1alpha1.GlobalKDSService.StreamStats:output_type -> kuma.mesh.v1alpha1.StatsRequest
+	5,  // 9: kuma.mesh.v1alpha1.GlobalKDSService.StreamClusters:output_type -> kuma.mesh.v1alpha1.ClustersRequest
+	6,  // [6:10] is the sub-list for method output_type
+	2,  // [2:6] is the sub-list for method input_type
+	2,  // [2:2] is the sub-list for extension type_name
+	2,  // [2:2] is the sub-list for extension extendee
+	0,  // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_mesh_v1alpha1_kds_proto_init() }
@@ -460,6 +859,54 @@ func file_mesh_v1alpha1_kds_proto_init() {
 			}
 		}
 		file_mesh_v1alpha1_kds_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*StatsRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_mesh_v1alpha1_kds_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*StatsResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_mesh_v1alpha1_kds_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ClustersRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_mesh_v1alpha1_kds_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ClustersResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_mesh_v1alpha1_kds_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*KumaResource_Meta); i {
 			case 0:
 				return &v.state
@@ -476,13 +923,21 @@ func file_mesh_v1alpha1_kds_proto_init() {
 		(*XDSConfigResponse_Error)(nil),
 		(*XDSConfigResponse_Config)(nil),
 	}
+	file_mesh_v1alpha1_kds_proto_msgTypes[4].OneofWrappers = []interface{}{
+		(*StatsResponse_Error)(nil),
+		(*StatsResponse_Stats)(nil),
+	}
+	file_mesh_v1alpha1_kds_proto_msgTypes[6].OneofWrappers = []interface{}{
+		(*ClustersResponse_Error)(nil),
+		(*ClustersResponse_Clusters)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_mesh_v1alpha1_kds_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   2,
 		},
@@ -616,6 +1071,15 @@ type GlobalKDSServiceClient interface {
 	// execute Config Dumps. It is however represented by bi-directional streaming
 	// to leverage existing connection from Zone CP to Global CP.
 	StreamXDSConfigs(ctx context.Context, opts ...grpc.CallOption) (GlobalKDSService_StreamXDSConfigsClient, error)
+	// StreamStats is logically a service exposed by Zone CP so Global CP can
+	// execute kuma-dp stats requests. It is however represented by bi-directional
+	// streaming to leverage existing connection from Zone CP to Global CP.
+	StreamStats(ctx context.Context, opts ...grpc.CallOption) (GlobalKDSService_StreamStatsClient, error)
+	// StreamStats is logically a service exposed by Zone CP so Global CP can
+	// execute kuma-dp clusters request. It is however represented by
+	// bi-directional streaming to leverage existing connection from Zone CP to
+	// Global CP.
+	StreamClusters(ctx context.Context, opts ...grpc.CallOption) (GlobalKDSService_StreamClustersClient, error)
 }
 
 type globalKDSServiceClient struct {
@@ -657,12 +1121,83 @@ func (x *globalKDSServiceStreamXDSConfigsClient) Recv() (*XDSConfigRequest, erro
 	return m, nil
 }
 
+func (c *globalKDSServiceClient) StreamStats(ctx context.Context, opts ...grpc.CallOption) (GlobalKDSService_StreamStatsClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_GlobalKDSService_serviceDesc.Streams[1], "/kuma.mesh.v1alpha1.GlobalKDSService/StreamStats", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &globalKDSServiceStreamStatsClient{stream}
+	return x, nil
+}
+
+type GlobalKDSService_StreamStatsClient interface {
+	Send(*StatsResponse) error
+	Recv() (*StatsRequest, error)
+	grpc.ClientStream
+}
+
+type globalKDSServiceStreamStatsClient struct {
+	grpc.ClientStream
+}
+
+func (x *globalKDSServiceStreamStatsClient) Send(m *StatsResponse) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *globalKDSServiceStreamStatsClient) Recv() (*StatsRequest, error) {
+	m := new(StatsRequest)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *globalKDSServiceClient) StreamClusters(ctx context.Context, opts ...grpc.CallOption) (GlobalKDSService_StreamClustersClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_GlobalKDSService_serviceDesc.Streams[2], "/kuma.mesh.v1alpha1.GlobalKDSService/StreamClusters", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &globalKDSServiceStreamClustersClient{stream}
+	return x, nil
+}
+
+type GlobalKDSService_StreamClustersClient interface {
+	Send(*ClustersResponse) error
+	Recv() (*ClustersRequest, error)
+	grpc.ClientStream
+}
+
+type globalKDSServiceStreamClustersClient struct {
+	grpc.ClientStream
+}
+
+func (x *globalKDSServiceStreamClustersClient) Send(m *ClustersResponse) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *globalKDSServiceStreamClustersClient) Recv() (*ClustersRequest, error) {
+	m := new(ClustersRequest)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // GlobalKDSServiceServer is the server API for GlobalKDSService service.
 type GlobalKDSServiceServer interface {
 	// StreamXDSConfigs is logically a service exposed by Zone CP so Global CP can
 	// execute Config Dumps. It is however represented by bi-directional streaming
 	// to leverage existing connection from Zone CP to Global CP.
 	StreamXDSConfigs(GlobalKDSService_StreamXDSConfigsServer) error
+	// StreamStats is logically a service exposed by Zone CP so Global CP can
+	// execute kuma-dp stats requests. It is however represented by bi-directional
+	// streaming to leverage existing connection from Zone CP to Global CP.
+	StreamStats(GlobalKDSService_StreamStatsServer) error
+	// StreamStats is logically a service exposed by Zone CP so Global CP can
+	// execute kuma-dp clusters request. It is however represented by
+	// bi-directional streaming to leverage existing connection from Zone CP to
+	// Global CP.
+	StreamClusters(GlobalKDSService_StreamClustersServer) error
 }
 
 // UnimplementedGlobalKDSServiceServer can be embedded to have forward compatible implementations.
@@ -671,6 +1206,12 @@ type UnimplementedGlobalKDSServiceServer struct {
 
 func (*UnimplementedGlobalKDSServiceServer) StreamXDSConfigs(GlobalKDSService_StreamXDSConfigsServer) error {
 	return status.Errorf(codes.Unimplemented, "method StreamXDSConfigs not implemented")
+}
+func (*UnimplementedGlobalKDSServiceServer) StreamStats(GlobalKDSService_StreamStatsServer) error {
+	return status.Errorf(codes.Unimplemented, "method StreamStats not implemented")
+}
+func (*UnimplementedGlobalKDSServiceServer) StreamClusters(GlobalKDSService_StreamClustersServer) error {
+	return status.Errorf(codes.Unimplemented, "method StreamClusters not implemented")
 }
 
 func RegisterGlobalKDSServiceServer(s *grpc.Server, srv GlobalKDSServiceServer) {
@@ -703,6 +1244,58 @@ func (x *globalKDSServiceStreamXDSConfigsServer) Recv() (*XDSConfigResponse, err
 	return m, nil
 }
 
+func _GlobalKDSService_StreamStats_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(GlobalKDSServiceServer).StreamStats(&globalKDSServiceStreamStatsServer{stream})
+}
+
+type GlobalKDSService_StreamStatsServer interface {
+	Send(*StatsRequest) error
+	Recv() (*StatsResponse, error)
+	grpc.ServerStream
+}
+
+type globalKDSServiceStreamStatsServer struct {
+	grpc.ServerStream
+}
+
+func (x *globalKDSServiceStreamStatsServer) Send(m *StatsRequest) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *globalKDSServiceStreamStatsServer) Recv() (*StatsResponse, error) {
+	m := new(StatsResponse)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func _GlobalKDSService_StreamClusters_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(GlobalKDSServiceServer).StreamClusters(&globalKDSServiceStreamClustersServer{stream})
+}
+
+type GlobalKDSService_StreamClustersServer interface {
+	Send(*ClustersRequest) error
+	Recv() (*ClustersResponse, error)
+	grpc.ServerStream
+}
+
+type globalKDSServiceStreamClustersServer struct {
+	grpc.ServerStream
+}
+
+func (x *globalKDSServiceStreamClustersServer) Send(m *ClustersRequest) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *globalKDSServiceStreamClustersServer) Recv() (*ClustersResponse, error) {
+	m := new(ClustersResponse)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 var _GlobalKDSService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "kuma.mesh.v1alpha1.GlobalKDSService",
 	HandlerType: (*GlobalKDSServiceServer)(nil),
@@ -711,6 +1304,18 @@ var _GlobalKDSService_serviceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "StreamXDSConfigs",
 			Handler:       _GlobalKDSService_StreamXDSConfigs_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "StreamStats",
+			Handler:       _GlobalKDSService_StreamStats_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "StreamClusters",
+			Handler:       _GlobalKDSService_StreamClusters_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},

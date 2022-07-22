@@ -71,7 +71,7 @@ It will then output a changelog with all PRs with the same changelog grouped tog
 			if err != nil {
 				return err
 			}
-			commitLimit = res.Oid
+			commitLimit = res
 		}
 		res, err := gqlClient.historyGraphQl(config.owner, config.repo, config.branch, since)
 		if err != nil {
@@ -172,7 +172,7 @@ func NewCommitInfo(commit GQLCommit) *CommitInfo {
 	if changelog == "skip" {
 		return nil
 	}
-	for _, v := range []string{"ci(", "test(", "refactor(", "fix(ci)", "fix(test)", "tests(", "build("} {
+	for _, v := range []string{"build:", "ci:", "ci(", "test(", "refactor(", "chore(ci)", "fix(ci)", "fix(test)", "tests(", "build(", "docs(madr)"} {
 		if strings.HasPrefix(commit.Message, v) {
 			return nil
 		}

@@ -77,7 +77,7 @@ func Setup(rt runtime.Runtime) (err error) {
 		rt.KDSContext().GlobalServerFilters,
 		*rt.Config().Multizone.Global.KDS,
 		rt.Metrics(),
-		service.NewGlobalKDSServiceServer(rt.KDSContext().XdsConfigStreams),
+		service.NewGlobalKDSServiceServer(rt.KDSContext().EnvoyAdminRPCs),
 	))
 }
 

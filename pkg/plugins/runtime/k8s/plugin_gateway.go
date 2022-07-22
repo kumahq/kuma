@@ -6,8 +6,9 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/discovery"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
-	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -65,7 +66,20 @@ func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conve
 	proxyFactory := containers.NewDataplaneProxyFactory(cpURL, caCert, rt.Config().GetEnvoyAdminPort(),
 		cfg.SidecarContainer.DataplaneContainer, cfg.BuiltinDNS)
 
+	kubeConfig := mgr.GetConfig()
+
+	discClient, err := discovery.NewDiscoveryClientForConfig(kubeConfig)
+	if err != nil {
+		return err
+	}
+
+	k8sVersion, err := discClient.ServerVersion()
+	if err != nil {
+		return err
+	}
+
 	gatewayInstanceReconciler := &controllers.GatewayInstanceReconciler{
+		K8sVersion:      k8sVersion,
 		Client:          mgr.GetClient(),
 		Log:             core.Log.WithName("controllers").WithName("MeshGatewayInstance"),
 		Scheme:          mgr.GetScheme(),

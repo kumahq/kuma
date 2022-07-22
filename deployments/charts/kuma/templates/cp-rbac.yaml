@@ -48,7 +48,7 @@ rules:
     resources:
       - gatewayclasses
       - gateways
-      - referencepolicies
+      - referencegrants
       - httproutes
     verbs:
       - create
@@ -297,6 +297,13 @@ rules:
       - create
       - update
       - patch
+      - delete
+  # leader-for-life election deletes Pods in some circumstances
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
       - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1

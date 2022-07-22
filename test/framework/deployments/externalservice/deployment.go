@@ -22,6 +22,7 @@ const (
 	DeploymentName = "externalservice-"
 	HttpServer     = "http-server"
 	HttpsServer    = "https-server"
+	TcpSink        = "tcp-sink"
 )
 
 func From(cluster framework.Cluster, name string) ExternalService {
@@ -41,7 +42,7 @@ func Install(name string, commands ...Command) framework.InstallFunc {
 				cmd:  commands[0],
 			}
 		case *framework.UniversalCluster:
-			deployment = &universalDeployment{
+			deployment = &UniversalDeployment{
 				name:     name,
 				commands: commands,
 				ports:    map[uint32]uint32{},

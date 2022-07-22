@@ -114,7 +114,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 
 	if cfg.Mode == config_core.Global {
 		builder.WithEnvoyAdminClient(admin.NewKDSEnvoyAdminClient(
-			builder.KDSContext().XdsConfigStreams,
+			builder.KDSContext().EnvoyAdminRPCs,
 			cfg.Store.Type == store.KubernetesStore))
 	} else {
 		envoyAdminClient, err := admin.NewEnvoyAdminClient(
@@ -134,7 +134,11 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		ResourceAccess:       resources_access.NewAdminResourceAccess(builder.Config().Access.Static.AdminResources),
 		DataplaneTokenAccess: tokens_access.NewStaticGenerateDataplaneTokenAccess(builder.Config().Access.Static.GenerateDPToken),
 		ZoneTokenAccess:      zone_access.NewStaticZoneTokenAccess(builder.Config().Access.Static.GenerateZoneToken),
-		ConfigDumpAccess:     access.NewStaticConfigDumpAccess(builder.Config().Access.Static.ViewConfigDump),
+		EnvoyAdminAccess: access.NewStaticEnvoyAdminAccess(
+			builder.Config().Access.Static.ViewConfigDump,
+			builder.Config().Access.Static.ViewStats,
+			builder.Config().Access.Static.ViewClusters,
+		),
 	})
 
 	if err := initializeAPIServerAuthenticator(builder); err != nil {

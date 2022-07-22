@@ -16,11 +16,15 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/gateway"
 	"github.com/kumahq/kuma/test/e2e_env/universal/healthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/universal/inspect"
+	"github.com/kumahq/kuma/test/e2e_env/universal/matching"
 	"github.com/kumahq/kuma/test/e2e_env/universal/membership"
+	"github.com/kumahq/kuma/test/e2e_env/universal/mtls"
 	"github.com/kumahq/kuma/test/e2e_env/universal/observability"
+	"github.com/kumahq/kuma/test/e2e_env/universal/proxytemplate"
 	"github.com/kumahq/kuma/test/e2e_env/universal/ratelimit"
 	"github.com/kumahq/kuma/test/e2e_env/universal/retry"
 	"github.com/kumahq/kuma/test/e2e_env/universal/timeout"
+	"github.com/kumahq/kuma/test/e2e_env/universal/trafficlog"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -71,11 +75,15 @@ var _ = Describe("Cross-mesh Gateway", gateway.CrossMeshGatewayOnUniversal, Orde
 var _ = Describe("HealthCheck panic threshold", healthcheck.HealthCheckPanicThreshold, Ordered)
 var _ = Describe("HealthCheck", healthcheck.Policy)
 var _ = Describe("Service Probes", healthcheck.ServiceProbes, Ordered)
-var _ = Describe("External Services", externalservices.ExternalServiceHostHeader, Ordered)
+var _ = Describe("External Services", externalservices.Policy, Ordered)
 var _ = Describe("Inspect", inspect.Inspect, Ordered)
 var _ = Describe("Applications Metrics", observability.ApplicationsMetrics, Ordered)
 var _ = Describe("Tracing", observability.Tracing, Ordered)
 var _ = Describe("Membership", membership.Membership, Ordered)
+var _ = Describe("Traffic Logging", trafficlog.TCPLogging, Ordered)
 var _ = Describe("Timeout", timeout.Policy, Ordered)
 var _ = Describe("Retry", retry.Policy, Ordered)
 var _ = Describe("RateLimit", ratelimit.Policy, Ordered)
+var _ = Describe("ProxyTemplate", proxytemplate.ProxyTemplate, Ordered)
+var _ = Describe("Matching", matching.Matching, Ordered)
+var _ = Describe("Mtls", mtls.Policy, Ordered)

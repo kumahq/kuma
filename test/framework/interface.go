@@ -46,6 +46,7 @@ type kumaDeploymentOptions struct {
 	zoneEgress                  bool
 	zoneEgressEnvoyAdminTunnel  bool
 	cni                         bool
+	cniExperimental             bool
 	cpReplicas                  int
 	hdsDisabled                 bool
 	runPostgresMigration        bool
@@ -107,6 +108,9 @@ type appDeploymentOptions struct {
 	serviceProbe          bool
 	reachableServices     []string
 	appendDataplaneConfig string
+
+	dockerVolumes       []string
+	dockerContainerName string
 }
 
 func (d *appDeploymentOptions) apply(opts ...AppDeploymentOption) {
@@ -289,6 +293,13 @@ func WithCNI() KumaDeploymentOption {
 	})
 }
 
+func WithExperimentalCNI() KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.cni = true
+		o.cniExperimental = true
+	})
+}
+
 func WithGlobalAddress(address string) KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.globalAddress = address
@@ -450,6 +461,18 @@ func WithConcurrency(concurrency int) AppDeploymentOption {
 func WithReachableServices(services ...string) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.reachableServices = services
+	})
+}
+
+func WithDockerVolumes(volumes ...string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.dockerVolumes = append(o.dockerVolumes, volumes...)
+	})
+}
+
+func WithDockerContainerName(name string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.dockerContainerName = name
 	})
 }
 

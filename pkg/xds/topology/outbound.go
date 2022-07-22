@@ -431,7 +431,10 @@ func fillExternalServicesOutboundsThroughEgress(
 	mesh *core_mesh.MeshResource,
 ) {
 	for _, externalService := range externalServices {
-		serviceTags := externalService.Spec.GetTags()
+		serviceTags := map[string]string{}
+		for tag, value := range externalService.Spec.GetTags() { // deep copy map to not modify tags in ExternalService.
+			serviceTags[tag] = value
+		}
 		serviceName := serviceTags[mesh_proto.ServiceTag]
 		locality := localityFromTags(mesh, priorityRemote, serviceTags)
 
@@ -466,7 +469,10 @@ func NewExternalServiceEndpoint(
 	spec := externalService.Spec
 	tls := spec.GetNetworking().GetTls()
 	meshName := mesh.GetMeta().GetName()
-	tags := spec.GetTags()
+	tags := map[string]string{}
+	for tag, value := range spec.GetTags() { // deep copy map to not modify tags in ExternalService.
+		tags[tag] = value
+	}
 
 	es := &core_xds.ExternalService{
 		TLSEnabled:         tls.GetEnabled(),

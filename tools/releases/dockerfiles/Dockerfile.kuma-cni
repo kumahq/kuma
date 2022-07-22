@@ -1,0 +1,10 @@
+ARG BASE_IMAGE_ARCH=amd64
+FROM --platform=linux/$BASE_IMAGE_ARCH alpine:3.16.0
+ARG ARCH
+
+ADD /build/artifacts-linux-$ARCH/kuma-cni/kuma-cni /opt/cni/bin/kuma-cni
+ADD /build/artifacts-linux-$ARCH/install-cni/install-cni /install-cni
+
+ENV PATH=$PATH:/opt/cni/bin
+WORKDIR /opt/cni/bin
+CMD [ "/install-cni" ]

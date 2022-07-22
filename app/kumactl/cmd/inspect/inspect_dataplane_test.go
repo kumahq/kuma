@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
@@ -63,6 +64,9 @@ var _ = Describe("kumactl inspect dataplane", func() {
 
 			rootCtx.Runtime.NewDataplaneInspectClient = func(client util_http.Client) resources.DataplaneInspectClient {
 				return testClient
+			}
+			rootCtx.Runtime.NewInspectEnvoyProxyClient = func(descriptor model.ResourceTypeDescriptor, client util_http.Client) resources.InspectEnvoyProxyClient {
+				return nil
 			}
 
 			rootCmd = cmd.NewRootCmd(rootCtx)

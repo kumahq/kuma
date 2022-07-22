@@ -3,6 +3,9 @@ package framework
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -219,6 +222,8 @@ func zoneRelatedResource(
 			Config.IPV6,
 			false,
 			[]string{},
+			[]string{},
+			"",
 		)
 		if err != nil {
 			return err
@@ -427,6 +432,31 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 	}
 }
 
+func TestServerExternalServiceUniversal(name string, mesh string, port int, tls bool) InstallFunc {
+	return func(cluster Cluster) error {
+		containerName := fmt.Sprintf("%s.%s", name, mesh)
+		args := []string{"test-server", "echo", "--instance", name, "--port", fmt.Sprintf("%d", port)}
+		opt := []AppDeploymentOption{
+			WithAppname(name),
+			WithName(name),
+			WithMesh(mesh),
+			WithoutDataplane(),
+			WithDockerContainerName(containerName),
+		}
+		if tls {
+			path, err := DumpTempCerts("localhost", containerName)
+			Logf("using temp dir: %s", path)
+			if err != nil {
+				return err
+			}
+			args = append(args, "--crt", "/certs/cert.pem", "--key", "/certs/key.pem", "--tls")
+			opt = append(opt, WithDockerVolumes(path+":/certs"))
+		}
+
+		opt = append(opt, WithArgs(args))
+		return cluster.DeployApp(opt...)
+	}
+}
 func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) InstallFunc {
 	return func(cluster Cluster) error {
 		var opts appDeploymentOptions
@@ -541,4 +571,22 @@ func CreateCertsFor(names ...string) (cert, key string, err error) {
 	}
 
 	return string(keyPair.CertPEM), string(keyPair.KeyPEM), nil
+}
+
+func DumpTempCerts(names ...string) (string, error) {
+	cert, key, err := CreateCertsFor(names...)
+	if err != nil {
+		return "", err
+	}
+	path, err := os.MkdirTemp("", "cert-*")
+	if err != nil {
+		return "", err
+	}
+	if err := ioutil.WriteFile(filepath.Join(path, "cert.pem"), []byte(fmt.Sprintf("---\n%s", cert)), os.ModePerm); err != nil {
+		return "", err
+	}
+	if err := ioutil.WriteFile(filepath.Join(path, "key.pem"), []byte(fmt.Sprintf("---\n%s", key)), os.ModePerm); err != nil {
+		return "", err
+	}
+	return path, nil
 }

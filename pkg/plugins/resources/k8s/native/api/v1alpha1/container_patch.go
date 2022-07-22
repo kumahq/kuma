@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	jsonpatch "github.com/evanphx/json-patch"
+	jsonpatch "github.com/evanphx/json-patch/v5"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

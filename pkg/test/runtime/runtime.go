@@ -140,6 +140,14 @@ type DummyEnvoyAdminClient struct {
 	PostQuitCalled *int
 }
 
+func (d *DummyEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+	return []byte("server.live: 1\n"), nil
+}
+
+func (d *DummyEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+	return []byte("kuma:envoy:admin\n"), nil
+}
+
 func (d *DummyEnvoyAdminClient) GenerateAPIToken(dp *core_mesh.DataplaneResource) (string, error) {
 	return "token", nil
 }

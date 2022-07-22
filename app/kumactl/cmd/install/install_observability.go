@@ -107,6 +107,14 @@ func getMetrics(args *context.ObservabilityTemplateArgs) ([]data.File, error) {
 		FileName: "kuma-cp.json",
 		Content:  dashboard.String(),
 	})
+	dashboard, err = data.ReadFile(installMetricsFS, "grafana/kuma-gateway.json")
+	if err != nil {
+		return nil, err
+	}
+	args.Dashboards = append(args.Dashboards, context.Dashboard{
+		FileName: "kuma-gateway.json",
+		Content:  dashboard.String(),
+	})
 
 	dashboard, err = data.ReadFile(installMetricsFS, "grafana/kuma-service.json")
 	if err != nil {
