@@ -106,7 +106,7 @@ func (d *DataplaneLifecycle) register(ctx context.Context, streamID core_xds.Str
 	return nil
 }
 
-func (d *DataplaneLifecycle) OnProxyDisconnected(ctx context.Context, streamID core_xds.StreamID, dpKey model.ResourceKey) {
+func (d *DataplaneLifecycle) OnProxyDisconnected(_ context.Context, streamID core_xds.StreamID, dpKey model.ResourceKey) {
 	// OnStreamClosed method could be called either in case data plane proxy is down or
 	// Kuma CP is gracefully shutting down. If Kuma CP is gracefully shutting down we
 	// must not delete Dataplane resource, data plane proxy will be reconnected to another
@@ -132,17 +132,17 @@ func (d *DataplaneLifecycle) OnProxyDisconnected(ctx context.Context, streamID c
 	log := lifecycleLog.WithValues("proxyType", proxyType, "proxyKey", dpKey, "streamID", streamID)
 	switch proxyType {
 	case mesh_proto.DataplaneProxyType:
-		err := d.deregisterProxy(ctx, dpKey, core_mesh.NewDataplaneResource(), core_mesh.NewDataplaneInsightResource(), log)
+		err := d.deregisterProxy(dpKey, core_mesh.NewDataplaneResource(), core_mesh.NewDataplaneInsightResource(), log)
 		if err != nil {
 			lifecycleLog.Error(err, "could not unregister dataplane")
 		}
 	case mesh_proto.IngressProxyType:
-		err := d.deregisterProxy(ctx, dpKey, core_mesh.NewZoneIngressResource(), core_mesh.NewZoneIngressInsightResource(), log)
+		err := d.deregisterProxy(dpKey, core_mesh.NewZoneIngressResource(), core_mesh.NewZoneIngressInsightResource(), log)
 		if err != nil {
 			lifecycleLog.Error(err, "could not unregister zone ingress")
 		}
 	case mesh_proto.EgressProxyType:
-		err := d.deregisterProxy(ctx, dpKey, core_mesh.NewZoneEgressResource(), core_mesh.NewZoneEgressInsightResource(), log)
+		err := d.deregisterProxy(dpKey, core_mesh.NewZoneEgressResource(), core_mesh.NewZoneEgressInsightResource(), log)
 		if err != nil {
 			lifecycleLog.Error(err, "could not unregister zone egress")
 		}
@@ -203,7 +203,6 @@ func (d *DataplaneLifecycle) registerZoneEgress(ctx context.Context, ze *core_me
 }
 
 func (d *DataplaneLifecycle) deregisterProxy(
-	ctx context.Context,
 	key model.ResourceKey,
 	obj model.Resource,
 	insight model.Resource,
@@ -211,7 +210,8 @@ func (d *DataplaneLifecycle) deregisterProxy(
 ) error {
 	log.Info("waiting for deregister proxy", "waitFor", d.deregistrationDelay)
 	time.After(d.deregistrationDelay)
-	err := d.resManager.Get(ctx, insight, store.GetBy(key))
+	// stream context is canceled at this point, because DP has disconnected. Use background context instead.
+	err := d.resManager.Get(context.Background(), insight, store.GetBy(key))
 	switch {
 	case store.IsResourceNotFound(err):
 		// If insight is missing it most likely means that it was not yet created, so DP just connected and now leaving the mesh.
