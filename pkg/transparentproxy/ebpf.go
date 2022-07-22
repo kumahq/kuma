@@ -17,28 +17,29 @@ import (
 // or/and exclude. It's currently hardcoded to 10 as merbridge during creation
 // of this map is assigning hardcoded 244 bytes for map values:
 //
-//  Cidr:			8 bytes
-//    Cidr.Net:		4 bytes
-//    Cidr.Mask:	1 byte
-//    pad:			3 bytes
+//  Cidr:        8 bytes
+//    Cidr.Net:  4 bytes
+//    Cidr.Mask: 1 byte
+//    pad:       3 bytes
 //
-//  PodConfig:										244 bytes
-//    PodConfig.StatusPort:							2 bytes
-//    pad:											2 bytes
-//    PodConfig.ExcludeOutRanges	(10x Cidr):		80 bytes
-//    PodConfig.IncludeOutRanges	(10x Cidr):		80 bytes
-//    PodConfig.IncludeInPorts		(10x 2 bytes):	20 bytes
-//    PodConfig.IncludeOutPorts		(10x 2 bytes):	20 bytes
-//    PodConfig.ExcludeInPorts		(10x 2 bytes):	20 bytes
-//    PodConfig.ExcludeOutPorts		(10x 2 bytes):	20 bytes
+//  PodConfig:                                  244 bytes
+//    PodConfig.StatusPort:                       2 bytes
+//    pad:                                        2 bytes
+//    PodConfig.ExcludeOutRanges (10x Cidr):     80 bytes
+//    PodConfig.IncludeOutRanges (10x Cidr):     80 bytes
+//    PodConfig.IncludeInPorts   (10x 2 bytes):  20 bytes
+//    PodConfig.IncludeOutPorts  (10x 2 bytes):  20 bytes
+//    PodConfig.ExcludeInPorts   (10x 2 bytes):  20 bytes
+//    PodConfig.ExcludeOutPorts  (10x 2 bytes):  20 bytes
 //
 // todo (bartsmykla): merbridge flagged this constant to be changed, so if
 //                    it will be changed, we have to update it
 const MaxItemLen = 10
 
-// LocalPodIPSPinnedMapPathRelativeToBPFFS is a path where the local_pod_ips map is pinned,
-// it's hardcoded as "/sys/fs/bpf/tc/globals" because merbridge is hard-coding
-// it as well, and we don't want to allot to change it by mistake
+// LocalPodIPSPinnedMapPathRelativeToBPFFS is a path where the local_pod_ips map
+// is pinned, it's hardcoded as "{BPFFS_path}/tc/globals/local_pod_ips" because
+// merbridge is hard-coding it as well, and we don't want to allot to change it
+// by mistake
 const LocalPodIPSPinnedMapPathRelativeToBPFFS = "/tc/globals/local_pod_ips"
 
 type Cidr struct {
