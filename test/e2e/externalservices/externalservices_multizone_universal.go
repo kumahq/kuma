@@ -136,7 +136,6 @@ routing:
 	})
 
 	It("should route to external-service", func() {
-
 		err := ResourceUniversal(externalServiceRes(es1, "kuma-3_externalservice-http-server:80", false, nil))(global)
 		Expect(err).ToNot(HaveOccurred())
 
