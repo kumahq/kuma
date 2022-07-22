@@ -95,6 +95,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 			},
 		}
 		const streamId = 123
+		Expect(callbacks.OnStreamOpen(context.Background(), streamId, "")).To(Succeed())
 
 		// when
 		err := callbacks.OnStreamRequest(streamId, &req)
@@ -322,6 +323,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 						},
 					},
 				}
+				Expect(callbacks.OnStreamOpen(context.Background(), streamID, "")).To(Succeed())
 
 				// when
 				err := callbacks.OnStreamRequest(streamID, &req)
@@ -388,6 +390,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		}
 
 		const streamId = 123
+		Expect(callbacks.OnStreamOpen(context.Background(), streamId, "")).To(Succeed())
 		err := callbacks.OnStreamRequest(streamId, &req)
 		Expect(err).ToNot(HaveOccurred())
 

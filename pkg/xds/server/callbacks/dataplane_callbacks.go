@@ -26,7 +26,7 @@ type DataplaneCallbacks interface {
 	// This can happen when there is a delay with closing the old connection from the proxy to the control plane.
 	OnProxyReconnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, ctx context.Context, metadata core_xds.DataplaneMetadata) error
 	// OnProxyDisconnected is executed only when the last stream of the proxy disconnects.
-	OnProxyDisconnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey)
+	OnProxyDisconnected(ctx context.Context, streamID core_xds.StreamID, dpKey core_model.ResourceKey)
 }
 
 type xdsCallbacks struct {
@@ -68,7 +68,7 @@ func (d *xdsCallbacks) OnStreamClosed(streamID core_xds.StreamID) {
 	d.Unlock()
 	if lastStreamDpKey != nil {
 		// execute callback after lock is freed, so heavy callback implementation won't block every callback for every DPP.
-		d.callbacks.OnProxyDisconnected(streamID, *lastStreamDpKey)
+		d.callbacks.OnProxyDisconnected(dpStream.ctx, streamID, *lastStreamDpKey)
 	}
 }
 
@@ -151,7 +151,7 @@ func (n *NoopDataplaneCallbacks) OnProxyConnected(core_xds.StreamID, core_model.
 	return nil
 }
 
-func (n *NoopDataplaneCallbacks) OnProxyDisconnected(core_xds.StreamID, core_model.ResourceKey) {
+func (n *NoopDataplaneCallbacks) OnProxyDisconnected(context.Context, core_xds.StreamID, core_model.ResourceKey) {
 }
 
 var _ DataplaneCallbacks = &NoopDataplaneCallbacks{}

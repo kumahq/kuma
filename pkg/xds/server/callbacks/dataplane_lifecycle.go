@@ -106,7 +106,7 @@ func (d *DataplaneLifecycle) register(ctx context.Context, streamID core_xds.Str
 	return nil
 }
 
-func (d *DataplaneLifecycle) OnProxyDisconnected(streamID core_xds.StreamID, dpKey model.ResourceKey) {
+func (d *DataplaneLifecycle) OnProxyDisconnected(ctx context.Context, streamID core_xds.StreamID, dpKey model.ResourceKey) {
 	// OnStreamClosed method could be called either in case data plane proxy is down or
 	// Kuma CP is gracefully shutting down. If Kuma CP is gracefully shutting down we
 	// must not delete Dataplane resource, data plane proxy will be reconnected to another
@@ -129,20 +129,21 @@ func (d *DataplaneLifecycle) OnProxyDisconnected(streamID core_xds.StreamID, dpK
 		return
 	}
 
+	log := lifecycleLog.WithValues("proxyType", proxyType, "proxyKey", dpKey, "streamID", streamID)
 	switch proxyType {
 	case mesh_proto.DataplaneProxyType:
-		log := lifecycleLog.WithValues("dataplaneKey", dpKey, "streamID", streamID)
-		if err := d.deregisterDataplane(dpKey, log); err != nil {
+		err := d.deregisterProxy(ctx, dpKey, core_mesh.NewDataplaneResource(), core_mesh.NewDataplaneInsightResource(), log)
+		if err != nil {
 			lifecycleLog.Error(err, "could not unregister dataplane")
 		}
 	case mesh_proto.IngressProxyType:
-		log := lifecycleLog.WithValues("zoneIngressKey", dpKey, "streamID", streamID)
-		if err := d.deregisterZoneIngress(dpKey, log); err != nil {
+		err := d.deregisterProxy(ctx, dpKey, core_mesh.NewZoneIngressResource(), core_mesh.NewZoneIngressInsightResource(), log)
+		if err != nil {
 			lifecycleLog.Error(err, "could not unregister zone ingress")
 		}
 	case mesh_proto.EgressProxyType:
-		log := lifecycleLog.WithValues("zoneEgressKey", dpKey, "streamID", streamID)
-		if err := d.deregisterZoneEgress(dpKey, log); err != nil {
+		err := d.deregisterProxy(ctx, dpKey, core_mesh.NewZoneEgressResource(), core_mesh.NewZoneEgressInsightResource(), log)
+		if err != nil {
 			lifecycleLog.Error(err, "could not unregister zone egress")
 		}
 	}
@@ -201,39 +202,32 @@ func (d *DataplaneLifecycle) registerZoneEgress(ctx context.Context, ze *core_me
 	})
 }
 
-func (d *DataplaneLifecycle) deregisterDataplane(key model.ResourceKey, log logr.Logger) error {
-	return d.deregisterProxy(key, core_mesh.NewDataplaneResource(), core_mesh.NewDataplaneInsightResource(), log)
-}
-
-func (d *DataplaneLifecycle) deregisterZoneIngress(key model.ResourceKey, log logr.Logger) error {
-	return d.deregisterProxy(key, core_mesh.NewZoneIngressResource(), core_mesh.NewZoneIngressInsightResource(), log)
-}
-
-func (d *DataplaneLifecycle) deregisterZoneEgress(key model.ResourceKey, log logr.Logger) error {
-	return d.deregisterProxy(key, core_mesh.NewZoneEgressResource(), core_mesh.NewZoneEgressInsightResource(), log)
-}
-
 func (d *DataplaneLifecycle) deregisterProxy(
+	ctx context.Context,
 	key model.ResourceKey,
 	obj model.Resource,
 	insight model.Resource,
 	log logr.Logger,
 ) error {
 	log.Info("waiting for deregister proxy", "waitFor", d.deregistrationDelay)
-	time.Sleep(d.deregistrationDelay)
-	err := d.resManager.Get(context.Background(), insight, store.GetBy(key))
-	if err != nil && !store.IsResourceNotFound(err) {
-		return errors.Wrap(err, "could not get insight to determine if we can delete proxy object")
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-time.After(d.deregistrationDelay):
 	}
-	if !store.IsResourceNotFound(err) {
-		sub := insight.GetSpec().(generic.Insight).GetLastSubscription().(*mesh_proto.DiscoverySubscription)
-		if sub != nil && sub.ControlPlaneInstanceId != d.cpInstanceID {
-			log.Info("no need to deregister proxy. It has already connected to another instance", "newCpInstanceID", sub.ControlPlaneInstanceId)
-			return nil
-		}
-	} else {
+	err := d.resManager.Get(ctx, insight, store.GetBy(key))
+	switch {
+	case store.IsResourceNotFound(err):
 		// If insight is missing it most likely means that it was not yet created, so DP just connected and now leaving the mesh.
 		log.V(1).Info("insight is missing. Safe to deregister the proxy")
+	case err != nil:
+		return errors.Wrap(err, "could not get insight to determine if we can delete proxy object")
+	default:
+		sub := insight.GetSpec().(generic.Insight).GetLastSubscription().(*mesh_proto.DiscoverySubscription)
+		if sub != nil && sub.ControlPlaneInstanceId != d.cpInstanceID {
+			log.Info("no need to deregister proxy. It has already connected to another instance", "newCPInstanceID", sub.ControlPlaneInstanceId)
+			return nil
+		}
 	}
 	log.Info("deregister proxy")
 	return d.resManager.Delete(context.Background(), obj, store.DeleteBy(key))
