@@ -36,6 +36,10 @@ kumactl install control-plane [flags]
       --dataplane-repository string                  repository for the image of the Kuma DataPlane component (default "kuma-dp")
       --dataplane-version string                     version of the image of the Kuma DataPlane component (default "unknown")
       --dump-values                                  output all possible values for the configuration. This is similar to `helm show values <chart>
+      --ebpf-bpffs-path string                       path where BPF file system should be mounted (default "/run/kuma/bpf")
+      --ebpf-enabled                                 enable ebpf mode for transparent proxy
+      --ebpf-instance-ip-env-var-name string         name of the environmental variable which will contain IP address of the instance/pod (default "INSTANCE_IP")
+      --ebpf-programs-source-path string             path where eBPF programs which will be installed can be found (default "/kuma/ebpf")
       --egress-drain-time string                     drain time for Envoy proxy (default "30s")
       --egress-enabled                               install Kuma with an Egress deployment, using the Data Plane image
       --egress-node-selector stringToString          node selector for Zone Egress (default [])

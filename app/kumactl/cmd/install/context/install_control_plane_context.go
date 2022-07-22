@@ -58,6 +58,10 @@ type InstallControlPlaneArgs struct {
 	Hooks_nodeSelector                           map[string]string `helm:"hooks.nodeSelector"`
 	WithoutKubernetesConnection                  bool              // there is no HELM equivalent, HELM always require connection to Kubernetes
 	ExperimentalGatewayAPI                       bool              `helm:"experimental.gatewayAPI"`
+	EbpfEnabled                                  bool              `helm:"experimental.ebpf.enabled"`
+	EbpfInstanceIPEnvVarName                     string            `helm:"experimental.ebpf.instanceIPEnvVarName"`
+	EbpfBPFFSPath                                string            `helm:"experimental.ebpf.bpffsPath"`
+	EbpfProgramsSourcePath                       string            `helm:"experimental.ebpf.programsSourcePath"`
 	ValueFiles                                   []string
 	Values                                       []string
 	DumpValues                                   bool
@@ -115,6 +119,10 @@ func DefaultInstallCpContext() InstallCpContext {
 			Egress_enabled:                          false,
 			Egress_drainTime:                        "30s",
 			Egress_service_type:                     "ClusterIP",
+			EbpfEnabled:                             false,
+			EbpfInstanceIPEnvVarName:                "INSTANCE_IP",
+			EbpfBPFFSPath:                           "/run/kuma/bpf",
+			EbpfProgramsSourcePath:                  "/kuma/ebpf",
 		},
 		InstallCpTemplateFiles: func(args *InstallControlPlaneArgs) (data.FileList, error) {
 			files, err := data.ReadFiles(deployments.KumaChartFS())

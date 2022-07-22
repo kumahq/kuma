@@ -210,6 +210,11 @@ This command requires that the KUBECONFIG environment is set`,
 	cmd.Flags().StringSliceVarP(&args.ValueFiles, "values", "f", []string{}, "specify values in a YAML file or '-' for stdin. This is similar to `helm template <chart> -f ...`")
 	cmd.Flags().StringArrayVar(&args.Values, "set", []string{}, "set values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2), This is similar to `helm template <chart> --set ...` to use set-file or set-string just use helm instead")
 	cmd.Flags().BoolVar(&args.DumpValues, "dump-values", false, "output all possible values for the configuration. This is similar to `helm show values <chart>")
+	// ebpf
+	cmd.Flags().BoolVar(&args.EbpfEnabled, "ebpf-enabled", args.EbpfEnabled, "enable ebpf mode for transparent proxy")
+	cmd.Flags().StringVar(&args.EbpfInstanceIPEnvVarName, "ebpf-instance-ip-env-var-name", args.EbpfInstanceIPEnvVarName, "name of the environmental variable which will contain IP address of the instance/pod")
+	cmd.Flags().StringVar(&args.EbpfBPFFSPath, "ebpf-bpffs-path", args.EbpfBPFFSPath, "path where BPF file system should be mounted")
+	cmd.Flags().StringVar(&args.EbpfProgramsSourcePath, "ebpf-programs-source-path", args.EbpfProgramsSourcePath, "path where eBPF programs which will be installed can be found")
 	return cmd
 }
 
