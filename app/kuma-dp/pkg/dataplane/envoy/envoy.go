@@ -115,7 +115,6 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 		// so, let's turn it off to simplify getting started experience.
 		"--disable-hot-restart",
 		"--log-level", e.opts.Config.DataplaneRuntime.EnvoyLogLevel,
-		"--log-path", "/tmp/envoy.log",
 	}
 
 	// If the concurrency is explicit, use that. On Linux, users
