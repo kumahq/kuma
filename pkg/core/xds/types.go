@@ -11,6 +11,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	util_tls "github.com/kumahq/kuma/pkg/tls"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
@@ -135,13 +136,14 @@ const (
 // Proxy contains required data for generating XDS config that is specific to a data plane proxy.
 // The data that is specific for the whole mesh should go into MeshContext.
 type Proxy struct {
-	Id          ProxyId
-	APIVersion  envoy_common.APIVersion // todo(jakubdyszkiewicz) consider moving APIVersion here. pkg/core should not depend on pkg/xds. It should be other way around.
-	Dataplane   *core_mesh.DataplaneResource
-	ZoneIngress *core_mesh.ZoneIngressResource
-	Metadata    *DataplaneMetadata
-	Routing     Routing
-	Policies    MatchedPolicies
+	Id                  ProxyId
+	APIVersion          envoy_common.APIVersion // todo(jakubdyszkiewicz) consider moving APIVersion here. pkg/core should not depend on pkg/xds. It should be other way around.
+	Dataplane           *core_mesh.DataplaneResource
+	ZoneIngress         *core_mesh.ZoneIngressResource
+	Metadata            *DataplaneMetadata
+	Routing             Routing
+	Policies            MatchedPolicies
+	EnvoyAdminMTLSCerts ServerSideMTLSCerts
 
 	// SecretsTracker allows us to track when a generator references a secret so
 	// we can be sure to include only those secrets later on.
@@ -151,6 +153,11 @@ type Proxy struct {
 	ZoneEgressProxy *ZoneEgressProxy
 	// ZoneIngressProxy is available only when XDS is generated for ZoneIngress data plane proxy.
 	ZoneIngressProxy *ZoneIngressProxy
+}
+
+type ServerSideMTLSCerts struct {
+	CaPEM      []byte
+	ServerPair util_tls.KeyPair
 }
 
 type identityCertRequest struct {

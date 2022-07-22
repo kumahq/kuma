@@ -119,8 +119,11 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 	)
 	Expect(err).To(Succeed())
 
-	control, err := xds_context.BuildControlPlaneContext(cache, secrets, rt.Config().Multizone.Zone.Name)
-	Expect(err).To(Succeed())
+	cpCtx := &xds_context.ControlPlaneContext{
+		CLACache: cache,
+		Secrets:  secrets,
+		Zone:     rt.Config().Multizone.Zone.Name,
+	}
 
 	meshCtxBuilder := xds_context.NewMeshContextBuilder(
 		rt.ReadOnlyResourceManager(),
@@ -135,7 +138,7 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 	Expect(err).To(Succeed())
 
 	ctx := xds_context.Context{
-		ControlPlane: control,
+		ControlPlane: cpCtx,
 		Mesh:         meshCtx,
 	}
 

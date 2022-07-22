@@ -24,27 +24,34 @@ import (
 var log = core.Log.WithName("defaults")
 
 func Setup(runtime runtime.Runtime) error {
-	if runtime.Config().Mode == config_core.Zone { // Don't run defaults in Zone (it's done in Global)
-		return nil
-	}
-	defaultsComponent := NewDefaultsComponent(runtime.Config().Defaults, runtime.Config().Mode, runtime.Config().Environment, runtime.ResourceManager(), runtime.ResourceStore())
+	if runtime.Config().Mode != config_core.Zone { // Don't run defaults in Zone (it's done in Global)
+		defaultsComponent := NewDefaultsComponent(runtime.Config().Defaults, runtime.Config().Mode, runtime.Config().Environment, runtime.ResourceManager(), runtime.ResourceStore())
 
-	zoneIngressSigningKeyManager := tokens.NewSigningKeyManager(runtime.ResourceManager(), zoneingress.ZoneIngressSigningKeyPrefix)
-	if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(
-		zoneIngressSigningKeyManager,
-		log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix))); err != nil {
-		return err
+		zoneIngressSigningKeyManager := tokens.NewSigningKeyManager(runtime.ResourceManager(), zoneingress.ZoneIngressSigningKeyPrefix)
+		if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(
+			zoneIngressSigningKeyManager,
+			log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix))); err != nil {
+			return err
+		}
+
+		zoneSigningKeyManager := tokens.NewSigningKeyManager(runtime.ResourceManager(), zone.SigningKeyPrefix)
+		if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(
+			zoneSigningKeyManager,
+			log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix),
+		)); err != nil {
+			return err
+		}
+		if err := runtime.Add(defaultsComponent); err != nil {
+			return err
+		}
 	}
 
-	zoneSigningKeyManager := tokens.NewSigningKeyManager(runtime.ResourceManager(), zone.SigningKeyPrefix)
-	if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(
-		zoneSigningKeyManager,
-		log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix),
-	)); err != nil {
-		return err
+	if runtime.Config().Mode != config_core.Global { // Envoy Admin CA is not synced in multizone and not needed in Global CP.
+		if err := runtime.Add(&EnvoyAdminCaDefaultComponent{ResManager: runtime.ResourceManager()}); err != nil {
+			return err
+		}
 	}
-
-	return runtime.Add(defaultsComponent)
+	return nil
 }
 
 func NewDefaultsComponent(config *kuma_cp.Defaults, cpMode config_core.CpMode, environment config_core.EnvironmentType, resManager core_manager.ResourceManager, resStore store.ResourceStore) component.Component {
