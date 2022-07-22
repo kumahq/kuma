@@ -210,11 +210,7 @@ func (d *DataplaneLifecycle) deregisterProxy(
 	log logr.Logger,
 ) error {
 	log.Info("waiting for deregister proxy", "waitFor", d.deregistrationDelay)
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-time.After(d.deregistrationDelay):
-	}
+	time.After(d.deregistrationDelay)
 	err := d.resManager.Get(ctx, insight, store.GetBy(key))
 	switch {
 	case store.IsResourceNotFound(err):
