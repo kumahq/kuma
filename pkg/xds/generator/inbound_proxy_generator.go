@@ -54,7 +54,6 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 			clusterBuilder = envoy_clusters.NewClusterBuilder(proxy.APIVersion).
 				Configure(envoy_clusters.ProvidedEndpointCluster(localClusterName, false, core_xds.Endpoint{Target: endpoint.WorkloadIP, Port: endpoint.WorkloadPort})).
 				Configure(envoy_clusters.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
-
 		}
 		switch protocol {
 		case core_mesh.ProtocolHTTP:
