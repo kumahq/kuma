@@ -53,6 +53,12 @@ spec:
           {{- if .Values.experimental.cni }}
           image: {{ include "kuma.formatImage" (dict "image" .Values.cni.experimental.image "root" $) | quote }}
           imagePullPolicy: IfNotPresent
+          readinessProbe:
+            initialDelaySeconds: 60
+            exec:
+              command:
+                - cat
+                - /tmp/ready
           command: ["/install-cni"]
           {{- else }}
           image: {{ include "kuma.formatImage" (dict "image" .Values.cni.image "root" $) | quote }}

@@ -509,6 +509,8 @@ type Cluster interface {
 	DeployApp(fs ...AppDeploymentOption) error
 	Exec(namespace, podName, containerName string, cmd ...string) (string, string, error)
 	ExecWithRetries(namespace, podName, containerName string, cmd ...string) (string, string, error)
+	CreateNode(name string, label string) error
+	DeleteNode(name string) error
 
 	// Testing
 	GetTesting() testing.TestingT

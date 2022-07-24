@@ -99,7 +99,19 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 	if err := addDNS(mgr, rt, converter); err != nil {
 		return err
 	}
+	if err := addNodeReconciler(mgr); err != nil {
+		return err
+	}
 	return nil
+}
+
+func addNodeReconciler(mgr kube_ctrl.Manager) error {
+	reconciler := &k8s_controllers.NodeReconciler{
+		Client: mgr.GetClient(),
+		Log:	core.Log.WithName("controllers").WithName("Node"),
+	}
+
+	return reconciler.SetupWithManager(mgr)
 }
 
 func addNamespaceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {

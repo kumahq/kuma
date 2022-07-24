@@ -39,31 +39,40 @@ metadata:
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
 				WithSkipDefaultMesh(true), // it's common case for HELM deployments that Mesh is also managed by HELM therefore it's not created by default
-				WithHelmOpt("cni.experimental.sleepBeforeRunSeconds", "120"),
+				WithHelmOpt("cni.experimental.sleepBeforeRunSeconds", "60"),
 				WithExperimentalCNI(),
 			)).
 			Install(YamlK8s(defaultMesh)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(DemoClientK8s("default", TestNamespace)).
-			Install(testserver.Install()).
-			Setup(cluster)
-		Expect(err).ToNot(HaveOccurred())
 	}
 
 	E2EAfterEach(func() {
 		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
+		Expect(cluster.DeleteNode("k3d-second-node-0")).To(Succeed())
 	})
 
 	It(
 		"Should deploy two apps",
 		func() {
 			setup()
+
+			err := cluster.CreateNode("second-node", "second=true")
+			Expect(err).ToNot(HaveOccurred())
+
+			err = NewClusterSetup().
+				Install(NamespaceWithSidecarInjection(TestNamespace)).
+				Install(DemoClientK8sWithAffinity("default", TestNamespace)).
+				Install(testserver.Install(func(opts *testserver.DeploymentOpts) {
+				opts.NodeSelector = map[string]string{
+					"second": "true",
+				}
+			})).
+				Setup(cluster)
+			Expect(err).ToNot(HaveOccurred())
 
 			clientPodName, err := PodNameOfApp(cluster, "demo-client", TestNamespace)
 			Expect(err).ToNot(HaveOccurred())

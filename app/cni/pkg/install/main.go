@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"path"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -221,6 +222,12 @@ func Run() {
 	err = install(installerConfig)
 	if err != nil {
 		log.Error(err, "error occurred during cni installation")
+		os.Exit(1)
+	}
+
+	err = atomic.WriteFile("/tmp/ready", strings.NewReader(""))
+	if err != nil {
+		log.Error(err, "unable to mark as ready")
 		os.Exit(1)
 	}
 

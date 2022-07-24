@@ -1115,3 +1115,45 @@ func (c *K8sCluster) Install(fn InstallFunc) error {
 func (c *K8sCluster) SetCP(cp *K8sControlPlane) {
 	c.controlplane = cp
 }
+
+func (c *K8sCluster) CreateNode(name string, label string) error {
+	switch Config.K8sType {
+	case K3dK8sType:
+		createCmd := exec.Command("k3d", "node", "create", name, "-c", c.name, "--k3s-node-label", label)
+		createCmd.Stdout = os.Stdout
+		createErr := createCmd.Run()
+
+		importCmd := exec.Command("k3d", "image", "import", "-c", c.name,
+			"kumahq/kuma-cni:0.0.0-preview.658dd6677",
+			"kumahq/kuma-dp:0.0.0-preview.658dd6677",
+			"kumahq/kuma-cp:0.0.0-preview.658dd6677",
+			"kumahq/kuma-universal:0.0.0-preview.658dd6677",
+		)
+		importCmd.Stdout = os.Stdout
+		importErr := importCmd.Run()
+		return multierr.Append(createErr, importErr)
+	case KindK8sType:
+		return errors.New("creating new node not available for kind")
+	case AwsK8sType:
+		return errors.New("creating new node not available for awsk8s")
+	case AzureK8sType:
+		return errors.New("creating new node not available for azurek8s")
+	default:
+		return errors.New("unknown kubernetes type")
+	}
+}
+
+func (c *K8sCluster) DeleteNode(name string) error {
+	switch Config.K8sType {
+	case K3dK8sType:
+		return exec.Command("k3d", "node", "delete", name).Run()
+	case KindK8sType:
+		return errors.New("deleting new node not available for kind")
+	case AwsK8sType:
+		return errors.New("deleting new node not available for awsk8s")
+	case AzureK8sType:
+		return errors.New("deleting new node not available for azurek8s")
+	default:
+		return errors.New("unknown kubernetes type")
+	}
+}

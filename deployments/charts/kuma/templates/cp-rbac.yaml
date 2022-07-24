@@ -31,6 +31,9 @@ rules:
       - get
       - list
       - watch
+  {{- if .Values.experimental.cni }} # just temp
+      - update
+  {{- end }}
   - apiGroups:
       - "apps"
     resources:
