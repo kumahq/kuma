@@ -39,6 +39,11 @@ spec:
       - gateway_error
 ```
 
+### Changes to default / existing behavior
+
+- This addition _would not_ change existing behavior in the case that the `http.retriableStatusCodes` field _is not_ specified.
+- This addition _would_ change the existing behavior in the case that the `http.retriableStatusCodes` field _is_ specified. Previously specifying this field would set the `retryOn` field to a default of `"connect-failure,refused-stream,retriable-status-codes"`. Following this change we will add _only_ `retriable-status-codes` (as specifying them doesn't make sense otherwise), and leave the additional conditions to be specified by the user (which would be possible now) if desired.
+
 ### Potential Implementation Notes
 
 - Due to this field being an enum, we cannot use `5xx` as a field name, so must prefix it (`all_5xx` above) then post 'convert' to the Envoy-native field name.
