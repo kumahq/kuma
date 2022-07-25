@@ -65,8 +65,8 @@ kumactl install transparent-proxy [flags]
 
 ```
       --dry-run                                                                         dry run
-      --ebpf                                                                            use ebpf instead of iptables to install transparent proxy
       --ebpf-bpffs-path string                                                          the path of the BPF filesystem (default "/run/kuma/bpf")
+      --ebpf-enabled                                                                    use ebpf instead of iptables to install transparent proxy
       --ebpf-instance-ip-env-var-name string                                            the name of environmental variable which will contain the IP address of the instance (pod/vm) where transparent proxy will be installed (default "INSTANCE_IP")
       --ebpf-programs-source-path string                                                path where compiled ebpf programs and other necessary for ebpf mode files can be found (default "/kuma/ebpf")
       --exclude-inbound-ports string                                                    a comma separated list of inbound ports to exclude from redirect to Envoy
