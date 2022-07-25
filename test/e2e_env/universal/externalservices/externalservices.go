@@ -8,7 +8,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
 )
@@ -28,20 +33,37 @@ networking:
     passthrough: false
 `, meshName)
 
-	externalService := fmt.Sprintf(`
-type: ExternalService
-mesh: "%s"
-name: %%s
-tags:
-  kuma.io/service: %%s
-  kuma.io/protocol: http
-networking:
-  address: "%%s"
-  tls:
-    enabled: %%t
-    caCert:
-      inline: "%%s"
-`, meshName)
+	externalService := func(service, address string, tls bool, caCert []byte) *core_mesh.ExternalServiceResource {
+		res := &core_mesh.ExternalServiceResource{
+			Meta: &test_model.ResourceMeta{
+				Mesh: meshName,
+				Name: service,
+			},
+			Spec: &mesh_proto.ExternalService{
+				Tags: map[string]string{
+					mesh_proto.ServiceTag:  service,
+					mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
+				},
+				Networking: &mesh_proto.ExternalService_Networking{
+					Address: address,
+					Tls: &mesh_proto.ExternalService_Networking_TLS{
+						Enabled: tls,
+					},
+				},
+			},
+		}
+		if tls {
+			res.Spec.Networking.Tls.CaCert = &system_proto.DataSource{
+				Type: &system_proto.DataSource_Inline{
+					Inline: &wrapperspb.BytesValue{
+						Value: caCert,
+					},
+				},
+			}
+		}
+		return res
+	}
+
 	var esHttpHostPort string
 	var esHttp2HostPort string
 	var esHttpsHostPort string
@@ -76,10 +98,8 @@ networking:
 	}
 
 	It("should route to external-service", func() {
-		err := env.Cluster.Install(YamlUniversal(fmt.Sprintf(externalService,
-			"ext-srv-1", "ext-srv-1",
-			esHttpHostPort,
-			false, "")))
+		ResourceUniversal(externalService("ext-srv-1", esHttpHostPort, false, nil))
+		err := env.Cluster.Install(ResourceUniversal(externalService("ext-srv-1", esHttpHostPort, false, nil)))
 		Expect(err).ToNot(HaveOccurred())
 
 		checkSuccessfulRequest("ext-srv-1.mesh", And(
@@ -91,16 +111,10 @@ networking:
 	})
 
 	It("should route to external-service with same hostname but different ports", func() {
-		err := env.Cluster.Install(YamlUniversal(fmt.Sprintf(externalService,
-			"ext-srv-1", "ext-srv-1",
-			esHttpHostPort,
-			false, "")))
+		err := env.Cluster.Install(ResourceUniversal(externalService("ext-srv-1", esHttpHostPort, false, nil)))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = env.Cluster.Install(YamlUniversal(fmt.Sprintf(externalService,
-			"ext-srv-2", "ext-srv-2",
-			esHttp2HostPort,
-			false, "")))
+		err = env.Cluster.Install(ResourceUniversal(externalService("ext-srv-2", esHttp2HostPort, false, nil)))
 		Expect(err).ToNot(HaveOccurred())
 
 		// when access the first external service with .mesh
@@ -118,11 +132,8 @@ networking:
 	It("should route to external-service over tls", func() {
 		// when set invalid certificate
 		otherCert := "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURMRENDQWhTZ0F3SUJBZ0lRSGRQaHhPZlhnV3VOeG9GbFYvRXdxVEFOQmdrcWhraUc5dzBCQVFzRkFEQVAKTVEwd0N3WURWUVFERXdScmRXMWhNQjRYRFRJd01Ea3hOakV5TWpnME5Gb1hEVE13TURreE5ERXlNamcwTkZvdwpEekVOTUFzR0ExVUVBeE1FYTNWdFlUQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQURnZ0VQQURDQ0FRb0NnZ0VCCkFPWkdiV2hTbFFTUnhGTnQ1cC8yV0NLRnlIWjNDdXdOZ3lMRVA3blM0Wlh5a3hzRmJZU3VWM2JJZ0Y3YlQvdXEKYTVRaXJlK0M2MGd1aEZicExjUGgyWjZVZmdJZDY5R2xRekhNVlljbUxHalZRdXlBdDRGTU1rVGZWRWw1STRPYQorMml0M0J2aWhWa0toVXo4eTVSUjVLYnFKZkdwNFoyMEZoNmZ0dG9DRmJlT0RtdkJzWUpGbVVRUytpZm95TVkvClAzUjAzU3U3ZzVpSXZuejd0bWt5ZG9OQzhuR1JEemRENUM4Zkp2clZJMVVYNkpSR3lMS3Q0NW9RWHQxbXhLMTAKNUthTjJ6TlYyV3RIc2FKcDlid3JQSCtKaVpHZVp5dnVoNVV3ckxkSENtcUs3c205VG9kR3p0VVpZMFZ6QWM0cQprWVZpWFk4Z1VqZk5tK2NRclBPMWtOOENBd0VBQWFPQmd6Q0JnREFPQmdOVkhROEJBZjhFQkFNQ0FxUXdIUVlEClZSMGxCQll3RkFZSUt3WUJCUVVIQXdFR0NDc0dBUVVGQndNQk1BOEdBMVVkRXdFQi93UUZNQU1CQWY4d0hRWUQKVlIwT0JCWUVGR01EQlBQaUJGSjNtdjJvQTlDVHFqZW1GVFYyTUI4R0ExVWRFUVFZTUJhQ0NXeHZZMkZzYUc5egpkSUlKYkc5allXeG9iM04wTUEwR0NTcUdTSWIzRFFFQkN3VUFBNElCQVFDLzE3UXdlT3BHZGIxTUVCSjhYUEc3CjNzSy91dG9XTFgxdGpmOFN1MURnYTZDRFQvZVRXSFpyV1JmODFLT1ZZMDdkbGU1U1JJREsxUWhmYkdHdEZQK1QKdlprcm9vdXNJOVVTMmFDV2xrZUNaV0dUbnF2TG1Eb091anFhZ0RvS1JSdWs0bVFkdE5Ob254aUwvd1p0VEZLaQorMWlOalVWYkxXaURYZEJMeG9SSVZkTE96cWIvTU54d0VsVXlhVERBa29wUXlPV2FURGtZUHJHbWFXamNzZlBHCmFPS293MHplK3pIVkZxVEhiam5DcUVWM2huc1V5UlV3c0JsbjkrakRKWGd3Wk0vdE1sVkpyWkNoMFNsZTlZNVoKTU9CMGZDZjZzVE1OUlRHZzVMcGw2dUlZTS81SU5wbUhWTW8zbjdNQlNucEVEQVVTMmJmL3VvNWdJaXE2WENkcAotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg=="
-		err := env.Cluster.Install(YamlUniversal(fmt.Sprintf(externalService,
-			"ext-srv-tls", "ext-srv-tls",
-			esHttpsHostPort,
-			true,
-			otherCert)))
+		caCert, _ := base64.StdEncoding.DecodeString(otherCert)
+		err := env.Cluster.Install(ResourceUniversal(externalService("ext-srv-tls", esHttpsHostPort, true, caCert)))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then accessing the secured external service fails
@@ -137,11 +148,7 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 		Expect(cert).ToNot(BeEmpty())
 
-		err = env.Cluster.Install(YamlUniversal(fmt.Sprintf(externalService,
-			"ext-srv-tls", "ext-srv-tls",
-			esHttpsHostPort,
-			true,
-			base64.StdEncoding.EncodeToString([]byte(cert)))))
+		err = env.Cluster.Install(ResourceUniversal(externalService("ext-srv-tls", esHttpsHostPort, true, []byte(cert))))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then accessing the secured external service succeeds

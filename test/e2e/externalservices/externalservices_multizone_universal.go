@@ -6,8 +6,13 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config/core"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	. "github.com/kumahq/kuma/test/framework"
 	. "github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
@@ -29,22 +34,39 @@ routing:
   localityAwareLoadBalancing: %s
 `
 
-	externalService := `
-type: ExternalService
-mesh: default
-name: external-service-%s
-tags:
-  kuma.io/service: external-service-%s
-  kuma.io/protocol: http
-networking:
-  address: %s
-  tls:
-    enabled: %s
-    caCert:
-      inline: "%s"
-`
-	es1 := "1"
-	es2 := "2"
+	externalServiceRes := func(service, address string, tls bool, caCert []byte) *core_mesh.ExternalServiceResource {
+		res := &core_mesh.ExternalServiceResource{
+			Meta: &test_model.ResourceMeta{
+				Mesh: "default",
+				Name: service,
+			},
+			Spec: &mesh_proto.ExternalService{
+				Tags: map[string]string{
+					mesh_proto.ServiceTag:  service,
+					mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
+				},
+				Networking: &mesh_proto.ExternalService_Networking{
+					Address: address,
+					Tls: &mesh_proto.ExternalService_Networking_TLS{
+						Enabled: tls,
+					},
+				},
+			},
+		}
+		if tls {
+			res.Spec.Networking.Tls.CaCert = &system_proto.DataSource{
+				Type: &system_proto.DataSource_Inline{
+					Inline: &wrapperspb.BytesValue{
+						Value: caCert,
+					},
+				},
+			}
+		}
+		return res
+	}
+
+	es1 := "external-service-1"
+	es2 := "external-service-2"
 
 	const defaultMesh = "default"
 
@@ -114,10 +136,7 @@ networking:
 	})
 
 	It("should route to external-service", func() {
-		err := YamlUniversal(fmt.Sprintf(externalService,
-			es1, es1,
-			"kuma-3_externalservice-http-server:80",
-			"false", ""))(global)
+		err := ResourceUniversal(externalServiceRes(es1, "kuma-3_externalservice-http-server:80", false, nil))(global)
 		Expect(err).ToNot(HaveOccurred())
 
 		stdout, _, err := zone1.ExecWithRetries("", "", "demo-client",
@@ -148,11 +167,8 @@ networking:
 	It("should route to external-service over tls", func() {
 		// when set invalid certificate
 		otherCert := "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURMRENDQWhTZ0F3SUJBZ0lRSGRQaHhPZlhnV3VOeG9GbFYvRXdxVEFOQmdrcWhraUc5dzBCQVFzRkFEQVAKTVEwd0N3WURWUVFERXdScmRXMWhNQjRYRFRJd01Ea3hOakV5TWpnME5Gb1hEVE13TURreE5ERXlNamcwTkZvdwpEekVOTUFzR0ExVUVBeE1FYTNWdFlUQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQURnZ0VQQURDQ0FRb0NnZ0VCCkFPWkdiV2hTbFFTUnhGTnQ1cC8yV0NLRnlIWjNDdXdOZ3lMRVA3blM0Wlh5a3hzRmJZU3VWM2JJZ0Y3YlQvdXEKYTVRaXJlK0M2MGd1aEZicExjUGgyWjZVZmdJZDY5R2xRekhNVlljbUxHalZRdXlBdDRGTU1rVGZWRWw1STRPYQorMml0M0J2aWhWa0toVXo4eTVSUjVLYnFKZkdwNFoyMEZoNmZ0dG9DRmJlT0RtdkJzWUpGbVVRUytpZm95TVkvClAzUjAzU3U3ZzVpSXZuejd0bWt5ZG9OQzhuR1JEemRENUM4Zkp2clZJMVVYNkpSR3lMS3Q0NW9RWHQxbXhLMTAKNUthTjJ6TlYyV3RIc2FKcDlid3JQSCtKaVpHZVp5dnVoNVV3ckxkSENtcUs3c205VG9kR3p0VVpZMFZ6QWM0cQprWVZpWFk4Z1VqZk5tK2NRclBPMWtOOENBd0VBQWFPQmd6Q0JnREFPQmdOVkhROEJBZjhFQkFNQ0FxUXdIUVlEClZSMGxCQll3RkFZSUt3WUJCUVVIQXdFR0NDc0dBUVVGQndNQk1BOEdBMVVkRXdFQi93UUZNQU1CQWY4d0hRWUQKVlIwT0JCWUVGR01EQlBQaUJGSjNtdjJvQTlDVHFqZW1GVFYyTUI4R0ExVWRFUVFZTUJhQ0NXeHZZMkZzYUc5egpkSUlKYkc5allXeG9iM04wTUEwR0NTcUdTSWIzRFFFQkN3VUFBNElCQVFDLzE3UXdlT3BHZGIxTUVCSjhYUEc3CjNzSy91dG9XTFgxdGpmOFN1MURnYTZDRFQvZVRXSFpyV1JmODFLT1ZZMDdkbGU1U1JJREsxUWhmYkdHdEZQK1QKdlprcm9vdXNJOVVTMmFDV2xrZUNaV0dUbnF2TG1Eb091anFhZ0RvS1JSdWs0bVFkdE5Ob254aUwvd1p0VEZLaQorMWlOalVWYkxXaURYZEJMeG9SSVZkTE96cWIvTU54d0VsVXlhVERBa29wUXlPV2FURGtZUHJHbWFXamNzZlBHCmFPS293MHplK3pIVkZxVEhiam5DcUVWM2huc1V5UlV3c0JsbjkrakRKWGd3Wk0vdE1sVkpyWkNoMFNsZTlZNVoKTU9CMGZDZjZzVE1OUlRHZzVMcGw2dUlZTS81SU5wbUhWTW8zbjdNQlNucEVEQVVTMmJmL3VvNWdJaXE2WENkcAotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg=="
-		err := YamlUniversal(fmt.Sprintf(externalService,
-			es2, es2,
-			"kuma-3_externalservice-https-server:443",
-			"true",
-			otherCert))(global)
+		cert, _ := base64.StdEncoding.DecodeString(otherCert)
+		err := ResourceUniversal(externalServiceRes(es2, "kuma-3_externalservice-https-server:443", true, cert))(global)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then accessing the secured external service fails
@@ -164,11 +180,7 @@ networking:
 		externalServiceCaCert := externalservice.From(external, externalservice.HttpsServer).GetCert()
 		Expect(externalServiceCaCert).ToNot(BeEmpty())
 
-		err = YamlUniversal(fmt.Sprintf(externalService,
-			es2, es2,
-			"kuma-3_externalservice-https-server:443",
-			"true",
-			base64.StdEncoding.EncodeToString([]byte(externalServiceCaCert))))(global)
+		err = ResourceUniversal(externalServiceRes(es2, "kuma-3_externalservice-https-server:443", true, []byte(externalServiceCaCert)))(global)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then accessing the secured external service succeeds
