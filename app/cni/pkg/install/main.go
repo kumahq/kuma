@@ -215,6 +215,7 @@ func Run() {
 		os.Exit(1)
 	}
 
+	// is there a better approach for this?
 	if installerConfig.SleepBeforeRunSeconds > 0 {
 		time.Sleep(time.Second * time.Duration(installerConfig.SleepBeforeRunSeconds))
 	}

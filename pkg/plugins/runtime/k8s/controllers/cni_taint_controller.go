@@ -45,6 +45,13 @@ func (r *NodeReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (
 
 	// List Pods in on the node
 	kubeSystemPods := &kube_core.PodList{}
+	// can we filter this in "kube_client.ListOption" instead of doing this manually?
+	//kube_client.MatchingFields{
+	//	"spec.nodeName": node.Name,
+	//	"spec.name": "",
+	//}
+	// use: r.Client.Get(ctx, ) instead
+
 	if err := r.Client.List(ctx, kubeSystemPods, kube_client.InNamespace("kube-system")); err != nil {
 		return kube_ctrl.Result{}, err
 	}
@@ -154,6 +161,7 @@ func hasCniPodRunning(log logr.Logger, pods []kube_core.Pod) bool {
 func (r *NodeReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&kube_core.Node{}, builder.WithPredicates(nodeEvents)).
+		// check this is necessary
 		Watches(
 			&kube_source.Kind{Type: &kube_core.Pod{}},
 			kube_handler.EnqueueRequestsFromMapFunc(podToNodeMapper(r.Log)),

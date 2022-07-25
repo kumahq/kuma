@@ -27,6 +27,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
 	"github.com/kumahq/kuma/test/framework/utils"
@@ -1123,15 +1124,19 @@ func (c *K8sCluster) CreateNode(name string, label string) error {
 		createCmd.Stdout = os.Stdout
 		createErr := createCmd.Run()
 
+		version := kuma_version.Build.Version
 		importCmd := exec.Command("k3d", "image", "import", "-c", c.name,
-			"kumahq/kuma-cni:0.0.0-preview.658dd6677",
-			"kumahq/kuma-dp:0.0.0-preview.658dd6677",
-			"kumahq/kuma-cp:0.0.0-preview.658dd6677",
-			"kumahq/kuma-universal:0.0.0-preview.658dd6677",
+			"kumahq/kuma-cni:" + version,
+			"kumahq/kuma-dp:" + version,
+			"kumahq/kuma-universal:" + version,
 		)
 		importCmd.Stdout = os.Stdout
+		importCmd.Stderr = os.Stderr
 		importErr := importCmd.Run()
 		return multierr.Append(createErr, importErr)
+		// list all of the cases and in the error message include which failed
+		// todo: create an abstraction over k8s type and have specific create for each type
+		// using https://github.com/kubernetes-sigs/kind/issues/452 seems too much for now
 	case KindK8sType:
 		return errors.New("creating new node not available for kind")
 	case AwsK8sType:

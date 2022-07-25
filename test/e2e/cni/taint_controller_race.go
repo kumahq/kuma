@@ -44,6 +44,7 @@ metadata:
 			)).
 			Install(YamlK8s(defaultMesh)).
 			Setup(cluster)
+		// here we could patch the "command" of the CNI, kubectl patch ...
 		Expect(err).ToNot(HaveOccurred())
 
 	}
@@ -60,6 +61,8 @@ metadata:
 		func() {
 			setup()
 
+			// write a test case that shows the test-server does not come up cleanly without taint-controller
+
 			err := cluster.CreateNode("second-node", "second=true")
 			Expect(err).ToNot(HaveOccurred())
 
@@ -73,6 +76,7 @@ metadata:
 			})).
 				Setup(cluster)
 			Expect(err).ToNot(HaveOccurred())
+			// assert pods demo-client and testserver are available on the node
 
 			clientPodName, err := PodNameOfApp(cluster, "demo-client", TestNamespace)
 			Expect(err).ToNot(HaveOccurred())
