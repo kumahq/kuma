@@ -5,9 +5,7 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"io"
-	"net"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -21,7 +19,6 @@ import (
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
-	"github.com/kumahq/kuma/pkg/test"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
@@ -64,13 +61,6 @@ var _ = Describe("run", func() {
 			parts := strings.SplitN(envVar, "=", 2)
 			Expect(os.Setenv(parts[0], parts[1])).To(Succeed())
 		}
-	})
-
-	var port int
-	BeforeEach(func() {
-		var err error
-		port, err = test.GetFreePort()
-		Expect(err).NotTo(HaveOccurred())
 	})
 
 	type testCase struct {
@@ -191,7 +181,6 @@ var _ = Describe("run", func() {
 					"KUMA_CONTROL_PLANE_API_SERVER_URL":  "http://localhost:1234",
 					"KUMA_DATAPLANE_NAME":                "example",
 					"KUMA_DATAPLANE_MESH":                "default",
-					"KUMA_DATAPLANE_ADMIN_PORT":          fmt.Sprintf("%d", port),
 					"KUMA_DATAPLANE_RUNTIME_BINARY_PATH": filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					// Notice: KUMA_DATAPLANE_RUNTIME_CONFIG_DIR is not set in order to let `kuma-dp` to create a temporary directory
 					"KUMA_DNS_CORE_DNS_BINARY_PATH": filepath.Join("testdata", "coredns-mock.sleep.sh"),
@@ -206,7 +195,6 @@ var _ = Describe("run", func() {
 					"KUMA_CONTROL_PLANE_API_SERVER_URL":  "http://localhost:1234",
 					"KUMA_DATAPLANE_NAME":                "example",
 					"KUMA_DATAPLANE_MESH":                "default",
-					"KUMA_DATAPLANE_ADMIN_PORT":          fmt.Sprintf("%d", port),
 					"KUMA_DATAPLANE_RUNTIME_BINARY_PATH": filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					"KUMA_DATAPLANE_RUNTIME_CONFIG_DIR":  tmpDir,
 					"KUMA_DNS_CORE_DNS_BINARY_PATH":      filepath.Join("testdata", "coredns-mock.sleep.sh"),
@@ -222,7 +210,6 @@ var _ = Describe("run", func() {
 					"--cp-address", "http://localhost:1234",
 					"--name", "example",
 					"--mesh", "default",
-					"--admin-port", fmt.Sprintf("%d", port),
 					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					// Notice: --config-dir is not set in order to let `kuma-dp` to create a temporary directory
 					"--dns-coredns-path", filepath.Join("testdata", "coredns-mock.sleep.sh"),
@@ -237,7 +224,6 @@ var _ = Describe("run", func() {
 					"--cp-address", "http://localhost:1234",
 					"--name", "example",
 					"--mesh", "default",
-					"--admin-port", fmt.Sprintf("%d", port),
 					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					"--config-dir", tmpDir,
 					"--dns-coredns-path", filepath.Join("testdata", "coredns-mock.sleep.sh"),
@@ -252,7 +238,6 @@ var _ = Describe("run", func() {
 					"--cp-address", "http://localhost:1234",
 					"--name", "example",
 					"--mesh", "default",
-					"--admin-port", fmt.Sprintf("%d", port),
 					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					"--dataplane-token-file", filepath.Join("testdata", "token"),
 					// Notice: --config-dir is not set in order to let `kuma-dp` to create a temporary directory
@@ -267,7 +252,6 @@ var _ = Describe("run", func() {
 					"KUMA_CONTROL_PLANE_API_SERVER_URL":  "http://localhost:1234",
 					"KUMA_DATAPLANE_NAME":                "example",
 					"KUMA_DATAPLANE_MESH":                "default",
-					"KUMA_DATAPLANE_ADMIN_PORT":          "",
 					"KUMA_DATAPLANE_RUNTIME_BINARY_PATH": filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					// Notice: KUMA_DATAPLANE_RUNTIME_CONFIG_DIR is not set in order to let `kuma-dp` to create a temporary directory
 					"KUMA_DNS_CORE_DNS_BINARY_PATH": filepath.Join("testdata", "coredns-mock.sleep.sh"),
@@ -283,7 +267,6 @@ var _ = Describe("run", func() {
 					"--cp-address", "http://localhost:1234",
 					"--name", "example",
 					"--mesh", "default",
-					"--admin-port", "",
 					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					// Notice: --config-dir is not set in order to let `kuma-dp` to create a temporary directory
 					"--dns-coredns-path", filepath.Join("testdata", "coredns-mock.sleep.sh"),
@@ -296,7 +279,6 @@ var _ = Describe("run", func() {
 				envVars: map[string]string{},
 				args: []string{
 					"--cp-address", "http://localhost:1234",
-					"--admin-port", fmt.Sprintf("%d", port),
 					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					"--dataplane-token-file", filepath.Join("testdata", "token"),
 					"--dataplane-file", filepath.Join("testdata", "dataplane_template.yaml"),
@@ -308,38 +290,6 @@ var _ = Describe("run", func() {
 			}
 		}),
 	)
-
-	It("should fail when there are no free ports in the port range chosen for Envoy Admin API", func() {
-
-		By("simulating another Envoy instance that already uses this port")
-		// given
-		address := fmt.Sprintf("%s:%d", "127.0.0.1", port)
-		// when
-		l, err := net.Listen("tcp", address)
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		// and
-		defer l.Close()
-
-		// given
-		cmd := NewRootCmd(opts, DefaultRootContext())
-		cmd.SetArgs([]string{
-			"run",
-			"--cp-address", "http://localhost:1234",
-			"--name", "example",
-			"--mesh", "default",
-			"--admin-port", fmt.Sprintf("%d", port),
-			"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
-			"--dns-coredns-path", filepath.Join("testdata", "coredns-mock.sleep.sh"),
-		})
-
-		// when
-		err = cmd.Execute()
-
-		// then
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring(fmt.Sprintf(`unable to find a free port in the range "%d" for Envoy Admin API to listen on`, port)))
-	})
 
 	It("should fail when name and mesh is provided with dataplane definition", func() {
 		// given
