@@ -529,12 +529,6 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *core_mesh.MeshRe
 
 			annotations[metadata.KumaTransparentProxyingExperimentalEngine] = metadata.AnnotationEnabled
 		}
-
-		if val, exist := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeInboundPorts); exist {
-			annotations[metadata.KumaTrafficExcludeInboundPorts] = val
-		} else if len(i.cfg.SidecarTraffic.ExcludeInboundPorts) > 0 {
-			annotations[metadata.KumaTrafficExcludeInboundPorts] = portsToAnnotationValue(i.cfg.SidecarTraffic.ExcludeInboundPorts)
-		}
 	}
 
 	if i.cfg.BuiltinDNS.Enabled {
