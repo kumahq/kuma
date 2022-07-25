@@ -1,4 +1,7 @@
 ARG MODE
+# With test-containers building the same image many times have race conditions when deleting the images
+# We therefore add a unique ID just to make images different
+ARG UNIQUEID
 FROM postgres:latest AS pg-tls
 COPY pg_hba.conf /var/lib/postgresql/pg_hba.conf
 COPY certs/rootCA.crt /var/lib/postgresql/rootCA.crt
@@ -10,3 +13,4 @@ CMD ["-c", "ssl=on", "-c", "ssl_cert_file=/var/lib/postgresql/postgres.server.cr
 FROM postgres:latest AS pg-standard
 
 FROM pg-${MODE}
+RUN echo ${UNIQUEID} /tmp/uniqueID

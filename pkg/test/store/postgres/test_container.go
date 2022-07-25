@@ -4,8 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"math/rand"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 
 	. "github.com/onsi/gomega"
@@ -43,7 +45,12 @@ func (v *PostgresContainer) Start() error {
 	if v.WithTLS {
 		mode = "tls"
 	}
+	uniqueId := strconv.Itoa(rand.Int())
 	buildArgs["MODE"] = &mode
+	// Add a uniqueId to make each image different, this was causing flakiness as test-container
+	// deletes the image that it builds unconditionally during teardown and fails if the image doesn't exist.
+	// In the case of parallel tests it's possible that the same image was used in multiple tests and the second teardown would fail.
+	buildArgs["UNIQUEID"] = &uniqueId
 	req := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context:   resourceDir(),

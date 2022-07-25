@@ -476,6 +476,55 @@ workflows:
             parameters:
               arch: [ amd64, arm64 ]
           requires: [ check ]
+      - test:
+          name: test-<< matrix.arch >>
+          matrix:
+            alias: test
+            parameters:
+              arch: [ amd64, arm64 ]
+          requires: [ check ]
+      - test:
+          name: test-<< matrix.arch >>
+          matrix:
+            alias: test
+            parameters:
+              arch: [ amd64, arm64 ]
+          requires: [ check ]
+      - test:
+          name: test-<< matrix.arch >>
+          matrix:
+            alias: test
+            parameters:
+              arch: [ amd64, arm64 ]
+          requires: [ check ]
+      - test:
+          name: test-<< matrix.arch >>
+          matrix:
+            alias: test
+            parameters:
+              arch: [ amd64, arm64 ]
+          requires: [ check ]
+      - test:
+          name: test-<< matrix.arch >>
+          matrix:
+            alias: test
+            parameters:
+              arch: [ amd64, arm64 ]
+          requires: [ check ]
+      - test:
+          name: test-<< matrix.arch >>
+          matrix:
+            alias: test
+            parameters:
+              arch: [ amd64, arm64 ]
+          requires: [ check ]
+      - test:
+          name: test-<< matrix.arch >>
+          matrix:
+            alias: test
+            parameters:
+              arch: [ amd64, arm64 ]
+          requires: [ check ]
 #      - e2e:
 #          name: test/e2e-legacy-k8s:<< matrix.arch >>-<< matrix.k8sVersion >>
 #          matrix:
