@@ -22,6 +22,7 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy/kubernetes"
@@ -29,12 +30,13 @@ import (
 
 var _ = Describe("kubernetes", func() {
 	type testCaseKumactl struct {
+		cfg         runtime_k8s.Injector
 		pod         *kube_core.Pod
 		commandLine []string
 	}
 
 	DescribeTable("should generate kumactl command line", func(given testCaseKumactl) {
-		podRedirect, err := kubernetes.NewPodRedirectForPod(given.pod)
+		podRedirect, err := kubernetes.NewPodRedirectForPod(given.pod, given.cfg)
 		Expect(err).ToNot(HaveOccurred())
 
 		commandLine := podRedirect.AsKumactlCommandLine()
@@ -52,7 +54,6 @@ var _ = Describe("kubernetes", func() {
 						metadata.KumaTransparentProxyingInboundPortAnnotation:   "25204",
 						metadata.KumaTransparentProxyingInboundPortAnnotationV6: "25206",
 						metadata.KumaSidecarUID:                                 "12345",
-						metadata.KumaTransparentProxyingEbpf:                    metadata.AnnotationEnabled,
 					},
 				},
 			},
@@ -68,7 +69,6 @@ var _ = Describe("kubernetes", func() {
 				"--skip-resolv-conf",
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "25053",
-				"--ebpf-enabled",
 			},
 		}),
 
@@ -154,15 +154,58 @@ var _ = Describe("kubernetes", func() {
 				"--redirect-dns-port", "25053",
 			},
 		}),
+		Entry("should generate for ebpf transparent proxy", testCaseKumactl{
+			cfg: runtime_k8s.Injector{
+				EBPF: runtime_k8s.EBPF{
+					Enabled:              true,
+					InstanceIPEnvVarName: "FOO_BAR_BAZ",
+					BPFFSPath:            "/baz/bar/foo",
+					ProgramsSourcePath:   "/foo",
+				},
+			},
+			pod: &kube_core.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						metadata.KumaBuiltinDNS:                                 metadata.AnnotationEnabled,
+						metadata.KumaBuiltinDNSPort:                             "25053",
+						metadata.KumaTrafficExcludeOutboundPorts:                "11000",
+						metadata.KumaTransparentProxyingOutboundPortAnnotation:  "25100",
+						metadata.KumaGatewayAnnotation:                          metadata.AnnotationEnabled,
+						metadata.KumaTrafficExcludeInboundPorts:                 "12000",
+						metadata.KumaTransparentProxyingInboundPortAnnotation:   "25204",
+						metadata.KumaTransparentProxyingInboundPortAnnotationV6: "25206",
+						metadata.KumaSidecarUID:                                 "12345",
+					},
+				},
+			},
+			commandLine: []string{
+				"--redirect-outbound-port", "25100",
+				"--redirect-inbound=" + "false",
+				"--redirect-inbound-port", "25204",
+				"--redirect-inbound-port-v6", "25206",
+				"--kuma-dp-uid", "12345",
+				"--exclude-inbound-ports", "12000",
+				"--exclude-outbound-ports", "11000",
+				"--verbose",
+				"--skip-resolv-conf",
+				"--redirect-all-dns-traffic",
+				"--redirect-dns-port", "25053",
+				"--ebpf-enabled",
+				"--ebpf-instance-ip-env-var-name", "FOO_BAR_BAZ",
+				"--ebpf-bpffs-path", "/baz/bar/foo",
+				"--ebpf-programs-source-path", "/foo",
+			},
+		}),
 	)
 
 	type testCaseTransparentProxyConfig struct {
+		cfg      runtime_k8s.Injector
 		pod      *kube_core.Pod
 		tpConfig *config.TransparentProxyConfig
 	}
 
 	DescribeTable("should generate transparent proxy config", func(given testCaseTransparentProxyConfig) {
-		podRedirect, err := kubernetes.NewPodRedirectForPod(given.pod)
+		podRedirect, err := kubernetes.NewPodRedirectForPod(given.pod, given.cfg)
 		Expect(err).ToNot(HaveOccurred())
 
 		tpConfig := podRedirect.AsTransparentProxyConfig()

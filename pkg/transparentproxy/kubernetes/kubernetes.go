@@ -22,6 +22,7 @@ import (
 
 	kube_core "k8s.io/api/core/v1"
 
+	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 )
@@ -43,9 +44,14 @@ type PodRedirect struct {
 	TransparentProxyEbpfProgramsSourcePath   string
 }
 
-func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
+func NewPodRedirectForPod(pod *kube_core.Pod, cfg runtime_k8s.Injector) (*PodRedirect, error) {
 	var err error
-	podRedirect := &PodRedirect{}
+	podRedirect := &PodRedirect{
+		TransparentProxyEnableEbpf:               cfg.EBPF.Enabled,
+		TransparentProxyEbpfInstanceIPEnvVarName: cfg.EBPF.InstanceIPEnvVarName,
+		TransparentProxyEbpfBPFFSPath:            cfg.EBPF.BPFFSPath,
+		TransparentProxyEbpfProgramsSourcePath:   cfg.EBPF.ProgramsSourcePath,
+	}
 
 	podRedirect.BuiltinDNSEnabled, _, err = metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaBuiltinDNS)
 	if err != nil {
@@ -92,37 +98,42 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 		return nil, err
 	}
 
-	podRedirect.TransparentProxyEnableEbpf, _, err = metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaTransparentProxyingEbpf)
-	if err != nil {
-		return nil, err
+	if value, exists := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTransparentProxyingEbpfBPFFSPath); exists {
+		podRedirect.TransparentProxyEbpfBPFFSPath = value
 	}
 
-	podRedirect.TransparentProxyEbpfBPFFSPath, _ = metadata.Annotations(pod.Annotations).GetString(metadata.KumaTransparentProxyingEbpfBPFFSPath)
+	if value, exists := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName); exists {
+		podRedirect.TransparentProxyEbpfInstanceIPEnvVarName = value
+	}
 
-	podRedirect.TransparentProxyEbpfInstanceIPEnvVarName, _ = metadata.Annotations(pod.Annotations).GetString(metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName)
-
-	podRedirect.TransparentProxyEbpfProgramsSourcePath, _ = metadata.Annotations(pod.Annotations).GetString(metadata.KumaTransparentProxyingEbpfProgramsSourcePath)
+	if value, exists := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTransparentProxyingEbpfProgramsSourcePath); exists {
+		podRedirect.TransparentProxyEbpfProgramsSourcePath = value
+	}
 
 	return podRedirect, nil
 }
 
 func (pr *PodRedirect) AsTransparentProxyConfig() *config.TransparentProxyConfig {
 	return &config.TransparentProxyConfig{
-		DryRun:                 false,
-		Verbose:                true,
-		RedirectPortOutBound:   fmt.Sprintf("%d", pr.RedirectPortOutbound),
-		RedirectInBound:        pr.RedirectInbound,
-		RedirectPortInBound:    fmt.Sprintf("%d", pr.RedirectPortInbound),
-		RedirectPortInBoundV6:  fmt.Sprintf("%d", pr.RedirectPortInboundV6),
-		ExcludeInboundPorts:    pr.ExcludeInboundPorts,
-		ExcludeOutboundPorts:   pr.ExcludeOutboundPorts,
-		UID:                    pr.UID,
-		GID:                    pr.UID, // TODO: shall we have a separate annotation here?
-		RedirectDNS:            pr.BuiltinDNSEnabled,
-		RedirectAllDNSTraffic:  false,
-		AgentDNSListenerPort:   fmt.Sprintf("%d", pr.BuiltinDNSPort),
-		DNSUpstreamTargetChain: "",
-		ExperimentalEngine:     pr.ExperimentalTransparentProxyEngine,
+		DryRun:                   false,
+		Verbose:                  true,
+		RedirectPortOutBound:     fmt.Sprintf("%d", pr.RedirectPortOutbound),
+		RedirectInBound:          pr.RedirectInbound,
+		RedirectPortInBound:      fmt.Sprintf("%d", pr.RedirectPortInbound),
+		RedirectPortInBoundV6:    fmt.Sprintf("%d", pr.RedirectPortInboundV6),
+		ExcludeInboundPorts:      pr.ExcludeInboundPorts,
+		ExcludeOutboundPorts:     pr.ExcludeOutboundPorts,
+		UID:                      pr.UID,
+		GID:                      pr.UID, // TODO: shall we have a separate annotation here?
+		RedirectDNS:              pr.BuiltinDNSEnabled,
+		RedirectAllDNSTraffic:    false,
+		AgentDNSListenerPort:     fmt.Sprintf("%d", pr.BuiltinDNSPort),
+		DNSUpstreamTargetChain:   "",
+		ExperimentalEngine:       pr.ExperimentalTransparentProxyEngine,
+		EbpfEnabled:              pr.TransparentProxyEnableEbpf,
+		EbpfInstanceIPEnvVarName: pr.TransparentProxyEbpfInstanceIPEnvVarName,
+		EbpfBPFFSPath:            pr.TransparentProxyEbpfBPFFSPath,
+		EbpfProgramsSourcePath:   pr.TransparentProxyEbpfProgramsSourcePath,
 	}
 }
 
@@ -159,12 +170,12 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 	if pr.TransparentProxyEnableEbpf {
 		result = append(result, "--ebpf-enabled")
 
-		if pr.TransparentProxyEbpfBPFFSPath != "" {
-			result = append(result, "--ebpf-bpffs-path", pr.TransparentProxyEbpfBPFFSPath)
-		}
-
 		if pr.TransparentProxyEbpfInstanceIPEnvVarName != "" {
 			result = append(result, "--ebpf-instance-ip-env-var-name", pr.TransparentProxyEbpfInstanceIPEnvVarName)
+		}
+
+		if pr.TransparentProxyEbpfBPFFSPath != "" {
+			result = append(result, "--ebpf-bpffs-path", pr.TransparentProxyEbpfBPFFSPath)
 		}
 
 		if pr.TransparentProxyEbpfProgramsSourcePath != "" {

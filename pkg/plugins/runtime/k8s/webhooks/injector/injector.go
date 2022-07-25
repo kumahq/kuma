@@ -426,7 +426,7 @@ func (i *KumaInjector) FindServiceAccountToken(podSpec *kube_core.PodSpec) *kube
 }
 
 func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container, error) {
-	podRedirect, err := tp_k8s.NewPodRedirectForPod(pod)
+	podRedirect, err := tp_k8s.NewPodRedirectForPod(pod, i.cfg)
 	if err != nil {
 		return kube_core.Container{}, err
 	}
@@ -459,7 +459,7 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 		},
 	}
 
-	if podRedirect.TransparentProxyEnableEbpf {
+	if i.cfg.EBPF.Enabled {
 		// container.SecurityContext.Privileged expects to have a reference
 		// to the bool value
 		tru := true
@@ -513,11 +513,29 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *core_mesh.MeshRe
 		annotations[metadata.CNCFNetworkAnnotation] = metadata.KumaCNI
 	}
 
+
 	if i.cfg.EBPF.Enabled {
-		annotations[metadata.KumaTransparentProxyingEbpf] = metadata.AnnotationEnabled
-		annotations[metadata.KumaTransparentProxyingEbpfBPFFSPath] = i.cfg.EBPF.BPFFSPath
-		annotations[metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName] = i.cfg.EBPF.InstanceIPEnvVarName
-		annotations[metadata.KumaTransparentProxyingEbpfProgramsSourcePath] = i.cfg.EBPF.ProgramsSourcePath
+		// ebpf works only with experimental transparent proxy engine, so instead of
+		// failing when no annotation enabling it is present (bad user experience)
+		// we implicitly add it and set to true
+		enabled, exists, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaTransparentProxyingExperimentalEngine)
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("getting %s annotation failed", metadata.KumaTransparentProxyingExperimentalEngine))
+		}
+		if !exists || !enabled {
+			log.V(1).Info(fmt.Sprintf("missing %s annotation which has to be %s for ebpf to work. The annotation will be implicitly added",
+				metadata.KumaTransparentProxyingExperimentalEngine, metadata.AnnotationEnabled),
+				"annotation", metadata.KumaTransparentProxyingExperimentalEngine,
+				"pod", pod.Name)
+
+			annotations[metadata.KumaTransparentProxyingExperimentalEngine] = metadata.AnnotationEnabled
+		}
+
+		if val, exist := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeInboundPorts); exist {
+			annotations[metadata.KumaTrafficExcludeInboundPorts] = val
+		} else if len(i.cfg.SidecarTraffic.ExcludeInboundPorts) > 0 {
+			annotations[metadata.KumaTrafficExcludeInboundPorts] = portsToAnnotationValue(i.cfg.SidecarTraffic.ExcludeInboundPorts)
+		}
 	}
 
 	if i.cfg.BuiltinDNS.Enabled {
