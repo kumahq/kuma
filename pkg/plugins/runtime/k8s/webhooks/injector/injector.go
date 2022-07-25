@@ -513,7 +513,6 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *core_mesh.MeshRe
 		annotations[metadata.CNCFNetworkAnnotation] = metadata.KumaCNI
 	}
 
-
 	if i.cfg.EBPF.Enabled {
 		// ebpf works only with experimental transparent proxy engine, so instead of
 		// failing when no annotation enabling it is present (bad user experience)
