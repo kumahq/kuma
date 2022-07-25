@@ -303,6 +303,7 @@ var _ = Describe("Config WS", func() {
           "xdsServer": {
             "dataplaneConfigurationRefreshInterval": "1s",
             "dataplaneStatusFlushInterval": "10s",
+            "dataplaneDeregistrationDelay": "10s",
             "nackBackoff": "5s"
           },
           "diagnostics": {
