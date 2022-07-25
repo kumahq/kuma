@@ -68,7 +68,7 @@ var _ = Describe("kubernetes", func() {
 				"--skip-resolv-conf",
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "25053",
-				"--ebpf",
+				"--ebpf-enabled",
 			},
 		}),
 

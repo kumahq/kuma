@@ -1,13 +1,16 @@
 package transparentproxy
 
 import (
+	"fmt"
 	"net"
 	"os/exec"
+	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma-net/iptables/builder"
-	kumanet_config "github.com/kumahq/kuma-net/iptables/config"
+	kumanet_tproxy "github.com/kumahq/kuma-net/transparent-proxy"
+	kumanet_config "github.com/kumahq/kuma-net/transparent-proxy/config"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy/istio/tools/istio-iptables/pkg/constants"
@@ -50,8 +53,37 @@ func ShouldEnableIPv6() (bool, error) {
 	return err == nil, nil
 }
 
+func parsePort(port string) (uint16, error) {
+	parsedPort, err := strconv.ParseUint(port, 10, 16)
+	if err != nil {
+		return 0, fmt.Errorf("port %s, is not valid uint16", port)
+	}
+
+	return uint16(parsedPort), nil
+}
+
+func splitPorts(ports string) ([]uint16, error) {
+	ports = strings.TrimSpace(ports)
+	if ports == "" {
+		return nil, nil
+	}
+
+	var result []uint16
+
+	for _, port := range strings.Split(ports, ",") {
+		p, err := parsePort(port)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, p)
+	}
+
+	return result, nil
+}
+
 func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyConfig) (string, error) {
-	redirectInboundPort, err := ParsePort(tpConfig.RedirectPortInBound)
+	redirectInboundPort, err := parsePort(tpConfig.RedirectPortInBound)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing inbound redirect port failed")
 	}
@@ -59,25 +91,25 @@ func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyC
 	var redirectInboundPortIPv6 uint16
 
 	if tpConfig.RedirectPortInBoundV6 != "" {
-		redirectInboundPortIPv6, err = ParsePort(tpConfig.RedirectPortInBoundV6)
+		redirectInboundPortIPv6, err = parsePort(tpConfig.RedirectPortInBoundV6)
 		if err != nil {
 			return "", errors.Wrap(err, "parsing inbound redirect port IPv6 failed")
 		}
 	}
 
-	redirectOutboundPort, err := ParsePort(tpConfig.RedirectPortOutBound)
+	redirectOutboundPort, err := parsePort(tpConfig.RedirectPortOutBound)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing outbound redirect port failed")
 	}
 
-	agentDNSListenerPort, err := ParsePort(tpConfig.AgentDNSListenerPort)
+	agentDNSListenerPort, err := parsePort(tpConfig.AgentDNSListenerPort)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing agent DNS listener port failed")
 	}
 
 	var excludeInboundPorts []uint16
 	if tpConfig.ExcludeInboundPorts != "" {
-		excludeInboundPorts, err = SplitPorts(tpConfig.ExcludeInboundPorts)
+		excludeInboundPorts, err = splitPorts(tpConfig.ExcludeInboundPorts)
 		if err != nil {
 			return "", errors.Wrap(err, "cannot parse inbound ports to exclude")
 		}
@@ -85,7 +117,7 @@ func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyC
 
 	var excludeOutboundPorts []uint16
 	if tpConfig.ExcludeOutboundPorts != "" {
-		excludeOutboundPorts, err = SplitPorts(tpConfig.ExcludeOutboundPorts)
+		excludeOutboundPorts, err = splitPorts(tpConfig.ExcludeOutboundPorts)
 		if err != nil {
 			return "", errors.Wrap(err, "cannot parse outbound ports to exclude")
 		}
@@ -117,15 +149,20 @@ func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyC
 				ConntrackZoneSplit: !tpConfig.SkipDNSConntrackZoneSplit,
 			},
 		},
-		IPv6:    ipv6,
-		Verbose: tpConfig.Verbose,
+		Ebpf: kumanet_config.Ebpf{
+			Enabled:              tpConfig.EbpfEnabled,
+			InstanceIPEnvVarName: tpConfig.EbpfInstanceIPEnvVarName,
+			BPFFSPath:            tpConfig.EbpfBPFFSPath,
+			ProgramsSourcePath:   tpConfig.EbpfProgramsSourcePath,
+		},
+		RuntimeStdout: tpConfig.Stdout,
+		RuntimeStderr: tpConfig.Stderr,
+		IPv6:          ipv6,
+		Verbose:       tpConfig.Verbose,
+		DryRun:        tpConfig.DryRun,
 	}
 
-	if tpConfig.DryRun {
-		return builder.BuildIPTables(cfg, ipv6)
-	}
-
-	return builder.RestoreIPTables(cfg)
+	return kumanet_tproxy.Setup(cfg)
 }
 
 func (tp *ExperimentalTransparentProxy) Cleanup(dryRun, verbose bool) (string, error) {

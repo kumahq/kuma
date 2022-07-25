@@ -157,7 +157,7 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 	}
 
 	if pr.TransparentProxyEnableEbpf {
-		result = append(result, "--ebpf")
+		result = append(result, "--ebpf-enabled")
 
 		if pr.TransparentProxyEbpfBPFFSPath != "" {
 			result = append(result, "--ebpf-bpffs-path", pr.TransparentProxyEbpfBPFFSPath)

@@ -8,7 +8,6 @@ require (
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/Nordix/simple-ipam v1.0.0
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
-	github.com/cilium/ebpf v0.7.0
 	github.com/cncf/xds/go v0.0.0-20211130200136-a8f946100490
 	github.com/containernetworking/cni v0.8.1
 	github.com/containernetworking/plugins v0.9.1
@@ -27,7 +26,7 @@ require (
 	github.com/gruntwork-io/terratest v0.40.18
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/kumahq/kuma-net v0.3.0
+	github.com/kumahq/kuma-net v0.4.0
 	github.com/kumahq/protoc-gen-kumadoc v0.2.0
 	github.com/lib/pq v1.10.6
 	github.com/miekg/dns v1.1.50
@@ -95,6 +94,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
+	github.com/cilium/ebpf v0.9.1 // indirect
 	github.com/containerd/cgroups v1.0.3 // indirect
 	github.com/containerd/containerd v1.5.13 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
