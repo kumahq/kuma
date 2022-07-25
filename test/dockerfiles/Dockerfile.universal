@@ -1,5 +1,5 @@
 ARG BASE_IMAGE_ARCH
-FROM --platform=linux/${BASE_IMAGE_ARCH} ubuntu:21.04
+FROM --platform=linux/${BASE_IMAGE_ARCH} ubuntu:22.04
 
 RUN mkdir /kuma
 RUN echo "# use this file to override default configuration of \`kuma-cp\`" > /kuma/kuma-cp.conf \
