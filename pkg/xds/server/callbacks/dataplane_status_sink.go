@@ -116,6 +116,11 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 		}
 	}
 
+	// flush the first insight as quickly as possible so
+	// 1) user sees that DP is online in kumactl/GUI (even without any XDS updates)
+	// 2) we can have lower deregistrationDelay, see pkg/xds/server/callbacks/dataplane_lifecycle.go#deregisterProxy
+	flush(false)
+
 	for {
 		select {
 		case <-flushTicker.C:

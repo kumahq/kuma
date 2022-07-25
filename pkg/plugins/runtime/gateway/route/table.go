@@ -36,6 +36,8 @@ type Entry struct {
 	// RequestHeaders specifies transformations on the HTTP
 	// request headers.
 	RequestHeaders *Headers
+
+	Rewrite *Rewrite
 }
 
 // KeyValue is a generic pairing of key and value strings. Route table
@@ -113,6 +115,12 @@ type Headers struct {
 	Replace []KeyValue
 	// Delete deletes a HTTP header field.
 	Delete []string
+}
+
+type Rewrite struct {
+	ReplaceFullPath *string
+
+	ReplacePrefixMatch *string
 }
 
 // Mirror specifies a traffic mirroring operation.

@@ -87,11 +87,11 @@ build/kumactl: ## Dev: Build `kumactl` binary
 	$(Build_Go_Application) ./app/$(notdir $@)
 
 .PHONY: build/kuma-cni
-build/kuma-cni: ## Dev: Build `kumactl` binary
+build/kuma-cni: ## Dev: Build `kuma-cni` binary
 	$(Build_Go_Application) -ldflags="-extldflags=-static" ./app/cni/cmd/kuma-cni
 
 .PHONY: build/install-cni
-build/install-cni: ## Dev: Build `kumactl` binary
+build/install-cni: ## Dev: Build `install-cni` binary
 	$(Build_Go_Application) -ldflags="-extldflags=-static" ./app/cni/cmd/install
 
 .PHONY: build/coredns

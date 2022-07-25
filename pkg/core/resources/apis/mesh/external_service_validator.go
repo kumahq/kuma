@@ -8,6 +8,7 @@ import (
 	"github.com/asaskevich/govalidator"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
@@ -44,6 +45,9 @@ func validateExternalServiceNetworking(networking *mesh_proto.ExternalService_Ne
 	if networking.GetTls().GetServerName() != nil && networking.GetTls().GetServerName().GetValue() == "" {
 		err.AddViolationAt(path.Field("tls").Field("serverName"), "cannot be empty")
 	}
+	err.Add(system.ValidateDataSource(path.Field("tls").Field("caCert"), networking.GetTls().GetCaCert()))
+	err.Add(system.ValidateDataSource(path.Field("tls").Field("clientCert"), networking.GetTls().GetClientCert()))
+	err.Add(system.ValidateDataSource(path.Field("tls").Field("clientKey"), networking.GetTls().GetClientKey()))
 	return err
 }
 
