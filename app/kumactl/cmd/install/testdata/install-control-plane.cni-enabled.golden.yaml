@@ -14,7 +14,7 @@ metadata:
   namespace: kube-system
   labels: 
     app: kuma-cni
-    parent-app: "kuma-cni"
+    parent.app: "kuma-cni"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 ---
@@ -35,7 +35,7 @@ metadata:
   namespace: kube-system
   labels: 
     app: kuma-cni
-    parent-app: "kuma-cni"
+    parent.app: "kuma-cni"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 data:
@@ -1615,7 +1615,7 @@ metadata:
   labels:
   
     app: kuma-cni
-    parent-app: "kuma-cni"
+    parent.app: "kuma-cni"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 rules:
@@ -1864,7 +1864,7 @@ metadata:
   labels:
   
     app: kuma-cni
-    parent-app: "kuma-cni"
+    parent.app: "kuma-cni"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 roleRef:
@@ -1993,7 +1993,7 @@ metadata:
   namespace: kube-system
   labels:
     app: kuma-cni
-    parent-app: "kuma-cni"
+    parent.app: "kuma-cni"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 spec:

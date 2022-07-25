@@ -97,7 +97,7 @@ CNI labels
 */}}
 {{- define "kuma.cniLabels" -}}
 app: {{ include "kuma.name" . }}-cni
-parent-app: "kuma-cni"
+parent.app: "kuma-cni"
 {{ include "kuma.labels" . }}
 {{- end }}
 

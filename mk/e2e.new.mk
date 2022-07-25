@@ -143,7 +143,9 @@ test/e2e-multizone: $(E2E_DEPS_TARGETS)
 	$(MAKE) test/e2e/k8s/stop
 
 .PHONY: test/e2e-d3d-only
+test/e2e-d3d-only: export K3D = true
+test/e2e-d3d-only: export KUMA_K8S_TYPE = k3d
 test/e2e-d3d-only:
-	$(MAKE) K3D=true test/e2e/k8s/start
-	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) --procs 1 "./test/e2e_k3d_only/..." || (ret=$$?; $(MAKE) K3D=true test/e2e/k8s/stop && exit $$ret)
-	$(MAKE) K3D=true test/e2e/k8s/stop
+	$(MAKE) test/e2e/k8s/start
+	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) --procs 1 "./test/e2e_k3d_only/..." || (ret=$$?; $(MAKE) test/e2e/k8s/stop && exit $$ret)
+	$(MAKE) test/e2e/k8s/stop

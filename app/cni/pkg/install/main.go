@@ -215,15 +215,15 @@ func Run() {
 		os.Exit(1)
 	}
 
-	// is there a better approach for this?
-	if installerConfig.SleepBeforeRunSeconds > 0 {
-		time.Sleep(time.Second * time.Duration(installerConfig.SleepBeforeRunSeconds))
-	}
-
 	err = install(installerConfig)
 	if err != nil {
 		log.Error(err, "error occurred during cni installation")
 		os.Exit(1)
+	}
+
+	// is there a better approach for this?
+	if installerConfig.SleepBeforeRunSeconds > 0 {
+		time.Sleep(time.Second * time.Duration(installerConfig.SleepBeforeRunSeconds))
 	}
 
 	err = atomic.WriteFile("/tmp/ready", strings.NewReader(""))
