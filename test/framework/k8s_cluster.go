@@ -1126,9 +1126,9 @@ func (c *K8sCluster) CreateNode(name string, label string) error {
 
 		version := kuma_version.Build.Version
 		importCmd := exec.Command("k3d", "image", "import", "-c", c.name,
-			"kumahq/kuma-cni:" + version,
-			"kumahq/kuma-dp:" + version,
-			"kumahq/kuma-universal:" + version,
+			"kumahq/kuma-cni:"+version,
+			"kumahq/kuma-dp:"+version,
+			"kumahq/kuma-universal:"+version,
 		)
 		importCmd.Stdout = os.Stdout
 		importCmd.Stderr = os.Stderr

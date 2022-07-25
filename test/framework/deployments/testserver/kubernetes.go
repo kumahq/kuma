@@ -156,7 +156,7 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 			Annotations: k.getAnnotations(),
 		},
 		Spec: corev1.PodSpec{
-			NodeSelector: k.opts.NodeSelector,
+			NodeSelector:       k.opts.NodeSelector,
 			ServiceAccountName: k.opts.ServiceAccount,
 			Containers: []corev1.Container{
 				{

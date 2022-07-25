@@ -323,7 +323,7 @@ func DemoClientK8sWithAffinity(mesh string, namespace string) InstallFunc {
         second: "true"
 `
 
-	return DemoClientK8sCustomized(mesh, namespace, demoClientDeployment + affinity)
+	return DemoClientK8sCustomized(mesh, namespace, demoClientDeployment+affinity)
 }
 
 func DemoClientK8s(mesh string, namespace string) InstallFunc {

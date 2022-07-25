@@ -46,7 +46,6 @@ metadata:
 			Setup(cluster)
 		// here we could patch the "command" of the CNI, kubectl patch ...
 		Expect(err).ToNot(HaveOccurred())
-
 	}
 
 	E2EAfterEach(func() {
@@ -70,10 +69,10 @@ metadata:
 				Install(NamespaceWithSidecarInjection(TestNamespace)).
 				Install(DemoClientK8sWithAffinity("default", TestNamespace)).
 				Install(testserver.Install(func(opts *testserver.DeploymentOpts) {
-				opts.NodeSelector = map[string]string{
-					"second": "true",
-				}
-			})).
+					opts.NodeSelector = map[string]string{
+						"second": "true",
+					}
+				})).
 				Setup(cluster)
 			Expect(err).ToNot(HaveOccurred())
 			// assert pods demo-client and testserver are available on the node

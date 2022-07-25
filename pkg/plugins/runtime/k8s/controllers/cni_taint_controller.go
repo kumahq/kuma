@@ -45,7 +45,7 @@ func (r *NodeReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (
 
 	// List Pods in on the node
 	// can we use use: r.Client.Get(ctx, ) instead? I don't think we can it only allows for filtering namespacedName
-	//matchingFields := kube_client.MatchingFields{
+	// matchingFields := kube_client.MatchingFields{
 	//	"spec.nodeName": node.Name,
 	//	"metadata.labels.parent-app": "kuma-cni",
 	//}
