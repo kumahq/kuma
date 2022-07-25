@@ -53,10 +53,9 @@ spec:
           {{- if .Values.experimental.cni }}
           image: {{ include "kuma.formatImage" (dict "image" .Values.cni.experimental.image "root" $) | quote }}
           imagePullPolicy: IfNotPresent
-          # how istio checks readiness
           # what will happen when this is undefined
           readinessProbe:
-            initialDelaySeconds: 90
+            initialDelaySeconds: 40
             exec:
               command:
                 - cat

@@ -14,6 +14,7 @@ metadata:
   namespace: kube-system
   labels: 
     app: kuma-cni
+    parent-app: "kuma-cni"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 ---
@@ -34,6 +35,7 @@ metadata:
   namespace: kube-system
   labels: 
     app: kuma-cni
+    parent-app: "kuma-cni"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 data:
@@ -1613,6 +1615,7 @@ metadata:
   labels:
   
     app: kuma-cni
+    parent-app: "kuma-cni"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 rules:
@@ -1642,7 +1645,8 @@ rules:
     verbs:
       - get
       - list
-      - watch
+      - watch # just temp
+      - update
   - apiGroups:
       - "apps"
     resources:
@@ -1861,6 +1865,7 @@ metadata:
   labels:
   
     app: kuma-cni
+    parent-app: "kuma-cni"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 roleRef:
@@ -1989,6 +1994,7 @@ metadata:
   namespace: kube-system
   labels:
     app: kuma-cni
+    parent-app: "kuma-cni"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 spec:
@@ -2013,7 +2019,7 @@ spec:
         # priority scheduling and that its resources are reserved
         # if it ever gets evicted.
         scheduler.alpha.kubernetes.io/critical-pod: ''
-        checksum/config: 58a987b71c02c72aa261be5074aca3e9361a0f8b9e9f8b2bc504a815484f1057
+        checksum/config: cbee592465070b2622fddea9cb1df474ab8707d42ce5f811c2a798c26c2bc6fd
     spec:
       nodeSelector:
       
@@ -2037,6 +2043,14 @@ spec:
         - name: install-cni
           image: "docker.io/kumahq/kuma-cni:1.7.0"
           imagePullPolicy: IfNotPresent
+          # what will happen when this is undefined
+          readinessProbe:
+            initialDelaySeconds: 40
+            exec:
+              command:
+                - cat
+                - /tmp/ready # hook checkInstall function to --check-readiness flag to the binary
+          # if test then "command: bash -c sleep 60 && /install-cni"
           command: ["/install-cni"]
           env:
             # Name of the CNI config file to create.
@@ -2053,6 +2067,8 @@ spec:
             # If true, deploy as a chained CNI plugin, otherwise deploy as a standalone CNI
             - name: CHAINED_CNI_PLUGIN
               value: "false"
+            - name: SLEEP_BEFORE_RUN_SECONDS
+              value: "0"
           volumeMounts:
             - mountPath: /host/opt/cni/bin
               name: cni-bin-dir

@@ -39,7 +39,7 @@ metadata:
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
 				WithSkipDefaultMesh(true), // it's common case for HELM deployments that Mesh is also managed by HELM therefore it's not created by default
-				WithHelmOpt("cni.experimental.sleepBeforeRunSeconds", "60"),
+				WithHelmOpt("cni.experimental.sleepBeforeRunSeconds", "30"),
 				WithExperimentalCNI(),
 			)).
 			Install(YamlK8s(defaultMesh)).
