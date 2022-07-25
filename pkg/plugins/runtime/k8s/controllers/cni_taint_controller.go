@@ -44,14 +44,13 @@ func (r *NodeReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (
 	log.Info("node successfully fetched")
 
 	// List Pods in on the node
-	kubeSystemPods := &kube_core.PodList{}
-	// can we filter this in "kube_client.ListOption" instead of doing this manually?
-	//kube_client.MatchingFields{
+	// can we use use: r.Client.Get(ctx, ) instead? I don't think we can it only allows for filtering namespacedName
+	//matchingFields := kube_client.MatchingFields{
 	//	"spec.nodeName": node.Name,
-	//	"spec.name": "",
+	//	"metadata.labels.parent-app": "kuma-cni",
 	//}
-	// use: r.Client.Get(ctx, ) instead
 
+	kubeSystemPods := &kube_core.PodList{}
 	if err := r.Client.List(ctx, kubeSystemPods, kube_client.InNamespace("kube-system")); err != nil {
 		return kube_ctrl.Result{}, err
 	}

@@ -56,7 +56,7 @@ spec:
           # how istio checks readiness
           # what will happen when this is undefined
           readinessProbe:
-            initialDelaySeconds: 60
+            initialDelaySeconds: 90
             exec:
               command:
                 - cat

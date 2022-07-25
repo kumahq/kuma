@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 
 	"github.com/kumahq/kuma/pkg/test"
-	"github.com/kumahq/kuma/test/e2e/cni"
+	"github.com/kumahq/kuma/test/e2e_k3d_only/cni"
 )
 
 func TestE2E(t *testing.T) {
