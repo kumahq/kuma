@@ -1,6 +1,8 @@
 ARG BASE_IMAGE_ARCH=amd64
 
-FROM merbridge/merbridge:0.7.0@sha256:c128d0abcc800193eba6a1590985fb5c875d1b749c59055f0b80a88b54ee5914 as merbridge
+FROM --platform=linux/$BASE_IMAGE_ARCH \
+  merbridge/merbridge:0.7.0@sha256:c128d0abcc800193eba6a1590985fb5c875d1b749c59055f0b80a88b54ee5914 \
+  as merbridge
 
 COPY /tools/builds/ebpf/compile.mk /app/bpf/Makefile
 
