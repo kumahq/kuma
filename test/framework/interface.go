@@ -511,6 +511,7 @@ type Cluster interface {
 	ExecWithRetries(namespace, podName, containerName string, cmd ...string) (string, string, error)
 	CreateNode(name string, label string) error
 	DeleteNode(name string) error
+	LoadImages(images ...string) error
 
 	// Testing
 	GetTesting() testing.TestingT

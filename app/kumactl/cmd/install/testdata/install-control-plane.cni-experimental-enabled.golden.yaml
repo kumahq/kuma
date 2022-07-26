@@ -2045,7 +2045,7 @@ spec:
           imagePullPolicy: IfNotPresent
           # what will happen when this is undefined
           readinessProbe:
-            initialDelaySeconds: 40
+            initialDelaySeconds: 0
             exec:
               command:
                 - cat
@@ -2067,8 +2067,6 @@ spec:
             # If true, deploy as a chained CNI plugin, otherwise deploy as a standalone CNI
             - name: CHAINED_CNI_PLUGIN
               value: "false"
-            - name: SLEEP_BEFORE_RUN_SECONDS
-              value: "0"
           volumeMounts:
             - mountPath: /host/opt/cni/bin
               name: cni-bin-dir
@@ -2156,6 +2154,8 @@ spec:
               value: "false"
             - name: KUMA_ENVIRONMENT
               value: "kubernetes"
+            - name: KUMA_EXPERIMENTAL_CNI
+              value: "true"
             - name: KUMA_GENERAL_TLS_CERT_FILE
               value: "/var/run/secrets/kuma.io/tls-cert/tls.crt"
             - name: KUMA_GENERAL_TLS_KEY_FILE

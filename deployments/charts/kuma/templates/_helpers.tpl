@@ -274,6 +274,10 @@ env:
 - name: KUMA_EXPERIMENTAL_GATEWAY_API
   value: "true"
 {{- end }}
+{{- if .Values.experimental.cni }}
+- name: KUMA_EXPERIMENTAL_CNI
+  value: "true"
+{{- end }}
 {{- end }}
 
 {{/*

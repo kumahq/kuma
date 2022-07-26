@@ -55,17 +55,28 @@ spec:
           imagePullPolicy: IfNotPresent
           # what will happen when this is undefined
           readinessProbe:
-            initialDelaySeconds: 40
+            initialDelaySeconds: {{ .Values.cni.test.sleepBeforeRunSeconds }}
             exec:
               command:
                 - cat
                 - /tmp/ready # hook checkInstall function to --check-readiness flag to the binary
           # if test then "command: bash -c sleep 60 && /install-cni"
+            {{- if .Values.cni.test.sleepBeforeRunSeconds }}
+          command: [ "/bin/sh", "-c", "--" ]
+          args: [ "sleep {{.Values.cni.test.sleepBeforeRunSeconds}} && exec /install-cni" ]
+            {{- else }}
           command: ["/install-cni"]
+            {{- end }}
+
           {{- else }}
           image: {{ include "kuma.formatImage" (dict "image" .Values.cni.image "root" $) | quote }}
           imagePullPolicy: Always
+            {{- if .Values.cni.test.sleepBeforeRunSeconds }}
+          command: [ "/bin/sh", "-c", "--" ]
+          args: [ "sleep {{.Values.cni.test.sleepBeforeRunSeconds}} && exec /install-cni.sh" ]
+            {{- else }}
           command: ["/install-cni.sh"]
+            {{- end }}
           {{- end }}
           env:
             # Name of the CNI config file to create.
@@ -82,8 +93,6 @@ spec:
             # If true, deploy as a chained CNI plugin, otherwise deploy as a standalone CNI
             - name: CHAINED_CNI_PLUGIN
               value: "{{ .Values.cni.chained }}"
-            - name: SLEEP_BEFORE_RUN_SECONDS
-              value: "{{ .Values.cni.experimental.sleepBeforeRunSeconds }}"
           volumeMounts:
             - mountPath: /host/opt/cni/bin
               name: cni-bin-dir

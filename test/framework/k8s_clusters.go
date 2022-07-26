@@ -245,3 +245,11 @@ func (cs *K8sClusters) DeleteNode(name string) error {
 	}
 	return allErrors
 }
+
+func (cs *K8sClusters) LoadImages(names ...string) error {
+	allErrors := errors.New("combined load images to node errors")
+	for _, cluster := range cs.clusters {
+		allErrors = multierr.Append(allErrors, cluster.LoadImages(names...))
+	}
+	return allErrors
+}

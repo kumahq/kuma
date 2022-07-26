@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/random"
+	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -14,7 +15,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
-func AppDeploymentWithCniAndTaintController() {
+func AppDeploymentWithCniAndNoTaintController() {
 	defaultMesh := `
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
@@ -40,7 +41,8 @@ metadata:
 				WithHelmReleaseName(releaseName),
 				WithSkipDefaultMesh(true), // it's common case for HELM deployments that Mesh is also managed by HELM therefore it's not created by default
 				WithHelmOpt("cni.test.sleepBeforeRunSeconds", "70"),
-				WithExperimentalCNI(),
+				WithHelmOpt("experimental.cni", "false"),
+				WithCNI(),
 			)).
 			Install(YamlK8s(defaultMesh)).
 			Setup(cluster)
@@ -56,7 +58,7 @@ metadata:
 	})
 
 	It(
-		"prevents race condition following a slow CNI start",
+		"is susceptible to the race condition",
 		func() {
 			setup()
 
@@ -65,7 +67,7 @@ metadata:
 			err := cluster.CreateNode("second-node", "second=true")
 			Expect(err).ToNot(HaveOccurred())
 
-			err = cluster.LoadImages("kuma-dp", "kuma-cni", "kuma-universal")
+			err = cluster.LoadImages("kuma-dp", "kuma-universal")
 			Expect(err).ToNot(HaveOccurred())
 
 			err = NewClusterSetup().
@@ -75,31 +77,12 @@ metadata:
 						"second": "true",
 					}
 				})).
-				Install(DemoClientK8sWithAffinity("default", TestNamespace)).
 				Setup(cluster)
-			Expect(err).ToNot(HaveOccurred())
-			// assert pods demo-client and testserver are available on the node
 
-			clientPodName, err := PodNameOfApp(cluster, "demo-client", TestNamespace)
-			Expect(err).ToNot(HaveOccurred())
-
-			Eventually(func() (string, error) {
-				_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
-					"curl", "-v", "-m", "3", "--fail", "test-server")
-				return stderr, err
-			}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
-
-			Eventually(func() (string, error) {
-				_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
-					"curl", "-v", "-m", "3", "--fail", "test-server_kuma-test_svc_80.mesh")
-				return stderr, err
-			}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
-
-			Eventually(func() (string, error) { // should access a service with . instead of _
-				_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
-					"curl", "-v", "-m", "3", "--fail", "test-server.kuma-test.svc.80.mesh")
-				return stderr, err
-			}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
+			// test-server probe will fail without iptables rules applied
+			Expect(err).Should(HaveOccurred())
+			_, errorIsOfTypeMaxRetriesExceeded := err.(retry.MaxRetriesExceeded)
+			Expect(errorIsOfTypeMaxRetriesExceeded).To(Equal(true))
 		},
 	)
 }

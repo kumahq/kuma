@@ -22,12 +22,12 @@ import (
 
 const nodeReadinessTaintKey = "NodeReadiness"
 
-type NodeReconciler struct {
+type CniNodeTaintReconciler struct {
 	kube_client.Client
 	Log logr.Logger
 }
 
-func (r *NodeReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
+func (r *CniNodeTaintReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
 	log := r.Log.WithValues("node", req.NamespacedName)
 	log.Info("event received")
 
@@ -69,7 +69,7 @@ func (r *NodeReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (
 	return kube_ctrl.Result{}, err
 }
 
-func (r *NodeReconciler) updateTaints(ctx context.Context, log logr.Logger, node *kube_core.Node, pods []kube_core.Pod) error {
+func (r *CniNodeTaintReconciler) updateTaints(ctx context.Context, log logr.Logger, node *kube_core.Node, pods []kube_core.Pod) error {
 	if hasTaint(node) {
 		if hasCniPodRunning(log, pods) {
 			log.Info("has cni pod running and taint")
@@ -89,7 +89,7 @@ func (r *NodeReconciler) updateTaints(ctx context.Context, log logr.Logger, node
 	}
 }
 
-func (r *NodeReconciler) untaintNode(ctx context.Context, log logr.Logger, node *kube_core.Node) error {
+func (r *CniNodeTaintReconciler) untaintNode(ctx context.Context, log logr.Logger, node *kube_core.Node) error {
 	taintIndex := slices.IndexFunc(node.Spec.Taints, func(taint kube_core.Taint) bool {
 		return taint.Key == nodeReadinessTaintKey && taint.Effect == kube_core.TaintEffectNoSchedule
 	})
@@ -109,7 +109,7 @@ func removeTaint(s []kube_core.Taint, index int) []kube_core.Taint {
 	return append(s[:index], s[index+1:]...)
 }
 
-func (r *NodeReconciler) taintNode(ctx context.Context, log logr.Logger, node *kube_core.Node) error {
+func (r *CniNodeTaintReconciler) taintNode(ctx context.Context, log logr.Logger, node *kube_core.Node) error {
 	node.Spec.Taints = append(node.Spec.Taints, kube_core.Taint{
 		Key:    nodeReadinessTaintKey,
 		Effect: kube_core.TaintEffectNoSchedule,
@@ -157,7 +157,7 @@ func hasCniPodRunning(log logr.Logger, pods []kube_core.Pod) bool {
 	return false
 }
 
-func (r *NodeReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
+func (r *CniNodeTaintReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&kube_core.Node{}, builder.WithPredicates(nodeEvents)).
 		// check this is necessary

@@ -235,3 +235,7 @@ func (cs *UniversalClusters) CreateNode(name string, label string) error {
 func (cs *UniversalClusters) DeleteNode(name string) error {
 	panic("not supported")
 }
+
+func (cs *UniversalClusters) LoadImages(images ...string) error {
+	panic("not supported")
+}

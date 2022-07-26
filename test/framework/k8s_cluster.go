@@ -236,6 +236,31 @@ func (c *K8sCluster) WaitNamespaceDelete(namespace string) {
 		})
 }
 
+func (c *K8sCluster) WaitNodeDelete(node string) (string, error) {
+	return retry.DoWithRetryE(c.t,
+		fmt.Sprintf("Wait for %s node to terminate.", node),
+		c.defaultRetries,
+		5*c.defaultTimeout,
+		func() (string, error) {
+			nodes, err := k8s.GetNodesE(c.t, c.GetKubectlOptions())
+			if err != nil {
+				return "Error getting node " + node, err
+			}
+
+			nodeAvailable := false
+			for _, _node := range nodes {
+				if _node.Name == node {
+					nodeAvailable = true
+				}
+			}
+
+			if nodeAvailable {
+				return "Namespace available " + node, fmt.Errorf("Node %s still active", node)
+			}
+			return "Node deleted " + node, nil
+		})
+}
+
 func (c *K8sCluster) GetPodLogs(pod v1.Pod) (string, error) {
 	podLogOpts := v1.PodLogOptions{}
 	// creates the clientset
@@ -1122,18 +1147,7 @@ func (c *K8sCluster) CreateNode(name string, label string) error {
 	case K3dK8sType:
 		createCmd := exec.Command("k3d", "node", "create", name, "-c", c.name, "--k3s-node-label", label)
 		createCmd.Stdout = os.Stdout
-		createErr := createCmd.Run()
-
-		version := kuma_version.Build.Version
-		importCmd := exec.Command("k3d", "image", "import", "-c", c.name,
-			"kumahq/kuma-cni:"+version,
-			"kumahq/kuma-dp:"+version,
-			"kumahq/kuma-universal:"+version,
-		)
-		importCmd.Stdout = os.Stdout
-		importCmd.Stderr = os.Stderr
-		importErr := importCmd.Run()
-		return multierr.Append(createErr, importErr)
+		return createCmd.Run()
 		// list all of the cases and in the error message include which failed
 		// todo: create an abstraction over k8s type and have specific create for each type
 		// using https://github.com/kubernetes-sigs/kind/issues/452 seems too much for now
@@ -1148,9 +1162,47 @@ func (c *K8sCluster) CreateNode(name string, label string) error {
 	}
 }
 
+func (c *K8sCluster) LoadImages(names ...string) error {
+	switch Config.K8sType {
+	case K3dK8sType:
+		version := kuma_version.Build.Version
+
+		var fullImageNames []string
+		for _, image := range names {
+			fullImageNames = append(fullImageNames, "kumahq/"+image+":"+version)
+		}
+		defaultArgs := []string{"image", "import", "-c", c.name}
+		allArgs := append(defaultArgs, fullImageNames...)
+
+		importCmd := exec.Command("k3d", allArgs...)
+		importCmd.Stdout = os.Stdout
+		importCmd.Stderr = os.Stderr
+		return importCmd.Run()
+		// list all of the cases and in the error message include which failed
+		// todo: create an abstraction over k8s type and have specific create for each type
+		// using https://github.com/kubernetes-sigs/kind/issues/452 seems too much for now
+	case KindK8sType:
+		return errors.New("loading new images to a node not available for kind")
+	case AwsK8sType:
+		return errors.New("loading new images to a node not available for awsk8s")
+	case AzureK8sType:
+		return errors.New("loading new images to a node available for azurek8s")
+	default:
+		return errors.New("unknown kubernetes type")
+	}
+}
+
 func (c *K8sCluster) DeleteNode(name string) error {
 	switch Config.K8sType {
 	case K3dK8sType:
+		err := c.DeleteNodeViaApi(name)
+		if err != nil {
+			return err
+		}
+		_, err = c.WaitNodeDelete(name)
+		if err != nil {
+			return err
+		}
 		return exec.Command("k3d", "node", "delete", name).Run()
 	case KindK8sType:
 		return errors.New("deleting new node not available for kind")
@@ -1161,4 +1213,14 @@ func (c *K8sCluster) DeleteNode(name string) error {
 	default:
 		return errors.New("unknown kubernetes type")
 	}
+}
+
+func (c *K8sCluster) DeleteNodeViaApi(node string) error {
+	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t, c.GetKubectlOptions())
+	if err != nil {
+		return errors.Wrapf(err, "error in getting access to K8S")
+	}
+
+	foreground := metav1.DeletePropagationForeground
+	return clientset.CoreV1().Nodes().Delete(context.Background(), node, metav1.DeleteOptions{PropagationPolicy: &foreground})
 }
