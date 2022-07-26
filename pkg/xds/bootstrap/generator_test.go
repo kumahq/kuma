@@ -318,27 +318,6 @@ var _ = Describe("bootstrapGenerator", func() {
 			expectedConfigFile: "generator.metrics-config.kubernetes.golden.yaml",
 			hdsEnabled:         false,
 		}),
-		Entry("backwards compatibility, adminPort in bootstrapRequest", testCase{ // https://github.com/kumahq/kuma/issues/4002
-			dpAuthEnabled: true,
-			config: func() *bootstrap_config.BootstrapServerConfig {
-				cfg := bootstrap_config.DefaultBootstrapServerConfig()
-				cfg.Params.XdsHost = "localhost"
-				cfg.Params.XdsPort = 5678
-				return cfg
-			},
-			dataplane: defaultDataplane,
-			request: types.BootstrapRequest{
-				Mesh:           "mesh",
-				Name:           "name.namespace",
-				AdminPort:      1234,
-				DataplaneToken: "token",
-				Version:        defaultVersion,
-				DNSPort:        53001,
-				EmptyDNSPort:   53002,
-			},
-			expectedConfigFile: "generator.default-config.golden.yaml",
-			hdsEnabled:         true,
-		}),
 		Entry("backwards compatibility, adminPort both in bootstrapRequest and in DPP resource", testCase{ // https://github.com/kumahq/kuma/issues/4002
 			dpAuthEnabled: true,
 			config: func() *bootstrap_config.BootstrapServerConfig {
@@ -355,7 +334,6 @@ var _ = Describe("bootstrapGenerator", func() {
 			request: types.BootstrapRequest{
 				Mesh:           "mesh",
 				Name:           "name.namespace",
-				AdminPort:      4321,
 				DataplaneToken: "token",
 				Version:        defaultVersion,
 				DNSPort:        53001,
