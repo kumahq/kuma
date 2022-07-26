@@ -71,7 +71,7 @@ const (
 	// KumaMetricsPrometheusPath to override `Mesh`-wide default path
 	KumaMetricsPrometheusPath = "prometheus.metrics.kuma.io/path"
 
-	// TODO add issue for deprecation
+	// Remove with: https://github.com/kumahq/kuma/issues/4675
 	KumaBuiltinDNSDeprecated     = "kuma.io/builtindns"
 	KumaBuiltinDNSPortDeprecated = "kuma.io/builtindnsport"
 	// KumaBuiltinDNS the sidecar will use its builtin DNS
