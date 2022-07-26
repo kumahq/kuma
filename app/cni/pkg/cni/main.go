@@ -9,7 +9,7 @@ import (
 
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
-	types100 "github.com/containernetworking/cni/pkg/types/100"
+	current "github.com/containernetworking/cni/pkg/types/100"
 	"github.com/containernetworking/cni/pkg/version"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -41,7 +41,7 @@ type PluginConf struct {
 	types.NetConf
 
 	RawPrevResult *map[string]interface{} `json:"prevResult"`
-	PrevResult    *types100.Result        `json:"-"`
+	PrevResult    *current.Result         `json:"-"`
 
 	// plugin-specific fields
 	LogLevel   string     `json:"log_level"` // this was not accessed anywhere in the previous CNI, should I just get rid of it or hook it up?
@@ -76,7 +76,7 @@ func parseConfig(stdin []byte) (*PluginConf, error) {
 			return nil, errors.Wrapf(err, "could not parse prevResult")
 		}
 		conf.RawPrevResult = nil
-		conf.PrevResult, err = types100.NewResultFromResult(res)
+		conf.PrevResult, err = current.NewResultFromResult(res)
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not convert result to current version")
 		}
@@ -153,10 +153,10 @@ func cmdAdd(args *skel.CmdArgs) error {
 }
 
 func prepareResult(conf *PluginConf, logger logr.Logger) error {
-	var result *types100.Result
+	var result *current.Result
 	if conf.PrevResult == nil {
-		result = &types100.Result{
-			CNIVersion: types100.ImplementedSpecVersion,
+		result = &current.Result{
+			CNIVersion: current.ImplementedSpecVersion,
 		}
 	} else {
 		// Pass through the result for the next plugin
