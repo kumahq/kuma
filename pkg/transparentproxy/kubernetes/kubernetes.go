@@ -43,12 +43,12 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 	var err error
 	podRedirect := &PodRedirect{}
 
-	podRedirect.BuiltinDNSEnabled, _, err = metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaBuiltinDNS)
+	podRedirect.BuiltinDNSEnabled, _, err = metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaBuiltinDNSDeprecated, metadata.KumaBuiltinDNS)
 	if err != nil {
 		return nil, err
 	}
 
-	podRedirect.BuiltinDNSPort, _, err = metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaBuiltinDNSPort)
+	podRedirect.BuiltinDNSPort, _, err = metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaBuiltinDNSPortDeprecated, metadata.KumaBuiltinDNSPort)
 	if err != nil {
 		return nil, err
 	}

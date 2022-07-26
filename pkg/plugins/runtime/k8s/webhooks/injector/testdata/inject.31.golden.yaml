@@ -2,14 +2,12 @@ apiVersion: v1
 kind: Pod
 metadata:
   annotations:
-    docs: Documentation
     kuma.io/builtin-dns: enabled
     kuma.io/builtin-dns-port: "25053"
     kuma.io/builtindns: enabled
     kuma.io/builtindnsport: "25053"
     kuma.io/envoy-admin-port: "9901"
     kuma.io/mesh: default
-    kuma.io/sidecar-env-vars: KUMA_DATAPLANE_DRAIN_TIME=5s;NEW_ENV_VAR=123
     kuma.io/sidecar-injected: "true"
     kuma.io/sidecar-uid: "5678"
     kuma.io/transparent-proxying: enabled
@@ -27,14 +25,10 @@ spec:
   - image: busybox
     name: busybox
     resources: {}
-    volumeMounts:
-    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-      name: default-token-w7dxf
-      readOnly: true
   - args:
     - run
     - --log-level=info
-    - --concurrency=8
+    - --concurrency=2
     env:
     - name: POD_NAME
       valueFrom:
@@ -76,7 +70,7 @@ spec:
     - name: KUMA_CONTROL_PLANE_URL
       value: http://kuma-control-plane.kuma-system:5681
     - name: KUMA_DATAPLANE_DRAIN_TIME
-      value: 5s
+      value: 31s
     - name: KUMA_DATAPLANE_MESH
       value: default
     - name: KUMA_DATAPLANE_NAME
@@ -93,8 +87,6 @@ spec:
       value: "true"
     - name: KUMA_DNS_ENVOY_DNS_PORT
       value: "25055"
-    - name: NEW_ENV_VAR
-      value: "123"
     image: kuma/kuma-sidecar:latest
     imagePullPolicy: IfNotPresent
     livenessProbe:
@@ -118,7 +110,7 @@ spec:
       timeoutSeconds: 13
     resources:
       limits:
-        cpu: 8500m
+        cpu: 1100m
         memory: 1512Mi
       requests:
         cpu: 150m
@@ -126,18 +118,7 @@ spec:
     securityContext:
       runAsGroup: 5678
       runAsUser: 5678
-    volumeMounts:
-    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-      name: default-token-w7dxf
-      readOnly: true
   initContainers:
-  - command:
-    - sh
-    - -c
-    - sleep 5
-    image: busybox
-    name: init
-    resources: {}
   - args:
     - --redirect-outbound-port
     - "15001"
@@ -178,8 +159,4 @@ spec:
         - NET_RAW
       runAsGroup: 0
       runAsUser: 0
-  volumes:
-  - name: default-token-w7dxf
-    secret:
-      secretName: default-token-w7dxf
 status: {}

@@ -67,18 +67,12 @@ func (i *DataplaneProxyFactory) proxyConcurrencyFor(annotations map[string]strin
 
 func (i *DataplaneProxyFactory) envoyAdminPort(annotations map[string]string) (uint32, error) {
 	adminPort, _, err := metadata.Annotations(annotations).GetUint32(metadata.KumaEnvoyAdminPort)
-	if err != nil {
-		return 0, err
-	}
-	return adminPort, nil
+	return adminPort, err
 }
 
 func (i *DataplaneProxyFactory) drainTime(annotations map[string]string) (time.Duration, error) {
-	drainTime, exists := metadata.Annotations(annotations).GetString(metadata.KumaSidecarDrainTime)
-	if !exists {
-		return i.ContainerConfig.DrainTime, nil
-	}
-	return time.ParseDuration(drainTime)
+	r, _, err := metadata.Annotations(annotations).GetDurationWithDefault(i.ContainerConfig.DrainTime, metadata.KumaSidecarDrainTime)
+	return r, err
 }
 
 func (i *DataplaneProxyFactory) NewContainer(
@@ -250,7 +244,7 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 	}
 
 	// override defaults and cfg env vars with annotations
-	annotationEnvVars, err := metadata.Annotations(podAnnotations).GetMap(metadata.KumaSidecarEnvVarsAnnotation)
+	annotationEnvVars, _, err := metadata.Annotations(podAnnotations).GetMap(metadata.KumaSidecarEnvVarsAnnotation)
 	if err != nil {
 		return nil, err
 	}

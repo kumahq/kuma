@@ -77,6 +77,12 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		return errors.Wrap(err, "could not retrieve namespace for pod")
 	}
 	logger := log.WithValues("pod", pod.GenerateName, "namespace", pod.Namespace)
+	// Log deprecated annotations
+	for _, d := range metadata.PodAnnotationDeprecations {
+		if _, exists := pod.Annotations[d.Key]; exists {
+			logger.Info("WARNING: using deprecated pod annotation", "key", d.Key, "message", d.Message)
+		}
+	}
 	if inject, err := i.needInject(pod, ns); err != nil {
 		return err
 	} else if !inject {
@@ -170,13 +176,11 @@ func (i *KumaInjector) needInject(pod *kube_core.Pod, ns *kube_core.Namespace) (
 
 	// support annotations for backwards compatibility
 	// https://github.com/kumahq/kuma/issues/4005
-	annotationWarningMsg := "WARNING: you are using kuma.io/sidecar-injection as annotation. Please migrate it to label to have strong guarantee that application can only start with sidecar"
 	enabled, exist, err = metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
 	if err != nil {
 		return false, err
 	}
 	if exist {
-		log.Info(annotationWarningMsg, "pod", pod.Name, "namespace", ns.Name)
 		if !enabled {
 			log.V(1).Info(`pod has "kuma.io/sidecar-injection: disabled" annotation`)
 		}
@@ -201,7 +205,6 @@ func (i *KumaInjector) needInject(pod *kube_core.Pod, ns *kube_core.Namespace) (
 		return false, err
 	}
 	if exist {
-		log.Info(annotationWarningMsg, "namespace", ns.Name)
 		if !enabled {
 			log.V(1).Info(`namespace has "kuma.io/sidecar-injection: disabled" annotation`)
 		}
@@ -250,13 +253,8 @@ func (i *KumaInjector) loadContainerPatches(
 	pod *kube_core.Pod,
 ) (sidecarPatches namedContainerPatches, initPatches namedContainerPatches, err error) {
 	patchNames := i.cfg.ContainerPatches
-	if val, exist := metadata.Annotations(pod.Annotations).GetString(metadata.KumaContainerPatches); exist {
-		for _, patchName := range strings.Split(val, ",") {
-			if patchName != "" {
-				patchNames = append(patchNames, patchName)
-			}
-		}
-	}
+	otherPatches, _ := metadata.Annotations(pod.Annotations).GetList(metadata.KumaContainerPatches)
+	patchNames = append(patchNames, otherPatches...)
 
 	var missingPatches []string
 
@@ -455,9 +453,23 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *core_mesh.MeshRe
 		annotations[metadata.CNCFNetworkAnnotation] = metadata.KumaCNI
 	}
 
-	if i.cfg.BuiltinDNS.Enabled {
+	podAnnotations := metadata.Annotations(pod.Annotations)
+	enabled, _, err := podAnnotations.GetEnabledWithDefault(i.cfg.BuiltinDNS.Enabled, metadata.KumaBuiltinDNSDeprecated, metadata.KumaBuiltinDNS)
+	if err != nil {
+		return nil, err
+	}
+	port, _, err := podAnnotations.GetUint32WithDefault(i.cfg.BuiltinDNS.Port, metadata.KumaBuiltinDNSPortDeprecated, metadata.KumaBuiltinDNSPort)
+	if err != nil {
+		return nil, err
+	}
+
+	if enabled {
+		portVal := strconv.Itoa(int(port))
 		annotations[metadata.KumaBuiltinDNS] = metadata.AnnotationEnabled
-		annotations[metadata.KumaBuiltinDNSPort] = strconv.FormatInt(int64(i.cfg.BuiltinDNS.Port), 10)
+		annotations[metadata.KumaBuiltinDNSPort] = portVal
+		// TODO remove deprecation issue
+		annotations[metadata.KumaBuiltinDNSDeprecated] = metadata.AnnotationEnabled
+		annotations[metadata.KumaBuiltinDNSPortDeprecated] = portVal
 	}
 
 	if err := setVirtualProbesEnabledAnnotation(annotations, pod, i.cfg); err != nil {
@@ -467,21 +479,17 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *core_mesh.MeshRe
 		return nil, errors.Wrap(err, fmt.Sprintf("unable to set %s", metadata.KumaVirtualProbesPortAnnotation))
 	}
 
-	if val, exist := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeInboundPorts); exist {
+	if val, _ := metadata.Annotations(pod.Annotations).GetStringWithDefault(portsToAnnotationValue(i.cfg.SidecarTraffic.ExcludeInboundPorts), metadata.KumaTrafficExcludeInboundPorts); val != "" {
 		annotations[metadata.KumaTrafficExcludeInboundPorts] = val
-	} else if len(i.cfg.SidecarTraffic.ExcludeInboundPorts) > 0 {
-		annotations[metadata.KumaTrafficExcludeInboundPorts] = portsToAnnotationValue(i.cfg.SidecarTraffic.ExcludeInboundPorts)
 	}
-	if val, exist := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeOutboundPorts); exist {
+	if val, _ := metadata.Annotations(pod.Annotations).GetStringWithDefault(portsToAnnotationValue(i.cfg.SidecarTraffic.ExcludeOutboundPorts), metadata.KumaTrafficExcludeOutboundPorts); val != "" {
 		annotations[metadata.KumaTrafficExcludeOutboundPorts] = val
-	} else if len(i.cfg.SidecarTraffic.ExcludeOutboundPorts) > 0 {
-		annotations[metadata.KumaTrafficExcludeOutboundPorts] = portsToAnnotationValue(i.cfg.SidecarTraffic.ExcludeOutboundPorts)
 	}
-	if _, exist, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaEnvoyAdminPort); err != nil {
+	val, _, err := metadata.Annotations(pod.Annotations).GetUint32WithDefault(i.defaultAdminPort, metadata.KumaEnvoyAdminPort)
+	if err != nil {
 		return nil, err
-	} else if !exist {
-		annotations[metadata.KumaEnvoyAdminPort] = fmt.Sprintf("%d", i.defaultAdminPort)
 	}
+	annotations[metadata.KumaEnvoyAdminPort] = fmt.Sprintf("%d", val)
 	return annotations, nil
 }
 
