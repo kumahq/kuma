@@ -11,7 +11,6 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
-	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 )
 
@@ -28,7 +27,6 @@ var _ = Describe("Config", func() {
 
 		// and
 		Expect(cfg.ControlPlane.URL).To(Equal("https://kuma-control-plane.internal:5682"))
-		Expect(cfg.Dataplane.AdminPort).To(Equal(config_types.MustExactPort(2345)))
 		Expect(cfg.Dataplane.DrainTime).To(Equal(60 * time.Second))
 	})
 
@@ -58,7 +56,6 @@ var _ = Describe("Config", func() {
 				"KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_RETRY_MAX_DURATION": "11s",
 				"KUMA_DATAPLANE_MESH":                                    "demo",
 				"KUMA_DATAPLANE_NAME":                                    "example",
-				"KUMA_DATAPLANE_ADMIN_PORT":                              "2345",
 				"KUMA_DATAPLANE_DRAIN_TIME":                              "60s",
 				"KUMA_DATAPLANE_PROXY_TYPE":                              "ingress",
 				"KUMA_DATAPLANE_RUNTIME_BINARY_PATH":                     "envoy.sh",
@@ -93,7 +90,6 @@ var _ = Describe("Config", func() {
 			Expect(cfg.ControlPlane.Retry.MaxDuration).To(Equal(10 * time.Second))
 			Expect(cfg.Dataplane.Mesh).To(Equal("demo"))
 			Expect(cfg.Dataplane.Name).To(Equal("example"))
-			Expect(cfg.Dataplane.AdminPort).To(Equal(config_types.MustExactPort(2345)))
 			Expect(cfg.Dataplane.DrainTime).To(Equal(60 * time.Second))
 			Expect(cfg.DataplaneRuntime.BinaryPath).To(Equal("envoy.sh"))
 			Expect(cfg.DataplaneRuntime.ConfigDir).To(Equal("/var/run/envoy"))

@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -33,10 +33,11 @@ var _ = Describe("Resource Endpoints", func() {
 
 	BeforeEach(func() {
 		resourceStore = store.NewPaginationStore(memory.NewStore())
-		m, err := core_metrics.NewMetrics("Standalone")
-		Expect(err).ToNot(HaveOccurred())
-		metrics = m
-		apiServer, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore).WithMetrics(m))
+		apiServer, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore).WithMetrics(func() core_metrics.Metrics {
+			m, _ := core_metrics.NewMetrics("Standalone")
+			metrics = m
+			return m
+		}))
 		client = resourceApiClient{
 			address: apiServer.Address(),
 			path:    "/meshes/" + mesh + "/sample-traffic-routes",
