@@ -19,7 +19,6 @@ import (
 
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/pkg/core"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/containers"
@@ -89,16 +88,19 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		logger.V(1).Info("skip injecting Kuma")
 		return nil
 	}
+	meshName := k8s_util.MeshOf(pod, ns)
+	logger = logger.WithValues("mesh", meshName)
+	// Check mesh exists
+	if err := i.client.Get(ctx, kube_types.NamespacedName{Name: meshName}, &mesh_k8s.Mesh{}); err != nil {
+		return err
+	}
+
 	logger.Info("injecting Kuma")
 	sidecarPatches, initPatches, err := i.loadContainerPatches(ctx, logger, pod)
 	if err != nil {
 		return err
 	}
-	// sidecar container
-	if pod.Spec.Containers == nil {
-		pod.Spec.Containers = []kube_core.Container{}
-	}
-	container, err := i.NewSidecarContainer(pod, ns)
+	container, err := i.NewSidecarContainer(pod, meshName)
 	if err != nil {
 		return err
 	}
@@ -108,17 +110,12 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 	}
 	pod.Spec.Containers = append(pod.Spec.Containers, patchedContainer)
 
-	mesh, err := i.meshFor(ctx, pod, ns)
-	if err != nil {
-		return errors.Wrap(err, "could not retrieve mesh for pod")
-	}
-
 	// annotations
 	if pod.Annotations == nil {
 		pod.Annotations = map[string]string{}
 	}
 
-	annotations, err := i.NewAnnotations(pod, mesh)
+	annotations, err := i.NewAnnotations(pod, meshName)
 	if err != nil {
 		return errors.Wrap(err, "could not generate annotations for pod")
 	}
@@ -128,9 +125,6 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 
 	// init container
 	if !i.cfg.CNIEnabled {
-		if pod.Spec.InitContainers == nil {
-			pod.Spec.InitContainers = []kube_core.Container{}
-		}
 		ic, err := i.NewInitContainer(pod)
 		if err != nil {
 			return err
@@ -221,23 +215,6 @@ func (i *KumaInjector) isInjectionException(pod *kube_core.Pod) bool {
 		}
 	}
 	return false
-}
-
-func (i *KumaInjector) meshFor(
-	ctx context.Context,
-	pod *kube_core.Pod,
-	ns *kube_core.Namespace,
-) (*core_mesh.MeshResource, error) {
-	meshName := k8s_util.MeshOf(pod, ns)
-	mesh := &mesh_k8s.Mesh{}
-	if err := i.client.Get(ctx, kube_types.NamespacedName{Name: meshName}, mesh); err != nil {
-		return nil, err
-	}
-	meshResource := core_mesh.NewMeshResource()
-	if err := i.converter.ToCoreResource(mesh, meshResource); err != nil {
-		return nil, err
-	}
-	return meshResource, nil
 }
 
 type namedContainerPatches struct {
@@ -345,9 +322,9 @@ func (i *KumaInjector) namespaceFor(ctx context.Context, pod *kube_core.Pod) (*k
 
 func (i *KumaInjector) NewSidecarContainer(
 	pod *kube_core.Pod,
-	ns *kube_core.Namespace,
+	mesh string,
 ) (kube_core.Container, error) {
-	container, err := i.proxyFactory.NewContainer(pod, ns)
+	container, err := i.proxyFactory.NewContainer(pod, mesh)
 	if err != nil {
 		return container, err
 	}
@@ -439,9 +416,9 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 	}, nil
 }
 
-func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *core_mesh.MeshResource) (map[string]string, error) {
+func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string) (map[string]string, error) {
 	annotations := map[string]string{
-		metadata.KumaMeshAnnotation:                             mesh.GetMeta().GetName(), // either user-defined value or default
+		metadata.KumaMeshAnnotation:                             mesh, // either user-defined value or default
 		metadata.KumaSidecarInjectedAnnotation:                  fmt.Sprintf("%t", true),
 		metadata.KumaSidecarUID:                                 fmt.Sprintf("%d", i.cfg.SidecarContainer.UID),
 		metadata.KumaTransparentProxyingAnnotation:              metadata.AnnotationEnabled,
