@@ -975,8 +975,8 @@ github.com/kumahq/gateway-api v0.0.0-20220714082056-fbb05ce01577 h1:YPnAD+6Sier4
 github.com/kumahq/gateway-api v0.0.0-20220714082056-fbb05ce01577/go.mod h1:x0AP6gugkFV8fC/oTlnOMU0pnmuzIR8LfIPRVUjxSqA=
 github.com/kumahq/go-control-plane v0.9.10-0.20211022075049-d35edcf0813a h1:RtOjGzZDv0JDtpWthWmxDHXhZRnJBaeIoIHcQrigWdE=
 github.com/kumahq/go-control-plane v0.9.10-0.20211022075049-d35edcf0813a/go.mod h1:utjuSZ1DPHuYf0cTZ8WEsaQf5bwmT1TZiWaQjpJtBF0=
-github.com/kumahq/kuma-net v0.3.0 h1:zwih5eR80shiqBsZEh1xAxlXyhaFHsE/0Fe8guZqWNE=
-github.com/kumahq/kuma-net v0.3.0/go.mod h1:dUqPEm6BP7TqQvaqYDXnwITekoxdtmXTd6UXVlq3n9w=
+github.com/kumahq/kuma-net v0.4.0 h1:CKmQYU9iVjnGtKWVNYh0h65WUVv03qNlpn4VDptMmO4=
+github.com/kumahq/kuma-net v0.4.0/go.mod h1:f6FAs2ULvGoJ4NeOoOD5F58oERXQpxZiKUww+iRQPZc=
 github.com/kumahq/protoc-gen-kumadoc v0.2.0 h1:3P1PZyw/tI1TYL6QmaePuLqGuarhYkL9ZxjN2yPTLXY=
 github.com/kumahq/protoc-gen-kumadoc v0.2.0/go.mod h1:F+c9RjgKlv1Q3UEoPJCtMJw8Fd+X5PfG5jlkTSfZOMA=
 github.com/lann/builder v0.0.0-20180802200727-47ae307949d0/go.mod h1:dXGbAdH5GtBTC4WfIxhKZfyBF/HBFgRZSWwZ9g/He9o=
