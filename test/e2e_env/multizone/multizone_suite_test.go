@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/multizone/env"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/gateway"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/healthcheck"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/inbound_communication"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/inspect"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/localityawarelb"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/trafficpermission"
@@ -225,4 +226,4 @@ var _ = Describe("Inspect", inspect.Inspect, Ordered)
 var _ = Describe("TrafficPermission", trafficpermission.TrafficPermission, Ordered)
 var _ = Describe("TrafficRoute", trafficroute.TrafficRoute, Ordered)
 
-// var _ = FDescribe("ServerBind", inbound_communication.ServerBind, Ordered)
+var _ = FDescribe("ServerBind", inbound_communication.ServerBind, Ordered)

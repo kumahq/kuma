@@ -23,7 +23,7 @@ var _ = Describe("IngressTrafficRoute", func() {
 		DescribeTable("should generate ingress outbounds matching given selectors",
 			func(given testCase) {
 				// when
-				endpoints := BuildEndpointMap(given.destinations, given.dataplanes, given.externalServices, given.zoneEgress, nil)
+				endpoints := BuildEndpointMap(given.destinations, given.dataplanes, given.externalServices, given.zoneEgress, nil, false)
 				// then
 				Expect(endpoints).To(Equal(given.expected))
 			},

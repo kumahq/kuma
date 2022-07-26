@@ -43,8 +43,8 @@ func ServerBind() {
 		Expect(err).To(Succeed())
 	})
 	E2EAfterAll(func() {
-		Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(mesh))
+		// Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+		// Expect(env.Cluster.DeleteMesh(mesh))
 	})
 
 	FIt("should communicate with the applications", func() {

@@ -137,9 +137,8 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 						Port: intstr.FromInt(80),
 					},
 				},
-				InitialDelaySeconds: 300,
+				InitialDelaySeconds: 3,
 				PeriodSeconds:       3,
-				FailureThreshold:    30000,
 			}
 			readiness = &corev1.Probe{
 				ProbeHandler: corev1.ProbeHandler{
@@ -148,9 +147,8 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 						Port: intstr.FromInt(80),
 					},
 				},
-				InitialDelaySeconds: 300,
+				InitialDelaySeconds: 3,
 				PeriodSeconds:       3,
-				FailureThreshold:    30000,
 			}
 		}
 	}
