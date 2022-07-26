@@ -12,7 +12,6 @@ import (
 
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
 type EnvVarsByName []kube_core.EnvVar
@@ -77,10 +76,8 @@ func (i *DataplaneProxyFactory) drainTime(annotations map[string]string) (time.D
 
 func (i *DataplaneProxyFactory) NewContainer(
 	owner kube_client.Object,
-	ns *kube_core.Namespace,
+	mesh string,
 ) (kube_core.Container, error) {
-	mesh := k8s_util.MeshOf(owner, ns)
-
 	annotations := owner.GetAnnotations()
 
 	env, err := i.sidecarEnvVars(mesh, annotations)
