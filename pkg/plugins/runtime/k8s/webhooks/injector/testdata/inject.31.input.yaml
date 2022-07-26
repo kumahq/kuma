@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+  labels:
+    run: busybox
+  annotations:
+    kuma.io/builtin-dns-port: "25053"
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    resources: {}
