@@ -15,6 +15,7 @@ kumactl install demo [flags]
 ```
   -h, --help               help for demo
       --namespace string   Namespace to install demo to (default "kuma-demo")
+      --without-gateway    Skip MeshGateway resources
       --zone string        Zone in which to install demo (default "local")
 ```
 
