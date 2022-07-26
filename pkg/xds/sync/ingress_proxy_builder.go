@@ -25,8 +25,9 @@ type IngressProxyBuilder struct {
 	MetadataTracker    DataplaneMetadataTracker
 	meshCache          *xds_cache.Cache
 
-	apiVersion envoy.APIVersion
-	zone       string
+	apiVersion               envoy.APIVersion
+	zone                     string
+	enableInboundPassthrough bool
 }
 
 func (p *IngressProxyBuilder) Build(key core_model.ResourceKey) (*xds.Proxy, error) {
@@ -124,7 +125,7 @@ func (p *IngressProxyBuilder) resolveRouting(
 ) *xds.Routing {
 	destinations := ingress.BuildDestinationMap(zoneIngress)
 	endpoints := ingress.BuildEndpointMap(
-		destinations, dataplanes.Items, externalServices.Items, zoneEgresses.Items, meshGateways.Items,
+		destinations, dataplanes.Items, externalServices.Items, zoneEgresses.Items, meshGateways.Items, p.enableInboundPassthrough,
 	)
 
 	routing := &xds.Routing{

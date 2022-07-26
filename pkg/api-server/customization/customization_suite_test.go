@@ -62,6 +62,7 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 			cfg.Multizone.Zone.Name,
 			vips.NewPersistence(manager.NewResourceManager(store), config_manager.NewConfigManager(store)),
 			cfg.DNSServer.Domain,
+			cfg.Defaults.EnableInboundPassthrough,
 		),
 		wsManager,
 		registry.Global().ObjectDescriptors(core_model.HasWsEnabled()),

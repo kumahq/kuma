@@ -103,7 +103,7 @@ func (g *filterChainGenerators) For(ctx xds_context.Context, info GatewayListene
 // Gateway and returns information about the listeners, routes and applied
 // policies.
 func GatewayListenerInfoFromProxy(
-	ctx xds_context.MeshContext, proxy *core_xds.Proxy, zone string,
+	ctx xds_context.MeshContext, proxy *core_xds.Proxy, zone string, enableInboundPassthrough bool,
 ) (
 	[]GatewayListenerInfo, error,
 ) {
@@ -159,6 +159,7 @@ func GatewayListenerInfoFromProxy(
 		ctx.Resources.ZoneEgresses().Items,
 		matchedExternalServices,
 		ctx.DataSourceLoader,
+		enableInboundPassthrough,
 	)
 
 	for port, listeners := range collapsed {
@@ -206,7 +207,7 @@ func GatewayListenerInfoFromProxy(
 func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
-	listenerInfos, err := GatewayListenerInfoFromProxy(ctx.Mesh, proxy, g.Zone)
+	listenerInfos, err := GatewayListenerInfoFromProxy(ctx.Mesh, proxy, g.Zone, ctx.ControlPlane.EnableInboundPassthrough)
 	if err != nil {
 		return nil, errors.Wrap(err, "error generating listener info from Proxy")
 	}

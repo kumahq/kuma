@@ -31,8 +31,10 @@ func BuildEndpointMap(
 	zoneEgresses []*core_mesh.ZoneEgressResource,
 	externalServices []*core_mesh.ExternalServiceResource,
 	loader datasource.Loader,
+	enableInboundPassthrough bool,
 ) core_xds.EndpointMap {
-	outbound := BuildEdsEndpointMap(mesh, zone, dataplanes, zoneIngresses, zoneEgresses, externalServices)
+	outbound := BuildEdsEndpointMap(
+		mesh, zone, dataplanes, zoneIngresses, zoneEgresses, externalServices, enableInboundPassthrough)
 
 	if !mesh.ZoneEgressEnabled() {
 		fillExternalServicesOutbounds(outbound, externalServices, mesh, loader, zone)
@@ -82,6 +84,7 @@ func BuildEdsEndpointMap(
 	zoneIngresses []*core_mesh.ZoneIngressResource,
 	zoneEgresses []*core_mesh.ZoneEgressResource,
 	externalServices []*core_mesh.ExternalServiceResource,
+	enableInboundPassthrough bool,
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 	ingressInstances := fillIngressOutbounds(
@@ -96,7 +99,7 @@ func BuildEdsEndpointMap(
 	if ingressInstances > 0 {
 		endpointWeight = ingressInstances
 	}
-	fillDataplaneOutbounds(outbound, dataplanes, mesh, endpointWeight)
+	fillDataplaneOutbounds(outbound, dataplanes, mesh, endpointWeight, enableInboundPassthrough)
 
 	if mesh.ZoneEgressEnabled() {
 		fillExternalServicesOutboundsThroughEgress(outbound, externalServices, zoneEgresses, mesh)
@@ -130,6 +133,7 @@ func fillDataplaneOutbounds(
 	dataplanes []*core_mesh.DataplaneResource,
 	mesh *core_mesh.MeshResource,
 	endpointWeight uint32,
+	enableInboundPassthrough bool,
 ) {
 	for _, dataplane := range dataplanes {
 		dpSpec := dataplane.Spec
@@ -141,8 +145,7 @@ func fillDataplaneOutbounds(
 			inboundInterface := dpNetworking.ToInboundInterface(inbound)
 			inboundAddress := inboundInterface.DataplaneAdvertisedIP
 			var inboundPort uint32
-			if dpSpec.Networking.TransparentProxying != nil &&
-				dpSpec.Networking.GetTransparentProxying().GetRedirectPortInbound() != 0 {
+			if enableInboundPassthrough && dpSpec.IsUsingTransparentProxy() {
 				inboundPort = inboundInterface.WorkloadPort
 			} else {
 				inboundPort = inboundInterface.DataplanePort

@@ -431,6 +431,12 @@ func (d *Dataplane) GetIdentifyingService() string {
 	return ServiceUnknown
 }
 
+func (d *Dataplane) IsUsingTransparentProxy() bool {
+	return d.GetNetworking() != nil &&
+		d.GetNetworking().GetTransparentProxying() != nil &&
+		d.GetNetworking().GetTransparentProxying().GetRedirectPortInbound() != 0
+}
+
 func (d *Dataplane) IsDelegatedGateway() bool {
 	return d.GetNetworking().GetGateway() != nil &&
 		d.GetNetworking().GetGateway().GetType() == Dataplane_Networking_Gateway_DELEGATED

@@ -14,6 +14,7 @@ func BuildEndpointMap(
 	externalServices []*core_mesh.ExternalServiceResource,
 	zoneEgresses []*core_mesh.ZoneEgressResource,
 	gateways []*core_mesh.MeshGatewayResource,
+	enableInboundPassthrough bool,
 ) core_xds.EndpointMap {
 	if len(destinations) == 0 {
 		return nil
@@ -33,7 +34,7 @@ func BuildEndpointMap(
 			}
 			iface := dataplane.Spec.GetNetworking().ToInboundInterface(inbound)
 			var inboundPort uint32
-			if dataplane.Spec.Networking.GetTransparentProxying() != nil &&
+			if enableInboundPassthrough && dataplane.Spec.Networking.GetTransparentProxying() != nil &&
 				dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInbound() != 0 {
 				inboundPort = iface.WorkloadPort
 			} else {

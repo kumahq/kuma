@@ -24,12 +24,13 @@ import (
 var logger = core.Log.WithName("xds").WithName("context")
 
 type meshContextBuilder struct {
-	rm              manager.ReadOnlyResourceManager
-	typeSet         map[core_model.ResourceType]struct{}
-	ipFunc          lookup.LookupIPFunc
-	zone            string
-	vipsPersistence *vips.Persistence
-	topLevelDomain  string
+	rm                       manager.ReadOnlyResourceManager
+	typeSet                  map[core_model.ResourceType]struct{}
+	ipFunc                   lookup.LookupIPFunc
+	zone                     string
+	vipsPersistence          *vips.Persistence
+	topLevelDomain           string
+	enableInboundPassthrough bool
 }
 
 type MeshContextBuilder interface {
@@ -48,6 +49,7 @@ func NewMeshContextBuilder(
 	zone string,
 	vipsPersistence *vips.Persistence,
 	topLevelDomain string,
+	enableInboundPassthrough bool,
 ) MeshContextBuilder {
 	typeSet := map[core_model.ResourceType]struct{}{}
 	for _, typ := range types {
@@ -55,12 +57,13 @@ func NewMeshContextBuilder(
 	}
 
 	return &meshContextBuilder{
-		rm:              rm,
-		typeSet:         typeSet,
-		ipFunc:          ipFunc,
-		zone:            zone,
-		vipsPersistence: vipsPersistence,
-		topLevelDomain:  topLevelDomain,
+		rm:                       rm,
+		typeSet:                  typeSet,
+		ipFunc:                   ipFunc,
+		zone:                     zone,
+		vipsPersistence:          vipsPersistence,
+		topLevelDomain:           topLevelDomain,
+		enableInboundPassthrough: enableInboundPassthrough,
 	}
 }
 
@@ -107,7 +110,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	zoneIngresses := resources.ZoneIngresses().Items
 	zoneEgresses := resources.ZoneEgresses().Items
 	externalServices := resources.ExternalServices().Items
-	endpointMap := xds_topology.BuildEdsEndpointMap(mesh, m.zone, dataplanes, zoneIngresses, zoneEgresses, externalServices)
+	endpointMap := xds_topology.BuildEdsEndpointMap(mesh, m.zone, dataplanes, zoneIngresses, zoneEgresses, externalServices, m.enableInboundPassthrough)
 
 	crossMeshEndpointMap := map[string]xds.EndpointMap{}
 	for otherMeshName, gateways := range resources.gatewaysAndDataplanesForMesh(mesh) {

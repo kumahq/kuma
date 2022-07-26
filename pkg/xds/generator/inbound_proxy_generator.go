@@ -1,8 +1,6 @@
 package generator
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -40,15 +38,13 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 		// generate CDS resource
 		var localClusterName string
 		var clusterBuilder *envoy_clusters.ClusterBuilder
-		if ctx.ControlPlane.EnableInboundPassthrough &&
-			proxy.Dataplane.Spec.Networking != nil &&
-			proxy.Dataplane.Spec.Networking.TransparentProxying != nil &&
-			proxy.Dataplane.Spec.Networking.TransparentProxying.RedirectPortInbound != 0 {
-			localClusterName = fmt.Sprintf("inbound:%d", endpoint.WorkloadPort)
+		if ctx.ControlPlane.EnableInboundPassthrough && proxy.Dataplane.Spec.IsUsingTransparentProxy() {
+			localClusterName = envoy_names.GetInboundClusterName(endpoint.WorkloadPort)
 			clusterBuilder = envoy_clusters.NewClusterBuilder(proxy.APIVersion).
 				Configure(envoy_clusters.PassThroughCluster(localClusterName)).
 				Configure(envoy_clusters.UpstreamBindConfig(inPassThroughIPv4, 0)).
-				Configure(envoy_clusters.DefaultTimeout())
+				Configure(envoy_clusters.DefaultTimeout()).
+				Configure(envoy_clusters.CleanupInterval(60))
 		} else {
 			localClusterName = envoy_names.GetLocalClusterName(endpoint.WorkloadPort)
 			clusterBuilder = envoy_clusters.NewClusterBuilder(proxy.APIVersion).
@@ -142,17 +138,14 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 					proxy.Policies.TrafficPermissions[endpoint]))
 		}
 
-		var port uint32
-		if ctx.ControlPlane.EnableInboundPassthrough &&
-			proxy.Dataplane.Spec.Networking != nil &&
-			proxy.Dataplane.Spec.Networking.TransparentProxying != nil &&
-			proxy.Dataplane.Spec.Networking.TransparentProxying.RedirectPortInbound != 0 {
-			port = endpoint.WorkloadPort
+		var listenerPort uint32
+		if ctx.ControlPlane.EnableInboundPassthrough && proxy.Dataplane.Spec.IsUsingTransparentProxy() {
+			listenerPort = endpoint.WorkloadPort
 		} else {
-			port = endpoint.DataplanePort
+			listenerPort = endpoint.DataplanePort
 		}
 		listenerBuilder := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-			Configure(envoy_listeners.InboundListener(inboundListenerName, endpoint.DataplaneIP, port, core_xds.SocketAddressProtocolTCP)).
+			Configure(envoy_listeners.InboundListener(inboundListenerName, endpoint.DataplaneIP, listenerPort, core_xds.SocketAddressProtocolTCP)).
 			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 			Configure(envoy_listeners.TagsMetadata(iface.GetTags()))
 

@@ -107,7 +107,7 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 	var args []string
 	var liveness *corev1.Probe
 	var readiness *corev1.Probe
-	if len(k.opts.healthcheckTCPArgs) > 0 {
+	if len(k.opts.healthcheckTCPArgs) > 0 && k.opts.ProbeEnabled {
 		args = k.opts.healthcheckTCPArgs
 		liveness = &corev1.Probe{
 			ProbeHandler: corev1.ProbeHandler{
@@ -129,27 +129,29 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 		}
 	} else {
 		args = append([]string{"echo", "--port", "80", "--probes"}, k.opts.echoArgs...)
-		liveness = &corev1.Probe{
-			ProbeHandler: corev1.ProbeHandler{
-				HTTPGet: &corev1.HTTPGetAction{
-					Path: `/probes?type=liveness`,
-					Port: intstr.FromInt(80),
+		if k.opts.ProbeEnabled {
+			liveness = &corev1.Probe{
+				ProbeHandler: corev1.ProbeHandler{
+					HTTPGet: &corev1.HTTPGetAction{
+						Path: `/probes?type=liveness`,
+						Port: intstr.FromInt(80),
+					},
 				},
-			},
-			InitialDelaySeconds: 3,
-			PeriodSeconds:       3,
-			FailureThreshold:    30000,
-		}
-		readiness = &corev1.Probe{
-			ProbeHandler: corev1.ProbeHandler{
-				HTTPGet: &corev1.HTTPGetAction{
-					Path: `/probes?type=readiness`,
-					Port: intstr.FromInt(80),
+				InitialDelaySeconds: 300,
+				PeriodSeconds:       3,
+				FailureThreshold:    30000,
+			}
+			readiness = &corev1.Probe{
+				ProbeHandler: corev1.ProbeHandler{
+					HTTPGet: &corev1.HTTPGetAction{
+						Path: `/probes?type=readiness`,
+						Port: intstr.FromInt(80),
+					},
 				},
-			},
-			InitialDelaySeconds: 3,
-			PeriodSeconds:       3,
-			FailureThreshold:    30000,
+				InitialDelaySeconds: 300,
+				PeriodSeconds:       3,
+				FailureThreshold:    30000,
+			}
 		}
 	}
 	spec := corev1.PodTemplateSpec{
@@ -168,6 +170,16 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 					Image:           framework.Config.GetUniversalImage(),
 					Ports: []corev1.ContainerPort{
 						{ContainerPort: 80},
+					},
+					Env: []corev1.EnvVar{
+						{
+							Name: "POD_IP",
+							ValueFrom: &corev1.EnvVarSource{
+								FieldRef: &corev1.ObjectFieldSelector{
+									FieldPath: "status.podIP",
+								},
+							},
+						},
 					},
 					Command: []string{"test-server"},
 					Args:    args,

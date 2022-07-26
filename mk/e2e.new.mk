@@ -121,7 +121,7 @@ test/e2e/debug-universal: build/kumactl images/test
 .PHONY: test/e2e
 test/e2e: $(E2E_DEPS_TARGETS)
 	$(MAKE) test/e2e/k8s/start
-	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) --procs 1 $(E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop && exit $$ret)
+	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) --procPs 1 $(E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop && exit $$ret)
 	$(MAKE) test/e2e/k8s/stop
 
 .PHONY: test/e2e-kubernetes
@@ -129,8 +129,10 @@ test/e2e-kubernetes: $(E2E_DEPS_TARGETS)
 	$(MAKE) test/e2e/k8s/start/cluster/kuma-1
 	$(MAKE) test/e2e/k8s/wait/kuma-1
 	$(MAKE) test/e2e/k8s/load/images/kuma-1
-	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(KUBE_E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop/cluster/kuma-1 && exit $$ret)
-	$(MAKE) test/e2e/k8s/stop/cluster/kuma-1
+	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(KUBE_E2E_PKG_LIST) 
+	
+#	|| (ret=$$?; $(MAKE) test/e2e/k8s/stop/cluster/kuma-1 && exit $$ret)
+#	$(MAKE) test/e2e/k8s/stop/cluster/kuma-1
 
 .PHONY: test/e2e-universal
 test/e2e-universal: build/kumactl images/test k3d/network/create
@@ -139,5 +141,6 @@ test/e2e-universal: build/kumactl images/test k3d/network/create
 .PHONY: test/e2e-multizone
 test/e2e-multizone: $(E2E_DEPS_TARGETS)
 	$(MAKE) test/e2e/k8s/start
-	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(MULTIZONE_E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop/cluster/kuma-1 && exit $$ret)
-	$(MAKE) test/e2e/k8s/stop
+	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(MULTIZONE_E2E_PKG_LIST) 
+#	|| (ret=$$?; $(MAKE) test/e2e/k8s/stop/cluster/kuma-1 && exit $$ret)
+#	$(MAKE) test/e2e/k8s/stop

@@ -27,8 +27,9 @@ var syncLog = core.Log.WithName("sync")
 type DataplaneProxyBuilder struct {
 	MetadataTracker DataplaneMetadataTracker
 
-	Zone       string
-	APIVersion envoy.APIVersion
+	Zone                     string
+	APIVersion               envoy.APIVersion
+	EnableInboundPassthrough bool
 }
 
 func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, meshContext xds_context.MeshContext) (*core_xds.Proxy, error) {
@@ -93,6 +94,7 @@ func (p *DataplaneProxyBuilder) resolveRouting(meshContext xds_context.MeshConte
 		meshContext.Resources.ZoneEgresses().Items,
 		matchedExternalServices,
 		meshContext.DataSourceLoader,
+		p.EnableInboundPassthrough,
 	)
 
 	routing := &core_xds.Routing{

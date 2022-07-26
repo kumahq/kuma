@@ -48,7 +48,7 @@ func getMatchedPolicies(
 		}
 		if proxy.Dataplane.Spec.IsBuiltinGateway() {
 			entries, err := gateway.GatewayListenerInfoFromProxy(
-				meshContext, proxy, proxyBuilder.Zone,
+				meshContext, proxy, proxyBuilder.Zone, cfg.Defaults.EnableInboundPassthrough,
 			)
 			if err != nil {
 				return nil, nil, core_xds.Proxy{}, err

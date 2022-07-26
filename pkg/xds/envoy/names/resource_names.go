@@ -25,6 +25,10 @@ func GetLocalClusterName(port uint32) string {
 	return Join("localhost", formatPort(port))
 }
 
+func GetInboundClusterName(port uint32) string {
+	return Join("inbound", formatPort(port))
+}
+
 func GetProbeClusterName(port uint32) string {
 	return Join("probe", formatPort(port))
 }

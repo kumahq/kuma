@@ -217,6 +217,7 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, func(
 			cfg.Multizone.Zone.Name,
 			vips.NewPersistence(manager.NewResourceManager(t.store), config_manager.NewConfigManager(t.store)),
 			cfg.DNSServer.Domain,
+			cfg.Defaults.EnableInboundPassthrough,
 		),
 		customization.NewAPIList(),
 		append(registry.Global().ObjectDescriptors(model.HasWsEnabled()), sample_model.TrafficRouteResourceTypeDescriptor),

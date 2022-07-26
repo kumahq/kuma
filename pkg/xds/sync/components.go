@@ -22,9 +22,10 @@ func DefaultDataplaneProxyBuilder(
 	apiVersion envoy.APIVersion,
 ) *DataplaneProxyBuilder {
 	return &DataplaneProxyBuilder{
-		MetadataTracker: metadataTracker,
-		Zone:            config.Multizone.Zone.Name,
-		APIVersion:      apiVersion,
+		MetadataTracker:          metadataTracker,
+		Zone:                     config.Multizone.Zone.Name,
+		APIVersion:               apiVersion,
+		EnableInboundPassthrough: config.Defaults.EnableInboundPassthrough,
 	}
 }
 
@@ -35,13 +36,14 @@ func DefaultIngressProxyBuilder(
 	meshCache *mesh.Cache,
 ) *IngressProxyBuilder {
 	return &IngressProxyBuilder{
-		ResManager:         rt.ResourceManager(),
-		ReadOnlyResManager: rt.ReadOnlyResourceManager(),
-		LookupIP:           rt.LookupIP(),
-		MetadataTracker:    metadataTracker,
-		apiVersion:         apiVersion,
-		meshCache:          meshCache,
-		zone:               rt.Config().Multizone.Zone.Name,
+		ResManager:               rt.ResourceManager(),
+		ReadOnlyResManager:       rt.ReadOnlyResourceManager(),
+		LookupIP:                 rt.LookupIP(),
+		MetadataTracker:          metadataTracker,
+		apiVersion:               apiVersion,
+		meshCache:                meshCache,
+		zone:                     rt.Config().Multizone.Zone.Name,
+		enableInboundPassthrough: rt.Config().Defaults.EnableInboundPassthrough,
 	}
 }
 
