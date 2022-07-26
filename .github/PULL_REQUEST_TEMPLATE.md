@@ -1,8 +1,10 @@
 ### Checklist prior to review
 
+<!--
 Each of these sections need to be filled by the author when opening the PR.
 
 If something doesn't apply please check the box and add a justification after the `--`
+-->
 
 - [ ] Link to docs PR or issue --
 - [ ] Link to UI issue or PR --
