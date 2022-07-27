@@ -27,8 +27,12 @@ spec:
         {{- end }}
         {{- end }}
       labels:
+<<<<<<< HEAD
         {{- include "kuma.selectorLabels" . | nindent 8 }}
         app: {{ include "kuma.name" . }}-ingress
+=======
+        {{- include "kuma.ingressLabels" . | nindent 8 }}
+>>>>>>> 610662ae0 (chore(helm): remove duplicate keys in resources (#4681))
     spec:
       {{- with .Values.ingress.affinity }}
       affinity:
