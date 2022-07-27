@@ -1,6 +1,7 @@
 package gatewayapi
 
 import (
+	"io/ioutil"
 	"net"
 	"runtime"
 
@@ -193,6 +194,20 @@ spec:
 			})
 			Expect(YamlK8s(gateway)(cluster)).To(Succeed())
 			address = net.JoinHostPort(GatewayIP(), "8080")
+		})
+
+		It("should send default static payload for no route", func() {
+			Eventually(func(g Gomega) {
+				resp, err := client.MakeDirectRequest("http://" + address)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(resp.StatusCode).To(Equal(404))
+
+				defer resp.Body.Close()
+				body, err := ioutil.ReadAll(resp.Body)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(body).ToNot(BeEmpty())
+			}, "30s", "1s").Should(Succeed())
 		})
 
 		It("should route the traffic to test-server by path", func() {

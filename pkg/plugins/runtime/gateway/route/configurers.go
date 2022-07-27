@@ -575,6 +575,23 @@ func RouteActionRequestTimeout(timeout time.Duration) RouteConfigurer {
 	})
 }
 
+// RouteActionDirectResponse sets the direct response for a route
+func RouteActionDirectResponse(status uint32, respStr string) RouteConfigurer {
+	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+		r.Action = &envoy_config_route.Route_DirectResponse{
+			DirectResponse: &envoy_config_route.DirectResponseAction{
+				Status: status,
+				Body: &envoy_config_core.DataSource{
+					Specifier: &envoy_config_core.DataSource_InlineString{
+						InlineString: respStr,
+					},
+				},
+			},
+		}
+		return nil
+	})
+}
+
 // VirtualHostRoute creates an option to add the route builder to a
 // virtual host. On execution, the builder will build the route and append
 // it to the virtual host. Since Envoy evaluates route matches in order,
