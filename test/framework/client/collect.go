@@ -240,16 +240,16 @@ func CollectResponse(
 	return *response, nil
 }
 
-// CollectResponseDirectly collects responses using http client that calls the server from outside the cluster
-func CollectResponseDirectly(
+// MakeDirectRequest collects responses using http client that calls the server from outside the cluster
+func MakeDirectRequest(
 	destination string,
 	fn ...CollectResponsesOptsFn,
-) (types.EchoResponse, error) {
+) (*http.Response, error) {
 	opts := CollectOptions(destination, fn...)
 
 	req, err := http.NewRequest(opts.Method, opts.URL, nil)
 	if err != nil {
-		return types.EchoResponse{}, err
+		return nil, err
 	}
 
 	for k, v := range opts.Headers {
@@ -268,7 +268,7 @@ func CollectResponseDirectly(
 		// https://github.com/golang/go/issues/22704
 		u, err := url.Parse(destination)
 		if err != nil {
-			return types.EchoResponse{}, err
+			return nil, err
 		}
 		dialer := &net.Dialer{}
 		client.Transport = &http.Transport{
@@ -283,7 +283,16 @@ func CollectResponseDirectly(
 		}
 		req.URL.Host = net.JoinHostPort(req.Host, req.URL.Port())
 	}
-	resp, err := client.Do(req)
+
+	return client.Do(req)
+}
+
+// CollectResponseDirectly collects responses using http client that calls the server from outside the cluster
+func CollectResponseDirectly(
+	destination string,
+	fn ...CollectResponsesOptsFn,
+) (types.EchoResponse, error) {
+	resp, err := MakeDirectRequest(destination, fn...)
 	if err != nil {
 		return types.EchoResponse{}, err
 	}
