@@ -68,7 +68,7 @@ func (c *UniversalControlPlane) GetAPIServerAddress() string {
 
 func (c *UniversalControlPlane) GetMetrics() (string, error) {
 	return retry.DoWithRetryE(c.t, "fetching CP metrics", DefaultRetries, DefaultTimeout, func() (string, error) {
-		sshApp := ssh.NewApp(c.verbose, c.cpNetworking.SshPort, nil, []string{"curl",
+		sshApp := ssh.NewApp(c.name, c.verbose, c.cpNetworking.SshPort, nil, []string{"curl",
 			"--fail", "--show-error",
 			"http://localhost:5680/metrics"})
 		if err := sshApp.Run(); err != nil {
@@ -94,6 +94,7 @@ func (c *UniversalControlPlane) generateToken(
 		DefaultTimeout,
 		func() (string, error) {
 			sshApp := ssh.NewApp(
+				c.name,
 				c.verbose,
 				c.cpNetworking.SshPort,
 				nil,
@@ -124,6 +125,7 @@ func (c *UniversalControlPlane) retrieveAdminToken() (string, error) {
 		DefaultTimeout,
 		func() (string, error) {
 			sshApp := ssh.NewApp(
+				c.name,
 				c.verbose, c.cpNetworking.SshPort, nil, []string{
 					"curl", "--fail", "--show-error",
 					"http://localhost:5681/global-secrets/admin-user-token",

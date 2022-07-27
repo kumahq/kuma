@@ -351,7 +351,7 @@ func runPostgresMigration(kumaCP *UniversalApp, envVars map[string]string) error
 		return errors.New("missing public port: 22")
 	}
 
-	app := ssh.NewApp(kumaCP.verbose, sshPort, envVars, args)
+	app := ssh.NewApp(kumaCP.containerName, kumaCP.verbose, sshPort, envVars, args)
 	if err := app.Run(); err != nil {
 		return errors.Errorf("db migration err: %s\nstderr :%s\nstdout %s", err.Error(), app.Err(), app.Out())
 	}
@@ -395,7 +395,7 @@ func (c *UniversalCluster) Exec(namespace, podName, appname string, cmd ...strin
 	if !ok {
 		return "", "", errors.Errorf("App %s not found", appname)
 	}
-	sshApp := ssh.NewApp(c.verbose, app.ports[sshPort], nil, cmd)
+	sshApp := ssh.NewApp(app.containerName, c.verbose, app.ports[sshPort], nil, cmd)
 	err := sshApp.Run()
 	return sshApp.Out(), sshApp.Err(), err
 }
@@ -417,7 +417,7 @@ func (c *UniversalCluster) ExecWithCustomRetries(namespace, podName, appname str
 			if !ok {
 				return "", errors.Errorf("App %s not found", appname)
 			}
-			sshApp := ssh.NewApp(c.verbose, app.ports[sshPort], nil, cmd)
+			sshApp := ssh.NewApp(app.containerName, c.verbose, app.ports[sshPort], nil, cmd)
 			err := sshApp.Run()
 			stdout = sshApp.Out()
 			stderr = sshApp.Err()
