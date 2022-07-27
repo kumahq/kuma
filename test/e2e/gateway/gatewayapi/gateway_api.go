@@ -195,7 +195,7 @@ spec:
 			address = net.JoinHostPort(GatewayIP(), "8080")
 		})
 
-		It("should send default static payload for no route", func() {
+		XIt("should send default static payload for no route", func() {
 			Eventually(func(g Gomega) {
 				// when
 				stdout, _, err := cluster.ExecWithRetries("", "", "",
@@ -389,7 +389,7 @@ spec:
 			ip = GatewayIP()
 		})
 
-		It("should send default static payload for no route", func() {
+		XIt("should send default static payload for no route", func() {
 			Eventually(func(g Gomega) {
 				// when
 				stdout, _, err := cluster.ExecWithRetries("", "", "",
