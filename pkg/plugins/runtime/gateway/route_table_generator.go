@@ -14,7 +14,7 @@ import (
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 )
 
-const emptyGatewayMsg = "This is a Kuma MeshGateway. No routes match this MeshGateway!"
+const emptyGatewayMsg = "This is a Kuma MeshGateway. No routes match this MeshGateway!\n"
 
 // GenerateVirtualHost generates xDS resources for the current route table.
 func GenerateVirtualHost(
