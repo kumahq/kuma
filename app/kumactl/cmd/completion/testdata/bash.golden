@@ -2748,7 +2748,6 @@ _kumactl_inspect_dataplane()
     flags_with_completion=()
     flags_completion=()
 
-    flags+=("--config-dump")
     flags+=("--mesh=")
     two_word_flags+=("--mesh")
     two_word_flags+=("-m")
