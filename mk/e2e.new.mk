@@ -121,7 +121,7 @@ test/e2e/debug-universal: build/kumactl images/test
 .PHONY: test/e2e
 test/e2e: $(E2E_DEPS_TARGETS)
 	$(MAKE) test/e2e/k8s/start
-	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) --procPs 1 $(E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop && exit $$ret)
+	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) --procs 1 $(E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop && exit $$ret)
 	$(MAKE) test/e2e/k8s/stop
 
 .PHONY: test/e2e-kubernetes
