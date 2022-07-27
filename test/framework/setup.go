@@ -520,7 +520,7 @@ networking:
 		opt = append(opt,
 			WithName(name),
 			WithMesh(mesh),
-			WithAppname("test-server"),
+			WithAppname(opts.serviceName),
 			WithTransparentProxy(true), // test server is always meant to be used with transparent proxy
 			WithToken(token),
 			WithArgs(args),

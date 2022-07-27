@@ -91,12 +91,12 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 		// generate LDS resource
 		service := iface.GetService()
 		var inboundListenerName string
-		if ctx.ControlPlane.EnableInboundPassthrough &&
-			proxy.Dataplane.Spec.Networking != nil &&
-			proxy.Dataplane.Spec.Networking.TransparentProxying != nil &&
-			proxy.Dataplane.Spec.Networking.TransparentProxying.RedirectPortInbound != 0 {
+		var listenerPort uint32
+		if ctx.ControlPlane.EnableInboundPassthrough && proxy.Dataplane.Spec.IsUsingTransparentProxy() {
+			listenerPort = endpoint.WorkloadPort
 			inboundListenerName = envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.WorkloadPort)
 		} else {
+			listenerPort = endpoint.DataplanePort
 			inboundListenerName = envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
 		}
 		filterChainBuilder := func(serverSideMTLS bool) *envoy_listeners.FilterChainBuilder {
@@ -138,12 +138,6 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 					proxy.Policies.TrafficPermissions[endpoint]))
 		}
 
-		var listenerPort uint32
-		if ctx.ControlPlane.EnableInboundPassthrough && proxy.Dataplane.Spec.IsUsingTransparentProxy() {
-			listenerPort = endpoint.WorkloadPort
-		} else {
-			listenerPort = endpoint.DataplanePort
-		}
 		listenerBuilder := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
 			Configure(envoy_listeners.InboundListener(inboundListenerName, endpoint.DataplaneIP, listenerPort, core_xds.SocketAddressProtocolTCP)).
 			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
