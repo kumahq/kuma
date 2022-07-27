@@ -14,13 +14,13 @@ import (
 // in zone token, where only global contains private key, and zones only
 // public ones to validate tokens
 type signingKeyFromPublicKeyAccessor struct {
-	resManager       manager.ResourceManager
+	resManager       manager.ReadOnlyResourceManager
 	signingKeyPrefix string
 }
 
 var _ SigningKeyAccessor = &signingKeyFromPublicKeyAccessor{}
 
-func NewSigningKeyFromPublicKeyAccessor(resManager manager.ResourceManager, signingKeyPrefix string) SigningKeyAccessor {
+func NewSigningKeyFromPublicKeyAccessor(resManager manager.ReadOnlyResourceManager, signingKeyPrefix string) SigningKeyAccessor {
 	return &signingKeyFromPublicKeyAccessor{
 		resManager:       resManager,
 		signingKeyPrefix: signingKeyPrefix,

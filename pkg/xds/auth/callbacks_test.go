@@ -125,7 +125,7 @@ var _ = Describe("Auth Callbacks", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("should authenticate only first request on the stream", func() {
+	It("should successfully authenticate", func() {
 		// given
 		ctx := metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{"authorization": "pass"}))
 		streamID := int64(1)
@@ -144,13 +144,6 @@ var _ = Describe("Auth Callbacks", func() {
 		})
 
 		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(testAuth.callCounter).To(Equal(1))
-
-		// when send second request that is already authenticated
-		err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{})
-
-		// then auth is called only once
 		Expect(err).ToNot(HaveOccurred())
 		Expect(testAuth.callCounter).To(Equal(1))
 	})
@@ -296,13 +289,6 @@ var _ = Describe("Auth Callbacks", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(testAuth.zoneCallCounter).To(Equal(1))
-
-		// when send second request that is already authenticated
-		err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{})
-
-		// then auth is called only once
-		Expect(err).ToNot(HaveOccurred())
-		Expect(testAuth.zoneCallCounter).To(Equal(1))
 	})
 
 	It("should authenticate egress", func() {
@@ -333,13 +319,6 @@ var _ = Describe("Auth Callbacks", func() {
 		})
 
 		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(testAuth.zoneCallCounter).To(Equal(1))
-
-		// when send second request that is already authenticated
-		err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{})
-
-		// then auth is called only once
 		Expect(err).ToNot(HaveOccurred())
 		Expect(testAuth.zoneCallCounter).To(Equal(1))
 	})

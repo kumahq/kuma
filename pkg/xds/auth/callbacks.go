@@ -12,6 +12,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
@@ -35,8 +36,7 @@ func NewCallbacks(resManager core_manager.ReadOnlyResourceManager, authenticator
 	return &authCallbacks{
 		resManager:      resManager,
 		authenticator:   authenticator,
-		contexts:        map[core_xds.StreamID]context.Context{},
-		authenticated:   map[core_xds.StreamID]string{},
+		streams:         map[core_xds.StreamID]stream{},
 		dpNotFoundRetry: dpNotFoundRetry,
 	}
 }
@@ -49,11 +49,13 @@ type authCallbacks struct {
 	dpNotFoundRetry DPNotFoundRetry
 
 	sync.RWMutex // protects contexts and authenticated
-	// contexts stores context for every stream, since Context from which we can extract auth data is only available in OnStreamOpen
-	contexts map[core_xds.StreamID]context.Context
-	// authenticated stores authenticated ProxyID for stream. We don't want to authenticate every because since on K8S we execute ReviewToken which is expensive
-	// as long as client won't change ProxyID it's safe to authenticate only once.
-	authenticated map[core_xds.StreamID]string
+	streams      map[core_xds.StreamID]stream
+}
+
+type stream struct {
+	ctx      context.Context
+	resource model.Resource
+	nodeID   string
 }
 
 var _ util_xds.Callbacks = &authCallbacks{}
@@ -62,102 +64,99 @@ func (a *authCallbacks) OnStreamOpen(ctx context.Context, streamID core_xds.Stre
 	a.Lock()
 	defer a.Unlock()
 
-	a.contexts[streamID] = ctx
+	a.streams[streamID] = stream{
+		ctx:      ctx,
+		resource: nil,
+	}
 	return nil
 }
 
 func (a *authCallbacks) OnStreamClosed(streamID core_xds.StreamID) {
 	a.Lock()
-	delete(a.contexts, streamID)
-	delete(a.authenticated, streamID)
+	delete(a.streams, streamID)
 	a.Unlock()
 }
 
 func (a *authCallbacks) OnStreamRequest(streamID core_xds.StreamID, req util_xds.DiscoveryRequest) error {
-	if id, alreadyAuthenticated := a.authNodeId(streamID); alreadyAuthenticated {
-		if req.NodeId() != "" && req.NodeId() != id {
-			return errors.Errorf("stream was authenticated for ID %s. Received request is for node with ID %s. Node ID cannot be changed after stream is initialized", id, req.NodeId())
-		}
-		return nil
+	s, err := a.stream(streamID, req)
+	if err != nil {
+		return err
 	}
 
-	credential, err := a.credential(streamID)
+	credential, err := ExtractCredential(s.ctx)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "could not extract credential from DiscoveryRequest")
 	}
-	err = a.authenticate(credential, req)
-	if err != nil {
-		return err
+	if err := a.authenticator.Authenticate(context.Background(), s.resource, credential); err != nil {
+		return errors.Wrap(err, "authentication failed")
 	}
 	a.Lock()
-	a.authenticated[streamID] = req.NodeId()
+	a.streams[streamID] = s
 	a.Unlock()
 	return nil
 }
 
-func (a *authCallbacks) authNodeId(streamID core_xds.StreamID) (string, bool) {
+func (a *authCallbacks) stream(streamID core_xds.StreamID, req util_xds.DiscoveryRequest) (stream, error) {
 	a.RLock()
-	defer a.RUnlock()
-	id, ok := a.authenticated[streamID]
-	return id, ok
+	s, ok := a.streams[streamID]
+	a.RUnlock()
+	if !ok {
+		return stream{}, errors.New("stream is not present")
+	}
+
+	if s.nodeID == "" {
+		s.nodeID = req.NodeId()
+	}
+
+	if s.nodeID != req.NodeId() {
+		return stream{}, errors.Errorf("stream was authenticated for ID %s. Received request is for node with ID %s. Node ID cannot be changed after stream is initialized", s.nodeID, req.NodeId())
+	}
+
+	if s.resource == nil {
+		md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata())
+		res, err := a.resource(md, req.NodeId())
+		if err != nil {
+			return stream{}, err
+		}
+		s.resource = res
+	}
+	return s, nil
 }
 
-func (a *authCallbacks) credential(streamID core_xds.StreamID) (Credential, error) {
-	a.RLock()
-	defer a.RUnlock()
-
-	ctx, exists := a.contexts[streamID]
-	if !exists {
-		return "", errors.Errorf("there is no context for stream ID %d", streamID)
+func (a *authCallbacks) resource(md *core_xds.DataplaneMetadata, nodeID string) (model.Resource, error) {
+	if md.Resource != nil {
+		return md.Resource, nil
 	}
-	credential, err := ExtractCredential(ctx)
-	if err != nil {
-		return "", errors.Wrap(err, "could not extract credential from DiscoveryRequest")
-	}
-	return credential, err
-}
-
-func (a *authCallbacks) authenticate(credential Credential, req util_xds.DiscoveryRequest) error {
-	md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata())
-
-	// If we already have a resource from the xDS bootstrap, we can use that.
-	resource := md.Resource
 
 	// Otherwise, search for the pre-created resource.
-	if resource == nil {
-		proxyId, err := core_xds.ParseProxyIdFromString(req.NodeId())
-		if err != nil {
-			return errors.Wrap(err, "request must have a valid Proxy ID")
-		}
-
-		switch md.GetProxyType() {
-		case mesh_proto.IngressProxyType:
-			resource = core_mesh.NewZoneIngressResource()
-		case mesh_proto.EgressProxyType:
-			resource = core_mesh.NewZoneEgressResource()
-		case mesh_proto.DataplaneProxyType:
-			resource = core_mesh.NewDataplaneResource()
-		default:
-			return errors.Errorf("unsupported proxy type %q", md.GetProxyType())
-		}
-
-		backoff := retry.WithMaxRetries(uint64(a.dpNotFoundRetry.MaxTimes), retry.NewConstant(a.dpNotFoundRetry.Backoff))
-		err = retry.Do(context.Background(), backoff, func(ctx context.Context) error {
-			err := a.resManager.Get(ctx, resource, core_store.GetBy(proxyId.ToResourceKey()))
-			if core_store.IsResourceNotFound(err) {
-				return retry.RetryableError(errors.Errorf(
-					"resource %q not found; create a %s in Kuma CP first or pass it as an argument to kuma-dp",
-					proxyId, resource.Descriptor().Name))
-			}
-			return err
-		})
-		if err != nil {
-			return err
-		}
+	proxyId, err := core_xds.ParseProxyIdFromString(nodeID)
+	if err != nil {
+		return nil, errors.Wrap(err, "request must have a valid Proxy ID")
 	}
 
-	return errors.Wrap(a.authenticator.Authenticate(context.Background(), resource, credential),
-		"authentication failed")
+	var resource model.Resource
+	switch md.GetProxyType() {
+	case mesh_proto.IngressProxyType:
+		resource = core_mesh.NewZoneIngressResource()
+	case mesh_proto.EgressProxyType:
+		resource = core_mesh.NewZoneEgressResource()
+	case mesh_proto.DataplaneProxyType:
+		resource = core_mesh.NewDataplaneResource()
+	default:
+		return nil, errors.Errorf("unsupported proxy type %q", md.GetProxyType())
+	}
+
+	backoff := retry.WithMaxRetries(uint64(a.dpNotFoundRetry.MaxTimes), retry.NewConstant(a.dpNotFoundRetry.Backoff))
+	err = retry.Do(context.Background(), backoff, func(ctx context.Context) error {
+		err := a.resManager.Get(ctx, resource, core_store.GetBy(proxyId.ToResourceKey()))
+		if core_store.IsResourceNotFound(err) {
+			return retry.RetryableError(errors.Errorf(
+				"resource %q not found; create a %s in Kuma CP first or pass it as an argument to kuma-dp",
+				proxyId, resource.Descriptor().Name))
+		}
+		return err
+	})
+	return resource, err
 }
 
 func ExtractCredential(ctx context.Context) (Credential, error) {
