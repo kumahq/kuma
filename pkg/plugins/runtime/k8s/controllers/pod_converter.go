@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"regexp"
-	"strings"
 
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
@@ -112,12 +111,12 @@ func (p *PodConverter) dataplaneFor(
 			RedirectPortOutbound:  outboundPort,
 			RedirectPortInboundV6: inboundPortV6,
 		}
-		if services, _ := annotations.GetString(metadata.KumaDirectAccess); services != "" {
-			dataplane.Networking.TransparentProxying.DirectAccessServices = strings.Split(services, ",")
+		if directAccessServices, exist := annotations.GetList(metadata.KumaDirectAccess); exist {
+			dataplane.Networking.TransparentProxying.DirectAccessServices = directAccessServices
 		}
-		if reachableServicesRaw, exist := annotations.GetString(metadata.KumaTransparentProxyingReachableServicesAnnotation); exist {
-			reachableServices = strings.Split(reachableServicesRaw, ",")
-			dataplane.Networking.TransparentProxying.ReachableServices = reachableServices
+		if reachableServicesValue, exist := annotations.GetList(metadata.KumaTransparentProxyingReachableServicesAnnotation); exist {
+			dataplane.Networking.TransparentProxying.ReachableServices = reachableServicesValue
+			reachableServices = reachableServicesValue
 		}
 	}
 
@@ -237,10 +236,7 @@ func MetricsAggregateFor(pod *kube_core.Pod) ([]*mesh_proto.PrometheusAggregateM
 		} else {
 			enabled = true
 		}
-		path, exist := metadata.Annotations(pod.Annotations).GetString(fmt.Sprintf(metadata.KumaMetricsPrometheusAggregatePath, app))
-		if !exist {
-			path = "/metrics"
-		}
+		path, _ := metadata.Annotations(pod.Annotations).GetStringWithDefault("/metrics", fmt.Sprintf(metadata.KumaMetricsPrometheusAggregatePath, app))
 		port, exist, err := metadata.Annotations(pod.Annotations).GetUint32(fmt.Sprintf(metadata.KumaMetricsPrometheusAggregatePort, app))
 		if err != nil {
 			return nil, err

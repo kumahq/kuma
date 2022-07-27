@@ -3,6 +3,8 @@ kind: Pod
 metadata:
   annotations:
     docs: Documentation
+    kuma.io/builtin-dns: enabled
+    kuma.io/builtin-dns-port: "25053"
     kuma.io/builtindns: enabled
     kuma.io/builtindnsport: "25053"
     kuma.io/envoy-admin-port: "9901"

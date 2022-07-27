@@ -1,7 +1,7 @@
 package injector
 
 import (
-	"fmt"
+	"strconv"
 
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
@@ -115,14 +115,10 @@ func setVirtualProbesEnabledAnnotation(annotations metadata.Annotations, pod *ku
 }
 
 func setVirtualProbesPortAnnotation(annotations metadata.Annotations, pod *kube_core.Pod, cfg runtime_k8s.Injector) error {
-	port, exist, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaVirtualProbesPortAnnotation)
+	port, _, err := metadata.Annotations(pod.Annotations).GetUint32WithDefault(cfg.VirtualProbesPort, metadata.KumaVirtualProbesPortAnnotation)
 	if err != nil {
 		return err
 	}
-	if exist {
-		annotations[metadata.KumaVirtualProbesPortAnnotation] = fmt.Sprintf("%d", port)
-		return nil
-	}
-	annotations[metadata.KumaVirtualProbesPortAnnotation] = fmt.Sprintf("%d", cfg.VirtualProbesPort)
+	annotations[metadata.KumaVirtualProbesPortAnnotation] = strconv.Itoa(int(port))
 	return nil
 }

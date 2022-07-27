@@ -113,18 +113,20 @@ type testApiServerConfigurer struct {
 	store     store.ResourceStore
 	enableGui bool
 	config    *config_api_server.ApiServerConfig
-	metrics   core_metrics.Metrics
+	metrics   func() core_metrics.Metrics
 	zone      string
 	global    bool
 }
 
 func NewTestApiServerConfigurer() *testApiServerConfigurer {
-	m, _ := core_metrics.NewMetrics("Standalone")
 	return &testApiServerConfigurer{
 		enableGui: false,
-		metrics:   m,
-		config:    config_api_server.DefaultApiServerConfig(),
-		store:     memory.NewStore(),
+		metrics: func() core_metrics.Metrics {
+			m, _ := core_metrics.NewMetrics("Standalone")
+			return m
+		},
+		config: config_api_server.DefaultApiServerConfig(),
+		store:  memory.NewStore(),
 	}
 }
 
@@ -156,8 +158,9 @@ func (t *testApiServerConfigurer) WithStore(resourceStore store.ResourceStore) *
 	return t
 }
 
-func (t *testApiServerConfigurer) WithMetrics(metrics core_metrics.Metrics) *testApiServerConfigurer {
-	t.metrics = metrics
+// WithMetrics a function that creates metrics (needs to be a function as these can't be reused in case of failed startups)
+func (t *testApiServerConfigurer) WithMetrics(metricsFn func() core_metrics.Metrics) *testApiServerConfigurer {
+	t.metrics = metricsFn
 	return t
 }
 
@@ -223,7 +226,7 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, func(
 		append(registry.Global().ObjectDescriptors(model.HasWsEnabled()), sample_model.TrafficRouteResourceTypeDescriptor),
 		&cfg,
 		t.enableGui,
-		t.metrics,
+		t.metrics(),
 		func() string { return "instance-id" },
 		func() string { return "cluster-id" },
 		certs.ClientCertAuthenticator,

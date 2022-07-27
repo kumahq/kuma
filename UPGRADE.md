@@ -8,17 +8,20 @@ does not have any particular instructions.
 
 ## Upcoming release
 
+### Kumactl
+
+* `kumactl inspect dataplane --config-dump` was deprecated in favour of `kumactl inspect dataplane --type config-dump`. The behaviour of the new flag is unchanged but you should migrate.
+
 ### Helm
 
-Under `cni.image`, the default values for `repository` and `registry` have been
+* Under `cni.image`, the default values for `repository` and `registry` have been
 changed to agree with the other `image` values.
-
-## Upgrade to `1.7.x`
 
 ### CP
 
 * The `/versions` endpoint was removed. This is not something that was reliable enough and version compatibility
 is checked inside the DP
+* We are deprecating `kuma.io/builtindns` and `kuma.io/builtindnsport` annotations in favour of the clearer `kuma.io/builtin-dns` and `kuma.io/builtin-dns-port`. The behavior of the new annotations is unchanged but you should migrate (a warning is present on the log if you are using the deprecated version).
 
 ## Upgrade to `1.7.x`
 

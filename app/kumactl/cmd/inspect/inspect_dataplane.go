@@ -116,8 +116,8 @@ func newInspectDataplaneCmd(pctx *cmd.RootContext) *cobra.Command {
 		},
 	}
 	cmd.PersistentFlags().StringVar(&inspectionType, "type", InspectionTypePolicies, kuma_cmd.UsageOptions("inspection type", InspectionTypePolicies, InspectionTypeConfigDump, InspectionTypeStats, InspectionTypeClusters))
-	_ = cmd.PersistentFlags().MarkDeprecated("config-dump", "use --type=config-dump")
 	cmd.PersistentFlags().BoolVar(&configDump, "config-dump", false, "if set then the command returns envoy config dump for provided dataplane")
+	_ = cmd.PersistentFlags().MarkDeprecated("config-dump", "use --type=config-dump")
 	cmd.PersistentFlags().StringVarP(&pctx.Args.Mesh, "mesh", "m", "default", "mesh to use")
 	return cmd
 }
