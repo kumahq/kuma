@@ -43,7 +43,7 @@ var _ = Describe("GroupByAttachment", func() {
 
 	DescribeTable("should generate attachmentMap based on MatchedPolicies",
 		func(given testCase) {
-			actual := core_xds.GroupByAttachment(given.matchedPolicies, given.dpNetworking)
+			actual := core_xds.GroupByAttachment(given.matchedPolicies, given.dpNetworking, false)
 			Expect(actual).To(Equal(given.expected))
 		},
 		Entry("group by inbounds", testCase{
@@ -346,7 +346,7 @@ var _ = Describe("GroupByAttachment", func() {
 
 	DescribeTable("should generate AttachmentsByPolicy map based on MatchedPolicies",
 		func(given testCase) {
-			actual := core_xds.GroupByPolicy(given.matchedPolicies, given.dpNetworking)
+			actual := core_xds.GroupByPolicy(given.matchedPolicies, given.dpNetworking, false)
 			Expect(actual).To(Equal(given.expected))
 		},
 		Entry("empty MatchedPolicies", testCase{

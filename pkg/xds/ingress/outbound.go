@@ -32,10 +32,9 @@ func BuildEndpointMap(
 			if !selectors.Matches(withMesh) {
 				continue
 			}
-			iface := dataplane.Spec.GetNetworking().ToInboundInterface(inbound)
+			iface := dataplane.Spec.GetNetworking().ToInboundInterface(inbound, enableInboundPassthrough)
 			var inboundPort uint32
-			if enableInboundPassthrough && dataplane.Spec.Networking.GetTransparentProxying() != nil &&
-				dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInbound() != 0 {
+			if enableInboundPassthrough && dataplane.Spec.IsUsingTransparentProxy() {
 				inboundPort = iface.WorkloadPort
 			} else {
 				inboundPort = iface.DataplanePort

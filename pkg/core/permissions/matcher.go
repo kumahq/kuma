@@ -18,7 +18,7 @@ type TrafficPermissionsMatcher struct {
 	ResourceManager manager.ReadOnlyResourceManager
 }
 
-func (m *TrafficPermissionsMatcher) Match(ctx context.Context, dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource) (core_xds.TrafficPermissionMap, error) {
+func (m *TrafficPermissionsMatcher) Match(ctx context.Context, dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource, enableInboundPassthrough bool) (core_xds.TrafficPermissionMap, error) {
 	permissions := &core_mesh.TrafficPermissionResourceList{}
 	if err := m.ResourceManager.List(ctx, permissions, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
 		return nil, errors.Wrap(err, "could not retrieve traffic permissions")
@@ -29,19 +29,20 @@ func (m *TrafficPermissionsMatcher) Match(ctx context.Context, dataplane *core_m
 		return nil, errors.Wrap(err, "could not fetch additional inbounds")
 	}
 	inbounds := append(dataplane.Spec.GetNetworking().GetInbound(), additionalInbounds...)
-	return BuildTrafficPermissionMap(dataplane, inbounds, permissions.Items), nil
+	return BuildTrafficPermissionMap(dataplane, inbounds, permissions.Items, enableInboundPassthrough), nil
 }
 
 func BuildTrafficPermissionMap(
 	dataplane *core_mesh.DataplaneResource,
 	inbounds []*mesh_proto.Dataplane_Networking_Inbound,
 	trafficPermissions []*core_mesh.TrafficPermissionResource,
+	enableInboundPassthrough bool,
 ) core_xds.TrafficPermissionMap {
 	policies := make([]policy.ConnectionPolicy, len(trafficPermissions))
 	for i, permission := range trafficPermissions {
 		policies[i] = permission
 	}
-	policyMap := policy.SelectInboundConnectionPolicies(dataplane, inbounds, policies)
+	policyMap := policy.SelectInboundConnectionPolicies(dataplane, inbounds, policies, enableInboundPassthrough)
 
 	result := core_xds.TrafficPermissionMap{}
 	for inbound, connectionPolicy := range policyMap {

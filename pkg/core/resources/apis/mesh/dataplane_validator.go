@@ -24,7 +24,7 @@ func (d *DataplaneResource) Validate() error {
 	if admin := d.Spec.GetNetworking().GetAdmin(); admin != nil {
 		adminPort := net.Field("admin").Field("port")
 
-		if d.UsesInboundInterface(IPv4Loopback, admin.GetPort()) {
+		if d.UsesInboundInterface(IPv4Loopback, admin.GetPort(), false) {
 			err.AddViolationAt(adminPort, "must differ from inbound")
 		}
 		if d.UsesOutboundInterface(IPv4Loopback, admin.GetPort()) {

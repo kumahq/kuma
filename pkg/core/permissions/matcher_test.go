@@ -39,7 +39,7 @@ var _ = Describe("Match", func() {
 				Expect(err).ToNot(HaveOccurred())
 			}
 
-			bestMatched, err := matcher.Match(context.Background(), given.dataplane, given.mesh)
+			bestMatched, err := matcher.Match(context.Background(), given.dataplane, given.mesh, false)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bestMatched).To(HaveLen(len(given.expected)))
 			for iface, policy := range bestMatched {

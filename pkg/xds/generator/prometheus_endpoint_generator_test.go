@@ -45,6 +45,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 		},
 		Entry("both Mesh and Dataplane have no Prometheus configuration", testCase{
 			ctx: xds_context.Context{
+				ControlPlane: &xds_context.ControlPlaneContext{},
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
@@ -69,6 +70,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 		}),
 		Entry("Dataplane has Prometheus configuration while Mesh doesn't", testCase{
 			ctx: xds_context.Context{
+				ControlPlane: &xds_context.ControlPlaneContext{},
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
@@ -102,6 +104,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 		}),
 		Entry("both Mesh and Dataplane do have Prometheus configuration but dataplane metadata is unknown", testCase{
 			ctx: xds_context.Context{
+				ControlPlane: &xds_context.ControlPlaneContext{},
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
@@ -150,6 +153,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 		}),
 		Entry("both Mesh and Dataplane do have Prometheus configuration but Admin API is not enabled on that dataplane", testCase{
 			ctx: xds_context.Context{
+				ControlPlane: &xds_context.ControlPlaneContext{},
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
@@ -222,6 +226,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 		},
 		Entry("should support a Dataplane without custom metrics configuration", testCase{
 			ctx: xds_context.Context{
+				ControlPlane: &xds_context.ControlPlaneContext{},
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
@@ -277,6 +282,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 		}),
 		Entry("should support a Dataplane without metrics hijacker", testCase{
 			ctx: xds_context.Context{
+				ControlPlane: &xds_context.ControlPlaneContext{},
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
@@ -332,6 +338,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 		}),
 		Entry("should support a Dataplane with custom metrics configuration", testCase{
 			ctx: xds_context.Context{
+				ControlPlane: &xds_context.ControlPlaneContext{},
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
@@ -603,6 +610,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 			func(given testCase) {
 				// given
 				ctx := xds_context.Context{
+					ControlPlane: &xds_context.ControlPlaneContext{},
 					Mesh: xds_context.MeshContext{
 						Resource: &core_mesh.MeshResource{
 							Meta: &test_model.ResourceMeta{

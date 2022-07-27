@@ -88,7 +88,7 @@ var _ = Describe("Match", func() {
 				Expect(err).ToNot(HaveOccurred())
 			}
 
-			allMatched, err := matcher.Match(context.Background(), given.dataplane, mesh)
+			allMatched, err := matcher.Match(context.Background(), given.dataplane, mesh, false)
 			Expect(err).ToNot(HaveOccurred())
 			inboundMatched := allMatched.Inbound
 			for key := range inboundMatched {

@@ -61,14 +61,14 @@ mtls:
 	clientToServer := curlAddr("test-server.mesh")
 	clientToServerDirect := func() error {
 		// using direct IP:PORT allows bypassing outbound listeners
-		addr := net.JoinHostPort(env.Cluster.GetApp("test-server").GetIP(), "80")
+		addr := net.JoinHostPort(env.Cluster.GetApp("test-server").GetIP(), "8080")
 		return curlAddr(addr)()
 	}
 	clientToServerTLS := curlAddr("https://test-server.mesh:80", "--cacert", "/kuma/server.crt")
 	clientToServerTLSDirect := func() error {
 		host := env.Cluster.GetApp("test-server").GetIP()
 		// we're using curl with '--resolve' flag to verify certificate Common Name 'test-server.mesh'
-		return curlAddr("https://test-server.mesh:80", "--cacert", "/kuma/server.crt", "--resolve", fmt.Sprintf("test-server.mesh:80:[%s]", host))()
+		return curlAddr("https://test-server.mesh:8080", "--cacert", "/kuma/server.crt", "--resolve", fmt.Sprintf("test-server.mesh:8080:[%s]", host))()
 	}
 
 	It("should support STRICT mTLS mode", func() {

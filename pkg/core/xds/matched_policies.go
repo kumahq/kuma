@@ -85,12 +85,12 @@ func (abp AttachmentsByPolicy) Merge(other AttachmentsByPolicy) {
 	}
 }
 
-func BuildAttachments(matchedPolicies *MatchedPolicies, networking *mesh_proto.Dataplane_Networking) Attachments {
+func BuildAttachments(matchedPolicies *MatchedPolicies, networking *mesh_proto.Dataplane_Networking, enableInboundPassthrough bool) Attachments {
 	attachments := Attachments{}
 
 	serviceByInbound := map[mesh_proto.InboundInterface]string{}
 	for _, iface := range networking.GetInbound() {
-		serviceByInbound[networking.ToInboundInterface(iface)] = iface.GetService()
+		serviceByInbound[networking.ToInboundInterface(iface, enableInboundPassthrough)] = iface.GetService()
 	}
 
 	for inbound, policies := range getInboundMatchedPolicies(matchedPolicies) {
@@ -130,10 +130,10 @@ func BuildAttachments(matchedPolicies *MatchedPolicies, networking *mesh_proto.D
 	return attachments
 }
 
-func GroupByAttachment(matchedPolicies *MatchedPolicies, networking *mesh_proto.Dataplane_Networking) AttachmentMap {
+func GroupByAttachment(matchedPolicies *MatchedPolicies, networking *mesh_proto.Dataplane_Networking, enableInboundPassthrough bool) AttachmentMap {
 	result := AttachmentMap{}
 
-	for attachment, policies := range BuildAttachments(matchedPolicies, networking) {
+	for attachment, policies := range BuildAttachments(matchedPolicies, networking, enableInboundPassthrough) {
 		if len(policies) == 0 {
 			continue
 		}
@@ -149,10 +149,10 @@ func GroupByAttachment(matchedPolicies *MatchedPolicies, networking *mesh_proto.
 	return result
 }
 
-func GroupByPolicy(matchedPolicies *MatchedPolicies, networking *mesh_proto.Dataplane_Networking) AttachmentsByPolicy {
+func GroupByPolicy(matchedPolicies *MatchedPolicies, networking *mesh_proto.Dataplane_Networking, enableInboundPassthrough bool) AttachmentsByPolicy {
 	result := AttachmentsByPolicy{}
 
-	for attachment, policies := range BuildAttachments(matchedPolicies, networking) {
+	for attachment, policies := range BuildAttachments(matchedPolicies, networking, enableInboundPassthrough) {
 		for _, policy := range policies {
 			key := PolicyKey{
 				Type: policy.Descriptor().Name,

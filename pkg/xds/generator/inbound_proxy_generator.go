@@ -26,7 +26,7 @@ type InboundProxyGenerator struct {
 
 func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
-	for i, endpoint := range proxy.Dataplane.Spec.Networking.GetInboundInterfaces() {
+	for i, endpoint := range proxy.Dataplane.Spec.Networking.GetInboundInterfaces(ctx.ControlPlane.EnableInboundPassthrough) {
 		// we do not create inbounds for serviceless
 		if endpoint.IsServiceLess() {
 			continue

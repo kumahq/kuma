@@ -225,5 +225,4 @@ var _ = Describe("Healthcheck", healthcheck.ApplicationOnUniversalClientOnK8s, O
 var _ = Describe("Inspect", inspect.Inspect, Ordered)
 var _ = Describe("TrafficPermission", trafficpermission.TrafficPermission, Ordered)
 var _ = Describe("TrafficRoute", trafficroute.TrafficRoute, Ordered)
-
-var _ = FDescribe("ServerBind", inbound_communication.ServerBind, Ordered)
+var _ = Describe("ServerBind", inbound_communication.ServerBind, Ordered)

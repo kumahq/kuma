@@ -105,7 +105,7 @@ var _ = Describe("Dataplane_Networking", func() {
 			DescribeTable("should parse valid input values",
 				func(given testCase) {
 					// when
-					ifaces := given.input.GetInboundInterfaces()
+					ifaces := given.input.GetInboundInterfaces(false)
 					// then
 					Expect(ifaces).To(ConsistOf(given.expected))
 				},

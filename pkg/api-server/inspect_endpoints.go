@@ -121,7 +121,7 @@ func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilde
 		var result api_server_types.DataplaneInspectResponse
 		if matchedPolicies != nil {
 			inner := api_server_types.NewDataplaneInspectEntryList()
-			inner.Items = append(inner.Items, newDataplaneInspectResponse(matchedPolicies, proxy.Dataplane)...)
+			inner.Items = append(inner.Items, newDataplaneInspectResponse(matchedPolicies, proxy.Dataplane, cfg.Defaults.EnableInboundPassthrough)...)
 			inner.Total = uint32(len(inner.Items))
 			result = api_server_types.NewDataplaneInspectResponse(inner)
 		} else {
@@ -275,7 +275,7 @@ func inspectPolicies(
 				return
 			}
 			if matchedPolicies != nil {
-				for policy, attachments := range core_xds.GroupByPolicy(matchedPolicies, dp.Spec.Networking) {
+				for policy, attachments := range core_xds.GroupByPolicy(matchedPolicies, dp.Spec.Networking, cfg.Defaults.EnableInboundPassthrough) {
 					if policy.Type == resType && policy.Key.Name == policyName && policy.Key.Mesh == meshName {
 						attachmentList := []api_server_types.AttachmentEntry{}
 						for _, attachment := range attachments {
@@ -320,8 +320,8 @@ func routeDestinationToAPIDestination(des route.Destination) api_server_types.De
 	}
 }
 
-func newDataplaneInspectResponse(matchedPolicies *core_xds.MatchedPolicies, dp *core_mesh.DataplaneResource) []*api_server_types.DataplaneInspectEntry {
-	attachmentMap := core_xds.GroupByAttachment(matchedPolicies, dp.Spec.Networking)
+func newDataplaneInspectResponse(matchedPolicies *core_xds.MatchedPolicies, dp *core_mesh.DataplaneResource, enableInboundPassthrough bool) []*api_server_types.DataplaneInspectEntry {
+	attachmentMap := core_xds.GroupByAttachment(matchedPolicies, dp.Spec.Networking, enableInboundPassthrough)
 
 	entries := make([]*api_server_types.DataplaneInspectEntry, 0, len(attachmentMap))
 	attachments := []core_xds.Attachment{}

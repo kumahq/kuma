@@ -70,7 +70,7 @@ var _ = Describe("DirectAccessProxyGenerator", func() {
 			parseResource(bytes, mesh)
 
 			ctx := context.Context{
-				ControlPlane: nil,
+				ControlPlane: &context.ControlPlaneContext{},
 				Mesh: context.MeshContext{
 					Resource: mesh,
 					Resources: context.Resources{

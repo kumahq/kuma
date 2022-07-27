@@ -14,6 +14,7 @@ func RegisterBootstrap(rt core_runtime.Runtime) error {
 		rt.Config().DpServer.Auth.UseTokenPath,
 		rt.Config().DpServer.Hds.Enabled,
 		rt.Config().GetEnvoyAdminPort(),
+		rt.Config().Defaults.EnableInboundPassthrough,
 	)
 	if err != nil {
 		return err

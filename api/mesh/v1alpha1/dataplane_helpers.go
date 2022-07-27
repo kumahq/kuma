@@ -119,29 +119,29 @@ func (n *Dataplane_Networking) ToOutboundInterface(outbound *Dataplane_Networkin
 	return oface
 }
 
-func (n *Dataplane_Networking) GetInboundInterface(service string) (*InboundInterface, error) {
+func (n *Dataplane_Networking) GetInboundInterface(service string, enablePassthroughInbound bool) (*InboundInterface, error) {
 	for _, inbound := range n.Inbound {
 		if inbound.Tags[ServiceTag] != service {
 			continue
 		}
-		iface := n.ToInboundInterface(inbound)
+		iface := n.ToInboundInterface(inbound, enablePassthroughInbound)
 		return &iface, nil
 	}
 	return nil, errors.Errorf("Dataplane has no Inbound Interface for service %q", service)
 }
 
-func (n *Dataplane_Networking) GetInboundInterfaces() []InboundInterface {
+func (n *Dataplane_Networking) GetInboundInterfaces(enablePassthroughInbound bool) []InboundInterface {
 	if n == nil {
 		return nil
 	}
 	ifaces := make([]InboundInterface, len(n.Inbound))
 	for i, inbound := range n.Inbound {
-		ifaces[i] = n.ToInboundInterface(inbound)
+		ifaces[i] = n.ToInboundInterface(inbound, enablePassthroughInbound)
 	}
 	return ifaces
 }
 
-func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_Inbound) InboundInterface {
+func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_Inbound, enablePassthroughInbound bool) InboundInterface {
 	iface := InboundInterface{
 		DataplanePort: inbound.Port,
 	}
@@ -158,7 +158,11 @@ func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_
 	if inbound.ServiceAddress != "" {
 		iface.WorkloadIP = inbound.ServiceAddress
 	} else {
-		iface.WorkloadIP = "127.0.0.1"
+		if enablePassthroughInbound {
+			iface.WorkloadIP = iface.DataplaneIP
+		} else {
+			iface.WorkloadIP = "127.0.0.1"
+		}
 	}
 	if inbound.ServicePort != 0 {
 		iface.WorkloadPort = inbound.ServicePort

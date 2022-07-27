@@ -46,7 +46,7 @@ func (g ProbeProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Prox
 
 	inbounds := map[uint32]ProtocolInboundInfo{}
 	for _, inbound := range proxy.Dataplane.Spec.Networking.Inbound {
-		iface := proxy.Dataplane.Spec.GetNetworking().ToInboundInterface(inbound)
+		iface := proxy.Dataplane.Spec.GetNetworking().ToInboundInterface(inbound, ctx.ControlPlane.EnableInboundPassthrough)
 		inbounds[inbound.Port] = ProtocolInboundInfo{
 			protocol:      core_mesh.ParseProtocol(inbound.GetProtocol()),
 			iface:         iface,

@@ -81,7 +81,7 @@ var _ = Describe("Match", func() {
 				Expect(err).ToNot(HaveOccurred())
 			}
 
-			bestMatched, err := matcher.Match(context.Background(), given.dataplane, mesh)
+			bestMatched, err := matcher.Match(context.Background(), given.dataplane, mesh, false)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(len(bestMatched)).To(Equal(len(given.expected)))
 			for key := range bestMatched {

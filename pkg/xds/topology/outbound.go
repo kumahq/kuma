@@ -142,7 +142,7 @@ func fillDataplaneOutbounds(
 		for _, inbound := range dpNetworking.GetHealthyInbounds() {
 			inboundTags := inbound.GetTags()
 			serviceName := inboundTags[mesh_proto.ServiceTag]
-			inboundInterface := dpNetworking.ToInboundInterface(inbound)
+			inboundInterface := dpNetworking.ToInboundInterface(inbound, enableInboundPassthrough)
 			inboundAddress := inboundInterface.DataplaneAdvertisedIP
 			var inboundPort uint32
 			if enableInboundPassthrough && dpSpec.IsUsingTransparentProxy() {

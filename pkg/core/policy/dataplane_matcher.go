@@ -67,7 +67,7 @@ func SelectDataplanePolicyWithMatcher(matches TagMatcher, policies []DataplanePo
 // DataplanePolicy with an empty list of selectors is considered a match with a rank (score) of 0.
 // DataplanePolicy with an empty selector (one that has no tags) is considered a match with a rank (score) of 0.
 // In case if there are multiple DataplanePolicies with the same rank (score), the policy created last is chosen.
-func SelectInboundDataplanePolicies(dataplane *mesh.DataplaneResource, policies []DataplanePolicy) InboundDataplanePolicyMap {
+func SelectInboundDataplanePolicies(dataplane *mesh.DataplaneResource, policies []DataplanePolicy, enableInboundPassthrough bool) InboundDataplanePolicyMap {
 	sort.Stable(DataplanePolicyByName(policies)) // sort to avoid flakiness
 
 	match := InboundDataplanePolicyMap{}
@@ -103,7 +103,7 @@ func SelectInboundDataplanePolicies(dataplane *mesh.DataplaneResource, policies 
 			}
 		}
 		if bestPolicy != nil {
-			iface := dataplane.Spec.GetNetworking().ToInboundInterface(inbound)
+			iface := dataplane.Spec.GetNetworking().ToInboundInterface(inbound, enableInboundPassthrough)
 			match[iface] = bestPolicy
 		}
 	}

@@ -141,12 +141,12 @@ func SelectConnectionPolicies(dataplane *core_mesh.DataplaneResource, destinatio
 // SelectInboundConnectionPolicies picks a single the most specific policy for each inbound interface of a given Dataplane.
 // For each inbound we pick a policy that matches the most destination tags with inbound tags
 // Sources part of matched policies are later used in Envoy config to apply it only for connection that matches sources
-func SelectInboundConnectionPolicies(dataplane *core_mesh.DataplaneResource, inbounds []*mesh_proto.Dataplane_Networking_Inbound, policies []ConnectionPolicy) InboundConnectionPolicyMap {
+func SelectInboundConnectionPolicies(dataplane *core_mesh.DataplaneResource, inbounds []*mesh_proto.Dataplane_Networking_Inbound, policies []ConnectionPolicy, enableInboundPassthrough bool) InboundConnectionPolicyMap {
 	sort.Stable(ConnectionPolicyByName(policies)) // sort to avoid flakiness
 	policiesMap := make(InboundConnectionPolicyMap)
 	for _, inbound := range inbounds {
 		if bestPolicy := SelectInboundConnectionPolicy(inbound.Tags, policies); bestPolicy != nil {
-			iface := dataplane.Spec.GetNetworking().ToInboundInterface(inbound)
+			iface := dataplane.Spec.GetNetworking().ToInboundInterface(inbound, enableInboundPassthrough)
 			policiesMap[iface] = bestPolicy
 		}
 	}
@@ -155,12 +155,12 @@ func SelectInboundConnectionPolicies(dataplane *core_mesh.DataplaneResource, inb
 }
 
 // SelectInboundConnectionMatchingPolicies picks all matching policies for each inbound interface of a given Dataplane.
-func SelectInboundConnectionMatchingPolicies(dataplane *core_mesh.DataplaneResource, inbounds []*mesh_proto.Dataplane_Networking_Inbound, policies []ConnectionPolicy) InboundConnectionPoliciesMap {
+func SelectInboundConnectionMatchingPolicies(dataplane *core_mesh.DataplaneResource, inbounds []*mesh_proto.Dataplane_Networking_Inbound, policies []ConnectionPolicy, enableInboundPassthrough bool) InboundConnectionPoliciesMap {
 	sort.Stable(ConnectionPolicyByName(policies)) // sort to avoid flakiness
 	policiesMap := make(InboundConnectionPoliciesMap)
 	for _, inbound := range inbounds {
 		if matchnigPolicies := SelectInboundConnectionAllPolicies(inbound.Tags, policies); matchnigPolicies != nil {
-			iface := dataplane.Spec.GetNetworking().ToInboundInterface(inbound)
+			iface := dataplane.Spec.GetNetworking().ToInboundInterface(inbound, enableInboundPassthrough)
 			policiesMap[iface] = matchnigPolicies
 		}
 	}

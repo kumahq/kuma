@@ -39,7 +39,7 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
 	meshName := ctx.Mesh.Resource.GetMeta().GetName()
 
-	endpoints, err := directAccessEndpoints(proxy.Dataplane, ctx.Mesh.Resources.Dataplanes(), ctx.Mesh.Resource)
+	endpoints, err := directAccessEndpoints(proxy.Dataplane, ctx.Mesh.Resources.Dataplanes(), ctx.Mesh.Resource, ctx.ControlPlane.EnableInboundPassthrough)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 	return resources, nil
 }
 
-func directAccessEndpoints(dataplane *core_mesh.DataplaneResource, other *core_mesh.DataplaneResourceList, mesh *core_mesh.MeshResource) (Endpoints, error) {
+func directAccessEndpoints(dataplane *core_mesh.DataplaneResource, other *core_mesh.DataplaneResourceList, mesh *core_mesh.MeshResource, enableInboundPassthrough bool) (Endpoints, error) {
 	// collect endpoints that are already created so we don't create 2 listeners with same IP:PORT
 	takenEndpoints := takenEndpoints(dataplane)
 
@@ -107,7 +107,7 @@ func directAccessEndpoints(dataplane *core_mesh.DataplaneResource, other *core_m
 		for _, inbound := range append(inbounds, dp.Spec.GetNetworking().GetInbound()...) {
 			service := inbound.Tags[mesh_proto.ServiceTag]
 			if services["*"] || services[service] {
-				iface := dp.Spec.GetNetworking().ToInboundInterface(inbound)
+				iface := dp.Spec.GetNetworking().ToInboundInterface(inbound, enableInboundPassthrough)
 				endpoint := Endpoint{
 					Address: iface.DataplaneIP,
 					Port:    iface.DataplanePort,

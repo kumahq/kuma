@@ -49,7 +49,7 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 	prometheusEndpointAddress := proxy.Dataplane.Spec.GetNetworking().Address
 	prometheusEndpointIP := net.ParseIP(prometheusEndpointAddress)
 
-	if proxy.Dataplane.UsesInterface(prometheusEndpointIP, prometheusEndpoint.Port) {
+	if proxy.Dataplane.UsesInterface(prometheusEndpointIP, prometheusEndpoint.Port, ctx.ControlPlane.EnableInboundPassthrough) {
 		// If the Prometheus endpoint would otherwise overshadow one of interfaces of that Dataplane,
 		// we prefer not to do that.
 
@@ -87,7 +87,7 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 		return nil, errors.Wrap(err, "could not get prometheus inbound interface")
 	}
 
-	iface := proxy.Dataplane.Spec.GetNetworking().ToInboundInterface(inbound)
+	iface := proxy.Dataplane.Spec.GetNetworking().ToInboundInterface(inbound, ctx.ControlPlane.EnableInboundPassthrough)
 	var listener envoy_common.NamedResource
 	if secureMetrics(prometheusEndpoint, ctx.Mesh.Resource) {
 		listener, err = envoy_listeners.NewListenerBuilder(proxy.APIVersion).
