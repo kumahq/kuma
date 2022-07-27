@@ -1,12 +1,10 @@
 pull_request_rules:
 - name: backport patches to stable branch
   conditions:
-  - base=master
   - label=backport-to-stable
   actions:
     backport:
-      branches:
-      - release-1.7
+      branches: []
 
 - name: automatically merge backport PRs
   conditions:
