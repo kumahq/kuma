@@ -42,7 +42,7 @@ func GenerateVirtualHost(
 	if len(routes) == 0 {
 		routeBuilder := route.RouteBuilder{}
 
-		routeBuilder.Configure(route.RouteMatchExactPath("*"))
+		routeBuilder.Configure(route.RouteMatchPrefixPath("/"))
 		routeBuilder.Configure(route.RouteActionDirectResponse(http.StatusNotFound, emptyGatewayMsg))
 		vh.Configure(route.VirtualHostRoute(&routeBuilder))
 
