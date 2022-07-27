@@ -3,7 +3,7 @@ package errors
 import (
 	"fmt"
 
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
 	"github.com/pkg/errors"
 
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"

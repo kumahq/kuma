@@ -73,20 +73,15 @@ var _ = Describe("DataplaneInsightSink", func() {
 				1*time.Millisecond,
 				store,
 			)
-			go sink.Start(stop)
 
 			// when
-			ticks <- t0.Add(1 * time.Second)
+			go sink.Start(stop)
+
 			// then
-			Eventually(func() bool {
-				select {
-				case create, ok := <-recorder.Creates:
-					latestOperation = &create
-					return ok
-				default:
-					return false
-				}
-			}, "100s", "1ms").Should(BeTrue())
+			create, ok := <-recorder.Creates
+			Expect(ok).To(BeTrue())
+			latestOperation = &create
+
 			// and
 			Expect(util_proto.ToYAML(latestOperation.DiscoverySubscription)).To(MatchYAML(`
             connectTime: "2019-07-01T00:00:00Z"

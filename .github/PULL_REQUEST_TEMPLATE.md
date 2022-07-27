@@ -1,28 +1,19 @@
-### Summary
+### Checklist prior to review
 
-SUMMARY_GOES_HERE
+<!--
+Each of these sections need to be filled by the author when opening the PR.
 
-### Full changelog
+If something doesn't apply please check the box and add a justification after the `--`
+-->
 
-* [Implement ...]
-* [Fix ...]
+- [ ] Link to docs PR or issue --
+- [ ] Link to UI issue or PR --
+- [ ] Is the [issue worked on linked][1]? --
+- [ ] Unit Tests --
+- [ ] E2E Tests --
+- [ ] Manual Universal Tests --
+- [ ] Manual Kubernetes Tests --
+- [ ] Do you need to update [`UPGRADE.md`](/UPGRADE.md)? --
+- [ ] Does it need to be backported according to the [backporting policy](/CONTRIBUTING.md#backporting)? --
 
-### Issues resolved
-
-Fix #XXX
-
-### Documentation
-
-- [ ] Link to the website [documentation PR](https://github.com/kumahq/kuma-website/pull/XXX)
-
-### Testing
-
-- [ ] Unit tests
-- [ ] E2E tests
-- [ ] Manual testing on Universal
-- [ ] Manual testing on Kubernetes
-
-### Backwards compatibility
-
-- [ ] Update [`UPGRADE.md`](/UPGRADE.md) with any steps users will need to take when upgrading.
-- [ ] Add `backport-to-stable` label if the code follows our [backporting policy](/CONTRIBUTING.md#backporting)
+[1]: https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword

@@ -22,9 +22,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
-
-	// import Envoy protobuf definitions so (un)marshaling Envoy protobuf works in tests (normally it is imported in root.go)
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy" // import Envoy protobuf definitions so (un)marshaling Envoy protobuf works in tests (normally it is imported in root.go)
 )
 
 type BootstrapGenerator interface {
@@ -112,16 +110,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		if adminPortFromResource != 0 {
 			params.AdminPort = adminPortFromResource
 		} else {
-			if request.AdminPort != 0 {
-				// https://github.com/kumahq/kuma/issues/4002
-				// Backwards compatibility, Inspect API may not work properly if the port
-				// was set through the '--admin-port' flag. It affects only ability to get
-				// config_dump through the Inspect API and it's done that way to avoid updating
-				// DPP or ZoneIngress resources on the fly.
-				params.AdminPort = request.AdminPort
-			} else {
-				params.AdminPort = b.defaultAdminPort
-			}
+			params.AdminPort = b.defaultAdminPort
 		}
 	}
 

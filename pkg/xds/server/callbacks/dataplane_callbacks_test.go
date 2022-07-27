@@ -31,7 +31,7 @@ func (c *countingDpCallbacks) OnProxyReconnected(streamID core_xds.StreamID, dpK
 	return nil
 }
 
-func (c *countingDpCallbacks) OnProxyDisconnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey) {
+func (c *countingDpCallbacks) OnProxyDisconnected(ctx context.Context, streamID core_xds.StreamID, dpKey core_model.ResourceKey) {
 	c.OnProxyDisconnectedCounter++
 }
 

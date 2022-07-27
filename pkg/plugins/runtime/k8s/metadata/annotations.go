@@ -1,8 +1,10 @@
 package metadata
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -69,9 +71,12 @@ const (
 	// KumaMetricsPrometheusPath to override `Mesh`-wide default path
 	KumaMetricsPrometheusPath = "prometheus.metrics.kuma.io/path"
 
+	// Remove with: https://github.com/kumahq/kuma/issues/4675
+	KumaBuiltinDNSDeprecated     = "kuma.io/builtindns"
+	KumaBuiltinDNSPortDeprecated = "kuma.io/builtindnsport"
 	// KumaBuiltinDNS the sidecar will use its builtin DNS
-	KumaBuiltinDNS     = "kuma.io/builtindns"
-	KumaBuiltinDNSPort = "kuma.io/builtindnsport"
+	KumaBuiltinDNS     = "kuma.io/builtin-dns"
+	KumaBuiltinDNSPort = "kuma.io/builtin-dns-port"
 
 	KumaTrafficExcludeInboundPorts  = "traffic.kuma.io/exclude-inbound-ports"
 	KumaTrafficExcludeOutboundPorts = "traffic.kuma.io/exclude-outbound-ports"
@@ -101,6 +106,27 @@ const (
 	// KumaMetricsPrometheusAggregatePattern allows to retrieve all the apps for which need to get port/path configuration
 	KumaMetricsPrometheusAggregatePattern = "^prometheus.metrics.kuma.io/aggregate-([a-zA-Z0-9-]+)-(port|path|enabled)$"
 )
+
+var PodAnnotationDeprecations = []Deprecation{
+	NewReplaceByDeprecation(KumaBuiltinDNSDeprecated, KumaBuiltinDNS),
+	NewReplaceByDeprecation(KumaBuiltinDNSPortDeprecated, KumaBuiltinDNSPort),
+	{
+		Key:     KumaSidecarInjectionAnnotation,
+		Message: "WARNING: you are using kuma.io/sidecar-injection as annotation. Please migrate it to label to have strong guarantee that application can only start with sidecar",
+	},
+}
+
+type Deprecation struct {
+	Key     string
+	Message string
+}
+
+func NewReplaceByDeprecation(old, new string) Deprecation {
+	return Deprecation{
+		Key:     old,
+		Message: fmt.Sprintf("'%s' is being replaced by: '%s'", old, new),
+	}
+}
 
 // Annotations that are being automatically set by the Kuma Sidecar Injector.
 const (
@@ -137,56 +163,123 @@ const (
 
 type Annotations map[string]string
 
-func (a Annotations) GetEnabled(key string) (bool, bool, error) {
-	value, ok := a[key]
-	if !ok {
-		return false, false, nil
-	}
-	switch value {
-	case AnnotationEnabled, AnnotationTrue:
-		return true, true, nil
-	case AnnotationDisabled, AnnotationFalse:
-		return false, true, nil
-	default:
-		return false, true, errors.Errorf("annotation \"%s\" has wrong value \"%s\"", key, value)
-	}
+func (a Annotations) GetEnabled(keys ...string) (bool, bool, error) {
+	return a.GetEnabledWithDefault(false, keys...)
 }
-
-func (a Annotations) GetUint32(key string) (uint32, bool, error) {
-	value, ok := a[key]
-	if !ok {
-		return 0, false, nil
-	}
-	u, err := strconv.ParseUint(value, 10, 32)
+func (a Annotations) GetEnabledWithDefault(def bool, keys ...string) (bool, bool, error) {
+	v, exists, err := a.getWithDefault(def, func(key, value string) (interface{}, error) {
+		switch value {
+		case AnnotationEnabled, AnnotationTrue:
+			return true, nil
+		case AnnotationDisabled, AnnotationFalse:
+			return false, nil
+		default:
+			return false, errors.Errorf("annotation \"%s\" has wrong value \"%s\"", key, value)
+		}
+	}, keys...)
 	if err != nil {
-		return 0, true, errors.Errorf("failed to parse annotation %q: %s", key, err.Error())
+		return def, exists, err
 	}
-	return uint32(u), true, nil
+	return v.(bool), exists, nil
 }
 
-func (a Annotations) GetString(key string) (string, bool) {
-	value, ok := a[key]
-	if !ok {
-		return "", false
+func (a Annotations) GetUint32(keys ...string) (uint32, bool, error) {
+	return a.GetUint32WithDefault(0, keys...)
+}
+func (a Annotations) GetUint32WithDefault(def uint32, keys ...string) (uint32, bool, error) {
+	v, exists, err := a.getWithDefault(def, func(key string, value string) (interface{}, error) {
+		u, err := strconv.ParseUint(value, 10, 32)
+		if err != nil {
+			return 0, errors.Errorf("failed to parse annotation %q: %s", key, err.Error())
+		}
+		return uint32(u), nil
+	}, keys...)
+	if err != nil {
+		return def, exists, err
 	}
-	return value, true
+	return v.(uint32), exists, nil
+}
+
+func (a Annotations) GetString(keys ...string) (string, bool) {
+	return a.GetStringWithDefault("", keys...)
+}
+func (a Annotations) GetStringWithDefault(def string, keys ...string) (string, bool) {
+	v, exists, _ := a.getWithDefault(def, func(key string, value string) (interface{}, error) {
+		return value, nil
+	}, keys...)
+	return v.(string), exists
+}
+
+func (a Annotations) GetDurationWithDefault(def time.Duration, keys ...string) (time.Duration, bool, error) {
+	v, exists, err := a.getWithDefault(def, func(key string, value string) (interface{}, error) {
+		return time.ParseDuration(value)
+	}, keys...)
+	if err != nil {
+		return def, exists, err
+	}
+	return v.(time.Duration), exists, err
+}
+
+func (a Annotations) GetList(keys ...string) ([]string, bool) {
+	return a.GetListWithDefault(nil, keys...)
+}
+func (a Annotations) GetListWithDefault(def []string, keys ...string) ([]string, bool) {
+	defCopy := []string{}
+	defCopy = append(defCopy, def...)
+	v, exists, _ := a.getWithDefault(defCopy, func(key string, value string) (interface{}, error) {
+		r := strings.Split(value, ",")
+		var res []string
+		for _, v := range r {
+			if v != "" {
+				res = append(res, v)
+			}
+		}
+		return res, nil
+	}, keys...)
+	return v.([]string), exists
 }
 
 // GetMap returns map from annotation. Example: "kuma.io/sidecar-env-vars: TEST1=1;TEST2=2"
-func (a Annotations) GetMap(key string) (map[string]string, error) {
-	value, ok := a[key]
-	if !ok {
-		return nil, nil
+func (a Annotations) GetMap(keys ...string) (map[string]string, bool, error) {
+	return a.GetMapWithDefault(map[string]string{}, keys...)
+}
+func (a Annotations) GetMapWithDefault(def map[string]string, keys ...string) (map[string]string, bool, error) {
+	defCopy := make(map[string]string, len(def))
+	for k, v := range def {
+		defCopy[k] = v
 	}
-	result := map[string]string{}
+	v, exists, err := a.getWithDefault(defCopy, func(key string, value string) (interface{}, error) {
+		result := map[string]string{}
 
-	pairs := strings.Split(value, ";")
-	for _, pair := range pairs {
-		kvSplit := strings.Split(pair, "=")
-		if len(kvSplit) != 2 {
-			return nil, errors.Errorf("invalid format. Map in %q has to be provided in the following format: key1=value1;key2=value2", key)
+		pairs := strings.Split(value, ";")
+		for _, pair := range pairs {
+			kvSplit := strings.Split(pair, "=")
+			if len(kvSplit) != 2 {
+				return nil, errors.Errorf("invalid format. Map in %q has to be provided in the following format: key1=value1;key2=value2", key)
+			}
+			result[kvSplit[0]] = kvSplit[1]
 		}
-		result[kvSplit[0]] = kvSplit[1]
+		return result, nil
+	}, keys...)
+	if err != nil {
+		return def, exists, err
 	}
-	return result, nil
+	return v.(map[string]string), exists, nil
+}
+
+func (a Annotations) getWithDefault(def interface{}, fn func(string, string) (interface{}, error), keys ...string) (interface{}, bool, error) {
+	res := def
+	exists := false
+	for _, k := range keys {
+		v, ok := a[k]
+		if ok {
+			exists = true
+			r, err := fn(k, v)
+			if err != nil {
+				return nil, exists, err
+			}
+			res = r
+		}
+	}
+	return res, exists, nil
 }

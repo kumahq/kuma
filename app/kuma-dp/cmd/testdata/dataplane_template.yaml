@@ -13,3 +13,5 @@ networking:
     - port: 33033
       tags:
         kuma.io/service: redis
+  admin:
+    port: 9901

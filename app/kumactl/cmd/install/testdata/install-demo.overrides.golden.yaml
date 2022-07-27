@@ -91,3 +91,49 @@ spec:
           ports:
             - name: http
               containerPort: 5000
+---
+apiVersion: kuma.io/v1alpha1
+kind: MeshGateway
+mesh: default
+metadata:
+  name: demo-app
+spec:
+  conf:
+    listeners:
+    - port: 80
+      protocol: HTTP
+  selectors:
+  - match:
+      kuma.io/service: demo-app_gateway
+---
+apiVersion: kuma.io/v1alpha1
+kind: MeshGatewayInstance
+metadata:
+  name: demo-app-gateway
+  namespace: not-kuma-demo
+spec:
+  replicas: 1
+  serviceType: LoadBalancer
+  tags:
+    kuma.io/service: demo-app_gateway
+---
+apiVersion: kuma.io/v1alpha1
+kind: MeshGatewayRoute
+mesh: default
+metadata:
+  name: demo-app
+spec:
+  conf:
+   http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: /
+      backends:
+      - destination:
+          kuma.io/service: demo-app_not-kuma-demo_svc_5000
+        weight: 1
+  selectors:
+  - match:
+      kuma.io/service: demo-app_gateway

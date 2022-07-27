@@ -1,6 +1,8 @@
 package install
 
 import (
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -13,6 +15,12 @@ import (
 type demoTemplateArgs struct {
 	Namespace string
 	Zone      string
+}
+
+type GatewayFilter struct{}
+
+func (GatewayFilter) Filter(name string) bool {
+	return !strings.HasSuffix(name, "gateway.yaml")
 }
 
 func newInstallDemoCmd(ctx *install_context.InstallDemoContext) *cobra.Command {
@@ -36,7 +44,12 @@ func newInstallDemoCmd(ctx *install_context.InstallDemoContext) *cobra.Command {
 				return errors.Wrap(err, "Failed to read template files")
 			}
 
-			renderedFiles, err := renderFiles(templateFiles, templateArgs, simpleTemplateRenderer)
+			var filter templateFilter = NoneFilter{}
+			if args.WithoutGateway {
+				filter = GatewayFilter{}
+			}
+
+			renderedFiles, err := renderFilesWithFilter(templateFiles, templateArgs, simpleTemplateRenderer, filter)
 
 			if err != nil {
 				return errors.Wrap(err, "Failed to render template files")
@@ -57,6 +70,7 @@ func newInstallDemoCmd(ctx *install_context.InstallDemoContext) *cobra.Command {
 	}
 	cmd.Flags().StringVar(&args.Zone, "zone", args.Zone, "Zone in which to install demo")
 	cmd.Flags().StringVar(&args.Namespace, "namespace", args.Namespace, "Namespace to install demo to")
+	cmd.Flags().BoolVar(&args.WithoutGateway, "without-gateway", args.WithoutGateway, "Skip MeshGateway resources")
 	return cmd
 }
 

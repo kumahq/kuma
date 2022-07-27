@@ -5,6 +5,8 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/pkg/errors"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -477,11 +479,24 @@ func NewExternalServiceEndpoint(
 		tags[tag] = value
 	}
 
+	caCert, err := loadBytes(tls.GetCaCert(), meshName, loader)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not load caCert")
+	}
+	clientCert, err := loadBytes(tls.GetClientCert(), meshName, loader)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not load clientCert")
+	}
+	clientKey, err := loadBytes(tls.GetClientKey(), meshName, loader)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not load clientKey")
+	}
+
 	es := &core_xds.ExternalService{
 		TLSEnabled:         tls.GetEnabled(),
-		CaCert:             convertToEnvoy(tls.GetCaCert(), meshName, loader),
-		ClientCert:         convertToEnvoy(tls.GetClientCert(), meshName, loader),
-		ClientKey:          convertToEnvoy(tls.GetClientKey(), meshName, loader),
+		CaCert:             caCert,
+		ClientCert:         clientCert,
+		ClientKey:          clientKey,
 		AllowRenegotiation: tls.GetAllowRenegotiation().GetValue(),
 		ServerName:         tls.GetServerName().GetValue(),
 	}
@@ -508,18 +523,11 @@ func NewExternalServiceEndpoint(
 	}, nil
 }
 
-func convertToEnvoy(ds *v1alpha1.DataSource, mesh string, loader datasource.Loader) []byte {
+func loadBytes(ds *v1alpha1.DataSource, mesh string, loader datasource.Loader) ([]byte, error) {
 	if ds == nil {
-		return nil
+		return nil, nil
 	}
-
-	data, err := loader.Load(context.Background(), mesh, ds)
-	if err != nil {
-		core.Log.Error(err, "failed to resolve ingress's public name, skipping dataplane")
-		return nil
-	}
-
-	return data
+	return loader.Load(context.Background(), mesh, ds)
 }
 
 func localityFromTags(mesh *core_mesh.MeshResource, priority uint32, tags map[string]string) *core_xds.Locality {

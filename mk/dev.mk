@@ -346,8 +346,11 @@ dev/envrc: $(KUBECONFIG_DIR)/kind-kuma-current ## Generate .envrc
 
 .PHONY: dev/sync-demo
 dev/sync-demo:
-	rm app/kumactl/data/install/k8s/demo/demo.yaml
-	curl -s https://raw.githubusercontent.com/kumahq/kuma-counter-demo/master/demo.yaml | \
+	rm app/kumactl/data/install/k8s/demo/*.yaml
+	curl -s --fail https://raw.githubusercontent.com/kumahq/kuma-counter-demo/master/demo.yaml | \
 		sed 's/"local"/"{{ .Zone }}"/g' | \
 		sed 's/\([^/]\)kuma-demo/\1{{ .Namespace }}/g' \
 		> app/kumactl/data/install/k8s/demo/demo.yaml
+	curl -s --fail https://raw.githubusercontent.com/kumahq/kuma-counter-demo/master/gateway.yaml | \
+		sed 's/\([^/]\)kuma-demo/\1{{ .Namespace }}/g' \
+		> app/kumactl/data/install/k8s/demo/gateway.yaml
