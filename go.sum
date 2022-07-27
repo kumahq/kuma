@@ -1015,8 +1015,8 @@ github.com/kumahq/go-control-plane v0.9.10-0.20211022075049-d35edcf0813a h1:RtOj
 github.com/kumahq/go-control-plane v0.9.10-0.20211022075049-d35edcf0813a/go.mod h1:utjuSZ1DPHuYf0cTZ8WEsaQf5bwmT1TZiWaQjpJtBF0=
 github.com/kumahq/kuma-net v0.3.0 h1:zwih5eR80shiqBsZEh1xAxlXyhaFHsE/0Fe8guZqWNE=
 github.com/kumahq/kuma-net v0.3.0/go.mod h1:dUqPEm6BP7TqQvaqYDXnwITekoxdtmXTd6UXVlq3n9w=
-github.com/kumahq/protoc-gen-kumadoc v0.2.0 h1:3P1PZyw/tI1TYL6QmaePuLqGuarhYkL9ZxjN2yPTLXY=
-github.com/kumahq/protoc-gen-kumadoc v0.2.0/go.mod h1:F+c9RjgKlv1Q3UEoPJCtMJw8Fd+X5PfG5jlkTSfZOMA=
+github.com/kumahq/protoc-gen-kumadoc v0.3.0 h1:EXCZZd2TUxWrnCcdQa9lV8/00uKgvaa4U2yTgnZ0H1w=
+github.com/kumahq/protoc-gen-kumadoc v0.3.0/go.mod h1:F+c9RjgKlv1Q3UEoPJCtMJw8Fd+X5PfG5jlkTSfZOMA=
 github.com/lann/builder v0.0.0-20180802200727-47ae307949d0/go.mod h1:dXGbAdH5GtBTC4WfIxhKZfyBF/HBFgRZSWwZ9g/He9o=
 github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0/go.mod h1:vmVJ0l/dxyfGW6FmdpVm2joNMFikkuWg0EoCKLGUMNw=
 github.com/lib/pq v1.0.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
