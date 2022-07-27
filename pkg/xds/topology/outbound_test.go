@@ -231,7 +231,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				{
 					Target: "192.168.0.6",
-					Port:   59200, // we take real applicaiton port instead of service when InboundPassthrough and transparent proxy enabled
+					Port:   59200, // we take real application port instead of service when InboundPassthrough and transparent proxy enabled
 					Tags:   map[string]string{mesh_proto.ServiceTag: "elastic", mesh_proto.ZoneTag: "us"},
 					Locality: &core_xds.Locality{
 						Zone: "us",
