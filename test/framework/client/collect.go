@@ -306,7 +306,8 @@ func CollectResponseDirectly(
 //
 // See https://curl.se/docs/manpage.html#-w.
 type FailureResponse struct {
-	Exitcode int `json:"exitcode"`
+	Body     string `json:"-"`
+	Exitcode int    `json:"exitcode"`
 
 	ResponseCode int    `json:"response_code"`
 	Method       string `json:"method"`
@@ -324,11 +325,8 @@ func CollectFailure(cluster framework.Cluster, container, destination string, fn
 	cmd := collectCommand(opts, "curl",
 		"--request", opts.Method,
 		"--max-time", "3",
-		"--silent",               // Suppress human-readable errors.
-		"--write-out", "%{json}", // Write JSON result. Requires curl 7.70.0, April 2020.
-		// Silence output so that we don't try to parse it. A future refactor could try to address this
-		// by using "%{stderr}%{json}", but that needs a bit more investigation.
-		"--output", os.DevNull,
+		"--silent",                        // Suppress human-readable errors.
+		"--write-out", "%{stderr}%{json}", // Write JSON result. Requires curl 7.70.0, April 2020.
 		opts.ShellEscaped(opts.URL),
 	)
 
@@ -341,13 +339,13 @@ func CollectFailure(cluster framework.Cluster, container, destination string, fn
 		}
 	}
 
-	stdout, _, err := cluster.Exec(opts.namespace, appPodName, container, cmd...)
+	stdout, stderr, err := cluster.Exec(opts.namespace, appPodName, container, cmd...)
 
 	// 1. If we fail to decode the JSON status, return the JSON error,
 	// but prefer the original error if we have it.
 	empty := FailureResponse{}
 	response := FailureResponse{}
-	if jsonErr := json.Unmarshal([]byte(stdout), &response); jsonErr != nil {
+	if jsonErr := json.Unmarshal([]byte(stderr), &response); jsonErr != nil {
 		// Prefer the original error to a JSON decoding error.
 		if err == nil {
 			return response, jsonErr
@@ -361,7 +359,7 @@ func CollectFailure(cluster framework.Cluster, container, destination string, fn
 			return response, err
 		}
 
-		return response, errors.Errorf("empty JSON response from curl: %q", stdout)
+		return response, errors.Errorf("empty JSON response from curl: %q", stderr)
 	}
 
 	// for k8s
@@ -375,6 +373,7 @@ func CollectFailure(cluster framework.Cluster, container, destination string, fn
 		response.Exitcode = exitErr.ExitCode()
 	}
 
+	response.Body = stdout
 	// 3. Finally, report the JSON status and no execution error
 	// since the JSON contains all the Curl error information.
 	return response, nil
