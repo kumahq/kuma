@@ -14,7 +14,6 @@ metadata:
   namespace: kube-system
   labels: 
     app: kuma-cni
-    parent.app: "kuma-cni"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 ---
@@ -35,7 +34,6 @@ metadata:
   namespace: kube-system
   labels: 
     app: kuma-cni
-    parent.app: "kuma-cni"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 data:
@@ -1615,7 +1613,6 @@ metadata:
   labels:
   
     app: kuma-cni
-    parent.app: "kuma-cni"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 rules:
@@ -1864,7 +1861,6 @@ metadata:
   labels:
   
     app: kuma-cni
-    parent.app: "kuma-cni"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 roleRef:
@@ -1993,13 +1989,13 @@ metadata:
   namespace: kube-system
   labels:
     app: kuma-cni
-    parent.app: "kuma-cni"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 spec:
   selector:
     matchLabels:
       app: kuma-cni
+      parent.app: "kuma-cni"
       app.kubernetes.io/name: kuma
       app.kubernetes.io/instance: kuma
   updateStrategy:
@@ -2010,6 +2006,7 @@ spec:
     metadata:
       labels:
         app: kuma-cni
+        parent.app: "kuma-cni"
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
       annotations:
@@ -2018,7 +2015,7 @@ spec:
         # priority scheduling and that its resources are reserved
         # if it ever gets evicted.
         scheduler.alpha.kubernetes.io/critical-pod: ''
-        checksum/config: 3bb8740cdadc97c129d8d3046ec2bffc1b638d6ad4e21cf91507ffe73c7c1b8f
+        checksum/config: 58a987b71c02c72aa261be5074aca3e9361a0f8b9e9f8b2bc504a815484f1057
     spec:
       nodeSelector:
       

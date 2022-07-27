@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -42,13 +41,6 @@ func (r *CniNodeTaintReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 		return kube_ctrl.Result{}, err
 	}
 	log.Info("node successfully fetched")
-
-	// List Pods in on the node
-	// can we use use: r.Client.Get(ctx, ) instead? I don't think we can it only allows for filtering namespacedName
-	// matchingFields := kube_client.MatchingFields{
-	//	"spec.nodeName": node.Name,
-	//	"metadata.labels.parent-app": "kuma-cni",
-	//}
 
 	kubeSystemPods := &kube_core.PodList{}
 	if err := r.Client.List(ctx, kubeSystemPods, kube_client.InNamespace("kube-system")); err != nil {
@@ -133,28 +125,22 @@ func hasTaint(node *kube_core.Node) bool {
 }
 
 func hasCniPodRunning(log logr.Logger, pods []kube_core.Pod) bool {
-	podReady := false
-	containersReady := false
 	for _, pod := range pods {
-		if strings.Contains(pod.Name, "kuma-cni-node") && pod.Status.Phase == kube_core.PodRunning {
+		if isCniPod(pod) && pod.Status.Phase == kube_core.PodRunning {
 			for _, condition := range pod.Status.Conditions {
 				if condition.Type == kube_core.PodReady && condition.Status == kube_core.ConditionTrue {
-					podReady = true
+					log.Info("pod has kuma-cni-node running and ready", "pod", pod.Name, "status", pod.Status)
+					return true
 				}
-				if condition.Type == kube_core.ContainersReady && condition.Status == kube_core.ConditionTrue {
-					containersReady = true
-				}
-			}
-			if podReady && containersReady {
-				log.Info("pod has kuma-cni-node running and ready", "pod", pod.Name, "status", pod.Status)
-				return true
-			} else {
-				podReady = false
-				containersReady = false
 			}
 		}
 	}
 	return false
+}
+
+func isCniPod(pod kube_core.Pod) bool {
+	value, ok := pod.Labels["parent.app"]
+	return ok && value == "kuma-cni"
 }
 
 func (r *CniNodeTaintReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {

@@ -38,6 +38,7 @@ K8S_CLUSTER_TOOL=k3d
 E2E_ENV_VARS += KUMA_K8S_TYPE=k3d
 else
 K8S_CLUSTER_TOOL=kind
+GINKGO_E2E_TEST_FLAGS += "--label-filter=\"!kind-not-supported\""
 endif
 
 ifdef IPV6
@@ -140,12 +141,4 @@ test/e2e-universal: build/kumactl images/test k3d/network/create
 test/e2e-multizone: $(E2E_DEPS_TARGETS)
 	$(MAKE) test/e2e/k8s/start
 	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(MULTIZONE_E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop/cluster/kuma-1 && exit $$ret)
-	$(MAKE) test/e2e/k8s/stop
-
-.PHONY: test/e2e-k3d-only
-test/e2e-k3d-only: export K3D = true
-test/e2e-k3d-only: export KUMA_K8S_TYPE = k3d
-test/e2e-k3d-only:
-	$(MAKE) test/e2e/k8s/start
-	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) --procs 1 "./test/e2e_k3d_only/..." || (ret=$$?; $(MAKE) test/e2e/k8s/stop && exit $$ret)
 	$(MAKE) test/e2e/k8s/stop

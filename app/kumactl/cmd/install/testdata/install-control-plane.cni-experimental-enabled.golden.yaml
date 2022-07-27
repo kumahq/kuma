@@ -14,7 +14,6 @@ metadata:
   namespace: kube-system
   labels: 
     app: kuma-cni
-    parent.app: "kuma-cni"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 ---
@@ -35,7 +34,6 @@ metadata:
   namespace: kube-system
   labels: 
     app: kuma-cni
-    parent.app: "kuma-cni"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 data:
@@ -1615,7 +1613,6 @@ metadata:
   labels:
   
     app: kuma-cni
-    parent.app: "kuma-cni"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 rules:
@@ -1645,8 +1642,7 @@ rules:
     verbs:
       - get
       - list
-      - watch # just temp
-      - update
+      - watch
   - apiGroups:
       - "apps"
     resources:
@@ -1817,6 +1813,18 @@ rules:
   - apiGroups:
       - ""
     resources:
+      - nodes
+    verbs:
+      - update
+  - apiGroups:
+      - "pods"
+    resources:
+      - pods
+    verbs:
+      - list
+  - apiGroups:
+      - ""
+    resources:
       - pods/finalizers
     verbs:
       - get
@@ -1865,7 +1873,6 @@ metadata:
   labels:
   
     app: kuma-cni
-    parent.app: "kuma-cni"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 roleRef:
@@ -1994,13 +2001,13 @@ metadata:
   namespace: kube-system
   labels:
     app: kuma-cni
-    parent.app: "kuma-cni"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 spec:
   selector:
     matchLabels:
       app: kuma-cni
+      parent.app: "kuma-cni"
       app.kubernetes.io/name: kuma
       app.kubernetes.io/instance: kuma
   updateStrategy:
@@ -2011,6 +2018,7 @@ spec:
     metadata:
       labels:
         app: kuma-cni
+        parent.app: "kuma-cni"
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
       annotations:
@@ -2019,7 +2027,7 @@ spec:
         # priority scheduling and that its resources are reserved
         # if it ever gets evicted.
         scheduler.alpha.kubernetes.io/critical-pod: ''
-        checksum/config: 3bb8740cdadc97c129d8d3046ec2bffc1b638d6ad4e21cf91507ffe73c7c1b8f
+        checksum/config: 58a987b71c02c72aa261be5074aca3e9361a0f8b9e9f8b2bc504a815484f1057
     spec:
       nodeSelector:
       
@@ -2043,14 +2051,12 @@ spec:
         - name: install-cni
           image: "docker.io/kumahq/kuma-cni:1.7.0"
           imagePullPolicy: IfNotPresent
-          # what will happen when this is undefined
           readinessProbe:
             initialDelaySeconds: 0
             exec:
               command:
                 - cat
                 - /tmp/ready # hook checkInstall function to --check-readiness flag to the binary
-          # if test then "command: bash -c sleep 60 && /install-cni"
           command: ["/install-cni"]
           env:
             # Name of the CNI config file to create.

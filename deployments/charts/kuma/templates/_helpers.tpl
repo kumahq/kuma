@@ -97,7 +97,6 @@ CNI labels
 */}}
 {{- define "kuma.cniLabels" -}}
 app: {{ include "kuma.name" . }}-cni
-parent.app: "kuma-cni"
 {{ include "kuma.labels" . }}
 {{- end }}
 
@@ -148,6 +147,7 @@ CNI selector labels
 */}}
 {{- define "kuma.cniSelectorLabels" -}}
 app: {{ include "kuma.name" . }}-cni
+parent.app: "kuma-cni"
 {{ include "kuma.selectorLabels" . }}
 {{- end }}
 
