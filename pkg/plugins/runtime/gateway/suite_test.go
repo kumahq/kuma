@@ -101,9 +101,10 @@ func (m mockMetadataTracker) Metadata(dpKey core_model.ResourceKey) *core_xds.Da
 
 func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_context.Context, *core_xds.Proxy) {
 	b := sync.DataplaneProxyBuilder{
-		MetadataTracker: mockMetadataTracker{},
-		Zone:            rt.Config().Multizone.Zone.Name,
-		APIVersion:      envoy.APIV3,
+		MetadataTracker:          mockMetadataTracker{},
+		Zone:                     rt.Config().Multizone.Zone.Name,
+		APIVersion:               envoy.APIV3,
+		EnableInboundPassthrough: rt.Config().Defaults.EnableInboundPassthrough,
 	}
 
 	cache, err := cla.NewCache(rt.Config().Store.Cache.ExpirationTime, rt.Metrics())
