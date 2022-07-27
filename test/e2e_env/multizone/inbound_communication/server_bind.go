@@ -134,12 +134,12 @@ func ServerBind() {
 			)).
 			Setup(env.KubeZone1)).ToNot(HaveOccurred())
 	})
-	// E2EAfterAll(func() {
-	// 	Expect(env.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
-	// 	Expect(env.KubeZone1.DeleteMesh(mesh))
-	// 	Expect(env.UniZone1.DeleteMeshApps(mesh)).To(Succeed())
-	// 	Expect(env.Global.DeleteMeshApps(mesh)).To(Succeed())
-	// })
+	E2EAfterAll(func() {
+		Expect(env.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(env.KubeZone1.DeleteMesh(mesh))
+		Expect(env.UniZone1.DeleteMeshApps(mesh)).To(Succeed())
+		Expect(env.Global.DeleteMeshApps(mesh)).To(Succeed())
+	})
 
 	It("should check communication k8s to k8s", func() {
 		// given

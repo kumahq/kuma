@@ -168,12 +168,12 @@ func ServerBind() {
 			Setup(zone4),
 		).To(Succeed())
 	})
-	// E2EAfterAll(func() {
-	// 	Expect(zone1.TriggerDeleteNamespace(namespace)).To(Succeed())
-	// 	Expect(zone1.DeleteMesh(mesh))
-	// 	Expect(zone4.DeleteMeshApps(mesh)).To(Succeed())
-	// 	Expect(env.Global.DeleteMeshApps(mesh)).To(Succeed())
-	// })
+
+	E2EAfterAll(func() {
+		Expect(zone1.DismissCluster()).To(Succeed())
+		Expect(zone4.DismissCluster()).To(Succeed())
+		Expect(global.DismissCluster()).To(Succeed())
+	})
 
 	It("should check communication k8s to k8s", func() {
 		// given

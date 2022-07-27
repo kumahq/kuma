@@ -36,7 +36,7 @@ type State struct {
 var _ = SynchronizedBeforeSuite(
 	func() []byte {
 		env.Global = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
-		// E2EDeferCleanup(env.Global.DismissCluster) // clean up any containers if needed
+		E2EDeferCleanup(env.Global.DismissCluster) // clean up any containers if needed
 		Expect(env.Global.Install(Kuma(core.Global,
 			WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 		))).To(Succeed())
@@ -73,7 +73,7 @@ var _ = SynchronizedBeforeSuite(
 		}()
 
 		env.UniZone1 = NewUniversalCluster(NewTestingT(), Kuma4, Silent)
-		// E2EDeferCleanup(env.UniZone1.DismissCluster) // clean up any containers if needed
+		E2EDeferCleanup(env.UniZone1.DismissCluster) // clean up any containers if needed
 		go func() {
 			defer GinkgoRecover()
 			err := NewClusterSetup().
@@ -91,7 +91,7 @@ var _ = SynchronizedBeforeSuite(
 		}()
 
 		env.UniZone2 = NewUniversalCluster(NewTestingT(), Kuma5, Silent)
-		// E2EDeferCleanup(env.UniZone2.DismissCluster) // clean up any containers if needed
+		E2EDeferCleanup(env.UniZone2.DismissCluster) // clean up any containers if needed
 		go func() {
 			defer GinkgoRecover()
 			err := NewClusterSetup().
@@ -148,7 +148,7 @@ var _ = SynchronizedBeforeSuite(
 		Expect(json.Unmarshal(bytes, &state)).To(Succeed())
 
 		env.Global = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
-		// E2EDeferCleanup(env.Global.DismissCluster) // clean up any containers if needed
+		E2EDeferCleanup(env.Global.DismissCluster) // clean up any containers if needed
 		cp, err := NewUniversalControlPlane(
 			env.Global.GetTesting(),
 			core.Global,
@@ -190,7 +190,7 @@ var _ = SynchronizedBeforeSuite(
 		Expect(env.KubeZone2.AddPortForward(state.KubeZone2.ZoneIngress, Config.ZoneIngressApp)).To(Succeed())
 
 		env.UniZone1 = NewUniversalCluster(NewTestingT(), Kuma4, Silent)
-		// E2EDeferCleanup(env.UniZone1.DismissCluster) // clean up any containers if needed
+		E2EDeferCleanup(env.UniZone1.DismissCluster) // clean up any containers if needed
 		cp, err = NewUniversalControlPlane(
 			env.UniZone1.GetTesting(),
 			core.Zone,
@@ -204,7 +204,7 @@ var _ = SynchronizedBeforeSuite(
 		Expect(env.UniZone1.AddNetworking(state.UniZone1.ZoneIngress, Config.ZoneIngressApp)).To(Succeed())
 
 		env.UniZone2 = NewUniversalCluster(NewTestingT(), Kuma5, Silent)
-		// E2EDeferCleanup(env.UniZone2.DismissCluster) // clean up any containers if needed
+		E2EDeferCleanup(env.UniZone2.DismissCluster) // clean up any containers if needed
 		cp, err = NewUniversalControlPlane(
 			env.UniZone2.GetTesting(),
 			core.Zone,

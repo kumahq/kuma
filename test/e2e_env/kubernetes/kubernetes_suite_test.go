@@ -77,5 +77,3 @@ var _ = Describe("Container Patch", container_patch.ContainerPatch, Ordered)
 var _ = Describe("Metrics", observability.ApplicationsMetrics, Ordered)
 var _ = Describe("Tracing", observability.Tracing, Ordered)
 var _ = Describe("Traffic Log", trafficlog.TCPLogging, Ordered)
-
-// var _ = FDescribe("Server Bind", inbound_communication.ServerBind, Ordered)
