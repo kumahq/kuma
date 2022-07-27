@@ -20,10 +20,11 @@ import (
 var _ = Describe("Match", func() {
 
 	type testCase struct {
-		dataplane *core_mesh.DataplaneResource
-		mesh      *core_mesh.MeshResource
-		policies  []*core_mesh.TrafficPermissionResource
-		expected  map[mesh_proto.InboundInterface]string
+		dataplane                *core_mesh.DataplaneResource
+		mesh                     *core_mesh.MeshResource
+		policies                 []*core_mesh.TrafficPermissionResource
+		expected                 map[mesh_proto.InboundInterface]string
+		enableInboundPassthrough bool
 	}
 
 	DescribeTable("should find best matched policy",
@@ -39,7 +40,7 @@ var _ = Describe("Match", func() {
 				Expect(err).ToNot(HaveOccurred())
 			}
 
-			bestMatched, err := matcher.Match(context.Background(), given.dataplane, given.mesh, false)
+			bestMatched, err := matcher.Match(context.Background(), given.dataplane, given.mesh, given.enableInboundPassthrough)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bestMatched).To(HaveLen(len(given.expected)))
 			for iface, policy := range bestMatched {
@@ -70,6 +71,7 @@ var _ = Describe("Match", func() {
 					},
 				},
 			},
+			enableInboundPassthrough: true,
 			dataplane: &core_mesh.DataplaneResource{
 				Meta: &model.ResourceMeta{
 					Mesh: "default",
@@ -173,8 +175,8 @@ var _ = Describe("Match", func() {
 				},
 			},
 			expected: map[mesh_proto.InboundInterface]string{
-				{DataplaneAdvertisedIP: "192.168.0.1", DataplaneIP: "192.168.0.1", WorkloadIP: "127.0.0.1", WorkloadPort: 8081, DataplanePort: 8080}: "more-specific-kong-to-web",
-				{DataplaneAdvertisedIP: "192.168.0.1", DataplaneIP: "192.168.0.1", WorkloadIP: "127.0.0.1", WorkloadPort: 1234, DataplanePort: 1234}: "metrics",
+				{DataplaneAdvertisedIP: "192.168.0.1", DataplaneIP: "192.168.0.1", WorkloadIP: "192.168.0.1", WorkloadPort: 8081, DataplanePort: 8080}: "more-specific-kong-to-web",
+				{DataplaneAdvertisedIP: "192.168.0.1", DataplaneIP: "192.168.0.1", WorkloadIP: "192.168.0.1", WorkloadPort: 1234, DataplanePort: 1234}: "metrics",
 			},
 		}),
 	)

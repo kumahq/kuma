@@ -66,7 +66,7 @@ func (g ProbeProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.P
 		if val, exists := inbounds[endpoint.InboundPort]; exists {
 			var clusterName string
 			if ctx.ControlPlane.EnableInboundPassthrough &&
-				proxy.Dataplane.Spec.IsUsingTransparentProxy() &&
+				proxy.Dataplane.Spec.IsUsingInboundTransparentProxy() &&
 				val.iface.WorkloadIP != core_mesh.IPv4Loopback.String() {
 				clusterName = names.GetProbeClusterName(val.iface.WorkloadPort)
 				clusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion).

@@ -435,7 +435,7 @@ func (d *Dataplane) GetIdentifyingService() string {
 	return ServiceUnknown
 }
 
-func (d *Dataplane) IsUsingTransparentProxy() bool {
+func (d *Dataplane) IsUsingInboundTransparentProxy() bool {
 	return d.GetNetworking() != nil &&
 		d.GetNetworking().GetTransparentProxying() != nil &&
 		d.GetNetworking().GetTransparentProxying().GetRedirectPortInbound() != 0

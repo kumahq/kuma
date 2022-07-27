@@ -98,14 +98,15 @@ var _ = Describe("Dataplane_Networking", func() {
 
 		Context("valid input values", func() {
 			type testCase struct {
-				input    *Dataplane_Networking
-				expected []InboundInterface
+				input                    *Dataplane_Networking
+				expected                 []InboundInterface
+				enableInboundPassthrough bool
 			}
 
 			DescribeTable("should parse valid input values",
 				func(given testCase) {
 					// when
-					ifaces := given.input.GetInboundInterfaces(false)
+					ifaces := given.input.GetInboundInterfaces(given.enableInboundPassthrough)
 					// then
 					Expect(ifaces).To(ConsistOf(given.expected))
 				},
@@ -114,8 +115,9 @@ var _ = Describe("Dataplane_Networking", func() {
 					expected: nil,
 				}),
 				Entry("empty", testCase{
-					input:    &Dataplane_Networking{},
-					expected: []InboundInterface{},
+					input:                    &Dataplane_Networking{},
+					expected:                 []InboundInterface{},
+					enableInboundPassthrough: true,
 				}),
 				Entry("2 inbound interfaces", testCase{
 					input: &Dataplane_Networking{
@@ -133,9 +135,10 @@ var _ = Describe("Dataplane_Networking", func() {
 						},
 					},
 					expected: []InboundInterface{
-						{DataplaneAdvertisedIP: "192.168.0.1", DataplaneIP: "192.168.0.1", DataplanePort: 80, WorkloadIP: "127.0.0.1", WorkloadPort: 80},
+						{DataplaneAdvertisedIP: "192.168.0.1", DataplaneIP: "192.168.0.1", DataplanePort: 80, WorkloadIP: "192.168.0.1", WorkloadPort: 80},
 						{DataplaneAdvertisedIP: "192.168.0.2", DataplaneIP: "192.168.0.2", DataplanePort: 443, WorkloadIP: "192.168.0.3", WorkloadPort: 8443},
 					},
+					enableInboundPassthrough: true,
 				}),
 			)
 		})

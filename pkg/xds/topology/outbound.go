@@ -147,7 +147,7 @@ func fillDataplaneOutbounds(
 			inboundInterface := dpNetworking.ToInboundInterface(inbound, enableInboundPassthrough)
 			inboundAddress := inboundInterface.DataplaneAdvertisedIP
 			var inboundPort uint32
-			if enableInboundPassthrough && dpSpec.IsUsingTransparentProxy() {
+			if enableInboundPassthrough && dpSpec.IsUsingInboundTransparentProxy() {
 				inboundPort = inboundInterface.WorkloadPort
 			} else {
 				inboundPort = inboundInterface.DataplanePort
