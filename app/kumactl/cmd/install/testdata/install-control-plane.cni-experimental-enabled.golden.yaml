@@ -2056,7 +2056,7 @@ spec:
             exec:
               command:
                 - cat
-                - /tmp/ready # hook checkInstall function to --check-readiness flag to the binary
+                - /tmp/ready
           command: ["/install-cni"]
           env:
             # Name of the CNI config file to create.

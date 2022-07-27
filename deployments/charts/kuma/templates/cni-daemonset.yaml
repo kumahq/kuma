@@ -58,7 +58,7 @@ spec:
             exec:
               command:
                 - cat
-                - /tmp/ready # hook checkInstall function to --check-readiness flag to the binary
+                - /tmp/ready
             {{- if .Values.cni.test.sleepBeforeRunSeconds }}
           command: [ "/bin/sh", "-c", "--" ]
           args: [ "sleep {{.Values.cni.test.sleepBeforeRunSeconds}} && exec /install-cni" ]

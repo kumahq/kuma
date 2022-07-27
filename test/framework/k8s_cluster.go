@@ -255,7 +255,7 @@ func (c *K8sCluster) WaitNodeDelete(node string) (string, error) {
 			}
 
 			if nodeAvailable {
-				return "Namespace available " + node, fmt.Errorf("Node %s still active", node)
+				return "Node available " + node, fmt.Errorf("node %s still active", node)
 			}
 			return "Node deleted " + node, nil
 		})
@@ -1148,15 +1148,8 @@ func (c *K8sCluster) CreateNode(name string, label string) error {
 		createCmd := exec.Command("k3d", "node", "create", name, "-c", c.name, "--k3s-node-label", label)
 		createCmd.Stdout = os.Stdout
 		return createCmd.Run()
-		// list all of the cases and in the error message include which failed
-		// todo: create an abstraction over k8s type and have specific create for each type
-		// using https://github.com/kubernetes-sigs/kind/issues/452 seems too much for now
-	case KindK8sType:
-		return errors.New("creating new node not available for kind")
-	case AwsK8sType:
-		return errors.New("creating new node not available for awsk8s")
-	case AzureK8sType:
-		return errors.New("creating new node not available for azurek8s")
+	case KindK8sType, AwsK8sType, AzureK8sType:
+		return errors.New("creating new node not available for " + string(Config.K8sType))
 	default:
 		return errors.New("unknown kubernetes type")
 	}
@@ -1178,15 +1171,8 @@ func (c *K8sCluster) LoadImages(names ...string) error {
 		importCmd.Stdout = os.Stdout
 		importCmd.Stderr = os.Stderr
 		return importCmd.Run()
-		// list all of the cases and in the error message include which failed
-		// todo: create an abstraction over k8s type and have specific create for each type
-		// using https://github.com/kubernetes-sigs/kind/issues/452 seems too much for now
-	case KindK8sType:
-		return errors.New("loading new images to a node not available for kind")
-	case AwsK8sType:
-		return errors.New("loading new images to a node not available for awsk8s")
-	case AzureK8sType:
-		return errors.New("loading new images to a node available for azurek8s")
+	case KindK8sType, AwsK8sType, AzureK8sType:
+		return errors.New("loading new images to a node not available for " + string(Config.K8sType))
 	default:
 		return errors.New("unknown kubernetes type")
 	}
@@ -1204,12 +1190,8 @@ func (c *K8sCluster) DeleteNode(name string) error {
 			return err
 		}
 		return exec.Command("k3d", "node", "delete", name).Run()
-	case KindK8sType:
-		return errors.New("deleting new node not available for kind")
-	case AwsK8sType:
-		return errors.New("deleting new node not available for awsk8s")
-	case AzureK8sType:
-		return errors.New("deleting new node not available for azurek8s")
+	case KindK8sType, AwsK8sType, AzureK8sType:
+		return errors.New("deleting new node not available for " + string(Config.K8sType))
 	default:
 		return errors.New("unknown kubernetes type")
 	}
