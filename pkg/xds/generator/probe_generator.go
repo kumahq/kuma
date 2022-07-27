@@ -9,7 +9,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	model "github.com/kumahq/kuma/pkg/core/xds"
 	defaults_mesh "github.com/kumahq/kuma/pkg/defaults/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
@@ -35,7 +34,7 @@ const (
 type ProbeProxyGenerator struct {
 }
 
-func (g ProbeProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
+func (g ProbeProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	probes := proxy.Dataplane.Spec.Probes
 	if probes == nil {
 		return nil, nil
@@ -54,7 +53,7 @@ func (g ProbeProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Prox
 			isServiceLess: iface.IsServiceLess(),
 		}
 	}
-	resources := model.NewResourceSet()
+	resources := core_xds.NewResourceSet()
 	for i, endpoint := range probes.Endpoints {
 		matchURL, err := url.Parse(endpoint.Path)
 		if err != nil {
@@ -66,10 +65,12 @@ func (g ProbeProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Prox
 		}
 		if val, exists := inbounds[endpoint.InboundPort]; exists {
 			var clusterName string
-			if ctx.ControlPlane.EnableInboundPassthrough && proxy.Dataplane.Spec.IsUsingTransparentProxy() {
+			if ctx.ControlPlane.EnableInboundPassthrough &&
+				proxy.Dataplane.Spec.IsUsingTransparentProxy() &&
+				val.iface.WorkloadIP != core_mesh.IPv4Loopback.String() {
 				clusterName = names.GetProbeClusterName(val.iface.WorkloadPort)
 				clusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
-					Configure(envoy_clusters.ProvidedEndpointCluster(clusterName, false, core_xds.Endpoint{Target: val.iface.DataplaneIP, Port: val.iface.WorkloadPort})).
+					Configure(envoy_clusters.ProvidedEndpointCluster(clusterName, false, core_xds.Endpoint{Target: val.iface.WorkloadIP, Port: val.iface.WorkloadPort})).
 					Configure(envoy_clusters.Timeout(defaults_mesh.DefaultInboundTimeout(), val.protocol)).
 					Configure(envoy_clusters.ClientSideMTLS(
 						proxy.SecretsTracker,
@@ -88,7 +89,7 @@ func (g ProbeProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Prox
 				if err != nil {
 					return nil, errors.Wrapf(err, "%s: could not generate cluster %s", validators.RootedAt("dataplane").Field("probe").Field("endpoints").Index(i), clusterName)
 				}
-				resources.Add(&model.Resource{
+				resources.Add(&core_xds.Resource{
 					Name:     clusterName,
 					Resource: envoyCluster,
 					Origin:   OriginProbe,
@@ -112,7 +113,7 @@ func (g ProbeProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Prox
 	}
 
 	probeListener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-		Configure(envoy_listeners.InboundListener(listenerName, proxy.Dataplane.Spec.GetNetworking().GetAddress(), probes.Port, model.SocketAddressProtocolTCP)).
+		Configure(envoy_listeners.InboundListener(listenerName, proxy.Dataplane.Spec.GetNetworking().GetAddress(), probes.Port, core_xds.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
 			Configure(envoy_listeners.HttpConnectionManager(listenerName, false)).
 			Configure(envoy_listeners.HttpStaticRoute(envoy_routes.NewRouteConfigurationBuilder(proxy.APIVersion).
@@ -123,7 +124,7 @@ func (g ProbeProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Prox
 		return nil, errors.Wrapf(err, "could not generate listener %s", listenerName)
 	}
 
-	resources.Add(&model.Resource{
+	resources.Add(&core_xds.Resource{
 		Name:     listenerName,
 		Resource: probeListener,
 		Origin:   OriginProbe,

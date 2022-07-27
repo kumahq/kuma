@@ -36,9 +36,15 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 		protocol := core_mesh.ParseProtocol(iface.GetProtocol())
 
 		// generate CDS resource
+		var inboundListenerName string
 		var localClusterName string
+		var listenerPort uint32
 		var clusterBuilder *envoy_clusters.ClusterBuilder
-		if ctx.ControlPlane.EnableInboundPassthrough && proxy.Dataplane.Spec.IsUsingTransparentProxy() {
+		if ctx.ControlPlane.EnableInboundPassthrough &&
+			proxy.Dataplane.Spec.IsUsingTransparentProxy() &&
+			endpoint.WorkloadIP != core_mesh.IPv4Loopback.String() {
+			listenerPort = endpoint.WorkloadPort
+			inboundListenerName = envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.WorkloadPort)
 			localClusterName = envoy_names.GetInboundClusterName(endpoint.WorkloadPort)
 			clusterBuilder = envoy_clusters.NewClusterBuilder(proxy.APIVersion).
 				Configure(envoy_clusters.PassThroughCluster(localClusterName)).
@@ -46,6 +52,8 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 				Configure(envoy_clusters.DefaultTimeout()).
 				Configure(envoy_clusters.CleanupInterval(60))
 		} else {
+			listenerPort = endpoint.DataplanePort
+			inboundListenerName = envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
 			localClusterName = envoy_names.GetLocalClusterName(endpoint.WorkloadPort)
 			clusterBuilder = envoy_clusters.NewClusterBuilder(proxy.APIVersion).
 				Configure(envoy_clusters.ProvidedEndpointCluster(localClusterName, false, core_xds.Endpoint{Target: endpoint.WorkloadIP, Port: endpoint.WorkloadPort})).
@@ -90,15 +98,6 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 
 		// generate LDS resource
 		service := iface.GetService()
-		var inboundListenerName string
-		var listenerPort uint32
-		if ctx.ControlPlane.EnableInboundPassthrough && proxy.Dataplane.Spec.IsUsingTransparentProxy() {
-			listenerPort = endpoint.WorkloadPort
-			inboundListenerName = envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.WorkloadPort)
-		} else {
-			listenerPort = endpoint.DataplanePort
-			inboundListenerName = envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
-		}
 		filterChainBuilder := func(serverSideMTLS bool) *envoy_listeners.FilterChainBuilder {
 			filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion)
 			switch protocol {

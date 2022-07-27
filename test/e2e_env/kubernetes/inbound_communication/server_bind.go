@@ -47,7 +47,7 @@ func ServerBind() {
 		// Expect(env.Cluster.DeleteMesh(mesh))
 	})
 
-	FIt("should communicate with the applications", func() {
+	It("should communicate with the applications", func() {
 		// given
 		podName, err := PodNameOfApp(env.Cluster, "demo-client", namespace)
 		Expect(err).ToNot(HaveOccurred())
