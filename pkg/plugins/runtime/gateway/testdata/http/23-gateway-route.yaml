@@ -271,10 +271,11 @@ Routes:
         routes:
         - directResponse:
             body:
-              inlineString: This is a Kuma MeshGateway. No routes match this MeshGateway!
+              inlineString: |
+                This is a Kuma MeshGateway. No routes match this MeshGateway!
             status: 404
           match:
-            path: '*'
+            prefix: /
 Runtimes:
   Resources: {}
 Secrets:
