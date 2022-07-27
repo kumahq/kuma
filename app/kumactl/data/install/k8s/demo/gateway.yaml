@@ -28,7 +28,7 @@ spec:
           value: /
       backends:
       - destination:
-          kuma.io/service: demo-app_kuma-demo_svc_5000
+          kuma.io/service: demo-app_{{ .Namespace }}_svc_5000
         weight: 1
   selectors:
   - match:
@@ -44,4 +44,3 @@ spec:
   serviceType: LoadBalancer
   tags:
     kuma.io/service: demo-app_gateway
-
