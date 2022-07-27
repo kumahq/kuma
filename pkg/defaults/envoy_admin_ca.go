@@ -47,7 +47,7 @@ func (e *EnvoyAdminCaDefaultComponent) ensureEnvoyAdminCaExist(ctx context.Conte
 	if !store.IsResourceNotFound(err) {
 		return errors.Wrap(err, "error while loading admin client certificate")
 	}
-	log.Info("trying to create Envoy Admin CA")
+	log.V(1).Info("trying to create Envoy Admin CA")
 	pair, err := tls.GenerateCA()
 	if err != nil {
 		return errors.Wrap(err, "could not generate admin client certificate")
