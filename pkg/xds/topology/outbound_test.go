@@ -181,6 +181,9 @@ var _ = Describe("TrafficRoute", func() {
 								ServicePort: 59200,
 							},
 						},
+						TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
+							RedirectPortInbound: 15006,
+						},
 					},
 				},
 			}
@@ -189,9 +192,10 @@ var _ = Describe("TrafficRoute", func() {
 			}
 
 			externalServices := &core_mesh.ExternalServiceResourceList{}
+			enableInboundPassthrough := true
 
 			// when
-			targets := BuildEndpointMap(defaultMeshWithMTLS, "zone-1", dataplanes.Items, nil, nil, externalServices.Items, dataSourceLoader, false)
+			targets := BuildEndpointMap(defaultMeshWithMTLS, "zone-1", dataplanes.Items, nil, nil, externalServices.Items, dataSourceLoader, enableInboundPassthrough)
 
 			Expect(targets).To(HaveLen(4))
 			// and
@@ -227,7 +231,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				{
 					Target: "192.168.0.6",
-					Port:   9200,
+					Port:   59200, // we take real applicaiton port instead of service when InboundPassthrough and transparent proxy enabled
 					Tags:   map[string]string{mesh_proto.ServiceTag: "elastic", mesh_proto.ZoneTag: "us"},
 					Locality: &core_xds.Locality{
 						Zone: "us",
@@ -268,24 +272,26 @@ var _ = Describe("TrafficRoute", func() {
 
 	Describe("BuildEndpointMap()", func() {
 		type testCase struct {
-			dataplanes       []*core_mesh.DataplaneResource
-			zoneIngresses    []*core_mesh.ZoneIngressResource
-			zoneEgresses     []*core_mesh.ZoneEgressResource
-			externalServices []*core_mesh.ExternalServiceResource
-			mesh             *core_mesh.MeshResource
-			expected         core_xds.EndpointMap
+			dataplanes               []*core_mesh.DataplaneResource
+			zoneIngresses            []*core_mesh.ZoneIngressResource
+			zoneEgresses             []*core_mesh.ZoneEgressResource
+			externalServices         []*core_mesh.ExternalServiceResource
+			mesh                     *core_mesh.MeshResource
+			expected                 core_xds.EndpointMap
+			enableInboundPassthrough bool
 		}
 		DescribeTable("should include only those dataplanes that match given selectors",
 			func(given testCase) {
 				// when
-				endpoints := BuildEndpointMap(given.mesh, "zone-1", given.dataplanes, given.zoneIngresses, given.zoneEgresses, given.externalServices, dataSourceLoader, false)
+				endpoints := BuildEndpointMap(given.mesh, "zone-1", given.dataplanes, given.zoneIngresses, given.zoneEgresses, given.externalServices, dataSourceLoader, given.enableInboundPassthrough)
 				// then
 				Expect(endpoints).To(Equal(given.expected))
 			},
 			Entry("no dataplanes", testCase{
-				dataplanes: []*core_mesh.DataplaneResource{},
-				mesh:       defaultMeshWithMTLS,
-				expected:   core_xds.EndpointMap{},
+				dataplanes:               []*core_mesh.DataplaneResource{},
+				mesh:                     defaultMeshWithMTLS,
+				expected:                 core_xds.EndpointMap{},
+				enableInboundPassthrough: true,
 			}),
 			Entry("ingress in the list of dataplanes", testCase{
 				dataplanes: []*core_mesh.DataplaneResource{
@@ -409,6 +415,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
+				enableInboundPassthrough: true,
 			}),
 			Entry("ingresses in the list of dataplanes from different meshes", testCase{
 				dataplanes: []*core_mesh.DataplaneResource{
@@ -473,6 +480,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
+				enableInboundPassthrough: true,
 			}),
 			Entry("ingress is not included if mtls is off", testCase{
 				dataplanes: []*core_mesh.DataplaneResource{
@@ -526,6 +534,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
+				enableInboundPassthrough: true,
 			}),
 			Entry("external service no TLS", testCase{
 				dataplanes: []*core_mesh.DataplaneResource{},
@@ -553,6 +562,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
+				enableInboundPassthrough: true,
 			}),
 			Entry("external service with TLS disabled", testCase{
 				dataplanes: []*core_mesh.DataplaneResource{},
@@ -582,6 +592,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
+				enableInboundPassthrough: true,
 			}),
 			Entry("external service with TLS enabled", testCase{
 				dataplanes: []*core_mesh.DataplaneResource{},
@@ -611,6 +622,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
+				enableInboundPassthrough: true,
 			}),
 			Entry("external service with TLS enabled and Locality", testCase{
 				dataplanes: []*core_mesh.DataplaneResource{},
@@ -641,6 +653,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
+				enableInboundPassthrough: true,
 			}),
 			Entry("external services with Zones and Locality", testCase{
 				dataplanes: []*core_mesh.DataplaneResource{},
@@ -685,6 +698,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
+				enableInboundPassthrough: true,
 			}),
 			Entry("unhealthy dataplane", testCase{
 				dataplanes: []*core_mesh.DataplaneResource{
@@ -731,6 +745,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
+				enableInboundPassthrough: true,
 			}),
 			Entry("external service with zoneegress address when mtls and zone egress enabled and zone egress instance available", testCase{
 				dataplanes: []*core_mesh.DataplaneResource{
@@ -813,6 +828,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
+				enableInboundPassthrough: true,
 			}),
 			Entry("external service with direct address when mtls and zone egress disabled", testCase{
 				dataplanes: []*core_mesh.DataplaneResource{
@@ -895,6 +911,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
+				enableInboundPassthrough: true,
 			}),
 			Entry("no external services when mtls and zone egress enabled but no zone egress instance", testCase{
 				dataplanes: []*core_mesh.DataplaneResource{
@@ -945,6 +962,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
+				enableInboundPassthrough: true,
 			}),
 			Entry("external services available from other zone should have non empty external service object for dp", testCase{
 				dataplanes: []*core_mesh.DataplaneResource{
@@ -1020,6 +1038,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
+				enableInboundPassthrough: true,
 			}),
 			Entry("service in zone2 available through ingress when zoneEgress disabled but zoneEgress instances available", testCase{
 				dataplanes: []*core_mesh.DataplaneResource{
@@ -1114,6 +1133,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
+				enableInboundPassthrough: true,
 			}),
 		)
 		Describe("BuildRemoteEndpointMap()", func() {
