@@ -10,8 +10,9 @@ does not have any particular instructions.
 
 ### Helm
 
-Under `cni.image`, the default values for `repository` and `registry` have been
+- Under `cni.image`, the default values for `repository` and `registry` have been
 changed to agree with the other `image` values.
+- We are deprecating `kuma.io/builtindns` and `kuma.io/builtindnsport` annotations in favour of the clearer `kuma.io/builtin-dns` and `kuma.io/builtin-dns-port`. The behavior of the new annotations is unchanged but you should migrate (a warning is present on the log if you are using the deprecated version).
 
 ## Upgrade to `1.7.x`
 
