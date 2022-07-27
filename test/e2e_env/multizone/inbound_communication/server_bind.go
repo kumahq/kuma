@@ -168,7 +168,7 @@ func ServerBind() {
 
 		// when
 		_, _, err = env.KubeZone1.Exec(namespace, podName, "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "k8s-test-server-pod.server-localhost.svc.80.mesh")
+			"curl", "-v", "-m", "3", "--fail", "k8s-test-server-localhost.server-bind.svc.80.mesh")
 
 		// then
 		Expect(err).To(HaveOccurred())
@@ -255,7 +255,7 @@ func ServerBind() {
 
 		// when
 		_, _, err = env.UniZone1.Exec("", "", "uni-demo-client",
-			"curl", "-v", "-m", "3", "--fail", "k8s-test-server-pod.server-localhost.svc.80.mesh")
+			"curl", "-v", "-m", "3", "--fail", "k8s-test-server-localhost.server-bind.svc.80.mesh")
 
 		// then
 		Expect(err).To(HaveOccurred())
@@ -282,7 +282,7 @@ func ServerBind() {
 
 		// when
 		_, _, err = env.UniZone1.Exec("", "", "uni-demo-client-egress",
-			"curl", "-v", "-m", "3", "--fail", "k8s-test-server-pod-egress.server-localhost-egress.svc.80.mesh")
+			"curl", "-v", "-m", "3", "--fail", "k8s-test-server-localhost-egress.server-bind-egress.svc.80.mesh")
 
 		// then
 		Expect(err).To(HaveOccurred())
