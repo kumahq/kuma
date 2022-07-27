@@ -53,14 +53,12 @@ spec:
           {{- if .Values.experimental.cni }}
           image: {{ include "kuma.formatImage" (dict "image" .Values.cni.experimental.image "root" $) | quote }}
           imagePullPolicy: IfNotPresent
-          # what will happen when this is undefined
           readinessProbe:
             initialDelaySeconds: {{ .Values.cni.test.sleepBeforeRunSeconds }}
             exec:
               command:
                 - cat
                 - /tmp/ready # hook checkInstall function to --check-readiness flag to the binary
-          # if test then "command: bash -c sleep 60 && /install-cni"
             {{- if .Values.cni.test.sleepBeforeRunSeconds }}
           command: [ "/bin/sh", "-c", "--" ]
           args: [ "sleep {{.Values.cni.test.sleepBeforeRunSeconds}} && exec /install-cni" ]

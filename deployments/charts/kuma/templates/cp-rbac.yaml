@@ -31,9 +31,6 @@ rules:
       - get
       - list
       - watch
-  {{- if .Values.experimental.cni }} # just temp
-      - update
-  {{- end }}
   - apiGroups:
       - "apps"
     resources:
@@ -211,6 +208,20 @@ rules:
       - get
       - list
       - watch
+  {{- if .Values.experimental.cni }}
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - update
+  - apiGroups:
+      - "pods"
+    resources:
+      - pods
+    verbs:
+      - list
+  {{- end }}
   {{- end }}
   - apiGroups:
       - ""

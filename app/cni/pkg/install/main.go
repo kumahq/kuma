@@ -24,6 +24,7 @@ const (
 	primaryBinDir      = "/host/opt/cni/bin"
 	secondaryBinDir    = "/host/secondary-bin-dir"
 	serviceAccountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
+	readyFilePath      = "/tmp/ready"
 )
 
 var (
@@ -50,6 +51,11 @@ func cleanup(ic *InstallerConfig) {
 		log.Error(err, "could not remove kubeconfig")
 	} else {
 		log.V(1).Info("removed kubeconfig")
+	}
+	if err := os.Remove(readyFilePath); err != nil {
+		log.Error(err, "could remove ready file")
+	} else {
+		log.V(1).Info("removed ready file")
 	}
 	log.Info("finished cleanup")
 }
@@ -221,12 +227,7 @@ func Run() {
 		os.Exit(1)
 	}
 
-	// is there a better approach for this?
-	if installerConfig.SleepBeforeRunSeconds > 0 {
-		time.Sleep(time.Second * time.Duration(installerConfig.SleepBeforeRunSeconds))
-	}
-
-	err = atomic.WriteFile("/tmp/ready", strings.NewReader(""))
+	err = atomic.WriteFile(readyFilePath, strings.NewReader(""))
 	if err != nil {
 		log.Error(err, "unable to mark as ready")
 		os.Exit(1)
