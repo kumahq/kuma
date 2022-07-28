@@ -237,6 +237,24 @@ var _ = Describe("Dataplane", func() {
 				port:     54321,
 				expected: false,
 			}),
+			Entry("port of the application is overshadowed (serviceAddress ip match)", testCase{
+				dataplane: `
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                  - port: 80
+                    serviceAddress: 192.168.0.1
+                    servicePort: 8080
+                  outbound:
+                  - port: 54321
+                    service: db
+                  - port: 59200
+                    service: elastic
+`,
+				address:  "192.168.0.1",
+				port:     8080,
+				expected: true,
+			}),
 		)
 
 		It("should not crash if Dataplane is nil", func() {

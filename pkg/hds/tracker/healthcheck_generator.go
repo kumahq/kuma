@@ -21,20 +21,23 @@ import (
 )
 
 type SnapshotGenerator struct {
-	config                  *dp_server.HdsConfig
-	readOnlyResourceManager manager.ReadOnlyResourceManager
-	defaultAdminPort        uint32
+	config                   *dp_server.HdsConfig
+	readOnlyResourceManager  manager.ReadOnlyResourceManager
+	defaultAdminPort         uint32
+	enableInboundPassthrough bool
 }
 
 func NewSnapshotGenerator(
 	readOnlyResourceManager manager.ReadOnlyResourceManager,
 	config *dp_server.HdsConfig,
 	defaultAdminPort uint32,
+	enableInboundPassthrough bool,
 ) *SnapshotGenerator {
 	return &SnapshotGenerator{
-		readOnlyResourceManager: readOnlyResourceManager,
-		config:                  config,
-		defaultAdminPort:        defaultAdminPort,
+		readOnlyResourceManager:  readOnlyResourceManager,
+		config:                   config,
+		defaultAdminPort:         defaultAdminPort,
+		enableInboundPassthrough: enableInboundPassthrough,
 	}
 }
 
@@ -86,15 +89,20 @@ func (g *SnapshotGenerator) GenerateSnapshot(node *envoy_core.Node) (util_xds_v3
 		} else {
 			unhealthyThreshold = serviceProbe.UnhealthyThreshold
 		}
-
+		var workloadIP string
+		if g.enableInboundPassthrough && intf.WorkloadIP == "" {
+			workloadIP = intf.DataplaneIP
+		} else {
+			workloadIP = intf.WorkloadIP
+		}
 		healthChecks = append(healthChecks, &envoy_service_health.ClusterHealthCheck{
-			ClusterName: names.GetLocalClusterName(intf.WorkloadPort),
+			ClusterName: names.GetInboundClusterName(intf.WorkloadPort),
 			LocalityEndpoints: []*envoy_service_health.LocalityEndpoints{{
 				Endpoints: []*envoy_endpoint.Endpoint{{
 					Address: &envoy_core.Address{
 						Address: &envoy_core.Address_SocketAddress{
 							SocketAddress: &envoy_core.SocketAddress{
-								Address: intf.WorkloadIP,
+								Address: workloadIP,
 								PortSpecifier: &envoy_core.SocketAddress_PortValue{
 									PortValue: intf.WorkloadPort,
 								},

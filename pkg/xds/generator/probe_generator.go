@@ -11,7 +11,6 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	defaults_mesh "github.com/kumahq/kuma/pkg/defaults/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
@@ -70,13 +69,9 @@ func (g ProbeProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.P
 				val.iface.WorkloadIP == "" {
 				clusterName = names.GetProbeClusterName(val.iface.WorkloadPort)
 				clusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
-					Configure(envoy_clusters.ProvidedEndpointCluster(clusterName, false, core_xds.Endpoint{Target: val.iface.WorkloadIP, Port: val.iface.WorkloadPort})).
+					Configure(envoy_clusters.ProvidedEndpointCluster(clusterName, false, core_xds.Endpoint{Target: val.iface.DataplaneIP, Port: val.iface.WorkloadPort})).
 					Configure(envoy_clusters.Timeout(defaults_mesh.DefaultInboundTimeout(), val.protocol)).
-					Configure(envoy_clusters.ClientSideMTLS(
-						proxy.SecretsTracker,
-						ctx.Mesh.Resource,
-						val.tags[mesh_proto.ServiceTag], true, []envoy.Tags{},
-					))
+					Configure(envoy_clusters.UpstreamBindConfig(inPassThroughIPv4, 0))
 
 				switch val.protocol {
 				case core_mesh.ProtocolHTTP:

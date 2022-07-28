@@ -44,8 +44,8 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 			proxy.Dataplane.Spec.IsUsingInboundTransparentProxy() &&
 			endpoint.WorkloadIP == "" {
 			listenerPort = endpoint.WorkloadPort
-			inboundListenerName = envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
-			localClusterName = envoy_names.GetInboundClusterName(endpoint.DataplanePort)
+			inboundListenerName = envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.WorkloadPort)
+			localClusterName = envoy_names.GetInboundClusterName(endpoint.WorkloadPort)
 			clusterBuilder = envoy_clusters.NewClusterBuilder(proxy.APIVersion).
 				Configure(envoy_clusters.PassThroughCluster(localClusterName)).
 				Configure(envoy_clusters.UpstreamBindConfig(inPassThroughIPv4, 0)).
@@ -58,6 +58,9 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 			clusterBuilder = envoy_clusters.NewClusterBuilder(proxy.APIVersion).
 				Configure(envoy_clusters.ProvidedEndpointCluster(localClusterName, false, core_xds.Endpoint{Target: endpoint.WorkloadIP, Port: endpoint.WorkloadPort})).
 				Configure(envoy_clusters.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
+			if endpoint.WorkloadIP != core_mesh.IPv4Loopback.String() {
+				clusterBuilder.Configure(envoy_clusters.UpstreamBindConfig(inPassThroughIPv4, 0))
+			}
 		}
 		switch protocol {
 		case core_mesh.ProtocolHTTP:

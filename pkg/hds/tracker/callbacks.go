@@ -51,6 +51,7 @@ func NewCallbacks(
 	hasher util_xds_v3.NodeHash,
 	metrics *hds_metrics.Metrics,
 	defaultAdminPort uint32,
+	enableInboundPassthrough bool,
 ) hds_callbacks.Callbacks {
 	return &tracker{
 		resourceManager:    resourceManager,
@@ -63,7 +64,7 @@ func NewCallbacks(
 			cache:     cache,
 			hasher:    hasher,
 			versioner: util_xds_v3.SnapshotAutoVersioner{UUID: core.NewUUID},
-			generator: NewSnapshotGenerator(readOnlyResourceManager, config, defaultAdminPort),
+			generator: NewSnapshotGenerator(readOnlyResourceManager, config, defaultAdminPort, enableInboundPassthrough),
 		},
 	}
 }

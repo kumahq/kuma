@@ -16,12 +16,12 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-func inbound(ip string, dpPort, workloadPort uint32) mesh_proto.InboundInterface {
+func inbound(ip string, dpPort uint32, workloadIp string, workloadPort uint32) mesh_proto.InboundInterface {
 	return mesh_proto.InboundInterface{
 		DataplaneAdvertisedIP: ip,
 		DataplaneIP:           ip,
 		DataplanePort:         dpPort,
-		WorkloadIP:            ip,
+		WorkloadIP:            workloadIp,
 		WorkloadPort:          workloadPort,
 	}
 }
@@ -49,12 +49,12 @@ var _ = Describe("GroupByAttachment", func() {
 		Entry("group by inbounds", testCase{
 			matchedPolicies: &core_xds.MatchedPolicies{
 				TrafficPermissions: core_xds.TrafficPermissionMap{
-					inbound("192.168.0.1", 80, 81): {Spec: samples.TrafficPermission},
-					inbound("192.168.0.2", 80, 81): {Spec: samples.TrafficPermission},
-					inbound("192.168.0.2", 90, 91): {Spec: samples.TrafficPermission},
+					inbound("192.168.0.1", 80, "192.168.0.1", 81): {Spec: samples.TrafficPermission},
+					inbound("192.168.0.2", 80, "192.168.0.2", 81): {Spec: samples.TrafficPermission},
+					inbound("192.168.0.2", 90, "192.168.0.2", 91): {Spec: samples.TrafficPermission},
 				},
 				FaultInjections: core_xds.FaultInjectionMap{
-					inbound("192.168.0.1", 80, 81): {
+					inbound("192.168.0.1", 80, "192.168.0.1", 81): {
 						{Spec: &mesh_proto.FaultInjection{Conf: &mesh_proto.FaultInjection_Conf{
 							Delay: &mesh_proto.FaultInjection_Conf_Delay{
 								Value:      durationpb.New(5 * time.Second),
@@ -68,7 +68,7 @@ var _ = Describe("GroupByAttachment", func() {
 							},
 						}}},
 					},
-					inbound("192.168.0.2", 80, 81): {
+					inbound("192.168.0.2", 80, "192.168.0.2", 81): {
 						{Spec: &mesh_proto.FaultInjection{Conf: &mesh_proto.FaultInjection_Conf{
 							Delay: &mesh_proto.FaultInjection_Conf_Delay{
 								Value:      durationpb.New(15 * time.Second),
@@ -78,7 +78,7 @@ var _ = Describe("GroupByAttachment", func() {
 					},
 				},
 				RateLimitsInbound: core_xds.InboundRateLimitsMap{
-					inbound("192.168.0.2", 90, 91): {
+					inbound("192.168.0.2", 90, "192.168.0.2", 91): {
 						{Spec: samples.RateLimit},
 					},
 				},
@@ -109,6 +109,116 @@ var _ = Describe("GroupByAttachment", func() {
 							mesh_proto.ServiceTag: "web-admin",
 						},
 					},
+				},
+			},
+			expected: core_xds.AttachmentMap{
+				core_xds.Attachment{Type: core_xds.Inbound, Name: "192.168.0.1:80:81", Service: "web"}: {
+					core_mesh.FaultInjectionType: []core_model.Resource{
+						&core_mesh.FaultInjectionResource{Spec: &mesh_proto.FaultInjection{Conf: &mesh_proto.FaultInjection_Conf{
+							Delay: &mesh_proto.FaultInjection_Conf_Delay{
+								Value:      durationpb.New(5 * time.Second),
+								Percentage: util_proto.Double(90),
+							},
+						}}},
+						&core_mesh.FaultInjectionResource{Spec: &mesh_proto.FaultInjection{Conf: &mesh_proto.FaultInjection_Conf{
+							Abort: &mesh_proto.FaultInjection_Conf_Abort{
+								HttpStatus: util_proto.UInt32(500),
+								Percentage: util_proto.Double(80),
+							},
+						}}},
+					},
+					core_mesh.TrafficPermissionType: []core_model.Resource{
+						&core_mesh.TrafficPermissionResource{Spec: samples.TrafficPermission},
+					},
+				},
+				core_xds.Attachment{Type: core_xds.Inbound, Name: "192.168.0.2:80:81", Service: "web-api"}: {
+					core_mesh.FaultInjectionType: []core_model.Resource{
+						&core_mesh.FaultInjectionResource{Spec: &mesh_proto.FaultInjection{Conf: &mesh_proto.FaultInjection_Conf{
+							Delay: &mesh_proto.FaultInjection_Conf_Delay{
+								Value:      durationpb.New(15 * time.Second),
+								Percentage: util_proto.Double(70),
+							},
+						}}},
+					},
+					core_mesh.TrafficPermissionType: []core_model.Resource{
+						&core_mesh.TrafficPermissionResource{Spec: samples.TrafficPermission},
+					},
+				},
+				core_xds.Attachment{Type: core_xds.Inbound, Name: "192.168.0.2:90:91", Service: "web-admin"}: {
+					core_mesh.TrafficPermissionType: []core_model.Resource{
+						&core_mesh.TrafficPermissionResource{Spec: samples.TrafficPermission},
+					},
+					core_mesh.RateLimitType: []core_model.Resource{
+						&core_mesh.RateLimitResource{Spec: samples.RateLimit},
+					},
+				},
+			}}),
+		Entry("group by inbounds with transparent proxy", testCase{
+			matchedPolicies: &core_xds.MatchedPolicies{
+				TrafficPermissions: core_xds.TrafficPermissionMap{
+					inbound("192.168.0.1", 80, "", 81): {Spec: samples.TrafficPermission},
+					inbound("192.168.0.2", 80, "", 81): {Spec: samples.TrafficPermission},
+					inbound("192.168.0.2", 90, "", 91): {Spec: samples.TrafficPermission},
+				},
+				FaultInjections: core_xds.FaultInjectionMap{
+					inbound("192.168.0.1", 80, "", 81): {
+						{Spec: &mesh_proto.FaultInjection{Conf: &mesh_proto.FaultInjection_Conf{
+							Delay: &mesh_proto.FaultInjection_Conf_Delay{
+								Value:      durationpb.New(5 * time.Second),
+								Percentage: util_proto.Double(90),
+							},
+						}}},
+						{Spec: &mesh_proto.FaultInjection{Conf: &mesh_proto.FaultInjection_Conf{
+							Abort: &mesh_proto.FaultInjection_Conf_Abort{
+								HttpStatus: util_proto.UInt32(500),
+								Percentage: util_proto.Double(80),
+							},
+						}}},
+					},
+					inbound("192.168.0.2", 80, "", 81): {
+						{Spec: &mesh_proto.FaultInjection{Conf: &mesh_proto.FaultInjection_Conf{
+							Delay: &mesh_proto.FaultInjection_Conf_Delay{
+								Value:      durationpb.New(15 * time.Second),
+								Percentage: util_proto.Double(70),
+							},
+						}}},
+					},
+				},
+				RateLimitsInbound: core_xds.InboundRateLimitsMap{
+					inbound("192.168.0.2", 90, "", 91): {
+						{Spec: samples.RateLimit},
+					},
+				},
+			},
+			dpNetworking: &mesh_proto.Dataplane_Networking{
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+					{
+						Address:     "192.168.0.1",
+						Port:        80,
+						ServicePort: 81,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "web",
+						},
+					},
+					{
+						Address:     "192.168.0.2",
+						Port:        80,
+						ServicePort: 81,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "web-api",
+						},
+					},
+					{
+						Address:     "192.168.0.2",
+						Port:        90,
+						ServicePort: 91,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "web-admin",
+						},
+					},
+				},
+				TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
+					RedirectPortInbound: 15006,
 				},
 			},
 			expected: core_xds.AttachmentMap{
@@ -384,21 +494,21 @@ var _ = Describe("GroupByAttachment", func() {
 			},
 			matchedPolicies: &core_xds.MatchedPolicies{
 				TrafficPermissions: core_xds.TrafficPermissionMap{
-					inbound("192.168.0.1", 80, 81): &core_mesh.TrafficPermissionResource{
+					inbound("192.168.0.1", 80, "192.168.0.1", 81): &core_mesh.TrafficPermissionResource{
 						Meta: &test_model.ResourceMeta{Name: "tp-1", Mesh: "default"},
 						Spec: samples.TrafficPermission,
 					},
-					inbound("192.168.0.2", 90, 91): &core_mesh.TrafficPermissionResource{
+					inbound("192.168.0.2", 90, "192.168.0.2", 91): &core_mesh.TrafficPermissionResource{
 						Meta: &test_model.ResourceMeta{Name: "tp-1", Mesh: "default"},
 						Spec: samples.TrafficPermission,
 					},
-					inbound("192.168.0.3", 80, 81): &core_mesh.TrafficPermissionResource{
+					inbound("192.168.0.3", 80, "192.168.0.3", 81): &core_mesh.TrafficPermissionResource{
 						Meta: &test_model.ResourceMeta{Name: "tp-2", Mesh: "default"},
 						Spec: samples.TrafficPermission,
 					},
 				},
 				FaultInjections: core_xds.FaultInjectionMap{
-					inbound("192.168.0.1", 80, 81): []*core_mesh.FaultInjectionResource{
+					inbound("192.168.0.1", 80, "192.168.0.1", 81): []*core_mesh.FaultInjectionResource{
 						{
 							Meta: &test_model.ResourceMeta{Name: "fi-1", Mesh: "default"},
 							Spec: samples.FaultInjection,
@@ -408,7 +518,7 @@ var _ = Describe("GroupByAttachment", func() {
 							Spec: samples.FaultInjection,
 						},
 					},
-					inbound("192.168.0.3", 80, 81): []*core_mesh.FaultInjectionResource{
+					inbound("192.168.0.3", 80, "192.168.0.3", 81): []*core_mesh.FaultInjectionResource{
 						{
 							Meta: &test_model.ResourceMeta{Name: "fi-2", Mesh: "default"},
 							Spec: samples.FaultInjection,
@@ -420,7 +530,7 @@ var _ = Describe("GroupByAttachment", func() {
 					},
 				},
 				RateLimitsInbound: core_xds.InboundRateLimitsMap{
-					inbound("192.168.0.2", 90, 91): []*core_mesh.RateLimitResource{
+					inbound("192.168.0.2", 90, "192.168.0.2", 91): []*core_mesh.RateLimitResource{
 						{
 							Meta: &test_model.ResourceMeta{Name: "rl-1", Mesh: "default"},
 							Spec: samples.RateLimit,
@@ -676,13 +786,13 @@ var _ = Describe("GroupByAttachment", func() {
 					},
 				},
 				RateLimitsInbound: core_xds.InboundRateLimitsMap{
-					inbound("192.168.0.1", 80, 81): []*core_mesh.RateLimitResource{
+					inbound("192.168.0.1", 80, "192.168.0.1", 81): []*core_mesh.RateLimitResource{
 						{
 							Meta: &test_model.ResourceMeta{Name: "rl-1", Mesh: "mesh-1"},
 							Spec: samples.RateLimit,
 						},
 					},
-					inbound("192.168.0.2", 80, 81): []*core_mesh.RateLimitResource{
+					inbound("192.168.0.2", 80, "192.168.0.2", 81): []*core_mesh.RateLimitResource{
 						{
 							Meta: &test_model.ResourceMeta{Name: "rl-1", Mesh: "mesh-1"},
 							Spec: samples.RateLimit,

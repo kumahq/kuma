@@ -161,8 +161,13 @@ func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_
 	if inbound.ServiceAddress != "" {
 		iface.WorkloadIP = inbound.ServiceAddress
 	} else {
-		if EnableInboundPassthrough {
+		if EnableInboundPassthrough &&
+			n.TransparentProxying != nil &&
+			n.TransparentProxying.RedirectPortInbound != 0 {
 			iface.WorkloadIP = ""
+		} else if EnableInboundPassthrough &&
+			n.TransparentProxying == nil {
+			iface.WorkloadIP = iface.DataplaneIP
 		} else {
 			iface.WorkloadIP = "127.0.0.1"
 		}

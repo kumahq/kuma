@@ -137,6 +137,29 @@ var _ = Describe("Dataplane_Networking", func() {
 						{DataplaneAdvertisedIP: "192.168.0.2", DataplaneIP: "192.168.0.2", DataplanePort: 443, WorkloadIP: "192.168.0.3", WorkloadPort: 8443},
 					},
 				}),
+				Entry("2 inbound interfaces with transparent proxy", testCase{
+					input: &Dataplane_Networking{
+						Address: "192.168.0.1",
+						Inbound: []*Dataplane_Networking_Inbound{
+							{
+								Port: 80,
+							},
+							{
+								Address:        "192.168.0.2",
+								Port:           443,
+								ServiceAddress: "192.168.0.3",
+								ServicePort:    8443,
+							},
+						},
+						TransparentProxying: &Dataplane_Networking_TransparentProxying{
+							RedirectPortInbound: 15006,
+						},
+					},
+					expected: []InboundInterface{
+						{DataplaneAdvertisedIP: "192.168.0.1", DataplaneIP: "192.168.0.1", DataplanePort: 80, WorkloadIP: "", WorkloadPort: 80},
+						{DataplaneAdvertisedIP: "192.168.0.2", DataplaneIP: "192.168.0.2", DataplanePort: 443, WorkloadIP: "192.168.0.3", WorkloadPort: 8443},
+					},
+				}),
 			)
 		})
 	})
