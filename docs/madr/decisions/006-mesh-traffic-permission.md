@@ -44,7 +44,7 @@ from:
       name: ...
 ```
 
-Configuration for MeshTrafficPermission has a single field "action" with 2 values "ALLOW" or "DENY".
+Configuration for MeshTrafficPermission has 2 fields "action" and "shadow_action" with values "ALLOW" or "DENY".
 So the overall specification looks like this:
 
 ```yaml
@@ -58,8 +58,9 @@ spec:
     - targetRef:
         kind: Mesh|MeshSubset|MeshService|MeshServiceSubset
         name: ...
-      conf:
+      default:
         action: ALLOW|DENY
+        shadow_action: ALLOW|DENY
 ```
 
 We don't want to mix mTLS configs (like permissive mTLS or TLS version) with MeshTrafficPermission. 
@@ -117,13 +118,13 @@ spec:
   from:
     - targetRef:
         kind: Mesh
-      conf:
+      default:
         action: DENY
     - targetRef:
         kind: MeshSubset
         tags:
           kuma.io/zone: us-east
-      conf:
+      default:
         action: ALLOW
 ---
 type: MeshTrafficPermission
@@ -137,7 +138,7 @@ spec:
         kind: MeshSubset
         tags:
           env: dev
-      conf:
+      default:
         action: DENY
 ```
 
@@ -146,19 +147,19 @@ Concatenated "from" array
 from:
   - targetRef:
       kind: Mesh
-    conf:
+    default:
       action: DENY
   - targetRef:
       kind: MeshSubset
       tags:
         kuma.io/zone: us-east
-    conf:
+    default:
       action: ALLOW
   - targetRef:
       kind: MeshSubset
       tags:
         env: dev
-    conf:
+    default:
       action: DENY
 ```
 
@@ -175,13 +176,13 @@ rules:
       tags:
         kuma.io/zone: us-east
         env: dev
-    conf:
+    default:
       action: DENY
   - targetRef: # rule 2
       kind: MeshSubset
       tags:
         kuma.io/zone: us-east
-    conf:
+    default:
       action: ALLOW
 ```
 
@@ -195,42 +196,42 @@ rules:
       tags:
         kuma.io/zone: us-east
         env: dev
-    conf:
+    default:
       action: DENY
   - targetRef:
       kind: MeshSubset
       tags:
         kuma.io/zone: us-east
         env: !dev
-    conf:
+    default:
       action: ALLOW
   - targetRef:
       kind: MeshSubset
       tags:
         kuma.io/zone: !us-east
         env: dev
-    conf:
+    default:
       action: DENY 
   - targetRef:
       kind: MeshSubset
       tags:
         kuma.io/zone: !us-east
         env: !dev
-    conf:
+    default:
       action: DENY
 ```
 
 See [how to generate a full rule-based view with negations](#how-to-generate-a-full-rule-based-view-with-negations)
 
-3. For each "rule" that has "ALLOW" action generate a separate NetworkRBAC policy
+3. For each "rule" that has "action: ALLOW" generate a single "principal" in v3.RBAC:
 
 ```yaml
 action: ALLOW
 policies:
-  "mtp-1":
+  "backend": # name of the most specific MeshTrafficPermission policy for the DPP
     permissions:
       - any: true
-    principals:
+    principals: # each principal is matched with OR semantics
       - and_ids:
           ids:
             - authenticated:
@@ -242,8 +243,12 @@ policies:
                     exact: "kuma://env/dev"
 ```
 
+Similarly generate a v3.RBAC using "shadow_action: ALLOW". 
+Generated RBACs are set in the network filter as "rules" and "shadow_rules" respectively.
+
 4. If MeshTrafficPermission is targeting proxy then NetworkRBAC is placed as a NetworkFilter on the inbound listener.
-If MeshTrafficPermission is targeting MeshHTTPRoute then NetworkRBAC is placed as a NetworkFilter on the route.
+If MeshTrafficPermission is targeting MeshHTTPRoute then NetworkRBAC is placed as a NetworkFilter on the route. 
+Even in the case of MeshHTTPRoute, global per-proxy NetworkRBAC is still will be set to provide secure access for other routes. 
 
 ### MeshTrafficPermission and Kubernetes
 
@@ -271,6 +276,36 @@ Today all policies are cluster-scoped, but new policies should be namespace scop
 MeshTrafficPermission is limited to have only "kuma-system" namespace, 
 and affects DPPs across all namespaces.
 In the future we'll add support for other namespaces, so the policy could affect DPPs only in the specified namespace. 
+
+### Cross-mesh
+
+MeshTrafficPermission is used to specify a list of clients from other meshes that have an access to MeshGatewayRoute.
+In that case we use targetRef with "mesh" field:
+
+```yaml
+type: MeshTrafficPermission
+mesh: expose
+name: cross-mesh-permission
+spec:
+  targetRef:
+    kind: MeshGatewayRoute
+    name: cross-mesh-route
+  from:
+    - targetRef:
+        kind: MeshService
+        name: backend
+        mesh: consume
+      default:
+        action: ALLOW
+    - targetRef:
+        kind: MeshServiceSubset
+        name: backend
+        mesh: consume
+        tags:
+          version: v1
+      default:
+        action: DENY
+```
 
 ### Positive Consequences <!-- optional -->
 
@@ -375,25 +410,25 @@ We have a "from" array:
 from:
   - targetRef:
       kind: Mesh
-    conf:
+    default:
       action: ALLOW
   - targetRef: 
       kind: MeshSubset
       tags:
         zone: us-east
-    conf:
+    default:
       action: DENY
   - targetRef:
       kind: MeshSubset
       tags:
         env: dev
-    conf:
+    default:
       action: ALLOW
   - targetRef:
        kind: MeshSubset
        tags:
           env: prod
-    conf:
+    default:
        action: ALLOW
 ```
 
@@ -463,28 +498,28 @@ rules:
       tags:
          zone: us-east
          env: dev
-    conf:
+    default:
       action: ALLOW
   - targetRef:
        kind: MeshSubset
        tags:
           zone: us-east
           env: prod
-    conf:
+    default:
        action: ALLOW
   - targetRef:
        kind: MeshSubset
        tags:
           zone: !us-east
           env: dev
-    conf:
+    default:
        action: ALLOW
   - targetRef:
        kind: MeshSubset
        tags:
           zone: !us-east
           env: prod
-    conf:
+    default:
        action: ALLOW
   - targetRef:
        kind: MeshSubset
@@ -492,7 +527,7 @@ rules:
           zone: us-east
           env: !prod
           env: !dev
-    conf:
+    default:
        action: DENY
   - targetRef:
        kind: MeshSubset
@@ -500,6 +535,6 @@ rules:
           zone: !us-east
           env: !prod
           env: !dev
-    conf:
+    default:
        action: ALLOW
 ```
