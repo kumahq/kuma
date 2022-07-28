@@ -329,8 +329,6 @@ jobs:
             if [[ "<< parameters.k8sVersion >>" != "kind"* ]]; then
               export CI_K3S_VERSION=<< parameters.k8sVersion >>
               export K3D=true
-            else
-              export GINKGO_E2E_TEST_FLAGS="$GINKGO_E2E_TEST_FLAGS --label-filter=\"!kind-not-supported\""
             fi
             if [[ "<< parameters.arch >>" == "arm64" ]]; then
               export GINKGO_E2E_TEST_FLAGS="$GINKGO_E2E_TEST_FLAGS --label-filter=\"!arm-not-supported\""
