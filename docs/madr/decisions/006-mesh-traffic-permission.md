@@ -262,7 +262,7 @@ metadata:
     kuma.io/mesh: mesh-1
 ```
 
-This allows filtering policies by mesh using kumactl. 
+This allows filtering policies by mesh using kubectl. 
 If the label is unset it will be added automatically by the webhook to be "kuma.io/mesh: default".
 
 #### Scope is namespaced
