@@ -143,7 +143,7 @@ const (
 	KumaCNI                                            = "kuma-cni"
 	KumaTransparentProxyingEbpf                        = "kuma.io/transparent-proxying-ebpf"
 	KumaTransparentProxyingEbpfBPFFSPath               = "kuma.io/transparent-proxying-ebpf-bpf-fs-path"
-	KumaTransparentProxyingEbpfInstanceIPEnvVarName    = "kuma.io/transparent-proxying-ebpf-instance-ip"
+	KumaTransparentProxyingEbpfInstanceIPEnvVarName    = "kuma.io/transparent-proxying-ebpf-instance-ip-env-var-name"
 	KumaTransparentProxyingEbpfProgramsSourcePath      = "kuma.io/transparent-proxying-ebpf-programs-source-path"
 )
 
