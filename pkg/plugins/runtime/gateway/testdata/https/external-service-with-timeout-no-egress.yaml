@@ -34,6 +34,7 @@ Clusters:
         enforcingConsecutiveLocalOriginFailure: 0
         enforcingFailurePercentage: 0
         enforcingSuccessRate: 0
+      perConnectionBufferLimitBytes: 32768
       transportSocketMatches:
       - match:
           kuma.io/external-service-name: external-httpbin
