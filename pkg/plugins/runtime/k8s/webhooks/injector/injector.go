@@ -116,7 +116,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		pod.Annotations = map[string]string{}
 	}
 
-	annotations, err := i.NewAnnotations(pod, meshName)
+	annotations, err := i.NewAnnotations(pod, meshName, logger)
 	if err != nil {
 		return errors.Wrap(err, "could not generate annotations for pod")
 	}
@@ -474,7 +474,7 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 	return container, nil
 }
 
-func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string) (map[string]string, error) {
+func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger logr.Logger) (map[string]string, error) {
 	annotations := map[string]string{
 		metadata.KumaMeshAnnotation:                             mesh, // either user-defined value or default
 		metadata.KumaSidecarInjectedAnnotation:                  fmt.Sprintf("%t", true),
@@ -509,10 +509,9 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string) (map[stri
 			return nil, errors.Wrap(err, fmt.Sprintf("getting %s annotation failed", metadata.KumaTransparentProxyingExperimentalEngine))
 		}
 		if !exists || !enabled {
-			log.V(1).Info(fmt.Sprintf("missing %s annotation which has to be %s for ebpf to work. The annotation will be implicitly added",
+			logger.V(1).Info(fmt.Sprintf("missing %s annotation which has to be %s for ebpf to work. The annotation will be implicitly added",
 				metadata.KumaTransparentProxyingExperimentalEngine, metadata.AnnotationEnabled),
-				"annotation", metadata.KumaTransparentProxyingExperimentalEngine,
-				"pod", pod.Name)
+				"annotation", metadata.KumaTransparentProxyingExperimentalEngine)
 
 			annotations[metadata.KumaTransparentProxyingExperimentalEngine] = metadata.AnnotationEnabled
 		}
