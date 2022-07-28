@@ -428,8 +428,8 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(50, kube_api.Mega),
 			},
 			Requests: kube_core.ResourceList{
-				kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(10, kube_api.Milli),
-				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(10, kube_api.Mega),
+				kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(20, kube_api.Milli),
+				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(20, kube_api.Mega),
 			},
 		},
 	}
@@ -439,17 +439,6 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 		// to the bool value
 		tru := true
 		bidirectional := kube_core.MountPropagationBidirectional
-
-		container.Resources = kube_core.ResourceRequirements{
-			Limits: kube_core.ResourceList{
-				kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(300, kube_api.Milli),
-				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(200, kube_api.Mega),
-			},
-			Requests: kube_core.ResourceList{
-				kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(100, kube_api.Milli),
-				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(200, kube_api.Mega),
-			},
-		}
 
 		container.SecurityContext.Capabilities = &kube_core.Capabilities{}
 		container.SecurityContext.Privileged = &tru
