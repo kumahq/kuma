@@ -60,6 +60,10 @@ message TargetRef {
 
   // Tags are used with MeshSubset and MeshServiceSubset to define a subset of proxies 
   map<string, string> tags = 3;
+  
+  // Mesh is used with MeshService and MeshServiceSubset to identify the service from another mesh.
+  // Could be useful when implementing policies with cross-mesh support.
+  string mesh = 4;
 }
 ```
 
@@ -89,7 +93,8 @@ The top-level "TargetRef" identifies a set of DPPs that will be affected by the 
 
 Traffic direction is expressed using "to" and "from" arrays. 
 
-If policy configures outbounds, then configuration is specified in "to" array: 
+If policy configures outbounds, then configuration is specified in "to" array 
+(we place configuration in "default" section to follow the [default/override hierarchy](https://gateway-api.sigs.k8s.io/references/policy-attachment/#hierarchy)): 
 ```yaml
 type: UpstreamTimeout
 mesh: mesh-1
@@ -102,12 +107,12 @@ spec:
     - targetRef:
         kind: MeshService
         name: payments
-      conf:
+      default:
         connectTimeout: 10s
     - targetRef:
         kind: MeshService
         name: web-api
-      conf:
+      default:
         connectTimeout: 20s
 ```
 
@@ -124,21 +129,21 @@ spec:
     - targetRef:
         kind: Mesh
         name: mesh-1
-      conf:
+      default:
         action: DENY
     - targetRef:
         kind: MeshServiceSubset
         name: backend
         tags:
           version: v2
-      conf:
+      default:
         action: ALLOW
     - targetRef:
         kind: MeshSubset
         name: mesh-1
         tags:
           kuma.io/zone: us-east
-      conf:
+      default:
         action: ALLOW
 ```
 
@@ -156,7 +161,7 @@ and has an outbound configuration:
 ```yaml
 to:
   - targetRef: Mesh | MeshService | MeshHTTPRoute
-    conf: ...
+    default: ...
 ```
 
 If a data plane proxy has 3 outbounds:
@@ -180,7 +185,7 @@ to:
   - targetRef:
       kind: MeshService
       name: web-api
-    conf: ... # conf for "web-api" outbound
+    default: ... # conf for "web-api" outbound
 ```
 
 policy can select all outbounds ("backend", "web-api" and "payments"):
@@ -190,7 +195,7 @@ to:
   - targetRef:
       kind: Mesh
       name: mesh-1
-    conf: ... # conf for all outbounds
+    default: ... # conf for all outbounds
 ```
 
 policy can select an MeshHTTPRoute:
@@ -200,7 +205,7 @@ to:
   - targetRef:
       kind: MeshHTTPRoute
       name: payments-get-info-v1-httproute
-    conf: ... # conf for "/v1/getinfo/" route of "payments" outbound 
+    default: ... # conf for "/v1/getinfo/" route of "payments" outbound 
 ```
 
 When several targetRefs select the same outbound,
@@ -214,25 +219,25 @@ to:
   - targetRef: 
       kind: Mesh
       name: mesh-1
-    conf:
+    default:
       param1: value1
   - targetRef: 
       kind: MeshService
       name: backend
-    conf:
+    default:
       param1: value2
       param2: value3
   - targetRef: 
       kind: Mesh
       name: mesh-1
-    conf:
+    default:
       param2: value4
 ```
 
 resulting configuration for "backend" outbound is:
 
 ```yaml
-conf:
+default:
   param1: value2 # overrides 'value1' from 'targetRef{kind:Mesh}' 
   param2: value4 # overrides 'value3' from 'targetRef{kind:MeshService,name:backend}'
 ```
@@ -246,7 +251,7 @@ and has a configuration for selected source:
 ```yaml
 from:
   - targetRef: Mesh | MeshSubset | MeshService | MeshServiceSubset
-    conf: ...
+    default: ...
 ```
 
 Policy can select traffic from all sources:
@@ -256,7 +261,7 @@ from:
   - targetRef:
       kind: Mesh
       name: mesh-1
-    conf: ... # conf for all incoming traffic
+    default: ... # conf for all incoming traffic
 ```
 
 Policy can select traffic from proxies with "kuma.io/zone: us-east" tag:
@@ -268,7 +273,7 @@ from:
       name: mesh-1
       tags:
         kuma.io/zone: us-east
-    conf: ... # conf for traffic coming from "us-east" zone
+    default: ... # conf for traffic coming from "us-east" zone
 ```
 
 Policy can select traffic from "backend" service:
@@ -278,7 +283,7 @@ from:
   - targetRef:
       kind: MeshService
       name: backend
-    conf: ... # conf for traffic coming from "backend" service
+    default: ... # conf for traffic coming from "backend" service
 ```
 
 Policy can select traffic from instances of "backend" service that have version=v2:
@@ -290,7 +295,7 @@ from:
       name: backend
       tags:
         version: v2
-    conf: ... # conf for traffic coming from "backend" v2 service
+    default: ... # conf for traffic coming from "backend" v2 service
 ```
 
 Just like with outbound policies, when several targetRefs select the same source,
@@ -306,25 +311,25 @@ from:
       name: backend
       tags:
         version: v2
-    conf:
+    default:
       param1: value1
   - targetRef:
       kind: MeshService
       name: backend
-    conf:
+    default:
       param1: value2
       param2: value3
   - targetRef:
       kind: Mesh
       name: mesh-1
-    conf:
+    default:
       param2: value4
 ```
 
 resulting configuration for "backend" outbound is:
 
 ```yaml
-conf:
+default:
   param1: value2 # overrides 'value1' from 'targetRef{kind:MeshServiceSubset,name:backend,tags:version=v2}'
   param2: value4 # overrides 'value3' from 'targetRef{kind:MeshService,name:backend}'
 ```
@@ -382,7 +387,7 @@ from:
       name: mesh-1
       tags:
         kuma.io/zone: us-east
-      conf:
+      default:
         param1: value1
         param2: value2
   - targetRef:
@@ -390,7 +395,7 @@ from:
       name: mesh-1
       tags:
         team: dev
-      conf:
+      default:
         param2: value3
         param3: value4
 ```
@@ -404,7 +409,7 @@ rules:
       tags:
         kuma.io/zone: us-east
         team: dev
-      conf:
+      default:
         param1: value1
         param2: value3
         param3: value4
@@ -413,7 +418,7 @@ rules:
       name: mesh-1
       tags:
         kuma.io/zone: us-east
-      conf:
+      default:
         param1: value1
         param2: value2
   - targetRef:
@@ -421,7 +426,7 @@ rules:
       name: mesh-1
       tags:
         team: dev
-      conf:
+      default:
         param2: value3
         param3: value4
 ```
@@ -487,7 +492,7 @@ for i, clientSubset := range allClientPartition {
     conf := {}
     for j, fromItem := range fromArray {
         if fromItem.identifies(clientSubset) {
-            mergeInto(conf, fromItem.Conf)
+            mergeInto(conf, fromItem.Default)
         }
     }
     saveConfForSubset(clientSubset, conf)
@@ -511,7 +516,7 @@ spec:
     - targetRef:
         kind: Service
         name: super-legacy
-      conf:
+      default:
         action: DENY
 ```
 
@@ -527,7 +532,7 @@ spec:
     - targetRef:
         kind: Service
         name: super-legacy
-      conf:
+      default:
         action: DENY
 ```
 
@@ -542,7 +547,7 @@ spec:
     - targetRef:
         kind: MeshService
         name: super-legacy
-      conf:
+      default:
         action: DENY
 ```
 
@@ -558,7 +563,7 @@ spec:
     - targetRef:
         kind: MeshService
         name: super-legacy
-      conf:
+      default:
         action: DENY
 ```
 
@@ -576,9 +581,9 @@ spec:
     - targetRef:
         kind: MeshService
         name: super-legacy
-      conf:
+      default:
         action: DENY
-    - conf:
+    - default:
         action: ALLOW
 ```
 
@@ -594,12 +599,12 @@ spec:
     - targetRef:
         kind: MeshService
         name: super-legacy
-      conf:
+      default:
         action: DENY
     - targetRef:
         kind: Mesh
         name: mesh-1
-      conf:
+      default:
         action: ALLOW
 ```
 
@@ -622,7 +627,7 @@ to:
   - targetRef:
       kind: Mesh
       name: mesh-1
-    conf:
+    default:
       connectTimeout: 10s
       http:
         requestTimeout: 5s
@@ -643,7 +648,7 @@ to:
   - targetRef:
       kind: MeshService
       name: backend
-    conf:
+    default:
       connectTimeout: 20s
       http:
         idleTimeout: 0s
@@ -663,12 +668,12 @@ to:
   - targetRef:
       kind: Mesh
       name: mesh-1
-    conf:
+    default:
       connectTimeout: 5s
   - targetRef:
       kind: MeshService
       name: backend
-    conf:
+    default:
       http:
         requestTimeout: 15s
 ```
@@ -684,7 +689,7 @@ to:
   - targetRef: # from '00-base-timeouts'
       kind: Mesh
       name: mesh-1
-    conf:
+    default:
       connectTimeout: 10s
       http:
         requestTimeout: 5s
@@ -692,19 +697,19 @@ to:
   - targetRef: # from '01-consume-backend-timeouts'
       kind: MeshService
       name: backend
-    conf:
+    default:
       connectTimeout: 20s
       http:
         idleTimeout: 0s
   - targetRef: # from 'web-timeouts'
       kind: Mesh
       name: mesh-1
-    conf:
+    default:
       connectTimeout: 5s
   - targetRef: # from 'web-timeouts'
       kind: MeshService
       name: backend
-    conf:
+    default:
       http:
         requestTimeout: 15s
 ```
@@ -719,7 +724,7 @@ to:
   - targetRef: # from '00-base-timeouts'
       kind: Mesh
       name: mesh-1
-    conf:
+    default:
       connectTimeout: 10s
       http:
         requestTimeout: 5s
@@ -727,19 +732,19 @@ to:
   - targetRef: # from '01-consume-backend-timeouts'
       kind: MeshService
       name: backend
-    conf:
+    default:
       connectTimeout: 20s
       http:
         idleTimeout: 0s
   - targetRef: # from 'web-timeouts'
       kind: Mesh
       name: mesh-1
-    conf:
+    default:
       connectTimeout: 5s
   - targetRef: # from 'web-timeouts'
       kind: MeshService
       name: backend
-    conf:
+    default:
       http:
         requestTimeout: 15s
 ```
@@ -747,7 +752,7 @@ to:
 and merge these into a single outbound conf for "backend" outbound:
 
 ```yaml
-conf:
+default:
   connectTimeout: 5s # from 'web-timeouts'
   http:
     requestTimeout: 15s # from 'web-timeouts'
@@ -763,7 +768,7 @@ to:
   - targetRef: # from '00-base-timeouts'
       kind: Mesh
       name: mesh-1
-    conf:
+    default:
       connectTimeout: 10s
       http:
         requestTimeout: 5s
@@ -771,14 +776,14 @@ to:
   - targetRef: # from 'web-timeouts'
       kind: Mesh
       name: mesh-1
-    conf:
+    default:
       connectTimeout: 5s
 ```
 
 and merge these into a single conf for "payment" outbound:
 
 ```yaml
-conf:
+default:
   connectTimeout: 5s # from 'web-timeouts'
   http:
     requestTimeout: 5s # from '00-base-timeouts'
@@ -792,7 +797,7 @@ rules:
   - targetRef:
       kind: MeshService
       name: backend
-    conf:
+    default:
       connectTimeout: 5s
       http:
         requestTimeout: 15s
@@ -800,7 +805,7 @@ rules:
   - targetRef:
       kind: Mesh
       name: mesh-1
-    conf:
+    default:
       connectTimeout: 5s
       http:
         requestTimeout: 5s
@@ -825,17 +830,17 @@ from:
   - targetRef:
       kind: Mesh
       name: mesh-1
-    conf:
+    default:
       action: DENY
   - targetRef:
       kind: MeshService
       name: infra-monitoring
-    conf:
+    default:
       action: ALLOW
   - targetRef:
       kind: MeshService
       name: infra-logger
-    conf:
+    default:
       action: ALLOW
 ```
 
@@ -853,14 +858,14 @@ from:
   - targetRef:
       kind: Mesh
       name: mesh-1
-    conf:
+    default:
       action: ALLOW
   - targetRef:
       kind: MeshServiceSubset
       name: web
       tags:
         version: v1
-    conf:
+    default:
       action: DENY
 ```
 
@@ -875,29 +880,29 @@ from:
   - targetRef: # from allow-only-infra
       kind: Mesh
       name: mesh-1
-    conf:
+    default:
       action: DENY
   - targetRef: # from allow-only-infra
       kind: MeshService
       name: infra-monitoring
-    conf:
+    default:
       action: ALLOW
   - targetRef: # from allow-only-infra
       kind: MeshService
       name: infra-logger
-    conf:
+    default:
       action: ALLOW
   - targetRef: # from backend-permissions
       kind: Mesh
       name: mesh-1
-    conf:
+    default:
       action: ALLOW
   - targetRef: # from backend-permissions
       kind: MeshServiceSubset
       name: web
       tags:
         version: v1
-    conf:
+    default:
       action: DENY
 ```
 
@@ -910,22 +915,22 @@ rules:
       name: web
       tags:
         version: v1
-    conf:
+    default:
       action: DENY
   - targetRef:
       kind: MeshService
       name: infra-monitoring
-    conf:
+    default:
       action: ALLOW
   - targetRef:
       kind: MeshService
       name: infra-logger
-    conf:
+    default:
       action: ALLOW
   - targetRef:
       kind: Mesh
       name: mesh-1
-    conf:
+    default:
       action: ALLOW
 ```
 
@@ -946,7 +951,7 @@ spec:
   targetRef:
     kind: MeshService
     name: backend
-  conf:
+  default:
     imports:
       - default-proxy
     modifications:
@@ -971,7 +976,7 @@ spec:
     name: backend
     tags:
       instance: my-special-backend-dpp
-  conf:
+  default:
     imports:
       - default-proxy
     modifications: [] # overrides "modifications" array from "pt-1"
@@ -994,14 +999,14 @@ to:
   - targetRef:
       kind: MeshService
       name: web
-    conf:
+    default:
       backends:
         - name: logstash
 from:
   - targetRef:
       kind: Mesh
       name: mesh-1
-    conf:
+    default:
       backends:
         - name: file
 ```
