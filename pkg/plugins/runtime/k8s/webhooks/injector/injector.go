@@ -481,7 +481,7 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 
 	ebpfEnabled, _, err := podAnnotations.GetEnabledWithDefault(i.cfg.EBPF.Enabled, metadata.KumaTransparentProxyingEbpf)
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("getting %s annotation failed", metadata.KumaTransparentProxyingEbpf))
+		return nil, errors.Wrapf(err, "getting %s annotation failed", metadata.KumaTransparentProxyingEbpf)
 	}
 	annotations[metadata.KumaTransparentProxyingEbpf] = metadata.BoolToEnabled(ebpfEnabled)
 
@@ -497,7 +497,7 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 		// we implicitly add it and set to true
 		enabled, exists, err := podAnnotations.GetEnabled(metadata.KumaTransparentProxyingExperimentalEngine)
 		if err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("getting %s annotation failed", metadata.KumaTransparentProxyingExperimentalEngine))
+			return nil, errors.Wrapf(err, "getting %s annotation failed", metadata.KumaTransparentProxyingExperimentalEngine)
 		}
 		if !exists || !enabled {
 			logger.V(1).Info(fmt.Sprintf("missing %s annotation which has to be %s for ebpf to work. The annotation will be implicitly added",
