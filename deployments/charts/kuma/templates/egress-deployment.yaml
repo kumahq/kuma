@@ -26,8 +26,8 @@ spec:
         {{ $key }}: {{ $value | quote }}
         {{- end }}
         {{- end }}
-      labels: {{ include "kuma.egressLabels" . | nindent 8 }}
-        {{- include "kuma.selectorLabels" . | nindent 8 }}
+      labels:
+        {{- include "kuma.egressLabels" . | nindent 8 }}
     spec:
       {{- with .Values.egress.affinity }}
       affinity: {{ tpl (toYaml . | nindent 8) $ }}

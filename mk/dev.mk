@@ -9,7 +9,7 @@ PROTOC_PGV_VERSION := v0.4.1
 PROTOC_VERSION := 3.20.0
 UDPA_LATEST_VERSION := main
 GOOGLEAPIS_LATEST_VERSION := master
-KUMADOC_VERSION := v0.2.0
+KUMADOC_VERSION := v0.3.0
 DATAPLANE_API_LATEST_VERSION := main
 SHELLCHECK_VERSION := v0.8.0
 YQ_VERSION := v4.24.2
@@ -346,8 +346,11 @@ dev/envrc: $(KUBECONFIG_DIR)/kind-kuma-current ## Generate .envrc
 
 .PHONY: dev/sync-demo
 dev/sync-demo:
-	rm app/kumactl/data/install/k8s/demo/demo.yaml
-	curl -s https://raw.githubusercontent.com/kumahq/kuma-counter-demo/master/demo.yaml | \
+	rm app/kumactl/data/install/k8s/demo/*.yaml
+	curl -s --fail https://raw.githubusercontent.com/kumahq/kuma-counter-demo/master/demo.yaml | \
 		sed 's/"local"/"{{ .Zone }}"/g' | \
 		sed 's/\([^/]\)kuma-demo/\1{{ .Namespace }}/g' \
 		> app/kumactl/data/install/k8s/demo/demo.yaml
+	curl -s --fail https://raw.githubusercontent.com/kumahq/kuma-counter-demo/master/gateway.yaml | \
+		sed 's/\([^/]\)kuma-demo/\1{{ .Namespace }}/g' \
+		> app/kumactl/data/install/k8s/demo/gateway.yaml

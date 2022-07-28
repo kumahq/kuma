@@ -131,12 +131,9 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, url *net_url.
 		token = cfg.DataplaneRuntime.Token
 	}
 	request := types.BootstrapRequest{
-		Mesh:      cfg.Dataplane.Mesh,
-		Name:      cfg.Dataplane.Name,
-		ProxyType: cfg.Dataplane.ProxyType,
-		// if not set in config, the 0 will be sent which will result in providing default admin port
-		// that is set in the control plane bootstrap params
-		AdminPort:          cfg.Dataplane.AdminPort.Lowest(),
+		Mesh:               cfg.Dataplane.Mesh,
+		Name:               cfg.Dataplane.Name,
+		ProxyType:          cfg.Dataplane.ProxyType,
 		DataplaneToken:     token,
 		DataplaneTokenPath: cfg.DataplaneRuntime.TokenPath,
 		DataplaneResource:  dataplaneResource,

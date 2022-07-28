@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/gateway"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/graceful"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/healthcheck"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/inspect"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/jobs"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/membership"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/observability"
@@ -77,3 +78,4 @@ var _ = Describe("Container Patch", container_patch.ContainerPatch, Ordered)
 var _ = Describe("Metrics", observability.ApplicationsMetrics, Ordered)
 var _ = Describe("Tracing", observability.Tracing, Ordered)
 var _ = Describe("Traffic Log", trafficlog.TCPLogging, Ordered)
+var _ = Describe("Inspect", inspect.Inspect, Ordered)

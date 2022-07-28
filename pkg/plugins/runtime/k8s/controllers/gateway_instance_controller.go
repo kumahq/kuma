@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strconv"
 
@@ -61,22 +62,28 @@ func (r *GatewayInstanceReconciler) Reconcile(ctx context.Context, req kube_ctrl
 
 		return kube_ctrl.Result{}, err
 	}
-	orig := gatewayInstance.DeepCopyObject().(kube_client.Object)
 
-	svc, err := r.createOrUpdateService(ctx, gatewayInstance)
+	ns := kube_core.Namespace{}
+	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: gatewayInstance.Namespace}, &ns); err != nil {
+		return kube_ctrl.Result{}, errors.Wrap(err, "unable to get Namespace of MeshGatewayInstance")
+	}
+	mesh := k8s_util.MeshOf(gatewayInstance, &ns)
+
+	orig := gatewayInstance.DeepCopyObject().(kube_client.Object)
+	svc, err := r.createOrUpdateService(ctx, mesh, gatewayInstance)
 	if err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to reconcile Service for Gateway")
 	}
 
 	var deployment *kube_apps.Deployment
 	if svc != nil {
-		deployment, err = r.createOrUpdateDeployment(ctx, gatewayInstance)
+		deployment, err = r.createOrUpdateDeployment(ctx, mesh, gatewayInstance)
 		if err != nil {
 			return kube_ctrl.Result{}, errors.Wrap(err, "unable to reconcile Deployment for Gateway")
 		}
 	}
 
-	updateStatus(gatewayInstance, svc, deployment)
+	updateStatus(gatewayInstance, mesh, svc, deployment)
 
 	if err := r.Client.Status().Patch(ctx, gatewayInstance, kube_client.MergeFrom(orig)); err != nil {
 		if kube_apierrs.IsNotFound(err) {
@@ -96,16 +103,10 @@ func k8sSelector(name string) map[string]string {
 // neither if reconciliation shouldn't continue.
 func (r *GatewayInstanceReconciler) createOrUpdateService(
 	ctx context.Context,
+	mesh string,
 	gatewayInstance *mesh_k8s.MeshGatewayInstance,
 ) (*kube_core.Service, error) {
 	gatewayList := &core_mesh.MeshGatewayResourceList{}
-
-	ns := kube_core.Namespace{}
-	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: gatewayInstance.Namespace}, &ns); err != nil {
-		return nil, errors.Wrap(err, "unable to get Namespace of MeshGatewayInstance")
-	}
-
-	mesh := k8s_util.MeshOf(gatewayInstance, &ns)
 	if err := r.ResourceManager.List(ctx, gatewayList, store.ListByMesh(mesh)); err != nil {
 		return nil, err
 	}
@@ -211,13 +212,9 @@ func isUnprivilegedPortStartSysctlSupported(v kube_version.Info) (bool, error) {
 // neither if reconciliation shouldn't continue.
 func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 	ctx context.Context,
+	mesh string,
 	gatewayInstance *mesh_k8s.MeshGatewayInstance,
 ) (*kube_apps.Deployment, error) {
-	ns := kube_core.Namespace{}
-	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: gatewayInstance.Namespace}, &ns); err != nil {
-		return nil, errors.Wrap(err, "unable to get Namespace for MeshGatewayInstance")
-	}
-
 	obj, err := ctrls_util.ManageControlledObject(
 		ctx, r.Client, gatewayInstance, &kube_apps.DeploymentList{},
 		func(obj kube_client.Object) (kube_client.Object, error) {
@@ -231,7 +228,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 				deployment = obj.(*kube_apps.Deployment)
 			}
 
-			container, err := r.ProxyFactory.NewContainer(gatewayInstance, &ns)
+			container, err := r.ProxyFactory.NewContainer(gatewayInstance, mesh)
 			if err != nil {
 				return nil, errors.Wrap(err, "unable to create gateway container")
 			}
@@ -276,7 +273,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 			annotations := map[string]string{
 				metadata.KumaGatewayAnnotation: metadata.AnnotationBuiltin,
 				metadata.KumaTagsAnnotation:    string(jsonTags),
-				metadata.KumaMeshAnnotation:    k8s_util.MeshOf(gatewayInstance, &ns),
+				metadata.KumaMeshAnnotation:    mesh,
 			}
 
 			labels := k8sSelector(gatewayInstance.Name)
@@ -336,15 +333,13 @@ func getCombinedReadiness(svc *kube_core.Service, deployment *kube_apps.Deployme
 	return kube_meta.ConditionFalse, mesh_k8s.GatewayInstanceAddressNotReady
 }
 
-const noGateway = "No Gateway matched by tags"
-
-func updateStatus(gatewayInstance *mesh_k8s.MeshGatewayInstance, svc *kube_core.Service, deployment *kube_apps.Deployment) {
+func updateStatus(gatewayInstance *mesh_k8s.MeshGatewayInstance, mesh string, svc *kube_core.Service, deployment *kube_apps.Deployment) {
 	var status kube_meta.ConditionStatus
 	var reason string
 	var message string
 
 	if svc == nil {
-		status, reason, message = kube_meta.ConditionFalse, mesh_k8s.GatewayInstanceNoGatewayMatched, noGateway
+		status, reason, message = kube_meta.ConditionFalse, mesh_k8s.GatewayInstanceNoGatewayMatched, fmt.Sprintf("No Gateway matched by tags in mesh: '%s'", mesh)
 	} else {
 		status, reason = getCombinedReadiness(svc, deployment)
 		gatewayInstance.Status.LoadBalancer = &svc.Status.LoadBalancer

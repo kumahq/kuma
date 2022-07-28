@@ -12,7 +12,6 @@ import (
 
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
 type EnvVarsByName []kube_core.EnvVar
@@ -67,26 +66,18 @@ func (i *DataplaneProxyFactory) proxyConcurrencyFor(annotations map[string]strin
 
 func (i *DataplaneProxyFactory) envoyAdminPort(annotations map[string]string) (uint32, error) {
 	adminPort, _, err := metadata.Annotations(annotations).GetUint32(metadata.KumaEnvoyAdminPort)
-	if err != nil {
-		return 0, err
-	}
-	return adminPort, nil
+	return adminPort, err
 }
 
 func (i *DataplaneProxyFactory) drainTime(annotations map[string]string) (time.Duration, error) {
-	drainTime, exists := metadata.Annotations(annotations).GetString(metadata.KumaSidecarDrainTime)
-	if !exists {
-		return i.ContainerConfig.DrainTime, nil
-	}
-	return time.ParseDuration(drainTime)
+	r, _, err := metadata.Annotations(annotations).GetDurationWithDefault(i.ContainerConfig.DrainTime, metadata.KumaSidecarDrainTime)
+	return r, err
 }
 
 func (i *DataplaneProxyFactory) NewContainer(
 	owner kube_client.Object,
-	ns *kube_core.Namespace,
+	mesh string,
 ) (kube_core.Container, error) {
-	mesh := k8s_util.MeshOf(owner, ns)
-
 	annotations := owner.GetAnnotations()
 
 	env, err := i.sidecarEnvVars(mesh, annotations)
@@ -250,7 +241,7 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 	}
 
 	// override defaults and cfg env vars with annotations
-	annotationEnvVars, err := metadata.Annotations(podAnnotations).GetMap(metadata.KumaSidecarEnvVarsAnnotation)
+	annotationEnvVars, _, err := metadata.Annotations(podAnnotations).GetMap(metadata.KumaSidecarEnvVarsAnnotation)
 	if err != nil {
 		return nil, err
 	}

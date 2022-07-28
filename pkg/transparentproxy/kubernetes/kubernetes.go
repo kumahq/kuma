@@ -53,12 +53,12 @@ func NewPodRedirectForPod(pod *kube_core.Pod, cfg runtime_k8s.Injector) (*PodRed
 		TransparentProxyEbpfProgramsSourcePath:   cfg.EBPF.ProgramsSourcePath,
 	}
 
-	podRedirect.BuiltinDNSEnabled, _, err = metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaBuiltinDNS)
+	podRedirect.BuiltinDNSEnabled, _, err = metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaBuiltinDNSDeprecated, metadata.KumaBuiltinDNS)
 	if err != nil {
 		return nil, err
 	}
 
-	podRedirect.BuiltinDNSPort, _, err = metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaBuiltinDNSPort)
+	podRedirect.BuiltinDNSPort, _, err = metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaBuiltinDNSPortDeprecated, metadata.KumaBuiltinDNSPort)
 	if err != nil {
 		return nil, err
 	}
