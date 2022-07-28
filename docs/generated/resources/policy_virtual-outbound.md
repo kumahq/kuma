@@ -2,13 +2,11 @@
 
 - `selectors` (required, repeated)
 
-    List of selectors to match dataplanes that this policy applies to    
-    
-    - `match` (optional)
-    
-        Tags to match, can be used for both source and destinations
+    List of selectors to match dataplanes that this policy applies to
 
-- `conf` (required)    
+- `conf` (required)
+
+    Child properties:    
     
     - `host` (required)
     
@@ -21,14 +19,5 @@
     - `parameters` (required, repeated)
     
         Parameters a mapping between tag keys and template parameter key. This
-        must always contain at least `kuma.io/service`    
-        
-        - `name` (required)
-        
-            Name the name of the template parameter (must be alphanumeric).    
-        
-        - `tagKey` (optional)
-        
-            TagKey the name of the tag in the Kuma outbound (optional if absent it
-            will use Name).
+        must always contain at least `kuma.io/service`
 
