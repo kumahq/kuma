@@ -21,7 +21,7 @@ func inbound(ip string, dpPort, workloadPort uint32) mesh_proto.InboundInterface
 		DataplaneAdvertisedIP: ip,
 		DataplaneIP:           ip,
 		DataplanePort:         dpPort,
-		WorkloadIP:            "127.0.0.1",
+		WorkloadIP:            ip,
 		WorkloadPort:          workloadPort,
 	}
 }
@@ -34,7 +34,7 @@ func outbound(ip string, port uint32) mesh_proto.OutboundInterface {
 }
 
 var _ = Describe("GroupByAttachment", func() {
-
+	mesh_proto.EnableInboundPassthrough = true
 	type testCase struct {
 		matchedPolicies *core_xds.MatchedPolicies
 		dpNetworking    *mesh_proto.Dataplane_Networking
@@ -43,7 +43,7 @@ var _ = Describe("GroupByAttachment", func() {
 
 	DescribeTable("should generate attachmentMap based on MatchedPolicies",
 		func(given testCase) {
-			actual := core_xds.GroupByAttachment(given.matchedPolicies, given.dpNetworking, false)
+			actual := core_xds.GroupByAttachment(given.matchedPolicies, given.dpNetworking)
 			Expect(actual).To(Equal(given.expected))
 		},
 		Entry("group by inbounds", testCase{
@@ -337,7 +337,7 @@ var _ = Describe("GroupByAttachment", func() {
 })
 
 var _ = Describe("GroupByAttachment", func() {
-
+	mesh_proto.EnableInboundPassthrough = true
 	type testCase struct {
 		matchedPolicies *core_xds.MatchedPolicies
 		dpNetworking    *mesh_proto.Dataplane_Networking
@@ -346,7 +346,7 @@ var _ = Describe("GroupByAttachment", func() {
 
 	DescribeTable("should generate AttachmentsByPolicy map based on MatchedPolicies",
 		func(given testCase) {
-			actual := core_xds.GroupByPolicy(given.matchedPolicies, given.dpNetworking, false)
+			actual := core_xds.GroupByPolicy(given.matchedPolicies, given.dpNetworking)
 			Expect(actual).To(Equal(given.expected))
 		},
 		Entry("empty MatchedPolicies", testCase{

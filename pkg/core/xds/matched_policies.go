@@ -85,12 +85,12 @@ func (abp AttachmentsByPolicy) Merge(other AttachmentsByPolicy) {
 	}
 }
 
-func BuildAttachments(matchedPolicies *MatchedPolicies, networking *mesh_proto.Dataplane_Networking, enableInboundPassthrough bool) Attachments {
+func BuildAttachments(matchedPolicies *MatchedPolicies, networking *mesh_proto.Dataplane_Networking) Attachments {
 	attachments := Attachments{}
 
 	serviceByInbound := map[mesh_proto.InboundInterface]string{}
 	for _, iface := range networking.GetInbound() {
-		serviceByInbound[networking.ToInboundInterface(iface, enableInboundPassthrough)] = iface.GetService()
+		serviceByInbound[networking.ToInboundInterface(iface)] = iface.GetService()
 	}
 
 	for inbound, policies := range getInboundMatchedPolicies(matchedPolicies) {
@@ -130,10 +130,10 @@ func BuildAttachments(matchedPolicies *MatchedPolicies, networking *mesh_proto.D
 	return attachments
 }
 
-func GroupByAttachment(matchedPolicies *MatchedPolicies, networking *mesh_proto.Dataplane_Networking, enableInboundPassthrough bool) AttachmentMap {
+func GroupByAttachment(matchedPolicies *MatchedPolicies, networking *mesh_proto.Dataplane_Networking) AttachmentMap {
 	result := AttachmentMap{}
 
-	for attachment, policies := range BuildAttachments(matchedPolicies, networking, enableInboundPassthrough) {
+	for attachment, policies := range BuildAttachments(matchedPolicies, networking) {
 		if len(policies) == 0 {
 			continue
 		}
@@ -149,10 +149,10 @@ func GroupByAttachment(matchedPolicies *MatchedPolicies, networking *mesh_proto.
 	return result
 }
 
-func GroupByPolicy(matchedPolicies *MatchedPolicies, networking *mesh_proto.Dataplane_Networking, enableInboundPassthrough bool) AttachmentsByPolicy {
+func GroupByPolicy(matchedPolicies *MatchedPolicies, networking *mesh_proto.Dataplane_Networking) AttachmentsByPolicy {
 	result := AttachmentsByPolicy{}
 
-	for attachment, policies := range BuildAttachments(matchedPolicies, networking, enableInboundPassthrough) {
+	for attachment, policies := range BuildAttachments(matchedPolicies, networking) {
 		for _, policy := range policies {
 			key := PolicyKey{
 				Type: policy.Descriptor().Name,

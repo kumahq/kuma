@@ -62,10 +62,9 @@ var _ = Describe("Match", func() {
 	}
 
 	type testCase struct {
-		dataplane                *mesh.DataplaneResource
-		policies                 []*mesh.FaultInjectionResource
-		expected                 core_xds.FaultInjectionMap
-		enableInboundPassthrough bool
+		dataplane *mesh.DataplaneResource
+		policies  []*mesh.FaultInjectionResource
+		expected  core_xds.FaultInjectionMap
 	}
 
 	DescribeTable("should find best matched policy",
@@ -82,7 +81,7 @@ var _ = Describe("Match", func() {
 				Expect(err).ToNot(HaveOccurred())
 			}
 
-			bestMatched, err := matcher.Match(context.Background(), given.dataplane, mesh, given.enableInboundPassthrough)
+			bestMatched, err := matcher.Match(context.Background(), given.dataplane, mesh)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(len(bestMatched)).To(Equal(len(given.expected)))
 			for key := range bestMatched {
@@ -128,7 +127,6 @@ var _ = Describe("Match", func() {
 					},
 				}),
 			},
-			enableInboundPassthrough: true,
 			expected: core_xds.FaultInjectionMap{
 				mesh_proto.InboundInterface{
 					WorkloadIP:   "1.2.3.4",
@@ -167,7 +165,6 @@ var _ = Describe("Match", func() {
 					},
 				},
 			}),
-			enableInboundPassthrough: true,
 			policies: []*mesh.FaultInjectionResource{
 				policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
 					{
@@ -207,7 +204,6 @@ var _ = Describe("Match", func() {
 					},
 				},
 			}),
-			enableInboundPassthrough: true,
 			policies: []*mesh.FaultInjectionResource{
 				policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
 					{

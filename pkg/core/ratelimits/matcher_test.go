@@ -69,10 +69,9 @@ var _ = Describe("Match", func() {
 	}
 
 	type testCase struct {
-		dataplane                *core_mesh.DataplaneResource
-		policies                 []*core_mesh.RateLimitResource
-		expected                 core_xds.RateLimitsMap
-		enableInboundPassthrough bool
+		dataplane *core_mesh.DataplaneResource
+		policies  []*core_mesh.RateLimitResource
+		expected  core_xds.RateLimitsMap
 	}
 
 	DescribeTable("should find best matched policy",
@@ -89,7 +88,7 @@ var _ = Describe("Match", func() {
 				Expect(err).ToNot(HaveOccurred())
 			}
 
-			allMatched, err := matcher.Match(context.Background(), given.dataplane, mesh, given.enableInboundPassthrough)
+			allMatched, err := matcher.Match(context.Background(), given.dataplane, mesh)
 			Expect(err).ToNot(HaveOccurred())
 			inboundMatched := allMatched.Inbound
 			for key := range inboundMatched {
@@ -116,7 +115,6 @@ var _ = Describe("Match", func() {
 					},
 				},
 			}),
-			enableInboundPassthrough: true,
 			policies: []*core_mesh.RateLimitResource{
 				policyWithDestinationsFunc("rl1", time.Unix(1, 0),
 					[]*mesh_proto.Selector{
@@ -190,7 +188,6 @@ var _ = Describe("Match", func() {
 					},
 				},
 			}),
-			enableInboundPassthrough: true,
 			policies: []*core_mesh.RateLimitResource{
 				policyWithDestinationsFunc("rl1", time.Unix(1, 0),
 					[]*mesh_proto.Selector{
@@ -275,7 +272,6 @@ var _ = Describe("Match", func() {
 					},
 				},
 			}),
-			enableInboundPassthrough: true,
 			policies: []*core_mesh.RateLimitResource{
 				policyWithDestinationsFunc("rl1", time.Unix(1, 0),
 					[]*mesh_proto.Selector{
@@ -343,7 +339,6 @@ var _ = Describe("Match", func() {
 					},
 				},
 			}),
-			enableInboundPassthrough: true,
 			policies: []*core_mesh.RateLimitResource{
 				policyWithDestinationsFunc("rl1", time.Unix(1, 0),
 					[]*mesh_proto.Selector{
@@ -402,7 +397,6 @@ var _ = Describe("Match", func() {
 					},
 				},
 			}),
-			enableInboundPassthrough: true,
 			policies: []*core_mesh.RateLimitResource{
 				policyWithDestinationsFunc("rl2", time.Unix(1, 0),
 					[]*mesh_proto.Selector{
@@ -489,7 +483,6 @@ var _ = Describe("Match", func() {
 					},
 				},
 			}),
-			enableInboundPassthrough: true,
 			policies: []*core_mesh.RateLimitResource{
 				policyWithDestinationsFunc("rl2", time.Unix(1, 0),
 					[]*mesh_proto.Selector{
@@ -562,7 +555,6 @@ var _ = Describe("Match", func() {
 					},
 				},
 			}),
-			enableInboundPassthrough: true,
 			policies: []*core_mesh.RateLimitResource{
 				policyWithDestinationsFunc("rl1", time.Unix(1, 0),
 					[]*mesh_proto.Selector{
@@ -704,7 +696,6 @@ var _ = Describe("Match", func() {
 					},
 				},
 			}),
-			enableInboundPassthrough: true,
 			policies: []*core_mesh.RateLimitResource{
 				policyWithDestinationsFunc("rl1", time.Unix(1, 0),
 					[]*mesh_proto.Selector{

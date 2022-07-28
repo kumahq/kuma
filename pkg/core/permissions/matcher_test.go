@@ -18,13 +18,12 @@ import (
 )
 
 var _ = Describe("Match", func() {
-
+	mesh_proto.EnableInboundPassthrough = true
 	type testCase struct {
-		dataplane                *core_mesh.DataplaneResource
-		mesh                     *core_mesh.MeshResource
-		policies                 []*core_mesh.TrafficPermissionResource
-		expected                 map[mesh_proto.InboundInterface]string
-		enableInboundPassthrough bool
+		dataplane *core_mesh.DataplaneResource
+		mesh      *core_mesh.MeshResource
+		policies  []*core_mesh.TrafficPermissionResource
+		expected  map[mesh_proto.InboundInterface]string
 	}
 
 	DescribeTable("should find best matched policy",
@@ -40,7 +39,7 @@ var _ = Describe("Match", func() {
 				Expect(err).ToNot(HaveOccurred())
 			}
 
-			bestMatched, err := matcher.Match(context.Background(), given.dataplane, given.mesh, given.enableInboundPassthrough)
+			bestMatched, err := matcher.Match(context.Background(), given.dataplane, given.mesh)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bestMatched).To(HaveLen(len(given.expected)))
 			for iface, policy := range bestMatched {
@@ -71,7 +70,6 @@ var _ = Describe("Match", func() {
 					},
 				},
 			},
-			enableInboundPassthrough: true,
 			dataplane: &core_mesh.DataplaneResource{
 				Meta: &model.ResourceMeta{
 					Mesh: "default",

@@ -31,12 +31,11 @@ type streams struct {
 }
 
 type tracker struct {
-	resourceManager          manager.ResourceManager
-	config                   *dp_server.HdsConfig
-	reconciler               *reconciler
-	log                      logr.Logger
-	metrics                  *hds_metrics.Metrics
-	enableInboundPassthrough bool
+	resourceManager manager.ResourceManager
+	config          *dp_server.HdsConfig
+	reconciler      *reconciler
+	log             logr.Logger
+	metrics         *hds_metrics.Metrics
 
 	sync.RWMutex       // protects access to the fields below
 	streamsAssociation map[xds.StreamID]core_model.ResourceKey
@@ -52,21 +51,19 @@ func NewCallbacks(
 	hasher util_xds_v3.NodeHash,
 	metrics *hds_metrics.Metrics,
 	defaultAdminPort uint32,
-	enableInboundPassthrough bool,
 ) hds_callbacks.Callbacks {
 	return &tracker{
-		resourceManager:          resourceManager,
-		streamsAssociation:       map[xds.StreamID]core_model.ResourceKey{},
-		dpStreams:                map[core_model.ResourceKey]streams{},
-		config:                   config,
-		log:                      log,
-		metrics:                  metrics,
-		enableInboundPassthrough: enableInboundPassthrough,
+		resourceManager:    resourceManager,
+		streamsAssociation: map[xds.StreamID]core_model.ResourceKey{},
+		dpStreams:          map[core_model.ResourceKey]streams{},
+		config:             config,
+		log:                log,
+		metrics:            metrics,
 		reconciler: &reconciler{
 			cache:     cache,
 			hasher:    hasher,
 			versioner: util_xds_v3.SnapshotAutoVersioner{UUID: core.NewUUID},
-			generator: NewSnapshotGenerator(readOnlyResourceManager, config, defaultAdminPort, enableInboundPassthrough),
+			generator: NewSnapshotGenerator(readOnlyResourceManager, config, defaultAdminPort),
 		},
 	}
 }
@@ -202,7 +199,7 @@ func (t *tracker) updateDataplane(streamID xds.StreamID, healthMap map[uint32]bo
 
 	changed := false
 	for _, inbound := range dp.Spec.Networking.Inbound {
-		intf := dp.Spec.Networking.ToInboundInterface(inbound, t.enableInboundPassthrough)
+		intf := dp.Spec.Networking.ToInboundInterface(inbound)
 		workloadHealth, exist := healthMap[intf.WorkloadPort]
 		if exist {
 			workloadHealth = workloadHealth && envoyHealth

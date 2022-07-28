@@ -38,6 +38,9 @@ const (
 	TCPPortReserved = 49151 // IANA Reserved
 )
 
+// We should remove it in the future version
+var EnableInboundPassthrough bool
+
 type ProxyType string
 
 const (
@@ -119,29 +122,29 @@ func (n *Dataplane_Networking) ToOutboundInterface(outbound *Dataplane_Networkin
 	return oface
 }
 
-func (n *Dataplane_Networking) GetInboundInterface(service string, enablePassthroughInbound bool) (*InboundInterface, error) {
+func (n *Dataplane_Networking) GetInboundInterface(service string) (*InboundInterface, error) {
 	for _, inbound := range n.Inbound {
 		if inbound.Tags[ServiceTag] != service {
 			continue
 		}
-		iface := n.ToInboundInterface(inbound, enablePassthroughInbound)
+		iface := n.ToInboundInterface(inbound)
 		return &iface, nil
 	}
 	return nil, errors.Errorf("Dataplane has no Inbound Interface for service %q", service)
 }
 
-func (n *Dataplane_Networking) GetInboundInterfaces(enablePassthroughInbound bool) []InboundInterface {
+func (n *Dataplane_Networking) GetInboundInterfaces() []InboundInterface {
 	if n == nil {
 		return nil
 	}
 	ifaces := make([]InboundInterface, len(n.Inbound))
 	for i, inbound := range n.Inbound {
-		ifaces[i] = n.ToInboundInterface(inbound, enablePassthroughInbound)
+		ifaces[i] = n.ToInboundInterface(inbound)
 	}
 	return ifaces
 }
 
-func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_Inbound, enablePassthroughInbound bool) InboundInterface {
+func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_Inbound) InboundInterface {
 	iface := InboundInterface{
 		DataplanePort: inbound.Port,
 	}
@@ -158,7 +161,7 @@ func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_
 	if inbound.ServiceAddress != "" {
 		iface.WorkloadIP = inbound.ServiceAddress
 	} else {
-		if enablePassthroughInbound {
+		if EnableInboundPassthrough {
 			iface.WorkloadIP = iface.DataplaneIP
 		} else {
 			iface.WorkloadIP = "127.0.0.1"

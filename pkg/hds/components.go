@@ -72,7 +72,6 @@ func DefaultCallbacks(rt core_runtime.Runtime, cache util_xds_v3.SnapshotCache) 
 			hasher{},
 			metrics,
 			rt.Config().GetEnvoyAdminPort(),
-			rt.Config().Defaults.EnableInboundPassthrough,
 		),
 	}, nil
 }

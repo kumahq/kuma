@@ -21,23 +21,20 @@ import (
 )
 
 type SnapshotGenerator struct {
-	config                   *dp_server.HdsConfig
-	readOnlyResourceManager  manager.ReadOnlyResourceManager
-	defaultAdminPort         uint32
-	enableInboundPassthrough bool
+	config                  *dp_server.HdsConfig
+	readOnlyResourceManager manager.ReadOnlyResourceManager
+	defaultAdminPort        uint32
 }
 
 func NewSnapshotGenerator(
 	readOnlyResourceManager manager.ReadOnlyResourceManager,
 	config *dp_server.HdsConfig,
 	defaultAdminPort uint32,
-	enableInboundPassthrough bool,
 ) *SnapshotGenerator {
 	return &SnapshotGenerator{
-		readOnlyResourceManager:  readOnlyResourceManager,
-		config:                   config,
-		defaultAdminPort:         defaultAdminPort,
-		enableInboundPassthrough: enableInboundPassthrough,
+		readOnlyResourceManager: readOnlyResourceManager,
+		config:                  config,
+		defaultAdminPort:        defaultAdminPort,
 	}
 }
 
@@ -60,7 +57,7 @@ func (g *SnapshotGenerator) GenerateSnapshot(node *envoy_core.Node) (util_xds_v3
 			continue
 		}
 		serviceProbe := inbound.ServiceProbe
-		intf := dp.Spec.GetNetworking().ToInboundInterface(inbound, g.enableInboundPassthrough)
+		intf := dp.Spec.GetNetworking().ToInboundInterface(inbound)
 
 		var timeout *durationpb.Duration
 		if serviceProbe.Timeout == nil {

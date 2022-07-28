@@ -8,7 +8,7 @@ import (
 )
 
 var _ = Describe("MultiValueTagSet", func() {
-
+	EnableInboundPassthrough = true
 	Describe("HostnameEntries()", func() {
 		type testCase struct {
 			value    MultiValueTagSet
@@ -33,7 +33,7 @@ var _ = Describe("MultiValueTagSet", func() {
 })
 
 var _ = Describe("Dataplane_Networking", func() {
-
+	EnableInboundPassthrough = true
 	Describe("GetOutboundInterfaces()", func() {
 		Context("valid input values", func() {
 			type testCase struct {
@@ -98,15 +98,14 @@ var _ = Describe("Dataplane_Networking", func() {
 
 		Context("valid input values", func() {
 			type testCase struct {
-				input                    *Dataplane_Networking
-				expected                 []InboundInterface
-				enableInboundPassthrough bool
+				input    *Dataplane_Networking
+				expected []InboundInterface
 			}
 
 			DescribeTable("should parse valid input values",
 				func(given testCase) {
 					// when
-					ifaces := given.input.GetInboundInterfaces(given.enableInboundPassthrough)
+					ifaces := given.input.GetInboundInterfaces()
 					// then
 					Expect(ifaces).To(ConsistOf(given.expected))
 				},
@@ -115,9 +114,8 @@ var _ = Describe("Dataplane_Networking", func() {
 					expected: nil,
 				}),
 				Entry("empty", testCase{
-					input:                    &Dataplane_Networking{},
-					expected:                 []InboundInterface{},
-					enableInboundPassthrough: true,
+					input:    &Dataplane_Networking{},
+					expected: []InboundInterface{},
 				}),
 				Entry("2 inbound interfaces", testCase{
 					input: &Dataplane_Networking{
@@ -138,7 +136,6 @@ var _ = Describe("Dataplane_Networking", func() {
 						{DataplaneAdvertisedIP: "192.168.0.1", DataplaneIP: "192.168.0.1", DataplanePort: 80, WorkloadIP: "192.168.0.1", WorkloadPort: 80},
 						{DataplaneAdvertisedIP: "192.168.0.2", DataplaneIP: "192.168.0.2", DataplanePort: 443, WorkloadIP: "192.168.0.3", WorkloadPort: 8443},
 					},
-					enableInboundPassthrough: true,
 				}),
 			)
 		})
@@ -189,6 +186,7 @@ var _ = Describe("Dataplane_Networking_Outbound", func() {
 		selector      TagSelector
 		expectedMatch bool
 	}
+	EnableInboundPassthrough = true
 	DescribeTable("MatchTags()",
 		func(given testCase) {
 			// given
@@ -227,7 +225,7 @@ var _ = Describe("Dataplane_Networking_Outbound", func() {
 })
 
 var _ = Describe("Dataplane_Networking_Inbound", func() {
-
+	EnableInboundPassthrough = true
 	DescribeTable("GetService()", func() {
 
 		type testCase struct {
@@ -298,6 +296,7 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 })
 
 var _ = Describe("Dataplane with inbound", func() {
+	EnableInboundPassthrough = true
 	d := Dataplane{
 		Networking: &Dataplane_Networking{
 			Inbound: []*Dataplane_Networking_Inbound{
@@ -355,6 +354,7 @@ var _ = Describe("Dataplane with inbound", func() {
 })
 
 var _ = Describe("Dataplane classification", func() {
+	EnableInboundPassthrough = true
 	Describe("with normal networking", func() {
 		It("should be a dataplane", func() {
 			dp := Dataplane{
@@ -407,6 +407,7 @@ var _ = Describe("Dataplane classification", func() {
 })
 
 var _ = Describe("Dataplane with gateway", func() {
+	EnableInboundPassthrough = true
 	d := Dataplane{
 		Networking: &Dataplane_Networking{
 			Gateway: &Dataplane_Networking_Gateway{
@@ -453,7 +454,7 @@ var _ = Describe("Dataplane with gateway", func() {
 })
 
 var _ = Describe("TagSelector", func() {
-
+	EnableInboundPassthrough = true
 	Describe("Matches()", func() {
 		type testCase struct {
 			tags  map[string]string
@@ -559,6 +560,7 @@ var _ = Describe("TagSelector", func() {
 })
 
 var _ = Describe("Tags", func() {
+	EnableInboundPassthrough = true
 	It("should print tags", func() {
 		// given
 		tags := map[string]map[string]bool{
@@ -580,7 +582,7 @@ var _ = Describe("Tags", func() {
 })
 
 var _ = Describe("TagSelectorRank", func() {
-
+	EnableInboundPassthrough = true
 	Describe("CompareTo()", func() {
 		type testCase struct {
 			rank1    TagSelectorRank

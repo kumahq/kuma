@@ -19,7 +19,7 @@ type FaultInjectionMatcher struct {
 	ResourceManager manager.ReadOnlyResourceManager
 }
 
-func (f *FaultInjectionMatcher) Match(ctx context.Context, dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource, enableInboundPassthrough bool) (core_xds.FaultInjectionMap, error) {
+func (f *FaultInjectionMatcher) Match(ctx context.Context, dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource) (core_xds.FaultInjectionMap, error) {
 	faultInjections := &core_mesh.FaultInjectionResourceList{}
 	if err := f.ResourceManager.List(ctx, faultInjections, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
 		return nil, errors.Wrap(err, "could not retrieve fault injections")
@@ -29,21 +29,20 @@ func (f *FaultInjectionMatcher) Match(ctx context.Context, dataplane *core_mesh.
 		return nil, errors.Wrap(err, "could not fetch additional inbounds")
 	}
 	inbounds := append(dataplane.Spec.GetNetworking().GetInbound(), additionalInbounds...)
-	return BuildFaultInjectionMap(dataplane, inbounds, faultInjections.Items, enableInboundPassthrough), nil
+	return BuildFaultInjectionMap(dataplane, inbounds, faultInjections.Items), nil
 }
 
 func BuildFaultInjectionMap(
 	dataplane *core_mesh.DataplaneResource,
 	inbounds []*mesh_proto.Dataplane_Networking_Inbound,
 	faultInjections []*core_mesh.FaultInjectionResource,
-	enableInboundPassthrough bool,
 ) core_xds.FaultInjectionMap {
 	policies := make([]policy.ConnectionPolicy, len(faultInjections))
 	for i, faultInjection := range faultInjections {
 		policies[i] = faultInjection
 	}
 
-	policyMap := policy.SelectInboundConnectionMatchingPolicies(dataplane, inbounds, policies, enableInboundPassthrough)
+	policyMap := policy.SelectInboundConnectionMatchingPolicies(dataplane, inbounds, policies)
 
 	result := core_xds.FaultInjectionMap{}
 	for inbound, connectionPolicies := range policyMap {

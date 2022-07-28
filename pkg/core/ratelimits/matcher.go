@@ -24,7 +24,6 @@ func (m *RateLimitMatcher) Match(
 	ctx context.Context,
 	dataplane *core_mesh.DataplaneResource,
 	mesh *core_mesh.MeshResource,
-	enableInboundPassthrough bool,
 ) (core_xds.RateLimitsMap, error) {
 	ratelimits := &core_mesh.RateLimitResourceList{}
 	if err := m.ResourceManager.List(ctx, ratelimits, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
@@ -36,21 +35,20 @@ func (m *RateLimitMatcher) Match(
 		return core_xds.RateLimitsMap{}, errors.Wrap(err, "could not fetch additional inbounds")
 	}
 	inbounds := append(dataplane.Spec.GetNetworking().GetInbound(), additionalInbounds...)
-	return BuildRateLimitMap(dataplane, inbounds, splitPoliciesBySourceMatch(ratelimits.Items), enableInboundPassthrough), nil
+	return BuildRateLimitMap(dataplane, inbounds, splitPoliciesBySourceMatch(ratelimits.Items)), nil
 }
 
 func BuildRateLimitMap(
 	dataplane *core_mesh.DataplaneResource,
 	inbounds []*mesh_proto.Dataplane_Networking_Inbound,
 	rateLimits []*core_mesh.RateLimitResource,
-	enableInboundPassthrough bool,
 ) core_xds.RateLimitsMap {
 	policies := make([]policy.ConnectionPolicy, len(rateLimits))
 	for i, ratelimit := range rateLimits {
 		policies[i] = ratelimit
 	}
 
-	policyMap := policy.SelectInboundConnectionMatchingPolicies(dataplane, inbounds, policies, enableInboundPassthrough)
+	policyMap := policy.SelectInboundConnectionMatchingPolicies(dataplane, inbounds, policies)
 
 	result := core_xds.RateLimitsMap{
 		Inbound:  core_xds.InboundRateLimitsMap{},

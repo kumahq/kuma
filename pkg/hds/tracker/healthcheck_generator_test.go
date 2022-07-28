@@ -45,7 +45,7 @@ var _ = Describe("HDS Snapshot generator", func() {
 			Expect(err).ToNot(HaveOccurred())
 			err = resourceManager.Create(context.Background(), dp, store.CreateByKey("dp-1", "mesh-1"))
 			Expect(err).ToNot(HaveOccurred())
-			generator := NewSnapshotGenerator(resourceManager, given.hdsConfig, 9901, false)
+			generator := NewSnapshotGenerator(resourceManager, given.hdsConfig, 9901)
 
 			// when
 			snapshot, err := generator.GenerateSnapshot(&envoy_config_core_v3.Node{Id: "mesh-1.dp-1"})

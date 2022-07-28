@@ -11,68 +11,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
-func (d *DataplaneResource) ValidateWithInbound(enableInboundPassthrough bool) error {
-	var err validators.ValidationError
-
-	net := validators.RootedAt("networking")
-
-	if d.Spec.GetNetworking() == nil {
-		err.AddViolationAt(net, "must be defined")
-		return err.OrNil()
-	}
-
-	if admin := d.Spec.GetNetworking().GetAdmin(); admin != nil {
-		adminPort := net.Field("admin").Field("port")
-
-		if d.UsesInboundInterface(IPv4Loopback, admin.GetPort(), enableInboundPassthrough) {
-			err.AddViolationAt(adminPort, "must differ from inbound")
-		}
-		if d.UsesOutboundInterface(IPv4Loopback, admin.GetPort()) {
-			err.AddViolationAt(adminPort, "must differ from outbound")
-		}
-	}
-
-	switch {
-	case d.Spec.IsDelegatedGateway():
-		if len(d.Spec.GetNetworking().GetInbound()) > 0 {
-			err.AddViolationAt(net.Field("inbound"),
-				"inbound cannot be defined for delegated gateways")
-		}
-
-		err.AddErrorAt(net.Field("gateway"), validateGateway(d.Spec.GetNetworking().GetGateway()))
-		err.Add(validateNetworking(d.Spec.GetNetworking()))
-		err.Add(validateProbes(d.Spec.GetProbes()))
-
-	case d.Spec.IsBuiltinGateway():
-		if len(d.Spec.GetNetworking().GetInbound()) > 0 {
-			err.AddViolationAt(net.Field("inbound"), "inbound cannot be defined for builtin gateways")
-		}
-
-		if len(d.Spec.GetNetworking().GetOutbound()) > 0 {
-			err.AddViolationAt(net.Field("outbound"), "outbound cannot be defined for builtin gateways")
-		}
-
-		if d.Spec.GetProbes() != nil {
-			err.AddViolationAt(net.Field("probes"), "probes cannot be defined for builtin gateways")
-		}
-
-		err.AddErrorAt(net.Field("gateway"), validateGateway(d.Spec.GetNetworking().GetGateway()))
-		err.Add(validateNetworking(d.Spec.GetNetworking()))
-
-	default:
-		if len(d.Spec.GetNetworking().GetInbound()) == 0 {
-			err.AddViolationAt(net, "has to contain at least one inbound interface or gateway")
-		}
-		err.Add(validateNetworking(d.Spec.GetNetworking()))
-		err.Add(validateProbes(d.Spec.GetProbes()))
-		if d.Spec.GetMetrics() != nil {
-			err.Add(validateMetricsBackend(d.Spec.GetMetrics()))
-		}
-	}
-
-	return err.OrNil()
-}
-
 func (d *DataplaneResource) Validate() error {
 	var err validators.ValidationError
 
@@ -86,7 +24,7 @@ func (d *DataplaneResource) Validate() error {
 	if admin := d.Spec.GetNetworking().GetAdmin(); admin != nil {
 		adminPort := net.Field("admin").Field("port")
 
-		if d.UsesInboundInterface(IPv4Loopback, admin.GetPort(), false) {
+		if d.UsesInboundInterface(IPv4Loopback, admin.GetPort()) {
 			err.AddViolationAt(adminPort, "must differ from inbound")
 		}
 		if d.UsesOutboundInterface(IPv4Loopback, admin.GetPort()) {

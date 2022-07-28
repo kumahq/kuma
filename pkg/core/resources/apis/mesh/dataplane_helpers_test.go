@@ -14,6 +14,7 @@ import (
 )
 
 var _ = Describe("Dataplane", func() {
+	mesh_proto.EnableInboundPassthrough = true
 
 	Describe("UsesInterface()", func() {
 
@@ -32,7 +33,7 @@ var _ = Describe("Dataplane", func() {
 				// when
 				Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane.Spec)).To(Succeed())
 				// then
-				Expect(dataplane.UsesInterface(net.ParseIP(given.address), given.port, false)).To(Equal(given.expected))
+				Expect(dataplane.UsesInterface(net.ParseIP(given.address), given.port)).To(Equal(given.expected))
 			},
 			Entry("port of an inbound interface is overshadowed (wilcard ip match)", testCase{
 				dataplane: `
@@ -115,7 +116,7 @@ var _ = Describe("Dataplane", func() {
                   - port: 59200
                     service: elastic
 `,
-				address:  "127.0.0.1",
+				address:  "192.168.0.1",
 				port:     8080,
 				expected: true,
 			}),
@@ -245,7 +246,7 @@ var _ = Describe("Dataplane", func() {
 			port := uint32(5670)
 			expected := false
 			// expect
-			Expect(dataplane.UsesInterface(address, port, false)).To(Equal(expected))
+			Expect(dataplane.UsesInterface(address, port)).To(Equal(expected))
 		})
 	})
 
@@ -555,7 +556,7 @@ var _ = Describe("Dataplane", func() {
 })
 
 var _ = Describe("ParseProtocol()", func() {
-
+	mesh_proto.EnableInboundPassthrough = true
 	type testCase struct {
 		tag      string
 		expected Protocol

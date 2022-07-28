@@ -71,7 +71,8 @@ func ServerBind() {
 				testserver.WithName("k8s-test-server-pod"),
 				testserver.WithEchoArgs("echo", "--instance", "k8s-bound-pod", "--ip", "$(POD_IP)"),
 			)).
-			Setup(env.KubeZone1)).ToNot(HaveOccurred())
+			Setup(env.KubeZone1),
+		).To(Succeed())
 	})
 	E2EAfterAll(func() {
 		Expect(env.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())

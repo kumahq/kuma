@@ -66,15 +66,15 @@ const PassThroughService = "pass_through"
 var IPv4Loopback = net.IPv4(127, 0, 0, 1)
 var IPv6Loopback = net.IPv6loopback
 
-func (d *DataplaneResource) UsesInterface(address net.IP, port uint32, enableInboundPassthrough bool) bool {
-	return d.UsesInboundInterface(address, port, enableInboundPassthrough) || d.UsesOutboundInterface(address, port)
+func (d *DataplaneResource) UsesInterface(address net.IP, port uint32) bool {
+	return d.UsesInboundInterface(address, port) || d.UsesOutboundInterface(address, port)
 }
 
-func (d *DataplaneResource) UsesInboundInterface(address net.IP, port uint32, enableInboundPassthrough bool) bool {
+func (d *DataplaneResource) UsesInboundInterface(address net.IP, port uint32) bool {
 	if d == nil {
 		return false
 	}
-	for _, iface := range d.Spec.Networking.GetInboundInterfaces(enableInboundPassthrough) {
+	for _, iface := range d.Spec.Networking.GetInboundInterfaces() {
 		// compare against port and IP address of the dataplane
 		if port == iface.DataplanePort && overlap(address, net.ParseIP(iface.DataplaneIP)) {
 			return true
