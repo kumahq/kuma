@@ -1,5 +1,9 @@
 package config
 
+import (
+	"io"
+)
+
 type TransparentProxyConfig struct {
 	DryRun                    bool
 	Verbose                   bool
@@ -17,4 +21,10 @@ type TransparentProxyConfig struct {
 	DNSUpstreamTargetChain    string
 	SkipDNSConntrackZoneSplit bool
 	ExperimentalEngine        bool
+	EbpfEnabled               bool
+	EbpfInstanceIP            string
+	EbpfBPFFSPath             string
+	EbpfProgramsSourcePath    string
+	Stdout                    io.Writer
+	Stderr                    io.Writer
 }

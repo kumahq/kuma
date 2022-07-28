@@ -7,6 +7,7 @@ metadata:
     kuma.io/sidecar-injected: "true"
     kuma.io/sidecar-uid: "5678"
     kuma.io/transparent-proxying: enabled
+    kuma.io/transparent-proxying-ebpf: disabled
     kuma.io/transparent-proxying-inbound-port: "15006"
     kuma.io/transparent-proxying-inbound-v6-port: "15010"
     kuma.io/transparent-proxying-outbound-port: "15001"
@@ -136,8 +137,8 @@ spec:
         cpu: 100m
         memory: 50M
       requests:
-        cpu: 10m
-        memory: 10M
+        cpu: 20m
+        memory: 20M
     securityContext:
       capabilities:
         add:

@@ -175,6 +175,12 @@ var _ = Describe("Config WS", func() {
                   "port": 15053
                 },
                 "cniEnabled": false,
+                "ebpf": {
+                  "enabled": false,
+                  "instanceIPEnvVarName": "INSTANCE_IP",
+                  "bpffsPath": "/run/kuma/bpf",
+                  "programsSourcePath": "/kuma/ebpf"
+                },
 				"exceptions": {
 				  "labels": {
 					"openshift.io/build.name": "*",
