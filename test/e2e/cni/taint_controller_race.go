@@ -23,9 +23,11 @@ metadata:
 `
 
 	var cluster Cluster
+	var k8sCluster *K8sCluster
 
 	var setup = func() {
-		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent).
+		k8sCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
+		cluster = k8sCluster.
 			WithTimeout(6 * time.Second).
 			WithRetries(60)
 
@@ -52,7 +54,7 @@ metadata:
 		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
-		Expect(cluster.DeleteNode("k3d-second-node-0")).To(Succeed())
+		Expect(k8sCluster.DeleteNode("k3d-second-node-0")).To(Succeed())
 	})
 
 	It(
@@ -62,10 +64,10 @@ metadata:
 
 			// write a test case that shows the test-server does not come up cleanly without taint-controller
 
-			err := cluster.CreateNode("second-node", "second=true")
+			err := k8sCluster.CreateNode("second-node", "second=true")
 			Expect(err).ToNot(HaveOccurred())
 
-			err = cluster.LoadImages("kuma-dp", "kuma-cni", "kuma-universal")
+			err = k8sCluster.LoadImages("kuma-dp", "kuma-cni", "kuma-universal")
 			Expect(err).ToNot(HaveOccurred())
 
 			err = NewClusterSetup().

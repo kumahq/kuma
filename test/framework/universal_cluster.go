@@ -553,15 +553,3 @@ func (c *UniversalCluster) Install(fn InstallFunc) error {
 func (c *UniversalCluster) SetCp(cp *UniversalControlPlane) {
 	c.controlplane = cp
 }
-
-func (c *UniversalCluster) CreateNode(name string, label string) error {
-	panic("unsupported")
-}
-
-func (c *UniversalCluster) DeleteNode(name string) error {
-	panic("unsupported")
-}
-
-func (c *UniversalCluster) LoadImages(images ...string) error {
-	panic("unsupported")
-}
