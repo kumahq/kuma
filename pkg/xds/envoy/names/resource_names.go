@@ -21,10 +21,6 @@ func Join(parts ...string) string {
 	return strings.Join(parts, Separator)
 }
 
-func GetLocalClusterName(port uint32) string {
-	return Join("localhost", formatPort(port))
-}
-
 func GetInboundClusterName(port uint32) string {
 	return Join("inbound", formatPort(port))
 }

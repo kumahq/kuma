@@ -1,11 +1,11 @@
 resources:
-- name: localhost:8080
+- name: inbound:8080
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: localhost_8080
+    altStatName: inbound_8080
     connectTimeout: 10s
     loadAssignment:
-      clusterName: localhost:8080
+      clusterName: inbound:8080
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -13,7 +13,7 @@ resources:
               socketAddress:
                 address: 127.0.0.1
                 portValue: 8080
-    name: localhost:8080
+    name: inbound:8080
     type: STATIC
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -22,13 +22,13 @@ resources:
           idleTimeout: 7200s
         explicitHttpConfig:
           httpProtocolOptions: {}
-- name: localhost:8443
+- name: inbound:8443
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: localhost_8443
+    altStatName: inbound_8443
     connectTimeout: 10s
     loadAssignment:
-      clusterName: localhost:8443
+      clusterName: inbound:8443
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -36,7 +36,7 @@ resources:
               socketAddress:
                 address: 127.0.0.1
                 portValue: 8443
-    name: localhost:8443
+    name: inbound:8443
     type: STATIC
 - name: inbound:192.168.0.1:443
   resource:
@@ -57,9 +57,9 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: localhost:8443
+          cluster: inbound:8443
           idleTimeout: 7200s
-          statPrefix: localhost_8443
+          statPrefix: inbound_8443
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
@@ -159,7 +159,7 @@ resources:
                       regex: .*&kuma.io/service=[^&]*frontend[,&].*
                   prefix: /
                 route:
-                  cluster: localhost:8080
+                  cluster: inbound:8080
                   timeout: 0s
                 typedPerFilterConfig:
                   envoy.filters.http.local_ratelimit:
@@ -185,7 +185,7 @@ resources:
                       regex: .*&kuma.io/service=.*
                   prefix: /
                 route:
-                  cluster: localhost:8080
+                  cluster: inbound:8080
                   timeout: 0s
                 typedPerFilterConfig:
                   envoy.filters.http.local_ratelimit:
@@ -213,11 +213,11 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: localhost:8080
+                  cluster: inbound:8080
                   timeout: 0s
           setCurrentClientCertDetails:
             uri: true
-          statPrefix: localhost_8080
+          statPrefix: inbound_8080
           streamIdleTimeout: 3600s
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -265,9 +265,9 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: localhost:8443
+          cluster: inbound:8443
           idleTimeout: 7200s
-          statPrefix: localhost_8443
+          statPrefix: inbound_8443
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
@@ -333,11 +333,11 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: localhost:8080
+                  cluster: inbound:8080
                   timeout: 0s
           setCurrentClientCertDetails:
             uri: true
-          statPrefix: localhost_8080
+          statPrefix: inbound_8080
           streamIdleTimeout: 3600s
       transportSocket:
         name: envoy.transport_sockets.tls

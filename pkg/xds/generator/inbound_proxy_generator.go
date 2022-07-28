@@ -54,7 +54,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 		} else {
 			listenerPort = endpoint.DataplanePort
 			inboundListenerName = envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
-			localClusterName = envoy_names.GetLocalClusterName(endpoint.WorkloadPort)
+			localClusterName = envoy_names.GetInboundClusterName(endpoint.WorkloadPort)
 			clusterBuilder = envoy_clusters.NewClusterBuilder(proxy.APIVersion).
 				Configure(envoy_clusters.ProvidedEndpointCluster(localClusterName, false, core_xds.Endpoint{Target: endpoint.WorkloadIP, Port: endpoint.WorkloadPort})).
 				Configure(envoy_clusters.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))

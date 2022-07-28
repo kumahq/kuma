@@ -92,7 +92,7 @@ func (g ProbeProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.P
 			} else {
 				// we don't have to generate inbound cluster, because they are
 				// generated in inbound_proxy_generator
-				clusterName = names.GetLocalClusterName(endpoint.InboundPort)
+				clusterName = names.GetInboundClusterName(endpoint.InboundPort)
 			}
 
 			virtualHostBuilder.Configure(
