@@ -401,7 +401,7 @@ func (i *KumaInjector) FindServiceAccountToken(podSpec *kube_core.PodSpec) *kube
 }
 
 func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container, error) {
-	podRedirect, err := tp_k8s.NewPodRedirectForPod(pod, i.cfg)
+	podRedirect, err := tp_k8s.NewPodRedirectForPod(pod)
 	if err != nil {
 		return kube_core.Container{}, err
 	}
@@ -490,7 +490,17 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string) (map[stri
 
 	podAnnotations := metadata.Annotations(pod.Annotations)
 
-	if i.cfg.EBPF.Enabled {
+	ebpfEnabled, _, err := podAnnotations.GetEnabledWithDefault(i.cfg.EBPF.Enabled, metadata.KumaTransparentProxyingEbpf)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("getting %s annotation failed", metadata.KumaTransparentProxyingEbpf))
+	}
+	annotations[metadata.KumaTransparentProxyingEbpf] = metadata.BoolToEnabled(ebpfEnabled)
+
+	if ebpfEnabled {
+		annotations[metadata.KumaTransparentProxyingEbpfBPFFSPath], _ = podAnnotations.GetStringWithDefault(i.cfg.EBPF.BPFFSPath, metadata.KumaTransparentProxyingEbpfBPFFSPath)
+		annotations[metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName], _ = podAnnotations.GetStringWithDefault(i.cfg.EBPF.InstanceIPEnvVarName, metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName)
+		annotations[metadata.KumaTransparentProxyingEbpfProgramsSourcePath], _ = podAnnotations.GetStringWithDefault(i.cfg.EBPF.ProgramsSourcePath, metadata.KumaTransparentProxyingEbpfProgramsSourcePath)
+
 		// ebpf works only with experimental transparent proxy engine, so instead of
 		// failing when no annotation enabling it is present (bad user experience)
 		// we implicitly add it and set to true

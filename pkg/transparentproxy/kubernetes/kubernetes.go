@@ -22,7 +22,6 @@ import (
 
 	kube_core "k8s.io/api/core/v1"
 
-	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 )
@@ -44,14 +43,9 @@ type PodRedirect struct {
 	TransparentProxyEbpfProgramsSourcePath   string
 }
 
-func NewPodRedirectForPod(pod *kube_core.Pod, cfg runtime_k8s.Injector) (*PodRedirect, error) {
+func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 	var err error
-	podRedirect := &PodRedirect{
-		TransparentProxyEnableEbpf:               cfg.EBPF.Enabled,
-		TransparentProxyEbpfInstanceIPEnvVarName: cfg.EBPF.InstanceIPEnvVarName,
-		TransparentProxyEbpfBPFFSPath:            cfg.EBPF.BPFFSPath,
-		TransparentProxyEbpfProgramsSourcePath:   cfg.EBPF.ProgramsSourcePath,
-	}
+	podRedirect := &PodRedirect{}
 
 	podRedirect.BuiltinDNSEnabled, _, err = metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaBuiltinDNSDeprecated, metadata.KumaBuiltinDNS)
 	if err != nil {
@@ -96,6 +90,12 @@ func NewPodRedirectForPod(pod *kube_core.Pod, cfg runtime_k8s.Injector) (*PodRed
 	podRedirect.ExperimentalTransparentProxyEngine, _, err = metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaTransparentProxyingExperimentalEngine)
 	if err != nil {
 		return nil, err
+	}
+
+	if value, exists, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaTransparentProxyingEbpf); err != nil {
+		return nil, err
+	} else if exists {
+		podRedirect.TransparentProxyEnableEbpf = value
 	}
 
 	if value, exists := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTransparentProxyingEbpfBPFFSPath); exists {

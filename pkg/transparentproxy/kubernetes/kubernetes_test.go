@@ -22,7 +22,6 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy/kubernetes"
@@ -30,13 +29,12 @@ import (
 
 var _ = Describe("kubernetes", func() {
 	type testCaseKumactl struct {
-		cfg         runtime_k8s.Injector
 		pod         *kube_core.Pod
 		commandLine []string
 	}
 
 	DescribeTable("should generate kumactl command line", func(given testCaseKumactl) {
-		podRedirect, err := kubernetes.NewPodRedirectForPod(given.pod, given.cfg)
+		podRedirect, err := kubernetes.NewPodRedirectForPod(given.pod)
 		Expect(err).ToNot(HaveOccurred())
 
 		commandLine := podRedirect.AsKumactlCommandLine()
@@ -184,14 +182,6 @@ var _ = Describe("kubernetes", func() {
 			},
 		}),
 		Entry("should generate for ebpf transparent proxy", testCaseKumactl{
-			cfg: runtime_k8s.Injector{
-				EBPF: runtime_k8s.EBPF{
-					Enabled:              true,
-					InstanceIPEnvVarName: "FOO_BAR_BAZ",
-					BPFFSPath:            "/baz/bar/foo",
-					ProgramsSourcePath:   "/foo",
-				},
-			},
 			pod: &kube_core.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
@@ -204,6 +194,10 @@ var _ = Describe("kubernetes", func() {
 						metadata.KumaTransparentProxyingInboundPortAnnotation:   "25204",
 						metadata.KumaTransparentProxyingInboundPortAnnotationV6: "25206",
 						metadata.KumaSidecarUID:                                 "12345",
+						metadata.KumaTransparentProxyingEbpf:                    metadata.AnnotationEnabled,
+						metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName: "FOO_BAR_BAZ",
+						metadata.KumaTransparentProxyingEbpfBPFFSPath:            "/baz/bar/foo",
+						metadata.KumaTransparentProxyingEbpfProgramsSourcePath:   "/foo",
 					},
 				},
 			},
@@ -228,13 +222,12 @@ var _ = Describe("kubernetes", func() {
 	)
 
 	type testCaseTransparentProxyConfig struct {
-		cfg      runtime_k8s.Injector
 		pod      *kube_core.Pod
 		tpConfig *config.TransparentProxyConfig
 	}
 
 	DescribeTable("should generate transparent proxy config", func(given testCaseTransparentProxyConfig) {
-		podRedirect, err := kubernetes.NewPodRedirectForPod(given.pod, given.cfg)
+		podRedirect, err := kubernetes.NewPodRedirectForPod(given.pod)
 		Expect(err).ToNot(HaveOccurred())
 
 		tpConfig := podRedirect.AsTransparentProxyConfig()
