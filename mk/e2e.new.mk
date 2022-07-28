@@ -139,6 +139,5 @@ test/e2e-universal: build/kumactl images/test k3d/network/create
 .PHONY: test/e2e-multizone
 test/e2e-multizone: $(E2E_DEPS_TARGETS)
 	$(MAKE) test/e2e/k8s/start
-	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(MULTIZONE_E2E_PKG_LIST) 
-#	|| (ret=$$?; $(MAKE) test/e2e/k8s/stop/cluster/kuma-1 && exit $$ret)
-#	$(MAKE) test/e2e/k8s/stop
+	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(MULTIZONE_E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop/cluster/kuma-1 && exit $$ret)
+	$(MAKE) test/e2e/k8s/stop
