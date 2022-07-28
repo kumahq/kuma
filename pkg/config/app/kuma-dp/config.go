@@ -137,6 +137,13 @@ type DataplaneRuntime struct {
 	// Available values are: [trace][debug][info][warning|warn][error][critical][off]
 	// By default it inherits Kuma DP logging level.
 	EnvoyLogLevel string `yaml:"envoyLogLevel,omitempty" envconfig:"kuma_dataplane_runtime_envoy_log_level"`
+	// Resources defines the resources for this proxy.
+	Resources DataplaneResources `yaml:"resources,omitempty"`
+}
+
+// DataplaneResources defines the resources available to a dataplane proxy.
+type DataplaneResources struct {
+	MaxHeapSizeBytes uint64 `yaml:"maxHeapSizeBytes,omitempty" envconfig:"kuma_dataplane_resources_max_heap_size_bytes"`
 }
 
 var _ config.Config = &Config{}

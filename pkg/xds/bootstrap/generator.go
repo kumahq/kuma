@@ -134,6 +134,10 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 			return nil, kumaDpBootstrap, err
 		}
 
+		if dataplane.Spec.IsBuiltinGateway() {
+			params.IsGatewayDataplane = true
+		}
+
 		params.Service = dataplane.Spec.GetIdentifyingService()
 		setAdminPort(dataplane.Spec.GetNetworking().GetAdmin().GetPort())
 

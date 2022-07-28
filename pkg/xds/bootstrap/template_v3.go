@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"net"
 	"strconv"
+	"time"
 
 	"github.com/asaskevich/govalidator"
 	envoy_accesslog_v3 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
@@ -12,7 +13,9 @@ import (
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_grpc_credentials_v3 "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v3"
 	envoy_metrics_v3 "github.com/envoyproxy/go-control-plane/envoy/config/metrics/v3"
+	envoy_overload_v3 "github.com/envoyproxy/go-control-plane/envoy/config/overload/v3"
 	access_loggers_file "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
+	resource_monitors_fixed_heap "github.com/envoyproxy/go-control-plane/envoy/extensions/resource_monitors/fixed_heap/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/pkg/errors"
@@ -183,6 +186,56 @@ func genConfig(parameters configParameters, useTokenPath bool) (*envoy_bootstrap
 			GrpcServices: []*envoy_core_v3.GrpcService{
 				buildGrpcService(parameters, useTokenPath),
 			},
+		}
+	}
+
+	if parameters.IsGatewayDataplane {
+		if maxBytesRaw, ok := parameters.DynamicMetadata["max_heap_size_bytes"]; ok {
+			maxBytes, err := strconv.ParseUint(maxBytesRaw, 10, 64)
+			if err != nil {
+				return nil, err
+			}
+
+			config := &resource_monitors_fixed_heap.FixedHeapConfig{
+				MaxHeapSizeBytes: maxBytes,
+			}
+			marshaledConfig, err := util_proto.MarshalAnyDeterministic(config)
+			if err != nil {
+				return nil, errors.Wrapf(err, "could not marshall %T", config)
+			}
+
+			fixedHeap := "envoy.resource_monitors.fixed_heap"
+
+			res.OverloadManager = &envoy_overload_v3.OverloadManager{
+				RefreshInterval: util_proto.Duration(250 * time.Millisecond),
+				ResourceMonitors: []*envoy_overload_v3.ResourceMonitor{{
+					Name: fixedHeap,
+					ConfigType: &envoy_overload_v3.ResourceMonitor_TypedConfig{
+						TypedConfig: marshaledConfig,
+					},
+				}},
+				Actions: []*envoy_overload_v3.OverloadAction{{
+					Name: "envoy.overload_actions.shrink_heap",
+					Triggers: []*envoy_overload_v3.Trigger{{
+						Name: fixedHeap,
+						TriggerOneof: &envoy_overload_v3.Trigger_Threshold{
+							Threshold: &envoy_overload_v3.ThresholdTrigger{
+								Value: 0.95,
+							},
+						},
+					}},
+				}, {
+					Name: "envoy.overload_actions.stop_accepting_requests",
+					Triggers: []*envoy_overload_v3.Trigger{{
+						Name: fixedHeap,
+						TriggerOneof: &envoy_overload_v3.Trigger_Threshold{
+							Threshold: &envoy_overload_v3.ThresholdTrigger{
+								Value: 0.98,
+							},
+						},
+					}},
+				}},
+			}
 		}
 	}
 

@@ -10,8 +10,10 @@ import (
 	"net/http"
 	net_url "net/url"
 	"os"
+	"strconv"
 	"strings"
 
+	"github.com/containerd/cgroups"
 	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
@@ -109,6 +111,60 @@ func (b *remoteBootstrap) Generate(ctx context.Context, url string, cfg kuma_dp.
 	return envoyBootstrap, &bootstrap.KumaSidecarConfiguration, nil
 }
 
+type UIntOrString struct {
+	Type   string
+	UInt   uint64
+	String string
+}
+
+func maybeReadAsBytes(path string) *UIntOrString {
+	byteContents, err := os.ReadFile(path)
+	if err == nil {
+		contents := strings.TrimSpace(string(byteContents))
+		bytes, err := strconv.ParseUint(contents, 10, 64)
+		if err != nil {
+			return &UIntOrString{
+				Type:   "string",
+				String: contents,
+			}
+		}
+		return &UIntOrString{
+			Type: "int",
+			UInt: bytes,
+		}
+	}
+	return nil
+}
+
+func (b *remoteBootstrap) resourceMetadata(cfg kuma_dp.DataplaneResources) (map[string]string, error) {
+	resources := map[string]string{}
+
+	var maxHeap uint64
+
+	if cfg.MaxHeapSizeBytes == 0 {
+		switch cgroups.Mode() {
+		case cgroups.Legacy:
+			res := maybeReadAsBytes("/sys/fs/cgroup/memory.limit_in_bytes")
+			if res != nil && res.Type == "int" {
+				maxHeap = res.UInt
+			}
+		case cgroups.Hybrid, cgroups.Unified:
+			res := maybeReadAsBytes("/sys/fs/cgroup/memory.max")
+			if res != nil && res.Type == "int" {
+				maxHeap = res.UInt
+			}
+		}
+	} else {
+		maxHeap = cfg.MaxHeapSizeBytes
+	}
+
+	if maxHeap != 0 {
+		resources["max_heap_size_bytes"] = strconv.Itoa(int(0.90 * float64(maxHeap)))
+	}
+
+	return resources, nil
+}
+
 func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, url *net_url.URL, cfg kuma_dp.Config, params BootstrapParams) ([]byte, error) {
 	url.Path = "/bootstrap"
 	var dataplaneResource string
@@ -130,6 +186,16 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, url *net_url.
 	if cfg.DataplaneRuntime.Token != "" {
 		token = cfg.DataplaneRuntime.Token
 	}
+
+	resourceMeta, err := b.resourceMetadata(cfg.DataplaneRuntime.Resources)
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range resourceMeta {
+		params.DynamicMetadata[k] = v
+	}
+
 	request := types.BootstrapRequest{
 		Mesh:               cfg.Dataplane.Mesh,
 		Name:               cfg.Dataplane.Name,
