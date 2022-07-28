@@ -63,6 +63,7 @@ var _ = SynchronizedBeforeSuite(
 			defer GinkgoRecover()
 			Expect(env.KubeZone2.Install(Kuma(core.Zone,
 				WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
+				WithEnv("KUMA_DEFAULTS_ENABLE_INBOUND_PASSTHROUGH", "false"),
 				WithIngress(),
 				WithIngressEnvoyAdminTunnel(),
 				WithEgress(),
@@ -98,6 +99,7 @@ var _ = SynchronizedBeforeSuite(
 				Install(Kuma(core.Zone,
 					WithGlobalAddress(env.Global.GetKuma().GetKDSServerAddress()),
 					WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
+					WithEnv("KUMA_DEFAULTS_ENABLE_INBOUND_PASSTHROUGH", "false"),
 					WithEgressEnvoyAdminTunnel(),
 					WithIngressEnvoyAdminTunnel(),
 				)).
@@ -225,5 +227,5 @@ var _ = Describe("Healthcheck", healthcheck.ApplicationOnUniversalClientOnK8s, O
 var _ = Describe("Inspect", inspect.Inspect, Ordered)
 var _ = Describe("TrafficPermission", trafficpermission.TrafficPermission, Ordered)
 var _ = Describe("TrafficRoute", trafficroute.TrafficRoute, Ordered)
-var _ = Describe("ServerBind", inbound_communication.ServerBind, Ordered)
-var _ = Describe("ServerBindEgress", inbound_communication.ServerBindEgress, Ordered)
+var _ = Describe("InboundPassthrough", inbound_communication.InboundPassthrough, Ordered)
+var _ = Describe("InboundPassthroughDisabled", inbound_communication.InboundPassthroughDisabled, Ordered)

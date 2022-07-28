@@ -660,7 +660,7 @@ var _ = Describe("MetricsAggregateFor(..)", func() {
 			}
 
 			// expect
-			configuration, err := MetricsAggregateFor(pod)
+			configuration, err := MetricsAggregateFor(pod, true)
 			Expect(err).To(BeNil())
 			Expect(configuration).To(HaveLen(len(given.expected)))
 			Expect(configuration).To(ContainElements(given.expected))
@@ -746,7 +746,7 @@ var _ = Describe("MetricsAggregateFor(..)", func() {
 			}
 
 			// expect
-			_, err := MetricsAggregateFor(pod)
+			_, err := MetricsAggregateFor(pod, true)
 			Expect(err.Error()).To(Equal(given.expected))
 		},
 		Entry("one parameter for each service only defined", testCase{

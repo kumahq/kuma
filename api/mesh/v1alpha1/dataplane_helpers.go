@@ -162,7 +162,7 @@ func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_
 		iface.WorkloadIP = inbound.ServiceAddress
 	} else {
 		if EnableInboundPassthrough {
-			iface.WorkloadIP = iface.DataplaneIP
+			iface.WorkloadIP = ""
 		} else {
 			iface.WorkloadIP = "127.0.0.1"
 		}
@@ -442,6 +442,12 @@ func (d *Dataplane) IsUsingInboundTransparentProxy() bool {
 	return d.GetNetworking() != nil &&
 		d.GetNetworking().GetTransparentProxying() != nil &&
 		d.GetNetworking().GetTransparentProxying().GetRedirectPortInbound() != 0
+}
+
+func (d *Dataplane) IsUsingOutboundTransparentProxy() bool {
+	return d.GetNetworking() != nil &&
+		d.GetNetworking().GetTransparentProxying() != nil &&
+		d.GetNetworking().GetTransparentProxying().GetRedirectPortOutbound() != 0
 }
 
 func (d *Dataplane) IsDelegatedGateway() bool {

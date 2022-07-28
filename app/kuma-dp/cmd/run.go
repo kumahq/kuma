@@ -295,6 +295,7 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 	if kumaSidecarConfiguration != nil {
 		for _, item := range kumaSidecarConfiguration.Metrics.Aggregate {
 			applicationsToScrape = append(applicationsToScrape, metrics.ApplicationToScrape{
+				Address:       item.Address,
 				Name:          item.Name,
 				Path:          item.Path,
 				Port:          item.Port,
@@ -304,6 +305,7 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 	}
 	// by default add envoy configuration
 	applicationsToScrape = append(applicationsToScrape, metrics.ApplicationToScrape{
+		Address:       "127.0.0.1",
 		Name:          "envoy",
 		Path:          "/stats",
 		Port:          envoyAdminPort,

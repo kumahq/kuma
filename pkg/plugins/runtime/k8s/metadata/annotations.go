@@ -97,6 +97,8 @@ const (
 	// Available values are: [trace][debug][info][warning|warn][error][critical][off]
 	KumaEnvoyLogLevel = "kuma.io/envoy-log-level"
 
+	// KumaMetricsPrometheusAggregateAddress allows to specify which address for specific app should request for metrics
+	KumaMetricsPrometheusAggregateAddress = "prometheus.metrics.kuma.io/aggregate-%s-address"
 	// KumaMetricsPrometheusAggregatePath allows to specify which path for specific app should request for metrics
 	KumaMetricsPrometheusAggregatePath = "prometheus.metrics.kuma.io/aggregate-%s-path"
 	// KumaMetricsPrometheusAggregatePort allows to specify which port for specific app should request for metrics

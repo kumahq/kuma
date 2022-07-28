@@ -24,11 +24,12 @@ var (
 )
 
 type PodConverter struct {
-	ServiceGetter       kube_client.Reader
-	NodeGetter          kube_client.Reader
-	ResourceConverter   k8s_common.Converter
-	Zone                string
-	KubeOutboundsAsVIPs bool
+	ServiceGetter            kube_client.Reader
+	NodeGetter               kube_client.Reader
+	ResourceConverter        k8s_common.Converter
+	Zone                     string
+	KubeOutboundsAsVIPs      bool
+	EnableInboundPassthrough bool
 }
 
 func (p *PodConverter) PodToDataplane(
@@ -40,7 +41,7 @@ func (p *PodConverter) PodToDataplane(
 	others []*mesh_k8s.Dataplane,
 ) error {
 	dataplane.Mesh = util_k8s.MeshOf(pod, ns)
-	dataplaneProto, err := p.dataplaneFor(ctx, pod, services, others)
+	dataplaneProto, err := p.dataplaneFor(ctx, pod, services, others, p.EnableInboundPassthrough)
 	if err != nil {
 		return err
 	}
@@ -75,6 +76,7 @@ func (p *PodConverter) dataplaneFor(
 	pod *kube_core.Pod,
 	services []*kube_core.Service,
 	others []*mesh_k8s.Dataplane,
+	enableInboundPassthrough bool,
 ) (*mesh_proto.Dataplane, error) {
 	dataplane := &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{},
@@ -148,7 +150,7 @@ func (p *PodConverter) dataplaneFor(
 		dataplane.Networking.Outbound = ofaces
 	}
 
-	metrics, err := MetricsFor(pod)
+	metrics, err := MetricsFor(pod, enableInboundPassthrough)
 	if err != nil {
 		return nil, err
 	}
@@ -182,14 +184,14 @@ func GatewayFor(clusterName string, pod *kube_core.Pod, services []*kube_core.Se
 	}, nil
 }
 
-func MetricsFor(pod *kube_core.Pod) (*mesh_proto.MetricsBackend, error) {
+func MetricsFor(pod *kube_core.Pod, enableInboundPassthrough bool) (*mesh_proto.MetricsBackend, error) {
 	path, _ := metadata.Annotations(pod.Annotations).GetString(metadata.KumaMetricsPrometheusPath)
 	port, exist, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaMetricsPrometheusPort)
 	if err != nil {
 		return nil, err
 	}
 
-	aggregate, err := MetricsAggregateFor(pod)
+	aggregate, err := MetricsAggregateFor(pod, enableInboundPassthrough)
 	if err != nil {
 		return nil, err
 	}
@@ -212,7 +214,7 @@ func MetricsFor(pod *kube_core.Pod) (*mesh_proto.MetricsBackend, error) {
 	}, nil
 }
 
-func MetricsAggregateFor(pod *kube_core.Pod) ([]*mesh_proto.PrometheusAggregateMetricsConfig, error) {
+func MetricsAggregateFor(pod *kube_core.Pod, enableInboundPassthrough bool) ([]*mesh_proto.PrometheusAggregateMetricsConfig, error) {
 	aggregateConfigNames := make(map[string]bool)
 	for key := range pod.Annotations {
 		matchedGroups := metricsAggregateRegex.FindStringSubmatch(key)
@@ -236,6 +238,12 @@ func MetricsAggregateFor(pod *kube_core.Pod) ([]*mesh_proto.PrometheusAggregateM
 		} else {
 			enabled = true
 		}
+		var address string
+		if enableInboundPassthrough {
+			address, _ = metadata.Annotations(pod.Annotations).GetStringWithDefault(pod.Status.PodIP, fmt.Sprintf(metadata.KumaMetricsPrometheusAggregateAddress, app))
+		} else {
+			address, _ = metadata.Annotations(pod.Annotations).GetStringWithDefault("127.0.0.1", fmt.Sprintf(metadata.KumaMetricsPrometheusAggregateAddress, app))
+		}
 		path, _ := metadata.Annotations(pod.Annotations).GetStringWithDefault("/metrics", fmt.Sprintf(metadata.KumaMetricsPrometheusAggregatePath, app))
 		port, exist, err := metadata.Annotations(pod.Annotations).GetUint32(fmt.Sprintf(metadata.KumaMetricsPrometheusAggregatePort, app))
 		if err != nil {
@@ -247,6 +255,7 @@ func MetricsAggregateFor(pod *kube_core.Pod) ([]*mesh_proto.PrometheusAggregateM
 
 		aggregateConfig = append(aggregateConfig, &mesh_proto.PrometheusAggregateMetricsConfig{
 			Name:    app,
+			Address: address,
 			Path:    path,
 			Port:    port,
 			Enabled: util_proto.Bool(enabled),

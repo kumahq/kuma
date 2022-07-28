@@ -495,9 +495,10 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 								Enabled: util_proto.Bool(false),
 							},
 							{
-								Name: "app",
-								Port: 12,
-								Path: "/dp/override",
+								Name:    "app",
+								Address: "1.2.3.4",
+								Port:    12,
+								Path:    "/dp/override",
 							},
 						},
 					}),
@@ -534,14 +535,16 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 		Expect(err).ToNot(HaveOccurred())
 		Expect(configParam.AggregateMetricsConfig).To(ContainElements([]AggregateMetricsConfig{
 			{
-				Name: "opa",
-				Path: "/mesh/config",
-				Port: 123,
+				Name:    "opa",
+				Address: "127.0.0.1",
+				Path:    "/mesh/config",
+				Port:    123,
 			},
 			{
-				Name: "app",
-				Path: "/dp/override",
-				Port: 12,
+				Name:    "app",
+				Address: "1.2.3.4",
+				Path:    "/dp/override",
+				Port:    12,
 			},
 		}))
 	})
@@ -625,14 +628,16 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 		Expect(err).ToNot(HaveOccurred())
 		Expect(configParam.AggregateMetricsConfig).To(Equal([]AggregateMetricsConfig{
 			{
-				Name: "opa",
-				Path: "/mesh/opa",
-				Port: 123,
+				Name:    "opa",
+				Address: "127.0.0.1",
+				Path:    "/mesh/opa",
+				Port:    123,
 			},
 			{
-				Name: "app",
-				Path: "/mesh/app",
-				Port: 999,
+				Name:    "app",
+				Address: "127.0.0.1",
+				Path:    "/mesh/app",
+				Port:    999,
 			},
 		}))
 	})

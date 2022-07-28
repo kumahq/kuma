@@ -42,10 +42,10 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 		var clusterBuilder *envoy_clusters.ClusterBuilder
 		if ctx.ControlPlane.EnableInboundPassthrough &&
 			proxy.Dataplane.Spec.IsUsingInboundTransparentProxy() &&
-			endpoint.WorkloadIP != core_mesh.IPv4Loopback.String() {
+			endpoint.WorkloadIP == "" {
 			listenerPort = endpoint.WorkloadPort
-			inboundListenerName = envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.WorkloadPort)
-			localClusterName = envoy_names.GetInboundClusterName(endpoint.WorkloadPort)
+			inboundListenerName = envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
+			localClusterName = envoy_names.GetInboundClusterName(endpoint.DataplanePort)
 			clusterBuilder = envoy_clusters.NewClusterBuilder(proxy.APIVersion).
 				Configure(envoy_clusters.PassThroughCluster(localClusterName)).
 				Configure(envoy_clusters.UpstreamBindConfig(inPassThroughIPv4, 0)).

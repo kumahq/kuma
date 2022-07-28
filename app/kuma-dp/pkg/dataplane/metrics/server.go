@@ -19,6 +19,10 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
+var upstreamLocalAddress = &net.TCPAddr{IP: net.ParseIP("127.0.0.6")}
+
+const IPv4Loopback = "127.0.0.1"
+
 var logger = core.Log.WithName("metrics-hijacker")
 
 var _ component.Component = &Hijacker{}
@@ -38,6 +42,7 @@ func AddPrometheusFormat(queryParameters url.Values) string {
 
 type ApplicationToScrape struct {
 	Name          string
+	Address       string
 	Path          string
 	Port          uint32
 	QueryModifier QueryParametersModifier
@@ -45,15 +50,24 @@ type ApplicationToScrape struct {
 }
 
 type Hijacker struct {
-	socketPath           string
-	httpClient           http.Client
-	applicationsToScrape []ApplicationToScrape
+	socketPath                 string
+	httpClient                 http.Client
+	upstreamOverrideHttpClient http.Client
+	applicationsToScrape       []ApplicationToScrape
 }
 
 func New(dataplane kumadp.Dataplane, applicationsToScrape []ApplicationToScrape) *Hijacker {
+	d := &net.Dialer{
+		LocalAddr: upstreamLocalAddress,
+	}
 	return &Hijacker{
-		socketPath:           envoy.MetricsHijackerSocketName(dataplane.Name, dataplane.Mesh),
-		httpClient:           http.Client{},
+		socketPath: envoy.MetricsHijackerSocketName(dataplane.Name, dataplane.Mesh),
+		httpClient: http.Client{},
+		upstreamOverrideHttpClient: http.Client{
+			Transport: &http.Transport{
+				DialContext: d.DialContext,
+			},
+		},
 		applicationsToScrape: applicationsToScrape,
 	}
 }
@@ -108,10 +122,10 @@ func (s *Hijacker) Start(stop <-chan struct{}) error {
 
 // We pass QueryParameters only for the specific application.
 // Currently, we only support QueryParameters for Envoy metrics.
-func rewriteMetricsURL(path string, port uint32, queryModifier QueryParametersModifier, in *url.URL) string {
+func rewriteMetricsURL(address string, port uint32, path string, queryModifier QueryParametersModifier, in *url.URL) string {
 	u := url.URL{
 		Scheme:   "http",
-		Host:     fmt.Sprintf("127.0.0.1:%d", port),
+		Host:     fmt.Sprintf("%s:%d", address, port),
 		Path:     path,
 		RawQuery: queryModifier(in.Query()),
 	}
@@ -153,13 +167,18 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Hijacker) getStats(ctx context.Context, url *url.URL, app ApplicationToScrape) []byte {
-	req, err := http.NewRequest("GET", rewriteMetricsURL(app.Path, app.Port, app.QueryModifier, url), nil)
+	req, err := http.NewRequest("GET", rewriteMetricsURL(app.Address, app.Port, app.Path, app.QueryModifier, url), nil)
 	if err != nil {
 		logger.Error(err, "failed to create request")
 		return nil
 	}
 	req = req.WithContext(ctx)
-	resp, err := s.httpClient.Do(req)
+	var resp *http.Response
+	if app.Address != IPv4Loopback {
+		resp, err = s.upstreamOverrideHttpClient.Do(req)
+	} else {
+		resp, err = s.httpClient.Do(req)
+	}
 	if err != nil {
 		logger.Error(err, "failed call", "name", app.Name, "path", app.Path, "port", app.Port)
 		return nil

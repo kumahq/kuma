@@ -121,7 +121,7 @@ func validateMetricsBackend(metrics *mesh_proto.MetricsBackend) validators.Valid
 	if metrics.GetType() != mesh_proto.MetricsPrometheusType {
 		verr.AddViolationAt(validators.RootedAt("metrics").Field("type"), fmt.Sprintf("unknown backend type. Available backends: %q", mesh_proto.MetricsPrometheusType))
 	} else {
-		verr.AddErrorAt(validators.RootedAt("metrics").Field("conf"), validatePrometheusConfig(metrics.GetConf()))
+		verr.AddErrorAt(validators.RootedAt("metrics").Field("conf"), validatePrometheusConfig(metrics.GetConf(), false))
 	}
 	return verr
 }

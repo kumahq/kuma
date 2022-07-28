@@ -1,12 +1,16 @@
 ## ExternalService
 
-- `networking` (required)    
+- `networking` (required)
+
+    Child properties:    
     
     - `address` (required)
     
         Address of the external service    
     
-    - `tls` (optional)    
+    - `tls` (optional)
+    
+        Child properties:    
         
         - `enabled` (optional)
         

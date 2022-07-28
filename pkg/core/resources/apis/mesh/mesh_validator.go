@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"regexp"
 
+	"github.com/asaskevich/govalidator"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -248,7 +249,7 @@ func validateMetrics(metrics *mesh_proto.Metrics) validators.ValidationError {
 		if backend.GetType() != mesh_proto.MetricsPrometheusType {
 			verr.AddViolationAt(validators.RootedAt("backends").Index(i).Field("type"), fmt.Sprintf("unknown backend type. Available backends: %q", mesh_proto.MetricsPrometheusType))
 		} else {
-			verr.AddErrorAt(validators.RootedAt("backends").Index(i).Field("conf"), validatePrometheusConfig(backend.GetConf()))
+			verr.AddErrorAt(validators.RootedAt("backends").Index(i).Field("conf"), validatePrometheusConfig(backend.GetConf(), true))
 		}
 		usedNames[backend.Name] = true
 	}
@@ -258,7 +259,7 @@ func validateMetrics(metrics *mesh_proto.Metrics) validators.ValidationError {
 	return verr
 }
 
-func validatePrometheusConfig(cfgStr *structpb.Struct) validators.ValidationError {
+func validatePrometheusConfig(cfgStr *structpb.Struct, isMeshConfig bool) validators.ValidationError {
 	var verr validators.ValidationError
 	cfg := mesh_proto.PrometheusMetricsBackendConfig{}
 	if err := proto.ToTyped(cfgStr, &cfg); err != nil {
@@ -275,6 +276,15 @@ func validatePrometheusConfig(cfgStr *structpb.Struct) validators.ValidationErro
 			verr.AddViolationAt(validators.RootedAt("aggregate").Index(i).Field("name"), fmt.Sprintf("duplicate entry: %s, values have to be unique", config.GetName()))
 			continue
 		}
+		if isMeshConfig && config.GetAddress() != "" {
+			verr.AddViolationAt(validators.RootedAt("aggregate").Index(i).Field("address"), fmt.Sprintf("address definition at mesh level is forbidden: %s", config.GetName()))
+		}
+		if !isMeshConfig && config.GetAddress() != "" {
+			if !govalidator.IsIP(config.GetAddress()) {
+				verr.AddViolationAt(validators.RootedAt("aggregate").Index(i).Field("address"), fmt.Sprintf("address has to be valid IP address: %s", config.GetAddress()))
+			}
+		}
+
 		usedName[config.GetName()] = true
 	}
 	return verr
