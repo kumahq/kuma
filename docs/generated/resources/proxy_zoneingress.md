@@ -8,9 +8,7 @@
 - `networking` (required)
 
     Networking defines the address and port of the Ingress to listen on.
-    Additionally publicly advertised address and port could be specified.
-
-    Child properties:    
+    Additionally publicly advertised address and port could be specified.    
     
     - `address` (required)
     
@@ -32,9 +30,7 @@
     
     - `admin` (optional)
     
-        Admin contains configuration related to Envoy Admin API
-    
-        Child properties:    
+        Admin contains configuration related to Envoy Admin API    
         
         - `port` (optional)
         
@@ -43,5 +39,21 @@
 - `availableservices` (optional, repeated)
 
     AvailableService contains tags that represent unique subset of
-    endpoints
+    endpoints    
+    
+    - `tags` (optional)
+    
+        tags of the service    
+    
+    - `instances` (optional)
+    
+        number of instances available for given tags    
+    
+    - `mesh` (optional)
+    
+        mesh of the instances available for given tags    
+    
+    - `externalservice` (optional)
+    
+        instance of external service available from the zone
 
