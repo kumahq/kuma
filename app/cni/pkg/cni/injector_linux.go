@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma-net/iptables/builder"
-	"github.com/kumahq/kuma-net/iptables/config"
+	"github.com/kumahq/kuma-net/transparent-proxy/config"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy"
 )
@@ -73,7 +73,7 @@ func mapToConfig(intermediateConfig *IntermediateConfig) (*config.Config, error)
 		return nil, err
 	}
 	cfg := config.Config{
-		RuntimeOutput: ioutil.Discard,
+		RuntimeStdout: ioutil.Discard,
 		Owner: config.Owner{
 			UID: intermediateConfig.noRedirectUID,
 		},

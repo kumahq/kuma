@@ -10,3 +10,15 @@ type ClusterConfigurer interface {
 	// Configure configures a single aspect on a given Envoy cluster.
 	Configure(cluster *envoy_cluster.Cluster) error
 }
+
+// ClusterMustConfigureFunc adapts a configuration function that never
+// fails to the ListenerConfigurer interface.
+type ClusterMustConfigureFunc func(cluster *envoy_cluster.Cluster)
+
+func (f ClusterMustConfigureFunc) Configure(cluster *envoy_cluster.Cluster) error {
+	if f != nil {
+		f(cluster)
+	}
+
+	return nil
+}
