@@ -42,7 +42,7 @@ type transparentProxyArgs struct {
 	ExperimentalTransparentProxyEngine bool
 	EbpfEnabled                        bool
 	EbpfProgramsSourcePath             string
-	EbpfInstanceIPEnvVarName           string
+	EbpfInstanceIP                     string
 	EbpfBPFFSPath                      string
 }
 
@@ -71,7 +71,6 @@ func newInstallTransparentProxy() *cobra.Command {
 		ExperimentalTransparentProxyEngine: false,
 		EbpfEnabled:                        false,
 		EbpfProgramsSourcePath:             "/kuma/ebpf",
-		EbpfInstanceIPEnvVarName:           "INSTANCE_IP",
 		EbpfBPFFSPath:                      "/run/kuma/bpf",
 	}
 	cmd := &cobra.Command{
@@ -159,6 +158,10 @@ runuser -u kuma-dp -- \
 			}
 
 			if args.EbpfEnabled {
+				if args.EbpfInstanceIP == "" {
+					return errors.Errorf("--ebpf-instance-ip flag has to be specified --ebpf-enabled is provided")
+				}
+
 				if !args.ExperimentalTransparentProxyEngine {
 					return errors.Errorf("--experimental-transparent-proxy-engine flag has to be specified when --ebpf-enabled is provided")
 				}
@@ -210,7 +213,7 @@ runuser -u kuma-dp -- \
 	// ebpf
 	cmd.Flags().BoolVar(&args.EbpfEnabled, "ebpf-enabled", args.EbpfEnabled, "use ebpf instead of iptables to install transparent proxy")
 	cmd.Flags().StringVar(&args.EbpfProgramsSourcePath, "ebpf-programs-source-path", args.EbpfProgramsSourcePath, "path where compiled ebpf programs and other necessary for ebpf mode files can be found")
-	cmd.Flags().StringVar(&args.EbpfInstanceIPEnvVarName, "ebpf-instance-ip-env-var-name", args.EbpfInstanceIPEnvVarName, "the name of environmental variable which will contain the IP address of the instance (pod/vm) where transparent proxy will be installed")
+	cmd.Flags().StringVar(&args.EbpfInstanceIP, "ebpf-instance-ip", args.EbpfInstanceIP, "IP address of the instance (pod/vm) where transparent proxy will be installed")
 	cmd.Flags().StringVar(&args.EbpfBPFFSPath, "ebpf-bpffs-path", args.EbpfBPFFSPath, "the path of the BPF filesystem")
 
 	return cmd
@@ -272,7 +275,7 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 		DNSUpstreamTargetChain:    args.DNSUpstreamTargetChain,
 		SkipDNSConntrackZoneSplit: args.SkipDNSConntrackZoneSplit,
 		EbpfEnabled:               args.EbpfEnabled,
-		EbpfInstanceIPEnvVarName:  args.EbpfInstanceIPEnvVarName,
+		EbpfInstanceIP:            args.EbpfInstanceIP,
 		EbpfBPFFSPath:             args.EbpfBPFFSPath,
 		EbpfProgramsSourcePath:    args.EbpfProgramsSourcePath,
 		Stdout:                    cmd.OutOrStdout(),

@@ -115,25 +115,25 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 
 func (pr *PodRedirect) AsTransparentProxyConfig() *config.TransparentProxyConfig {
 	return &config.TransparentProxyConfig{
-		DryRun:                   false,
-		Verbose:                  true,
-		RedirectPortOutBound:     fmt.Sprintf("%d", pr.RedirectPortOutbound),
-		RedirectInBound:          pr.RedirectInbound,
-		RedirectPortInBound:      fmt.Sprintf("%d", pr.RedirectPortInbound),
-		RedirectPortInBoundV6:    fmt.Sprintf("%d", pr.RedirectPortInboundV6),
-		ExcludeInboundPorts:      pr.ExcludeInboundPorts,
-		ExcludeOutboundPorts:     pr.ExcludeOutboundPorts,
-		UID:                      pr.UID,
-		GID:                      pr.UID, // TODO: shall we have a separate annotation here?
-		RedirectDNS:              pr.BuiltinDNSEnabled,
-		RedirectAllDNSTraffic:    false,
-		AgentDNSListenerPort:     fmt.Sprintf("%d", pr.BuiltinDNSPort),
-		DNSUpstreamTargetChain:   "",
-		ExperimentalEngine:       pr.ExperimentalTransparentProxyEngine,
-		EbpfEnabled:              pr.TransparentProxyEnableEbpf,
-		EbpfInstanceIPEnvVarName: pr.TransparentProxyEbpfInstanceIPEnvVarName,
-		EbpfBPFFSPath:            pr.TransparentProxyEbpfBPFFSPath,
-		EbpfProgramsSourcePath:   pr.TransparentProxyEbpfProgramsSourcePath,
+		DryRun:                 false,
+		Verbose:                true,
+		RedirectPortOutBound:   fmt.Sprintf("%d", pr.RedirectPortOutbound),
+		RedirectInBound:        pr.RedirectInbound,
+		RedirectPortInBound:    fmt.Sprintf("%d", pr.RedirectPortInbound),
+		RedirectPortInBoundV6:  fmt.Sprintf("%d", pr.RedirectPortInboundV6),
+		ExcludeInboundPorts:    pr.ExcludeInboundPorts,
+		ExcludeOutboundPorts:   pr.ExcludeOutboundPorts,
+		UID:                    pr.UID,
+		GID:                    pr.UID, // TODO: shall we have a separate annotation here?
+		RedirectDNS:            pr.BuiltinDNSEnabled,
+		RedirectAllDNSTraffic:  false,
+		AgentDNSListenerPort:   fmt.Sprintf("%d", pr.BuiltinDNSPort),
+		DNSUpstreamTargetChain: "",
+		ExperimentalEngine:     pr.ExperimentalTransparentProxyEngine,
+		EbpfEnabled:            pr.TransparentProxyEnableEbpf,
+		EbpfInstanceIP:         pr.TransparentProxyEbpfInstanceIPEnvVarName,
+		EbpfBPFFSPath:          pr.TransparentProxyEbpfBPFFSPath,
+		EbpfProgramsSourcePath: pr.TransparentProxyEbpfProgramsSourcePath,
 	}
 }
 
@@ -170,9 +170,11 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 	if pr.TransparentProxyEnableEbpf {
 		result = append(result, "--ebpf-enabled")
 
+		instanceIPEnvVarName := "INSTANCE_IP"
 		if pr.TransparentProxyEbpfInstanceIPEnvVarName != "" {
-			result = append(result, "--ebpf-instance-ip-env-var-name", pr.TransparentProxyEbpfInstanceIPEnvVarName)
+			instanceIPEnvVarName = pr.TransparentProxyEbpfInstanceIPEnvVarName
 		}
+		result = append(result, "--ebpf-instance-ip", fmt.Sprintf("$(%s)", instanceIPEnvVarName))
 
 		if pr.TransparentProxyEbpfBPFFSPath != "" {
 			result = append(result, "--ebpf-bpffs-path", pr.TransparentProxyEbpfBPFFSPath)

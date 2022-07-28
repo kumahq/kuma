@@ -22,7 +22,7 @@ type TransparentProxyConfig struct {
 	SkipDNSConntrackZoneSplit bool
 	ExperimentalEngine        bool
 	EbpfEnabled               bool
-	EbpfInstanceIPEnvVarName  string
+	EbpfInstanceIP            string
 	EbpfBPFFSPath             string
 	EbpfProgramsSourcePath    string
 	Stdout                    io.Writer

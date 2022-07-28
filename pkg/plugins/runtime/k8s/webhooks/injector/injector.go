@@ -487,8 +487,10 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 
 	if ebpfEnabled {
 		annotations[metadata.KumaTransparentProxyingEbpfBPFFSPath], _ = podAnnotations.GetStringWithDefault(i.cfg.EBPF.BPFFSPath, metadata.KumaTransparentProxyingEbpfBPFFSPath)
-		annotations[metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName], _ = podAnnotations.GetStringWithDefault(i.cfg.EBPF.InstanceIPEnvVarName, metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName)
 		annotations[metadata.KumaTransparentProxyingEbpfProgramsSourcePath], _ = podAnnotations.GetStringWithDefault(i.cfg.EBPF.ProgramsSourcePath, metadata.KumaTransparentProxyingEbpfProgramsSourcePath)
+		if value, exists := podAnnotations.GetString(i.cfg.EBPF.InstanceIPEnvVarName, metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName); exists {
+			annotations[metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName] = value
+		}
 
 		// ebpf works only with experimental transparent proxy engine, so instead of
 		// failing when no annotation enabling it is present (bad user experience)
