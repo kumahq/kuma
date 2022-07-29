@@ -4,7 +4,9 @@ import (
 	"context"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	kube_auth "k8s.io/api/authentication/v1"
 	kube_core "k8s.io/api/core/v1"
@@ -20,25 +22,23 @@ import (
 func New(client kube_client.Client) auth.Authenticator {
 	return &kubeAuthenticator{
 		client:        client,
-		authenticated: map[auth.Credential]struct{}{},
+		authenticated: cache.New(1*time.Hour, 1*time.Minute),
 	}
 }
 
 type kubeAuthenticator struct {
 	client kube_client.Client
 
-	// todo cleanup of the map. number of elements? cache with expiration time?
-	authenticated map[auth.Credential]struct{}
+	authenticated *cache.Cache
 	mutex         sync.RWMutex
 }
 
 var _ auth.Authenticator = &kubeAuthenticator{}
 
 func (k *kubeAuthenticator) Authenticate(ctx context.Context, resource model.Resource, credential auth.Credential) error {
-	k.mutex.RLock()
-	_, authenticated := k.authenticated[credential]
-	k.mutex.RUnlock()
+	_, authenticated := k.authenticated.Get(credential)
 	if authenticated {
+		k.authenticated.Set(credential, struct{}{}, 1*time.Hour) // prolong the cache
 		return nil
 	}
 
@@ -58,9 +58,7 @@ func (k *kubeAuthenticator) Authenticate(ctx context.Context, resource model.Res
 		return err
 	}
 
-	k.mutex.Lock()
-	k.authenticated[credential] = struct{}{}
-	k.mutex.Unlock()
+	k.authenticated.Set(credential, struct{}{}, 1*time.Hour)
 	return nil
 }
 
