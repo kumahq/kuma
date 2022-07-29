@@ -17,6 +17,7 @@ import (
 )
 
 var _ = Describe("TrafficRoute", func() {
+	mesh_proto.EnableInboundPassthrough = true
 	const defaultMeshName = "default"
 	defaultMeshWithMTLS := &core_mesh.MeshResource{
 		Meta: &test_model.ResourceMeta{

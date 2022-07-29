@@ -108,6 +108,7 @@ type appDeploymentOptions struct {
 	serviceProbe          bool
 	reachableServices     []string
 	appendDataplaneConfig string
+	boundToContainerIp    bool
 
 	dockerVolumes       []string
 	dockerContainerName string
@@ -407,6 +408,13 @@ func ServiceProbe() AppDeploymentOption {
 func WithDPVersion(version string) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.dpVersion = version
+	})
+}
+
+// BoundToContainerIp only works with Universal
+func BoundToContainerIp() AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.boundToContainerIp = true
 	})
 }
 

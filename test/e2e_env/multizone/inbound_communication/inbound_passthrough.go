@@ -28,7 +28,6 @@ func InboundPassthrough() {
 				mesh,
 				WithTransparentProxy(true),
 			)).
-			// TODO: bind to docker ip
 			Install(TestServerUniversal("uni-test-server-localhost", mesh,
 				WithArgs([]string{"echo", "--instance", "uni-bound-localhost", "--ip", "127.0.0.1"}),
 				ServiceProbe(),
@@ -44,6 +43,12 @@ func InboundPassthrough() {
 				ServiceProbe(),
 				WithTransparentProxy(false),
 				WithServiceName("uni-test-server-wildcard-no-tp"),
+			)).
+			Install(TestServerUniversal("uni-test-server-containerip", mesh,
+				WithArgs([]string{"echo", "--instance", "uni-bound-containerip"}),
+				ServiceProbe(),
+				BoundToContainerIp(),
+				WithServiceName("uni-test-server-containerip"),
 			)).
 			Setup(env.UniZone1),
 		).To(Succeed())
@@ -134,6 +139,15 @@ func InboundPassthrough() {
 		Expect(response.Instance).To(Equal("uni-bound-wildcard-no-tp"))
 
 		// when
+		response, err = client.CollectResponse(
+			env.UniZone1, "uni-demo-client", "uni-test-server-containerip.mesh",
+		)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(response.Instance).To(Equal("uni-bound-containerip"))
+
+		// when
 		_, _, err = env.UniZone1.Exec("", "", "uni-demo-client",
 			"curl", "-v", "-m", "3", "--fail", "uni-test-server-localhost.mesh")
 
@@ -165,6 +179,15 @@ func InboundPassthrough() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(response.Instance).To(Equal("uni-bound-wildcard-no-tp"))
+
+		// when
+		response, err = client.CollectResponse(
+			env.UniZone1, "uni-demo-client", "uni-test-server-containerip.mesh",
+		)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(response.Instance).To(Equal("uni-bound-containerip"))
 
 		// when
 		_, _, err = env.KubeZone1.Exec(namespace, podName, "demo-client",

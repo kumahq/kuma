@@ -12,6 +12,7 @@ import (
 )
 
 var _ = Describe("IngressTrafficRoute", func() {
+	mesh_proto.EnableInboundPassthrough = true
 	Describe("BuildEndpointMap()", func() {
 		type testCase struct {
 			destinations             core_xds.DestinationMap

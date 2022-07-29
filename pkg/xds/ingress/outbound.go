@@ -34,7 +34,9 @@ func BuildEndpointMap(
 			}
 			iface := dataplane.Spec.GetNetworking().ToInboundInterface(inbound)
 			var inboundPort uint32
-			if enableInboundPassthrough && dataplane.Spec.IsUsingInboundTransparentProxy() {
+			if enableInboundPassthrough &&
+				dataplane.Spec.IsUsingInboundTransparentProxy() &&
+				iface.WorkloadIP == "" {
 				inboundPort = iface.WorkloadPort
 			} else {
 				inboundPort = iface.DataplanePort
