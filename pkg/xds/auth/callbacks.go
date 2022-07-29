@@ -48,14 +48,17 @@ type authCallbacks struct {
 	authenticator   Authenticator
 	dpNotFoundRetry DPNotFoundRetry
 
-	sync.RWMutex // protects contexts and authenticated
+	sync.RWMutex // protects streams
 	streams      map[core_xds.StreamID]stream
 }
 
 type stream struct {
-	ctx      context.Context
+	// context of the stream that contains a credential
+	ctx context.Context
+	// Dataplane / ZoneIngress / ZoneEgress associated with this XDS stream.
 	resource model.Resource
-	nodeID   string
+	// nodeID of the stream. Has to be the same for the whole life of a stream.
+	nodeID string
 }
 
 var _ util_xds.Callbacks = &authCallbacks{}
