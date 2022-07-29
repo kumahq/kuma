@@ -141,12 +141,19 @@ spec:
         kind: Mesh
       default:
         action: DENY
+---
+type: MeshTrafficPermission
+name: global-2
+spec:
+  targetRef:
+    kind: Mesh
+  from:
     - targetRef:
         kind: MeshSubset
         tags:
           kuma.io/zone: us-east
       default:
-        action: ALLOW
+        action: DENY
 ---
 type: MeshTrafficPermission
 name: backend
@@ -160,7 +167,7 @@ spec:
         tags:
           env: dev
       default:
-        action: DENY
+        action: ALLOW
 ```
 
 Concatenated "from" array
@@ -175,13 +182,13 @@ from:
       tags:
         kuma.io/zone: us-east
     default:
-      action: ALLOW
+      action: DENY
   - targetRef:
       kind: MeshSubset
       tags:
         env: dev
     default:
-      action: DENY
+      action: ALLOW
 ```
 
 2. Create a full rule-based view (with negations) 
@@ -198,13 +205,13 @@ rules:
         kuma.io/zone: us-east
         env: dev
     default:
-      action: DENY
+      action: ALLOW
   - targetRef: # rule 2
       kind: MeshSubset
       tags:
         kuma.io/zone: us-east
     default:
-      action: ALLOW
+      action: DENY
 ```
 
 So "rule 2" implicitly matches requests from zone "us-east" that are **not** from env "dev".
@@ -218,21 +225,21 @@ rules:
         kuma.io/zone: us-east
         env: dev
     default:
-      action: DENY
+      action: ALLOW
   - targetRef:
       kind: MeshSubset
       tags:
         kuma.io/zone: us-east
         env: !dev
     default:
-      action: ALLOW
+      action: DENY
   - targetRef:
       kind: MeshSubset
       tags:
         kuma.io/zone: !us-east
         env: dev
     default:
-      action: DENY 
+      action: ALLOW
   - targetRef:
       kind: MeshSubset
       tags:
@@ -248,13 +255,20 @@ See [how to generate a full rule-based view with negations](#how-to-generate-a-f
 
 ```yaml
 rules:
-   - targetRef:
-        kind: MeshSubset
-        tags:
-           kuma.io/zone: us-east
-           env: !dev
-     default:
-        action: ALLOW
+  - targetRef:
+      kind: MeshSubset
+      tags:
+        kuma.io/zone: us-east
+        env: dev
+    default:
+      action: ALLOW
+  - targetRef:
+      kind: MeshSubset
+      tags:
+        kuma.io/zone: !us-east
+        env: dev
+    default:
+      action: ALLOW
 ```
 
 4. Generate [config.rbac.v3.RBAC](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/rbac/v3/rbac.proto#envoy-v3-api-msg-config-rbac-v3-rbac)
@@ -273,10 +287,18 @@ policies:
             - authenticated:
                 principal_name:
                   exact: "kuma://kuma.io/zone/us-east"
+            - authenticated:
+                  principal_name:
+                    exact: "kuma://env/dev"
+      - and_ids:
+          ids:
             - not_id:
                 authenticated:
                   principal_name:
-                    exact: "kuma://env/dev"
+                    exact: "kuma://kuma.io/zone/us-east"
+            - authenticated:
+                principal_name:
+                  exact: "kuma://env/dev"
 ```
 
 Similarly generate a v3.RBAC using "shadow_action: ALLOW". 
