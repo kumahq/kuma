@@ -79,6 +79,7 @@ func mapToConfig(intermediateConfig *IntermediateConfig) (*kumanet_config.Config
 		},
 		Redirect: kumanet_config.Redirect{
 			Outbound: kumanet_config.TrafficFlow{
+				Enabled:      true,
 				Port:         port,
 				ExcludePorts: excludePorts,
 			},
@@ -110,6 +111,7 @@ func mapToConfig(intermediateConfig *IntermediateConfig) (*kumanet_config.Config
 			return nil, err
 		}
 		cfg.Redirect.Inbound = kumanet_config.TrafficFlow{
+			Enabled:      true,
 			Port:         inboundPort,
 			PortIPv6:     inboundPortV6,
 			ExcludePorts: excludedPorts,

@@ -135,11 +135,13 @@ func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyC
 		Redirect: kumanet_config.Redirect{
 			NamePrefix: "KUMA_",
 			Inbound: kumanet_config.TrafficFlow{
+				Enabled:      tpConfig.RedirectInBound,
 				Port:         redirectInboundPort,
 				PortIPv6:     redirectInboundPortIPv6,
 				ExcludePorts: excludeInboundPorts,
 			},
 			Outbound: kumanet_config.TrafficFlow{
+				Enabled:      true,
 				Port:         redirectOutboundPort,
 				ExcludePorts: excludeOutboundPorts,
 			},
