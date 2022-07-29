@@ -2,7 +2,6 @@ package ratelimit
 
 import (
 	"fmt"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -46,9 +45,12 @@ conf:
 		Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
-	requestRateLimited := func(client string, svc string, status string) bool {
-		stdout, _, err := env.Cluster.Exec("", "", client, "curl", "-v", fmt.Sprintf("%s.mesh", svc))
-		return err == nil && strings.Contains(stdout, status)
+	requestRateLimited := func(client string, svc string, status string) func(g Gomega) {
+		return func(g Gomega) {
+			stdout, _, err := env.Cluster.Exec("", "", client, "curl", "-v", fmt.Sprintf("%s.mesh", svc))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).Should(ContainSubstring(status))
+		}
 	}
 
 	It("should limit per source", func() {
@@ -72,17 +74,14 @@ conf:
 		Expect(env.Cluster.Install(YamlUniversal(specificRateLimitPolicy))).To(Succeed())
 
 		By("demo-client specific RateLimit works")
-		Eventually(func() bool {
-			return requestRateLimited("demo-client", "test-server", "400")
-		}).Should(BeTrue())
+		Eventually(requestRateLimited("demo-client", "test-server", "400"), "10s", "100ms").Should(Succeed())
 
 		By("catch-all RateLimit works")
-		Eventually(func() bool {
-			return requestRateLimited("web", "test-server", "429")
-		}).Should(BeTrue())
+		Eventually(requestRateLimited("web", "test-server", "429"), "10s", "100ms").Should(Succeed())
 	})
 
-	It("should limit echo server as external service", func() {
+	// Added Flake because: https://github.com/kumahq/kuma/issues/4700
+	It("should limit echo server as external service", FlakeAttempts(3), func() {
 		externalService := fmt.Sprintf(`
 type: ExternalService
 mesh: "%s"
@@ -116,13 +115,9 @@ conf:
 		Expect(env.Cluster.Install(YamlUniversal(specificRateLimitPolicy))).To(Succeed())
 
 		By("demo-client specific RateLimit works")
-		Eventually(func() bool {
-			return requestRateLimited("demo-client", "external-service", "429")
-		}).Should(BeTrue())
+		Eventually(requestRateLimited("demo-client", "external-service", "429"), "10s", "100ms").Should(Succeed())
 
 		By("RateLimit doesn't apply for other clients")
-		Consistently(func() bool {
-			return requestRateLimited("web", "external-service", "429")
-		}).Should(BeFalse())
+		Consistently(requestRateLimited("web", "external-service", "429"), "10s", "100ms").ShouldNot(Succeed())
 	})
 }
