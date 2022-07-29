@@ -65,10 +65,6 @@ var _ = Describe("DNSConfigurer", func() {
                         portValue: 53002
                 serverConfig:
                   inlineDnsTable:
-                    knownSuffixes:
-                    - safeRegex:
-                        googleRe2: {}
-                        regex: .*
                     virtualDomains:
                     - answerTtl: 30s
                       endpoint:
@@ -121,10 +117,6 @@ var _ = Describe("DNSConfigurer", func() {
                       portValue: 53002
                 serverConfig:
                   inlineDnsTable:
-                    knownSuffixes:
-                    - safeRegex:
-                        googleRe2: {}
-                        regex: .*
                     virtualDomains:
                     - answerTtl: 30s
                       endpoint:

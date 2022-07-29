@@ -21,10 +21,6 @@ resources:
           maxPendingLookups: "256"
         serverConfig:
           inlineDnsTable:
-            knownSuffixes:
-            - safeRegex:
-                googleRe2: {}
-                regex: .*
             virtualDomains:
             - answerTtl: 30s
               endpoint:

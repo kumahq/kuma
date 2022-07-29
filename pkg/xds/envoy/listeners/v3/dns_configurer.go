@@ -9,7 +9,6 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_data_dns "github.com/envoyproxy/go-control-plane/envoy/data/dns/v3"
 	envoy_dns "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/udp/dns_filter/v3"
-	v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/golang/protobuf/ptypes/any"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -103,17 +102,6 @@ func (c *DNSConfigurer) dnsFilter() *envoy_dns.DnsFilterConfig {
 				InlineDnsTable: &envoy_data_dns.DnsTable{
 					VirtualDomains:     virtualDomains,
 					ExternalRetryCount: 0,
-					KnownSuffixes: []*v3.StringMatcher{
-						{
-							MatchPattern: &v3.StringMatcher_SafeRegex{
-								SafeRegex: &v3.RegexMatcher{
-									EngineType: &v3.RegexMatcher_GoogleRe2{},
-									// This is just an indicator that Envoy will try to resolve any hostname using list of virtual domains
-									Regex: ".*",
-								},
-							},
-						},
-					},
 				},
 			},
 		},
@@ -161,17 +149,6 @@ func (c *DNSConfigurer) dnsFilterV3Alpha() *envoy_dns_v3alpha.DnsFilterConfig {
 				InlineDnsTable: &envoy_data_dns.DnsTable{
 					VirtualDomains:     virtualDomains,
 					ExternalRetryCount: 0,
-					KnownSuffixes: []*v3.StringMatcher{
-						{
-							MatchPattern: &v3.StringMatcher_SafeRegex{
-								SafeRegex: &v3.RegexMatcher{
-									EngineType: &v3.RegexMatcher_GoogleRe2{},
-									// This is just an indicator that Envoy will try to resolve any hostname using list of virtual domains
-									Regex: ".*",
-								},
-							},
-						},
-					},
 				},
 			},
 		},
