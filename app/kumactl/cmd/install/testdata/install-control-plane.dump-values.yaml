@@ -320,9 +320,8 @@ cni:
     # -- CNI image tag
     tag: "0.0.10"
 
-  # -- variables used in e2e tests
-  test:
-    sleepBeforeRunSeconds: 0
+  # -- it's only useful in tests to trigger a possible race condition
+  delayStartupSeconds: 0
 
   # -- use new CNI image (experimental)
   experimental:

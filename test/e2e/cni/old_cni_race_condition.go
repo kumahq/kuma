@@ -42,7 +42,7 @@ metadata:
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
 				WithSkipDefaultMesh(true), // it's common case for HELM deployments that Mesh is also managed by HELM therefore it's not created by default
-				WithHelmOpt("cni.test.sleepBeforeRunSeconds", "70"),
+				WithHelmOpt("cni.delayStartupSeconds", "70"),
 				WithHelmOpt("experimental.cni", "false"),
 				WithCNI(),
 			)).

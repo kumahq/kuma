@@ -28,7 +28,7 @@ type CniNodeTaintReconciler struct {
 
 func (r *CniNodeTaintReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
 	log := r.Log.WithValues("node", req.NamespacedName)
-	log.Info("event received")
+	log.V(1).Info("event received")
 
 	// Fetch the Node instance
 	node := &kube_core.Node{}
@@ -117,7 +117,7 @@ func (r *CniNodeTaintReconciler) taintNode(ctx context.Context, log logr.Logger,
 func hasTaint(node *kube_core.Node) bool {
 	foundTaint := false
 	for _, taint := range node.Spec.Taints {
-		if taint.Key == "NodeReadiness" && taint.Effect == kube_core.TaintEffectNoSchedule {
+		if taint.Key == nodeReadinessTaintKey && taint.Effect == kube_core.TaintEffectNoSchedule {
 			foundTaint = true
 		}
 	}

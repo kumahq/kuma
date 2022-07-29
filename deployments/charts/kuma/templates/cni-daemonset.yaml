@@ -54,27 +54,27 @@ spec:
           image: {{ include "kuma.formatImage" (dict "image" .Values.cni.experimental.image "root" $) | quote }}
           imagePullPolicy: IfNotPresent
           readinessProbe:
-            initialDelaySeconds: {{ .Values.cni.test.sleepBeforeRunSeconds }}
+            initialDelaySeconds: {{ .Values.cni.delayStartupSeconds }}
             exec:
               command:
                 - cat
                 - /tmp/ready
-            {{- if .Values.cni.test.sleepBeforeRunSeconds }}
+          {{- if .Values.cni.delayStartupSeconds }}
           command: [ "/bin/sh", "-c", "--" ]
-          args: [ "sleep {{.Values.cni.test.sleepBeforeRunSeconds}} && exec /install-cni" ]
-            {{- else }}
+          args: [ "sleep {{.Values.cni.delayStartupSeconds}} && exec /install-cni" ]
+          {{- else }}
           command: ["/install-cni"]
-            {{- end }}
+          {{- end }}
 
           {{- else }}
           image: {{ include "kuma.formatImage" (dict "image" .Values.cni.image "root" $) | quote }}
           imagePullPolicy: Always
-            {{- if .Values.cni.test.sleepBeforeRunSeconds }}
+          {{- if .Values.cni.delayStartupSeconds }}
           command: [ "/bin/sh", "-c", "--" ]
-          args: [ "sleep {{.Values.cni.test.sleepBeforeRunSeconds}} && exec /install-cni.sh" ]
-            {{- else }}
+          args: [ "sleep {{.Values.cni.delayStartupSeconds}} && exec /install-cni.sh" ]
+          {{- else }}
           command: ["/install-cni.sh"]
-            {{- end }}
+          {{- end }}
           {{- end }}
           env:
             # Name of the CNI config file to create.
