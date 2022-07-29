@@ -53,7 +53,7 @@ func cleanup(ic *InstallerConfig) {
 		log.V(1).Info("removed kubeconfig")
 	}
 	if err := os.Remove(readyFilePath); err != nil {
-		log.Error(err, "could remove ready file")
+		log.Error(err, "couldn't remove ready file")
 	} else {
 		log.V(1).Info("removed ready file")
 	}
