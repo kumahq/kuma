@@ -38,7 +38,7 @@ var defaultVersion = types.Version{
 }
 
 var _ = Describe("bootstrapGenerator", func() {
-
+	mesh_proto.EnableInboundPassthrough = true
 	var resManager core_manager.ResourceManager
 
 	core.TempDir = func() string {
@@ -536,7 +536,7 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 		Expect(configParam.AggregateMetricsConfig).To(ContainElements([]AggregateMetricsConfig{
 			{
 				Name:    "opa",
-				Address: "127.0.0.1",
+				Address: "8.8.8.8",
 				Path:    "/mesh/config",
 				Port:    123,
 			},
@@ -629,13 +629,13 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 		Expect(configParam.AggregateMetricsConfig).To(Equal([]AggregateMetricsConfig{
 			{
 				Name:    "opa",
-				Address: "127.0.0.1",
+				Address: "8.8.8.8",
 				Path:    "/mesh/opa",
 				Port:    123,
 			},
 			{
 				Name:    "app",
-				Address: "127.0.0.1",
+				Address: "8.8.8.8",
 				Path:    "/mesh/app",
 				Port:    999,
 			},
