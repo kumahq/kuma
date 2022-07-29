@@ -66,6 +66,27 @@ spec:
 We don't want to mix mTLS configs (like permissive mTLS or TLS version) with MeshTrafficPermission. 
 The main reason is that mTLS settings are applied for the entire inbound, while permissions could be set for a group of clients. 
 
+### Shadow actions
+
+Shadow actions are not enforced but emit stats and can be used for rule testing.
+For example, before creating "action: DENY" rule, user creates "shadow_action: DENY" rule and checks the stats.
+If there are no unexpected denied requests from the clients then it's safe to change "shadow_action" to "action".
+
+Alternatively we could introduce `shadow: true|false` instead of `shadow_action: ALLOW|DENY`. 
+But this approach has its flaws:
+* policy matching makes it less obvious with merging. It's easy to create a rule like:
+    ```yaml
+    targetRef:
+       kind: Mesh
+    default:
+      action: DENY
+      shadow: true
+   ```
+   and unintentionally shadow all less specific rules.
+
+* Envoy configuration has 2 independent places for "rules" and "shadow_rules", 
+so having independent fields "action" and "shadow_action" makes it easier to translate to Envoy configs.
+
 ### Envoy configuration
 
 Envoy has [RBAC Network Filter](https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/network_filters/rbac_filter) 
@@ -223,15 +244,30 @@ rules:
 
 See [how to generate a full rule-based view with negations](#how-to-generate-a-full-rule-based-view-with-negations)
 
-3. For each "rule" that has "action: ALLOW" generate a single "principal" in v3.RBAC:
+3. Delete rules that have "action: DENY":
+
+```yaml
+rules:
+   - targetRef:
+        kind: MeshSubset
+        tags:
+           kuma.io/zone: us-east
+           env: !dev
+     default:
+        action: ALLOW
+```
+
+4. Generate [config.rbac.v3.RBAC](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/rbac/v3/rbac.proto#envoy-v3-api-msg-config-rbac-v3-rbac)
+with "ALLOW" action and with a single "MeshTrafficPermission" policy. The policy has permission "any: true" and the list of "principals".
+List of principals generated based on the list from step 3. Each principal is matched with OR semantic: 
 
 ```yaml
 action: ALLOW
 policies:
-  "backend": # name of the most specific MeshTrafficPermission policy for the DPP
+  "MeshTrafficPermission":
     permissions:
       - any: true
-    principals: # each principal is matched with OR semantics
+    principals: 
       - and_ids:
           ids:
             - authenticated:
