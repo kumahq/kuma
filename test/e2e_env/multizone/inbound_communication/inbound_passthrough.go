@@ -33,6 +33,12 @@ func InboundPassthrough() {
 				ServiceProbe(),
 				WithServiceName("uni-test-server-localhost"),
 			)).
+			Install(TestServerUniversal("uni-test-server-localhost-exposed", mesh,
+				WithArgs([]string{"echo", "--instance", "uni-bound-localhost-exposed", "--ip", "127.0.0.1"}),
+				ServiceProbe(),
+				WithServiceAddress("127.0.0.1"),
+				WithServiceName("uni-test-server-localhost-exposed"),
+			)).
 			Install(TestServerUniversal("uni-test-server-wildcard", mesh,
 				WithArgs([]string{"echo", "--instance", "uni-bound-wildcard", "--ip", "0.0.0.0"}),
 				ServiceProbe(),
@@ -148,6 +154,15 @@ func InboundPassthrough() {
 		Expect(response.Instance).To(Equal("uni-bound-containerip"))
 
 		// when
+		response, err = client.CollectResponse(
+			env.UniZone1, "uni-demo-client", "uni-test-server-localhost-exposed.mesh",
+		)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(response.Instance).To(Equal("uni-bound-localhost-exposed"))
+
+		// when
 		_, _, err = env.UniZone1.Exec("", "", "uni-demo-client",
 			"curl", "-v", "-m", "3", "--fail", "uni-test-server-localhost.mesh")
 
@@ -188,6 +203,15 @@ func InboundPassthrough() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(response.Instance).To(Equal("uni-bound-containerip"))
+
+		// when
+		response, err = client.CollectResponse(
+			env.UniZone1, "uni-demo-client", "uni-test-server-localhost-exposed.mesh",
+		)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(response.Instance).To(Equal("uni-bound-localhost-exposed"))
 
 		// when
 		_, _, err = env.KubeZone1.Exec(namespace, podName, "demo-client",

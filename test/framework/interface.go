@@ -109,6 +109,7 @@ type appDeploymentOptions struct {
 	reachableServices     []string
 	appendDataplaneConfig string
 	boundToContainerIp    bool
+	serviceAddress        string
 
 	dockerVolumes       []string
 	dockerContainerName string
@@ -401,6 +402,12 @@ func ProxyOnly() AppDeploymentOption {
 func ServiceProbe() AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.serviceProbe = true
+	})
+}
+
+func WithServiceAddress(serviceAddress string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.serviceAddress = serviceAddress
 	})
 }
 
