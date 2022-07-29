@@ -262,8 +262,13 @@ Changes that are to be backported should only be critical bug fixes of one of th
 - Panic, crash, hang
 - Security
 
-If you think your PR applies and should be backported please add the label `backport-to-stable` and it will receive extra scrutiny.
-Once the PR is approved and merged mergifyio will open a new PR with the backport, a contributor will work on getting it merged and included in a future patch release.
+If you think your PR applies and should be backported please add the label `backport-to-stable` and add a comment: `@mergifyio backport <release-1.x> <release-1.y>...`.  
+Once the PR is approved and merged mergifyio will open a new PR with the backport for each of the branches. If you backport a change it's your responsibility to make sure the backport succeeds.
+
+#### Reviewing
+
+You can indicate that you are reviewing a PR by using the `eyes` emoji on the PR description.
+If you give up on doing so please remove the emoji.
 
 ### Contributor T-shirt
 

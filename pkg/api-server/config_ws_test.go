@@ -175,6 +175,12 @@ var _ = Describe("Config WS", func() {
                   "port": 15053
                 },
                 "cniEnabled": false,
+                "ebpf": {
+                  "enabled": false,
+                  "instanceIPEnvVarName": "INSTANCE_IP",
+                  "bpffsPath": "/run/kuma/bpf",
+                  "programsSourcePath": "/kuma/ebpf"
+                },
 				"exceptions": {
 				  "labels": {
 					"openshift.io/build.name": "*",
@@ -297,6 +303,7 @@ var _ = Describe("Config WS", func() {
           "xdsServer": {
             "dataplaneConfigurationRefreshInterval": "1s",
             "dataplaneStatusFlushInterval": "10s",
+            "dataplaneDeregistrationDelay": "10s",
             "nackBackoff": "5s"
           },
           "diagnostics": {

@@ -31,16 +31,12 @@ routing:
 	externalService := `
 type: ExternalService
 mesh: default
-name: external-service-%s
+name: external-service-1
 tags:
-  kuma.io/service: external-service-%s
+  kuma.io/service: external-service-1
   kuma.io/protocol: http
 networking:
-  address: %s
-  tls:
-    enabled: %s
-    caCert:
-      inline: "%s"
+  address: "kuma-3_externalservice-http-server:80"
 `
 
 	var cluster Cluster
@@ -86,10 +82,7 @@ networking:
 			"external-service-1",
 		)
 
-		err := YamlUniversal(fmt.Sprintf(externalService,
-			"1", "1",
-			"kuma-3_externalservice-http-server:80",
-			"false", ""))(cluster)
+		err := YamlUniversal(externalService)(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func(g Gomega) {
@@ -123,10 +116,7 @@ networking:
 		)
 
 		// when external service configuration is provided
-		err := YamlUniversal(fmt.Sprintf(externalService,
-			"1", "1",
-			"kuma-3_externalservice-http-server:80",
-			"false", ""))(cluster)
+		err := YamlUniversal(externalService)(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then should reach external service

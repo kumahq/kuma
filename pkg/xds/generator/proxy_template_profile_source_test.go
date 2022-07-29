@@ -70,10 +70,6 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			}
 			ctx := xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{
-					AdminProxyKeyPair: &tls.KeyPair{
-						CertPEM: []byte("LS0=="),
-						KeyPEM:  []byte("LS0=="),
-					},
 					CLACache: &dummyCLACache{outboundTargets: outboundTargets},
 					Secrets:  &xds.TestSecrets{},
 				},
@@ -159,6 +155,13 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						KumaDp: &mesh_proto.KumaDpVersion{
 							Version: "1.2.0",
 						},
+					},
+				},
+				EnvoyAdminMTLSCerts: core_xds.ServerSideMTLSCerts{
+					CaPEM: []byte("caPEM"),
+					ServerPair: tls.KeyPair{
+						CertPEM: []byte("certPEM"),
+						KeyPEM:  []byte("keyPEM"),
 					},
 				},
 			}

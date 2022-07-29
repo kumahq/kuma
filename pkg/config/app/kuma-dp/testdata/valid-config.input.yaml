@@ -6,7 +6,6 @@ controlPlane:
 dataplane:
   mesh: demo
   name: example
-  adminPort: 2345
   drainTime: 60s
   proxyType: ingress
 dataplaneRuntime:

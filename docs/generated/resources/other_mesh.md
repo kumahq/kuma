@@ -3,9 +3,7 @@
 - `mtls` (optional)
 
     mTLS settings.
-    +optional
-
-    Child properties:    
+    +optional    
     
     - `enabledbackend` (required)
     
@@ -13,14 +11,56 @@
     
     - `backends` (required, repeated)
     
-        List of available Certificate Authority backends
+        List of available Certificate Authority backends    
+        
+        - `name` (required)
+        
+            Name of the backend    
+        
+        - `type` (required)
+        
+            Type of the backend. Has to be one of the loaded plugins (Kuma ships with
+            builtin and provided)    
+        
+        - `dpcert` (optional)
+        
+            Dataplane certificate settings    
+            
+            - `rotation` (optional)
+            
+                Rotation settings    
+                
+                - `expiration` (optional)
+                
+                    Time after which generated certificate for Dataplane will expire    
+            
+            - `requesttimeout` (optional)
+            
+                Timeout on request to CA for DP certificate generation and retrieval    
+        
+        - `conf` (optional)
+        
+            Configuration of the backend    
+        
+        - `mode` (optional, enum)
+        
+            Mode defines the behaviour of inbound listeners with regard to traffic
+            encryption
+        
+            - `STRICT`
+        
+            - `PERMISSIVE`    
+        
+        - `rootchain` (optional)    
+            
+            - `requesttimeout` (optional)
+            
+                Timeout on request for to CA for root certificate chain.
 
 - `tracing` (optional)
 
     Tracing settings.
-    +optional
-
-    Child properties:    
+    +optional    
     
     - `defaultbackend` (required)
     
@@ -28,14 +68,30 @@
     
     - `backends` (required, repeated)
     
-        List of available tracing backends
+        List of available tracing backends    
+        
+        - `name` (required)
+        
+            Name of the backend, can be then used in Mesh.tracing.defaultBackend or in
+            TrafficTrace    
+        
+        - `sampling` (optional)
+        
+            Percentage of traces that will be sent to the backend (range 0.0 - 100.0).
+            Empty value defaults to 100.0%    
+        
+        - `type` (required)
+        
+            Type of the backend (Kuma ships with 'zipkin')    
+        
+        - `conf` (required)
+        
+            Configuration of the backend
 
 - `logging` (optional)
 
     Logging settings.
-    +optional
-
-    Child properties:    
+    +optional    
     
     - `defaultbackend` (required)
     
@@ -43,7 +99,25 @@
     
     - `backends` (required, repeated)
     
-        List of available logging backends
+        List of available logging backends    
+        
+        - `name` (required)
+        
+            Name of the backend, can be then used in Mesh.logging.defaultBackend or in
+            TrafficLogging    
+        
+        - `format` (optional)
+        
+            Format of access logs. Placeholders available on
+            https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log    
+        
+        - `type` (required)
+        
+            Type of the backend (Kuma ships with 'tcp' and 'file')    
+        
+        - `conf` (required)
+        
+            Configuration of the backend
 
 - `metrics` (optional)
 
@@ -52,9 +126,7 @@
     Settings defined here become defaults for every dataplane in a given Mesh.
     Additionally, it is also possible to further customize this configuration
     for each dataplane individually using Dataplane resource.
-    +optional
-
-    Child properties:    
+    +optional    
     
     - `enabledbackend` (optional)
     
@@ -62,19 +134,27 @@
     
     - `backends` (optional, repeated)
     
-        List of available Metrics backends
+        List of available Metrics backends    
+        
+        - `name` (optional)
+        
+            Name of the backend, can be then used in Mesh.metrics.enabledBackend    
+        
+        - `type` (optional)
+        
+            Type of the backend (Kuma ships with 'prometheus')    
+        
+        - `conf` (optional)
+        
+            Configuration of the backend
 
 - `networking` (optional)
 
-    Networking settings of the mesh
-
-    Child properties:    
+    Networking settings of the mesh    
     
     - `outbound` (optional)
     
-        Outbound settings
-    
-        Child properties:    
+        Outbound settings    
         
         - `passthrough` (optional)
         
@@ -82,9 +162,7 @@
 
 - `routing` (optional)
 
-    Routing settings of the mesh
-
-    Child properties:    
+    Routing settings of the mesh    
     
     - `localityawareloadbalancing` (optional)
     
@@ -97,16 +175,12 @@
 
 - `constraints` (optional)
 
-    Constraints that applies to the mesh and its entities
-
-    Child properties:    
+    Constraints that applies to the mesh and its entities    
     
     - `dataplaneproxy` (required)
     
         DataplaneProxyMembership defines a set of requirements for data plane
-        proxies to be a member of the mesh.
-    
-        Child properties:    
+        proxies to be a member of the mesh.    
         
         - `requirements` (optional, repeated)
         
@@ -114,13 +188,23 @@
             fulfill in order to join the mesh. A data plane proxy must fulfill at
             least one requirement in order to join the mesh. Empty list of allowed
             requirements means that any proxy that is not explicitly denied can join.    
+            
+            - `tags` (required)
+            
+                Tags defines set of required tags. You can specify '*' in value to
+                require non empty value of tag    
         
         - `restrictions` (optional, repeated)
         
             Restrictions defines a set of restrictions that data plane proxies cannot
             fulfill in order to join the mesh. A data plane proxy cannot fulfill any
             requirement in order to join the mesh.
-            Restrictions takes precedence over requirements.
+            Restrictions takes precedence over requirements.    
+            
+            - `tags` (required)
+            
+                Tags defines set of required tags. You can specify '*' in value to
+                require non empty value of tag
 ## CertificateAuthorityBackend
 
 - `name` (required)
@@ -134,15 +218,11 @@
 
 - `dpcert` (optional)
 
-    Dataplane certificate settings
-
-    Child properties:    
+    Dataplane certificate settings    
     
     - `rotation` (optional)
     
-        Rotation settings
-    
-        Child properties:    
+        Rotation settings    
         
         - `expiration` (optional)
         
@@ -156,20 +236,16 @@
 
     Configuration of the backend
 
-- `mode` (optional)
+- `mode` (optional, enum)
 
     Mode defines the behaviour of inbound listeners with regard to traffic
     encryption
-
-    Supported values:
 
     - `STRICT`
 
     - `PERMISSIVE`
 
-- `rootchain` (optional)
-
-    Child properties:    
+- `rootchain` (optional)    
     
     - `requesttimeout` (optional)
     
@@ -178,9 +254,7 @@
 
 - `outbound` (optional)
 
-    Outbound settings
-
-    Child properties:    
+    Outbound settings    
     
     - `passthrough` (optional)
     
@@ -193,7 +267,25 @@
 
 - `backends` (required, repeated)
 
-    List of available tracing backends
+    List of available tracing backends    
+    
+    - `name` (required)
+    
+        Name of the backend, can be then used in Mesh.tracing.defaultBackend or in
+        TrafficTrace    
+    
+    - `sampling` (optional)
+    
+        Percentage of traces that will be sent to the backend (range 0.0 - 100.0).
+        Empty value defaults to 100.0%    
+    
+    - `type` (required)
+    
+        Type of the backend (Kuma ships with 'zipkin')    
+    
+    - `conf` (required)
+    
+        Configuration of the backend
 ## TracingBackend
 
 - `name` (required)
@@ -251,7 +343,25 @@
 
 - `backends` (required, repeated)
 
-    List of available logging backends
+    List of available logging backends    
+    
+    - `name` (required)
+    
+        Name of the backend, can be then used in Mesh.logging.defaultBackend or in
+        TrafficLogging    
+    
+    - `format` (optional)
+    
+        Format of access logs. Placeholders available on
+        https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log    
+    
+    - `type` (required)
+    
+        Type of the backend (Kuma ships with 'tcp' and 'file')    
+    
+    - `conf` (required)
+    
+        Configuration of the backend
 ## LoggingBackend
 
 - `name` (required)

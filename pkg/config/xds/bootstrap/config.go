@@ -40,7 +40,6 @@ type BootstrapParamsConfig struct {
 	// Address of Envoy Admin
 	AdminAddress string `yaml:"adminAddress" envconfig:"kuma_bootstrap_server_params_admin_address"`
 	// Port of Envoy Admin
-	// Deprecated
 	AdminPort uint32 `yaml:"adminPort" envconfig:"kuma_bootstrap_server_params_admin_port"`
 	// Path to access log file of Envoy Admin
 	AdminAccessLogPath string `yaml:"adminAccessLogPath" envconfig:"kuma_bootstrap_server_params_admin_access_log_path"`

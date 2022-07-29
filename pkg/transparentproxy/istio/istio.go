@@ -24,6 +24,12 @@ func NewIstioTransparentProxy() *IstioTransparentProxy {
 }
 
 func (tp *IstioTransparentProxy) Setup(cfg *config.TransparentProxyConfig) (string, error) {
+	if !cfg.DryRun {
+		_, _ = cfg.Stdout.Write([]byte("kumactl is about to apply the iptables " +
+			"rules that will enable transparent proxying on the machine. The SSH " +
+			"connection may drop. If that happens, just reconnect again.\n"))
+	}
+
 	viper.Set(constants.EnvoyPort, cfg.RedirectPortOutBound)
 	viper.Set(constants.InboundCapturePort, cfg.RedirectPortInBound)
 	viper.Set(constants.InboundCapturePortV6, cfg.RedirectPortInBoundV6)
@@ -62,7 +68,15 @@ func (tp *IstioTransparentProxy) Setup(cfg *config.TransparentProxyConfig) (stri
 		return tp.getStdOutStdErr(), errors.Wrapf(err, "setting istio")
 	}
 
-	return tp.getStdOutStdErr(), nil
+	output := tp.getStdOutStdErr()
+
+	if cfg.DryRun {
+		_, _ = cfg.Stdout.Write([]byte(output))
+	} else {
+		_, _ = cfg.Stdout.Write([]byte("iptables set to diverge the traffic to Envoy.\n"))
+	}
+
+	return output, nil
 }
 
 func (tp *IstioTransparentProxy) Cleanup(dryRun, verbose bool) (string, error) {

@@ -1,6 +1,7 @@
 package transparentproxy
 
 import (
+	"fmt"
 	"net"
 	"os/exec"
 	"strconv"
@@ -8,8 +9,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma-net/iptables/builder"
-	kumanet_config "github.com/kumahq/kuma-net/iptables/config"
+	kumanet_tproxy "github.com/kumahq/kuma-net/transparent-proxy"
+	kumanet_config "github.com/kumahq/kuma-net/transparent-proxy/config"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy/istio/tools/istio-iptables/pkg/constants"
@@ -18,21 +19,6 @@ import (
 var _ TransparentProxy = &ExperimentalTransparentProxy{}
 
 type ExperimentalTransparentProxy struct{}
-
-func splitPorts(ports string) ([]uint16, error) {
-	var result []uint16
-
-	for _, port := range strings.Split(ports, ",") {
-		p, err := strconv.ParseUint(port, 10, 16)
-		if err != nil {
-			return nil, errors.Wrapf(err, "port (%s), is not valid uint16", port)
-		}
-
-		result = append(result, uint16(p))
-	}
-
-	return result, nil
-}
 
 func hasLocalIPv6() (bool, error) {
 	addrs, err := net.InterfaceAddrs()
@@ -67,45 +53,58 @@ func ShouldEnableIPv6() (bool, error) {
 	return err == nil, nil
 }
 
-func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyConfig) (string, error) {
-	redirectInboundPort, err := strconv.ParseUint(tpConfig.RedirectPortInBound, 10, 16)
+func parsePort(port string) (uint16, error) {
+	parsedPort, err := strconv.ParseUint(port, 10, 16)
 	if err != nil {
-		return "", errors.Wrapf(
-			err,
-			"inbound redirect port (%s), is not valid uint16",
-			tpConfig.RedirectPortInBound,
-		)
+		return 0, fmt.Errorf("port %s, is not valid uint16", port)
 	}
 
-	var redirectInboundPortIPv6 uint64
+	return uint16(parsedPort), nil
+}
+
+func splitPorts(ports string) ([]uint16, error) {
+	ports = strings.TrimSpace(ports)
+	if ports == "" {
+		return nil, nil
+	}
+
+	var result []uint16
+
+	for _, port := range strings.Split(ports, ",") {
+		p, err := parsePort(port)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, p)
+	}
+
+	return result, nil
+}
+
+func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyConfig) (string, error) {
+	redirectInboundPort, err := parsePort(tpConfig.RedirectPortInBound)
+	if err != nil {
+		return "", errors.Wrap(err, "parsing inbound redirect port failed")
+	}
+
+	var redirectInboundPortIPv6 uint16
 
 	if tpConfig.RedirectPortInBoundV6 != "" {
-		redirectInboundPortIPv6, err = strconv.ParseUint(tpConfig.RedirectPortInBoundV6, 10, 16)
+		redirectInboundPortIPv6, err = parsePort(tpConfig.RedirectPortInBoundV6)
 		if err != nil {
-			return "", errors.Wrapf(
-				err,
-				"inbound redirect port IPv6 (%s), is not valid uint16",
-				tpConfig.RedirectPortInBound,
-			)
+			return "", errors.Wrap(err, "parsing inbound redirect port IPv6 failed")
 		}
 	}
 
-	redirectOutboundPort, err := strconv.ParseUint(tpConfig.RedirectPortOutBound, 10, 16)
+	redirectOutboundPort, err := parsePort(tpConfig.RedirectPortOutBound)
 	if err != nil {
-		return "", errors.Wrapf(
-			err,
-			"outbound redirect port (%s), is not valid uint16",
-			tpConfig.RedirectPortOutBound,
-		)
+		return "", errors.Wrap(err, "parsing outbound redirect port failed")
 	}
 
-	agentDNSListenerPort, err := strconv.ParseUint(tpConfig.AgentDNSListenerPort, 10, 16)
+	agentDNSListenerPort, err := parsePort(tpConfig.AgentDNSListenerPort)
 	if err != nil {
-		return "", errors.Wrapf(
-			err,
-			"outbound redirect port (%s), is not valid uint16",
-			tpConfig.RedirectPortOutBound,
-		)
+		return "", errors.Wrap(err, "parsing agent DNS listener port failed")
 	}
 
 	var excludeInboundPorts []uint16
@@ -136,29 +135,36 @@ func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyC
 		Redirect: kumanet_config.Redirect{
 			NamePrefix: "KUMA_",
 			Inbound: kumanet_config.TrafficFlow{
-				Port:         uint16(redirectInboundPort),
-				PortIPv6:     uint16(redirectInboundPortIPv6),
+				Enabled:      tpConfig.RedirectInBound,
+				Port:         redirectInboundPort,
+				PortIPv6:     redirectInboundPortIPv6,
 				ExcludePorts: excludeInboundPorts,
 			},
 			Outbound: kumanet_config.TrafficFlow{
-				Port:         uint16(redirectOutboundPort),
+				Enabled:      true,
+				Port:         redirectOutboundPort,
 				ExcludePorts: excludeOutboundPorts,
 			},
 			DNS: kumanet_config.DNS{
 				Enabled:            tpConfig.RedirectAllDNSTraffic,
-				Port:               uint16(agentDNSListenerPort),
+				Port:               agentDNSListenerPort,
 				ConntrackZoneSplit: !tpConfig.SkipDNSConntrackZoneSplit,
 			},
 		},
-		IPv6:    ipv6,
-		Verbose: tpConfig.Verbose,
+		Ebpf: kumanet_config.Ebpf{
+			Enabled:            tpConfig.EbpfEnabled,
+			InstanceIP:         tpConfig.EbpfInstanceIP,
+			BPFFSPath:          tpConfig.EbpfBPFFSPath,
+			ProgramsSourcePath: tpConfig.EbpfProgramsSourcePath,
+		},
+		RuntimeStdout: tpConfig.Stdout,
+		RuntimeStderr: tpConfig.Stderr,
+		IPv6:          ipv6,
+		Verbose:       tpConfig.Verbose,
+		DryRun:        tpConfig.DryRun,
 	}
 
-	if tpConfig.DryRun {
-		return builder.BuildIPTables(cfg, ipv6)
-	}
-
-	return builder.RestoreIPTables(cfg)
+	return kumanet_tproxy.Setup(cfg)
 }
 
 func (tp *ExperimentalTransparentProxy) Cleanup(dryRun, verbose bool) (string, error) {

@@ -938,6 +938,10 @@ func (c *K8sCluster) deleteKumaViaKumactl() error {
 }
 
 func (c *K8sCluster) DeleteKuma() error {
+	if c.controlplane == nil {
+		return nil
+	}
+
 	c.controlplane.ClosePortForwards()
 	var err error
 	switch c.opts.installationMode {

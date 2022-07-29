@@ -20,6 +20,8 @@ import (
 	k8sjson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 
 	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_rest "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	bootstrap_k8s "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
 	"github.com/kumahq/kuma/pkg/tls"
 )
@@ -183,6 +185,26 @@ func YamlUniversal(yaml string) InstallFunc {
 			func() (s string, err error) {
 				kumactl := cluster.GetKumactlOptions()
 				return "", kumactl.KumactlApplyFromString(yaml)
+			})
+		return err
+	}
+}
+
+func ResourceUniversal(resource model.Resource) InstallFunc {
+	return func(cluster Cluster) error {
+		_, err := retry.DoWithRetryE(cluster.GetTesting(), "install resource", DefaultRetries, DefaultTimeout,
+			func() (s string, err error) {
+				kumactl := cluster.GetKumactlOptions()
+
+				json, err := core_rest.From.Resource(resource).MarshalJSON()
+				if err != nil {
+					return "", err
+				}
+				yaml, err := yaml.JSONToYAML(json)
+				if err != nil {
+					return "", err
+				}
+				return "", kumactl.KumactlApplyFromString(string(yaml))
 			})
 		return err
 	}

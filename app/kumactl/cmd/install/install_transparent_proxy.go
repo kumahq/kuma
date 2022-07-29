@@ -40,6 +40,10 @@ type transparentProxyArgs struct {
 	KumaCpIP                           net.IP
 	SkipDNSConntrackZoneSplit          bool
 	ExperimentalTransparentProxyEngine bool
+	EbpfEnabled                        bool
+	EbpfProgramsSourcePath             string
+	EbpfInstanceIP                     string
+	EbpfBPFFSPath                      string
 }
 
 var defaultCpIP = net.IPv4(0, 0, 0, 0)
@@ -65,6 +69,9 @@ func newInstallTransparentProxy() *cobra.Command {
 		KumaCpIP:                           defaultCpIP,
 		SkipDNSConntrackZoneSplit:          false,
 		ExperimentalTransparentProxyEngine: false,
+		EbpfEnabled:                        false,
+		EbpfProgramsSourcePath:             "/kuma/ebpf",
+		EbpfBPFFSPath:                      "/run/kuma/bpf",
 	}
 	cmd := &cobra.Command{
 		Use:   "transparent-proxy",
@@ -150,7 +157,25 @@ runuser -u kuma-dp -- \
 				_, _ = cmd.ErrOrStderr().Write([]byte("# `--redirect-dns-upstream-target-chain` is deprecated, please avoid using it"))
 			}
 
-			if err := modifyIpTables(cmd, &args); err != nil {
+			if args.EbpfEnabled {
+				if args.EbpfInstanceIP == "" {
+					return errors.Errorf("--ebpf-instance-ip flag has to be specified --ebpf-enabled is provided")
+				}
+
+				if !args.ExperimentalTransparentProxyEngine {
+					return errors.Errorf("--experimental-transparent-proxy-engine flag has to be specified when --ebpf-enabled is provided")
+				}
+
+				if args.StoreFirewalld {
+					_, _ = cmd.ErrOrStderr().Write([]byte("# --store-firewalld will be ignored when --ebpf-enabled is being used"))
+				}
+
+				if args.SkipDNSConntrackZoneSplit {
+					_, _ = cmd.ErrOrStderr().Write([]byte("# --skip-dns-conntrack-zone-split will be ignored when --ebpf-enabled is being used"))
+				}
+			}
+
+			if err := configureTransparentProxy(cmd, &args); err != nil {
 				return err
 			}
 
@@ -185,6 +210,12 @@ runuser -u kuma-dp -- \
 	cmd.Flags().BoolVar(&args.SkipDNSConntrackZoneSplit, "skip-dns-conntrack-zone-split", args.SkipDNSConntrackZoneSplit, "skip applying conntrack zone splitting iptables rules")
 	cmd.Flags().BoolVar(&args.ExperimentalTransparentProxyEngine, "experimental-transparent-proxy-engine", args.ExperimentalTransparentProxyEngine, "use experimental transparent proxy engine")
 
+	// ebpf
+	cmd.Flags().BoolVar(&args.EbpfEnabled, "ebpf-enabled", args.EbpfEnabled, "use ebpf instead of iptables to install transparent proxy")
+	cmd.Flags().StringVar(&args.EbpfProgramsSourcePath, "ebpf-programs-source-path", args.EbpfProgramsSourcePath, "path where compiled ebpf programs and other necessary for ebpf mode files can be found")
+	cmd.Flags().StringVar(&args.EbpfInstanceIP, "ebpf-instance-ip", args.EbpfInstanceIP, "IP address of the instance (pod/vm) where transparent proxy will be installed")
+	cmd.Flags().StringVar(&args.EbpfBPFFSPath, "ebpf-bpffs-path", args.EbpfBPFFSPath, "the path of the BPF filesystem")
+
 	return cmd
 }
 
@@ -208,7 +239,7 @@ func findUidGid(uid, user string) (string, string, error) {
 	return u.Uid, u.Gid, nil
 }
 
-func modifyIpTables(cmd *cobra.Command, args *transparentProxyArgs) error {
+func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) error {
 	var tp transparentproxy.TransparentProxy
 	if !args.ExperimentalTransparentProxyEngine {
 		tp = transparentproxy.DefaultTransparentProxy()
@@ -227,10 +258,6 @@ func modifyIpTables(cmd *cobra.Command, args *transparentProxyArgs) error {
 		return errors.Wrapf(err, "unable to find the kuma-dp user")
 	}
 
-	if !args.DryRun {
-		_, _ = cmd.OutOrStdout().Write([]byte("kumactl is about to apply the iptables rules that will enable transparent proxying on the machine. The SSH connection may drop. If that happens, just reconnect again.\n"))
-	}
-
 	cfg := &config.TransparentProxyConfig{
 		DryRun:                    args.DryRun,
 		Verbose:                   args.Verbose,
@@ -247,6 +274,12 @@ func modifyIpTables(cmd *cobra.Command, args *transparentProxyArgs) error {
 		AgentDNSListenerPort:      args.AgentDNSListenerPort,
 		DNSUpstreamTargetChain:    args.DNSUpstreamTargetChain,
 		SkipDNSConntrackZoneSplit: args.SkipDNSConntrackZoneSplit,
+		EbpfEnabled:               args.EbpfEnabled,
+		EbpfInstanceIP:            args.EbpfInstanceIP,
+		EbpfBPFFSPath:             args.EbpfBPFFSPath,
+		EbpfProgramsSourcePath:    args.EbpfProgramsSourcePath,
+		Stdout:                    cmd.OutOrStdout(),
+		Stderr:                    cmd.OutOrStderr(),
 	}
 
 	output, err := tp.Setup(cfg)
@@ -254,13 +287,7 @@ func modifyIpTables(cmd *cobra.Command, args *transparentProxyArgs) error {
 		return errors.Wrap(err, "failed to setup transparent proxy")
 	}
 
-	if args.DryRun {
-		_, _ = cmd.OutOrStdout().Write([]byte(output))
-	} else {
-		_, _ = cmd.OutOrStdout().Write([]byte("iptables set to diverge the traffic to Envoy.\n"))
-	}
-
-	if args.StoreFirewalld {
+	if !args.EbpfEnabled && args.StoreFirewalld {
 		if _, err := firewalld.NewIptablesTranslator().
 			WithDryRun(args.DryRun).
 			WithOutput(cmd.OutOrStdout()).

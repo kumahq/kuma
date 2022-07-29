@@ -2,15 +2,21 @@
 
 - `sources` (required, repeated)
 
-    List of selectors to match dataplanes that are sources of traffic.
+    List of selectors to match dataplanes that are sources of traffic.    
+    
+    - `match` (optional)
+    
+        Tags to match, can be used for both source and destinations
 
 - `destinations` (required, repeated)
 
-    List of selectors to match services that are destinations of traffic.
+    List of selectors to match services that are destinations of traffic.    
+    
+    - `match` (optional)
+    
+        Tags to match, can be used for both source and destinations
 
-- `conf` (required)
-
-    Child properties:    
+- `conf` (required)    
     
     - `interval` (optional)
     
@@ -30,40 +36,30 @@
     
         Enables Split Mode in which local and external errors are distinguished    
     
-    - `detectors` (optional)
-    
-        Child properties:    
+    - `detectors` (optional)    
         
         - `totalerrors` (optional)
         
             Errors with status code 5xx and locally originated errors, in Split
-            Mode - just errors with status code 5xx
-        
-            Child properties:    
+            Mode - just errors with status code 5xx    
             
             - `consecutive` (optional)    
         
         - `gatewayerrors` (optional)
         
             Subset of 'total' related to gateway errors (502, 503 or 504 status
-            code)
-        
-            Child properties:    
+            code)    
             
             - `consecutive` (optional)    
         
         - `localerrors` (optional)
         
             Takes into account only in Split Mode, number of locally originated
-            errors
-        
-            Child properties:    
+            errors    
             
             - `consecutive` (optional)    
         
-        - `standarddeviation` (optional)
-        
-            Child properties:    
+        - `standarddeviation` (optional)    
             
             - `requestvolume` (optional)
             
@@ -78,9 +74,7 @@
             
                 Resulting threshold = mean - (stdev * factor)    
         
-        - `failure` (optional)
-        
-            Child properties:    
+        - `failure` (optional)    
             
             - `requestvolume` (optional)
             
@@ -96,9 +90,7 @@
                 Eject host if failure percentage of a given host is greater than or
                 equal to this value, has to be in [0 - 100] range    
     
-    - `thresholds` (optional)
-    
-        Child properties:    
+    - `thresholds` (optional)    
         
         - `maxconnections` (optional)
         

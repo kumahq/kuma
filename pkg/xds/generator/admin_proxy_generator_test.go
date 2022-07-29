@@ -37,12 +37,6 @@ var _ = Describe("AdminProxyGenerator", func() {
 			parseResource(bytes, dataplane)
 
 			ctx := context.Context{
-				ControlPlane: &context.ControlPlaneContext{
-					AdminProxyKeyPair: &tls.KeyPair{
-						CertPEM: []byte("LS0=="),
-						KeyPEM:  []byte("LS0=="),
-					},
-				},
 				Mesh: context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
@@ -55,6 +49,13 @@ var _ = Describe("AdminProxyGenerator", func() {
 			proxy := &xds.Proxy{
 				Metadata: &xds.DataplaneMetadata{
 					AdminPort: 9901,
+				},
+				EnvoyAdminMTLSCerts: xds.ServerSideMTLSCerts{
+					CaPEM: []byte("caPEM"),
+					ServerPair: tls.KeyPair{
+						CertPEM: []byte("certPEM"),
+						KeyPEM:  []byte("keyPEM"),
+					},
 				},
 				Dataplane:  dataplane,
 				APIVersion: envoy_common.APIV3,

@@ -76,6 +76,10 @@ spec:
           command: ["/install-cni.sh"]
           {{- end }}
           {{- end }}
+          {{- if .Values.cni.containerSecurityContext }}
+          securityContext:
+          {{- toYaml .Values.cni.containerSecurityContext | trim | nindent 12 }}
+          {{- end }}
           env:
             # Name of the CNI config file to create.
             - name: CNI_CONF_NAME

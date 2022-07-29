@@ -56,7 +56,7 @@ func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKe
 	return nil
 }
 
-func (t *dataplaneSyncTracker) OnProxyDisconnected(_ core_xds.StreamID, dpKey core_model.ResourceKey) {
+func (t *dataplaneSyncTracker) OnProxyDisconnected(_ context.Context, _ core_xds.StreamID, dpKey core_model.ResourceKey) {
 	t.Lock()
 	defer t.Unlock()
 	if cancelFn := t.watchdogs[dpKey]; cancelFn != nil {

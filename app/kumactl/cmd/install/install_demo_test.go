@@ -64,5 +64,11 @@ var _ = Describe("kumactl install demo", func() {
 			},
 			goldenFile: "install-demo.overrides.golden.yaml",
 		}),
+		Entry("should respect --without-gateway", testCase{
+			extraArgs: []string{
+				"--without-gateway",
+			},
+			goldenFile: "install-demo.without-gateway.golden.yaml",
+		}),
 	)
 })

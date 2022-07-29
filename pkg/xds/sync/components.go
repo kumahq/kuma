@@ -109,6 +109,7 @@ func DefaultDataplaneWatchdogFactory(
 		envoyCpCtx:            envoyCpCtx,
 		meshCache:             meshSnapshotCache,
 		metadataTracker:       metadataTracker,
+		resManager:            rt.ReadOnlyResourceManager(),
 	}
 	return NewDataplaneWatchdogFactory(
 		xdsMetrics,

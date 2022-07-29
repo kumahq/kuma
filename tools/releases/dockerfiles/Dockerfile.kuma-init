@@ -1,10 +1,13 @@
 ARG BASE_IMAGE_ARCH=amd64
+ARG EBPF_IMAGE=kumahq/kuma-net-ebpf:0.4.0
+
+FROM --platform=linux/$BASE_IMAGE_ARCH $EBPF_IMAGE as ebpf
 FROM --platform=linux/$BASE_IMAGE_ARCH ubuntu:focal
 
 ARG ARCH
 
 RUN apt-get update && \
-    apt-get -y install iptables iproute2 && \
+    apt-get -y install iptables iproute2 make && \
     rm -rf /var/lib/apt/lists/*
 
 ADD /build/artifacts-linux-$ARCH/kumactl/kumactl /usr/bin
@@ -14,6 +17,11 @@ COPY /tools/releases/templates/LICENSE \
     /kuma/
 
 COPY /tools/releases/templates/NOTICE-kumactl /kuma/NOTICE
+
+# ebpf
+COPY --from=ebpf /app/bpf/*.o /kuma/ebpf/
+COPY --from=ebpf /app/bpf/load-and-attach.mk /kuma/ebpf/Makefile
+COPY --from=ebpf /usr/local/sbin/bpftool /usr/bin/bpftool
 
 RUN adduser --system --disabled-password --group kumactl --uid 5678
 

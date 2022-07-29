@@ -56,6 +56,72 @@ var _ = Describe("Kubernetes Annotations", func() {
 		})
 	})
 
+	Describe("withDefaultUint", func() {
+		It("not set annotations", func() {
+			res, exists, err := metadata.Annotations(map[string]string{}).GetUint32WithDefault(23, "foo")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(exists).To(BeFalse())
+			Expect(res).To(Equal(uint32(23)))
+		})
+		It("use last key entry", func() {
+			res, exists, err := metadata.Annotations(map[string]string{"foo": "43", "bar": "25"}).GetUint32WithDefault(23, "foo", "bar")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(exists).To(BeTrue())
+			Expect(res).To(Equal(uint32(25)))
+		})
+		It("use one key entry", func() {
+			res, exists, err := metadata.Annotations(map[string]string{"foo": "24"}).GetUint32WithDefault(23, "foo")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(exists).To(BeTrue())
+			Expect(res).To(Equal(uint32(24)))
+		})
+		It("bad value", func() {
+			_, exists, err := metadata.Annotations(map[string]string{"foo": "few"}).GetUint32WithDefault(32, "foo")
+			Expect(err).To(HaveOccurred())
+			Expect(exists).To(BeTrue())
+		})
+	})
+	Describe("withDefaultEnabled", func() {
+		It("not set annotations", func() {
+			res, exists, err := metadata.Annotations(map[string]string{}).GetEnabledWithDefault(false, "foo")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(exists).To(BeFalse())
+			Expect(res).To(BeFalse())
+		})
+		It("use last key entry", func() {
+			res, exists, err := metadata.Annotations(map[string]string{"foo": "enabled", "bar": "disabled"}).GetEnabledWithDefault(true, "foo", "bar")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(exists).To(BeTrue())
+			Expect(res).To(BeFalse())
+		})
+		It("use one key entry", func() {
+			res, exists, err := metadata.Annotations(map[string]string{"foo": "disabled"}).GetEnabledWithDefault(true, "foo")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(exists).To(BeTrue())
+			Expect(res).To(BeFalse())
+		})
+		It("bad value", func() {
+			res, exists, err := metadata.Annotations(map[string]string{"foo": "few"}).GetEnabledWithDefault(true, "foo")
+			Expect(err).To(HaveOccurred())
+			Expect(exists).To(BeTrue())
+			Expect(res).To(BeTrue())
+		})
+	})
+	Describe("withDefaultString", func() {
+		It("not set annotations", func() {
+			res, _ := metadata.Annotations(map[string]string{}).GetStringWithDefault("def", "foo")
+			Expect(res).To(Equal("def"))
+		})
+		It("use last key entry", func() {
+			res, _ := metadata.Annotations(map[string]string{"foo": "enabled", "bar": "disabled"}).GetStringWithDefault("", "foo", "bar")
+			Expect(res).To(Equal("disabled"))
+		})
+		It("use one key entry", func() {
+			res, _ := metadata.Annotations(map[string]string{"foo": "disabled"}).GetStringWithDefault("", "foo")
+			Expect(res).To(Equal("disabled"))
+		})
+	})
+
 	Context("GetUint32()", func() {
 		It("should parse value to uint32", func() {
 			// given
@@ -87,11 +153,12 @@ var _ = Describe("Kubernetes Annotations", func() {
 			}
 
 			// when
-			m, err := metadata.Annotations(annotations).GetMap("key1")
+			m, exists, err := metadata.Annotations(annotations).GetMap("key1")
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(m).To(Equal(map[string]string{"TEST1": "1", "TEST2": "2"}))
+			Expect(exists).To(BeTrue())
 		})
 
 		It("should return error if value has wrong format", func() {
@@ -101,10 +168,11 @@ var _ = Describe("Kubernetes Annotations", func() {
 			}
 
 			// when
-			_, err := metadata.Annotations(annotations).GetMap("key1")
+			_, exists, err := metadata.Annotations(annotations).GetMap("key1")
 
 			// then
 			Expect(err).To(MatchError(`invalid format. Map in "key1" has to be provided in the following format: key1=value1;key2=value2`))
+			Expect(exists).To(BeTrue())
 		})
 	})
 })

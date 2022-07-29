@@ -9,7 +9,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config"
-	config_types "github.com/kumahq/kuma/pkg/config/types"
 )
 
 var DefaultConfig = func() Config {
@@ -112,11 +111,6 @@ type Dataplane struct {
 	Name string `yaml:"name,omitempty" envconfig:"kuma_dataplane_name"`
 	// ProxyType defines mode which should be used, supported values: 'dataplane', 'ingress'
 	ProxyType string `yaml:"proxyType,omitempty" envconfig:"kuma_dataplane_proxy_type"`
-	// Port (or range of ports to choose from) for Envoy Admin API to listen on.
-	// Empty value indicates that Envoy Admin API should not be exposed over TCP.
-	// Format: "9901 | 9901-9999 | 9901- | -9901".
-	// Deprecated
-	AdminPort config_types.PortRange `yaml:"adminPort,omitempty" envconfig:"kuma_dataplane_admin_port"`
 	// Drain time for listeners.
 	DrainTime time.Duration `yaml:"drainTime,omitempty" envconfig:"kuma_dataplane_drain_time"`
 }

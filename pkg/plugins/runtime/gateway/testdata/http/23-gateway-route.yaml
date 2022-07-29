@@ -19,6 +19,7 @@ Clusters:
         enforcingConsecutiveLocalOriginFailure: 0
         enforcingFailurePercentage: 0
         enforcingSuccessRate: 0
+      perConnectionBufferLimitBytes: 32768
       type: EDS
       typedExtensionProtocolOptions:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -46,6 +47,7 @@ Clusters:
         enforcingConsecutiveLocalOriginFailure: 0
         enforcingFailurePercentage: 0
         enforcingSuccessRate: 0
+      perConnectionBufferLimitBytes: 32768
       type: EDS
       typedExtensionProtocolOptions:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -73,6 +75,7 @@ Clusters:
         enforcingConsecutiveLocalOriginFailure: 0
         enforcingFailurePercentage: 0
         enforcingSuccessRate: 0
+      perConnectionBufferLimitBytes: 32768
       type: EDS
       typedExtensionProtocolOptions:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -268,6 +271,14 @@ Routes:
       - domains:
         - '*'
         name: '*'
+        routes:
+        - directResponse:
+            body:
+              inlineString: |
+                This is a Kuma MeshGateway. No routes match this MeshGateway!
+            status: 404
+          match:
+            prefix: /
 Runtimes:
   Resources: {}
 Secrets:

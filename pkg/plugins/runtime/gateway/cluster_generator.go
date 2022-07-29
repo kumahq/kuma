@@ -125,6 +125,7 @@ func (c *ClusterGenerator) generateMeshCluster(
 		clusters.EdsCluster(dest.Destination[mesh_proto.ServiceTag]),
 		clusters.LB(nil /* TODO(jpeach) uses default Round Robin*/),
 		clusters.ClientSideMTLS(info.Proxy.SecretsTracker, mesh, upstreamServiceName, true, []envoy.Tags{dest.Destination}),
+		clusters.ConnectionBufferLimit(DefaultConnectionBuffer),
 	)
 
 	// TODO(jpeach) Envoy configures retries and fault injection with
@@ -161,6 +162,7 @@ func (c *ClusterGenerator) generateExternalCluster(
 		newClusterBuilder(info.Proxy.APIVersion, protocol, dest).Configure(
 			clusters.ProvidedEndpointCluster(dest.Destination[mesh_proto.ServiceTag], info.Proxy.Dataplane.IsIPv6(), endpoints...),
 			clusters.ClientSideTLS(endpoints),
+			clusters.ConnectionBufferLimit(DefaultConnectionBuffer),
 		),
 		identifyingTags,
 	)

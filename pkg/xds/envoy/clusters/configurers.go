@@ -1,6 +1,9 @@
 package clusters
 
 import (
+	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -162,6 +165,14 @@ func UpstreamBindConfig(address string, port uint32) ClusterBuilderOpt {
 			Address: address,
 			Port:    port,
 		})
+	})
+}
+
+func ConnectionBufferLimit(bytes uint32) ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
+		config.AddV3(v3.ClusterMustConfigureFunc(func(c *envoy_cluster.Cluster) {
+			c.PerConnectionBufferLimitBytes = wrapperspb.UInt32(bytes)
+		}))
 	})
 }
 

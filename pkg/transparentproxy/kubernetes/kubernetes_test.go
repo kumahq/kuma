@@ -69,6 +69,35 @@ var _ = Describe("kubernetes", func() {
 				"--redirect-dns-port", "25053",
 			},
 		}),
+		Entry("should generate with deprecated dns annotation", testCaseKumactl{
+			pod: &kube_core.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						metadata.KumaBuiltinDNSDeprecated:                       metadata.AnnotationEnabled,
+						metadata.KumaBuiltinDNSPortDeprecated:                   "25053",
+						metadata.KumaTrafficExcludeOutboundPorts:                "11000",
+						metadata.KumaTransparentProxyingOutboundPortAnnotation:  "25100",
+						metadata.KumaTrafficExcludeInboundPorts:                 "12000",
+						metadata.KumaTransparentProxyingInboundPortAnnotation:   "25204",
+						metadata.KumaTransparentProxyingInboundPortAnnotationV6: "25206",
+						metadata.KumaSidecarUID:                                 "12345",
+					},
+				},
+			},
+			commandLine: []string{
+				"--redirect-outbound-port", "25100",
+				"--redirect-inbound=" + "true",
+				"--redirect-inbound-port", "25204",
+				"--redirect-inbound-port-v6", "25206",
+				"--kuma-dp-uid", "12345",
+				"--exclude-inbound-ports", "12000",
+				"--exclude-outbound-ports", "11000",
+				"--verbose",
+				"--skip-resolv-conf",
+				"--redirect-all-dns-traffic",
+				"--redirect-dns-port", "25053",
+			},
+		}),
 
 		Entry("should generate no builtin DNS", testCaseKumactl{
 			pod: &kube_core.Pod{
@@ -150,6 +179,44 @@ var _ = Describe("kubernetes", func() {
 				"--skip-resolv-conf",
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "25053",
+			},
+		}),
+		Entry("should generate for ebpf transparent proxy", testCaseKumactl{
+			pod: &kube_core.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						metadata.KumaBuiltinDNS:                                  metadata.AnnotationEnabled,
+						metadata.KumaBuiltinDNSPort:                              "25053",
+						metadata.KumaTrafficExcludeOutboundPorts:                 "11000",
+						metadata.KumaTransparentProxyingOutboundPortAnnotation:   "25100",
+						metadata.KumaGatewayAnnotation:                           metadata.AnnotationEnabled,
+						metadata.KumaTrafficExcludeInboundPorts:                  "12000",
+						metadata.KumaTransparentProxyingInboundPortAnnotation:    "25204",
+						metadata.KumaTransparentProxyingInboundPortAnnotationV6:  "25206",
+						metadata.KumaSidecarUID:                                  "12345",
+						metadata.KumaTransparentProxyingEbpf:                     metadata.AnnotationEnabled,
+						metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName: "FOO_BAR",
+						metadata.KumaTransparentProxyingEbpfBPFFSPath:            "/baz/bar/foo",
+						metadata.KumaTransparentProxyingEbpfProgramsSourcePath:   "/foo",
+					},
+				},
+			},
+			commandLine: []string{
+				"--redirect-outbound-port", "25100",
+				"--redirect-inbound=" + "false",
+				"--redirect-inbound-port", "25204",
+				"--redirect-inbound-port-v6", "25206",
+				"--kuma-dp-uid", "12345",
+				"--exclude-inbound-ports", "12000",
+				"--exclude-outbound-ports", "11000",
+				"--verbose",
+				"--skip-resolv-conf",
+				"--redirect-all-dns-traffic",
+				"--redirect-dns-port", "25053",
+				"--ebpf-enabled",
+				"--ebpf-instance-ip", "$(FOO_BAR)",
+				"--ebpf-bpffs-path", "/baz/bar/foo",
+				"--ebpf-programs-source-path", "/foo",
 			},
 		}),
 	)

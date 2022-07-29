@@ -330,3 +330,10 @@ type ExperimentalConfig struct {
 func (e ExperimentalConfig) Validate() error {
 	return nil
 }
+
+func (c Config) GetEnvoyAdminPort() uint32 {
+	if c.BootstrapServer == nil || c.BootstrapServer.Params == nil {
+		return 0
+	}
+	return c.BootstrapServer.Params.AdminPort
+}

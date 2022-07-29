@@ -179,6 +179,10 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ReadinessProbe.InitialDelaySeconds).To(Equal(int32(41)))
 			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Enabled).To(Equal(true))
 			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Port).To(Equal(uint32(1053)))
+			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.Enabled).To(Equal(true))
+			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.InstanceIPEnvVarName).To(Equal("FOO"))
+			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.BPFFSPath).To(Equal("/run/kuma/bar"))
+			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.ProgramsSourcePath).To(Equal("/kuma/baz"))
 
 			Expect(cfg.Runtime.Universal.DataplaneCleanupAge).To(Equal(1 * time.Hour))
 
@@ -216,6 +220,7 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.XdsServer.DataplaneStatusFlushInterval).To(Equal(7 * time.Second))
 			Expect(cfg.XdsServer.DataplaneConfigurationRefreshInterval).To(Equal(21 * time.Second))
+			Expect(cfg.XdsServer.DataplaneDeregistrationDelay).To(Equal(11 * time.Second))
 			Expect(cfg.XdsServer.NACKBackoff).To(Equal(10 * time.Second))
 
 			Expect(cfg.Metrics.Zone.SubscriptionLimit).To(Equal(23))
@@ -387,6 +392,11 @@ runtime:
       builtinDNS:
         enabled: true
         port: 1053
+      ebpf:
+        enabled: true
+        instanceIPEnvVarName: FOO
+        bpffsPath: /run/kuma/bar
+        programsSourcePath: /kuma/baz
 reports:
   enabled: false
 general:
@@ -425,6 +435,7 @@ diagnostics:
 xdsServer:
   dataplaneConfigurationRefreshInterval: 21s
   dataplaneStatusFlushInterval: 7s
+  dataplaneDeregistrationDelay: 11s
   nackBackoff: 10s
 metrics:
   zone:
@@ -566,6 +577,10 @@ experimental:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_INITIAL_DELAY_SECONDS": "41",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED":                                     "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_PORT":                                        "1053",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_ENABLED":                                            "true",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_INSTANCE_IP_ENV_VAR_NAME":                           "FOO",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_BPFFS_PATH":                                         "/run/kuma/bar",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH":                               "/kuma/baz",
 				"KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED":                                           "false",
 				"KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT":                                              "1111",
 				"KUMA_RUNTIME_KUBERNETES_EXCEPTIONS_LABELS":                                                "openshift.io/build.name:value1,openshift.io/deployer-pod-for.name:value2",
@@ -596,6 +611,7 @@ experimental:
 				"KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS":                                                         "true",
 				"KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL":                                          "7s",
 				"KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL":                                 "21s",
+				"KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY":                                                  "11s",
 				"KUMA_XDS_SERVER_NACK_BACKOFF":                                                             "10s",
 				"KUMA_METRICS_ZONE_SUBSCRIPTION_LIMIT":                                                     "23",
 				"KUMA_METRICS_ZONE_IDLE_TIMEOUT":                                                           "2m",
