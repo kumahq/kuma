@@ -106,7 +106,7 @@ If we want to grant any permissions to these instances we can create the followi
 ```yaml
 action: ALLOW
 policies:
-  "backend-us-east-v1-allow-all":
+  "MeshTrafficPermission":
     permissions:
       - any: true
     principals:
