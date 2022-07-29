@@ -207,7 +207,12 @@ func (b *bootstrapGenerator) getMetricsConfig(
 			if config.GetAddress() != "" {
 				address = config.GetAddress()
 			} else {
-				address = "127.0.0.1"
+				switch b.enableInboundPassthrough {
+				case true:
+					address = dataplane.GetIP()
+				case false:
+					address = "127.0.0.1"
+				}
 			}
 			aggregateConfig = append(aggregateConfig, AggregateMetricsConfig{
 				Address: address,
