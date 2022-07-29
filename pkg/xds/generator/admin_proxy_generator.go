@@ -73,7 +73,7 @@ func (g AdminProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.P
 		filterChains = append(filterChains, envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
 			Configure(envoy_listeners.MatchTransportProtocol("tls")).
 			Configure(envoy_listeners.StaticEndpoints(envoy_names.GetAdminListenerName(), staticTlsEndpointPaths)).
-			Configure(envoy_listeners.ServerSideMTLSWithCP(ctx, proxy.SecretsTracker)),
+			Configure(envoy_listeners.ServerSideStaticMTLS(proxy.EnvoyAdminMTLSCerts)),
 		))
 
 		listener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).

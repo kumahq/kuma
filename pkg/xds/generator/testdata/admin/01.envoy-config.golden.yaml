@@ -75,11 +75,14 @@ resources:
           commonTlsContext:
             tlsCertificates:
             - certificateChain:
-                inlineBytes: TFMwPT0=
+                inlineBytes: Y2VydFBFTQ==
               privateKey:
-                inlineBytes: TFMwPT0=
-            validationContextSdsSecretConfig:
-              name: cp_validation_ctx
+                inlineBytes: a2V5UEVN
+            validationContext:
+              matchSubjectAltNames:
+              - exact: kuma-cp
+              trustedCa:
+                inlineBytes: Y2FQRU0=
           requireClientCertificate: true
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector

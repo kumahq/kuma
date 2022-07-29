@@ -116,19 +116,14 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	if cfg.Mode == config_core.Global {
 		builder.WithEnvoyAdminClient(admin.NewKDSEnvoyAdminClient(
 			builder.KDSContext().EnvoyAdminRPCs,
-			cfg.Store.Type == store.KubernetesStore))
+			cfg.Store.Type == store.KubernetesStore,
+		))
 	} else {
-		envoyAdminClient, err := admin.NewEnvoyAdminClient(
+		builder.WithEnvoyAdminClient(admin.NewEnvoyAdminClient(
 			builder.ResourceManager(),
 			builder.CaManagers(),
-			builder.Config().DpServer.TlsCertFile,
-			builder.Config().DpServer.TlsKeyFile,
 			builder.Config().GetEnvoyAdminPort(),
-		)
-		if err != nil {
-			return nil, err
-		}
-		builder.WithEnvoyAdminClient(envoyAdminClient)
+		))
 	}
 
 	// The setting should be removed, and there is no easy way to set it without breaking most of the code

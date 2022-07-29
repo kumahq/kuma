@@ -6,7 +6,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/tls"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
 
@@ -23,7 +22,6 @@ type ConnectionInfo struct {
 // ControlPlaneContext contains shared global data and components that are required for generating XDS
 // This data is the same regardless of a data plane proxy and mesh we are generating the data for.
 type ControlPlaneContext struct {
-	AdminProxyKeyPair        *tls.KeyPair
 	CLACache                 xds.CLACache
 	Secrets                  secrets.Secrets
 	Zone                     string
@@ -75,24 +73,4 @@ func (mc *MeshContext) GetLoggingBackend(tl *core_mesh.TrafficLogResource) *mesh
 	} else {
 		return lb
 	}
-}
-
-func BuildControlPlaneContext(
-	claCache xds.CLACache,
-	secrets secrets.Secrets,
-	zone string,
-	enableInboundPassthrough bool,
-) (*ControlPlaneContext, error) {
-	adminKeyPair, err := tls.NewSelfSignedCert("admin", tls.ServerCertType, tls.DefaultKeyType, "localhost")
-	if err != nil {
-		return nil, err
-	}
-
-	return &ControlPlaneContext{
-		AdminProxyKeyPair:        &adminKeyPair,
-		CLACache:                 claCache,
-		Secrets:                  secrets,
-		Zone:                     zone,
-		EnableInboundPassthrough: enableInboundPassthrough,
-	}, nil
 }

@@ -93,9 +93,11 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 		return err
 	}
 
-	envoyCpCtx, err := xds_context.BuildControlPlaneContext(claCache, secrets, rt.Config().Multizone.Zone.Name, rt.Config().Defaults.EnableInboundPassthrough)
-	if err != nil {
-		return err
+	envoyCpCtx := &xds_context.ControlPlaneContext{
+		CLACache:                 claCache,
+		Secrets:                  secrets,
+		Zone:                     rt.Config().Multizone.Zone.Name,
+		EnableInboundPassthrough: rt.Config().Defaults.EnableInboundPassthrough,
 	}
 
 	if err := v3.RegisterXDS(statsCallbacks, xdsMetrics, meshSnapshotCache, envoyCpCtx, rt); err != nil {
