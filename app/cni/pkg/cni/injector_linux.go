@@ -9,8 +9,8 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma-net/iptables/builder"
-	"github.com/kumahq/kuma-net/transparent-proxy/config"
+	kumanet_tproxy "github.com/kumahq/kuma-net/transparent-proxy"
+	kumanet_config "github.com/kumahq/kuma-net/transparent-proxy/config"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy"
 )
@@ -51,7 +51,7 @@ func Inject(netns string, logger logr.Logger, intermediateConfig *IntermediateCo
 	defer namespace.Close()
 
 	err = namespace.Do(func(_ ns.NetNS) error {
-		rules, err := builder.RestoreIPTables(*cfg)
+		rules, err := kumanet_tproxy.Setup(*cfg)
 		if err != nil {
 			return err
 		}
@@ -63,7 +63,7 @@ func Inject(netns string, logger logr.Logger, intermediateConfig *IntermediateCo
 	return err
 }
 
-func mapToConfig(intermediateConfig *IntermediateConfig) (*config.Config, error) {
+func mapToConfig(intermediateConfig *IntermediateConfig) (*kumanet_config.Config, error) {
 	port, err := convertToUint16("inbound port", intermediateConfig.targetPort)
 	if err != nil {
 		return nil, err
@@ -72,13 +72,13 @@ func mapToConfig(intermediateConfig *IntermediateConfig) (*config.Config, error)
 	if err != nil {
 		return nil, err
 	}
-	cfg := config.Config{
+	cfg := kumanet_config.Config{
 		RuntimeStdout: ioutil.Discard,
-		Owner: config.Owner{
+		Owner: kumanet_config.Owner{
 			UID: intermediateConfig.noRedirectUID,
 		},
-		Redirect: config.Redirect{
-			Outbound: config.TrafficFlow{
+		Redirect: kumanet_config.Redirect{
+			Outbound: kumanet_config.TrafficFlow{
 				Port:         port,
 				ExcludePorts: excludePorts,
 			},
@@ -109,7 +109,7 @@ func mapToConfig(intermediateConfig *IntermediateConfig) (*config.Config, error)
 		if err != nil {
 			return nil, err
 		}
-		cfg.Redirect.Inbound = config.TrafficFlow{
+		cfg.Redirect.Inbound = kumanet_config.TrafficFlow{
 			Port:         inboundPort,
 			PortIPv6:     inboundPortV6,
 			ExcludePorts: excludedPorts,
@@ -125,7 +125,7 @@ func mapToConfig(intermediateConfig *IntermediateConfig) (*config.Config, error)
 		if err != nil {
 			return nil, err
 		}
-		cfg.Redirect.DNS = config.DNS{
+		cfg.Redirect.DNS = kumanet_config.DNS{
 			Enabled: true,
 			Port:    builtinDnsPort,
 		}
