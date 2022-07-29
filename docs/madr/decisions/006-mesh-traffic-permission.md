@@ -275,7 +275,7 @@ If the label is unset it will be added automatically by the webhook to be "kuma.
 Today all policies are cluster-scoped, but new policies should be namespace scoped.
 MeshTrafficPermission can only be created in the namespace where the control-plane runs (`kuma-system` by default), 
 and affects DPPs across all namespaces.
-In the future we'll add support for other namespaces, so the policy could affect DPPs only in the specified namespace. 
+In the future we'll add support for other namespaces, so the policy could affect DPPs only in the specified namespace but this is out of scope for this MADR. 
 
 ### Cross-mesh
 
