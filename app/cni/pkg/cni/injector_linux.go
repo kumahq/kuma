@@ -128,8 +128,10 @@ func mapToConfig(intermediateConfig *IntermediateConfig) (*kumanet_config.Config
 			return nil, err
 		}
 		cfg.Redirect.DNS = kumanet_config.DNS{
-			Enabled: true,
-			Port:    builtinDnsPort,
+			Enabled:            true,
+			Port:               builtinDnsPort,
+			CaptureAll:         true,
+			ConntrackZoneSplit: true,
 		}
 	}
 	return &cfg, nil
