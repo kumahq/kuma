@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	_ "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 var _ = Describe("Sanitize ConfigDump", func() {

@@ -10,7 +10,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
@@ -47,10 +46,9 @@ func ServerSideMTLS(mesh *core_mesh.MeshResource, secrets core_xds.SecretsTracke
 	})
 }
 
-func ServerSideMTLSWithCP(ctx xds_context.Context, secrets core_xds.SecretsTracker) FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(&v3.ServerSideMTLSWithCPConfigurer{
-		Ctx:            ctx,
-		SecretsTracker: secrets,
+func ServerSideStaticMTLS(mtlsCerts core_xds.ServerSideMTLSCerts) FilterChainBuilderOpt {
+	return AddFilterChainConfigurer(&v3.ServerSideStaticMTLSConfigurer{
+		MTLSCerts: mtlsCerts,
 	})
 }
 
