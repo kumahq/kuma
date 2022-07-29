@@ -118,6 +118,19 @@ func ApplicationsMetrics() {
 			Install(testserver.Install(
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(meshNoAggregate),
+				testserver.WithName("test-server-localhost"),
+				testserver.WithoutProbe(),
+				testserver.WithEchoArgs("echo", "--instance", "test-server-localhost", "--ip", "127.0.0.1"),
+				testserver.WithPodAnnotations(map[string]string{
+					"prometheus.metrics.kuma.io/aggregate-app-path":       "/my-app",
+					"prometheus.metrics.kuma.io/aggregate-app-port":       "80",
+					"prometheus.metrics.kuma.io/aggregate-app-address":    "127.0.0.1",
+					"prometheus.metrics.kuma.io/aggregate-other-app-path": "/other-app",
+					"prometheus.metrics.kuma.io/aggregate-other-app-port": "80",
+				}))).
+			Install(testserver.Install(
+				testserver.WithNamespace(namespace),
+				testserver.WithMesh(meshNoAggregate),
 				testserver.WithName("test-server-dp-metrics"),
 				testserver.WithPodAnnotations(map[string]string{
 					"prometheus.metrics.kuma.io/aggregate-app-path":       "/my-app",
@@ -194,6 +207,30 @@ func ApplicationsMetrics() {
 		// overridden by pod
 		Expect(stdout).To(ContainSubstring("mesh-default"))
 		// added in pod
+		Expect(stdout).To(ContainSubstring("my-app"))
+		// metric from envoy
+		Expect(stdout).To(ContainSubstring("envoy_server_concurrency"))
+	})
+
+	It("should get metrics for application bound to localhost when address defined", func() {
+		// given
+		podName, err := PodNameOfApp(env.Cluster, "test-server-localhost", namespace)
+		Expect(err).ToNot(HaveOccurred())
+		podIp, err := PodIPOfApp(env.Cluster, "test-server-localhost", namespace)
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		stdout, _, err := env.Cluster.Exec(namespace, podName, "test-server-localhost",
+			"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(podIp, "1234")+"/metrics")
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(stdout).ToNot(BeNil())
+
+		// address not provided for localhost bound application
+		Expect(stdout).ToNot(ContainSubstring("other-app"))
+
+		// metrics from pod
 		Expect(stdout).To(ContainSubstring("my-app"))
 		// metric from envoy
 		Expect(stdout).To(ContainSubstring("envoy_server_concurrency"))
