@@ -240,7 +240,7 @@ jobs:
   e2e:
     parameters:
       k8sVersion:
-        description: version of k3s to use or "kind" and "kindv6"
+        description: version of k3s to use or "kind" and "kindIpv6"
         type: string
         default: v1.21.7-k3s1
       parallelism:
@@ -277,6 +277,9 @@ jobs:
             }
             if [[ "<< parameters.k8sVersion >>" == "kind" && "<< parameters.target >>" != "test/e2e-universal" ]]; then
               skip "kind should only be used when testing ipv6 or with test/e2e-universal"
+            fi
+            if [[ "<< parameters.k8sVersion >>" != kind* && "<< parameters.target >>" == "test/e2e-universal" ]]; then
+              skip "universal only runs on kind"
             fi
             if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* ]]; then
               if [[ "<< parameters.k8sVersion >>" == "kindIpv6" || "<< parameters.k8sVersion >>" == "v1.19.16-k3s1" || "<< parameters.arch >>" == "arm64" ]]; then
