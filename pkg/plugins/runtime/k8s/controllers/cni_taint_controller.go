@@ -17,9 +17,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
+
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )
 
 const nodeReadinessTaintKey = "NodeReadiness"
+const nodeIndexField = "spec.nodeName"
+const parentAppLabel = "parent.app"
 
 type CniNodeTaintReconciler struct {
 	kube_client.Client
@@ -43,17 +47,14 @@ func (r *CniNodeTaintReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 	log.Info("node successfully fetched")
 
 	kubeSystemPods := &kube_core.PodList{}
-	if err := r.Client.List(ctx, kubeSystemPods, kube_client.InNamespace("kube-system")); err != nil {
+	namespaceOption := kube_client.InNamespace("kube-system")
+	matchingFields := kube_client.MatchingFields{nodeIndexField: node.Name}
+	matchingLabels := kube_client.MatchingLabels{parentAppLabel: metadata.KumaCNI}
+	if err := r.Client.List(ctx, kubeSystemPods, namespaceOption, matchingFields, matchingLabels); err != nil {
 		return kube_ctrl.Result{}, err
 	}
-	var podsOnThisNode []kube_core.Pod
-	for _, pod := range kubeSystemPods.Items {
-		if pod.Spec.NodeName == node.Name {
-			podsOnThisNode = append(podsOnThisNode, pod)
-		}
-	}
 
-	err := r.updateTaints(ctx, log, node, podsOnThisNode)
+	err := r.updateTaints(ctx, log, node, kubeSystemPods.Items)
 	if err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to update node taints")
 	}
@@ -129,7 +130,7 @@ func hasCniPodRunning(log logr.Logger, pods []kube_core.Pod) bool {
 		if isCniPod(pod) && pod.Status.Phase == kube_core.PodRunning {
 			for _, condition := range pod.Status.Conditions {
 				if condition.Type == kube_core.PodReady && condition.Status == kube_core.ConditionTrue {
-					log.Info("pod has kuma-cni-node running and ready", "pod", pod.Name, "status", pod.Status)
+					log.V(1).Info("pod has kuma-cni-node running and ready", "pod", pod.Name, "status", pod.Status)
 					return true
 				}
 			}
@@ -139,11 +140,18 @@ func hasCniPodRunning(log logr.Logger, pods []kube_core.Pod) bool {
 }
 
 func isCniPod(pod kube_core.Pod) bool {
-	value, ok := pod.Labels["parent.app"]
-	return ok && value == "kuma-cni"
+	value, ok := pod.Labels[parentAppLabel]
+	return ok && value == metadata.KumaCNI
 }
 
 func (r *CniNodeTaintReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &kube_core.Pod{}, nodeIndexField, func(obj kube_client.Object) []string {
+		pod := obj.(*kube_core.Pod)
+		return []string{pod.Spec.NodeName}
+	}); err != nil {
+		return err
+	}
+
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&kube_core.Node{}, builder.WithPredicates(nodeEvents)).
 		// check this is necessary
@@ -159,6 +167,10 @@ func podToNodeMapper(log logr.Logger) kube_handler.MapFunc {
 		pod, ok := obj.(*kube_core.Pod)
 		if !ok {
 			log.WithValues("pod", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", pod, obj), "wrong argument type")
+			return nil
+		}
+
+		if pod.Spec.NodeName == "" {
 			return nil
 		}
 
