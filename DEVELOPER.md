@@ -93,6 +93,46 @@ make build/kumactl
 ```
 This could help expedite your development process if you only made changes to the `kumactl` files.
 
+### Experimental caching
+
+#### Requirements
+- sha256sum (`brew install coreutils`, usually already installed on linux)
+
+Make target `images` always rebuilds the image even if nothing has changed.
+This can eat up some time which is really precious in the developer feedback loop.
+
+The caching mechanism uses sha256 checksum and an additional docker tag to check if the files used for docker context actually changed.
+The current versioning scheme (e.g. `0.0.0-preview.a4bdb34c7`) does not change at all.
+
+Before this is proven to be working correctly for all the cases it's the feature will be behind a flag.
+To enable caching export this env variable:
+
+```bash
+export CACHE_IMAGE_BUILDS=true
+```
+
+or set it via make:
+
+```bash
+make CACHE_IMAGE_BUILDS=true images
+```
+
+On my machine the build time went down from **51 seconds** to **25 seconds** without paralelization
+
+```
+make images  19,88s user 20,21s system 78% cpu 51,151 total
+...
+make CACHE_IMAGE_BUILDS=true images  16,94s user 16,39s system 128% cpu 25,943 total
+```
+
+and from **24 seconds** to **9 seconds** with parallelization
+
+```bash
+make -j images  20,13s user 22,87s system 178% cpu 24,134 total
+```
+
+In a real world scenario when one or two images are changed the effect will be smaller but still noticeable.
+
 ## Running
 
 ### Kubernetes
