@@ -21,7 +21,7 @@ Chosen option: create a MeshTrafficPermission policy
 ### Overview
 
 MeshTrafficPermission allows blocking unwanted incoming traffic for the service.
-There are might be several reasons why it could be useful to block unwanted traffic:
+There might be several reasons why it could be useful to block unwanted traffic:
 * following the [principle of least privilege](https://en.wikipedia.org/wiki/Principle_of_least_privilege)
 * cut off access for clients that shouldn't use your service (legacy clients, clients from another zone, etc.)
 
