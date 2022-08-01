@@ -18,7 +18,7 @@ package {{ .Package }}
 
 import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core"
-{{range $idx, $version := .Versions}}
+{{- range $idx, $version := .Versions}}
 	api_{{ $version }} "github.com/kumahq/kuma/pkg/plugins/policies/{{ $pkg }}/api/{{ $version }}"
 	k8s_{{ $version }} "github.com/kumahq/kuma/pkg/plugins/policies/{{ $pkg }}/k8s/{{ $version }}"
 {{- end}}
