@@ -190,12 +190,7 @@ func genConfig(parameters configParameters, useTokenPath bool) (*envoy_bootstrap
 	}
 
 	if parameters.IsGatewayDataplane {
-		if maxBytesRaw, ok := parameters.DynamicMetadata["max_heap_size_bytes"]; ok {
-			maxBytes, err := strconv.ParseUint(maxBytesRaw, 10, 64)
-			if err != nil {
-				return nil, err
-			}
-
+		if maxBytes := parameters.Resources.MaxHeapSizeBytes; maxBytes > 0 {
 			config := &resource_monitors_fixed_heap.FixedHeapConfig{
 				MaxHeapSizeBytes: maxBytes,
 			}

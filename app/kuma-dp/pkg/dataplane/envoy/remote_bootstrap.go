@@ -136,12 +136,10 @@ func maybeReadAsBytes(path string) *UIntOrString {
 	return nil
 }
 
-func (b *remoteBootstrap) resourceMetadata(cfg kuma_dp.DataplaneResources) (map[string]string, error) {
-	resources := map[string]string{}
-
+func (b *remoteBootstrap) resourceMetadata(cfg kuma_dp.DataplaneResources) (types.ProxyResources, error) {
 	var maxHeap uint64
 
-	if cfg.MaxHeapSizeBytes == 0 {
+	if cfg.MaxMemoryBytes == 0 {
 		switch cgroups.Mode() {
 		case cgroups.Legacy:
 			res := maybeReadAsBytes("/sys/fs/cgroup/memory.limit_in_bytes")
@@ -155,14 +153,16 @@ func (b *remoteBootstrap) resourceMetadata(cfg kuma_dp.DataplaneResources) (map[
 			}
 		}
 	} else {
-		maxHeap = cfg.MaxHeapSizeBytes
+		maxHeap = cfg.MaxMemoryBytes
 	}
+
+	res := types.ProxyResources{}
 
 	if maxHeap != 0 {
-		resources["max_heap_size_bytes"] = strconv.Itoa(int(0.90 * float64(maxHeap)))
+		res.MaxHeapSizeBytes = uint64(0.90 * float64(maxHeap))
 	}
 
-	return resources, nil
+	return res, nil
 }
 
 func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, url *net_url.URL, cfg kuma_dp.Config, params BootstrapParams) ([]byte, error) {
@@ -187,13 +187,9 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, url *net_url.
 		token = cfg.DataplaneRuntime.Token
 	}
 
-	resourceMeta, err := b.resourceMetadata(cfg.DataplaneRuntime.Resources)
+	resources, err := b.resourceMetadata(cfg.DataplaneRuntime.Resources)
 	if err != nil {
 		return nil, err
-	}
-
-	for k, v := range resourceMeta {
-		params.DynamicMetadata[k] = v
 	}
 
 	request := types.BootstrapRequest{
@@ -222,6 +218,7 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, url *net_url.
 		EmptyDNSPort:    params.EmptyDNSPort,
 		OperatingSystem: b.operatingSystem,
 		Features:        b.features,
+		Resources:       resources,
 	}
 	jsonBytes, err := json.Marshal(request)
 	if err != nil {

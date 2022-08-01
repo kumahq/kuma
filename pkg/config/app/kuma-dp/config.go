@@ -143,7 +143,7 @@ type DataplaneRuntime struct {
 
 // DataplaneResources defines the resources available to a dataplane proxy.
 type DataplaneResources struct {
-	MaxHeapSizeBytes uint64 `yaml:"maxHeapSizeBytes,omitempty" envconfig:"kuma_dataplane_resources_max_heap_size_bytes"`
+	MaxMemoryBytes uint64 `yaml:"maxMemoryBytes,omitempty" envconfig:"kuma_dataplane_resources_max_memory_bytes"`
 }
 
 var _ config.Config = &Config{}

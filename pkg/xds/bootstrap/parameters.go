@@ -2,6 +2,8 @@ package bootstrap
 
 import (
 	"time"
+
+	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
 type KumaDpBootstrap struct {
@@ -42,4 +44,5 @@ type configParameters struct {
 	ProxyType             string
 	Features              []string
 	IsGatewayDataplane    bool
+	Resources             types.ProxyResources
 }

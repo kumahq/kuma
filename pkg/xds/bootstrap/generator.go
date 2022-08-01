@@ -98,6 +98,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		EmptyDNSPort:          request.EmptyDNSPort,
 		ProxyType:             request.ProxyType,
 		Features:              request.Features,
+		Resources:             request.Resources,
 	}
 	if params.ProxyType == "" {
 		params.ProxyType = string(mesh_proto.DataplaneProxyType)
