@@ -137,29 +137,29 @@ func maybeReadAsBytes(path string) *UIntOrString {
 }
 
 func (b *remoteBootstrap) resourceMetadata(cfg kuma_dp.DataplaneResources) (types.ProxyResources, error) {
-	var maxHeap uint64
+	var maxMemory uint64
 
 	if cfg.MaxMemoryBytes == 0 {
 		switch cgroups.Mode() {
 		case cgroups.Legacy:
 			res := maybeReadAsBytes("/sys/fs/cgroup/memory.limit_in_bytes")
 			if res != nil && res.Type == "int" {
-				maxHeap = res.UInt
+				maxMemory = res.UInt
 			}
 		case cgroups.Hybrid, cgroups.Unified:
 			res := maybeReadAsBytes("/sys/fs/cgroup/memory.max")
 			if res != nil && res.Type == "int" {
-				maxHeap = res.UInt
+				maxMemory = res.UInt
 			}
 		}
 	} else {
-		maxHeap = cfg.MaxMemoryBytes
+		maxMemory = cfg.MaxMemoryBytes
 	}
 
 	res := types.ProxyResources{}
 
-	if maxHeap != 0 {
-		res.MaxHeapSizeBytes = uint64(0.90 * float64(maxHeap))
+	if maxMemory != 0 {
+		res.MaxHeapSizeBytes = maxMemory
 	}
 
 	return res, nil
