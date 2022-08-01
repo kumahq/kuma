@@ -28,6 +28,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/timeout"
 	"github.com/kumahq/kuma/test/e2e_env/universal/trafficlog"
 	"github.com/kumahq/kuma/test/e2e_env/universal/trafficpermission"
+	"github.com/kumahq/kuma/test/e2e_env/universal/trafficroute"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -93,3 +94,4 @@ var _ = Describe("Mtls", mtls.Policy, Ordered)
 var _ = Describe("Reachable Services", reachableservices.ReachableServices, Ordered)
 var _ = Describe("Apis", api.Api, Ordered)
 var _ = Describe("Traffic Permission", trafficpermission.TrafficPermissionUniversal, Ordered)
+var _ = Describe("Traffic Route", trafficroute.TrafficRoute, Ordered)
