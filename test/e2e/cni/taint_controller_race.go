@@ -62,8 +62,6 @@ metadata:
 		func() {
 			setup()
 
-			// write a test case that shows the test-server does not come up cleanly without taint-controller
-
 			err := k8sCluster.CreateNode("second-node", "second=true")
 			Expect(err).ToNot(HaveOccurred())
 
