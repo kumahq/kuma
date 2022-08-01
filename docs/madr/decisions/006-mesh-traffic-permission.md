@@ -135,7 +135,7 @@ policies:
                   exact: "kuma://version/v1"
 ```
 
-In order request to be allowed, at least 1 policy should be matched. 
+In order request to be allowed, at least 1 principal should be matched. 
 
 #### Converting MeshTrafficPermission to Envoy NetworkRBAC
 
