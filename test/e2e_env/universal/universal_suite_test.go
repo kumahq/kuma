@@ -10,6 +10,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/test"
+	"github.com/kumahq/kuma/test/e2e_env/universal/api"
 	"github.com/kumahq/kuma/test/e2e_env/universal/auth"
 	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	"github.com/kumahq/kuma/test/e2e_env/universal/externalservices"
@@ -22,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/observability"
 	"github.com/kumahq/kuma/test/e2e_env/universal/proxytemplate"
 	"github.com/kumahq/kuma/test/e2e_env/universal/ratelimit"
+	"github.com/kumahq/kuma/test/e2e_env/universal/reachableservices"
 	"github.com/kumahq/kuma/test/e2e_env/universal/retry"
 	"github.com/kumahq/kuma/test/e2e_env/universal/timeout"
 	"github.com/kumahq/kuma/test/e2e_env/universal/trafficlog"
@@ -88,4 +90,6 @@ var _ = Describe("RateLimit", ratelimit.Policy, Ordered)
 var _ = Describe("ProxyTemplate", proxytemplate.ProxyTemplate, Ordered)
 var _ = Describe("Matching", matching.Matching, Ordered)
 var _ = Describe("Mtls", mtls.Policy, Ordered)
+var _ = Describe("Reachable Services", reachableservices.ReachableServices, Ordered)
+var _ = Describe("Apis", api.Api, Ordered)
 var _ = Describe("Traffic Permission", trafficpermission.TrafficPermissionUniversal, Ordered)
