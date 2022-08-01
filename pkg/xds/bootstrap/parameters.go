@@ -1,6 +1,10 @@
 package bootstrap
 
-import "time"
+import (
+	"time"
+
+	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
+)
 
 type KumaDpBootstrap struct {
 	AggregateMetricsConfig []AggregateMetricsConfig
@@ -39,4 +43,6 @@ type configParameters struct {
 	EmptyDNSPort          uint32
 	ProxyType             string
 	Features              []string
+	IsGatewayDataplane    bool
+	Resources             types.ProxyResources
 }

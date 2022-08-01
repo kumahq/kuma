@@ -135,6 +135,23 @@ var _ = Describe("Bootstrap Server", func() {
 		}
 	}
 
+	gatewayDataplane := func() *mesh.DataplaneResource {
+		return &mesh.DataplaneResource{
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "8.8.8.8",
+					Gateway: &mesh_proto.Dataplane_Networking_Gateway{
+						Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "gateway",
+						},
+					},
+					Admin: &mesh_proto.EnvoyAdmin{},
+				},
+			},
+		}
+	}
+
 	type testCase struct {
 		dataplaneName      string
 		dataplane          func() *mesh.DataplaneResource
@@ -186,6 +203,12 @@ var _ = Describe("Bootstrap Server", func() {
 			dataplane:          defaultDataplane,
 			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1.default", "dataplaneToken": "token", %s }`, version),
 			expectedConfigFile: "bootstrap.k8s.golden.yaml",
+		}),
+		Entry("with max heap size", testCase{
+			dataplaneName:      "gateway-1.default",
+			dataplane:          gatewayDataplane,
+			body:               fmt.Sprintf(`{ "mesh": "default", "name": "gateway-1.default", "dataplaneToken": "token", "resources": { "maxHeapSizeBytes": 2000000 }, %s }`, version),
+			expectedConfigFile: "bootstrap.gateway.golden.yaml",
 		}),
 		Entry("full data provided", testCase{
 			dataplaneName: "dp-1.default",

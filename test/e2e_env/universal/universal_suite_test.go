@@ -26,6 +26,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/retry"
 	"github.com/kumahq/kuma/test/e2e_env/universal/timeout"
 	"github.com/kumahq/kuma/test/e2e_env/universal/trafficlog"
+	"github.com/kumahq/kuma/test/e2e_env/universal/trafficpermission"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -89,3 +90,4 @@ var _ = Describe("ProxyTemplate", proxytemplate.ProxyTemplate, Ordered)
 var _ = Describe("Matching", matching.Matching, Ordered)
 var _ = Describe("Mtls", mtls.Policy, Ordered)
 var _ = Describe("Apis", api.Api, Ordered)
+var _ = Describe("Traffic Permission", trafficpermission.TrafficPermissionUniversal, Ordered)

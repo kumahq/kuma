@@ -1,57 +1,48 @@
-package universal
+package trafficpermission
 
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	config_core "github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-var universalCluster Cluster
-
-var meshDefaultMtlsOn = `
-type: Mesh
-name: default
-mtls:
-  enabledBackend: ca-1
-  backends:
-  - name: ca-1
-    type: builtin
-`
-
-var _ = E2EBeforeSuite(func() {
-	universalCluster = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
-
-	Expect(NewClusterSetup().
-		Install(Kuma(config_core.Standalone)).
-		Install(YamlUniversal(meshDefaultMtlsOn)).
-		Install(TestServerUniversal("test-server", "default", WithArgs([]string{"echo", "--instance", "echo-v1"}))).
-		Install(DemoClientUniversal(AppModeDemoClient, "default", WithTransparentProxy(true))).
-		Setup(universalCluster)).To(Succeed())
-	E2EDeferCleanup(universalCluster.DismissCluster)
-})
-
 func TrafficPermissionUniversal() {
+	meshName := "trafficpermission"
+
+	BeforeAll(func() {
+		Expect(NewClusterSetup().
+			Install(MTLSMeshUniversal(meshName)).
+			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}))).
+			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
+			Setup(env.Cluster)).To(Succeed())
+	})
+
+	E2EAfterAll(func() {
+		Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+	})
+
 	E2EAfterEach(func() {
 		// remove all TrafficPermissions
-		items, err := universalCluster.GetKumactlOptions().KumactlList("traffic-permissions", "default")
+		items, err := env.Cluster.GetKumactlOptions().KumactlList("traffic-permissions", meshName)
 		Expect(err).ToNot(HaveOccurred())
 		defaultFound := false
 		for _, item := range items {
-			if item == "allow-all-default" {
+			if item == "allow-all-"+meshName {
 				defaultFound = true
 				continue
 			}
-			err := universalCluster.GetKumactlOptions().KumactlDelete("traffic-permission", item, "default")
+			err := env.Cluster.GetKumactlOptions().KumactlDelete("traffic-permission", item, meshName)
 			Expect(err).ToNot(HaveOccurred())
 		}
 
 		if !defaultFound {
 			yaml := `
 type: TrafficPermission
-name: allow-all-default
-mesh: default
+name: allow-all-trafficpermission
+mesh: trafficpermission
 sources:
   - match:
       kuma.io/service: '*'
@@ -59,13 +50,13 @@ destinations:
   - match:
       kuma.io/service: '*'
 `
-			err = YamlUniversal(yaml)(universalCluster)
+			err = YamlUniversal(yaml)(env.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		}
 	})
 
 	trafficAllowed := func() {
-		stdout, _, err := universalCluster.ExecWithRetries("", "", "demo-client",
+		stdout, _, err := env.Cluster.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "--fail", "test-server.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
@@ -73,14 +64,14 @@ destinations:
 
 	trafficBlocked := func() {
 		Eventually(func() error {
-			_, _, err := universalCluster.Exec("", "", "demo-client",
+			_, _, err := env.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "--fail", "test-server.mesh")
 			return err
 		}, "30s", "1s").Should(HaveOccurred())
 	}
 
 	removeDefaultTrafficPermission := func() {
-		err := universalCluster.GetKumactlOptions().KumactlDelete("traffic-permission", "allow-all-default", "default")
+		err := env.Cluster.GetKumactlOptions().KumactlDelete("traffic-permission", "allow-all-"+meshName, meshName)
 		Expect(err).ToNot(HaveOccurred())
 	}
 
@@ -106,7 +97,7 @@ destinations:
 		yaml := `
 type: TrafficPermission
 name: example
-mesh: default
+mesh: trafficpermission
 sources:
   - match:
       kuma.io/service: demo-client
@@ -114,7 +105,7 @@ destinations:
   - match:
       kuma.io/service: test-server
 `
-		err := YamlUniversal(yaml)(universalCluster)
+		err := YamlUniversal(yaml)(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -130,7 +121,7 @@ destinations:
 		yaml := `
 type: TrafficPermission
 name: other-tag-example
-mesh: default
+mesh: trafficpermission
 sources:
   - match:
       team: client-owners
@@ -138,7 +129,7 @@ destinations:
   - match:
       team: server-owners
 `
-		err := YamlUniversal(yaml)(universalCluster)
+		err := YamlUniversal(yaml)(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -154,7 +145,7 @@ destinations:
 		yaml := `
 type: TrafficPermission
 name: other-tag-example
-mesh: default
+mesh: trafficpermission
 sources:
   - match:
       team: client-owners
@@ -164,7 +155,7 @@ destinations:
       team: server-owners
       kuma.io/service: test-server
 `
-		err := YamlUniversal(yaml)(universalCluster)
+		err := YamlUniversal(yaml)(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -179,7 +170,7 @@ destinations:
 		yaml := `
 type: TrafficPermission
 name: example
-mesh: default
+mesh: trafficpermission
 sources:
   - match:
       kuma.io/service: non-existent-demo-client
@@ -187,7 +178,7 @@ destinations:
   - match:
       kuma.io/service: test-server
 `
-		err := YamlUniversal(yaml)(universalCluster)
+		err := YamlUniversal(yaml)(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -197,7 +188,7 @@ destinations:
 		yaml = `
 type: TrafficPermission
 name: example-2
-mesh: default
+mesh: trafficpermission
 sources:
   - match:
       kuma.io/service: demo-client
@@ -205,7 +196,7 @@ destinations:
   - match:
       kuma.io/service: test-server
 `
-		err = YamlUniversal(yaml)(universalCluster)
+		err = YamlUniversal(yaml)(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then communication works because it was applied later
