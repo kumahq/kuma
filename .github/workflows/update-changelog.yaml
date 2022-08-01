@@ -1,0 +1,32 @@
+name: "Update changelog"
+
+on:
+  workflow_dispatch: {}
+  release:
+    types: [published, edited, released, unpublished, deleted]
+jobs:
+  upgrade-kuma:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: kong-mesh
+    steps:
+      - name: "Clone Kuma"
+        uses: actions/checkout@v2
+
+      - uses: actions/setup-go@v2
+        with:
+          go-version: "~1.18.1"
+      - run: |
+          go run ./tools/releases/changelog/... changelog.md > CHANGELOG.md
+      - name: "Create Pull Request"
+        uses: peter-evans/create-pull-request@v3
+        with:
+          commit-message: "docs(CHANGELOG.md): Updating changelog"
+          committer: GitHub <noreply@github.com>
+          author: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
+          signoff: true
+          branch: chore/update-changelog
+          delete-branch: true
+          title: "docs(CHANGELOG.md): Updating changelog"
+          draft: false
