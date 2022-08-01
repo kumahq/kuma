@@ -98,6 +98,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		EmptyDNSPort:          request.EmptyDNSPort,
 		ProxyType:             request.ProxyType,
 		Features:              request.Features,
+		Resources:             request.Resources,
 	}
 	if params.ProxyType == "" {
 		params.ProxyType = string(mesh_proto.DataplaneProxyType)
@@ -132,6 +133,10 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		dataplane, err := b.dataplaneFor(ctx, request, proxyId)
 		if err != nil {
 			return nil, kumaDpBootstrap, err
+		}
+
+		if dataplane.Spec.IsBuiltinGateway() {
+			params.IsGatewayDataplane = true
 		}
 
 		params.Service = dataplane.Spec.GetIdentifyingService()
