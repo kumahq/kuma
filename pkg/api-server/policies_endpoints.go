@@ -10,7 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
-func addPoliciesWsEndpoints(ws *restful.WebService, mode core.CpMode, readOnly bool, defs []model.ResourceTypeDescriptor) error {
+func addPoliciesWsEndpoints(ws *restful.WebService, mode core.CpMode, readOnly bool, defs []model.ResourceTypeDescriptor) {
 	ws.Route(ws.GET("/policies").To(func(req *restful.Request, resp *restful.Response) {
 		response := types.PoliciesResponse{}
 		for _, def := range defs {
@@ -19,7 +19,7 @@ func addPoliciesWsEndpoints(ws *restful.WebService, mode core.CpMode, readOnly b
 			}
 			response.Policies = append(response.Policies, types.PolicyEntry{
 				Name:        string(def.Name),
-				ReadOnly:    readOnly || core.Zone == mode,
+				ReadOnly:    readOnly || core.Zone == mode || def.ReadOnly,
 				Path:        def.WsPath,
 				DisplayName: def.DisplayName,
 			})
@@ -32,5 +32,4 @@ func addPoliciesWsEndpoints(ws *restful.WebService, mode core.CpMode, readOnly b
 			log.Error(err, "Could not write the index response")
 		}
 	}))
-	return nil
 }

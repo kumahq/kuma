@@ -41,7 +41,8 @@ message KumaResourceOptions {
   // is used in the storage. All other versions must be convertible to it.
   bool storage_version = 14;
 
-  // Display Name
+  // The name of the policy showed as plural to be displayed in the UI and maybe
+  // CLI
   string display_name = 15;
 }
 

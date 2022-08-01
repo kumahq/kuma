@@ -49,7 +49,8 @@ type KumaResourceOptions struct {
 	// If resource has more than one version, then the flag defines which version
 	// is used in the storage. All other versions must be convertible to it.
 	StorageVersion bool `protobuf:"varint,14,opt,name=storage_version,json=storageVersion,proto3" json:"storage_version,omitempty"`
-	// Display Name
+	// The name of the policy showed as plural to be displayed in the UI and maybe
+	// CLI
 	DisplayName string `protobuf:"bytes,15,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
 }
 
