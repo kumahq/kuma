@@ -111,6 +111,8 @@ var ConfigResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "",
 	KumactlListArg: "",
 	AllowToInspect: false,
+	IsPolicy:       false,
+	DisplayName:    "",
 }
 
 func init() {
@@ -216,6 +218,8 @@ var SecretResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "secret",
 	KumactlListArg: "secrets",
 	AllowToInspect: false,
+	IsPolicy:       false,
+	DisplayName:    "",
 }
 
 func init() {
@@ -320,6 +324,8 @@ var ZoneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "zone",
 	KumactlListArg: "zones",
 	AllowToInspect: false,
+	IsPolicy:       false,
+	DisplayName:    "",
 }
 
 func init() {
@@ -424,6 +430,8 @@ var ZoneInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "",
 	KumactlListArg: "",
 	AllowToInspect: false,
+	IsPolicy:       false,
+	DisplayName:    "",
 }
 
 func init() {
@@ -528,4 +536,6 @@ var ZoneOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "",
 	KumactlListArg: "",
 	AllowToInspect: false,
+	IsPolicy:       false,
+	DisplayName:    "",
 }

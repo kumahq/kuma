@@ -90,6 +90,10 @@ type ResourceTypeDescriptor struct {
 	KumactlListArg string
 	// AllowToInspect if it's required to generate Inspect API endpoint for this type
 	AllowToInspect bool
+	// IsPolicy if this type is a policy (Dataplanes, Insights, Ingresses are not policies as they describe either metadata or workload, Retries are policies).
+	IsPolicy bool
+	// DisplayName the name of the policy showed as plural to be displayed in the UI and maybe CLI
+	DisplayName string
 }
 
 func (d ResourceTypeDescriptor) NewObject() Resource {
