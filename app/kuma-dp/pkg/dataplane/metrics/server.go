@@ -20,13 +20,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
-const (
-	acceptHeader            = "accept"
-	acceptEncodingHeader    = "accept-encoding"
-	userAgentHeader         = "user-agent"
-	prometheusTimeoutHeader = "x-prometheus-scrape-timeout-seconds"
-)
-
+var prometheusRequestHeaders = []string{"accept", "accept-encoding", "user-agent", "x-prometheus-scrape-timeout-seconds"}
 var logger = core.Log.WithName("metrics-hijacker")
 
 var _ component.Component = &Hijacker{}
@@ -198,7 +192,7 @@ func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app Appl
 func (s *Hijacker) passRequestHeaders(into http.Header, from http.Header) {
 	// pass request headers
 	// https://github.com/prometheus/prometheus/blob/main/scrape/scrape.go#L772
-	for _, header := range []string{acceptEncodingHeader, acceptHeader, prometheusTimeoutHeader, userAgentHeader} {
+	for _, header := range prometheusRequestHeaders {
 		val := from.Get(header)
 		if val != "" {
 			into.Set(header, val)
