@@ -10,10 +10,8 @@ import (
 	"net/http"
 	net_url "net/url"
 	"os"
-	"strconv"
 	"strings"
 
-	"github.com/containerd/cgroups"
 	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
@@ -111,47 +109,11 @@ func (b *remoteBootstrap) Generate(ctx context.Context, url string, cfg kuma_dp.
 	return envoyBootstrap, &bootstrap.KumaSidecarConfiguration, nil
 }
 
-type UIntOrString struct {
-	Type   string
-	UInt   uint64
-	String string
-}
-
-func maybeReadAsBytes(path string) *UIntOrString {
-	byteContents, err := os.ReadFile(path)
-	if err == nil {
-		contents := strings.TrimSpace(string(byteContents))
-		bytes, err := strconv.ParseUint(contents, 10, 64)
-		if err != nil {
-			return &UIntOrString{
-				Type:   "string",
-				String: contents,
-			}
-		}
-		return &UIntOrString{
-			Type: "int",
-			UInt: bytes,
-		}
-	}
-	return nil
-}
-
 func (b *remoteBootstrap) resourceMetadata(cfg kuma_dp.DataplaneResources) (types.ProxyResources, error) {
 	var maxMemory uint64
 
 	if cfg.MaxMemoryBytes == 0 {
-		switch cgroups.Mode() {
-		case cgroups.Legacy:
-			res := maybeReadAsBytes("/sys/fs/cgroup/memory.limit_in_bytes")
-			if res != nil && res.Type == "int" {
-				maxMemory = res.UInt
-			}
-		case cgroups.Hybrid, cgroups.Unified:
-			res := maybeReadAsBytes("/sys/fs/cgroup/memory.max")
-			if res != nil && res.Type == "int" {
-				maxMemory = res.UInt
-			}
-		}
+		maxMemory = DetectMaxMemory()
 	} else {
 		maxMemory = cfg.MaxMemoryBytes
 	}
