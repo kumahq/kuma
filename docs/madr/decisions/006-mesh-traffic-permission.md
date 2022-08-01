@@ -493,7 +493,7 @@ Set this policy as "shadow_rules" into NetworkFilter.
 
 5. If MeshTrafficPermission is targeting proxy then NetworkRBAC is placed as a NetworkFilter on the inbound listener.
 If MeshTrafficPermission is targeting MeshHTTPRoute then NetworkRBAC is placed as a NetworkFilter on the route. 
-Even in the case of MeshHTTPRoute, global per-proxy NetworkRBAC is still will be set to provide secure access for other routes. 
+Even in the case of MeshHTTPRoute, global per-proxy NetworkRBAC will be set to provide secure access for other routes. 
 
 ### MeshTrafficPermission and Kubernetes
 
