@@ -126,6 +126,9 @@ func NewApiServer(
 		Produces(restful.MIME_JSON)
 
 	addResourcesEndpoints(ws, defs, resManager, cfg, access.ResourceAccess)
+	if err := addPoliciesWsEndpoints(ws, cfg.Mode, cfg.ApiServer.ReadOnly, defs); err != nil {
+		return nil, errors.Wrap(err, "could not create policies webserver")
+	}
 	addInspectEndpoints(ws, cfg, meshContextBuilder, resManager)
 	addInspectEnvoyAdminEndpoints(ws, cfg, resManager, access.EnvoyAdminAccess, envoyAdminClient)
 	container.Add(ws)
