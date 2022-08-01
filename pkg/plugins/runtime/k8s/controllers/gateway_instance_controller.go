@@ -238,6 +238,17 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 			}
 
 			container.Name = k8s_util.KumaGatewayContainerName
+			container.Env = append(container.Env,
+				kube_core.EnvVar{
+					Name: "KUMA_DATAPLANE_RESOURCES_MAX_MEMORY_BYTES",
+					ValueFrom: &kube_core.EnvVarSource{
+						ResourceFieldRef: &kube_core.ResourceFieldSelector{
+							ContainerName: container.Name,
+							Resource:      "limits.memory",
+						},
+					},
+				},
+			)
 
 			unprivilegedPortStartSupported, err := isUnprivilegedPortStartSysctlSupported(*r.K8sVersion)
 			if err != nil {

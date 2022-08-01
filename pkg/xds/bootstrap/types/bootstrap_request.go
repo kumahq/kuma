@@ -16,6 +16,7 @@ type BootstrapRequest struct {
 	EmptyDNSPort    uint32            `json:"emptyDnsPort,omitempty"`
 	OperatingSystem string            `json:"operatingSystem"`
 	Features        []string          `json:"features"`
+	Resources       ProxyResources    `json:"resources"`
 }
 
 type Version struct {
@@ -34,4 +35,10 @@ type EnvoyVersion struct {
 	Version          string `json:"version"`
 	Build            string `json:"build"`
 	KumaDpCompatible bool   `json:"kumaDpCompatible"`
+}
+
+// ProxyResources contains information about what resources this proxy has
+// available
+type ProxyResources struct {
+	MaxHeapSizeBytes uint64 `json:"maxHeapSizeBytes"`
 }
