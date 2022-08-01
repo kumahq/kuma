@@ -27,7 +27,7 @@ type dataplaneInsightManager struct {
 }
 
 func (m *dataplaneInsightManager) Create(ctx context.Context, resource core_model.Resource, fs ...core_store.CreateOptionsFunc) error {
-	if err := resource.Validate(); err != nil {
+	if err := core_model.Validate(resource); err != nil {
 		return err
 	}
 	opts := core_store.NewCreateOptions(fs...)

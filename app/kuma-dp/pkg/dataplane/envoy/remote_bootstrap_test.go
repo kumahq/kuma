@@ -130,7 +130,10 @@ var _ = Describe("Remote Bootstrap", func() {
 					    "test": "value"
 					  },
 					  "operatingSystem": "linux",
-					  "features": []
+					  "features": [],
+					  "resources": {
+					    "maxHeapSizeBytes": 0
+				      }
 					}`,
 				}
 			}()),
@@ -176,7 +179,10 @@ var _ = Describe("Remote Bootstrap", func() {
                       "caCert": "",
                       "dynamicMetadata": null,
                       "operatingSystem": "linux",
-                      "features": []
+                      "features": [],
+					  "resources": {
+					    "maxHeapSizeBytes": 0
+				      }
                     }`,
 				}
 			}()),
@@ -221,7 +227,10 @@ var _ = Describe("Remote Bootstrap", func() {
                       "caCert": "",
                       "dynamicMetadata": null,
                       "operatingSystem": "linux",
-                      "features": []
+                      "features": [],
+					  "resources": {
+					    "maxHeapSizeBytes": 0
+				      }
                     }`,
 				}
 			}()),
@@ -265,7 +274,10 @@ var _ = Describe("Remote Bootstrap", func() {
                       "caCert": "",
 					  "dynamicMetadata": null,
 					  "operatingSystem": "linux",
-					  "features": []
+					  "features": [],
+					  "resources": {
+					    "maxHeapSizeBytes": 0
+				      }
                     }`,
 				}
 			}()),

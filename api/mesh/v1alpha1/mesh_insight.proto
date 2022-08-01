@@ -13,7 +13,6 @@ message MeshInsight {
   option (kuma.mesh.resource).type = "MeshInsight";
   option (kuma.mesh.resource).global = true;
   option (kuma.mesh.resource).package = "mesh";
-  option (kuma.mesh.resource).skip_validation = true;
   option (kuma.mesh.resource).ws.name = "mesh-insight";
   option (kuma.mesh.resource).ws.read_only = true;
 

@@ -41,10 +41,6 @@ func (t *ConfigResource) GetSpec() model.ResourceSpec {
 	return t.Spec
 }
 
-func (t *ConfigResource) Validate() error {
-	return nil
-}
-
 func (t *ConfigResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*system_proto.Config)
 	if !ok {
@@ -111,6 +107,8 @@ var ConfigResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "",
 	KumactlListArg: "",
 	AllowToInspect: false,
+	IsPolicy:       false,
+	DisplayName:    "",
 }
 
 func init() {
@@ -144,10 +142,6 @@ func (t *SecretResource) SetMeta(m model.ResourceMeta) {
 
 func (t *SecretResource) GetSpec() model.ResourceSpec {
 	return t.Spec
-}
-
-func (t *SecretResource) Validate() error {
-	return nil
 }
 
 func (t *SecretResource) SetSpec(spec model.ResourceSpec) error {
@@ -216,6 +210,8 @@ var SecretResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "secret",
 	KumactlListArg: "secrets",
 	AllowToInspect: false,
+	IsPolicy:       false,
+	DisplayName:    "",
 }
 
 func init() {
@@ -249,10 +245,6 @@ func (t *ZoneResource) SetMeta(m model.ResourceMeta) {
 
 func (t *ZoneResource) GetSpec() model.ResourceSpec {
 	return t.Spec
-}
-
-func (t *ZoneResource) Validate() error {
-	return nil
 }
 
 func (t *ZoneResource) SetSpec(spec model.ResourceSpec) error {
@@ -320,6 +312,8 @@ var ZoneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "zone",
 	KumactlListArg: "zones",
 	AllowToInspect: false,
+	IsPolicy:       false,
+	DisplayName:    "",
 }
 
 func init() {
@@ -353,10 +347,6 @@ func (t *ZoneInsightResource) SetMeta(m model.ResourceMeta) {
 
 func (t *ZoneInsightResource) GetSpec() model.ResourceSpec {
 	return t.Spec
-}
-
-func (t *ZoneInsightResource) Validate() error {
-	return nil
 }
 
 func (t *ZoneInsightResource) SetSpec(spec model.ResourceSpec) error {
@@ -424,6 +414,8 @@ var ZoneInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "",
 	KumactlListArg: "",
 	AllowToInspect: false,
+	IsPolicy:       false,
+	DisplayName:    "",
 }
 
 func init() {
@@ -457,10 +449,6 @@ func (t *ZoneOverviewResource) SetMeta(m model.ResourceMeta) {
 
 func (t *ZoneOverviewResource) GetSpec() model.ResourceSpec {
 	return t.Spec
-}
-
-func (t *ZoneOverviewResource) Validate() error {
-	return nil
 }
 
 func (t *ZoneOverviewResource) SetSpec(spec model.ResourceSpec) error {
@@ -528,4 +516,6 @@ var ZoneOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "",
 	KumactlListArg: "",
 	AllowToInspect: false,
+	IsPolicy:       false,
+	DisplayName:    "",
 }

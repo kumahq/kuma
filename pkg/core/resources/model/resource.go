@@ -63,8 +63,18 @@ type Resource interface {
 	SetMeta(ResourceMeta)
 	GetSpec() ResourceSpec
 	SetSpec(ResourceSpec) error
-	Validate() error
 	Descriptor() ResourceTypeDescriptor
+}
+
+type ResourceValidator interface {
+	Validate() error
+}
+
+func Validate(resource Resource) error {
+	if rv, ok := resource.(ResourceValidator); ok {
+		return rv.Validate()
+	}
+	return nil
 }
 
 type ResourceTypeDescriptor struct {
@@ -90,6 +100,10 @@ type ResourceTypeDescriptor struct {
 	KumactlListArg string
 	// AllowToInspect if it's required to generate Inspect API endpoint for this type
 	AllowToInspect bool
+	// IsPolicy if this type is a policy (Dataplanes, Insights, Ingresses are not policies as they describe either metadata or workload, Retries are policies).
+	IsPolicy bool
+	// DisplayName the name of the policy showed as plural to be displayed in the UI and maybe CLI
+	DisplayName string
 }
 
 func (d ResourceTypeDescriptor) NewObject() Resource {
