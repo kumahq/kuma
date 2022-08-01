@@ -21,7 +21,7 @@ Chosen option: create a MeshTrafficPermission policy
 ### Overview
 
 MeshTrafficPermission allows blocking unwanted incoming traffic for the service.
-There are might be several reasons why it could be useful to block unwanted traffic:
+There might be several reasons why it could be useful to block unwanted traffic:
 * following the [principle of least privilege](https://en.wikipedia.org/wiki/Principle_of_least_privilege)
 * cut off access for clients that shouldn't use your service (legacy clients, clients from another zone, etc.)
 * temporary blocking services that mistakenly (e.g. caused by a bug) seemed to DOS a service. 
@@ -137,7 +137,7 @@ policies:
                   exact: "kuma://version/v1"
 ```
 
-In order request to be allowed, at least 1 policy should be matched. 
+In order request to be allowed, at least 1 principal should be matched. 
 
 #### Converting MeshTrafficPermission to Envoy NetworkRBAC
 
@@ -495,7 +495,7 @@ Set this policy as "shadow_rules" into NetworkFilter.
 
 5. If MeshTrafficPermission is targeting proxy then NetworkRBAC is placed as a NetworkFilter on the inbound listener.
 If MeshTrafficPermission is targeting MeshHTTPRoute then NetworkRBAC is placed as a NetworkFilter on the route. 
-Even in the case of MeshHTTPRoute, global per-proxy NetworkRBAC is still will be set to provide secure access for other routes. 
+Even in the case of MeshHTTPRoute, global per-proxy NetworkRBAC will be set to provide secure access for other routes. 
 
 ### MeshTrafficPermission and Kubernetes
 
