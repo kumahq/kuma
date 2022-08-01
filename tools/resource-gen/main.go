@@ -307,6 +307,8 @@ var {{.ResourceName}}TypeDescriptor = model.ResourceTypeDescriptor{
 		KumactlArg: "{{.KumactlSingular}}",
 		KumactlListArg: "{{.KumactlPlural}}",
 		AllowToInspect: {{.AllowToInspect}},
+		IsPolicy: {{.IsPolicy}},
+		DisplayName: "{{.DisplayName}}",
 	}
 
 {{- if not .SkipRegistration}}

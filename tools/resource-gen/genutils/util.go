@@ -3,6 +3,7 @@ package genutils
 import (
 	"fmt"
 	"strings"
+	"unicode"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -57,6 +58,8 @@ type ResourceInfo struct {
 	KdsDirection           string
 	AllowToInspect         bool
 	StorageVersion         bool
+	IsPolicy               bool
+	DisplayName            string
 }
 
 func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
@@ -74,6 +77,7 @@ func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 		ScopeNamespace:         r.ScopeNamespace,
 		AllowToInspect:         r.AllowToInspect,
 		StorageVersion:         r.StorageVersion,
+		DisplayName:            r.DisplayName,
 	}
 	if r.Ws != nil {
 		pluralResourceName := r.Ws.Plural
@@ -92,6 +96,18 @@ func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 				out.KumactlPlural = "healthchecks"
 			}
 		}
+	}
+	// Working around the fact we don't really differentiate policies from the rest of resources:
+	// Anything global can't be a policy as it need to be on a mesh. Anything with locked Ws config is something internal and therefore not a policy
+	out.IsPolicy = !out.SkipRegistration && !out.Global && !out.WsAdminOnly && !out.WsReadOnly && out.ResourceType != "Dataplane"
+	if out.DisplayName == "" && out.IsPolicy {
+		for i, c := range out.ResourceType {
+			if unicode.IsUpper(c) && i != 0 {
+				out.DisplayName += " "
+			}
+			out.DisplayName += string(c)
+		}
+		out.DisplayName += "s"
 	}
 	switch {
 	case r.Kds == nil || (!r.Kds.SendToZone && !r.Kds.SendToGlobal):
