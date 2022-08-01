@@ -66,6 +66,15 @@ message KumaKdsOptions {
   bool send_to_zone = 2;
 }
 
+message KumaPolicyOptions {
+  // Whether to skip type registration for this resource.
+  bool skip_registration = 1;
+  // An optional alternative plural form if this is unset default to a standard
+  // derivation of the name
+  string plural = 2;
+}
+
 extend google.protobuf.MessageOptions {
   KumaResourceOptions resource = 43534533; // 'kuma'
+  KumaPolicyOptions policy = 43534534;     // 'kuma'
 }
