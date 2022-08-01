@@ -14,7 +14,6 @@ message DataplaneInsight {
   option (kuma.mesh.resource).name = "DataplaneInsightResource";
   option (kuma.mesh.resource).type = "DataplaneInsight";
   option (kuma.mesh.resource).package = "mesh";
-  option (kuma.mesh.resource).skip_validation = true;
   option (kuma.mesh.resource).kds.send_to_global = true;
   option (kuma.mesh.resource).ws.name = "dataplane-insight";
   option (kuma.mesh.resource).ws.read_only = true;

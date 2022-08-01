@@ -19,9 +19,6 @@ message KumaResourceOptions {
   // Name of the resource's Go package.
   string package = 4;
 
-  // Whether to generate a no-op validation function.
-  bool skip_validation = 5;
-
   // Whether to skip type registration for this resource.
   bool skip_registration = 6;
 

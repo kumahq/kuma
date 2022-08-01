@@ -46,7 +46,6 @@ type ResourceInfo struct {
 	ProtoType              string
 	Selectors              []string
 	SkipRegistration       bool
-	SkipValidation         bool
 	SkipKubernetesWrappers bool
 	ScopeNamespace         bool
 	Global                 bool
@@ -72,7 +71,6 @@ func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 		Selectors:              SelectorsForMessage(desc),
 		SkipRegistration:       r.SkipRegistration,
 		SkipKubernetesWrappers: r.SkipKubernetesWrappers,
-		SkipValidation:         r.SkipValidation,
 		Global:                 r.Global,
 		ScopeNamespace:         r.ScopeNamespace,
 		AllowToInspect:         r.AllowToInspect,
