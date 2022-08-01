@@ -9,6 +9,7 @@ import (
 
 	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/onsi/ginkgo/v2"
+	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/test/framework/utils"
 )
@@ -19,14 +20,15 @@ func Logf(format string, args ...interface{}) {
 }
 
 type App struct {
-	cmd    *exec.Cmd
-	stdin  bytes.Buffer
-	stdout bytes.Buffer
-	stderr bytes.Buffer
-	port   string
+	cmd     *exec.Cmd
+	stdin   bytes.Buffer
+	stdout  bytes.Buffer
+	stderr  bytes.Buffer
+	port    string
+	logFile *os.File
 }
 
-func NewApp(verbose bool, port string, envMap map[string]string, args []string) *App {
+func NewApp(appName string, verbose bool, port string, envMap map[string]string, args []string) *App {
 	app := &App{
 		port: port,
 	}
@@ -48,6 +50,20 @@ func NewApp(verbose bool, port string, envMap map[string]string, args []string) 
 	inWriters := []io.Reader{&app.stdin}
 	outWriters := []io.Writer{&app.stdout}
 	errWriters := []io.Writer{&app.stderr}
+
+	logDirName := "/tmp/e2e"
+	err := os.MkdirAll(logDirName, os.ModePerm)
+	if err != nil {
+		panic(errors.Wrap(err, "could not create /tmp/e2e"))
+	}
+	logFileName := logDirName + "/" + appName
+	f, err := os.OpenFile(logFileName, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0660)
+	if err != nil {
+		panic(errors.Wrap(err, "could not create "+logFileName))
+	}
+	outWriters = append(outWriters, f)
+	errWriters = append(errWriters, f)
+
 	if verbose {
 		outWriters = append(outWriters, os.Stdout)
 		errWriters = append(errWriters, os.Stderr)
@@ -87,6 +103,11 @@ func (s *App) Stop() error {
 	}
 	if _, err := s.cmd.Process.Wait(); err != nil {
 		return err
+	}
+	if s.logFile != nil {
+		if err := s.logFile.Close(); err != nil {
+			return errors.Wrapf(err, "could not close the file %s", s.logFile.Name())
+		}
 	}
 	return nil
 }
