@@ -16,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/healthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/inspect"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/jobs"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/k8s_api_bypass"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/membership"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/observability"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/trafficlog"
@@ -79,3 +80,4 @@ var _ = Describe("Metrics", observability.ApplicationsMetrics, Ordered)
 var _ = Describe("Tracing", observability.Tracing, Ordered)
 var _ = Describe("Traffic Log", trafficlog.TCPLogging, Ordered)
 var _ = Describe("Inspect", inspect.Inspect, Ordered)
+var _ = Describe("K8S API Bypass", k8s_api_bypass.K8sApiBypass, Ordered)
