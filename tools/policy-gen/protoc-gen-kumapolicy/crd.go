@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"go/format"
 	"html/template"
+	"strings"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/compiler/protogen"
-
-	"github.com/kumahq/kuma/tools/resource-gen/genutils"
 )
 
 // CustomResourceTemplate for creating a Kubernetes CRD to wrap a Kuma resource.
@@ -29,25 +28,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 
-	"github.com/kumahq/kuma/pkg/plugins/policies/{{.KumactlSingular}}/api/{{.PolicyVersion}}"
+	policy "github.com/kumahq/kuma/pkg/plugins/policies/{{.Package}}/api/{{.PolicyVersion}}"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	{{- if not .SkipRegistration }}
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	{{- end }}
 )
 
-{{- if not .SkipKubernetesWrappers }}
-
 // +kubebuilder:object:root=true
-{{- if .ScopeNamespace }}
 // +kubebuilder:resource:categories=kuma,scope=Namespaced
-{{- else }}
-// +kubebuilder:resource:categories=kuma,scope=Cluster
-{{- end}}
-{{- if .StorageVersion }}
-// +kubebuilder:storageversion
-{{- end}}
-type {{.ResourceType}} struct {
+type {{.Name}} struct {
 	metav1.TypeMeta   {{ $tk }}json:",inline"{{ $tk }}
 	metav1.ObjectMeta {{ $tk }}json:"metadata,omitempty"{{ $tk }}
 
@@ -57,89 +47,57 @@ type {{.ResourceType}} struct {
     // +kubebuilder:validation:Optional
 	Mesh string {{ $tk }}json:"mesh,omitempty"{{ $tk }}
 
-{{- if eq .ResourceType "DataplaneInsight" }}
-	// Status is the status the Kuma resource.
+	// Spec is the specification of the Kuma {{ .Name }} resource.
     // +kubebuilder:validation:Optional
-	Status   *apiextensionsv1.JSON {{ $tk }}json:"status,omitempty"{{ $tk }}
-{{- else}}
-	// Spec is the specification of the Kuma {{ .ProtoType }} resource.
-    // +kubebuilder:validation:Optional
-	Spec   *{{.PolicyVersion}}.{{.ProtoType}} {{ $tk }}json:"spec,omitempty"{{ $tk }}
-{{- end}}
+	Spec   *policy.{{.Name}} {{ $tk }}json:"spec,omitempty"{{ $tk }}
 }
 
 // +kubebuilder:object:root=true
-{{- if .ScopeNamespace }}
-// +kubebuilder:resource:scope=Cluster
-{{- else }}
 // +kubebuilder:resource:scope=Namespaced
-{{- end}}
-type {{.ResourceType}}List struct {
+type {{.Name}}List struct {
 	metav1.TypeMeta {{ $tk }}json:",inline"{{ $tk }}
 	metav1.ListMeta {{ $tk }}json:"metadata,omitempty"{{ $tk }}
-	Items           []{{.ResourceType}} {{ $tk }}json:"items"{{ $tk }}
+	Items           []{{.Name}} {{ $tk }}json:"items"{{ $tk }}
 }
 
-{{- if not .SkipRegistration}}
-func init() {
-	SchemeBuilder.Register(&{{.ResourceType}}{}, &{{.ResourceType}}List{})
-}
-{{- end}}
-
-func (cb *{{.ResourceType}}) GetObjectMeta() *metav1.ObjectMeta {
+func (cb *{{.Name}}) GetObjectMeta() *metav1.ObjectMeta {
 	return &cb.ObjectMeta
 }
 
-func (cb *{{.ResourceType}}) SetObjectMeta(m *metav1.ObjectMeta) {
+func (cb *{{.Name}}) SetObjectMeta(m *metav1.ObjectMeta) {
 	cb.ObjectMeta = *m
 }
 
-func (cb *{{.ResourceType}}) GetMesh() string {
+func (cb *{{.Name}}) GetMesh() string {
 	return cb.Mesh
 }
 
-func (cb *{{.ResourceType}}) SetMesh(mesh string) {
+func (cb *{{.Name}}) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *{{.ResourceType}}) GetSpec() (proto.Message, error) {
-{{- if eq .ResourceType "DataplaneInsight" }}
-	return cb.Status, nil
-{{- else}}
+func (cb *{{.Name}}) GetSpec() (proto.Message, error) {
 	return cb.Spec, nil
-{{- end}}
 }
 
-func (cb *{{.ResourceType}}) SetSpec(spec proto.Message) {
+func (cb *{{.Name}}) SetSpec(spec proto.Message) {
 	if spec == nil {
-{{- if eq .ResourceType "DataplaneInsight" }}
-		cb.Status = nil
-{{ else }}
 		cb.Spec = nil
-{{- end }}
 		return
 	}
 
-	if _, ok := spec.(*{{.PolicyVersion}}.{{.ProtoType}}); !ok {
+	if _, ok := spec.(*policy.{{.Name}}); !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-{{ if eq .ResourceType "DataplaneInsight" }}
-	cb.Status = spec.(*{{.PolicyVersion}}.{{.ProtoType}})
-{{ else}}
-	cb.Spec = spec.(*{{.PolicyVersion}}.{{.ProtoType}})
-{{- end}}
+	cb.Spec = spec.(*policy.{{.Name}})
 }
 
-func (cb *{{.ResourceType}}) Scope() model.Scope {
-{{- if .ScopeNamespace }}
+func (cb *{{.Name}}) Scope() model.Scope {
 	return model.ScopeNamespace
-{{- else }}
-	return model.ScopeCluster
-{{- end }}
 }
 
-func (l *{{.ResourceType}}List) GetItems() []model.KubernetesObject {
+func (l *{{.Name}}List) GetItems() []model.KubernetesObject {
 	result := make([]model.KubernetesObject, len(l.Items))
 	for i := range l.Items {
 		result[i] = &l.Items[i]
@@ -149,21 +107,21 @@ func (l *{{.ResourceType}}List) GetItems() []model.KubernetesObject {
 
 {{if not .SkipRegistration}}
 func init() {
-	registry.RegisterObjectType(&{{.PolicyVersion}}.{{.ProtoType}}{}, &{{.ResourceType}}{
+	SchemeBuilder.Register(&{{.Name}}{}, &{{.Name}}List{})
+	registry.RegisterObjectType(&policy.{{.Name}}{}, &{{.Name}}{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),
-			Kind:       "{{.ResourceType}}",
+			Kind:       "{{.Name}}",
 		},
 	})
-	registry.RegisterListType(&{{.PolicyVersion}}.{{.ProtoType}}{}, &{{.ResourceType}}List{
+	registry.RegisterListType(&policy.{{.Name}}{}, &{{.Name}}List{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),
-			Kind:       "{{.ResourceType}}List",
+			Kind:       "{{.Name}}List",
 		},
 	})
 }
 {{- end }} {{/* .SkipRegistration */}}
-{{- end }} {{/* .SkipKubernetesWrappers */}}
 `))
 
 var GroupVersionInfoTemplate = template.Must(template.New("groupversion-info").Parse(`
@@ -192,9 +150,9 @@ func generateCRD(
 	p *protogen.Plugin,
 	file *protogen.File,
 ) error {
-	var infos []genutils.ResourceInfo
+	var infos []PolicyConfig
 	for _, msg := range file.Messages {
-		infos = append(infos, genutils.ToResourceInfo(msg.Desc))
+		infos = append(infos, NewPolicyConfig(msg.Desc))
 	}
 
 	if len(infos) > 1 {
@@ -205,11 +163,15 @@ func generateCRD(
 
 	outBuf := bytes.Buffer{}
 	if err := CustomResourceTemplate.Execute(&outBuf, struct {
-		genutils.ResourceInfo
-		PolicyVersion string
+		Name             string
+		PolicyVersion    string
+		Package          string
+		SkipRegistration bool
 	}{
-		ResourceInfo:  info,
-		PolicyVersion: string(file.GoPackageName),
+		PolicyVersion:    string(file.GoPackageName),
+		Package:          strings.ToLower(info.Name),
+		Name:             info.Name,
+		SkipRegistration: info.SkipRegistration,
 	}); err != nil {
 		return err
 	}

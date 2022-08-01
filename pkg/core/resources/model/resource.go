@@ -63,8 +63,18 @@ type Resource interface {
 	SetMeta(ResourceMeta)
 	GetSpec() ResourceSpec
 	SetSpec(ResourceSpec) error
-	Validate() error
 	Descriptor() ResourceTypeDescriptor
+}
+
+type ResourceValidator interface {
+	Validate() error
+}
+
+func Validate(resource Resource) error {
+	if rv, ok := resource.(ResourceValidator); ok {
+		return rv.Validate()
+	}
+	return nil
 }
 
 type ResourceTypeDescriptor struct {

@@ -255,10 +255,6 @@ func (t *DataplaneInsightResource) GetSpec() model.ResourceSpec {
 	return t.Spec
 }
 
-func (t *DataplaneInsightResource) Validate() error {
-	return nil
-}
-
 func (t *DataplaneInsightResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.DataplaneInsight)
 	if !ok {
@@ -360,10 +356,6 @@ func (t *DataplaneOverviewResource) SetMeta(m model.ResourceMeta) {
 
 func (t *DataplaneOverviewResource) GetSpec() model.ResourceSpec {
 	return t.Spec
-}
-
-func (t *DataplaneOverviewResource) Validate() error {
-	return nil
 }
 
 func (t *DataplaneOverviewResource) SetSpec(spec model.ResourceSpec) error {
@@ -1106,10 +1098,6 @@ func (t *MeshInsightResource) GetSpec() model.ResourceSpec {
 	return t.Spec
 }
 
-func (t *MeshInsightResource) Validate() error {
-	return nil
-}
-
 func (t *MeshInsightResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.MeshInsight)
 	if !ok {
@@ -1541,10 +1529,6 @@ func (t *ServiceInsightResource) GetSpec() model.ResourceSpec {
 	return t.Spec
 }
 
-func (t *ServiceInsightResource) Validate() error {
-	return nil
-}
-
 func (t *ServiceInsightResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.ServiceInsight)
 	if !ok {
@@ -1646,10 +1630,6 @@ func (t *ServiceOverviewResource) SetMeta(m model.ResourceMeta) {
 
 func (t *ServiceOverviewResource) GetSpec() model.ResourceSpec {
 	return t.Spec
-}
-
-func (t *ServiceOverviewResource) Validate() error {
-	return nil
 }
 
 func (t *ServiceOverviewResource) SetSpec(spec model.ResourceSpec) error {
@@ -2511,10 +2491,6 @@ func (t *ZoneEgressInsightResource) GetSpec() model.ResourceSpec {
 	return t.Spec
 }
 
-func (t *ZoneEgressInsightResource) Validate() error {
-	return nil
-}
-
 func (t *ZoneEgressInsightResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.ZoneEgressInsight)
 	if !ok {
@@ -2616,10 +2592,6 @@ func (t *ZoneEgressOverviewResource) SetMeta(m model.ResourceMeta) {
 
 func (t *ZoneEgressOverviewResource) GetSpec() model.ResourceSpec {
 	return t.Spec
-}
-
-func (t *ZoneEgressOverviewResource) Validate() error {
-	return nil
 }
 
 func (t *ZoneEgressOverviewResource) SetSpec(spec model.ResourceSpec) error {
@@ -2823,10 +2795,6 @@ func (t *ZoneIngressInsightResource) GetSpec() model.ResourceSpec {
 	return t.Spec
 }
 
-func (t *ZoneIngressInsightResource) Validate() error {
-	return nil
-}
-
 func (t *ZoneIngressInsightResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.ZoneIngressInsight)
 	if !ok {
@@ -2928,10 +2896,6 @@ func (t *ZoneIngressOverviewResource) SetMeta(m model.ResourceMeta) {
 
 func (t *ZoneIngressOverviewResource) GetSpec() model.ResourceSpec {
 	return t.Spec
-}
-
-func (t *ZoneIngressOverviewResource) Validate() error {
-	return nil
 }
 
 func (t *ZoneIngressOverviewResource) SetSpec(spec model.ResourceSpec) error {

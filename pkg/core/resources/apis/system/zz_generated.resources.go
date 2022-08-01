@@ -41,10 +41,6 @@ func (t *ConfigResource) GetSpec() model.ResourceSpec {
 	return t.Spec
 }
 
-func (t *ConfigResource) Validate() error {
-	return nil
-}
-
 func (t *ConfigResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*system_proto.Config)
 	if !ok {
@@ -146,10 +142,6 @@ func (t *SecretResource) SetMeta(m model.ResourceMeta) {
 
 func (t *SecretResource) GetSpec() model.ResourceSpec {
 	return t.Spec
-}
-
-func (t *SecretResource) Validate() error {
-	return nil
 }
 
 func (t *SecretResource) SetSpec(spec model.ResourceSpec) error {
@@ -255,10 +247,6 @@ func (t *ZoneResource) GetSpec() model.ResourceSpec {
 	return t.Spec
 }
 
-func (t *ZoneResource) Validate() error {
-	return nil
-}
-
 func (t *ZoneResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*system_proto.Zone)
 	if !ok {
@@ -361,10 +349,6 @@ func (t *ZoneInsightResource) GetSpec() model.ResourceSpec {
 	return t.Spec
 }
 
-func (t *ZoneInsightResource) Validate() error {
-	return nil
-}
-
 func (t *ZoneInsightResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*system_proto.ZoneInsight)
 	if !ok {
@@ -465,10 +449,6 @@ func (t *ZoneOverviewResource) SetMeta(m model.ResourceMeta) {
 
 func (t *ZoneOverviewResource) GetSpec() model.ResourceSpec {
 	return t.Spec
-}
-
-func (t *ZoneOverviewResource) Validate() error {
-	return nil
 }
 
 func (t *ZoneOverviewResource) SetSpec(spec model.ResourceSpec) error {

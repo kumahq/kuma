@@ -47,7 +47,7 @@ func (r *resourcesManager) List(ctx context.Context, list model.ResourceList, fs
 }
 
 func (r *resourcesManager) Create(ctx context.Context, resource model.Resource, fs ...store.CreateOptionsFunc) error {
-	if err := resource.Validate(); err != nil {
+	if err := model.Validate(resource); err != nil {
 		return err
 	}
 	opts := store.NewCreateOptions(fs...)
@@ -91,7 +91,7 @@ func DeleteAllResources(manager ResourceManager, ctx context.Context, list model
 }
 
 func (r *resourcesManager) Update(ctx context.Context, resource model.Resource, fs ...store.UpdateOptionsFunc) error {
-	if err := resource.Validate(); err != nil {
+	if err := model.Validate(resource); err != nil {
 		return err
 	}
 	return r.Store.Update(ctx, resource, append(fs, store.ModifiedAt(time.Now()))...)

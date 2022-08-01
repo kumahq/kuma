@@ -15,7 +15,7 @@ spec:
     listKind: DoNothingPolicyList
     plural: donothingpolicies
     singular: donothingpolicy
-  scope: Cluster
+  scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
@@ -46,36 +46,6 @@ spec:
                     description: Set true in case of doing nothing
                     type: boolean
                 type: object
-              destinations:
-                description: List of selectors to match services that are destinations
-                  of traffic.
-                items:
-                  description: Selector defines structure for selecting tags for given
-                    dataplane
-                  properties:
-                    match:
-                      additionalProperties:
-                        type: string
-                      description: Tags to match, can be used for both source and
-                        destinations
-                      type: object
-                  type: object
-                type: array
-              sources:
-                description: List of selectors to match dataplanes that are sources
-                  of traffic.
-                items:
-                  description: Selector defines structure for selecting tags for given
-                    dataplane
-                  properties:
-                    match:
-                      additionalProperties:
-                        type: string
-                      description: Tags to match, can be used for both source and
-                        destinations
-                      type: object
-                  type: object
-                type: array
             type: object
         type: object
     served: true

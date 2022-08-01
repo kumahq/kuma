@@ -30,7 +30,7 @@ type dataplaneManager struct {
 }
 
 func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resource, fs ...core_store.CreateOptionsFunc) error {
-	if err := resource.Validate(); err != nil {
+	if err := core_model.Validate(resource); err != nil {
 		return err
 	}
 	dp, err := m.dataplane(resource)
