@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/prometheus/common/expfmt"
 
 	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
@@ -177,6 +178,7 @@ metrics:
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).ToNot(BeNil())
+		Expect(stdout).To(ContainSubstring(string(expfmt.FmtText)))
 
 		// response doesn't exist because was disabled
 		Expect(stdout).ToNot(ContainSubstring("path-stats"))

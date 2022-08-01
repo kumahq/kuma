@@ -12,11 +12,19 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/prometheus/common/expfmt"
 
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
+)
+
+const (
+	acceptHeader            = "accept"
+	acceptEncodingHeader    = "accept-encoding"
+	userAgentHeader         = "user-agent"
+	prometheusTimeoutHeader = "x-prometheus-scrape-timeout-seconds"
 )
 
 var logger = core.Log.WithName("metrics-hijacker")
@@ -133,7 +141,7 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	for _, app := range s.applicationsToScrape {
 		go func(app ApplicationToScrape) {
 			defer wg.Done()
-			out <- s.getStats(ctx, req.URL, app)
+			out <- s.getStats(ctx, req, app)
 		}(app)
 	}
 
@@ -141,6 +149,8 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	case <-ctx.Done():
 		return
 	case <-done:
+		// default format returned by prometheus
+		writer.Header().Set("content-type", string(expfmt.FmtText))
 		for resp := range out {
 			if _, err := writer.Write(resp); err != nil {
 				logger.Error(err, "error while writing the response")
@@ -152,12 +162,13 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (s *Hijacker) getStats(ctx context.Context, url *url.URL, app ApplicationToScrape) []byte {
-	req, err := http.NewRequest("GET", rewriteMetricsURL(app.Path, app.Port, app.QueryModifier, url), nil)
+func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app ApplicationToScrape) []byte {
+	req, err := http.NewRequest("GET", rewriteMetricsURL(app.Path, app.Port, app.QueryModifier, initReq.URL), nil)
 	if err != nil {
 		logger.Error(err, "failed to create request")
 		return nil
 	}
+	s.passRequestHeaders(req.Header, initReq.Header)
 	req = req.WithContext(ctx)
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
@@ -182,6 +193,17 @@ func (s *Hijacker) getStats(ctx context.Context, url *url.URL, app ApplicationTo
 		}
 	}
 	return bodyBytes
+}
+
+func (s *Hijacker) passRequestHeaders(into http.Header, from http.Header) {
+	// pass request headers
+	// https://github.com/prometheus/prometheus/blob/main/scrape/scrape.go#L772
+	for _, header := range []string{acceptEncodingHeader, acceptHeader, prometheusTimeoutHeader, userAgentHeader} {
+		val := from.Get(header)
+		if val != "" {
+			into.Set(header, val)
+		}
+	}
 }
 
 func (s *Hijacker) NeedLeaderElection() bool {
