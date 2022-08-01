@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/jobs"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/membership"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/observability"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/reachableservices"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/trafficlog"
 	. "github.com/kumahq/kuma/test/framework"
 )
@@ -79,3 +80,4 @@ var _ = Describe("Metrics", observability.ApplicationsMetrics, Ordered)
 var _ = Describe("Tracing", observability.Tracing, Ordered)
 var _ = Describe("Traffic Log", trafficlog.TCPLogging, Ordered)
 var _ = Describe("Inspect", inspect.Inspect, Ordered)
+var _ = Describe("Reachable Services", reachableservices.ReachableServices, Ordered)
