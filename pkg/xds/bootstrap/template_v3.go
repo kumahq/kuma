@@ -58,18 +58,27 @@ func genConfig(parameters configParameters, useTokenPath bool) (*envoy_bootstrap
 	}}
 
 	if parameters.IsGatewayDataplane {
-		runtimeLayers = append(runtimeLayers, &envoy_bootstrap_v3.RuntimeLayer{
-			Name: "gateway.listeners",
-			LayerSpecifier: &envoy_bootstrap_v3.RuntimeLayer_RtdsLayer_{
-				RtdsLayer: &envoy_bootstrap_v3.RuntimeLayer_RtdsLayer{
-					Name: "gateway.listeners",
-					RtdsConfig: &envoy_core_v3.ConfigSource{
-						ResourceApiVersion:    envoy_core_v3.ApiVersion_V3,
-						ConfigSourceSpecifier: &envoy_core_v3.ConfigSource_Ads{},
-					},
+		runtimeLayers = append(runtimeLayers,
+			&envoy_bootstrap_v3.RuntimeLayer{
+				Name: "gateway",
+				LayerSpecifier: &envoy_bootstrap_v3.RuntimeLayer_StaticLayer{
+					StaticLayer: util_proto.MustStruct(map[string]interface{}{
+						"overload.global_downstream_max_connections": 50000,
+					}),
 				},
 			},
-		})
+			&envoy_bootstrap_v3.RuntimeLayer{
+				Name: "gateway.listeners",
+				LayerSpecifier: &envoy_bootstrap_v3.RuntimeLayer_RtdsLayer_{
+					RtdsLayer: &envoy_bootstrap_v3.RuntimeLayer_RtdsLayer{
+						Name: "gateway.listeners",
+						RtdsConfig: &envoy_core_v3.ConfigSource{
+							ResourceApiVersion:    envoy_core_v3.ApiVersion_V3,
+							ConfigSourceSpecifier: &envoy_core_v3.ConfigSource_Ads{},
+						},
+					},
+				},
+			})
 	}
 
 	res := &envoy_bootstrap_v3.Bootstrap{
