@@ -11,9 +11,14 @@ jobs:
       run:
         working-directory: kong-mesh
     steps:
+      - name: Generate GitHub app token
+        id: github-app-token
+        uses: tibdex/github-app-token@f717b5ecd4534d3c4df4ce9b5c1c2214f0f7cd06 # v1.6.0
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: "Clone Kuma"
         uses: actions/checkout@v2
-
       - uses: actions/setup-go@v2
         with:
           go-version: "~1.18.1"
@@ -23,10 +28,11 @@ jobs:
         uses: peter-evans/create-pull-request@v3
         with:
           commit-message: "docs(CHANGELOG.md): Updating changelog"
-          committer: GitHub <noreply@github.com>
-          author: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
           signoff: true
           branch: chore/update-changelog
           delete-branch: true
           title: "docs(CHANGELOG.md): Updating changelog"
           draft: false
+          token: ${{ steps.github-app-token.outputs.token }}
+          committer: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>
+          author: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>
