@@ -21,7 +21,7 @@
   "links": [],
   "panels": [
     {
-      "collapsed": true,
+      "collapsed": false,
       "datasource": "Prometheus",
       "gridPos": {
         "h": 1,
@@ -889,7 +889,7 @@
       }
     },
     {
-      "collapsed": true,
+      "collapsed": false,
       "datasource": "Prometheus",
       "gridPos": {
         "h": 1,
@@ -1299,7 +1299,7 @@
           "value": "backend_kuma-demo_svc_3001"
         },
         "datasource": "Prometheus",
-        "definition": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_service)",
+        "definition": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_mesh_gateway=\"\"}, kuma_io_service)",
         "description": null,
         "error": null,
         "hide": 0,
@@ -1309,7 +1309,7 @@
         "name": "source_service",
         "options": [],
         "query": {
-          "query": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_service)",
+          "query": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_mesh_gateway=\"\"}, kuma_io_service)",
           "refId": "Prometheus-source_service-Variable-Query"
         },
         "refresh": 1,

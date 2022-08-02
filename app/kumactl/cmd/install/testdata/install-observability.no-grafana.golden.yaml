@@ -186,15 +186,6 @@ data:
         target_label: kubernetes_node
       scrape_interval: 5m
       scrape_timeout: 30s
-    - honor_labels: true
-      job_name: prometheus-pushgateway
-      kubernetes_sd_configs:
-      - role: service
-      relabel_configs:
-      - action: keep
-        regex: pushgateway
-        source_labels:
-        - __meta_kubernetes_service_annotation_prometheus_io_probe
     - job_name: kubernetes-services
       kubernetes_sd_configs:
       - role: service
@@ -289,14 +280,6 @@ data:
       scrape_interval: "5s"
       relabel_configs:
       - source_labels:
-        - k8s_kuma_io_name
-        regex: "(.*)"
-        target_label: pod
-      - source_labels:
-        - k8s_kuma_io_namespace
-        regex: "(.*)"
-        target_label: namespace
-      - source_labels:
         - __meta_kuma_mesh
         regex: "(.*)"
         target_label: mesh
@@ -310,6 +293,14 @@ data:
         target_label: service
       - action: labelmap
         regex: __meta_kuma_label_(.+)
+      - source_labels:
+        - k8s_kuma_io_name
+        regex: "(.*)"
+        target_label: pod
+      - source_labels:
+        - k8s_kuma_io_namespace
+        regex: "(.*)"
+        target_label: namespace
       kuma_sd_configs:
       - server: http://kuma-control-plane.kuma-system:5676
     alerting:
