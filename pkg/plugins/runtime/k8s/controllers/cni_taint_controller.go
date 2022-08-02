@@ -65,14 +65,14 @@ func (r *CniNodeTaintReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 }
 
 func (r *CniNodeTaintReconciler) updateTaints(ctx context.Context, log logr.Logger, node *kube_core.Node, pods []kube_core.Pod) error {
-	hasTaint := slices.IndexFunc(node.Spec.Taints, func(taint kube_core.Taint) bool {
+	taintIndex := slices.IndexFunc(node.Spec.Taints, func(taint kube_core.Taint) bool {
 		return taint.Key == nodeReadinessTaintKey && taint.Effect == kube_core.TaintEffectNoSchedule
-	}) >= 0
+	})
 
-	if hasTaint {
+	if taintIndex >= 0 {
 		if r.hasCniPodRunning(log, pods) {
 			log.Info("has cni pod running and taint")
-			return r.untaintNode(ctx, log, node)
+			return r.untaintNode(ctx, log, node, taintIndex)
 		} else {
 			log.Info("has no cni pod running and taint")
 			return nil
@@ -88,14 +88,8 @@ func (r *CniNodeTaintReconciler) updateTaints(ctx context.Context, log logr.Logg
 	}
 }
 
-func (r *CniNodeTaintReconciler) untaintNode(ctx context.Context, log logr.Logger, node *kube_core.Node) error {
-	taintIndex := slices.IndexFunc(node.Spec.Taints, func(taint kube_core.Taint) bool {
-		return taint.Key == nodeReadinessTaintKey && taint.Effect == kube_core.TaintEffectNoSchedule
-	})
-
-	if taintIndex >= 0 {
-		node.Spec.Taints = slices.Delete(node.Spec.Taints, taintIndex, taintIndex+1)
-	}
+func (r *CniNodeTaintReconciler) untaintNode(ctx context.Context, log logr.Logger, node *kube_core.Node, taintIndex int) error {
+	node.Spec.Taints = slices.Delete(node.Spec.Taints, taintIndex, taintIndex+1)
 
 	err := r.Client.Update(ctx, node)
 	if err == nil {

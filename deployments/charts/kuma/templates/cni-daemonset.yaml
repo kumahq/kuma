@@ -59,22 +59,13 @@ spec:
               command:
                 - cat
                 - /tmp/ready
-          {{- if .Values.cni.delayStartupSeconds }}
           command: [ "/bin/sh", "-c", "--" ]
           args: [ "sleep {{.Values.cni.delayStartupSeconds}} && exec /install-cni" ]
           {{- else }}
-          command: ["/install-cni"]
-          {{- end }}
-
-          {{- else }}
           image: {{ include "kuma.formatImage" (dict "image" .Values.cni.image "root" $) | quote }}
           imagePullPolicy: Always
-          {{- if .Values.cni.delayStartupSeconds }}
           command: [ "/bin/sh", "-c", "--" ]
           args: [ "sleep {{.Values.cni.delayStartupSeconds}} && exec /install-cni.sh" ]
-          {{- else }}
-          command: ["/install-cni.sh"]
-          {{- end }}
           {{- end }}
           {{- if .Values.cni.containerSecurityContext }}
           securityContext:

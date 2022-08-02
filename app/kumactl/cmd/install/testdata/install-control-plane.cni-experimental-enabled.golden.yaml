@@ -2055,7 +2055,8 @@ spec:
               command:
                 - cat
                 - /tmp/ready
-          command: ["/install-cni"]
+          command: [ "/bin/sh", "-c", "--" ]
+          args: [ "sleep 0 && exec /install-cni" ]
           env:
             # Name of the CNI config file to create.
             - name: CNI_CONF_NAME
