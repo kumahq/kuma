@@ -222,8 +222,7 @@ func EnablePathNormalization() FilterChainBuilderOpt {
 		v3.HttpConnectionManagerMustConfigureFunc(func(hcm *envoy_hcm.HttpConnectionManager) {
 			hcm.NormalizePath = util_proto.Bool(true)
 			hcm.MergeSlashes = true
-
-			// TODO(jpeach) set path_with_escaped_slashes_action when we upgrade to Envoy v1.19.
+			hcm.PathWithEscapedSlashesAction = envoy_hcm.HttpConnectionManager_UNESCAPE_AND_REDIRECT
 		}),
 	)
 }

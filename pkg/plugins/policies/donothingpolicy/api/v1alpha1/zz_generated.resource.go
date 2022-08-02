@@ -7,7 +7,6 @@ package v1alpha1
 import (
 	"fmt"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
@@ -38,14 +37,6 @@ func (t *DoNothingPolicyResource) SetMeta(m model.ResourceMeta) {
 
 func (t *DoNothingPolicyResource) GetSpec() model.ResourceSpec {
 	return t.Spec
-}
-
-func (t *DoNothingPolicyResource) Sources() []*v1alpha1.Selector {
-	return t.Spec.GetSources()
-}
-
-func (t *DoNothingPolicyResource) Destinations() []*v1alpha1.Selector {
-	return t.Spec.GetDestinations()
 }
 
 func (t *DoNothingPolicyResource) SetSpec(spec model.ResourceSpec) error {
@@ -114,12 +105,12 @@ var DoNothingPolicyResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:           DoNothingPolicyType,
 	Resource:       NewDoNothingPolicyResource(),
 	ResourceList:   &DoNothingPolicyResourceList{},
-	ReadOnly:       false,
-	AdminOnly:      false,
 	Scope:          model.ScopeMesh,
 	KDSFlags:       model.FromGlobalToZone,
 	WsPath:         "donothingpolicies",
 	KumactlArg:     "donothingpolicy",
 	KumactlListArg: "donothingpolicies",
 	AllowToInspect: true,
+	IsPolicy:       true,
+	DisplayName:    "Do Nothing Policies",
 }

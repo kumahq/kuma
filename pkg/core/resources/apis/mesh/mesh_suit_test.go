@@ -44,7 +44,7 @@ func DescribeValidCases(generator ResourceGenerator, cases ...TableEntry) {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			verr := resource.Validate()
+			verr := model.Validate(resource)
 
 			// then
 			Expect(verr).ToNot(HaveOccurred())
@@ -73,7 +73,7 @@ func DescribeErrorCases(generator ResourceGenerator, cases ...TableEntry) {
 				}}
 
 			// then
-			Expect(resource.Validate()).To(Equal(expected.OrNil()))
+			Expect(model.Validate(resource)).To(Equal(expected.OrNil()))
 		},
 		cases,
 	)

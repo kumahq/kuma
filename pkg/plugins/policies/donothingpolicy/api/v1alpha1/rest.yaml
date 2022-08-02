@@ -8,7 +8,7 @@ paths:
   /meshes/{mesh}/donothingpolicies/{name}:
     get:
       summary: Returns DoNothingPolicy entity
-      tags: ["DoNothingPolicy"]
+      tags: [ "DoNothingPolicy" ]
       parameters:
         - in: path
           name: mesh
@@ -32,7 +32,7 @@ paths:
 
     put:
       summary: Creates or Updates DoNothingPolicy entity
-      tags: ["DoNothingPolicy"]
+      tags: [ "DoNothingPolicy" ]
       parameters:
         - in: path
           name: mesh
@@ -61,7 +61,7 @@ paths:
 
     delete:
       summary: Deletes DoNothingPolicy entity
-      tags: ["DoNothingPolicy"]
+      tags: [ "DoNothingPolicy" ]
       parameters:
         - in: path
           name: mesh
@@ -83,7 +83,7 @@ paths:
   /meshes/{mesh}/donothingpolicies:
     get:
       summary: Returns a list of DoNothingPolicy in the mesh.
-      tags: ["DoNothingPolicy"]
+      tags: [ "DoNothingPolicy" ]
       parameters:
         - in: path
           name: mesh
@@ -111,7 +111,7 @@ paths:
   /donothingpolicies:
     get:
       summary: Returns a list of DoNothingPolicy from all meshes
-      tags: ["DoNothingPolicy"]
+      tags: [ "DoNothingPolicy" ]
       responses:
         '200':
           description: Successful response

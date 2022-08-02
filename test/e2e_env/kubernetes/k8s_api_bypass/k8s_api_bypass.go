@@ -6,16 +6,19 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
 func K8sApiBypass() {
+	meshName := "k8s-api-bypass"
+	namespace := "k8s-api-bypass"
+
 	meshDefaultMtlsOn := `
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
 metadata:
-  name: default
+  name: k8s-api-bypass
 spec:
   mtls:
     enabledBackend: ca-1
@@ -27,37 +30,23 @@ spec:
       passthrough: %s
 `
 
-	var cluster *K8sCluster
 	var clientPodName string
 
-	BeforeEach(func() {
-		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
-
+	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(Kuma(core.Standalone)).
-			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(DemoClientK8s("default", TestNamespace)).
-			Setup(cluster)
-		Expect(err).ToNot(HaveOccurred())
-		err = cluster.VerifyKuma()
+			Install(YamlK8s(fmt.Sprintf(meshDefaultMtlsOn, "true"))).
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(DemoClientK8s(meshName, namespace)).
+			Setup(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = YamlK8s(fmt.Sprintf(meshDefaultMtlsOn, "true"))(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		clientPodName, err = PodNameOfApp(cluster, "demo-client", TestNamespace)
+		clientPodName, err = PodNameOfApp(env.Cluster, "demo-client", namespace)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	E2EAfterEach(func() {
-		err := cluster.DeleteNamespace(TestNamespace)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = cluster.DeleteKuma()
-		Expect(err).ToNot(HaveOccurred())
-
-		err = cluster.DismissCluster()
-		Expect(err).ToNot(HaveOccurred())
+	E2EAfterAll(func() {
+		Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should be able to communicate with API Server", func() {
@@ -71,17 +60,17 @@ spec:
 		cmd := fmt.Sprintf("curl -s --cacert %s --header %q -o /dev/null -w '%%{http_code}\\n' -m 3 --fail %s", caCert, header, url)
 
 		// given Mesh with passthrough enabled then communication with API Server works
-		stdout, _, err := cluster.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
+		stdout, _, err := env.Cluster.ExecWithRetries(namespace, clientPodName, "demo-client",
 			"bash", "-c", cmd)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(Equal("200"))
 
 		// when passthrough is disabled on the Mesh
-		err = YamlK8s(fmt.Sprintf(meshDefaultMtlsOn, "false"))(cluster)
+		err = env.Cluster.Install(YamlK8s(fmt.Sprintf(meshDefaultMtlsOn, "false")))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then communication with API Server still works
-		stdout, _, err = cluster.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
+		stdout, _, err = env.Cluster.ExecWithRetries(namespace, clientPodName, "demo-client",
 			"bash", "-c", cmd)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(Equal("200"))

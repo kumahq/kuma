@@ -78,7 +78,7 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 			return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
 		}
 
-		if err := coreRes.Validate(); err != nil {
+		if err := core_model.Validate(coreRes); err != nil {
 			if kumaErr, ok := err.(*validators.ValidationError); ok {
 				// we assume that coreRes.Validate() returns validation errors of the spec
 				return convertSpecValidationError(kumaErr, k8sObj)

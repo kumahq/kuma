@@ -1,4 +1,4 @@
-package universal_standalone
+package trafficroute
 
 import (
 	"fmt"
@@ -8,59 +8,55 @@ import (
 	"github.com/onsi/gomega/types"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
 	. "github.com/kumahq/kuma/test/framework/client"
 )
 
-const defaultMesh = "default"
+func TrafficRoute() {
+	meshName := "trafficroute"
 
-var universal Cluster
+	BeforeAll(func() {
+		Expect(NewClusterSetup().
+			Install(MeshUniversal(meshName)).
+			Install(TestServerUniversal("dp-echo-1", meshName,
+				WithArgs([]string{"echo", "--instance", "echo-v1"}),
+				WithServiceVersion("v1"),
+			)).
+			Install(TestServerUniversal("dp-echo-2", meshName,
+				WithArgs([]string{"echo", "--instance", "echo-v2"}),
+				WithServiceVersion("v2"),
+			)).
+			Install(TestServerUniversal("dp-echo-3", meshName,
+				WithArgs([]string{"echo", "--instance", "echo-v3"}),
+				WithServiceVersion("v3"),
+			)).
+			Install(TestServerUniversal("dp-echo-4", meshName,
+				WithArgs([]string{"echo", "--instance", "echo-v4"}),
+				WithServiceVersion("v4"),
+			)).
+			Install(TestServerUniversal("dp-another-test", meshName,
+				WithArgs([]string{"echo", "--instance", "another-test-server"}),
+				WithServiceName("another-test-server"),
+			)).
+			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
+			Setup(env.Cluster)).To(Succeed())
+	})
 
-var _ = E2EBeforeSuite(func() {
-	clusters, err := NewUniversalClusters([]string{Kuma3}, Verbose)
-	Expect(err).ToNot(HaveOccurred())
+	E2EAfterAll(func() {
+		Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+	})
 
-	universal = clusters.GetCluster(Kuma3)
-
-	Expect(NewClusterSetup().
-		Install(Kuma(core.Standalone)).
-		Install(TestServerUniversal("dp-echo-1", defaultMesh,
-			WithArgs([]string{"echo", "--instance", "echo-v1"}),
-			WithServiceVersion("v1"),
-		)).
-		Install(TestServerUniversal("dp-echo-2", defaultMesh,
-			WithArgs([]string{"echo", "--instance", "echo-v2"}),
-			WithServiceVersion("v2"),
-		)).
-		Install(TestServerUniversal("dp-echo-3", defaultMesh,
-			WithArgs([]string{"echo", "--instance", "echo-v3"}),
-			WithServiceVersion("v3"),
-		)).
-		Install(TestServerUniversal("dp-echo-4", defaultMesh,
-			WithArgs([]string{"echo", "--instance", "echo-v4"}),
-			WithServiceVersion("v4"),
-		)).
-		Install(TestServerUniversal("dp-another-test", defaultMesh,
-			WithArgs([]string{"echo", "--instance", "another-test-server"}),
-			WithServiceName("another-test-server"),
-		)).
-		Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, WithTransparentProxy(true))).
-		Setup(universal)).To(Succeed())
-
-	E2EDeferCleanup(universal.DismissCluster)
-})
-
-func KumaStandalone() {
 	E2EAfterEach(func() {
 		// remove all TrafficRoutes
-		items, err := universal.GetKumactlOptions().KumactlList("traffic-routes", "default")
+		items, err := env.Cluster.GetKumactlOptions().KumactlList("traffic-routes", meshName)
 		Expect(err).ToNot(HaveOccurred())
 		for _, item := range items {
-			if item == "route-all-default" {
+			if item == "route-all-trafficroute" {
 				continue
 			}
-			err := universal.GetKumactlOptions().KumactlDelete("traffic-route", item, "default")
+			err := env.Cluster.GetKumactlOptions().KumactlDelete("traffic-route", item, meshName)
 			Expect(err).ToNot(HaveOccurred())
 		}
 	})
@@ -69,7 +65,7 @@ func KumaStandalone() {
 		const trafficRoute = `
 type: TrafficRoute
 name: three-way-route
-mesh: default
+mesh: trafficroute
 sources:
   - match:
       kuma.io/service: demo-client
@@ -93,10 +89,10 @@ conf:
         kuma.io/service: test-server
         version: v4
 `
-		Expect(YamlUniversal(trafficRoute)(universal)).To(Succeed())
+		Expect(env.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
 		Eventually(func() (map[string]int, error) {
-			return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh")
+			return CollectResponsesByInstance(env.Cluster, "demo-client", "test-server.mesh")
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(3),
@@ -111,7 +107,7 @@ conf:
 		const trafficRoute = `
 type: TrafficRoute
 name: route-echo-to-backend
-mesh: default
+mesh: trafficroute
 sources:
   - match:
       kuma.io/service: demo-client
@@ -126,10 +122,10 @@ conf:
       destination:
         kuma.io/service: another-test-server
 `
-		Expect(YamlUniversal(trafficRoute)(universal)).To(Succeed())
+		Expect(env.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
 		Eventually(func() (map[string]int, error) {
-			return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh")
+			return CollectResponsesByInstance(env.Cluster, "demo-client", "test-server.mesh")
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(1),
@@ -145,7 +141,7 @@ conf:
 		trafficRoute := fmt.Sprintf(`
 type: TrafficRoute
 name: route-20-80-split
-mesh: default
+mesh: trafficroute
 sources:
   - match:
       kuma.io/service: demo-client
@@ -165,10 +161,11 @@ conf:
         kuma.io/service: test-server
         version: v2
 `, v1Weight, v2Weight)
-		Expect(YamlUniversal(trafficRoute)(universal)).To(Succeed())
+
+		Expect(env.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
 		Eventually(func() (map[string]int, error) {
-			return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh", WithNumberOfRequests(10))
+			return CollectResponsesByInstance(env.Cluster, "demo-client", "test-server.mesh", WithNumberOfRequests(10))
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(2),
@@ -190,7 +187,7 @@ conf:
 			const trafficRoute = `
 type: TrafficRoute
 name: route-by-path
-mesh: default
+mesh: trafficroute
 sources:
   - match:
       kuma.io/service: demo-client
@@ -223,19 +220,19 @@ conf:
     kuma.io/service: test-server
     version: v4
 `
-			Expect(YamlUniversal(trafficRoute)(universal)).To(Succeed())
+			Expect(env.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh/version1")
+				return CollectResponsesByInstance(env.Cluster, "demo-client", "test-server.mesh/version1")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v1"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh/version2")
+				return CollectResponsesByInstance(env.Cluster, "demo-client", "test-server.mesh/version2")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v2"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh/version3")
+				return CollectResponsesByInstance(env.Cluster, "demo-client", "test-server.mesh/version3")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v3"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh")
+				return CollectResponsesByInstance(env.Cluster, "demo-client", "test-server.mesh")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v4"))
 		})
 
@@ -243,7 +240,7 @@ conf:
 			const trafficRoute = `
 type: TrafficRoute
 name: route-by-header
-mesh: default
+mesh: trafficroute
 sources:
   - match:
       kuma.io/service: demo-client
@@ -279,19 +276,19 @@ conf:
     kuma.io/service: test-server
     version: v4
 `
-			Expect(YamlUniversal(trafficRoute)(universal)).To(Succeed())
+			Expect(YamlUniversal(trafficRoute)(env.Cluster)).To(Succeed())
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh", WithHeader("x-version", "v1"))
+				return CollectResponsesByInstance(env.Cluster, "demo-client", "test-server.mesh", WithHeader("x-version", "v1"))
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v1"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh", WithHeader("x-version", "v2"))
+				return CollectResponsesByInstance(env.Cluster, "demo-client", "test-server.mesh", WithHeader("x-version", "v2"))
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v2"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh", WithHeader("x-version", "v3"))
+				return CollectResponsesByInstance(env.Cluster, "demo-client", "test-server.mesh", WithHeader("x-version", "v3"))
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v3"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh")
+				return CollectResponsesByInstance(env.Cluster, "demo-client", "test-server.mesh")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v4"))
 		})
 
@@ -299,7 +296,7 @@ conf:
 			const trafficRoute = `
 type: TrafficRoute
 name: two-splits
-mesh: default
+mesh: trafficroute
 sources:
   - match:
       kuma.io/service: demo-client
@@ -332,10 +329,10 @@ conf:
       kuma.io/service: test-server
       version: v4
 `
-			Expect(YamlUniversal(trafficRoute)(universal)).To(Succeed())
+			Expect(YamlUniversal(trafficRoute)(env.Cluster)).To(Succeed())
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh/split", WithNumberOfRequests(10))
+				return CollectResponsesByInstance(env.Cluster, "demo-client", "test-server.mesh/split", WithNumberOfRequests(10))
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
@@ -345,7 +342,7 @@ conf:
 			)
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh", WithNumberOfRequests(10))
+				return CollectResponsesByInstance(env.Cluster, "demo-client", "test-server.mesh", WithNumberOfRequests(10))
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
@@ -359,7 +356,7 @@ conf:
 			const trafficRoute = `
 type: TrafficRoute
 name: same-splits
-mesh: default
+mesh: trafficroute
 sources:
   - match:
       kuma.io/service: demo-client
@@ -392,10 +389,10 @@ conf:
       kuma.io/service: test-server
       version: v2
 `
-			Expect(YamlUniversal(trafficRoute)(universal)).To(Succeed())
+			Expect(env.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh/split", WithNumberOfRequests(10))
+				return CollectResponsesByInstance(env.Cluster, "demo-client", "test-server.mesh/split", WithNumberOfRequests(10))
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
@@ -405,7 +402,7 @@ conf:
 			)
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh", WithNumberOfRequests(10))
+				return CollectResponsesByInstance(env.Cluster, "demo-client", "test-server.mesh", WithNumberOfRequests(10))
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
@@ -419,7 +416,7 @@ conf:
 			const trafficRoute = `
 type: TrafficRoute
 name: modify-path
-mesh: default
+mesh: trafficroute
 sources:
   - match:
       kuma.io/service: demo-client
@@ -451,10 +448,10 @@ conf:
   destination:
     kuma.io/service: test-server
 `
-			Expect(YamlUniversal(trafficRoute)(universal)).To(Succeed())
+			Expect(env.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
 			Eventually(func() error {
-				resp, err := CollectResponse(universal, "demo-client", "test-server.mesh/test-rewrite-prefix")
+				resp, err := CollectResponse(env.Cluster, "demo-client", "test-server.mesh/test-rewrite-prefix")
 				if err != nil {
 					return err
 				}
@@ -465,7 +462,7 @@ conf:
 			}, "30s", "500ms").Should(Succeed())
 
 			Eventually(func() error {
-				resp, err := CollectResponse(universal, "demo-client", "test-server.mesh/test-regex")
+				resp, err := CollectResponse(env.Cluster, "demo-client", "test-server.mesh/test-regex")
 				if err != nil {
 					return err
 				}
@@ -480,7 +477,7 @@ conf:
 			const trafficRoute = `
 type: TrafficRoute
 name: modify-host
-mesh: default
+mesh: trafficroute
 sources:
   - match:
       kuma.io/service: demo-client
@@ -514,10 +511,10 @@ conf:
   destination:
     kuma.io/service: test-server
 `
-			Expect(YamlUniversal(trafficRoute)(universal)).To(Succeed())
+			Expect(env.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
 			Eventually(func() error {
-				resp, err := CollectResponse(universal, "demo-client", "test-server.mesh/modified-host")
+				resp, err := CollectResponse(env.Cluster, "demo-client", "test-server.mesh/modified-host")
 				if err != nil {
 					return err
 				}
@@ -529,7 +526,7 @@ conf:
 			}, "30s", "500ms").Should(Succeed())
 
 			Eventually(func() error {
-				resp, err := CollectResponse(universal, "demo-client", "test-server.mesh/from-path")
+				resp, err := CollectResponse(env.Cluster, "demo-client", "test-server.mesh/from-path")
 				if err != nil {
 					return err
 				}
@@ -545,7 +542,7 @@ conf:
 			const trafficRoute = `
 type: TrafficRoute
 name: modify-headers
-mesh: default
+mesh: trafficroute
 sources:
   - match:
       kuma.io/service: demo-client
@@ -574,10 +571,10 @@ conf:
   destination:
     kuma.io/service: test-server
 `
-			Expect(YamlUniversal(trafficRoute)(universal)).To(Succeed())
+			Expect(env.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
 			Eventually(func() error {
-				resp, err := CollectResponse(universal, "demo-client", "test-server.mesh/modified-headers",
+				resp, err := CollectResponse(env.Cluster, "demo-client", "test-server.mesh/modified-headers",
 					WithHeader("header-to-remove", "abc"),
 					WithHeader("x-multiple-values", "abc"),
 				)
@@ -600,7 +597,7 @@ conf:
 
 			// "add" should replace existing headers
 			Eventually(func() error {
-				resp, err := CollectResponse(universal, "demo-client", "test-server.mesh/modified-headers", WithHeader("x-custom-header", "abc"))
+				resp, err := CollectResponse(env.Cluster, "demo-client", "test-server.mesh/modified-headers", WithHeader("x-custom-header", "abc"))
 				if err != nil {
 					return err
 				}
