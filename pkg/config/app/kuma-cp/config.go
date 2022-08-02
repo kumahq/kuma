@@ -143,6 +143,8 @@ type Config struct {
 	Access access.AccessConfig `yaml:"access"`
 	// Configuration of experimental features
 	Experimental ExperimentalConfig `yaml:"experimental"`
+	// ProxyConfiguration holds configuration for proxies
+	ProxyConfiguration xds.ProxyConfig `yaml:"proxyConfig"`
 }
 
 func (c *Config) Sanitize() {
@@ -202,6 +204,7 @@ var DefaultConfig = func() Config {
 			GatewayAPI:          false,
 			KubeOutboundsAsVIPs: false,
 		},
+		ProxyConfiguration: xds.DefaultProxyConfig(),
 	}
 }
 

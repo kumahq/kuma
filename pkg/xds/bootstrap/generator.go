@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	xds_config "github.com/kumahq/kuma/pkg/config/xds"
 	bootstrap_config "github.com/kumahq/kuma/pkg/config/xds/bootstrap"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -31,7 +32,8 @@ type BootstrapGenerator interface {
 
 func NewDefaultBootstrapGenerator(
 	resManager core_manager.ResourceManager,
-	config *bootstrap_config.BootstrapServerConfig,
+	serverConfig *bootstrap_config.BootstrapServerConfig,
+	proxyConfig xds_config.ProxyConfig,
 	dpServerCertFile string,
 	dpAuthEnabled bool,
 	dpUseTokenPath bool,
@@ -42,12 +44,13 @@ func NewDefaultBootstrapGenerator(
 	if err != nil {
 		return nil, err
 	}
-	if config.Params.XdsHost != "" && !hostsAndIps[config.Params.XdsHost] {
-		return nil, errors.Errorf("hostname: %s set by KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST is not available in the DP Server certificate. Available hostnames: %q. Change the hostname or generate certificate with proper hostname.", config.Params.XdsHost, hostsAndIps.slice())
+	if serverConfig.Params.XdsHost != "" && !hostsAndIps[serverConfig.Params.XdsHost] {
+		return nil, errors.Errorf("hostname: %s set by KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST is not available in the DP Server certificate. Available hostnames: %q. Change the hostname or generate certificate with proper hostname.", serverConfig.Params.XdsHost, hostsAndIps.slice())
 	}
 	return &bootstrapGenerator{
 		resManager:       resManager,
-		config:           config,
+		config:           serverConfig,
+		proxyConfig:      proxyConfig,
 		xdsCertFile:      dpServerCertFile,
 		dpAuthEnabled:    dpAuthEnabled,
 		dpUseTokenPath:   dpUseTokenPath,
@@ -60,6 +63,7 @@ func NewDefaultBootstrapGenerator(
 type bootstrapGenerator struct {
 	resManager       core_manager.ResourceManager
 	config           *bootstrap_config.BootstrapServerConfig
+	proxyConfig      xds_config.ProxyConfig
 	dpAuthEnabled    bool
 	dpUseTokenPath   bool
 	xdsCertFile      string
@@ -155,7 +159,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		return nil, kumaDpBootstrap, err
 	}
 
-	config, err := genConfig(params, b.dpUseTokenPath)
+	config, err := genConfig(params, b.proxyConfig, b.dpUseTokenPath)
 	if err != nil {
 		return nil, kumaDpBootstrap, errors.Wrap(err, "failed creating bootstrap conf")
 	}
