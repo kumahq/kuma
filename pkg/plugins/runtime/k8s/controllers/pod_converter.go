@@ -28,7 +28,6 @@ type PodConverter struct {
 	ServiceGetter       kube_client.Reader
 	NodeGetter          kube_client.Reader
 	ReplicaSetGetter    kube_client.Reader
-	DeploymentGetter    kube_client.Reader
 	ResourceConverter   k8s_common.Converter
 	Zone                string
 	KubeOutboundsAsVIPs bool
@@ -214,19 +213,10 @@ func (p *PodConverter) DeploymentFor(ctx context.Context, namespace string, pod 
 	}
 
 	rsOwners := rs.GetObjectMeta().GetOwnerReferences()
-	dpl := &kube_apps.Deployment{}
 	for _, owner := range rsOwners {
 		if owner.Kind == "Deployment" {
-			dplKey := kube_client.ObjectKey{Namespace: namespace, Name: owner.Name}
-			if err := p.DeploymentGetter.Get(ctx, dplKey, dpl); err != nil {
-				return "", false, err
-			}
-			break
+			return owner.Name, true, nil
 		}
-	}
-
-	if dpl != nil {
-		return dpl.Name, true, nil
 	}
 
 	return "", false, nil
