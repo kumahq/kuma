@@ -1,12 +1,11 @@
 package matchers
 
 import (
-	"github.com/golang/protobuf/proto"
-	"github.com/onsi/gomega/format"
+	"github.com/google/go-cmp/cmp"
 	"github.com/onsi/gomega/types"
 	"github.com/pkg/errors"
-
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 func MatchProto(expected interface{}) types.GomegaMatcher {
@@ -44,34 +43,12 @@ func (p *ProtoMatcher) Match(actual interface{}) (success bool, err error) {
 }
 
 func (p *ProtoMatcher) FailureMessage(actual interface{}) (message string) {
-	actualYAML, expectedYAML, err := p.yamls(actual)
-	if err != nil {
-		return err.Error()
-	}
-	return format.Message(actualYAML, "to equal", expectedYAML)
-}
-
-func (p *ProtoMatcher) yamls(actual interface{}) (string, string, error) {
-	actualProto := actual.(proto.Message)
-	actualYAML, err := util_proto.ToYAML(actualProto)
-	if err != nil {
-		return "", "", errors.Errorf("Proto are not equal (could not convert to YAML: %s)", err)
-	}
-
-	expectedProto := p.Expected.(proto.Message)
-	expectedYAML, err := util_proto.ToYAML(expectedProto)
-	if err != nil {
-		return "", "", errors.Errorf("Proto are not equal (could not convert to YAML: %s)", err)
-	}
-	return string(actualYAML), string(expectedYAML), nil
+	differences := cmp.Diff(p.Expected, actual, protocmp.Transform())
+	return "Expected matching protobuf message:\n" + differences
 }
 
 func (p *ProtoMatcher) NegatedFailureMessage(actual interface{}) (message string) {
-	actualYAML, expectedYAML, err := p.yamls(actual)
-	if err != nil {
-		return err.Error()
-	}
-	return format.Message(actualYAML, "not to equal", expectedYAML)
+	return "Expected different protobuf but was the same"
 }
 
 var _ types.GomegaMatcher = &ProtoMatcher{}
