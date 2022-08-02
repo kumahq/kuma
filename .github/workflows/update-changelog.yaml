@@ -5,11 +5,8 @@ on:
   release:
     types: [published, edited, released, unpublished, deleted]
 jobs:
-  upgrade-kuma:
+  update-changelog:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: kong-mesh
     steps:
       - name: Generate GitHub app token
         id: github-app-token
@@ -22,7 +19,9 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: "~1.18.1"
-      - run: |
+      - env:
+          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
+        run: |
           go run ./tools/releases/changelog/... changelog.md > CHANGELOG.md
       - name: "Create Pull Request"
         uses: peter-evans/create-pull-request@v3
