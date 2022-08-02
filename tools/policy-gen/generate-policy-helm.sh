@@ -22,7 +22,7 @@ for policy in "$@"; do
   policy_crd_file="$(find "${policy_crd_dir}" -type f)"
   rm -f "${HELM_CRD_DIR}/$(basename "${policy_crd_file}")"
 
-  if [ ! -f ${policy_dir}/plugin.go ]; then
+  if [ ! -f "${policy_dir}/plugin.go" ]; then
     echo "Policy ${policy} has skip registration, not updating helm"
     continue
   fi
