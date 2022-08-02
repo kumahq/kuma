@@ -696,3 +696,35 @@ Other:
 * fix: pass validation of V3 specific configs in ProxyTemplate [#1819](https://github.com//kumahq/kuma/pull/1819)
 * chore: support ingress annotations (kuma.io/ingress-public-address and kuma.io/ingress-public-port) in HELM [#1796](https://github.com//kumahq/kuma/pull/1796)
 
+
+## [1.1.2]
+> Released on 2021/04/09
+
+* feat: extend CircuitBreaker policy with Thresholds [#1688](https://github.com//kumahq/kuma/pull/1688)
+* feat: enable IPv6 support and tests [#1726](https://github.com//kumahq/kuma/pull/1726) [#1734](https://github.com//kumahq/kuma/pull/1734)
+* feat: unuversal mode transparent-proxy firewalld support [#1702](https://github.com//kumahq/kuma/pull/1702)
+* feat: new Grafana charts for golden signals and L7 metrics [#1739](https://github.com//kumahq/kuma/pull/1739) [#1786](https://github.com//kumahq/kuma/pull/1786)
+* chore: verify e2e tests run in EKS [#1684](https://github.com//kumahq/kuma/pull/1684)  [#1685](https://github.com//kumahq/kuma/pull/1685) [#1744](https://github.com//kumahq/kuma/pull/1744)
+* chore: upgrade CRDS to apiextensions.k8s.io/v1 [#1108](https://github.com//kumahq/kuma/pull/1108)
+* fix: helm cp service annotations [#1767](https://github.com//kumahq/kuma/pull/1767)
+  👍contributed by nbrink91
+* fix: gui fixes [#1773](https://github.com//kumahq/kuma/pull/1773)
+* fix: KDS may delete ConfigMaps on Control Plane restarts [#1769](https://github.com//kumahq/kuma/pull/1769)
+* fix: Kuma CP restart may cause stale Envoy configs on Universal [#1749](https://github.com//kumahq/kuma/pull/1749)
+* fix: use EnvoyGRPC to fix DNS resolving [#1740](https://github.com//kumahq/kuma/pull/1740)
+* fix: fix ingress-enabled [#1725](https://github.com//kumahq/kuma/pull/1725)
+* fix: pick HTTP health checker version depending on outbound's protocol [#1714](https://github.com//kumahq/kuma/pull/1714)
+* fix: improve the DNS server bind message [#1701](https://github.com//kumahq/kuma/pull/1701)
+* fix: validate --name and --mesh when dataplane is provided [#1771](https://github.com//kumahq/kuma/pull/1771)
+* fix: better error messages when there is problem with pod dataplane convertion [#1743](https://github.com//kumahq/kuma/pull/1743)
+* fix: crashes under load [#1694](https://github.com//kumahq/kuma/pull/1694) [#1695](https://github.com//kumahq/kuma/pull/1695)
+
+## [1.1.1]
+> Released on 2021/03/11
+
+* fix: make sure we enumerate all types in kumactl [#1673](https://github.com//kumahq/kuma/pull/1673)
+* fix: annnotate service with ingress that has no annotations [#1671](https://github.com//kumahq/kuma/pull/1671)
+* fix: improve err message if $HOME is not defined [#1664](https://github.com//kumahq/kuma/pull/1664)
+* feat: zipkin config add shared span context option [#1660](https://github.com//kumahq/kuma/pull/1660)
+  👍contributed by @ericmustin
+* feat: get rid of 'changed' check [#1663](https://github.com//kumahq/kuma/pull/1663)
