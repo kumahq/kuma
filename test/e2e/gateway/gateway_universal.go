@@ -40,7 +40,7 @@ func GatewayOnUniversal() {
 			Install(Kuma(config_core.Standalone, opt...)).
 			Install(GatewayClientAppUniversal("gateway-client")).
 			Install(EchoServerApp("echo-server", "echo-service", "universal")).
-			Install(GatewayProxyUniversal("gateway-proxy")).
+			Install(GatewayProxyUniversal("default", "gateway-proxy")).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	}
@@ -148,7 +148,7 @@ conf:
 				Install(Kuma(config_core.Standalone, WithVerbose())).
 				Install(ExternalServerUniversal("external-echo")).
 				Install(GatewayClientAppUniversal("gateway-client")).
-				Install(GatewayProxyUniversal("gateway-proxy")).
+				Install(GatewayProxyUniversal("default", "gateway-proxy")).
 				Install(EchoServerApp("echo-server", "echo-service", "universal")).
 				Setup(cluster)
 			Expect(err).ToNot(HaveOccurred())
