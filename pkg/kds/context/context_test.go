@@ -4,7 +4,6 @@ import (
 	stdcontext "context"
 	"fmt"
 
-	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -21,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	zone_tokens "github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
@@ -51,7 +51,7 @@ var _ = Describe("Context", func() {
 				// then
 				Expect(out.GetMeta()).To(Equal(given.expect.GetMeta()))
 				Expect(out.Descriptor()).To(Equal(given.expect.Descriptor()))
-				Expect(proto.Equal(out.GetSpec(), given.expect.GetSpec())).To(BeTrue())
+				Expect(out.GetSpec()).To(matchers.MatchProto(given.expect.GetSpec()))
 			},
 			Entry("should zero generation on DataplaneInsight", testCase{
 				resource: &core_mesh.DataplaneInsightResource{
