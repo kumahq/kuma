@@ -37,7 +37,7 @@ policies = $(foreach dir,$(shell find pkg/plugins/policies -maxdepth 1 -mindepth
 generate_policy_targets = $(addprefix generate/policy/,$(policies))
 cleanup_policy_targets = $(addprefix cleanup/policy/,$(policies))
 
-generate/policies: cleanup/crds $(cleanup_policy_targets) $(generate_policy_targets) generate/policy-import generate/builtin-crds
+generate/policies: cleanup/crds $(cleanup_policy_targets) $(generate_policy_targets) generate/policy-import generate/policy-helm generate/builtin-crds
 
 cleanup/crds:
 	rm -f ./deployments/charts/kuma/crds/*
@@ -49,10 +49,7 @@ cleanup/policy/%:
 	@rm -r $(POLICIES_DIR)/$*/k8s || true
 
 generate/policy/%: generate/schema/%
-	@echo "Copy CRD to helm directory"
-	$(MAKE) generate/helm/$*
 	@echo "Policy $* successfully generated"
-	@echo "Don't forget to update Helm chart's cp-rbac.yaml with $*"
 
 generate/schema/%: generate/controller-gen/%
 	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \
@@ -61,6 +58,9 @@ generate/schema/%: generate/controller-gen/%
 
 generate/policy-import:
 	tools/policy-gen/generate-policy-import.sh $(policies)
+
+generate/policy-helm:
+	tools/policy-gen/generate-policy-helm.sh $(policies)
 
 generate/controller-gen/%: generate/kumapolicy-gen/%
 	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \
@@ -98,9 +98,6 @@ generate/builtin-crds:
 crd/controller-gen:
 	$(CONTROLLER_GEN) "crd:crdVersions=v1" paths=$(IN_CRD) output:crd:artifacts:config=$(OUT_CRD)
 	$(CONTROLLER_GEN) object:headerFile=./tools/policy-gen/boilerplate.go.txt,year=$$(date +%Y) paths=$(IN_CRD)
-
-generate/helm/%:
-	tools/policy-gen/crd-helm-copy.sh $*
 
 
 KUMA_GUI_GIT_URL=https://github.com/kumahq/kuma-gui.git
