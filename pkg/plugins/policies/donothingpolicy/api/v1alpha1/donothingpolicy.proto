@@ -5,7 +5,6 @@ package kuma.plugins.policies.donothingpolicy.v1alpha1;
 import "mesh/options.proto";
 option go_package = "github.com/kumahq/kuma/pkg/plugins/policies/donothingpolicy/api/v1alpha1";
 
-import "mesh/v1alpha1/selector.proto";
 import "config.proto";
 
 option (doc.config) = {
@@ -16,21 +15,9 @@ option (doc.config) = {
 
 // DoNothingPolicy defines permission for traffic between dataplanes.
 message DoNothingPolicy {
-
-  option (kuma.mesh.resource).name = "DoNothingPolicyResource";
-  option (kuma.mesh.resource).type = "DoNothingPolicy";
-  option (kuma.mesh.resource).package = "mesh";
-  option (kuma.mesh.resource).kds.send_to_zone = true;
-  option (kuma.mesh.resource).ws.name = "donothingpolicy";
-  option (kuma.mesh.resource).ws.plural = "donothingpolicies";
-  option (kuma.mesh.resource).allow_to_inspect = true;
-  option (kuma.mesh.resource).skip_registration = true;
-
-  // List of selectors to match dataplanes that are sources of traffic.
-  repeated kuma.mesh.v1alpha1.Selector sources = 1 [ (doc.required) = true ];
-  // List of selectors to match services that are destinations of traffic.
-  repeated kuma.mesh.v1alpha1.Selector destinations = 2
-      [ (doc.required) = true ];
+  option (kuma.mesh.policy) = {
+    skip_registration : true,
+  };
 
   message Conf {
     // Set true in case of doing nothing

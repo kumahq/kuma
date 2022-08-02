@@ -4,12 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"go/format"
-	"html/template"
+	"text/template"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/compiler/protogen"
-
-	"github.com/kumahq/kuma/tools/resource-gen/genutils"
 )
 
 // ResourceTemplate for creating a Kuma resource.
@@ -23,61 +21,46 @@ package {{.PolicyVersion}}
 import (
 	"fmt"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 {{range .Resources}}
 const (
-	{{.ResourceType}}Type model.ResourceType = "{{.ResourceType}}"
+	{{.Name}}Type model.ResourceType = "{{.Name}}"
 )
 
-var _ model.Resource = &{{.ResourceName}}{}
+var _ model.Resource = &{{.Name}}Resource{}
 
-type {{.ResourceName}} struct {
+type {{.Name}}Resource struct {
 	Meta model.ResourceMeta
-	Spec *{{.ProtoType}}
+	Spec *{{.Name}}
 }
 
-func New{{.ResourceName}}() *{{.ResourceName}} {
-	return &{{.ResourceName}}{
-		Spec: &{{.ProtoType}}{},
+func New{{.Name}}Resource() *{{.Name}}Resource {
+	return &{{.Name}}Resource{
+		Spec: &{{.Name}}{},
 	}
 }
 
-func (t *{{.ResourceName}}) GetMeta() model.ResourceMeta {
+func (t *{{.Name}}Resource) GetMeta() model.ResourceMeta {
 	return t.Meta
 }
 
-func (t *{{.ResourceName}}) SetMeta(m model.ResourceMeta) {
+func (t *{{.Name}}Resource) SetMeta(m model.ResourceMeta) {
 	t.Meta = m
 }
 
-func (t *{{.ResourceName}}) GetSpec() model.ResourceSpec {
+func (t *{{.Name}}Resource) GetSpec() model.ResourceSpec {
 	return t.Spec
 }
 
-{{if .SkipValidation}}
-func (t *{{.ResourceName}}) Validate() error {
-	return nil
-}
-{{end}}
-
-{{with $in := .}}
-{{range .Selectors}}
-func (t *{{$in.ResourceName}}) {{.}}() []*v1alpha1.Selector {
-	return t.Spec.Get{{.}}()
-}
-{{end}}
-{{end}}
-
-func (t *{{.ResourceName}}) SetSpec(spec model.ResourceSpec) error {
-	protoType, ok := spec.(*{{.ProtoType}})
+func (t *{{.Name}}Resource) SetSpec(spec model.ResourceSpec) error {
+	protoType, ok := spec.(*{{.Name}})
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			t.Spec = &{{.ProtoType}}{}
+			t.Spec = &{{.Name}}{}
 		} else  {
 			t.Spec = protoType
 		}
@@ -85,11 +68,11 @@ func (t *{{.ResourceName}}) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (t *{{.ResourceName}}) Descriptor() model.ResourceTypeDescriptor {
-	return {{.ResourceName}}TypeDescriptor 
+func (t *{{.Name}}Resource) Descriptor() model.ResourceTypeDescriptor {
+	return {{.Name}}ResourceTypeDescriptor 
 }
 
-func (t *{{.ResourceName}}) Validate() error {
+func (t *{{.Name}}Resource) Validate() error {
 	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
 		return nil
 	} else {
@@ -97,14 +80,14 @@ func (t *{{.ResourceName}}) Validate() error {
 	}
 }
 
-var _ model.ResourceList = &{{.ResourceName}}List{}
+var _ model.ResourceList = &{{.Name}}ResourceList{}
 
-type {{.ResourceName}}List struct {
-	Items      []*{{.ResourceName}}
+type {{.Name}}ResourceList struct {
+	Items      []*{{.Name}}Resource
 	Pagination model.Pagination
 }
 
-func (l *{{.ResourceName}}List) GetItems() []model.Resource {
+func (l *{{.Name}}ResourceList) GetItems() []model.Resource {
 	res := make([]model.Resource, len(l.Items))
 	for i, elem := range l.Items {
 		res[i] = elem
@@ -112,41 +95,39 @@ func (l *{{.ResourceName}}List) GetItems() []model.Resource {
 	return res
 }
 
-func (l *{{.ResourceName}}List) GetItemType() model.ResourceType {
-	return {{.ResourceType}}Type
+func (l *{{.Name}}ResourceList) GetItemType() model.ResourceType {
+	return {{.Name}}Type
 }
 
-func (l *{{.ResourceName}}List) NewItem() model.Resource {
-	return New{{.ResourceName}}()
+func (l *{{.Name}}ResourceList) NewItem() model.Resource {
+	return New{{.Name}}Resource()
 }
 
-func (l *{{.ResourceName}}List) AddItem(r model.Resource) error {
-	if trr, ok := r.(*{{.ResourceName}}); ok {
+func (l *{{.Name}}ResourceList) AddItem(r model.Resource) error {
+	if trr, ok := r.(*{{.Name}}Resource); ok {
 		l.Items = append(l.Items, trr)
 		return nil
 	} else {
-		return model.ErrorInvalidItemType((*{{.ResourceName}})(nil), r)
+		return model.ErrorInvalidItemType((*{{.Name}}Resource)(nil), r)
 	}
 }
 
-func (l *{{.ResourceName}}List) GetPagination() *model.Pagination {
+func (l *{{.Name}}ResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-var {{.ResourceName}}TypeDescriptor = model.ResourceTypeDescriptor{
-		Name: {{.ResourceType}}Type,
-		Resource: New{{.ResourceName}}(),
-		ResourceList: &{{.ResourceName}}List{},
-		ReadOnly: {{.WsReadOnly}},
-		AdminOnly: {{.WsAdminOnly}},
-		Scope: {{if .Global}}model.ScopeGlobal{{else}}model.ScopeMesh{{end}},
-		{{- if ne .KdsDirection ""}}
-		KDSFlags: {{.KdsDirection}},
-		{{- end}}
-		WsPath: "{{.WsPath}}",
-		KumactlArg: "{{.KumactlSingular}}",
-		KumactlListArg: "{{.KumactlPlural}}",
-		AllowToInspect: {{.AllowToInspect}},
+var {{.Name}}ResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name: {{.Name}}Type,
+		Resource: New{{.Name}}Resource(),
+		ResourceList: &{{.Name}}ResourceList{},
+		Scope: model.ScopeMesh,
+		KDSFlags: model.FromGlobalToZone,
+		WsPath: "{{.Path}}",
+		KumactlArg: "{{index .AlternativeNames 0}}",
+		KumactlListArg: "{{.Path}}",
+		AllowToInspect: true,
+		IsPolicy: true,
+		DisplayName: "{{.DisplayName}}",
 	}
 {{end}}
 `))
@@ -155,9 +136,9 @@ func generateResource(
 	p *protogen.Plugin,
 	file *protogen.File,
 ) error {
-	var infos []genutils.ResourceInfo
+	var infos []PolicyConfig
 	for _, msg := range file.Messages {
-		infos = append(infos, genutils.ToResourceInfo(msg.Desc))
+		infos = append(infos, NewPolicyConfig(msg.Desc))
 	}
 
 	if len(infos) > 1 {
@@ -167,7 +148,7 @@ func generateResource(
 	outBuf := bytes.Buffer{}
 	if err := ResourceTemplate.Execute(&outBuf, struct {
 		PolicyVersion string
-		Resources     []genutils.ResourceInfo
+		Resources     []PolicyConfig
 	}{
 		PolicyVersion: string(file.GoPackageName),
 		Resources:     infos,

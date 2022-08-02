@@ -17,8 +17,21 @@ type GQLData struct {
 }
 
 type GQLRepo struct {
-	Ref    GQLRef        `json:"ref"`
-	Object GQLObjectRepo `json:"object"`
+	Ref      GQLRef           `json:"ref"`
+	Object   GQLObjectRepo    `json:"object"`
+	Releases GQLObjectRelease `json:"releases"`
+}
+
+type GQLObjectRelease struct {
+	Nodes []GQLRelease `json:"nodes"`
+}
+
+type GQLRelease struct {
+	Name         string    `json:"name"`
+	CreatedAt    time.Time `json:"createdAt"`
+	IsDraft      bool      `json:"isDraft"`
+	IsPrerelease bool      `json:"isPrerelease"`
+	Description  string    `json:"description"`
 }
 
 type GQLObjectRepo struct {
@@ -61,6 +74,28 @@ type GQLRefTarget struct {
 
 type GQLClient struct {
 	Token string
+}
+
+func (c GQLClient) releaseGraphQL(owner, name string) ([]GQLRelease, error) {
+	res, err := c.graphqlQuery(`
+query($name: String!, $owner: String!) {
+  repository(owner: $owner, name: $name) {
+    releases(first: 100, orderBy: {field: CREATED_AT, direction: DESC}) {
+      nodes {
+        name
+        createdAt
+        isDraft
+        isPrerelease
+        description
+      }
+    }
+  }
+}
+`, map[string]interface{}{"owner": owner, "name": name})
+	if err != nil {
+		return nil, err
+	}
+	return res.Data.Repository.Releases.Nodes, nil
 }
 
 func (c GQLClient) historyGraphQl(owner, name, branch string, since time.Time) ([]GQLCommit, error) {

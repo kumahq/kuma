@@ -10,12 +10,12 @@ import (
 	"github.com/golang/protobuf/proto"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kumahq/kuma/pkg/plugins/policies/donothingpolicy/api/v1alpha1"
+	policy "github.com/kumahq/kuma/pkg/plugins/policies/donothingpolicy/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 )
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=kuma,scope=Cluster
+// +kubebuilder:resource:categories=kuma,scope=Namespaced
 type DoNothingPolicy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -25,9 +25,10 @@ type DoNothingPolicy struct {
 	//
 	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
+
 	// Spec is the specification of the Kuma DoNothingPolicy resource.
 	// +kubebuilder:validation:Optional
-	Spec *v1alpha1.DoNothingPolicy `json:"spec,omitempty"`
+	Spec *policy.DoNothingPolicy `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -64,15 +65,15 @@ func (cb *DoNothingPolicy) SetSpec(spec proto.Message) {
 		return
 	}
 
-	if _, ok := spec.(*v1alpha1.DoNothingPolicy); !ok {
+	if _, ok := spec.(*policy.DoNothingPolicy); !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = spec.(*v1alpha1.DoNothingPolicy)
+	cb.Spec = spec.(*policy.DoNothingPolicy)
 }
 
 func (cb *DoNothingPolicy) Scope() model.Scope {
-	return model.ScopeCluster
+	return model.ScopeNamespace
 }
 
 func (l *DoNothingPolicyList) GetItems() []model.KubernetesObject {
