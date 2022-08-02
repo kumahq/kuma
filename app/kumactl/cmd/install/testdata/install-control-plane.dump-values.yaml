@@ -664,3 +664,6 @@ experimental:
     bpffsPath: /run/kuma/bpf
     # -- Path where compiled eBPF programs which will be installed can be found
     programsSourcePath: /kuma/ebpf
+
+plugins:
+  policies: []
