@@ -42,6 +42,15 @@ var _ = Describe("NamespaceReconciler", func() {
 					Namespace: "non-system-ns-without-sidecar-injection",
 				},
 			},
+			&kube_core.Namespace{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Name:      "non-system-ns-with-sidecar-injection-disabled",
+					Namespace: "non-system-ns-with-sidecar-injection-disabled",
+					Labels: map[string]string{
+						"kuma.io/sidecar-injection": "disabled",
+					},
+				},
+			},
 		).Build()
 
 		reconciler = &controllers.NamespaceReconciler{
@@ -82,6 +91,40 @@ var _ = Describe("NamespaceReconciler", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(nads.Items).To(HaveLen(1))
 		Expect(nads.Items[0].Namespace).To(Equal("non-system-ns-with-sidecar-injection"))
+		Expect(nads.Items[0].Name).To(Equal("kuma-cni"))
+	})
+
+	It("should create NetworkAttachmentDefinition when injection is disabled", func() {
+		// setup CustomResourceDefinition
+		crd := &apiextensionsv1.CustomResourceDefinition{
+			ObjectMeta: kube_meta.ObjectMeta{
+				Name: "network-attachment-definitions.k8s.cni.cncf.io",
+			},
+		}
+		err := kubeClient.Create(context.Background(), crd)
+		Expect(err).ToNot(HaveOccurred())
+
+		// given
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{
+				Namespace: "non-system-ns-with-sidecar-injection-disabled",
+				Name:      "non-system-ns-with-sidecar-injection-disabled",
+			},
+		}
+
+		// when
+		result, err := reconciler.Reconcile(context.Background(), req)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(result).To(BeZero())
+
+		// and NetworkAttachmentDefinition is created
+		nads := &v1.NetworkAttachmentDefinitionList{}
+		err = kubeClient.List(context.Background(), nads)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(nads.Items).To(HaveLen(1))
+		Expect(nads.Items[0].Namespace).To(Equal("non-system-ns-with-sidecar-injection-disabled"))
 		Expect(nads.Items[0].Name).To(Equal("kuma-cni"))
 	})
 
