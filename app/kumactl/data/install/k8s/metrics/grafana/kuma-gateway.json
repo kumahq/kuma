@@ -574,10 +574,10 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(envoy_cluster_internal_upstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_mesh_traffic=\"true\"}[1m])) by (envoy_response_code_class)",
+          "expr": "sum(rate(envoy_cluster_internal_upstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_mesh_traffic=\"true\"}[1m])) by (envoy_response_code_class,envoy_cluster_name)",
           "hide": false,
           "interval": "",
-          "legendFormat": "{{envoy_response_code_class}}xx",
+          "legendFormat": "{{envoy_cluster_name}}:{{envoy_response_code_class}}xx",
           "refId": "B"
         }
       ],

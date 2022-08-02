@@ -694,7 +694,7 @@ data:
           }
         },
         {
-          "collapsed": true,
+          "collapsed": false,
           "datasource": "Prometheus",
           "gridPos": {
             "h": 1,
@@ -1437,7 +1437,7 @@ data:
           "type": "row"
         },
         {
-          "collapsed": true,
+          "collapsed": false,
           "datasource": "Prometheus",
           "gridPos": {
             "h": 1,
@@ -2476,7 +2476,7 @@ data:
           }
         },
         {
-          "collapsed": true,
+          "collapsed": false,
           "datasource": "Prometheus",
           "gridPos": {
             "h": 1,
@@ -2691,7 +2691,7 @@ data:
           "type": "row"
         },
         {
-          "collapsed": true,
+          "collapsed": false,
           "datasource": null,
           "gridPos": {
             "h": 1,
@@ -4333,7 +4333,7 @@ data:
       "links": [],
       "panels": [
         {
-          "collapsed": true,
+          "collapsed": false,
           "datasource": "Prometheus",
           "gridPos": {
             "h": 1,
@@ -5201,7 +5201,7 @@ data:
           }
         },
         {
-          "collapsed": true,
+          "collapsed": false,
           "datasource": "Prometheus",
           "gridPos": {
             "h": 1,
@@ -5611,7 +5611,7 @@ data:
               "value": "backend_kuma-demo_svc_3001"
             },
             "datasource": "Prometheus",
-            "definition": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_service)",
+            "definition": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_mesh_gateway=\"\"}, kuma_io_service)",
             "description": null,
             "error": null,
             "hide": 0,
@@ -5621,7 +5621,7 @@ data:
             "name": "source_service",
             "options": [],
             "query": {
-              "query": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_service)",
+              "query": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_mesh_gateway=\"\"}, kuma_io_service)",
               "refId": "Prometheus-source_service-Variable-Query"
             },
             "refresh": 1,
@@ -10076,10 +10076,10 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(envoy_cluster_internal_upstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_mesh_traffic=\"true\"}[1m])) by (envoy_response_code_class)",
+              "expr": "sum(rate(envoy_cluster_internal_upstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=~\".*$meshgateway.*\",kuma_io_mesh_gateway!=\"\",kuma_io_mesh_traffic=\"true\"}[1m])) by (envoy_response_code_class,envoy_cluster_name)",
               "hide": false,
               "interval": "",
-              "legendFormat": "{{envoy_response_code_class}}xx",
+              "legendFormat": "{{envoy_cluster_name}}:{{envoy_response_code_class}}xx",
               "refId": "B"
             }
           ],
@@ -11556,7 +11556,7 @@ data:
               "value": "backend_kuma-demo_svc_3001"
             },
             "datasource": null,
-            "definition": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}, kuma_io_service)",
+            "definition": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=\"\"}, kuma_io_service)",
             "description": null,
             "error": null,
             "hide": 0,
@@ -11566,7 +11566,7 @@ data:
             "name": "service",
             "options": [],
             "query": {
-              "query": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}, kuma_io_service)",
+              "query": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=\"\"}, kuma_io_service)",
               "refId": "StandardVariableQuery"
             },
             "refresh": 1,
