@@ -147,7 +147,6 @@ CNI selector labels
 */}}
 {{- define "kuma.cniSelectorLabels" -}}
 app: {{ include "kuma.name" . }}-cni
-parent.app: "kuma-cni"
 {{ include "kuma.selectorLabels" . }}
 {{- end }}
 
@@ -277,6 +276,8 @@ env:
 {{- if .Values.experimental.cni }}
 - name: KUMA_EXPERIMENTAL_CNI
   value: "true"
+- name: KUMA_CNI_APP
+  value: "kuma-cni"
 {{- end }}
 {{- if .Values.experimental.ebpf.enabled }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_ENABLED

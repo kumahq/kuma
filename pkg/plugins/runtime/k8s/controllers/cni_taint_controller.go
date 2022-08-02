@@ -17,22 +17,24 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
-
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )
 
-const nodeReadinessTaintKey = "NodeReadiness"
-const nodeIndexField = "spec.nodeName"
-const parentAppLabel = "parent.app"
+const (
+	nodeReadinessTaintKey = "NodeReadiness"
+	nodeIndexField        = "spec.nodeName"
+	cniAppLabel           = "app"
+	cniPodNamespace       = "kube-system"
+)
 
 type CniNodeTaintReconciler struct {
 	kube_client.Client
 	Log logr.Logger
+
+	CniApp string
 }
 
 func (r *CniNodeTaintReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
 	log := r.Log.WithValues("node", req.NamespacedName)
-	log.V(1).Info("event received")
 
 	// Fetch the Node instance
 	node := &kube_core.Node{}
@@ -47,9 +49,9 @@ func (r *CniNodeTaintReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 	log.Info("node successfully fetched")
 
 	kubeSystemPods := &kube_core.PodList{}
-	namespaceOption := kube_client.InNamespace("kube-system")
+	namespaceOption := kube_client.InNamespace(cniPodNamespace)
 	matchingFields := kube_client.MatchingFields{nodeIndexField: node.Name}
-	matchingLabels := kube_client.MatchingLabels{parentAppLabel: metadata.KumaCNI}
+	matchingLabels := kube_client.MatchingLabels{cniAppLabel: r.CniApp}
 	if err := r.Client.List(ctx, kubeSystemPods, namespaceOption, matchingFields, matchingLabels); err != nil {
 		return kube_ctrl.Result{}, err
 	}
@@ -63,8 +65,12 @@ func (r *CniNodeTaintReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 }
 
 func (r *CniNodeTaintReconciler) updateTaints(ctx context.Context, log logr.Logger, node *kube_core.Node, pods []kube_core.Pod) error {
-	if hasTaint(node) {
-		if hasCniPodRunning(log, pods) {
+	hasTaint := slices.IndexFunc(node.Spec.Taints, func(taint kube_core.Taint) bool {
+		return taint.Key == nodeReadinessTaintKey && taint.Effect == kube_core.TaintEffectNoSchedule
+	}) >= 0
+
+	if hasTaint {
+		if r.hasCniPodRunning(log, pods) {
 			log.Info("has cni pod running and taint")
 			return r.untaintNode(ctx, log, node)
 		} else {
@@ -72,8 +78,8 @@ func (r *CniNodeTaintReconciler) updateTaints(ctx context.Context, log logr.Logg
 			return nil
 		}
 	} else {
-		if hasCniPodRunning(log, pods) {
-			log.Info("has cni pod running and no taint")
+		if r.hasCniPodRunning(log, pods) {
+			log.V(1).Info("has cni pod running and no taint")
 			return nil
 		} else {
 			log.Info("has no cni pod running and no taint")
@@ -88,7 +94,7 @@ func (r *CniNodeTaintReconciler) untaintNode(ctx context.Context, log logr.Logge
 	})
 
 	if taintIndex >= 0 {
-		node.Spec.Taints = removeTaint(node.Spec.Taints, taintIndex)
+		node.Spec.Taints = slices.Delete(node.Spec.Taints, taintIndex, taintIndex+1)
 	}
 
 	err := r.Client.Update(ctx, node)
@@ -96,10 +102,6 @@ func (r *CniNodeTaintReconciler) untaintNode(ctx context.Context, log logr.Logge
 		log.Info("removed the taint from node")
 	}
 	return err
-}
-
-func removeTaint(s []kube_core.Taint, index int) []kube_core.Taint {
-	return append(s[:index], s[index+1:]...)
 }
 
 func (r *CniNodeTaintReconciler) taintNode(ctx context.Context, log logr.Logger, node *kube_core.Node) error {
@@ -115,19 +117,10 @@ func (r *CniNodeTaintReconciler) taintNode(ctx context.Context, log logr.Logger,
 	return err
 }
 
-func hasTaint(node *kube_core.Node) bool {
-	foundTaint := false
-	for _, taint := range node.Spec.Taints {
-		if taint.Key == nodeReadinessTaintKey && taint.Effect == kube_core.TaintEffectNoSchedule {
-			foundTaint = true
-		}
-	}
-	return foundTaint
-}
-
-func hasCniPodRunning(log logr.Logger, pods []kube_core.Pod) bool {
+func (r *CniNodeTaintReconciler) hasCniPodRunning(log logr.Logger, pods []kube_core.Pod) bool {
 	for _, pod := range pods {
-		if isCniPod(pod) && pod.Status.Phase == kube_core.PodRunning {
+		isCniPod := pod.Labels[cniAppLabel] == r.CniApp
+		if isCniPod && pod.Status.Phase == kube_core.PodRunning {
 			for _, condition := range pod.Status.Conditions {
 				if condition.Type == kube_core.PodReady && condition.Status == kube_core.ConditionTrue {
 					log.V(1).Info("pod has kuma-cni-node running and ready", "pod", pod.Name, "status", pod.Status)
@@ -137,11 +130,6 @@ func hasCniPodRunning(log logr.Logger, pods []kube_core.Pod) bool {
 		}
 	}
 	return false
-}
-
-func isCniPod(pod kube_core.Pod) bool {
-	value, ok := pod.Labels[parentAppLabel]
-	return ok && value == metadata.KumaCNI
 }
 
 func (r *CniNodeTaintReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
@@ -154,15 +142,14 @@ func (r *CniNodeTaintReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&kube_core.Node{}, builder.WithPredicates(nodeEvents)).
-		// check this is necessary
 		Watches(
 			&kube_source.Kind{Type: &kube_core.Pod{}},
-			kube_handler.EnqueueRequestsFromMapFunc(podToNodeMapper(r.Log)),
+			kube_handler.EnqueueRequestsFromMapFunc(podToNodeMapper(r.Log, r.CniApp)),
 		).
 		Complete(r)
 }
 
-func podToNodeMapper(log logr.Logger) kube_handler.MapFunc {
+func podToNodeMapper(log logr.Logger, cniApp string) kube_handler.MapFunc {
 	return func(obj kube_client.Object) []kube_reconcile.Request {
 		pod, ok := obj.(*kube_core.Pod)
 		if !ok {
@@ -170,7 +157,17 @@ func podToNodeMapper(log logr.Logger) kube_handler.MapFunc {
 			return nil
 		}
 
+		// For some reason in the logs there are a lot of 'could not find a node with name ""'
+		// so this is why I'm filtering it out here
 		if pod.Spec.NodeName == "" {
+			return nil
+		}
+
+		// the following checks match the ones on the pod list filtering
+		if pod.Namespace != cniPodNamespace {
+			return nil
+		}
+		if pod.Labels[cniAppLabel] != cniApp {
 			return nil
 		}
 

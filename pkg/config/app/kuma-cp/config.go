@@ -325,6 +325,8 @@ type ExperimentalConfig struct {
 
 	// If true, new experimental CNI taint controller is enabled
 	Cni bool `yaml:"cni" envconfig:"KUMA_EXPERIMENTAL_CNI"`
+	// Name of the CNI pod
+	CniApp string `yaml:"cniApp" envconfig:"KUMA_CNI_APP"`
 }
 
 func (e ExperimentalConfig) Validate() error {

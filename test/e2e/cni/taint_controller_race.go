@@ -78,8 +78,8 @@ metadata:
 				Install(DemoClientK8sWithAffinity("default", TestNamespace)).
 				Setup(cluster)
 			Expect(err).ToNot(HaveOccurred())
-			// assert pods demo-client and testserver are available on the node
 
+			// assert pods demo-client and testserver are available on the node
 			clientPodName, err := PodNameOfApp(cluster, "demo-client", TestNamespace)
 			Expect(err).ToNot(HaveOccurred())
 

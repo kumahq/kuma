@@ -2007,7 +2007,6 @@ spec:
   selector:
     matchLabels:
       app: kuma-cni
-      parent.app: "kuma-cni"
       app.kubernetes.io/name: kuma
       app.kubernetes.io/instance: kuma
   updateStrategy:
@@ -2018,7 +2017,6 @@ spec:
     metadata:
       labels:
         app: kuma-cni
-        parent.app: "kuma-cni"
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
       annotations:
@@ -2154,6 +2152,8 @@ spec:
               value: "false"
             - name: KUMA_API_SERVER_READ_ONLY
               value: "true"
+            - name: KUMA_CNI_APP
+              value: "kuma-cni"
             - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
               value: "false"
             - name: KUMA_DP_SERVER_HDS_ENABLED

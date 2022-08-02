@@ -1995,7 +1995,6 @@ spec:
   selector:
     matchLabels:
       app: kuma-cni
-      parent.app: "kuma-cni"
       app.kubernetes.io/name: kuma
       app.kubernetes.io/instance: kuma
   updateStrategy:
@@ -2006,7 +2005,6 @@ spec:
     metadata:
       labels:
         app: kuma-cni
-        parent.app: "kuma-cni"
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
       annotations:

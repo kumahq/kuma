@@ -1168,7 +1168,7 @@ func (c *K8sCluster) LoadImages(names ...string) error {
 		for _, image := range names {
 			fullImageNames = append(fullImageNames, "kumahq/"+image+":"+version)
 		}
-		defaultArgs := []string{"image", "import", "-c", c.name}
+		defaultArgs := []string{"image", "import", "-m", "direct", "-c", c.name}
 		allArgs := append(defaultArgs, fullImageNames...)
 
 		importCmd := exec.Command("k3d", allArgs...)
