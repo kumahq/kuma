@@ -15,11 +15,15 @@ import (
 const (
 	HttpRetryOnDefault = "gateway-error,connect-failure," +
 		"refused-stream"
-	HttpRetryOnRetriableStatusCodes = "connect-failure,refused-stream," +
-		"retriable-status-codes"
-	GrpcRetryOnDefault = "cancelled,connect-failure," +
+	HttpRetryOnRetriableStatusCodes = "retriable-status-codes"
+	GrpcRetryOnDefault              = "cancelled,connect-failure," +
 		"gateway-error,refused-stream,reset,resource-exhausted,unavailable"
 )
+
+var retryHttpConversion = map[string]string{
+	"all_5xx":                          "5xx",
+	"specified_retriable_status_codes": "retriable_status_codes",
+}
 
 type RetryConfigurer struct {
 	Retry    *core_mesh.RetryResource
@@ -88,9 +92,26 @@ func genHttpRetryPolicy(
 		}
 	}
 
+	if conf.RetryOn != nil {
+		var retryOn []string
+
+		for _, item := range conf.RetryOn {
+			key := item.String()
+			if convertedKey, ok := retryHttpConversion[key]; ok {
+				key = convertedKey
+			}
+			// As `retryOn` is an enum value, and as in protobuf we can't use
+			// hyphens we are using underscores instead, but as envoy expect
+			// values with hyphens it's being changed here
+			retryOn = append(retryOn, strings.ReplaceAll(key, "_", "-"))
+		}
+
+		policy.RetryOn = strings.Join(retryOn, ",")
+	}
+
 	if conf.RetriableStatusCodes != nil {
-		policy.RetryOn = HttpRetryOnRetriableStatusCodes
 		policy.RetriableStatusCodes = conf.RetriableStatusCodes
+		policy.RetryOn = ensureRetriableStatusCodes(policy.RetryOn)
 	}
 
 	for _, method := range conf.GetRetriableMethods() {
@@ -136,4 +157,20 @@ func (c *RetryConfigurer) Configure(
 	}
 
 	return UpdateHTTPConnectionManager(filterChain, updateFunc)
+}
+
+func ensureRetriableStatusCodes(policyRetryOn string) string {
+	policyRetrySplit := strings.Split(policyRetryOn, ",")
+	seenRetriable := false
+	for _, r := range policyRetrySplit {
+		if r == HttpRetryOnRetriableStatusCodes {
+			seenRetriable = true
+			break
+		}
+	}
+	if !seenRetriable {
+		policyRetrySplit = append(policyRetrySplit, HttpRetryOnRetriableStatusCodes)
+	}
+	policyRetryOn = strings.Join(policyRetrySplit, ",")
+	return policyRetryOn
 }

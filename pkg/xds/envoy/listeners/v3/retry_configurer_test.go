@@ -196,7 +196,7 @@ var _ = Describe("RetryConfigurer", func() {
                         retryBackOff:
                           baseInterval: 0.200s
                           maxInterval: 0.500s
-                        retryOn: connect-failure,refused-stream,retriable-status-codes
+                        retryOn: gateway-error,connect-failure,refused-stream,retriable-status-codes
                       routes:
                       - match:
                           prefix: /
@@ -346,6 +346,89 @@ var _ = Describe("RetryConfigurer", func() {
                           baseInterval: 0.400s
                           maxInterval: 1s
                         retryOn: cancelled,resource-exhausted
+                      routes:
+                      - match:
+                          prefix: /
+                        route:
+                          cluster: backend
+                          timeout: 0s
+                  statPrefix: "127_0_0_1_18080"
+            name: outbound:127.0.0.1:18080
+            trafficDirection: OUTBOUND`,
+		}),
+		Entry("basic http_connection_manager with an outbound route"+
+			" and more complex http retry policy", testCase{
+			listenerName:    "outbound:127.0.0.1:18080",
+			listenerAddress: "127.0.0.1",
+			listenerPort:    18080,
+			statsName:       "127.0.0.1:18080",
+			service:         "backend",
+			routes: envoy_common.Routes{
+				{
+					Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+						envoy_common.WithService("backend"),
+						envoy_common.WithWeight(100),
+					)},
+				},
+			},
+			dpTags: map[string]map[string]bool{
+				"kuma.io/service": {
+					"web": true,
+				},
+			},
+			protocol: "http",
+			retry: &core_mesh.RetryResource{
+				Spec: &mesh_proto.Retry{
+					Conf: &mesh_proto.Retry_Conf{
+						Http: &mesh_proto.Retry_Conf_Http{
+							NumRetries:    util_proto.UInt32(3),
+							PerTryTimeout: util_proto.Duration(time.Second * 1),
+							BackOff: &mesh_proto.Retry_Conf_BackOff{
+								BaseInterval: util_proto.Duration(time.Nanosecond * 200000000),
+								MaxInterval:  util_proto.Duration(time.Nanosecond * 500000000),
+							},
+							RetriableStatusCodes: []uint32{302},
+							RetryOn: []mesh_proto.Retry_Conf_Http_RetryOn{
+								mesh_proto.Retry_Conf_Http_all_5xx,
+							},
+						},
+					},
+				},
+			},
+			expected: `
+            address:
+              socketAddress:
+                address: 127.0.0.1
+                portValue: 18080
+            filterChains:
+            - filters:
+              - name: envoy.filters.network.http_connection_manager
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                  httpFilters:
+                  - name: envoy.filters.http.router
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                  routeConfig:
+                    name: outbound:backend
+                    validateClusters: false
+                    requestHeadersToAdd:
+                    - header:
+                        key: x-kuma-tags
+                        value: '&kuma.io/service=web&'
+                    virtualHosts:
+                    - domains:
+                      - '*'
+                      name: backend
+                      retryPolicy:
+                        numRetries: 3
+                        perTryTimeout: 1s
+                        retriableStatusCodes:
+                        - 302
+                        retryBackOff:
+                          baseInterval: 0.200s
+                          maxInterval: 0.500s
+                        retryOn: 5xx,retriable-status-codes
                       routes:
                       - match:
                           prefix: /
