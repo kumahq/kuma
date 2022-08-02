@@ -164,34 +164,6 @@ func GatewayClientAppUniversal(name string) framework.InstallFunc {
 	}
 }
 
-func GatewayProxyUniversal(name string) framework.InstallFunc {
-	return func(cluster framework.Cluster) error {
-		token, err := cluster.GetKuma().GenerateDpToken("default", "edge-gateway")
-		if err != nil {
-			return err
-		}
-
-		dataplaneYaml := `
-type: Dataplane
-mesh: default
-name: {{ name }}
-networking:
-  address:  {{ address }}
-  gateway:
-    type: BUILTIN
-    tags:
-      kuma.io/service: edge-gateway
-`
-		return cluster.DeployApp(
-			framework.WithKumactlFlow(),
-			framework.WithName(name),
-			framework.WithToken(token),
-			framework.WithVerbose(),
-			framework.WithYaml(dataplaneYaml),
-		)
-	}
-}
-
 func EchoServerApp(name string, service string, instance string) framework.InstallFunc {
 	return func(cluster framework.Cluster) error {
 		return framework.TestServerUniversal(
