@@ -19,13 +19,13 @@ type SigningKeyAccessor interface {
 }
 
 type signingKeyAccessor struct {
-	resManager       manager.ResourceManager
+	resManager       manager.ReadOnlyResourceManager
 	signingKeyPrefix string
 }
 
 var _ SigningKeyAccessor = &signingKeyAccessor{}
 
-func NewSigningKeyAccessor(resManager manager.ResourceManager, signingKeyPrefix string) SigningKeyAccessor {
+func NewSigningKeyAccessor(resManager manager.ReadOnlyResourceManager, signingKeyPrefix string) SigningKeyAccessor {
 	return &signingKeyAccessor{
 		resManager:       resManager,
 		signingKeyPrefix: signingKeyPrefix,

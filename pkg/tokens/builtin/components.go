@@ -34,7 +34,7 @@ func NewZoneTokenIssuer(resManager manager.ResourceManager) zone.TokenIssuer {
 	)
 }
 
-func NewDataplaneTokenValidator(resManager manager.ResourceManager, storeType store_config.StoreType) issuer.Validator {
+func NewDataplaneTokenValidator(resManager manager.ReadOnlyResourceManager, storeType store_config.StoreType) issuer.Validator {
 	return issuer.NewValidator(func(meshName string) tokens.Validator {
 		return tokens.NewValidator(
 			tokens.NewMeshedSigningKeyAccessor(resManager, issuer.DataplaneTokenSigningKeyPrefix(meshName), meshName),
@@ -44,7 +44,7 @@ func NewDataplaneTokenValidator(resManager manager.ResourceManager, storeType st
 	})
 }
 
-func NewZoneIngressTokenValidator(resManager manager.ResourceManager, storeType store_config.StoreType) zoneingress.Validator {
+func NewZoneIngressTokenValidator(resManager manager.ReadOnlyResourceManager, storeType store_config.StoreType) zoneingress.Validator {
 	return zoneingress.NewValidator(
 		tokens.NewValidator(
 			tokens.NewSigningKeyAccessor(resManager, zoneingress.ZoneIngressSigningKeyPrefix),
@@ -54,7 +54,7 @@ func NewZoneIngressTokenValidator(resManager manager.ResourceManager, storeType 
 	)
 }
 
-func NewZoneTokenValidator(resManager manager.ResourceManager, mode core.CpMode, storeType store_config.StoreType) zone.Validator {
+func NewZoneTokenValidator(resManager manager.ReadOnlyResourceManager, mode core.CpMode, storeType store_config.StoreType) zone.Validator {
 	var signingKeyAccessor tokens.SigningKeyAccessor
 
 	if mode == core.Zone {
