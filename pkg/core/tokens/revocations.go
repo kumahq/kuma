@@ -50,17 +50,25 @@ func (s *secretRevocations) IsRevoked(ctx context.Context, id string) (bool, err
 }
 
 func (s *secretRevocations) getSecretData(ctx context.Context) ([]byte, error) {
-	var resource core_model.Resource
+	// Do a list operation instead of get because of the cache in ReadOnlyResourceManager
+	// For the majority of cases, users do not set revocation secret.
+	// We don't cache not found result of get operation, so with many execution to IsRevoked() we would send a lot of requests to a DB.
+	// We could do get requests and preserve separate cache here (taking into account resource not found),
+	// but there is a high chance that SecretResourceList is already in the cache, because of XDS reconciliation, so we can avoid I/O at all.
+	var resources core_model.ResourceList
 	if s.revocationKey.Mesh == "" {
-		resource = system.NewGlobalSecretResource()
+		resources = &system.GlobalSecretResourceList{}
 	} else {
-		resource = system.NewSecretResource()
+		resources = &system.SecretResourceList{}
 	}
-	if err := s.manager.Get(ctx, resource, core_store.GetBy(s.revocationKey)); err != nil {
-		if core_store.IsResourceNotFound(err) {
-			return nil, nil
-		}
+
+	if err := s.manager.List(ctx, resources, core_store.ListByMesh(s.revocationKey.Mesh)); err != nil {
 		return nil, err
 	}
-	return resource.GetSpec().(*system_proto.Secret).GetData().GetValue(), nil
+	for _, res := range resources.GetItems() {
+		if res.GetMeta().GetName() == s.revocationKey.Name {
+			return res.GetSpec().(*system_proto.Secret).GetData().GetValue(), nil
+		}
+	}
+	return nil, nil
 }

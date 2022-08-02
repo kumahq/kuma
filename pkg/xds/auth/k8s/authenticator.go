@@ -3,7 +3,10 @@ package k8s
 import (
 	"context"
 	"strings"
+	"sync"
+	"time"
 
+	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	kube_auth "k8s.io/api/authentication/v1"
 	kube_core "k8s.io/api/core/v1"
@@ -18,27 +21,45 @@ import (
 
 func New(client kube_client.Client) auth.Authenticator {
 	return &kubeAuthenticator{
-		client: client,
+		client:        client,
+		authenticated: cache.New(1*time.Hour, 1*time.Minute),
 	}
 }
 
 type kubeAuthenticator struct {
 	client kube_client.Client
+
+	authenticated *cache.Cache
+	mutex         sync.RWMutex
 }
 
 var _ auth.Authenticator = &kubeAuthenticator{}
 
 func (k *kubeAuthenticator) Authenticate(ctx context.Context, resource model.Resource, credential auth.Credential) error {
+	_, authenticated := k.authenticated.Get(credential)
+	if authenticated {
+		k.authenticated.Set(credential, struct{}{}, 1*time.Hour) // prolong the cache
+		return nil
+	}
+
+	var err error
 	switch resource := resource.(type) {
 	case *core_mesh.DataplaneResource:
-		return k.authDataplane(ctx, resource, credential)
+		err = k.authDataplane(ctx, resource, credential)
 	case *core_mesh.ZoneIngressResource:
-		return k.authZoneIngress(ctx, resource, credential)
+		err = k.authZoneIngress(ctx, resource, credential)
 	case *core_mesh.ZoneEgressResource:
-		return k.authZoneEgress(ctx, resource, credential)
+		err = k.authZoneEgress(ctx, resource, credential)
 	default:
-		return errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
+		err = errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}
+
+	if err != nil {
+		return err
+	}
+
+	k.authenticated.Set(credential, struct{}{}, 1*time.Hour)
+	return nil
 }
 
 func (k *kubeAuthenticator) authDataplane(ctx context.Context, dataplane *core_mesh.DataplaneResource, credential auth.Credential) error {

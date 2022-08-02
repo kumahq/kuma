@@ -101,7 +101,7 @@ func signingKeySerialNumber(secretName string, signingKeyPrefix string) (int, er
 
 func getKeyBytes(
 	ctx context.Context,
-	resManager manager.ResourceManager,
+	resManager manager.ReadOnlyResourceManager,
 	signingKeyPrefix string,
 	serialNumber int,
 ) ([]byte, error) {
