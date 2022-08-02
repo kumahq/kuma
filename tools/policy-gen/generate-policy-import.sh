@@ -1,13 +1,18 @@
 #!/bin/bash
 
+IMPORTS_FILE="pkg/plugins/policies/imports.go"
+
 imports=$(for i in "$@"; do [[ -f pkg/plugins/policies/${i}/plugin.go ]] && echo "_ \"github.com/kumahq/kuma/pkg/plugins/policies/${i}\""; done)
 if [[ $imports == "" ]]; then
-  rm -f pkg/plugins/policies/imports.go
+  rm -f "${IMPORTS_FILE}"
   exit 0
 fi
 
 echo "package policies
 
 import (
+$imports
 )
-" > pkg/plugins/policies/imports.go
+" > "${IMPORTS_FILE}"
+
+gofmt -w "${IMPORTS_FILE}"
