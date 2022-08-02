@@ -345,6 +345,7 @@ var _ = Describe("Config WS", func() {
           },
           "experimental": {
             "cni": false,
+			"cniApp": "",
             "gatewayAPI": false,
             "kubeOutboundsAsVIPs": false
           }
