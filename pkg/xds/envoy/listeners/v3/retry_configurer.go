@@ -20,11 +20,6 @@ const (
 		"gateway-error,refused-stream,reset,resource-exhausted,unavailable"
 )
 
-var retryHttpConversion = map[string]string{
-	"all_5xx":                          "5xx",
-	"specified_retriable_status_codes": "retriable_status_codes",
-}
-
 type RetryConfigurer struct {
 	Retry    *core_mesh.RetryResource
 	Protocol core_mesh.Protocol
@@ -97,8 +92,10 @@ func genHttpRetryPolicy(
 
 		for _, item := range conf.RetryOn {
 			key := item.String()
-			if convertedKey, ok := retryHttpConversion[key]; ok {
-				key = convertedKey
+			// Protobuf fields cannot start with a number so convert to the correct
+			// value before appending
+			if key == "all_5xx" {
+				key = "5xx"
 			}
 			// As `retryOn` is an enum value, and as in protobuf we can't use
 			// hyphens we are using underscores instead, but as envoy expect

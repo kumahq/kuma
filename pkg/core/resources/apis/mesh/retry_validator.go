@@ -211,7 +211,7 @@ func validateConfHttp(
 	}
 
 	for i, r := range retryOn {
-		if r.String() == "specified_retriable_status_codes" && retriableStatusCodes == nil {
+		if r.String() == "retriable_status_codes" && retriableStatusCodes == nil {
 			err.AddViolationAt(path.Field("retryOn").Index(i), StatusCodesNotDefinedViolation)
 		}
 	}

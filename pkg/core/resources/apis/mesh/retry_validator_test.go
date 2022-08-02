@@ -178,7 +178,7 @@ var _ = Describe("Retry", func() {
                     http:
                         retryOn:
                         - all_5xx
-                        - specified_retriable_status_codes
+                        - retriable_status_codes
 `,
 				expected: `
                 violations:

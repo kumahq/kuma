@@ -89,7 +89,7 @@
         
             - `refused_stream`
         
-            - `specified_retriable_status_codes`
+            - `retriable_status_codes`
         
             - `retriable_headers`
         

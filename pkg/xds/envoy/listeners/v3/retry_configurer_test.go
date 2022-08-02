@@ -387,9 +387,9 @@ var _ = Describe("RetryConfigurer", func() {
 								BaseInterval: util_proto.Duration(time.Nanosecond * 200000000),
 								MaxInterval:  util_proto.Duration(time.Nanosecond * 500000000),
 							},
-							RetriableStatusCodes: []uint32{302},
-							RetryOn: []mesh_proto.Retry_Conf_Http_RetryOn{
-								mesh_proto.Retry_Conf_Http_all_5xx,
+							RetriableStatusCodes: []uint32{410},
+							RetryOn: []mesh_proto.HttpRetryOn{
+								mesh_proto.HttpRetryOn_all_5xx,
 							},
 						},
 					},
@@ -424,7 +424,7 @@ var _ = Describe("RetryConfigurer", func() {
                         numRetries: 3
                         perTryTimeout: 1s
                         retriableStatusCodes:
-                        - 302
+                        - 410
                         retryBackOff:
                           baseInterval: 0.200s
                           maxInterval: 0.500s
