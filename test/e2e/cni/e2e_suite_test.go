@@ -13,5 +13,5 @@ func TestE2E(t *testing.T) {
 	test.RunSpecs(t, "E2E CNI Suite")
 }
 
-var _ = Describe("Taint controller", Label("arm-not-supported"), Label("kind-not-supported"), cni.AppDeploymentWithCniAndTaintController)
+var _ = Describe("Taint controller", Label("kind-not-supported"), cni.AppDeploymentWithCniAndTaintController)
 var _ = Describe("Old CNI", Label("arm-not-supported"), Label("kind-not-supported"), cni.AppDeploymentWithCniAndNoTaintController)
