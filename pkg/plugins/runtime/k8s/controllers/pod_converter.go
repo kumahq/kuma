@@ -127,19 +127,20 @@ func (p *PodConverter) dataplaneFor(
 
 	gwType, exist := annotations.GetString(metadata.KumaGatewayAnnotation)
 	if exist {
-		if gwType == "enabled" {
+		switch gwType {
+		case "enabled":
 			gateway, err := GatewayByServiceFor(p.Zone, pod, services)
 			if err != nil {
 				return nil, err
 			}
 			dataplane.Networking.Gateway = gateway
-		} else if gwType == "provided" {
+		case "provided":
 			gateway, err := p.GatewayByDeploymentFor(ctx, p.Zone, pod, services)
 			if err != nil {
 				return nil, err
 			}
 			dataplane.Networking.Gateway = gateway
-		} else {
+		default:
 			return nil, errors.Errorf("invalid delegated gateway type '%s'", gwType)
 		}
 	} else {
