@@ -2,8 +2,7 @@ name: "Update changelog"
 
 on:
   workflow_dispatch: {}
-  release:
-    types: [published, edited, released, unpublished, deleted]
+  release: {}
 jobs:
   update-changelog:
     runs-on: ubuntu-latest
@@ -26,11 +25,11 @@ jobs:
       - name: "Create Pull Request"
         uses: peter-evans/create-pull-request@v3
         with:
-          commit-message: "docs(CHANGELOG.md): Updating changelog"
+          commit-message: "docs(CHANGELOG.md): updating changelog"
           signoff: true
           branch: chore/update-changelog
           delete-branch: true
-          title: "docs(CHANGELOG.md): Updating changelog"
+          title: "docs(CHANGELOG.md): updating changelog"
           draft: false
           token: ${{ steps.github-app-token.outputs.token }}
           committer: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>
