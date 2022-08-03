@@ -71,6 +71,9 @@ Listeners:
 Routes:
   Resources: {}
 Runtimes:
-  Resources: {}
+  Resources:
+    gateway.listeners:
+      layer: {}
+      name: gateway.listeners
 Secrets:
   Resources: {}
