@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v2"
@@ -14,9 +15,10 @@ import (
 )
 
 var _ = Describe("Config WS", func() {
-	var stop func()
 	var apiServer *api_server.ApiServer
-	apiServer, stop = StartApiServer(NewTestApiServerConfigurer())
+	var cfg kuma_cp.Config
+	var stop func()
+	apiServer, cfg, stop = StartApiServer(NewTestApiServerConfigurer())
 	AfterEach(func() {
 		stop()
 	})
@@ -33,5 +35,9 @@ var _ = Describe("Config WS", func() {
 		// when
 		parsedCfg := kuma_cp.Config{}
 		Expect(yaml.Unmarshal(body, &parsedCfg)).To(Succeed())
+		Expect(parsedCfg.Store.Postgres.Password).To(Equal("*****"))
+		Expect(parsedCfg).To(BeComparableTo(cfg, cmp.FilterPath(
+			func(p cmp.Path) bool { return p.String() == "Store.Postgres.Password" }, cmp.Ignore())),
+		)
 	})
 })
