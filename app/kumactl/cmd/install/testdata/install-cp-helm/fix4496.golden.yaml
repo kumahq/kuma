@@ -1718,9 +1718,16 @@ rules:
     resources:
       - meshgatewayinstances/status
       - meshgatewayinstances/finalizers
-      - pods/finalizers
       - meshes/finalizers
       - dataplanes/finalizers
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - ""
+    resources:
+      - pods/finalizers
     verbs:
       - get
       - patch
