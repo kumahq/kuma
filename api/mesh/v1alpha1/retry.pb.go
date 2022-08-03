@@ -25,6 +25,8 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// These options correspond with the retry_on options in Envoy's documentation:
+// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/router_filter#config-http-filters-router-x-envoy-retry-on
 type HttpRetryOn int32
 
 const (
