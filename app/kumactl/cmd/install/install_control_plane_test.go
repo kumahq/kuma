@@ -189,8 +189,9 @@ var _ = Describe("kumactl install control-plane", func() {
 		Entry("should generate Kubernetes resources with new CNI plugin (experimental)", testCase{
 			extraArgs: []string{
 				"--cni-enabled",
-				"--cni-experimental",
 				"--without-kubernetes-connection",
+				"--set",
+				"experimental.cni=true",
 			},
 			goldenFile: "install-control-plane.cni-experimental-enabled.golden.yaml",
 		}),
