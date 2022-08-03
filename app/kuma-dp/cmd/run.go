@@ -307,6 +307,7 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 	applicationsToScrape = append(applicationsToScrape, metrics.ApplicationToScrape{
 		Name:          "envoy",
 		Path:          "/stats",
+		Address:       "127.0.0.1",
 		Port:          envoyAdminPort,
 		QueryModifier: metrics.AddPrometheusFormat,
 		Mutator:       metrics.MergeClusters,
