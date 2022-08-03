@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net"
-	"path"
 	"strings"
 	"text/template"
 
@@ -272,44 +271,6 @@ spec:
 
 		It("should proxy simple HTTP requests", func() {
 			ProxySimpleRequests(cluster, "kubernetes",
-				net.JoinHostPort(GatewayAddress("edge-gateway"), GatewayPort),
-				client.FromKubernetesPod(ClientNamespace, "gateway-client"))
-		})
-	})
-
-	Context("when mTLS is enabled", func() {
-		BeforeEach(func() {
-			DeployCluster(OptEnableMeshMTLS)
-		})
-
-		It("should proxy simple HTTP requests", func() {
-			ProxySimpleRequests(cluster, "kubernetes",
-				net.JoinHostPort(GatewayAddress("edge-gateway"), GatewayPort),
-				client.FromKubernetesPod(ClientNamespace, "gateway-client"))
-		})
-
-		It("should rewrite HTTP requests", func() {
-			expectedPath := path.Join("/test", GinkgoT().Name())
-			targetPath := path.Join("prefix", "/test", GinkgoT().Name())
-			expectedHostname := "other.example.kuma.io"
-			ProxyHTTPRequests(cluster, "kubernetes",
-				net.JoinHostPort(GatewayAddress("edge-gateway"), GatewayPort),
-				targetPath, expectedPath, expectedHostname,
-				client.FromKubernetesPod(ClientNamespace, "gateway-client"))
-		})
-
-		It("should proxy TCP connections", func() {
-			ProxyTcpRequest(cluster, "request", "response",
-				net.JoinHostPort(GatewayAddress("edge-gateway"), "8081"),
-				client.FromKubernetesPod(ClientNamespace, "gateway-client"),
-			)
-		})
-
-		// In mTLS mode, only the presence of TrafficPermission rules allow services to receive
-		// traffic, so removing the permission should cause requests to fail. We use this to
-		// prove that mTLS is enabled
-		It("should fail without TrafficPermission", func() {
-			ProxyRequestsWithMissingPermission(cluster,
 				net.JoinHostPort(GatewayAddress("edge-gateway"), GatewayPort),
 				client.FromKubernetesPod(ClientNamespace, "gateway-client"))
 		})
