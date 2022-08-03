@@ -7,7 +7,6 @@ option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 import "mesh/options.proto";
 import "mesh/v1alpha1/selector.proto";
 import "mesh/v1alpha1/http_method.proto";
-import "mesh/v1alpha1/http_retry_on.proto";
 
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
@@ -19,6 +18,19 @@ option (doc.config) = {
   name : "Retry",
   file_name : "retry"
 };
+
+enum HttpRetryOn {
+  all_5xx = 0;
+  gateway_error = 1;
+  reset = 2;
+  connect_failure = 3;
+  envoy_ratelimited = 4;
+  retriable_4xx = 5;
+  refused_stream = 6;
+  retriable_status_codes = 7;
+  retriable_headers = 8;
+  http3_post_connect_failure = 9;
+}
 
 message Retry {
 
