@@ -75,7 +75,7 @@ var _ = Describe("Resolve Dataplane address", func() {
 
 			actual := topology.ResolveAddresses(core.Log, lif, given)
 			Expect(actual).To(HaveLen(4))
-			Expect(expected).Should(BeComparableTo(expected, cmp.Comparer(proto.Equal)))
+			Expect(actual).Should(BeComparableTo(expected, cmp.Comparer(proto.Equal)))
 		})
 		It("should skip dataplane if unable to resolve domain name", func() {
 			given := []*mesh.DataplaneResource{
@@ -93,7 +93,7 @@ var _ = Describe("Resolve Dataplane address", func() {
 			}
 			actual := topology.ResolveAddresses(core.Log, lif, given)
 			Expect(actual).To(HaveLen(3))
-			Expect(expected).Should(BeComparableTo(expected, cmp.Comparer(proto.Equal)))
+			Expect(actual).Should(BeComparableTo(expected, cmp.Comparer(proto.Equal)))
 		})
 	})
 })
