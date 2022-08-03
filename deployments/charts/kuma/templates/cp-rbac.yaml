@@ -100,13 +100,6 @@ rules:
       - update
       - patch
   - apiGroups:
-      - ""
-    resources:
-      - events
-    verbs:
-      - create
-      - patch
-  - apiGroups:
       - kuma.io
     resources:
       - dataplanes
@@ -129,23 +122,20 @@ rules:
       - circuitbreakers
       - virtualoutbounds
       - containerpatches
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - update
-      - patch
-      - delete
-  - apiGroups:
-      - kuma.io
-    resources:
+      - externalservices
+      - faultinjections
+      - healthchecks
+      - trafficlogs
+      - traffictraces
       - meshgateways
       - meshgatewayroutes
       - meshgatewayinstances
   {{- if .Values.experimental.gatewayAPI }}
       - meshgatewayconfigs
   {{- end }}
+  {{- range $idx, $policy := .Values.plugins.policies }}
+      - {{ $policy }}
+  {{- end}}
     verbs:
       - get
       - list
@@ -158,37 +148,21 @@ rules:
       - kuma.io
     resources:
       - meshgatewayinstances/status
-    verbs:
-      - get
-      - patch
-      - update
-  # for the OwnerReferencesPermissionEnforcement plugin
-  - apiGroups:
-      - kuma.io
-    resources:
       - meshgatewayinstances/finalizers
+      - meshes/finalizers
+      - dataplanes/finalizers
     verbs:
       - get
       - patch
       - update
   - apiGroups:
-      - kuma.io
+      - ""
     resources:
-      - externalservices
-      - faultinjections
-      - healthchecks
-      - trafficlogs
-      - traffictraces
+      - pods/finalizers
     verbs:
       - get
-      - list
-      - watch
-      {{- if eq .Values.controlPlane.mode "zone" }}
-      - create
-      - update
       - patch
-      - delete
-  {{- end }}
+      - update
   {{- if .Values.cni.enabled }}
   - apiGroups:
       - k8s.cni.cncf.io
@@ -209,42 +183,6 @@ rules:
       - list
       - watch
   {{- end }}
-  - apiGroups:
-      - ""
-    resources:
-      - pods/finalizers
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - update
-      - patch
-      - delete
-  - apiGroups:
-      - kuma.io
-    resources:
-      - meshes/finalizers
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - update
-      - patch
-      - delete
-  - apiGroups:
-      - kuma.io
-    resources:
-      - dataplanes/finalizers
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - update
-      - patch
-      - delete
   # validate k8s token before issuing mTLS cert
   - apiGroups:
       - authentication.k8s.io
