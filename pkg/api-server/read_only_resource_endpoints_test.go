@@ -26,7 +26,7 @@ var _ = Describe("Read only Resource Endpoints", func() {
 
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
-		apiServer, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore).WithConfigMutator(func(serverConfig *config.ApiServerConfig) {
+		apiServer, _, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore).WithConfigMutator(func(serverConfig *config.ApiServerConfig) {
 			serverConfig.ReadOnly = true
 		}))
 		client = resourceApiClient{

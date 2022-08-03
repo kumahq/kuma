@@ -32,7 +32,7 @@ var _ = Describe("Auth test", func() {
 		Expect(externalIP).ToNot(BeEmpty())
 		certPath, keyPath := createCertsForIP(externalIP)
 		var apiServer *api_server.ApiServer
-		apiServer, stop = StartApiServer(NewTestApiServerConfigurer().WithConfigMutator(func(cfg *config.ApiServerConfig) {
+		apiServer, _, stop = StartApiServer(NewTestApiServerConfigurer().WithConfigMutator(func(cfg *config.ApiServerConfig) {
 			cfg.HTTPS.TlsCertFile = certPath
 			cfg.HTTPS.TlsKeyFile = keyPath
 			cfg.Authn.Type = certs.PluginName

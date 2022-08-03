@@ -33,7 +33,7 @@ var _ = Describe("Resource Endpoints", func() {
 
 	BeforeEach(func() {
 		resourceStore = store.NewPaginationStore(memory.NewStore())
-		apiServer, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore).WithMetrics(func() core_metrics.Metrics {
+		apiServer, _, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore).WithMetrics(func() core_metrics.Metrics {
 			m, _ := core_metrics.NewMetrics("Standalone")
 			metrics = m
 			return m
