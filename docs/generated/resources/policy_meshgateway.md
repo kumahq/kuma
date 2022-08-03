@@ -103,5 +103,9 @@
         - `crossmesh` (optional)
         
             CrossMesh enables traffic to flow to this listener only from other
-            meshes.
+            meshes.    
+        
+        - `resources` (optional)    
+            
+            - `connectionlimit` (optional)
 
