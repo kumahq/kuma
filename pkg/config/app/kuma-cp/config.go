@@ -26,7 +26,8 @@ var _ config.Config = &Config{}
 var _ config.Config = &Defaults{}
 
 type Defaults struct {
-	SkipMeshCreation bool `yaml:"skipMeshCreation" envconfig:"kuma_defaults_skip_mesh_creation"`
+	SkipMeshCreation               bool `yaml:"skipMeshCreation" envconfig:"kuma_defaults_skip_mesh_creation"`
+	EnableLocalhostInboundClusters bool `yaml:"enableDefaultLocalhostInboundClusters" envconfig:"kuma_defaults_enable_localhost_inbound_clusters"`
 }
 
 func (d *Defaults) Sanitize() {
@@ -172,7 +173,8 @@ var DefaultConfig = func() Config {
 		BootstrapServer:            bootstrap.DefaultBootstrapServerConfig(),
 		Runtime:                    runtime.DefaultRuntimeConfig(),
 		Defaults: &Defaults{
-			SkipMeshCreation: false,
+			SkipMeshCreation:               false,
+			EnableLocalhostInboundClusters: false,
 		},
 		Metrics: &Metrics{
 			Dataplane: &DataplaneMetrics{

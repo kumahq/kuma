@@ -88,7 +88,7 @@ func (g *SnapshotGenerator) GenerateSnapshot(node *envoy_core.Node) (util_xds_v3
 		}
 
 		healthChecks = append(healthChecks, &envoy_service_health.ClusterHealthCheck{
-			ClusterName: names.GetLocalClusterName(intf.WorkloadPort),
+			ClusterName: names.GetInboundClusterName(intf.WorkloadPort),
 			LocalityEndpoints: []*envoy_service_health.LocalityEndpoints{{
 				Endpoints: []*envoy_endpoint.Endpoint{{
 					Address: &envoy_core.Address{

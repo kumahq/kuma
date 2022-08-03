@@ -36,10 +36,15 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 		protocol := core_mesh.ParseProtocol(iface.GetProtocol())
 
 		// generate CDS resource
-		localClusterName := envoy_names.GetLocalClusterName(endpoint.WorkloadPort)
+		localClusterName := envoy_names.GetInboundClusterName(endpoint.WorkloadPort)
 		clusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
 			Configure(envoy_clusters.ProvidedEndpointCluster(localClusterName, false, core_xds.Endpoint{Target: endpoint.WorkloadIP, Port: endpoint.WorkloadPort})).
 			Configure(envoy_clusters.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
+		// localhost traffic is routed dirrectly to the application, in case of other interface we are going to set source address to
+		// 127.0.0.6 to avoid redirections and thanks to first iptables rule just return fast
+		if endpoint.WorkloadIP != core_mesh.IPv4Loopback.String() {
+			clusterBuilder.Configure(envoy_clusters.UpstreamBindConfig(inPassThroughIPv4, 0))
+		}
 
 		switch protocol {
 		case core_mesh.ProtocolHTTP:
