@@ -30,6 +30,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 					UID:       5678,
 					GID:       5678,
 					DrainTime: 30 * time.Second,
+					EnvVars:   map[string]string{},
 
 					ReadinessProbe: SidecarReadinessProbe{
 						InitialDelaySeconds: 1,
