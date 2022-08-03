@@ -24,7 +24,8 @@ Routes:
 Runtimes:
   Resources:
     gateway.listeners:
-      layer: {}
+      layer:
+        envoy.resource_limits.listener.default-gateway:TCP:443.connection_limit: 10000
       name: gateway.listeners
 Secrets:
   Resources: {}

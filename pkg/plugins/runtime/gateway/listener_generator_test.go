@@ -3,7 +3,6 @@ package gateway_test
 import (
 	"path"
 
-	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo/v2"
@@ -84,7 +83,7 @@ data: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb3dJQkFBS0NBUUVBM3ZWM1cvNX
 			snap, err := Do(gateway)
 			Expect(err).To(Succeed())
 
-			out, err := yaml.Marshal(MakeProtoResource(snap.Resources[envoy_types.Listener]))
+			out, err := yaml.Marshal(MakeProtoSnapshot(snap))
 			Expect(err).To(Succeed())
 
 			Expect(out).To(matchers.MatchGoldenYAML(path.Join("testdata", golden)))
@@ -217,6 +216,23 @@ conf:
     hostname: bar.example.com
     tags:
       name: example.com
+`),
+
+		Entry("should add connection limits",
+			"connection-limited-listener.yaml", `
+type: MeshGateway
+mesh: default
+name: default-gateway
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  listeners:
+  - port: 443
+    protocol: TCP
+    hostname: bar.example.com
+    resources:
+      connectionLimit: 10000
 `),
 	)
 
