@@ -46,7 +46,7 @@ func (r *CniNodeTaintReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 		log.Error(err, "unable to fetch node")
 		return kube_ctrl.Result{}, err
 	}
-	log.Info("node successfully fetched")
+	log.V(1).Info("node successfully fetched")
 
 	kubeSystemPods := &kube_core.PodList{}
 	namespaceOption := kube_client.InNamespace(cniPodNamespace)
@@ -139,6 +139,7 @@ func (r *CniNodeTaintReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		Watches(
 			&kube_source.Kind{Type: &kube_core.Pod{}},
 			kube_handler.EnqueueRequestsFromMapFunc(podToNodeMapper(r.Log, r.CniApp)),
+			builder.WithPredicates(podEvents),
 		).
 		Complete(r)
 }
@@ -154,6 +155,7 @@ func podToNodeMapper(log logr.Logger, cniApp string) kube_handler.MapFunc {
 		// For some reason in the logs there are a lot of 'could not find a node with name ""'
 		// so this is why I'm filtering it out here
 		if pod.Spec.NodeName == "" {
+			log.Info("empty node name no longer triggers")
 			return nil
 		}
 
@@ -178,6 +180,21 @@ var nodeEvents = predicate.Funcs{
 	},
 	DeleteFunc: func(deleteEvent event.DeleteEvent) bool {
 		return false
+	},
+	UpdateFunc: func(updateEvent event.UpdateEvent) bool {
+		return true
+	},
+	GenericFunc: func(genericEvent event.GenericEvent) bool {
+		return false
+	},
+}
+
+var podEvents = predicate.Funcs{
+	CreateFunc: func(event event.CreateEvent) bool {
+		return false
+	},
+	DeleteFunc: func(deleteEvent event.DeleteEvent) bool {
+		return true
 	},
 	UpdateFunc: func(updateEvent event.UpdateEvent) bool {
 		return true
