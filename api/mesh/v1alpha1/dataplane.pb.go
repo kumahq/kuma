@@ -321,8 +321,8 @@ type Dataplane_Networking_Inbound struct {
 	// Port of the service that requests will be forwarded to.
 	ServicePort uint32 `protobuf:"varint,4,opt,name=servicePort,proto3" json:"servicePort,omitempty"`
 	// Address of the service that requests will be forwarded to.
-	// Empty value defaults to 'DataplaneIP', to not expose localhost application
-	// outside.
+	// Empty value defaults to '127.0.0.1', since Kuma DP should be deployed
+	// next to service.
 	ServiceAddress string `protobuf:"bytes,6,opt,name=serviceAddress,proto3" json:"serviceAddress,omitempty"`
 	// Address on which inbound listener will be exposed. Defaults to
 	// networking.address.
