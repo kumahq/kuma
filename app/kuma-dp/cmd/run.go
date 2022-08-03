@@ -295,6 +295,7 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 	if kumaSidecarConfiguration != nil {
 		for _, item := range kumaSidecarConfiguration.Metrics.Aggregate {
 			applicationsToScrape = append(applicationsToScrape, metrics.ApplicationToScrape{
+				Address:       item.Address,
 				Name:          item.Name,
 				Path:          item.Path,
 				Port:          item.Port,

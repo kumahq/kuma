@@ -79,7 +79,7 @@ var _ = Describe("Bootstrap Server", func() {
 		}
 		dpServer := server.NewDpServer(dpServerCfg, metrics)
 
-		generator, err := bootstrap.NewDefaultBootstrapGenerator(resManager, config, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true, false, true, 0)
+		generator, err := bootstrap.NewDefaultBootstrapGenerator(resManager, config, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true, false, true, 0, false)
 		Expect(err).ToNot(HaveOccurred())
 		bootstrapHandler := bootstrap.BootstrapHandler{
 			Generator: generator,

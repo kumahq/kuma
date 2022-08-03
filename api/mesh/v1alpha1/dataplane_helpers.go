@@ -166,7 +166,6 @@ func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_
 		default:
 			iface.WorkloadIP = iface.DataplaneIP
 		}
-		iface.WorkloadIP = "127.0.0.1"
 	}
 	if inbound.ServicePort != 0 {
 		iface.WorkloadPort = inbound.ServicePort

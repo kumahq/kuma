@@ -79,6 +79,33 @@ resources:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicitHttpConfig:
           http2ProtocolOptions: {}
+- name: inbound:8080
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: inbound_8080
+    connectTimeout: 10s
+    loadAssignment:
+      clusterName: inbound:8080
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.0.1
+                portValue: 8080
+    name: inbound:8080
+    type: STATIC
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        commonHttpProtocolOptions:
+          idleTimeout: 7200s
+        explicitHttpConfig:
+          httpProtocolOptions: {}
+    upstreamBindConfig:
+      sourceAddress:
+        address: 127.0.0.6
+        portValue: 0
 - name: inbound:passthrough:ipv4
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
@@ -122,29 +149,6 @@ resources:
                 path: /tmp/kuma-mh-backend-01-demo.sock
     name: kuma:metrics:hijacker
     type: STATIC
-- name: localhost:8080
-  resource:
-    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: localhost_8080
-    connectTimeout: 10s
-    loadAssignment:
-      clusterName: localhost:8080
-      endpoints:
-      - lbEndpoints:
-        - endpoint:
-            address:
-              socketAddress:
-                address: 127.0.0.1
-                portValue: 8080
-    name: localhost:8080
-    type: STATIC
-    typedExtensionProtocolOptions:
-      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-        commonHttpProtocolOptions:
-          idleTimeout: 7200s
-        explicitHttpConfig:
-          httpProtocolOptions: {}
 - name: outbound:passthrough:ipv4
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
@@ -222,11 +226,11 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: localhost:8080
+                  cluster: inbound:8080
                   timeout: 0s
           setCurrentClientCertDetails:
             uri: true
-          statPrefix: localhost_8080
+          statPrefix: inbound_8080
           streamIdleTimeout: 3600s
       transportSocket:
         name: envoy.transport_sockets.tls
