@@ -86,7 +86,9 @@ k3d/load/images:
 	@k3d image import $(KUMA_IMAGES) --cluster=$(KIND_CLUSTER_NAME) --verbose || k3d image import $(KUMA_IMAGES) --cluster=$(KIND_CLUSTER_NAME) --verbose
 
 .PHONY: k3d/load
-k3d/load: images k3d/load/images
+k3d/load:
+	$(MAKE) images
+	$(MAKE) k3d/load/images
 
 .PHONY: k3d/deploy/kuma
 k3d/deploy/kuma: build/kumactl k3d/load
