@@ -27,7 +27,7 @@ resources:
                     name: :method
                   path: /8080/healthz/probe
                 route:
-                  cluster: inbound:8080
+                  cluster: localhost:8080
                   regexRewrite:
                     pattern:
                       googleRe2: {}

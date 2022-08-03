@@ -79,26 +79,6 @@ resources:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicitHttpConfig:
           http2ProtocolOptions: {}
-- name: inbound:8080
-  resource:
-    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: inbound_8080
-    connectTimeout: 10s
-    loadAssignment:
-      clusterName: inbound:8080
-      endpoints:
-      - lbEndpoints:
-        - endpoint:
-            address:
-              socketAddress:
-                address: 192.168.0.1
-                portValue: 8080
-    name: inbound:8080
-    type: STATIC
-    upstreamBindConfig:
-      sourceAddress:
-        address: 127.0.0.6
-        portValue: 0
 - name: kuma:envoy:admin
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
@@ -115,6 +95,26 @@ resources:
                 portValue: 9902
     name: kuma:envoy:admin
     type: STATIC
+- name: localhost:8080
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: localhost_8080
+    connectTimeout: 10s
+    loadAssignment:
+      clusterName: localhost:8080
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.0.1
+                portValue: 8080
+    name: localhost:8080
+    type: STATIC
+    upstreamBindConfig:
+      sourceAddress:
+        address: 127.0.0.6
+        portValue: 0
 - name: db
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
@@ -163,9 +163,9 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: inbound:8080
+          cluster: localhost:8080
           idleTimeout: 7200s
-          statPrefix: inbound_8080
+          statPrefix: localhost_8080
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:

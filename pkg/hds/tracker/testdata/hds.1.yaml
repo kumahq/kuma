@@ -14,7 +14,7 @@ clusterHealthChecks:
         socketAddress:
           address: 127.0.0.1
           portValue: 9901
-- clusterName: inbound:80
+- clusterName: localhost:80
   healthChecks:
   - healthyThreshold: 4
     interval: 1s

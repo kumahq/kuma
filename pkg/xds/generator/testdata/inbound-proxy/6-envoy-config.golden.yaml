@@ -1,11 +1,11 @@
 resources:
-- name: inbound:8080
+- name: localhost:8080
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: inbound_8080
+    altStatName: localhost_8080
     connectTimeout: 10s
     loadAssignment:
-      clusterName: inbound:8080
+      clusterName: localhost:8080
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -13,7 +13,7 @@ resources:
               socketAddress:
                 address: 192.168.0.2
                 portValue: 8080
-    name: inbound:8080
+    name: localhost:8080
     type: STATIC
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -26,13 +26,13 @@ resources:
       sourceAddress:
         address: 127.0.0.6
         portValue: 0
-- name: inbound:8443
+- name: localhost:8443
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: inbound_8443
+    altStatName: localhost_8443
     connectTimeout: 10s
     loadAssignment:
-      clusterName: inbound:8443
+      clusterName: localhost:8443
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -40,7 +40,7 @@ resources:
               socketAddress:
                 address: 192.168.0.2
                 portValue: 8443
-    name: inbound:8443
+    name: localhost:8443
     type: STATIC
     upstreamBindConfig:
       sourceAddress:
@@ -67,9 +67,9 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: inbound:8443
+          cluster: localhost:8443
           idleTimeout: 7200s
-          statPrefix: inbound_8443
+          statPrefix: localhost_8443
     - filterChainMatch:
         transportProtocol: tls
       filters:
@@ -81,9 +81,9 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: inbound:8443
+          cluster: localhost:8443
           idleTimeout: 7200s
-          statPrefix: inbound_8443
+          statPrefix: localhost_8443
     - filterChainMatch:
         applicationProtocols:
         - kuma
@@ -97,9 +97,9 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: inbound:8443
+          cluster: localhost:8443
           idleTimeout: 7200s
-          statPrefix: inbound_8443
+          statPrefix: localhost_8443
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
@@ -171,11 +171,11 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: inbound:8080
+                  cluster: localhost:8080
                   timeout: 0s
           setCurrentClientCertDetails:
             uri: true
-          statPrefix: inbound_8080
+          statPrefix: localhost_8080
           streamIdleTimeout: 3600s
     - filterChainMatch:
         transportProtocol: tls
@@ -208,11 +208,11 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: inbound:8080
+                  cluster: localhost:8080
                   timeout: 0s
           setCurrentClientCertDetails:
             uri: true
-          statPrefix: inbound_8080
+          statPrefix: localhost_8080
           streamIdleTimeout: 3600s
     - filterChainMatch:
         applicationProtocols:
@@ -247,11 +247,11 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: inbound:8080
+                  cluster: localhost:8080
                   timeout: 0s
           setCurrentClientCertDetails:
             uri: true
-          statPrefix: inbound_8080
+          statPrefix: localhost_8080
           streamIdleTimeout: 3600s
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -305,9 +305,9 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: inbound:8443
+          cluster: localhost:8443
           idleTimeout: 7200s
-          statPrefix: inbound_8443
+          statPrefix: localhost_8443
     - filterChainMatch:
         transportProtocol: tls
       filters:
@@ -319,9 +319,9 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: inbound:8443
+          cluster: localhost:8443
           idleTimeout: 7200s
-          statPrefix: inbound_8443
+          statPrefix: localhost_8443
     - filterChainMatch:
         applicationProtocols:
         - kuma
@@ -335,9 +335,9 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: inbound:8443
+          cluster: localhost:8443
           idleTimeout: 7200s
-          statPrefix: inbound_8443
+          statPrefix: localhost_8443
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
@@ -409,11 +409,11 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: inbound:8080
+                  cluster: localhost:8080
                   timeout: 0s
           setCurrentClientCertDetails:
             uri: true
-          statPrefix: inbound_8080
+          statPrefix: localhost_8080
           streamIdleTimeout: 3600s
     - filterChainMatch:
         transportProtocol: tls
@@ -446,11 +446,11 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: inbound:8080
+                  cluster: localhost:8080
                   timeout: 0s
           setCurrentClientCertDetails:
             uri: true
-          statPrefix: inbound_8080
+          statPrefix: localhost_8080
           streamIdleTimeout: 3600s
     - filterChainMatch:
         applicationProtocols:
@@ -485,11 +485,11 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: inbound:8080
+                  cluster: localhost:8080
                   timeout: 0s
           setCurrentClientCertDetails:
             uri: true
-          statPrefix: inbound_8080
+          statPrefix: localhost_8080
           streamIdleTimeout: 3600s
       transportSocket:
         name: envoy.transport_sockets.tls

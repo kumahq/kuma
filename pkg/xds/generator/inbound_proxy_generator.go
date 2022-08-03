@@ -36,7 +36,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 		protocol := core_mesh.ParseProtocol(iface.GetProtocol())
 
 		// generate CDS resource
-		localClusterName := envoy_names.GetInboundClusterName(endpoint.WorkloadPort)
+		localClusterName := envoy_names.GetLocalClusterName(endpoint.WorkloadPort)
 		clusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
 			Configure(envoy_clusters.ProvidedEndpointCluster(localClusterName, false, core_xds.Endpoint{Target: endpoint.WorkloadIP, Port: endpoint.WorkloadPort})).
 			Configure(envoy_clusters.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))

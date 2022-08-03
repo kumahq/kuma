@@ -21,8 +21,10 @@ func Join(parts ...string) string {
 	return strings.Join(parts, Separator)
 }
 
-func GetInboundClusterName(port uint32) string {
-	return Join("inbound", formatPort(port))
+// Renaming might break metrics
+// https://github.com/kumahq/kuma/issues/3249
+func GetLocalClusterName(port uint32) string {
+	return Join("localhost", formatPort(port))
 }
 
 func GetSplitClusterName(service string, idx int) string {
