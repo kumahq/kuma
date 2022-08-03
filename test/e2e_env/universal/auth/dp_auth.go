@@ -120,7 +120,7 @@ destinations:
 conf:
   http:
     numRetries: %d
-`, rand.Int()%100)
+`, rand.Int()%100+1)
 			g.Expect(env.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
 
 			online, _, err := IsDataplaneOnline(env.Cluster, meshName, serviceName)
