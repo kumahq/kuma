@@ -115,9 +115,9 @@ func (r *CniNodeTaintReconciler) hasCniPodRunning(log logr.Logger, pods []kube_c
 	for _, pod := range pods {
 		isCniPod := pod.Labels[cniAppLabel] == r.CniApp
 		if isCniPod && pod.Status.Phase == kube_core.PodRunning && isConditionTrue(pod.Status.Conditions, kube_core.PodReady) {
-			 log.V(1).Info("pod has kuma-cni-node running and ready", "pod", pod.Name, "status", pod.Status)
-			 return true
-		 }
+			log.V(1).Info("pod has kuma-cni-node running and ready", "pod", pod.Name, "status", pod.Status)
+			return true
+		}
 	}
 	return false
 }
@@ -155,18 +155,18 @@ func podToNodeMapper(log logr.Logger) kube_handler.MapFunc {
 	}
 }
 
-var nodeEvents = predicate.Funcs {
+var nodeEvents = predicate.Funcs{
 	CreateFunc: func(event event.CreateEvent) bool {
-		 return filterNodes(event.Object)
+		return filterNodes(event.Object)
 	},
 	DeleteFunc: func(deleteEvent event.DeleteEvent) bool {
-		 return false
+		return false
 	},
 	UpdateFunc: func(updateEvent event.UpdateEvent) bool {
-		 return filterNodes(updateEvent.ObjectNew)
+		return filterNodes(updateEvent.ObjectNew)
 	},
 	GenericFunc: func(genericEvent event.GenericEvent) bool {
-		 return false
+		return false
 	},
 }
 
