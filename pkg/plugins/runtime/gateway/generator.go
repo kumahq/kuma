@@ -22,8 +22,6 @@ import (
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
-const WildcardHostname = "*"
-
 // RoutePolicyTypes specifies the resource types the gateway will bind
 // for routes.
 var RoutePolicyTypes = []model.ResourceType{
@@ -161,21 +159,9 @@ func GatewayListenerInfoFromProxy(
 		ctx.DataSourceLoader,
 	)
 
-	for port, listeners := range collapsed {
-		// Force all listeners on the same port to have the same protocol.
-		for i := range listeners {
-			if listeners[i].GetProtocol() != listeners[0].GetProtocol() {
-				return nil, errors.Errorf(
-					"cannot collapse listener protocols %s and %s on port %d",
-					listeners[i].GetProtocol(), listeners[0].GetProtocol(), port,
-				)
-			}
-		}
-
-		listener, hosts, err := MakeGatewayListener(ctx, gateway, proxy.Dataplane, listeners)
-		if err != nil {
-			return nil, err
-		}
+	// We already validate that listeners are collapsible
+	for _, listeners := range collapsed {
+		listener, hosts := MakeGatewayListener(ctx, gateway, proxy.Dataplane, listeners)
 
 		var hostInfos []GatewayHostInfo
 		for _, host := range hosts {
@@ -318,12 +304,14 @@ func (g Generator) generateRDS(ctx xds_context.Context, info GatewayListenerInfo
 // MakeGatewayListener converts a collapsed set of listener configurations
 // in to a single configuration with a matched set of route resources. The
 // given listeners must have a consistent protocol and port.
+// Listeners must be validated for collapsibility in terms of hostnames and
+// protocols.
 func MakeGatewayListener(
 	meshContext xds_context.MeshContext,
 	gateway *core_mesh.MeshGatewayResource,
 	dataplane *core_mesh.DataplaneResource,
 	listeners []*mesh_proto.MeshGateway_Listener,
-) (GatewayListener, []GatewayHost, error) {
+) (GatewayListener, []GatewayHost) {
 	hostsByName := map[string]GatewayHost{}
 
 	listener := GatewayListener{
@@ -343,11 +331,7 @@ func MakeGatewayListener(
 		// An empty hostname is the same as "*", i.e. matches all hosts.
 		hostname := l.GetHostname()
 		if hostname == "" {
-			hostname = WildcardHostname
-		}
-
-		if _, ok := hostsByName[hostname]; ok {
-			return listener, nil, errors.Errorf("duplicate hostname %q", hostname)
+			hostname = mesh_proto.WildcardHostname
 		}
 
 		host := GatewayHost{
@@ -390,7 +374,7 @@ func MakeGatewayListener(
 		return hosts[i].Hostname > hosts[j].Hostname
 	})
 
-	return listener, hosts, nil
+	return listener, hosts
 }
 
 // RedistributeWildcardRoutes takes the routes from the wildcard host
@@ -417,7 +401,7 @@ func RedistributeWildcardRoutes(
 		hostsByName[h.Hostname] = h
 	}
 
-	wild, ok := hostsByName[WildcardHostname]
+	wild, ok := hostsByName[mesh_proto.WildcardHostname]
 	if !ok {
 		return hosts
 	}
@@ -472,7 +456,7 @@ func RedistributeWildcardRoutes(
 		}
 	}
 
-	hostsByName[WildcardHostname] = wild
+	hostsByName[mesh_proto.WildcardHostname] = wild
 
 	var flattened []GatewayHost
 	for _, host := range hostsByName {

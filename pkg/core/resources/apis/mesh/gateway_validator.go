@@ -1,6 +1,9 @@
 package mesh
 
 import (
+	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
@@ -47,6 +50,80 @@ func (g *MeshGatewayResource) Validate() error {
 	))
 
 	return err.OrNil()
+}
+
+func validateListenerCompatibility(path validators.PathBuilder, listeners []*mesh_proto.MeshGateway_Listener) validators.ValidationError {
+	protocolsForPort := map[uint32]map[string][]int{}
+	hostnamesForPort := map[uint32]map[string][]int{}
+
+	for i, ep := range listeners {
+		protocols, ok := protocolsForPort[ep.GetPort()]
+		if !ok {
+			protocols = map[string][]int{}
+		}
+
+		hostnames, ok := hostnamesForPort[ep.GetPort()]
+		if !ok {
+			hostnames = map[string][]int{}
+		}
+
+		protocols[ep.GetProtocol().String()] = append(protocols[ep.GetProtocol().String()], i)
+
+		// An empty hostname is the same as "*", i.e. matches all hosts.
+		hostname := ep.GetHostname()
+		if hostname == "" {
+			hostname = mesh_proto.WildcardHostname
+		}
+
+		hostnames[hostname] = append(hostnames[hostname], i)
+
+		hostnamesForPort[ep.GetPort()] = hostnames
+		protocolsForPort[ep.GetPort()] = protocols
+	}
+
+	err := validators.ValidationError{}
+
+	ports := maps.Keys(protocolsForPort)
+	slices.Sort(ports)
+
+	for _, port := range ports {
+		protocolIndexes := protocolsForPort[port]
+		if len(protocolIndexes) <= 1 {
+			continue
+		}
+
+		var allIndexes []int
+		for _, indexes := range protocolIndexes {
+			allIndexes = append(allIndexes, indexes...)
+		}
+
+		slices.Sort(allIndexes)
+		for _, index := range allIndexes {
+			err.AddViolationAt(path.Index(index), "protocol conflicts with other listeners on this port")
+		}
+	}
+
+	ports = maps.Keys(hostnamesForPort)
+	for _, port := range ports {
+		hostnameIndexes := hostnamesForPort[port]
+
+		hostnames := maps.Keys(hostnameIndexes)
+		slices.Sort(hostnames)
+
+		for _, hostname := range hostnames {
+			indexes := hostnameIndexes[hostname]
+			if len(indexes) <= 1 {
+				continue
+			}
+
+			slices.Sort(indexes)
+			for _, index := range indexes {
+				err.AddViolationAt(path.Index(index), "multiple listeners for hostname on this port")
+			}
+		}
+	}
+
+	return err
 }
 
 func validateMeshGatewayConf(path validators.PathBuilder, conf *mesh_proto.MeshGateway_Conf) validators.ValidationError {
@@ -139,6 +216,8 @@ func validateMeshGatewayConf(path validators.PathBuilder, conf *mesh_proto.MeshG
 				},
 			}))
 	}
+
+	err.Add(validateListenerCompatibility(path, conf.GetListeners()))
 
 	return err
 }
