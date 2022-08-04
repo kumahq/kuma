@@ -225,12 +225,6 @@ func (t *{{.ResourceName}}) GetSpec() model.ResourceSpec {
 	return t.Spec
 }
 
-{{if .SkipValidation}}
-func (t *{{.ResourceName}}) Validate() error {
-	return nil
-}
-{{end}}
-
 {{with $in := .}}
 {{range .Selectors}}
 func (t *{{$in.ResourceName}}) {{.}}() []*{{$pkg}}.Selector {
@@ -307,6 +301,8 @@ var {{.ResourceName}}TypeDescriptor = model.ResourceTypeDescriptor{
 		KumactlArg: "{{.KumactlSingular}}",
 		KumactlListArg: "{{.KumactlPlural}}",
 		AllowToInspect: {{.AllowToInspect}},
+		IsPolicy: {{.IsPolicy}},
+		DisplayName: "{{.DisplayName}}",
 	}
 
 {{- if not .SkipRegistration}}

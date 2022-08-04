@@ -49,7 +49,7 @@ func (m *externalServiceManager) Create(ctx context.Context, resource core_model
 	if err != nil {
 		return err
 	}
-	if err := resource.Validate(); err != nil {
+	if err := core_model.Validate(resource); err != nil {
 		return err
 	}
 	if err := m.externalServiceValidator.ValidateCreate(ctx, opts.Mesh, externalService); err != nil {
@@ -90,7 +90,7 @@ func (m *externalServiceManager) Update(ctx context.Context, resource core_model
 	if err != nil {
 		return err
 	}
-	if err := resource.Validate(); err != nil {
+	if err := core_model.Validate(resource); err != nil {
 		return err
 	}
 

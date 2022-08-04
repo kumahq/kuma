@@ -115,6 +115,8 @@ var CircuitBreakerResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "circuit-breaker",
 	KumactlListArg: "circuit-breakers",
 	AllowToInspect: true,
+	IsPolicy:       true,
+	DisplayName:    "Circuit Breakers",
 }
 
 func init() {
@@ -216,6 +218,8 @@ var DataplaneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "dataplane",
 	KumactlListArg: "dataplanes",
 	AllowToInspect: false,
+	IsPolicy:       false,
+	DisplayName:    "",
 }
 
 func init() {
@@ -249,10 +253,6 @@ func (t *DataplaneInsightResource) SetMeta(m model.ResourceMeta) {
 
 func (t *DataplaneInsightResource) GetSpec() model.ResourceSpec {
 	return t.Spec
-}
-
-func (t *DataplaneInsightResource) Validate() error {
-	return nil
 }
 
 func (t *DataplaneInsightResource) SetSpec(spec model.ResourceSpec) error {
@@ -321,6 +321,8 @@ var DataplaneInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "",
 	KumactlListArg: "",
 	AllowToInspect: false,
+	IsPolicy:       false,
+	DisplayName:    "",
 }
 
 func init() {
@@ -354,10 +356,6 @@ func (t *DataplaneOverviewResource) SetMeta(m model.ResourceMeta) {
 
 func (t *DataplaneOverviewResource) GetSpec() model.ResourceSpec {
 	return t.Spec
-}
-
-func (t *DataplaneOverviewResource) Validate() error {
-	return nil
 }
 
 func (t *DataplaneOverviewResource) SetSpec(spec model.ResourceSpec) error {
@@ -425,6 +423,8 @@ var DataplaneOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "",
 	KumactlListArg: "",
 	AllowToInspect: false,
+	IsPolicy:       false,
+	DisplayName:    "",
 }
 
 const (
@@ -522,6 +522,8 @@ var ExternalServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "external-service",
 	KumactlListArg: "external-services",
 	AllowToInspect: false,
+	IsPolicy:       true,
+	DisplayName:    "External Services",
 }
 
 func init() {
@@ -631,6 +633,8 @@ var FaultInjectionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "fault-injection",
 	KumactlListArg: "fault-injections",
 	AllowToInspect: true,
+	IsPolicy:       true,
+	DisplayName:    "Fault Injections",
 }
 
 func init() {
@@ -740,6 +744,8 @@ var HealthCheckResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "healthcheck",
 	KumactlListArg: "healthchecks",
 	AllowToInspect: true,
+	IsPolicy:       true,
+	DisplayName:    "Health Checks",
 }
 
 func init() {
@@ -841,6 +847,8 @@ var MeshResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "mesh",
 	KumactlListArg: "meshes",
 	AllowToInspect: false,
+	IsPolicy:       false,
+	DisplayName:    "",
 }
 
 func init() {
@@ -946,6 +954,8 @@ var MeshGatewayResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "meshgateway",
 	KumactlListArg: "meshgateways",
 	AllowToInspect: false,
+	IsPolicy:       true,
+	DisplayName:    "Mesh Gateways",
 }
 
 func init() {
@@ -1051,6 +1061,8 @@ var MeshGatewayRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "meshgatewayroute",
 	KumactlListArg: "meshgatewayroutes",
 	AllowToInspect: false,
+	IsPolicy:       true,
+	DisplayName:    "Mesh Gateway Routes",
 }
 
 func init() {
@@ -1084,10 +1096,6 @@ func (t *MeshInsightResource) SetMeta(m model.ResourceMeta) {
 
 func (t *MeshInsightResource) GetSpec() model.ResourceSpec {
 	return t.Spec
-}
-
-func (t *MeshInsightResource) Validate() error {
-	return nil
 }
 
 func (t *MeshInsightResource) SetSpec(spec model.ResourceSpec) error {
@@ -1155,6 +1163,8 @@ var MeshInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "",
 	KumactlListArg: "",
 	AllowToInspect: false,
+	IsPolicy:       false,
+	DisplayName:    "",
 }
 
 func init() {
@@ -1260,6 +1270,8 @@ var ProxyTemplateResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "proxytemplate",
 	KumactlListArg: "proxytemplates",
 	AllowToInspect: true,
+	IsPolicy:       true,
+	DisplayName:    "Proxy Templates",
 }
 
 func init() {
@@ -1369,6 +1381,8 @@ var RateLimitResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "rate-limit",
 	KumactlListArg: "rate-limits",
 	AllowToInspect: true,
+	IsPolicy:       true,
+	DisplayName:    "Rate Limits",
 }
 
 func init() {
@@ -1478,6 +1492,8 @@ var RetryResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "retry",
 	KumactlListArg: "retries",
 	AllowToInspect: true,
+	IsPolicy:       true,
+	DisplayName:    "Retries",
 }
 
 func init() {
@@ -1511,10 +1527,6 @@ func (t *ServiceInsightResource) SetMeta(m model.ResourceMeta) {
 
 func (t *ServiceInsightResource) GetSpec() model.ResourceSpec {
 	return t.Spec
-}
-
-func (t *ServiceInsightResource) Validate() error {
-	return nil
 }
 
 func (t *ServiceInsightResource) SetSpec(spec model.ResourceSpec) error {
@@ -1583,6 +1595,8 @@ var ServiceInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "",
 	KumactlListArg: "",
 	AllowToInspect: false,
+	IsPolicy:       false,
+	DisplayName:    "",
 }
 
 func init() {
@@ -1616,10 +1630,6 @@ func (t *ServiceOverviewResource) SetMeta(m model.ResourceMeta) {
 
 func (t *ServiceOverviewResource) GetSpec() model.ResourceSpec {
 	return t.Spec
-}
-
-func (t *ServiceOverviewResource) Validate() error {
-	return nil
 }
 
 func (t *ServiceOverviewResource) SetSpec(spec model.ResourceSpec) error {
@@ -1687,6 +1697,8 @@ var ServiceOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "",
 	KumactlListArg: "",
 	AllowToInspect: false,
+	IsPolicy:       false,
+	DisplayName:    "",
 }
 
 const (
@@ -1792,6 +1804,8 @@ var TimeoutResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "timeout",
 	KumactlListArg: "timeouts",
 	AllowToInspect: true,
+	IsPolicy:       true,
+	DisplayName:    "Timeouts",
 }
 
 func init() {
@@ -1901,6 +1915,8 @@ var TrafficLogResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "traffic-log",
 	KumactlListArg: "traffic-logs",
 	AllowToInspect: true,
+	IsPolicy:       true,
+	DisplayName:    "Traffic Logs",
 }
 
 func init() {
@@ -2010,6 +2026,8 @@ var TrafficPermissionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "traffic-permission",
 	KumactlListArg: "traffic-permissions",
 	AllowToInspect: true,
+	IsPolicy:       true,
+	DisplayName:    "Traffic Permissions",
 }
 
 func init() {
@@ -2119,6 +2137,8 @@ var TrafficRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "traffic-route",
 	KumactlListArg: "traffic-routes",
 	AllowToInspect: true,
+	IsPolicy:       true,
+	DisplayName:    "Traffic Routes",
 }
 
 func init() {
@@ -2224,6 +2244,8 @@ var TrafficTraceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "traffic-trace",
 	KumactlListArg: "traffic-traces",
 	AllowToInspect: true,
+	IsPolicy:       true,
+	DisplayName:    "Traffic Traces",
 }
 
 func init() {
@@ -2329,6 +2351,8 @@ var VirtualOutboundResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "virtual-outbound",
 	KumactlListArg: "virtual-outbounds",
 	AllowToInspect: false,
+	IsPolicy:       true,
+	DisplayName:    "Virtual Outbounds",
 }
 
 func init() {
@@ -2430,6 +2454,8 @@ var ZoneEgressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "zoneegress",
 	KumactlListArg: "zoneegresses",
 	AllowToInspect: false,
+	IsPolicy:       false,
+	DisplayName:    "",
 }
 
 func init() {
@@ -2463,10 +2489,6 @@ func (t *ZoneEgressInsightResource) SetMeta(m model.ResourceMeta) {
 
 func (t *ZoneEgressInsightResource) GetSpec() model.ResourceSpec {
 	return t.Spec
-}
-
-func (t *ZoneEgressInsightResource) Validate() error {
-	return nil
 }
 
 func (t *ZoneEgressInsightResource) SetSpec(spec model.ResourceSpec) error {
@@ -2535,6 +2557,8 @@ var ZoneEgressInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "",
 	KumactlListArg: "",
 	AllowToInspect: false,
+	IsPolicy:       false,
+	DisplayName:    "",
 }
 
 func init() {
@@ -2568,10 +2592,6 @@ func (t *ZoneEgressOverviewResource) SetMeta(m model.ResourceMeta) {
 
 func (t *ZoneEgressOverviewResource) GetSpec() model.ResourceSpec {
 	return t.Spec
-}
-
-func (t *ZoneEgressOverviewResource) Validate() error {
-	return nil
 }
 
 func (t *ZoneEgressOverviewResource) SetSpec(spec model.ResourceSpec) error {
@@ -2639,6 +2659,8 @@ var ZoneEgressOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "",
 	KumactlListArg: "",
 	AllowToInspect: false,
+	IsPolicy:       false,
+	DisplayName:    "",
 }
 
 const (
@@ -2736,6 +2758,8 @@ var ZoneIngressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "zone-ingress",
 	KumactlListArg: "zone-ingresses",
 	AllowToInspect: false,
+	IsPolicy:       false,
+	DisplayName:    "",
 }
 
 func init() {
@@ -2769,10 +2793,6 @@ func (t *ZoneIngressInsightResource) SetMeta(m model.ResourceMeta) {
 
 func (t *ZoneIngressInsightResource) GetSpec() model.ResourceSpec {
 	return t.Spec
-}
-
-func (t *ZoneIngressInsightResource) Validate() error {
-	return nil
 }
 
 func (t *ZoneIngressInsightResource) SetSpec(spec model.ResourceSpec) error {
@@ -2841,6 +2861,8 @@ var ZoneIngressInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "",
 	KumactlListArg: "",
 	AllowToInspect: false,
+	IsPolicy:       false,
+	DisplayName:    "",
 }
 
 func init() {
@@ -2874,10 +2896,6 @@ func (t *ZoneIngressOverviewResource) SetMeta(m model.ResourceMeta) {
 
 func (t *ZoneIngressOverviewResource) GetSpec() model.ResourceSpec {
 	return t.Spec
-}
-
-func (t *ZoneIngressOverviewResource) Validate() error {
-	return nil
 }
 
 func (t *ZoneIngressOverviewResource) SetSpec(spec model.ResourceSpec) error {
@@ -2945,4 +2963,6 @@ var ZoneIngressOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:     "",
 	KumactlListArg: "",
 	AllowToInspect: false,
+	IsPolicy:       false,
+	DisplayName:    "",
 }

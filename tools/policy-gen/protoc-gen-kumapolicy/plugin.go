@@ -4,22 +4,21 @@ import (
 	"bytes"
 	"go/format"
 	"html/template"
+	"strings"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/compiler/protogen"
-
-	"github.com/kumahq/kuma/tools/resource-gen/genutils"
 )
 
 var PluginGoTemplate = template.Must(template.New("plugin-go").Parse(`
 package {{ .Package }}
 
 {{ $pkg := .Package }}
-{{ $rName := .ResourceName }}
+{{ $name := .Name }}
 
 import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core"
-{{range $idx, $version := .Versions}}
+{{- range $idx, $version := .Versions}}
 	api_{{ $version }} "github.com/kumahq/kuma/pkg/plugins/policies/{{ $pkg }}/api/{{ $version }}"
 	k8s_{{ $version }} "github.com/kumahq/kuma/pkg/plugins/policies/{{ $pkg }}/k8s/{{ $version }}"
 {{- end}}
@@ -28,7 +27,7 @@ import (
 func init() {
 	{{- range $idx, $version := .Versions}}
 	core.Register(
-		api_{{ $version }}.{{ $rName }}TypeDescriptor,
+		api_{{ $version }}.{{ $name }}ResourceTypeDescriptor,
 		k8s_{{ $version }}.AddToScheme,
 	)
 	{{- end}}
@@ -46,9 +45,9 @@ func generatePluginFile(
 
 	file := files[0]
 
-	var infos []genutils.ResourceInfo
+	var infos []PolicyConfig
 	for _, msg := range file.Messages {
-		infos = append(infos, genutils.ToResourceInfo(msg.Desc))
+		infos = append(infos, NewPolicyConfig(msg.Desc))
 	}
 
 	if len(infos) > 1 {
@@ -68,13 +67,13 @@ func generatePluginFile(
 	}
 	outBuf := bytes.Buffer{}
 	if err := PluginGoTemplate.Execute(&outBuf, struct {
-		Package      string
-		Versions     []string
-		ResourceName string
+		Package  string
+		Versions []string
+		Name     string
 	}{
-		Package:      info.KumactlSingular,
-		ResourceName: info.ResourceName,
-		Versions:     versions,
+		Package:  strings.ToLower(info.Name),
+		Name:     info.Name,
+		Versions: versions,
 	}); err != nil {
 		return err
 	}

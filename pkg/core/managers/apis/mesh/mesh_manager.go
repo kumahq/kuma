@@ -68,7 +68,7 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 	if err := mesh.Default(); err != nil {
 		return err
 	}
-	if err := resource.Validate(); err != nil {
+	if err := core_model.Validate(resource); err != nil {
 		return err
 	}
 	if err := m.meshValidator.ValidateCreate(ctx, opts.Name, mesh); err != nil {
@@ -132,7 +132,7 @@ func (m *meshManager) Update(ctx context.Context, resource core_model.Resource, 
 	if err := mesh.Default(); err != nil {
 		return err
 	}
-	if err := resource.Validate(); err != nil {
+	if err := core_model.Validate(resource); err != nil {
 		return err
 	}
 

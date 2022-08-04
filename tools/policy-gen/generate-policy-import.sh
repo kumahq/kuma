@@ -1,19 +1,18 @@
 #!/bin/bash
 
-IMPORTS=""
-for i in "$@"; do
-  if [[ -f pkg/plugins/policies/${i}/plugin.go ]]; then
-    IMPORTS="${IMPORTS}\t_ \"github.com/kumahq/kuma/pkg/plugins/policies/${i}\"\n"
-  fi
-done
+IMPORTS_FILE="pkg/plugins/policies/imports.go"
 
-rm -f pkg/plugins/policies/imports.go
-if [[ ${IMPORTS} == "" ]]; then
+imports=$(for i in "$@"; do [[ -f pkg/plugins/policies/${i}/plugin.go ]] && echo "_ \"github.com/kumahq/kuma/pkg/plugins/policies/${i}\""; done)
+if [[ $imports == "" ]]; then
+  rm -f "${IMPORTS_FILE}"
   exit 0
 fi
+
 echo "package policies
 
 import (
-${IMPORTS}
+$imports
 )
-" > pkg/plugins/policies/imports.go
+" > "${IMPORTS_FILE}"
+
+gofmt -w "${IMPORTS_FILE}"

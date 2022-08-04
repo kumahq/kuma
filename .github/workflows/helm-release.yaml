@@ -92,7 +92,14 @@ jobs:
         with:
           name: ${{ needs.package.outputs.filename }}
           path: .cr-release-packages
+      - name: Generate GitHub app token
+        id: github-app-token
+        uses: tibdex/github-app-token@f717b5ecd4534d3c4df4ce9b5c1c2214f0f7cd06 # v1.6.0
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+          repository: ${{ env.GH_OWNER }}/charts
       - name: Release chart
         env:
-          GH_TOKEN: ${{ secrets.CHARTS_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.github-app-token.outputs.token }}
         run: ./tools/releases/helm.sh --release

@@ -8,8 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/compiler/protogen"
-
-	"github.com/kumahq/kuma/tools/resource-gen/genutils"
 )
 
 func main() {
@@ -55,9 +53,9 @@ func generateEndpoints(
 	file *protogen.File,
 	openAPITemplate string,
 ) error {
-	var infos []genutils.ResourceInfo
+	var infos []PolicyConfig
 	for _, msg := range file.Messages {
-		infos = append(infos, genutils.ToResourceInfo(msg.Desc))
+		infos = append(infos, NewPolicyConfig(msg.Desc))
 	}
 
 	if len(infos) > 1 {
@@ -72,10 +70,12 @@ func generateEndpoints(
 
 	bf := &bytes.Buffer{}
 	if err := tmpl.Execute(bf, struct {
-		genutils.ResourceInfo
+		Path          string
+		Name          string
 		PolicyVersion string
 	}{
-		ResourceInfo:  info,
+		Path:          info.Path,
+		Name:          info.Name,
 		PolicyVersion: string(file.GoPackageName),
 	}); err != nil {
 		return err

@@ -66,6 +66,7 @@ var _ = Describe("HttpConnectionManager Configurers", func() {
                   '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
               mergeSlashes: true
               normalizePath: true
+              pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
               statPrefix: test`,
 			}),
 

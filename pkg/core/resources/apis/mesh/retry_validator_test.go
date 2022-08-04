@@ -165,6 +165,27 @@ var _ = Describe("Retry", func() {
                   message: field cannot be empty
 `,
 			}),
+			Entry("invalid conf.http retries not specified", testCase{
+				retry: `
+                sources:
+                - match:
+                    kuma.io/service: web
+                    region: eu
+                destinations:
+                - match:
+                    kuma.io/service: backend
+                conf:
+                    http:
+                        retryOn:
+                        - all_5xx
+                        - retriable_status_codes
+`,
+				expected: `
+                violations:
+                - field: conf.http.retryOn[1]
+                  message: retriableStatusCodes cannot be empty when this option is specified
+`,
+			}),
 			Entry("empty conf.grpc", testCase{
 				retry: `
                 sources:

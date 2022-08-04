@@ -10,14 +10,17 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/container_patch"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/defaults"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/gateway"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/graceful"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/healthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/inspect"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/jobs"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/k8s_api_bypass"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/membership"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/observability"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/reachableservices"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/trafficlog"
 	. "github.com/kumahq/kuma/test/framework"
 )
@@ -70,6 +73,7 @@ var _ = SynchronizedBeforeSuite(
 var _ = SynchronizedAfterSuite(func() {}, func() {})
 
 var _ = Describe("Virtual Probes", healthcheck.VirtualProbes, Ordered)
+var _ = Describe("Gateway mTLS", gateway.Mtls, Ordered)
 var _ = Describe("Cross-mesh Gateways", gateway.CrossMeshGatewayOnKubernetes, Ordered)
 var _ = Describe("Graceful", graceful.Graceful, Ordered)
 var _ = Describe("Jobs", jobs.Jobs)
@@ -79,3 +83,6 @@ var _ = Describe("Metrics", observability.ApplicationsMetrics, Ordered)
 var _ = Describe("Tracing", observability.Tracing, Ordered)
 var _ = Describe("Traffic Log", trafficlog.TCPLogging, Ordered)
 var _ = Describe("Inspect", inspect.Inspect, Ordered)
+var _ = Describe("K8S API Bypass", k8s_api_bypass.K8sApiBypass, Ordered)
+var _ = Describe("Reachable Services", reachableservices.ReachableServices, Ordered)
+var _ = Describe("Defaults", defaults.Defaults, Ordered)

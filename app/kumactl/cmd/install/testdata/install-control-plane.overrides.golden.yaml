@@ -1790,13 +1790,6 @@ rules:
       - update
       - patch
   - apiGroups:
-      - ""
-    resources:
-      - events
-    verbs:
-      - create
-      - patch
-  - apiGroups:
       - kuma.io
     resources:
       - dataplanes
@@ -1819,17 +1812,11 @@ rules:
       - circuitbreakers
       - virtualoutbounds
       - containerpatches
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - update
-      - patch
-      - delete
-  - apiGroups:
-      - kuma.io
-    resources:
+      - externalservices
+      - faultinjections
+      - healthchecks
+      - trafficlogs
+      - traffictraces
       - meshgateways
       - meshgatewayroutes
       - meshgatewayinstances
@@ -1846,71 +1833,21 @@ rules:
       - kuma.io
     resources:
       - meshgatewayinstances/status
-    verbs:
-      - get
-      - patch
-      - update
-  # for the OwnerReferencesPermissionEnforcement plugin
-  - apiGroups:
-      - kuma.io
-    resources:
       - meshgatewayinstances/finalizers
+      - meshes/finalizers
+      - dataplanes/finalizers
     verbs:
       - get
       - patch
       - update
-  - apiGroups:
-      - kuma.io
-    resources:
-      - externalservices
-      - faultinjections
-      - healthchecks
-      - trafficlogs
-      - traffictraces
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - update
-      - patch
-      - delete
   - apiGroups:
       - ""
     resources:
       - pods/finalizers
     verbs:
       - get
-      - list
-      - watch
-      - create
-      - update
       - patch
-      - delete
-  - apiGroups:
-      - kuma.io
-    resources:
-      - meshes/finalizers
-    verbs:
-      - get
-      - list
-      - watch
-      - create
       - update
-      - patch
-      - delete
-  - apiGroups:
-      - kuma.io
-    resources:
-      - dataplanes/finalizers
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - update
-      - patch
-      - delete
   # validate k8s token before issuing mTLS cert
   - apiGroups:
       - authentication.k8s.io
@@ -2053,7 +1990,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 7608e20e60bbf732fc10719c710ef4e8e5d2221f20ff0dbf699ae918a9b70571
-        checksum/tls-secrets: 7cbeeca05a4c162980aef211b2f97ff07e1eb5b7155f4d2c9981b0c1a4e16e54
+        checksum/tls-secrets: fd01b3301fd7ba0e4b578b2d5e136a33be0ef074c4be17379582435f586de4e2
         
       labels: 
         app: kuma-control-plane
@@ -2272,12 +2209,13 @@ webhooks:
           - proxytemplates
           - ratelimits
           - retries
+          - timeouts
           - trafficlogs
           - trafficpermissions
           - trafficroutes
           - traffictraces
           - virtualoutbounds
-    
+  
       
     sideEffects: None
   - name: namespace-kuma-injector.kuma.io

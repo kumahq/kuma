@@ -218,6 +218,7 @@ var _ = SynchronizedBeforeSuite(
 	},
 )
 
+var _ = Describe("Gateway", gateway.GatewayHybrid, Ordered)
 var _ = Describe("Cross-mesh Gateways", gateway.CrossMeshGatewayOnMultizone, Ordered)
 var _ = Describe("External Service locality aware", localityawarelb.ExternalServicesWithLocalityAwareLb, Ordered)
 var _ = Describe("Healthcheck", healthcheck.ApplicationOnUniversalClientOnK8s, Ordered)

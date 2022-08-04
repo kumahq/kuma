@@ -49,7 +49,7 @@ func (m *rateLimitManager) Create(ctx context.Context, resource core_model.Resou
 	if err != nil {
 		return err
 	}
-	if err := resource.Validate(); err != nil {
+	if err := core_model.Validate(resource); err != nil {
 		return err
 	}
 	if err := m.rateLimitValidator.ValidateCreate(ctx, opts.Mesh, rateLimit); err != nil {
@@ -90,7 +90,7 @@ func (m *rateLimitManager) Update(ctx context.Context, resource core_model.Resou
 	if err != nil {
 		return err
 	}
-	if err := resource.Validate(); err != nil {
+	if err := core_model.Validate(resource); err != nil {
 		return err
 	}
 

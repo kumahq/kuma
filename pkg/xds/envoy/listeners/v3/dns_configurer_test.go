@@ -58,11 +58,14 @@ var _ = Describe("DNSConfigurer", func() {
                 '@type': type.googleapis.com/envoy.extensions.filters.udp.dns_filter.v3.DnsFilterConfig
                 clientConfig:
                   maxPendingLookups: "256"
-                  dnsResolutionConfig:
-                    resolvers:
-                    - socketAddress:
-                        address: 127.0.0.1
-                        portValue: 53002
+                  typedDnsResolverConfig:
+                      name: envoy.network.dns_resolver.cares
+                      typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.network.dns_resolver.cares.v3.CaresDnsResolverConfig
+                          resolvers:
+                              - socketAddress:
+                                  address: 127.0.0.1
+                                  portValue: 53002
                 serverConfig:
                   inlineDnsTable:
                     virtualDomains:

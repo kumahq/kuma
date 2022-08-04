@@ -1008,7 +1008,7 @@
           "value": "backend_kuma-demo_svc_3001"
         },
         "datasource": null,
-        "definition": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}, kuma_io_service)",
+        "definition": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=\"\"}, kuma_io_service)",
         "description": null,
         "error": null,
         "hide": 0,
@@ -1018,7 +1018,7 @@
         "name": "service",
         "options": [],
         "query": {
-          "query": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}, kuma_io_service)",
+          "query": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_mesh_gateway=\"\"}, kuma_io_service)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 1,

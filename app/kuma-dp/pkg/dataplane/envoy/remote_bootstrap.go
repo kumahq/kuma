@@ -109,6 +109,24 @@ func (b *remoteBootstrap) Generate(ctx context.Context, url string, cfg kuma_dp.
 	return envoyBootstrap, &bootstrap.KumaSidecarConfiguration, nil
 }
 
+func (b *remoteBootstrap) resourceMetadata(cfg kuma_dp.DataplaneResources) (types.ProxyResources, error) {
+	var maxMemory uint64
+
+	if cfg.MaxMemoryBytes == 0 {
+		maxMemory = DetectMaxMemory()
+	} else {
+		maxMemory = cfg.MaxMemoryBytes
+	}
+
+	res := types.ProxyResources{}
+
+	if maxMemory != 0 {
+		res.MaxHeapSizeBytes = maxMemory
+	}
+
+	return res, nil
+}
+
 func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, url *net_url.URL, cfg kuma_dp.Config, params BootstrapParams) ([]byte, error) {
 	url.Path = "/bootstrap"
 	var dataplaneResource string
@@ -130,6 +148,12 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, url *net_url.
 	if cfg.DataplaneRuntime.Token != "" {
 		token = cfg.DataplaneRuntime.Token
 	}
+
+	resources, err := b.resourceMetadata(cfg.DataplaneRuntime.Resources)
+	if err != nil {
+		return nil, err
+	}
+
 	request := types.BootstrapRequest{
 		Mesh:               cfg.Dataplane.Mesh,
 		Name:               cfg.Dataplane.Name,
@@ -156,6 +180,7 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, url *net_url.
 		EmptyDNSPort:    params.EmptyDNSPort,
 		OperatingSystem: b.operatingSystem,
 		Features:        b.features,
+		Resources:       resources,
 	}
 	jsonBytes, err := json.Marshal(request)
 	if err != nil {
