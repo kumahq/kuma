@@ -82,7 +82,7 @@ message MeshGateway {
   }
 
   message Listener {
-    message Resources { uint32 connectionLimit = 1; }
+    message Resources { uint32 connection_limit = 1; }
 
     enum Protocol {
       NONE = 0;
@@ -124,6 +124,7 @@ message MeshGateway {
     // meshes.
     bool crossMesh = 6;
 
+    // Resources is used to specify listener-specific resource settings.
     Resources resources = 7;
   }
 
