@@ -1787,6 +1787,18 @@ rules:
       - get
       - list
       - watch
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - update
+  - apiGroups:
+      - "pods"
+    resources:
+      - pods
+    verbs:
+      - list
   # validate k8s token before issuing mTLS cert
   - apiGroups:
       - authentication.k8s.io
@@ -1978,7 +1990,14 @@ spec:
         - name: install-cni
           image: "docker.io/kumahq/kuma-cni:0.0.1"
           imagePullPolicy: IfNotPresent
-          command: ["/install-cni"]
+          readinessProbe:
+            initialDelaySeconds: 0
+            exec:
+              command:
+                - cat
+                - /tmp/ready
+          command: [ "/bin/sh", "-c", "--" ]
+          args: [ "sleep 0 && exec /install-cni" ]
           env:
             # Name of the CNI config file to create.
             - name: CNI_CONF_NAME
@@ -2075,12 +2094,16 @@ spec:
               value: "false"
             - name: KUMA_API_SERVER_READ_ONLY
               value: "true"
+            - name: KUMA_CNI_APP
+              value: "kuma-cni"
             - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
               value: "false"
             - name: KUMA_DP_SERVER_HDS_ENABLED
               value: "false"
             - name: KUMA_ENVIRONMENT
               value: "kubernetes"
+            - name: KUMA_EXPERIMENTAL_CNI
+              value: "true"
             - name: KUMA_GENERAL_TLS_CERT_FILE
               value: "/var/run/secrets/kuma.io/tls-cert/tls.crt"
             - name: KUMA_GENERAL_TLS_KEY_FILE

@@ -41,8 +41,8 @@ type InstallControlPlaneArgs struct {
 	Cni_image_registry                           string            `helm:"cni.image.registry,omitempty"`
 	Cni_image_repository                         string            `helm:"cni.image.repository"`
 	Cni_image_tag                                string            `helm:"cni.image.tag"`
-	Cni_imageExperimental_repository             string            `helm:"cni.imageExperimental.repository"`
-	Cni_imageExperimental_tag                    string            `helm:"cni.imageExperimental.tag"`
+	Cni_experimental_image_repository            string            `helm:"cni.experimental.image.repository"`
+	Cni_experimental_image_tag                   string            `helm:"cni.experimental.image.tag"`
 	Cni_nodeSelector                             map[string]string `helm:"cni.nodeSelector"`
 	ControlPlane_mode                            string            `helm:"controlPlane.mode"`
 	ControlPlane_zone                            string            `helm:"controlPlane.zone"`
@@ -106,8 +106,8 @@ func DefaultInstallCpContext() InstallCpContext {
 			Cni_image_registry:                      "",
 			Cni_image_repository:                    "install-cni",
 			Cni_image_tag:                           "0.0.10",
-			Cni_imageExperimental_repository:        "kuma-cni",
-			Cni_imageExperimental_tag:               kuma_version.Build.Version,
+			Cni_experimental_image_repository:       "kuma-cni",
+			Cni_experimental_image_tag:              kuma_version.Build.Version,
 			ControlPlane_mode:                       core.Standalone,
 			ControlPlane_zone:                       "",
 			ControlPlane_globalZoneSyncService_type: "LoadBalancer",

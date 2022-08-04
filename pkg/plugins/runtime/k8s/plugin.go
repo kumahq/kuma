@@ -99,7 +99,24 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 	if err := addDNS(mgr, rt, converter); err != nil {
 		return err
 	}
+
+	if rt.Config().Experimental.Cni {
+		if err := addCniNodeTaintReconciler(mgr, rt.Config().Experimental.CniApp); err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+func addCniNodeTaintReconciler(mgr kube_ctrl.Manager, cniApp string) error {
+	reconciler := &k8s_controllers.CniNodeTaintReconciler{
+		Client: mgr.GetClient(),
+		Log:    core.Log.WithName("controllers").WithName("NodeTaint"),
+		CniApp: cniApp,
+	}
+
+	return reconciler.SetupWithManager(mgr)
 }
 
 func addNamespaceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {

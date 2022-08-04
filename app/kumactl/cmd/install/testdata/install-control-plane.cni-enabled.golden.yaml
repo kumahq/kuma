@@ -1978,7 +1978,8 @@ spec:
         - name: install-cni
           image: "docker.io/kumahq/install-cni:0.0.10"
           imagePullPolicy: Always
-          command: ["/install-cni.sh"]
+          command: [ "/bin/sh", "-c", "--" ]
+          args: [ "sleep 0 && exec /install-cni.sh" ]
           env:
             # Name of the CNI config file to create.
             - name: CNI_CONF_NAME

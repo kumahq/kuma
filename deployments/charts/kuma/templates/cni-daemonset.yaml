@@ -51,13 +51,21 @@ spec:
       containers:
         - name: install-cni
           {{- if .Values.experimental.cni }}
-          image: {{ include "kuma.formatImage" (dict "image" .Values.cni.imageExperimental "root" $) | quote }}
+          image: {{ include "kuma.formatImage" (dict "image" .Values.cni.experimental.image "root" $) | quote }}
           imagePullPolicy: IfNotPresent
-          command: ["/install-cni"]
+          readinessProbe:
+            initialDelaySeconds: {{ .Values.cni.delayStartupSeconds }}
+            exec:
+              command:
+                - cat
+                - /tmp/ready
+          command: [ "/bin/sh", "-c", "--" ]
+          args: [ "sleep {{.Values.cni.delayStartupSeconds}} && exec /install-cni" ]
           {{- else }}
           image: {{ include "kuma.formatImage" (dict "image" .Values.cni.image "root" $) | quote }}
           imagePullPolicy: Always
-          command: ["/install-cni.sh"]
+          command: [ "/bin/sh", "-c", "--" ]
+          args: [ "sleep {{.Values.cni.delayStartupSeconds}} && exec /install-cni.sh" ]
           {{- end }}
           {{- if .Values.cni.containerSecurityContext }}
           securityContext:

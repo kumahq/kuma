@@ -7,6 +7,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
@@ -227,4 +228,28 @@ func (cs *K8sClusters) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
 
 func (cs *K8sClusters) GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel {
 	panic("not supported")
+}
+
+func (cs *K8sClusters) CreateNode(name string, label string) error {
+	allErrors := errors.New("combined create node errors")
+	for _, cluster := range cs.clusters {
+		allErrors = multierr.Append(allErrors, cluster.CreateNode(name, label))
+	}
+	return allErrors
+}
+
+func (cs *K8sClusters) DeleteNode(name string) error {
+	allErrors := errors.New("combined delete node errors")
+	for _, cluster := range cs.clusters {
+		allErrors = multierr.Append(allErrors, cluster.DeleteNode(name))
+	}
+	return allErrors
+}
+
+func (cs *K8sClusters) LoadImages(names ...string) error {
+	allErrors := errors.New("combined load images to node errors")
+	for _, cluster := range cs.clusters {
+		allErrors = multierr.Append(allErrors, cluster.LoadImages(names...))
+	}
+	return allErrors
 }

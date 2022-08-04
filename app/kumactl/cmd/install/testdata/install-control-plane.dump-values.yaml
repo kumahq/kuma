@@ -320,12 +320,16 @@ cni:
     # -- CNI image tag
     tag: "0.0.10"
 
+  # -- it's only useful in tests to trigger a possible race condition
+  delayStartupSeconds: 0
+
   # -- use new CNI image (experimental)
-  imageExperimental:
-    # -- CNI experimental image repository
-    repository: "kuma-cni"
-    # -- CNI experimental image tag - defaults to .Chart.AppVersion
-    tag:
+  experimental:
+    image:
+      # -- CNI experimental image repository
+      repository: "kuma-cni"
+      # -- CNI experimental image tag - defaults to .Chart.AppVersion
+      tag:
 
   # -- Security context at the pod level for cni
   podSecurityContext: {}
