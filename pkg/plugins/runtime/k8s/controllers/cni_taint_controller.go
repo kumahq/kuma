@@ -114,14 +114,10 @@ func (r *CniNodeTaintReconciler) taintNode(ctx context.Context, log logr.Logger,
 func (r *CniNodeTaintReconciler) hasCniPodRunning(log logr.Logger, pods []kube_core.Pod) bool {
 	for _, pod := range pods {
 		isCniPod := pod.Labels[cniAppLabel] == r.CniApp
-		if isCniPod && pod.Status.Phase == kube_core.PodRunning {
-			for _, condition := range pod.Status.Conditions {
-				if condition.Type == kube_core.PodReady && condition.Status == kube_core.ConditionTrue {
-					log.V(1).Info("pod has kuma-cni-node running and ready", "pod", pod.Name, "status", pod.Status)
-					return true
-				}
-			}
-		}
+		if isCniPod && pod.Status.Phase == kube_core.PodRunning && isConditionTrue(pod.Status.Conditions, kube_core.PodReady) {
+			 log.V(1).Info("pod has kuma-cni-node running and ready", "pod", pod.Name, "status", pod.Status)
+			 return true
+		 }
 	}
 	return false
 }
@@ -138,32 +134,17 @@ func (r *CniNodeTaintReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		For(&kube_core.Node{}, builder.WithPredicates(nodeEvents)).
 		Watches(
 			&kube_source.Kind{Type: &kube_core.Pod{}},
-			kube_handler.EnqueueRequestsFromMapFunc(podToNodeMapper(r.Log, r.CniApp)),
-			builder.WithPredicates(podEvents),
+			kube_handler.EnqueueRequestsFromMapFunc(podToNodeMapper(r.Log)),
+			builder.WithPredicates(podEvents(r.CniApp)),
 		).
 		Complete(r)
 }
 
-func podToNodeMapper(log logr.Logger, cniApp string) kube_handler.MapFunc {
+func podToNodeMapper(log logr.Logger) kube_handler.MapFunc {
 	return func(obj kube_client.Object) []kube_reconcile.Request {
 		pod, ok := obj.(*kube_core.Pod)
 		if !ok {
 			log.WithValues("pod", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", pod, obj), "wrong argument type")
-			return nil
-		}
-
-		// For some reason in the logs there are a lot of 'could not find a node with name ""'
-		// so this is why I'm filtering it out here
-		if pod.Spec.NodeName == "" {
-			log.Info("empty node name no longer triggers")
-			return nil
-		}
-
-		// the following checks match the ones on the pod list filtering
-		if pod.Namespace != cniPodNamespace {
-			return nil
-		}
-		if pod.Labels[cniAppLabel] != cniApp {
 			return nil
 		}
 
@@ -174,32 +155,74 @@ func podToNodeMapper(log logr.Logger, cniApp string) kube_handler.MapFunc {
 	}
 }
 
-var nodeEvents = predicate.Funcs{
+var nodeEvents = predicate.Funcs {
 	CreateFunc: func(event event.CreateEvent) bool {
-		return true
+		 return filterNodes(event.Object)
 	},
 	DeleteFunc: func(deleteEvent event.DeleteEvent) bool {
-		return false
+		 return false
 	},
 	UpdateFunc: func(updateEvent event.UpdateEvent) bool {
-		return true
+		 return filterNodes(updateEvent.ObjectNew)
 	},
 	GenericFunc: func(genericEvent event.GenericEvent) bool {
-		return false
+		 return false
 	},
 }
 
-var podEvents = predicate.Funcs{
-	CreateFunc: func(event event.CreateEvent) bool {
+func podEvents(cniApp string) predicate.Funcs {
+	return predicate.Funcs{
+		CreateFunc: func(event event.CreateEvent) bool {
+			return false
+		},
+		DeleteFunc: func(deleteEvent event.DeleteEvent) bool {
+			return filterPods(deleteEvent.Object, cniApp)
+		},
+		UpdateFunc: func(updateEvent event.UpdateEvent) bool {
+			return filterPods(updateEvent.ObjectNew, cniApp)
+		},
+		GenericFunc: func(genericEvent event.GenericEvent) bool {
+			return false
+		},
+	}
+}
+
+func filterNodes(obj kube_client.Object) bool {
+	node, ok := obj.(*kube_core.Node)
+	if !ok {
 		return false
-	},
-	DeleteFunc: func(deleteEvent event.DeleteEvent) bool {
-		return true
-	},
-	UpdateFunc: func(updateEvent event.UpdateEvent) bool {
-		return true
-	},
-	GenericFunc: func(genericEvent event.GenericEvent) bool {
+	}
+	if node.Name == "" {
 		return false
-	},
+	}
+
+	return true
+}
+
+func filterPods(obj kube_client.Object, cniApp string) bool {
+	pod, ok := obj.(*kube_core.Pod)
+	if !ok {
+		return false
+	}
+	if pod.Spec.NodeName == "" {
+		return false
+	}
+	if pod.Namespace != cniPodNamespace {
+		return false
+	}
+	if pod.Labels[cniAppLabel] != cniApp {
+		return false
+	}
+
+	return true
+}
+
+func isConditionTrue(conditions []kube_core.PodCondition, conditionType kube_core.PodConditionType) bool {
+	for _, condition := range conditions {
+		if condition.Type == conditionType && condition.Status == kube_core.ConditionTrue {
+			return true
+		}
+	}
+
+	return false
 }
