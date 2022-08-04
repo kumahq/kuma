@@ -148,8 +148,8 @@ func podToNodeMapper(log logr.Logger) kube_handler.MapFunc {
 			return nil
 		}
 
-		// For some reason in the logs there are a lot of 'could not find a node with name ""'
-		// so this is why I'm filtering it out here
+		// we only care about new object but pod update event triggers two reconciliation (for old and new object)
+		// and on the first one updateEvent.OldObject does not have a node assigned so that's why I'm filtering out here
 		if pod.Spec.NodeName == "" {
 			return nil
 		}
