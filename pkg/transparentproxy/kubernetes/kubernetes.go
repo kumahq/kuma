@@ -153,6 +153,7 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 		"--exclude-outbound-ports",
 		pr.ExcludeOutboundPorts,
 		"--verbose",
+		// Remove with https://github.com/kumahq/kuma/issues/4759
 		"--skip-resolv-conf",
 	}
 

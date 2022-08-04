@@ -4,21 +4,19 @@ Install Transparent Proxy pre-requisites on the host
 
 ### Synopsis
 
-Install Transparent Proxy by modifying the hosts iptables and /etc/resolv.conf.
+Install Transparent Proxy by modifying the hosts iptables.
 
 Follow the following steps to use the Kuma data plane proxy in Transparent Proxy mode:
 
  1) create a dedicated user for the Kuma data plane proxy, e.g. 'kuma-dp'
  2) run this command as a 'root' user to modify the host's iptables and /etc/resolv.conf
-    - supply the dedicated username with '--kuma-dp-'
+    - supply the dedicated username with '--kuma-dp-uid'
     - all changes are easly revertible by issuing 'kumactl uninstall transparent-proxy'
     - by default the SSH port tcp/22 will not be redirected to Envoy, but everything else will.
       Use '--exclude-inbound-ports' to provide a comma separated list of ports that should also be excluded
-    - this command also creates a backup copy of the modified resolv.conf under /etc/resolv.conf
 
  sudo kumactl install transparent-proxy \
           --kuma-dp-user kuma-dp \
-          --kuma-cp-ip 10.0.0.1 \
           --exclude-inbound-ports 443
 
  3) prepare a Dataplane resource yaml like this:
@@ -53,8 +51,6 @@ runuser -u kuma-dp -- \
     --dataplane-var port=80  \
     --binary-path /usr/local/bin/envoy
 
- 5) make sure the kuma-cp is running its DNS service on port 53 by setting the environment variable 'KUMA_DNS_SERVER_PORT=53'
-
 
 
 ```
@@ -65,18 +61,13 @@ kumactl install transparent-proxy [flags]
 
 ```
       --dry-run                                                                         dry run
-      --ebpf-bpffs-path string                                                          the path of the BPF filesystem (default "/run/kuma/bpf")
-      --ebpf-enabled                                                                    use ebpf instead of iptables to install transparent proxy
-      --ebpf-instance-ip string                                                         IP address of the instance (pod/vm) where transparent proxy will be installed
-      --ebpf-programs-source-path string                                                path where compiled ebpf programs and other necessary for ebpf mode files can be found (default "/kuma/ebpf")
       --exclude-inbound-ports string                                                    a comma separated list of inbound ports to exclude from redirect to Envoy
       --exclude-outbound-ports string                                                   a comma separated list of outbound ports to exclude from redirect to Envoy
       --experimental-transparent-proxy-engine                                           use experimental transparent proxy engine
   -h, --help                                                                            help for transparent-proxy
-      --kuma-cp-ip ip                                                                   the IP address of the Kuma CP which exposes the DNS service on port 53. (default 0.0.0.0)
       --kuma-dp-uid string                                                              the UID of the user that will run kuma-dp
       --kuma-dp-user string                                                             the user that will run kuma-dp
-      --redirect-all-dns-traffic                                                        redirect all DNS requests to a specified port
+      --redirect-all-dns-traffic                                                        redirect all DNS traffic to a specified port, unlike --redirect-dns this will not be limited to the dns servers identified in /etc/resolve.conf
       --redirect-dns                                                                    redirect only DNS requests targeted to the servers listed in /etc/resolv.conf to a specified port
       --redirect-dns-port string                                                        the port where the DNS agent is listening (default "15053")
       --redirect-dns-upstream-target-chain string                                       (optional) the iptables chain where the upstream DNS requests should be directed to. It is only applied for IP V4. Use with care. (default "RETURN")
@@ -85,7 +76,6 @@ kumactl install transparent-proxy [flags]
       --redirect-inbound-port-v6 networking.transparentProxying.redirectPortInboundV6   IPv6 inbound port redirected to Envoy, as specified in dataplane's networking.transparentProxying.redirectPortInboundV6 (default "15010")
       --redirect-outbound-port networking.transparentProxying.redirectPortOutbound      outbound port redirected to Envoy, as specified in dataplane's networking.transparentProxying.redirectPortOutbound (default "15001")
       --skip-dns-conntrack-zone-split                                                   skip applying conntrack zone splitting iptables rules
-      --skip-resolv-conf /etc/resolv.conf                                               skip modifying the host /etc/resolv.conf
       --store-firewalld                                                                 store the iptables changes with firewalld
       --verbose                                                                         verbose
 ```
