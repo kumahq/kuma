@@ -2,8 +2,7 @@ package accesslogs
 
 import (
 	"bufio"
-	"os"
-	"syscall"
+	"io"
 
 	"github.com/pkg/errors"
 
@@ -33,19 +32,15 @@ func NewAccessLogServer(dataplane kumadp.Dataplane) *accessLogServer {
 	}
 }
 
+type ReaderCloser interface {
+	io.Reader
+	io.Closer
+}
+
 func (s *accessLogServer) Start(stop <-chan struct{}) error {
-	alStreamer := v3.NewAccessLogStreamer()
-	err := os.Remove(s.address)
-	if err != nil && !os.IsNotExist(err) {
-		return errors.Wrapf(err, "error removing existing fifo %s", s.address)
-	}
-	err = syscall.Mkfifo(s.address, 0666)
+	fd, err := streamer(s.address)
 	if err != nil {
-		return errors.Wrapf(err, "error creating fifo %s", s.address)
-	}
-	fd, err := os.OpenFile(s.address, os.O_CREATE, os.ModeNamedPipe)
-	if err != nil {
-		return errors.Wrapf(err, "error opening fifo %s", s.address)
+		return errors.Wrap(err, "error creating reader")
 	}
 
 	reader := bufio.NewReader(fd)
@@ -56,6 +51,8 @@ func (s *accessLogServer) Start(stop <-chan struct{}) error {
 
 	logger.Info("starting Access Log Server", "pipefile", s.address)
 	errCh := make(chan error, 1)
+
+	alStreamer := v3.NewAccessLogStreamer()
 	go func() {
 		if err := alStreamer.StreamAccessLogs(reader); err != nil {
 			errCh <- err
