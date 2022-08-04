@@ -94,7 +94,7 @@
             
                 xDS listener    
         
-        - `networkfilter` (optional)
+        - `networkFilter` (optional)
         
             Network Filter modification    
             
@@ -111,12 +111,12 @@
                 
                     Name of the network filter    
                 
-                - `listenername` (optional)
+                - `listenerName` (optional)
                 
                     Name of the listener that network filter modifications will be
                     applied to    
                 
-                - `listenertags` (optional)
+                - `listenerTags` (optional)
                 
                     ListenerTags available in
                     Listener#Metadata#FilterMetadata[io.kuma.tags]    
@@ -130,7 +130,7 @@
             
                 xDS network filter    
         
-        - `httpfilter` (optional)
+        - `httpFilter` (optional)
         
             HTTP Filter modification    
             
@@ -147,12 +147,12 @@
                 
                     Name of the network filter    
                 
-                - `listenername` (optional)
+                - `listenerName` (optional)
                 
                     Name of the listener that http filter modifications will be applied
                     to    
                 
-                - `listenertags` (optional)
+                - `listenerTags` (optional)
                 
                     ListenerTags available in
                     Listener#Metadata#FilterMetadata[io.kuma.tags]    
@@ -166,7 +166,7 @@
             
                 xDS HTTP filter    
         
-        - `virtualhost` (optional)
+        - `virtualHost` (optional)
         
             Virtual Host modifications    
             
@@ -183,7 +183,7 @@
                 
                     Name of the virtual host to match    
                 
-                - `routeconfigurationname` (optional)
+                - `routeConfigurationName` (optional)
                 
                     Name of the route configuration    
             
