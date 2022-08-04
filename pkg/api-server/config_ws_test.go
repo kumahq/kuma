@@ -18,7 +18,10 @@ var _ = Describe("Config WS", func() {
 	var apiServer *api_server.ApiServer
 	var cfg kuma_cp.Config
 	var stop func()
-	apiServer, cfg, stop = StartApiServer(NewTestApiServerConfigurer())
+
+	BeforeEach(func() {
+		apiServer, cfg, stop = StartApiServer(NewTestApiServerConfigurer())
+	})
 	AfterEach(func() {
 		stop()
 	})
