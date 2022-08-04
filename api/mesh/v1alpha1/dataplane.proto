@@ -41,7 +41,7 @@ message Dataplane {
     // routable address for such dataplane so that other dataplanes in the mesh
     // can connect to it over advertisedAddress and not via address
     // Note: Envoy binds to the address not advertisedAddress
-    string advertisedAddress = 7;
+    string advertised_address = 7;
 
     // Inbound describes a service implemented by the dataplane.
     message Inbound {
@@ -50,12 +50,12 @@ message Dataplane {
       uint32 port = 3 [ (doc.required) = true ];
 
       // Port of the service that requests will be forwarded to.
-      uint32 servicePort = 4;
+      uint32 service_port = 4;
 
       // Address of the service that requests will be forwarded to.
       // Empty value defaults to '127.0.0.1', since Kuma DP should be deployed
       // next to service.
-      string serviceAddress = 6;
+      string service_address = 6;
 
       // Address on which inbound listener will be exposed. Defaults to
       // networking.address.
@@ -98,7 +98,7 @@ message Dataplane {
       }
 
       // ServiceProbe defines parameters for probing service's port
-      ServiceProbe serviceProbe = 8;
+      ServiceProbe service_probe = 8;
     }
 
     // Outbound describes a service consumed by the dataplane.
