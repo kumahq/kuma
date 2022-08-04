@@ -148,6 +148,12 @@ func podToNodeMapper(log logr.Logger) kube_handler.MapFunc {
 			return nil
 		}
 
+		// For some reason in the logs there are a lot of 'could not find a node with name ""'
+		// so this is why I'm filtering it out here
+		if pod.Spec.NodeName == "" {
+			return nil
+		}
+
 		req := kube_reconcile.Request{NamespacedName: kube_types.NamespacedName{
 			Name: pod.Spec.NodeName,
 		}}
@@ -179,7 +185,7 @@ func podEvents(cniApp string) predicate.Funcs {
 			return filterPods(deleteEvent.Object, cniApp)
 		},
 		UpdateFunc: func(updateEvent event.UpdateEvent) bool {
-			return filterPods(updateEvent.ObjectNew, cniApp) && filterPods(updateEvent.ObjectOld, cniApp)
+			return filterPods(updateEvent.ObjectNew, cniApp)
 		},
 		GenericFunc: func(genericEvent event.GenericEvent) bool {
 			return false
