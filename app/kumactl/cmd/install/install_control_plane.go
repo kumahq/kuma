@@ -35,7 +35,7 @@ func (cv *componentVersion) Set(v string) error {
 	cv.args.ControlPlane_image_tag = v
 	cv.args.DataPlane_image_tag = v
 	cv.args.DataPlane_initImage_tag = v
-	cv.args.Cni_imageExperimental_tag = v
+	cv.args.Cni_experimental_image_tag = v
 	return nil
 }
 
