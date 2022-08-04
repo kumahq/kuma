@@ -26,7 +26,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 	t1, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 	BeforeEach(func() {
 		resourceStore = store.NewPaginationStore(memory.NewStore())
-		apiServer, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore))
+		apiServer, _, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore))
 	})
 
 	AfterEach(func() {
