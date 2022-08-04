@@ -10,7 +10,7 @@
     
         Public IP on which the dataplane is accessible in the network.    
     
-    - `advertisedaddress` (optional)
+    - `advertisedAddress` (optional)
     
         In some situation, dataplane resides in a private network and not
         reachable via 'address'. advertisedAddress is configured with public
