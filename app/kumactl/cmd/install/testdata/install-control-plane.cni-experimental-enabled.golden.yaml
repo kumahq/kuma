@@ -1787,6 +1787,18 @@ rules:
       - get
       - list
       - watch
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - update
+  - apiGroups:
+      - "pods"
+    resources:
+      - pods
+    verbs:
+      - list
   # validate k8s token before issuing mTLS cert
   - apiGroups:
       - authentication.k8s.io
@@ -1976,7 +1988,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
         - name: install-cni
-          image: "docker.io/kumahq/kuma-cni:0.0.1"
+          image: "docker.io/kumahq/kuma-cni:1.7.0"
           imagePullPolicy: IfNotPresent
           readinessProbe:
             initialDelaySeconds: 0
@@ -2233,7 +2245,7 @@ webhooks:
           - trafficroutes
           - traffictraces
           - virtualoutbounds
-
+  
       
     sideEffects: None
   - name: namespace-kuma-injector.kuma.io
