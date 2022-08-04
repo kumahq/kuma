@@ -134,13 +134,13 @@ func (r *CniNodeTaintReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		For(&kube_core.Node{}, builder.WithPredicates(nodeEvents)).
 		Watches(
 			&kube_source.Kind{Type: &kube_core.Pod{}},
-			kube_handler.EnqueueRequestsFromMapFunc(podToNodeMapper(r.Log)),
+			kube_handler.EnqueueRequestsFromMapFunc(podToNodeMapper(r.Log, r.CniApp)),
 			builder.WithPredicates(podEvents(r.CniApp)),
 		).
 		Complete(r)
 }
 
-func podToNodeMapper(log logr.Logger) kube_handler.MapFunc {
+func podToNodeMapper(log logr.Logger, cniApp string) kube_handler.MapFunc {
 	return func(obj kube_client.Object) []kube_reconcile.Request {
 		pod, ok := obj.(*kube_core.Pod)
 		if !ok {
@@ -148,9 +148,10 @@ func podToNodeMapper(log logr.Logger) kube_handler.MapFunc {
 			return nil
 		}
 
-		// we only care about new object but pod update event triggers two reconciliation (for old and new object)
-		// and on the first one updateEvent.OldObject does not have a node assigned so that's why I'm filtering out here
-		if pod.Spec.NodeName == "" {
+		// it is more performant not to use shouldTriggerReconciliation in the predicates but instead in the mapper
+		// podEvents correctly checks only ObjectNew, the mapper may be called with an ObjectOld that doesn't pass filterPods
+		// and may trigger an extra reconciliation
+		if !shouldTriggerReconciliation(pod, cniApp) {
 			return nil
 		}
 
@@ -182,10 +183,10 @@ func podEvents(cniApp string) predicate.Funcs {
 			return false
 		},
 		DeleteFunc: func(deleteEvent event.DeleteEvent) bool {
-			return filterPods(deleteEvent.Object, cniApp)
+			return true
 		},
 		UpdateFunc: func(updateEvent event.UpdateEvent) bool {
-			return filterPods(updateEvent.ObjectNew, cniApp)
+			return true
 		},
 		GenericFunc: func(genericEvent event.GenericEvent) bool {
 			return false
@@ -193,7 +194,7 @@ func podEvents(cniApp string) predicate.Funcs {
 	}
 }
 
-func filterPods(obj kube_client.Object, cniApp string) bool {
+func shouldTriggerReconciliation(obj kube_client.Object, cniApp string) bool {
 	pod, ok := obj.(*kube_core.Pod)
 	if !ok {
 		return false
