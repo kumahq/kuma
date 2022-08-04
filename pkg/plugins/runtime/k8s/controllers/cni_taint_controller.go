@@ -40,7 +40,7 @@ func (r *CniNodeTaintReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 	node := &kube_core.Node{}
 	if err := r.Get(ctx, req.NamespacedName, node); err != nil {
 		if kube_apierrs.IsNotFound(err) {
-			log.Error(err, "node not found")
+			log.V(1).Info("node not found", "node", req.NamespacedName)
 			return kube_ctrl.Result{}, nil
 		}
 		log.Error(err, "unable to fetch node")
