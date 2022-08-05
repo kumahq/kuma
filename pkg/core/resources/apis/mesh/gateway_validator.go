@@ -1,9 +1,6 @@
 package mesh
 
 import (
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
@@ -83,40 +80,24 @@ func validateListenerCompatibility(path validators.PathBuilder, listeners []*mes
 
 	err := validators.ValidationError{}
 
-	ports := maps.Keys(protocolsForPort)
-	slices.Sort(ports)
-
-	for _, port := range ports {
-		protocolIndexes := protocolsForPort[port]
+	for _, protocolIndexes := range protocolsForPort {
 		if len(protocolIndexes) <= 1 {
 			continue
 		}
 
-		var allIndexes []int
 		for _, indexes := range protocolIndexes {
-			allIndexes = append(allIndexes, indexes...)
-		}
-
-		slices.Sort(allIndexes)
-		for _, index := range allIndexes {
-			err.AddViolationAt(path.Index(index), "protocol conflicts with other listeners on this port")
+			for _, index := range indexes {
+				err.AddViolationAt(path.Index(index), "protocol conflicts with other listeners on this port")
+			}
 		}
 	}
 
-	ports = maps.Keys(hostnamesForPort)
-	for _, port := range ports {
-		hostnameIndexes := hostnamesForPort[port]
-
-		hostnames := maps.Keys(hostnameIndexes)
-		slices.Sort(hostnames)
-
-		for _, hostname := range hostnames {
-			indexes := hostnameIndexes[hostname]
+	for _, hostnameIndexes := range hostnamesForPort {
+		for _, indexes := range hostnameIndexes {
 			if len(indexes) <= 1 {
 				continue
 			}
 
-			slices.Sort(indexes)
 			for _, index := range indexes {
 				err.AddViolationAt(path.Index(index), "multiple listeners for hostname on this port")
 			}
