@@ -1142,6 +1142,8 @@ func (c *K8sCluster) SetCP(cp *K8sControlPlane) {
 	c.controlplane = cp
 }
 
+// CreateNode creates a new node
+// warning: there seems to be a bug in k3s1 v1.19.16 so that each tests needs a unique node name
 func (c *K8sCluster) CreateNode(name string, label string) error {
 	switch Config.K8sType {
 	case K3dK8sType:
