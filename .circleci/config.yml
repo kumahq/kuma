@@ -275,10 +275,13 @@ jobs:
               circleci-agent step halt
               exit 0
             }
-            function has_full_matrix_label() {
-              local labels=$(curl -s -H "Accept: application/vnd.github+json" -H "Authorization: token $GH_TOKEN" https://api.github.com/repos/kumahq/kuma/pulls/$CIRCLE_PR_NUMBER | jq '.labels[].name')
-              echo $labels | grep -q "ci/run-full-matrix"
-            }
+            PR_OUTPUT=$(curl -H "Accept: application/vnd.github+json" -H "Authorization: token $GH_TOKEN" https://api.github.com/repos/kumahq/kuma/pulls/$CIRCLE_PR_NUMBER)
+            echo $PR_OUTPUT
+            JQ_OUTPUT=$(echo $PR_OUTPUT | jq '.labels[].name')
+            echo $JQ_OUTPUT
+            echo $JQ_OUTPUT | grep -q "ci/run-full-matrix"
+            skip "no need to run further"
+            
             if [[ "<< parameters.k8sVersion >>" == "kind" && "<< parameters.target >>" != "test/e2e-universal" ]]; then
               skip "kind should only be used when testing ipv6 or with test/e2e-universal"
             fi
