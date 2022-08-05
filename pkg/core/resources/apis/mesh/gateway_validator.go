@@ -49,9 +49,15 @@ func (g *MeshGatewayResource) Validate() error {
 	return err.OrNil()
 }
 
+type resourceLimits struct {
+	connectionLimits map[uint32]struct{}
+	listeners        []int
+}
+
 func validateListenerCompatibility(path validators.PathBuilder, listeners []*mesh_proto.MeshGateway_Listener) validators.ValidationError {
 	protocolsForPort := map[uint32]map[string][]int{}
 	hostnamesForPort := map[uint32]map[string][]int{}
+	limitedListenersForPort := map[uint32]resourceLimits{}
 
 	for i, ep := range listeners {
 		protocols, ok := protocolsForPort[ep.GetPort()]
@@ -64,6 +70,13 @@ func validateListenerCompatibility(path validators.PathBuilder, listeners []*mes
 			hostnames = map[string][]int{}
 		}
 
+		limitedListeners, ok := limitedListenersForPort[ep.GetPort()]
+		if !ok {
+			limitedListeners = resourceLimits{
+				connectionLimits: map[uint32]struct{}{},
+			}
+		}
+
 		protocols[ep.GetProtocol().String()] = append(protocols[ep.GetProtocol().String()], i)
 
 		// An empty hostname is the same as "*", i.e. matches all hosts.
@@ -74,8 +87,14 @@ func validateListenerCompatibility(path validators.PathBuilder, listeners []*mes
 
 		hostnames[hostname] = append(hostnames[hostname], i)
 
+		if l := ep.GetResources().GetConnectionLimit(); l != 0 {
+			limitedListeners.listeners = append(limitedListeners.listeners, i)
+			limitedListeners.connectionLimits[l] = struct{}{}
+		}
+
 		hostnamesForPort[ep.GetPort()] = hostnames
 		protocolsForPort[ep.GetPort()] = protocols
+		limitedListenersForPort[ep.GetPort()] = limitedListeners
 	}
 
 	err := validators.ValidationError{}
@@ -101,6 +120,15 @@ func validateListenerCompatibility(path validators.PathBuilder, listeners []*mes
 			for _, index := range indexes {
 				err.AddViolationAt(path.Index(index), "multiple listeners for hostname on this port")
 			}
+		}
+	}
+
+	for _, listeners := range limitedListenersForPort {
+		if len(listeners.connectionLimits) <= 1 {
+			continue
+		}
+		for _, index := range listeners.listeners {
+			err.AddViolationAt(path.Index(index).Field("resources").Field("connectionLimit"), "conflicting values for this port")
 		}
 	}
 
