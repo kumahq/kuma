@@ -120,24 +120,6 @@ func ExternalServicesWithLocalityAwareLb() {
 		Expect(env.Global.DeleteMesh(meshNoZoneEgress)).To(Succeed())
 	})
 
-	BeforeEach(func() {
-		Eventually(func(g Gomega) {
-			g.Expect(env.UniZone1.GetZoneEgressEnvoyTunnel().ResetCounters()).To(Succeed())
-		}, "15s", "1s").Should(Succeed())
-
-		Eventually(func(g Gomega) {
-			g.Expect(env.UniZone1.GetZoneIngressEnvoyTunnel().ResetCounters()).To(Succeed())
-		}, "15s", "1s").Should(Succeed())
-
-		Eventually(func(g Gomega) {
-			g.Expect(env.KubeZone1.GetZoneEgressEnvoyTunnel().ResetCounters()).To(Succeed())
-		}, "15s", "1s").Should(Succeed())
-
-		Eventually(func(g Gomega) {
-			g.Expect(env.KubeZone1.GetZoneIngressEnvoyTunnel().ResetCounters()).To(Succeed())
-		}, "15s", "1s").Should(Succeed())
-	})
-
 	EgressStats := func(cluster Cluster, filter string) func() (*stats.Stats, error) {
 		return func() (*stats.Stats, error) {
 			return cluster.GetZoneEgressEnvoyTunnel().GetStats(filter)

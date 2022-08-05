@@ -140,29 +140,35 @@ func CrossMeshGatewayOnMultizone() {
 				gatewayMesh,
 				crossMeshGatewayName,
 			)
-			It("proxies HTTP requests from a different mesh", func() {
-				egress := (*zone).GetZoneEgressEnvoyTunnel()
-				Expect(egress.ResetCounters()).To(Succeed())
+			var currentStat stats.StatItem
 
+			BeforeEach(func() {
+				egress := (*zone).GetZoneEgressEnvoyTunnel()
+				stats, err := egress.GetStats(filter)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(stats.Stats).To(HaveLen(1))
+				currentStat = stats.Stats[0]
+			})
+
+			It("proxies HTTP requests from a different mesh", func() {
 				k8s_gateway.SuccessfullyProxyRequestToGateway(
 					*zone, gatewayMesh,
 					gatewayAddr,
 					gatewayClientNamespaceOtherMesh,
 				)
 
-				Expect(egress.GetStats(filter)).To(stats.BeGreaterThanZero())
+				egress := (*zone).GetZoneEgressEnvoyTunnel()
+				Expect(egress.GetStats(filter)).To(stats.BeGreaterThan(currentStat))
 			})
 			It("proxies HTTP requests from the same mesh", func() {
-				egress := (*zone).GetZoneEgressEnvoyTunnel()
-				Expect(egress.ResetCounters()).To(Succeed())
-
 				k8s_gateway.SuccessfullyProxyRequestToGateway(
 					*zone, gatewayMesh,
 					gatewayAddr,
 					gatewayClientNamespaceSameMesh,
 				)
 
-				Expect(egress.GetStats(filter)).To(stats.BeGreaterThanZero())
+				egress := (*zone).GetZoneEgressEnvoyTunnel()
+				Expect(egress.GetStats(filter)).To(stats.BeGreaterThan(currentStat))
 			})
 		})
 	})
