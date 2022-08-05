@@ -277,7 +277,7 @@ jobs:
             }
             function has_full_matrix_label() {
               local labels=$(gh --repo kumahq/kuma pr view $CIRCLE_PR_NUMBER --json labels | jq '.labels[].name')
-              echo $LABELS | grep -q "ci/run-full-matrix"
+              echo $labels | grep -q "ci/run-full-matrix"
             }
             if [[ "<< parameters.k8sVersion >>" == "kind" && "<< parameters.target >>" != "test/e2e-universal" ]]; then
               skip "kind should only be used when testing ipv6 or with test/e2e-universal"
