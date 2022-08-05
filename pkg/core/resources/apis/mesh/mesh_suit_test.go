@@ -72,7 +72,8 @@ func DescribeErrorCases(generator ResourceGenerator, cases ...TableEntry) {
 			}
 
 			// then
-			Expect(model.Validate(resource)).To(Equal(expected.OrNil()))
+			err := model.Validate(resource).(*validators.ValidationError)
+			Expect(err.Violations).To(ConsistOf(expected.Violations))
 		},
 		cases,
 	)
