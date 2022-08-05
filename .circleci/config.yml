@@ -281,11 +281,6 @@ jobs:
             if [[ "<< parameters.k8sVersion >>" != kind* && "<< parameters.target >>" == "test/e2e-universal" ]]; then
               skip "universal only runs on kind"
             fi
-            if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* ]]; then
-              if [[ "<< parameters.k8sVersion >>" == "kindIpv6" || "<< parameters.k8sVersion >>" == "v1.19.16-k3s1" || "<< parameters.arch >>" == "arm64" ]]; then
-                skip "Not running tests on PRs with kindIpv6, oldK8s and arm64"
-              fi
-            fi
             echo "Continuing tests"
       - install_build_tools:
           go_arch: << parameters.arch >>
