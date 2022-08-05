@@ -12,6 +12,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+// To remove in the future.
+// TODO: https://github.com/kumahq/kuma/issues/4772
 var EnableLocalhostInboundClusters bool
 
 const (

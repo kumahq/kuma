@@ -3,8 +3,10 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/spf13/cobra"
 
@@ -79,9 +81,9 @@ func newEchoHTTPCmd() *cobra.Command {
 				})
 			}
 			if args.tls {
-				return http.ListenAndServeTLS(fmt.Sprintf("%s:%d", args.ip, args.port), args.crtFile, args.keyFile, nil)
+				return http.ListenAndServeTLS(net.JoinHostPort(args.ip, strconv.FormatInt(int64(args.port), 10)), args.crtFile, args.keyFile, nil)
 			}
-			return http.ListenAndServe(fmt.Sprintf("%s:%d", args.ip, args.port), nil)
+			return http.ListenAndServe(net.JoinHostPort(args.ip, strconv.FormatInt(int64(args.port), 10)), nil)
 		},
 	}
 	cmd.PersistentFlags().Uint32Var(&args.port, "port", 10011, "port server is listening on")
