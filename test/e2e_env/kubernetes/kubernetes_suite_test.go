@@ -73,8 +73,9 @@ var _ = SynchronizedBeforeSuite(
 var _ = SynchronizedAfterSuite(func() {}, func() {})
 
 var _ = Describe("Virtual Probes", healthcheck.VirtualProbes, Ordered)
-var _ = Describe("Gateway mTLS", gateway.Mtls, Ordered)
-var _ = Describe("Cross-mesh Gateways", gateway.CrossMeshGatewayOnKubernetes, Ordered)
+var _ = Describe("Gateway", gateway.Gateway, Ordered)
+var _ = Describe("Gateway - mTLS", gateway.Mtls, Ordered)
+var _ = Describe("Gateway - Cross-mesh", gateway.CrossMeshGatewayOnKubernetes, Ordered)
 var _ = Describe("Graceful", graceful.Graceful, Ordered)
 var _ = Describe("Jobs", jobs.Jobs)
 var _ = Describe("Membership", membership.Membership, Ordered)
