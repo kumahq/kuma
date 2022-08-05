@@ -23,8 +23,8 @@ type ResourceGenerator interface {
 
 // ResourceValidationCase captures a resource YAML and any corresponding validation error.
 type ResourceValidationCase struct {
-	Resource  string
-	Violation validators.Violation
+	Resource   string
+	Violations []validators.Violation
 }
 
 // DescribeValidCases creates a Ginkgo table test for the given entries,
@@ -68,12 +68,12 @@ func DescribeErrorCases(generator ResourceGenerator, cases ...TableEntry) {
 			).ToNot(HaveOccurred())
 
 			expected := validators.ValidationError{
-				Violations: []validators.Violation{
-					given.Violation,
-				}}
+				Violations: given.Violations,
+			}
 
 			// then
-			Expect(model.Validate(resource)).To(Equal(expected.OrNil()))
+			err := model.Validate(resource).(*validators.ValidationError)
+			Expect(err.Violations).To(ConsistOf(expected.Violations))
 		},
 		cases,
 	)
@@ -84,8 +84,18 @@ func ErrorCase(description string, err validators.Violation, yaml string) TableE
 	return Entry(
 		description,
 		ResourceValidationCase{
-			Violation: err,
-			Resource:  yaml,
+			Violations: []validators.Violation{err},
+			Resource:   yaml,
+		},
+	)
+}
+
+func ErrorCases(description string, errs []validators.Violation, yaml string) TableEntry {
+	return Entry(
+		description,
+		ResourceValidationCase{
+			Violations: errs,
+			Resource:   yaml,
 		},
 	)
 }
