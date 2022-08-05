@@ -275,20 +275,13 @@ jobs:
               circleci-agent step halt
               exit 0
             }
-            PR_OUTPUT=$(curl -H "Accept: application/vnd.github+json" -H "Authorization: token $GH_TOKEN" https://api.github.com/repos/kumahq/kuma/pulls/$CIRCLE_PR_NUMBER)
-            echo $PR_OUTPUT
-            JQ_OUTPUT=$(echo $PR_OUTPUT | jq '.labels[].name')
-            echo $JQ_OUTPUT
-            echo $JQ_OUTPUT | grep -q "ci/run-full-matrix"
-            skip "no need to run further"
-            
             if [[ "<< parameters.k8sVersion >>" == "kind" && "<< parameters.target >>" != "test/e2e-universal" ]]; then
               skip "kind should only be used when testing ipv6 or with test/e2e-universal"
             fi
             if [[ "<< parameters.k8sVersion >>" != kind* && "<< parameters.target >>" == "test/e2e-universal" ]]; then
               skip "universal only runs on kind"
             fi
-            if ! has_full_matrix_label; then
+            if [[ ! $(./tools/ci/has_label.sh ci/run-full-matrix) == "true" ]]; then
               if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* ]]; then
                 if [[ "<< parameters.k8sVersion >>" == "kindIpv6" || "<< parameters.k8sVersion >>" == "v1.19.16-k3s1" || "<< parameters.arch >>" == "arm64" ]]; then
                   skip "Not running tests on PRs with kindIpv6, oldK8s and arm64"
