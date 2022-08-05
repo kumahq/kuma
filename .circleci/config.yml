@@ -259,6 +259,7 @@ jobs:
       name: vm-<< parameters.arch >>
     parallelism: << parameters.parallelism >>
     steps:
+      - checkout
       - run:
           # This works around circleci limitation by skipping tests for combinations that don't make sense
           # See: https://discuss.circleci.com/t/matrix-exclude-entire-subset/43879
@@ -291,7 +292,6 @@ jobs:
             echo "Continuing tests"
       - install_build_tools:
           go_arch: << parameters.arch >>
-      - checkout
       - restore_cache:
           keys:
             # prefer the exact match
