@@ -11,6 +11,8 @@ does not have any particular instructions.
 ### Kumactl
 
 * `kumactl inspect dataplane --config-dump` was deprecated in favour of `kumactl inspect dataplane --type config-dump`. The behaviour of the new flag is unchanged but you should migrate.
+* `kumactl install transparent-proxy --skip-resolv-conf` was deprecated as there's no reason for us to update the `/etc/resolv.conf` of the user.
+* `kumactl install transparent-proxy --kuma-cp-ip` was removed as it's not possible to run a DNS server on the cp. 
 
 ### Helm
 

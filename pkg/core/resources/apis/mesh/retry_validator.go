@@ -18,6 +18,8 @@ const (
 	HasToBeGreaterThan0Violation            = "has to be greater than 0"
 	WhenDefinedHasToBeGreaterThan0Violation = "has to be greater than 0" +
 		" when defined"
+	StatusCodesNotDefinedViolation = "retriableStatusCodes cannot" +
+		" be empty when this option is specified"
 )
 
 func (r *RetryResource) Validate() error {
@@ -181,12 +183,12 @@ func validateConfHttp(
 		return
 	}
 
-	numRetries, perTryTimeout, backOff, retriableStatusCodes, retriableMethods :=
+	numRetries, perTryTimeout, backOff, retriableStatusCodes, retriableMethods, retryOn :=
 		conf.NumRetries, conf.PerTryTimeout, conf.BackOff,
-		conf.RetriableStatusCodes, conf.RetriableMethods
+		conf.RetriableStatusCodes, conf.RetriableMethods, conf.RetryOn
 
 	if numRetries == nil && perTryTimeout == nil && backOff == nil &&
-		retriableStatusCodes == nil && retriableMethods == nil {
+		retriableStatusCodes == nil && retriableMethods == nil && retryOn == nil {
 		err.AddViolationAt(path, EmptyFieldViolation)
 	}
 
@@ -205,6 +207,12 @@ func validateConfHttp(
 	for i, m := range retriableMethods {
 		if m == mesh_proto.HttpMethod_NONE {
 			err.AddViolationAt(path.Field("retriableMethods").Index(i), EmptyFieldViolation)
+		}
+	}
+
+	for i, r := range retryOn {
+		if r.String() == "retriable_status_codes" && retriableStatusCodes == nil {
+			err.AddViolationAt(path.Field("retryOn").Index(i), StatusCodesNotDefinedViolation)
 		}
 	}
 

@@ -36,7 +36,7 @@
             The the interval for which `requests` will be accounted.
             +required    
         
-        - `onratelimit` (optional)
+        - `onRateLimit` (optional)
         
             Describes the actions to take on RatelLimiter event
             +optional    

@@ -261,6 +261,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Access.Static.ViewClusters.Groups).To(Equal([]string{"zt-group1", "zt-group2"}))
 
 			Expect(cfg.Experimental.GatewayAPI).To(BeTrue())
+			Expect(cfg.Experimental.Cni).To(BeTrue())
+			Expect(cfg.Experimental.CniApp).To(Equal("kuma-cni"))
 			Expect(cfg.Experimental.KubeOutboundsAsVIPs).To(BeTrue())
 		},
 		Entry("from config file", testCase{
@@ -492,6 +494,8 @@ access:
 experimental:
   gatewayAPI: true
   kubeOutboundsAsVIPs: true
+  cni: true
+  cniApp: "kuma-cni"
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -651,6 +655,8 @@ experimental:
 				"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_USERS":                                                   "zt-admin1,zt-admin2",
 				"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_GROUPS":                                                  "zt-group1,zt-group2",
 				"KUMA_EXPERIMENTAL_GATEWAY_API":                                                            "true",
+				"KUMA_EXPERIMENTAL_CNI":                                                                    "true",
+				"KUMA_CNI_APP":                                                                             "kuma-cni",
 				"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS":                                                 "true",
 			},
 			yamlFileConfig: "",

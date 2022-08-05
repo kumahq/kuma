@@ -19,6 +19,7 @@ type DeploymentOpts struct {
 	WaitingToBeReady   bool
 	PodAnnotations     map[string]string
 	ProbeEnabled       bool
+	NodeSelector       map[string]string
 }
 
 func DefaultDeploymentOpts() DeploymentOpts {

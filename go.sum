@@ -1020,8 +1020,8 @@ github.com/kumahq/go-control-plane v0.9.10-0.20211022075049-d35edcf0813a h1:RtOj
 github.com/kumahq/go-control-plane v0.9.10-0.20211022075049-d35edcf0813a/go.mod h1:utjuSZ1DPHuYf0cTZ8WEsaQf5bwmT1TZiWaQjpJtBF0=
 github.com/kumahq/kuma-net v0.4.2 h1:eNiExbfcs1Oc9veE39MXif5YrXK+TbYX6GULVoo7Oxo=
 github.com/kumahq/kuma-net v0.4.2/go.mod h1:f6FAs2ULvGoJ4NeOoOD5F58oERXQpxZiKUww+iRQPZc=
-github.com/kumahq/protoc-gen-kumadoc v0.3.0 h1:EXCZZd2TUxWrnCcdQa9lV8/00uKgvaa4U2yTgnZ0H1w=
-github.com/kumahq/protoc-gen-kumadoc v0.3.0/go.mod h1:F+c9RjgKlv1Q3UEoPJCtMJw8Fd+X5PfG5jlkTSfZOMA=
+github.com/kumahq/protoc-gen-kumadoc v0.3.1 h1:tY2dGQJTYVGkhxAHN154fddcWDRy55Pl4+oLT+FhsHo=
+github.com/kumahq/protoc-gen-kumadoc v0.3.1/go.mod h1:F+c9RjgKlv1Q3UEoPJCtMJw8Fd+X5PfG5jlkTSfZOMA=
 github.com/lann/builder v0.0.0-20180802200727-47ae307949d0/go.mod h1:dXGbAdH5GtBTC4WfIxhKZfyBF/HBFgRZSWwZ9g/He9o=
 github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0/go.mod h1:vmVJ0l/dxyfGW6FmdpVm2joNMFikkuWg0EoCKLGUMNw=
 github.com/lib/pq v1.0.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
@@ -2273,8 +2273,9 @@ google.golang.org/protobuf v1.25.0/go.mod h1:9JNX74DMeImyA3h4bdi1ymwjUzf21/xIlba
 google.golang.org/protobuf v1.26.0-rc.1/go.mod h1:jlhhOSvTdKEhbULTjvd4ARK9grFBp09yW+WbY/TyQbw=
 google.golang.org/protobuf v1.26.0/go.mod h1:9q0QmTI4eRPtz6boOQmLYwt+qCgq0jsYwAQnmE0givc=
 google.golang.org/protobuf v1.27.1/go.mod h1:9q0QmTI4eRPtz6boOQmLYwt+qCgq0jsYwAQnmE0givc=
-google.golang.org/protobuf v1.28.0 h1:w43yiav+6bVFTBQFZX0r7ipe9JQ1QsbMgHwbBziscLw=
 google.golang.org/protobuf v1.28.0/go.mod h1:HV8QOd/L58Z+nl8r43ehVNZIU/HEI6OcFqwMG9pJV4I=
+google.golang.org/protobuf v1.28.1 h1:d0NfwRgPtno5B1Wa6L2DAG+KivqkdutMf1UhdNx175w=
+google.golang.org/protobuf v1.28.1/go.mod h1:HV8QOd/L58Z+nl8r43ehVNZIU/HEI6OcFqwMG9pJV4I=
 gopkg.in/airbrake/gobrake.v2 v2.0.9/go.mod h1:/h5ZAUhDkGaJfjzjKLSjv6zCL6O0LLBxU4K+aSYdM/U=
 gopkg.in/alecthomas/kingpin.v2 v2.2.6/go.mod h1:FMv+mEhP44yOT+4EoQTLFTRgOQ1FBLkstjWtayDeSgw=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=

@@ -18,7 +18,7 @@ var _ = Describe("Policies Endpoints", func() {
 	var stop = func() {}
 	var apiServer *api_server.ApiServer
 	BeforeEach(func() {
-		apiServer, stop = StartApiServer(NewTestApiServerConfigurer())
+		apiServer, _, stop = StartApiServer(NewTestApiServerConfigurer())
 	})
 	AfterEach(func() {
 		stop()

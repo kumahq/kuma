@@ -32,7 +32,7 @@ var _ = Describe("HealthCheck Endpoints", func() {
 		}
 
 		resourceStore = memory.NewStore()
-		apiServer, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore))
+		apiServer, _, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore))
 		client = resourceApiClient{
 			apiServer.Address(),
 			"/meshes/default/health-checks",

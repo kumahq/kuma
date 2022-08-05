@@ -31,7 +31,7 @@ var _ = Describe("TrafficTrace Endpoints", func() {
 			return now
 		}
 		resourceStore = memory.NewStore()
-		apiServer, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore))
+		apiServer, _, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore))
 		client = resourceApiClient{
 			apiServer.Address(),
 			"/meshes/default/traffic-traces",

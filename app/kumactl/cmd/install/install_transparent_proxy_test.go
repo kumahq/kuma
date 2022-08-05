@@ -58,22 +58,18 @@ var _ = Describe("kumactl install transparent proxy", func() {
 		Entry("should generate defaults with username", testCase{
 			extraArgs: []string{
 				"--kuma-dp-user", "root",
-				"--kuma-cp-ip", "1.2.3.4",
 			},
 			goldenFile: "install-transparent-proxy.defaults.golden.txt",
 		}),
 		Entry("should generate defaults with user id", testCase{
 			extraArgs: []string{
 				"--kuma-dp-uid", "0",
-				"--kuma-cp-ip", "1.2.3.4",
 			},
 			goldenFile: "install-transparent-proxy.defaults.golden.txt",
 		}),
 		Entry("should generate defaults with user id and DNS redirected and log deprecate", testCase{
 			extraArgs: []string{
 				"--kuma-dp-uid", "0",
-				"--kuma-cp-ip", "1.2.3.4",
-				"--skip-resolv-conf",
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "12345",
 				"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT",
@@ -84,8 +80,6 @@ var _ = Describe("kumactl install transparent proxy", func() {
 		Entry("should generate defaults with user id and DNS redirected without conntrack zone splitting and log deprecate", testCase{
 			extraArgs: []string{
 				"--kuma-dp-uid", "0",
-				"--kuma-cp-ip", "1.2.3.4",
-				"--skip-resolv-conf",
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "12345",
 				"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT",
@@ -97,7 +91,6 @@ var _ = Describe("kumactl install transparent proxy", func() {
 		Entry("should generate defaults with overrides", testCase{
 			extraArgs: []string{
 				"--kuma-dp-user", "root",
-				"--kuma-cp-ip", "1.2.3.4",
 				"--redirect-outbound-port", "12345",
 				"--redirect-inbound-port", "12346",
 				"--redirect-inbound-port-v6", "123457",
