@@ -1,6 +1,4 @@
 version: 2.1 # Adds support for executors, parameterized jobs, etc
-orbs:
-  github-cli: circleci/github-cli@2.1.0
 
 reusable:
 
@@ -278,7 +276,7 @@ jobs:
               exit 0
             }
             function has_full_matrix_label() {
-              local labels=$(gh --repo kumahq/kuma pr view $CIRCLE_PR_NUMBER --json labels | jq '.labels[].name')
+              local labels=$(curl -s -H "Accept: application/vnd.github+json" -H "Authorization: token $GH_TOKEN" https://api.github.com/repos/kumahq/kuma/pulls/$CIRCLE_PR_NUMBER | jq '.labels[].name')
               echo $labels | grep -q "ci/run-full-matrix"
             }
             if [[ "<< parameters.k8sVersion >>" == "kind" && "<< parameters.target >>" != "test/e2e-universal" ]]; then
