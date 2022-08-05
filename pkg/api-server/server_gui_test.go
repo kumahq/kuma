@@ -27,7 +27,7 @@ var _ = Describe("GUI Server", func() {
 			// given
 			var apiServer *api_server.ApiServer
 			var stop func()
-			apiServer, stop = StartApiServer(NewTestApiServerConfigurer().WithGui())
+			apiServer, _, stop = StartApiServer(NewTestApiServerConfigurer().WithGui())
 			baseUrl = "http://" + apiServer.Address()
 			defer stop()
 
@@ -71,7 +71,7 @@ var _ = Describe("GUI Server", func() {
 				// given
 				var apiServer *api_server.ApiServer
 				var stop func()
-				apiServer, stop = StartApiServer(NewTestApiServerConfigurer())
+				apiServer, _, stop = StartApiServer(NewTestApiServerConfigurer())
 				baseUrl = "http://" + apiServer.Address()
 				defer stop()
 

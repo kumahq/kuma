@@ -80,7 +80,7 @@ func UniversalTransparentProxyDeployment() {
 
 		stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
 			"/usr/bin/kumactl", "install", "transparent-proxy",
-			"--kuma-dp-user", "kuma-dp", "--skip-resolv-conf", "--verbose")
+			"--kuma-dp-user", "kuma-dp", "--verbose")
 		Expect(stdout).To(ContainSubstring("Transparent proxy set up successfully"))
 		Expect(err).ToNot(HaveOccurred())
 

@@ -273,6 +273,12 @@ env:
 - name: KUMA_EXPERIMENTAL_GATEWAY_API
   value: "true"
 {{- end }}
+{{- if .Values.experimental.cni }}
+- name: KUMA_EXPERIMENTAL_CNI
+  value: "true"
+- name: KUMA_CNI_APP
+  value: "kuma-cni"
+{{- end }}
 {{- if .Values.experimental.ebpf.enabled }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_ENABLED
   value: "true"

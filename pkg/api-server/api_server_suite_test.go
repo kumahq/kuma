@@ -169,31 +169,36 @@ func (t *testApiServerConfigurer) WithConfigMutator(fn func(*config_api_server.A
 	return t
 }
 
-func StartApiServer(t *testApiServerConfigurer) (apiServer *api_server.ApiServer, stop func()) {
+func StartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_cp.Config, func()) {
+	var apiServer *api_server.ApiServer
+	var cfg kuma_cp.Config
+	var stop func()
+
 	Eventually(func() (err error) {
-		apiServer, stop, err = tryStartApiServer(t)
+		apiServer, cfg, stop, err = tryStartApiServer(t)
 		return
 	}).
 		WithTimeout(time.Second * 30).
 		WithPolling(time.Millisecond * 500).
 		WithOffset(1).
 		Should(Succeed())
-	return apiServer, stop
+
+	return apiServer, cfg, stop
 }
 
-func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, func(), error) {
+func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_cp.Config, func(), error) {
 	ctx, stop := context.WithCancel(context.Background())
 	// we have to manually search for port and put it into config. There is no way to retrieve port of running
 	// http.Server and we need it later for the client
 	port, err := test.GetFreePort()
 	if err != nil {
-		return nil, stop, err
+		return nil, kuma_cp.Config{}, stop, err
 	}
 	t.config.HTTP.Port = uint32(port)
 
 	port, err = test.GetFreePort()
 	if err != nil {
-		return nil, stop, err
+		return nil, kuma_cp.Config{}, stop, err
 	}
 	t.config.HTTPS.Port = uint32(port)
 	if t.config.HTTPS.TlsKeyFile == "" {
@@ -241,7 +246,7 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, func(
 		&test_runtime.DummyEnvoyAdminClient{},
 	)
 	if err != nil {
-		return nil, stop, err
+		return nil, cfg, stop, err
 	}
 	errChan := make(chan error)
 	go func() {
@@ -254,16 +259,16 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, func(
 	for {
 		if leftTicks == 0 {
 			stop()
-			return nil, stop, errors.New("no more ticks left")
+			return nil, cfg, stop, errors.New("no more ticks left")
 		}
 		select {
 		case err = <-errChan:
-			return nil, stop, err
+			return nil, cfg, stop, err
 		case _ = <-tick.C:
 			leftTicks--
 			r, err := http.Get("http://" + apiServer.Address() + "/config")
 			if err == nil && r.StatusCode == http.StatusOK {
-				return apiServer, stop, nil
+				return apiServer, cfg, stop, nil
 			}
 		}
 	}

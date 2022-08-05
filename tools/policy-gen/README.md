@@ -65,8 +65,7 @@ by `make cleanup/policy/donothingpolicy`. Implement method `validate() error`:
    }
    ```
 
-5. Update `cp-rbac.yaml` manually, automation is yet to come.
-6. You can always not register a policy with `skip_registration` in the policy definition
+5. You can always not register a policy with `skip_registration` in the policy definition
 
 ## How to use
 

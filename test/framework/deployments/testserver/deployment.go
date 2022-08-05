@@ -18,6 +18,7 @@ type DeploymentOpts struct {
 	Replicas           int32
 	WaitingToBeReady   bool
 	PodAnnotations     map[string]string
+	NodeSelector       map[string]string
 }
 
 func DefaultDeploymentOpts() DeploymentOpts {

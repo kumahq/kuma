@@ -235,35 +235,4 @@ conf:
       connectionLimit: 10000
 `),
 	)
-
-	DescribeTable("fail to generate xDS resources",
-		func(errMsg string, gateway string) {
-			_, err := Do(gateway)
-			Expect(err).ToNot(Succeed())
-			Expect(err.Error()).To(ContainSubstring(errMsg))
-		},
-
-		Entry("incompatible listeners",
-			"cannot collapse listener protocols", `
-type: MeshGateway
-mesh: default
-name: edge-gateway
-selectors:
-- match:
-    kuma.io/service: gateway-default
-conf:
-  listeners:
-  - port: 8080
-    protocol: HTTP
-    tags:
-      port: http/8080
-  - port: 8080
-    protocol: HTTPS
-    tls:
-      mode: PASSTHROUGH
-    tags:
-      port: http/9090
-`,
-		),
-	)
 })

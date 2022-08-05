@@ -482,7 +482,6 @@ func (s *UniversalApp) setupTransparent(cpIp string, builtindns bool) {
 
 	if builtindns {
 		args = append(args,
-			"--skip-resolv-conf",
 			"--redirect-dns",
 		)
 	}

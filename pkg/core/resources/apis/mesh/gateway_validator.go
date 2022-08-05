@@ -49,6 +49,64 @@ func (g *MeshGatewayResource) Validate() error {
 	return err.OrNil()
 }
 
+func validateListenerCompatibility(path validators.PathBuilder, listeners []*mesh_proto.MeshGateway_Listener) validators.ValidationError {
+	protocolsForPort := map[uint32]map[string][]int{}
+	hostnamesForPort := map[uint32]map[string][]int{}
+
+	for i, ep := range listeners {
+		protocols, ok := protocolsForPort[ep.GetPort()]
+		if !ok {
+			protocols = map[string][]int{}
+		}
+
+		hostnames, ok := hostnamesForPort[ep.GetPort()]
+		if !ok {
+			hostnames = map[string][]int{}
+		}
+
+		protocols[ep.GetProtocol().String()] = append(protocols[ep.GetProtocol().String()], i)
+
+		// An empty hostname is the same as "*", i.e. matches all hosts.
+		hostname := ep.GetHostname()
+		if hostname == "" {
+			hostname = mesh_proto.WildcardHostname
+		}
+
+		hostnames[hostname] = append(hostnames[hostname], i)
+
+		hostnamesForPort[ep.GetPort()] = hostnames
+		protocolsForPort[ep.GetPort()] = protocols
+	}
+
+	err := validators.ValidationError{}
+
+	for _, protocolIndexes := range protocolsForPort {
+		if len(protocolIndexes) <= 1 {
+			continue
+		}
+
+		for _, indexes := range protocolIndexes {
+			for _, index := range indexes {
+				err.AddViolationAt(path.Index(index), "protocol conflicts with other listeners on this port")
+			}
+		}
+	}
+
+	for _, hostnameIndexes := range hostnamesForPort {
+		for _, indexes := range hostnameIndexes {
+			if len(indexes) <= 1 {
+				continue
+			}
+
+			for _, index := range indexes {
+				err.AddViolationAt(path.Index(index), "multiple listeners for hostname on this port")
+			}
+		}
+	}
+
+	return err
+}
+
 func validateMeshGatewayConf(path validators.PathBuilder, conf *mesh_proto.MeshGateway_Conf) validators.ValidationError {
 	err := validators.ValidationError{}
 
@@ -139,6 +197,8 @@ func validateMeshGatewayConf(path validators.PathBuilder, conf *mesh_proto.MeshG
 				},
 			}))
 	}
+
+	err.Add(validateListenerCompatibility(path, conf.GetListeners()))
 
 	return err
 }
