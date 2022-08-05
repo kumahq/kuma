@@ -54,47 +54,47 @@ type resourceLimits struct {
 	listeners        []int
 }
 
-func validateListenerCompatibility(path validators.PathBuilder, listeners []*mesh_proto.MeshGateway_Listener) validators.ValidationError {
+func validateListenerCollapsibility(path validators.PathBuilder, listeners []*mesh_proto.MeshGateway_Listener) validators.ValidationError {
 	protocolsForPort := map[uint32]map[string][]int{}
 	hostnamesForPort := map[uint32]map[string][]int{}
 	limitedListenersForPort := map[uint32]resourceLimits{}
 
-	for i, ep := range listeners {
-		protocols, ok := protocolsForPort[ep.GetPort()]
+	for i, listener := range listeners {
+		protocols, ok := protocolsForPort[listener.GetPort()]
 		if !ok {
 			protocols = map[string][]int{}
 		}
 
-		hostnames, ok := hostnamesForPort[ep.GetPort()]
+		hostnames, ok := hostnamesForPort[listener.GetPort()]
 		if !ok {
 			hostnames = map[string][]int{}
 		}
 
-		limitedListeners, ok := limitedListenersForPort[ep.GetPort()]
+		limitedListeners, ok := limitedListenersForPort[listener.GetPort()]
 		if !ok {
 			limitedListeners = resourceLimits{
 				connectionLimits: map[uint32]struct{}{},
 			}
 		}
 
-		protocols[ep.GetProtocol().String()] = append(protocols[ep.GetProtocol().String()], i)
+		protocols[listener.GetProtocol().String()] = append(protocols[listener.GetProtocol().String()], i)
 
 		// An empty hostname is the same as "*", i.e. matches all hosts.
-		hostname := ep.GetHostname()
+		hostname := listener.GetHostname()
 		if hostname == "" {
 			hostname = mesh_proto.WildcardHostname
 		}
 
 		hostnames[hostname] = append(hostnames[hostname], i)
 
-		if l := ep.GetResources().GetConnectionLimit(); l != 0 {
+		if l := listener.GetResources().GetConnectionLimit(); l != 0 {
 			limitedListeners.listeners = append(limitedListeners.listeners, i)
 			limitedListeners.connectionLimits[l] = struct{}{}
 		}
 
-		hostnamesForPort[ep.GetPort()] = hostnames
-		protocolsForPort[ep.GetPort()] = protocols
-		limitedListenersForPort[ep.GetPort()] = limitedListeners
+		hostnamesForPort[listener.GetPort()] = hostnames
+		protocolsForPort[listener.GetPort()] = protocols
+		limitedListenersForPort[listener.GetPort()] = limitedListeners
 	}
 
 	err := validators.ValidationError{}
@@ -226,7 +226,7 @@ func validateMeshGatewayConf(path validators.PathBuilder, conf *mesh_proto.MeshG
 			}))
 	}
 
-	err.Add(validateListenerCompatibility(path, conf.GetListeners()))
+	err.Add(validateListenerCollapsibility(path, conf.GetListeners()))
 
 	return err
 }
