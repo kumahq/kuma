@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	kube_apps "k8s.io/api/apps/v1"
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
@@ -62,6 +63,18 @@ var _ = Describe("PodToDataplane(..)", func() {
 		return services, nil
 	}
 
+	ParseReplicaSets := func(values []string) ([]*kube_apps.ReplicaSet, error) {
+		rsets := make([]*kube_apps.ReplicaSet, len(values))
+		for i, value := range values {
+			rset := kube_apps.ReplicaSet{}
+			if err := yaml.Unmarshal([]byte(value), &rset); err != nil {
+				return nil, err
+			}
+			rsets[i] = &rset
+		}
+		return rsets, nil
+	}
+
 	ParseDataplanes := func(values []string) ([]*mesh_k8s.Dataplane, error) {
 		dataplanes := make([]*mesh_k8s.Dataplane, len(values))
 		for i, value := range values {
@@ -75,12 +88,13 @@ var _ = Describe("PodToDataplane(..)", func() {
 	}
 
 	type testCase struct {
-		pod             string
-		servicesForPod  string
-		otherDataplanes string
-		otherServices   string
-		node            string
-		dataplane       string
+		pod              string
+		servicesForPod   string
+		otherDataplanes  string
+		otherServices    string
+		otherReplicaSets string
+		node             string
+		dataplane        string
 	}
 	DescribeTable("should convert Pod into a Dataplane YAML version",
 		func(given testCase) {
@@ -121,6 +135,19 @@ var _ = Describe("PodToDataplane(..)", func() {
 				serviceGetter = reader
 			}
 
+			// other ReplicaSets
+			var replicaSetGetter kube_client.Reader
+			if given.otherReplicaSets != "" {
+				bytes, err = os.ReadFile(filepath.Join("testdata", given.otherReplicaSets))
+				Expect(err).ToNot(HaveOccurred())
+				YAMLs := util_yaml.SplitYAML(string(bytes))
+				rsets, err := ParseReplicaSets(YAMLs)
+				Expect(err).ToNot(HaveOccurred())
+				reader, err := newFakeReplicaSetReader(rsets)
+				Expect(err).ToNot(HaveOccurred())
+				replicaSetGetter = reader
+			}
+
 			// other dataplanes
 			var otherDataplanes []*mesh_k8s.Dataplane
 			if given.otherDataplanes != "" {
@@ -133,6 +160,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 
 			converter := PodConverter{
 				ServiceGetter:     serviceGetter,
+				ReplicaSetGetter:  replicaSetGetter,
 				Zone:              "zone-1",
 				ResourceConverter: k8s.NewSimpleConverter(),
 			}
@@ -160,7 +188,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			otherServices:   "02.other-services.yaml",
 			dataplane:       "02.dataplane.yaml",
 		}),
-		Entry("03. Pod with gateway annotation and 1 service", testCase{
+		Entry("03. Pod with gateway annotation and 1 service - legacy", testCase{
 			pod:            "03.pod.yaml",
 			servicesForPod: "03.services-for-pod.yaml",
 			dataplane:      "03.dataplane.yaml",
@@ -250,6 +278,23 @@ var _ = Describe("PodToDataplane(..)", func() {
 			pod:            "19.pod.yaml",
 			servicesForPod: "19.services-for-pod.yaml",
 			dataplane:      "19.dataplane.yaml",
+		}),
+		Entry("20. Pod with gateway annotation and 1 service identified by deployment", testCase{
+			pod:              "20.pod.yaml",
+			servicesForPod:   "20.services-for-pod.yaml",
+			otherReplicaSets: "20.replicasets-for-pod.yaml",
+			dataplane:        "20.dataplane.yaml",
+		}),
+		Entry("21. Pod with gateway annotation and 1 service with no replicaset", testCase{
+			pod:            "21.pod.yaml",
+			servicesForPod: "21.services-for-pod.yaml",
+			dataplane:      "21.dataplane.yaml",
+		}),
+		Entry("22. Pod with gateway annotation and 1 service with replicaset but no deployment", testCase{
+			pod:              "22.pod.yaml",
+			servicesForPod:   "22.services-for-pod.yaml",
+			otherReplicaSets: "22.replicasets-for-pod.yaml",
+			dataplane:        "22.dataplane.yaml",
 		}),
 	)
 
@@ -857,9 +902,10 @@ func newFakeServiceReader(services []*kube_core.Service) (fakeServiceReader, err
 var _ kube_client.Reader = fakeServiceReader{}
 
 func (r fakeServiceReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_client.Object) error {
-	data, ok := r[fmt.Sprintf("%s/%s", key.Namespace, key.Name)]
+	fqName := fmt.Sprintf("%s/%s", key.Namespace, key.Name)
+	data, ok := r[fqName]
 	if !ok {
-		return errors.New("not found")
+		return errors.Errorf("service not found: %s", fqName)
 	}
 	return yaml.Unmarshal([]byte(data), obj)
 }
@@ -883,4 +929,33 @@ func (f fakeNodeReader) List(ctx context.Context, list kube_client.ObjectList, o
 	l := list.(*kube_core.NodeList)
 	l.Items = append(l.Items, node)
 	return nil
+}
+
+type fakeReplicaSetReader map[string]string
+
+func newFakeReplicaSetReader(replicaSets []*kube_apps.ReplicaSet) (fakeReplicaSetReader, error) {
+	replicaSetsMap := map[string]string{}
+	for _, rs := range replicaSets {
+		bytes, err := yaml.Marshal(rs)
+		if err != nil {
+			return nil, err
+		}
+		replicaSetsMap[rs.GetNamespace()+"/"+rs.GetName()] = string(bytes)
+	}
+	return replicaSetsMap, nil
+}
+
+var _ kube_client.Reader = fakeReplicaSetReader{}
+
+func (r fakeReplicaSetReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_client.Object) error {
+	fqName := fmt.Sprintf("%s/%s", key.Namespace, key.Name)
+	data, ok := r[fqName]
+	if !ok {
+		return errors.Errorf("replicaset not found: %s", fqName)
+	}
+	return yaml.Unmarshal([]byte(data), obj)
+}
+
+func (f fakeReplicaSetReader) List(ctx context.Context, list kube_client.ObjectList, opts ...kube_client.ListOption) error {
+	return errors.New("not implemented")
 }
