@@ -28,6 +28,7 @@ type ExecOptions struct {
 	PodName       string
 	ContainerName string
 
+	Stdin         io.Reader
 	CaptureStdout bool
 	CaptureStderr bool
 	// If false, whitespace in std{err,out} will be removed.
@@ -63,7 +64,13 @@ func (c *K8sCluster) execOnce(options ExecOptions) (string, string, error) {
 	}, scheme.ParameterCodec)
 
 	var stdout, stderr bytes.Buffer
-	err = executeK8s("POST", req.URL(), config, strings.NewReader(""), &stdout, &stderr, tty)
+
+	stdin := options.Stdin
+	if stdin == nil {
+		stdin = strings.NewReader("")
+	}
+
+	err = executeK8s("POST", req.URL(), config, stdin, &stdout, &stderr, tty)
 
 	if options.PreserveWhitespace {
 		return stdout.String(), stderr.String(), err
@@ -123,6 +130,13 @@ func (c *K8sCluster) Exec(namespace, podName, containerName string, cmd ...strin
 	}
 
 	return stdout, stderr, err
+}
+
+type BlockingReader struct {
+}
+
+func (*BlockingReader) Read([]byte) (int, error) {
+	select {}
 }
 
 // ExecWithRetries executes a command in the specified container and

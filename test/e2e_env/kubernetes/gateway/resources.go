@@ -19,7 +19,7 @@ func Resources() {
 	waitingClientNamespace := "gateway-resources-client-wait"
 	curlingClientNamespace := "gateway-resources-client-curl"
 
-	meshGateway := fmt.Sprintf(`
+	meshGatewayWithLimit := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshGateway
 metadata:
@@ -32,12 +32,14 @@ spec:
   conf:
     listeners:
     - port: 8080
-      protocol: TCP
+      protocol: HTTP
+      resources:
+        connectionLimit: 1
 `, gatewayName, meshName, gatewayName)
 
-	serverSvc := fmt.Sprintf("test-server-%s_svc_80", namespace)
+	serverSvc := fmt.Sprintf("test-server_%s_svc_80", namespace)
 
-	tcpRoute := fmt.Sprintf(`
+	httpRoute := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshGatewayRoute
 metadata:
@@ -47,11 +49,14 @@ spec:
   selectors:
   - match:
       kuma.io/service: %s
-      protocol: http
   conf:
-    tcp:
+    http:
       rules:
-      - backends:
+      - matches:
+          - path:
+              match: PREFIX
+              value: /
+        backends:
         - destination:
             kuma.io/service: %s
 `, gatewayName, meshName, gatewayName, serverSvc)
@@ -64,9 +69,9 @@ spec:
 			Install(Namespace(curlingClientNamespace)).
 			Install(DemoClientK8s(meshName, waitingClientNamespace)).
 			Install(DemoClientK8s(meshName, curlingClientNamespace)).
-			Install(YamlK8s(meshGateway)).
+			Install(YamlK8s(meshGatewayWithLimit)).
 			Install(YamlK8s(MkGatewayInstance(gatewayName, namespace, meshName))).
-			Install(YamlK8s(tcpRoute)).
+			Install(YamlK8s(httpRoute)).
 			Install(testserver.Install(
 				testserver.WithMesh(meshName),
 				testserver.WithNamespace(namespace),
@@ -84,44 +89,56 @@ spec:
 		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	Context("connection limit", func() {
+	Specify("connection limit is respected", func() {
 		gatewayHost := fmt.Sprintf("%s.%s", gatewayName, namespace)
 		target := fmt.Sprintf("http://%s:8080", gatewayHost)
 
-		It("should allow 1 connection", func() {
-			Eventually(func(g Gomega) {
-				response, err := client.CollectResponse(
-					env.Cluster, "demo-client", target,
-					client.FromKubernetesPod(curlingClientNamespace, "demo-client"),
-				)
+		By("allowing 1 connection")
 
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(response.Instance).To(Equal("kubernetes"))
+		Eventually(func(g Gomega) {
+			response, err := client.CollectResponse(
+				env.Cluster, "demo-client", target,
+				client.FromKubernetesPod(curlingClientNamespace, "demo-client"),
+			)
+
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Instance).To(Equal("kubernetes"))
+		}, "20s", "1s")
+
+		By("not allowing more than 1 connection")
+
+		// Open TCP connections to the gateway
+		go func() {
+			defer GinkgoRecover()
+
+			demoClientPod, err := PodNameOfApp(env.Cluster, "demo-client", waitingClientNamespace)
+			Expect(err).ToNot(HaveOccurred())
+
+			cmd := []string{"telnet", gatewayHost, "8080"}
+			// We pass in a stdin that blocks so that telnet will keep the
+			// connection open
+			_, _, _ = env.Cluster.ExecWithOptions(ExecOptions{
+				Command:            cmd,
+				Namespace:          waitingClientNamespace,
+				PodName:            demoClientPod,
+				ContainerName:      "demo-client",
+				Stdin:              &BlockingReader{},
+				CaptureStdout:      true,
+				CaptureStderr:      true,
+				PreserveWhitespace: false,
+				Retries:            DefaultRetries,
+				Timeout:            DefaultTimeout,
 			})
-		})
+		}()
 
-		It("should not allow more than 1 connection", func() {
-			// Open a long-living TCP connection to the gateway
-			go func() {
-				defer GinkgoRecover()
+		Eventually(func(g Gomega) {
+			response, err := client.CollectFailure(
+				env.Cluster, "demo-client", target,
+				client.FromKubernetesPod(curlingClientNamespace, "demo-client"),
+			)
 
-				demoClientPod, err := PodNameOfApp(env.Cluster, "demo-client", waitingClientNamespace)
-				Expect(err).ToNot(HaveOccurred())
-
-				// this pod will be killed when we delete the namespace
-				cmd := []string{"nc", "-w", "30", gatewayHost, "8080"}
-				_, _, _ = env.Cluster.Exec(waitingClientNamespace, demoClientPod, "demo-client", cmd...)
-			}()
-
-			Eventually(func(g Gomega) {
-				response, err := client.CollectFailure(
-					env.Cluster, "demo-client", target,
-					client.FromKubernetesPod(curlingClientNamespace, "demo-client"),
-				)
-
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(response.Exitcode).To(Equal(56))
-			}, "20s", "1s").Should(Succeed())
-		})
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Exitcode).To(Or(Equal(52), Equal(56)))
+		}, "20s", "1s").Should(Succeed())
 	})
 }
