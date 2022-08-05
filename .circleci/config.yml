@@ -1,4 +1,6 @@
 version: 2.1 # Adds support for executors, parameterized jobs, etc
+orbs:
+  github-cli: circleci/github-cli@2.1.0
 
 reusable:
 
