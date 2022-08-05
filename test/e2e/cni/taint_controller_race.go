@@ -58,7 +58,7 @@ metadata:
 		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
-		Expect(k8sCluster.DeleteNode("k3d-"+nodeName+"-0")).To(Succeed())
+		Expect(k8sCluster.DeleteNode("k3d-" + nodeName + "-0")).To(Succeed())
 	})
 
 	It(

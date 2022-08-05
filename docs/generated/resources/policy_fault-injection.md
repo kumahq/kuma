@@ -43,7 +43,7 @@
             Percentage of requests on which abort will be injected, has to be in
             [0.0 - 100.0] range    
         
-        - `httpStatus` (required)
+        - `httpstatus` (required)
         
             HTTP status code which will be returned to source side    
     

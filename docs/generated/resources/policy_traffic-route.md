@@ -140,7 +140,7 @@
             
                 Path modifications.    
                 
-                - `rewritePrefix` (optional)
+                - `rewriteprefix` (optional)
                 
                     RewritePrefix rewrites previously matched prefix in match section.    
                 
@@ -166,7 +166,7 @@
                 
                     Value replaces the host header with given value.    
                 
-                - `fromPath` (optional)
+                - `frompath` (optional)
                 
                     FromPath replaces the host header from path using regex.    
                     
@@ -180,7 +180,7 @@
                         Substitution using regex groups. E.g. use \\1 as a first matched
                         group.    
             
-            - `requestHeaders` (optional)
+            - `requestheaders` (optional)
             
                 Request headers modifications.    
                 
@@ -209,7 +209,7 @@
                     
                         Name of the header to remove.    
             
-            - `responseHeaders` (optional)
+            - `responseheaders` (optional)
             
                 Response headers modifications.    
                 

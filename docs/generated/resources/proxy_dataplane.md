@@ -8,7 +8,7 @@
     
         Public IP on which the dataplane is accessible in the network.    
     
-    - `advertisedAddress` (optional)
+    - `advertisedaddress` (optional)
     
         In some situation, dataplane resides in a private network and not
         reachable via 'address'. advertisedAddress is configured with public
@@ -45,11 +45,11 @@
             Port of the inbound interface that will forward requests to the
             service.    
         
-        - `servicePort` (optional)
+        - `serviceport` (optional)
         
             Port of the service that requests will be forwarded to.    
         
-        - `serviceAddress` (optional)
+        - `serviceaddress` (optional)
         
             Address of the service that requests will be forwarded to.
             Empty value defaults to '127.0.0.1', since Kuma DP should be deployed
@@ -75,7 +75,7 @@
             
             - `ready` (optional)    
         
-        - `serviceProbe` (optional)
+        - `serviceprobe` (optional)
         
             ServiceProbe defines parameters for probing service's port    
             

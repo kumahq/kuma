@@ -100,7 +100,7 @@
             gateway tags and the listener tags. A route will be attached to the
             listener if all of the route's tags are preset in the matching tags    
         
-        - `crossMesh` (optional)
+        - `crossmesh` (optional)
         
             CrossMesh enables traffic to flow to this listener only from other
             meshes.

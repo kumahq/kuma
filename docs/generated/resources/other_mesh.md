@@ -5,7 +5,7 @@
     mTLS settings.
     +optional    
     
-    - `enabledBackend` (required)
+    - `enabledbackend` (required)
     
         Name of the enabled backend    
     
@@ -22,7 +22,7 @@
             Type of the backend. Has to be one of the loaded plugins (Kuma ships with
             builtin and provided)    
         
-        - `dpCert` (optional)
+        - `dpcert` (optional)
         
             Dataplane certificate settings    
             
@@ -34,7 +34,7 @@
                 
                     Time after which generated certificate for Dataplane will expire    
             
-            - `requestTimeout` (optional)
+            - `requesttimeout` (optional)
             
                 Timeout on request to CA for DP certificate generation and retrieval    
         
@@ -51,9 +51,9 @@
         
             - `PERMISSIVE`    
         
-        - `rootChain` (optional)    
+        - `rootchain` (optional)    
             
-            - `requestTimeout` (optional)
+            - `requesttimeout` (optional)
             
                 Timeout on request for to CA for root certificate chain.
 
@@ -62,7 +62,7 @@
     Tracing settings.
     +optional    
     
-    - `defaultBackend` (required)
+    - `defaultbackend` (required)
     
         Name of the default backend    
     
@@ -93,7 +93,7 @@
     Logging settings.
     +optional    
     
-    - `defaultBackend` (required)
+    - `defaultbackend` (required)
     
         Name of the default backend    
     
@@ -128,7 +128,7 @@
     for each dataplane individually using Dataplane resource.
     +optional    
     
-    - `enabledBackend` (optional)
+    - `enabledbackend` (optional)
     
         Name of the enabled backend    
     
@@ -164,11 +164,11 @@
 
     Routing settings of the mesh    
     
-    - `localityAwareLoadBalancing` (optional)
+    - `localityawareloadbalancing` (optional)
     
         Enable the Locality Aware Load Balancing    
     
-    - `zoneEgress` (optional)
+    - `zoneegress` (optional)
     
         Enable routing traffic to services in other zone or external services
         through ZoneEgress. Default: false
@@ -177,7 +177,7 @@
 
     Constraints that applies to the mesh and its entities    
     
-    - `dataplaneProxy` (required)
+    - `dataplaneproxy` (required)
     
         DataplaneProxyMembership defines a set of requirements for data plane
         proxies to be a member of the mesh.    
@@ -216,7 +216,7 @@
     Type of the backend. Has to be one of the loaded plugins (Kuma ships with
     builtin and provided)
 
-- `dpCert` (optional)
+- `dpcert` (optional)
 
     Dataplane certificate settings    
     
@@ -228,7 +228,7 @@
         
             Time after which generated certificate for Dataplane will expire    
     
-    - `requestTimeout` (optional)
+    - `requesttimeout` (optional)
     
         Timeout on request to CA for DP certificate generation and retrieval
 
@@ -245,9 +245,9 @@
 
     - `PERMISSIVE`
 
-- `rootChain` (optional)    
+- `rootchain` (optional)    
     
-    - `requestTimeout` (optional)
+    - `requesttimeout` (optional)
     
         Timeout on request for to CA for root certificate chain.
 ## Networking
@@ -261,7 +261,7 @@
         Control the passthrough cluster
 ## Tracing
 
-- `defaultBackend` (required)
+- `defaultbackend` (required)
 
     Name of the default backend
 
@@ -320,24 +320,24 @@
 
     Address of Zipkin collector.
 
-- `traceId128bit` (optional)
+- `traceid128bit` (optional)
 
     Generate 128bit traces. Default: false
 
-- `apiVersion` (required)
+- `apiversion` (required)
 
     Version of the API. values: httpJson, httpJsonV1, httpProto. Default:
     httpJson see
     https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/trace.proto#envoy-v3-api-enum-config-trace-v3-zipkinconfig-collectorendpointversion
 
-- `sharedSpanContext` (optional)
+- `sharedspancontext` (optional)
 
     Determines whether client and server spans will share the same span
     context. Default: true.
     https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/zipkin.proto#config-trace-v3-zipkinconfig
 ## Logging
 
-- `defaultBackend` (required)
+- `defaultbackend` (required)
 
     Name of the default backend
 
@@ -393,11 +393,11 @@
     Address to TCP service that will receive logs
 ## Routing
 
-- `localityAwareLoadBalancing` (optional)
+- `localityawareloadbalancing` (optional)
 
     Enable the Locality Aware Load Balancing
 
-- `zoneEgress` (optional)
+- `zoneegress` (optional)
 
     Enable routing traffic to services in other zone or external services
     through ZoneEgress. Default: false

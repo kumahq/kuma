@@ -24,7 +24,7 @@
         
             Data source for the authentication    
         
-        - `allowRenegotiation` (optional)
+        - `allowrenegotiation` (optional)
         
             If true then TLS session will allow renegotiation.
             It's not recommended to set this to true because of security reasons.
