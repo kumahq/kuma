@@ -139,6 +139,6 @@ spec:
 
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Exitcode).To(Or(Equal(52), Equal(56)))
-		}, "20s", "1s").Should(Succeed())
+		}, "40s", "1s").Should(Succeed())
 	})
 }
