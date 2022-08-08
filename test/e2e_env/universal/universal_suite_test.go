@@ -29,6 +29,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/trafficlog"
 	"github.com/kumahq/kuma/test/e2e_env/universal/trafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/universal/trafficroute"
+	"github.com/kumahq/kuma/test/e2e_env/universal/zoneegress"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -48,6 +49,9 @@ var _ = SynchronizedBeforeSuite(
 			WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 			WithEnv("KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL", "1s"), // speed up some tests by flushing stats quicker than default 10s
 		))).To(Succeed())
+		Expect(env.Cluster.Install(EgressUniversal(func(zone string) (string, error) {
+			return env.Cluster.GetKuma().GenerateZoneEgressToken("")
+		}))).To(Succeed())
 		pf := env.Cluster.GetKuma().(*UniversalControlPlane).Networking()
 		bytes, err := json.Marshal(pf)
 		Expect(err).ToNot(HaveOccurred())
@@ -95,3 +99,4 @@ var _ = Describe("Reachable Services", reachableservices.ReachableServices, Orde
 var _ = Describe("Apis", api.Api, Ordered)
 var _ = Describe("Traffic Permission", trafficpermission.TrafficPermissionUniversal, Ordered)
 var _ = Describe("Traffic Route", trafficroute.TrafficRoute, Ordered)
+var _ = Describe("Zone Egress", zoneegress.ExternalServices, Ordered)
