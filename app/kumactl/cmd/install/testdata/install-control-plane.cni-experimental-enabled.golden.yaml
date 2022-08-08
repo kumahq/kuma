@@ -2032,7 +2032,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 3a05a95096ec7248d5e43d50e181064206f451b7714554d2b64c8f5a37118bed
-        checksum/tls-secrets: d528d01a36be17967684f52456de23ee93c066042d2594d179e2aefc921ab0b1
+        checksum/tls-secrets: 7f9e90b76ece42c1045f21b5780d01e216373dc93d2bb11e1b7cbf15392a59de
         
       labels: 
         app: kuma-control-plane
@@ -2170,7 +2170,7 @@ metadata:
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 webhooks:
-  - name: mesh.defaulter.kuma-admission.kuma.io
+  - name: defaulter.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
     failurePolicy: Fail
     clientConfig:
@@ -2178,7 +2178,7 @@ webhooks:
       service:
         namespace: kuma-system
         name: kuma-control-plane
-        path: /default-kuma-io-v1alpha1-mesh
+        path: /default-kuma-io-v1alpha1
     rules:
       - apiGroups:
           - kuma.io
