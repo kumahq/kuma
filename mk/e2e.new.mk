@@ -41,7 +41,7 @@ K8S_CLUSTER_TOOL=kind
 GINKGO_E2E_TEST_FLAGS += --label-filter="!kind-not-supported"
 endif
 
-ifeq ($(CI_K3S_VERSION), "v1.19.16-k3s1")
+ifeq ($(CI_K3S_VERSION), v1.19.16-k3s1)
 GINKGO_E2E_TEST_FLAGS += --label-filter="!legacy-k3s-not-supported"
 endif
 
