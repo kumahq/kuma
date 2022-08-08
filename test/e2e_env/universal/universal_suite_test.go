@@ -52,8 +52,11 @@ var _ = SynchronizedBeforeSuite(
 		Expect(env.Cluster.Install(EgressUniversal(func(zone string) (string, error) {
 			return env.Cluster.GetKuma().GenerateZoneEgressToken("")
 		}))).To(Succeed())
-		pf := env.Cluster.GetKuma().(*UniversalControlPlane).Networking()
-		bytes, err := json.Marshal(pf)
+		state := UniversalNetworkingState{
+			ZoneEgress: env.Cluster.GetZoneEgressNetworking(),
+			KumaCp:     env.Cluster.GetKuma().(*UniversalControlPlane).Networking(),
+		}
+		bytes, err := json.Marshal(state)
 		Expect(err).ToNot(HaveOccurred())
 		return bytes
 	},
@@ -61,8 +64,8 @@ var _ = SynchronizedBeforeSuite(
 		if env.Cluster != nil {
 			return // cluster was already initiated with first function
 		}
-		networking := UniversalNetworking{}
-		Expect(json.Unmarshal(bytes, &networking)).To(Succeed())
+		state := UniversalNetworkingState{}
+		Expect(json.Unmarshal(bytes, &state)).To(Succeed())
 		env.Cluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
 		E2EDeferCleanup(env.Cluster.DismissCluster) // clean up any containers if needed
 		cp, err := NewUniversalControlPlane(
@@ -70,9 +73,10 @@ var _ = SynchronizedBeforeSuite(
 			core.Standalone,
 			env.Cluster.Name(),
 			env.Cluster.Verbose(),
-			networking,
+			state.KumaCp,
 		)
 		Expect(err).ToNot(HaveOccurred())
+		Expect(env.Cluster.AddNetworking(state.ZoneEgress, Config.ZoneEgressApp)).To(Succeed())
 		env.Cluster.SetCp(cp)
 	},
 )
