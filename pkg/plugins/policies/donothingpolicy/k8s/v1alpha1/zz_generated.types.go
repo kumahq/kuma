@@ -12,6 +12,7 @@ import (
 
 	policy "github.com/kumahq/kuma/pkg/plugins/policies/donothingpolicy/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )
 
 // +kubebuilder:object:root=true
@@ -19,12 +20,6 @@ import (
 type DoNothingPolicy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	// Mesh is the name of the Kuma mesh this resource belongs to.
-	// It may be omitted for cluster-scoped resources.
-	//
-	// +kubebuilder:validation:Optional
-	Mesh string `json:"mesh,omitempty"`
 
 	// Spec is the specification of the Kuma DoNothingPolicy resource.
 	// +kubebuilder:validation:Optional
@@ -48,11 +43,18 @@ func (cb *DoNothingPolicy) SetObjectMeta(m *metav1.ObjectMeta) {
 }
 
 func (cb *DoNothingPolicy) GetMesh() string {
-	return cb.Mesh
+	if mesh, ok := cb.ObjectMeta.Labels[metadata.KumaMeshLabel]; ok {
+		return mesh
+	} else {
+		return metadata.KumaMeshLabelDefault
+	}
 }
 
 func (cb *DoNothingPolicy) SetMesh(mesh string) {
-	cb.Mesh = mesh
+	if cb.ObjectMeta.Labels == nil {
+		cb.ObjectMeta.Labels = map[string]string{}
+	}
+	cb.ObjectMeta.Labels[metadata.KumaMeshLabel] = mesh
 }
 
 func (cb *DoNothingPolicy) GetSpec() (proto.Message, error) {

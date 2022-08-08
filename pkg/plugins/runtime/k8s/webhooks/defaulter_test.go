@@ -3,6 +3,7 @@ package webhooks_test
 import (
 	"context"
 
+	jsonpatch "github.com/evanphx/json-patch/v5"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	admissionv1 "k8s.io/api/admission/v1"
@@ -11,25 +12,16 @@ import (
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	sample_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/test/api/sample/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
 	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
-	sample_core "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
+	"github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 )
 
 var _ = Describe("Defaulter", func() {
-
-	var factory func() core_model.Resource
-
-	BeforeEach(func() {
-		factory = func() core_model.Resource {
-			return sample_core.NewTrafficRouteResource()
-		}
-	})
 
 	var converter k8s_common.Converter
 
@@ -60,13 +52,13 @@ var _ = Describe("Defaulter", func() {
 	var handler *kube_admission.Webhook
 
 	BeforeEach(func() {
-		handler = DefaultingWebhookFor(factory, converter)
+		handler = DefaultingWebhookFor(converter)
 		Expect(handler.InjectScheme(scheme)).To(Succeed())
 	})
 
 	type testCase struct {
-		inputObject   string
-		expectedPatch string
+		inputObject string
+		expected    string
 	}
 
 	DescribeTable("should apply defaults on a target object",
@@ -78,6 +70,9 @@ var _ = Describe("Defaulter", func() {
 					Object: kube_runtime.RawExtension{
 						Raw: []byte(given.inputObject),
 					},
+					Kind: kube_meta.GroupVersionKind{
+						Kind: string(sample.TrafficRouteType),
+					},
 				},
 			}
 
@@ -88,13 +83,17 @@ var _ = Describe("Defaulter", func() {
 			Expect(resp.UID).To(Equal(kube_types.UID("12345")))
 			Expect(resp.Result.Message).To(Equal(""))
 			Expect(resp.Allowed).To(Equal(true))
-			if given.expectedPatch != "" {
-				Expect(*resp.PatchType).To(Equal(admissionv1.PatchTypeJSONPatch))
-				Expect(string(resp.Patch)).To(MatchJSON(given.expectedPatch))
+
+			var actual []byte
+			if len(resp.Patch) == 0 {
+				actual = []byte(given.inputObject)
 			} else {
-				Expect(resp.PatchType).To(BeNil())
-				Expect(string(resp.Patch)).To(BeZero())
+				patch, err := jsonpatch.DecodePatch(resp.Patch)
+				Expect(err).ToNot(HaveOccurred())
+				actual, err = patch.Apply([]byte(given.inputObject))
+				Expect(err).ToNot(HaveOccurred())
 			}
+			Expect(actual).To(MatchJSON(given.expected))
 		},
 		Entry("should apply defaults to empty spec fields", testCase{
 			inputObject: `
@@ -111,14 +110,23 @@ var _ = Describe("Defaulter", func() {
               }
             }
 `,
-			expectedPatch: `
-            [
-              {
-                "op": "add",
-                "path": "/spec/path",
-                "value": "/default"
+			expected: `
+            {
+              "apiVersion": "sample.test.kuma.io/v1alpha1",
+              "kind": "SampleTrafficRoute",
+              "mesh": "demo",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "creationTimestamp": null,
+                "labels": {
+                  "kuma.io/mesh": "default"
+                }
+              },
+              "spec": {
+                "path": "/default"
               }
-            ]
+			}
 `,
 		}),
 		Entry("should not override non-empty spec fields", testCase{
@@ -137,7 +145,24 @@ var _ = Describe("Defaulter", func() {
               }
             }
 `,
-			expectedPatch: ``,
+			expected: `
+            {
+              "apiVersion": "sample.test.kuma.io/v1alpha1",
+              "kind": "SampleTrafficRoute",
+              "mesh": "demo",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "creationTimestamp": null,
+                "labels": {
+                  "kuma.io/mesh": "default"
+                }
+              },
+              "spec": {
+                "path": "anything"
+              }
+            }
+`,
 		}),
 		Entry("should not override spec fields already set to default value", testCase{
 			inputObject: `
@@ -155,7 +180,62 @@ var _ = Describe("Defaulter", func() {
               }
             }
 `,
-			expectedPatch: ``,
+			expected: `
+            {
+              "apiVersion": "sample.test.kuma.io/v1alpha1",
+              "kind": "SampleTrafficRoute",
+              "mesh": "demo",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "creationTimestamp": null,
+                "labels": {
+                  "kuma.io/mesh": "default"
+                }
+              },
+              "spec": {
+                "path": "/default"
+              }
+            }
+`,
+		}),
+		Entry("should not override mesh label if it's already set", testCase{
+			inputObject: `
+            {
+              "apiVersion": "sample.test.kuma.io/v1alpha1",
+              "kind": "SampleTrafficRoute",
+              "mesh": "demo",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "creationTimestamp": null,
+                "labels": {
+                  "kuma.io/mesh": "my-mesh-1"
+                }
+              },
+              "spec": {
+                "path": "/default"
+              }
+            }
+`,
+			expected: `
+            {
+              "apiVersion": "sample.test.kuma.io/v1alpha1",
+              "kind": "SampleTrafficRoute",
+              "mesh": "demo",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "creationTimestamp": null,
+                "labels": {
+                  "kuma.io/mesh": "my-mesh-1"
+                }
+              },
+              "spec": {
+                "path": "/default"
+              }
+            }
+`,
 		}),
 	)
 })

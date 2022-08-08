@@ -33,6 +33,7 @@ import (
 	{{- if not .SkipRegistration }}
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	{{- end }}
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )
 
 // +kubebuilder:object:root=true
@@ -40,12 +41,6 @@ import (
 type {{.Name}} struct {
 	metav1.TypeMeta   {{ $tk }}json:",inline"{{ $tk }}
 	metav1.ObjectMeta {{ $tk }}json:"metadata,omitempty"{{ $tk }}
-
-    // Mesh is the name of the Kuma mesh this resource belongs to.
-	// It may be omitted for cluster-scoped resources.
-	//
-    // +kubebuilder:validation:Optional
-	Mesh string {{ $tk }}json:"mesh,omitempty"{{ $tk }}
 
 	// Spec is the specification of the Kuma {{ .Name }} resource.
     // +kubebuilder:validation:Optional
@@ -69,11 +64,18 @@ func (cb *{{.Name}}) SetObjectMeta(m *metav1.ObjectMeta) {
 }
 
 func (cb *{{.Name}}) GetMesh() string {
-	return cb.Mesh
+	if mesh, ok := cb.ObjectMeta.Labels[metadata.KumaMeshLabel]; ok {
+		return mesh
+	} else {
+		return metadata.KumaMeshLabelDefault
+	}
 }
 
 func (cb *{{.Name}}) SetMesh(mesh string) {
-	cb.Mesh = mesh
+	if cb.ObjectMeta.Labels == nil {
+		cb.ObjectMeta.Labels = map[string]string{}
+	}
+	cb.ObjectMeta.Labels[metadata.KumaMeshLabel] = mesh
 }
 
 func (cb *{{.Name}}) GetSpec() (proto.Message, error) {
