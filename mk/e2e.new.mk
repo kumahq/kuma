@@ -35,7 +35,7 @@ GINKGO_E2E_LABEL_FILTERS ?=
 GINKGO_TEST_E2E=$(GINKGO_TEST) -v --slow-spec-threshold 30s $(GINKGO_E2E_TEST_FLAGS) --label-filter="$(GINKGO_E2E_LABEL_FILTERS)"
 
 define append_label_filter
-$(if $(GINKGO_E2E_LABEL_FILTERS),$(GINKGO_E2E_LABEL_FILTERS) || ($(1)),($(1)))
+$(if $(GINKGO_E2E_LABEL_FILTERS),$(GINKGO_E2E_LABEL_FILTERS) || $(1),$(1))
 endef
 
 ifdef K3D
@@ -50,9 +50,6 @@ ifeq ($(CI_K3S_VERSION),v1.19.16-k3s1)
 GINKGO_E2E_LABEL_FILTERS := $(call append_label_filter,!legacy-k3s-not-supported)
 endif
 
-ifeq ($(UNAME_ARCH),arm64)
-GINKGO_E2E_LABEL_FILTERS := $(call append_label_filter,!arm-not-supported)
-endif
 
 ifdef IPV6
 KIND_CONFIG_IPV6=-ipv6
