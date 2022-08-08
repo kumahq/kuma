@@ -19,6 +19,22 @@ func Resources() {
 	waitingClientNamespace := "gateway-resources-client-wait"
 	curlingClientNamespace := "gateway-resources-client-curl"
 
+	meshGatewayWithoutLimit := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshGateway
+metadata:
+  name: %s
+mesh: %s
+spec:
+  selectors:
+  - match:
+      kuma.io/service: %s
+  conf:
+    listeners:
+    - port: 8080
+      protocol: HTTP
+`, gatewayName, meshName, gatewayName)
+
 	meshGatewayWithLimit := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshGateway
@@ -69,7 +85,7 @@ spec:
 			Install(Namespace(curlingClientNamespace)).
 			Install(DemoClientK8s(meshName, waitingClientNamespace)).
 			Install(DemoClientK8s(meshName, curlingClientNamespace)).
-			Install(YamlK8s(meshGatewayWithLimit)).
+			Install(YamlK8s(meshGatewayWithoutLimit)).
 			Install(YamlK8s(MkGatewayInstance(gatewayName, namespace, meshName))).
 			Install(YamlK8s(httpRoute)).
 			Install(testserver.Install(
@@ -89,11 +105,35 @@ spec:
 		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	Specify("connection limit is respected", func() {
-		gatewayHost := fmt.Sprintf("%s.%s", gatewayName, namespace)
-		target := fmt.Sprintf("http://%s:8080", gatewayHost)
+	gatewayHost := fmt.Sprintf("%s.%s", gatewayName, namespace)
+	target := fmt.Sprintf("http://%s:8080", gatewayHost)
 
-		By("allowing 1 connection")
+	keepConnectionOpen := func() {
+		// Open TCP connections to the gateway
+		defer GinkgoRecover()
+
+		demoClientPod, err := PodNameOfApp(env.Cluster, "demo-client", waitingClientNamespace)
+		Expect(err).ToNot(HaveOccurred())
+
+		cmd := []string{"telnet", gatewayHost, "8080"}
+		// We pass in a stdin that blocks so that telnet will keep the
+		// connection open
+		_, _, _ = env.Cluster.ExecWithOptions(ExecOptions{
+			Command:            cmd,
+			Namespace:          waitingClientNamespace,
+			PodName:            demoClientPod,
+			ContainerName:      "demo-client",
+			Stdin:              &BlockingReader{},
+			CaptureStdout:      true,
+			CaptureStderr:      true,
+			PreserveWhitespace: false,
+			Retries:            DefaultRetries,
+			Timeout:            DefaultTimeout,
+		})
+	}
+
+	Specify("connection limit is respected", func() {
+		By("allowing connections without a limit")
 
 		Eventually(func(g Gomega) {
 			response, err := client.CollectResponse(
@@ -105,31 +145,27 @@ spec:
 			g.Expect(response.Instance).To(Equal("kubernetes"))
 		}, "20s", "1s")
 
-		By("not allowing more than 1 connection")
+		By("allowing more than 1 connection without a limit")
 
-		// Open TCP connections to the gateway
-		go func() {
-			defer GinkgoRecover()
+		go keepConnectionOpen()
 
-			demoClientPod, err := PodNameOfApp(env.Cluster, "demo-client", waitingClientNamespace)
-			Expect(err).ToNot(HaveOccurred())
+		Consistently(func(g Gomega) {
+			response, err := client.CollectResponse(
+				env.Cluster, "demo-client", target,
+				client.FromKubernetesPod(curlingClientNamespace, "demo-client"),
+			)
 
-			cmd := []string{"telnet", gatewayHost, "8080"}
-			// We pass in a stdin that blocks so that telnet will keep the
-			// connection open
-			_, _, _ = env.Cluster.ExecWithOptions(ExecOptions{
-				Command:            cmd,
-				Namespace:          waitingClientNamespace,
-				PodName:            demoClientPod,
-				ContainerName:      "demo-client",
-				Stdin:              &BlockingReader{},
-				CaptureStdout:      true,
-				CaptureStderr:      true,
-				PreserveWhitespace: false,
-				Retries:            DefaultRetries,
-				Timeout:            DefaultTimeout,
-			})
-		}()
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Instance).To(Equal("kubernetes"))
+		}, "40s", "1s").Should(Succeed())
+
+		By("not allowing more than 1 connection with a limit of 1")
+
+		Expect(env.Cluster.Install(YamlK8s(meshGatewayWithLimit))).To(Succeed())
+
+		Expect(env.Cluster.KillAppPod("demo-client", waitingClientNamespace)).To(Succeed())
+
+		go keepConnectionOpen()
 
 		Eventually(func(g Gomega) {
 			response, err := client.CollectFailure(
