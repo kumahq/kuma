@@ -1,0 +1,31 @@
+Clusters:
+  Resources: {}
+Endpoints:
+  Resources: {}
+Listeners:
+  Resources:
+    default-gateway:TCP:443:
+      address:
+        socketAddress:
+          address: 192.168.1.1
+          portValue: 443
+      enableReusePort: true
+      filterChains:
+      - {}
+      listenerFilters:
+      - name: envoy.filters.listener.tls_inspector
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+      name: default-gateway:TCP:443
+      perConnectionBufferLimitBytes: 32768
+      trafficDirection: INBOUND
+Routes:
+  Resources: {}
+Runtimes:
+  Resources:
+    gateway.listeners:
+      layer:
+        envoy.resource_limits.listener.default-gateway:TCP:443.connection_limit: 10000
+      name: gateway.listeners
+Secrets:
+  Resources: {}

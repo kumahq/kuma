@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	envoy_service_runtime_v3 "github.com/envoyproxy/go-control-plane/envoy/service/runtime/v3"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -15,14 +16,13 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/merge"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
-
-const WildcardHostname = "*"
 
 // RoutePolicyTypes specifies the resource types the gateway will bind
 // for routes.
@@ -62,6 +62,7 @@ type GatewayListener struct {
 	// CrossMesh is important because for generation we need to treat such a
 	// listener as if we have HTTPS with the Mesh cert for this Dataplane
 	CrossMesh bool
+	Resources *mesh_proto.MeshGateway_Listener_Resources // TODO verify these don't conflict when merging
 }
 
 // GatewayListenerInfo holds everything needed to generate resources for a
@@ -161,21 +162,9 @@ func GatewayListenerInfoFromProxy(
 		ctx.DataSourceLoader,
 	)
 
-	for port, listeners := range collapsed {
-		// Force all listeners on the same port to have the same protocol.
-		for i := range listeners {
-			if listeners[i].GetProtocol() != listeners[0].GetProtocol() {
-				return nil, errors.Errorf(
-					"cannot collapse listener protocols %s and %s on port %d",
-					listeners[i].GetProtocol(), listeners[0].GetProtocol(), port,
-				)
-			}
-		}
-
-		listener, hosts, err := MakeGatewayListener(ctx, gateway, proxy.Dataplane, listeners)
-		if err != nil {
-			return nil, err
-		}
+	// We already validate that listeners are collapsible
+	for _, listeners := range collapsed {
+		listener, hosts := MakeGatewayListener(ctx, gateway, proxy.Dataplane, listeners)
 
 		var hostInfos []GatewayHostInfo
 		for _, host := range hosts {
@@ -211,6 +200,8 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 		return nil, errors.Wrap(err, "error generating listener info from Proxy")
 	}
 
+	var limits []RuntimeResoureLimitListener
+
 	for _, info := range listenerInfos {
 		// This is checked by the gateway validator
 		if !SupportsProtocol(info.Listener.Protocol) {
@@ -223,11 +214,15 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 		}
 		resources.AddSet(cdsResources)
 
-		ldsResources, err := g.generateLDS(ctx, info, info.HostInfos)
+		ldsResources, limit, err := g.generateLDS(ctx, info, info.HostInfos)
 		if err != nil {
 			return nil, err
 		}
 		resources.AddSet(ldsResources)
+
+		if limit != nil {
+			limits = append(limits, *limit)
+		}
 
 		rdsResources, err := g.generateRDS(ctx, info, info.HostInfos)
 		if err != nil {
@@ -236,12 +231,33 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 		resources.AddSet(rdsResources)
 	}
 
+	resources.Add(g.generateRTDS(limits))
+
 	return resources, nil
 }
 
-func (g Generator) generateLDS(ctx xds_context.Context, info GatewayListenerInfo, hostInfos []GatewayHostInfo) (*core_xds.ResourceSet, error) {
+func (g Generator) generateRTDS(limits []RuntimeResoureLimitListener) *core_xds.Resource {
+	layer := map[string]interface{}{}
+	for _, limit := range limits {
+		layer[fmt.Sprintf("envoy.resource_limits.listener.%s.connection_limit", limit.Name)] = limit.ConnectionLimit
+	}
+
+	res := &core_xds.Resource{
+		Name:   "gateway.listeners",
+		Origin: OriginGateway,
+		Resource: &envoy_service_runtime_v3.Runtime{
+			Name:  "gateway.listeners",
+			Layer: util_proto.MustStruct(layer),
+		},
+	}
+
+	return res
+}
+
+func (g Generator) generateLDS(ctx xds_context.Context, info GatewayListenerInfo, hostInfos []GatewayHostInfo) (*core_xds.ResourceSet, *RuntimeResoureLimitListener, error) {
 	resources := core_xds.NewResourceSet()
-	listenerBuilder := GenerateListener(info)
+
+	listenerBuilder, limit := GenerateListener(info)
 
 	var gatewayHosts []GatewayHost
 	for _, hostInfo := range hostInfos {
@@ -254,7 +270,7 @@ func (g Generator) generateLDS(ctx xds_context.Context, info GatewayListenerInfo
 	}
 	res, filterChainBuilders, err := g.FilterChainGenerators.FilterChainGenerators[protocol].Generate(ctx, info, gatewayHosts)
 	if err != nil {
-		return nil, err
+		return nil, limit, err
 	}
 	resources.AddSet(res)
 
@@ -264,11 +280,11 @@ func (g Generator) generateLDS(ctx xds_context.Context, info GatewayListenerInfo
 
 	res, err = BuildResourceSet(listenerBuilder)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build listener resource")
+		return nil, limit, errors.Wrapf(err, "failed to build listener resource")
 	}
 	resources.AddSet(res)
 
-	return resources, nil
+	return resources, limit, nil
 }
 
 func (g Generator) generateCDS(ctx xds_context.Context, info GatewayListenerInfo, hostInfos []GatewayHostInfo) (*core_xds.ResourceSet, error) {
@@ -318,12 +334,14 @@ func (g Generator) generateRDS(ctx xds_context.Context, info GatewayListenerInfo
 // MakeGatewayListener converts a collapsed set of listener configurations
 // in to a single configuration with a matched set of route resources. The
 // given listeners must have a consistent protocol and port.
+// Listeners must be validated for collapsibility in terms of hostnames and
+// protocols.
 func MakeGatewayListener(
 	meshContext xds_context.MeshContext,
 	gateway *core_mesh.MeshGatewayResource,
 	dataplane *core_mesh.DataplaneResource,
 	listeners []*mesh_proto.MeshGateway_Listener,
-) (GatewayListener, []GatewayHost, error) {
+) (GatewayListener, []GatewayHost) {
 	hostsByName := map[string]GatewayHost{}
 
 	listener := GatewayListener{
@@ -335,6 +353,7 @@ func MakeGatewayListener(
 			listeners[0].GetPort(),
 		),
 		CrossMesh: listeners[0].CrossMesh,
+		Resources: listeners[0].GetResources(),
 	}
 
 	// Hostnames must be unique to a listener to remove ambiguity
@@ -343,11 +362,7 @@ func MakeGatewayListener(
 		// An empty hostname is the same as "*", i.e. matches all hosts.
 		hostname := l.GetHostname()
 		if hostname == "" {
-			hostname = WildcardHostname
-		}
-
-		if _, ok := hostsByName[hostname]; ok {
-			return listener, nil, errors.Errorf("duplicate hostname %q", hostname)
+			hostname = mesh_proto.WildcardHostname
 		}
 
 		host := GatewayHost{
@@ -390,7 +405,7 @@ func MakeGatewayListener(
 		return hosts[i].Hostname > hosts[j].Hostname
 	})
 
-	return listener, hosts, nil
+	return listener, hosts
 }
 
 // RedistributeWildcardRoutes takes the routes from the wildcard host
@@ -417,7 +432,7 @@ func RedistributeWildcardRoutes(
 		hostsByName[h.Hostname] = h
 	}
 
-	wild, ok := hostsByName[WildcardHostname]
+	wild, ok := hostsByName[mesh_proto.WildcardHostname]
 	if !ok {
 		return hosts
 	}
@@ -472,7 +487,7 @@ func RedistributeWildcardRoutes(
 		}
 	}
 
-	hostsByName[WildcardHostname] = wild
+	hostsByName[mesh_proto.WildcardHostname] = wild
 
 	var flattened []GatewayHost
 	for _, host := range hostsByName {

@@ -46,6 +46,32 @@ func genConfig(parameters configParameters, useTokenPath bool) (*envoy_bootstrap
 		features = append(features, feature)
 	}
 
+	runtimeLayers := []*envoy_bootstrap_v3.RuntimeLayer{{
+		Name: "kuma",
+		LayerSpecifier: &envoy_bootstrap_v3.RuntimeLayer_StaticLayer{
+			StaticLayer: util_proto.MustStruct(map[string]interface{}{
+				"envoy.restart_features.use_apple_api_for_dns_lookups": false,
+				"re2.max_program_size.error_level":                     4294967295,
+				"re2.max_program_size.warn_level":                      1000,
+			}),
+		},
+	}}
+
+	if parameters.IsGatewayDataplane {
+		runtimeLayers = append(runtimeLayers, &envoy_bootstrap_v3.RuntimeLayer{
+			Name: "gateway.listeners",
+			LayerSpecifier: &envoy_bootstrap_v3.RuntimeLayer_RtdsLayer_{
+				RtdsLayer: &envoy_bootstrap_v3.RuntimeLayer_RtdsLayer{
+					Name: "gateway.listeners",
+					RtdsConfig: &envoy_core_v3.ConfigSource{
+						ResourceApiVersion:    envoy_core_v3.ApiVersion_V3,
+						ConfigSourceSpecifier: &envoy_core_v3.ConfigSource_Ads{},
+					},
+				},
+			},
+		})
+	}
+
 	res := &envoy_bootstrap_v3.Bootstrap{
 		Node: &envoy_core_v3.Node{
 			Id:      parameters.Id,
@@ -69,18 +95,7 @@ func genConfig(parameters configParameters, useTokenPath bool) (*envoy_bootstrap
 			}),
 		},
 		LayeredRuntime: &envoy_bootstrap_v3.LayeredRuntime{
-			Layers: []*envoy_bootstrap_v3.RuntimeLayer{
-				{
-					Name: "kuma",
-					LayerSpecifier: &envoy_bootstrap_v3.RuntimeLayer_StaticLayer{
-						StaticLayer: util_proto.MustStruct(map[string]interface{}{
-							"envoy.restart_features.use_apple_api_for_dns_lookups": false,
-							"re2.max_program_size.error_level":                     4294967295,
-							"re2.max_program_size.warn_level":                      1000,
-						}),
-					},
-				},
-			},
+			Layers: runtimeLayers,
 		},
 		StatsConfig: &envoy_metrics_v3.StatsConfig{
 			StatsTags: []*envoy_metrics_v3.TagSpecifier{

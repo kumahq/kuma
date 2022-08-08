@@ -98,6 +98,8 @@ to verify a few things:
 - If your PR are open and some tests are failing due to outdated golden files
   or formatted and generated files are incorrect a maintainer can fix it by adding a
   comment `/format` or `/golden_files`.
+- If you are introducing a change that might break on ipv6 or old k8s kubernetes (v1.19.16-k3s1)
+  consider creating PR with a label `ci/run-full-matrix` that will trigger the full test matrix
 - If you are introducing a change which requires specific attention when
   upgrading update UPGRADE.md
 - Do not update CHANGELOG.md yourself. Your change will be included there in

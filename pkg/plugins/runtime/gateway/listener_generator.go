@@ -27,7 +27,12 @@ func SupportsProtocol(p mesh_proto.MeshGateway_Listener_Protocol) bool {
 	}
 }
 
-func GenerateListener(info GatewayListenerInfo) *envoy_listeners.ListenerBuilder {
+type RuntimeResoureLimitListener struct {
+	Name            string
+	ConnectionLimit uint32
+}
+
+func GenerateListener(info GatewayListenerInfo) (*envoy_listeners.ListenerBuilder, *RuntimeResoureLimitListener) {
 	// TODO(jpeach) what we really need to do here is to
 	// generate a HTTP filter chain for each
 	// host on the same HTTPConnectionManager. Each HTTP filter
@@ -48,12 +53,23 @@ func GenerateListener(info GatewayListenerInfo) *envoy_listeners.ListenerBuilder
 		"protocol", protocol,
 	)
 
-	// TODO(jpeach) if proxy protocol is enabled, add the proxy protocol listener filter.
+	name := envoy_names.GetGatewayListenerName(info.Gateway.Meta.GetName(), protocol.String(), port)
 
+	var limits *RuntimeResoureLimitListener
+	if resources := info.Listener.Resources; resources != nil {
+		if resources.ConnectionLimit > 0 {
+			limits = &RuntimeResoureLimitListener{
+				Name:            name,
+				ConnectionLimit: resources.ConnectionLimit,
+			}
+		}
+	}
+
+	// TODO(jpeach) if proxy protocol is enabled, add the proxy protocol listener filter.
 	return envoy_listeners.NewListenerBuilder(info.Proxy.APIVersion).
 		Configure(
 			envoy_listeners.InboundListener(
-				envoy_names.GetGatewayListenerName(info.Gateway.Meta.GetName(), protocol.String(), port),
+				name,
 				address, port, core_xds.SocketAddressProtocolTCP),
 			// Limit default buffering for edge connections.
 			envoy_listeners.ConnectionBufferLimit(DefaultConnectionBuffer),
@@ -61,5 +77,5 @@ func GenerateListener(info GatewayListenerInfo) *envoy_listeners.ListenerBuilder
 			envoy_listeners.EnableReusePort(true),
 			// Always sniff for TLS.
 			envoy_listeners.TLSInspector(),
-		)
+		), limits
 }

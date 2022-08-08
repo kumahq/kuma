@@ -4,6 +4,8 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
+const WildcardHostname = "*"
+
 func (m *MeshGateway) UnmarshalJSON(data []byte) error {
 	return util_proto.FromJSON(data, m)
 }

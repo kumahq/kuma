@@ -1208,3 +1208,16 @@ func (c *K8sCluster) DeleteNodeViaApi(node string) error {
 	foreground := metav1.DeletePropagationForeground
 	return clientset.CoreV1().Nodes().Delete(context.Background(), node, metav1.DeleteOptions{PropagationPolicy: &foreground})
 }
+
+func (c *K8sCluster) KillAppPod(app, namespace string) error {
+	pod, err := PodNameOfApp(c, app, namespace)
+	if err != nil {
+		return err
+	}
+
+	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(namespace), "delete", "pod", pod); err != nil {
+		return err
+	}
+
+	return c.WaitApp(app, namespace, 1)
+}

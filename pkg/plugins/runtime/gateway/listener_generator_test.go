@@ -3,7 +3,6 @@ package gateway_test
 import (
 	"path"
 
-	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo/v2"
@@ -84,7 +83,7 @@ data: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb3dJQkFBS0NBUUVBM3ZWM1cvNX
 			snap, err := Do(gateway)
 			Expect(err).To(Succeed())
 
-			out, err := yaml.Marshal(MakeProtoResource(snap.Resources[envoy_types.Listener]))
+			out, err := yaml.Marshal(MakeProtoSnapshot(snap))
 			Expect(err).To(Succeed())
 
 			Expect(out).To(matchers.MatchGoldenYAML(path.Join("testdata", golden)))
@@ -218,36 +217,22 @@ conf:
     tags:
       name: example.com
 `),
-	)
 
-	DescribeTable("fail to generate xDS resources",
-		func(errMsg string, gateway string) {
-			_, err := Do(gateway)
-			Expect(err).ToNot(Succeed())
-			Expect(err.Error()).To(ContainSubstring(errMsg))
-		},
-
-		Entry("incompatible listeners",
-			"cannot collapse listener protocols", `
+		Entry("should add connection limits",
+			"connection-limited-listener.yaml", `
 type: MeshGateway
 mesh: default
-name: edge-gateway
+name: default-gateway
 selectors:
 - match:
     kuma.io/service: gateway-default
 conf:
   listeners:
-  - port: 8080
-    protocol: HTTP
-    tags:
-      port: http/8080
-  - port: 8080
-    protocol: HTTPS
-    tls:
-      mode: PASSTHROUGH
-    tags:
-      port: http/9090
-`,
-		),
+  - port: 443
+    protocol: TCP
+    hostname: bar.example.com
+    resources:
+      connectionLimit: 10000
+`),
 	)
 })
