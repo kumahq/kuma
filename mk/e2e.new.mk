@@ -35,7 +35,7 @@ GINKGO_E2E_LABEL_FILTERS ?=
 GINKGO_TEST_E2E=$(GINKGO_TEST) -v --slow-spec-threshold 30s $(GINKGO_E2E_TEST_FLAGS) --label-filter="$(GINKGO_E2E_LABEL_FILTERS)"
 
 define append_label_filter
-$(if $(GINKGO_E2E_LABEL_FILTERS),$(GINKGO_E2E_LABEL_FILTERS) || $(1),$(1))
+$(if $(GINKGO_E2E_LABEL_FILTERS),$(GINKGO_E2E_LABEL_FILTERS) || ($(1)),($(1)))
 endef
 
 ifdef K3D
