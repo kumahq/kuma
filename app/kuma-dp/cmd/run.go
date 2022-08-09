@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"net"
 	"os"
 	"path/filepath"
 	"time"
@@ -299,6 +300,7 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 				Name:          item.Name,
 				Path:          item.Path,
 				Port:          item.Port,
+				IsIPv6:        isIPv6(item.Address),
 				QueryModifier: metrics.RemoveQueryParameters,
 			})
 		}
@@ -309,6 +311,7 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 		Path:          "/stats",
 		Address:       "127.0.0.1",
 		Port:          envoyAdminPort,
+		IsIPv6:        false,
 		QueryModifier: metrics.AddPrometheusFormat,
 		Mutator:       metrics.MergeClusters,
 	})
@@ -320,4 +323,16 @@ func writeFile(filename string, data []byte, perm os.FileMode) error {
 		return err
 	}
 	return os.WriteFile(filename, data, perm)
+}
+
+func isIPv6(address string) bool {
+	if address == "" {
+		return false
+	}
+	ip := net.ParseIP(address)
+	if ip == nil {
+		return false
+	}
+
+	return ip.To4() == nil
 }

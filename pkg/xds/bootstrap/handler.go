@@ -121,6 +121,7 @@ func createBootstrapResponse(bootstrap []byte, config *KumaDpBootstrap) *types.B
 			Name:    value.Name,
 			Port:    value.Port,
 			Path:    value.Path,
+			IsIPv6:  value.IsIPv6,
 		})
 	}
 	bootstrapConfig.KumaSidecarConfiguration = types.KumaSidecarConfiguration{

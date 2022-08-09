@@ -21,9 +21,8 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
-var upstreamLocalAddress = &net.TCPAddr{IP: net.ParseIP("127.0.0.6")}
-
-const IPv4Loopback = "127.0.0.1"
+var inPassThroughIPv4 = &net.TCPAddr{IP: net.ParseIP("127.0.0.6")}
+var inPassThroughIPv6 = &net.TCPAddr{IP: net.ParseIP("::6")}
 
 var prometheusRequestHeaders = []string{"accept", "accept-encoding", "user-agent", "x-prometheus-scrape-timeout-seconds"}
 var logger = core.Log.WithName("metrics-hijacker")
@@ -48,28 +47,36 @@ type ApplicationToScrape struct {
 	Address       string
 	Path          string
 	Port          uint32
+	IsIPv6        bool
 	QueryModifier QueryParametersModifier
 	Mutator       MetricsMutator
 }
 
 type Hijacker struct {
-	socketPath                 string
-	httpClient                 http.Client
-	upstreamOverrideHttpClient http.Client
-	applicationsToScrape       []ApplicationToScrape
+	socketPath                     string
+	upstreamOverrideHttpClientIPv4 http.Client
+	upstreamOverrideHttpClientIPv6 http.Client
+	applicationsToScrape           []ApplicationToScrape
 }
 
 func New(dataplane kumadp.Dataplane, applicationsToScrape []ApplicationToScrape) *Hijacker {
 	// we need this in case of not localhost requests, it returns fast in iptabels
-	d := &net.Dialer{
-		LocalAddr: upstreamLocalAddress,
+	dialerV4 := &net.Dialer{
+		LocalAddr: inPassThroughIPv4,
+	}
+	dialerV6 := &net.Dialer{
+		LocalAddr: inPassThroughIPv6,
 	}
 	return &Hijacker{
 		socketPath: envoy.MetricsHijackerSocketName(dataplane.Name, dataplane.Mesh),
-		httpClient: http.Client{},
-		upstreamOverrideHttpClient: http.Client{
+		upstreamOverrideHttpClientIPv4: http.Client{
 			Transport: &http.Transport{
-				DialContext: d.DialContext,
+				DialContext: dialerV4.DialContext,
+			},
+		},
+		upstreamOverrideHttpClientIPv6: http.Client{
+			Transport: &http.Transport{
+				DialContext: dialerV6.DialContext,
 			},
 		},
 		applicationsToScrape: applicationsToScrape,
@@ -181,10 +188,10 @@ func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app Appl
 	s.passRequestHeaders(req.Header, initReq.Header)
 	req = req.WithContext(ctx)
 	var resp *http.Response
-	if app.Address != IPv4Loopback {
-		resp, err = s.upstreamOverrideHttpClient.Do(req)
+	if app.IsIPv6 {
+		resp, err = s.upstreamOverrideHttpClientIPv6.Do(req)
 	} else {
-		resp, err = s.httpClient.Do(req)
+		resp, err = s.upstreamOverrideHttpClientIPv4.Do(req)
 	}
 	if err != nil {
 		logger.Error(err, "failed call", "name", app.Name, "path", app.Path, "port", app.Port)

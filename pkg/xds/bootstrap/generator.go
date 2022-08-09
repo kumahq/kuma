@@ -204,9 +204,12 @@ func (b *bootstrapGenerator) getMetricsConfig(
 	}
 
 	var address string
+	var isIPv6 bool
 	if b.enableLocalhostInboundCluster {
+		isIPv6 = false
 		address = core_mesh.IPv4Loopback.String()
 	} else {
+		isIPv6 = dataplane.IsIPv6()
 		address = dataplane.Spec.GetNetworking().GetAddress()
 	}
 
@@ -221,6 +224,7 @@ func (b *bootstrapGenerator) getMetricsConfig(
 				Name:    config.Name,
 				Port:    config.Port,
 				Path:    config.Path,
+				IsIPv6:  isIPv6,
 			})
 		}
 		kumaDpBootstrap.AggregateMetricsConfig = aggregateConfig

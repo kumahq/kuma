@@ -15,6 +15,7 @@ type AggregateMetricsConfig struct {
 	Path    string
 	Address string
 	Port    uint32
+	IsIPv6  bool
 }
 
 type configParameters struct {
