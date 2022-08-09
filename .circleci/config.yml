@@ -336,8 +336,8 @@ jobs:
               export K3D=true
             fi
             if [[ "<< parameters.arch >>" == "arm64" ]]; then
-              export GINKGO_E2E_TEST_FLAGS="$GINKGO_E2E_TEST_FLAGS --label-filter=\"!arm-not-supported\""
               export MAKE_PARAMETERS="-j1"
+              export GINKGO_E2E_LABEL_FILTERS='!arm-not-supported'
             else
               export MAKE_PARAMETERS="-j2"
             fi

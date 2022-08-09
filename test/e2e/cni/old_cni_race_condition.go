@@ -25,6 +25,10 @@ metadata:
 
 	var cluster Cluster
 	var k8sCluster *K8sCluster
+	nodeName := fmt.Sprintf(
+		"second-%s",
+		strings.ToLower(random.UniqueId()),
+	)
 
 	var setup = func() {
 		k8sCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
@@ -56,7 +60,7 @@ metadata:
 		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
-		Expect(k8sCluster.DeleteNode("k3d-second-node-0")).To(Succeed())
+		Expect(k8sCluster.DeleteNode("k3d-" + nodeName + "-0")).To(Succeed())
 	})
 
 	It(
@@ -64,9 +68,8 @@ metadata:
 		func() {
 			setup()
 
-			// write a test case that shows the test-server does not come up cleanly without taint-controller
-
-			err := k8sCluster.CreateNode("second-node", "second=true")
+			// k3s1 v1.19.16 hangs if the name is the same in the previous test
+			err := k8sCluster.CreateNode(nodeName, "second=true")
 			Expect(err).ToNot(HaveOccurred())
 
 			err = k8sCluster.LoadImages("kuma-dp", "kuma-universal")
