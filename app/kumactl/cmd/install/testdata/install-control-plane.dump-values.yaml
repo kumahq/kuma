@@ -658,7 +658,6 @@ experimental:
   gatewayAPI: false
   # -- If true, it installs experimental new version of the CNI
   cni: false
-  cniApp: '{{ include "kuma.name" . }}-cni'
   # Configuration for the experimental ebpf mode for transparent proxy
   ebpf:
     # -- If true, ebpf will be used instead of using iptables to install/configure transparent proxy

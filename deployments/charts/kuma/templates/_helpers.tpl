@@ -277,7 +277,7 @@ env:
 - name: KUMA_EXPERIMENTAL_CNI
   value: "true"
 - name: KUMA_CNI_APP
-  value: {{ .Values.experimental.cniApp }}
+  value: "{{ include "kuma.name" . }}-cni"
 {{- end }}
 {{- if .Values.experimental.ebpf.enabled }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_ENABLED
