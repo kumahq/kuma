@@ -22,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/observability"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/reachableservices"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/trafficlog"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/virtualoutbound"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -88,3 +89,4 @@ var _ = Describe("Inspect", inspect.Inspect, Ordered)
 var _ = Describe("K8S API Bypass", k8s_api_bypass.K8sApiBypass, Ordered)
 var _ = Describe("Reachable Services", reachableservices.ReachableServices, Ordered)
 var _ = Describe("Defaults", defaults.Defaults, Ordered)
+var _ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)

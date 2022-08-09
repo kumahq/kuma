@@ -68,44 +68,4 @@ spec:
 			"curl", "-v", "-m", "3", "--fail", "test-server_kuma-test_svc_80.mesh:80")
 		Expect(err).To(HaveOccurred())
 	})
-
-	It("virtual outbounds on statefulSet", func() {
-		virtualOutboundAll := `
-apiVersion: kuma.io/v1alpha1
-kind: VirtualOutbound
-mesh: default
-metadata:
-  name: instance
-spec:
-  selectors:
-  - match:
-      kuma.io/service: "*"
-      statefulset.kubernetes.io/pod-name: "*"
-  conf:
-    host: "{{.svc}}.{{.inst}}"
-    port: "8080"
-    parameters:
-    - name: "svc"
-      tagKey: "kuma.io/service"
-    - name: "inst"
-      tagKey: "statefulset.kubernetes.io/pod-name"
-`
-		err := YamlK8s(virtualOutboundAll)(k8sCluster)
-		Expect(err).ToNot(HaveOccurred())
-		// when client sends requests to server
-		clientPodName, err := PodNameOfApp(k8sCluster, "demo-client", TestNamespace)
-		Expect(err).ToNot(HaveOccurred())
-
-		stdout, stderr, err := k8sCluster.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "test-server_kuma-test_svc_80.test-server-0:8080")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
-		Expect(stdout).To(ContainSubstring(`"instance":"test-server-0"`))
-
-		stdout, stderr, err = k8sCluster.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "test-server_kuma-test_svc_80.test-server-1:8080")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
-		Expect(stdout).To(ContainSubstring(`"instance":"test-server-1"`))
-	})
 }
