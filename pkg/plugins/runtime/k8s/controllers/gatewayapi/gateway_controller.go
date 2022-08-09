@@ -26,6 +26,7 @@ import (
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/containers"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
@@ -87,7 +88,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 			return kube_ctrl.Result{}, errors.Wrap(err, "could not reconcile owned MeshGateway.kuma.io")
 		}
 
-		gatewayInstance, err = r.createOrUpdateInstance(ctx, r.Client, gateway, class)
+		gatewayInstance, err = r.createOrUpdateInstance(ctx, r.Client, mesh, gateway, class)
 		if err != nil {
 			return kube_ctrl.Result{}, errors.Wrap(err, "unable to reconcile MeshGatewayInstance")
 		}
@@ -100,11 +101,14 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 	return kube_ctrl.Result{}, nil
 }
 
-func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, client kube_client.Client, gateway *gatewayapi.Gateway, class *gatewayapi.GatewayClass) (*mesh_k8s.MeshGatewayInstance, error) {
+func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, client kube_client.Client, mesh string, gateway *gatewayapi.Gateway, class *gatewayapi.GatewayClass) (*mesh_k8s.MeshGatewayInstance, error) {
 	instance := &mesh_k8s.MeshGatewayInstance{
 		ObjectMeta: kube_meta.ObjectMeta{
 			Namespace: gateway.Namespace,
 			Name:      gateway.Name,
+			Annotations: map[string]string{
+				metadata.KumaMeshAnnotation: mesh,
+			},
 		},
 	}
 
@@ -127,6 +131,8 @@ func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, client k
 	}
 
 	if _, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, instance, func() error {
+		instance.Annotations = instance.Annotations
+
 		instance.Spec = mesh_k8s.MeshGatewayInstanceSpec{
 			Tags:                    tags,
 			MeshGatewayCommonConfig: commonConfig,
