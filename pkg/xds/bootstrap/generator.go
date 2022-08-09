@@ -33,7 +33,7 @@ type BootstrapGenerator interface {
 func NewDefaultBootstrapGenerator(
 	resManager core_manager.ResourceManager,
 	serverConfig *bootstrap_config.BootstrapServerConfig,
-	proxyConfig xds_config.ProxyConfig,
+	proxyConfig xds_config.Proxy,
 	dpServerCertFile string,
 	dpAuthEnabled bool,
 	dpUseTokenPath bool,
@@ -63,7 +63,7 @@ func NewDefaultBootstrapGenerator(
 type bootstrapGenerator struct {
 	resManager       core_manager.ResourceManager
 	config           *bootstrap_config.BootstrapServerConfig
-	proxyConfig      xds_config.ProxyConfig
+	proxyConfig      xds_config.Proxy
 	dpAuthEnabled    bool
 	dpUseTokenPath   bool
 	xdsCertFile      string

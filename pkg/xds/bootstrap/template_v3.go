@@ -36,7 +36,7 @@ func RegisterBootstrapCluster(c string) string {
 var adsClusterName = RegisterBootstrapCluster("ads_cluster")
 var accessLogSinkClusterName = RegisterBootstrapCluster("access_log_sink")
 
-func genConfig(parameters configParameters, proxyConfig xds.ProxyConfig, useTokenPath bool) (*envoy_bootstrap_v3.Bootstrap, error) {
+func genConfig(parameters configParameters, proxyConfig xds.Proxy, useTokenPath bool) (*envoy_bootstrap_v3.Bootstrap, error) {
 	staticClusters, err := buildStaticClusters(parameters, useTokenPath)
 	if err != nil {
 		return nil, err

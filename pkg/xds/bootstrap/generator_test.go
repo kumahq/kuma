@@ -95,7 +95,7 @@ var _ = Describe("bootstrapGenerator", func() {
 
 	type testCase struct {
 		serverConfig       *bootstrap_config.BootstrapServerConfig
-		proxyConfig        *xds_config.ProxyConfig
+		proxyConfig        *xds_config.Proxy
 		dataplane          func() *core_mesh.DataplaneResource
 		dpAuthEnabled      bool
 		useTokenPath       bool
@@ -383,7 +383,7 @@ var _ = Describe("bootstrapGenerator", func() {
 				cfg.Params.XdsPort = 5678
 				return cfg
 			}(),
-			proxyConfig: func() *xds_config.ProxyConfig {
+			proxyConfig: func() *xds_config.Proxy {
 				cfg := xds_config.DefaultProxyConfig()
 				cfg.Gateway.GlobalDownstreamMaxConnections = 35678
 				return &cfg

@@ -108,7 +108,7 @@ var _ = Describe("genConfig", func() {
 		}
 
 		// when
-		result, err := genConfig(params, xds_config.ProxyConfig{}, true)
+		result, err := genConfig(params, xds_config.Proxy{}, true)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -161,7 +161,7 @@ var _ = Describe("genConfig", func() {
 		}
 
 		// when
-		result, err := genConfig(params, xds_config.ProxyConfig{}, false)
+		result, err := genConfig(params, xds_config.Proxy{}, false)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -196,7 +196,7 @@ var _ = Describe("genConfig", func() {
 		}
 
 		// when
-		result, err := genConfig(params, xds_config.ProxyConfig{}, true)
+		result, err := genConfig(params, xds_config.Proxy{}, true)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

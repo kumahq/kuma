@@ -48,18 +48,18 @@ func DefaultXdsServerConfig() *XdsServerConfig {
 	}
 }
 
-type ProxyConfig struct {
+type Proxy struct {
 	// Gateway holds data plane wide configuration for MeshGateway proxies
-	Gateway GatewayConfig `yaml:"gateway"`
+	Gateway Gateway `yaml:"gateway"`
 }
 
-type GatewayConfig struct {
-	GlobalDownstreamMaxConnections uint64 `yaml:"globalDownstreamMaxConnections"`
+type Gateway struct {
+	GlobalDownstreamMaxConnections uint64 `yaml:"globalDownstreamMaxConnections" envconfig:"kuma_proxy_gateway_global_downstream_max_connections"`
 }
 
-func DefaultProxyConfig() ProxyConfig {
-	return ProxyConfig{
-		Gateway: GatewayConfig{
+func DefaultProxyConfig() Proxy {
+	return Proxy{
+		Gateway: Gateway{
 			GlobalDownstreamMaxConnections: 50000,
 		},
 	}
