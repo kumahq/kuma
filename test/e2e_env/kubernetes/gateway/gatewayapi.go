@@ -27,7 +27,7 @@ spec:
 
 func GatewayAPI() {
 	if Config.IPV6 {
-		return // KIND which is used for IPV6 tests does not support load balancer that is used in this test.
+		Skip("IPv6 tests use kind which doesn't support the LoadBalancer ServiceType")
 	}
 	if runtime.GOARCH == "arm64" {
 		Skip("The webhook doesn't provide an arm64 image")
