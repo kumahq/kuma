@@ -1,6 +1,7 @@
 CI_K3D_VERSION ?= v5.3.0
 CI_K3S_VERSION ?= v1.21.1-k3s1
 
+
 KUMA_MODE ?= standalone
 KUMA_NAMESPACE ?= kuma-system
 # Comment about PORT_PREFIX generation

@@ -49,6 +49,92 @@ func (g *MeshGatewayResource) Validate() error {
 	return err.OrNil()
 }
 
+type resourceLimits struct {
+	connectionLimits map[uint32]struct{}
+	listeners        []int
+}
+
+func validateListenerCollapsibility(path validators.PathBuilder, listeners []*mesh_proto.MeshGateway_Listener) validators.ValidationError {
+	protocolsForPort := map[uint32]map[string][]int{}
+	hostnamesForPort := map[uint32]map[string][]int{}
+	limitedListenersForPort := map[uint32]resourceLimits{}
+
+	for i, listener := range listeners {
+		protocols, ok := protocolsForPort[listener.GetPort()]
+		if !ok {
+			protocols = map[string][]int{}
+		}
+
+		hostnames, ok := hostnamesForPort[listener.GetPort()]
+		if !ok {
+			hostnames = map[string][]int{}
+		}
+
+		limitedListeners, ok := limitedListenersForPort[listener.GetPort()]
+		if !ok {
+			limitedListeners = resourceLimits{
+				connectionLimits: map[uint32]struct{}{},
+			}
+		}
+
+		protocols[listener.GetProtocol().String()] = append(protocols[listener.GetProtocol().String()], i)
+
+		// An empty hostname is the same as "*", i.e. matches all hosts.
+		hostname := listener.GetHostname()
+		if hostname == "" {
+			hostname = mesh_proto.WildcardHostname
+		}
+
+		hostnames[hostname] = append(hostnames[hostname], i)
+
+		if l := listener.GetResources().GetConnectionLimit(); l != 0 {
+			limitedListeners.listeners = append(limitedListeners.listeners, i)
+			limitedListeners.connectionLimits[l] = struct{}{}
+		}
+
+		hostnamesForPort[listener.GetPort()] = hostnames
+		protocolsForPort[listener.GetPort()] = protocols
+		limitedListenersForPort[listener.GetPort()] = limitedListeners
+	}
+
+	err := validators.ValidationError{}
+
+	for _, protocolIndexes := range protocolsForPort {
+		if len(protocolIndexes) <= 1 {
+			continue
+		}
+
+		for _, indexes := range protocolIndexes {
+			for _, index := range indexes {
+				err.AddViolationAt(path.Index(index), "protocol conflicts with other listeners on this port")
+			}
+		}
+	}
+
+	for _, hostnameIndexes := range hostnamesForPort {
+		for _, indexes := range hostnameIndexes {
+			if len(indexes) <= 1 {
+				continue
+			}
+
+			for _, index := range indexes {
+				err.AddViolationAt(path.Index(index), "multiple listeners for hostname on this port")
+			}
+		}
+	}
+
+	for _, listeners := range limitedListenersForPort {
+		if len(listeners.connectionLimits) <= 1 {
+			continue
+		}
+		for _, index := range listeners.listeners {
+			err.AddViolationAt(path.Index(index).Field("resources").Field("connectionLimit"), "conflicting values for this port")
+		}
+	}
+
+	return err
+}
+
 func validateMeshGatewayConf(path validators.PathBuilder, conf *mesh_proto.MeshGateway_Conf) validators.ValidationError {
 	err := validators.ValidationError{}
 
@@ -139,6 +225,8 @@ func validateMeshGatewayConf(path validators.PathBuilder, conf *mesh_proto.MeshG
 				},
 			}))
 	}
+
+	err.Add(validateListenerCollapsibility(path, conf.GetListeners()))
 
 	return err
 }

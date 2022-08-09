@@ -27,7 +27,7 @@ func filterGatewayRoutes(in []model.Resource, accept func(resource *core_mesh.Me
 func GenerateEnvoyRouteEntries(host GatewayHost) []route.Entry {
 	gatewayRoutes := filterGatewayRoutes(host.Routes, func(route *core_mesh.MeshGatewayRouteResource) bool {
 		// Wildcard virtual host accepts all routes.
-		if host.Hostname == WildcardHostname {
+		if host.Hostname == mesh_proto.WildcardHostname {
 			return true
 		}
 

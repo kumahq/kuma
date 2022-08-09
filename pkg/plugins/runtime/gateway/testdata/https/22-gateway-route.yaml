@@ -213,6 +213,9 @@ Routes:
           match:
             prefix: /
 Runtimes:
-  Resources: {}
+  Resources:
+    gateway.listeners:
+      layer: {}
+      name: gateway.listeners
 Secrets:
   Resources: {}

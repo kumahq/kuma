@@ -24,6 +24,10 @@ metadata:
 
 	var cluster Cluster
 	var k8sCluster *K8sCluster
+	nodeName := fmt.Sprintf(
+		"second-%s",
+		strings.ToLower(random.UniqueId()),
+	)
 
 	var setup = func() {
 		k8sCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
@@ -54,7 +58,7 @@ metadata:
 		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
-		Expect(k8sCluster.DeleteNode("k3d-second-node-0")).To(Succeed())
+		Expect(k8sCluster.DeleteNode("k3d-" + nodeName + "-0")).To(Succeed())
 	})
 
 	It(
@@ -62,7 +66,7 @@ metadata:
 		func() {
 			setup()
 
-			err := k8sCluster.CreateNode("second-node", "second=true")
+			err := k8sCluster.CreateNode(nodeName, "second=true")
 			Expect(err).ToNot(HaveOccurred())
 
 			err = k8sCluster.LoadImages("kuma-dp", "kuma-cni", "kuma-universal")
