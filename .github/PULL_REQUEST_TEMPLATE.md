@@ -9,6 +9,7 @@ If something doesn't apply please check the box and add a justification after th
 - [ ] Link to docs PR or issue --
 - [ ] Link to UI issue or PR --
 - [ ] Is the [issue worked on linked][1]? --
+- [ ] The PR does not hardcode values that might break projects that depend on kuma (e.g. "kumahq" as a image registry) --
 - [ ] Unit Tests --
 - [ ] E2E Tests --
 - [ ] Manual Universal Tests --
