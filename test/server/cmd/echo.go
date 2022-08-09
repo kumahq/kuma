@@ -81,9 +81,9 @@ func newEchoHTTPCmd() *cobra.Command {
 				})
 			}
 			if args.tls {
-				return http.ListenAndServeTLS(net.JoinHostPort(args.ip, strconv.FormatInt(int64(args.port), 10)), args.crtFile, args.keyFile, nil)
+				return http.ListenAndServeTLS(net.JoinHostPort(args.ip, strconv.Itoa(int(args.port))), args.crtFile, args.keyFile, nil)
 			}
-			return http.ListenAndServe(net.JoinHostPort(args.ip, strconv.FormatInt(int64(args.port), 10)), nil)
+			return http.ListenAndServe(net.JoinHostPort(args.ip, strconv.Itoa(int(args.port))), nil)
 		},
 	}
 	cmd.PersistentFlags().Uint32Var(&args.port, "port", 10011, "port server is listening on")
