@@ -32,9 +32,15 @@ func TestE2E(t *testing.T) {
 var _ = SynchronizedBeforeSuite(
 	func() []byte {
 		env.Cluster = NewK8sCluster(NewTestingT(), Kuma1, Verbose)
-		Expect(env.Cluster.Install(Kuma(core.Standalone,
-			WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
-		))).To(Succeed())
+		Expect(env.Cluster.Install(
+			gateway.GatewayAPICRDs,
+		)).To(Succeed())
+		Expect(env.Cluster.Install(
+			Kuma(core.Standalone,
+				WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
+				WithCtlOpts(map[string]string{"--experimental-gatewayapi": "true"}),
+			)),
+		).To(Succeed())
 		portFwd := env.Cluster.GetKuma().(*K8sControlPlane).PortFwd()
 
 		bytes, err := json.Marshal(portFwd)
@@ -74,8 +80,9 @@ var _ = SynchronizedAfterSuite(func() {}, func() {})
 
 var _ = Describe("Virtual Probes", healthcheck.VirtualProbes, Ordered)
 var _ = Describe("Gateway", gateway.Gateway, Ordered)
-var _ = Describe("Gateway - mTLS", gateway.Mtls, Ordered)
 var _ = Describe("Gateway - Cross-mesh", gateway.CrossMeshGatewayOnKubernetes, Ordered)
+var _ = Describe("Gateway - Gateway API", gateway.GatewayAPI, Ordered)
+var _ = Describe("Gateway - mTLS", gateway.Mtls, Ordered)
 var _ = Describe("Gateway - Resources", gateway.Resources, Ordered)
 var _ = Describe("Graceful", graceful.Graceful, Ordered)
 var _ = Describe("Jobs", jobs.Jobs)
