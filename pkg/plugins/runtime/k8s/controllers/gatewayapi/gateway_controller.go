@@ -106,9 +106,6 @@ func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, client k
 		ObjectMeta: kube_meta.ObjectMeta{
 			Namespace: gateway.Namespace,
 			Name:      gateway.Name,
-			Annotations: map[string]string{
-				metadata.KumaMeshAnnotation: mesh,
-			},
 		},
 	}
 
@@ -131,7 +128,10 @@ func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, client k
 	}
 
 	if _, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, instance, func() error {
-		instance.Annotations = instance.Annotations
+		if instance.Annotations == nil {
+			instance.Annotations = map[string]string{}
+		}
+		instance.Annotations[metadata.KumaMeshAnnotation] = mesh
 
 		instance.Spec = mesh_k8s.MeshGatewayInstanceSpec{
 			Tags:                    tags,
