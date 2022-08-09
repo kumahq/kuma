@@ -50,7 +50,8 @@ type KumaResourceOptions struct {
 	// The name of the policy showed as plural to be displayed in the UI and maybe
 	// CLI
 	PluralDisplayName string `protobuf:"bytes,15,opt,name=plural_display_name,json=pluralDisplayName,proto3" json:"plural_display_name,omitempty"`
-	// Is Experimental indicates if a policy is in experimental state (might not be production ready).
+	// Is Experimental indicates if a policy is in experimental state (might not
+	// be production ready).
 	IsExperimental bool `protobuf:"varint,16,opt,name=is_experimental,json=isExperimental,proto3" json:"is_experimental,omitempty"`
 }
 

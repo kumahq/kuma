@@ -42,7 +42,8 @@ message KumaResourceOptions {
   // CLI
   string plural_display_name = 15;
 
-  // Is Experimental indicates if a policy is in experimental state (might not be production ready).
+  // Is Experimental indicates if a policy is in experimental state (might not
+  // be production ready).
   bool is_experimental = 16;
 }
 
