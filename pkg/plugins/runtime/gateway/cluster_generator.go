@@ -190,7 +190,7 @@ func newClusterBuilder(
 	// the same, but it doesn't work.
 	switch protocol {
 	case core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
-		builder.Configure(clusters.Http2())
+		builder.Configure(clusters.Http2FromEdge())
 	case core_mesh.ProtocolHTTP:
 		builder.Configure(clusters.Http())
 	default:
