@@ -141,9 +141,9 @@ func ExternalServicesWithLocalityAwareLb() {
 		)
 		filterIngress := "cluster.external-service-in-kube-zone1.upstream_rq_total"
 
-		Eventually(EgressStats(env.UniZone1, filterEgress), "15s", "1s").Should(stats.BeEqualZero())
-		Eventually(IngressStats(env.KubeZone1, filterIngress), "15s", "1s").Should(stats.BeEqualZero())
-		Eventually(EgressStats(env.KubeZone1, filterEgress), "15s", "1s").Should(stats.BeEqualZero())
+		Eventually(EgressStats(env.UniZone1, filterEgress), "30s", "1s").Should(stats.BeEqualZero())
+		Eventually(IngressStats(env.KubeZone1, filterIngress), "30s", "1s").Should(stats.BeEqualZero())
+		Eventually(EgressStats(env.KubeZone1, filterEgress), "30s", "1s").Should(stats.BeEqualZero())
 
 		// when
 		response, err := client.CollectResponse(env.UniZone1, "uni-zone4-demo-client", "external-service-in-kube-zone1.mesh")
@@ -152,9 +152,9 @@ func ExternalServicesWithLocalityAwareLb() {
 
 		// then should route:
 		// app -> zone egress (zone4) -> zone ingress (zone1) -> zone egress (zone1) -> external service
-		Eventually(EgressStats(env.UniZone1, filterEgress), "15s", "1s").Should(stats.BeGreaterThanZero())
-		Eventually(IngressStats(env.KubeZone1, filterIngress), "15s", "1s").Should(stats.BeGreaterThanZero())
-		Eventually(EgressStats(env.KubeZone1, filterEgress), "15s", "1s").Should(stats.BeGreaterThanZero())
+		Eventually(EgressStats(env.UniZone1, filterEgress), "30s", "1s").Should(stats.BeGreaterThanZero())
+		Eventually(IngressStats(env.KubeZone1, filterIngress), "30s", "1s").Should(stats.BeGreaterThanZero())
+		Eventually(EgressStats(env.KubeZone1, filterEgress), "30s", "1s").Should(stats.BeGreaterThanZero())
 	})
 
 	It("should route to external-service from k8s through universal", func() {
@@ -166,9 +166,9 @@ func ExternalServicesWithLocalityAwareLb() {
 		)
 		filterIngress := "cluster.external-service-in-uni-zone4.upstream_rq_total"
 
-		Eventually(EgressStats(env.KubeZone1, filterEgress), "15s", "1s").Should(stats.BeEqualZero())
-		Eventually(IngressStats(env.UniZone1, filterIngress), "15s", "1s").Should(stats.BeEqualZero())
-		Eventually(EgressStats(env.UniZone1, filterEgress), "15s", "1s").Should(stats.BeEqualZero())
+		Eventually(EgressStats(env.KubeZone1, filterEgress), "30s", "1s").Should(stats.BeEqualZero())
+		Eventually(IngressStats(env.UniZone1, filterIngress), "30s", "1s").Should(stats.BeEqualZero())
+		Eventually(EgressStats(env.UniZone1, filterEgress), "30s", "1s").Should(stats.BeEqualZero())
 
 		// when request to external service in zone 1
 		response, err := client.CollectResponse(
@@ -180,9 +180,9 @@ func ExternalServicesWithLocalityAwareLb() {
 
 		// then should route:
 		// app -> zone egress (zone1) -> zone ingress (zone4) -> zone egress (zone4) -> external service
-		Eventually(EgressStats(env.KubeZone1, filterEgress), "15s", "1s").Should(stats.BeGreaterThanZero())
-		Eventually(IngressStats(env.UniZone1, filterIngress), "15s", "1s").Should(stats.BeGreaterThanZero())
-		Eventually(EgressStats(env.UniZone1, filterEgress), "15s", "1s").Should(stats.BeGreaterThanZero())
+		Eventually(EgressStats(env.KubeZone1, filterEgress), "30s", "1s").Should(stats.BeGreaterThanZero())
+		Eventually(IngressStats(env.UniZone1, filterIngress), "30s", "1s").Should(stats.BeGreaterThanZero())
+		Eventually(EgressStats(env.UniZone1, filterEgress), "30s", "1s").Should(stats.BeGreaterThanZero())
 	})
 
 	It("requests should be routed directly through local sidecar when zone egress disabled", func() {
@@ -198,7 +198,7 @@ func ExternalServicesWithLocalityAwareLb() {
 			s, err := env.KubeZone1.GetZoneIngressEnvoyTunnel().GetStats(filterIngress)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(s.Stats).To(BeEmpty())
-		}, "15s", "1s").Should(Succeed())
+		}, "30s", "1s").Should(Succeed())
 
 		// when doing requests to external service with tag zone1
 		response, err := client.CollectResponse(env.UniZone1, "uni-zone4-demo-client-no-egress", "demo-es-in-uni-zone4.mesh")
@@ -210,11 +210,11 @@ func ExternalServicesWithLocalityAwareLb() {
 			s, err := env.KubeZone1.GetZoneIngressEnvoyTunnel().GetStats(filterEgress)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(s.Stats).To(BeEmpty())
-		}, "15s", "1s").Should(Succeed())
+		}, "30s", "1s").Should(Succeed())
 		Eventually(func(g Gomega) {
 			s, err := env.UniZone1.GetZoneIngressEnvoyTunnel().GetStats(filterEgress)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(s.Stats).To(BeEmpty())
-		}, "15s", "1s").Should(Succeed())
+		}, "30s", "1s").Should(Succeed())
 	})
 }
