@@ -47,3 +47,20 @@ func DefaultXdsServerConfig() *XdsServerConfig {
 		NACKBackoff:                           5 * time.Second,
 	}
 }
+
+type Proxy struct {
+	// Gateway holds data plane wide configuration for MeshGateway proxies
+	Gateway Gateway `yaml:"gateway"`
+}
+
+type Gateway struct {
+	GlobalDownstreamMaxConnections uint64 `yaml:"globalDownstreamMaxConnections" envconfig:"kuma_proxy_gateway_global_downstream_max_connections"`
+}
+
+func DefaultProxyConfig() Proxy {
+	return Proxy{
+		Gateway: Gateway{
+			GlobalDownstreamMaxConnections: 50000,
+		},
+	}
+}

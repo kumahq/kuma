@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	xds_config "github.com/kumahq/kuma/pkg/config/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -107,7 +108,7 @@ var _ = Describe("genConfig", func() {
 		}
 
 		// when
-		result, err := genConfig(params, true)
+		result, err := genConfig(params, xds_config.Proxy{}, true)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -160,7 +161,7 @@ var _ = Describe("genConfig", func() {
 		}
 
 		// when
-		result, err := genConfig(params, false)
+		result, err := genConfig(params, xds_config.Proxy{}, false)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -195,7 +196,7 @@ var _ = Describe("genConfig", func() {
 		}
 
 		// when
-		result, err := genConfig(params, true)
+		result, err := genConfig(params, xds_config.Proxy{}, true)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
