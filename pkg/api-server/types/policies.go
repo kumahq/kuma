@@ -5,8 +5,10 @@ type PoliciesResponse struct {
 }
 
 type PolicyEntry struct {
-	Name        string `json:"name"`
-	ReadOnly    bool   `json:"readOnly"`
-	Path        string `json:"path"`
-	DisplayName string `json:"displayName"`
+	Name                string `json:"name"`
+	ReadOnly            bool   `json:"readOnly"`
+	Path                string `json:"path"`
+	SingularDisplayName string `json:"singularDisplayName"`
+	PluralDisplayName   string `json:"pluralDisplayName"`
+	IsExperimental      bool   `json:"isExperimental"`
 }

@@ -11,12 +11,13 @@ import (
 )
 
 type PolicyConfig struct {
-	Name             string
-	Plural           string
-	SkipRegistration bool
-	DisplayName      string
-	Path             string
-	AlternativeNames []string
+	Name                string
+	Plural              string
+	SkipRegistration    bool
+	SingularDisplayName string
+	PluralDisplayName   string
+	Path                string
+	AlternativeNames    []string
 }
 
 func NewPolicyConfig(desc protoreflect.MessageDescriptor) PolicyConfig {
@@ -40,11 +41,17 @@ func NewPolicyConfig(desc protoreflect.MessageDescriptor) PolicyConfig {
 			res.Plural = res.Name + "s"
 		}
 	}
+	for i, c := range res.Name {
+		if unicode.IsUpper(c) && i != 0 {
+			res.SingularDisplayName += " "
+		}
+		res.SingularDisplayName += string(c)
+	}
 	for i, c := range res.Plural {
 		if unicode.IsUpper(c) && i != 0 {
-			res.DisplayName += " "
+			res.PluralDisplayName += " "
 		}
-		res.DisplayName += string(c)
+		res.PluralDisplayName += string(c)
 	}
 	res.Path = strings.ToLower(res.Plural)
 	res.AlternativeNames = []string{strings.ToLower(res.Name)}

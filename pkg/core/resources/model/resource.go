@@ -103,7 +103,11 @@ type ResourceTypeDescriptor struct {
 	// IsPolicy if this type is a policy (Dataplanes, Insights, Ingresses are not policies as they describe either metadata or workload, Retries are policies).
 	IsPolicy bool
 	// DisplayName the name of the policy showed as plural to be displayed in the UI and maybe CLI
-	DisplayName string
+	SingularDisplayName string
+	// PluralDisplayName the name of the policy showed as plural to be displayed in the UI and maybe CLI
+	PluralDisplayName string
+	// IsExperimental indicates if a policy is in experimental state (might not be production ready).
+	IsExperimental bool
 }
 
 func (d ResourceTypeDescriptor) NewObject() Resource {

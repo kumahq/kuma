@@ -38,7 +38,7 @@ message Retry {
 
   option (kuma.mesh.resource).name = "RetryResource";
   option (kuma.mesh.resource).type = "Retry";
-  option (kuma.mesh.resource).display_name = "Retries";
+  option (kuma.mesh.resource).plural_display_name = "Retries";
   option (kuma.mesh.resource).package = "mesh";
   option (kuma.mesh.resource).kds.send_to_zone = true;
   option (kuma.mesh.resource).ws.name = "retry";

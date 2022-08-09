@@ -40,7 +40,10 @@ message KumaResourceOptions {
 
   // The name of the policy showed as plural to be displayed in the UI and maybe
   // CLI
-  string display_name = 15;
+  string plural_display_name = 15;
+
+  // Is Experimental indicates if a policy is in experimental state (might not be production ready).
+  bool is_experimental = 16;
 }
 
 message KumaWsOptions {
