@@ -5,7 +5,4 @@ const (
 	// with a particular Mesh.
 	// Label value must be the name of a Mesh resource.
 	KumaMeshLabel = "kuma.io/mesh"
-
-	// KumaMeshLabelDefault defines a default value for KumaMeshLabel
-	KumaMeshLabelDefault = "default"
 )

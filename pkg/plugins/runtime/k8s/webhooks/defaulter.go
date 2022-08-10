@@ -75,7 +75,7 @@ func (h *defaultingHandler) Handle(ctx context.Context, req admission.Request) a
 			if len(labels) == 0 {
 				labels = map[string]string{}
 			}
-			labels[metadata.KumaMeshLabel] = metadata.KumaMeshLabelDefault
+			labels[metadata.KumaMeshLabel] = core_model.DefaultMesh
 			obj.SetLabels(labels)
 		}
 	}

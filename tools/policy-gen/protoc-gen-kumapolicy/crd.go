@@ -28,6 +28,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	policy "github.com/kumahq/kuma/pkg/plugins/policies/{{.Package}}/api/{{.PolicyVersion}}"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	{{- if not .SkipRegistration }}
@@ -67,7 +68,7 @@ func (cb *{{.Name}}) GetMesh() string {
 	if mesh, ok := cb.ObjectMeta.Labels[metadata.KumaMeshLabel]; ok {
 		return mesh
 	} else {
-		return metadata.KumaMeshLabelDefault
+		return core_model.DefaultMesh
 	}
 }
 

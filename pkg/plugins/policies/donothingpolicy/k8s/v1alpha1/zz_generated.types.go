@@ -10,6 +10,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	policy "github.com/kumahq/kuma/pkg/plugins/policies/donothingpolicy/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
@@ -46,7 +47,7 @@ func (cb *DoNothingPolicy) GetMesh() string {
 	if mesh, ok := cb.ObjectMeta.Labels[metadata.KumaMeshLabel]; ok {
 		return mesh
 	} else {
-		return metadata.KumaMeshLabelDefault
+		return core_model.DefaultMesh
 	}
 }
 

@@ -100,7 +100,6 @@ var _ = Describe("Defaulter", func() {
             {
               "apiVersion": "sample.test.kuma.io/v1alpha1",
               "kind": "SampleTrafficRoute",
-              "mesh": "demo",
               "metadata": {
                 "namespace": "example",
 				"name": "empty",
@@ -114,7 +113,6 @@ var _ = Describe("Defaulter", func() {
             {
               "apiVersion": "sample.test.kuma.io/v1alpha1",
               "kind": "SampleTrafficRoute",
-              "mesh": "demo",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
@@ -134,7 +132,6 @@ var _ = Describe("Defaulter", func() {
             {
               "apiVersion": "sample.test.kuma.io/v1alpha1",
               "kind": "SampleTrafficRoute",
-              "mesh": "demo",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
@@ -149,7 +146,6 @@ var _ = Describe("Defaulter", func() {
             {
               "apiVersion": "sample.test.kuma.io/v1alpha1",
               "kind": "SampleTrafficRoute",
-              "mesh": "demo",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
@@ -169,7 +165,6 @@ var _ = Describe("Defaulter", func() {
             {
               "apiVersion": "sample.test.kuma.io/v1alpha1",
               "kind": "SampleTrafficRoute",
-              "mesh": "demo",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
@@ -184,7 +179,6 @@ var _ = Describe("Defaulter", func() {
             {
               "apiVersion": "sample.test.kuma.io/v1alpha1",
               "kind": "SampleTrafficRoute",
-              "mesh": "demo",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
@@ -204,7 +198,6 @@ var _ = Describe("Defaulter", func() {
             {
               "apiVersion": "sample.test.kuma.io/v1alpha1",
               "kind": "SampleTrafficRoute",
-              "mesh": "demo",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
@@ -222,7 +215,6 @@ var _ = Describe("Defaulter", func() {
             {
               "apiVersion": "sample.test.kuma.io/v1alpha1",
               "kind": "SampleTrafficRoute",
-              "mesh": "demo",
               "metadata": {
                 "namespace": "example",
                 "name": "empty",
