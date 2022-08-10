@@ -104,19 +104,21 @@ func (l *CircuitBreakerResourceList) GetPagination() *model.Pagination {
 }
 
 var CircuitBreakerResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           CircuitBreakerType,
-	Resource:       NewCircuitBreakerResource(),
-	ResourceList:   &CircuitBreakerResourceList{},
-	ReadOnly:       false,
-	AdminOnly:      false,
-	Scope:          model.ScopeMesh,
-	KDSFlags:       model.FromGlobalToZone,
-	WsPath:         "circuit-breakers",
-	KumactlArg:     "circuit-breaker",
-	KumactlListArg: "circuit-breakers",
-	AllowToInspect: true,
-	IsPolicy:       true,
-	DisplayName:    "Circuit Breakers",
+	Name:                CircuitBreakerType,
+	Resource:            NewCircuitBreakerResource(),
+	ResourceList:        &CircuitBreakerResourceList{},
+	ReadOnly:            false,
+	AdminOnly:           false,
+	Scope:               model.ScopeMesh,
+	KDSFlags:            model.FromGlobalToZone,
+	WsPath:              "circuit-breakers",
+	KumactlArg:          "circuit-breaker",
+	KumactlListArg:      "circuit-breakers",
+	AllowToInspect:      true,
+	IsPolicy:            true,
+	SingularDisplayName: "Circuit Breaker",
+	PluralDisplayName:   "Circuit Breakers",
+	IsExperimental:      false,
 }
 
 func init() {
@@ -207,19 +209,21 @@ func (l *DataplaneResourceList) GetPagination() *model.Pagination {
 }
 
 var DataplaneResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           DataplaneType,
-	Resource:       NewDataplaneResource(),
-	ResourceList:   &DataplaneResourceList{},
-	ReadOnly:       false,
-	AdminOnly:      false,
-	Scope:          model.ScopeMesh,
-	KDSFlags:       model.FromZoneToGlobal,
-	WsPath:         "dataplanes",
-	KumactlArg:     "dataplane",
-	KumactlListArg: "dataplanes",
-	AllowToInspect: false,
-	IsPolicy:       false,
-	DisplayName:    "",
+	Name:                DataplaneType,
+	Resource:            NewDataplaneResource(),
+	ResourceList:        &DataplaneResourceList{},
+	ReadOnly:            false,
+	AdminOnly:           false,
+	Scope:               model.ScopeMesh,
+	KDSFlags:            model.FromZoneToGlobal,
+	WsPath:              "dataplanes",
+	KumactlArg:          "dataplane",
+	KumactlListArg:      "dataplanes",
+	AllowToInspect:      false,
+	IsPolicy:            false,
+	SingularDisplayName: "Dataplane",
+	PluralDisplayName:   "Dataplanes",
+	IsExperimental:      false,
 }
 
 func init() {
@@ -310,19 +314,21 @@ func (l *DataplaneInsightResourceList) GetPagination() *model.Pagination {
 }
 
 var DataplaneInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           DataplaneInsightType,
-	Resource:       NewDataplaneInsightResource(),
-	ResourceList:   &DataplaneInsightResourceList{},
-	ReadOnly:       true,
-	AdminOnly:      false,
-	Scope:          model.ScopeMesh,
-	KDSFlags:       model.FromZoneToGlobal,
-	WsPath:         "dataplane-insights",
-	KumactlArg:     "",
-	KumactlListArg: "",
-	AllowToInspect: false,
-	IsPolicy:       false,
-	DisplayName:    "",
+	Name:                DataplaneInsightType,
+	Resource:            NewDataplaneInsightResource(),
+	ResourceList:        &DataplaneInsightResourceList{},
+	ReadOnly:            true,
+	AdminOnly:           false,
+	Scope:               model.ScopeMesh,
+	KDSFlags:            model.FromZoneToGlobal,
+	WsPath:              "dataplane-insights",
+	KumactlArg:          "",
+	KumactlListArg:      "",
+	AllowToInspect:      false,
+	IsPolicy:            false,
+	SingularDisplayName: "Dataplane Insight",
+	PluralDisplayName:   "Dataplane Insights",
+	IsExperimental:      false,
 }
 
 func init() {
@@ -413,18 +419,20 @@ func (l *DataplaneOverviewResourceList) GetPagination() *model.Pagination {
 }
 
 var DataplaneOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           DataplaneOverviewType,
-	Resource:       NewDataplaneOverviewResource(),
-	ResourceList:   &DataplaneOverviewResourceList{},
-	ReadOnly:       false,
-	AdminOnly:      false,
-	Scope:          model.ScopeMesh,
-	WsPath:         "",
-	KumactlArg:     "",
-	KumactlListArg: "",
-	AllowToInspect: false,
-	IsPolicy:       false,
-	DisplayName:    "",
+	Name:                DataplaneOverviewType,
+	Resource:            NewDataplaneOverviewResource(),
+	ResourceList:        &DataplaneOverviewResourceList{},
+	ReadOnly:            false,
+	AdminOnly:           false,
+	Scope:               model.ScopeMesh,
+	WsPath:              "",
+	KumactlArg:          "",
+	KumactlListArg:      "",
+	AllowToInspect:      false,
+	IsPolicy:            false,
+	SingularDisplayName: "Dataplane Overview",
+	PluralDisplayName:   "Dataplane Overviews",
+	IsExperimental:      false,
 }
 
 const (
@@ -511,19 +519,21 @@ func (l *ExternalServiceResourceList) GetPagination() *model.Pagination {
 }
 
 var ExternalServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           ExternalServiceType,
-	Resource:       NewExternalServiceResource(),
-	ResourceList:   &ExternalServiceResourceList{},
-	ReadOnly:       false,
-	AdminOnly:      false,
-	Scope:          model.ScopeMesh,
-	KDSFlags:       model.FromGlobalToZone,
-	WsPath:         "external-services",
-	KumactlArg:     "external-service",
-	KumactlListArg: "external-services",
-	AllowToInspect: false,
-	IsPolicy:       true,
-	DisplayName:    "External Services",
+	Name:                ExternalServiceType,
+	Resource:            NewExternalServiceResource(),
+	ResourceList:        &ExternalServiceResourceList{},
+	ReadOnly:            false,
+	AdminOnly:           false,
+	Scope:               model.ScopeMesh,
+	KDSFlags:            model.FromGlobalToZone,
+	WsPath:              "external-services",
+	KumactlArg:          "external-service",
+	KumactlListArg:      "external-services",
+	AllowToInspect:      false,
+	IsPolicy:            false,
+	SingularDisplayName: "External Service",
+	PluralDisplayName:   "External Services",
+	IsExperimental:      false,
 }
 
 func init() {
@@ -622,19 +632,21 @@ func (l *FaultInjectionResourceList) GetPagination() *model.Pagination {
 }
 
 var FaultInjectionResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           FaultInjectionType,
-	Resource:       NewFaultInjectionResource(),
-	ResourceList:   &FaultInjectionResourceList{},
-	ReadOnly:       false,
-	AdminOnly:      false,
-	Scope:          model.ScopeMesh,
-	KDSFlags:       model.FromGlobalToZone,
-	WsPath:         "fault-injections",
-	KumactlArg:     "fault-injection",
-	KumactlListArg: "fault-injections",
-	AllowToInspect: true,
-	IsPolicy:       true,
-	DisplayName:    "Fault Injections",
+	Name:                FaultInjectionType,
+	Resource:            NewFaultInjectionResource(),
+	ResourceList:        &FaultInjectionResourceList{},
+	ReadOnly:            false,
+	AdminOnly:           false,
+	Scope:               model.ScopeMesh,
+	KDSFlags:            model.FromGlobalToZone,
+	WsPath:              "fault-injections",
+	KumactlArg:          "fault-injection",
+	KumactlListArg:      "fault-injections",
+	AllowToInspect:      true,
+	IsPolicy:            true,
+	SingularDisplayName: "Fault Injection",
+	PluralDisplayName:   "Fault Injections",
+	IsExperimental:      false,
 }
 
 func init() {
@@ -733,19 +745,21 @@ func (l *HealthCheckResourceList) GetPagination() *model.Pagination {
 }
 
 var HealthCheckResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           HealthCheckType,
-	Resource:       NewHealthCheckResource(),
-	ResourceList:   &HealthCheckResourceList{},
-	ReadOnly:       false,
-	AdminOnly:      false,
-	Scope:          model.ScopeMesh,
-	KDSFlags:       model.FromGlobalToZone,
-	WsPath:         "health-checks",
-	KumactlArg:     "healthcheck",
-	KumactlListArg: "healthchecks",
-	AllowToInspect: true,
-	IsPolicy:       true,
-	DisplayName:    "Health Checks",
+	Name:                HealthCheckType,
+	Resource:            NewHealthCheckResource(),
+	ResourceList:        &HealthCheckResourceList{},
+	ReadOnly:            false,
+	AdminOnly:           false,
+	Scope:               model.ScopeMesh,
+	KDSFlags:            model.FromGlobalToZone,
+	WsPath:              "health-checks",
+	KumactlArg:          "healthcheck",
+	KumactlListArg:      "healthchecks",
+	AllowToInspect:      true,
+	IsPolicy:            true,
+	SingularDisplayName: "Health Check",
+	PluralDisplayName:   "Health Checks",
+	IsExperimental:      false,
 }
 
 func init() {
@@ -836,19 +850,21 @@ func (l *MeshResourceList) GetPagination() *model.Pagination {
 }
 
 var MeshResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           MeshType,
-	Resource:       NewMeshResource(),
-	ResourceList:   &MeshResourceList{},
-	ReadOnly:       false,
-	AdminOnly:      false,
-	Scope:          model.ScopeGlobal,
-	KDSFlags:       model.FromGlobalToZone,
-	WsPath:         "meshes",
-	KumactlArg:     "mesh",
-	KumactlListArg: "meshes",
-	AllowToInspect: false,
-	IsPolicy:       false,
-	DisplayName:    "",
+	Name:                MeshType,
+	Resource:            NewMeshResource(),
+	ResourceList:        &MeshResourceList{},
+	ReadOnly:            false,
+	AdminOnly:           false,
+	Scope:               model.ScopeGlobal,
+	KDSFlags:            model.FromGlobalToZone,
+	WsPath:              "meshes",
+	KumactlArg:          "mesh",
+	KumactlListArg:      "meshes",
+	AllowToInspect:      false,
+	IsPolicy:            false,
+	SingularDisplayName: "Mesh",
+	PluralDisplayName:   "Meshes",
+	IsExperimental:      false,
 }
 
 func init() {
@@ -943,19 +959,21 @@ func (l *MeshGatewayResourceList) GetPagination() *model.Pagination {
 }
 
 var MeshGatewayResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           MeshGatewayType,
-	Resource:       NewMeshGatewayResource(),
-	ResourceList:   &MeshGatewayResourceList{},
-	ReadOnly:       false,
-	AdminOnly:      false,
-	Scope:          model.ScopeMesh,
-	KDSFlags:       model.FromGlobalToZone,
-	WsPath:         "meshgateways",
-	KumactlArg:     "meshgateway",
-	KumactlListArg: "meshgateways",
-	AllowToInspect: false,
-	IsPolicy:       true,
-	DisplayName:    "Mesh Gateways",
+	Name:                MeshGatewayType,
+	Resource:            NewMeshGatewayResource(),
+	ResourceList:        &MeshGatewayResourceList{},
+	ReadOnly:            false,
+	AdminOnly:           false,
+	Scope:               model.ScopeMesh,
+	KDSFlags:            model.FromGlobalToZone,
+	WsPath:              "meshgateways",
+	KumactlArg:          "meshgateway",
+	KumactlListArg:      "meshgateways",
+	AllowToInspect:      false,
+	IsPolicy:            true,
+	SingularDisplayName: "Mesh Gateway",
+	PluralDisplayName:   "Mesh Gateways",
+	IsExperimental:      true,
 }
 
 func init() {
@@ -1050,19 +1068,21 @@ func (l *MeshGatewayRouteResourceList) GetPagination() *model.Pagination {
 }
 
 var MeshGatewayRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           MeshGatewayRouteType,
-	Resource:       NewMeshGatewayRouteResource(),
-	ResourceList:   &MeshGatewayRouteResourceList{},
-	ReadOnly:       false,
-	AdminOnly:      false,
-	Scope:          model.ScopeMesh,
-	KDSFlags:       model.FromGlobalToZone,
-	WsPath:         "meshgatewayroutes",
-	KumactlArg:     "meshgatewayroute",
-	KumactlListArg: "meshgatewayroutes",
-	AllowToInspect: false,
-	IsPolicy:       true,
-	DisplayName:    "Mesh Gateway Routes",
+	Name:                MeshGatewayRouteType,
+	Resource:            NewMeshGatewayRouteResource(),
+	ResourceList:        &MeshGatewayRouteResourceList{},
+	ReadOnly:            false,
+	AdminOnly:           false,
+	Scope:               model.ScopeMesh,
+	KDSFlags:            model.FromGlobalToZone,
+	WsPath:              "meshgatewayroutes",
+	KumactlArg:          "meshgatewayroute",
+	KumactlListArg:      "meshgatewayroutes",
+	AllowToInspect:      false,
+	IsPolicy:            true,
+	SingularDisplayName: "Mesh Gateway Route",
+	PluralDisplayName:   "Mesh Gateway Routes",
+	IsExperimental:      true,
 }
 
 func init() {
@@ -1153,18 +1173,20 @@ func (l *MeshInsightResourceList) GetPagination() *model.Pagination {
 }
 
 var MeshInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           MeshInsightType,
-	Resource:       NewMeshInsightResource(),
-	ResourceList:   &MeshInsightResourceList{},
-	ReadOnly:       true,
-	AdminOnly:      false,
-	Scope:          model.ScopeGlobal,
-	WsPath:         "mesh-insights",
-	KumactlArg:     "",
-	KumactlListArg: "",
-	AllowToInspect: false,
-	IsPolicy:       false,
-	DisplayName:    "",
+	Name:                MeshInsightType,
+	Resource:            NewMeshInsightResource(),
+	ResourceList:        &MeshInsightResourceList{},
+	ReadOnly:            true,
+	AdminOnly:           false,
+	Scope:               model.ScopeGlobal,
+	WsPath:              "mesh-insights",
+	KumactlArg:          "",
+	KumactlListArg:      "",
+	AllowToInspect:      false,
+	IsPolicy:            false,
+	SingularDisplayName: "Mesh Insight",
+	PluralDisplayName:   "Mesh Insights",
+	IsExperimental:      false,
 }
 
 func init() {
@@ -1259,19 +1281,21 @@ func (l *ProxyTemplateResourceList) GetPagination() *model.Pagination {
 }
 
 var ProxyTemplateResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           ProxyTemplateType,
-	Resource:       NewProxyTemplateResource(),
-	ResourceList:   &ProxyTemplateResourceList{},
-	ReadOnly:       false,
-	AdminOnly:      false,
-	Scope:          model.ScopeMesh,
-	KDSFlags:       model.FromGlobalToZone,
-	WsPath:         "proxytemplates",
-	KumactlArg:     "proxytemplate",
-	KumactlListArg: "proxytemplates",
-	AllowToInspect: true,
-	IsPolicy:       true,
-	DisplayName:    "Proxy Templates",
+	Name:                ProxyTemplateType,
+	Resource:            NewProxyTemplateResource(),
+	ResourceList:        &ProxyTemplateResourceList{},
+	ReadOnly:            false,
+	AdminOnly:           false,
+	Scope:               model.ScopeMesh,
+	KDSFlags:            model.FromGlobalToZone,
+	WsPath:              "proxytemplates",
+	KumactlArg:          "proxytemplate",
+	KumactlListArg:      "proxytemplates",
+	AllowToInspect:      true,
+	IsPolicy:            true,
+	SingularDisplayName: "Proxy Template",
+	PluralDisplayName:   "Proxy Templates",
+	IsExperimental:      false,
 }
 
 func init() {
@@ -1370,19 +1394,21 @@ func (l *RateLimitResourceList) GetPagination() *model.Pagination {
 }
 
 var RateLimitResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           RateLimitType,
-	Resource:       NewRateLimitResource(),
-	ResourceList:   &RateLimitResourceList{},
-	ReadOnly:       false,
-	AdminOnly:      false,
-	Scope:          model.ScopeMesh,
-	KDSFlags:       model.FromGlobalToZone,
-	WsPath:         "rate-limits",
-	KumactlArg:     "rate-limit",
-	KumactlListArg: "rate-limits",
-	AllowToInspect: true,
-	IsPolicy:       true,
-	DisplayName:    "Rate Limits",
+	Name:                RateLimitType,
+	Resource:            NewRateLimitResource(),
+	ResourceList:        &RateLimitResourceList{},
+	ReadOnly:            false,
+	AdminOnly:           false,
+	Scope:               model.ScopeMesh,
+	KDSFlags:            model.FromGlobalToZone,
+	WsPath:              "rate-limits",
+	KumactlArg:          "rate-limit",
+	KumactlListArg:      "rate-limits",
+	AllowToInspect:      true,
+	IsPolicy:            true,
+	SingularDisplayName: "Rate Limit",
+	PluralDisplayName:   "Rate Limits",
+	IsExperimental:      false,
 }
 
 func init() {
@@ -1481,19 +1507,21 @@ func (l *RetryResourceList) GetPagination() *model.Pagination {
 }
 
 var RetryResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           RetryType,
-	Resource:       NewRetryResource(),
-	ResourceList:   &RetryResourceList{},
-	ReadOnly:       false,
-	AdminOnly:      false,
-	Scope:          model.ScopeMesh,
-	KDSFlags:       model.FromGlobalToZone,
-	WsPath:         "retries",
-	KumactlArg:     "retry",
-	KumactlListArg: "retries",
-	AllowToInspect: true,
-	IsPolicy:       true,
-	DisplayName:    "Retries",
+	Name:                RetryType,
+	Resource:            NewRetryResource(),
+	ResourceList:        &RetryResourceList{},
+	ReadOnly:            false,
+	AdminOnly:           false,
+	Scope:               model.ScopeMesh,
+	KDSFlags:            model.FromGlobalToZone,
+	WsPath:              "retries",
+	KumactlArg:          "retry",
+	KumactlListArg:      "retries",
+	AllowToInspect:      true,
+	IsPolicy:            true,
+	SingularDisplayName: "Retry",
+	PluralDisplayName:   "Retries",
+	IsExperimental:      false,
 }
 
 func init() {
@@ -1584,19 +1612,21 @@ func (l *ServiceInsightResourceList) GetPagination() *model.Pagination {
 }
 
 var ServiceInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           ServiceInsightType,
-	Resource:       NewServiceInsightResource(),
-	ResourceList:   &ServiceInsightResourceList{},
-	ReadOnly:       true,
-	AdminOnly:      false,
-	Scope:          model.ScopeMesh,
-	KDSFlags:       model.FromGlobalToZone,
-	WsPath:         "service-insights",
-	KumactlArg:     "",
-	KumactlListArg: "",
-	AllowToInspect: false,
-	IsPolicy:       false,
-	DisplayName:    "",
+	Name:                ServiceInsightType,
+	Resource:            NewServiceInsightResource(),
+	ResourceList:        &ServiceInsightResourceList{},
+	ReadOnly:            true,
+	AdminOnly:           false,
+	Scope:               model.ScopeMesh,
+	KDSFlags:            model.FromGlobalToZone,
+	WsPath:              "service-insights",
+	KumactlArg:          "",
+	KumactlListArg:      "",
+	AllowToInspect:      false,
+	IsPolicy:            false,
+	SingularDisplayName: "Service Insight",
+	PluralDisplayName:   "Service Insights",
+	IsExperimental:      false,
 }
 
 func init() {
@@ -1687,18 +1717,20 @@ func (l *ServiceOverviewResourceList) GetPagination() *model.Pagination {
 }
 
 var ServiceOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           ServiceOverviewType,
-	Resource:       NewServiceOverviewResource(),
-	ResourceList:   &ServiceOverviewResourceList{},
-	ReadOnly:       false,
-	AdminOnly:      false,
-	Scope:          model.ScopeMesh,
-	WsPath:         "",
-	KumactlArg:     "",
-	KumactlListArg: "",
-	AllowToInspect: false,
-	IsPolicy:       false,
-	DisplayName:    "",
+	Name:                ServiceOverviewType,
+	Resource:            NewServiceOverviewResource(),
+	ResourceList:        &ServiceOverviewResourceList{},
+	ReadOnly:            false,
+	AdminOnly:           false,
+	Scope:               model.ScopeMesh,
+	WsPath:              "",
+	KumactlArg:          "",
+	KumactlListArg:      "",
+	AllowToInspect:      false,
+	IsPolicy:            false,
+	SingularDisplayName: "Service Overview",
+	PluralDisplayName:   "Service Overviews",
+	IsExperimental:      false,
 }
 
 const (
@@ -1793,19 +1825,21 @@ func (l *TimeoutResourceList) GetPagination() *model.Pagination {
 }
 
 var TimeoutResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           TimeoutType,
-	Resource:       NewTimeoutResource(),
-	ResourceList:   &TimeoutResourceList{},
-	ReadOnly:       false,
-	AdminOnly:      false,
-	Scope:          model.ScopeMesh,
-	KDSFlags:       model.FromGlobalToZone,
-	WsPath:         "timeouts",
-	KumactlArg:     "timeout",
-	KumactlListArg: "timeouts",
-	AllowToInspect: true,
-	IsPolicy:       true,
-	DisplayName:    "Timeouts",
+	Name:                TimeoutType,
+	Resource:            NewTimeoutResource(),
+	ResourceList:        &TimeoutResourceList{},
+	ReadOnly:            false,
+	AdminOnly:           false,
+	Scope:               model.ScopeMesh,
+	KDSFlags:            model.FromGlobalToZone,
+	WsPath:              "timeouts",
+	KumactlArg:          "timeout",
+	KumactlListArg:      "timeouts",
+	AllowToInspect:      true,
+	IsPolicy:            true,
+	SingularDisplayName: "Timeout",
+	PluralDisplayName:   "Timeouts",
+	IsExperimental:      false,
 }
 
 func init() {
@@ -1904,19 +1938,21 @@ func (l *TrafficLogResourceList) GetPagination() *model.Pagination {
 }
 
 var TrafficLogResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           TrafficLogType,
-	Resource:       NewTrafficLogResource(),
-	ResourceList:   &TrafficLogResourceList{},
-	ReadOnly:       false,
-	AdminOnly:      false,
-	Scope:          model.ScopeMesh,
-	KDSFlags:       model.FromGlobalToZone,
-	WsPath:         "traffic-logs",
-	KumactlArg:     "traffic-log",
-	KumactlListArg: "traffic-logs",
-	AllowToInspect: true,
-	IsPolicy:       true,
-	DisplayName:    "Traffic Logs",
+	Name:                TrafficLogType,
+	Resource:            NewTrafficLogResource(),
+	ResourceList:        &TrafficLogResourceList{},
+	ReadOnly:            false,
+	AdminOnly:           false,
+	Scope:               model.ScopeMesh,
+	KDSFlags:            model.FromGlobalToZone,
+	WsPath:              "traffic-logs",
+	KumactlArg:          "traffic-log",
+	KumactlListArg:      "traffic-logs",
+	AllowToInspect:      true,
+	IsPolicy:            true,
+	SingularDisplayName: "Traffic Log",
+	PluralDisplayName:   "Traffic Logs",
+	IsExperimental:      false,
 }
 
 func init() {
@@ -2015,19 +2051,21 @@ func (l *TrafficPermissionResourceList) GetPagination() *model.Pagination {
 }
 
 var TrafficPermissionResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           TrafficPermissionType,
-	Resource:       NewTrafficPermissionResource(),
-	ResourceList:   &TrafficPermissionResourceList{},
-	ReadOnly:       false,
-	AdminOnly:      false,
-	Scope:          model.ScopeMesh,
-	KDSFlags:       model.FromGlobalToZone,
-	WsPath:         "traffic-permissions",
-	KumactlArg:     "traffic-permission",
-	KumactlListArg: "traffic-permissions",
-	AllowToInspect: true,
-	IsPolicy:       true,
-	DisplayName:    "Traffic Permissions",
+	Name:                TrafficPermissionType,
+	Resource:            NewTrafficPermissionResource(),
+	ResourceList:        &TrafficPermissionResourceList{},
+	ReadOnly:            false,
+	AdminOnly:           false,
+	Scope:               model.ScopeMesh,
+	KDSFlags:            model.FromGlobalToZone,
+	WsPath:              "traffic-permissions",
+	KumactlArg:          "traffic-permission",
+	KumactlListArg:      "traffic-permissions",
+	AllowToInspect:      true,
+	IsPolicy:            true,
+	SingularDisplayName: "Traffic Permission",
+	PluralDisplayName:   "Traffic Permissions",
+	IsExperimental:      false,
 }
 
 func init() {
@@ -2126,19 +2164,21 @@ func (l *TrafficRouteResourceList) GetPagination() *model.Pagination {
 }
 
 var TrafficRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           TrafficRouteType,
-	Resource:       NewTrafficRouteResource(),
-	ResourceList:   &TrafficRouteResourceList{},
-	ReadOnly:       false,
-	AdminOnly:      false,
-	Scope:          model.ScopeMesh,
-	KDSFlags:       model.FromGlobalToZone,
-	WsPath:         "traffic-routes",
-	KumactlArg:     "traffic-route",
-	KumactlListArg: "traffic-routes",
-	AllowToInspect: true,
-	IsPolicy:       true,
-	DisplayName:    "Traffic Routes",
+	Name:                TrafficRouteType,
+	Resource:            NewTrafficRouteResource(),
+	ResourceList:        &TrafficRouteResourceList{},
+	ReadOnly:            false,
+	AdminOnly:           false,
+	Scope:               model.ScopeMesh,
+	KDSFlags:            model.FromGlobalToZone,
+	WsPath:              "traffic-routes",
+	KumactlArg:          "traffic-route",
+	KumactlListArg:      "traffic-routes",
+	AllowToInspect:      true,
+	IsPolicy:            true,
+	SingularDisplayName: "Traffic Route",
+	PluralDisplayName:   "Traffic Routes",
+	IsExperimental:      false,
 }
 
 func init() {
@@ -2233,19 +2273,21 @@ func (l *TrafficTraceResourceList) GetPagination() *model.Pagination {
 }
 
 var TrafficTraceResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           TrafficTraceType,
-	Resource:       NewTrafficTraceResource(),
-	ResourceList:   &TrafficTraceResourceList{},
-	ReadOnly:       false,
-	AdminOnly:      false,
-	Scope:          model.ScopeMesh,
-	KDSFlags:       model.FromGlobalToZone,
-	WsPath:         "traffic-traces",
-	KumactlArg:     "traffic-trace",
-	KumactlListArg: "traffic-traces",
-	AllowToInspect: true,
-	IsPolicy:       true,
-	DisplayName:    "Traffic Traces",
+	Name:                TrafficTraceType,
+	Resource:            NewTrafficTraceResource(),
+	ResourceList:        &TrafficTraceResourceList{},
+	ReadOnly:            false,
+	AdminOnly:           false,
+	Scope:               model.ScopeMesh,
+	KDSFlags:            model.FromGlobalToZone,
+	WsPath:              "traffic-traces",
+	KumactlArg:          "traffic-trace",
+	KumactlListArg:      "traffic-traces",
+	AllowToInspect:      true,
+	IsPolicy:            true,
+	SingularDisplayName: "Traffic Trace",
+	PluralDisplayName:   "Traffic Traces",
+	IsExperimental:      false,
 }
 
 func init() {
@@ -2340,19 +2382,21 @@ func (l *VirtualOutboundResourceList) GetPagination() *model.Pagination {
 }
 
 var VirtualOutboundResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           VirtualOutboundType,
-	Resource:       NewVirtualOutboundResource(),
-	ResourceList:   &VirtualOutboundResourceList{},
-	ReadOnly:       false,
-	AdminOnly:      false,
-	Scope:          model.ScopeMesh,
-	KDSFlags:       model.FromGlobalToZone,
-	WsPath:         "virtual-outbounds",
-	KumactlArg:     "virtual-outbound",
-	KumactlListArg: "virtual-outbounds",
-	AllowToInspect: false,
-	IsPolicy:       true,
-	DisplayName:    "Virtual Outbounds",
+	Name:                VirtualOutboundType,
+	Resource:            NewVirtualOutboundResource(),
+	ResourceList:        &VirtualOutboundResourceList{},
+	ReadOnly:            false,
+	AdminOnly:           false,
+	Scope:               model.ScopeMesh,
+	KDSFlags:            model.FromGlobalToZone,
+	WsPath:              "virtual-outbounds",
+	KumactlArg:          "virtual-outbound",
+	KumactlListArg:      "virtual-outbounds",
+	AllowToInspect:      false,
+	IsPolicy:            true,
+	SingularDisplayName: "Virtual Outbound",
+	PluralDisplayName:   "Virtual Outbounds",
+	IsExperimental:      false,
 }
 
 func init() {
@@ -2443,19 +2487,21 @@ func (l *ZoneEgressResourceList) GetPagination() *model.Pagination {
 }
 
 var ZoneEgressResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           ZoneEgressType,
-	Resource:       NewZoneEgressResource(),
-	ResourceList:   &ZoneEgressResourceList{},
-	ReadOnly:       false,
-	AdminOnly:      false,
-	Scope:          model.ScopeGlobal,
-	KDSFlags:       model.FromZoneToGlobal,
-	WsPath:         "zoneegresses",
-	KumactlArg:     "zoneegress",
-	KumactlListArg: "zoneegresses",
-	AllowToInspect: false,
-	IsPolicy:       false,
-	DisplayName:    "",
+	Name:                ZoneEgressType,
+	Resource:            NewZoneEgressResource(),
+	ResourceList:        &ZoneEgressResourceList{},
+	ReadOnly:            false,
+	AdminOnly:           false,
+	Scope:               model.ScopeGlobal,
+	KDSFlags:            model.FromZoneToGlobal,
+	WsPath:              "zoneegresses",
+	KumactlArg:          "zoneegress",
+	KumactlListArg:      "zoneegresses",
+	AllowToInspect:      false,
+	IsPolicy:            false,
+	SingularDisplayName: "Zone Egress",
+	PluralDisplayName:   "Zone Egresses",
+	IsExperimental:      false,
 }
 
 func init() {
@@ -2546,19 +2592,21 @@ func (l *ZoneEgressInsightResourceList) GetPagination() *model.Pagination {
 }
 
 var ZoneEgressInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           ZoneEgressInsightType,
-	Resource:       NewZoneEgressInsightResource(),
-	ResourceList:   &ZoneEgressInsightResourceList{},
-	ReadOnly:       true,
-	AdminOnly:      false,
-	Scope:          model.ScopeGlobal,
-	KDSFlags:       model.FromZoneToGlobal,
-	WsPath:         "zoneegressinsights",
-	KumactlArg:     "",
-	KumactlListArg: "",
-	AllowToInspect: false,
-	IsPolicy:       false,
-	DisplayName:    "",
+	Name:                ZoneEgressInsightType,
+	Resource:            NewZoneEgressInsightResource(),
+	ResourceList:        &ZoneEgressInsightResourceList{},
+	ReadOnly:            true,
+	AdminOnly:           false,
+	Scope:               model.ScopeGlobal,
+	KDSFlags:            model.FromZoneToGlobal,
+	WsPath:              "zoneegressinsights",
+	KumactlArg:          "",
+	KumactlListArg:      "",
+	AllowToInspect:      false,
+	IsPolicy:            false,
+	SingularDisplayName: "Zone Egress Insight",
+	PluralDisplayName:   "Zone Egress Insights",
+	IsExperimental:      false,
 }
 
 func init() {
@@ -2649,18 +2697,20 @@ func (l *ZoneEgressOverviewResourceList) GetPagination() *model.Pagination {
 }
 
 var ZoneEgressOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           ZoneEgressOverviewType,
-	Resource:       NewZoneEgressOverviewResource(),
-	ResourceList:   &ZoneEgressOverviewResourceList{},
-	ReadOnly:       false,
-	AdminOnly:      false,
-	Scope:          model.ScopeGlobal,
-	WsPath:         "",
-	KumactlArg:     "",
-	KumactlListArg: "",
-	AllowToInspect: false,
-	IsPolicy:       false,
-	DisplayName:    "",
+	Name:                ZoneEgressOverviewType,
+	Resource:            NewZoneEgressOverviewResource(),
+	ResourceList:        &ZoneEgressOverviewResourceList{},
+	ReadOnly:            false,
+	AdminOnly:           false,
+	Scope:               model.ScopeGlobal,
+	WsPath:              "",
+	KumactlArg:          "",
+	KumactlListArg:      "",
+	AllowToInspect:      false,
+	IsPolicy:            false,
+	SingularDisplayName: "Zone Egress Overview",
+	PluralDisplayName:   "Zone Egress Overviews",
+	IsExperimental:      false,
 }
 
 const (
@@ -2747,19 +2797,21 @@ func (l *ZoneIngressResourceList) GetPagination() *model.Pagination {
 }
 
 var ZoneIngressResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           ZoneIngressType,
-	Resource:       NewZoneIngressResource(),
-	ResourceList:   &ZoneIngressResourceList{},
-	ReadOnly:       false,
-	AdminOnly:      false,
-	Scope:          model.ScopeGlobal,
-	KDSFlags:       model.FromZoneToGlobal | model.FromGlobalToZone,
-	WsPath:         "zone-ingresses",
-	KumactlArg:     "zone-ingress",
-	KumactlListArg: "zone-ingresses",
-	AllowToInspect: false,
-	IsPolicy:       false,
-	DisplayName:    "",
+	Name:                ZoneIngressType,
+	Resource:            NewZoneIngressResource(),
+	ResourceList:        &ZoneIngressResourceList{},
+	ReadOnly:            false,
+	AdminOnly:           false,
+	Scope:               model.ScopeGlobal,
+	KDSFlags:            model.FromZoneToGlobal | model.FromGlobalToZone,
+	WsPath:              "zone-ingresses",
+	KumactlArg:          "zone-ingress",
+	KumactlListArg:      "zone-ingresses",
+	AllowToInspect:      false,
+	IsPolicy:            false,
+	SingularDisplayName: "Zone Ingress",
+	PluralDisplayName:   "Zone Ingresses",
+	IsExperimental:      false,
 }
 
 func init() {
@@ -2850,19 +2902,21 @@ func (l *ZoneIngressInsightResourceList) GetPagination() *model.Pagination {
 }
 
 var ZoneIngressInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           ZoneIngressInsightType,
-	Resource:       NewZoneIngressInsightResource(),
-	ResourceList:   &ZoneIngressInsightResourceList{},
-	ReadOnly:       true,
-	AdminOnly:      false,
-	Scope:          model.ScopeGlobal,
-	KDSFlags:       model.FromZoneToGlobal,
-	WsPath:         "zone-ingress-insights",
-	KumactlArg:     "",
-	KumactlListArg: "",
-	AllowToInspect: false,
-	IsPolicy:       false,
-	DisplayName:    "",
+	Name:                ZoneIngressInsightType,
+	Resource:            NewZoneIngressInsightResource(),
+	ResourceList:        &ZoneIngressInsightResourceList{},
+	ReadOnly:            true,
+	AdminOnly:           false,
+	Scope:               model.ScopeGlobal,
+	KDSFlags:            model.FromZoneToGlobal,
+	WsPath:              "zone-ingress-insights",
+	KumactlArg:          "",
+	KumactlListArg:      "",
+	AllowToInspect:      false,
+	IsPolicy:            false,
+	SingularDisplayName: "Zone Ingress Insight",
+	PluralDisplayName:   "Zone Ingress Insights",
+	IsExperimental:      false,
 }
 
 func init() {
@@ -2953,16 +3007,18 @@ func (l *ZoneIngressOverviewResourceList) GetPagination() *model.Pagination {
 }
 
 var ZoneIngressOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           ZoneIngressOverviewType,
-	Resource:       NewZoneIngressOverviewResource(),
-	ResourceList:   &ZoneIngressOverviewResourceList{},
-	ReadOnly:       false,
-	AdminOnly:      false,
-	Scope:          model.ScopeGlobal,
-	WsPath:         "",
-	KumactlArg:     "",
-	KumactlListArg: "",
-	AllowToInspect: false,
-	IsPolicy:       false,
-	DisplayName:    "",
+	Name:                ZoneIngressOverviewType,
+	Resource:            NewZoneIngressOverviewResource(),
+	ResourceList:        &ZoneIngressOverviewResourceList{},
+	ReadOnly:            false,
+	AdminOnly:           false,
+	Scope:               model.ScopeGlobal,
+	WsPath:              "",
+	KumactlArg:          "",
+	KumactlListArg:      "",
+	AllowToInspect:      false,
+	IsPolicy:            false,
+	SingularDisplayName: "Zone Ingress Overview",
+	PluralDisplayName:   "Zone Ingress Overviews",
+	IsExperimental:      false,
 }

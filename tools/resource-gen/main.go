@@ -302,7 +302,9 @@ var {{.ResourceName}}TypeDescriptor = model.ResourceTypeDescriptor{
 		KumactlListArg: "{{.KumactlPlural}}",
 		AllowToInspect: {{.AllowToInspect}},
 		IsPolicy: {{.IsPolicy}},
-		DisplayName: "{{.DisplayName}}",
+		SingularDisplayName: "{{.SingularDisplayName}}",
+		PluralDisplayName: "{{.PluralDisplayName}}",
+		IsExperimental: {{.IsExperimental}},
 	}
 
 {{- if not .SkipRegistration}}

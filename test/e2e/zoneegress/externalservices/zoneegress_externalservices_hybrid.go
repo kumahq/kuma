@@ -197,7 +197,7 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 
 		serviceUnreachable := func() error {
-			_, _, err := k8sCluster.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
+			_, _, err := k8sCluster.Exec(TestNamespace, clientPodName, "demo-client",
 				"curl", "--verbose", "--max-time", "3", "--fail", "external-service-1.mesh")
 			return err
 		}

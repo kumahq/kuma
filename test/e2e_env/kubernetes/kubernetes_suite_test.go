@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/container_patch"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/defaults"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/externalservices"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/gateway"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/graceful"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/healthcheck"
@@ -39,6 +40,7 @@ var _ = SynchronizedBeforeSuite(
 			Kuma(core.Standalone,
 				WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 				WithCtlOpts(map[string]string{"--experimental-gatewayapi": "true"}),
+				WithEgress(),
 			)),
 		).To(Succeed())
 		portFwd := env.Cluster.GetKuma().(*K8sControlPlane).PortFwd()
@@ -95,3 +97,4 @@ var _ = Describe("Inspect", inspect.Inspect, Ordered)
 var _ = Describe("K8S API Bypass", k8s_api_bypass.K8sApiBypass, Ordered)
 var _ = Describe("Reachable Services", reachableservices.ReachableServices, Ordered)
 var _ = Describe("Defaults", defaults.Defaults, Ordered)
+var _ = Describe("External Services", externalservices.ExternalServices, Ordered)

@@ -45,7 +45,7 @@ func ApplicationOnUniversalClientOnK8s() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 	E2EAfterAll(func() {
-		Expect(env.KubeZone1.DeleteNamespace(namespace)).To(Succeed())
+		Expect(env.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(env.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(env.Global.DeleteMesh(meshName)).To(Succeed())
 	})

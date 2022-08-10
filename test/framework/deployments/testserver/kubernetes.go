@@ -150,6 +150,10 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 			PeriodSeconds:       3,
 		}
 	}
+	if !k.opts.EnableProbes {
+		liveness = nil
+		readiness = nil
+	}
 	spec := corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels:      map[string]string{"app": k.Name()},
