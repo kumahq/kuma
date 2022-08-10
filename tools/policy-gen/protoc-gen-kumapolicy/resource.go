@@ -127,7 +127,9 @@ var {{.Name}}ResourceTypeDescriptor = model.ResourceTypeDescriptor{
 		KumactlListArg: "{{.Path}}",
 		AllowToInspect: true,
 		IsPolicy: true,
-		DisplayName: "{{.DisplayName}}",
+		IsExperimental: false,
+		SingularDisplayName: "{{.SingularDisplayName}}",
+		PluralDisplayName: "{{.PluralDisplayName}}",
 	}
 {{end}}
 `))
