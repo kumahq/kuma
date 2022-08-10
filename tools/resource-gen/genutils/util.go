@@ -3,12 +3,12 @@ package genutils
 import (
 	"fmt"
 	"strings"
-	"unicode"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/kumahq/kuma/api/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 // KumaResourceForMessage fetches the Kuma resource option out of a message.
@@ -77,6 +77,7 @@ func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 		ScopeNamespace:         r.ScopeNamespace,
 		AllowToInspect:         r.AllowToInspect,
 		StorageVersion:         r.StorageVersion,
+		SingularDisplayName:    core_model.DisplayName(r.Type),
 		PluralDisplayName:      r.PluralDisplayName,
 		IsExperimental:         r.IsExperimental,
 	}
@@ -98,18 +99,12 @@ func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 			}
 		}
 	}
-	for i, c := range out.ResourceType {
-		if unicode.IsUpper(c) && i != 0 {
-			out.SingularDisplayName += " "
-		}
-		out.SingularDisplayName += string(c)
+	if out.PluralDisplayName == "" {
+		out.PluralDisplayName = core_model.PluralDisplayName(r.Type)
 	}
 	// Working around the fact we don't really differentiate policies from the rest of resources:
 	// Anything global can't be a policy as it need to be on a mesh. Anything with locked Ws config is something internal and therefore not a policy
 	out.IsPolicy = !out.SkipRegistration && !out.Global && !out.WsAdminOnly && !out.WsReadOnly && out.ResourceType != "Dataplane" && out.ResourceType != "ExternalService"
-	if out.PluralDisplayName == "" && out.IsPolicy {
-		out.PluralDisplayName = out.SingularDisplayName + "s"
-	}
 	switch {
 	case r.Kds == nil || (!r.Kds.SendToZone && !r.Kds.SendToGlobal):
 		out.KdsDirection = ""

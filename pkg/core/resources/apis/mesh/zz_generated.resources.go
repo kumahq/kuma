@@ -222,7 +222,7 @@ var DataplaneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowToInspect:      false,
 	IsPolicy:            false,
 	SingularDisplayName: "Dataplane",
-	PluralDisplayName:   "",
+	PluralDisplayName:   "Dataplanes",
 	IsExperimental:      false,
 }
 
@@ -327,7 +327,7 @@ var DataplaneInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowToInspect:      false,
 	IsPolicy:            false,
 	SingularDisplayName: "Dataplane Insight",
-	PluralDisplayName:   "",
+	PluralDisplayName:   "Dataplane Insights",
 	IsExperimental:      false,
 }
 
@@ -431,7 +431,7 @@ var DataplaneOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowToInspect:      false,
 	IsPolicy:            false,
 	SingularDisplayName: "Dataplane Overview",
-	PluralDisplayName:   "",
+	PluralDisplayName:   "Dataplane Overviews",
 	IsExperimental:      false,
 }
 
@@ -532,7 +532,7 @@ var ExternalServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowToInspect:      false,
 	IsPolicy:            false,
 	SingularDisplayName: "External Service",
-	PluralDisplayName:   "",
+	PluralDisplayName:   "External Services",
 	IsExperimental:      false,
 }
 
@@ -863,7 +863,7 @@ var MeshResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowToInspect:      false,
 	IsPolicy:            false,
 	SingularDisplayName: "Mesh",
-	PluralDisplayName:   "",
+	PluralDisplayName:   "Meshes",
 	IsExperimental:      false,
 }
 
@@ -1185,7 +1185,7 @@ var MeshInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowToInspect:      false,
 	IsPolicy:            false,
 	SingularDisplayName: "Mesh Insight",
-	PluralDisplayName:   "",
+	PluralDisplayName:   "Mesh Insights",
 	IsExperimental:      false,
 }
 
@@ -1625,7 +1625,7 @@ var ServiceInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowToInspect:      false,
 	IsPolicy:            false,
 	SingularDisplayName: "Service Insight",
-	PluralDisplayName:   "",
+	PluralDisplayName:   "Service Insights",
 	IsExperimental:      false,
 }
 
@@ -1729,7 +1729,7 @@ var ServiceOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowToInspect:      false,
 	IsPolicy:            false,
 	SingularDisplayName: "Service Overview",
-	PluralDisplayName:   "",
+	PluralDisplayName:   "Service Overviews",
 	IsExperimental:      false,
 }
 
@@ -2500,7 +2500,7 @@ var ZoneEgressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowToInspect:      false,
 	IsPolicy:            false,
 	SingularDisplayName: "Zone Egress",
-	PluralDisplayName:   "",
+	PluralDisplayName:   "Zone Egresses",
 	IsExperimental:      false,
 }
 
@@ -2605,7 +2605,7 @@ var ZoneEgressInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowToInspect:      false,
 	IsPolicy:            false,
 	SingularDisplayName: "Zone Egress Insight",
-	PluralDisplayName:   "",
+	PluralDisplayName:   "Zone Egress Insights",
 	IsExperimental:      false,
 }
 
@@ -2709,7 +2709,7 @@ var ZoneEgressOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowToInspect:      false,
 	IsPolicy:            false,
 	SingularDisplayName: "Zone Egress Overview",
-	PluralDisplayName:   "",
+	PluralDisplayName:   "Zone Egress Overviews",
 	IsExperimental:      false,
 }
 
@@ -2810,7 +2810,7 @@ var ZoneIngressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowToInspect:      false,
 	IsPolicy:            false,
 	SingularDisplayName: "Zone Ingress",
-	PluralDisplayName:   "",
+	PluralDisplayName:   "Zone Ingresses",
 	IsExperimental:      false,
 }
 
@@ -2915,7 +2915,7 @@ var ZoneIngressInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowToInspect:      false,
 	IsPolicy:            false,
 	SingularDisplayName: "Zone Ingress Insight",
-	PluralDisplayName:   "",
+	PluralDisplayName:   "Zone Ingress Insights",
 	IsExperimental:      false,
 }
 
@@ -3019,6 +3019,6 @@ var ZoneIngressOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowToInspect:      false,
 	IsPolicy:            false,
 	SingularDisplayName: "Zone Ingress Overview",
-	PluralDisplayName:   "",
+	PluralDisplayName:   "Zone Ingress Overviews",
 	IsExperimental:      false,
 }

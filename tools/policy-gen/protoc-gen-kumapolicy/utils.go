@@ -2,12 +2,12 @@ package main
 
 import (
 	"strings"
-	"unicode"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/kumahq/kuma/api/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 type PolicyConfig struct {
@@ -32,27 +32,10 @@ func NewPolicyConfig(desc protoreflect.MessageDescriptor) PolicyConfig {
 		Plural:           resOption.Plural,
 	}
 	if resOption.Plural == "" {
-		switch {
-		case strings.HasSuffix(res.Name, "y"):
-			res.Plural = strings.TrimSuffix(res.Name, "y") + "ies"
-		case strings.HasSuffix(res.Name, "s"):
-			res.Plural = res.Name + "es"
-		default:
-			res.Plural = res.Name + "s"
-		}
+		res.Plural = core_model.PluralType(res.Name)
 	}
-	for i, c := range res.Name {
-		if unicode.IsUpper(c) && i != 0 {
-			res.SingularDisplayName += " "
-		}
-		res.SingularDisplayName += string(c)
-	}
-	for i, c := range res.Plural {
-		if unicode.IsUpper(c) && i != 0 {
-			res.PluralDisplayName += " "
-		}
-		res.PluralDisplayName += string(c)
-	}
+	res.SingularDisplayName = core_model.DisplayName(res.Name)
+	res.PluralDisplayName = core_model.PluralDisplayName(res.Name)
 	res.Path = strings.ToLower(res.Plural)
 	res.AlternativeNames = []string{strings.ToLower(res.Name)}
 	return res

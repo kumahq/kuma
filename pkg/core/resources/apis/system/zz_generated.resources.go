@@ -109,7 +109,7 @@ var ConfigResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowToInspect:      false,
 	IsPolicy:            false,
 	SingularDisplayName: "Config",
-	PluralDisplayName:   "",
+	PluralDisplayName:   "Configs",
 	IsExperimental:      false,
 }
 
@@ -214,7 +214,7 @@ var SecretResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowToInspect:      false,
 	IsPolicy:            false,
 	SingularDisplayName: "Secret",
-	PluralDisplayName:   "",
+	PluralDisplayName:   "Secrets",
 	IsExperimental:      false,
 }
 
@@ -318,7 +318,7 @@ var ZoneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowToInspect:      false,
 	IsPolicy:            false,
 	SingularDisplayName: "Zone",
-	PluralDisplayName:   "",
+	PluralDisplayName:   "Zones",
 	IsExperimental:      false,
 }
 
@@ -422,7 +422,7 @@ var ZoneInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowToInspect:      false,
 	IsPolicy:            false,
 	SingularDisplayName: "Zone Insight",
-	PluralDisplayName:   "",
+	PluralDisplayName:   "Zone Insights",
 	IsExperimental:      false,
 }
 
@@ -526,6 +526,6 @@ var ZoneOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowToInspect:      false,
 	IsPolicy:            false,
 	SingularDisplayName: "Zone Overview",
-	PluralDisplayName:   "",
+	PluralDisplayName:   "Zone Overviews",
 	IsExperimental:      false,
 }
