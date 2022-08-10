@@ -93,6 +93,12 @@ func (c E2eConfig) AutoConfigure() error {
 				NetDir:   "/var/lib/rancher/k3s/agent/etc/cni/net.d",
 				BinDir:   "/bin",
 			}
+		case K3dCalicoK8sType:
+			Config.CNIConf = CniConf{
+				ConfName: "10-calico.conflist",
+				NetDir:   "/etc/cni/net.d/",
+				BinDir:   "/opt/cni/bin",
+			}
 		case AzureK8sType:
 			Config.CNIConf = CniConf{
 				ConfName: "10-azure.conflist",
@@ -121,6 +127,7 @@ type K8sType string
 const (
 	KindK8sType  K8sType = "kind"
 	K3dK8sType   K8sType = "k3d"
+	K3dCalicoK8sType   K8sType = "k3d-calico"
 	AzureK8sType K8sType = "azure"
 	AwsK8sType   K8sType = "aws"
 )

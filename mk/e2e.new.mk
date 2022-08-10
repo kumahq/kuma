@@ -40,7 +40,7 @@ endef
 
 ifdef K3D
 K8S_CLUSTER_TOOL=k3d
-E2E_ENV_VARS += KUMA_K8S_TYPE=k3d
+E2E_ENV_VARS += KUMA_K8S_TYPE=k3d-calico
 else
 K8S_CLUSTER_TOOL=kind
 GINKGO_E2E_LABEL_FILTERS := $(call append_label_filter,!kind-not-supported)
