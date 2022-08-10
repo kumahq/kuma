@@ -79,8 +79,8 @@ spec:
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cluster.DeleteNamespace(namespace)).To(Succeed())
-		Expect(env.Cluster.DeleteNamespace(externalServicesNamespace)).To(Succeed())
+		Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(env.Cluster.TriggerDeleteNamespace(externalServicesNamespace)).To(Succeed())
 		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
