@@ -135,13 +135,13 @@ networking:
 			Expect(YamlUniversal(fmt.Sprintf(meshMTLSOn, nonDefaultMesh, "false", "false"))(global)).To(Succeed())
 		})
 
-		It("k8s should reach external service", func() {
+		It("should reach external service from k8s", func() {
 			_, _, err := zone1.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
 				"curl", "--verbose", "--max-time", "3", "--fail", "external-service-1.mesh")
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("universal should reach external service", func() {
+		It("should reach external service from universal", func() {
 			_, _, err := zone4.ExecWithRetries("", "", "zone4-demo-client",
 				"curl", "-v", "-m", "3", "--fail", "external-service-2.mesh")
 			Expect(err).ToNot(HaveOccurred())
@@ -153,7 +153,7 @@ networking:
 			Expect(YamlUniversal(fmt.Sprintf(meshMTLSOn, nonDefaultMesh, "false", "true"))(global)).To(Succeed())
 		})
 
-		It("k8s should not reach external service when zone egress is down", func() {
+		It("should not reach external service from k8s when zone egress is down", func() {
 			Eventually(func() error {
 				_, _, err := zone1.Exec(TestNamespace, clientPodName, "demo-client",
 					"curl", "--verbose", "--max-time", "3", "--fail", "external-service-1.mesh")
@@ -161,7 +161,7 @@ networking:
 			}, "30s", "1s").Should(HaveOccurred())
 		})
 
-		It("universal should not reach external service when zone egress is down", func() {
+		It("should not reach external service from universal when zone egress is down", func() {
 			Eventually(func() error {
 				_, _, err := zone4.Exec("", "", "zone4-demo-client",
 					"curl", "-v", "-m", "3", "--fail", "external-service-2.mesh")
