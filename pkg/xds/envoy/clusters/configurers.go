@@ -182,6 +182,12 @@ func Http2() ClusterBuilderOpt {
 	})
 }
 
+func Http2FromEdge() ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
+		config.AddV3(&v3.Http2Configurer{EdgeProxyWindowSizes: true})
+	})
+}
+
 func Http() ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.HttpConfigurer{})

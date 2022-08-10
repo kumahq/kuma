@@ -20,6 +20,7 @@ import (
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/config/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	clusters_v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
@@ -35,7 +36,7 @@ func RegisterBootstrapCluster(c string) string {
 var adsClusterName = RegisterBootstrapCluster("ads_cluster")
 var accessLogSinkClusterName = RegisterBootstrapCluster("access_log_sink")
 
-func genConfig(parameters configParameters, useTokenPath bool) (*envoy_bootstrap_v3.Bootstrap, error) {
+func genConfig(parameters configParameters, proxyConfig xds.Proxy, useTokenPath bool) (*envoy_bootstrap_v3.Bootstrap, error) {
 	staticClusters, err := buildStaticClusters(parameters, useTokenPath)
 	if err != nil {
 		return nil, err
@@ -58,18 +59,32 @@ func genConfig(parameters configParameters, useTokenPath bool) (*envoy_bootstrap
 	}}
 
 	if parameters.IsGatewayDataplane {
-		runtimeLayers = append(runtimeLayers, &envoy_bootstrap_v3.RuntimeLayer{
-			Name: "gateway.listeners",
-			LayerSpecifier: &envoy_bootstrap_v3.RuntimeLayer_RtdsLayer_{
-				RtdsLayer: &envoy_bootstrap_v3.RuntimeLayer_RtdsLayer{
-					Name: "gateway.listeners",
-					RtdsConfig: &envoy_core_v3.ConfigSource{
-						ResourceApiVersion:    envoy_core_v3.ApiVersion_V3,
-						ConfigSourceSpecifier: &envoy_core_v3.ConfigSource_Ads{},
-					},
+		connections := proxyConfig.Gateway.GlobalDownstreamMaxConnections
+		if connections == 0 {
+			connections = 50000
+		}
+
+		runtimeLayers = append(runtimeLayers,
+			&envoy_bootstrap_v3.RuntimeLayer{
+				Name: "gateway",
+				LayerSpecifier: &envoy_bootstrap_v3.RuntimeLayer_StaticLayer{
+					StaticLayer: util_proto.MustStruct(map[string]interface{}{
+						"overload.global_downstream_max_connections": connections,
+					}),
 				},
 			},
-		})
+			&envoy_bootstrap_v3.RuntimeLayer{
+				Name: "gateway.listeners",
+				LayerSpecifier: &envoy_bootstrap_v3.RuntimeLayer_RtdsLayer_{
+					RtdsLayer: &envoy_bootstrap_v3.RuntimeLayer_RtdsLayer{
+						Name: "gateway.listeners",
+						RtdsConfig: &envoy_core_v3.ConfigSource{
+							ResourceApiVersion:    envoy_core_v3.ApiVersion_V3,
+							ConfigSourceSpecifier: &envoy_core_v3.ConfigSource_Ads{},
+						},
+					},
+				},
+			})
 	}
 
 	res := &envoy_bootstrap_v3.Bootstrap{

@@ -52,7 +52,9 @@ Clusters:
           commonHttpProtocolOptions:
             idleTimeout: 3600s
           explicitHttpConfig:
-            http2ProtocolOptions: {}
+            http2ProtocolOptions:
+              initialConnectionWindowSize: 1048576
+              initialStreamWindowSize: 65536
 Endpoints:
   Resources: {}
 Listeners:
