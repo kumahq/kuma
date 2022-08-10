@@ -84,13 +84,13 @@ spec:
 		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	GatewayIP := func() string {
+	GatewayIP := func(name string) string {
 		var ip string
 		Eventually(func(g Gomega) {
 			out, err := k8s.RunKubectlAndGetOutputE(
 				env.Cluster.GetTesting(),
 				env.Cluster.GetKubectlOptions(namespace),
-				"get", "gateway", "kuma", "-ojsonpath={.status.addresses[0].value}",
+				"get", "gateway", name, "-ojsonpath={.status.addresses[0].value}",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(out).ToNot(BeEmpty())
@@ -100,6 +100,7 @@ spec:
 	}
 
 	Describe("GatewayClass parametersRef", Ordered, func() {
+		gatewayName := "kuma-ha"
 		haGatewayClass := `
 apiVersion: gateway.networking.k8s.io/v1alpha2
 kind: GatewayClass
@@ -124,7 +125,7 @@ spec:
 apiVersion: gateway.networking.k8s.io/v1alpha2
 kind: Gateway
 metadata:
-  name: kuma
+  name: %s
   namespace: %s
   annotations:
     kuma.io/mesh: %s
@@ -134,7 +135,7 @@ spec:
   - name: proxy
     port: 8080
     protocol: HTTP
-`, namespace, meshName)
+`, gatewayName, namespace, meshName)
 
 		BeforeAll(func() {
 			Expect(YamlK8s(haConfig)(env.Cluster)).To(Succeed())
@@ -142,13 +143,13 @@ spec:
 			Expect(YamlK8s(haGateway)(env.Cluster)).To(Succeed())
 		})
 		E2EAfterAll(func() {
-			Expect(k8s.RunKubectlE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(namespace), "delete", "gateway", "kuma")).To(Succeed())
+			Expect(k8s.RunKubectlE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(namespace), "delete", "gateway", gatewayName)).To(Succeed())
 			Expect(k8s.RunKubectlE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(namespace), "delete", "gatewayclass", "ha-kuma")).To(Succeed())
 			Expect(k8s.RunKubectlE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(namespace), "delete", "meshgatewayconfig", "ha-config")).To(Succeed())
 		})
 
 		It("should create the right number of pods", func() {
-			Expect(env.Cluster.WaitApp("kuma", namespace, 3)).To(Succeed())
+			Expect(env.Cluster.WaitApp(gatewayName, namespace, 3)).To(Succeed())
 		})
 
 		It("should create the right number of pods after updating MeshGatewayConfig", func() {
@@ -161,11 +162,12 @@ spec:
   replicas: 4`
 			Expect(YamlK8s(newHaConfig)(env.Cluster)).To(Succeed())
 
-			Expect(env.Cluster.WaitApp("kuma", namespace, 4)).To(Succeed())
+			Expect(env.Cluster.WaitApp(gatewayName, namespace, 4)).To(Succeed())
 		})
 	})
 
 	Context("HTTP Gateway", Ordered, func() {
+		const gatewayName = "kuma-http"
 		gatewayClass := `
 apiVersion: gateway.networking.k8s.io/v1alpha2
 kind: GatewayClass
@@ -179,7 +181,7 @@ spec:
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: Gateway
 metadata:
-  name: kuma
+  name: %s
   namespace: %s
   annotations:
     kuma.io/mesh: %s
@@ -189,17 +191,17 @@ spec:
   - name: proxy
     port: 8080
     protocol: HTTP
-`, namespace, meshName)
+`, gatewayName, namespace, meshName)
 
 		var address string
 
 		BeforeAll(func() {
 			Expect(YamlK8s(gatewayClass)(env.Cluster)).To(Succeed())
 			Expect(YamlK8s(gateway)(env.Cluster)).To(Succeed())
-			address = net.JoinHostPort(GatewayIP(), "8080")
+			address = net.JoinHostPort(GatewayIP(gatewayName), "8080")
 		})
 		E2EAfterAll(func() {
-			Expect(k8s.RunKubectlE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(namespace), "delete", "gateway", "kuma")).To(Succeed())
+			Expect(k8s.RunKubectlE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(namespace), "delete", "gateway", gatewayName)).To(Succeed())
 			Expect(k8s.RunKubectlE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(namespace), "delete", "gatewayclass", "kuma")).To(Succeed())
 		})
 
@@ -229,7 +231,7 @@ metadata:
     kuma.io/mesh: %s
 spec:
   parentRefs:
-  - name: kuma
+  - name: %s
   rules:
   - backendRefs:
     - name: test-server-1
@@ -245,7 +247,7 @@ spec:
     - path:
         type: PathPrefix
         value: /2
-`, namespace, meshName)
+`, namespace, meshName, gatewayName)
 
 			// when
 			err := YamlK8s(route)(env.Cluster)
@@ -278,7 +280,7 @@ metadata:
     kuma.io/mesh: %s
 spec:
   parentRefs:
-  - name: kuma
+  - name: %s
   hostnames:
   - "test-server-1.com"
   rules:
@@ -295,14 +297,14 @@ metadata:
     kuma.io/mesh: %s
 spec:
   parentRefs:
-  - name: kuma
+  - name: %s
   hostnames:
   - "test-server-2.com"
   rules:
   - backendRefs:
     - name: test-server-2
       port: 80
-`, namespace, meshName, namespace, meshName)
+`, namespace, meshName, gatewayName, namespace, meshName, gatewayName)
 
 			// when
 			err := YamlK8s(routes)(env.Cluster)
@@ -335,7 +337,7 @@ metadata:
     kuma.io/mesh: %s
 spec:
   parentRefs:
-  - name: kuma
+  - name: %s
   hostnames:
   - "external-service.com"
   rules:
@@ -343,7 +345,7 @@ spec:
     - group: kuma.io
       kind: ExternalService
       name: external-service
-`, namespace, meshName)
+`, namespace, meshName, gatewayName)
 
 			// when
 			err := YamlK8s(routes)(env.Cluster)
@@ -360,6 +362,7 @@ spec:
 	})
 
 	Context("HTTPS Gateway", Ordered, func() {
+		const gatewayName = "kuma-https"
 		secret := fmt.Sprintf(`
 apiVersion: v1
 kind: Secret
@@ -384,7 +387,7 @@ spec:
 apiVersion: gateway.networking.k8s.io/v1alpha2
 kind: Gateway
 metadata:
-  name: kuma
+  name: %s
   namespace: %s
   annotations:
     kuma.io/mesh: %s
@@ -404,7 +407,7 @@ spec:
     tls:
       certificateRefs:
       - name: secret-tls
-`, namespace, meshName)
+`, gatewayName, namespace, meshName)
 
 		var ip string
 
@@ -412,10 +415,10 @@ spec:
 			Expect(YamlK8s(secret)(env.Cluster)).To(Succeed())
 			Expect(YamlK8s(gatewayClass)(env.Cluster)).To(Succeed())
 			Expect(YamlK8s(gateway)(env.Cluster)).To(Succeed())
-			ip = GatewayIP()
+			ip = GatewayIP(gatewayName)
 		})
 		E2EAfterAll(func() {
-			Expect(k8s.RunKubectlE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(namespace), "delete", "gateway", "kuma")).To(Succeed())
+			Expect(k8s.RunKubectlE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(namespace), "delete", "gateway", gatewayName)).To(Succeed())
 			Expect(k8s.RunKubectlE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(namespace), "delete", "gatewayclass", "kuma")).To(Succeed())
 		})
 
@@ -431,7 +434,7 @@ metadata:
     kuma.io/mesh: %s
 spec:
   parentRefs:
-  - name: kuma
+  - name: %s
   rules:
   - backendRefs:
     - name: test-server-1
@@ -440,7 +443,7 @@ spec:
     - path:
         type: PathPrefix
         value: /
-`, namespace, meshName)
+`, namespace, meshName, gatewayName)
 
 			// when
 			err := YamlK8s(route)(env.Cluster)
@@ -511,7 +514,7 @@ data:
 apiVersion: gateway.networking.k8s.io/v1alpha2
 kind: Gateway
 metadata:
-  name: kuma
+  name: kuma-validate
   namespace: %s
   annotations:
     kuma.io/mesh: %s
