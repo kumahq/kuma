@@ -1221,6 +1221,7 @@ spec:
       annotations:
         kuma.io/gateway: enabled
         traffic.sidecar.istio.io/includeInboundPorts: ""
+        kuma.io/mesh: "{{ .Mesh }}"
       labels:
         app: ingress-kong
     spec:

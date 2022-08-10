@@ -42,5 +42,6 @@ func newInstallGatewayKongCmd(ctx *install_context.InstallGatewayKongContext) *c
 		},
 	}
 	cmd.Flags().StringVar(&args.Namespace, "namespace", args.Namespace, "namespace to install gateway to")
+	cmd.Flags().StringVar(&args.Mesh, "mesh", args.Namespace, "mesh to install gateway to")
 	return cmd
 }

@@ -1223,6 +1223,7 @@ spec:
       annotations:
         kuma.io/gateway: enabled
         traffic.sidecar.istio.io/includeInboundPorts: ""
+        kuma.io/mesh: "kuma-gateway"
       labels:
         app: ingress-kong
     spec:
