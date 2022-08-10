@@ -43,7 +43,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 		// localhost traffic is routed dirrectly to the application, in case of other interface we are going to set source address to
 		// 127.0.0.6 to avoid redirections and thanks to first iptables rule just return fast
 		if endpoint.WorkloadIP != core_mesh.IPv4Loopback.String() || endpoint.WorkloadIP != core_mesh.IPv6Loopback.String() {
-			switch proxy.Dataplane.IsIPv6() {
+			switch IsAddressIPv6(endpoint.WorkloadIP) {
 			case true:
 				clusterBuilder.Configure(envoy_clusters.UpstreamBindConfig(inPassThroughIPv6, 0))
 			case false:

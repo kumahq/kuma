@@ -18,7 +18,6 @@ func InboundPassthroughDisabled() {
 		localhostAddress := "127.0.0.1"
 		wildcardAddress := "0.0.0.0"
 		if Config.IPV6 {
-			localhostAddress = "::1"
 			wildcardAddress = "::"
 		}
 

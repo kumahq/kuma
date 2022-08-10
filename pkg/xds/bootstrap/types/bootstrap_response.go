@@ -29,5 +29,4 @@ type Aggregate struct {
 	Address string `json:"address"`
 	Port    uint32 `json:"port"`
 	Path    string `json:"path"`
-	IsIPv6  bool   `json:"isIPv6"`
 }

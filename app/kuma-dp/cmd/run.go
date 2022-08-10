@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"net"
 	"os"
 	"path/filepath"
 	"time"
@@ -26,6 +25,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/proto"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
+	xds_generator "github.com/kumahq/kuma/pkg/xds/generator"
 )
 
 var runLog = dataplaneLog.WithName("run")
@@ -300,7 +300,7 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 				Name:          item.Name,
 				Path:          item.Path,
 				Port:          item.Port,
-				IsIPv6:        isIPv6(item.Address),
+				IsIPv6:        xds_generator.IsAddressIPv6(item.Address),
 				QueryModifier: metrics.RemoveQueryParameters,
 			})
 		}
@@ -323,16 +323,4 @@ func writeFile(filename string, data []byte, perm os.FileMode) error {
 		return err
 	}
 	return os.WriteFile(filename, data, perm)
-}
-
-func isIPv6(address string) bool {
-	if address == "" {
-		return false
-	}
-	ip := net.ParseIP(address)
-	if ip == nil {
-		return false
-	}
-
-	return ip.To4() == nil
 }
