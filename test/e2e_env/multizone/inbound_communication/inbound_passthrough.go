@@ -15,6 +15,12 @@ func InboundPassthrough() {
 	const mesh = "inbound-passthrough"
 
 	BeforeAll(func() {
+		localhostAddress := "127.0.0.1"
+		wildcardAddress := "0.0.0.0"
+		if Config.IPV6 {
+			localhostAddress = "::1"
+			wildcardAddress = "::"
+		}
 		// Global
 		Expect(NewClusterSetup().
 			Install(MTLSMeshUniversal(mesh)).
@@ -29,23 +35,23 @@ func InboundPassthrough() {
 				WithTransparentProxy(true),
 			)).
 			Install(TestServerUniversal("uni-test-server-localhost", mesh,
-				WithArgs([]string{"echo", "--instance", "uni-bound-localhost", "--ip", "127.0.0.1"}),
+				WithArgs([]string{"echo", "--instance", "uni-bound-localhost", "--ip", localhostAddress}),
 				ServiceProbe(),
 				WithServiceName("uni-test-server-localhost"),
 			)).
 			Install(TestServerUniversal("uni-test-server-localhost-exposed", mesh,
-				WithArgs([]string{"echo", "--instance", "uni-bound-localhost-exposed", "--ip", "127.0.0.1"}),
+				WithArgs([]string{"echo", "--instance", "uni-bound-localhost-exposed", "--ip", localhostAddress}),
 				ServiceProbe(),
-				WithServiceAddress("127.0.0.1"),
+				WithServiceAddress(localhostAddress),
 				WithServiceName("uni-test-server-localhost-exposed"),
 			)).
 			Install(TestServerUniversal("uni-test-server-wildcard", mesh,
-				WithArgs([]string{"echo", "--instance", "uni-bound-wildcard", "--ip", "0.0.0.0"}),
+				WithArgs([]string{"echo", "--instance", "uni-bound-wildcard", "--ip", wildcardAddress}),
 				ServiceProbe(),
 				WithServiceName("uni-test-server-wildcard"),
 			)).
 			Install(TestServerUniversal("uni-test-server-wildcard-no-tp", mesh,
-				WithArgs([]string{"echo", "--instance", "uni-bound-wildcard-no-tp", "--ip", "0.0.0.0"}),
+				WithArgs([]string{"echo", "--instance", "uni-bound-wildcard-no-tp", "--ip", wildcardAddress}),
 				ServiceProbe(),
 				WithTransparentProxy(false),
 				WithServiceName("uni-test-server-wildcard-no-tp"),
@@ -67,14 +73,14 @@ func InboundPassthrough() {
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(mesh),
 				testserver.WithName("k8s-test-server-localhost"),
-				testserver.WithEchoArgs("echo", "--instance", "k8s-bound-localhost", "--ip", "127.0.0.1"),
+				testserver.WithEchoArgs("echo", "--instance", "k8s-bound-localhost", "--ip", localhostAddress),
 				testserver.WithoutProbe(),
 			)).
 			Install(testserver.Install(
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(mesh),
 				testserver.WithName("k8s-test-server-wildcard"),
-				testserver.WithEchoArgs("echo", "--instance", "k8s-bound-wildcard", "--ip", "0.0.0.0"),
+				testserver.WithEchoArgs("echo", "--instance", "k8s-bound-wildcard", "--ip", wildcardAddress),
 			)).
 			Install(testserver.Install(
 				testserver.WithNamespace(namespace),
