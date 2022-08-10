@@ -11,7 +11,12 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/env"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/gateway"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/healthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/inbound_communication"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/inspect"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/localityawarelb"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/trafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/trafficroute"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/zoneegress"
 	. "github.com/kumahq/kuma/test/framework"
@@ -217,12 +222,12 @@ var _ = SynchronizedBeforeSuite(
 	},
 )
 
-// var _ = Describe("Gateway", gateway.GatewayHybrid, Ordered)
-// var _ = Describe("Cross-mesh Gateways", gateway.CrossMeshGatewayOnMultizone, Ordered)
-// var _ = Describe("External Service locality aware", localityawarelb.ExternalServicesWithLocalityAwareLb, Ordered)
-// var _ = Describe("Healthcheck", healthcheck.ApplicationOnUniversalClientOnK8s, Ordered)
-// var _ = Describe("Inspect", inspect.Inspect, Ordered)
-// var _ = Describe("TrafficPermission", trafficpermission.TrafficPermission, Ordered)
+var _ = Describe("Gateway", gateway.GatewayHybrid, Ordered)
+var _ = Describe("Cross-mesh Gateways", gateway.CrossMeshGatewayOnMultizone, Ordered)
+var _ = Describe("External Service locality aware", localityawarelb.ExternalServicesWithLocalityAwareLb, Ordered)
+var _ = Describe("Healthcheck", healthcheck.ApplicationOnUniversalClientOnK8s, Ordered)
+var _ = Describe("Inspect", inspect.Inspect, Ordered)
+var _ = Describe("TrafficPermission", trafficpermission.TrafficPermission, Ordered)
 var _ = Describe("TrafficRoute", trafficroute.TrafficRoute, Ordered)
 var _ = Describe("InboundPassthrough", inbound_communication.InboundPassthrough, Ordered)
 var _ = Describe("InboundPassthroughDisabled", inbound_communication.InboundPassthroughDisabled, Ordered)

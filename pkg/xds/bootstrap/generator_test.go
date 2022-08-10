@@ -432,11 +432,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			cfg := bootstrap_config.DefaultBootstrapServerConfig()
 			proxyCfg := xds_config.DefaultProxyConfig()
 
-<<<<<<< HEAD
-			generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false, false, true, 9901, false)
-=======
-			generator, err := NewDefaultBootstrapGenerator(resManager, cfg, proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false, false, true, 9901)
->>>>>>> master
+			generator, err := NewDefaultBootstrapGenerator(resManager, cfg, proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false, false, true, 9901, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -570,11 +566,7 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 		err = resManager.Create(context.Background(), dataplane, store.CreateByKey("name.namespace", "metrics"))
 		Expect(err).ToNot(HaveOccurred())
 
-<<<<<<< HEAD
-		generator, err := NewDefaultBootstrapGenerator(resManager, config(), filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true, false, false, 0, false)
-=======
-		generator, err := NewDefaultBootstrapGenerator(resManager, config(), proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true, false, false, 0)
->>>>>>> master
+		generator, err := NewDefaultBootstrapGenerator(resManager, config(), proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true, false, false, 0, false)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -668,11 +660,7 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 		err = resManager.Create(context.Background(), dataplane, store.CreateByKey("name.namespace", "metrics"))
 		Expect(err).ToNot(HaveOccurred())
 
-<<<<<<< HEAD
-		generator, err := NewDefaultBootstrapGenerator(resManager, config(), filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true, false, false, 0, false)
-=======
-		generator, err := NewDefaultBootstrapGenerator(resManager, config(), proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true, false, false, 0)
->>>>>>> master
+		generator, err := NewDefaultBootstrapGenerator(resManager, config(), proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true, false, false, 0, false)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
