@@ -68,6 +68,7 @@ var _ = SynchronizedBeforeSuite(
 				WithEgress(),
 				WithEgressEnvoyAdminTunnel(),
 				WithGlobalAddress(env.Global.GetKuma().GetKDSServerAddress()),
+				WithExperimentalCNI(),
 			))).To(Succeed())
 			wg.Done()
 		}()
