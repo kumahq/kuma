@@ -133,7 +133,7 @@ spec:
   gatewayClassName: ha-kuma
   listeners:
   - name: proxy
-    port: 8080
+    port: 10080
     protocol: HTTP
 `, gatewayName, namespace, meshName)
 
@@ -189,7 +189,7 @@ spec:
   gatewayClassName: kuma
   listeners:
   - name: proxy
-    port: 8080
+    port: 10080
     protocol: HTTP
 `, gatewayName, namespace, meshName)
 
@@ -198,7 +198,7 @@ spec:
 		BeforeAll(func() {
 			Expect(YamlK8s(gatewayClass)(env.Cluster)).To(Succeed())
 			Expect(YamlK8s(gateway)(env.Cluster)).To(Succeed())
-			address = net.JoinHostPort(GatewayIP(gatewayName), "8080")
+			address = net.JoinHostPort(GatewayIP(gatewayName), "10080")
 		})
 		E2EAfterAll(func() {
 			Expect(k8s.RunKubectlE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(namespace), "delete", "gateway", gatewayName)).To(Succeed())
@@ -522,7 +522,7 @@ spec:
   gatewayClassName: kuma
   listeners:
   - name: proxy
-    port: 8080
+    port: 10080
     protocol: TCP
     hostname: xyz.io
 `, namespace, meshName)
