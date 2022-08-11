@@ -1,3 +1,5 @@
+# file taken from k3d docs https://github.com/k3d-io/k3d/blob/90c19610ba877141bc642894d5b43db66f0d3ecf/docs/usage/advanced/calico.md#use-calico-instead-of-flannel
+# it's extension is .kubelint-excluded so that kube-lint does not complain that it has privileged containers
 ---
 # Source: calico/templates/calico-config.yaml
 # This ConfigMap is used to configure a self-hosted Calico installation.
