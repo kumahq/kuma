@@ -80,6 +80,9 @@ func TestConformance(t *testing.T) {
 			metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationTrue,
 		},
 		ValidUniqueListenerPorts: validUniqueListenerPorts,
+		SupportedFeatures: []suite.SupportedFeature{
+			suite.SupportHTTPRouteQueryParamMatching,
+		},
 	})
 
 	conformanceSuite.Setup(t)
