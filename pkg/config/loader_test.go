@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"golang.org/x/exp/maps"
 
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -60,26 +61,26 @@ var _ = Describe("Config loader", func() {
 			err = config.Load(file.Name(), &cfg)
 			Expect(err).ToNot(HaveOccurred())
 
+			// then
 			if len(given.envVars) != 0 {
 				infos, err := testenvconfig.GatherInfo("", &cfg)
 				Expect(err).ToNot(HaveOccurred())
 
-				configEnvs := map[string]bool{}
+				configEnvs := map[string]struct{}{}
 				for _, info := range infos {
 					if info.Alt != "" {
-						configEnvs[info.Alt] = true
+						configEnvs[info.Alt] = struct{}{}
 					}
 				}
 
-				testEnvs := map[string]bool{}
+				testEnvs := map[string]struct{}{}
 				for key := range given.envVars {
-					testEnvs[key] = true
+					testEnvs[key] = struct{}{}
 				}
 
-				Expect(testEnvs).To(Equal(configEnvs), "config values are not overridden in the test. Add overrides for them with a value that is different than default.")
+				Expect(maps.Keys(testEnvs)).To(ConsistOf(maps.Keys(configEnvs)), "config values are not overridden in the test. Add overrides for them with a value that is different than default.")
 			}
 
-			// then
 			Expect(cfg.BootstrapServer.Params.AdminPort).To(Equal(uint32(1234)))
 			Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma-control-plane"))
 			Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(4321)))
@@ -263,6 +264,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Experimental.Cni).To(BeTrue())
 			Expect(cfg.Experimental.CniApp).To(Equal("kuma-cni"))
 			Expect(cfg.Experimental.KubeOutboundsAsVIPs).To(BeTrue())
+
+			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -494,6 +497,9 @@ experimental:
   kubeOutboundsAsVIPs: true
   cni: true
   cniApp: "kuma-cni"
+proxy:
+  gateway:
+    globalDownstreamMaxConnections: 1
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -655,6 +661,7 @@ experimental:
 				"KUMA_EXPERIMENTAL_CNI":                                                                    "true",
 				"KUMA_CNI_APP":                                                                             "kuma-cni",
 				"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS":                                                 "true",
+				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
 			},
 			yamlFileConfig: "",
 		}),

@@ -1164,7 +1164,7 @@ func (c *K8sCluster) LoadImages(names ...string) error {
 
 		var fullImageNames []string
 		for _, image := range names {
-			fullImageNames = append(fullImageNames, "kumahq/"+image+":"+version)
+			fullImageNames = append(fullImageNames, Config.KumaImageRegistry+"/"+image+":"+version)
 		}
 		defaultArgs := []string{"image", "import", "-m", "direct", "-c", c.name}
 		allArgs := append(defaultArgs, fullImageNames...)

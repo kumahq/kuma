@@ -4,91 +4,113 @@
    "name": "CircuitBreaker",
    "readOnly": false,
    "path": "circuit-breakers",
-   "displayName": "Circuit Breakers"
-  },
-  {
-   "name": "ExternalService",
-   "readOnly": false,
-   "path": "external-services",
-   "displayName": "External Services"
+   "singularDisplayName": "Circuit Breaker",
+   "pluralDisplayName": "Circuit Breakers",
+   "isExperimental": false
   },
   {
    "name": "FaultInjection",
    "readOnly": false,
    "path": "fault-injections",
-   "displayName": "Fault Injections"
+   "singularDisplayName": "Fault Injection",
+   "pluralDisplayName": "Fault Injections",
+   "isExperimental": false
   },
   {
    "name": "HealthCheck",
    "readOnly": false,
    "path": "health-checks",
-   "displayName": "Health Checks"
+   "singularDisplayName": "Health Check",
+   "pluralDisplayName": "Health Checks",
+   "isExperimental": false
   },
   {
    "name": "MeshGateway",
    "readOnly": false,
    "path": "meshgateways",
-   "displayName": "Mesh Gateways"
+   "singularDisplayName": "Mesh Gateway",
+   "pluralDisplayName": "Mesh Gateways",
+   "isExperimental": true
   },
   {
    "name": "MeshGatewayRoute",
    "readOnly": false,
    "path": "meshgatewayroutes",
-   "displayName": "Mesh Gateway Routes"
+   "singularDisplayName": "Mesh Gateway Route",
+   "pluralDisplayName": "Mesh Gateway Routes",
+   "isExperimental": true
   },
   {
    "name": "ProxyTemplate",
    "readOnly": false,
    "path": "proxytemplates",
-   "displayName": "Proxy Templates"
+   "singularDisplayName": "Proxy Template",
+   "pluralDisplayName": "Proxy Templates",
+   "isExperimental": false
   },
   {
    "name": "RateLimit",
    "readOnly": false,
    "path": "rate-limits",
-   "displayName": "Rate Limits"
+   "singularDisplayName": "Rate Limit",
+   "pluralDisplayName": "Rate Limits",
+   "isExperimental": false
   },
   {
    "name": "Retry",
    "readOnly": false,
    "path": "retries",
-   "displayName": "Retries"
+   "singularDisplayName": "Retry",
+   "pluralDisplayName": "Retries",
+   "isExperimental": false
   },
   {
    "name": "Timeout",
    "readOnly": false,
    "path": "timeouts",
-   "displayName": "Timeouts"
+   "singularDisplayName": "Timeout",
+   "pluralDisplayName": "Timeouts",
+   "isExperimental": false
   },
   {
    "name": "TrafficLog",
    "readOnly": false,
    "path": "traffic-logs",
-   "displayName": "Traffic Logs"
+   "singularDisplayName": "Traffic Log",
+   "pluralDisplayName": "Traffic Logs",
+   "isExperimental": false
   },
   {
    "name": "TrafficPermission",
    "readOnly": false,
    "path": "traffic-permissions",
-   "displayName": "Traffic Permissions"
+   "singularDisplayName": "Traffic Permission",
+   "pluralDisplayName": "Traffic Permissions",
+   "isExperimental": false
   },
   {
    "name": "TrafficRoute",
    "readOnly": false,
    "path": "traffic-routes",
-   "displayName": "Traffic Routes"
+   "singularDisplayName": "Traffic Route",
+   "pluralDisplayName": "Traffic Routes",
+   "isExperimental": false
   },
   {
    "name": "TrafficTrace",
    "readOnly": false,
    "path": "traffic-traces",
-   "displayName": "Traffic Traces"
+   "singularDisplayName": "Traffic Trace",
+   "pluralDisplayName": "Traffic Traces",
+   "isExperimental": false
   },
   {
    "name": "VirtualOutbound",
    "readOnly": false,
    "path": "virtual-outbounds",
-   "displayName": "Virtual Outbounds"
+   "singularDisplayName": "Virtual Outbound",
+   "pluralDisplayName": "Virtual Outbounds",
+   "isExperimental": false
   }
  ]
 }

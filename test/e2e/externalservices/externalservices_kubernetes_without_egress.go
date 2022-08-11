@@ -140,8 +140,10 @@ spec:
 			"true"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		_, _, err = cluster.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "http://external-service.mesh:10080")
-		Expect(err).To(HaveOccurred())
+		Eventually(func() error {
+			_, _, err = cluster.Exec(TestNamespace, clientPodName, "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "http://external-service.mesh:10080")
+			return err
+		}, "30s", "1s").Should(HaveOccurred())
 	})
 }

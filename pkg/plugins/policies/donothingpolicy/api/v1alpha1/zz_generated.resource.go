@@ -102,15 +102,17 @@ func (l *DoNothingPolicyResourceList) GetPagination() *model.Pagination {
 }
 
 var DoNothingPolicyResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           DoNothingPolicyType,
-	Resource:       NewDoNothingPolicyResource(),
-	ResourceList:   &DoNothingPolicyResourceList{},
-	Scope:          model.ScopeMesh,
-	KDSFlags:       model.FromGlobalToZone,
-	WsPath:         "donothingpolicies",
-	KumactlArg:     "donothingpolicy",
-	KumactlListArg: "donothingpolicies",
-	AllowToInspect: true,
-	IsPolicy:       true,
-	DisplayName:    "Do Nothing Policies",
+	Name:                DoNothingPolicyType,
+	Resource:            NewDoNothingPolicyResource(),
+	ResourceList:        &DoNothingPolicyResourceList{},
+	Scope:               model.ScopeMesh,
+	KDSFlags:            model.FromGlobalToZone,
+	WsPath:              "donothingpolicies",
+	KumactlArg:          "donothingpolicy",
+	KumactlListArg:      "donothingpolicies",
+	AllowToInspect:      true,
+	IsPolicy:            true,
+	IsExperimental:      false,
+	SingularDisplayName: "Do Nothing Policy",
+	PluralDisplayName:   "Do Nothing Policies",
 }
