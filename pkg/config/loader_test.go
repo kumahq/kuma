@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"golang.org/x/exp/maps"
 
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -60,26 +61,26 @@ var _ = Describe("Config loader", func() {
 			err = config.Load(file.Name(), &cfg)
 			Expect(err).ToNot(HaveOccurred())
 
+			// then
 			if len(given.envVars) != 0 {
 				infos, err := testenvconfig.GatherInfo("", &cfg)
 				Expect(err).ToNot(HaveOccurred())
 
-				configEnvs := map[string]bool{}
+				configEnvs := map[string]struct{}{}
 				for _, info := range infos {
 					if info.Alt != "" {
-						configEnvs[info.Alt] = true
+						configEnvs[info.Alt] = struct{}{}
 					}
 				}
 
-				testEnvs := map[string]bool{}
+				testEnvs := map[string]struct{}{}
 				for key := range given.envVars {
-					testEnvs[key] = true
+					testEnvs[key] = struct{}{}
 				}
 
-				Expect(testEnvs).To(Equal(configEnvs), "config values are not overridden in the test. Add overrides for them with a value that is different than default.")
+				Expect(maps.Keys(testEnvs)).To(ConsistOf(maps.Keys(configEnvs)), "config values are not overridden in the test. Add overrides for them with a value that is different than default.")
 			}
 
-			// then
 			Expect(cfg.BootstrapServer.Params.AdminPort).To(Equal(uint32(1234)))
 			Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma-control-plane"))
 			Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(4321)))
@@ -179,10 +180,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ReadinessProbe.InitialDelaySeconds).To(Equal(int32(41)))
 			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Enabled).To(Equal(true))
 			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Port).To(Equal(uint32(1053)))
-			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.Enabled).To(Equal(true))
-			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.InstanceIPEnvVarName).To(Equal("FOO"))
-			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.BPFFSPath).To(Equal("/run/kuma/bar"))
-			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.ProgramsSourcePath).To(Equal("/kuma/baz"))
 
 			Expect(cfg.Runtime.Universal.DataplaneCleanupAge).To(Equal(1 * time.Hour))
 
@@ -210,6 +207,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Zone.KDS.MaxMsgSize).To(Equal(uint32(2)))
 
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
+			Expect(cfg.Defaults.EnableLocalhostInboundClusters).To(BeTrue())
 
 			Expect(cfg.Diagnostics.ServerPort).To(Equal(uint32(5003)))
 			Expect(cfg.Diagnostics.DebugEndpoints).To(BeTrue())
@@ -260,7 +258,11 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Access.Static.ViewClusters.Groups).To(Equal([]string{"zt-group1", "zt-group2"}))
 
 			Expect(cfg.Experimental.GatewayAPI).To(BeTrue())
+			Expect(cfg.Experimental.Cni).To(BeTrue())
+			Expect(cfg.Experimental.CniApp).To(Equal("kuma-cni"))
 			Expect(cfg.Experimental.KubeOutboundsAsVIPs).To(BeTrue())
+
+			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -392,11 +394,6 @@ runtime:
       builtinDNS:
         enabled: true
         port: 1053
-      ebpf:
-        enabled: true
-        instanceIPEnvVarName: FOO
-        bpffsPath: /run/kuma/bar
-        programsSourcePath: /kuma/baz
 reports:
   enabled: false
 general:
@@ -429,6 +426,7 @@ dnsServer:
   serviceVipEnabled: false
 defaults:
   skipMeshCreation: true
+  enableLocalhostInboundClusters: true
 diagnostics:
   serverPort: 5003
   debugEndpoints: true
@@ -490,6 +488,11 @@ access:
 experimental:
   gatewayAPI: true
   kubeOutboundsAsVIPs: true
+  cni: true
+  cniApp: "kuma-cni"
+proxy:
+  gateway:
+    globalDownstreamMaxConnections: 1
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -577,10 +580,6 @@ experimental:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_INITIAL_DELAY_SECONDS": "41",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED":                                     "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_PORT":                                        "1053",
-				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_ENABLED":                                            "true",
-				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_INSTANCE_IP_ENV_VAR_NAME":                           "FOO",
-				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_BPFFS_PATH":                                         "/run/kuma/bar",
-				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH":                               "/kuma/baz",
 				"KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED":                                           "false",
 				"KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT":                                              "1111",
 				"KUMA_RUNTIME_KUBERNETES_EXCEPTIONS_LABELS":                                                "openshift.io/build.name:value1,openshift.io/deployer-pod-for.name:value2",
@@ -607,6 +606,7 @@ experimental:
 				"KUMA_MULTIZONE_ZONE_KDS_MAX_MSG_SIZE":                                                     "2",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL":                                    "5s",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",
+				"KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS":                                          "true",
 				"KUMA_DIAGNOSTICS_SERVER_PORT":                                                             "5003",
 				"KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS":                                                         "true",
 				"KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL":                                          "7s",
@@ -648,7 +648,10 @@ experimental:
 				"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_USERS":                                                   "zt-admin1,zt-admin2",
 				"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_GROUPS":                                                  "zt-group1,zt-group2",
 				"KUMA_EXPERIMENTAL_GATEWAY_API":                                                            "true",
+				"KUMA_EXPERIMENTAL_CNI":                                                                    "true",
+				"KUMA_CNI_APP":                                                                             "kuma-cni",
 				"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS":                                                 "true",
+				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
 			},
 			yamlFileConfig: "",
 		}),

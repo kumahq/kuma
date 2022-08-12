@@ -88,9 +88,14 @@ A Helm chart for the Kuma Control Plane
 | cni.image.registry | string | `"docker.io/kumahq"` | CNI image registry |
 | cni.image.repository | string | `"install-cni"` | CNI image repository |
 | cni.image.tag | string | `"0.0.10"` | CNI image tag |
-| cni.imageExperimental | object | `{"repository":"kuma-cni","tag":null}` | use new CNI image (experimental) |
-| cni.imageExperimental.repository | string | `"kuma-cni"` | CNI experimental image repository |
-| cni.imageExperimental.tag | string | `nil` | CNI experimental image tag - defaults to .Chart.AppVersion |
+| cni.image.imagePullPolicy | string | `"IfNotPresent"` | CNI image pull policy |
+| cni.delayStartupSeconds | int | `0` | it's only useful in tests to trigger a possible race condition |
+| cni.experimental | object | `{"image":{"repository":"kuma-cni","tag":null},"imageEbpf":{"registry":"docker.io/kumahq","repository":"merbridge","tag":"0.7.1"}}` | use new CNI image (experimental) |
+| cni.experimental.image.repository | string | `"kuma-cni"` | CNI experimental image repository |
+| cni.experimental.image.tag | string | `nil` | CNI experimental image tag - defaults to .Chart.AppVersion |
+| cni.experimental.imageEbpf.registry | string | `"docker.io/kumahq"` | CNI experimental eBPF image registry |
+| cni.experimental.imageEbpf.repository | string | `"merbridge"` | CNI experimental eBPF image repository |
+| cni.experimental.imageEbpf.tag | string | `"0.7.1"` | CNI experimental eBPF image tag |
 | cni.podSecurityContext | object | `{}` | Security context at the pod level for cni |
 | cni.containerSecurityContext | object | `{}` | Security context at the container level for cni |
 | dataPlane.image.repository | string | `"kuma-dp"` | The Kuma DP image repository |
@@ -158,9 +163,6 @@ A Helm chart for the Kuma Control Plane
 | experimental.gatewayAPI | bool | `false` | If true, it installs experimental Gateway API support |
 | experimental.cni | bool | `false` | If true, it installs experimental new version of the CNI |
 | experimental.ebpf.enabled | bool | `false` | If true, ebpf will be used instead of using iptables to install/configure transparent proxy |
-| experimental.ebpf.instanceIPEnvVarName | string | `"INSTANCE_IP"` | Name of the environmental variable which will contain the IP address of a pod |
-| experimental.ebpf.bpffsPath | string | `"/run/kuma/bpf"` | Path where BPF file system should be mounted |
-| experimental.ebpf.programsSourcePath | string | `"/kuma/ebpf"` | Path where compiled eBPF programs which will be installed can be found |
 | plugins.policies | list | `[]` |  |
 
 ## Custom Resource Definitions

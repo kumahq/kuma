@@ -28,7 +28,7 @@ var _ = Describe("Zone Overview Endpoints", func() {
 
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
-		apiServer, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore))
+		apiServer, _, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore))
 	})
 
 	AfterEach(func() {

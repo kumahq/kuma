@@ -319,13 +319,27 @@ cni:
     repository: "install-cni"
     # -- CNI image tag
     tag: "0.0.10"
+    # -- CNI image pull policy
+    imagePullPolicy: IfNotPresent
+
+  # -- it's only useful in tests to trigger a possible race condition
+  delayStartupSeconds: 0
 
   # -- use new CNI image (experimental)
-  imageExperimental:
-    # -- CNI experimental image repository
-    repository: "kuma-cni"
-    # -- CNI experimental image tag - defaults to .Chart.AppVersion
-    tag:
+  experimental:
+    image:
+      # -- CNI experimental image repository
+      repository: "kuma-cni"
+      # -- CNI experimental image tag - defaults to .Chart.AppVersion
+      tag:
+
+    imageEbpf:
+      # -- CNI experimental eBPF image registry
+      registry: "docker.io/kumahq"
+      # -- CNI experimental eBPF image repository
+      repository: "merbridge"
+      # -- CNI experimental eBPF image tag
+      tag: "0.7.1"
 
   # -- Security context at the pod level for cni
   podSecurityContext: {}
@@ -658,12 +672,6 @@ experimental:
   ebpf:
     # -- If true, ebpf will be used instead of using iptables to install/configure transparent proxy
     enabled: false
-    # -- Name of the environmental variable which will contain the IP address of a pod
-    instanceIPEnvVarName: INSTANCE_IP
-    # -- Path where BPF file system should be mounted
-    bpffsPath: /run/kuma/bpf
-    # -- Path where compiled eBPF programs which will be installed can be found
-    programsSourcePath: /kuma/ebpf
 
 plugins:
   policies: []

@@ -22,6 +22,13 @@ func BeEqual(expected interface{}) types.GomegaMatcher {
 	}
 }
 
+func BeGreaterThan(other StatItem) types.GomegaMatcher {
+	fn := greaterThanOther(other)
+	return &statMatcher{
+		predicate: &fn,
+	}
+}
+
 func BeGreaterThanZero() types.GomegaMatcher {
 	return &statMatcher{
 		predicate: &greaterThanZeroPredicate,
@@ -53,6 +60,14 @@ var greaterThanZeroPredicate = func(interface{}) func(item StatItem) bool {
 var equalPredicate = func(expected interface{}) func(item StatItem) bool {
 	return func(stat StatItem) bool {
 		return int(stat.Value.(float64)) == expected.(int)
+	}
+}
+
+func greaterThanOther(other StatItem) func(interface{}) func(StatItem) bool {
+	return func(expected interface{}) func(item StatItem) bool {
+		return func(item StatItem) bool {
+			return item.Value.(float64) > other.Value.(float64)
+		}
 	}
 }
 

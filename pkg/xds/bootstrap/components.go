@@ -9,11 +9,13 @@ func RegisterBootstrap(rt core_runtime.Runtime) error {
 	generator, err := NewDefaultBootstrapGenerator(
 		rt.ResourceManager(),
 		rt.Config().BootstrapServer,
+		rt.Config().Proxy,
 		rt.Config().DpServer.TlsCertFile,
 		rt.Config().DpServer.Auth.Type != dp_server.DpServerAuthNone,
 		rt.Config().DpServer.Auth.UseTokenPath,
 		rt.Config().DpServer.Hds.Enabled,
 		rt.Config().GetEnvoyAdminPort(),
+		rt.Config().Defaults.EnableLocalhostInboundClusters,
 	)
 	if err != nil {
 		return err

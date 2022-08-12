@@ -70,6 +70,30 @@
             - `PUT`
         
             - `TRACE`    
+        
+        - `retryOn` (optional, repeated, enum)
+        
+            +optional
+        
+            - `all_5xx`
+        
+            - `gateway_error`
+        
+            - `reset`
+        
+            - `connect_failure`
+        
+            - `envoy_ratelimited`
+        
+            - `retriable_4xx`
+        
+            - `refused_stream`
+        
+            - `retriable_status_codes`
+        
+            - `retriable_headers`
+        
+            - `http3_post_connect_failure`    
     
     - `tcp` (optional)    
         

@@ -75,35 +75,6 @@ networking:
 		return err
 	}
 
-	It("should access external service through zoneegress", func() {
-		filter := fmt.Sprintf(
-			"cluster.%s_%s.upstream_rq_total",
-			"default",
-			"external-service-1",
-		)
-
-		err := YamlUniversal(externalService)(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		Eventually(func(g Gomega) {
-			stat, err := cluster.GetZoneEgressEnvoyTunnel().GetStats(filter)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stat).To(stats.BeEqualZero())
-		}, "30s", "1s").Should(Succeed())
-
-		stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
-			"curl", "--verbose", "--max-time", "3", "--fail", "external-service-1.mesh")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-		Expect(stdout).To(ContainSubstring("Echo 80"))
-
-		Eventually(func(g Gomega) {
-			stat, err := cluster.GetZoneEgressEnvoyTunnel().GetStats(filter)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stat).To(stats.BeGreaterThanZero())
-		}, "30s", "1s").Should(Succeed())
-	})
-
 	It("should not access external service when zone egress is down", func() {
 		// given universal cluster
 		universalClusters, ok := cluster.(*UniversalCluster)

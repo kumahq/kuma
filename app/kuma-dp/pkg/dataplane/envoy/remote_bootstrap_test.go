@@ -300,14 +300,16 @@ var _ = Describe("Remote Bootstrap", func() {
 					Metrics: types.MetricsConfiguration{
 						Aggregate: []types.Aggregate{
 							{
-								Name: "my-app",
-								Port: 123,
-								Path: "/stats",
+								Address: "127.0.0.1",
+								Name:    "my-app",
+								Port:    123,
+								Path:    "/stats",
 							},
 							{
-								Name: "my-app-2",
-								Port: 12345,
-								Path: "/stats/2",
+								Address: "1.2.3.4",
+								Name:    "my-app-2",
+								Port:    12345,
+								Path:    "/stats/2",
 							},
 						},
 					},
@@ -343,13 +345,15 @@ var _ = Describe("Remote Bootstrap", func() {
 		Expect(bootstrap).ToNot(BeNil())
 		Expect(len(kumaSidecarConfiguration.Metrics.Aggregate)).To(Equal(2))
 		Expect(kumaSidecarConfiguration.Metrics.Aggregate).To(ContainElements(types.Aggregate{
-			Name: "my-app",
-			Port: 123,
-			Path: "/stats",
+			Address: "127.0.0.1",
+			Name:    "my-app",
+			Port:    123,
+			Path:    "/stats",
 		}, types.Aggregate{
-			Name: "my-app-2",
-			Port: 12345,
-			Path: "/stats/2",
+			Address: "1.2.3.4",
+			Name:    "my-app-2",
+			Port:    12345,
+			Path:    "/stats/2",
 		}))
 
 	})

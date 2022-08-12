@@ -11,9 +11,10 @@ type KumaDpBootstrap struct {
 }
 
 type AggregateMetricsConfig struct {
-	Name string
-	Path string
-	Port uint32
+	Name    string
+	Path    string
+	Address string
+	Port    uint32
 }
 
 type configParameters struct {

@@ -1,265 +1,407 @@
-Resources:
-  default-gateway:HTTPS:443:
-    address:
-      socketAddress:
-        address: 192.168.1.1
-        portValue: 443
-    enableReusePort: true
-    filterChains:
-    - filterChainMatch:
-        serverNames:
+Clusters:
+  Resources: {}
+Endpoints:
+  Resources: {}
+Listeners:
+  Resources:
+    default-gateway:HTTPS:443:
+      address:
+        socketAddress:
+          address: 192.168.1.1
+          portValue: 443
+      enableReusePort: true
+      filterChains:
+      - filterChainMatch:
+          serverNames:
+          - foo.example.com
+          transportProtocol: tls
+        filters:
+        - name: envoy.filters.network.http_connection_manager
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+            commonHttpProtocolOptions:
+              headersWithUnderscoresAction: REJECT_REQUEST
+              idleTimeout: 300s
+            http2ProtocolOptions:
+              allowConnect: true
+              initialConnectionWindowSize: 1048576
+              initialStreamWindowSize: 65536
+              maxConcurrentStreams: 100
+            httpFilters:
+            - name: envoy.filters.http.local_ratelimit
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                statPrefix: rate_limit
+            - name: gzip-compress
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
+                compressorLibrary:
+                  name: gzip
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
+                responseDirectionConfig:
+                  disableOnEtagHeader: true
+            - name: envoy.filters.http.router
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+            mergeSlashes: true
+            normalizePath: true
+            pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
+            rds:
+              configSource:
+                ads: {}
+                resourceApiVersion: V3
+              routeConfigName: default-gateway:HTTPS:443
+            requestHeadersTimeout: 0.500s
+            serverName: Kuma Gateway
+            statPrefix: gateway-default
+            streamIdleTimeout: 5s
+            stripAnyHostPort: true
+            useRemoteAddress: true
+        transportSocket:
+          name: envoy.transport_sockets.tls
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+            commonTlsContext:
+              alpnProtocols:
+              - h2
+              - http/1.1
+              tlsCertificateSdsSecretConfigs:
+              - name: cert.rsa:secret:server-certificate
+                sdsConfig:
+                  ads: {}
+                  resourceApiVersion: V3
+              tlsParams:
+                tlsMinimumProtocolVersion: TLSv1_2
+            requireClientCertificate: false
+      - filterChainMatch:
+          serverNames:
+          - bar.example.com
+          transportProtocol: tls
+        filters:
+        - name: envoy.filters.network.http_connection_manager
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+            commonHttpProtocolOptions:
+              headersWithUnderscoresAction: REJECT_REQUEST
+              idleTimeout: 300s
+            http2ProtocolOptions:
+              allowConnect: true
+              initialConnectionWindowSize: 1048576
+              initialStreamWindowSize: 65536
+              maxConcurrentStreams: 100
+            httpFilters:
+            - name: envoy.filters.http.local_ratelimit
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                statPrefix: rate_limit
+            - name: gzip-compress
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
+                compressorLibrary:
+                  name: gzip
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
+                responseDirectionConfig:
+                  disableOnEtagHeader: true
+            - name: envoy.filters.http.router
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+            mergeSlashes: true
+            normalizePath: true
+            pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
+            rds:
+              configSource:
+                ads: {}
+                resourceApiVersion: V3
+              routeConfigName: default-gateway:HTTPS:443
+            requestHeadersTimeout: 0.500s
+            serverName: Kuma Gateway
+            statPrefix: gateway-default
+            streamIdleTimeout: 5s
+            stripAnyHostPort: true
+            useRemoteAddress: true
+        transportSocket:
+          name: envoy.transport_sockets.tls
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+            commonTlsContext:
+              alpnProtocols:
+              - h2
+              - http/1.1
+              tlsCertificateSdsSecretConfigs:
+              - name: cert.rsa:secret:server-certificate
+                sdsConfig:
+                  ads: {}
+                  resourceApiVersion: V3
+              tlsParams:
+                tlsMinimumProtocolVersion: TLSv1_2
+            requireClientCertificate: false
+      - filterChainMatch:
+          serverNames:
+          - '*.example.com'
+          transportProtocol: tls
+        filters:
+        - name: envoy.filters.network.http_connection_manager
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+            commonHttpProtocolOptions:
+              headersWithUnderscoresAction: REJECT_REQUEST
+              idleTimeout: 300s
+            http2ProtocolOptions:
+              allowConnect: true
+              initialConnectionWindowSize: 1048576
+              initialStreamWindowSize: 65536
+              maxConcurrentStreams: 100
+            httpFilters:
+            - name: envoy.filters.http.local_ratelimit
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                statPrefix: rate_limit
+            - name: gzip-compress
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
+                compressorLibrary:
+                  name: gzip
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
+                responseDirectionConfig:
+                  disableOnEtagHeader: true
+            - name: envoy.filters.http.router
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+            mergeSlashes: true
+            normalizePath: true
+            pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
+            rds:
+              configSource:
+                ads: {}
+                resourceApiVersion: V3
+              routeConfigName: default-gateway:HTTPS:443
+            requestHeadersTimeout: 0.500s
+            serverName: Kuma Gateway
+            statPrefix: gateway-default
+            streamIdleTimeout: 5s
+            stripAnyHostPort: true
+            useRemoteAddress: true
+        transportSocket:
+          name: envoy.transport_sockets.tls
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+            commonTlsContext:
+              alpnProtocols:
+              - h2
+              - http/1.1
+              tlsCertificateSdsSecretConfigs:
+              - name: cert.rsa:secret:server-certificate
+                sdsConfig:
+                  ads: {}
+                  resourceApiVersion: V3
+              tlsParams:
+                tlsMinimumProtocolVersion: TLSv1_2
+            requireClientCertificate: false
+      - filterChainMatch:
+          transportProtocol: tls
+        filters:
+        - name: envoy.filters.network.http_connection_manager
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+            commonHttpProtocolOptions:
+              headersWithUnderscoresAction: REJECT_REQUEST
+              idleTimeout: 300s
+            http2ProtocolOptions:
+              allowConnect: true
+              initialConnectionWindowSize: 1048576
+              initialStreamWindowSize: 65536
+              maxConcurrentStreams: 100
+            httpFilters:
+            - name: envoy.filters.http.local_ratelimit
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                statPrefix: rate_limit
+            - name: gzip-compress
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
+                compressorLibrary:
+                  name: gzip
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
+                responseDirectionConfig:
+                  disableOnEtagHeader: true
+            - name: envoy.filters.http.router
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+            mergeSlashes: true
+            normalizePath: true
+            pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
+            rds:
+              configSource:
+                ads: {}
+                resourceApiVersion: V3
+              routeConfigName: default-gateway:HTTPS:443
+            requestHeadersTimeout: 0.500s
+            serverName: Kuma Gateway
+            statPrefix: gateway-default
+            streamIdleTimeout: 5s
+            stripAnyHostPort: true
+            useRemoteAddress: true
+        transportSocket:
+          name: envoy.transport_sockets.tls
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+            commonTlsContext:
+              alpnProtocols:
+              - h2
+              - http/1.1
+              tlsCertificateSdsSecretConfigs:
+              - name: cert.rsa:secret:server-certificate
+                sdsConfig:
+                  ads: {}
+                  resourceApiVersion: V3
+              tlsParams:
+                tlsMinimumProtocolVersion: TLSv1_2
+            requireClientCertificate: false
+      listenerFilters:
+      - name: envoy.filters.listener.tls_inspector
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+      name: default-gateway:HTTPS:443
+      perConnectionBufferLimitBytes: 32768
+      trafficDirection: INBOUND
+Routes:
+  Resources:
+    default-gateway:HTTPS:443:
+      name: default-gateway:HTTPS:443
+      requestHeadersToRemove:
+      - x-kuma-tags
+      validateClusters: false
+      virtualHosts:
+      - domains:
         - foo.example.com
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.http_connection_manager
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-          commonHttpProtocolOptions:
-            headersWithUnderscoresAction: REJECT_REQUEST
-            idleTimeout: 300s
-          http2ProtocolOptions:
-            allowConnect: true
-            initialConnectionWindowSize: 1048576
-            initialStreamWindowSize: 65536
-            maxConcurrentStreams: 100
-          httpFilters:
-          - name: envoy.filters.http.local_ratelimit
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-              statPrefix: rate_limit
-          - name: gzip-compress
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
-              compressorLibrary:
-                name: gzip
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
-              responseDirectionConfig:
-                disableOnEtagHeader: true
-          - name: envoy.filters.http.router
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-          mergeSlashes: true
-          normalizePath: true
-          pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
-          rds:
-            configSource:
-              ads: {}
-              resourceApiVersion: V3
-            routeConfigName: default-gateway:HTTPS:443
-          requestHeadersTimeout: 0.500s
-          serverName: Kuma Gateway
-          statPrefix: gateway-default
-          streamIdleTimeout: 5s
-          stripAnyHostPort: true
-          useRemoteAddress: true
-      transportSocket:
-        name: envoy.transport_sockets.tls
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
-          commonTlsContext:
-            alpnProtocols:
-            - h2
-            - http/1.1
-            tlsCertificateSdsSecretConfigs:
-            - name: cert.rsa:secret:server-certificate
-              sdsConfig:
-                ads: {}
-                resourceApiVersion: V3
-            tlsParams:
-              tlsMinimumProtocolVersion: TLSv1_2
-          requireClientCertificate: false
-    - filterChainMatch:
-        serverNames:
+        name: foo.example.com
+        requireTls: ALL
+        responseHeadersToAdd:
+        - append: false
+          header:
+            key: Strict-Transport-Security
+            value: max-age=31536000; includeSubDomains
+        routes:
+        - directResponse:
+            body:
+              inlineString: |
+                This is a Kuma MeshGateway. No routes match this MeshGateway!
+            status: 404
+          match:
+            prefix: /
+      - domains:
         - bar.example.com
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.http_connection_manager
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-          commonHttpProtocolOptions:
-            headersWithUnderscoresAction: REJECT_REQUEST
-            idleTimeout: 300s
-          http2ProtocolOptions:
-            allowConnect: true
-            initialConnectionWindowSize: 1048576
-            initialStreamWindowSize: 65536
-            maxConcurrentStreams: 100
-          httpFilters:
-          - name: envoy.filters.http.local_ratelimit
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-              statPrefix: rate_limit
-          - name: gzip-compress
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
-              compressorLibrary:
-                name: gzip
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
-              responseDirectionConfig:
-                disableOnEtagHeader: true
-          - name: envoy.filters.http.router
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-          mergeSlashes: true
-          normalizePath: true
-          pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
-          rds:
-            configSource:
-              ads: {}
-              resourceApiVersion: V3
-            routeConfigName: default-gateway:HTTPS:443
-          requestHeadersTimeout: 0.500s
-          serverName: Kuma Gateway
-          statPrefix: gateway-default
-          streamIdleTimeout: 5s
-          stripAnyHostPort: true
-          useRemoteAddress: true
-      transportSocket:
-        name: envoy.transport_sockets.tls
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
-          commonTlsContext:
-            alpnProtocols:
-            - h2
-            - http/1.1
-            tlsCertificateSdsSecretConfigs:
-            - name: cert.rsa:secret:server-certificate
-              sdsConfig:
-                ads: {}
-                resourceApiVersion: V3
-            tlsParams:
-              tlsMinimumProtocolVersion: TLSv1_2
-          requireClientCertificate: false
-    - filterChainMatch:
-        serverNames:
+        name: bar.example.com
+        requireTls: ALL
+        responseHeadersToAdd:
+        - append: false
+          header:
+            key: Strict-Transport-Security
+            value: max-age=31536000; includeSubDomains
+        routes:
+        - directResponse:
+            body:
+              inlineString: |
+                This is a Kuma MeshGateway. No routes match this MeshGateway!
+            status: 404
+          match:
+            prefix: /
+      - domains:
         - '*.example.com'
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.http_connection_manager
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-          commonHttpProtocolOptions:
-            headersWithUnderscoresAction: REJECT_REQUEST
-            idleTimeout: 300s
-          http2ProtocolOptions:
-            allowConnect: true
-            initialConnectionWindowSize: 1048576
-            initialStreamWindowSize: 65536
-            maxConcurrentStreams: 100
-          httpFilters:
-          - name: envoy.filters.http.local_ratelimit
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-              statPrefix: rate_limit
-          - name: gzip-compress
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
-              compressorLibrary:
-                name: gzip
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
-              responseDirectionConfig:
-                disableOnEtagHeader: true
-          - name: envoy.filters.http.router
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-          mergeSlashes: true
-          normalizePath: true
-          pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
-          rds:
-            configSource:
-              ads: {}
-              resourceApiVersion: V3
-            routeConfigName: default-gateway:HTTPS:443
-          requestHeadersTimeout: 0.500s
-          serverName: Kuma Gateway
-          statPrefix: gateway-default
-          streamIdleTimeout: 5s
-          stripAnyHostPort: true
-          useRemoteAddress: true
-      transportSocket:
-        name: envoy.transport_sockets.tls
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
-          commonTlsContext:
-            alpnProtocols:
-            - h2
-            - http/1.1
-            tlsCertificateSdsSecretConfigs:
-            - name: cert.rsa:secret:server-certificate
-              sdsConfig:
-                ads: {}
-                resourceApiVersion: V3
-            tlsParams:
-              tlsMinimumProtocolVersion: TLSv1_2
-          requireClientCertificate: false
-    - filterChainMatch:
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.http_connection_manager
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-          commonHttpProtocolOptions:
-            headersWithUnderscoresAction: REJECT_REQUEST
-            idleTimeout: 300s
-          http2ProtocolOptions:
-            allowConnect: true
-            initialConnectionWindowSize: 1048576
-            initialStreamWindowSize: 65536
-            maxConcurrentStreams: 100
-          httpFilters:
-          - name: envoy.filters.http.local_ratelimit
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-              statPrefix: rate_limit
-          - name: gzip-compress
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
-              compressorLibrary:
-                name: gzip
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
-              responseDirectionConfig:
-                disableOnEtagHeader: true
-          - name: envoy.filters.http.router
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-          mergeSlashes: true
-          normalizePath: true
-          pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
-          rds:
-            configSource:
-              ads: {}
-              resourceApiVersion: V3
-            routeConfigName: default-gateway:HTTPS:443
-          requestHeadersTimeout: 0.500s
-          serverName: Kuma Gateway
-          statPrefix: gateway-default
-          streamIdleTimeout: 5s
-          stripAnyHostPort: true
-          useRemoteAddress: true
-      transportSocket:
-        name: envoy.transport_sockets.tls
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
-          commonTlsContext:
-            alpnProtocols:
-            - h2
-            - http/1.1
-            tlsCertificateSdsSecretConfigs:
-            - name: cert.rsa:secret:server-certificate
-              sdsConfig:
-                ads: {}
-                resourceApiVersion: V3
-            tlsParams:
-              tlsMinimumProtocolVersion: TLSv1_2
-          requireClientCertificate: false
-    listenerFilters:
-    - name: envoy.filters.listener.tls_inspector
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
-    name: default-gateway:HTTPS:443
-    perConnectionBufferLimitBytes: 32768
-    trafficDirection: INBOUND
+        name: '*.example.com'
+        requireTls: ALL
+        responseHeadersToAdd:
+        - append: false
+          header:
+            key: Strict-Transport-Security
+            value: max-age=31536000; includeSubDomains
+        routes:
+        - directResponse:
+            body:
+              inlineString: |
+                This is a Kuma MeshGateway. No routes match this MeshGateway!
+            status: 404
+          match:
+            prefix: /
+      - domains:
+        - '*'
+        name: '*'
+        requireTls: ALL
+        responseHeadersToAdd:
+        - append: false
+          header:
+            key: Strict-Transport-Security
+            value: max-age=31536000; includeSubDomains
+        routes:
+        - directResponse:
+            body:
+              inlineString: |
+                This is a Kuma MeshGateway. No routes match this MeshGateway!
+            status: 404
+          match:
+            prefix: /
+Runtimes:
+  Resources:
+    gateway.listeners:
+      layer: {}
+      name: gateway.listeners
+Secrets:
+  Resources:
+    cert.rsa:secret:server-certificate:
+      name: cert.rsa:secret:server-certificate
+      tlsCertificate:
+        certificateChain:
+          inlineString: |+
+            -----BEGIN CERTIFICATE-----
+            MIIDJjCCAg6gAwIBAgIRAI+Hqx9HaFRq8yilXfKkQRIwDQYJKoZIhvcNAQELBQAw
+            FjEUMBIGA1UEAxMLZXhhbXBsZS5jb20wHhcNMjExMTAzMDQzMDE3WhcNMzExMTAx
+            MDQzMDE3WjAWMRQwEgYDVQQDEwtleGFtcGxlLmNvbTCCASIwDQYJKoZIhvcNAQEB
+            BQADggEPADCCAQoCggEBAN71d1v+a5nPV/3JaGL6QIKB6tJxWOlSHWUhAsli+s5D
+            5yuMTtWQ98SMzzOjg4dW9SA9RxqJFzTzppVbeb1+Gse4RjlOY+DuqUTB4BTEp9bp
+            FmtW/zbB+y2Afy8qCzSQVcLufHStKbNNJafQ+m0aKw/iCjv5FR8gxqDqp1BGyvZr
+            s4K+rX6mIGmBadI82ExawYzy2uFR5jcvtUHRjbLJjtMuZI/Gbh27aicnv1gLC5TT
+            MwHrWkJG3A6eMdgP3nf4C/Z1Em40gKdwOU3/TNK3lb+UALhuQwH+B+QXhllCEmQE
+            HA4yF6Cta1P4SbBOsec/kqpL5wP5wGs/N5rfXgaD2msCAwEAAaNvMG0wDgYDVR0P
+            AQH/BAQDAgKkMBMGA1UdJQQMMAoGCCsGAQUFBwMBMA8GA1UdEwEB/wQFMAMBAf8w
+            HQYDVR0OBBYEFIsc2IMeCIormB/p5zUdBvd5qUGdMBYGA1UdEQQPMA2CC2V4YW1w
+            bGUuY29tMA0GCSqGSIb3DQEBCwUAA4IBAQA6e8eJHZRhDGiNG9oIkcdirvdW4t7G
+            ApaWAInXJ5lbp0GOFCPtKSsIBsqyNqcYhGwz69UT/0l72+m/NCktBZzCvR0jiFYU
+            ssnZX3q4BYnme20Ff7o8k1SH4XQ3iIMeQIpOiEmoiHpaBmDs81TjrOvhI2WxO7Kt
+            nViTfVKeyrQYJtj+pdV2JxRqzbGb893l3UtEnUIbVkSjShzOQI9+PnDN4e+KPFCe
+            oviSBYMV8TQHNHlo5qvgdSEe68BGEAuL9dFG6KBffgBO8t3U/UaH4giaIG7N6FwJ
+            ZMSGbXcnLNWJOWRMoymSpk8a9/hXXKVYHppbkAeFGRwhm7XDXsCwq5Wd
+            -----END CERTIFICATE-----
+
+        privateKey:
+          inlineString: |
+            -----BEGIN RSA PRIVATE KEY-----
+            MIIEowIBAAKCAQEA3vV3W/5rmc9X/cloYvpAgoHq0nFY6VIdZSECyWL6zkPnK4xO
+            1ZD3xIzPM6ODh1b1ID1HGokXNPOmlVt5vX4ax7hGOU5j4O6pRMHgFMSn1ukWa1b/
+            NsH7LYB/LyoLNJBVwu58dK0ps00lp9D6bRorD+IKO/kVHyDGoOqnUEbK9muzgr6t
+            fqYgaYFp0jzYTFrBjPLa4VHmNy+1QdGNssmO0y5kj8ZuHbtqJye/WAsLlNMzAeta
+            QkbcDp4x2A/ed/gL9nUSbjSAp3A5Tf9M0reVv5QAuG5DAf4H5BeGWUISZAQcDjIX
+            oK1rU/hJsE6x5z+SqkvnA/nAaz83mt9eBoPaawIDAQABAoIBAAmy/f1HhSDMz1Qg
+            BeWAY3wJ8NA01BxaUSMMG5XtM2HzvEO9t9Q8mTq4sW7apyclFkbPw58Y5aSNEOsg
+            bpxatwmHL67ghSHM4Bo4oOnmYDLOMwZ6Y2HbcHTbSS0hFBm2SbTQMSPWQKEnMwMo
+            6SwD3mmzeKSBQnT3NQzdCGhKnBu6IOMY8FBcFaIrsOFAUEeSnVrn6E9Epb3qbJ8K
+            RUI18mPgGyWtyes1NG2elm3h4Wu+67cswuMNqG64luItpz6FLLfKlHS5u5wDlm2H
+            KKhYiMmtzoHFt9RteBwAodFDp9x6/i6/gtThSKqg9DO4UePu8j+L4zEhJ6jMcao0
+            fqEqGLkCgYEA4PlvwFPv6z+EN60IejyOPKD9pdxV6BYSi7CmLMm9ZHuneluI0MTh
+            XkVH6VZnKXgwaB9YpeB3nsUmuZRaJS01dBDS2Zdm/DKaCwk4pKyT7qNcyJAC5pdF
+            4wcTOS+k8Pm4zo0xdmE0AMKIJKeLwfU59dizaSRLIUsd4ZbJZKSWR4cCgYEA/bTf
+            osqY740uZd8PDj7zIwAjQGhMoD67D2VFNk4i1D8PCgKXQ6TlNqO8c//+/vgPOJqE
+            JxB/daSay0EOwrRosGnfQlRoBWwE7FmlJblh9QgMdhAnsVkX0K9V2YS2FOv36k5M
+            AQWjHvhf/0K4jmhLRpK6dPuTnOKF3NOsTXWeBv0CgYAYAIS7sDjYkF460mslH3DN
+            Zx+oomlH6ZLw9FfGT3+1SLwFgd6G53pj5GBXtLAs7HW9php/GAOrHL2U7w7vCHO7
+            flAAhval0YA9zS4N45ukyikL/NFSaLE8F3UllL+0NfBRmR690oEJ07dSsc1nVBJq
+            +EOr5ANf+fOmLcAuzKB74QKBgG+TWj7nxrajamJW5PIo8RjVeKtcs0ZOEEpHCVdG
+            qb6aNOz8ErYnEL8k5z5EuUo8ocUM/02GzedZCtKUu/8ZBGmBRjSPlme8B7ZB/oVG
+            sDPo5EIP/MTcH8MhOSo+WS1+UTt0T6yrY/+8z8sc9rl6WJCi+ulzsolufdyOItq1
+            /VepAoGBAKVmWp9NA/Q/keC7iBQlyCjUHEFdpdYxjNLobW/r21oTmbcUDrBkMuk+
+            ho85r4ks3t1kODZ2oi6ACVC8BaH1ihQ29+VqADqGrO2TWwKmHJRhoTrazyud9TVH
+            SK4u80+3Mzg9poUv80lwtuJ8xDWpQcRIp1CfqwkvIA393JCw7VCK
+            -----END RSA PRIVATE KEY-----

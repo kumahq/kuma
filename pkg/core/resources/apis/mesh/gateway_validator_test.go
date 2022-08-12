@@ -86,6 +86,29 @@ conf:
     tags:
       name: http`,
 		),
+		Entry("listeners with connectionLimits", `
+type: MeshGateway
+name: gateway
+mesh: default
+selectors:
+  - match:
+      kuma.io/service: gateway
+tags:
+  product: edge
+conf:
+  listeners:
+  - protocol: HTTP
+    hostname: one.com
+    port: 99
+    resources:
+      connectionLimit: 2
+  - protocol: HTTP
+    hostname: two.com
+    port: 99
+    resources:
+      connectionLimit: 2
+`,
+		),
 	)
 
 	DescribeErrorCases(
@@ -346,6 +369,98 @@ conf:
     port: 443
     crossMesh: true
     protocol: HTTP
+`),
+
+		ErrorCases("protocol conflict",
+			[]validators.Violation{{
+				Field:   "conf.listeners[0]",
+				Message: "protocol conflicts with other listeners on this port",
+			}, {
+				Field:   "conf.listeners[1]",
+				Message: "protocol conflicts with other listeners on this port",
+			}}, `
+type: MeshGateway
+name: gateway
+mesh: default
+selectors:
+  - match:
+      kuma.io/service: gateway
+conf:
+  listeners:
+  - hostname: www-1.example.com
+    port: 443
+    protocol: TCP
+  - hostname: www-2.example.com
+    port: 443
+    protocol: HTTPS
+    tls:
+      mode: PASSTHROUGH
+`),
+
+		ErrorCases("hostname conflict",
+			[]validators.Violation{{
+				Field:   "conf.listeners[0]",
+				Message: "multiple listeners for hostname on this port",
+			}, {
+				Field:   "conf.listeners[1]",
+				Message: "multiple listeners for hostname on this port",
+			}}, `
+type: MeshGateway
+name: gateway
+mesh: default
+selectors:
+  - match:
+      kuma.io/service: gateway
+conf:
+  listeners:
+  - hostname: www-1.example.com
+    port: 443
+    protocol: TCP
+  - hostname: www-1.example.com
+    port: 443
+    protocol: TCP
+`),
+
+		ErrorCases("hostname, protocol and resource conflict",
+			[]validators.Violation{{
+				Field:   "conf.listeners[0]",
+				Message: "protocol conflicts with other listeners on this port",
+			}, {
+				Field:   "conf.listeners[1]",
+				Message: "protocol conflicts with other listeners on this port",
+			}, {
+				Field:   "conf.listeners[0]",
+				Message: "multiple listeners for hostname on this port",
+			}, {
+				Field:   "conf.listeners[1]",
+				Message: "multiple listeners for hostname on this port",
+			}, {
+				Field:   "conf.listeners[0].resources.connectionLimit",
+				Message: "conflicting values for this port",
+			}, {
+				Field:   "conf.listeners[1].resources.connectionLimit",
+				Message: "conflicting values for this port",
+			}}, `
+type: MeshGateway
+name: gateway
+mesh: default
+selectors:
+  - match:
+      kuma.io/service: gateway
+conf:
+  listeners:
+  - hostname: www-1.example.com
+    port: 443
+    protocol: TCP
+    resources:
+      connectionLimit: 2
+  - hostname: www-1.example.com
+    port: 443
+    protocol: HTTPS
+    tls:
+      mode: PASSTHROUGH
+    resources:
+      connectionLimit: 1
 `),
 	)
 })

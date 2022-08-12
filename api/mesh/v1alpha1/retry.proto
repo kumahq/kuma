@@ -19,11 +19,25 @@ option (doc.config) = {
   file_name : "retry"
 };
 
+// These options correspond with the retry_on options in Envoy's documentation:
+// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/router_filter#config-http-filters-router-x-envoy-retry-on
+enum HttpRetryOn {
+  all_5xx = 0;
+  gateway_error = 1;
+  reset = 2;
+  connect_failure = 3;
+  envoy_ratelimited = 4;
+  retriable_4xx = 5;
+  refused_stream = 6;
+  retriable_status_codes = 7;
+  retriable_headers = 8;
+  http3_post_connect_failure = 9;
+}
+
 message Retry {
 
   option (kuma.mesh.resource).name = "RetryResource";
   option (kuma.mesh.resource).type = "Retry";
-  option (kuma.mesh.resource).display_name = "Retries";
   option (kuma.mesh.resource).package = "mesh";
   option (kuma.mesh.resource).kds.send_to_zone = true;
   option (kuma.mesh.resource).ws.name = "retry";
@@ -62,6 +76,9 @@ message Retry {
 
       //  +optional
       repeated HttpMethod retriable_methods = 6;
+
+      //  +optional
+      repeated HttpRetryOn retry_on = 7;
     }
 
     message Tcp {

@@ -26,6 +26,48 @@ import (
 	"github.com/kumahq/kuma/pkg/tls"
 )
 
+const (
+	demoClientDeployment = `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-client
+  namespace: %s
+  labels:
+    app: demo-client
+spec:
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: demo-client
+  template:
+    metadata:
+      annotations:
+        kuma.io/mesh: %s
+      labels:
+        app: demo-client
+    spec:
+      containers:
+        - name: demo-client
+          image: %s
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          command: [ "ncat" ]
+          args:
+            - -lk
+            - -p
+            - "3000"
+          resources:
+            limits:
+              cpu: 50m
+              memory: 64Mi
+`
+)
+
 type InstallFunc func(cluster Cluster) error
 
 var Serializer *k8sjson.Serializer
@@ -298,49 +340,22 @@ func EgressUniversal(tokenProvider func(zone string) (string, error)) InstallFun
 	return zoneRelatedResource(tokenProvider, AppEgress, manifestFunc)
 }
 
-func DemoClientK8s(mesh string, namespace string) InstallFunc {
-	const name = "demo-client"
-	deployment := `
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: demo-client
-  namespace: %s
-  labels:
-    app: demo-client
-spec:
-  strategy:
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-  selector:
-    matchLabels:
-      app: demo-client
-  template:
-    metadata:
-      annotations:
-        kuma.io/mesh: %s
-      labels:
-        app: demo-client
-    spec:
-      containers:
-        - name: demo-client
-          image: %s
-          imagePullPolicy: IfNotPresent
-          ports:
-            - containerPort: 3000
-          command: [ "ncat" ]
-          args:
-            - -lk
-            - -p
-            - "3000"
-          resources:
-            limits:
-              cpu: 50m
-              memory: 64Mi
+func DemoClientK8sWithAffinity(mesh string, namespace string) InstallFunc {
+	affinity := `      nodeSelector:
+        second: "true"
 `
+
+	return DemoClientK8sCustomized(mesh, namespace, demoClientDeployment+affinity)
+}
+
+func DemoClientK8s(mesh string, namespace string) InstallFunc {
+	return DemoClientK8sCustomized(mesh, namespace, demoClientDeployment)
+}
+
+func DemoClientK8sCustomized(mesh string, namespace string, deploymentYaml string) InstallFunc {
+	const name = "demo-client"
 	return Combine(
-		YamlK8s(fmt.Sprintf(deployment, namespace, mesh, Config.GetUniversalImage())),
+		YamlK8s(fmt.Sprintf(deploymentYaml, namespace, mesh, Config.GetUniversalImage())),
 		WaitNumPods(namespace, 1, name),
 		WaitPodsAvailable(namespace, name),
 	)
@@ -515,6 +530,11 @@ func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) I
       tcp: {}`
 		}
 
+		serviceAddress := ""
+		if opts.serviceAddress != "" {
+			serviceAddress = fmt.Sprintf(`    serviceAddress: %s`, opts.serviceAddress)
+		}
+
 		args = append(args, "--port", "8080")
 		appYaml := fmt.Sprintf(`
 type: Dataplane
@@ -525,6 +545,7 @@ networking:
   inbound:
   - port: %s
     servicePort: %s
+%s
     tags:
       kuma.io/service: %s
       kuma.io/protocol: %s
@@ -537,12 +558,12 @@ networking:
     redirectPortInboundV6: %s
     redirectPortOutbound: %s
 %s
-`, mesh, "80", "8080", opts.serviceName, opts.protocol, opts.serviceVersion, opts.serviceInstance, serviceProbe, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound, opts.appendDataplaneConfig)
+`, mesh, "80", "8080", serviceAddress, opts.serviceName, opts.protocol, opts.serviceVersion, opts.serviceInstance, serviceProbe, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound, opts.appendDataplaneConfig)
 
 		opt = append(opt,
 			WithName(name),
 			WithMesh(mesh),
-			WithAppname("test-server"),
+			WithAppname(opts.serviceName),
 			WithTransparentProxy(true), // test server is always meant to be used with transparent proxy
 			WithToken(token),
 			WithArgs(args),

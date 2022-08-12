@@ -141,10 +141,6 @@ const (
 	KumaTransparentProxyingReachableServicesAnnotation = "kuma.io/transparent-proxying-reachable-services"
 	CNCFNetworkAnnotation                              = "k8s.v1.cni.cncf.io/networks"
 	KumaCNI                                            = "kuma-cni"
-	KumaTransparentProxyingEbpf                        = "kuma.io/transparent-proxying-ebpf"
-	KumaTransparentProxyingEbpfBPFFSPath               = "kuma.io/transparent-proxying-ebpf-bpf-fs-path"
-	KumaTransparentProxyingEbpfInstanceIPEnvVarName    = "kuma.io/transparent-proxying-ebpf-instance-ip-env-var-name"
-	KumaTransparentProxyingEbpfProgramsSourcePath      = "kuma.io/transparent-proxying-ebpf-programs-source-path"
 )
 
 // Annotations related to the gateway
@@ -164,14 +160,6 @@ const (
 	AnnotationTrue     = "true"
 	AnnotationFalse    = "false"
 )
-
-func BoolToEnabled(b bool) string {
-	if b {
-		return AnnotationEnabled
-	}
-
-	return AnnotationDisabled
-}
 
 type Annotations map[string]string
 

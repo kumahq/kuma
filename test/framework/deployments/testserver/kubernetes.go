@@ -150,12 +150,17 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 			PeriodSeconds:       3,
 		}
 	}
+	if !k.opts.EnableProbes {
+		liveness = nil
+		readiness = nil
+	}
 	spec := corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels:      map[string]string{"app": k.Name()},
 			Annotations: k.getAnnotations(),
 		},
 		Spec: corev1.PodSpec{
+			NodeSelector:       k.opts.NodeSelector,
 			ServiceAccountName: k.opts.ServiceAccount,
 			Containers: []corev1.Container{
 				{
@@ -166,6 +171,16 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 					Image:           framework.Config.GetUniversalImage(),
 					Ports: []corev1.ContainerPort{
 						{ContainerPort: 80},
+					},
+					Env: []corev1.EnvVar{
+						{
+							Name: "POD_IP",
+							ValueFrom: &corev1.EnvVarSource{
+								FieldRef: &corev1.ObjectFieldSelector{
+									FieldPath: "status.podIP",
+								},
+							},
+						},
 					},
 					Command: []string{"test-server"},
 					Args:    args,

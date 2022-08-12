@@ -60,19 +60,17 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 		return kube_ctrl.Result{}, nil
 	}
 
-	injectedLabel, _, err := metadata.Annotations(ns.Labels).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
+	_, labelExists, err := metadata.Annotations(ns.Labels).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
 	if err != nil {
 		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to check sidecar injection label on namespace %s", ns.Name)
 	}
 	// support annotations for backwards compatibility
 	// https://github.com/kumahq/kuma/issues/4005
-	injectedAnnotation := false
-	injectedAnnotation, _, err = metadata.Annotations(ns.Annotations).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
+	_, annotationExists, err := metadata.Annotations(ns.Annotations).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
 	if err != nil {
 		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to check sidecar injection annotation on namespace %s", ns.Name)
 	}
-	injected := injectedLabel || injectedAnnotation
-	if injected {
+	if labelExists || annotationExists {
 		log.Info("creating NetworkAttachmentDefinition for CNI support")
 		err := r.createOrUpdateNetworkAttachmentDefinition(ctx, req.Name)
 		return kube_ctrl.Result{}, err

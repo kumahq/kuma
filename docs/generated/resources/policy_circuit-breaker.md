@@ -22,50 +22,50 @@
     
         Time interval between ejection analysis sweeps    
     
-    - `baseejectiontime` (optional)
+    - `baseEjectionTime` (optional)
     
         The base time that a host is ejected for. The real time is equal to the
         base time multiplied by the number of times the host has been ejected    
     
-    - `maxejectionpercent` (optional)
+    - `maxEjectionPercent` (optional)
     
         The maximum percent of an upstream cluster that can be ejected due to
         outlier detection, has to be in [0 - 100] range    
     
-    - `splitexternalandlocalerrors` (optional)
+    - `splitExternalAndLocalErrors` (optional)
     
         Enables Split Mode in which local and external errors are distinguished    
     
     - `detectors` (optional)    
         
-        - `totalerrors` (optional)
+        - `totalErrors` (optional)
         
             Errors with status code 5xx and locally originated errors, in Split
             Mode - just errors with status code 5xx    
             
             - `consecutive` (optional)    
         
-        - `gatewayerrors` (optional)
+        - `gatewayErrors` (optional)
         
             Subset of 'total' related to gateway errors (502, 503 or 504 status
             code)    
             
             - `consecutive` (optional)    
         
-        - `localerrors` (optional)
+        - `localErrors` (optional)
         
             Takes into account only in Split Mode, number of locally originated
             errors    
             
             - `consecutive` (optional)    
         
-        - `standarddeviation` (optional)    
+        - `standardDeviation` (optional)    
             
-            - `requestvolume` (optional)
+            - `requestVolume` (optional)
             
                 Ignore hosts with less number of requests than 'requestVolume'    
             
-            - `minimumhosts` (optional)
+            - `minimumHosts` (optional)
             
                 Won't count success rate for cluster if number of hosts with required
                 'requestVolume' is less than 'minimumHosts'    
@@ -76,11 +76,11 @@
         
         - `failure` (optional)    
             
-            - `requestvolume` (optional)
+            - `requestVolume` (optional)
             
                 Ignore hosts with less number of requests than 'requestVolume'    
             
-            - `minimumhosts` (optional)
+            - `minimumHosts` (optional)
             
                 Won't count success rate for cluster if number of hosts with required
                 'requestVolume' is less than 'minimumHosts'    
@@ -92,22 +92,22 @@
     
     - `thresholds` (optional)    
         
-        - `maxconnections` (optional)
+        - `maxConnections` (optional)
         
             The maximum number of connections that Envoy will make to the upstream
             cluster. If not specified, the default is 1024.    
         
-        - `maxpendingrequests` (optional)
+        - `maxPendingRequests` (optional)
         
             The maximum number of pending requests that Envoy will allow to the
             upstream cluster. If not specified, the default is 1024.    
         
-        - `maxretries` (optional)
+        - `maxRetries` (optional)
         
             The maximum number of parallel retries that Envoy will allow to the
             upstream cluster. If not specified, the default is 3.    
         
-        - `maxrequests` (optional)
+        - `maxRequests` (optional)
         
             The maximum number of parallel requests that Envoy will make to the
             upstream cluster. If not specified, the default is 1024.

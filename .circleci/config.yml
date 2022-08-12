@@ -255,10 +255,15 @@ jobs:
         description: The golang arch
         type: string
         default: amd64
+      cniNetworkPlugin:
+        description: The CNI networking plugin to use [flannel | calico]
+        type: string
+        default: flannel
     executor:
       name: vm-<< parameters.arch >>
     parallelism: << parameters.parallelism >>
     steps:
+      - checkout
       - run:
           # This works around circleci limitation by skipping tests for combinations that don't make sense
           # See: https://discuss.circleci.com/t/matrix-exclude-entire-subset/43879
@@ -269,6 +274,7 @@ jobs:
               target:<< parameters.target >> \
               parallelism:<< parameters.parallelism >> \
               arch:<< parameters.arch >> \
+              cniNetworkPlugin:<< parameters.cniNetworkPlugin >> \
             "
             function skip() {
               echo "Non valid job combination halting job reason: $1"
@@ -281,15 +287,16 @@ jobs:
             if [[ "<< parameters.k8sVersion >>" != kind* && "<< parameters.target >>" == "test/e2e-universal" ]]; then
               skip "universal only runs on kind"
             fi
-            if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* ]]; then
-              if [[ "<< parameters.k8sVersion >>" == "kindIpv6" || "<< parameters.k8sVersion >>" == "v1.19.16-k3s1" || "<< parameters.arch >>" == "arm64" ]]; then
-                skip "Not running tests on PRs with kindIpv6, oldK8s and arm64"
+            if [[ ! $(./tools/ci/has_label.sh ci/run-full-matrix) == "true" ]]; then
+              if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* ]]; then
+                if [[ "<< parameters.cniNetworkPlugin >>" == "calico" || "<< parameters.k8sVersion >>" == "kindIpv6" || "<< parameters.k8sVersion >>" == "v1.19.16-k3s1" || "<< parameters.arch >>" == "arm64" ]]; then
+                  skip "Not running tests on PRs with kindIpv6, oldK8s, calico and arm64"
+                fi
               fi
             fi
             echo "Continuing tests"
       - install_build_tools:
           go_arch: << parameters.arch >>
-      - checkout
       - restore_cache:
           keys:
             # prefer the exact match
@@ -332,10 +339,11 @@ jobs:
             if [[ "<< parameters.k8sVersion >>" != "kind"* ]]; then
               export CI_K3S_VERSION=<< parameters.k8sVersion >>
               export K3D=true
+              export K3D_NETWORK_CNI=<< parameters.cniNetworkPlugin >>
             fi
             if [[ "<< parameters.arch >>" == "arm64" ]]; then
-              export GINKGO_E2E_TEST_FLAGS="--label-filter=\"!arm-not-supported\""
               export MAKE_PARAMETERS="-j1"
+              export GINKGO_E2E_LABEL_FILTERS='!arm-not-supported'
             else
               export MAKE_PARAMETERS="-j2"
             fi
@@ -344,7 +352,7 @@ jobs:
               export E2E_PKG_LIST=${E2E_PKG_LIST:-$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")}
             fi
             env
-            make ${MAKE_PARAMETERS} << parameters.target >>
+            make ${MAKE_PARAMETERS} CI=true << parameters.target >>
       - store_test_results:
           path: build/reports
 
@@ -475,6 +483,17 @@ workflows:
               k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
               target: [ test/e2e-kubernetes, test/e2e-universal, test/e2e-multizone ]
               arch: [ amd64, arm64 ]
+          parallelism: 1
+          requires: [ build-<< matrix.arch >>, check ]
+      - e2e:
+          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
+          matrix:
+            alias: test/e2e-calico
+            parameters:
+              k8sVersion: [ v1.21.7-k3s1 ]
+              target: [ test/e2e-multizone ]
+              arch: [ amd64 ]
+              cniNetworkPlugin: [ calico ]
           parallelism: 1
           requires: [ build-<< matrix.arch >>, check ]
       - release:

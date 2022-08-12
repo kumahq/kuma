@@ -4,12 +4,9 @@
 package install
 
 import (
-	"fmt"
 	"net"
-	"os"
 	os_user "os/user"
 	"runtime"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -35,18 +32,10 @@ type transparentProxyArgs struct {
 	RedirectAllDNSTraffic              bool
 	AgentDNSListenerPort               string
 	DNSUpstreamTargetChain             string
-	SkipResolvConf                     bool
 	StoreFirewalld                     bool
-	KumaCpIP                           net.IP
 	SkipDNSConntrackZoneSplit          bool
 	ExperimentalTransparentProxyEngine bool
-	EbpfEnabled                        bool
-	EbpfProgramsSourcePath             string
-	EbpfInstanceIP                     string
-	EbpfBPFFSPath                      string
 }
-
-var defaultCpIP = net.IPv4(0, 0, 0, 0)
 
 func newInstallTransparentProxy() *cobra.Command {
 	args := transparentProxyArgs{
@@ -64,33 +53,26 @@ func newInstallTransparentProxy() *cobra.Command {
 		RedirectAllDNSTraffic:              false,
 		AgentDNSListenerPort:               "15053",
 		DNSUpstreamTargetChain:             "RETURN",
-		SkipResolvConf:                     false,
 		StoreFirewalld:                     false,
-		KumaCpIP:                           defaultCpIP,
 		SkipDNSConntrackZoneSplit:          false,
 		ExperimentalTransparentProxyEngine: false,
-		EbpfEnabled:                        false,
-		EbpfProgramsSourcePath:             "/kuma/ebpf",
-		EbpfBPFFSPath:                      "/run/kuma/bpf",
 	}
 	cmd := &cobra.Command{
 		Use:   "transparent-proxy",
 		Short: "Install Transparent Proxy pre-requisites on the host",
-		Long: `Install Transparent Proxy by modifying the hosts iptables and /etc/resolv.conf.
+		Long: `Install Transparent Proxy by modifying the hosts iptables.
 
 Follow the following steps to use the Kuma data plane proxy in Transparent Proxy mode:
 
  1) create a dedicated user for the Kuma data plane proxy, e.g. 'kuma-dp'
  2) run this command as a 'root' user to modify the host's iptables and /etc/resolv.conf
-    - supply the dedicated username with '--kuma-dp-'
+    - supply the dedicated username with '--kuma-dp-uid'
     - all changes are easly revertible by issuing 'kumactl uninstall transparent-proxy'
     - by default the SSH port tcp/22 will not be redirected to Envoy, but everything else will.
       Use '--exclude-inbound-ports' to provide a comma separated list of ports that should also be excluded
-    - this command also creates a backup copy of the modified resolv.conf under /etc/resolv.conf
 
  sudo kumactl install transparent-proxy \
           --kuma-dp-user kuma-dp \
-          --kuma-cp-ip 10.0.0.1 \
           --exclude-inbound-ports 443
 
  3) prepare a Dataplane resource yaml like this:
@@ -125,8 +107,6 @@ runuser -u kuma-dp -- \
     --dataplane-var port=80  \
     --binary-path /usr/local/bin/envoy
 
- 5) make sure the kuma-cp is running its DNS service on port 53 by setting the environment variable 'KUMA_DNS_SERVER_PORT=53'
-
 `,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if !args.DryRun && runtime.GOOS != "linux" {
@@ -145,44 +125,12 @@ runuser -u kuma-dp -- \
 				args.RedirectDNS = true
 			}
 
-			if args.RedirectDNS && !args.SkipResolvConf {
-				return errors.Errorf("please set --skip-resolv-conf when using --redirect-dns or --redirect-all-dns-traffic")
-			}
-
-			if !args.SkipResolvConf && args.KumaCpIP.String() == defaultCpIP.String() {
-				return errors.Errorf("please supply a valid --kuma-cp-ip")
-			}
-
 			if args.DNSUpstreamTargetChain != "RETURN" {
 				_, _ = cmd.ErrOrStderr().Write([]byte("# `--redirect-dns-upstream-target-chain` is deprecated, please avoid using it"))
 			}
 
-			if args.EbpfEnabled {
-				if args.EbpfInstanceIP == "" {
-					return errors.Errorf("--ebpf-instance-ip flag has to be specified --ebpf-enabled is provided")
-				}
-
-				if !args.ExperimentalTransparentProxyEngine {
-					return errors.Errorf("--experimental-transparent-proxy-engine flag has to be specified when --ebpf-enabled is provided")
-				}
-
-				if args.StoreFirewalld {
-					_, _ = cmd.ErrOrStderr().Write([]byte("# --store-firewalld will be ignored when --ebpf-enabled is being used"))
-				}
-
-				if args.SkipDNSConntrackZoneSplit {
-					_, _ = cmd.ErrOrStderr().Write([]byte("# --skip-dns-conntrack-zone-split will be ignored when --ebpf-enabled is being used"))
-				}
-			}
-
 			if err := configureTransparentProxy(cmd, &args); err != nil {
 				return err
-			}
-
-			if !args.SkipResolvConf {
-				if err := modifyResolvConf(cmd, &args); err != nil {
-					return err
-				}
 			}
 
 			_, _ = cmd.OutOrStdout().Write([]byte("Transparent proxy set up successfully\n"))
@@ -201,20 +149,18 @@ runuser -u kuma-dp -- \
 	cmd.Flags().StringVar(&args.User, "kuma-dp-user", args.UID, "the user that will run kuma-dp")
 	cmd.Flags().StringVar(&args.UID, "kuma-dp-uid", args.UID, "the UID of the user that will run kuma-dp")
 	cmd.Flags().BoolVar(&args.RedirectDNS, "redirect-dns", args.RedirectDNS, "redirect only DNS requests targeted to the servers listed in /etc/resolv.conf to a specified port")
-	cmd.Flags().BoolVar(&args.RedirectAllDNSTraffic, "redirect-all-dns-traffic", args.RedirectAllDNSTraffic, "redirect all DNS requests to a specified port")
+	// Deprecation issue: https://github.com/kumahq/kuma/issues/4759
+	cmd.Flags().BoolVar(&args.RedirectAllDNSTraffic, "redirect-all-dns-traffic", args.RedirectAllDNSTraffic, "redirect all DNS traffic to a specified port, unlike --redirect-dns this will not be limited to the dns servers identified in /etc/resolve.conf")
 	cmd.Flags().StringVar(&args.AgentDNSListenerPort, "redirect-dns-port", args.AgentDNSListenerPort, "the port where the DNS agent is listening")
 	cmd.Flags().StringVar(&args.DNSUpstreamTargetChain, "redirect-dns-upstream-target-chain", args.DNSUpstreamTargetChain, "(optional) the iptables chain where the upstream DNS requests should be directed to. It is only applied for IP V4. Use with care.")
-	cmd.Flags().BoolVar(&args.SkipResolvConf, "skip-resolv-conf", args.SkipResolvConf, "skip modifying the host `/etc/resolv.conf`")
+	// Deprecation issue: https://github.com/kumahq/kuma/issues/4759
+	_ = cmd.Flags().Bool("skip-resolv-conf", false, "[Deprecated]")
+	_ = cmd.Flags().MarkDeprecated("skip-resolv-conf", "we never change resolveConf so this flag has no effect, you can stop using it")
 	cmd.Flags().BoolVar(&args.StoreFirewalld, "store-firewalld", args.StoreFirewalld, "store the iptables changes with firewalld")
-	cmd.Flags().IPVar(&args.KumaCpIP, "kuma-cp-ip", args.KumaCpIP, "the IP address of the Kuma CP which exposes the DNS service on port 53.")
+	_ = cmd.Flags().IP("kuma-cp-ip", net.IPv4(0, 0, 0, 0), "[Deprecated]")
+	_ = cmd.Flags().MarkDeprecated("kuma-cp-ip", "Running a DNS inside the CP is not possible anymore")
 	cmd.Flags().BoolVar(&args.SkipDNSConntrackZoneSplit, "skip-dns-conntrack-zone-split", args.SkipDNSConntrackZoneSplit, "skip applying conntrack zone splitting iptables rules")
 	cmd.Flags().BoolVar(&args.ExperimentalTransparentProxyEngine, "experimental-transparent-proxy-engine", args.ExperimentalTransparentProxyEngine, "use experimental transparent proxy engine")
-
-	// ebpf
-	cmd.Flags().BoolVar(&args.EbpfEnabled, "ebpf-enabled", args.EbpfEnabled, "use ebpf instead of iptables to install transparent proxy")
-	cmd.Flags().StringVar(&args.EbpfProgramsSourcePath, "ebpf-programs-source-path", args.EbpfProgramsSourcePath, "path where compiled ebpf programs and other necessary for ebpf mode files can be found")
-	cmd.Flags().StringVar(&args.EbpfInstanceIP, "ebpf-instance-ip", args.EbpfInstanceIP, "IP address of the instance (pod/vm) where transparent proxy will be installed")
-	cmd.Flags().StringVar(&args.EbpfBPFFSPath, "ebpf-bpffs-path", args.EbpfBPFFSPath, "the path of the BPF filesystem")
 
 	return cmd
 }
@@ -274,10 +220,6 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 		AgentDNSListenerPort:      args.AgentDNSListenerPort,
 		DNSUpstreamTargetChain:    args.DNSUpstreamTargetChain,
 		SkipDNSConntrackZoneSplit: args.SkipDNSConntrackZoneSplit,
-		EbpfEnabled:               args.EbpfEnabled,
-		EbpfInstanceIP:            args.EbpfInstanceIP,
-		EbpfBPFFSPath:             args.EbpfBPFFSPath,
-		EbpfProgramsSourcePath:    args.EbpfProgramsSourcePath,
 		Stdout:                    cmd.OutOrStdout(),
 		Stderr:                    cmd.OutOrStderr(),
 	}
@@ -287,7 +229,7 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 		return errors.Wrap(err, "failed to setup transparent proxy")
 	}
 
-	if !args.EbpfEnabled && args.StoreFirewalld {
+	if args.StoreFirewalld {
 		if _, err := firewalld.NewIptablesTranslator().
 			WithDryRun(args.DryRun).
 			WithOutput(cmd.OutOrStdout()).
@@ -295,36 +237,6 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 			return err
 		}
 	}
-
-	return nil
-}
-
-func modifyResolvConf(cmd *cobra.Command, args *transparentProxyArgs) error {
-	kumaCPLine := fmt.Sprintf("nameserver %s", args.KumaCpIP.String())
-	content, err := os.ReadFile("/etc/resolv.conf")
-	if err != nil {
-		return errors.Wrap(err, "unable to open /etc/resolv.conf")
-	}
-	newcontent := fmt.Sprintf("%s\n%s", kumaCPLine, string(content))
-
-	if args.DryRun {
-		_, _ = cmd.OutOrStdout().Write([]byte(newcontent))
-		_, _ = cmd.OutOrStdout().Write([]byte("\n"))
-		return nil
-	}
-
-	if !strings.Contains(string(content), kumaCPLine) {
-		err = os.WriteFile("/etc/resolv.conf.kuma-backup", content, 0644)
-		if err != nil {
-			return errors.Wrap(err, "unable to open /etc/resolv.conf.kuma-backup")
-		}
-		err = os.WriteFile("/etc/resolv.conf", []byte(newcontent), 0644)
-		if err != nil {
-			return errors.Wrap(err, "unable to write /etc/resolv.conf")
-		}
-	}
-
-	_, _ = cmd.OutOrStdout().Write([]byte("/etc/resolv.conf modified. The previous version of the file backed up to /etc/resolv.conf.kuma-backup"))
 
 	return nil
 }

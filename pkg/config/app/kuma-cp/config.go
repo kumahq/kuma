@@ -27,6 +27,11 @@ var _ config.Config = &Defaults{}
 
 type Defaults struct {
 	SkipMeshCreation bool `yaml:"skipMeshCreation" envconfig:"kuma_defaults_skip_mesh_creation"`
+	// If true, instead of providing inbound clusters with address of dataplane, generates cluster with localhost.
+	// Enabled can cause security threat by exposing application listing on localhost. This configuration is going to
+	// removed.
+	// TODO: https://github.com/kumahq/kuma/issues/4772
+	EnableLocalhostInboundClusters bool `yaml:"enableLocalhostInboundClusters" envconfig:"kuma_defaults_enable_localhost_inbound_clusters"`
 }
 
 func (d *Defaults) Sanitize() {
@@ -143,6 +148,8 @@ type Config struct {
 	Access access.AccessConfig `yaml:"access"`
 	// Configuration of experimental features
 	Experimental ExperimentalConfig `yaml:"experimental"`
+	// Proxy holds configuration for proxies
+	Proxy xds.Proxy `yaml:"proxy"`
 }
 
 func (c *Config) Sanitize() {
@@ -172,7 +179,8 @@ var DefaultConfig = func() Config {
 		BootstrapServer:            bootstrap.DefaultBootstrapServerConfig(),
 		Runtime:                    runtime.DefaultRuntimeConfig(),
 		Defaults: &Defaults{
-			SkipMeshCreation: false,
+			SkipMeshCreation:               false,
+			EnableLocalhostInboundClusters: false,
 		},
 		Metrics: &Metrics{
 			Dataplane: &DataplaneMetrics{
@@ -202,6 +210,7 @@ var DefaultConfig = func() Config {
 			GatewayAPI:          false,
 			KubeOutboundsAsVIPs: false,
 		},
+		Proxy: xds.DefaultProxyConfig(),
 	}
 }
 
@@ -322,6 +331,11 @@ type ExperimentalConfig struct {
 	// If true, instead of embedding kubernetes outbounds into Dataplane object, they are persisted next to VIPs in ConfigMap
 	// This can improve performance, but it should be enabled only after all instances are migrated to version that supports this config
 	KubeOutboundsAsVIPs bool `yaml:"kubeOutboundsAsVIPs" envconfig:"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS"`
+
+	// If true, new experimental CNI taint controller is enabled
+	Cni bool `yaml:"cni" envconfig:"KUMA_EXPERIMENTAL_CNI"`
+	// Name of the CNI pod
+	CniApp string `yaml:"cniApp" envconfig:"KUMA_CNI_APP"`
 }
 
 func (e ExperimentalConfig) Validate() error {

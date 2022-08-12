@@ -27,6 +27,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
 	"github.com/kumahq/kuma/test/framework/utils"
@@ -235,6 +236,31 @@ func (c *K8sCluster) WaitNamespaceDelete(namespace string) {
 		})
 }
 
+func (c *K8sCluster) WaitNodeDelete(node string) (string, error) {
+	return retry.DoWithRetryE(c.t,
+		fmt.Sprintf("Wait for %s node to terminate.", node),
+		c.defaultRetries,
+		5*c.defaultTimeout,
+		func() (string, error) {
+			nodes, err := k8s.GetNodesE(c.t, c.GetKubectlOptions())
+			if err != nil {
+				return "Error getting node " + node, err
+			}
+
+			nodeAvailable := false
+			for _, _node := range nodes {
+				if _node.Name == node {
+					nodeAvailable = true
+				}
+			}
+
+			if nodeAvailable {
+				return "Node available " + node, fmt.Errorf("node %s still active", node)
+			}
+			return "Node deleted " + node, nil
+		})
+}
+
 func (c *K8sCluster) GetPodLogs(pod v1.Pod) (string, error) {
 	podLogOpts := v1.PodLogOptions{}
 	// creates the clientset
@@ -321,6 +347,10 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		argsMap["--cni-net-dir"] = Config.CNIConf.NetDir
 		argsMap["--cni-bin-dir"] = Config.CNIConf.BinDir
 		argsMap["--cni-conf-name"] = Config.CNIConf.ConfName
+
+		if c.opts.cniExperimental {
+			argsMap["--set"] = "experimental.cni=true"
+		}
 	}
 
 	if Config.XDSApiVersion != "" {
@@ -1114,4 +1144,84 @@ func (c *K8sCluster) Install(fn InstallFunc) error {
 
 func (c *K8sCluster) SetCP(cp *K8sControlPlane) {
 	c.controlplane = cp
+}
+
+// CreateNode creates a new node
+// warning: there seems to be a bug in k3s1 v1.19.16 so that each tests needs a unique node name
+func (c *K8sCluster) CreateNode(name string, label string) error {
+	switch Config.K8sType {
+	case K3dK8sType, K3dCalicoK8sType:
+		createCmd := exec.Command("k3d", "node", "create", name, "-c", c.name, "--k3s-node-label", label)
+		createCmd.Stdout = os.Stdout
+		return createCmd.Run()
+	case KindK8sType, AwsK8sType, AzureK8sType:
+		return errors.New("creating new node not available for " + string(Config.K8sType))
+	default:
+		return errors.New("unknown kubernetes type")
+	}
+}
+
+func (c *K8sCluster) LoadImages(names ...string) error {
+	switch Config.K8sType {
+	case K3dK8sType, K3dCalicoK8sType:
+		version := kuma_version.Build.Version
+
+		var fullImageNames []string
+		for _, image := range names {
+			fullImageNames = append(fullImageNames, Config.KumaImageRegistry+"/"+image+":"+version)
+		}
+		defaultArgs := []string{"image", "import", "-m", "direct", "-c", c.name}
+		allArgs := append(defaultArgs, fullImageNames...)
+
+		importCmd := exec.Command("k3d", allArgs...)
+		importCmd.Stdout = os.Stdout
+		importCmd.Stderr = os.Stderr
+		return importCmd.Run()
+	case KindK8sType, AwsK8sType, AzureK8sType:
+		return errors.New("loading new images to a node not available for " + string(Config.K8sType))
+	default:
+		return errors.New("unknown kubernetes type")
+	}
+}
+
+func (c *K8sCluster) DeleteNode(name string) error {
+	switch Config.K8sType {
+	case K3dK8sType, K3dCalicoK8sType:
+		err := c.DeleteNodeViaApi(name)
+		if err != nil {
+			return err
+		}
+		_, err = c.WaitNodeDelete(name)
+		if err != nil {
+			return err
+		}
+		return exec.Command("k3d", "node", "delete", name).Run()
+	case KindK8sType, AwsK8sType, AzureK8sType:
+		return errors.New("deleting new node not available for " + string(Config.K8sType))
+	default:
+		return errors.New("unknown kubernetes type")
+	}
+}
+
+func (c *K8sCluster) DeleteNodeViaApi(node string) error {
+	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t, c.GetKubectlOptions())
+	if err != nil {
+		return errors.Wrapf(err, "error in getting access to K8S")
+	}
+
+	foreground := metav1.DeletePropagationForeground
+	return clientset.CoreV1().Nodes().Delete(context.Background(), node, metav1.DeleteOptions{PropagationPolicy: &foreground})
+}
+
+func (c *K8sCluster) KillAppPod(app, namespace string) error {
+	pod, err := PodNameOfApp(c, app, namespace)
+	if err != nil {
+		return err
+	}
+
+	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(namespace), "delete", "pod", pod); err != nil {
+		return err
+	}
+
+	return c.WaitApp(app, namespace, 1)
 }

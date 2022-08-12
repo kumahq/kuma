@@ -103,7 +103,11 @@ type ResourceTypeDescriptor struct {
 	// IsPolicy if this type is a policy (Dataplanes, Insights, Ingresses are not policies as they describe either metadata or workload, Retries are policies).
 	IsPolicy bool
 	// DisplayName the name of the policy showed as plural to be displayed in the UI and maybe CLI
-	DisplayName string
+	SingularDisplayName string
+	// PluralDisplayName the name of the policy showed as plural to be displayed in the UI and maybe CLI
+	PluralDisplayName string
+	// IsExperimental indicates if a policy is in experimental state (might not be production ready).
+	IsExperimental bool
 }
 
 func (d ResourceTypeDescriptor) NewObject() Resource {
@@ -208,8 +212,8 @@ type ResourceType string
 // Technically, ResourceNameExtensions is a mapping between
 // a component identifier and a component value, e.g.
 //
-//   "k8s.kuma.io/namespace" => "my-namespace"
-//   "k8s.kuma.io/name"      => "my-policy"
+//	"k8s.kuma.io/namespace" => "my-namespace"
+//	"k8s.kuma.io/name"      => "my-policy"
 //
 // Component identifier must be considered a part of user-facing Kuma API.
 // In other words, it is supposed to be visible to users and should not be changed lightly.

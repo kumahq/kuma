@@ -182,6 +182,20 @@ rules:
       - get
       - list
       - watch
+  {{- if .Values.experimental.cni }}
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - update
+  - apiGroups:
+      - "pods"
+    resources:
+      - pods
+    verbs:
+      - list
+  {{- end }}
   {{- end }}
   # validate k8s token before issuing mTLS cert
   - apiGroups:

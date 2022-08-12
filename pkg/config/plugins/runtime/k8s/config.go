@@ -30,6 +30,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 					UID:       5678,
 					GID:       5678,
 					DrainTime: 30 * time.Second,
+					EnvVars:   map[string]string{},
 
 					ReadinessProbe: SidecarReadinessProbe{
 						InitialDelaySeconds: 1,
@@ -74,12 +75,6 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			BuiltinDNS: BuiltinDNS{
 				Enabled: true,
 				Port:    15053,
-			},
-			EBPF: EBPF{
-				Enabled:              false,
-				InstanceIPEnvVarName: "INSTANCE_IP",
-				BPFFSPath:            "/run/kuma/bpf",
-				ProgramsSourcePath:   "/kuma/ebpf",
 			},
 		},
 		MarshalingCacheExpirationTime: 5 * time.Minute,
@@ -138,9 +133,6 @@ type Injector struct {
 	// CaCertFile is CA certificate which will be used to verify a connection to the control plane
 	CaCertFile string     `yaml:"caCertFile" envconfig:"kuma_runtime_kubernetes_injector_ca_cert_file"`
 	BuiltinDNS BuiltinDNS `yaml:"builtinDNS"`
-	// EBPF is a configuration for ebpf if transparent proxy should be installed
-	// using ebpf instead of iptables
-	EBPF EBPF `yaml:"ebpf"`
 }
 
 // Exceptions defines list of exceptions for Kuma injection
@@ -252,19 +244,6 @@ type BuiltinDNS struct {
 	Enabled bool `yaml:"enabled,omitempty" envconfig:"kuma_runtime_kubernetes_injector_builtin_dns_enabled"`
 	// Redirect port for DNS
 	Port uint32 `yaml:"port,omitempty" envconfig:"kuma_runtime_kubernetes_injector_builtin_dns_port"`
-}
-
-// EBPF defines configuration for the ebpf, when transparent proxy is marked to be
-// installed using ebpf instead of iptables
-type EBPF struct {
-	// Install transparent proxy using ebpf
-	Enabled bool `yaml:"enabled" envconfig:"kuma_runtime_kubernetes_injector_ebpf_enabled"`
-	// Name of the environmental variable which will include IP address of the pod
-	InstanceIPEnvVarName string `yaml:"instanceIPEnvVarName,omitempty" envconfig:"kuma_runtime_kubernetes_injector_ebpf_instance_ip_env_var_name"`
-	// Path where BPF file system will be mounted for pinning ebpf programs and maps
-	BPFFSPath string `yaml:"bpffsPath,omitempty" envconfig:"kuma_runtime_kubernetes_injector_ebpf_bpffs_path"`
-	// Path where compiled eBPF programs are placed
-	ProgramsSourcePath string `yaml:"programsSourcePath,omitempty" envconfig:"kuma_runtime_kubernetes_injector_ebpf_programs_source_path"`
 }
 
 var _ config.Config = &KubernetesRuntimeConfig{}

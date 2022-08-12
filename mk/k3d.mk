@@ -1,6 +1,7 @@
 CI_K3D_VERSION ?= v5.3.0
 CI_K3S_VERSION ?= v1.21.1-k3s1
 
+
 KUMA_MODE ?= standalone
 KUMA_NAMESPACE ?= kuma-system
 # Comment about PORT_PREFIX generation
@@ -39,6 +40,19 @@ KUMA_NAMESPACE ?= kuma-system
 #  [...etc]
 PORT_PREFIX := $$(($(patsubst 300-%,300+%-1,$(KIND_CLUSTER_NAME:kuma%=300%))))
 
+K3D_NETWORK_CNI ?= flannel
+K3D_CLUSTER_CREATE_OPTS ?= -i rancher/k3s:$(CI_K3S_VERSION) \
+	--k3s-arg '--no-deploy=traefik@server:0' \
+	--k3s-arg '--disable=metrics-server@server:0' \
+	--network kind \
+	--port "$(PORT_PREFIX)80-$(PORT_PREFIX)89:30080-30089@server:0" \
+	--timeout 120s
+
+ifeq ($(K3D_NETWORK_CNI),calico)
+	K3D_CLUSTER_CREATE_OPTS += --volume "$(TOP)/test/k3d/calico.yaml.kubelint-excluded:/var/lib/rancher/k3s/server/manifests/calico.yaml" \
+		--k3s-arg '--flannel-backend=none@server:*'
+endif
+
 .PHONY: k3d/network/create
 k3d/network/create:
 	@touch $(BUILD_DIR)/k3d_network.lock && \
@@ -50,13 +64,7 @@ k3d/network/create:
 k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create
 	@echo "PORT_PREFIX=$(PORT_PREFIX)"
 	@KUBECONFIG=$(KIND_KUBECONFIG) \
-		k3d cluster create "$(KIND_CLUSTER_NAME)" \
-			-i rancher/k3s:$(CI_K3S_VERSION) \
-			--k3s-arg '--no-deploy=traefik@server:0' \
-			--k3s-arg '--disable=metrics-server@server:0' \
-			--network kind \
-			--port "$(PORT_PREFIX)80-$(PORT_PREFIX)89:30080-30089@server:0" \
-			--timeout 120s && \
+		k3d cluster create "$(KIND_CLUSTER_NAME)" $(K3D_CLUSTER_CREATE_OPTS)
 	$(MAKE) k3d/wait
 	@echo
 	@echo '>>> You need to manually run the following command in your shell: >>>'

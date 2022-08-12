@@ -14,7 +14,7 @@
     
         Address on which inbound listener will be exposed    
     
-    - `advertisedaddress` (required)
+    - `advertisedAddress` (required)
     
         AdvertisedAddress defines IP or DNS name on which ZoneIngress is
         accessible to other Kuma clusters.    
@@ -23,7 +23,7 @@
     
         Port of the inbound interface that will forward requests to the service.    
     
-    - `advertisedport` (required)
+    - `advertisedPort` (required)
     
         AdvertisedPort defines port on which ZoneIngress is accessible to other
         Kuma clusters.    
@@ -36,7 +36,7 @@
         
             Port on which Envoy Admin API server will be listening
 
-- `availableservices` (optional, repeated)
+- `availableServices` (optional, repeated)
 
     AvailableService contains tags that represent unique subset of
     endpoints    
@@ -53,7 +53,7 @@
     
         mesh of the instances available for given tags    
     
-    - `externalservice` (optional)
+    - `externalService` (optional)
     
         instance of external service available from the zone
 

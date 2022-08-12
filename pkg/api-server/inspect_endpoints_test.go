@@ -237,7 +237,7 @@ var _ = Describe("Inspect WS", func() {
 			} else {
 				conf = conf.WithZone("local")
 			}
-			apiServer, stop = StartApiServer(conf)
+			apiServer, _, stop = StartApiServer(conf)
 			defer stop()
 
 			// when
@@ -1168,7 +1168,7 @@ var _ = Describe("Inspect WS", func() {
 		var stop func()
 		resourceStore := memory.NewStore()
 		rm := manager.NewResourceManager(resourceStore)
-		apiServer, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore))
+		apiServer, _, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore))
 		defer stop()
 
 		// when init the state
