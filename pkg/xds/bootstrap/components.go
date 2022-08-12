@@ -15,6 +15,7 @@ func RegisterBootstrap(rt core_runtime.Runtime) error {
 		rt.Config().DpServer.Auth.UseTokenPath,
 		rt.Config().DpServer.Hds.Enabled,
 		rt.Config().GetEnvoyAdminPort(),
+		rt.Config().Defaults.EnableLocalhostInboundClusters,
 	)
 	if err != nil {
 		return err

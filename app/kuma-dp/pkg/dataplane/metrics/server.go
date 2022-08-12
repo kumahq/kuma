@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -19,6 +20,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
+
+var inPassThroughIPv4 = &net.TCPAddr{IP: net.ParseIP("127.0.0.6")}
+var inPassThroughIPv6 = &net.TCPAddr{IP: net.ParseIP("::6")}
 
 var prometheusRequestHeaders = []string{"accept", "accept-encoding", "user-agent", "x-prometheus-scrape-timeout-seconds"}
 var logger = core.Log.WithName("metrics-hijacker")
@@ -40,22 +44,41 @@ func AddPrometheusFormat(queryParameters url.Values) string {
 
 type ApplicationToScrape struct {
 	Name          string
+	Address       string
 	Path          string
 	Port          uint32
+	IsIPv6        bool
 	QueryModifier QueryParametersModifier
 	Mutator       MetricsMutator
 }
 
 type Hijacker struct {
-	socketPath           string
-	httpClient           http.Client
-	applicationsToScrape []ApplicationToScrape
+	socketPath                     string
+	upstreamOverrideHttpClientIPv4 http.Client
+	upstreamOverrideHttpClientIPv6 http.Client
+	applicationsToScrape           []ApplicationToScrape
 }
 
 func New(dataplane kumadp.Dataplane, applicationsToScrape []ApplicationToScrape) *Hijacker {
+	// we need this in case of not localhost requests, it returns fast in iptabels
+	dialerV4 := &net.Dialer{
+		LocalAddr: inPassThroughIPv4,
+	}
+	dialerV6 := &net.Dialer{
+		LocalAddr: inPassThroughIPv6,
+	}
 	return &Hijacker{
-		socketPath:           envoy.MetricsHijackerSocketName(dataplane.Name, dataplane.Mesh),
-		httpClient:           http.Client{},
+		socketPath: envoy.MetricsHijackerSocketName(dataplane.Name, dataplane.Mesh),
+		upstreamOverrideHttpClientIPv4: http.Client{
+			Transport: &http.Transport{
+				DialContext: dialerV4.DialContext,
+			},
+		},
+		upstreamOverrideHttpClientIPv6: http.Client{
+			Transport: &http.Transport{
+				DialContext: dialerV6.DialContext,
+			},
+		},
 		applicationsToScrape: applicationsToScrape,
 	}
 }
@@ -110,10 +133,10 @@ func (s *Hijacker) Start(stop <-chan struct{}) error {
 
 // We pass QueryParameters only for the specific application.
 // Currently, we only support QueryParameters for Envoy metrics.
-func rewriteMetricsURL(path string, port uint32, queryModifier QueryParametersModifier, in *url.URL) string {
+func rewriteMetricsURL(address string, port uint32, path string, queryModifier QueryParametersModifier, in *url.URL) string {
 	u := url.URL{
 		Scheme:   "http",
-		Host:     fmt.Sprintf("127.0.0.1:%d", port),
+		Host:     net.JoinHostPort(address, strconv.FormatUint(uint64(port), 10)),
 		Path:     path,
 		RawQuery: queryModifier(in.Query()),
 	}
@@ -157,14 +180,19 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app ApplicationToScrape) []byte {
-	req, err := http.NewRequest("GET", rewriteMetricsURL(app.Path, app.Port, app.QueryModifier, initReq.URL), nil)
+	req, err := http.NewRequest("GET", rewriteMetricsURL(app.Address, app.Port, app.Path, app.QueryModifier, initReq.URL), nil)
 	if err != nil {
 		logger.Error(err, "failed to create request")
 		return nil
 	}
 	s.passRequestHeaders(req.Header, initReq.Header)
 	req = req.WithContext(ctx)
-	resp, err := s.httpClient.Do(req)
+	var resp *http.Response
+	if app.IsIPv6 {
+		resp, err = s.upstreamOverrideHttpClientIPv6.Do(req)
+	} else {
+		resp, err = s.upstreamOverrideHttpClientIPv4.Do(req)
+	}
 	if err != nil {
 		logger.Error(err, "failed call", "name", app.Name, "path", app.Path, "port", app.Port)
 		return nil

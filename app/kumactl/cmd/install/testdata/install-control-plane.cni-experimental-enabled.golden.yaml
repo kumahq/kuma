@@ -1618,8 +1618,12 @@ metadata:
 rules:
   - apiGroups: [""]
     resources:
-      - pods
       - nodes
+    verbs:
+      - get
+  - apiGroups: [""]
+    resources:
+      - pods
     verbs:
       - get
 ---

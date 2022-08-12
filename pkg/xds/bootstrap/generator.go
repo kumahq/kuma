@@ -39,6 +39,7 @@ func NewDefaultBootstrapGenerator(
 	dpUseTokenPath bool,
 	hdsEnabled bool,
 	defaultAdminPort uint32,
+	enableLocalhostInboundCluster bool,
 ) (BootstrapGenerator, error) {
 	hostsAndIps, err := hostsAndIPsFromCertFile(dpServerCertFile)
 	if err != nil {
@@ -48,28 +49,30 @@ func NewDefaultBootstrapGenerator(
 		return nil, errors.Errorf("hostname: %s set by KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST is not available in the DP Server certificate. Available hostnames: %q. Change the hostname or generate certificate with proper hostname.", serverConfig.Params.XdsHost, hostsAndIps.slice())
 	}
 	return &bootstrapGenerator{
-		resManager:       resManager,
-		config:           serverConfig,
-		proxyConfig:      proxyConfig,
-		xdsCertFile:      dpServerCertFile,
-		dpAuthEnabled:    dpAuthEnabled,
-		dpUseTokenPath:   dpUseTokenPath,
-		hostsAndIps:      hostsAndIps,
-		hdsEnabled:       hdsEnabled,
-		defaultAdminPort: defaultAdminPort,
+		resManager:                    resManager,
+		config:                        serverConfig,
+		proxyConfig:                   proxyConfig,
+		xdsCertFile:                   dpServerCertFile,
+		dpAuthEnabled:                 dpAuthEnabled,
+		dpUseTokenPath:                dpUseTokenPath,
+		hostsAndIps:                   hostsAndIps,
+		hdsEnabled:                    hdsEnabled,
+		defaultAdminPort:              defaultAdminPort,
+		enableLocalhostInboundCluster: enableLocalhostInboundCluster,
 	}, nil
 }
 
 type bootstrapGenerator struct {
-	resManager       core_manager.ResourceManager
-	config           *bootstrap_config.BootstrapServerConfig
-	proxyConfig      xds_config.Proxy
-	dpAuthEnabled    bool
-	dpUseTokenPath   bool
-	xdsCertFile      string
-	hostsAndIps      SANSet
-	hdsEnabled       bool
-	defaultAdminPort uint32
+	resManager                    core_manager.ResourceManager
+	config                        *bootstrap_config.BootstrapServerConfig
+	proxyConfig                   xds_config.Proxy
+	dpAuthEnabled                 bool
+	dpUseTokenPath                bool
+	xdsCertFile                   string
+	hostsAndIps                   SANSet
+	hdsEnabled                    bool
+	defaultAdminPort              uint32
+	enableLocalhostInboundCluster bool
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, KumaDpBootstrap, error) {
@@ -204,6 +207,13 @@ func (b *bootstrapGenerator) getMetricsConfig(
 		return err
 	}
 
+	var address string
+	if b.enableLocalhostInboundCluster {
+		address = core_mesh.IPv4Loopback.String()
+	} else {
+		address = dataplane.Spec.GetNetworking().GetAddress()
+	}
+
 	if config != nil {
 		aggregateConfig := []AggregateMetricsConfig{}
 		for _, config := range config.GetAggregate() {
@@ -211,9 +221,10 @@ func (b *bootstrapGenerator) getMetricsConfig(
 				continue
 			}
 			aggregateConfig = append(aggregateConfig, AggregateMetricsConfig{
-				Name: config.Name,
-				Port: config.Port,
-				Path: config.Path,
+				Address: address,
+				Name:    config.Name,
+				Port:    config.Port,
+				Path:    config.Path,
 			})
 		}
 		kumaDpBootstrap.AggregateMetricsConfig = aggregateConfig

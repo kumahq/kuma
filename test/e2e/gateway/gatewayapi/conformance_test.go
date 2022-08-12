@@ -14,13 +14,22 @@ import (
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/test/e2e/gateway/gatewayapi"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/gateway"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
 var clusterName = Kuma1
 var minNodePort = 30080
 var maxNodePort = 30089
+
+const gatewayClass = `
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: GatewayClass
+metadata:
+  name: kuma
+spec:
+  controllerName: gateways.kuma.io/controller
+`
 
 // TestConformance runs as a `testing` test and not Ginkgo so we have to use an
 // explicit `g` to use Gomega.
@@ -42,11 +51,11 @@ func TestConformance(t *testing.T) {
 	}()
 
 	err := NewClusterSetup().
-		Install(gatewayapi.GatewayAPICRDs).
+		Install(gateway.GatewayAPICRDs).
 		Install(Kuma(config_core.Standalone,
 			WithCtlOpts(map[string]string{"--experimental-gatewayapi": "true"}),
 		)).
-		Install(YamlK8s(gatewayapi.GatewayClass)).
+		Install(YamlK8s(gatewayClass)).
 		Setup(cluster)
 	g.Expect(err).ToNot(HaveOccurred())
 
@@ -81,6 +90,7 @@ func TestConformance(t *testing.T) {
 		},
 		ValidUniqueListenerPorts: validUniqueListenerPorts,
 		SupportedFeatures: []suite.SupportedFeature{
+			suite.SupportHTTPRouteQueryParamMatching,
 			suite.SupportReferenceGrant,
 		},
 	})

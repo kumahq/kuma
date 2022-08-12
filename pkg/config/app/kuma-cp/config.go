@@ -27,6 +27,11 @@ var _ config.Config = &Defaults{}
 
 type Defaults struct {
 	SkipMeshCreation bool `yaml:"skipMeshCreation" envconfig:"kuma_defaults_skip_mesh_creation"`
+	// If true, instead of providing inbound clusters with address of dataplane, generates cluster with localhost.
+	// Enabled can cause security threat by exposing application listing on localhost. This configuration is going to
+	// removed.
+	// TODO: https://github.com/kumahq/kuma/issues/4772
+	EnableLocalhostInboundClusters bool `yaml:"enableLocalhostInboundClusters" envconfig:"kuma_defaults_enable_localhost_inbound_clusters"`
 }
 
 func (d *Defaults) Sanitize() {
@@ -174,7 +179,8 @@ var DefaultConfig = func() Config {
 		BootstrapServer:            bootstrap.DefaultBootstrapServerConfig(),
 		Runtime:                    runtime.DefaultRuntimeConfig(),
 		Defaults: &Defaults{
-			SkipMeshCreation: false,
+			SkipMeshCreation:               false,
+			EnableLocalhostInboundClusters: false,
 		},
 		Metrics: &Metrics{
 			Dataplane: &DataplaneMetrics{

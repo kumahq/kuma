@@ -21,7 +21,7 @@ func inbound(ip string, dpPort, workloadPort uint32) mesh_proto.InboundInterface
 		DataplaneAdvertisedIP: ip,
 		DataplaneIP:           ip,
 		DataplanePort:         dpPort,
-		WorkloadIP:            "127.0.0.1",
+		WorkloadIP:            ip,
 		WorkloadPort:          workloadPort,
 	}
 }

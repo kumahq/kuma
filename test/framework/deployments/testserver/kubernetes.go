@@ -172,6 +172,16 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 					Ports: []corev1.ContainerPort{
 						{ContainerPort: 80},
 					},
+					Env: []corev1.EnvVar{
+						{
+							Name: "POD_IP",
+							ValueFrom: &corev1.EnvVarSource{
+								FieldRef: &corev1.ObjectFieldSelector{
+									FieldPath: "status.podIP",
+								},
+							},
+						},
+					},
 					Command: []string{"test-server"},
 					Args:    args,
 					Resources: corev1.ResourceRequirements{

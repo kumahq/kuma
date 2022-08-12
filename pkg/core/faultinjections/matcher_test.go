@@ -99,7 +99,8 @@ var _ = Describe("Match", func() {
 		Entry("1 inbound dataplane, 2 policies", testCase{
 			dataplane: dataplaneWithInboundsFunc([]*mesh_proto.Dataplane_Networking_Inbound{
 				{
-					ServicePort: 8080,
+					ServiceAddress: "1.2.3.4",
+					ServicePort:    8080,
 					Tags: map[string]string{
 						"service":          "web",
 						"version":          "0.1",
@@ -128,7 +129,7 @@ var _ = Describe("Match", func() {
 			},
 			expected: core_xds.FaultInjectionMap{
 				mesh_proto.InboundInterface{
-					WorkloadIP:   "127.0.0.1",
+					WorkloadIP:   "1.2.3.4",
 					WorkloadPort: 8080,
 				}: {
 					policyWithDestinationsFunc("fi2", time.Unix(1, 0), []*mesh_proto.Selector{
@@ -144,7 +145,8 @@ var _ = Describe("Match", func() {
 		Entry("should apply policy only to the first inbound", testCase{
 			dataplane: dataplaneWithInboundsFunc([]*mesh_proto.Dataplane_Networking_Inbound{
 				{
-					ServicePort: 8080,
+					ServiceAddress: "1.2.3.4",
+					ServicePort:    8080,
 					Tags: map[string]string{
 						"service":          "web",
 						"version":          "0.1",
@@ -153,7 +155,8 @@ var _ = Describe("Match", func() {
 					},
 				},
 				{
-					ServicePort: 8081,
+					ServiceAddress: "1.2.3.4",
+					ServicePort:    8081,
 					Tags: map[string]string{
 						"service":          "web-api",
 						"version":          "0.1.2",
@@ -174,7 +177,7 @@ var _ = Describe("Match", func() {
 			},
 			expected: core_xds.FaultInjectionMap{
 				mesh_proto.InboundInterface{
-					WorkloadIP:   "127.0.0.1",
+					WorkloadIP:   "1.2.3.4",
 					WorkloadPort: 8081,
 				}: {
 					policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
@@ -191,7 +194,8 @@ var _ = Describe("Match", func() {
 		Entry("should select all policies matched for the inbound", testCase{
 			dataplane: dataplaneWithInboundsFunc([]*mesh_proto.Dataplane_Networking_Inbound{
 				{
-					ServicePort: 8080,
+					ServiceAddress: "1.2.3.4",
+					ServicePort:    8080,
 					Tags: map[string]string{
 						"service":          "web",
 						"version":          "0.1",
@@ -237,7 +241,7 @@ var _ = Describe("Match", func() {
 			},
 			expected: core_xds.FaultInjectionMap{
 				mesh_proto.InboundInterface{
-					WorkloadIP:   "127.0.0.1",
+					WorkloadIP:   "1.2.3.4",
 					WorkloadPort: 8080,
 				}: {
 					policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{

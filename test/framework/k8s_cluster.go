@@ -347,6 +347,10 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		argsMap["--cni-net-dir"] = Config.CNIConf.NetDir
 		argsMap["--cni-bin-dir"] = Config.CNIConf.BinDir
 		argsMap["--cni-conf-name"] = Config.CNIConf.ConfName
+
+		if c.opts.cniExperimental {
+			argsMap["--set"] = "experimental.cni=true"
+		}
 	}
 
 	if Config.XDSApiVersion != "" {
@@ -1146,7 +1150,7 @@ func (c *K8sCluster) SetCP(cp *K8sControlPlane) {
 // warning: there seems to be a bug in k3s1 v1.19.16 so that each tests needs a unique node name
 func (c *K8sCluster) CreateNode(name string, label string) error {
 	switch Config.K8sType {
-	case K3dK8sType:
+	case K3dK8sType, K3dCalicoK8sType:
 		createCmd := exec.Command("k3d", "node", "create", name, "-c", c.name, "--k3s-node-label", label)
 		createCmd.Stdout = os.Stdout
 		return createCmd.Run()
@@ -1159,7 +1163,7 @@ func (c *K8sCluster) CreateNode(name string, label string) error {
 
 func (c *K8sCluster) LoadImages(names ...string) error {
 	switch Config.K8sType {
-	case K3dK8sType:
+	case K3dK8sType, K3dCalicoK8sType:
 		version := kuma_version.Build.Version
 
 		var fullImageNames []string
@@ -1182,7 +1186,7 @@ func (c *K8sCluster) LoadImages(names ...string) error {
 
 func (c *K8sCluster) DeleteNode(name string) error {
 	switch Config.K8sType {
-	case K3dK8sType:
+	case K3dK8sType, K3dCalicoK8sType:
 		err := c.DeleteNodeViaApi(name)
 		if err != nil {
 			return err

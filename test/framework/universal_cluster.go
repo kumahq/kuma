@@ -330,6 +330,10 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 		}
 	}
 
+	if opts.boundToContainerIp {
+		args = append(args, "--ip", app.ip)
+	}
+
 	if !opts.proxyOnly {
 		app.CreateMainApp(nil, args)
 		err = app.mainApp.Start()

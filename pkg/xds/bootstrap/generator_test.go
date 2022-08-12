@@ -114,7 +114,7 @@ var _ = Describe("bootstrapGenerator", func() {
 				proxyConfig = *given.proxyConfig
 			}
 
-			generator, err := NewDefaultBootstrapGenerator(resManager, given.serverConfig, proxyConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthEnabled, given.useTokenPath, given.hdsEnabled, 0)
+			generator, err := NewDefaultBootstrapGenerator(resManager, given.serverConfig, proxyConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthEnabled, given.useTokenPath, given.hdsEnabled, 0, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -432,7 +432,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			cfg := bootstrap_config.DefaultBootstrapServerConfig()
 			proxyCfg := xds_config.DefaultProxyConfig()
 
-			generator, err := NewDefaultBootstrapGenerator(resManager, cfg, proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false, false, true, 9901)
+			generator, err := NewDefaultBootstrapGenerator(resManager, cfg, proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false, false, true, 9901, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -566,7 +566,7 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 		err = resManager.Create(context.Background(), dataplane, store.CreateByKey("name.namespace", "metrics"))
 		Expect(err).ToNot(HaveOccurred())
 
-		generator, err := NewDefaultBootstrapGenerator(resManager, config(), proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true, false, false, 0)
+		generator, err := NewDefaultBootstrapGenerator(resManager, config(), proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true, false, false, 0, false)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -585,14 +585,16 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 		Expect(err).ToNot(HaveOccurred())
 		Expect(configParam.AggregateMetricsConfig).To(ContainElements([]AggregateMetricsConfig{
 			{
-				Name: "opa",
-				Path: "/mesh/config",
-				Port: 123,
+				Address: "8.8.8.8",
+				Name:    "opa",
+				Path:    "/mesh/config",
+				Port:    123,
 			},
 			{
-				Name: "app",
-				Path: "/dp/override",
-				Port: 12,
+				Address: "8.8.8.8",
+				Name:    "app",
+				Path:    "/dp/override",
+				Port:    12,
 			},
 		}))
 	})
@@ -658,7 +660,7 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 		err = resManager.Create(context.Background(), dataplane, store.CreateByKey("name.namespace", "metrics"))
 		Expect(err).ToNot(HaveOccurred())
 
-		generator, err := NewDefaultBootstrapGenerator(resManager, config(), proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true, false, false, 0)
+		generator, err := NewDefaultBootstrapGenerator(resManager, config(), proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true, false, false, 0, false)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -677,14 +679,16 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 		Expect(err).ToNot(HaveOccurred())
 		Expect(configParam.AggregateMetricsConfig).To(Equal([]AggregateMetricsConfig{
 			{
-				Name: "opa",
-				Path: "/mesh/opa",
-				Port: 123,
+				Address: "8.8.8.8",
+				Name:    "opa",
+				Path:    "/mesh/opa",
+				Port:    123,
 			},
 			{
-				Name: "app",
-				Path: "/mesh/app",
-				Port: 999,
+				Address: "8.8.8.8",
+				Name:    "app",
+				Path:    "/mesh/app",
+				Port:    999,
 			},
 		}))
 	})

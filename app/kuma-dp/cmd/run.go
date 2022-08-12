@@ -22,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/util/net"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
@@ -295,9 +296,11 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 	if kumaSidecarConfiguration != nil {
 		for _, item := range kumaSidecarConfiguration.Metrics.Aggregate {
 			applicationsToScrape = append(applicationsToScrape, metrics.ApplicationToScrape{
+				Address:       item.Address,
 				Name:          item.Name,
 				Path:          item.Path,
 				Port:          item.Port,
+				IsIPv6:        net.IsAddressIPv6(item.Address),
 				QueryModifier: metrics.RemoveQueryParameters,
 			})
 		}
@@ -306,7 +309,9 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 	applicationsToScrape = append(applicationsToScrape, metrics.ApplicationToScrape{
 		Name:          "envoy",
 		Path:          "/stats",
+		Address:       "127.0.0.1",
 		Port:          envoyAdminPort,
+		IsIPv6:        false,
 		QueryModifier: metrics.AddPrometheusFormat,
 		Mutator:       metrics.MergeClusters,
 	})
