@@ -27,10 +27,12 @@ spec:
 
 func GatewayAPI() {
 	if Config.IPV6 {
-		Skip("IPv6 tests use kind which doesn't support the LoadBalancer ServiceType")
+		fmt.Println("IPv6 tests use kind which doesn't support the LoadBalancer ServiceType")
+		return
 	}
 	if runtime.GOARCH == "arm64" {
-		Skip("The webhook doesn't provide an arm64 image")
+		fmt.Println("The webhook doesn't provide an arm64 image")
+		return
 	}
 
 	meshName := "gatewayapi"
