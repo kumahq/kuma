@@ -158,7 +158,7 @@ networking:
 				_, _, err := zone1.Exec(TestNamespace, clientPodName, "demo-client",
 					"curl", "--verbose", "--max-time", "3", "--fail", "external-service-1.mesh")
 				return err
-			}, "30s", "1s").Should(HaveOccurred())
+			}, "120s", "1s").Should(HaveOccurred()) // https://github.com/kumahq/kuma/issues/4809
 		})
 
 		It("should not reach external service from universal when zone egress is down", func() {
@@ -166,7 +166,7 @@ networking:
 				_, _, err := zone4.Exec("", "", "zone4-demo-client",
 					"curl", "-v", "-m", "3", "--fail", "external-service-2.mesh")
 				return err
-			}, "30s", "1s").Should(HaveOccurred())
+			}, "120s", "1s").Should(HaveOccurred()) // https://github.com/kumahq/kuma/issues/4809
 		})
 	})
 }
