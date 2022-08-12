@@ -51,8 +51,27 @@ spec:
       containers:
         - name: install-cni
           {{- if .Values.experimental.cni }}
+          {{- if .Values.experimental.ebpf.enabled }}
+          image: {{ include "kuma.formatImage" (dict "image" .Values.cni.experimental.imageEbpf "root" $) | quote }}
+          imagePullPolicy: {{ .Values.cni.image.imagePullPolicy }}
+          args:
+          - /app/mbctl
+          - --mode=kuma
+          - --use-reconnect=true
+          - --cni-mode=true
+          {{- if eq .Values.cni.logLevel "debug" }}
+          - --debug=true
+          {{- end }}
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                - make
+                - --keep-going
+                - clean
+          {{- else }}
           image: {{ include "kuma.formatImage" (dict "image" .Values.cni.experimental.image "root" $) | quote }}
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: {{ .Values.cni.image.imagePullPolicy }}
           readinessProbe:
             initialDelaySeconds: {{ .Values.cni.delayStartupSeconds }}
             exec:
@@ -61,16 +80,23 @@ spec:
                 - /tmp/ready
           command: [ "/bin/sh", "-c", "--" ]
           args: [ "sleep {{.Values.cni.delayStartupSeconds}} && exec /install-cni" ]
+          {{- end }}
           {{- else }}
           image: {{ include "kuma.formatImage" (dict "image" .Values.cni.image "root" $) | quote }}
-          imagePullPolicy: Always
+          imagePullPolicy: {{ .Values.cni.image.imagePullPolicy }}
           command: [ "/bin/sh", "-c", "--" ]
           args: [ "sleep {{.Values.cni.delayStartupSeconds}} && exec /install-cni.sh" ]
           {{- end }}
+          {{- if and .Values.experimental.cni .Values.experimental.ebpf.enabled }}
+          securityContext:
+            privileged: true
+          {{- else }}
           {{- if .Values.cni.containerSecurityContext }}
           securityContext:
           {{- toYaml .Values.cni.containerSecurityContext | trim | nindent 12 }}
           {{- end }}
+          {{- end }}
+          {{- if not .Values.experimental.ebpf.enabled }}
           env:
             # Name of the CNI config file to create.
             - name: CNI_CONF_NAME
@@ -86,11 +112,21 @@ spec:
             # If true, deploy as a chained CNI plugin, otherwise deploy as a standalone CNI
             - name: CHAINED_CNI_PLUGIN
               value: "{{ .Values.cni.chained }}"
+          {{- end }}
           volumeMounts:
             - mountPath: /host/opt/cni/bin
               name: cni-bin-dir
             - mountPath: /host/etc/cni/net.d
               name: cni-net-dir
+            {{- if and .Values.experimental.cni .Values.experimental.ebpf.enabled }}
+            - mountPath: /sys/fs/cgroup
+              name: sys-fs-cgroup
+            - mountPath: /host/proc
+              name: host-proc
+            - mountPath: /host/var/run
+              name: host-var-run
+              mountPropagation: Bidirectional
+            {{- end }}
       volumes:
         # Used to install CNI.
         - name: cni-bin-dir
@@ -99,4 +135,15 @@ spec:
         - name: cni-net-dir
           hostPath:
             path: {{ .Values.cni.netDir }}
-  {{- end }}
+        {{- if and .Values.experimental.cni .Values.experimental.ebpf.enabled }}
+        - hostPath:
+            path: /var/run
+          name: host-var-run
+        - hostPath:
+            path: /sys/fs/cgroup
+          name: sys-fs-cgroup
+        - hostPath:
+            path: /proc
+          name: host-proc
+        {{- end }}
+{{- end }}
