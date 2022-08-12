@@ -188,6 +188,55 @@ var _ = Describe("Endpoints", func() {
                     loadBalancingWeight: 2
 `,
 			}),
+			Entry("mixed locality", testCase{
+				cluster: "127.0.0.1:8080",
+				endpoints: []core_xds.Endpoint{
+					{
+						Target: "192.168.0.1",
+						Port:   8081,
+						Weight: 2,
+						Locality: &core_xds.Locality{
+							Zone: "west",
+						},
+					},
+					{
+						Target: "192.168.0.2",
+						Port:   8082,
+						Weight: 1,
+					},
+					{
+						Target: "192.168.0.3",
+						Port:   8082,
+						Weight: 1,
+					},
+				},
+				expected: `
+clusterName: 127.0.0.1:8080
+endpoints:
+    - lbEndpoints:
+        - endpoint:
+            address:
+                socketAddress:
+                    address: 192.168.0.2
+                    portValue: 8082
+          loadBalancingWeight: 1
+        - endpoint:
+            address:
+                socketAddress:
+                    address: 192.168.0.3
+                    portValue: 8082
+          loadBalancingWeight: 1
+    - lbEndpoints:
+        - endpoint:
+            address:
+                socketAddress:
+                    address: 192.168.0.1
+                    portValue: 8081
+          loadBalancingWeight: 2
+      locality:
+        zone: west
+`,
+			}),
 		)
 	})
 })
