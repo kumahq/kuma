@@ -29,6 +29,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/trafficlog"
 	"github.com/kumahq/kuma/test/e2e_env/universal/trafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/universal/trafficroute"
+	"github.com/kumahq/kuma/test/e2e_env/universal/virtualoutbound"
 	"github.com/kumahq/kuma/test/e2e_env/universal/zoneegress"
 	. "github.com/kumahq/kuma/test/framework"
 )
@@ -104,3 +105,4 @@ var _ = Describe("Apis", api.Api, Ordered)
 var _ = Describe("Traffic Permission", trafficpermission.TrafficPermissionUniversal, Ordered)
 var _ = Describe("Traffic Route", trafficroute.TrafficRoute, Ordered)
 var _ = Describe("Zone Egress", zoneegress.ExternalServices, Ordered)
+var _ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)

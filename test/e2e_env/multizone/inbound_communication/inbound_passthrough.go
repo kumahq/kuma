@@ -74,7 +74,7 @@ func InboundPassthrough() {
 				testserver.WithMesh(mesh),
 				testserver.WithName("k8s-test-server-localhost"),
 				testserver.WithEchoArgs("echo", "--instance", "k8s-bound-localhost", "--ip", localhostAddress),
-				testserver.WithoutProbe(),
+				testserver.WithoutProbes(),
 			)).
 			Install(testserver.Install(
 				testserver.WithNamespace(namespace),

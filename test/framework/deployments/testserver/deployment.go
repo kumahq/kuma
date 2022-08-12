@@ -17,8 +17,8 @@ type DeploymentOpts struct {
 	healthcheckTCPArgs []string
 	Replicas           int32
 	WaitingToBeReady   bool
+	EnableProbes       bool
 	PodAnnotations     map[string]string
-	ProbeEnabled       bool
 	NodeSelector       map[string]string
 }
 
@@ -30,7 +30,7 @@ func DefaultDeploymentOpts() DeploymentOpts {
 		Replicas:         1,
 		WaitingToBeReady: true,
 		PodAnnotations:   map[string]string{},
-		ProbeEnabled:     true,
+		EnableProbes:     true,
 	}
 }
 
@@ -102,9 +102,9 @@ func WithPodAnnotations(annotations map[string]string) DeploymentOptsFn {
 	}
 }
 
-func WithoutProbe() DeploymentOptsFn {
+func WithoutProbes() DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
-		opts.ProbeEnabled = false
+		opts.EnableProbes = false
 	}
 }
 

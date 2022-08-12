@@ -346,7 +346,7 @@ jobs:
               export E2E_PKG_LIST=${E2E_PKG_LIST:-$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")}
             fi
             env
-            make ${MAKE_PARAMETERS} << parameters.target >>
+            make ${MAKE_PARAMETERS} CI=true << parameters.target >>
       - store_test_results:
           path: build/reports
 

@@ -9,6 +9,8 @@ If something doesn't apply please check the box and add a justification after th
 - [ ] Link to docs PR or issue --
 - [ ] Link to UI issue or PR --
 - [ ] Is the [issue worked on linked][1]? --
+- [ ] The PR does not hardcode values that might break projects that depend on kuma (e.g. "kumahq" as a image registry) --
+- [ ] The PR will work for both Linux and Windows, system specific functions like `syscall.Mkfifo` have equivalent implementation on the other OS --
 - [ ] Unit Tests --
 - [ ] E2E Tests --
 - [ ] Manual Universal Tests --

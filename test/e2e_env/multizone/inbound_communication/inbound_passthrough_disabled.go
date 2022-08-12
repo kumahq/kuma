@@ -80,7 +80,7 @@ func InboundPassthroughDisabled() {
 				testserver.WithMesh(mesh),
 				testserver.WithName("k8s-test-server-pod"),
 				testserver.WithEchoArgs("echo", "--instance", "k8s-bound-pod", "--ip", "$(POD_IP)"),
-				testserver.WithoutProbe(),
+				testserver.WithoutProbes(),
 			)).
 			Setup(env.KubeZone2),
 		).To(Succeed())

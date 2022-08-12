@@ -18,10 +18,12 @@ func addPoliciesWsEndpoints(ws *restful.WebService, mode core.CpMode, readOnly b
 				continue
 			}
 			response.Policies = append(response.Policies, types.PolicyEntry{
-				Name:        string(def.Name),
-				ReadOnly:    readOnly || core.Zone == mode || def.ReadOnly,
-				Path:        def.WsPath,
-				DisplayName: def.DisplayName,
+				Name:                string(def.Name),
+				ReadOnly:            readOnly || core.Zone == mode || def.ReadOnly,
+				Path:                def.WsPath,
+				SingularDisplayName: def.SingularDisplayName,
+				PluralDisplayName:   def.PluralDisplayName,
+				IsExperimental:      def.IsExperimental,
 			})
 		}
 		sort.SliceStable(response.Policies, func(i, j int) bool {

@@ -107,7 +107,7 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 	var args []string
 	var liveness *corev1.Probe
 	var readiness *corev1.Probe
-	if len(k.opts.healthcheckTCPArgs) > 0 && k.opts.ProbeEnabled {
+	if len(k.opts.healthcheckTCPArgs) > 0 {
 		args = k.opts.healthcheckTCPArgs
 		liveness = &corev1.Probe{
 			ProbeHandler: corev1.ProbeHandler{
@@ -129,28 +129,30 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 		}
 	} else {
 		args = append([]string{"echo", "--port", "80", "--probes"}, k.opts.echoArgs...)
-		if k.opts.ProbeEnabled {
-			liveness = &corev1.Probe{
-				ProbeHandler: corev1.ProbeHandler{
-					HTTPGet: &corev1.HTTPGetAction{
-						Path: `/probes?type=liveness`,
-						Port: intstr.FromInt(80),
-					},
+		liveness = &corev1.Probe{
+			ProbeHandler: corev1.ProbeHandler{
+				HTTPGet: &corev1.HTTPGetAction{
+					Path: `/probes?type=liveness`,
+					Port: intstr.FromInt(80),
 				},
-				InitialDelaySeconds: 3,
-				PeriodSeconds:       3,
-			}
-			readiness = &corev1.Probe{
-				ProbeHandler: corev1.ProbeHandler{
-					HTTPGet: &corev1.HTTPGetAction{
-						Path: `/probes?type=readiness`,
-						Port: intstr.FromInt(80),
-					},
-				},
-				InitialDelaySeconds: 3,
-				PeriodSeconds:       3,
-			}
+			},
+			InitialDelaySeconds: 3,
+			PeriodSeconds:       3,
 		}
+		readiness = &corev1.Probe{
+			ProbeHandler: corev1.ProbeHandler{
+				HTTPGet: &corev1.HTTPGetAction{
+					Path: `/probes?type=readiness`,
+					Port: intstr.FromInt(80),
+				},
+			},
+			InitialDelaySeconds: 3,
+			PeriodSeconds:       3,
+		}
+	}
+	if !k.opts.EnableProbes {
+		liveness = nil
+		readiness = nil
 	}
 	spec := corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
