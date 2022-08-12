@@ -18,6 +18,13 @@ import (
 	"github.com/kumahq/kuma/test/framework/client"
 )
 
+func GatewayAPICRDs(cluster Cluster) error {
+	return k8s.RunKubectlE(
+		cluster.GetTesting(),
+		cluster.GetKubectlOptions(),
+		"apply", "-f", "https://github.com/kubernetes-sigs/gateway-api/releases/download/v0.5.0/experimental-install.yaml")
+}
+
 func SuccessfullyProxyRequestToGateway(cluster Cluster, instance string, gatewayAddr string, namespace string) {
 	Logf("expecting 200 response from %q", gatewayAddr)
 	target := fmt.Sprintf("http://%s/%s",
