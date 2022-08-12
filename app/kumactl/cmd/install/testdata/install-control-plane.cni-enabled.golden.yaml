@@ -1618,10 +1618,16 @@ metadata:
 rules:
   - apiGroups: [""]
     resources:
-      - pods
       - nodes
     verbs:
       - get
+  - apiGroups: [""]
+    resources:
+      - pods
+    verbs:
+      - get
+      - list
+      - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -1977,7 +1983,7 @@ spec:
       containers:
         - name: install-cni
           image: "docker.io/kumahq/install-cni:0.0.10"
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           command: [ "/bin/sh", "-c", "--" ]
           args: [ "sleep 0 && exec /install-cni.sh" ]
           env:

@@ -319,6 +319,8 @@ cni:
     repository: "install-cni"
     # -- CNI image tag
     tag: "0.0.10"
+    # -- CNI image pull policy
+    imagePullPolicy: IfNotPresent
 
   # -- it's only useful in tests to trigger a possible race condition
   delayStartupSeconds: 0
@@ -330,6 +332,14 @@ cni:
       repository: "kuma-cni"
       # -- CNI experimental image tag - defaults to .Chart.AppVersion
       tag:
+
+    imageEbpf:
+      # -- CNI experimental eBPF image registry
+      registry: "docker.io/merbridge"
+      # -- CNI experimental eBPF image repository
+      repository: "merbridge"
+      # -- CNI experimental eBPF image tag
+      tag: "latest"
 
   # -- Security context at the pod level for cni
   podSecurityContext: {}
@@ -659,6 +669,7 @@ experimental:
   # -- If true, it installs experimental new version of the CNI
   cni: false
   # Configuration for the experimental ebpf mode for transparent proxy
+  merbridge: false
   ebpf:
     # -- If true, ebpf will be used instead of using iptables to install/configure transparent proxy
     enabled: false
