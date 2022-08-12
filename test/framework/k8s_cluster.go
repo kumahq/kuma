@@ -347,6 +347,10 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		argsMap["--cni-net-dir"] = Config.CNIConf.NetDir
 		argsMap["--cni-bin-dir"] = Config.CNIConf.BinDir
 		argsMap["--cni-conf-name"] = Config.CNIConf.ConfName
+
+		if c.opts.cniExperimental {
+			argsMap["--set"] = "experimental.cni=true"
+		}
 	}
 
 	if Config.XDSApiVersion != "" {
