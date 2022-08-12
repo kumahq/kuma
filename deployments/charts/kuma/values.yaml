@@ -335,11 +335,11 @@ cni:
 
     imageEbpf:
       # -- CNI experimental eBPF image registry
-      registry: "docker.io/merbridge"
+      registry: "docker.io/kumahq"
       # -- CNI experimental eBPF image repository
       repository: "merbridge"
       # -- CNI experimental eBPF image tag
-      tag: "latest"
+      tag: "0.7.1"
 
   # -- Security context at the pod level for cni
   podSecurityContext: {}

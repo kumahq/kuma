@@ -29,8 +29,10 @@ rules:
       - pods
     verbs:
       - get
+      {{- if .Values.experimental.ebpf.enabled }}
       - list
       - watch
+      {{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

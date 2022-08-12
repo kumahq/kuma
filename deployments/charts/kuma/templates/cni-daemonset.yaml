@@ -52,7 +52,9 @@ spec:
         - name: install-cni
           {{- if .Values.experimental.cni }}
           {{- if .Values.experimental.ebpf.enabled }}
-          image: {{ include "kuma.formatImage" (dict "image" .Values.cni.experimental.imageEbpf "root" $) | quote }}
+          {{- with .Values.cni.experimental.imageEbpf }}
+          image: {{ printf "%s/%s:%s" .registry .repository .tag | quote }}
+          {{- end }}
           imagePullPolicy: {{ .Values.cni.image.imagePullPolicy }}
           args:
           - /app/mbctl
