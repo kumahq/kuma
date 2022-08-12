@@ -52,6 +52,28 @@ networking:
   address: "%s"
 `
 
+	// Override wait_for_warm_on_init to false because universal zone cannot resolve "es-test-server.default.svc.cluster.local:80"
+	// The default (true) slows down ACK of all warming all the clusters delivered to universal client, even if only one cluster has problem.
+	// This speeds up the test by at least 60s.
+	ptWaitForWarmOnInit := `
+type: ProxyTemplate
+mesh: non-default
+name: custom-template-1
+selectors:
+  - match:
+      kuma.io/service: '*'
+conf:
+  imports:
+    - default-proxy
+  modifications:
+    - cluster:
+        operation: patch
+        match:
+          origin: outbound
+        value: |
+          wait_for_warm_on_init: false
+`
+
 	var global, zone1 Cluster
 	var zone4 *UniversalCluster
 	var clientPodName string
@@ -73,6 +95,7 @@ networking:
 		Expect(NewClusterSetup().
 			Install(Kuma(config_core.Global)).
 			Install(YamlUniversal(fmt.Sprintf(meshMTLSOn, nonDefaultMesh, "true", "true"))).
+			Install(YamlUniversal(ptWaitForWarmOnInit)).
 			Install(YamlUniversal(fmt.Sprintf(externalService1, nonDefaultMesh))).
 			Setup(global)).To(Succeed())
 
