@@ -22,10 +22,10 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/util/net"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
-	xds_generator "github.com/kumahq/kuma/pkg/xds/generator"
 )
 
 var runLog = dataplaneLog.WithName("run")
@@ -300,7 +300,7 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 				Name:          item.Name,
 				Path:          item.Path,
 				Port:          item.Port,
-				IsIPv6:        xds_generator.IsAddressIPv6(item.Address),
+				IsIPv6:        net.IsAddressIPv6(item.Address),
 				QueryModifier: metrics.RemoveQueryParameters,
 			})
 		}
