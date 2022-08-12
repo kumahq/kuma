@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/multizone/localityawarelb"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/trafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/trafficroute"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/zoneegress"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -225,3 +226,4 @@ var _ = Describe("Healthcheck", healthcheck.ApplicationOnUniversalClientOnK8s, O
 var _ = Describe("Inspect", inspect.Inspect, Ordered)
 var _ = Describe("TrafficPermission", trafficpermission.TrafficPermission, Ordered)
 var _ = Describe("TrafficRoute", trafficroute.TrafficRoute, Ordered)
+var _ = Describe("ZoneEgress Internal Services", zoneegress.InternalServices, Ordered)

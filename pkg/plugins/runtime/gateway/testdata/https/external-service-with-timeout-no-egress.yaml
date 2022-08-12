@@ -53,7 +53,9 @@ Clusters:
             idleTimeout: 115s
             maxStreamDuration: 117s
           explicitHttpConfig:
-            http2ProtocolOptions: {}
+            http2ProtocolOptions:
+              initialConnectionWindowSize: 1048576
+              initialStreamWindowSize: 65536
 Endpoints:
   Resources: {}
 Listeners:
@@ -160,6 +162,9 @@ Routes:
                 weight: 1
               totalWeight: 1
 Runtimes:
-  Resources: {}
+  Resources:
+    gateway.listeners:
+      layer: {}
+      name: gateway.listeners
 Secrets:
   Resources: {}

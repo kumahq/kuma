@@ -74,19 +74,22 @@ func BuildRateLimitMap(
 // most general order.
 //
 // Example:
-//  sources:
-//    - match:
-//        kuma.io/service: 'web'
-//        version: '1'
-//    - match:
-//        kuma.io/service: 'web-api'
-//---
-//  sources:
-//    - match:
-//        kuma.io/service: 'web'
-//    - match:
-//        kuma.io/service: 'web-api'
-//        version: '1'
+//
+//	sources:
+//	  - match:
+//	      kuma.io/service: 'web'
+//	      version: '1'
+//	  - match:
+//	      kuma.io/service: 'web-api'
+//
+// ---
+//
+//	sources:
+//	  - match:
+//	      kuma.io/service: 'web'
+//	  - match:
+//	      kuma.io/service: 'web-api'
+//	      version: '1'
 func splitPoliciesBySourceMatch(rateLimits []*core_mesh.RateLimitResource) []*core_mesh.RateLimitResource {
 	result := []*core_mesh.RateLimitResource{}
 

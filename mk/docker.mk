@@ -75,7 +75,7 @@ ${BUILD_DOCKER_IMAGES_DIR}:
 docker/save: $(DOCKER_SAVE_TARGETS)
 
 .PHONY: docker/save/release
-docker/save/release: docker/save/kuma-cp docker/save/kuma-dp docker/save/kumactl docker/save/kuma-init docker/save/kuma-prometheus-sd
+docker/save/release: docker/save/kuma-cp docker/save/kuma-dp docker/save/kumactl docker/save/kuma-init docker/save/kuma-prometheus-sd docker/save/kuma-cni
 
 .PHONY: docker/save/test
 docker/save/test: docker/save/kuma-universal
@@ -100,6 +100,10 @@ docker/save/kuma-init: ${BUILD_DOCKER_IMAGES_DIR}
 docker/save/kuma-prometheus-sd: ${BUILD_DOCKER_IMAGES_DIR}
 	docker save --output ${BUILD_DOCKER_IMAGES_DIR}/kuma-prometheus-sd.tar $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE)
 
+.PHONY: docker/save/kuma-cni
+docker/save/kuma-cni: ${BUILD_DOCKER_IMAGES_DIR}
+	docker save --output ${BUILD_DOCKER_IMAGES_DIR}/kuma-cni.tar $(KUMA_CNI_DOCKER_IMAGE)
+
 .PHONY: docker/save/kuma-universal
 docker/save/kuma-universal: ${BUILD_DOCKER_IMAGES_DIR}
 	docker save --output ${BUILD_DOCKER_IMAGES_DIR}/kuma-universal.tar $(KUMA_UNIVERSAL_DOCKER_IMAGE)
@@ -108,7 +112,7 @@ docker/save/kuma-universal: ${BUILD_DOCKER_IMAGES_DIR}
 docker/load: $(DOCKER_LOAD_TARGETS)
 
 .PHONY: docker/load/release
-docker/load/release: docker/load/kuma-cp docker/load/kuma-dp docker/load/kumactl docker/load/kuma-init docker/load/kuma-prometheus-sd
+docker/load/release: docker/load/kuma-cp docker/load/kuma-dp docker/load/kumactl docker/load/kuma-init docker/load/kuma-prometheus-sd docker/load/kuma-cni
 
 .PHONY: docker/load/test
 docker/load/test: docker/load/kuma-universal
@@ -132,6 +136,10 @@ docker/load/kuma-init: ${BUILD_DOCKER_IMAGES_DIR}/kuma-init.tar
 .PHONY: docker/load/kuma-prometheus-sd
 docker/load/kuma-prometheus-sd: ${BUILD_DOCKER_IMAGES_DIR}/kuma-prometheus-sd.tar
 	docker load --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-prometheus-sd.tar
+
+.PHONY: docker/load/kuma-cni
+docker/load/kuma-cni: ${BUILD_DOCKER_IMAGES_DIR}/kuma-cni.tar
+	docker load --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-cni.tar
 
 .PHONY: docker/load/kuma-universal
 docker/load/kuma-universal: ${BUILD_DOCKER_IMAGES_DIR}/kuma-universal.tar

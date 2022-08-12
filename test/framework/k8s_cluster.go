@@ -1142,6 +1142,8 @@ func (c *K8sCluster) SetCP(cp *K8sControlPlane) {
 	c.controlplane = cp
 }
 
+// CreateNode creates a new node
+// warning: there seems to be a bug in k3s1 v1.19.16 so that each tests needs a unique node name
 func (c *K8sCluster) CreateNode(name string, label string) error {
 	switch Config.K8sType {
 	case K3dK8sType:
@@ -1162,7 +1164,7 @@ func (c *K8sCluster) LoadImages(names ...string) error {
 
 		var fullImageNames []string
 		for _, image := range names {
-			fullImageNames = append(fullImageNames, "kumahq/"+image+":"+version)
+			fullImageNames = append(fullImageNames, Config.KumaImageRegistry+"/"+image+":"+version)
 		}
 		defaultArgs := []string{"image", "import", "-m", "direct", "-c", c.name}
 		allArgs := append(defaultArgs, fullImageNames...)
@@ -1205,4 +1207,17 @@ func (c *K8sCluster) DeleteNodeViaApi(node string) error {
 
 	foreground := metav1.DeletePropagationForeground
 	return clientset.CoreV1().Nodes().Delete(context.Background(), node, metav1.DeleteOptions{PropagationPolicy: &foreground})
+}
+
+func (c *K8sCluster) KillAppPod(app, namespace string) error {
+	pod, err := PodNameOfApp(c, app, namespace)
+	if err != nil {
+		return err
+	}
+
+	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(namespace), "delete", "pod", pod); err != nil {
+		return err
+	}
+
+	return c.WaitApp(app, namespace, 1)
 }

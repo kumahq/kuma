@@ -319,6 +319,9 @@ Routes:
                 maxTokens: 1
                 tokensPerFill: 1
 Runtimes:
-  Resources: {}
+  Resources:
+    gateway.listeners:
+      layer: {}
+      name: gateway.listeners
 Secrets:
   Resources: {}

@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/container_patch"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/defaults"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/externalservices"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/gateway"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/graceful"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/healthcheck"
@@ -22,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/observability"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/reachableservices"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/trafficlog"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/virtualoutbound"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -32,9 +34,16 @@ func TestE2E(t *testing.T) {
 var _ = SynchronizedBeforeSuite(
 	func() []byte {
 		env.Cluster = NewK8sCluster(NewTestingT(), Kuma1, Verbose)
-		Expect(env.Cluster.Install(Kuma(core.Standalone,
-			WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
-		))).To(Succeed())
+		Expect(env.Cluster.Install(
+			gateway.GatewayAPICRDs,
+		)).To(Succeed())
+		Expect(env.Cluster.Install(
+			Kuma(core.Standalone,
+				WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
+				WithCtlOpts(map[string]string{"--experimental-gatewayapi": "true"}),
+				WithEgress(),
+			)),
+		).To(Succeed())
 		portFwd := env.Cluster.GetKuma().(*K8sControlPlane).PortFwd()
 
 		bytes, err := json.Marshal(portFwd)
@@ -73,8 +82,11 @@ var _ = SynchronizedBeforeSuite(
 var _ = SynchronizedAfterSuite(func() {}, func() {})
 
 var _ = Describe("Virtual Probes", healthcheck.VirtualProbes, Ordered)
-var _ = Describe("Gateway mTLS", gateway.Mtls, Ordered)
-var _ = Describe("Cross-mesh Gateways", gateway.CrossMeshGatewayOnKubernetes, Ordered)
+var _ = Describe("Gateway", gateway.Gateway, Ordered)
+var _ = Describe("Gateway - Cross-mesh", gateway.CrossMeshGatewayOnKubernetes, Ordered)
+var _ = Describe("Gateway - Gateway API", gateway.GatewayAPI, Ordered)
+var _ = Describe("Gateway - mTLS", gateway.Mtls, Ordered)
+var _ = Describe("Gateway - Resources", gateway.Resources, Ordered)
 var _ = Describe("Graceful", graceful.Graceful, Ordered)
 var _ = Describe("Jobs", jobs.Jobs)
 var _ = Describe("Membership", membership.Membership, Ordered)
@@ -86,3 +98,5 @@ var _ = Describe("Inspect", inspect.Inspect, Ordered)
 var _ = Describe("K8S API Bypass", k8s_api_bypass.K8sApiBypass, Ordered)
 var _ = Describe("Reachable Services", reachableservices.ReachableServices, Ordered)
 var _ = Describe("Defaults", defaults.Defaults, Ordered)
+var _ = Describe("External Services", externalservices.ExternalServices, Ordered)
+var _ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)

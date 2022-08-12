@@ -29,6 +29,8 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/trafficlog"
 	"github.com/kumahq/kuma/test/e2e_env/universal/trafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/universal/trafficroute"
+	"github.com/kumahq/kuma/test/e2e_env/universal/virtualoutbound"
+	"github.com/kumahq/kuma/test/e2e_env/universal/zoneegress"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -48,8 +50,14 @@ var _ = SynchronizedBeforeSuite(
 			WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 			WithEnv("KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL", "1s"), // speed up some tests by flushing stats quicker than default 10s
 		))).To(Succeed())
-		pf := env.Cluster.GetKuma().(*UniversalControlPlane).Networking()
-		bytes, err := json.Marshal(pf)
+		Expect(env.Cluster.Install(EgressUniversal(func(zone string) (string, error) {
+			return env.Cluster.GetKuma().GenerateZoneEgressToken("")
+		}))).To(Succeed())
+		state := UniversalNetworkingState{
+			ZoneEgress: env.Cluster.GetZoneEgressNetworking(),
+			KumaCp:     env.Cluster.GetKuma().(*UniversalControlPlane).Networking(),
+		}
+		bytes, err := json.Marshal(state)
 		Expect(err).ToNot(HaveOccurred())
 		return bytes
 	},
@@ -57,8 +65,8 @@ var _ = SynchronizedBeforeSuite(
 		if env.Cluster != nil {
 			return // cluster was already initiated with first function
 		}
-		networking := UniversalNetworking{}
-		Expect(json.Unmarshal(bytes, &networking)).To(Succeed())
+		state := UniversalNetworkingState{}
+		Expect(json.Unmarshal(bytes, &state)).To(Succeed())
 		env.Cluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
 		E2EDeferCleanup(env.Cluster.DismissCluster) // clean up any containers if needed
 		cp, err := NewUniversalControlPlane(
@@ -66,9 +74,10 @@ var _ = SynchronizedBeforeSuite(
 			core.Standalone,
 			env.Cluster.Name(),
 			env.Cluster.Verbose(),
-			networking,
+			state.KumaCp,
 		)
 		Expect(err).ToNot(HaveOccurred())
+		Expect(env.Cluster.AddNetworking(state.ZoneEgress, Config.ZoneEgressApp)).To(Succeed())
 		env.Cluster.SetCp(cp)
 	},
 )
@@ -95,3 +104,5 @@ var _ = Describe("Reachable Services", reachableservices.ReachableServices, Orde
 var _ = Describe("Apis", api.Api, Ordered)
 var _ = Describe("Traffic Permission", trafficpermission.TrafficPermissionUniversal, Ordered)
 var _ = Describe("Traffic Route", trafficroute.TrafficRoute, Ordered)
+var _ = Describe("Zone Egress", zoneegress.ExternalServices, Ordered)
+var _ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)

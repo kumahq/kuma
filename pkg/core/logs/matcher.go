@@ -13,13 +13,13 @@ import (
 )
 
 // Current limitations:
-// 1) Right now we only generate and place access logs for outbound listeners
-// 2) We match all tags in source section of TrafficLog but only service tag on destination
-// 3) Let's assume we've got following dataplanes:
-//    Dataplane 1 with services: kong and kong-admin
-//    Dataplane 2 with services: backend
-//    If we define rule kong->backend, it is also applied for kong-admin because there is no way to differentiate
-//    traffic from services that are using one dataplane.
+//  1. Right now we only generate and place access logs for outbound listeners
+//  2. We match all tags in source section of TrafficLog but only service tag on destination
+//  3. Let's assume we've got following dataplanes:
+//     Dataplane 1 with services: kong and kong-admin
+//     Dataplane 2 with services: backend
+//     If we define rule kong->backend, it is also applied for kong-admin because there is no way to differentiate
+//     traffic from services that are using one dataplane.
 type TrafficLogsMatcher struct {
 	ResourceManager manager.ReadOnlyResourceManager
 }

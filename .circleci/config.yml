@@ -259,6 +259,7 @@ jobs:
       name: vm-<< parameters.arch >>
     parallelism: << parameters.parallelism >>
     steps:
+      - checkout
       - run:
           # This works around circleci limitation by skipping tests for combinations that don't make sense
           # See: https://discuss.circleci.com/t/matrix-exclude-entire-subset/43879
@@ -281,15 +282,16 @@ jobs:
             if [[ "<< parameters.k8sVersion >>" != kind* && "<< parameters.target >>" == "test/e2e-universal" ]]; then
               skip "universal only runs on kind"
             fi
-            if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* ]]; then
-              if [[ "<< parameters.k8sVersion >>" == "kindIpv6" || "<< parameters.k8sVersion >>" == "v1.19.16-k3s1" || "<< parameters.arch >>" == "arm64" ]]; then
-                skip "Not running tests on PRs with kindIpv6, oldK8s and arm64"
+            if [[ ! $(./tools/ci/has_label.sh ci/run-full-matrix) == "true" ]]; then
+              if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* ]]; then
+                if [[ "<< parameters.k8sVersion >>" == "kindIpv6" || "<< parameters.k8sVersion >>" == "v1.19.16-k3s1" || "<< parameters.arch >>" == "arm64" ]]; then
+                  skip "Not running tests on PRs with kindIpv6, oldK8s and arm64"
+                fi
               fi
             fi
             echo "Continuing tests"
       - install_build_tools:
           go_arch: << parameters.arch >>
-      - checkout
       - restore_cache:
           keys:
             # prefer the exact match
@@ -334,8 +336,8 @@ jobs:
               export K3D=true
             fi
             if [[ "<< parameters.arch >>" == "arm64" ]]; then
-              export GINKGO_E2E_TEST_FLAGS="$GINKGO_E2E_TEST_FLAGS --label-filter=\"!arm-not-supported\""
               export MAKE_PARAMETERS="-j1"
+              export GINKGO_E2E_LABEL_FILTERS='!arm-not-supported'
             else
               export MAKE_PARAMETERS="-j2"
             fi
@@ -344,7 +346,7 @@ jobs:
               export E2E_PKG_LIST=${E2E_PKG_LIST:-$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")}
             fi
             env
-            make ${MAKE_PARAMETERS} << parameters.target >>
+            make ${MAKE_PARAMETERS} CI=true << parameters.target >>
       - store_test_results:
           path: build/reports
 

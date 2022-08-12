@@ -27,9 +27,10 @@ var GlobalSecretKey = model.ResourceKey{
 
 // GenerateCA generates CA for Envoy Admin communication (CP sending requests to Envoy Admin).
 // While we could reuse CA from enable mTLS backend on a Mesh object there are two problems
-// 1) mTLS on Mesh can be disabled and Envoy Admin communication needs security in place.
-//    Otherwise, malicious actor could execute /quitquitquit endpoint and perform DDoS
-// 2) ZoneIngress and ZoneEgress are not scoped to a Mesh.
+//  1. mTLS on Mesh can be disabled and Envoy Admin communication needs security in place.
+//     Otherwise, malicious actor could execute /quitquitquit endpoint and perform DDoS
+//  2. ZoneIngress and ZoneEgress are not scoped to a Mesh.
+//
 // To solve this we need at least self-signed client certificate for the control plane.
 // But we can just as well have a CA and generate client and server certs from it.
 //

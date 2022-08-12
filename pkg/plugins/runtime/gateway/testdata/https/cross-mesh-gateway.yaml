@@ -102,7 +102,9 @@ Clusters:
           commonHttpProtocolOptions:
             idleTimeout: 3600s
           explicitHttpConfig:
-            http2ProtocolOptions: {}
+            http2ProtocolOptions:
+              initialConnectionWindowSize: 1048576
+              initialStreamWindowSize: 65536
 Endpoints:
   Resources:
     echo-service-bfae5b64a0fe8b74:
@@ -293,7 +295,10 @@ Routes:
                 weight: 1
               totalWeight: 1
 Runtimes:
-  Resources: {}
+  Resources:
+    gateway.listeners:
+      layer: {}
+      name: gateway.listeners
 Secrets:
   Resources:
     identity_cert:secret:default:

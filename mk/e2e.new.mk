@@ -31,15 +31,25 @@ KUBE_E2E_PKG_LIST ?= ./test/e2e_env/kubernetes
 UNIVERSAL_E2E_PKG_LIST ?= ./test/e2e_env/universal
 MULTIZONE_E2E_PKG_LIST ?= ./test/e2e_env/multizone
 GINKGO_E2E_TEST_FLAGS ?=
-GINKGO_TEST_E2E=$(GINKGO_TEST) -v --slow-spec-threshold 30s $(GINKGO_E2E_TEST_FLAGS)
+GINKGO_E2E_LABEL_FILTERS ?=
+GINKGO_TEST_E2E=$(GINKGO_TEST) -v --slow-spec-threshold 30s $(GINKGO_E2E_TEST_FLAGS) --label-filter="$(GINKGO_E2E_LABEL_FILTERS)"
+
+define append_label_filter
+$(if $(GINKGO_E2E_LABEL_FILTERS),$(GINKGO_E2E_LABEL_FILTERS) && $(1),$(1))
+endef
 
 ifdef K3D
 K8S_CLUSTER_TOOL=k3d
 E2E_ENV_VARS += KUMA_K8S_TYPE=k3d
 else
 K8S_CLUSTER_TOOL=kind
-GINKGO_E2E_TEST_FLAGS += --label-filter="!kind-not-supported"
+GINKGO_E2E_LABEL_FILTERS := $(call append_label_filter,!kind-not-supported)
 endif
+
+ifeq ($(CI_K3S_VERSION),v1.19.16-k3s1)
+GINKGO_E2E_LABEL_FILTERS := $(call append_label_filter,!legacy-k3s-not-supported)
+endif
+
 
 ifdef IPV6
 KIND_CONFIG_IPV6=-ipv6
@@ -54,7 +64,7 @@ test/e2e/k8s/start/cluster/$1:
 
 .PHONY: test/e2e/k8s/load/images/$1
 test/e2e/k8s/load/images/$1:
-	KIND_CLUSTER_NAME=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/load
+	KIND_CLUSTER_NAME=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/load/images
 
 .PHONY: test/e2e/k8s/wait/$1
 test/e2e/k8s/wait/$1:

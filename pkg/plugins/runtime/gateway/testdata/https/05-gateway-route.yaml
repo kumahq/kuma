@@ -107,7 +107,10 @@ Routes:
             schemeRedirect: https
             stripQuery: true
 Runtimes:
-  Resources: {}
+  Resources:
+    gateway.listeners:
+      layer: {}
+      name: gateway.listeners
 Secrets:
   Resources:
     cert.rsa:secret:echo-example-com-server-cert:

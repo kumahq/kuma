@@ -29,6 +29,7 @@ message MeshGateway {
   option (kuma.mesh.resource).name = "MeshGatewayResource";
   option (kuma.mesh.resource).type = "MeshGateway";
   option (kuma.mesh.resource).package = "mesh";
+  option (kuma.mesh.resource).is_experimental = true;
 
   option (kuma.mesh.resource).kds.send_to_zone = true;
   option (kuma.mesh.resource).ws.name = "meshgateway";
@@ -82,6 +83,8 @@ message MeshGateway {
   }
 
   message Listener {
+    message Resources { uint32 connection_limit = 1; }
+
     enum Protocol {
       NONE = 0;
       TCP = 1;
@@ -121,6 +124,9 @@ message MeshGateway {
     // CrossMesh enables traffic to flow to this listener only from other
     // meshes.
     bool crossMesh = 6;
+
+    // Resources is used to specify listener-specific resource settings.
+    Resources resources = 7;
   }
 
   // Conf defines the desired state of MeshGateway.
