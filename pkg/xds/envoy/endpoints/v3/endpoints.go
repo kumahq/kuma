@@ -97,8 +97,12 @@ func (l LocalityLbEndpointsMap) asSlice() []*envoy_endpoint.LocalityLbEndpoints 
 	// sort the slice to ensure stable Envoy configuration
 	sort.Slice(slice, func(i, j int) bool {
 		left, right := slice[i], slice[j]
-		return (left.Locality.Region + left.Locality.Zone + left.Locality.SubZone) >
-			(right.Locality.Region + right.Locality.Zone + right.Locality.SubZone)
+		leftLocality := left.GetLocality().GetRegion() + left.GetLocality().GetZone() + left.GetLocality().GetSubZone()
+		rightLocality := right.GetLocality().GetRegion() + right.GetLocality().GetZone() + right.GetLocality().GetSubZone()
+		if leftLocality != "" || rightLocality != "" {
+			return leftLocality < rightLocality
+		}
+		return len(left.LbEndpoints) < len(right.LbEndpoints)
 	})
 
 	return slice
