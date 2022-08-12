@@ -669,7 +669,6 @@ experimental:
   # -- If true, it installs experimental new version of the CNI
   cni: false
   # Configuration for the experimental ebpf mode for transparent proxy
-  merbridge: false
   ebpf:
     # -- If true, ebpf will be used instead of using iptables to install/configure transparent proxy
     enabled: false
