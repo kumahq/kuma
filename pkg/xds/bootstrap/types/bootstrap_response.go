@@ -25,7 +25,8 @@ type MetricsConfiguration struct {
 }
 
 type Aggregate struct {
-	Name string `json:"name"`
-	Port uint32 `json:"port"`
-	Path string `json:"path"`
+	Name    string `json:"name"`
+	Address string `json:"address"`
+	Port    uint32 `json:"port"`
+	Path    string `json:"path"`
 }

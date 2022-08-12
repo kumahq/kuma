@@ -530,6 +530,11 @@ func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) I
       tcp: {}`
 		}
 
+		serviceAddress := ""
+		if opts.serviceAddress != "" {
+			serviceAddress = fmt.Sprintf(`    serviceAddress: %s`, opts.serviceAddress)
+		}
+
 		args = append(args, "--port", "8080")
 		appYaml := fmt.Sprintf(`
 type: Dataplane
@@ -540,6 +545,7 @@ networking:
   inbound:
   - port: %s
     servicePort: %s
+%s
     tags:
       kuma.io/service: %s
       kuma.io/protocol: %s
@@ -552,12 +558,12 @@ networking:
     redirectPortInboundV6: %s
     redirectPortOutbound: %s
 %s
-`, mesh, "80", "8080", opts.serviceName, opts.protocol, opts.serviceVersion, opts.serviceInstance, serviceProbe, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound, opts.appendDataplaneConfig)
+`, mesh, "80", "8080", serviceAddress, opts.serviceName, opts.protocol, opts.serviceVersion, opts.serviceInstance, serviceProbe, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound, opts.appendDataplaneConfig)
 
 		opt = append(opt,
 			WithName(name),
 			WithMesh(mesh),
-			WithAppname("test-server"),
+			WithAppname(opts.serviceName),
 			WithTransparentProxy(true), // test server is always meant to be used with transparent proxy
 			WithToken(token),
 			WithArgs(args),

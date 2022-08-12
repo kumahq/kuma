@@ -211,6 +211,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Zone.KDS.MaxMsgSize).To(Equal(uint32(2)))
 
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
+			Expect(cfg.Defaults.EnableLocalhostInboundClusters).To(BeTrue())
 
 			Expect(cfg.Diagnostics.ServerPort).To(Equal(uint32(5003)))
 			Expect(cfg.Diagnostics.DebugEndpoints).To(BeTrue())
@@ -434,6 +435,7 @@ dnsServer:
   serviceVipEnabled: false
 defaults:
   skipMeshCreation: true
+  enableLocalhostInboundClusters: true
 diagnostics:
   serverPort: 5003
   debugEndpoints: true
@@ -617,6 +619,7 @@ proxy:
 				"KUMA_MULTIZONE_ZONE_KDS_MAX_MSG_SIZE":                                                     "2",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL":                                    "5s",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",
+				"KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS":                                          "true",
 				"KUMA_DIAGNOSTICS_SERVER_PORT":                                                             "5003",
 				"KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS":                                                         "true",
 				"KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL":                                          "7s",

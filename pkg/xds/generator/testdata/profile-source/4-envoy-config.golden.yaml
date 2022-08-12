@@ -134,7 +134,7 @@ resources:
         - endpoint:
             address:
               socketAddress:
-                address: 127.0.0.1
+                address: 192.168.0.1
                 portValue: 8080
     name: localhost:8080
     type: STATIC
@@ -145,6 +145,10 @@ resources:
           idleTimeout: 7200s
         explicitHttpConfig:
           httpProtocolOptions: {}
+    upstreamBindConfig:
+      sourceAddress:
+        address: 127.0.0.6
+        portValue: 0
 - name: outbound:passthrough:ipv4
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster

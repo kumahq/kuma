@@ -105,7 +105,8 @@ var _ = Describe("Match", func() {
 		Entry("1 inbound dataplane, 2 policies", testCase{
 			dataplane: dataplaneWithInboundsFunc([]*mesh_proto.Dataplane_Networking_Inbound{
 				{
-					ServicePort: 8080,
+					ServiceAddress: "1.2.3.4",
+					ServicePort:    8080,
 					Tags: map[string]string{
 						"kuma.io/service":  "web",
 						"version":          "0.1",
@@ -153,7 +154,7 @@ var _ = Describe("Match", func() {
 			expected: core_xds.RateLimitsMap{
 				Inbound: core_xds.InboundRateLimitsMap{
 					mesh_proto.InboundInterface{
-						WorkloadIP:   "127.0.0.1",
+						WorkloadIP:   "1.2.3.4",
 						WorkloadPort: 8080,
 					}: []*core_mesh.RateLimitResource{
 						policyWithDestinationsFunc("rl2", time.Unix(1, 0),
@@ -251,7 +252,8 @@ var _ = Describe("Match", func() {
 		Entry("should apply policy only to the first inbound", testCase{
 			dataplane: dataplaneWithInboundsFunc([]*mesh_proto.Dataplane_Networking_Inbound{
 				{
-					ServicePort: 8080,
+					ServiceAddress: "1.2.3.4",
+					ServicePort:    8080,
 					Tags: map[string]string{
 						"kuma.io/service":  "web",
 						"version":          "0.1",
@@ -260,7 +262,8 @@ var _ = Describe("Match", func() {
 					},
 				},
 				{
-					ServicePort: 8081,
+					ServiceAddress: "1.2.3.4",
+					ServicePort:    8081,
 					Tags: map[string]string{
 						"kuma.io/service":  "web-api",
 						"version":          "0.1.2",
@@ -291,7 +294,7 @@ var _ = Describe("Match", func() {
 			expected: core_xds.RateLimitsMap{
 				Inbound: core_xds.InboundRateLimitsMap{
 					mesh_proto.InboundInterface{
-						WorkloadIP:   "127.0.0.1",
+						WorkloadIP:   "1.2.3.4",
 						WorkloadPort: 8081,
 					}: []*core_mesh.RateLimitResource{
 						policyWithDestinationsFunc("rl1", time.Unix(1, 0),
@@ -384,7 +387,8 @@ var _ = Describe("Match", func() {
 		Entry("match 2 policies on inbound", testCase{
 			dataplane: dataplaneWithInboundsFunc([]*mesh_proto.Dataplane_Networking_Inbound{
 				{
-					ServicePort: 8080,
+					ServiceAddress: "1.2.3.4",
+					ServicePort:    8080,
 					Tags: map[string]string{
 						"kuma.io/service":  "backend",
 						"version":          "0.1",
@@ -430,7 +434,7 @@ var _ = Describe("Match", func() {
 			expected: core_xds.RateLimitsMap{
 				Inbound: core_xds.InboundRateLimitsMap{
 					mesh_proto.InboundInterface{
-						WorkloadIP:   "127.0.0.1",
+						WorkloadIP:   "1.2.3.4",
 						WorkloadPort: 8080,
 					}: []*core_mesh.RateLimitResource{
 						policyWithDestinationsFunc("rl2", time.Unix(1, 0),
@@ -541,7 +545,8 @@ var _ = Describe("Match", func() {
 		Entry("match and sort 3 policies inbound", testCase{
 			dataplane: dataplaneWithInboundsFunc([]*mesh_proto.Dataplane_Networking_Inbound{
 				{
-					ServicePort: 8080,
+					ServiceAddress: "1.2.3.4",
+					ServicePort:    8080,
 					Tags: map[string]string{
 						"kuma.io/service":  "backend",
 						"version":          "0.1",
@@ -609,7 +614,7 @@ var _ = Describe("Match", func() {
 			expected: core_xds.RateLimitsMap{
 				Inbound: core_xds.InboundRateLimitsMap{
 					mesh_proto.InboundInterface{
-						WorkloadIP:   "127.0.0.1",
+						WorkloadIP:   "1.2.3.4",
 						WorkloadPort: 8080,
 					}: []*core_mesh.RateLimitResource{
 						policyWithDestinationsFunc("rl3", time.Unix(1, 0),

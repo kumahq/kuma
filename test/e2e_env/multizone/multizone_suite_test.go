@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/multizone/env"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/gateway"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/healthcheck"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/inbound_communication"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/inspect"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/localityawarelb"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/trafficpermission"
@@ -63,6 +64,7 @@ var _ = SynchronizedBeforeSuite(
 			defer GinkgoRecover()
 			Expect(env.KubeZone2.Install(Kuma(core.Zone,
 				WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
+				WithEnv("KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS", "true"),
 				WithIngress(),
 				WithIngressEnvoyAdminTunnel(),
 				WithEgress(),
@@ -98,6 +100,7 @@ var _ = SynchronizedBeforeSuite(
 				Install(Kuma(core.Zone,
 					WithGlobalAddress(env.Global.GetKuma().GetKDSServerAddress()),
 					WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
+					WithEnv("KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS", "true"),
 					WithEgressEnvoyAdminTunnel(),
 					WithIngressEnvoyAdminTunnel(),
 				)).
@@ -226,4 +229,6 @@ var _ = Describe("Healthcheck", healthcheck.ApplicationOnUniversalClientOnK8s, O
 var _ = Describe("Inspect", inspect.Inspect, Ordered)
 var _ = Describe("TrafficPermission", trafficpermission.TrafficPermission, Ordered)
 var _ = Describe("TrafficRoute", trafficroute.TrafficRoute, Ordered)
+var _ = Describe("InboundPassthrough", inbound_communication.InboundPassthrough, Ordered)
+var _ = Describe("InboundPassthroughDisabled", inbound_communication.InboundPassthroughDisabled, Ordered)
 var _ = Describe("ZoneEgress Internal Services", zoneegress.InternalServices, Ordered)

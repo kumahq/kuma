@@ -106,6 +106,7 @@ metrics:
 			Install(TestServerUniversal("test-server-dp-metrics", meshNoAggregate,
 				WithTransparentProxy(true),
 				WithArgs([]string{"echo", "--instance", "test-server-dp-metrics"}),
+				BoundToContainerIp(),
 				WithServiceName("test-server-dp-metrics"),
 				WithAppendDataplaneYaml(dpAggregateConfig),
 			)).

@@ -115,7 +115,7 @@ var _ = Describe("Dataplane", func() {
                   - port: 59200
                     service: elastic
 `,
-				address:  "127.0.0.1",
+				address:  "192.168.0.1",
 				port:     8080,
 				expected: true,
 			}),
