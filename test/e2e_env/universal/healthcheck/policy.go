@@ -86,6 +86,83 @@ conf:
 	}, Ordered)
 
 	Describe("TCP", func() {
+		healthCheck := func(mesh, serviceName, send, recv string) string {
+			sendBase64 := base64.StdEncoding.EncodeToString([]byte(send))
+			recvBase64 := base64.StdEncoding.EncodeToString([]byte(recv))
+
+			return fmt.Sprintf(`
+type: HealthCheck
+name: gateway-to-backend
+mesh: %s
+sources:
+- match:
+    kuma.io/service: '*'
+destinations:
+- match:
+    kuma.io/service: %s
+conf:
+  interval: 10s
+  timeout: 2s
+  unhealthyThreshold: 3
+  healthyThreshold: 1
+  failTrafficOnPanic: true
+  noTrafficInterval: 1s
+  healthyPanicThreshold: 0
+  reuse_connection: true
+  tcp: 
+    send: %s
+    receive:
+    - %s`, mesh, serviceName, sendBase64, recvBase64)
+		}
+		meshName := "healthcheck-tcp"
+		BeforeAll(func() {
+			err := NewClusterSetup().
+				Install(MeshUniversal(meshName)).
+				Install(DemoClientUniversal("dp-demo-client", meshName,
+					WithTransparentProxy(true)),
+				).
+				Install(TestServerUniversal("test-server", meshName,
+					WithArgs([]string{"health-check", "tcp"}),
+					WithProtocol("tcp")),
+				).
+				Setup(env.Cluster)
+			Expect(err).ToNot(HaveOccurred())
+		})
+		E2EAfterAll(func() {
+			Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+			Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		})
+
+		It("should mark host as unhealthy if it doesn't reply on health checks", func() {
+			// check that test-server is healthy
+			cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server.mesh 80\""}
+			stdout, _, err := env.Cluster.ExecWithRetries("", "", "dp-demo-client", cmd...)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(stdout).To(ContainSubstring("response"))
+
+			// update HealthCheck policy to check for another 'recv' line
+			Expect(YamlUniversal(healthCheck(meshName, "test-server", "foo", "baz"))(env.Cluster)).To(Succeed())
+
+			// wait cluster 'test-server' to be marked as unhealthy
+			Eventually(func() bool {
+				cmd := []string{"/bin/bash", "-c", "\"curl localhost:9901/clusters | grep test-server\""}
+				stdout, _, err := env.Cluster.ExecWithRetries("", "", "dp-demo-client", cmd...)
+				if err != nil {
+					return false
+				}
+				return strings.Contains(stdout, "health_flags::/failed_active_hc")
+			}, "30s", "500ms").Should(BeTrue())
+
+			cmd = []string{"/bin/bash", "-c", "\"echo request | nc test-server.mesh 80\""}
+			stdout, _, _ = env.Cluster.ExecWithRetries("", "", "dp-demo-client", cmd...)
+
+			// there is no real attempt to setup a connection with test-server, but Envoy may return either
+			// empty response with EXIT_CODE = 0, or  'Ncat: Connection reset by peer.' with EXIT_CODE = 1
+			Expect(stdout).To(Or(BeEmpty(), ContainSubstring("Ncat: Connection reset by peer.")))
+		})
+	}, Ordered)
+
+	Context("TCP with permissive mTLS", func() {
 		mtlsPermissiveMesh := func(mesh string) InstallFunc {
 			return YamlUniversal(fmt.Sprintf(`
 type: Mesh
@@ -126,23 +203,14 @@ conf:
     receive:
     - %s`, mesh, serviceName, sendBase64, recvBase64)
 		}
-		meshName := "healthcheck-tcp"
-		meshNameMtlsPermissive := "healthcheck-mtls-permissive-tcp"
+		meshName := "healthcheck-mtls-permissive-tcp"
 		BeforeAll(func() {
 			err := NewClusterSetup().
-				Install(MeshUniversal(meshName)).
-				Install(mtlsPermissiveMesh(meshNameMtlsPermissive)).
-				Install(DemoClientUniversal("dp-demo-client", meshName,
+				Install(mtlsPermissiveMesh(meshName)).
+				Install(DemoClientUniversal("dp-demo-client-mtls", meshName,
 					WithTransparentProxy(true)),
 				).
-				Install(TestServerUniversal("test-server", meshName,
-					WithArgs([]string{"health-check", "tcp"}),
-					WithProtocol("tcp")),
-				).
-				Install(DemoClientUniversal("dp-demo-client-mtls", meshNameMtlsPermissive,
-					WithTransparentProxy(true)),
-				).
-				Install(TestServerUniversal("test-server-mtls", meshNameMtlsPermissive,
+				Install(TestServerUniversal("test-server-mtls", meshName,
 					WithArgs([]string{"health-check", "tcp"}),
 					WithProtocol("tcp"),
 					WithServiceName("test-server-mtls")),
@@ -152,37 +220,7 @@ conf:
 		})
 		E2EAfterAll(func() {
 			Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-			Expect(env.Cluster.DeleteMeshApps(meshNameMtlsPermissive)).To(Succeed())
 			Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
-			Expect(env.Cluster.DeleteMesh(meshNameMtlsPermissive)).To(Succeed())
-		})
-
-		It("should mark host as unhealthy if it doesn't reply on health checks", func() {
-			// check that test-server is healthy
-			cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server.mesh 80\""}
-			stdout, _, err := env.Cluster.ExecWithRetries("", "", "dp-demo-client", cmd...)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(stdout).To(ContainSubstring("response"))
-
-			// update HealthCheck policy to check for another 'recv' line
-			Expect(YamlUniversal(healthCheck(meshName, "test-server", "foo", "baz"))(env.Cluster)).To(Succeed())
-
-			// wait cluster 'test-server' to be marked as unhealthy
-			Eventually(func() bool {
-				cmd := []string{"/bin/bash", "-c", "\"curl localhost:9901/clusters | grep test-server\""}
-				stdout, _, err := env.Cluster.ExecWithRetries("", "", "dp-demo-client", cmd...)
-				if err != nil {
-					return false
-				}
-				return strings.Contains(stdout, "health_flags::/failed_active_hc")
-			}, "30s", "500ms").Should(BeTrue())
-
-			cmd = []string{"/bin/bash", "-c", "\"echo request | nc test-server.mesh 80\""}
-			stdout, _, _ = env.Cluster.ExecWithRetries("", "", "dp-demo-client", cmd...)
-
-			// there is no real attempt to setup a connection with test-server, but Envoy may return either
-			// empty response with EXIT_CODE = 0, or  'Ncat: Connection reset by peer.' with EXIT_CODE = 1
-			Expect(stdout).To(Or(BeEmpty(), ContainSubstring("Ncat: Connection reset by peer.")))
 		})
 
 		It("should mark host as unhealthy if it doesn't reply on health checks when Permissive mTLS enabled", func() {
@@ -193,7 +231,7 @@ conf:
 			Expect(stdout).To(ContainSubstring("response"))
 
 			// update HealthCheck policy to check for another 'recv' line
-			Expect(YamlUniversal(healthCheck(meshNameMtlsPermissive, "test-server-mtls", "foo", "baz"))(env.Cluster)).To(Succeed())
+			Expect(YamlUniversal(healthCheck(meshName, "test-server-mtls", "foo", "baz"))(env.Cluster)).To(Succeed())
 
 			// wait cluster 'test-server-mtls' to be marked as unhealthy
 			Eventually(func() bool {
