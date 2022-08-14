@@ -3,7 +3,7 @@ package generic
 import (
 	"time"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 type Insight interface {
