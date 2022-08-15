@@ -5,7 +5,7 @@ import (
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
-	"github.com/golang/protobuf/proto"
+	protov1 "github.com/golang/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
@@ -25,7 +25,7 @@ type ResourceList []*Resource
 func (rs ResourceList) ToDeltaDiscoveryResponse() (*envoy_sd.DeltaDiscoveryResponse, error) {
 	resp := &envoy_sd.DeltaDiscoveryResponse{}
 	for _, r := range rs {
-		pbany, err := anypb.New(proto.MessageV2(r.Resource))
+		pbany, err := anypb.New(protov1.MessageV2(r.Resource))
 		if err != nil {
 			return nil, err
 		}
@@ -148,7 +148,7 @@ func (s *ResourceSet) AddSet(set *ResourceSet) *ResourceSet {
 }
 
 func (s *ResourceSet) typeName(resource ResourcePayload) string {
-	return "type.googleapis.com/" + proto.MessageName(resource)
+	return "type.googleapis.com/" + string(protov1.MessageV2(resource).ProtoReflect().Descriptor().FullName())
 }
 
 func (s *ResourceSet) List() ResourceList {

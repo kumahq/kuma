@@ -47,6 +47,7 @@ type server struct {
 	filters       []Filter
 	metrics       core_metrics.Metrics
 	serviceServer *service.GlobalKDSServiceServer
+	mesh_proto.UnimplementedMultiplexServiceServer
 }
 
 var (

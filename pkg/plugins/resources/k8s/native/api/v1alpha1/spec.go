@@ -1,7 +1,7 @@
 package v1alpha1
 
 import (
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"

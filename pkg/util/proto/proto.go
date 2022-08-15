@@ -7,7 +7,8 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
+	protov1 "github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -21,7 +22,7 @@ func FromYAML(content []byte, pb proto.Message) error {
 
 func ToYAML(pb proto.Message) ([]byte, error) {
 	marshaler := &jsonpb.Marshaler{}
-	json, err := marshaler.MarshalToString(pb)
+	json, err := marshaler.MarshalToString(protov1.MessageV1(pb))
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +32,7 @@ func ToYAML(pb proto.Message) ([]byte, error) {
 func ToJSON(pb proto.Message) ([]byte, error) {
 	var buf bytes.Buffer
 	marshaler := &jsonpb.Marshaler{}
-	if err := marshaler.Marshal(&buf, pb); err != nil {
+	if err := marshaler.Marshal(&buf, protov1.MessageV1(pb)); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
@@ -42,7 +43,7 @@ func ToJSONIndent(pb proto.Message, indent string) ([]byte, error) {
 	marshaler := &jsonpb.Marshaler{
 		Indent: indent,
 	}
-	if err := marshaler.Marshal(&buf, pb); err != nil {
+	if err := marshaler.Marshal(&buf, protov1.MessageV1(pb)); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
@@ -59,7 +60,7 @@ func MustMarshalJSON(in proto.Message) []byte {
 
 func FromJSON(content []byte, out proto.Message) error {
 	unmarshaler := &jsonpb.Unmarshaler{AllowUnknownFields: true}
-	return unmarshaler.Unmarshal(bytes.NewReader(content), out)
+	return unmarshaler.Unmarshal(bytes.NewReader(content), protov1.MessageV1(out))
 }
 
 func MustUnmarshalJSON(content []byte, out proto.Message) proto.Message {

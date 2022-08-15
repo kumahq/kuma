@@ -11,6 +11,7 @@ import (
 
 type GlobalKDSServiceServer struct {
 	envoyAdminRPCs EnvoyAdminRPCs
+	mesh_proto.UnimplementedGlobalKDSServiceServer
 }
 
 func NewGlobalKDSServiceServer(envoyAdminRPCs EnvoyAdminRPCs) *GlobalKDSServiceServer {

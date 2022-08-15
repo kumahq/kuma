@@ -7,7 +7,7 @@ import (
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-	"github.com/golang/protobuf/proto"
+	protov1 "github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -146,7 +146,7 @@ func equalSnapshots(old, new map[string]envoy_types.ResourceWithTTL) bool {
 		return false
 	}
 	for key, newValue := range new {
-		if oldValue, hasOldValue := old[key]; !hasOldValue || !proto.Equal(newValue.Resource, oldValue.Resource) {
+		if oldValue, hasOldValue := old[key]; !hasOldValue || !protov1.Equal(newValue.Resource, oldValue.Resource) {
 			return false
 		}
 	}
