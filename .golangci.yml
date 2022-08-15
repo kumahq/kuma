@@ -33,6 +33,7 @@ linters-settings:
     - default
     - prefix(github.com/kumahq/kuma-net)
     - prefix(github.com/kumahq/kuma)
+    # This doesn't take effect until 1.48.0
     custom-order: true
   importas:
     alias:
