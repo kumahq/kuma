@@ -2,7 +2,7 @@ package install_test
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -79,7 +79,7 @@ var _ = Describe("kumactl install control-plane", func() {
 	}, func() []TableEntry {
 		var res []TableEntry
 		testDir := filepath.Join("testdata", "install-cp-helm")
-		files, err := ioutil.ReadDir(testDir)
+		files, err := os.ReadDir(testDir)
 		Expect(err).ToNot(HaveOccurred())
 		for _, f := range files {
 			if !f.IsDir() && strings.HasSuffix(f.Name(), ".values.yaml") {

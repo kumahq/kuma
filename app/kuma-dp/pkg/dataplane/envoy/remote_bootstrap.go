@@ -109,7 +109,7 @@ func (b *remoteBootstrap) Generate(ctx context.Context, url string, cfg kuma_dp.
 	return envoyBootstrap, &bootstrap.KumaSidecarConfiguration, nil
 }
 
-func (b *remoteBootstrap) resourceMetadata(cfg kuma_dp.DataplaneResources) (types.ProxyResources, error) {
+func (b *remoteBootstrap) resourceMetadata(cfg kuma_dp.DataplaneResources) types.ProxyResources {
 	var maxMemory uint64
 
 	if cfg.MaxMemoryBytes == 0 {
@@ -124,7 +124,7 @@ func (b *remoteBootstrap) resourceMetadata(cfg kuma_dp.DataplaneResources) (type
 		res.MaxHeapSizeBytes = maxMemory
 	}
 
-	return res, nil
+	return res
 }
 
 func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, url *net_url.URL, cfg kuma_dp.Config, params BootstrapParams) ([]byte, error) {
@@ -149,10 +149,7 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, url *net_url.
 		token = cfg.DataplaneRuntime.Token
 	}
 
-	resources, err := b.resourceMetadata(cfg.DataplaneRuntime.Resources)
-	if err != nil {
-		return nil, err
-	}
+	resources := b.resourceMetadata(cfg.DataplaneRuntime.Resources)
 
 	request := types.BootstrapRequest{
 		Mesh:               cfg.Dataplane.Mesh,

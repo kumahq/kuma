@@ -1,7 +1,7 @@
 package cni
 
 import (
-	"io/ioutil"
+	"io"
 	"strconv"
 	"strings"
 
@@ -73,7 +73,7 @@ func mapToConfig(intermediateConfig *IntermediateConfig) (*kumanet_config.Config
 		return nil, err
 	}
 	cfg := kumanet_config.Config{
-		RuntimeStdout: ioutil.Discard,
+		RuntimeStdout: io.Discard,
 		Owner: kumanet_config.Owner{
 			UID: intermediateConfig.noRedirectUID,
 		},

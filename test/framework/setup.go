@@ -3,7 +3,6 @@ package framework
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -625,10 +624,10 @@ func DumpTempCerts(names ...string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if err := ioutil.WriteFile(filepath.Join(path, "cert.pem"), []byte(fmt.Sprintf("---\n%s", cert)), os.ModePerm); err != nil {
+	if err := os.WriteFile(filepath.Join(path, "cert.pem"), []byte(fmt.Sprintf("---\n%s", cert)), os.ModePerm); err != nil {
 		return "", err
 	}
-	if err := ioutil.WriteFile(filepath.Join(path, "key.pem"), []byte(fmt.Sprintf("---\n%s", key)), os.ModePerm); err != nil {
+	if err := os.WriteFile(filepath.Join(path, "key.pem"), []byte(fmt.Sprintf("---\n%s", key)), os.ModePerm); err != nil {
 		return "", err
 	}
 	return path, nil

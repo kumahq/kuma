@@ -2,7 +2,8 @@ package install
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
+	"os"
 	"strings"
 
 	"github.com/ghodss/yaml"
@@ -81,9 +82,9 @@ This command requires that the KUBECONFIG environment is set`,
 
 				var bytes []byte
 				if strings.TrimSpace(filePath) == "-" {
-					bytes, err = ioutil.ReadAll(cmd.InOrStdin())
+					bytes, err = io.ReadAll(cmd.InOrStdin())
 				} else {
-					bytes, err = ioutil.ReadFile(filePath)
+					bytes, err = os.ReadFile(filePath)
 				}
 				if err != nil {
 					return err

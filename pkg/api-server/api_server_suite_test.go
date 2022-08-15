@@ -63,10 +63,6 @@ func (r *resourceApiClient) list() *http.Response {
 	return response
 }
 
-func (r *resourceApiClient) listOrError() (*http.Response, error) {
-	return http.Get(r.fullAddress())
-}
-
 func (r *resourceApiClient) delete(name string) *http.Response {
 	request, err := http.NewRequest(
 		"DELETE",
@@ -109,7 +105,6 @@ func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string, 
 }
 
 type testApiServerConfigurer struct {
-	stop      func()
 	store     store.ResourceStore
 	enableGui bool
 	config    *config_api_server.ApiServerConfig
@@ -264,10 +259,14 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 		select {
 		case err = <-errChan:
 			return nil, cfg, stop, err
-		case _ = <-tick.C:
+		case <-tick.C:
 			leftTicks--
 			r, err := http.Get("http://" + apiServer.Address() + "/config")
-			if err == nil && r.StatusCode == http.StatusOK {
+			if err != nil {
+				return nil, cfg, stop, err
+			}
+			r.Body.Close()
+			if r.StatusCode == http.StatusOK {
 				return apiServer, cfg, stop, nil
 			}
 		}

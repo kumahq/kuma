@@ -2,7 +2,7 @@ package types_test
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"os"
 	"path"
 
@@ -68,7 +68,7 @@ var _ = Describe("Unmarshal DataplaneInspectEntry", func() {
 		func(given testCase) {
 			inputFile, err := os.Open(path.Join("testdata", given.inputFile))
 			Expect(err).ToNot(HaveOccurred())
-			bytes, err := ioutil.ReadAll(inputFile)
+			bytes, err := io.ReadAll(inputFile)
 			Expect(err).ToNot(HaveOccurred())
 
 			entry := &types.DataplaneInspectEntry{}
@@ -138,7 +138,7 @@ var _ = Describe("Unmarshal DataplaneInspectEntry", func() {
 		func(given testCase) {
 			inputFile, err := os.Open(path.Join("testdata", given.inputFile))
 			Expect(err).ToNot(HaveOccurred())
-			bytes, err := ioutil.ReadAll(inputFile)
+			bytes, err := io.ReadAll(inputFile)
 			Expect(err).ToNot(HaveOccurred())
 
 			entry := &types.DataplaneInspectEntry{}

@@ -189,15 +189,20 @@ func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app Appl
 	req = req.WithContext(ctx)
 	var resp *http.Response
 	if app.IsIPv6 {
-		resp, err = s.upstreamOverrideHttpClientIPv6.Do(req)
+		resp, err := s.upstreamOverrideHttpClientIPv6.Do(req)
+		if err == nil {
+			defer resp.Body.Close()
+		}
 	} else {
 		resp, err = s.upstreamOverrideHttpClientIPv4.Do(req)
+		if err == nil {
+			defer resp.Body.Close()
+		}
 	}
 	if err != nil {
 		logger.Error(err, "failed call", "name", app.Name, "path", app.Path, "port", app.Port)
 		return nil
 	}
-	defer resp.Body.Close()
 
 	var bodyBytes []byte
 	if app.Mutator != nil {

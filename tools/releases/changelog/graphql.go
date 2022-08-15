@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 )
@@ -170,7 +170,7 @@ func (c GQLClient) graphqlQuery(query string, variables map[string]interface{}) 
 	}
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
-		b, _ := ioutil.ReadAll(res.Body)
+		b, _ := io.ReadAll(res.Body)
 		err = fmt.Errorf("got status: %d body:%s", res.StatusCode, b)
 		return
 	}

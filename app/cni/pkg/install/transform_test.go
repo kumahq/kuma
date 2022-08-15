@@ -1,7 +1,7 @@
 package install
 
 import (
-	"io/ioutil"
+	"os"
 	"path"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -13,7 +13,7 @@ import (
 var _ = Describe("testTransformJsonConfig", func() {
 	It("should properly manipulate CNI conflist file", func() {
 		// given
-		calicoConfig, _ := ioutil.ReadFile(path.Join("testdata", "10-calico.conflist"))
+		calicoConfig, _ := os.ReadFile(path.Join("testdata", "10-calico.conflist"))
 		expectedConfig := path.Join("testdata", "10-calico-cni-injected.conflist")
 
 		// when
@@ -26,7 +26,7 @@ var _ = Describe("testTransformJsonConfig", func() {
 
 	It("should properly manipulate CNI conf file", func() {
 		// given
-		calicoConfig, _ := ioutil.ReadFile(path.Join("testdata", "10-flannel.conf"))
+		calicoConfig, _ := os.ReadFile(path.Join("testdata", "10-flannel.conf"))
 		expectedConfig := path.Join("testdata", "10-flannel-cni-injected.conf")
 
 		// when
@@ -40,7 +40,7 @@ var _ = Describe("testTransformJsonConfig", func() {
 var _ = Describe("revertConfig", func() {
 	It("should properly revert CNI conflist", func() {
 		// given
-		changedConfig, _ := ioutil.ReadFile(path.Join("testdata", "10-calico-cni-injected.conflist"))
+		changedConfig, _ := os.ReadFile(path.Join("testdata", "10-calico-cni-injected.conflist"))
 		originalConfig := path.Join("testdata", "10-calico.conflist")
 
 		// when
@@ -53,7 +53,7 @@ var _ = Describe("revertConfig", func() {
 
 	It("should properly revert CNI conf", func() {
 		// given
-		changedConfig, _ := ioutil.ReadFile(path.Join("testdata", "10-flannel-cni-injected.conf"))
+		changedConfig, _ := os.ReadFile(path.Join("testdata", "10-flannel-cni-injected.conf"))
 		originalConfig := path.Join("testdata", "10-flannel-clean.conf")
 
 		// when

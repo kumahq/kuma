@@ -2,11 +2,11 @@ package install
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 )
 
 func parseFileToHashMap(file string) (map[string]interface{}, error) {
-	contents, err := ioutil.ReadFile(file)
+	contents, err := os.ReadFile(file)
 	if err != nil {
 		return nil, err
 	}
