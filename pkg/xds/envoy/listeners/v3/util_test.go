@@ -178,12 +178,12 @@ var _ = Describe("NewUnexpectedFilterConfigTypeError()", func() {
 			// then
 			Expect(err).To(HaveOccurred())
 			// and
-			Expect(err.Error()).To(Equal(given.expectedErr))
+			Expect(err.Error()).To(ContainSubstring(given.expectedErr))
 		},
 		Entry("TcpProxy instead of HttpConnectionManager", testCase{
 			inputActual:   &envoy_tcp.TcpProxy{},
 			inputExpected: &envoy_hcm.HttpConnectionManager{},
-			expectedErr:   `filter config has unexpected type: expected *envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager, got *envoy_extensions_filters_network_tcp_proxy_v3.TcpProxy`,
+			expectedErr:   `filter config has unexpected type`,
 		}),
 	)
 })

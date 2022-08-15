@@ -7,6 +7,7 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/server/stream/v3"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -71,7 +72,7 @@ func (s *server) StreamHandler(stream Stream) error {
 	return s.process(stream, reqOrRespCh)
 }
 
-func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.HealthCheckRequestOrEndpointHealthResponse) error {
+func (s *server) process(str Stream, reqOrRespCh chan *envoy_service_health.HealthCheckRequestOrEndpointHealthResponse) error {
 	streamID := atomic.AddInt64(&s.streamCount, 1)
 	lastVersion := ""
 
@@ -84,6 +85,8 @@ func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.H
 			s.callbacks.OnStreamClosed(streamID)
 		}
 	}()
+
+	streamState := stream.NewStreamState(false, map[string]string{})
 
 	send := func(resp cache.Response) error {
 		if resp == nil {
@@ -106,11 +109,11 @@ func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.H
 		if err != nil {
 			return err
 		}
-		return stream.Send(hcs)
+		return str.Send(hcs)
 	}
 
 	if s.callbacks != nil {
-		if err := s.callbacks.OnStreamOpen(stream.Context(), streamID); err != nil {
+		if err := s.callbacks.OnStreamOpen(str.Context(), streamID); err != nil {
 			return err
 		}
 	}
@@ -136,7 +139,7 @@ func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.H
 				TypeUrl:       envoy_cache.HealthCheckSpecifierType,
 				ResourceNames: []string{"hcs"},
 				VersionInfo:   lastVersion,
-			}, responseChan)
+			}, streamState, responseChan)
 		case reqOrResp, more := <-reqOrRespCh:
 			if !more {
 				return nil
@@ -171,7 +174,7 @@ func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.H
 				TypeUrl:       envoy_cache.HealthCheckSpecifierType,
 				ResourceNames: []string{"hcs"},
 				VersionInfo:   lastVersion,
-			}, responseChan)
+			}, streamState, responseChan)
 		}
 	}
 }

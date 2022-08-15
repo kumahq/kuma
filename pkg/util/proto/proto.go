@@ -24,8 +24,8 @@ func FromYAML(content []byte, pb proto.Message) error {
 	return FromJSON(json, pb)
 }
 
-func V1ToYAML(pb protov1.Message) ([]byte, error) {
-	return ToYAML(protov1.MessageV2(pb))
+func V1ToYAML(pb proto.Message) ([]byte, error) {
+	return ToYAML(pb)
 }
 
 func ToYAML(pb proto.Message) ([]byte, error) {
