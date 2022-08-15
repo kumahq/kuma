@@ -126,7 +126,7 @@ func (c *K8sCluster) Exec(namespace, podName, containerName string, cmd ...strin
 	})
 
 	if err != nil {
-		logger.Logf(c.t, "%s returned an error: %s.", desc, err.Error())
+		logger.TestingT.Logf(c.t, "%s returned an error: %s.", desc, err.Error())
 	}
 
 	return stdout, stderr, err
