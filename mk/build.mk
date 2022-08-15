@@ -106,7 +106,7 @@ ifeq (,$(wildcard $(BUILD_ARTIFACTS_DIR)/coredns/coredns))
 		$(GO_BUILD_COREDNS) -ldflags="-s -w -X github.com/coredns/coredns/coremain.GitCommit=$(shell git describe --dirty --always)" -o $(BUILD_ARTIFACTS_DIR)/coredns/coredns
 	rm -rf "$(COREDNS_TMP_DIRECTORY)"
 else
-	echo "CoreDNS is already built. If you want to rebuild it, remove the binary: rm $(BUILD_ARTIFACTS_DIR)/coredns/coredns"
+	@echo "CoreDNS is already built. If you want to rebuild it, remove the binary: rm $(BUILD_ARTIFACTS_DIR)/coredns/coredns"
 endif
 
 .PHONY: build/kuma-prometheus-sd
