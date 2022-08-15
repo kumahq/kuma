@@ -69,10 +69,7 @@ issues:
   exclude-rules:
     - linters:
         - staticcheck
-      text: "SA1019: package github.com/golang/protobuf/proto is deprecated" # TODO ignore deprecation of proto library. We don't want to migrate yet because go-control-plane is not ready
-    - linters:
-        - staticcheck
-      text: "SA1019: package github.com/golang/protobuf/jsonpb" # TODO ignore deprecation of proto library. We don't want to migrate yet because go-control-plane is not ready
+      text: 'SA1019: "github.com/golang/protobuf' # TODO ignore deprecation of proto library. We don't want to migrate yet because go-control-plane is not ready
     - linters:
         - staticcheck
       text: "SA1019: proto.MessageName is deprecated" # TODO ignore deprecation of proto library. We don't want to migrate yet because go-control-plane is not ready
