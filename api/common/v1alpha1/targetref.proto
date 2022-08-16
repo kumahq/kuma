@@ -22,10 +22,12 @@ message TargetRef {
   // Name of the referenced resource
   string name = 2;
 
-  // Tags are used with MeshSubset and MeshServiceSubset to define a subset of proxies
+  // Tags are used with MeshSubset and MeshServiceSubset to define a subset of
+  // proxies
   map<string, string> tags = 3;
 
-  // Mesh is used with MeshService and MeshServiceSubset to identify the service from another mesh.
-  // Could be useful when implementing policies with cross-mesh support.
+  // Mesh is used with MeshService and MeshServiceSubset to identify the service
+  // from another mesh. Could be useful when implementing policies with
+  // cross-mesh support.
   string mesh = 4;
 }

@@ -89,10 +89,12 @@ type TargetRef struct {
 	Kind string `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`
 	// Name of the referenced resource
 	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	// Tags are used with MeshSubset and MeshServiceSubset to define a subset of proxies
+	// Tags are used with MeshSubset and MeshServiceSubset to define a subset of
+	// proxies
 	Tags map[string]string `protobuf:"bytes,3,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	// Mesh is used with MeshService and MeshServiceSubset to identify the service from another mesh.
-	// Could be useful when implementing policies with cross-mesh support.
+	// Mesh is used with MeshService and MeshServiceSubset to identify the service
+	// from another mesh. Could be useful when implementing policies with
+	// cross-mesh support.
 	Mesh string `protobuf:"bytes,4,opt,name=mesh,proto3" json:"mesh,omitempty"`
 }
 

@@ -23,14 +23,16 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// MeshTrafficPermission defines permission for traffic between data planes prxoies.
+// MeshTrafficPermission defines permission for traffic between data planes
+// prxoies.
 type MeshTrafficPermission struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
 	// TargetRef is a reference to the resource the policy takes an effect on.
-	// The resource could be either a real store object or virtual resource defined inplace.
+	// The resource could be either a real store object or virtual resource
+	// defined inplace.
 	TargetRef *v1alpha1.TargetRef `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef,omitempty"`
 	// From is a list of pairs – a group of clients and action applied for it
 	From []*MeshTrafficPermission_From `protobuf:"bytes,2,rep,name=from,proto3" json:"from,omitempty"`
@@ -87,9 +89,11 @@ type MeshTrafficPermission_From struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// TargetRef is a reference to the resource that represents a group of clients.
+	// TargetRef is a reference to the resource that represents a group of
+	// clients.
 	TargetRef *v1alpha1.TargetRef `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef,omitempty"`
-	// Default is a configuration specific to the group of clients referenced in 'targetRef'
+	// Default is a configuration specific to the group of clients referenced in
+	// 'targetRef'
 	Default *MeshTrafficPermission_From_Default `protobuf:"bytes,2,opt,name=default,proto3" json:"default,omitempty"`
 }
 
@@ -147,8 +151,10 @@ type MeshTrafficPermission_From_Default struct {
 	// Action defines a behaviour for the specified group of clients:
 	//  * ALLOW - lets the requests pass
 	//  * DENY - blocks the requests
-	//  * ALLOW_WITH_SHADOW_DENY - lets the requests pass but emits logs as if requests are denied
-	//  * DENY_WITH_SHADOW_ALLOW - blocks the requests but emits logs as if requests are allowed
+	//  * ALLOW_WITH_SHADOW_DENY - lets the requests pass but emits logs as if
+	//  requests are denied
+	//  * DENY_WITH_SHADOW_ALLOW - blocks the requests but emits logs as if
+	//  requests are allowed
 	// +kubebuilder:validation:Enum=ALLOW;DENY;ALLOW_WITH_SHADOW_DENY;DENY_WITH_SHADOW_ALLOW
 	Action string `protobuf:"bytes,1,opt,name=action,proto3" json:"action,omitempty"`
 }
