@@ -42,4 +42,5 @@ function yq_patch() {
   rm "$2.noblank"
 }
 
+yq_patch '.plugins.policies = []' "${HELM_VALUES_FILE}"
 yq_patch '.plugins.policies = [ '"${policies}"' ]' "${HELM_VALUES_FILE}"

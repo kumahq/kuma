@@ -1,0 +1,129 @@
+openapi: 3.0.1
+info:
+  version: v1alpha1
+  title: Kuma API
+  description: Kuma API
+
+paths:
+  /meshes/{mesh}/meshtrafficpermissions/{name}:
+    get:
+      summary: Returns MeshTrafficPermission entity
+      tags: [ "MeshTrafficPermission" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshTrafficPermission
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: 'schema.yaml'
+
+    put:
+      summary: Creates or Updates MeshTrafficPermission entity
+      tags: [ "MeshTrafficPermission" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshTrafficPermission
+      requestBody:
+        description: MeshTrafficPermission entity
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'schema.yaml'
+      responses:
+        '200':
+          description: Updated
+        '201':
+          description: Created
+
+    delete:
+      summary: Deletes MeshTrafficPermission entity
+      tags: [ "MeshTrafficPermission" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshTrafficPermission
+      responses:
+        '200':
+          description: Successful response
+
+
+  /meshes/{mesh}/meshtrafficpermissions:
+    get:
+      summary: Returns a list of MeshTrafficPermission in the mesh.
+      tags: [ "MeshTrafficPermission" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: 'schema.yaml'
+                  next:
+                    type: string
+                    description: URL to the next page
+
+
+  /meshtrafficpermissions:
+    get:
+      summary: Returns a list of MeshTrafficPermission from all meshes
+      tags: [ "MeshTrafficPermission" ]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: 'schema.yaml'
+                  next:
+                    type: string
+                    description: URL to the next page

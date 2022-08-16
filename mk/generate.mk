@@ -45,7 +45,7 @@ cleanup/crds:
 
 # deletes all files in policy directory except *.proto and validator.go
 cleanup/policy/%:
-	$(shell find $(POLICIES_DIR)/$* -not -name '*.proto' -not -name 'validator.go' -type f -delete)
+	$(shell find $(POLICIES_DIR)/$* -not -name '*.proto' -not -name 'validator.go' -not -name '*_test.go' -type f -delete)
 	@rm -r $(POLICIES_DIR)/$*/k8s || true
 
 generate/policy/%: generate/schema/%
@@ -123,4 +123,4 @@ generate/envoy-imports:
 	echo ')' >> ${ENVOY_IMPORTS}
 
 .PHONY: generate/api
-generate/api: protoc/mesh protoc/mesh/v1alpha1 protoc/observability/v1 protoc/system/v1alpha1 ## Process Kuma API .proto definitions
+generate/api: protoc/common/v1alpha1 protoc/mesh protoc/mesh/v1alpha1 protoc/observability/v1 protoc/system/v1alpha1 ## Process Kuma API .proto definitions
