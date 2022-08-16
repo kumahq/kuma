@@ -2,10 +2,8 @@ package k8s
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/pkg/errors"
-	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 
@@ -15,8 +13,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/managers/apis/ratelimit"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/secrets/manager"
@@ -25,7 +21,6 @@ import (
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	k8s_controllers "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	k8s_webhooks "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
@@ -67,10 +62,6 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 	}
 
 	if err := addMutators(mgr, rt, simpleConverter); err != nil {
-		return err
-	}
-
-	if err := addDefaulters(mgr, simpleConverter); err != nil {
 		return err
 	}
 
@@ -228,31 +219,6 @@ func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common
 	return nil
 }
 
-func addDefaulters(mgr kube_ctrl.Manager, converter k8s_common.Converter) error {
-	addDefaulter(mgr, mesh_k8s.GroupVersion.WithKind("Mesh"),
-		func() core_model.Resource {
-			return core_mesh.NewMeshResource()
-		}, converter)
-
-	return nil
-}
-
-func addDefaulter(
-	mgr kube_ctrl.Manager,
-	gvk kube_schema.GroupVersionKind,
-	factory func() core_model.Resource,
-	converter k8s_common.Converter,
-) {
-	wh := k8s_webhooks.DefaultingWebhookFor(factory, converter)
-	path := generateDefaulterPath(gvk)
-	log.Info("Registering a defaulting webhook", "GVK", gvk, "path", path)
-	mgr.GetWebhookServer().Register(path, wh)
-}
-
-func generateDefaulterPath(gvk kube_schema.GroupVersionKind) string {
-	return fmt.Sprintf("/default-%s-%s-%s", strings.ReplaceAll(gvk.Group, ".", "-"), gvk.Version, strings.ToLower(gvk.Kind))
-}
-
 func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
 	composite, ok := k8s_extensions.FromCompositeValidatorContext(rt.Extensions())
 	if !ok {
@@ -338,5 +304,8 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_c
 		Scheme:       mgr.GetScheme(),
 	}
 	mgr.GetWebhookServer().Register("/owner-reference-kuma-io-v1alpha1", &kube_webhook.Admission{Handler: ownerRefMutator})
+
+	defaultMutator := k8s_webhooks.DefaultingWebhookFor(converter)
+	mgr.GetWebhookServer().Register("/default-kuma-io-v1alpha1-mesh", defaultMutator)
 	return nil
 }

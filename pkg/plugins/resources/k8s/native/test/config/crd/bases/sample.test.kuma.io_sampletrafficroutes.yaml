@@ -36,8 +36,6 @@ spec:
             type: object
           spec:
             x-kubernetes-preserve-unknown-fields: true
-        required:
-        - mesh
         type: object
     served: true
     storage: true
