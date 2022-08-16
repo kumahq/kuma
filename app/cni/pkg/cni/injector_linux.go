@@ -1,7 +1,8 @@
 package cni
 
 import (
-	"io/ioutil"
+	"bufio"
+	"bytes"
 	"strconv"
 	"strings"
 
@@ -39,7 +40,9 @@ func convertCommaSeparatedString(list string) ([]uint16, error) {
 }
 
 func Inject(netns string, logger logr.Logger, intermediateConfig *IntermediateConfig) error {
-	cfg, err := mapToConfig(intermediateConfig)
+	var logBuffer bytes.Buffer
+	logWriter := bufio.NewWriter(&logBuffer)
+	cfg, err := mapToConfig(intermediateConfig, logWriter)
 	if err != nil {
 		return err
 	}
@@ -50,20 +53,23 @@ func Inject(netns string, logger logr.Logger, intermediateConfig *IntermediateCo
 	}
 	defer namespace.Close()
 
-	err = namespace.Do(func(_ ns.NetNS) error {
-		rules, err := kumanet_tproxy.Setup(*cfg)
-		if err != nil {
+	return namespace.Do(func(_ ns.NetNS) error {
+		if _, err := kumanet_tproxy.Setup(*cfg); err != nil {
 			return err
 		}
-		logger.V(1).Info("generated iptables rules", "rules", rules)
+
+		if err := logWriter.Flush(); err != nil {
+			return err
+		}
+
 		logger.Info("iptables rules applied")
+		logger.V(1).Info("generated iptables rules", "iptablesStdout", logBuffer.String())
+
 		return nil
 	})
-
-	return err
 }
 
-func mapToConfig(intermediateConfig *IntermediateConfig) (*kumanet_config.Config, error) {
+func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer) (*kumanet_config.Config, error) {
 	port, err := convertToUint16("inbound port", intermediateConfig.targetPort)
 	if err != nil {
 		return nil, err
@@ -73,7 +79,7 @@ func mapToConfig(intermediateConfig *IntermediateConfig) (*kumanet_config.Config
 		return nil, err
 	}
 	cfg := kumanet_config.Config{
-		RuntimeStdout: ioutil.Discard,
+		RuntimeStdout: logWriter,
 		Owner: kumanet_config.Owner{
 			UID: intermediateConfig.noRedirectUID,
 		},
