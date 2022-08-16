@@ -27,7 +27,7 @@ type SampleTrafficRoute struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string `json:"mesh"`
+	Mesh string `json:"mesh,omitempty"`
 
 	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
