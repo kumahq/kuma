@@ -114,8 +114,6 @@ spec:
             # If true, deploy as a chained CNI plugin, otherwise deploy as a standalone CNI
             - name: CHAINED_CNI_PLUGIN
               value: "{{ .Values.cni.chained }}"
-            - name: CNI_LOG_LEVEL
-              value: "{{ .Values.cni.logLevel }}"
           {{- end }}
           volumeMounts:
             - mountPath: /host/opt/cni/bin

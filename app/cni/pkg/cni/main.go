@@ -74,8 +74,6 @@ func parseConfig(stdin []byte) (*PluginConf, error) {
 		return nil, errors.Wrapf(err, "could not parse network configuration")
 	}
 
-	install.SetLogLevel(&log, conf.LogLevel)
-
 	if conf.RawPrevResult != nil {
 		resultBytes, err := json.Marshal(conf.RawPrevResult)
 		if err != nil {
@@ -128,7 +126,6 @@ func cmdAdd(args *skel.CmdArgs) error {
 	}
 
 	hijackMainProcessStderr()
-	install.SetLogLevel(&log, conf.LogLevel)
 	logPrevResult(conf)
 
 	// Determine if running under k8s by checking the CNI args
