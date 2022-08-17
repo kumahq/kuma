@@ -3,26 +3,40 @@
     "list": [
       {
         "builtIn": 1,
-        "datasource": "-- Grafana --",
+        "datasource": {
+          "type": "datasource",
+          "uid": "grafana"
+        },
         "enable": true,
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
         "name": "Annotations & Alerts",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [],
+          "type": "dashboard"
+        },
         "type": "dashboard"
       }
     ]
   },
   "description": "Statistics of the traffic between services in Kuma Service Mesh",
   "editable": true,
+  "fiscalYearStartMonth": 0,
   "gnetId": 11776,
   "graphTooltip": 0,
-  "id": 4,
-  "iteration": 1617905663030,
+  "id": null,
+  "iteration": 1660731191817,
   "links": [],
+  "liveNow": false,
   "panels": [
     {
       "collapsed": false,
-      "datasource": "Prometheus",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -30,545 +44,520 @@
         "y": 0
       },
       "id": 10,
-      "panels": [
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": "Prometheus",
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {},
-              "links": []
-            },
-            "overrides": []
-          },
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 1
-          },
-          "hiddenSeries": false,
-          "id": 2,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "options": {
-            "alertThreshold": true
-          },
-          "percentage": false,
-          "pluginVersion": "7.4.3",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "expr": "sum(irate(envoy_cluster_upstream_cx_tx_bytes_total{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
-              "legendFormat": "Bytes sent",
-              "refId": "A"
-            },
-            {
-              "expr": "sum(irate(envoy_cluster_upstream_cx_rx_bytes_total{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
-              "legendFormat": "Bytes received",
-              "refId": "B"
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": null,
-          "timeRegions": [],
-          "timeShift": null,
-          "title": "Traffic from source service perspective",
-          "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "format": "decbytes",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            },
-            {
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": null
-          }
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": "Prometheus",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {},
-              "links": []
-            },
-            "overrides": []
-          },
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 1
-          },
-          "hiddenSeries": false,
-          "id": 14,
-          "legend": {
-            "alignAsTable": false,
-            "avg": false,
-            "current": false,
-            "hideEmpty": false,
-            "hideZero": false,
-            "max": false,
-            "min": false,
-            "rightSide": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "options": {
-            "alertThreshold": true
-          },
-          "percentage": false,
-          "pluginVersion": "7.4.3",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_remote_with_active_rq{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
-              "hide": true,
-              "legendFormat": "Connection destroyed by the client",
-              "refId": "A"
-            },
-            {
-              "expr": "sum(irate(envoy_cluster_upstream_cx_connect_timeout{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
-              "legendFormat": "Connection timeout",
-              "refId": "B"
-            },
-            {
-              "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_local_with_active_rq{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
-              "hide": true,
-              "legendFormat": "Connection destroyed by local Envoy",
-              "refId": "C"
-            },
-            {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_failure_eject{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
-              "legendFormat": "Pending failure ejection",
-              "refId": "D"
-            },
-            {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
-              "legendFormat": "Pending overflow",
-              "refId": "E"
-            },
-            {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_timeout{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
-              "legendFormat": "Request timeout",
-              "refId": "F"
-            },
-            {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_rx_reset{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
-              "legendFormat": "Response reset",
-              "refId": "G"
-            },
-            {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_tx_reset{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
-              "legendFormat": "Request reset",
-              "refId": "H"
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": null,
-          "timeRegions": [],
-          "timeShift": null,
-          "title": "Connection/Requests errors from source service perspective",
-          "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            },
-            {
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": null
-          }
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": "Prometheus",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {},
-              "links": []
-            },
-            "overrides": []
-          },
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 8,
-            "w": 8,
-            "x": 0,
-            "y": 9
-          },
-          "hiddenSeries": false,
-          "id": 4,
-          "interval": "",
-          "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "options": {
-            "alertThreshold": true
-          },
-          "percentage": false,
-          "pluginVersion": "7.4.3",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "expr": "sum(envoy_cluster_upstream_cx_active{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"})",
-              "legendFormat": "Connections",
-              "refId": "A"
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": null,
-          "timeRegions": [],
-          "timeShift": null,
-          "title": "Active Connections between services",
-          "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": "0",
-              "show": true
-            },
-            {
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": null
-          }
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": "Prometheus",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {},
-              "links": []
-            },
-            "overrides": []
-          },
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 8,
-            "w": 8,
-            "x": 8,
-            "y": 9
-          },
-          "hiddenSeries": false,
-          "id": 6,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "hideEmpty": true,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "options": {
-            "alertThreshold": true
-          },
-          "percentage": false,
-          "pluginVersion": "7.4.3",
-          "pointradius": 4,
-          "points": true,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "expr": "max(histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_connect_ms_bucket{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])))",
-              "legendFormat": "Time",
-              "refId": "A"
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": null,
-          "timeRegions": [],
-          "timeShift": null,
-          "title": "Connection time (P99)",
-          "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "format": "ms",
-              "label": "",
-              "logBase": 1,
-              "max": null,
-              "min": "0",
-              "show": true
-            },
-            {
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": null
-          }
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": "Prometheus",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {},
-              "links": []
-            },
-            "overrides": []
-          },
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 8,
-            "w": 8,
-            "x": 16,
-            "y": 9
-          },
-          "hiddenSeries": false,
-          "id": 8,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "hideEmpty": true,
-            "hideZero": true,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "options": {
-            "alertThreshold": true
-          },
-          "percentage": false,
-          "pluginVersion": "7.4.3",
-          "pointradius": 4,
-          "points": true,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "expr": "max(histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_length_ms_bucket{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])))",
-              "legendFormat": "Time",
-              "refId": "A"
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": null,
-          "timeRegions": [],
-          "timeShift": null,
-          "title": "Connection length (P99)",
-          "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "format": "ms",
-              "label": "",
-              "logBase": 1,
-              "max": null,
-              "min": "0",
-              "show": true
-            },
-            {
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": null
-          }
-        }
-      ],
+      "panels": [],
       "title": "Traffic",
       "type": "row"
     },
     {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 1
+      },
+      "hiddenSeries": false,
+      "id": 2,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.5.2",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(irate(envoy_cluster_upstream_cx_tx_bytes_total{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+          "legendFormat": "Bytes sent",
+          "refId": "A",
+          "datasource": "Prometheus"
+        },
+        {
+          "expr": "sum(irate(envoy_cluster_upstream_cx_rx_bytes_total{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+          "legendFormat": "Bytes received",
+          "refId": "B",
+          "datasource": "Prometheus"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Traffic from source service perspective",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "decbytes",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 1
+      },
+      "hiddenSeries": false,
+      "id": 14,
+      "legend": {
+        "alignAsTable": false,
+        "avg": false,
+        "current": false,
+        "hideEmpty": false,
+        "hideZero": false,
+        "max": false,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.5.2",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_remote_with_active_rq{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+          "hide": true,
+          "legendFormat": "Connection destroyed by the client",
+          "refId": "A",
+          "datasource": "Prometheus"
+        },
+        {
+          "expr": "sum(irate(envoy_cluster_upstream_cx_connect_timeout{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+          "legendFormat": "Connection timeout",
+          "refId": "B",
+          "datasource": "Prometheus"
+        },
+        {
+          "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_local_with_active_rq{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+          "hide": true,
+          "legendFormat": "Connection destroyed by local Envoy",
+          "refId": "C",
+          "datasource": "Prometheus"
+        },
+        {
+          "expr": "sum(irate(envoy_cluster_upstream_rq_pending_failure_eject{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+          "legendFormat": "Pending failure ejection",
+          "refId": "D",
+          "datasource": "Prometheus"
+        },
+        {
+          "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+          "legendFormat": "Pending overflow",
+          "refId": "E",
+          "datasource": "Prometheus"
+        },
+        {
+          "expr": "sum(irate(envoy_cluster_upstream_rq_timeout{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+          "legendFormat": "Request timeout",
+          "refId": "F",
+          "datasource": "Prometheus"
+        },
+        {
+          "expr": "sum(irate(envoy_cluster_upstream_rq_rx_reset{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+          "legendFormat": "Response reset",
+          "refId": "G",
+          "datasource": "Prometheus"
+        },
+        {
+          "expr": "sum(irate(envoy_cluster_upstream_rq_tx_reset{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
+          "legendFormat": "Request reset",
+          "refId": "H",
+          "datasource": "Prometheus"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Connection/Requests errors from source service perspective",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 9
+      },
+      "hiddenSeries": false,
+      "id": 4,
+      "interval": "",
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.5.2",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(envoy_cluster_upstream_cx_active{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"})",
+          "legendFormat": "Connections",
+          "refId": "A",
+          "datasource": "Prometheus"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Active Connections between services",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "logBase": 1,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 9
+      },
+      "hiddenSeries": false,
+      "id": 6,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "hideEmpty": true,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.5.2",
+      "pointradius": 4,
+      "points": true,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "max(histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_connect_ms_bucket{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])))",
+          "legendFormat": "Time",
+          "refId": "A",
+          "datasource": "Prometheus"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Connection time (P99)",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "ms",
+          "label": "",
+          "logBase": 1,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 9
+      },
+      "hiddenSeries": false,
+      "id": 8,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "hideEmpty": true,
+        "hideZero": true,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.5.2",
+      "pointradius": 4,
+      "points": true,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "max(histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_length_ms_bucket{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])))",
+          "legendFormat": "Time",
+          "refId": "A",
+          "datasource": "Prometheus"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Connection length (P99)",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "ms",
+          "label": "",
+          "logBase": 1,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
       "collapsed": false,
-      "datasource": null,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 1
+        "y": 17
       },
       "id": 25,
       "panels": [],
@@ -580,17 +569,9 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {
-          "color": {},
-          "custom": {},
-          "thresholds": {
-            "mode": "absolute",
-            "steps": []
-          }
-        },
-        "overrides": []
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
       },
       "fill": 1,
       "fillGradient": 0,
@@ -598,7 +579,7 @@
         "h": 9,
         "w": 8,
         "x": 0,
-        "y": 2
+        "y": 18
       },
       "hiddenSeries": false,
       "id": 27,
@@ -618,7 +599,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.4.3",
+      "pluginVersion": "8.5.2",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -632,27 +613,28 @@
           "hide": false,
           "interval": "",
           "legendFormat": "p99",
-          "refId": "A"
+          "refId": "A",
+          "datasource": "Prometheus"
         },
         {
           "expr": "max(histogram_quantile(0.95, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_service=\"$source_service\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=\"$destination_cluster\"}[1m])))",
           "hide": false,
           "interval": "",
           "legendFormat": "p95",
-          "refId": "C"
+          "refId": "C",
+          "datasource": "Prometheus"
         },
         {
           "expr": "max(histogram_quantile(0.50, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_service=\"$source_service\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=\"$destination_cluster\"}[1m])))",
           "hide": false,
           "interval": "",
           "legendFormat": "p50",
-          "refId": "D"
+          "refId": "D",
+          "datasource": "Prometheus"
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Latency",
       "tooltip": {
         "shared": true,
@@ -661,9 +643,7 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
@@ -671,25 +651,19 @@
         {
           "$$hashKey": "object:631",
           "format": "ms",
-          "label": null,
           "logBase": 1,
-          "max": null,
           "min": "0",
           "show": true
         },
         {
           "$$hashKey": "object:632",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -697,12 +671,9 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
       },
       "fill": 1,
       "fillGradient": 0,
@@ -710,7 +681,7 @@
         "h": 9,
         "w": 8,
         "x": 8,
-        "y": 2
+        "y": 18
       },
       "hiddenSeries": false,
       "id": 29,
@@ -730,7 +701,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.4.3",
+      "pluginVersion": "8.5.2",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -744,13 +715,12 @@
           "hide": false,
           "interval": "",
           "legendFormat": "Requests",
-          "refId": "C"
+          "refId": "C",
+          "datasource": "Prometheus"
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Traffic",
       "tooltip": {
         "shared": true,
@@ -759,9 +729,7 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
@@ -769,25 +737,20 @@
         {
           "$$hashKey": "object:429",
           "format": "reqps",
-          "label": null,
           "logBase": 1,
-          "max": null,
           "min": "0",
           "show": true
         },
         {
           "$$hashKey": "object:430",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
           "min": "0",
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -795,12 +758,9 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
       },
       "fill": 1,
       "fillGradient": 0,
@@ -808,7 +768,7 @@
         "h": 9,
         "w": 8,
         "x": 16,
-        "y": 2
+        "y": 18
       },
       "hiddenSeries": false,
       "id": 31,
@@ -828,7 +788,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.4.3",
+      "pluginVersion": "8.5.2",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -842,13 +802,12 @@
           "hide": false,
           "interval": "",
           "legendFormat": "{{envoy_response_code_class}}xx",
-          "refId": "A"
+          "refId": "A",
+          "datasource": "Prometheus"
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Status codes",
       "tooltip": {
         "shared": true,
@@ -857,9 +816,7 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
@@ -867,150 +824,143 @@
         {
           "$$hashKey": "object:242",
           "format": "reqps",
-          "label": null,
           "logBase": 1,
-          "max": null,
           "min": "0",
           "show": true
         },
         {
           "$$hashKey": "object:243",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
       "collapsed": false,
-      "datasource": "Prometheus",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 11
+        "y": 27
       },
       "id": 18,
-      "panels": [
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": "Prometheus",
-          "description": "Data is only available if HealthCheck policy is applied.",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {},
-              "links": []
-            },
-            "overrides": []
-          },
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 7,
-            "w": 24,
-            "x": 0,
-            "y": 12
-          },
-          "hiddenSeries": false,
-          "id": 12,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "hideEmpty": true,
-            "hideZero": true,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "options": {
-            "alertThreshold": true
-          },
-          "percentage": false,
-          "pluginVersion": "7.4.3",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "expr": "sum(envoy_cluster_health_check_healthy{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}) / sum(envoy_cluster_membership_total{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"})",
-              "legendFormat": "Healthy destinations",
-              "refId": "A"
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": null,
-          "timeRegions": [],
-          "timeShift": null,
-          "title": "Active Health Checks",
-          "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "$$hashKey": "object:347",
-              "format": "percentunit",
-              "label": null,
-              "logBase": 1,
-              "max": "1",
-              "min": "0",
-              "show": true
-            },
-            {
-              "$$hashKey": "object:348",
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": null
-          }
-        }
-      ],
+      "panels": [],
       "title": "Health Checks",
       "type": "row"
     },
     {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "description": "Data is only available if HealthCheck policy is applied.",
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 28
+      },
+      "hiddenSeries": false,
+      "id": 12,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "hideEmpty": true,
+        "hideZero": true,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.5.2",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(envoy_cluster_health_check_healthy{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}) / sum(envoy_cluster_membership_total{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"})",
+          "legendFormat": "Healthy destinations",
+          "refId": "A",
+          "datasource": "Prometheus"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Active Health Checks",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:347",
+          "format": "percentunit",
+          "logBase": 1,
+          "max": "1",
+          "min": "0",
+          "show": true
+        },
+        {
+          "$$hashKey": "object:348",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
       "collapsed": false,
-      "datasource": null,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 35
       },
       "id": 23,
       "panels": [],
@@ -1022,21 +972,18 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
-      "description": "Total times that the cluster’s connection circuit breaker overflowed",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
       },
+      "description": "Total times that the cluster’s connection circuit breaker overflowed",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 13
+        "y": 36
       },
       "hiddenSeries": false,
       "id": 21,
@@ -1056,7 +1003,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.4.3",
+      "pluginVersion": "8.5.2",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1069,27 +1016,28 @@
           "expr": "sum(irate(envoy_cluster_upstream_cx_overflow{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
           "interval": "",
           "legendFormat": "Connection overflow",
-          "refId": "A"
+          "refId": "A",
+          "datasource": "Prometheus"
         },
         {
           "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
           "hide": false,
           "interval": "",
           "legendFormat": "Pending request overflow",
-          "refId": "B"
+          "refId": "B",
+          "datasource": "Prometheus"
         },
         {
           "expr": "sum(irate(envoy_cluster_upstream_rq_retry_overflow{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
           "hide": false,
           "interval": "",
           "legendFormat": "Retry overflow",
-          "refId": "C"
+          "refId": "C",
+          "datasource": "Prometheus"
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Thresholds Overflow",
       "tooltip": {
         "shared": true,
@@ -1098,9 +1046,7 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
@@ -1108,25 +1054,19 @@
         {
           "$$hashKey": "object:72",
           "format": "ops",
-          "label": null,
           "logBase": 1,
-          "max": null,
           "min": "0",
           "show": true
         },
         {
           "$$hashKey": "object:73",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     },
     {
@@ -1134,11 +1074,13 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
       "description": "Data is only available if CircuitBreaker policy is applied",
       "fieldConfig": {
         "defaults": {
-          "custom": {},
           "links": []
         },
         "overrides": []
@@ -1149,7 +1091,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 13
+        "y": 36
       },
       "hiddenSeries": false,
       "id": 19,
@@ -1171,7 +1113,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.4.3",
+      "pluginVersion": "8.5.2",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1184,13 +1126,12 @@
           "expr": "1 - sum(envoy_cluster_outlier_detection_ejections_active{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}) / sum(envoy_cluster_membership_total{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"})",
           "interval": "",
           "legendFormat": "Healthy destinations",
-          "refId": "A"
+          "refId": "A",
+          "datasource": "Prometheus"
         }
       ],
       "thresholds": [],
-      "timeFrom": null,
       "timeRegions": [],
-      "timeShift": null,
       "title": "Outlier detection",
       "tooltip": {
         "shared": true,
@@ -1199,9 +1140,7 @@
       },
       "type": "graph",
       "xaxis": {
-        "buckets": null,
         "mode": "time",
-        "name": null,
         "show": true,
         "values": []
       },
@@ -1209,7 +1148,6 @@
         {
           "$$hashKey": "object:402",
           "format": "percentunit",
-          "label": null,
           "logBase": 1,
           "max": "1",
           "min": "0",
@@ -1218,36 +1156,28 @@
         {
           "$$hashKey": "object:403",
           "format": "short",
-          "label": null,
           "logBase": 1,
-          "max": null,
-          "min": null,
           "show": true
         }
       ],
       "yaxis": {
-        "align": false,
-        "alignLevel": null
+        "align": false
       }
     }
   ],
   "refresh": "5s",
-  "schemaVersion": 27,
+  "schemaVersion": 36,
   "style": "dark",
   "tags": [],
   "templating": {
     "list": [
       {
-        "allValue": null,
-        "current": {
-          "selected": false,
-          "text": "default",
-          "value": "default"
+        "current": {},
+        "datasource": {
+          "type": "prometheus",
+          "uid": "Prometheus"
         },
-        "datasource": "Prometheus",
         "definition": "label_values(envoy_server_live, mesh)",
-        "description": null,
-        "error": null,
         "hide": 0,
         "includeAll": false,
         "label": "Mesh",
@@ -1263,16 +1193,17 @@
         "skipUrlSync": false,
         "sort": 0,
         "tagValuesQuery": "",
-        "tags": [],
         "tagsQuery": "",
         "type": "query",
         "useTags": false
       },
       {
         "allFormat": "wildcard",
-        "allValue": null,
         "current": {},
-        "datasource": "Prometheus",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "Prometheus"
+        },
         "definition": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_zone)",
         "hide": 0,
         "includeAll": true,
@@ -1280,28 +1211,26 @@
         "multi": true,
         "name": "zone",
         "options": [],
-        "query": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_zone)",
+        "query": {
+          "query": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_zone)",
+          "refId": "Prometheus-zone-Variable-Query"
+        },
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
         "sort": 0,
         "tagValuesQuery": "",
-        "tags": [],
         "tagsQuery": "",
         "type": "query",
         "useTags": false
       },
       {
-        "allValue": null,
-        "current": {
-          "selected": true,
-          "text": "backend_kuma-demo_svc_3001",
-          "value": "backend_kuma-demo_svc_3001"
+        "current": {},
+        "datasource": {
+          "type": "prometheus",
+          "uid": "Prometheus"
         },
-        "datasource": "Prometheus",
         "definition": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_mesh_gateway=\"\"}, kuma_io_service)",
-        "description": null,
-        "error": null,
         "hide": 0,
         "includeAll": false,
         "label": "Source service",
@@ -1317,22 +1246,17 @@
         "skipUrlSync": false,
         "sort": 0,
         "tagValuesQuery": "",
-        "tags": [],
         "tagsQuery": "",
         "type": "query",
         "useTags": false
       },
       {
-        "allValue": null,
-        "current": {
-          "selected": true,
-          "text": "frontend_kuma-demo_svc_8080",
-          "value": "frontend_kuma-demo_svc_8080"
+        "current": {},
+        "datasource": {
+          "type": "prometheus",
+          "uid": "Prometheus"
         },
-        "datasource": "Prometheus",
         "definition": "label_values(envoy_cluster_upstream_cx_active{kuma_io_service=\"$source_service\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}, envoy_cluster_name)",
-        "description": null,
-        "error": null,
         "hide": 0,
         "includeAll": false,
         "label": "Destination service",
@@ -1348,7 +1272,6 @@
         "skipUrlSync": false,
         "sort": 0,
         "tagValuesQuery": "",
-        "tags": [],
         "tagsQuery": "",
         "type": "query",
         "useTags": false
@@ -1376,5 +1299,6 @@
   "timezone": "",
   "title": "Kuma Service to Service",
   "uid": "QdCgOqyWz",
-  "version": 1
+  "version": 1,
+  "weekStart": ""
 }
