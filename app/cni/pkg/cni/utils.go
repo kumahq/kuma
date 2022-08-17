@@ -12,7 +12,7 @@ import (
 	"unicode"
 )
 
-// PidOf Find process(es) with a specified name (regexp match)
+// PidOf Find process(es) with a specified name (string match)
 // copied from https://github.com/kubernetes/kubernetes/blob/v1.24.3/pkg/util/procfs/procfs_linux.go#L99
 // with small modifications
 // and return their pid(s)
@@ -23,6 +23,7 @@ func pidOf(name string) ([]int, error) {
 	return getPids(name), nil
 }
 
+// we don't need regex so this is changed to "string"
 func getPids(name string) []int {
 	pids := []int{}
 
