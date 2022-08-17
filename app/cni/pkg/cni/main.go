@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
+	"path"
+	"strconv"
 	"time"
 
 	"github.com/containernetworking/cni/pkg/skel"
@@ -24,10 +27,13 @@ import (
 const (
 	podRetrievalMaxRetries = 30
 	podRetrievalInterval   = 1 * time.Second
+	defaultLogLocation     = "/tmp/kuma-cni.log"
+	defaultLogLevel        = 2
+	defaultLogName         = "kuma-cni"
 )
 
 var (
-	log = core.NewLoggerWithRotation(2, "/tmp/kuma-cni.log", 100, 0, 0).WithName("kuma-cni")
+	log = core.NewLoggerWithRotation(defaultLogLevel, defaultLogLocation, 100, 0, 0).WithName(defaultLogName)
 )
 
 // Kubernetes a K8s specific struct to hold config
@@ -85,12 +91,42 @@ func parseConfig(stdin []byte) (*PluginConf, error) {
 	return &conf, nil
 }
 
+func hijackMainProcessStderr() *os.File {
+	file, err := getCniProcessStderr()
+	if err != nil {
+		log.Error(err, "could not hijack main process file - continue logging to "+defaultLogLocation)
+		return nil
+	}
+	log.V(0).Info("successfully hijacked stderr of cni process - logs will be available in 'kubectl logs'")
+	os.Stderr = file
+	log = core.NewLoggerTo(os.Stderr, 2).WithName(defaultLogName)
+	return file
+}
+
+func getCniProcessStderr() (*os.File, error) {
+	pids, err := pidOf("/install-cni")
+	if err != nil {
+		return nil, err
+	}
+	if len(pids) != 1 {
+		return nil, errors.New("more than one process '/install-cni' running on a node, this should not happen")
+	}
+
+	file, err := os.OpenFile(path.Join("/", "proc", strconv.Itoa(pids[0]), "fd", "2"), os.O_WRONLY, 0)
+	return file, err
+}
+
 // cmdAdd is called for ADD requests
 func cmdAdd(args *skel.CmdArgs) error {
 	ctx := context.Background()
 	conf, err := parseConfig(args.StdinData)
 	if err != nil {
 		return errors.Wrap(err, "error parsing kuma-cni cmdAdd config")
+	}
+
+	mainProcessStderr := hijackMainProcessStderr()
+	if mainProcessStderr != nil {
+		defer mainProcessStderr.Close()
 	}
 	logPrevResult(conf)
 
