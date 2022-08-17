@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"os/exec"
 	"path"
-	"strings"
+	"strconv"
 	"time"
 
 	"github.com/containernetworking/cni/pkg/skel"
@@ -19,7 +18,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 
-	"github.com/kumahq/kuma/app/cni/pkg/install"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
@@ -52,7 +50,7 @@ type PluginConf struct {
 	PrevResult    *current.Result         `json:"-"`
 
 	// plugin-specific fields
-	LogLevel   string     `json:"log_level"`
+	LogLevel   string     `json:"log_level"` // this was not accessed anywhere in the previous CNI, should I just get rid of it or hook it up?
 	Kubernetes Kubernetes `json:"kubernetes"`
 }
 
@@ -96,7 +94,7 @@ func parseConfig(stdin []byte) (*PluginConf, error) {
 func hijackMainProcessStderr() {
 	file, err := getCniProcessStderr()
 	if err != nil {
-		log.Error(err, "could not hijack main process file - continue logging to " + defaultLogLocation)
+		log.Error(err, "could not hijack main process file - continue logging to "+defaultLogLocation)
 	} else {
 		log.V(0).Info("successfully hijacked stderr of cni process - logs will be available in 'kubectl logs'")
 		os.Stderr = file
@@ -105,17 +103,17 @@ func hijackMainProcessStderr() {
 }
 
 func getCniProcessStderr() (*os.File, error) {
-	cmd := exec.Command("pidof", "/install-cni")
-	pid, err := cmd.Output()
-
+	pids, err := pidOf("/install-cni")
 	if err != nil {
 		return nil, err
 	}
+	if len(pids) != 1 {
+		return nil, errors.New("more than one process '/install-cni' running on a node, this should not happen")
+	}
 
-	file, err := os.OpenFile(path.Join("/", "proc", strings.TrimSpace(string(pid)), "fd", "2"), os.O_WRONLY, 0)
+	file, err := os.OpenFile(path.Join("/", "proc", strconv.Itoa(pids[0]), "fd", "2"), os.O_WRONLY, 0)
 	return file, err
 }
-
 
 // cmdAdd is called for ADD requests
 func cmdAdd(args *skel.CmdArgs) error {
