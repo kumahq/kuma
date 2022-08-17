@@ -1463,6 +1463,23 @@ conf:
     max_stream_duration: 117s
 `,
 		),
+
+		Entry("doesn't create invalid config with tcp route",
+			"http-tcp-route.yaml", `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  tcp:
+    rules:
+    - backends:
+      - destination:
+          kuma.io/service: service
+`,
+		),
 	}
 
 	tcpEntries := []TableEntry{
