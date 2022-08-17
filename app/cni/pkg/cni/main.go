@@ -91,15 +91,16 @@ func parseConfig(stdin []byte) (*PluginConf, error) {
 	return &conf, nil
 }
 
-func hijackMainProcessStderr() {
+func hijackMainProcessStderr() *os.File {
 	file, err := getCniProcessStderr()
 	if err != nil {
 		log.Error(err, "could not hijack main process file - continue logging to "+defaultLogLocation)
-	} else {
-		log.V(0).Info("successfully hijacked stderr of cni process - logs will be available in 'kubectl logs'")
-		os.Stderr = file
-		log = core.NewLoggerTo(os.Stderr, 2).WithName(defaultLogName)
+		return nil
 	}
+	log.V(0).Info("successfully hijacked stderr of cni process - logs will be available in 'kubectl logs'")
+	os.Stderr = file
+	log = core.NewLoggerTo(os.Stderr, 2).WithName(defaultLogName)
+	return file
 }
 
 func getCniProcessStderr() (*os.File, error) {
@@ -123,7 +124,10 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return errors.Wrap(err, "error parsing kuma-cni cmdAdd config")
 	}
 
-	hijackMainProcessStderr()
+	mainProcessStderr := hijackMainProcessStderr()
+	if mainProcessStderr != nil {
+		defer mainProcessStderr.Close()
+	}
 	logPrevResult(conf)
 
 	// Determine if running under k8s by checking the CNI args
