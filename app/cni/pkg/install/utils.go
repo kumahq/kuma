@@ -3,6 +3,8 @@ package install
 import (
 	"encoding/json"
 	"io/ioutil"
+
+	"github.com/go-logr/logr"
 )
 
 func parseFileToHashMap(file string) (map[string]interface{}, error) {
@@ -21,4 +23,15 @@ func parseBytesToHashMap(bytes []byte) (map[string]interface{}, error) {
 		return nil, err
 	}
 	return parsed, nil
+}
+
+func SetLogLevel(logger *logr.Logger, level string) {
+	switch level {
+	case "off":
+		*logger = logr.Discard()
+	case "debug":
+		*logger = logger.V(1)
+	default:
+		*logger = logger.V(0)
+	}
 }
