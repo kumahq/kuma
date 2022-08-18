@@ -30,9 +30,9 @@ const (
 )
 
 var (
-	log = CreateNewLogger(defaultLogName, kuma_log.DebugLevel)
+	log             = CreateNewLogger(defaultLogName, kuma_log.DebugLevel)
 	cleanupFinished = false
-	cleanupMutex = sync.Mutex{}
+	cleanupMutex    = sync.Mutex{}
 )
 
 func removeBinFiles() error {
