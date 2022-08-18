@@ -8,7 +8,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 
@@ -30,9 +29,7 @@ const (
 )
 
 var (
-	log             = CreateNewLogger(defaultLogName, kuma_log.DebugLevel)
-	cleanupFinished = false
-	cleanupMutex    = sync.Mutex{}
+	log = CreateNewLogger(defaultLogName, kuma_log.DebugLevel)
 )
 
 func removeBinFiles() error {
@@ -40,12 +37,6 @@ func removeBinFiles() error {
 }
 
 func cleanup(ic *InstallerConfig) {
-	cleanupMutex.Lock()
-	defer cleanupMutex.Unlock()
-	if cleanupFinished {
-		return
-	}
-
 	log.Info("starting cleanup")
 	if err := removeBinFiles(); err != nil {
 		log.Error(err, "could not remove cni bin file")
@@ -68,7 +59,6 @@ func cleanup(ic *InstallerConfig) {
 		log.V(1).Info("removed ready file")
 	}
 	log.Info("finished cleanup")
-	cleanupFinished = true
 }
 
 func removeKubeconfig(mountedCniNetDir, kubeconfigName string) error {
@@ -212,19 +202,6 @@ func tryWritingToDir(dir string) error {
 	return nil
 }
 
-func setupSignalCleanup(ic *InstallerConfig) {
-	osSignals := make(chan os.Signal, 1)
-	signal.Notify(osSignals,
-		syscall.SIGHUP,
-		syscall.SIGINT,
-		syscall.SIGTERM,
-		syscall.SIGQUIT)
-	go func() {
-		_ = <-osSignals
-		cleanup(ic)
-	}()
-}
-
 func Run() {
 	installerConfig, err := loadInstallerConfig()
 	if err != nil {
@@ -254,15 +231,22 @@ func Run() {
 
 func runLoop(ic *InstallerConfig) error {
 	defer cleanup(ic)
-	setupSignalCleanup(ic)
+	osSignals := make(chan os.Signal, 1)
+	signal.Notify(osSignals, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
-	for ic.ShouldSleep {
-		time.Sleep(time.Duration(ic.CfgCheckInterval) * time.Second)
-		err := checkInstall(ic.MountedCniNetDir+"/"+ic.CniConfName, ic.ChainedCniPlugin)
-		if err != nil {
-			return err
-		}
+	if !ic.ShouldSleep {
+		return nil
 	}
 
-	return nil
+	for {
+		select {
+		case <-osSignals:
+			return nil
+		case <-time.After(time.Duration(ic.CfgCheckInterval) * time.Second):
+			err := checkInstall(ic.MountedCniNetDir+"/"+ic.CniConfName, ic.ChainedCniPlugin)
+			if err != nil {
+				return err
+			}
+		}
+	}
 }
