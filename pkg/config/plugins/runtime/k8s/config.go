@@ -15,8 +15,9 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 		AdmissionServer: AdmissionServerConfig{
 			Port: 5443,
 		},
-		ControlPlaneServiceName: "kuma-control-plane",
-		ServiceAccountName:      "system:serviceaccount:kuma-system:kuma-control-plane",
+		ControlPlaneServiceName:    "kuma-control-plane",
+		NodeTaintControllerEnabled: true,
+		ServiceAccountName:         "system:serviceaccount:kuma-system:kuma-control-plane",
 		Injector: Injector{
 			CNIEnabled:           false,
 			VirtualProbesEnabled: true,
@@ -95,6 +96,8 @@ type KubernetesRuntimeConfig struct {
 	ServiceAccountName string `yaml:"serviceAccountName,omitempty" envconfig:"kuma_runtime_kubernetes_service_account_name"`
 	// ControlPlaneServiceName defines service name of the Kuma control plane. It is used to point Kuma DP to proper URL.
 	ControlPlaneServiceName string `yaml:"controlPlaneServiceName,omitempty" envconfig:"kuma_runtime_kubernetes_control_plane_service_name"`
+	// NodeTaintControllerEnabled enables taint controller that prevents applications from scheduling until experimental CNI is ready.
+	NodeTaintControllerEnabled bool `yaml:"nodeTaintControllerEnabled" envconfig:"kuma_runtime_kubernetes_node_taint_controller_enabled"`
 }
 
 // Configuration of the Admission WebHook Server implemented by the Control Plane.
