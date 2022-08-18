@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -15,7 +16,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	"github.com/kumahq/kuma/pkg/core"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/util/files"
 )
 
@@ -25,10 +26,13 @@ const (
 	secondaryBinDir    = "/host/secondary-bin-dir"
 	serviceAccountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
 	readyFilePath      = "/tmp/ready"
+	defaultLogName     = "install-cni"
 )
 
 var (
-	log = core.NewLoggerTo(os.Stderr, 2).WithName("install-cni")
+	log = CreateNewLogger(defaultLogName, kuma_log.DebugLevel)
+	cleanupFinished = false
+	cleanupMutex = sync.Mutex{}
 )
 
 func removeBinFiles() error {
@@ -36,6 +40,12 @@ func removeBinFiles() error {
 }
 
 func cleanup(ic *InstallerConfig) {
+	cleanupMutex.Lock()
+	defer cleanupMutex.Unlock()
+	if cleanupFinished == true {
+		return
+	}
+
 	log.Info("starting cleanup")
 	if err := removeBinFiles(); err != nil {
 		log.Error(err, "could not remove cni bin file")
@@ -58,6 +68,7 @@ func cleanup(ic *InstallerConfig) {
 		log.V(1).Info("removed ready file")
 	}
 	log.Info("finished cleanup")
+	cleanupFinished = true
 }
 
 func removeKubeconfig(mountedCniNetDir, kubeconfigName string) error {
@@ -220,6 +231,8 @@ func Run() {
 		log.Error(err, "error occurred during config loading")
 		os.Exit(1)
 	}
+
+	SetLogLevel(&log, installerConfig.CniLogLevel, defaultLogName)
 
 	err = install(installerConfig)
 	if err != nil {
