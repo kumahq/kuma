@@ -22,6 +22,7 @@ type InstallerConfig struct {
 	CfgCheckInterval          int    `envconfig:"cfgcheck_interval" default:"1"`
 	ChainedCniPlugin          bool   `envconfig:"chained_cni_plugin" default:"true"`
 	CniConfName               string `envconfig:"cni_conf_name" default:""`
+	CniLogLevel               string `envconfig:"cni_log_level" default:"info"`
 	CniNetworkConfig          string `envconfig:"cni_network_config" default:""`
 	HostCniNetDir             string `envconfig:"cni_net_dir" default:"/etc/cni/net.d"`
 	KubeconfigName            string `envconfig:"kubecfg_file_name" default:"ZZZ-kuma-cni-kubeconfig"`

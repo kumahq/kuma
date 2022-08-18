@@ -3,6 +3,12 @@ package install
 import (
 	"encoding/json"
 	"io/ioutil"
+	"os"
+
+	"github.com/go-logr/logr"
+
+	"github.com/kumahq/kuma/pkg/core"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 )
 
 func parseFileToHashMap(file string) (map[string]interface{}, error) {
@@ -21,4 +27,20 @@ func parseBytesToHashMap(bytes []byte) (map[string]interface{}, error) {
 		return nil, err
 	}
 	return parsed, nil
+}
+
+func CreateNewLogger(name string, logLevel kuma_log.LogLevel) logr.Logger {
+	// kubelet expects a specific JSON on stdout, so we're using stderr in CNI
+	return core.NewLoggerTo(os.Stderr, logLevel).WithName(name)
+}
+
+func SetLogLevel(logger *logr.Logger, level string, name string) error {
+	logLevel, err := kuma_log.ParseLogLevel(level)
+
+	if err != nil {
+		return err
+	}
+
+	*logger = CreateNewLogger(name, logLevel)
+	return nil
 }
