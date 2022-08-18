@@ -209,23 +209,27 @@ func Run() {
 		os.Exit(1)
 	}
 
-	SetLogLevel(&log, installerConfig.CniLogLevel, defaultLogName)
+	err = SetLogLevel(&log, installerConfig.CniLogLevel, defaultLogName)
+	if err != nil {
+		log.Error(err, "error occurred during setting the log level")
+		os.Exit(2)
+	}
 
 	err = install(installerConfig)
 	if err != nil {
 		log.Error(err, "error occurred during cni installation")
-		os.Exit(1)
+		os.Exit(3)
 	}
 
 	err = atomic.WriteFile(readyFilePath, strings.NewReader(""))
 	if err != nil {
 		log.Error(err, "unable to mark as ready")
-		os.Exit(1)
+		os.Exit(4)
 	}
 
 	if err := runLoop(installerConfig); err != nil {
 		log.Error(err, "checking installation failed - exiting")
-		os.Exit(1)
+		os.Exit(5)
 	}
 }
 
