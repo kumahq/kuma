@@ -166,6 +166,8 @@ runtime:
     controlPlaneServiceName: kuma-control-plane # ENV: KUMA_RUNTIME_KUBERNETES_CONTROL_PLANE_SERVICE_NAME
     # Name of Service Account that is used to run the Control Plane
     serviceAccountName: "system:serviceaccount:kuma-system:kuma-control-plane" # ENV: KUMA_RUNTIME_KUBERNETES_SERVICE_ACCOUNT_NAME
+    # Enables taint controller that prevents applications from scheduling until experimental CNI is ready.
+    nodeTaintControllerEnabled: true
     # Admission WebHook Server configuration
     admissionServer:
       # Address the Admission WebHook Server should be listening on
