@@ -91,7 +91,7 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 		return err
 	}
 
-	if rt.Config().Experimental.Cni && rt.Config().Runtime.Kubernetes.NodeTaintControllerEnabled {
+	if rt.Config().Runtime.Kubernetes.NodeTaintControllerEnabled {
 		if err := addCniNodeTaintReconciler(mgr, rt.Config().Experimental.CniApp); err != nil {
 			return err
 		}

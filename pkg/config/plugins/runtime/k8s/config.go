@@ -16,7 +16,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			Port: 5443,
 		},
 		ControlPlaneServiceName:    "kuma-control-plane",
-		NodeTaintControllerEnabled: true,
+		NodeTaintControllerEnabled: false,
 		ServiceAccountName:         "system:serviceaccount:kuma-system:kuma-control-plane",
 		Injector: Injector{
 			CNIEnabled:           false,

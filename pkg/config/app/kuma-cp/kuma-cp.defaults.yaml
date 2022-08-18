@@ -1,10 +1,11 @@
-# Environment Type, can be either "kubernetes" or "universal"
+# Environment type. Available values are: "kubernetes" or "universal"
 environment: universal # ENV: KUMA_ENVIRONMENT
-mode: standalone # ENV: KUMA_MODE By default autoconfigured to standalone
+# Mode in which Kuma CP is running. Available values are: "standalone", "global", "zone"
+mode: standalone # ENV: KUMA_MODE
 
 # Resource Store configuration
 store:
-  # Type of Store used in the Control Plane. Can be either "kubernetes", "postgres" or "memory"
+  # Type of Store used in the Control Plane. Available values are: "kubernetes", "postgres" or "memory"
   type: memory # ENV: KUMA_STORE_TYPE
 
   # Kubernetes Store configuration (used when store.type=kubernetes)
@@ -34,7 +35,7 @@ store:
     maxIdleConnections: 50  # ENV: KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS
     # TLS settings
     tls:
-      # Mode of TLS connection. Available values (disable, verifyNone, verifyCa, verifyFull)
+      # Mode of TLS connection. Available values are: "disable", "verifyNone", "verifyCa", "verifyFull"
       mode: disable # ENV: KUMA_STORE_POSTGRES_TLS_MODE
       # Path to TLS Certificate of the client. Used in verifyCa and verifyFull modes
       certPath: # ENV: KUMA_STORE_POSTGRES_TLS_CERT_PATH
@@ -59,9 +60,9 @@ store:
     # Expiration time for elements in cache.
     expirationTime: 1s # ENV: KUMA_STORE_CACHE_EXPIRATION_TIME
 
-  # Upsert configuration
+  # Upsert (get and update) configuration
   upsert:
-    # Base time for exponential backoff on upsert (get and update) operations when retry is enabled
+    # Base time for exponential backoff on upsert operations when retry is enabled
     conflictRetryBaseBackoff: 100ms # ENV: KUMA_STORE_UPSERT_CONFLICT_RETRY_BASE_BACKOFF
     # Max retries on upsert (get and update) operation when retry is enabled
     conflictRetryMaxTimes: 5 # ENV: KUMA_STORE_UPSERT_CONFLICT_RETRY_MAX_TIMES
@@ -72,8 +73,6 @@ store:
 
 # Configuration of Bootstrap Server, which provides bootstrap config to Dataplanes
 bootstrapServer:
-  # The version of Envoy API (available: "v3")
-  apiVersion: v3
   # Parameters of bootstrap configuration
   params:
     # Address of Envoy Admin
@@ -84,7 +83,7 @@ bootstrapServer:
     adminAccessLogPath: /dev/null # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ACCESS_LOG_PATH
     # Host of XDS Server. By default it is the same host as the one used by kuma-dp to connect to the control plane
     xdsHost: "" # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST
-    # Port of XDS Server. By default it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT
+    # Port of XDS Server. By default it is autoconfigured from KUMA_DP_SERVER_PORT
     xdsPort: 0 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
     # Connection timeout to the XDS Server
     xdsConnectTimeout: 1s # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT
@@ -94,8 +93,7 @@ monitoringAssignmentServer:
   # Port of a gRPC server that serves Monitoring Assignment Discovery Service (MADS).
   port: 5676 # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_PORT
   # Which MADS API versions to serve
-  apiVersions: # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_API_VERSIONS
-    - v1
+  apiVersions: ["v1"] # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_API_VERSIONS
   # Interval for re-generating monitoring assignments for clients connected to the Control Plane.
   assignmentRefreshInterval: 1s # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL
   # The default timeout for a single fetch-based discovery request, if not specified
@@ -167,7 +165,7 @@ runtime:
     # Name of Service Account that is used to run the Control Plane
     serviceAccountName: "system:serviceaccount:kuma-system:kuma-control-plane" # ENV: KUMA_RUNTIME_KUBERNETES_SERVICE_ACCOUNT_NAME
     # Enables taint controller that prevents applications from scheduling until experimental CNI is ready.
-    nodeTaintControllerEnabled: true
+    nodeTaintControllerEnabled: false # ENV: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_ENABLED
     # Admission WebHook Server configuration
     admissionServer:
       # Address the Admission WebHook Server should be listening on
@@ -278,7 +276,11 @@ runtime:
 
 # Default Kuma entities configuration
 defaults:
+  # If true, it skips creating the default Mesh
   skipMeshCreation: false # ENV: KUMA_DEFAULTS_SKIP_MESH_CREATION
+  # If true, instead of providing inbound clusters with address of dataplane, generates cluster with localhost.
+  # Enabled can cause security threat by exposing application listing on localhost. This configuration is going to
+  # be removed in the future.
   enableLocalhostInboundClusters: false #ENV: KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS
 
 # Metrics configuration
@@ -316,12 +318,10 @@ general:
   tlsCertFile: # ENV: KUMA_GENERAL_TLS_CERT_FILE
   # TlsKeyFile defines a path to a file with PEM-encoded TLS key that will be used across all the Kuma Servers.
   tlsKeyFile: # ENV: KUMA_GENERAL_TLS_KEY_FILE
-  workDir: ""
-
-# Web GUI Server configuration
-guiServer:
-  # URL of the Api Server
-  apiServerUrl: # ENV: KUMA_GUI_SERVER_API_SERVER_URL
+  # WorkDir defines a path to the working directory
+  # Kuma stores in this directory autogenerated entities like certificates.
+  # If empty then the working directory is $HOME/.kuma
+  workDir: "" # ENV: KUMA_GENERAL_WORK_DIR
 
 # DNS Server configuration
 dnsServer:
@@ -460,6 +460,8 @@ experimental:
   # If true, instead of embedding kubernetes outbounds into Dataplane object, they are persisted next to VIPs in ConfigMap
   # This can improve performance, but it should be enabled only after all instances are migrated to version that supports this config
   kubeOutboundsAsVIPs: false # ENV: KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS
+  # Name of the CNI pod
+  cniApp: "" # ENV: KUMA_EXPERIMENTAL_CNI_APP
 
 proxy:
   gateway:

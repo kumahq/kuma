@@ -141,7 +141,7 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Runtime.Kubernetes.ControlPlaneServiceName).To(Equal("custom-control-plane"))
 			Expect(cfg.Runtime.Kubernetes.ServiceAccountName).To(Equal("custom-sa"))
-			Expect(cfg.Runtime.Kubernetes.NodeTaintControllerEnabled).To(BeFalse())
+			Expect(cfg.Runtime.Kubernetes.NodeTaintControllerEnabled).To(BeTrue())
 
 			Expect(cfg.Runtime.Kubernetes.AdmissionServer.Address).To(Equal("127.0.0.2"))
 			Expect(cfg.Runtime.Kubernetes.AdmissionServer.Port).To(Equal(uint32(9443)))
@@ -191,7 +191,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.General.DNSCacheTTL).To(Equal(19 * time.Second))
 			Expect(cfg.General.WorkDir).To(Equal("/custom/work/dir"))
 
-			Expect(cfg.GuiServer.ApiServerUrl).To(Equal("http://localhost:1234"))
 			Expect(cfg.Mode).To(Equal(config_core.Zone))
 			Expect(cfg.Multizone.Zone.Name).To(Equal("zone-1"))
 
@@ -259,7 +258,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Access.Static.ViewClusters.Groups).To(Equal([]string{"zt-group1", "zt-group2"}))
 
 			Expect(cfg.Experimental.GatewayAPI).To(BeTrue())
-			Expect(cfg.Experimental.Cni).To(BeTrue())
 			Expect(cfg.Experimental.CniApp).To(Equal("kuma-cni"))
 			Expect(cfg.Experimental.KubeOutboundsAsVIPs).To(BeTrue())
 
@@ -338,7 +336,7 @@ runtime:
   kubernetes:
     serviceAccountName: custom-sa
     controlPlaneServiceName: custom-control-plane
-    nodeTaintControllerEnabled: false
+    nodeTaintControllerEnabled: true
     admissionServer:
       address: 127.0.0.2
       port: 9443
@@ -403,8 +401,6 @@ general:
   tlsCertFile: /tmp/cert
   dnsCacheTTL: 19s
   workDir: /custom/work/dir
-guiServer:
-  apiServerUrl: http://localhost:1234
 mode: zone
 multizone:
   global:
@@ -490,7 +486,6 @@ access:
 experimental:
   gatewayAPI: true
   kubeOutboundsAsVIPs: true
-  cni: true
   cniApp: "kuma-cni"
 proxy:
   gateway:
@@ -548,7 +543,7 @@ proxy:
 				"KUMA_REPORTS_ENABLED":                                                                     "false",
 				"KUMA_RUNTIME_KUBERNETES_CONTROL_PLANE_SERVICE_NAME":                                       "custom-control-plane",
 				"KUMA_RUNTIME_KUBERNETES_SERVICE_ACCOUNT_NAME":                                             "custom-sa",
-				"KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_ENABLED":                                    "false",
+				"KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_ENABLED":                                    "true",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_ADDRESS":                                         "127.0.0.2",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT":                                            "9443",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR":                                        "/var/run/secrets/kuma.io/kuma-admission-server/tls-cert",
@@ -592,7 +587,6 @@ proxy:
 				"KUMA_GENERAL_DNS_CACHE_TTL":                                                               "19s",
 				"KUMA_GENERAL_WORK_DIR":                                                                    "/custom/work/dir",
 				"KUMA_API_SERVER_CORS_ALLOWED_DOMAINS":                                                     "https://kuma,https://someapi",
-				"KUMA_GUI_SERVER_API_SERVER_URL":                                                           "http://localhost:1234",
 				"KUMA_DNS_SERVER_DOMAIN":                                                                   "test-domain",
 				"KUMA_DNS_SERVER_CIDR":                                                                     "127.1.0.0/16",
 				"KUMA_DNS_SERVER_SERVICE_VIP_ENABLED":                                                      "false",
@@ -651,8 +645,7 @@ proxy:
 				"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_USERS":                                                   "zt-admin1,zt-admin2",
 				"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_GROUPS":                                                  "zt-group1,zt-group2",
 				"KUMA_EXPERIMENTAL_GATEWAY_API":                                                            "true",
-				"KUMA_EXPERIMENTAL_CNI":                                                                    "true",
-				"KUMA_CNI_APP":                                                                             "kuma-cni",
+				"KUMA_EXPERIMENTAL_CNI_APP":                                                                "kuma-cni",
 				"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS":                                                 "true",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
 			},
