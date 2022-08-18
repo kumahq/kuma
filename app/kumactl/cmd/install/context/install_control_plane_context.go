@@ -41,6 +41,7 @@ type InstallControlPlaneArgs struct {
 	Cni_image_registry                           string            `helm:"cni.image.registry,omitempty"`
 	Cni_image_repository                         string            `helm:"cni.image.repository"`
 	Cni_image_tag                                string            `helm:"cni.image.tag"`
+	Cni_experimental_image_registry              string            `helm:"cni.experimental.image.registry"`
 	Cni_experimental_image_repository            string            `helm:"cni.experimental.image.repository"`
 	Cni_experimental_image_tag                   string            `helm:"cni.experimental.image.tag"`
 	Cni_nodeSelector                             map[string]string `helm:"cni.nodeSelector"`
@@ -106,6 +107,7 @@ func DefaultInstallCpContext() InstallCpContext {
 			Cni_image_registry:                      "",
 			Cni_image_repository:                    "install-cni",
 			Cni_image_tag:                           "0.0.10",
+			Cni_experimental_image_registry:         "",
 			Cni_experimental_image_repository:       "kuma-cni",
 			Cni_experimental_image_tag:              kuma_version.Build.Version,
 			ControlPlane_mode:                       core.Standalone,
