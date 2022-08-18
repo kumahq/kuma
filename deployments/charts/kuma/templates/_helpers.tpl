@@ -274,9 +274,9 @@ env:
   value: "true"
 {{- end }}
 {{- if .Values.experimental.cni }}
-- name: KUMA_EXPERIMENTAL_CNI
+- name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_ENABLED
   value: "true"
-- name: KUMA_CNI_APP
+- name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_APP
   value: "{{ include "kuma.name" . }}-cni"
 {{- end }}
 {{- end }}
