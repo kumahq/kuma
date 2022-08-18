@@ -28,7 +28,7 @@ const (
 )
 
 var (
-	log = core.NewLoggerWithRotation(2, "/tmp/install-cni.log", 100, 0, 0).WithName("install-cni")
+	log = core.NewLoggerTo(os.Stderr, 2).WithName("install-cni")
 )
 
 func removeBinFiles() error {
