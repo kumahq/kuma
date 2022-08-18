@@ -42,7 +42,7 @@ func removeBinFiles() error {
 func cleanup(ic *InstallerConfig) {
 	cleanupMutex.Lock()
 	defer cleanupMutex.Unlock()
-	if cleanupFinished == true {
+	if cleanupFinished {
 		return
 	}
 
