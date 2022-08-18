@@ -164,8 +164,12 @@ runtime:
     controlPlaneServiceName: kuma-control-plane # ENV: KUMA_RUNTIME_KUBERNETES_CONTROL_PLANE_SERVICE_NAME
     # Name of Service Account that is used to run the Control Plane
     serviceAccountName: "system:serviceaccount:kuma-system:kuma-control-plane" # ENV: KUMA_RUNTIME_KUBERNETES_SERVICE_ACCOUNT_NAME
-    # Enables taint controller that prevents applications from scheduling until experimental CNI is ready.
-    nodeTaintControllerEnabled: false # ENV: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_ENABLED
+    # Taint controller that prevents applications from scheduling until CNI is ready.
+    nodeTaintController:
+      # If true enables the taint controller.
+      enabled: false # ENV: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_ENABLED
+      # Value of app label on CNI pod that indicates if node can be ready.
+      cniApp: "" # ENV: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_APP
     # Admission WebHook Server configuration
     admissionServer:
       # Address the Admission WebHook Server should be listening on
@@ -460,8 +464,6 @@ experimental:
   # If true, instead of embedding kubernetes outbounds into Dataplane object, they are persisted next to VIPs in ConfigMap
   # This can improve performance, but it should be enabled only after all instances are migrated to version that supports this config
   kubeOutboundsAsVIPs: false # ENV: KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS
-  # Name of the CNI pod
-  cniApp: "" # ENV: KUMA_EXPERIMENTAL_CNI_APP
 
 proxy:
   gateway:

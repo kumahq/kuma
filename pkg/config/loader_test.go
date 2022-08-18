@@ -141,7 +141,8 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Runtime.Kubernetes.ControlPlaneServiceName).To(Equal("custom-control-plane"))
 			Expect(cfg.Runtime.Kubernetes.ServiceAccountName).To(Equal("custom-sa"))
-			Expect(cfg.Runtime.Kubernetes.NodeTaintControllerEnabled).To(BeTrue())
+			Expect(cfg.Runtime.Kubernetes.NodeTaintController.Enabled).To(BeTrue())
+			Expect(cfg.Runtime.Kubernetes.NodeTaintController.CniApp).To(Equal("kuma-cni"))
 
 			Expect(cfg.Runtime.Kubernetes.AdmissionServer.Address).To(Equal("127.0.0.2"))
 			Expect(cfg.Runtime.Kubernetes.AdmissionServer.Port).To(Equal(uint32(9443)))
@@ -258,7 +259,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Access.Static.ViewClusters.Groups).To(Equal([]string{"zt-group1", "zt-group2"}))
 
 			Expect(cfg.Experimental.GatewayAPI).To(BeTrue())
-			Expect(cfg.Experimental.CniApp).To(Equal("kuma-cni"))
 			Expect(cfg.Experimental.KubeOutboundsAsVIPs).To(BeTrue())
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
@@ -336,7 +336,9 @@ runtime:
   kubernetes:
     serviceAccountName: custom-sa
     controlPlaneServiceName: custom-control-plane
-    nodeTaintControllerEnabled: true
+    nodeTaintController:
+      enabled: true
+      cniApp: kuma-cni
     admissionServer:
       address: 127.0.0.2
       port: 9443
@@ -544,6 +546,7 @@ proxy:
 				"KUMA_RUNTIME_KUBERNETES_CONTROL_PLANE_SERVICE_NAME":                                       "custom-control-plane",
 				"KUMA_RUNTIME_KUBERNETES_SERVICE_ACCOUNT_NAME":                                             "custom-sa",
 				"KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_ENABLED":                                    "true",
+				"KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_APP":                                    "kuma-cni",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_ADDRESS":                                         "127.0.0.2",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT":                                            "9443",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR":                                        "/var/run/secrets/kuma.io/kuma-admission-server/tls-cert",
@@ -645,7 +648,6 @@ proxy:
 				"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_USERS":                                                   "zt-admin1,zt-admin2",
 				"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_GROUPS":                                                  "zt-group1,zt-group2",
 				"KUMA_EXPERIMENTAL_GATEWAY_API":                                                            "true",
-				"KUMA_EXPERIMENTAL_CNI_APP":                                                                "kuma-cni",
 				"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS":                                                 "true",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
 			},

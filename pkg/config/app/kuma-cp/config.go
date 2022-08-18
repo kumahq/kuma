@@ -323,8 +323,6 @@ type ExperimentalConfig struct {
 	// If true, instead of embedding kubernetes outbounds into Dataplane object, they are persisted next to VIPs in ConfigMap
 	// This can improve performance, but it should be enabled only after all instances are migrated to version that supports this config
 	KubeOutboundsAsVIPs bool `yaml:"kubeOutboundsAsVIPs" envconfig:"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS"`
-	// Name of the CNI pod
-	CniApp string `yaml:"cniApp" envconfig:"KUMA_EXPERIMENTAL_CNI_APP"`
 }
 
 func (e ExperimentalConfig) Validate() error {
