@@ -84,14 +84,15 @@ func (s *accessLogStreamer) Start(stop <-chan struct{}) error {
 }
 
 func (s *accessLogStreamer) cleanup() {
-	s.RLock()
-	defer s.RUnlock()
+	s.Lock()
+	defer s.Unlock()
 	for _, sender := range s.senders {
 		logger.Info("closing connection to the TCP log destination", "address", sender)
 		if err := sender.close(); err != nil {
 			logger.Error(err, "could not close access log destination")
 		}
 	}
+	s.senders = map[string]*logSender{}
 }
 
 func (s *accessLogStreamer) streamAccessLogs(reader *bufio.Reader) (err error) {
