@@ -67,7 +67,6 @@ func convertLoggingBackend(mesh string, trafficDirection envoy.TrafficDirection,
 		return fileAccessLog(format.String(), cfg.Path)
 	case mesh_proto.LoggingTcpType:
 		if proxy.Metadata.Features.HasFeature(core_xds.FeatureTCPAccessLogViaNamedPipe) {
-			log.V(1).Info("kuma-dp has named pipe feature flag")
 			cfg := mesh_proto.TcpLoggingBackendConfig{}
 			if err := proto.ToTyped(backend.Conf, &cfg); err != nil {
 				return nil, errors.Wrap(err, "could not parse backend config")
@@ -75,7 +74,7 @@ func convertLoggingBackend(mesh string, trafficDirection envoy.TrafficDirection,
 			path := envoy.AccessLogSocketName(proxy.Dataplane.Meta.GetName(), mesh)
 			return fileAccessLog(fmt.Sprintf("%s;%s", cfg.Address, format.String()), path)
 		} else {
-			log.V(1).Info("kuma-dp does not support accesslog via named pipe; falling back on grpc stream")
+			log.V(1).Info("kuma-dp does not support accesslog via named pipe; falling back on grpc stream", "proxyID", proxy.Id)
 			return legacyTcpAccessLog(format, backend.Conf)
 		}
 	default: // should be caught by validator
