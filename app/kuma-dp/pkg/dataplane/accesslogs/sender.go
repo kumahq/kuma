@@ -16,7 +16,7 @@ type logSender struct {
 	conn    net.Conn
 }
 
-func (s *logSender) Connect() error {
+func (s *logSender) connect() error {
 	conn, err := net.DialTimeout("tcp", s.address, defaultConnectTimeout)
 	if err != nil {
 		return errors.Wrapf(err, "failed to connect to a TCP logging backend: %s", s.address)
@@ -25,7 +25,7 @@ func (s *logSender) Connect() error {
 	return nil
 }
 
-func (s *logSender) Send(record []byte) error {
+func (s *logSender) send(record []byte) error {
 	if s.conn == nil {
 		return errors.New("connection not initialized")
 	}
@@ -33,7 +33,7 @@ func (s *logSender) Send(record []byte) error {
 	return errors.Wrapf(err, "failed to send a log entry to a TCP logging backend: %s", s.address)
 }
 
-func (s *logSender) Close() error {
+func (s *logSender) close() error {
 	if s.conn != nil {
 		return s.conn.Close()
 	}

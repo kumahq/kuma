@@ -88,7 +88,7 @@ func (s *accessLogStreamer) cleanup() {
 	defer s.RUnlock()
 	for _, sender := range s.senders {
 		logger.Info("closing connection to the TCP log destination", "address", sender)
-		if err := sender.Close(); err != nil {
+		if err := sender.close(); err != nil {
 			logger.Error(err, "could not close access log destination")
 		}
 	}
@@ -117,7 +117,7 @@ func (s *accessLogStreamer) streamAccessLogs(reader *bufio.Reader) (err error) {
 
 		if !initialized {
 			sender = &logSender{address: address}
-			if err := sender.Connect(); err != nil {
+			if err := sender.connect(); err != nil {
 				// Drop log rather than return an error. Returning an error will cause reopening pipe which is unnecessary.
 				// Do not retry this operation. If we were to retry here, the fifo can quickly grow.
 				// Additionally, if TCP address is misconfigured, we would produce a lot of logs with misconfigured IP:port.
@@ -132,11 +132,11 @@ func (s *accessLogStreamer) streamAccessLogs(reader *bufio.Reader) (err error) {
 			log.Info("connected to TCP log destination")
 		}
 
-		if err := sender.Send(accessLogMsg); err != nil {
+		if err := sender.send(accessLogMsg); err != nil {
 			// If there is a problem on this connection, we need to reconnect.
 			// Drop log rather than return an error. Returning an error would cause reopening pipe which is unnecessary.
 			log.Error(err, "could not send the log to TCP log destination. Dropping the log", "address", address)
-			if err := sender.Close(); err != nil {
+			if err := sender.close(); err != nil {
 				log.Error(err, "could not close access log destination")
 			}
 			s.Lock()

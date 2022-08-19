@@ -3,9 +3,12 @@ package accesslogs
 
 import (
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
+
+var logger = core.Log.WithName("access-log-streamer")
 
 var _ component.Component = &accessLogStreamer{}
 
