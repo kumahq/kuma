@@ -1162,6 +1162,14 @@ func (c *K8sCluster) CreateNode(name string, label string) error {
 }
 
 func (c *K8sCluster) LoadImages(names ...string) error {
+	_, err := retry.DoWithRetryE(c.GetTesting(), "load images", 2, time.Second*5, func() (string, error) {
+		err := c.loadImages(names...)
+		return "Loaded images " + strings.Join(names, ", "), err
+	})
+	return err
+}
+
+func (c *K8sCluster) loadImages(names ...string) error {
 	switch Config.K8sType {
 	case K3dK8sType, K3dCalicoK8sType:
 		version := kuma_version.Build.Version
