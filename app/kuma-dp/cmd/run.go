@@ -153,7 +153,10 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			shouldQuit := make(chan struct{})
 			gracefulCtx, ctx := opts.SetupSignalHandler()
 			components := []component.Component{
-				accesslogs.NewAccessLogServer(cfg.Dataplane),
+				component.NewResilientComponent(
+					runLog.WithName("access-log-streamer"),
+					accesslogs.NewAccessLogStreamer(cfg.Dataplane),
+				),
 			}
 
 			opts := envoy.Opts{
