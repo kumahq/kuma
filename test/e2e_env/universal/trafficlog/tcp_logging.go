@@ -31,7 +31,7 @@ logging:
       address: %s
 `
 		validLoggingBackend := fmt.Sprintf(loggingBackend, meshName, "kuma-3_externalservice-tcp-sink:9999")
-		invalidLoggingBackend := fmt.Sprintf(loggingBackend, meshName, "240.0.0.100:9999")
+		invalidLoggingBackend := fmt.Sprintf(loggingBackend, meshName, "127.0.0.1:20")
 
 		trafficLog := fmt.Sprintf(`
 type: TrafficLog
