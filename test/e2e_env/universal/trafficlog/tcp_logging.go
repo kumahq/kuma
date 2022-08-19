@@ -8,7 +8,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
@@ -18,18 +17,21 @@ import (
 func TCPLogging() {
 	Describe("TrafficLog Logging to TCP", func() {
 		meshName := "trafficlog-tcp-logging"
-		loggingBackend := fmt.Sprintf(`
+
+		loggingBackend := `
 type: Mesh
 name: %s
-`, meshName) + `logging:
+logging:
   defaultBackend: netcat
   backends:
   - name: netcat
-    format: '%START_TIME(%s)%,%KUMA_SOURCE_SERVICE%,%KUMA_DESTINATION_SERVICE%'
+    format: '%%START_TIME(%%s)%%,%%KUMA_SOURCE_SERVICE%%,%%KUMA_DESTINATION_SERVICE%%'
     type: tcp
     conf:
-      address: kuma-3_externalservice-tcp-sink:9999
+      address: %s
 `
+		validLoggingBackend := fmt.Sprintf(loggingBackend, meshName, "kuma-3_externalservice-tcp-sink:9999")
+		invalidLoggingBackend := fmt.Sprintf(loggingBackend, meshName, "127.0.0.1:20")
 
 		trafficLog := fmt.Sprintf(`
 type: TrafficLog
@@ -44,7 +46,7 @@ destinations:
 `, meshName)
 		BeforeAll(func() {
 			err := NewClusterSetup().
-				Install(YamlUniversal(loggingBackend)).
+				Install(YamlUniversal(invalidLoggingBackend)). // start with invalid backend to test that it does not break anything
 				Install(YamlUniversal(trafficLog)).
 				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "universal-1"}))).
 				Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
@@ -59,27 +61,31 @@ destinations:
 		})
 
 		It("should send a traffic log to TCP port", func() {
+			// given traffic between apps with invalid logging backend
+			Expect(env.Cluster.Install(YamlUniversal(invalidLoggingBackend))).To(Succeed())
+			_, _, err := env.Cluster.ExecWithRetries("", "", AppModeDemoClient,
+				"curl", "-v", "--fail", "test-server.mesh")
+			Expect(err).ToNot(HaveOccurred())
+
+			// when valid backend is present
+			Expect(env.Cluster.Install(YamlUniversal(validLoggingBackend))).To(Succeed())
+
+			// and traffic is sent between applications
 			var startTimeStr, src, dst string
-			var err error
-			var stdout string
 			sinkDeployment := env.Cluster.Deployment("externalservice-tcp-sink").(*externalservice.UniversalDeployment)
-			Eventually(func() error {
-				stdout, _, err = env.Cluster.ExecWithRetries("", "", AppModeDemoClient,
+			Eventually(func(g Gomega) {
+				_, _, err := env.Cluster.ExecWithRetries("", "", AppModeDemoClient,
 					"curl", "-v", "--fail", "test-server.mesh")
-				if err != nil {
-					return err
-				}
-				stdout, _, err = sinkDeployment.Exec("", "", "head", "-1", "/nc.out")
-				if err != nil {
-					return err
-				}
+				g.Expect(err).ToNot(HaveOccurred())
+
+				stdout, _, err := sinkDeployment.Exec("", "", "head", "-1", "/nc.out")
+				g.Expect(err).ToNot(HaveOccurred())
 				parts := strings.Split(stdout, ",")
-				if len(parts) != 3 {
-					return errors.Errorf("unexpected number of fields in: %s", stdout)
-				}
+				g.Expect(parts).To(HaveLen(3))
 				startTimeStr, src, dst = parts[0], parts[1], parts[2]
-				return nil
-			}, "30s", "1ms").ShouldNot(HaveOccurred())
+			}, "30s", "1ms").Should(Succeed())
+
+			// then
 			startTimeInt, err := strconv.Atoi(startTimeStr)
 			Expect(err).ToNot(HaveOccurred())
 			startTime := time.Unix(int64(startTimeInt), 0)
