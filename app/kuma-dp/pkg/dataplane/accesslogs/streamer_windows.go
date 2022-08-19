@@ -3,31 +3,28 @@ package accesslogs
 
 import (
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
-var logger = core.Log.WithName("accesslogs-server")
+var _ component.Component = &accessLogStreamer{}
 
-var _ component.Component = &accessLogServer{}
-
-type accessLogServer struct {
+type accessLogStreamer struct {
 	address string
 }
 
-func (s *accessLogServer) NeedLeaderElection() bool {
+func (s *accessLogStreamer) NeedLeaderElection() bool {
 	return false
 }
 
-func NewAccessLogServer(dataplane kumadp.Dataplane) *accessLogServer {
+func NewAccessLogStreamer(dataplane kumadp.Dataplane) *accessLogStreamer {
 	address := envoy.AccessLogSocketName(dataplane.Name, dataplane.Mesh)
-	return &accessLogServer{
+	return &accessLogStreamer{
 		address: address,
 	}
 }
 
-func (s *accessLogServer) Start(stop <-chan struct{}) error {
+func (s *accessLogStreamer) Start(stop <-chan struct{}) error {
 	logger.Info("TCP AccessLog is not supported on windows")
 	select {
 	case <-stop:
