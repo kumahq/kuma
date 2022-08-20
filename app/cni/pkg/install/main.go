@@ -2,7 +2,6 @@ package install
 
 import (
 	"bytes"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"path"
@@ -81,7 +80,7 @@ func revertConfig(mountedCniNetDir, cniConfName string, chainedCniPlugin bool) e
 	}
 
 	if chainedCniPlugin {
-		contents, err := ioutil.ReadFile(configPath)
+		contents, err := os.ReadFile(configPath)
 		if err != nil {
 			return errors.Wrap(err, "couldn't read cni conf file")
 		}
@@ -131,7 +130,7 @@ func setupChainedPlugin(mountedCniNetDir, cniConfName, kumaCniConfig string) err
 		return errors.Errorf("CNI config %v not found. Kuma CNI won't be chained", cniConfPath)
 	}
 
-	hostCniConfig, err := ioutil.ReadFile(cniConfPath)
+	hostCniConfig, err := os.ReadFile(cniConfPath)
 	if err != nil {
 		return err
 	}

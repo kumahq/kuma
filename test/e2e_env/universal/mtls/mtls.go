@@ -45,7 +45,7 @@ func Policy() {
 		publicAddress := func() string {
 			return net.JoinHostPort(env.Cluster.GetApp("test-server").GetIP(), "80")
 		}
-		setupTest := func(mode string, serverTLS bool) {
+		setupTest := func(mode string) {
 			meshYaml := fmt.Sprintf(
 				`
 type: Mesh
@@ -64,7 +64,7 @@ mtls:
 			Expect(err).ToNot(HaveOccurred())
 		}
 		It("PERMISSIVE server without TLS", func() {
-			setupTest("PERMISSIVE", false)
+			setupTest("PERMISSIVE")
 			By("Check inside-mesh communication")
 			trafficAllowed("test-server.mesh")
 
@@ -72,7 +72,7 @@ mtls:
 			trafficAllowed(publicAddress())
 		})
 		It("STRICT server without TLS", func() {
-			setupTest("STRICT", false)
+			setupTest("STRICT")
 			By("Check inside-mesh communication")
 			trafficAllowed("test-server.mesh")
 
@@ -80,7 +80,7 @@ mtls:
 			trafficBlocked(publicAddress())
 		})
 		It("PERMISSIVE server with TLS", func() {
-			setupTest("PERMISSIVE", true)
+			setupTest("PERMISSIVE")
 			By("Check inside-mesh communication")
 			trafficAllowed("test-server.mesh", "--cacert", "/kuma/server.crt")
 
@@ -90,7 +90,7 @@ mtls:
 			trafficAllowed(publicAddress(), "--cacert", "/kuma/server.crt", "--resolve", fmt.Sprintf("test-server.mesh:80:[%s]", host))
 		})
 		It("STRICT server with TLS", func() {
-			setupTest("STRICT", true)
+			setupTest("STRICT")
 			By("Check inside-mesh communication")
 			trafficAllowed("test-server.mesh", "--cacert", "/kuma/server.crt")
 

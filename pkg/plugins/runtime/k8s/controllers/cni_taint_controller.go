@@ -135,7 +135,7 @@ func (r *CniNodeTaintReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		Watches(
 			&kube_source.Kind{Type: &kube_core.Pod{}},
 			kube_handler.EnqueueRequestsFromMapFunc(podToNodeMapper(r.Log, r.CniApp)),
-			builder.WithPredicates(podEvents(r.CniApp)),
+			builder.WithPredicates(podEvents()),
 		).
 		Complete(r)
 }
@@ -177,7 +177,7 @@ var nodeEvents = predicate.Funcs{
 	},
 }
 
-func podEvents(cniApp string) predicate.Funcs {
+func podEvents() predicate.Funcs {
 	return predicate.Funcs{
 		CreateFunc: func(event event.CreateEvent) bool {
 			return false

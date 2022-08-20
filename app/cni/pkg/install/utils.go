@@ -2,7 +2,6 @@ package install
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 
 	"github.com/go-logr/logr"
@@ -12,7 +11,7 @@ import (
 )
 
 func parseFileToHashMap(file string) (map[string]interface{}, error) {
-	contents, err := ioutil.ReadFile(file)
+	contents, err := os.ReadFile(file)
 	if err != nil {
 		return nil, err
 	}

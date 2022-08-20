@@ -2,9 +2,9 @@ package install
 
 import (
 	"encoding/base64"
-	"io/ioutil"
 	"net"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -74,7 +74,7 @@ func findCniConfFile(mountedCNINetDir string) (string, error) {
 func prepareKubeconfig(ic *InstallerConfig, serviceAccountPath string) error {
 	kubeconfigPath := ic.MountedCniNetDir + "/" + ic.KubeconfigName
 	serviceAccountTokenPath := serviceAccountPath + "/token"
-	serviceAccountToken, err := ioutil.ReadFile(serviceAccountTokenPath)
+	serviceAccountToken, err := os.ReadFile(serviceAccountTokenPath)
 	if err != nil {
 		return err
 	}
@@ -91,7 +91,7 @@ func prepareKubeconfig(ic *InstallerConfig, serviceAccountPath string) error {
 		ic.KubernetesCaFile = serviceAccountPath + "/ca.crt"
 	}
 
-	kubeCa, err := ioutil.ReadFile(ic.KubernetesCaFile)
+	kubeCa, err := os.ReadFile(ic.KubernetesCaFile)
 	if err != nil {
 		return err
 	}
@@ -140,7 +140,7 @@ func prepareKumaCniConfig(ic *InstallerConfig, serviceAccountPath string) error 
 	cniConfig := strings.Replace(rawConfig, "__KUBECONFIG_FILEPATH__", kubeconfigFilePath, 1)
 	log.V(1).Info("cni config after replace", "cni config", cniConfig)
 
-	serviceAccountToken, err := ioutil.ReadFile(serviceAccountPath + "/token")
+	serviceAccountToken, err := os.ReadFile(serviceAccountPath + "/token")
 	if err != nil {
 		return err
 	}

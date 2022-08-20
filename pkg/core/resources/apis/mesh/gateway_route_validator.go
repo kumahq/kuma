@@ -58,8 +58,8 @@ func validateMeshGatewayRouteTLS(
 }
 
 func validateMeshGatewayRouteTCP(
-	path validators.PathBuilder,
-	conf *mesh_proto.MeshGatewayRoute_TcpRoute,
+	_ validators.PathBuilder,
+	_ *mesh_proto.MeshGatewayRoute_TcpRoute,
 ) validators.ValidationError {
 	return validators.OK()
 }

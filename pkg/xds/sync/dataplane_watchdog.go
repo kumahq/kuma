@@ -66,7 +66,7 @@ func (d *DataplaneWatchdog) Sync(ctx context.Context) error {
 	case mesh_proto.IngressProxyType:
 		return d.syncIngress(ctx)
 	case mesh_proto.EgressProxyType:
-		return d.syncEgress(ctx)
+		return d.syncEgress()
 	default:
 		// It might be a case that dp type is not yet inferred because there is no Dataplane definition yet.
 		return nil
@@ -152,7 +152,7 @@ func (d *DataplaneWatchdog) syncIngress(ctx context.Context) error {
 
 // syncEgress syncs state of Egress Dataplane. Notice that it does not use
 // Mesh Hash yet because Egress supports many Meshes.
-func (d *DataplaneWatchdog) syncEgress(ctx context.Context) error {
+func (d *DataplaneWatchdog) syncEgress() error {
 	envoyCtx := &xds_context.Context{
 		ControlPlane: d.envoyCpCtx,
 		Mesh:         xds_context.MeshContext{}, // ZoneEgress does not have a mesh!

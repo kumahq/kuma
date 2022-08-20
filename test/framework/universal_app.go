@@ -458,20 +458,6 @@ func (s *UniversalApp) CreateDP(
 	s.dpApp = ssh.NewApp(s.containerName, s.verbose, s.ports[sshPort], nil, args)
 }
 
-// iptablesChainExists tests whether iptables believes the given chainName
-// has been created in the table given by tableName. If we can't run
-// the iptables command, the chain is assumed to exist (for backwards
-// compatibility) though subsequent commands that depend on it may
-// still fail.
-func (s *UniversalApp) iptablesChainExists(tableName string, chainName string) bool {
-	app := ssh.NewApp(s.containerName, s.verbose, s.ports[sshPort], nil, []string{
-		"iptables", "-t", tableName, "-L", chainName,
-	})
-
-	err := app.Run()
-	return err == nil
-}
-
 func (s *UniversalApp) setupTransparent(cpIp string, builtindns bool) {
 	args := []string{
 		"/usr/bin/kumactl", "install", "transparent-proxy",

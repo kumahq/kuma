@@ -170,7 +170,8 @@ func (b *dataplaneBuilder) outbound8080(service, ip string) *dataplaneBuilder {
 	return b
 }
 
-func (b *dataplaneBuilder) admin(port uint32) *dataplaneBuilder {
+func (b *dataplaneBuilder) admin() *dataplaneBuilder {
+	var port uint32 = 3301
 	b.Spec.Networking.Admin = &mesh_proto.EnvoyAdmin{Port: port}
 	return b
 }
@@ -1054,7 +1055,7 @@ var _ = Describe("Inspect WS", func() {
 				newMesh("mesh-1"),
 				newDataplane().
 					meta("backend-1", "mesh-1").
-					admin(3301).
+					admin().
 					inbound80to81("backend", "192.168.0.1").
 					outbound8080("redis", "192.168.0.2").
 					outbound8080("gateway", "192.168.0.3").
@@ -1110,7 +1111,7 @@ var _ = Describe("Inspect WS", func() {
 				newMesh("mesh-1"),
 				newDataplane().
 					meta("backend-1", "mesh-1").
-					admin(3301).
+					admin().
 					inbound80to81("backend", "192.168.0.1").
 					outbound8080("redis", "192.168.0.2").
 					outbound8080("gateway", "192.168.0.3").
@@ -1137,7 +1138,7 @@ var _ = Describe("Inspect WS", func() {
 				newMesh("mesh-1"),
 				newDataplane().
 					meta("backend-1", "mesh-1").
-					admin(3301).
+					admin().
 					inbound80to81("backend", "192.168.0.1").
 					outbound8080("redis", "192.168.0.2").
 					outbound8080("gateway", "192.168.0.3").
@@ -1152,7 +1153,7 @@ var _ = Describe("Inspect WS", func() {
 				newMesh("mesh-1"),
 				newDataplane().
 					meta("backend-1", "mesh-1").
-					admin(3301).
+					admin().
 					inbound80to81("backend", "192.168.0.1").
 					outbound8080("redis", "192.168.0.2").
 					outbound8080("gateway", "192.168.0.3").

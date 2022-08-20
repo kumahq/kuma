@@ -29,7 +29,6 @@ func Inspect() {
 	type testCase struct {
 		cluster     func() Cluster
 		args        []string
-		typ         string
 		expectedOut string
 	}
 

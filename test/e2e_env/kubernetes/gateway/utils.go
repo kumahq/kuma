@@ -57,7 +57,7 @@ func FailToProxyRequestToGateway(cluster Cluster, gatewayAddr string, namespace 
 	}
 }
 
-func mkGateway(name, namespace, mesh string, crossMesh bool, hostname, backendService string, port int) string {
+func mkGateway(name, mesh string, crossMesh bool, hostname, backendService string, port int) string {
 	meshGateway := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshGateway

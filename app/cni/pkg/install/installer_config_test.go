@@ -1,7 +1,7 @@
 package install
 
 import (
-	"io/ioutil"
+	"os"
 	"path"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -63,7 +63,7 @@ var _ = Describe("prepareKubeconfig", func() {
 		// then
 		Expect(err).To(Not(HaveOccurred()))
 		// and
-		kubeconfig, _ := ioutil.ReadFile(path.Join("testdata", "prepare-kubeconfig", "ZZZ-kuma-cni-kubeconfig"))
+		kubeconfig, _ := os.ReadFile(path.Join("testdata", "prepare-kubeconfig", "ZZZ-kuma-cni-kubeconfig"))
 		Expect(kubeconfig).To(matchers.MatchGoldenYAML(path.Join("testdata", "prepare-kubeconfig", "ZZZ-kuma-cni-kubeconfig.golden")))
 	})
 })
@@ -86,7 +86,7 @@ var _ = Describe("prepareKumaCniConfig", func() {
 		// then
 		Expect(err).To(Not(HaveOccurred()))
 		// and
-		kubeconfig, _ := ioutil.ReadFile(path.Join("testdata", "prepare-chained-kuma-config", "10-calico.conflist"))
+		kubeconfig, _ := os.ReadFile(path.Join("testdata", "prepare-chained-kuma-config", "10-calico.conflist"))
 		Expect(kubeconfig).To(matchers.MatchGoldenJSON(path.Join("testdata", "prepare-chained-kuma-config", "10-calico.conflist.golden")))
 	})
 
@@ -107,7 +107,7 @@ var _ = Describe("prepareKumaCniConfig", func() {
 		// then
 		Expect(err).To(Not(HaveOccurred()))
 		// and
-		kubeconfig, _ := ioutil.ReadFile(path.Join("testdata", "prepare-standalone-kuma-config", "kuma-cni.conf"))
+		kubeconfig, _ := os.ReadFile(path.Join("testdata", "prepare-standalone-kuma-config", "kuma-cni.conf"))
 		Expect(kubeconfig).To(matchers.MatchGoldenJSON(path.Join("testdata", "prepare-standalone-kuma-config", "kuma-cni.conf.golden")))
 	})
 })
