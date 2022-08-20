@@ -50,3 +50,6 @@ injector:
 marshalingCacheExpirationTime: 5m0s
 serviceAccountName: system:serviceaccount:kuma-system:kuma-control-plane
 controlPlaneServiceName: kuma-control-plane
+nodeTaintController:
+  enabled: false
+  cniApp: ""

@@ -78,6 +78,10 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			},
 		},
 		MarshalingCacheExpirationTime: 5 * time.Minute,
+		NodeTaintController: NodeTaintController{
+			Enabled: false,
+			CniApp:  "",
+		},
 	}
 }
 
@@ -95,6 +99,8 @@ type KubernetesRuntimeConfig struct {
 	ServiceAccountName string `yaml:"serviceAccountName,omitempty" envconfig:"kuma_runtime_kubernetes_service_account_name"`
 	// ControlPlaneServiceName defines service name of the Kuma control plane. It is used to point Kuma DP to proper URL.
 	ControlPlaneServiceName string `yaml:"controlPlaneServiceName,omitempty" envconfig:"kuma_runtime_kubernetes_control_plane_service_name"`
+	// NodeTaintController that prevents applications from scheduling until CNI is ready.
+	NodeTaintController NodeTaintController `yaml:"nodeTaintController"`
 }
 
 // Configuration of the Admission WebHook Server implemented by the Control Plane.
@@ -244,6 +250,20 @@ type BuiltinDNS struct {
 	Enabled bool `yaml:"enabled,omitempty" envconfig:"kuma_runtime_kubernetes_injector_builtin_dns_enabled"`
 	// Redirect port for DNS
 	Port uint32 `yaml:"port,omitempty" envconfig:"kuma_runtime_kubernetes_injector_builtin_dns_port"`
+}
+
+type NodeTaintController struct {
+	// If true enables the taint controller.
+	Enabled bool `yaml:"enabled" envconfig:"kuma_runtime_kubernetes_node_taint_controller_enabled"`
+	// Value of app label on CNI pod that indicates if node can be ready.
+	CniApp string `yaml:"cniApp" envconfig:"kuma_runtime_kubernetes_node_taint_controller_cni_app"`
+}
+
+func (n *NodeTaintController) Validate() error {
+	if n.Enabled && n.CniApp == "" {
+		return errors.New(".CniApp has to be set when .Enabled is true")
+	}
+	return nil
 }
 
 var _ config.Config = &KubernetesRuntimeConfig{}

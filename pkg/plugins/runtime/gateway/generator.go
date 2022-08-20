@@ -48,7 +48,7 @@ type GatewayHostInfo struct {
 
 type GatewayHost struct {
 	Hostname string
-	Routes   []model.Resource
+	Routes   []*core_mesh.MeshGatewayRouteResource
 	Policies map[model.ResourceType][]match.RankedPolicy
 	TLS      *mesh_proto.MeshGateway_TLS_Conf
 	// Contains MeshGateway, Listener and Dataplane object tags
@@ -365,21 +365,24 @@ func MakeGatewayListener(
 			hostname = mesh_proto.WildcardHostname
 		}
 
+		allRoutes := match.Routes(meshContext.Resources.GatewayRoutes().Items, l.GetTags())
+
+		var routes []*core_mesh.MeshGatewayRouteResource
+		switch listener.Protocol {
+		case mesh_proto.MeshGateway_Listener_HTTP,
+			mesh_proto.MeshGateway_Listener_HTTPS,
+			mesh_proto.MeshGateway_Listener_TCP:
+
+			routes = route.FilterProtocols(allRoutes, listener.Protocol)
+		default:
+		}
+
 		host := GatewayHost{
 			Hostname: hostname,
 			Policies: map[model.ResourceType][]match.RankedPolicy{},
 			TLS:      l.GetTls(),
 			Tags:     l.Tags,
-		}
-
-		switch listener.Protocol {
-		case mesh_proto.MeshGateway_Listener_HTTP,
-			mesh_proto.MeshGateway_Listener_HTTPS,
-			mesh_proto.MeshGateway_Listener_TCP:
-			host.Routes = append(host.Routes,
-				match.Routes(meshContext.Resources.GatewayRoutes(), l.GetTags())...)
-		default:
-			// TODO(jpeach) match other route types that are appropriate to the protocol.
+			Routes:   routes,
 		}
 
 		for _, t := range ConnectionPolicyTypes {
@@ -439,24 +442,19 @@ func RedistributeWildcardRoutes(
 
 	wildcardRoutes := wild.Routes
 	wild.Routes = nil // We are rebuilding this.
-	for _, r := range wildcardRoutes {
-		gw, ok := r.(*core_mesh.MeshGatewayRouteResource)
-		if !ok {
-			continue
-		}
-
+	for _, gw := range wildcardRoutes {
 		names := gw.Spec.GetConf().GetHttp().GetHostnames()
 
 		// No hostnames on this route, it stays as a wildcard route.
 		if len(names) == 0 {
-			wild.Routes = append(wild.Routes, r)
+			wild.Routes = append(wild.Routes, gw)
 			continue
 		}
 
 		appendRoutesToHost := func(host GatewayHost) {
 			// Note that if we already have a virtualhost for this
 			// name, and add the route to it, it might be a duplicate.
-			host.Routes = append(host.Routes, r)
+			host.Routes = append(host.Routes, gw)
 			hostsByName[host.Hostname] = host
 		}
 
