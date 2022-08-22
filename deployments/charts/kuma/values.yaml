@@ -335,7 +335,7 @@ cni:
 
     imageEbpf:
       # -- CNI experimental eBPF image registry
-      registry: "docker.io/kumahq"
+      registry: "docker.io/merbridge"
       # -- CNI experimental eBPF image repository
       repository: "merbridge"
       # -- CNI experimental eBPF image tag

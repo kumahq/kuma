@@ -2,7 +2,7 @@ package gateway
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"runtime"
 
@@ -215,7 +215,7 @@ spec:
 				g.Expect(resp.StatusCode).To(Equal(404))
 
 				defer resp.Body.Close()
-				body, err := ioutil.ReadAll(resp.Body)
+				body, err := io.ReadAll(resp.Body)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(body).ToNot(BeEmpty())
 			}, "30s", "1s").Should(Succeed())

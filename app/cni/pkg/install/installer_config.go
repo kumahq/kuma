@@ -2,9 +2,9 @@ package install
 
 import (
 	"encoding/base64"
-	"io/ioutil"
 	"net"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -22,6 +22,7 @@ type InstallerConfig struct {
 	CfgCheckInterval          int    `envconfig:"cfgcheck_interval" default:"1"`
 	ChainedCniPlugin          bool   `envconfig:"chained_cni_plugin" default:"true"`
 	CniConfName               string `envconfig:"cni_conf_name" default:""`
+	CniLogLevel               string `envconfig:"cni_log_level" default:"info"`
 	CniNetworkConfig          string `envconfig:"cni_network_config" default:""`
 	HostCniNetDir             string `envconfig:"cni_net_dir" default:"/etc/cni/net.d"`
 	KubeconfigName            string `envconfig:"kubecfg_file_name" default:"ZZZ-kuma-cni-kubeconfig"`
@@ -73,7 +74,7 @@ func findCniConfFile(mountedCNINetDir string) (string, error) {
 func prepareKubeconfig(ic *InstallerConfig, serviceAccountPath string) error {
 	kubeconfigPath := ic.MountedCniNetDir + "/" + ic.KubeconfigName
 	serviceAccountTokenPath := serviceAccountPath + "/token"
-	serviceAccountToken, err := ioutil.ReadFile(serviceAccountTokenPath)
+	serviceAccountToken, err := os.ReadFile(serviceAccountTokenPath)
 	if err != nil {
 		return err
 	}
@@ -90,7 +91,7 @@ func prepareKubeconfig(ic *InstallerConfig, serviceAccountPath string) error {
 		ic.KubernetesCaFile = serviceAccountPath + "/ca.crt"
 	}
 
-	kubeCa, err := ioutil.ReadFile(ic.KubernetesCaFile)
+	kubeCa, err := os.ReadFile(ic.KubernetesCaFile)
 	if err != nil {
 		return err
 	}
@@ -139,7 +140,7 @@ func prepareKumaCniConfig(ic *InstallerConfig, serviceAccountPath string) error 
 	cniConfig := strings.Replace(rawConfig, "__KUBECONFIG_FILEPATH__", kubeconfigFilePath, 1)
 	log.V(1).Info("cni config after replace", "cni config", cniConfig)
 
-	serviceAccountToken, err := ioutil.ReadFile(serviceAccountPath + "/token")
+	serviceAccountToken, err := os.ReadFile(serviceAccountPath + "/token")
 	if err != nil {
 		return err
 	}

@@ -96,7 +96,6 @@ var _ = Describe("SecretsGenerator", func() {
 	DescribeTable("should generate Envoy xDS resources if secret backend is present",
 		func(given testCase) {
 			// when
-			rs := core_xds.NewResourceSet()
 			if given.identity {
 				given.proxy.SecretsTracker.RequestIdentityCert()
 			}

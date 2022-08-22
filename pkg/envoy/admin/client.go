@@ -48,7 +48,7 @@ func NewEnvoyAdminClient(rm manager.ResourceManager, caManagers ca.Managers, adm
 	return client
 }
 
-func (a *envoyAdminClient) buildHTTPClient(ctx context.Context, mesh, identifyingService string) (*http.Client, error) {
+func (a *envoyAdminClient) buildHTTPClient(ctx context.Context) (*http.Client, error) {
 	caCertPool, clientCert, err := a.mtlsCerts(ctx)
 	if err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ const (
 )
 
 func (a *envoyAdminClient) PostQuit(ctx context.Context, dataplane *core_mesh.DataplaneResource) error {
-	httpClient, err := a.buildHTTPClient(ctx, dataplane.Meta.GetMesh(), dataplane.Spec.GetIdentifyingService())
+	httpClient, err := a.buildHTTPClient(ctx)
 	if err != nil {
 		return err
 	}
@@ -164,15 +164,15 @@ func (a *envoyAdminClient) executeRequest(ctx context.Context, proxy core_model.
 	var err error
 	u := &url.URL{}
 
-	switch p := proxy.(type) {
+	switch proxy.(type) {
 	case *core_mesh.DataplaneResource:
-		httpClient, err = a.buildHTTPClient(ctx, p.Meta.GetMesh(), p.Spec.GetIdentifyingService())
+		httpClient, err = a.buildHTTPClient(ctx)
 		if err != nil {
 			return nil, err
 		}
 		u.Scheme = "https"
 	case *core_mesh.ZoneIngressResource, *core_mesh.ZoneEgressResource:
-		httpClient, err = a.buildHTTPClient(ctx, core_model.NoMesh, "")
+		httpClient, err = a.buildHTTPClient(ctx)
 		if err != nil {
 			return nil, err
 		}

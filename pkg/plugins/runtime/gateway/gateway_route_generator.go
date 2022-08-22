@@ -5,19 +5,16 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 )
 
-func filterGatewayRoutes(in []model.Resource, accept func(resource *core_mesh.MeshGatewayRouteResource) bool) []*core_mesh.MeshGatewayRouteResource {
+func filterGatewayRoutes(in []*core_mesh.MeshGatewayRouteResource, accept func(resource *core_mesh.MeshGatewayRouteResource) bool) []*core_mesh.MeshGatewayRouteResource {
 	routes := make([]*core_mesh.MeshGatewayRouteResource, 0, len(in))
 
 	for _, r := range in {
-		if trafficRoute, ok := r.(*core_mesh.MeshGatewayRouteResource); ok {
-			if accept(trafficRoute) {
-				routes = append(routes, trafficRoute)
-			}
+		if accept(r) {
+			routes = append(routes, r)
 		}
 	}
 

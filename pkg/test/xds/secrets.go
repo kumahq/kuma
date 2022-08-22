@@ -31,7 +31,7 @@ var TestSecretsInfo = &secrets.Info{
 type TestSecrets struct {
 }
 
-func get(meshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, map[string]*core_xds.CaSecret, *core_xds.CaSecret, error) {
+func get(meshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, map[string]*core_xds.CaSecret, *core_xds.CaSecret) {
 	identitySecret := &core_xds.IdentitySecret{
 		PemCerts: [][]byte{
 			[]byte("CERT"),
@@ -54,16 +54,16 @@ func get(meshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, map[string
 		},
 	}
 
-	return identitySecret, cas, allInOne, nil
+	return identitySecret, cas, allInOne
 }
 
 func (*TestSecrets) GetForZoneEgress(
 	_ *core_mesh.ZoneEgressResource,
 	mesh *core_mesh.MeshResource,
 ) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
-	identity, cas, _, err := get([]*core_mesh.MeshResource{mesh})
+	identity, cas, _ := get([]*core_mesh.MeshResource{mesh})
 
-	return identity, cas[mesh.GetMeta().GetName()], err
+	return identity, cas[mesh.GetMeta().GetName()], nil
 }
 
 func (*TestSecrets) GetForDataPlane(
@@ -71,8 +71,8 @@ func (*TestSecrets) GetForDataPlane(
 	mesh *core_mesh.MeshResource,
 	meshes []*core_mesh.MeshResource,
 ) (*core_xds.IdentitySecret, map[string]*core_xds.CaSecret, error) {
-	identity, cas, _, err := get(append([]*core_mesh.MeshResource{mesh}, meshes...))
-	return identity, cas, err
+	identity, cas, _ := get(append([]*core_mesh.MeshResource{mesh}, meshes...))
+	return identity, cas, nil
 }
 
 func (*TestSecrets) GetAllInOne(
@@ -80,8 +80,8 @@ func (*TestSecrets) GetAllInOne(
 	_ *core_mesh.DataplaneResource,
 	meshes []*core_mesh.MeshResource,
 ) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
-	identity, _, allInOne, err := get(append([]*core_mesh.MeshResource{mesh}, meshes...))
-	return identity, allInOne, err
+	identity, _, allInOne := get(append([]*core_mesh.MeshResource{mesh}, meshes...))
+	return identity, allInOne, nil
 }
 
 func (*TestSecrets) Info(model.ResourceKey) *secrets.Info {

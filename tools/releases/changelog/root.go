@@ -7,7 +7,6 @@ import (
 	"os"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -16,7 +15,6 @@ var config struct {
 	branch     string
 	owner      string
 	repo       string
-	since      time.Duration
 	fromTag    string
 	fromCommit string
 	format     string
@@ -76,7 +74,7 @@ var github = &cobra.Command{
 	Use:   "github",
 	Short: "Generate the changelog using the github graphql api",
 	Long: `Generate the changelog using the github graphql api.
-This will get all the commits in the branch after '--from-tag' or '--from-commit' and younger than '--since'
+This will get all the commits in the branch after '--from-tag' or '--from-commit'
 It will retrieve all the associated PRs to these commits and extract a changelog entry following these rules:
 
 - If there's in the PR description an entry '> Changelog:'
@@ -88,6 +86,9 @@ It will retrieve all the associated PRs to these commits and extract a changelog
 It will then output a changelog with all PRs with the same changelog grouped together
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if config.fromTag == "" && config.fromCommit == "" {
+			return errors.New("You must set either --from-tag or --from-commit")
+		}
 		token := os.Getenv("GITHUB_TOKEN")
 		if token == "" {
 			token = os.Getenv("GITHUB_API_TOKEN")
@@ -95,7 +96,6 @@ It will then output a changelog with all PRs with the same changelog grouped tog
 				return errors.New("need to set at least env GITHUB_TOKEN or GITHUB_API_TOKEN")
 			}
 		}
-		since := time.Now().Add(-config.since)
 		gqlClient := GQLClient{Token: token}
 
 		// Retrieve data from github
@@ -107,17 +107,15 @@ It will then output a changelog with all PRs with the same changelog grouped tog
 			}
 			commitLimit = res
 		}
-		res, err := gqlClient.historyGraphQl(config.owner, config.repo, config.branch, since)
+		byChangelog := map[string][]*CommitInfo{}
+		// Deal with pagination
+		res, err := gqlClient.historyGraphQl(config.owner, config.repo, config.branch, commitLimit)
 		if err != nil {
 			return err
 		}
 
 		// Rollup changes together
-		byChangelog := map[string][]*CommitInfo{}
 		for i := range res {
-			if strings.HasPrefix(commitLimit, res[i].Oid) {
-				break
-			}
 			ci := NewCommitInfo(res[i])
 			if ci == nil {
 				continue
@@ -239,7 +237,6 @@ func init() {
 	autoChangelog.Flags().StringVar(&config.owner, "owner", "kumahq", "The owner org to query")
 	autoChangelog.Flags().StringVar(&config.repo, "name", "kuma", "The repository to query")
 	github.Flags().StringVar(&config.branch, "branch", "master", "The branch to look for the start on")
-	github.Flags().DurationVar(&config.since, "since", time.Hour*24*90, "When to get the data from as a go duration (90 days ago)")
 	github.Flags().StringVar(&config.fromCommit, "from-commit", "", "If set only show commits after this commit sha")
 	github.Flags().StringVar(&config.fromTag, "from-tag", "", "If set only show commits after this tag (must be on the same branch)")
 	github.Flags().StringVar(&config.format, "format", string(FormatMarkdown), fmt.Sprintf("The output format (%s, %s)", FormatJson, FormatMarkdown))

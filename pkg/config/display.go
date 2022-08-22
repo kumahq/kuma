@@ -2,7 +2,7 @@ package config
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"reflect"
 
 	"gopkg.in/yaml.v2"
@@ -41,5 +41,5 @@ func DumpToFile(filename string, cfg Config) error {
 		return err
 	}
 
-	return ioutil.WriteFile(filename, b, 0666)
+	return os.WriteFile(filename, b, 0666)
 }

@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
+	"path"
+	"strconv"
 	"time"
 
 	"github.com/containernetworking/cni/pkg/skel"
@@ -15,7 +18,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 
+	"github.com/kumahq/kuma/app/cni/pkg/install"
 	"github.com/kumahq/kuma/pkg/core"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
@@ -24,10 +29,13 @@ import (
 const (
 	podRetrievalMaxRetries = 30
 	podRetrievalInterval   = 1 * time.Second
+	defaultLogLocation     = "/tmp/kuma-cni.log"
+	defaultLogLevel        = kuma_log.DebugLevel
+	defaultLogName         = "kuma-cni"
 )
 
 var (
-	log = core.NewLoggerWithRotation(2, "/tmp/kuma-cni.log", 100, 0, 0).WithName("kuma-cni")
+	log = core.NewLoggerWithRotation(defaultLogLevel, defaultLogLocation, 100, 0, 0).WithName(defaultLogName)
 )
 
 // Kubernetes a K8s specific struct to hold config
@@ -44,7 +52,7 @@ type PluginConf struct {
 	PrevResult    *current.Result         `json:"-"`
 
 	// plugin-specific fields
-	LogLevel   string     `json:"log_level"` // this was not accessed anywhere in the previous CNI, should I just get rid of it or hook it up?
+	LogLevel   string     `json:"log_level"`
 	Kubernetes Kubernetes `json:"kubernetes"`
 }
 
@@ -85,12 +93,48 @@ func parseConfig(stdin []byte) (*PluginConf, error) {
 	return &conf, nil
 }
 
+func hijackMainProcessStderr(logLevel string) (*os.File, error) {
+	file, err := getCniProcessStderr()
+	if err != nil {
+		log.Error(err, "could not hijack main process file - continue logging to "+defaultLogLocation)
+		return nil, err
+	}
+	log.V(0).Info("successfully hijacked stderr of cni process - logs will be available in 'kubectl logs'")
+	os.Stderr = file
+	if err := install.SetLogLevel(&log, logLevel, defaultLogName); err != nil {
+		return file, errors.Wrap(err, "wrong set the right log level")
+	}
+
+	return file, err
+}
+
+func getCniProcessStderr() (*os.File, error) {
+	pids, err := pidOf("/install-cni")
+	if err != nil {
+		return nil, err
+	}
+	if len(pids) != 1 {
+		return nil, errors.New("more than one process '/install-cni' running on a node, this should not happen")
+	}
+
+	file, err := os.OpenFile(path.Join("/proc", strconv.Itoa(pids[0]), "fd", "2"), os.O_WRONLY, 0)
+	return file, err
+}
+
 // cmdAdd is called for ADD requests
 func cmdAdd(args *skel.CmdArgs) error {
 	ctx := context.Background()
 	conf, err := parseConfig(args.StdinData)
 	if err != nil {
 		return errors.Wrap(err, "error parsing kuma-cni cmdAdd config")
+	}
+
+	mainProcessStderr, err := hijackMainProcessStderr(conf.LogLevel)
+	if mainProcessStderr != nil {
+		defer mainProcessStderr.Close()
+	}
+	if err != nil {
+		return err
 	}
 	logPrevResult(conf)
 
