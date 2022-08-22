@@ -12,6 +12,10 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+// Note: we continue to use github.com/golang/protobuf/jsonpb because it
+// unmarshals types the way we expect in go.
+// See https://github.com/golang/protobuf/issues/1374
+
 func FromYAML(content []byte, pb proto.Message) error {
 	json, err := yaml.YAMLToJSON(content)
 	if err != nil {
