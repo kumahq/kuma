@@ -3,7 +3,6 @@ package gatewayapi
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -212,34 +211,44 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 			listener.Hostname = string(*l.Hostname)
 		}
 
-		var unresolvableCertRefs []string
+		type badCertRef struct {
+			message string
+			reason  string
+		}
+		var unresolvableCertRef *badCertRef
 		if l.TLS != nil {
 			var referencedSecrets []kube_types.NamespacedName
 			for _, certRef := range l.TLS.CertificateRefs {
 				policyRef := policy.PolicyReferenceSecret(policy.FromGatewayIn(gateway.Namespace), certRef)
 
-				permitted, err := policy.IsReferencePermitted(ctx, r.Client, policyRef)
-				if err != nil {
+				if permitted, err := policy.IsReferencePermitted(ctx, r.Client, policyRef); err != nil {
 					return nil, nil, err
+				} else if !permitted {
+					name := fmt.Sprintf("%q %q", policyRef.GroupKindReferredTo().String(), policyRef.NamespacedNameReferredTo().String())
+					unresolvableCertRef = &badCertRef{
+						reason:  string(gatewayapi.ListenerReasonRefNotPermitted),
+						message: fmt.Sprintf("reference to %s not permitted by any ReferenceGrant", name),
+					}
+					break
 				}
 
 				if err := r.Client.Get(ctx, policyRef.NamespacedNameReferredTo(), &kube_core.Secret{}); err != nil {
 					if kube_apierrs.IsNotFound(err) {
-						permitted = false
+						name := fmt.Sprintf("%q %q", policyRef.GroupKindReferredTo().String(), policyRef.NamespacedNameReferredTo().String())
+						unresolvableCertRef = &badCertRef{
+							reason:  string(gatewayapi.ListenerReasonInvalidCertificateRef),
+							message: fmt.Sprintf("invalid reference to %s", name),
+						}
+						break
 					} else {
 						return nil, nil, err
 					}
 				}
 
-				if permitted {
-					referencedSecrets = append(referencedSecrets, policyRef.NamespacedNameReferredTo())
-				} else {
-					message := fmt.Sprintf("%q %q", policyRef.GroupKindReferredTo().String(), policyRef.NamespacedNameReferredTo().String())
-					unresolvableCertRefs = append(unresolvableCertRefs, message)
-				}
+				referencedSecrets = append(referencedSecrets, policyRef.NamespacedNameReferredTo())
 			}
 
-			if len(unresolvableCertRefs) == 0 {
+			if unresolvableCertRef == nil {
 				if l.TLS.Mode != nil && *l.TLS.Mode == gatewayapi.TLSModePassthrough {
 					continue // todo admission webhook should prevent this
 				}
@@ -279,7 +288,7 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 
 		var resolvedRefConditions []kube_meta.Condition
 
-		if len(unresolvableCertRefs) == 0 {
+		if unresolvableCertRef == nil {
 			listeners = append(listeners, listener)
 
 			resolvedRefConditions = []kube_meta.Condition{
@@ -299,8 +308,8 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 				{
 					Type:    string(gatewayapi.ListenerConditionResolvedRefs),
 					Status:  kube_meta.ConditionFalse,
-					Reason:  string(gatewayapi.ListenerReasonInvalidCertificateRef),
-					Message: fmt.Sprintf("references to %s not permitted by any ReferencePolicy", strings.Join(unresolvableCertRefs, ", ")),
+					Reason:  unresolvableCertRef.reason,
+					Message: unresolvableCertRef.message,
 				},
 				{
 					Type:    string(gatewayapi.ListenerConditionReady),
