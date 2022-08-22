@@ -24,11 +24,6 @@ ifeq ($(KUMACTL_INSTALL_USE_LOCAL_IMAGES),true)
 else
 	KUMACTL_INSTALL_CONTROL_PLANE_IMAGES :=
 endif
-ifeq ($(KUMACTL_INSTALL_USE_LOCAL_IMAGES),true)
-	KUMACTL_INSTALL_METRICS_IMAGES := --kuma-prometheus-sd-image=$(KUMA_PROMETHEUS_SD_DOCKER_IMAGE)
-else
-	KUMACTL_INSTALL_METRICS_IMAGES :=
-endif
 
 define KIND_EXAMPLE_DATAPLANE_MESH
 $(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=example-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar printenv KUMA_DATAPLANE_MESH)
