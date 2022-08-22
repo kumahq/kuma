@@ -15,7 +15,7 @@ import (
 // It verifies that incoming connection has TLS certificate signed by Mesh CA with URI SAN of prefix spiffe://{mesh_name}/
 // It secures inbound listener with certificate of "identity_cert" that will be received from the SDS (it contains URI SANs of all inbounds).
 func CreateDownstreamTlsContext(downstreamMesh core_xds.CaRequest, mesh core_xds.IdentityCertRequest) (*envoy_tls.DownstreamTlsContext, error) {
-	var validationSANMatchers []*envoy_type_matcher.StringMatcher
+	var validationSANMatchers []*envoy_tls.SubjectAltNameMatcher
 	meshNames := downstreamMesh.MeshName()
 	for _, meshName := range meshNames {
 		validationSANMatchers = append(validationSANMatchers, MeshSpiffeIDPrefixMatcher(meshName))
@@ -36,13 +36,18 @@ func CreateDownstreamTlsContext(downstreamMesh core_xds.CaRequest, mesh core_xds
 //
 // Pass "*" for upstreamService to validate that upstream service is a service that is part of the mesh (but not specific one)
 func CreateUpstreamTlsContext(mesh core_xds.IdentityCertRequest, upstreamMesh core_xds.CaRequest, upstreamService string, sni string) (*envoy_tls.UpstreamTlsContext, error) {
-	var validationSANMatchers []*envoy_type_matcher.StringMatcher
+	var validationSANMatchers []*envoy_tls.SubjectAltNameMatcher
 	meshNames := upstreamMesh.MeshName()
 	for _, meshName := range meshNames {
 		if upstreamService == "*" {
 			validationSANMatchers = append(validationSANMatchers, MeshSpiffeIDPrefixMatcher(meshName))
 		} else {
-			validationSANMatchers = append(validationSANMatchers, ServiceSpiffeIDMatcher(meshName, upstreamService))
+			stringMatcher := ServiceSpiffeIDMatcher(meshName, upstreamService)
+			matcher := &envoy_tls.SubjectAltNameMatcher{
+				SanType: envoy_tls.SubjectAltNameMatcher_URI,
+				Matcher: stringMatcher,
+			}
+			validationSANMatchers = append(validationSANMatchers, matcher)
 		}
 	}
 	commonTlsContext := createCommonTlsContext(mesh, upstreamMesh, validationSANMatchers)
@@ -53,7 +58,7 @@ func CreateUpstreamTlsContext(mesh core_xds.IdentityCertRequest, upstreamMesh co
 	}, nil
 }
 
-func createCommonTlsContext(ownMesh core_xds.IdentityCertRequest, targetMeshCa core_xds.CaRequest, validationSANMatchers []*envoy_type_matcher.StringMatcher) *envoy_tls.CommonTlsContext {
+func createCommonTlsContext(ownMesh core_xds.IdentityCertRequest, targetMeshCa core_xds.CaRequest, matchers []*envoy_tls.SubjectAltNameMatcher) *envoy_tls.CommonTlsContext {
 	meshCaSecret := NewSecretConfigSource(targetMeshCa.Name())
 	identitySecret := NewSecretConfigSource(ownMesh.Name())
 
@@ -61,7 +66,7 @@ func createCommonTlsContext(ownMesh core_xds.IdentityCertRequest, targetMeshCa c
 		ValidationContextType: &envoy_tls.CommonTlsContext_CombinedValidationContext{
 			CombinedValidationContext: &envoy_tls.CommonTlsContext_CombinedCertificateValidationContext{
 				DefaultValidationContext: &envoy_tls.CertificateValidationContext{
-					MatchSubjectAltNames: validationSANMatchers,
+					MatchTypedSubjectAltNames: matchers,
 				},
 				ValidationContextSdsSecretConfig: meshCaSecret,
 			},
@@ -126,11 +131,16 @@ func dataSourceFromBytes(bytes []byte) *envoy_core.DataSource {
 	}
 }
 
-func MeshSpiffeIDPrefixMatcher(mesh string) *envoy_type_matcher.StringMatcher {
-	return &envoy_type_matcher.StringMatcher{
+func MeshSpiffeIDPrefixMatcher(mesh string) *envoy_tls.SubjectAltNameMatcher {
+	stringMatcher := &envoy_type_matcher.StringMatcher{
 		MatchPattern: &envoy_type_matcher.StringMatcher_Prefix{
 			Prefix: xds_tls.MeshSpiffeIDPrefix(mesh),
 		},
+	}
+
+	return &envoy_tls.SubjectAltNameMatcher{
+		SanType: envoy_tls.SubjectAltNameMatcher_URI,
+		Matcher: stringMatcher,
 	}
 }
 
