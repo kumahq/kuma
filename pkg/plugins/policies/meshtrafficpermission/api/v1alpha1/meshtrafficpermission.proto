@@ -18,7 +18,7 @@ option (doc.config) = {
 // prxoies.
 message MeshTrafficPermission {
   option (kuma.mesh.policy) = {
-    skip_registration : true,
+    skip_registration : false,
   };
 
   // TargetRef is a reference to the resource the policy takes an effect on.

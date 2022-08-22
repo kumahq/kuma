@@ -674,4 +674,5 @@ experimental:
     enabled: false
 
 plugins:
-  policies: []
+  policies:
+    - meshtrafficpermissions

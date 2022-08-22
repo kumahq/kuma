@@ -13,6 +13,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	policy "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )
 
@@ -85,4 +86,20 @@ func (l *MeshTrafficPermissionList) GetItems() []model.KubernetesObject {
 		result[i] = &l.Items[i]
 	}
 	return result
+}
+
+func init() {
+	SchemeBuilder.Register(&MeshTrafficPermission{}, &MeshTrafficPermissionList{})
+	registry.RegisterObjectType(&policy.MeshTrafficPermission{}, &MeshTrafficPermission{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "MeshTrafficPermission",
+		},
+	})
+	registry.RegisterListType(&policy.MeshTrafficPermission{}, &MeshTrafficPermissionList{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "MeshTrafficPermissionList",
+		},
+	})
 }
