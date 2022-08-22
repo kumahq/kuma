@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -14,6 +15,11 @@ type GQLOutput struct {
 }
 type GQLData struct {
 	Repository GQLRepo `json:"repository"`
+}
+
+type GQLPageInfo struct {
+	HasNextPage bool   `json:"hasNextPage"`
+	EndCursor   string `json:"endCursor"`
 }
 
 type GQLRepo struct {
@@ -39,7 +45,8 @@ type GQLObjectRepo struct {
 }
 
 type GQLHistoryRepo struct {
-	Nodes []GQLCommit `json:"nodes"`
+	PageInfo GQLPageInfo `json:"pageInfo"`
+	Nodes    []GQLCommit `json:"nodes"`
 }
 
 type GQLAssociatedPRs struct {
@@ -98,13 +105,23 @@ query($name: String!, $owner: String!) {
 	return res.Data.Repository.Releases.Nodes, nil
 }
 
-func (c GQLClient) historyGraphQl(owner, name, branch string, since time.Time) ([]GQLCommit, error) {
-	res, err := c.graphqlQuery(`
-query($name: String!, $owner: String!, $branch: String!, $since: GitTimestamp!) {
+func (c GQLClient) historyGraphQl(owner, name, branch, commitLimit string) (out []GQLCommit, err error) {
+	var res GQLOutput
+	for {
+		cursorStr := ""
+		if res.Data.Repository.Object.History.PageInfo.EndCursor != "" {
+			cursorStr = fmt.Sprintf(`(after: "%s")`, res.Data.Repository.Object.History.PageInfo.EndCursor)
+		}
+		res, err = c.graphqlQuery(fmt.Sprintf(`
+query($name: String!, $owner: String!, $branch: String!) {
   repository(owner: $owner, name: $name) {
     object(expression: $branch) {
       ... on Commit {
-        history(since: $since) {
+        history%s {
+          pageInfo {
+            hasNextPage
+            endCursor
+          }
           nodes {
             oid
             message
@@ -124,11 +141,20 @@ query($name: String!, $owner: String!, $branch: String!, $since: GitTimestamp!) 
     }
   }
 }
-`, map[string]interface{}{"owner": owner, "name": name, "branch": branch, "since": since.Format(time.RFC3339)})
-	if err != nil {
-		return nil, err
+`, cursorStr), map[string]interface{}{"owner": owner, "name": name, "branch": branch})
+		if err != nil {
+			return
+		}
+		for _, r := range res.Data.Repository.Object.History.Nodes {
+			if commitLimit != "" && strings.HasPrefix(r.Oid, commitLimit) {
+				return
+			}
+			out = append(out, r)
+		}
+		if !res.Data.Repository.Object.History.PageInfo.HasNextPage {
+			return
+		}
 	}
-	return res.Data.Repository.Object.History.Nodes, nil
 }
 
 func (c GQLClient) commitByRef(owner, name, tag string) (string, error) {
