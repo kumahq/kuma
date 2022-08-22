@@ -28,6 +28,7 @@ var _ Server = &server{}
 type server struct {
 	stream sotw.Server
 	rest   rest.Server
+	observability_v1.UnimplementedMonitoringAssignmentDiscoveryServiceServer
 }
 
 func (s *server) DeltaMonitoringAssignments(stream observability_v1.MonitoringAssignmentDiscoveryService_DeltaMonitoringAssignmentsServer) error {

@@ -1,24 +1,24 @@
 package envoy
 
 import (
-	"bytes"
 	"errors"
 
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/ghodss/yaml"
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
+	protov1 "github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
+
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-func ResourceFromYaml(resYaml string) (proto.Message, error) {
+func ResourceFromYaml(resYaml string) (protov1.Message, error) {
 	json, err := yaml.YAMLToJSON([]byte(resYaml))
 	if err != nil {
 		json = []byte(resYaml)
 	}
 
 	var anything any.Any
-	if err := (&jsonpb.Unmarshaler{}).Unmarshal(bytes.NewReader(json), &anything); err != nil {
+	if err := util_proto.FromJSON(json, &anything); err != nil {
 		return nil, err
 	}
 	msg, err := anything.UnmarshalNew()

@@ -17,15 +17,16 @@ type Server interface {
 
 func NewServer(config envoy_cache.Cache, callbacks envoy_server.Callbacks, log logr.Logger) Server {
 	sotwServer := sotw.NewServer(context.Background(), config, callbacks)
-	return &server{sotwServer}
+	return &server{Server: sotwServer}
 }
 
 var _ Server = &server{}
 
 type server struct {
 	sotw.Server
+	mesh_proto.UnimplementedKumaDiscoveryServiceServer
 }
 
 func (s *server) StreamKumaResources(stream mesh_proto.KumaDiscoveryService_StreamKumaResourcesServer) error {
-	return s.StreamHandler(stream, "")
+	return s.Server.StreamHandler(stream, "")
 }

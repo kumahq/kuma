@@ -1,15 +1,14 @@
 package rest
 
 import (
-	"bytes"
 	"encoding/json"
 	"time"
 
-	"github.com/golang/protobuf/jsonpb"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 type ResourceMeta struct {
@@ -82,11 +81,11 @@ var _ json.Unmarshaler = &Resource{}
 func (r *Resource) MarshalJSON() ([]byte, error) {
 	var specBytes []byte
 	if r.Spec != nil {
-		var buf bytes.Buffer
-		if err := (&jsonpb.Marshaler{}).Marshal(&buf, r.Spec); err != nil {
+		bytes, err := proto.ToJSON(r.Spec)
+		if err != nil {
 			return nil, err
 		}
-		specBytes = buf.Bytes()
+		specBytes = bytes
 	}
 
 	metaJSON, err := json.Marshal(r.Meta)
@@ -113,7 +112,7 @@ func (r *Resource) UnmarshalJSON(data []byte) error {
 		}
 		r.Spec = newR.GetSpec()
 	}
-	if err := (&jsonpb.Unmarshaler{AllowUnknownFields: true}).Unmarshal(bytes.NewReader(data), r.Spec); err != nil {
+	if err := proto.FromJSON(data, r.Spec); err != nil {
 		return err
 	}
 	return nil

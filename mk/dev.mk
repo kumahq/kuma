@@ -2,7 +2,7 @@ KUMA_DIR ?= .
 ENVOY_VERSION = $(shell ${KUMA_DIR}/tools/envoy/version.sh)
 GINKGO_VERSION := v2.1.3
 GOLANGCI_LINT_VERSION := v1.47.0
-GOLANG_PROTOBUF_VERSION := v1.5.2
+GOLANG_PROTOBUF_VERSION := v1.28.1
 HELM_DOCS_VERSION := 1.7.0
 KUSTOMIZE_VERSION := v4.4.1
 PROTOC_PGV_VERSION := v0.4.1
@@ -151,7 +151,8 @@ dev/install/protobuf-wellknown-types:: ## Bootstrap: Install Protobuf well-known
 
 .PHONY: dev/install/protoc-gen-go
 dev/install/protoc-gen-go: ## Bootstrap: Install Protoc Go Plugin (protobuf Go generator)
-	go install github.com/golang/protobuf/protoc-gen-go@$(GOLANG_PROTOBUF_VERSION)
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@$(GOLANG_PROTOBUF_VERSION)
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2
 
 .PHONY: dev/install/protoc-gen-validate
 dev/install/protoc-gen-validate: ## Bootstrap: Install Protoc Gen Validate Plugin (protobuf validation code generator)

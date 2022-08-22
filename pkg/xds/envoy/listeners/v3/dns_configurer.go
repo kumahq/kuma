@@ -10,7 +10,7 @@ import (
 	envoy_data_dns "github.com/envoyproxy/go-control-plane/envoy/data/dns/v3"
 	envoy_dns "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/udp/dns_filter/v3"
 	envoy_cares "github.com/envoyproxy/go-control-plane/envoy/extensions/network/dns_resolver/cares/v3"
-	"github.com/golang/protobuf/ptypes/any"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -37,7 +37,7 @@ func (c *DNSConfigurer) Configure(listener *envoy_listener.Listener) error {
 	if err != nil {
 		return err
 	}
-	var pbst *any.Any
+	var pbst *anypb.Any
 	if v.LessThan(semver.MustParse("1.20.0")) {
 		if pbst, err = util_proto.MarshalAnyDeterministic(c.dnsFilterV3Alpha()); err != nil {
 			return err

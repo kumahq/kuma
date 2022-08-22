@@ -10,7 +10,7 @@ import (
 	"github.com/Nordix/simple-ipam/pkg/ipam"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	cache_v3 "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	"github.com/golang/protobuf/proto"
+	protov1 "github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -44,11 +44,11 @@ func TestGateway(t *testing.T) {
 }
 
 type ProtoMessage struct {
-	Message proto.Message
+	Message protov1.Message
 }
 
 func (p ProtoMessage) MarshalJSON() ([]byte, error) {
-	return util_proto.ToJSON(p.Message)
+	return util_proto.ToJSON(protov1.MessageV2(p.Message))
 }
 
 type ProtoResource struct {

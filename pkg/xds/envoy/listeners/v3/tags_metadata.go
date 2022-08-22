@@ -3,7 +3,7 @@ package v3
 import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	"github.com/golang/protobuf/ptypes/struct"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
 )
