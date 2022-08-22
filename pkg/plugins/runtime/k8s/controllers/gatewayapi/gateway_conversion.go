@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	kube_core "k8s.io/api/core/v1"
+	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
+	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
@@ -212,6 +214,7 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 
 		var unresolvableCertRefs []string
 		if l.TLS != nil {
+			var referencedSecrets []kube_types.NamespacedName
 			for _, certRef := range l.TLS.CertificateRefs {
 				policyRef := policy.PolicyReferenceSecret(policy.FromGatewayIn(gateway.Namespace), certRef)
 
@@ -220,7 +223,17 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 					return nil, nil, err
 				}
 
-				if !permitted {
+				if err := r.Client.Get(ctx, policyRef.NamespacedNameReferredTo(), &kube_core.Secret{}); err != nil {
+					if kube_apierrs.IsNotFound(err) {
+						permitted = false
+					} else {
+						return nil, nil, err
+					}
+				}
+
+				if permitted {
+					referencedSecrets = append(referencedSecrets, policyRef.NamespacedNameReferredTo())
+				} else {
 					message := fmt.Sprintf("%q %q", policyRef.GroupKindReferredTo().String(), policyRef.NamespacedNameReferredTo().String())
 					unresolvableCertRefs = append(unresolvableCertRefs, message)
 				}
@@ -233,19 +246,13 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 				listener.Tls = &mesh_proto.MeshGateway_TLS_Conf{
 					Mode: mesh_proto.MeshGateway_TLS_TERMINATE,
 				}
-				for _, certRef := range l.TLS.CertificateRefs {
+				for _, secretKey := range referencedSecrets {
 					// We only support canonical Secret of TLS type. Ignore other types
-					namespacedName := types.NamespacedName{
-						Name:      string(certRef.Name),
-						Namespace: gateway.Namespace, // if not specified, namespace is inherited from Gateway
-					}
-					if certRef.Namespace != nil {
-						namespacedName.Namespace = string(*certRef.Namespace)
-					}
-					secretKey, err := r.createSecretIfMissing(ctx, namespacedName, mesh)
+					secretKey, err := r.createSecretIfMissing(ctx, secretKey, mesh)
 					if err != nil {
 						return nil, nil, err
 					}
+
 					listener.Tls.Certificates = append(listener.Tls.Certificates, &system_proto.DataSource{
 						Type: &system_proto.DataSource_Secret{
 							Secret: secretKey.Name,
