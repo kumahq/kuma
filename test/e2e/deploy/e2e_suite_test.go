@@ -15,4 +15,3 @@ func TestE2E(t *testing.T) {
 
 var _ = Describe("Test Zone and Global", deploy.ZoneAndGlobal)
 var _ = Describe("Test Universal deployment", deploy.UniversalDeployment)
-var _ = Describe("Test Universal Transparent Proxy deployment", deploy.UniversalTransparentProxyDeployment)
