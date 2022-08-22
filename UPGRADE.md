@@ -8,7 +8,10 @@ does not have any particular instructions.
 
 ## Upcoming release
 
-Nothing here yet.
+### `kuma-prometheus-sd`
+
+This component has been removed
+after [a long period of deprecation](https://github.com/kumahq/kuma/issues/2851).
 
 ## Upgrade to `1.8.x`
 
