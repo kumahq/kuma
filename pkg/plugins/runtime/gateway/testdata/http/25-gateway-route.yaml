@@ -29,8 +29,10 @@ Clusters:
             - kuma
             combinedValidationContext:
               defaultValidationContext:
-                matchSubjectAltNames:
-                - exact: spiffe://default/zone-egress
+                matchTypedSubjectAltNames:
+                - matcher:
+                    exact: spiffe://default/zone-egress
+                  sanType: URI
               validationContextSdsSecretConfig:
                 name: mesh_ca:secret:default
                 sdsConfig:

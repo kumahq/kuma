@@ -76,8 +76,10 @@ var _ = Describe("EdsClusterConfigurer", func() {
                   - kuma
                   combinedValidationContext:
                     defaultValidationContext:
-                      matchSubjectAltNames:
-                      - exact: spiffe://default/backend
+                      matchTypedSubjectAltNames:
+                      - matcher:
+                          exact: spiffe://default/backend
+                        sanType: URI
                     validationContextSdsSecretConfig:
                       name: mesh_ca:secret:default
                       sdsConfig:
@@ -139,8 +141,10 @@ var _ = Describe("EdsClusterConfigurer", func() {
                     - kuma
                     combinedValidationContext:
                       defaultValidationContext:
-                        matchSubjectAltNames:
-                        - exact: spiffe://default/backend
+                        matchTypedSubjectAltNames:
+                        - matcher:
+                            exact: spiffe://default/backend
+                          sanType: URI
                       validationContextSdsSecretConfig:
                         name: mesh_ca:secret:default
                         sdsConfig:
@@ -164,8 +168,10 @@ var _ = Describe("EdsClusterConfigurer", func() {
                     - kuma
                     combinedValidationContext:
                       defaultValidationContext:
-                        matchSubjectAltNames:
-                        - exact: spiffe://default/backend
+                        matchTypedSubjectAltNames:
+                        - matcher:
+                            exact: spiffe://default/backend
+                          sanType: URI
                       validationContextSdsSecretConfig:
                         name: mesh_ca:secret:default
                         sdsConfig:
@@ -220,8 +226,10 @@ var _ = Describe("EdsClusterConfigurer", func() {
                   - kuma
                   combinedValidationContext:
                     defaultValidationContext:
-                      matchSubjectAltNames:
-                      - exact: spiffe://default/backend
+                      matchTypedSubjectAltNames:
+                      - matcher:
+                          exact: spiffe://default/backend
+                        sanType: URI
                     validationContextSdsSecretConfig:
                       name: mesh_ca:secret:default
                       sdsConfig:

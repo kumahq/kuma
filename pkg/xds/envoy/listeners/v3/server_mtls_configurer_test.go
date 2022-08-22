@@ -90,8 +90,10 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                   commonTlsContext:
                     combinedValidationContext:
                       defaultValidationContext:
-                        matchSubjectAltNames:
-                        - prefix: spiffe://default/
+                        matchTypedSubjectAltNames:
+                        - matcher:
+                            prefix: spiffe://default/
+                          sanType: URI
                       validationContextSdsSecretConfig:
                         name: mesh_ca:secret:default
                         sdsConfig:
@@ -152,8 +154,10 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                   commonTlsContext:
                     combinedValidationContext:
                       defaultValidationContext:
-                        matchSubjectAltNames:
-                        - prefix: spiffe://default/
+                        matchTypedSubjectAltNames:
+                        - matcher:
+                            prefix: spiffe://default/
+                          sanType: URI
                       validationContextSdsSecretConfig:
                         name: mesh_ca:secret:default
                         sdsConfig:
