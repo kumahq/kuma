@@ -2,7 +2,6 @@ package install
 
 import (
 	"bytes"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"path"
@@ -15,7 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	"github.com/kumahq/kuma/pkg/core"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/util/files"
 )
 
@@ -25,10 +24,11 @@ const (
 	secondaryBinDir    = "/host/secondary-bin-dir"
 	serviceAccountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
 	readyFilePath      = "/tmp/ready"
+	defaultLogName     = "install-cni"
 )
 
 var (
-	log = core.NewLoggerWithRotation(2, "/tmp/install-cni.log", 100, 0, 0).WithName("install-cni")
+	log = CreateNewLogger(defaultLogName, kuma_log.DebugLevel)
 )
 
 func removeBinFiles() error {
@@ -80,7 +80,7 @@ func revertConfig(mountedCniNetDir, cniConfName string, chainedCniPlugin bool) e
 	}
 
 	if chainedCniPlugin {
-		contents, err := ioutil.ReadFile(configPath)
+		contents, err := os.ReadFile(configPath)
 		if err != nil {
 			return errors.Wrap(err, "couldn't read cni conf file")
 		}
@@ -130,7 +130,7 @@ func setupChainedPlugin(mountedCniNetDir, cniConfName, kumaCniConfig string) err
 		return errors.Errorf("CNI config %v not found. Kuma CNI won't be chained", cniConfPath)
 	}
 
-	hostCniConfig, err := ioutil.ReadFile(cniConfPath)
+	hostCniConfig, err := os.ReadFile(cniConfPath)
 	if err != nil {
 		return err
 	}
@@ -201,19 +201,6 @@ func tryWritingToDir(dir string) error {
 	return nil
 }
 
-func setupSignalCleanup(ic *InstallerConfig) {
-	osSignals := make(chan os.Signal, 1)
-	signal.Notify(osSignals,
-		syscall.SIGHUP,
-		syscall.SIGINT,
-		syscall.SIGTERM,
-		syscall.SIGQUIT)
-	go func() {
-		_ = <-osSignals
-		cleanup(ic)
-	}()
-}
-
 func Run() {
 	installerConfig, err := loadInstallerConfig()
 	if err != nil {
@@ -221,35 +208,48 @@ func Run() {
 		os.Exit(1)
 	}
 
+	err = SetLogLevel(&log, installerConfig.CniLogLevel, defaultLogName)
+	if err != nil {
+		log.Error(err, "error occurred during setting the log level")
+		os.Exit(2)
+	}
+
 	err = install(installerConfig)
 	if err != nil {
 		log.Error(err, "error occurred during cni installation")
-		os.Exit(1)
+		os.Exit(3)
 	}
 
 	err = atomic.WriteFile(readyFilePath, strings.NewReader(""))
 	if err != nil {
 		log.Error(err, "unable to mark as ready")
-		os.Exit(1)
+		os.Exit(4)
 	}
 
 	if err := runLoop(installerConfig); err != nil {
 		log.Error(err, "checking installation failed - exiting")
-		os.Exit(1)
+		os.Exit(5)
 	}
 }
 
 func runLoop(ic *InstallerConfig) error {
 	defer cleanup(ic)
-	setupSignalCleanup(ic)
+	osSignals := make(chan os.Signal, 1)
+	signal.Notify(osSignals, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
-	for ic.ShouldSleep {
-		time.Sleep(time.Duration(ic.CfgCheckInterval) * time.Second)
-		err := checkInstall(ic.MountedCniNetDir+"/"+ic.CniConfName, ic.ChainedCniPlugin)
-		if err != nil {
-			return err
-		}
+	if !ic.ShouldSleep {
+		return nil
 	}
 
-	return nil
+	for {
+		select {
+		case <-osSignals:
+			return nil
+		case <-time.After(time.Duration(ic.CfgCheckInterval) * time.Second):
+			err := checkInstall(ic.MountedCniNetDir+"/"+ic.CniConfName, ic.ChainedCniPlugin)
+			if err != nil {
+				return err
+			}
+		}
+	}
 }

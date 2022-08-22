@@ -3,7 +3,6 @@ package graceful
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"time"
@@ -144,7 +143,7 @@ spec:
 		if resp.StatusCode != 200 {
 			return errors.Errorf("status code: %d", resp.StatusCode)
 		}
-		_, err = io.Copy(ioutil.Discard, resp.Body)
+		_, err = io.Copy(io.Discard, resp.Body)
 		return err
 	}
 

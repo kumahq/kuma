@@ -14,6 +14,7 @@ func Api() {
 	It("Works with /policies", func() {
 		r, err := http.Get(env.Cluster.GetKuma().GetAPIServerAddress() + "/policies")
 		Expect(err).ToNot(HaveOccurred())
+		defer r.Body.Close()
 
 		res := map[string][]interface{}{}
 		Expect(json.NewDecoder(r.Body).Decode(&res)).To(Succeed())
@@ -23,6 +24,7 @@ func Api() {
 	It("Works with /", func() {
 		r, err := http.Get(env.Cluster.GetKuma().GetAPIServerAddress())
 		Expect(err).ToNot(HaveOccurred())
+		defer r.Body.Close()
 
 		res := map[string]interface{}{}
 		Expect(json.NewDecoder(r.Body).Decode(&res)).To(Succeed())

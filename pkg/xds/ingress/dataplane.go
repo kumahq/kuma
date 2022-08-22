@@ -72,10 +72,7 @@ func UpdateAvailableServices(
 	availableExternalServices := GetExternalAvailableServices(externalServices)
 	availableServices = append(availableServices, availableExternalServices...)
 
-	meshGatewayDataplanes, err := getMeshGateways(otherDataplanes, meshGateways)
-	if err != nil {
-		return err
-	}
+	meshGatewayDataplanes := getMeshGateways(otherDataplanes, meshGateways)
 
 	for _, meshGateways := range meshGatewayDataplanes {
 		availableMeshGatewayListeners := getIngressAvailableMeshGateways(
@@ -118,7 +115,7 @@ type MeshGatewayDataplanes struct {
 func getMeshGateways(
 	dataplanes []*core_mesh.DataplaneResource,
 	meshGateways []*core_mesh.MeshGatewayResource,
-) ([]MeshGatewayDataplanes, error) {
+) []MeshGatewayDataplanes {
 	meshGatewayDataplanes := []MeshGatewayDataplanes{}
 
 	meshGatewaysByMesh := map[xds.MeshName][]*core_mesh.MeshGatewayResource{}
@@ -146,7 +143,7 @@ func getMeshGateways(
 		})
 	}
 
-	return meshGatewayDataplanes, nil
+	return meshGatewayDataplanes
 }
 
 func getIngressAvailableMeshGateways(meshName string, meshGateways []*core_mesh.MeshGatewayResource, dataplanes []*core_mesh.DataplaneResource) []*mesh_proto.ZoneIngress_AvailableService {

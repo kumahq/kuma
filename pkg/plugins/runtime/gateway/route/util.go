@@ -1,6 +1,8 @@
 package route
 
 import (
+	"fmt"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -47,4 +49,27 @@ func HasExternalServiceEndpoint(mesh *core_mesh.MeshResource, endpoints core_xds
 	// direct the traffic through them. The condition is, the mesh must
 	// have mTLS enabled and traffic through zoneEgress is enabled.
 	return firstEndpointExternalService
+}
+
+// FilterProtocols returns only the routes a listener of this protocol knows how to configure.
+func FilterProtocols(routes []*core_mesh.MeshGatewayRouteResource, protocol mesh_proto.MeshGateway_Listener_Protocol) []*core_mesh.MeshGatewayRouteResource {
+	var filtered []*core_mesh.MeshGatewayRouteResource
+
+	for _, route := range routes {
+		switch t := route.Spec.GetConf().GetRoute().(type) {
+		case *mesh_proto.MeshGatewayRoute_Conf_Http:
+			if protocol == mesh_proto.MeshGateway_Listener_HTTP ||
+				protocol == mesh_proto.MeshGateway_Listener_HTTPS {
+				filtered = append(filtered, route)
+			}
+		case *mesh_proto.MeshGatewayRoute_Conf_Tcp:
+			if protocol == mesh_proto.MeshGateway_Listener_TCP {
+				filtered = append(filtered, route)
+			}
+		default:
+			panic(fmt.Sprintf("Route type %T unimplemented", t))
+		}
+	}
+
+	return filtered
 }

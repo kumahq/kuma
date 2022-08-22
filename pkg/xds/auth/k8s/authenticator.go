@@ -3,7 +3,6 @@ package k8s
 import (
 	"context"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/patrickmn/go-cache"
@@ -30,7 +29,6 @@ type kubeAuthenticator struct {
 	client kube_client.Client
 
 	authenticated *cache.Cache
-	mutex         sync.RWMutex
 }
 
 var _ auth.Authenticator = &kubeAuthenticator{}

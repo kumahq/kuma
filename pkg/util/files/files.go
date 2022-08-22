@@ -2,7 +2,6 @@ package files
 
 import (
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -25,7 +24,7 @@ func FileEmpty(path string) (bool, error) {
 func IsDirWriteable(dir string) error {
 	f := filepath.Join(dir, ".touch")
 	perm := 0600
-	if err := ioutil.WriteFile(f, []byte(""), fs.FileMode(perm)); err != nil {
+	if err := os.WriteFile(f, []byte(""), fs.FileMode(perm)); err != nil {
 		return err
 	}
 	return os.Remove(f)

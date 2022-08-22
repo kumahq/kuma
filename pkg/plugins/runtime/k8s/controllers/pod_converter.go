@@ -197,9 +197,10 @@ func GatewayByServiceFor(clusterName string, pod *kube_core.Pod, services []*kub
 // error is returned as the third return value.
 func (p *PodConverter) DeploymentFor(ctx context.Context, namespace string, pod *kube_core.Pod) (string, bool, error) {
 	owners := pod.GetObjectMeta().GetOwnerReferences()
-	rs := &kube_apps.ReplicaSet{}
+	var rs *kube_apps.ReplicaSet
 	for _, owner := range owners {
 		if owner.Kind == "ReplicaSet" {
+			rs = &kube_apps.ReplicaSet{}
 			rsKey := kube_client.ObjectKey{Namespace: namespace, Name: owner.Name}
 			if err := p.ReplicaSetGetter.Get(ctx, rsKey, rs); err != nil {
 				return "", false, err
@@ -272,7 +273,7 @@ func MetricsAggregateFor(pod *kube_core.Pod) ([]*mesh_proto.PrometheusAggregateM
 	aggregateConfigNames := make(map[string]bool)
 	for key := range pod.Annotations {
 		matchedGroups := metricsAggregateRegex.FindStringSubmatch(key)
-		if matchedGroups != nil && len(matchedGroups) == 3 {
+		if len(matchedGroups) == 3 {
 			// first group is service name and second one of (port|path|enabled)
 			aggregateConfigNames[matchedGroups[1]] = true
 		}

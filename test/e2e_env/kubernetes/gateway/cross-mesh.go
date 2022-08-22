@@ -87,11 +87,11 @@ func CrossMeshGatewayOnKubernetes() {
 	}
 
 	crossMeshGatewayYaml := mkGateway(
-		crossMeshGatewayName, gatewayTestNamespace, gatewayMesh, true, crossMeshHostname, echoServerService(gatewayMesh, gatewayTestNamespace), crossMeshGatewayPort,
+		crossMeshGatewayName, gatewayMesh, true, crossMeshHostname, echoServerService(gatewayMesh, gatewayTestNamespace), crossMeshGatewayPort,
 	)
 	crossMeshGatewayInstanceYaml := MkGatewayInstance(crossMeshGatewayName, gatewayTestNamespace, gatewayMesh)
 	edgeGatewayYaml := mkGateway(
-		edgeGatewayName, gatewayTestNamespace, gatewayOtherMesh, false, "", echoServerService(gatewayOtherMesh, gatewayTestNamespace), edgeGatewayPort,
+		edgeGatewayName, gatewayOtherMesh, false, "", echoServerService(gatewayOtherMesh, gatewayTestNamespace), edgeGatewayPort,
 	)
 	edgeGatewayInstanceYaml := MkGatewayInstance(
 		edgeGatewayName, gatewayTestNamespace, gatewayOtherMesh,

@@ -107,8 +107,8 @@ var _ = Describe("Auth Tokens WS", func() {
 
 		// when
 		resp, err := httpClient.Do(req)
-		defer resp.Body.Close()
 		Expect(err).ToNot(HaveOccurred())
+		defer resp.Body.Close()
 
 		// then
 		respBytes, err := io.ReadAll(resp.Body)

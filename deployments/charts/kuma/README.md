@@ -90,10 +90,10 @@ A Helm chart for the Kuma Control Plane
 | cni.image.tag | string | `"0.0.10"` | CNI image tag |
 | cni.image.imagePullPolicy | string | `"IfNotPresent"` | CNI image pull policy |
 | cni.delayStartupSeconds | int | `0` | it's only useful in tests to trigger a possible race condition |
-| cni.experimental | object | `{"image":{"repository":"kuma-cni","tag":null},"imageEbpf":{"registry":"docker.io/kumahq","repository":"merbridge","tag":"0.7.1"}}` | use new CNI image (experimental) |
+| cni.experimental | object | `{"image":{"repository":"kuma-cni","tag":null},"imageEbpf":{"registry":"docker.io/merbridge","repository":"merbridge","tag":"0.7.1"}}` | use new CNI image (experimental) |
 | cni.experimental.image.repository | string | `"kuma-cni"` | CNI experimental image repository |
 | cni.experimental.image.tag | string | `nil` | CNI experimental image tag - defaults to .Chart.AppVersion |
-| cni.experimental.imageEbpf.registry | string | `"docker.io/kumahq"` | CNI experimental eBPF image registry |
+| cni.experimental.imageEbpf.registry | string | `"docker.io/merbridge"` | CNI experimental eBPF image registry |
 | cni.experimental.imageEbpf.repository | string | `"merbridge"` | CNI experimental eBPF image repository |
 | cni.experimental.imageEbpf.tag | string | `"0.7.1"` | CNI experimental eBPF image tag |
 | cni.podSecurityContext | object | `{}` | Security context at the pod level for cni |
