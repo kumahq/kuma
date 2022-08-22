@@ -2,19 +2,17 @@ package service
 
 import (
 	"context"
-	"io"
 	"net/http"
 	"time"
 
 	"github.com/emicklei/go-restful/v3"
 	v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	cache_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
-	"google.golang.org/protobuf/encoding/protojson"
+	"github.com/golang/protobuf/jsonpb"
 
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	rest_error_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	mads_v1 "github.com/kumahq/kuma/pkg/mads/v1"
-	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 const FetchMonitoringAssignmentsPath = "/v3/discovery:monitoringassignments"
@@ -32,19 +30,8 @@ func (s *service) RegisterRoutes(ws *restful.WebService) {
 }
 
 func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
-	body, err := io.ReadAll(req.Request.Body)
-	if err != nil {
-		writeBadRequestError(res, rest_error_types.Error{
-			Title:   "Could not read request body",
-			Details: err.Error(),
-		})
-		return
-	}
-
 	discoveryReq := &v3.DiscoveryRequest{}
-
-	err = proto.FromJSON(body, discoveryReq)
-	if err != nil {
+	if err := jsonpb.Unmarshal(req.Request.Body, discoveryReq); err != nil {
 		writeBadRequestError(res, rest_error_types.Error{
 			Title:   "Could not parse request body",
 			Details: err.Error(),
@@ -86,14 +73,8 @@ func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
 		return
 	}
 
-	marshaller := &protojson.MarshalOptions{UseProtoNames: true}
-	resStr, err := marshaller.Marshal(discoveryRes)
-	if err != nil {
-		rest_errors.HandleError(res, err, "Could encode DiscoveryResponse")
-		return
-	}
-
-	if _, err = res.Write(resStr); err != nil {
+	marshaller := &jsonpb.Marshaler{OrigName: true}
+	if err := marshaller.Marshal(res, discoveryRes); err != nil {
 		rest_errors.HandleError(res, err, "Could write DiscoveryResponse")
 		return
 	}
