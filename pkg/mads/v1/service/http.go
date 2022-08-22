@@ -86,7 +86,6 @@ func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
 		return
 	}
 
-	// TODO is this equivalent?
 	marshaller := &protojson.MarshalOptions{UseProtoNames: true}
 	resStr, err := marshaller.Marshal(discoveryRes)
 	if err != nil {
