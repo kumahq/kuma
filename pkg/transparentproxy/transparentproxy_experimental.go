@@ -152,7 +152,10 @@ func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyC
 			},
 		},
 		Ebpf: kumanet_config.Ebpf{
-			Enabled: false,
+			Enabled:            tpConfig.EbpfEnabled,
+			InstanceIP:         tpConfig.EbpfInstanceIP,
+			BPFFSPath:          tpConfig.EbpfBPFFSPath,
+			ProgramsSourcePath: tpConfig.EbpfProgramsSourcePath,
 		},
 		RuntimeStdout: tpConfig.Stdout,
 		RuntimeStderr: tpConfig.Stderr,
