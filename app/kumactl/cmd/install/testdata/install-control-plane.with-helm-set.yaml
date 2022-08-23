@@ -1921,8 +1921,8 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 3a05a95096ec7248d5e43d50e181064206f451b7714554d2b64c8f5a37118bed
-        checksum/tls-secrets: d528d01a36be17967684f52456de23ee93c066042d2594d179e2aefc921ab0b1
+        checksum/config: c52be51867deb8823a422dc1d188c7a2ab7fc5e501f620467d7fdd8fc4637d47
+        checksum/tls-secrets: c18b5a13b515430c78db0471417d72df2b8f0a38f63eccc5ba15ea98469dc670
         
       labels: 
         app: kuma-control-plane
