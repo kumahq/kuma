@@ -75,9 +75,9 @@ func TestConformance(t *testing.T) {
 	g.Expect(apis_gatewayapi_alpha.AddToScheme(client.Scheme())).To(Succeed())
 	g.Expect(apis_gatewayapi.AddToScheme(client.Scheme())).To(Succeed())
 
-	var validUniqueListenerPorts []apis_gatewayapi_alpha.PortNumber
+	var validUniqueListenerPorts []apis_gatewayapi.PortNumber
 	for i := minNodePort; i <= maxNodePort; i++ {
-		validUniqueListenerPorts = append(validUniqueListenerPorts, apis_gatewayapi_alpha.PortNumber(i))
+		validUniqueListenerPorts = append(validUniqueListenerPorts, apis_gatewayapi.PortNumber(i))
 	}
 
 	conformanceSuite := suite.New(suite.Options{

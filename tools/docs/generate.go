@@ -11,7 +11,6 @@ import (
 
 	kuma_cp "github.com/kumahq/kuma/app/kuma-cp/cmd"
 	kuma_dp "github.com/kumahq/kuma/app/kuma-dp/cmd"
-	kuma_prometheus_sd "github.com/kumahq/kuma/app/kuma-prometheus-sd/cmd"
 	kumactl "github.com/kumahq/kuma/app/kumactl/cmd"
 	"github.com/kumahq/kuma/pkg/version"
 )
@@ -79,15 +78,6 @@ func main() {
 			command: kuma_dp.DefaultRootCmd(),
 			header: &doc.GenManHeader{
 				Title:   "KUMA-DP",
-				Section: "8",
-				Source:  fmt.Sprintf("%s %s", version.Product, version.Build.Version),
-				Manual:  version.Product,
-			},
-		},
-		path.Join(prefix, "kuma-prometheus-sd"): {
-			command: kuma_prometheus_sd.DefaultRootCmd(),
-			header: &doc.GenManHeader{
-				Title:   "KUMA-PROMETHEUS-SD",
 				Section: "8",
 				Source:  fmt.Sprintf("%s %s", version.Product, version.Build.Version),
 				Manual:  version.Product,

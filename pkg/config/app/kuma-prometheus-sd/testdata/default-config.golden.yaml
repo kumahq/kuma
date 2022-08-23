@@ -1,7 +1,0 @@
-monitoringAssignment:
-  client:
-    name: kuma_sd
-    url: grpc://localhost:5676
-    apiVersion: v1
-prometheus:
-  outputFile: kuma.file_sd.json
