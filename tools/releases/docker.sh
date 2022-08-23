@@ -80,13 +80,16 @@ function usage() {
 }
 
 function main() {
-  KUMA_VERSION=$("${SCRIPT_DIR}/version.sh")
 
   while [[ $# -gt 0 ]]; do
     flag=$1
     case $flag in
     --help)
       usage
+      ;;
+    --context)
+      context="$2"
+      shift
       ;;
     --build)
       op="build"
@@ -105,6 +108,7 @@ function main() {
     shift
   done
 
+  KUMA_VERSION=$("${SCRIPT_DIR}/version.sh" "$context")
   [ -z "$DOCKER_USERNAME" ] && msg_err "\$DOCKER_USERNAME required"
   [ -z "$DOCKER_API_KEY" ] && msg_err "\$DOCKER_API_KEY required"
 

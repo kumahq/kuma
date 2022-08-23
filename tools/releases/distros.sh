@@ -188,13 +188,15 @@ function usage() {
 }
 
 function main() {
-  KUMA_VERSION=$("${SCRIPT_DIR}/version.sh")
-
   while [[ $# -gt 0 ]]; do
     flag=$1
     case $flag in
     --help)
       usage
+      ;;
+    --context)
+      context="$2"
+      shift
       ;;
     --package)
       op="package"
@@ -210,6 +212,7 @@ function main() {
     shift
   done
 
+  KUMA_VERSION=$("${SCRIPT_DIR}/version.sh" "$context")
   case $op in
   package)
     package

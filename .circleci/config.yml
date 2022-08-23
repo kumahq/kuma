@@ -391,6 +391,11 @@ jobs:
         - artifacts-linux-<<parameters.arch>>
 
   release:
+    parameters:
+      build_context:
+        description: Context of the build script to determinate version
+        type: string
+        default: "branch"
     executor: vm-amd64
     steps:
     - install_build_tools
@@ -406,23 +411,23 @@ jobs:
     - run:
         name: Build Packages
         command: |
-          ./tools/releases/distros.sh --package
+          ./tools/releases/distros.sh --package --context <<parameters.build_context>>
     - run:
         name: Push Packages
         command: |
-          ./tools/releases/distros.sh --release
+          ./tools/releases/distros.sh --release --context <<parameters.build_context>>
     - run:
         name: Build Docker
         command: |
-          ./tools/releases/docker.sh --build
+          ./tools/releases/docker.sh --build --context <<parameters.build_context>>
     - run:
         name: Push Docker
         command: |
-          ./tools/releases/docker.sh --push
+          ./tools/releases/docker.sh --push --context <<parameters.build_context>>
     - run:
         name: Create and Push multiarch manifest for Docker images
         command: |
-          ./tools/releases/docker.sh --manifest
+          ./tools/releases/docker.sh --manifest --context <<parameters.build_context>>
 
 workflows:
   version: 2
@@ -513,4 +518,3 @@ workflows:
               ignore: /.*/
             tags:
               only: /.*/
-          requires: [ dev, test, test/e2e, test/e2e-legacy ]

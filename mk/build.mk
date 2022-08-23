@@ -1,7 +1,8 @@
+BUILD_INFO_CONTEXT ?= "branch"
 BUILD_INFO_GIT_TAG ?= $(shell git describe --tags 2>/dev/null || echo unknown)
 BUILD_INFO_GIT_COMMIT ?= $(shell git rev-parse HEAD 2>/dev/null || echo unknown)
 BUILD_INFO_BUILD_DATE ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ" || echo unknown)
-BUILD_INFO_VERSION ?= $(shell $(TOOLS_DIR)/releases/version.sh)
+BUILD_INFO_VERSION ?= $(shell $(TOOLS_DIR)/releases/version.sh $(BUILD_INFO_CONTEXT))
 BUILD_INFO_ENVOY_VERSION ?= $(ENVOY_VERSION)
 
 build_info_fields := \
