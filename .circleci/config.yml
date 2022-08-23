@@ -373,7 +373,7 @@ jobs:
         # prefer the exact match
         - golang_go.mod_{{ checksum "go.sum" }}
     - run:
-        name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp, kuma-prometheus-sd)
+        name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp)
         command: make build
     - run:
         name: Build Docker images
