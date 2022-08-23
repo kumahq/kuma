@@ -14,8 +14,6 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
-
-	"github.com/golang/protobuf/ptypes"
 )
 
 // ensure the imports are used
@@ -30,7 +28,6 @@ var (
 	_ = time.Duration(0)
 	_ = (*url.URL)(nil)
 	_ = (*mail.Address)(nil)
-	_ = ptypes.DynamicAny{}
 )
 
 // Validate checks the field values on DnsFilterConfig with the rules defined
@@ -236,14 +233,7 @@ func (m *DnsFilterConfig_ClientContextConfig) Validate() error {
 	}
 
 	if d := m.GetResolverTimeout(); d != nil {
-		dur, err := ptypes.Duration(d)
-		if err != nil {
-			return DnsFilterConfig_ClientContextConfigValidationError{
-				field:  "ResolverTimeout",
-				reason: "value is not a valid duration",
-				cause:  err,
-			}
-		}
+		dur := d.AsDuration()
 
 		gte := time.Duration(1*time.Second + 0*time.Nanosecond)
 

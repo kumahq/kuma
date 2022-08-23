@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	mads_config "github.com/kumahq/kuma/pkg/config/mads"
 	"github.com/kumahq/kuma/pkg/core"
@@ -41,6 +42,7 @@ type muxServer struct {
 	grpcServices []GrpcService
 	config       *mads_config.MonitoringAssignmentServerConfig
 	metrics      core_metrics.Metrics
+	mesh_proto.UnimplementedMultiplexServiceServer
 }
 
 type HttpService interface {

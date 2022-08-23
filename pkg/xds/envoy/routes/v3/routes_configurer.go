@@ -6,7 +6,7 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	"github.com/golang/protobuf/ptypes/any"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -230,8 +230,8 @@ func (c RoutesConfigurer) setModifications(routeAction *envoy_route.RouteAction,
 	}
 }
 
-func (c *RoutesConfigurer) typedPerFilterConfig(route *envoy_common.Route) (map[string]*any.Any, error) {
-	typedPerFilterConfig := map[string]*any.Any{}
+func (c *RoutesConfigurer) typedPerFilterConfig(route *envoy_common.Route) (map[string]*anypb.Any, error) {
+	typedPerFilterConfig := map[string]*anypb.Any{}
 
 	if route.RateLimit != nil {
 		rateLimit, err := NewRateLimitConfiguration(route.RateLimit.GetConf().GetHttp())

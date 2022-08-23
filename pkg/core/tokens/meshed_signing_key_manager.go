@@ -4,8 +4,8 @@ import (
 	"context"
 	"crypto/rsa"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -52,7 +52,7 @@ func (s *meshedSigningKeyManager) CreateSigningKey(ctx context.Context, serialNu
 
 	secret := system.NewSecretResource()
 	secret.Spec = &system_proto.Secret{
-		Data: &wrappers.BytesValue{
+		Data: &wrapperspb.BytesValue{
 			Value: key,
 		},
 	}

@@ -13,7 +13,7 @@ GOOGLEAPIS_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/goo
 KUMADOC_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/kumahq,protoc-gen-kumadoc))
 
 protoc_search_go_packages := \
-	github.com/golang/protobuf@$(GOLANG_PROTOBUF_VERSION) \
+	google.golang.org/protobuf@$(GOLANG_PROTOBUF_VERSION) \
 	github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION) \
 	github.com/envoyproxy/data-plane-api@$(DATAPLANE_API_ACTUAL_VERSION) \
 	github.com/cncf/udpa@$(UDPA_ACTUAL_VERSION) \
@@ -67,7 +67,9 @@ PROTOC := protoc \
 
 PROTOC_GO := $(PROTOC) \
 	--go_opt=paths=source_relative \
-	--go_out=plugins=grpc,$(go_mapping):.
+	--go_out=$(go_mapping):. \
+	--go-grpc_opt=paths=source_relative \
+	--go-grpc_out=$(go_mapping):.
 
 
 protoc/common/v1alpha1:

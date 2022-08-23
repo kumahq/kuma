@@ -8,8 +8,8 @@ import (
 	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	"github.com/golang/protobuf/ptypes/any"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -267,10 +267,10 @@ func RouteMirror(percent float64, destination Destination) RouteConfigurer {
 // RoutePerFilterConfig sets an optional per-filter configuration message
 // for this route. filterName is the name of the filter that should receive
 // the configuration that is specified in filterConfig
-func RoutePerFilterConfig(filterName string, filterConfig *any.Any) RouteConfigurer {
+func RoutePerFilterConfig(filterName string, filterConfig *anypb.Any) RouteConfigurer {
 	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
 		if r.GetTypedPerFilterConfig() == nil {
-			r.TypedPerFilterConfig = map[string]*any.Any{}
+			r.TypedPerFilterConfig = map[string]*anypb.Any{}
 		}
 
 		m := r.GetTypedPerFilterConfig()

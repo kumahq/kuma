@@ -7,7 +7,6 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
-	"github.com/golang/protobuf/jsonpb"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/config"
@@ -22,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 type testRuntime struct {
@@ -124,12 +124,10 @@ var _ = Describe("MADS Server", func() {
 			},
 		}
 
-		reqbuf := new(bytes.Buffer)
-		marshaller := &jsonpb.Marshaler{}
-		err = marshaller.Marshal(reqbuf, req)
+		reqBytes, err := util_proto.ToJSON(req)
 		Expect(err).ToNot(HaveOccurred())
 
-		request, err := http.NewRequest("POST", fmt.Sprintf("http://127.0.0.1:%d/v3/discovery:monitoringassignments", port), reqbuf)
+		request, err := http.NewRequest("POST", fmt.Sprintf("http://127.0.0.1:%d/v3/discovery:monitoringassignments", port), bytes.NewReader(reqBytes))
 		Expect(err).ToNot(HaveOccurred())
 
 		request.Header.Add("Content-Type", "application/json")

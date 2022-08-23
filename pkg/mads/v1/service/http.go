@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"io"
 	"net/http"
 	"time"
 
@@ -31,18 +30,8 @@ func (s *service) RegisterRoutes(ws *restful.WebService) {
 }
 
 func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
-	body, err := io.ReadAll(req.Request.Body)
-	if err != nil {
-		writeBadRequestError(res, rest_error_types.Error{
-			Title:   "Could not read request body",
-			Details: err.Error(),
-		})
-		return
-	}
-
 	discoveryReq := &v3.DiscoveryRequest{}
-	err = jsonpb.UnmarshalString(string(body), discoveryReq)
-	if err != nil {
+	if err := jsonpb.Unmarshal(req.Request.Body, discoveryReq); err != nil {
 		writeBadRequestError(res, rest_error_types.Error{
 			Title:   "Could not parse request body",
 			Details: err.Error(),
@@ -85,13 +74,7 @@ func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
 	}
 
 	marshaller := &jsonpb.Marshaler{OrigName: true}
-	resStr, err := marshaller.MarshalToString(discoveryRes)
-	if err != nil {
-		rest_errors.HandleError(res, err, "Could encode DiscoveryResponse")
-		return
-	}
-
-	if _, err = res.Write([]byte(resStr)); err != nil {
+	if err := marshaller.Marshal(res, discoveryRes); err != nil {
 		rest_errors.HandleError(res, err, "Could write DiscoveryResponse")
 		return
 	}

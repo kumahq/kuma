@@ -4,13 +4,13 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_extensions_filters_http_local_ratelimit_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-	"github.com/golang/protobuf/ptypes/any"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
-func NewRateLimitConfiguration(rlHttp *v1alpha1.RateLimit_Conf_Http) (*any.Any, error) {
+func NewRateLimitConfiguration(rlHttp *v1alpha1.RateLimit_Conf_Http) (*anypb.Any, error) {
 	var status *envoy_type_v3.HttpStatus
 	var responseHeaders []*envoy_config_core_v3.HeaderValueOption
 	if rlHttp.GetOnRateLimit() != nil {

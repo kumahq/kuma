@@ -38,7 +38,7 @@ package proto
 import (
 	"fmt"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/durationpb"
 )
@@ -79,7 +79,7 @@ func merge(dst, src proto.Message, opts ...OptionFn) {
 	for _, opt := range opts {
 		mo = opt(mo)
 	}
-	mo.mergeMessage(proto.MessageReflect(dst), proto.MessageReflect(src))
+	mo.mergeMessage(dst.ProtoReflect(), src.ProtoReflect())
 }
 
 func (o mergeOptions) mergeMessage(dst, src protoreflect.Message) {

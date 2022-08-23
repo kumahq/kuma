@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	envoy_cache "github.com/kumahq/kuma/pkg/hds/cache"
 	hds_callbacks "github.com/kumahq/kuma/pkg/hds/callbacks"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -31,6 +32,7 @@ type server struct {
 	ctx         context.Context
 	callbacks   hds_callbacks.Callbacks
 	cache       cache.Cache
+	mesh_proto.UnimplementedMultiplexServiceServer
 }
 
 func New(ctx context.Context, config cache.Cache, callbacks hds_callbacks.Callbacks) envoy_service_health.HealthDiscoveryServiceServer {
