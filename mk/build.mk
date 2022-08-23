@@ -33,7 +33,7 @@ COREDNS_TMP_DIRECTORY ?= $(BUILD_DIR)/coredns
 COREDNS_PLUGIN_CFG_PATH ?= $(TOP)/tools/builds/coredns/templates/plugin.cfg
 
 # List of binaries that we have release build rules for.
-BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl kuma-prometheus-sd coredns envoy kuma-cni install-cni
+BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl coredns envoy kuma-cni install-cni
 
 # List of binaries that we have test build roles for.
 BUILD_TEST_BINARIES := test-server
@@ -109,10 +109,6 @@ else
 	@echo "CoreDNS is already built. If you want to rebuild it, remove the binary: rm $(BUILD_ARTIFACTS_DIR)/coredns/coredns"
 endif
 
-.PHONY: build/kuma-prometheus-sd
-build/kuma-prometheus-sd: ## Dev: Build `kuma-prometheus-sd` binary
-	$(Build_Go_Application) ./app/$(notdir $@)
-
 .PHONY: build/test-server
 build/test-server: ## Dev: Build `test-server` binary
 	$(Build_Go_Application) ./test/server
@@ -156,14 +152,6 @@ build/kumactl/linux-amd64:
 .PHONY: build/kumactl/linux-arm64
 build/kumactl/linux-arm64:
 	GOOS=linux GOARCH=arm64 $(MAKE) build/kumactl
-
-.PHONY: build/kuma-prometheus-sd/linux-amd64
-build/kuma-prometheus-sd/linux-amd64:
-	GOOS=linux GOARCH=amd64 $(MAKE) build/kuma-prometheus-sd
-
-.PHONY: build/kuma-prometheus-sd/linux-arm64
-build/kuma-prometheus-sd/linux-arm64:
-	GOOS=linux GOARCH=arm64 $(MAKE) build/kuma-prometheus-sd
 
 .PHONY: build/coredns/linux-amd64
 build/coredns/linux-amd64:

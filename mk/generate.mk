@@ -74,8 +74,9 @@ generate/kumapolicy-gen/%: generate/dirs/%
 		--proto_path=./api \
 		--kumapolicy_opt=endpoints-template=tools/policy-gen/templates/endpoints.yaml \
 		--kumapolicy_out=$(POLICIES_DIR)/$* \
+		--go_out=$(go_mapping):. \
 		--go_opt=paths=source_relative \
-		--go_out=plugins=grpc,$(go_mapping):. \
+		--go-grpc_out=$(go_mapping):. \
 		--plugin=protoc-gen-kumapolicy=tools/policy-gen/protoc-gen-kumapolicy/protoc-gen-kumapolicy \
 		$(POLICIES_DIR)/$*/api/*/*.proto ; \
 	rm tools/policy-gen/protoc-gen-kumapolicy/protoc-gen-kumapolicy ; \

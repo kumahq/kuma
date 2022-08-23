@@ -7,7 +7,7 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
-	"github.com/golang/protobuf/proto"
+	protov1 "github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -58,7 +58,7 @@ var _ = Describe("KDS Server", func() {
 		ctx := context.Background()
 		// Do not forget to update this test after updating protobuf `KumaKdsOptions`.
 		Expect(registry.Global().ObjectTypes(model.HasKdsEnabled())).
-			To(HaveLen(len([]proto.Message{
+			To(HaveLen(len([]protov1.Message{
 				kds_samples.CircuitBreaker,
 				kds_samples.Dataplane,
 				kds_samples.DataplaneInsight,

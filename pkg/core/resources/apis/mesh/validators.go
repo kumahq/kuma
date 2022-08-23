@@ -1,19 +1,18 @@
 package mesh
 
 import (
-	"bytes"
 	"fmt"
 	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/ghodss/yaml"
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 type TagsValidatorFunc func(path validators.PathBuilder, selector map[string]string) validators.ValidationError
@@ -266,7 +265,7 @@ func ValidateResourceYAML(msg proto.Message, resYAML string) error {
 		json = []byte(resYAML)
 	}
 
-	if err := (&jsonpb.Unmarshaler{}).Unmarshal(bytes.NewReader(json), msg); err != nil {
+	if err := util_proto.FromJSON(json, msg); err != nil {
 		return err
 	}
 	if v, ok := msg.(interface{ Validate() error }); ok {
@@ -282,7 +281,7 @@ func ValidateResourceYAMLPatch(msg proto.Message, resYAML string) error {
 	if err != nil {
 		json = []byte(resYAML)
 	}
-	return (&jsonpb.Unmarshaler{}).Unmarshal(bytes.NewReader(json), msg)
+	return util_proto.FromJSON(json, msg)
 }
 
 // SelectorKeyNotInSet returns a TagKeyValidatorFunc that checks the tag key

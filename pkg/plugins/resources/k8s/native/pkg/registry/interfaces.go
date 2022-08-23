@@ -1,7 +1,7 @@
 package registry
 
 import (
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 )

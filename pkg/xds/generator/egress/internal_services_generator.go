@@ -1,6 +1,8 @@
 package egress
 
 import (
+	protov1 "github.com/golang/protobuf/proto"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -77,7 +79,7 @@ func (*InternalServicesGenerator) generateEDS(
 		resources = append(resources, &core_xds.Resource{
 			Name:     clusterName,
 			Origin:   OriginEgress,
-			Resource: cla,
+			Resource: protov1.MessageV1(cla),
 		})
 	}
 

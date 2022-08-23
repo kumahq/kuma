@@ -8,6 +8,13 @@ does not have any particular instructions.
 
 ## Upcoming release
 
+### `kuma-prometheus-sd`
+
+This component has been removed
+after [a long period of deprecation](https://github.com/kumahq/kuma/issues/2851).
+
+## Upgrade to `1.8.x`
+
 ### Kumactl
 
 * `kumactl inspect dataplane --config-dump` was deprecated in favour of `kumactl inspect dataplane --type config-dump`. The behaviour of the new flag is unchanged but you should migrate.
