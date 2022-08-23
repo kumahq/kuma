@@ -1,7 +1,0 @@
-monitoringAssignment:
-  client:
-    name: custom
-    url: grpcs://kuma-control-plane.internal:5682
-    apiVersion: v1
-prometheus:
-  outputFile: /path/to/file
