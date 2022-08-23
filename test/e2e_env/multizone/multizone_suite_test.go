@@ -16,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/multizone/inbound_communication"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/inspect"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/localityawarelb"
+	multizone_sync "github.com/kumahq/kuma/test/e2e_env/multizone/sync"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/trafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/trafficroute"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/zoneegress"
@@ -233,3 +234,4 @@ var _ = Describe("TrafficRoute", trafficroute.TrafficRoute, Ordered)
 var _ = Describe("InboundPassthrough", inbound_communication.InboundPassthrough, Ordered)
 var _ = Describe("InboundPassthroughDisabled", inbound_communication.InboundPassthroughDisabled, Ordered)
 var _ = Describe("ZoneEgress Internal Services", zoneegress.InternalServices, Ordered)
+var _ = Describe("Sync", multizone_sync.Sync, Ordered)

@@ -13,5 +13,4 @@ func TestE2E(t *testing.T) {
 	test.RunSpecs(t, "E2E Deploy Suite")
 }
 
-var _ = Describe("Test Zone and Global", deploy.ZoneAndGlobal)
 var _ = Describe("Test Universal deployment", deploy.UniversalDeployment)
