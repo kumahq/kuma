@@ -7,7 +7,7 @@ package v1alpha1
 import (
 	"fmt"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
