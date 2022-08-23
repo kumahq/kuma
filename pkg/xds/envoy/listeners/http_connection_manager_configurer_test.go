@@ -32,7 +32,7 @@ var _ = Describe("HttpConnectionManager Configurers", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
-				actual, err := util_proto.V1ToYAML(chain)
+				actual, err := util_proto.ToYAML(chain)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and

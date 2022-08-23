@@ -20,7 +20,7 @@ var _ = Describe("ResetTagsHeaderConfigurer", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		actual, err := util_proto.V1ToYAML(routeConfiguration)
+		actual, err := util_proto.ToYAML(routeConfiguration)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and

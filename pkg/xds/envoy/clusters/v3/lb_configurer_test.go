@@ -31,7 +31,7 @@ var _ = Describe("Lb", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			actual, err := util_proto.V1ToYAML(cluster)
+			actual, err := util_proto.ToYAML(cluster)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual).To(MatchYAML(given.expected))
 		},
