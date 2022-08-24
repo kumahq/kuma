@@ -201,16 +201,17 @@ func NewCommitInfo(commit GQLCommit) *CommitInfo {
 			changelog = strings.TrimSpace(strings.TrimPrefix(l, "> Changelog: "))
 		}
 	}
-	if changelog == "skip" {
+	switch changelog {
+	case "skip":
 		return nil
-	}
-	for _, v := range []string{"build:", "ci:", "ci(", "test(", "refactor(", "chore(ci)", "fix(ci)", "fix(test)", "tests(", "build(", "docs(madr)"} {
-		if strings.HasPrefix(commit.Message, v) {
-			return nil
+	case "":
+		// Ignore prs with usually ignored prefix
+		for _, v := range []string{"build:", "ci:", "ci(", "test(", "refactor(", "chore(ci)", "fix(ci)", "fix(test)", "tests(", "build(", "docs(madr)"} {
+			if strings.HasPrefix(commit.Message, v) {
+				return nil
+			}
 		}
-	}
-	// We do this after so that if we set `> Changelog:` with one of the ignored prefix we still can have this
-	if changelog == "" {
+		// Use the pr.Title as a changelog entry
 		changelog = pr.Title
 	}
 	return &CommitInfo{
