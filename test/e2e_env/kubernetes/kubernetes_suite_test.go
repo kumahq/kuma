@@ -20,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/jobs"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/k8s_api_bypass"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/membership"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/observability"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/reachableservices"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/trafficlog"
@@ -100,3 +101,4 @@ var _ = Describe("Reachable Services", reachableservices.ReachableServices, Orde
 var _ = Describe("Defaults", defaults.Defaults, Ordered)
 var _ = Describe("External Services", externalservices.ExternalServices, Ordered)
 var _ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)
+var _ = Describe("MeshTrafficPermission API", meshtrafficpermission.API, Ordered)
