@@ -9,7 +9,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e/gateway"
 )
 
-var _ = Describe("Test Gateway on Universal", Label("arm-not-supported"), gateway.GatewayOnUniversal)
+var _ = Describe("Test Gateway on Universal", Label("job-4"), Label("arm-not-supported"), gateway.GatewayOnUniversal)
 
 func TestE2E(t *testing.T) {
 	test.RunSpecs(t, "E2E Gateway Suite")

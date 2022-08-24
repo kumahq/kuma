@@ -13,4 +13,4 @@ func TestE2E(t *testing.T) {
 	test.RunSpecs(t, "E2E Ownership tests")
 }
 
-var _ = Describe("Test Multizone Ownership for Universal", ownership.MultizoneUniversal)
+var _ = Describe("Test Multizone Ownership for Universal", Label("job-2"), ownership.MultizoneUniversal)
