@@ -33,18 +33,10 @@ func TrafficRoute() {
 	BeforeAll(func() {
 		// Global
 		err := env.Global.Install(YamlUniversal(meshMTLSOn(meshName, "false")))
-		E2EDeferCleanup(func() {
-			out, _ := env.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshes")
-			println(out)
-			Expect(env.Global.DeleteMesh(meshName)).To(Succeed())
-		})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, env.Zones())).To(Succeed())
 
 		// Universal Zone 1
-		E2EDeferCleanup(func() {
-			Expect(env.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
-		})
 		err = NewClusterSetup().
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true), WithConcurrency(8))).
 			Install(TestServerUniversal("dp-echo-1", meshName,
@@ -55,9 +47,6 @@ func TrafficRoute() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// Universal Zone 2
-		E2EDeferCleanup(func() {
-			Expect(env.UniZone2.DeleteMeshApps(meshName)).To(Succeed())
-		})
 		err = NewClusterSetup().
 			Install(TestServerUniversal("dp-echo-2", meshName,
 				WithArgs([]string{"echo", "--instance", "echo-v2"}),
@@ -77,6 +66,11 @@ func TrafficRoute() {
 			)).
 			Setup(env.UniZone2)
 		Expect(err).ToNot(HaveOccurred())
+	})
+	E2EAfterAll(func() {
+		Expect(env.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(env.UniZone2.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(env.Global.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	BeforeEach(func() {

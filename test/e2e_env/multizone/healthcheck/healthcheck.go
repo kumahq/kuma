@@ -21,6 +21,7 @@ func ApplicationOnUniversalClientOnK8s() {
 	BeforeAll(func() {
 		err := env.Global.Install(MTLSMeshUniversal(meshName))
 		Expect(err).ToNot(HaveOccurred())
+		Expect(WaitForMesh(meshName, env.Zones())).To(Succeed())
 
 		err = NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).

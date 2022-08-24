@@ -79,6 +79,7 @@ func ExternalServicesWithLocalityAwareLb() {
 			Install(YamlUniversal(MeshMTLSOnAndZoneEgressAndNoPassthrough(meshNoZoneEgress, "false"))).
 			Setup(env.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, env.Zones())).To(Succeed())
+		Expect(WaitForMesh(meshNoZoneEgress, env.Zones())).To(Succeed())
 
 		// Universal Zone 4
 		Expect(NewClusterSetup().

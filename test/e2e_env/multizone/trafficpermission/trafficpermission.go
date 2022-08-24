@@ -19,25 +19,16 @@ func TrafficPermission() {
 	BeforeAll(func() {
 		// Global
 		err := env.Global.Install(MTLSMeshUniversal(meshName))
-		E2EDeferCleanup(func() {
-			Expect(env.Global.DeleteMesh(meshName)).To(Succeed())
-		})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, env.Zones())).To(Succeed())
 
 		// Universal Zone 1
-		E2EDeferCleanup(func() {
-			Expect(env.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
-		})
 		err = env.UniZone1.Install(TestServerUniversal("test-server", meshName,
 			WithArgs([]string{"echo", "--instance", "echo"}),
 		))
 		Expect(err).ToNot(HaveOccurred())
 
 		// Kubernetes Zone 1
-		E2EDeferCleanup(func() {
-			Expect(env.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
-		})
 		err = NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(DemoClientK8s(meshName, namespace)).
@@ -46,6 +37,12 @@ func TrafficPermission() {
 
 		clientPodName, err = PodNameOfApp(env.KubeZone1, "demo-client", namespace)
 		Expect(err).ToNot(HaveOccurred())
+	})
+
+	E2EAfterAll(func() {
+		Expect(env.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(env.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(env.Global.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	BeforeEach(func() {
