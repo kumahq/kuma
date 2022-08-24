@@ -9,11 +9,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/transparentproxy/config"
-	"github.com/kumahq/kuma/pkg/transparentproxy/istio/tools/istio-iptables/pkg/constants"
-
 	kumanet_tproxy "github.com/kumahq/kuma-net/transparent-proxy"
 	kumanet_config "github.com/kumahq/kuma-net/transparent-proxy/config"
+
+	"github.com/kumahq/kuma/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/pkg/transparentproxy/istio/tools/istio-iptables/pkg/constants"
 )
 
 var _ TransparentProxy = &ExperimentalTransparentProxy{}
