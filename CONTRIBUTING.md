@@ -105,7 +105,7 @@ to verify a few things:
 - Do not update CHANGELOG.md yourself. Your change will be included there when we release, no worries!
   You can however help us maintain a good changelog and release notes by following this process:
     - By default, the changelog generation will use the PR title. If you want to specify something different as a Changelog entry add a line that starts with `> Changelog:` in the PR description e.g.:`> Changelog: feat: my new feature`. Reusing the same content across multiple PRs will rollup all the PRs in a single changelog entry (this is useful for features that span multiple PRs).
-    - By default, all commit messages that start with build, ci, test, refactor will be excluded from the Changelog. If you want still want a change to be included add a `> Changelog:` entry in the PR description.
+    - By default, all commit messages that start with build, ci, test, refactor will be excluded from the Changelog. If you still want a change to be included add a `> Changelog:` entry in the PR description.
     - If you want a change to not be included in the changelog you can add `> Changelog: skip` to explicitly ignore it.
   This is in the PR description because it enables you to add/modify it even after merging a PR. curious about the automation? You can find it in: [`tools/releases/changelog`](tools/releases/changelog).
 
