@@ -23,7 +23,7 @@ func Sync() {
 		err := NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(DemoClientK8s(meshName, namespace)).
-			Setup(env.KubeZone1)
+			Setup(env.KubeZone2)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
@@ -32,7 +32,7 @@ func Sync() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 	E2EAfterAll(func() {
-		Expect(env.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(env.KubeZone2.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(env.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(env.Global.DeleteMesh(meshName)).To(Succeed())
 	})
@@ -113,7 +113,7 @@ spec:
 
 		policySyncedToZones := func(name string) {
 			Eventually(func() (string, error) {
-				return k8s.RunKubectlAndGetOutputE(env.KubeZone1.GetTesting(), env.KubeZone1.GetKubectlOptions(), "get", "trafficroute")
+				return k8s.RunKubectlAndGetOutputE(env.KubeZone2.GetTesting(), env.KubeZone2.GetKubectlOptions(), "get", "trafficroute")
 			}, "30s", "1s").Should(ContainSubstring(name))
 			Eventually(func() (string, error) {
 				return env.UniZone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "traffic-routes", "-m", meshName)
@@ -145,7 +145,7 @@ spec:
 				return env.UniZone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "traffic-route", name, "-m", meshName, "-o", "yaml")
 			}, "30s", "1s").Should(ContainSubstring(`weight: 101`))
 			Eventually(func() (string, error) {
-				return k8s.RunKubectlAndGetOutputE(env.KubeZone1.GetTesting(), env.KubeZone1.GetKubectlOptions(), "get", "trafficroute", name, "-oyaml")
+				return k8s.RunKubectlAndGetOutputE(env.KubeZone2.GetTesting(), env.KubeZone2.GetKubectlOptions(), "get", "trafficroute", name, "-oyaml")
 			}, "30s", "1s").Should(ContainSubstring(`weight: 101`))
 		})
 
@@ -157,7 +157,7 @@ spec:
 			})
 
 			It("should deny creating policy on Kube Zone CP", func() {
-				err := k8s.KubectlApplyFromStringE(env.KubeZone1.GetTesting(), env.KubeZone1.GetKubectlOptions(), kubernetesPolicyNamed("denied", 100))
+				err := k8s.KubectlApplyFromStringE(env.KubeZone2.GetTesting(), env.KubeZone2.GetKubectlOptions(), kubernetesPolicyNamed("denied", 100))
 				Expect(err).To(HaveOccurred())
 			})
 
@@ -168,7 +168,7 @@ spec:
 
 			It("should deny update on Kube Zone CP", func() {
 				policyUpdate := kubernetesPolicyNamed(name, 101)
-				err := k8s.KubectlApplyFromStringE(env.KubeZone1.GetTesting(), env.KubeZone1.GetKubectlOptions(), policyUpdate)
+				err := k8s.KubectlApplyFromStringE(env.KubeZone2.GetTesting(), env.KubeZone2.GetKubectlOptions(), policyUpdate)
 				Expect(err).To(HaveOccurred())
 			})
 
@@ -179,7 +179,7 @@ spec:
 			})
 
 			It("should deny delete on Kube Zone CP", func() {
-				err := k8s.RunKubectlE(env.KubeZone1.GetTesting(), env.KubeZone1.GetKubectlOptions(), "delete", "trafficroute", name)
+				err := k8s.RunKubectlE(env.KubeZone2.GetTesting(), env.KubeZone2.GetKubectlOptions(), "delete", "trafficroute", name)
 				Expect(err).To(HaveOccurred())
 			})
 
