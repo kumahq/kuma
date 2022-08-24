@@ -101,4 +101,4 @@ var _ = Describe("Reachable Services", reachableservices.ReachableServices, Orde
 var _ = Describe("Defaults", defaults.Defaults, Ordered)
 var _ = Describe("External Services", externalservices.ExternalServices, Ordered)
 var _ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)
-var _ = Describe("Kong Ingress Controller", kic.KICKubernetes, Ordered)
+var _ = Describe("Kong Ingress Controller", Label("arm-not-supported"), kic.KICKubernetes, Ordered)
