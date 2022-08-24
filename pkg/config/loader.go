@@ -11,39 +11,41 @@ import (
 )
 
 func Load(file string, cfg Config) error {
+	return LoadWithOption(file, cfg, false, true, true)
+}
+
+func LoadWithOption(file string, cfg Config, strict bool, includeEnv bool, validate bool) error {
 	if file == "" {
 		core.Log.Info("Skipping reading config from file")
-	} else if err := loadFromFile(file, cfg); err != nil {
+	} else if err := loadFromFile(file, cfg, strict); err != nil {
 		return err
 	}
 
-	if err := loadFromEnv(cfg); err != nil {
-		return err
+	if includeEnv {
+		if err := envconfig.Process("", cfg); err != nil {
+			return err
+		}
 	}
-
-	if err := cfg.Validate(); err != nil {
-		return errors.Wrapf(err, "Invalid configuration")
+	if validate {
+		if err := cfg.Validate(); err != nil {
+			return errors.Wrapf(err, "Invalid configuration")
+		}
 	}
 	return nil
 }
 
-func loadFromFile(file string, cfg Config) error {
-	if !fileExists(file) {
+func loadFromFile(file string, cfg Config, strict bool) error {
+	if _, err := os.Stat(file); err != nil {
 		return errors.Errorf("Failed to access configuration file %q", file)
 	}
-	if contents, err := os.ReadFile(file); err != nil {
+	contents, err := os.ReadFile(file)
+	if err != nil {
 		return errors.Wrapf(err, "Failed to read configuration from file %q", file)
-	} else if err := yaml.Unmarshal(contents, cfg); err != nil {
-		return errors.Wrapf(err, "Failed to parse configuration from file %q", file)
 	}
-	return nil
-}
-
-func loadFromEnv(config Config) error {
-	return envconfig.Process("", config)
-}
-
-func fileExists(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil
+	if strict {
+		err = yaml.UnmarshalStrict(contents, cfg)
+	} else {
+		err = yaml.Unmarshal(contents, cfg)
+	}
+	return errors.Wrapf(err, "Failed to parse configuration from file %q", file)
 }

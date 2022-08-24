@@ -290,15 +290,11 @@ defaults:
 # Metrics configuration
 metrics:
   dataplane:
-    # Enables collecting metrics from Dataplane
-    enabled: true # ENV: KUMA_METRICS_DATAPLANE_ENABLED
     # How many latest subscriptions will be stored in DataplaneInsight object, if equals 0 then unlimited
     subscriptionLimit: 2 # ENV: KUMA_METRICS_DATAPLANE_SUBSCRIPTION_LIMIT
     # How long data plane proxy can stay Online without active xDS connection
     idleTimeout: 5m # ENV: KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT
   zone:
-    # Enables collecting metrics from Zone
-    enabled: true # ENV: KUMA_METRICS_ZONE_ENABLED
     # How many latest subscriptions will be stored in ZoneInsights object, if equals 0 then unlimited
     subscriptionLimit: 10 # ENV: KUMA_METRICS_ZONE_SUBSCRIPTION_LIMIT
     # How long zone can stay Online without active KDS connection
