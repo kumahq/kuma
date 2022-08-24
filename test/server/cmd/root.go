@@ -26,6 +26,8 @@ func NewRootCmd() *cobra.Command {
 				return err
 			}
 			core.SetLogger(core.NewLogger(level))
+
+			cmd.SilenceUsage = true
 			return nil
 		},
 	}
@@ -33,6 +35,7 @@ func NewRootCmd() *cobra.Command {
 
 	cmd.AddCommand(newHealthCheckCmd())
 	cmd.AddCommand(newEchoHTTPCmd())
+	cmd.AddCommand(newGRPCCmd())
 	return cmd
 }
 
