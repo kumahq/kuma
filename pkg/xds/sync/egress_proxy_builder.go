@@ -106,6 +106,7 @@ func (p *EgressProxyBuilder) Build(
 			TrafficRoutes:    trafficRoutes,
 			ExternalServices: externalServices,
 			EndpointMap: xds_topology.BuildRemoteEndpointMap(
+				ctx,
 				mesh,
 				p.zone,
 				zoneIngresses,

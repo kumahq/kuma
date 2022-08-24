@@ -113,7 +113,7 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) error {
 		ControlPlane: d.envoyCpCtx,
 		Mesh:         meshCtx,
 	}
-	proxy, err := d.dataplaneProxyBuilder.Build(d.key, meshCtx)
+	proxy, err := d.dataplaneProxyBuilder.Build(ctx, d.key, meshCtx)
 	if err != nil {
 		return err
 	}
