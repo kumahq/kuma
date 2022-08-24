@@ -142,10 +142,10 @@ spec:
 
 			// then
 			Eventually(func() (string, error) {
-				return k8s.RunKubectlAndGetOutputE(env.KubeZone1.GetTesting(), env.KubeZone1.GetKubectlOptions(), "get", "trafficroute", name, "-oyaml")
+				return env.UniZone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "traffic-route", name, "-m", meshName, "-o", "yaml")
 			}, "30s", "1s").Should(ContainSubstring(`weight: 101`))
 			Eventually(func() (string, error) {
-				return env.UniZone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "traffic-route", name, "-m", meshName, "-o", "yaml")
+				return k8s.RunKubectlAndGetOutputE(env.KubeZone1.GetTesting(), env.KubeZone1.GetKubectlOptions(), "get", "trafficroute", name, "-oyaml")
 			}, "30s", "1s").Should(ContainSubstring(`weight: 101`))
 		})
 
