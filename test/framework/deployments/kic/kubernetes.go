@@ -14,6 +14,7 @@ import (
 
 type k8sDeployment struct {
 	ingressNamespace string
+	mesh             string
 }
 
 var DefaultNodePortHTTP = 30080
@@ -61,11 +62,13 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 	var yaml string
 	var err error
 	if t.ingressNamespace == "" {
-		yaml, err = cluster.GetKumactlOptions().RunKumactlAndGetOutputV(framework.Verbose, "install", "gateway", "kong")
 		t.ingressNamespace = framework.Config.DefaultGatewayNamespace
-	} else {
-		yaml, err = cluster.GetKumactlOptions().RunKumactlAndGetOutputV(framework.Verbose, "install", "gateway", "kong", "--namespace", t.ingressNamespace)
 	}
+	yaml, err = cluster.GetKumactlOptions().RunKumactlAndGetOutputV(framework.Verbose,
+		"install", "gateway", "kong",
+		"--namespace", t.ingressNamespace,
+		"--mesh", t.mesh,
+	)
 
 	if err != nil {
 		return err

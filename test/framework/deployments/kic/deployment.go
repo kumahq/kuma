@@ -19,6 +19,7 @@ type Deployment interface {
 
 type deployOptions struct {
 	namespace string
+	mesh      string
 }
 
 type deployOptionsFunc func(*deployOptions)
@@ -41,10 +42,9 @@ func Install(fs ...deployOptionsFunc) framework.InstallFunc {
 		var deployment *k8sDeployment
 		switch cluster.(type) {
 		case *framework.K8sCluster:
-			deployment = &k8sDeployment{}
-			// Need to trigger default command if unspecified
-			if opts.namespace != "" {
-				deployment.ingressNamespace = opts.namespace
+			deployment = &k8sDeployment{
+				ingressNamespace: opts.namespace,
+				mesh:             opts.mesh,
 			}
 		default:
 			return errors.New("invalid cluster")
@@ -56,6 +56,12 @@ func Install(fs ...deployOptionsFunc) framework.InstallFunc {
 func WithNamespace(namespace string) deployOptionsFunc {
 	return func(o *deployOptions) {
 		o.namespace = namespace
+	}
+}
+
+func WithMesh(mesh string) deployOptionsFunc {
+	return func(o *deployOptions) {
+		o.mesh = mesh
 	}
 }
 
