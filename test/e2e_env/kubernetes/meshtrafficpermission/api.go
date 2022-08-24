@@ -9,7 +9,6 @@ import (
 )
 
 func API() {
-
 	meshName := "meshtrafficpermission-api"
 
 	BeforeAll(func() {
