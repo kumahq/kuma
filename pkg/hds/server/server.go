@@ -6,15 +6,15 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
-	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	"github.com/envoyproxy/go-control-plane/pkg/server/stream/v3"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	envoy_stream "github.com/envoyproxy/go-control-plane/pkg/server/stream/v3"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	envoy_cache "github.com/kumahq/kuma/pkg/hds/cache"
+	hds_cache "github.com/kumahq/kuma/pkg/hds/cache"
 	hds_callbacks "github.com/kumahq/kuma/pkg/hds/callbacks"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -32,11 +32,11 @@ type server struct {
 	streamCount int64
 	ctx         context.Context
 	callbacks   hds_callbacks.Callbacks
-	cache       cache.Cache
+	cache       envoy_cache.Cache
 	mesh_proto.UnimplementedMultiplexServiceServer
 }
 
-func New(ctx context.Context, config cache.Cache, callbacks hds_callbacks.Callbacks) envoy_service_health.HealthDiscoveryServiceServer {
+func New(ctx context.Context, config envoy_cache.Cache, callbacks hds_callbacks.Callbacks) envoy_service_health.HealthDiscoveryServiceServer {
 	return &server{
 		ctx:       ctx,
 		callbacks: callbacks,
@@ -72,7 +72,7 @@ func (s *server) StreamHandler(stream Stream) error {
 	return s.process(stream, reqOrRespCh)
 }
 
-func (s *server) process(str Stream, reqOrRespCh chan *envoy_service_health.HealthCheckRequestOrEndpointHealthResponse) error {
+func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.HealthCheckRequestOrEndpointHealthResponse) error {
 	streamID := atomic.AddInt64(&s.streamCount, 1)
 	lastVersion := ""
 
@@ -86,9 +86,7 @@ func (s *server) process(str Stream, reqOrRespCh chan *envoy_service_health.Heal
 		}
 	}()
 
-	streamState := stream.NewStreamState(false, map[string]string{})
-
-	send := func(resp cache.Response) error {
+	send := func(resp envoy_cache.Response) error {
 		if resp == nil {
 			return errors.New("missing response")
 		}
@@ -109,16 +107,16 @@ func (s *server) process(str Stream, reqOrRespCh chan *envoy_service_health.Heal
 		if err != nil {
 			return err
 		}
-		return str.Send(hcs)
+		return stream.Send(hcs)
 	}
 
 	if s.callbacks != nil {
-		if err := s.callbacks.OnStreamOpen(str.Context(), streamID); err != nil {
+		if err := s.callbacks.OnStreamOpen(stream.Context(), streamID); err != nil {
 			return err
 		}
 	}
 
-	responseChan := make(chan cache.Response, 1)
+	responseChan := make(chan envoy_cache.Response, 1)
 	var node = &envoy_core.Node{}
 	for {
 		select {
@@ -134,12 +132,12 @@ func (s *server) process(str Stream, reqOrRespCh chan *envoy_service_health.Heal
 			if watchCancellation != nil {
 				watchCancellation()
 			}
-			watchCancellation = s.cache.CreateWatch(&cache.Request{
+			watchCancellation = s.cache.CreateWatch(&envoy_cache.Request{
 				Node:          node,
-				TypeUrl:       envoy_cache.HealthCheckSpecifierType,
+				TypeUrl:       hds_cache.HealthCheckSpecifierType,
 				ResourceNames: []string{"hcs"},
 				VersionInfo:   lastVersion,
-			}, streamState, responseChan)
+			}, envoy_stream.NewStreamState(false, nil), responseChan)
 		case reqOrResp, more := <-reqOrRespCh:
 			if !more {
 				return nil
@@ -169,12 +167,12 @@ func (s *server) process(str Stream, reqOrRespCh chan *envoy_service_health.Heal
 			if watchCancellation != nil {
 				watchCancellation()
 			}
-			watchCancellation = s.cache.CreateWatch(&cache.Request{
+			watchCancellation = s.cache.CreateWatch(&envoy_cache.Request{
 				Node:          node,
-				TypeUrl:       envoy_cache.HealthCheckSpecifierType,
+				TypeUrl:       hds_cache.HealthCheckSpecifierType,
 				ResourceNames: []string{"hcs"},
 				VersionInfo:   lastVersion,
-			}, streamState, responseChan)
+			}, envoy_stream.NewStreamState(false, nil), responseChan)
 		}
 	}
 }
