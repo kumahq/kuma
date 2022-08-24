@@ -38,40 +38,16 @@ func validateMeshGatewayRouteConf(path validators.PathBuilder, conf *mesh_proto.
 		err.AddViolationAt(path, "cannot be empty")
 	}
 
-	err.Add(validateMeshGatewayRouteTLS(path.Field("tls"), conf.GetTls()))
 	err.Add(validateMeshGatewayRouteTCP(path.Field("tcp"), conf.GetTcp()))
-	err.Add(validateMeshGatewayRouteUDP(path.Field("udp"), conf.GetUdp()))
 	err.Add(validateMeshGatewayRouteHTTP(path.Field("http"), conf.GetHttp()))
 
 	return err
-}
-
-func validateMeshGatewayRouteTLS(
-	path validators.PathBuilder,
-	conf *mesh_proto.MeshGatewayRoute_TlsRoute,
-) validators.ValidationError {
-	if conf != nil {
-		return validators.MakeUnimplementedFieldErr(path)
-	}
-
-	return validators.OK()
 }
 
 func validateMeshGatewayRouteTCP(
 	_ validators.PathBuilder,
 	_ *mesh_proto.MeshGatewayRoute_TcpRoute,
 ) validators.ValidationError {
-	return validators.OK()
-}
-
-func validateMeshGatewayRouteUDP(
-	path validators.PathBuilder,
-	conf *mesh_proto.MeshGatewayRoute_UdpRoute,
-) validators.ValidationError {
-	if conf != nil {
-		return validators.MakeUnimplementedFieldErr(path)
-	}
-
 	return validators.OK()
 }
 
