@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/test/e2e_env/universal/env"
-	"github.com/kumahq/kuma/test/framework"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 )
@@ -210,52 +209,4 @@ func proxySecureRequests(cluster Cluster, instance string, gateway string, opts 
 		g.Expect(response.Instance).To(Equal(instance))
 		g.Expect(response.Received.Headers["Host"]).To(ContainElement("example.kuma.io"))
 	}, "60s", "1s").Should(Succeed())
-}
-
-// proxyRequestsWithMissingPermission deletes the default TrafficPermission and expects
-// that to cause proxying requests to fail.
-//
-// In mTLS mode, only the presence of TrafficPermission rules allow services to receive
-// traffic, so removing the permission should cause requests to fail. We use this to
-// prove that mTLS is enabled.
-func proxyRequestsWithMissingPermission(cluster Cluster, mesh, gateway, host string, opts ...client.CollectResponsesOptsFn) {
-	PermissionName := "allow-all-" + mesh
-
-	Logf("deleting TrafficPermission %q", PermissionName)
-	Expect(cluster.GetKumactlOptions().KumactlDelete(
-		"traffic-permission", PermissionName, mesh),
-	).To(Succeed())
-
-	Logf("expecting 503 response from %q", gateway)
-	Eventually(func(g Gomega) {
-		target := fmt.Sprintf("http://%s/%s",
-			gateway, path.Join("test", url.PathEscape(GinkgoT().Name())),
-		)
-
-		opts = append(opts, client.WithHeader("Host", host))
-		status, err := client.CollectFailure(cluster, "gateway-client", target, opts...)
-
-		g.Expect(err).To(Succeed())
-		g.Expect(status.ResponseCode).To(Equal(503))
-	}, "30s", "1s").Should(Succeed())
-}
-
-// proxyRequestsWithRateLimit tests that requests to gateway are rate-limited with a 429 response.
-func proxyRequestsWithRateLimit(cluster framework.Cluster, gateway string, opts ...client.CollectResponsesOptsFn) {
-	framework.Logf("expecting 429 response from %q", gateway)
-	Eventually(func(g Gomega) {
-		target := fmt.Sprintf("http://%s/%s",
-			gateway, path.Join("test", url.PathEscape(GinkgoT().Name())),
-		)
-
-		opts = append(opts,
-			client.NoFail(),
-			client.OutputFormat(`{ "received": { "status": %{response_code} } }`),
-			client.WithHeader("Host", "example.kuma.io"),
-		)
-		response, err := client.CollectResponse(cluster, "gateway-client", target, opts...)
-
-		g.Expect(err).To(Succeed())
-		g.Expect(response.Received.StatusCode).To(Equal(429))
-	}, "30s", "1s").Should(Succeed())
 }
