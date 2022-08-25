@@ -45,12 +45,10 @@ type Context struct {
 	EnvoyAdminRPCs service.EnvoyAdminRPCs
 }
 
-func DefaultContext(manager manager.ResourceManager, zone string) *Context {
+func DefaultContext(ctx context.Context, manager manager.ResourceManager, zone string) *Context {
 	configs := map[string]bool{
 		config_manager.ClusterIdConfigKey: true,
 	}
-
-	ctx := context.Background()
 
 	return &Context{
 		ZoneClientCtx:        ctx,

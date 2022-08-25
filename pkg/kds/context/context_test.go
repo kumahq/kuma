@@ -39,7 +39,7 @@ var _ = Describe("Context", func() {
 
 		BeforeEach(func() {
 			rm = manager.NewResourceManager(memory.NewStore())
-			defaultContext := context.DefaultContext(rm, "zone")
+			defaultContext := context.DefaultContext(stdcontext.Background(), rm, "zone")
 			mapper = defaultContext.ZoneResourceMapper
 		})
 
