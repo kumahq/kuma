@@ -196,7 +196,7 @@ func Bootstrap(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runtime
 		return nil, err
 	}
 
-	if err = startReporter(runtime); err != nil {
+	if err = startReporter(runtime); err != nil { //nolint:contextcheck
 		return nil, err
 	}
 
