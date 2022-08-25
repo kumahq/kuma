@@ -25,7 +25,7 @@ var _ = Describe("ValidateListeners", func() {
 				},
 			},
 		}
-		valids, conditions := k8s_gatewayapi.ValidateListeners(listeners)
+		valids, conditions := k8s_gatewayapi.ValidateListeners(false, listeners)
 		Expect(valids).To(ConsistOf(
 			HaveField("Name", gatewayapi.SectionName("prod")),
 		))
@@ -55,7 +55,7 @@ var _ = Describe("ValidateListeners", func() {
 				},
 			},
 		}
-		valids, conditions := k8s_gatewayapi.ValidateListeners(listeners)
+		valids, conditions := k8s_gatewayapi.ValidateListeners(false, listeners)
 
 		Expect(valids).To(BeEmpty())
 
@@ -105,12 +105,59 @@ var _ = Describe("ValidateListeners", func() {
 				},
 			},
 		}
-		valids, conditions := k8s_gatewayapi.ValidateListeners(listeners)
+		valids, conditions := k8s_gatewayapi.ValidateListeners(false, listeners)
 		Expect(valids).To(ConsistOf(
 			HaveField("Name", gatewayapi.SectionName("prod-1")),
 			HaveField("Name", gatewayapi.SectionName("prod-2")),
 		))
 		Expect(conditions).To(BeEmpty())
+	})
+	It("enforces HTTP and cross-mesh", func() {
+		same := gatewayapi.NamespacesFromSame
+		listeners := []gatewayapi.Listener{
+			{
+				Name:     gatewayapi.SectionName("valid-mesh"),
+				Protocol: gatewayapi.HTTPProtocolType,
+				Port:     gatewayapi.PortNumber(80),
+				AllowedRoutes: &gatewayapi.AllowedRoutes{
+					Namespaces: &gatewayapi.RouteNamespaces{
+						From: &same,
+					},
+				},
+			},
+			{
+				Name:     gatewayapi.SectionName("invalid-mesh"),
+				Protocol: gatewayapi.HTTPSProtocolType,
+				Port:     gatewayapi.PortNumber(80),
+				AllowedRoutes: &gatewayapi.AllowedRoutes{
+					Namespaces: &gatewayapi.RouteNamespaces{
+						From: &same,
+					},
+				},
+			},
+		}
+
+		valids, conditions := k8s_gatewayapi.ValidateListeners(true, listeners)
+		Expect(valids).To(ConsistOf(
+			HaveField("Name", gatewayapi.SectionName("valid-mesh")),
+		))
+
+		invalid := ContainElements(
+			MatchFields(IgnoreExtras, Fields{
+				"Type":   Equal(string(gatewayapi.ListenerConditionDetached)),
+				"Status": Equal(kube_meta.ConditionTrue),
+				"Reason": Equal(string(gatewayapi.ListenerReasonUnsupportedProtocol)),
+			}),
+			MatchFields(IgnoreExtras, Fields{
+				"Type":   Equal(string(gatewayapi.ListenerConditionReady)),
+				"Status": Equal(kube_meta.ConditionFalse),
+			}),
+		)
+		Expect(conditions).To(
+			MatchAllKeys(Keys{
+				gatewayapi.SectionName("invalid-mesh"): invalid,
+			}),
+		)
 	})
 	It("works with multiple listeners for same hostname:port conflict", func() {
 		same := gatewayapi.NamespacesFromSame
@@ -139,7 +186,7 @@ var _ = Describe("ValidateListeners", func() {
 				},
 			},
 		}
-		valids, conditions := k8s_gatewayapi.ValidateListeners(listeners)
+		valids, conditions := k8s_gatewayapi.ValidateListeners(false, listeners)
 
 		Expect(valids).To(BeEmpty())
 
