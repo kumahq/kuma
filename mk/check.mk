@@ -24,7 +24,14 @@ shellcheck:
 
 .PHONY: golangci-lint
 golangci-lint: ## Dev: Runs golangci-lint linter
-	$(GOLANGCI_LINT_DIR)/golangci-lint run --timeout=10m -v
+	$(GOLANGCI_LINT_DIR)/golangci-lint run \
+		--disable-all \
+		--enable bodyclose,contextcheck,errcheck,gci,gocritic,gofmt,gomodguard,govet,importas,ineffassign,misspell,typecheck,unconvert,unparam,whitespace \
+		--timeout=10m -v
+	$(GOLANGCI_LINT_DIR)/golangci-lint run \
+		--disable-all \
+		--enable gosimple,staticcheck,unused \
+		--timeout=10m -v
 
 .PHONY: helm-lint
 helm-lint:
