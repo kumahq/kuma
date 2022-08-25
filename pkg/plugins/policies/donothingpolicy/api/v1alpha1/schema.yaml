@@ -10,9 +10,9 @@ properties:
   name:
     description: 'Name of the Kuma resource'
     type: string
-  conf:
+  spec:
     properties:
       enableDoNothing:
-        description: Set true in case of doing nothing
+        description: User defined fields Set true in case of doing nothing
         type: boolean
     type: object

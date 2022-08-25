@@ -21,6 +21,7 @@ import (
 {{- range $idx, $version := .Versions}}
 	api_{{ $version }} "github.com/kumahq/kuma/pkg/plugins/policies/{{ $pkg }}/api/{{ $version }}"
 	k8s_{{ $version }} "github.com/kumahq/kuma/pkg/plugins/policies/{{ $pkg }}/k8s/{{ $version }}"
+	plugin_{{ $version }} "github.com/kumahq/kuma/pkg/plugins/policies/{{ $pkg }}/plugin/{{ $version }}"
 {{- end}}
 )
 
@@ -29,6 +30,7 @@ func init() {
 	core.Register(
 		api_{{ $version }}.{{ $name }}ResourceTypeDescriptor,
 		k8s_{{ $version }}.AddToScheme,
+		plugin_{{ $version }}.NewPlugin(),
 	)
 	{{- end}}
 }
@@ -83,7 +85,7 @@ func generatePluginFile(
 		return err
 	}
 
-	gviGenerator := gen.NewGeneratedFile("plugin.go", file.GoImportPath)
+	gviGenerator := gen.NewGeneratedFile("zz_generated.plugin.go", file.GoImportPath)
 	if _, err := gviGenerator.Write(pg); err != nil {
 		return err
 	}

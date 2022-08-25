@@ -13,16 +13,20 @@ option (doc.config) = {
   file_name : "donothingpolicy"
 };
 
-// DoNothingPolicy defines permission for traffic between dataplanes.
+// DoNothingPolicy a policy that does nothing
 message DoNothingPolicy {
   option (kuma.mesh.policy) = {
+    // Toggle this to have the policy registered or not in Kuma
     skip_registration : true,
   };
 
-  message Conf {
+  message Spec {
+    // TODO @lobkovilya add protobuf for standard matchers
+
+    // User defined fields
     // Set true in case of doing nothing
     bool enableDoNothing = 1;
   }
 
-  Conf conf = 3;
+  Spec spec = 1;
 }
