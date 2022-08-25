@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -106,11 +107,13 @@ type zoneInsightStore struct {
 }
 
 func (s *zoneInsightStore) Upsert(zone string, subscription *system_proto.KDSSubscription) error {
+	ctx := context.TODO()
+
 	key := core_model.ResourceKey{
 		Name: zone,
 	}
 	zoneInsight := system.NewZoneInsightResource()
-	return manager.Upsert(s.resManager, key, zoneInsight, func(resource core_model.Resource) error {
+	return manager.Upsert(ctx, s.resManager, key, zoneInsight, func(resource core_model.Resource) error {
 		return zoneInsight.Spec.UpdateSubscription(subscription)
 	})
 }

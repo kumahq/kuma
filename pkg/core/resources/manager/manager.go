@@ -124,8 +124,7 @@ func NewUpsertOpts(fs ...UpsertFunc) UpsertOpts {
 	return opts
 }
 
-func Upsert(manager ResourceManager, key model.ResourceKey, resource model.Resource, fn func(resource model.Resource) error, fs ...UpsertFunc) error {
-	ctx := context.Background()
+func Upsert(ctx context.Context, manager ResourceManager, key model.ResourceKey, resource model.Resource, fn func(resource model.Resource) error, fs ...UpsertFunc) error {
 	upsert := func(ctx context.Context) error {
 		create := false
 		err := manager.Get(ctx, resource, store.GetBy(key))

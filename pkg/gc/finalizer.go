@@ -86,6 +86,8 @@ func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 }
 
 func (f *subscriptionFinalizer) checkGeneration(typ core_model.ResourceType) error {
+	ctx := context.TODO()
+
 	// get all the insights for provided type
 	insights, _ := registry.Global().NewList(typ)
 	if err := f.rm.List(context.Background(), insights); err != nil {
@@ -120,7 +122,7 @@ func (f *subscriptionFinalizer) checkGeneration(typ core_model.ResourceType) err
 		insight.GetLastSubscription().SetDisconnectTime(core.Now())
 
 		upsertInsight, _ := registry.Global().NewObject(typ)
-		err := manager.Upsert(f.rm, key, upsertInsight, func(r core_model.Resource) error {
+		err := manager.Upsert(ctx, f.rm, key, upsertInsight, func(r core_model.Resource) error {
 			return upsertInsight.GetSpec().(generic.Insight).UpdateSubscription(insight.GetLastSubscription())
 		})
 		if err != nil {

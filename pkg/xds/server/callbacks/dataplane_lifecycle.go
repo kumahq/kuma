@@ -152,7 +152,7 @@ func (d *DataplaneLifecycle) OnProxyDisconnected(ctx context.Context, streamID c
 func (d *DataplaneLifecycle) registerDataplane(ctx context.Context, dp *core_mesh.DataplaneResource) error {
 	key := model.MetaToResourceKey(dp.GetMeta())
 	existing := core_mesh.NewDataplaneResource()
-	return manager.Upsert(d.resManager, key, existing, func(resource model.Resource) error {
+	return manager.Upsert(ctx, d.resManager, key, existing, func(resource model.Resource) error {
 		if err := d.validateUpsert(ctx, existing); err != nil {
 			return errors.Wrap(err, "you are trying to override existing dataplane to which you don't have an access.")
 		}
@@ -183,7 +183,7 @@ func (d *DataplaneLifecycle) validateUpsert(ctx context.Context, existing model.
 func (d *DataplaneLifecycle) registerZoneIngress(ctx context.Context, zi *core_mesh.ZoneIngressResource) error {
 	key := model.MetaToResourceKey(zi.GetMeta())
 	existing := core_mesh.NewZoneIngressResource()
-	return manager.Upsert(d.resManager, key, existing, func(resource model.Resource) error {
+	return manager.Upsert(ctx, d.resManager, key, existing, func(resource model.Resource) error {
 		if err := d.validateUpsert(ctx, existing); err != nil {
 			return errors.Wrap(err, "you are trying to override existing zone ingress to which you don't have an access.")
 		}
@@ -194,7 +194,7 @@ func (d *DataplaneLifecycle) registerZoneIngress(ctx context.Context, zi *core_m
 func (d *DataplaneLifecycle) registerZoneEgress(ctx context.Context, ze *core_mesh.ZoneEgressResource) error {
 	key := model.MetaToResourceKey(ze.GetMeta())
 	existing := core_mesh.NewZoneEgressResource()
-	return manager.Upsert(d.resManager, key, existing, func(resource model.Resource) error {
+	return manager.Upsert(ctx, d.resManager, key, existing, func(resource model.Resource) error {
 		if err := d.validateUpsert(ctx, existing); err != nil {
 			return errors.Wrap(err, "you are trying to override existing zone egress to which you don't have an access.")
 		}
