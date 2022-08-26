@@ -53,7 +53,7 @@ func (v *PostgresContainer) Start() error {
 	// Add a uniqueId to make each image different, this was causing flakiness as test-container
 	// deletes the image that it builds unconditionally during teardown and fails if the image doesn't exist.
 	// In the case of parallel tests it's possible that the same image was used in multiple tests and the second teardown would fail.
-	r := rand.New(rand.NewSource(GinkgoRandomSeed()))
+	r := rand.New(rand.NewSource(int64(GinkgoParallelProcess())))
 	uniqueId := strconv.Itoa(r.Int())
 	buildArgs["UNIQUEID"] = &uniqueId
 
