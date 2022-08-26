@@ -24,6 +24,9 @@ shellcheck:
 
 .PHONY: golangci-lint
 golangci-lint: ## Dev: Runs golangci-lint linter
+	# Starting with golangci-lint v1.47.1, the CI job runs OOM if all of these
+	# linters are used together. The first set is the largest that ran without
+	# OOM.
 	$(GOLANGCI_LINT_DIR)/golangci-lint run \
 		--disable-all \
 		--enable bodyclose,contextcheck,errcheck,gci,gocritic,gofmt,gomodguard,govet,importas,ineffassign,misspell,typecheck,unconvert,unparam,whitespace \
