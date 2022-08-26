@@ -9,8 +9,8 @@ import (
 	"path"
 	"strconv"
 	"strings"
-	"time"
 
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -53,7 +53,7 @@ func (v *PostgresContainer) Start() error {
 	// Add a uniqueId to make each image different, this was causing flakiness as test-container
 	// deletes the image that it builds unconditionally during teardown and fails if the image doesn't exist.
 	// In the case of parallel tests it's possible that the same image was used in multiple tests and the second teardown would fail.
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	r := rand.New(rand.NewSource(GinkgoRandomSeed()))
 	uniqueId := strconv.Itoa(r.Int())
 	buildArgs["UNIQUEID"] = &uniqueId
 
