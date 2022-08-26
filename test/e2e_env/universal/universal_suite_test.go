@@ -85,7 +85,8 @@ var _ = SynchronizedBeforeSuite(
 
 var _ = Describe("User Auth", auth.UserAuth)
 var _ = Describe("DP Auth", auth.DpAuth, Ordered)
-var _ = Describe("Cross-mesh Gateway", gateway.CrossMeshGatewayOnUniversal, Ordered)
+var _ = Describe("Gateway", gateway.Gateway, Ordered)
+var _ = Describe("Gateway - Cross-mesh", gateway.CrossMeshGatewayOnUniversal, Ordered)
 var _ = Describe("HealthCheck panic threshold", healthcheck.HealthCheckPanicThreshold, Ordered)
 var _ = Describe("HealthCheck", healthcheck.Policy)
 var _ = Describe("Service Probes", healthcheck.ServiceProbes, Ordered)
