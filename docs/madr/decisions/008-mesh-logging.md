@@ -53,18 +53,18 @@ There are 3 parts to matching, each meaning a different part of the request flow
 
 Matching on `MeshGatewayRoute` and `MeshHTTPRoute` can be achieved by using a
 [HeaderMatcher](https://github.com/envoyproxy/envoy/blob/23a9a686bb4237934cd575d8e62d3e0df98b59ee/api/envoy/config/accesslog/v3/accesslog.proto#L207)
-with a value of `:path`. 
+with a value of `:path`.
+
+#### From level
+
+`spec.from.targetRef` can only have: `Mesh|MeshSubset|MeshService|MeshServiceSubset`.
+Matching on `MeshGatewayRoute` and `MeshHTTPRoute` does not make sense (there is no `route` that a request originates **from**).
 
 #### To level
 
 `spec.to.targetRef` can have: `Mesh|MeshSubset|MeshService|MeshServiceSubset|MeshHTTPRoute`.
 Matching on `MeshGatewayRoute` and `MeshHTTPRoute` will be achieved the same way as on the top level `targetRef`
-but it will be attached on the outbound instead of the `inbound`.
-
-#### From level
-
-`spec.from.targetRef` can only have: `Mesh|MeshSubset|MeshService|MeshServiceSubset`.
-Matching on `MeshGatewayRoute` and `MeshHTTPRoute` does not make sense (there is no `route` that a request originates from).
+but it will be attached on the `outbound` instead of the `inbound`.
 
 ### Examples
 
