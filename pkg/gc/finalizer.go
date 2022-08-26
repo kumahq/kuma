@@ -72,9 +72,9 @@ func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 	finalizerLog.Info("started")
 	for {
 		select {
-		case <-ticker.C:
+		case now := <-ticker.C:
 			for _, typ := range f.types {
-				if err := f.checkGeneration(typ); err != nil {
+				if err := f.checkGeneration(typ, now); err != nil {
 					finalizerLog.Error(err, "unable to check subscription's generation", "type", typ)
 				}
 			}
@@ -85,7 +85,7 @@ func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (f *subscriptionFinalizer) checkGeneration(typ core_model.ResourceType) error {
+func (f *subscriptionFinalizer) checkGeneration(typ core_model.ResourceType, now time.Time) error {
 	ctx := context.TODO()
 
 	// get all the insights for provided type
@@ -119,7 +119,7 @@ func (f *subscriptionFinalizer) checkGeneration(typ core_model.ResourceType) err
 		}
 
 		log.V(1).Info("mark subscription as disconnected")
-		insight.GetLastSubscription().SetDisconnectTime(core.Now())
+		insight.GetLastSubscription().SetDisconnectTime(now)
 
 		upsertInsight, _ := registry.Global().NewObject(typ)
 		err := manager.Upsert(ctx, f.rm, key, upsertInsight, func(r core_model.Resource) error {

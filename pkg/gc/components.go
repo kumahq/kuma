@@ -29,7 +29,7 @@ func setupCollector(rt runtime.Runtime) error {
 		return nil
 	}
 	return rt.Add(
-		NewCollector(rt.ResourceManager(), 1*time.Minute, rt.Config().Runtime.Universal.DataplaneCleanupAge),
+		NewCollector(rt.ResourceManager(), func() *time.Ticker { return time.NewTicker(1 * time.Minute) }, rt.Config().Runtime.Universal.DataplaneCleanupAge),
 	)
 }
 

@@ -114,7 +114,7 @@ conf:
           value: /
       backends:
       - destination:
-          kuma.io/service: %s # Matches the echo-server we deployed.
+          kuma.io/service: %s
 `, name, mesh, name, backendService)
 
 	return strings.Join([]string{meshGateway, route}, "\n---\n")
@@ -146,4 +146,67 @@ networking:
 			WithYaml(dataplane),
 		)
 	}
+}
+
+// gatewayClientAppUniversal runs an empty container that will
+// function as a client for a gateway.
+func gatewayClientAppUniversal(name string) InstallFunc {
+	return func(cluster Cluster) error {
+		return cluster.DeployApp(
+			WithName(name),
+			WithoutDataplane(),
+			WithVerbose(),
+		)
+	}
+}
+
+func echoServerApp(mesh, name, service, instance string) InstallFunc {
+	return func(cluster Cluster) error {
+		return TestServerUniversal(
+			name,
+			mesh,
+			WithArgs([]string{"echo", "--instance", instance}),
+			WithServiceName(service),
+		)(cluster)
+	}
+}
+
+func proxySimpleRequests(cluster Cluster, instance, gateway, host string, opts ...client.CollectResponsesOptsFn) {
+	targetPath := path.Join("test", GinkgoT().Name())
+
+	Logf("expecting 200 response from %q", gateway)
+	Eventually(func(g Gomega) {
+		var escaped []string
+		for _, segment := range strings.Split(targetPath, "/") {
+			escaped = append(escaped, url.PathEscape(segment))
+		}
+
+		target := fmt.Sprintf("http://%s/%s", gateway, path.Join(escaped...))
+
+		opts = append(opts, client.WithHeader("Host", host))
+		response, err := client.CollectResponse(cluster, "gateway-client", target, opts...)
+
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(response.Instance).To(Equal(instance))
+		g.Expect(response.Received.Headers["Host"]).To(ContainElement(host))
+	}, "60s", "1s").Should(Succeed())
+}
+
+// proxySecureRequests tests that basic HTTPS requests are proxied to the echo-server.
+func proxySecureRequests(cluster Cluster, instance string, gateway string, opts ...client.CollectResponsesOptsFn) {
+	Logf("expecting 200 response from %q", gateway)
+	Eventually(func(g Gomega) {
+		target := fmt.Sprintf("https://%s/%s",
+			gateway, path.Join("https", "test", url.PathEscape(GinkgoT().Name())),
+		)
+
+		opts = append(opts,
+			client.Insecure(),
+			client.WithHeader("Host", "example.kuma.io"))
+		response, err := client.CollectResponse(cluster, "gateway-client", target, opts...)
+
+		g.Expect(err).To(Succeed())
+		g.Expect(response.Instance).To(Equal(instance))
+		g.Expect(response.Received.Headers["Host"]).To(ContainElement("example.kuma.io"))
+	}, "60s", "1s").Should(Succeed())
 }

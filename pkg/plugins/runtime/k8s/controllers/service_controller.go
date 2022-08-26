@@ -79,6 +79,7 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		return kube_ctrl.Result{}, nil
 	}
 	annotations[metadata.IngressServiceUpstream] = metadata.AnnotationTrue
+	annotations[metadata.NginxIngressServiceUpstream] = metadata.AnnotationTrue
 	svc.Annotations = annotations
 
 	if err = r.Update(ctx, svc); err != nil {
