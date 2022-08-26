@@ -145,7 +145,8 @@ const (
 
 // Annotations related to the gateway
 const (
-	IngressServiceUpstream = "ingress.kubernetes.io/service-upstream"
+	IngressServiceUpstream      = "ingress.kubernetes.io/service-upstream"
+	NginxIngressServiceUpstream = "nginx.ingress.kubernetes.io/service-upstream"
 )
 
 const (
