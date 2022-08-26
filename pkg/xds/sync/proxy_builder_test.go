@@ -120,7 +120,7 @@ var _ = Describe("Proxy Builder", func() {
 			rk := core_model.ResourceKey{Name: "zone-egress-1"}
 
 			// when
-			proxy, err := egressProxyBuilder.Build(rk)
+			proxy, err := egressProxyBuilder.Build(ctx, rk)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
@@ -208,7 +208,7 @@ var _ = Describe("Proxy Builder", func() {
 			rk := core_model.ResourceKey{Name: "zone-ingress-zone-1"}
 
 			// when
-			proxy, err := ingressProxyBuilder.Build(rk)
+			proxy, err := ingressProxyBuilder.Build(ctx, rk)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then

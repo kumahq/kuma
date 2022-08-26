@@ -113,6 +113,7 @@ var _ = Describe("EgressGenerator", func() {
 
 			for _, meshResources := range meshResourcesMap {
 				meshResources.EndpointMap = xds_topology.BuildRemoteEndpointMap(
+					context.Background(),
 					meshResources.Mesh,
 					zoneName,
 					zoneIngresses,

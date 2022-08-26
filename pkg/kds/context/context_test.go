@@ -39,7 +39,7 @@ var _ = Describe("Context", func() {
 
 		BeforeEach(func() {
 			rm = manager.NewResourceManager(memory.NewStore())
-			defaultContext := context.DefaultContext(rm, "zone")
+			defaultContext := context.DefaultContext(stdcontext.Background(), rm, "zone")
 			mapper = defaultContext.ZoneResourceMapper
 		})
 
@@ -242,6 +242,7 @@ var _ = Describe("Context", func() {
 
 		It("should filter out dataplanes", func() {
 			// given
+			ctx := stdcontext.Background()
 			dp := &core_mesh.DataplaneResource{
 				Meta: &test_model.ResourceMeta{
 					Name: "dp-1",
@@ -249,13 +250,14 @@ var _ = Describe("Context", func() {
 			}
 
 			// when
-			ok := predicate(clusterID, kds.Features{}, dp)
+			ok := predicate(ctx, clusterID, kds.Features{}, dp)
 
 			// then
 			Expect(ok).To(BeFalse())
 		})
 
 		It("should filter out configs if not in provided argument", func() {
+			ctx := stdcontext.Background()
 			// given
 			config1 := &core_system.ConfigResource{
 				Meta: &test_model.ResourceMeta{
@@ -269,13 +271,13 @@ var _ = Describe("Context", func() {
 			}
 
 			// when
-			ok := predicate(clusterID, kds.Features{}, config1)
+			ok := predicate(ctx, clusterID, kds.Features{}, config1)
 
 			// then
 			Expect(ok).To(BeTrue())
 
 			// when
-			ok = predicate(clusterID, kds.Features{}, config2)
+			ok = predicate(ctx, clusterID, kds.Features{}, config2)
 
 			// then
 			Expect(ok).To(BeFalse())
@@ -283,8 +285,9 @@ var _ = Describe("Context", func() {
 
 		DescribeTable("global secrets",
 			func(given testCase) {
+				ctx := stdcontext.Background()
 				// when
-				ok := predicate(clusterID, kds.Features{
+				ok := predicate(ctx, clusterID, kds.Features{
 					kds.FeatureZoneToken: true,
 				}, given.resource)
 
@@ -319,17 +322,18 @@ var _ = Describe("Context", func() {
 
 		DescribeTable("zone ingresses",
 			func(given testCase) {
+				ctx := stdcontext.Background()
 				// given
 				if given.zoneResource != nil {
 					Expect(rm.Create(
-						stdcontext.Background(),
+						ctx,
 						given.zoneResource,
 						core_store.CreateByKey(given.zoneName, ""),
 					)).To(Succeed())
 				}
 
 				// when
-				ok := predicate(clusterID, kds.Features{}, given.resource)
+				ok := predicate(ctx, clusterID, kds.Features{}, given.resource)
 
 				// then
 				Expect(ok).To(Equal(given.expect))
@@ -418,8 +422,9 @@ var _ = Describe("Context", func() {
 
 			DescribeTable("returned predicate function",
 				func(given testCase) {
+					ctx := stdcontext.Background()
 					// when
-					ok := predicate(clusterID, kds.Features{}, given.resource)
+					ok := predicate(ctx, clusterID, kds.Features{}, given.resource)
 
 					// then
 					Expect(ok).To(BeTrue())

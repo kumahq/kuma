@@ -1,6 +1,7 @@
 package api_server
 
 import (
+	"context"
 	"fmt"
 	"sort"
 
@@ -30,7 +31,7 @@ var CustomizeProxy func(meshContext xds_context.MeshContext, proxy *core_xds.Pro
 // getMatchedPolicies returns information about either sidecar dataplanes or
 // builtin gateway dataplanes as well as the proxy and a potential error.
 func getMatchedPolicies(
-	cfg *kuma_cp.Config, meshContext xds_context.MeshContext, dataplaneKey core_model.ResourceKey,
+	ctx context.Context, cfg *kuma_cp.Config, meshContext xds_context.MeshContext, dataplaneKey core_model.ResourceKey,
 ) (
 	*core_xds.MatchedPolicies, []gateway.GatewayListenerInfo, core_xds.Proxy, error,
 ) {
@@ -38,7 +39,7 @@ func getMatchedPolicies(
 		*cfg,
 		callbacks.NewDataplaneMetadataTracker(),
 		envoy.APIV3)
-	if proxy, err := proxyBuilder.Build(dataplaneKey, meshContext); err != nil {
+	if proxy, err := proxyBuilder.Build(ctx, dataplaneKey, meshContext); err != nil {
 		return nil, nil, core_xds.Proxy{}, err
 	} else {
 		if CustomizeProxy != nil {
@@ -48,7 +49,7 @@ func getMatchedPolicies(
 		}
 		if proxy.Dataplane.Spec.IsBuiltinGateway() {
 			entries, err := gateway.GatewayListenerInfoFromProxy(
-				meshContext, proxy, proxyBuilder.Zone,
+				ctx, meshContext, proxy, proxyBuilder.Zone,
 			)
 			if err != nil {
 				return nil, nil, core_xds.Proxy{}, err
@@ -112,7 +113,9 @@ func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilde
 			return
 		}
 
-		matchedPolicies, gatewayEntries, proxy, err := getMatchedPolicies(cfg, meshContext, core_model.ResourceKey{Mesh: meshName, Name: dataplaneName})
+		matchedPolicies, gatewayEntries, proxy, err := getMatchedPolicies(
+			request.Request.Context(), cfg, meshContext, core_model.ResourceKey{Mesh: meshName, Name: dataplaneName},
+		)
 		if err != nil {
 			rest_errors.HandleError(response, err, "Could not get MatchedPolicies")
 			return
@@ -209,7 +212,7 @@ func inspectGatewayRouteDataplanes(
 				continue
 			}
 			key := core_model.MetaToResourceKey(dp.GetMeta())
-			_, listeners, _, err := getMatchedPolicies(cfg, meshContext, key)
+			_, listeners, _, err := getMatchedPolicies(request.Request.Context(), cfg, meshContext, key)
 			if err != nil {
 				rest_errors.HandleError(response, err, "Could not generate listener info")
 				return
@@ -269,7 +272,7 @@ func inspectPolicies(
 				Mesh: dpKey.Mesh,
 				Name: dpKey.Name,
 			}
-			matchedPolicies, gatewayEntries, proxy, err := getMatchedPolicies(cfg, meshContext, dpKey)
+			matchedPolicies, gatewayEntries, proxy, err := getMatchedPolicies(request.Request.Context(), cfg, meshContext, dpKey)
 			if err != nil {
 				rest_errors.HandleError(response, err, fmt.Sprintf("Could not get MatchedPolicies for %v", dpKey))
 				return

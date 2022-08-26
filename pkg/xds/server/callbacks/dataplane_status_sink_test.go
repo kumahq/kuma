@@ -156,6 +156,8 @@ var _ = Describe("DataplaneInsightSink", func() {
 		})
 
 		It("should create/update DataplaneInsight resource", func() {
+			ctx := context.Background()
+
 			// setup
 			key := core_model.ResourceKey{Mesh: "default", Name: "example-001"}
 			subscription := &mesh_proto.DiscoverySubscription{
@@ -172,12 +174,12 @@ var _ = Describe("DataplaneInsightSink", func() {
 			statusStore := callbacks.NewDataplaneInsightStore(manager.NewResourceManager(store))
 
 			// when
-			err := statusStore.Upsert(dataplaneType, key, proto.Clone(subscription).(*mesh_proto.DiscoverySubscription), nil)
+			err := statusStore.Upsert(ctx, dataplaneType, key, proto.Clone(subscription).(*mesh_proto.DiscoverySubscription), nil)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			Eventually(func() bool {
-				err := store.Get(context.Background(), dataplaneInsight, core_store.GetBy(key))
+				err := store.Get(ctx, dataplaneInsight, core_store.GetBy(key))
 				if err != nil {
 					return false
 				}
@@ -206,12 +208,12 @@ var _ = Describe("DataplaneInsightSink", func() {
 			subscription.Status.Lds.ResponsesSent += 1
 			subscription.Status.Total.ResponsesSent += 1
 			// and
-			err = statusStore.Upsert(dataplaneType, key, proto.Clone(subscription).(*mesh_proto.DiscoverySubscription), nil)
+			err = statusStore.Upsert(ctx, dataplaneType, key, proto.Clone(subscription).(*mesh_proto.DiscoverySubscription), nil)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			Eventually(func() bool {
-				err := store.Get(context.Background(), dataplaneInsight, core_store.GetBy(key))
+				err := store.Get(ctx, dataplaneInsight, core_store.GetBy(key))
 				if err != nil {
 					return false
 				}
