@@ -13,7 +13,6 @@ import (
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/gc"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/util/proto"
@@ -23,22 +22,18 @@ var _ = Describe("Subscription Finalizer", func() {
 	sampleTime, _ := time.Parse(time.RFC3339, "2019-07-01T00:00:00+00:00")
 
 	var rm *countingManager
-	var finalizer component.Component
 
 	BeforeEach(func() {
 		rm = &countingManager{ResourceManager: core_manager.NewResourceManager(memory.NewStore())}
 	})
 
 	startSubscriptionFinalizer := func(ticks chan time.Time, stop chan struct{}) {
-		var err error
-		finalizer, err = gc.NewSubscriptionFinalizer(rm, func() *time.Ticker {
+		finalizer, err := gc.NewSubscriptionFinalizer(rm, func() *time.Ticker {
 			return &time.Ticker{C: ticks}
 		}, system.ZoneInsightType)
 		Expect(err).ToNot(HaveOccurred())
 		go func() {
-			mtxNow.RLock()
 			_ = finalizer.Start(stop)
-			mtxNow.RUnlock()
 		}()
 	}
 
