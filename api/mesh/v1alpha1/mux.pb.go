@@ -28,6 +28,7 @@ type Message struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Value:
+	//
 	//	*Message_LegacyRequest
 	//	*Message_LegacyResponse
 	//	*Message_Request
