@@ -2011,7 +2011,6 @@ spec:
       annotations:
         checksum/config: a339f834847039f79aed19d73fd8903aeb736f152c512a641f4fb907dbad1429
         checksum/tls-secrets: 6c59f080c0827192e886efb995ae009149bee063ab26e28eac17b70cfd7ae974
-        
       labels: 
         app: kuma-control-plane
         "foo": "baz"

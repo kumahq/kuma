@@ -10,11 +10,30 @@ metadata:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
+  name: kuma-cni
+  namespace: kube-system
+  labels: 
+    app: kuma-cni
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
   name: kuma-control-plane
   namespace: kuma-system
   labels: 
     app: kuma-control-plane
-    "foo": "bar"
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kuma-egress
+  namespace: kuma-system
+  labels: 
+    app: kuma-egress
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 ---
@@ -25,9 +44,32 @@ metadata:
   namespace: kuma-system
   labels: 
     app: kuma-ingress
-    "foo": "bar"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: kuma-cni-config
+  namespace: kube-system
+  labels: 
+    app: kuma-cni
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+data:
+  # The CNI network configuration to add to the plugin chain on each node.
+  cni_network_config: |-
+    {
+      "cniVersion": "0.3.1",
+      "name": "kuma-cni",
+      "type": "kuma-cni",
+      "log_level": "info",
+      "kubernetes": {
+          "kubeconfig": "__KUBECONFIG_FILEPATH__",
+          "cni_bin_dir": "/var/lib/cni/bin",
+          "exclude_namespaces": [ "kube-system" ]
+      }
+    }
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -36,7 +78,6 @@ metadata:
   namespace: kuma-system
   labels: 
     app: kuma-control-plane
-    "foo": "bar"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 data:
@@ -1715,10 +1756,30 @@ spec:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
+  name: kuma-cni
+  labels:
+  
+    app: kuma-cni
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+rules:
+  - apiGroups: [""]
+    resources:
+      - nodes
+    verbs:
+      - get
+  - apiGroups: [""]
+    resources:
+      - pods
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
   name: kuma-control-plane
   labels: 
     app: kuma-control-plane
-    "foo": "bar"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 rules:
@@ -1860,6 +1921,24 @@ rules:
       - get
       - patch
       - update
+  - apiGroups:
+      - k8s.cni.cncf.io
+    resources:
+      - network-attachment-definitions
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+  - apiGroups:
+      - apiextensions.k8s.io
+    resources:
+      - customresourcedefinitions
+    verbs:
+      - get
+      - list
+      - watch
   # validate k8s token before issuing mTLS cert
   - apiGroups:
       - authentication.k8s.io
@@ -1871,10 +1950,27 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
+  name: kuma-cni
+  labels:
+  
+    app: kuma-cni
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kuma-cni
+subjects:
+  - kind: ServiceAccount
+    name: kuma-cni
+    namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
   name: kuma-control-plane
   labels: 
     app: kuma-control-plane
-    "foo": "bar"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 roleRef:
@@ -1893,7 +1989,6 @@ metadata:
   namespace: kuma-system
   labels: 
     app: kuma-control-plane
-    "foo": "bar"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 rules:
@@ -1936,7 +2031,6 @@ metadata:
   namespace: kuma-system
   labels: 
     app: kuma-control-plane
-    "foo": "bar"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 roleRef:
@@ -1955,12 +2049,13 @@ metadata:
   namespace: kuma-system
   labels: 
     app: kuma-control-plane
-    "foo": "bar"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
   annotations:
     prometheus.io/scrape: "true"
     prometheus.io/port: "5680"
+    foo: "{\"bar\": \"baz\"}"
+    service: "annotation"
 spec:
   type: ClusterIP
   ports:
@@ -1985,14 +2080,38 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  name: kuma-egress
+  namespace: kuma-system
+  labels: 
+    app: kuma-egress
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+  annotations:
+      foo: "{\"bar\": \"baz\"}"
+      service: "zone-egress"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 10002
+      protocol: TCP
+      targetPort: 10002
+  selector:
+    app: kuma-egress
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+---
+apiVersion: v1
+kind: Service
+metadata:
   name: kuma-ingress
   namespace: kuma-system
   labels: 
     app: kuma-ingress
-    "foo": "bar"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
   annotations:
+      foo: "{\"bar\": \"baz\"}"
+      service: "zone-ingress"
 spec:
   type: LoadBalancer
   ports:
@@ -2004,6 +2123,95 @@ spec:
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 ---
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: kuma-cni-node
+  namespace: kube-system
+  labels:
+    app: kuma-cni
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+spec:
+  selector:
+    matchLabels:
+      app: kuma-cni
+      app.kubernetes.io/name: kuma
+      app.kubernetes.io/instance: kuma
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: kuma-cni
+        app.kubernetes.io/name: kuma
+        app.kubernetes.io/instance: kuma
+      annotations:
+        checksum/config: 850246b56a69bba30d67145d2efc88941f6c91badd116beca4123d75c70a39ec
+        foo: "{\"bar\": \"baz\"}"
+        pod: "cni"
+    spec:
+      # This, along with the CriticalAddonsOnly toleration below,
+      # marks the pod as a critical add-on, ensuring it gets
+      # priority scheduling and that its resources are reserved
+      # if it ever gets evicted.
+      priorityClassName: system-cluster-critical
+      nodeSelector:
+      
+        kubernetes.io/os: linux
+      hostNetwork: true
+      tolerations:
+        # Make sure kuma-cni-node gets scheduled on all nodes.
+        - effect: NoSchedule
+          operator: Exists
+        # Mark the pod as a critical add-on for rescheduling.
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - effect: NoExecute
+          operator: Exists
+      serviceAccountName: kuma-cni
+      # Minimize downtime during a rolling upgrade or deletion; tell Kubernetes to do a "force
+      # deletion": https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods.
+      terminationGracePeriodSeconds: 5
+      containers:
+        - name: install-cni
+          image: "docker.io/kumahq/install-cni:0.0.10"
+          imagePullPolicy: IfNotPresent
+          command: [ "/bin/sh", "-c", "--" ]
+          args: [ "sleep 0 && exec /install-cni.sh" ]
+          env:
+            # Name of the CNI config file to create.
+            - name: CNI_CONF_NAME
+              value: "kuma-cni.conf"
+            # The CNI network config to install on each node.
+            - name: CNI_NETWORK_CONFIG
+              valueFrom:
+                configMapKeyRef:
+                  name: kuma-cni-config
+                  key: cni_network_config
+            - name: CNI_NET_DIR
+              value: "/etc/cni/multus/net.d"
+            # If true, deploy as a chained CNI plugin, otherwise deploy as a standalone CNI
+            - name: CHAINED_CNI_PLUGIN
+              value: "false"
+            - name: CNI_LOG_LEVEL
+              value: "info"
+          volumeMounts:
+            - mountPath: /host/opt/cni/bin
+              name: cni-bin-dir
+            - mountPath: /host/etc/cni/net.d
+              name: cni-net-dir
+      volumes:
+        # Used to install CNI.
+        - name: cni-bin-dir
+          hostPath:
+            path: /var/lib/cni/bin
+        - name: cni-net-dir
+          hostPath:
+            path: /etc/cni/multus/net.d
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -2011,7 +2219,6 @@ metadata:
   namespace: kuma-system
   labels: 
     app: kuma-control-plane
-    "foo": "bar"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 spec:
@@ -2028,11 +2235,12 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 8e3d9b7078c00005eae94f443d41866ae6d12b93b99888c865c01e843e16dd38
-        checksum/tls-secrets: 6a60bfebb565d14f3eb7deea8f96a8d4eb674254ab8a60c3e19e7ff761168e0b
+        checksum/config: c52be51867deb8823a422dc1d188c7a2ab7fc5e501f620467d7fdd8fc4637d47
+        checksum/tls-secrets: 0f778cb0c1f035e562a58b0fac0af5eb78fa2ed5d89f26c9e7968d50cea2a1dd
+        bim: "bam"
+        foo: "{\"bar\": \"baz\"}"
       labels: 
         app: kuma-control-plane
-        "foo": "bar"
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
     spec:
@@ -2087,9 +2295,9 @@ spec:
             - name: KUMA_MODE
               value: "zone"
             - name: KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS
-              value: "grpcs://foo.com:3456"
+              value: "grpcs://localhost:5678"
             - name: KUMA_MULTIZONE_ZONE_NAME
-              value: "east"
+              value: "zone1"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
               value: "/var/run/secrets/kuma.io/tls-cert"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
@@ -2099,7 +2307,7 @@ spec:
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
               value: "/var/run/secrets/kuma.io/tls-cert/ca.crt"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
-              value: "false"
+              value: "true"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
               value: "docker.io/kumahq/kuma-dp:0.0.1"
             - name: KUMA_RUNTIME_KUBERNETES_SERVICE_ACCOUNT_NAME
@@ -2166,11 +2374,130 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: kuma-egress
+  namespace: kuma-system
+  labels: 
+    app: kuma-egress
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+spec:
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kuma
+      app.kubernetes.io/instance: kuma
+      app: kuma-egress
+  template:
+    metadata:
+      annotations:
+        kuma.io/egress: enabled
+        foo: "{\"bar\": \"baz\"}"
+        pod: "zone-egress"
+        pod2: "zone-ingress"
+      labels:
+        app: kuma-egress
+        app.kubernetes.io/name: kuma
+        app.kubernetes.io/instance: kuma
+    spec:
+      affinity: 
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                  - 'kuma'
+                - key: app.kubernetes.io/instance
+                  operator: In
+                  values:
+                  - 'kuma'
+                - key: app
+                  operator: In
+                  values:
+                  - kuma-egress
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+      serviceAccountName: kuma-egress
+      nodeSelector:
+      
+        kubernetes.io/os: linux
+      containers:
+        - name: egress
+          image: "docker.io/kumahq/kuma-dp:0.0.1"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: KUMA_CONTROL_PLANE_URL
+              value: "https://kuma-control-plane.kuma-system:5678"
+            - name: KUMA_CONTROL_PLANE_CA_CERT_FILE
+              value: /var/run/secrets/kuma.io/tls-cert/ca.crt
+            - name: KUMA_DATAPLANE_NAME
+              value: $(POD_NAME).$(POD_NAMESPACE)
+            - name: KUMA_DATAPLANE_DRAIN_TIME
+              value: 30s
+            - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
+              value: /var/run/secrets/kubernetes.io/serviceaccount/token
+            - name: KUMA_DATAPLANE_PROXY_TYPE
+              value: "egress"
+          args:
+            - run
+            - --log-level=info
+          ports:
+            - containerPort: 10002
+          livenessProbe:
+            httpGet:
+              path: "/ready"
+              port: 9901
+            failureThreshold: 12
+            initialDelaySeconds: 60
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: "/ready"
+              port: 9901
+            failureThreshold: 12
+            initialDelaySeconds: 1
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+          volumeMounts:
+            - name: kuma-tls-cert
+              mountPath: /var/run/secrets/kuma.io/tls-cert
+              readOnly: true
+      volumes:
+        - name: kuma-tls-cert
+          secret:
+            secretName: kuma-tls-cert
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: kuma-ingress
   namespace: kuma-system
   labels: 
     app: kuma-ingress
-    "foo": "bar"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 spec:
@@ -2188,9 +2515,11 @@ spec:
     metadata:
       annotations:
         kuma.io/ingress: enabled
+        foo: "{\"bar\": \"baz\"}"
+        pod: "zone-ingress"
+        pod2: "zone-ingress"
       labels:
         app: kuma-ingress
-        "foo": "bar"
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
     spec:
@@ -2289,9 +2618,11 @@ kind: Ingress
 metadata:
   name: kuma-control-plane
   namespace: kuma-system
+  annotations:
+    foo: '{"bar": "baz"}'
+    service: ingress
   labels: 
     app: kuma-control-plane
-    "foo": "bar"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 spec:
@@ -2315,7 +2646,6 @@ metadata:
   namespace: kuma-system
   labels: 
     app: kuma-control-plane
-    "foo": "bar"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 webhooks:
@@ -2447,7 +2777,6 @@ metadata:
   namespace: kuma-system
   labels: 
     app: kuma-control-plane
-    "foo": "bar"
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 webhooks:
