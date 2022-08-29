@@ -115,9 +115,9 @@ app: {{ include "kuma.name" . }}-control-plane
 control plane pod annotations
 */}}
 {{- define "kuma.cpPodAnnotations" -}}
-{{ range $key, $value := $.Values.controlPlane.podAnnotations }}
-{{- $key }}: {{ $value -}}
-{{ end }}
+{{- range $key, $value := $.Values.controlPlane.podAnnotations }}
+{{ $key }}: {{ $value }}
+{{- end }}
 {{- end }}
 
 {{/*
