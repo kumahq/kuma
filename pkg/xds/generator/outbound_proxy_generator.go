@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	protov1 "github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -300,7 +299,7 @@ func (OutboundProxyGenerator) generateEDS(
 
 				resources.Add(&model.Resource{
 					Name:     cluster.Name(),
-					Resource: protov1.MessageV1(loadAssignment),
+					Resource: loadAssignment,
 				})
 			}
 		}

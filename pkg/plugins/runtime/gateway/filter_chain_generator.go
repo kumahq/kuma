@@ -161,7 +161,7 @@ func (g *HTTPSFilterChainGenerator) Generate(
 				return nil, nil, errors.Wrap(err, "couldn't generate downstream tls context for gateway")
 			}
 
-			downstream.CommonTlsContext.GetCombinedValidationContext().DefaultValidationContext.MatchSubjectAltNames = nil
+			downstream.CommonTlsContext.GetCombinedValidationContext().DefaultValidationContext.MatchTypedSubjectAltNames = nil
 
 			hostResources.AddSet(resources)
 
