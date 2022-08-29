@@ -1,6 +1,7 @@
 package gatewayapi_test
 
 import (
+	"os"
 	"runtime"
 	"testing"
 
@@ -34,6 +35,9 @@ spec:
 // TestConformance runs as a `testing` test and not Ginkgo so we have to use an
 // explicit `g` to use Gomega.
 func TestConformance(t *testing.T) {
+	if os.Getenv("CIRCLE_NODE_INDEX") != "" && os.Getenv("CIRCLE_NODE_INDEX") != "4" {
+		t.Skip("Conformance tests are only run on job 4")
+	}
 	if Config.IPV6 {
 		t.Skip("On IPv6 we run on kind which doesn't support load balancers")
 	}
@@ -75,9 +79,9 @@ func TestConformance(t *testing.T) {
 	g.Expect(apis_gatewayapi_alpha.AddToScheme(client.Scheme())).To(Succeed())
 	g.Expect(apis_gatewayapi.AddToScheme(client.Scheme())).To(Succeed())
 
-	var validUniqueListenerPorts []apis_gatewayapi_alpha.PortNumber
+	var validUniqueListenerPorts []apis_gatewayapi.PortNumber
 	for i := minNodePort; i <= maxNodePort; i++ {
-		validUniqueListenerPorts = append(validUniqueListenerPorts, apis_gatewayapi_alpha.PortNumber(i))
+		validUniqueListenerPorts = append(validUniqueListenerPorts, apis_gatewayapi.PortNumber(i))
 	}
 
 	conformanceSuite := suite.New(suite.Options{
@@ -104,7 +108,8 @@ func TestConformance(t *testing.T) {
 			tests.HTTPRouteInvalidCrossNamespaceBackendRef.ShortName, // The following fail due to #4597
 			tests.HTTPRouteInvalidBackendRefUnknownKind.ShortName,
 			tests.HTTPRouteInvalidNonExistentBackendRef.ShortName,
-			tests.HTTPRouteInvalidReferenceGrant.ShortName:
+			tests.HTTPRouteInvalidReferenceGrant.ShortName,
+			tests.GatewaySecretReferenceGrantAllInNamespace.ShortName: // this test is still flaky.
 			continue
 		}
 		passingTests = append(passingTests, test)

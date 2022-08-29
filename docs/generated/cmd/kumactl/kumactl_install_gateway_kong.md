@@ -14,6 +14,7 @@ kumactl install gateway kong [flags]
 
 ```
   -h, --help               help for kong
+      --mesh string        mesh to install gateway to (default "kuma-gateway")
       --namespace string   namespace to install gateway to (default "kuma-gateway")
 ```
 

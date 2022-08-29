@@ -1,6 +1,7 @@
 package callbacks
 
 import (
+	"context"
 	"reflect"
 	"time"
 
@@ -25,7 +26,7 @@ type DataplaneInsightStore interface {
 	// Upsert creates or updates the subscription, storing it with
 	// the key dataplaneID. dataplaneType gives the resource type of
 	// the dataplane proxy that has subscribed.
-	Upsert(dataplaneType core_model.ResourceType, dataplaneID core_model.ResourceKey, subscription *mesh_proto.DiscoverySubscription, secretsInfo *secrets.Info) error
+	Upsert(ctx context.Context, dataplaneType core_model.ResourceType, dataplaneID core_model.ResourceKey, subscription *mesh_proto.DiscoverySubscription, secretsInfo *secrets.Info) error
 }
 
 func NewDataplaneInsightSink(
@@ -85,7 +86,9 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 			return
 		}
 
-		if err := s.store.Upsert(s.dataplaneType, dataplaneID, currentState, secretsInfo); err != nil {
+		ctx := context.TODO()
+
+		if err := s.store.Upsert(ctx, s.dataplaneType, dataplaneID, currentState, secretsInfo); err != nil {
 			switch {
 			case closing:
 				// When XDS stream is closed, Dataplane Status Tracker executes OnStreamClose which closes stop channel
@@ -147,20 +150,20 @@ type dataplaneInsightStore struct {
 	resManager manager.ResourceManager
 }
 
-func (s *dataplaneInsightStore) Upsert(dataplaneType core_model.ResourceType, dataplaneID core_model.ResourceKey, subscription *mesh_proto.DiscoverySubscription, secretsInfo *secrets.Info) error {
+func (s *dataplaneInsightStore) Upsert(ctx context.Context, dataplaneType core_model.ResourceType, dataplaneID core_model.ResourceKey, subscription *mesh_proto.DiscoverySubscription, secretsInfo *secrets.Info) error {
 	switch dataplaneType {
 	case core_mesh.ZoneIngressType:
-		return manager.Upsert(s.resManager, dataplaneID, core_mesh.NewZoneIngressInsightResource(), func(resource core_model.Resource) error {
+		return manager.Upsert(ctx, s.resManager, dataplaneID, core_mesh.NewZoneIngressInsightResource(), func(resource core_model.Resource) error {
 			insight := resource.(*core_mesh.ZoneIngressInsightResource)
 			return insight.Spec.UpdateSubscription(subscription)
 		})
 	case core_mesh.ZoneEgressType:
-		return manager.Upsert(s.resManager, dataplaneID, core_mesh.NewZoneEgressInsightResource(), func(resource core_model.Resource) error {
+		return manager.Upsert(ctx, s.resManager, dataplaneID, core_mesh.NewZoneEgressInsightResource(), func(resource core_model.Resource) error {
 			insight := resource.(*core_mesh.ZoneEgressInsightResource)
 			return insight.Spec.UpdateSubscription(subscription)
 		})
 	case core_mesh.DataplaneType:
-		return manager.Upsert(s.resManager, dataplaneID, core_mesh.NewDataplaneInsightResource(), func(resource core_model.Resource) error {
+		return manager.Upsert(ctx, s.resManager, dataplaneID, core_mesh.NewDataplaneInsightResource(), func(resource core_model.Resource) error {
 			insight := resource.(*core_mesh.DataplaneInsightResource)
 			if err := insight.Spec.UpdateSubscription(subscription); err != nil {
 				return err

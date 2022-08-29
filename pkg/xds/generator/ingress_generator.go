@@ -139,12 +139,6 @@ func (_ IngressGenerator) destinations(
 		for _, rule := range route.Spec.GetConf().GetTcp().GetRules() {
 			backends = append(backends, rule.Backends...)
 		}
-		for _, rule := range route.Spec.GetConf().GetTls().GetRules() {
-			backends = append(backends, rule.Backends...)
-		}
-		for _, rule := range route.Spec.GetConf().GetUdp().GetRules() {
-			backends = append(backends, rule.Backends...)
-		}
 	}
 
 	for _, backend := range backends {

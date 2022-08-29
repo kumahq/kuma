@@ -66,7 +66,7 @@ func (d *DataplaneWatchdog) Sync(ctx context.Context) error {
 	case mesh_proto.IngressProxyType:
 		return d.syncIngress(ctx)
 	case mesh_proto.EgressProxyType:
-		return d.syncEgress()
+		return d.syncEgress(ctx)
 	default:
 		// It might be a case that dp type is not yet inferred because there is no Dataplane definition yet.
 		return nil
@@ -113,7 +113,7 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) error {
 		ControlPlane: d.envoyCpCtx,
 		Mesh:         meshCtx,
 	}
-	proxy, err := d.dataplaneProxyBuilder.Build(d.key, meshCtx)
+	proxy, err := d.dataplaneProxyBuilder.Build(ctx, d.key, meshCtx)
 	if err != nil {
 		return err
 	}
@@ -138,7 +138,7 @@ func (d *DataplaneWatchdog) syncIngress(ctx context.Context) error {
 		ControlPlane: d.envoyCpCtx,
 		Mesh:         xds_context.MeshContext{}, // ZoneIngress does not have a mesh!
 	}
-	proxy, err := d.ingressProxyBuilder.Build(d.key)
+	proxy, err := d.ingressProxyBuilder.Build(ctx, d.key)
 	if err != nil {
 		return err
 	}
@@ -152,17 +152,17 @@ func (d *DataplaneWatchdog) syncIngress(ctx context.Context) error {
 
 // syncEgress syncs state of Egress Dataplane. Notice that it does not use
 // Mesh Hash yet because Egress supports many Meshes.
-func (d *DataplaneWatchdog) syncEgress() error {
+func (d *DataplaneWatchdog) syncEgress(ctx context.Context) error {
 	envoyCtx := &xds_context.Context{
 		ControlPlane: d.envoyCpCtx,
 		Mesh:         xds_context.MeshContext{}, // ZoneEgress does not have a mesh!
 	}
 
-	proxy, err := d.egressProxyBuilder.Build(d.key)
+	proxy, err := d.egressProxyBuilder.Build(ctx, d.key)
 	if err != nil {
 		return err
 	}
-	envoyAdminMTLS, err := d.getEnvoyAdminMTLS(context.Background(), proxy.ZoneEgressProxy.ZoneEgressResource.Spec.Networking.Address)
+	envoyAdminMTLS, err := d.getEnvoyAdminMTLS(ctx, proxy.ZoneEgressProxy.ZoneEgressResource.Spec.Networking.Address)
 	if err != nil {
 		return errors.Wrap(err, "could not get Envoy Admin mTLS certs")
 	}

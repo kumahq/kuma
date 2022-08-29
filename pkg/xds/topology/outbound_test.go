@@ -1,6 +1,8 @@
 package topology_test
 
 import (
+	"context"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -191,7 +193,9 @@ var _ = Describe("TrafficRoute", func() {
 			externalServices := &core_mesh.ExternalServiceResourceList{}
 
 			// when
-			targets := BuildEndpointMap(defaultMeshWithMTLS, "zone-1", dataplanes.Items, nil, nil, externalServices.Items, dataSourceLoader)
+			targets := BuildEndpointMap(
+				context.Background(), defaultMeshWithMTLS, "zone-1", dataplanes.Items, nil, nil, externalServices.Items, dataSourceLoader,
+			)
 
 			Expect(targets).To(HaveLen(4))
 			// and
@@ -278,7 +282,9 @@ var _ = Describe("TrafficRoute", func() {
 		DescribeTable("should include only those dataplanes that match given selectors",
 			func(given testCase) {
 				// when
-				endpoints := BuildEndpointMap(given.mesh, "zone-1", given.dataplanes, given.zoneIngresses, given.zoneEgresses, given.externalServices, dataSourceLoader)
+				endpoints := BuildEndpointMap(
+					context.Background(), given.mesh, "zone-1", given.dataplanes, given.zoneIngresses, given.zoneEgresses, given.externalServices, dataSourceLoader,
+				)
 				// then
 				Expect(endpoints).To(Equal(given.expected))
 			},
@@ -1127,7 +1133,7 @@ var _ = Describe("TrafficRoute", func() {
 			DescribeTable("should generate endpoints map for zone egress",
 				func(given testCase) {
 					// when
-					endpoints := BuildRemoteEndpointMap(given.mesh, "zone-1", given.zoneIngresses, given.externalServices, dataSourceLoader)
+					endpoints := BuildRemoteEndpointMap(context.Background(), given.mesh, "zone-1", given.zoneIngresses, given.externalServices, dataSourceLoader)
 					// then
 					Expect(endpoints).To(Equal(given.expected))
 				},

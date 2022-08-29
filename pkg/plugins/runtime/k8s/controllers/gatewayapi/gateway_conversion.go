@@ -3,10 +3,11 @@ package gatewayapi
 import (
 	"context"
 	"fmt"
-	"strings"
 
+	kube_core "k8s.io/api/core/v1"
+	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
+	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
@@ -210,101 +211,20 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 			listener.Hostname = string(*l.Hostname)
 		}
 
-		var unresolvableCertRefs []string
+		var unresolvableCertRef *certRefCondition
 		if l.TLS != nil {
-			for _, certRef := range l.TLS.CertificateRefs {
-				policyRef := policy.PolicyReferenceSecret(policy.FromGatewayIn(gateway.Namespace), certRef)
-
-				permitted, err := policy.IsReferencePermitted(ctx, r.Client, policyRef)
-				if err != nil {
-					return nil, nil, err
-				}
-
-				if !permitted {
-					message := fmt.Sprintf("%q %q", policyRef.GroupKindReferredTo().String(), policyRef.NamespacedNameReferredTo().String())
-					unresolvableCertRefs = append(unresolvableCertRefs, message)
-				}
-			}
-
-			if len(unresolvableCertRefs) == 0 {
-				if l.TLS.Mode != nil && *l.TLS.Mode == gatewayapi.TLSModePassthrough {
-					continue // todo admission webhook should prevent this
-				}
-				listener.Tls = &mesh_proto.MeshGateway_TLS_Conf{
-					Mode: mesh_proto.MeshGateway_TLS_TERMINATE,
-				}
-				for _, certRef := range l.TLS.CertificateRefs {
-					// We only support canonical Secret of TLS type. Ignore other types
-					namespacedName := types.NamespacedName{
-						Name:      string(certRef.Name),
-						Namespace: gateway.Namespace, // if not specified, namespace is inherited from Gateway
-					}
-					if certRef.Namespace != nil {
-						namespacedName.Namespace = string(*certRef.Namespace)
-					}
-					secretKey, err := r.createSecretIfMissing(ctx, namespacedName, mesh)
-					if err != nil {
-						return nil, nil, err
-					}
-					listener.Tls.Certificates = append(listener.Tls.Certificates, &system_proto.DataSource{
-						Type: &system_proto.DataSource_Secret{
-							Secret: secretKey.Name,
-						},
-					})
-				}
+			var err error
+			listener.Tls, unresolvableCertRef, err = r.handleCertRefs(ctx, mesh, gateway.Namespace, l)
+			if err != nil {
+				return nil, nil, err
 			}
 		}
 
-		// We've already cleared this listener of conflicts and being detached
-		listenerConditions[l.Name] = append(
-			listenerConditions[l.Name],
-			kube_meta.Condition{
-				Type:   string(gatewayapi.ListenerConditionDetached),
-				Status: kube_meta.ConditionFalse,
-				Reason: string(gatewayapi.ListenerReasonAttached),
-			},
-			kube_meta.Condition{
-				Type:   string(gatewayapi.ListenerConditionConflicted),
-				Status: kube_meta.ConditionFalse,
-				Reason: string(gatewayapi.ListenerReasonNoConflicts),
-			},
-		)
-
-		var resolvedRefConditions []kube_meta.Condition
-
-		if len(unresolvableCertRefs) == 0 {
+		if unresolvableCertRef == nil {
 			listeners = append(listeners, listener)
-
-			resolvedRefConditions = []kube_meta.Condition{
-				{
-					Type:   string(gatewayapi.ListenerConditionResolvedRefs),
-					Status: kube_meta.ConditionTrue,
-					Reason: string(gatewayapi.ListenerReasonResolvedRefs),
-				},
-				{
-					Type:   string(gatewayapi.ListenerConditionReady),
-					Status: kube_meta.ConditionTrue,
-					Reason: string(gatewayapi.ListenerConditionReady),
-				},
-			}
-		} else {
-			resolvedRefConditions = []kube_meta.Condition{
-				{
-					Type:    string(gatewayapi.ListenerConditionResolvedRefs),
-					Status:  kube_meta.ConditionFalse,
-					Reason:  string(gatewayapi.ListenerReasonInvalidCertificateRef),
-					Message: fmt.Sprintf("references to %s not permitted by any ReferencePolicy", strings.Join(unresolvableCertRefs, ", ")),
-				},
-				{
-					Type:    string(gatewayapi.ListenerConditionReady),
-					Status:  kube_meta.ConditionFalse,
-					Reason:  string(gatewayapi.ListenerReasonInvalid),
-					Message: "unable to resolve refs",
-				},
-			}
 		}
 
-		listenerConditions[l.Name] = append(listenerConditions[l.Name], resolvedRefConditions...)
+		listenerConditions[l.Name] = handleConditions(listenerConditions[l.Name], unresolvableCertRef)
 	}
 
 	var kumaGateway *mesh_proto.MeshGateway
@@ -323,4 +243,114 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 	}
 
 	return kumaGateway, listenerConditions, nil
+}
+
+type certRefCondition struct {
+	message string
+	reason  string
+}
+
+func (r *GatewayReconciler) handleCertRefs(ctx context.Context, mesh string, gatewayNamespace string, l gatewayapi.Listener) (*mesh_proto.MeshGateway_TLS_Conf, *certRefCondition, error) {
+	var referencedSecrets []kube_types.NamespacedName
+	for _, certRef := range l.TLS.CertificateRefs {
+		policyRef := policy.PolicyReferenceSecret(policy.FromGatewayIn(gatewayNamespace), certRef)
+
+		if permitted, err := policy.IsReferencePermitted(ctx, r.Client, policyRef); err != nil {
+			return nil, nil, err
+		} else if !permitted {
+			name := fmt.Sprintf("%q %q", policyRef.GroupKindReferredTo().String(), policyRef.NamespacedNameReferredTo().String())
+			return nil, &certRefCondition{
+				reason:  string(gatewayapi.ListenerReasonRefNotPermitted),
+				message: fmt.Sprintf("reference to %s not permitted by any ReferenceGrant", name),
+			}, nil
+		}
+
+		if err := r.Client.Get(ctx, policyRef.NamespacedNameReferredTo(), &kube_core.Secret{}); err != nil {
+			if kube_apierrs.IsNotFound(err) {
+				name := fmt.Sprintf("%q %q", policyRef.GroupKindReferredTo().String(), policyRef.NamespacedNameReferredTo().String())
+				return nil, &certRefCondition{
+					reason:  string(gatewayapi.ListenerReasonInvalidCertificateRef),
+					message: fmt.Sprintf("invalid reference to %s", name),
+				}, nil
+			}
+
+			return nil, nil, err
+		}
+
+		referencedSecrets = append(referencedSecrets, policyRef.NamespacedNameReferredTo())
+	}
+
+	if l.TLS.Mode != nil && *l.TLS.Mode == gatewayapi.TLSModePassthrough {
+		return nil, nil, nil // todo admission webhook should prevent this
+	}
+
+	tls := &mesh_proto.MeshGateway_TLS_Conf{
+		Mode: mesh_proto.MeshGateway_TLS_TERMINATE,
+	}
+	for _, secretKey := range referencedSecrets {
+		// We only support canonical Secret of TLS type. Ignore other types
+		secretKey, err := r.createSecretIfMissing(ctx, secretKey, mesh)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		tls.Certificates = append(tls.Certificates, &system_proto.DataSource{
+			Type: &system_proto.DataSource_Secret{
+				Secret: secretKey.Name,
+			},
+		})
+	}
+
+	return tls, nil, nil
+}
+
+func handleConditions(conditions []kube_meta.Condition, unresolvableCertRef *certRefCondition) []kube_meta.Condition {
+	// We've already cleared this listener of conflicts and being detached
+	conditions = append(
+		conditions,
+		kube_meta.Condition{
+			Type:   string(gatewayapi.ListenerConditionDetached),
+			Status: kube_meta.ConditionFalse,
+			Reason: string(gatewayapi.ListenerReasonAttached),
+		},
+		kube_meta.Condition{
+			Type:   string(gatewayapi.ListenerConditionConflicted),
+			Status: kube_meta.ConditionFalse,
+			Reason: string(gatewayapi.ListenerReasonNoConflicts),
+		},
+	)
+
+	var resolvedRefConditions []kube_meta.Condition
+
+	if unresolvableCertRef == nil {
+		resolvedRefConditions = []kube_meta.Condition{
+			{
+				Type:   string(gatewayapi.ListenerConditionResolvedRefs),
+				Status: kube_meta.ConditionTrue,
+				Reason: string(gatewayapi.ListenerReasonResolvedRefs),
+			},
+			{
+				Type:   string(gatewayapi.ListenerConditionReady),
+				Status: kube_meta.ConditionTrue,
+				Reason: string(gatewayapi.ListenerConditionReady),
+			},
+		}
+	} else {
+		resolvedRefConditions = []kube_meta.Condition{
+			{
+				Type:    string(gatewayapi.ListenerConditionResolvedRefs),
+				Status:  kube_meta.ConditionFalse,
+				Reason:  unresolvableCertRef.reason,
+				Message: unresolvableCertRef.message,
+			},
+			{
+				Type:    string(gatewayapi.ListenerConditionReady),
+				Status:  kube_meta.ConditionFalse,
+				Reason:  string(gatewayapi.ListenerReasonInvalid),
+				Message: "unable to resolve refs",
+			},
+		}
+	}
+
+	return append(conditions, resolvedRefConditions...)
 }

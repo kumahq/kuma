@@ -41,7 +41,7 @@ require (
 	github.com/prometheus/client_golang v1.13.0
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.37.0
-	github.com/prometheus/prometheus v0.37.0
+	github.com/prometheus/prometheus v0.38.0
 	github.com/sethvargo/go-retry v0.2.3
 	github.com/slok/go-http-metrics v0.10.0
 	github.com/soheilhy/cmux v0.1.5
@@ -201,7 +201,7 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace sigs.k8s.io/gateway-api => github.com/kumahq/gateway-api v0.0.0-20220714082056-fbb05ce01577
+replace sigs.k8s.io/gateway-api => github.com/kumahq/gateway-api v0.0.0-20220822185518-e8a3f0be778b
 
 // The following replacement refers to the kuma-release-1.3 branch.
 //

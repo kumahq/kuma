@@ -15,14 +15,14 @@ import (
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
-type ResourceFilter func(clusterID string, features kds.Features, r model.Resource) bool
+type ResourceFilter func(ctx context.Context, clusterID string, features kds.Features, r model.Resource) bool
 type ResourceMapper func(r model.Resource) (model.Resource, error)
 
 func NoopResourceMapper(r model.Resource) (model.Resource, error) {
 	return r, nil
 }
 
-func Any(string, kds.Features, model.Resource) bool {
+func Any(context.Context, string, kds.Features, model.Resource) bool {
 	return true
 }
 
@@ -55,16 +55,16 @@ func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 	return builder.Build(""), nil
 }
 
-func (s *snapshotGenerator) getResources(context context.Context, typ model.ResourceType, node *envoy_core.Node) ([]envoy_types.Resource, error) {
+func (s *snapshotGenerator) getResources(ctx context.Context, typ model.ResourceType, node *envoy_core.Node) ([]envoy_types.Resource, error) {
 	rlist, err := registry.Global().NewList(typ)
 	if err != nil {
 		return nil, err
 	}
-	if err := s.resourceManager.List(context, rlist); err != nil {
+	if err := s.resourceManager.List(ctx, rlist); err != nil {
 		return nil, err
 	}
 
-	resources, err := s.mapper(s.filter(rlist, node))
+	resources, err := s.mapper(s.filter(ctx, rlist, node))
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (s *snapshotGenerator) getResources(context context.Context, typ model.Reso
 	return util.ToEnvoyResources(resources)
 }
 
-func (s *snapshotGenerator) filter(rs model.ResourceList, node *envoy_core.Node) model.ResourceList {
+func (s *snapshotGenerator) filter(ctx context.Context, rs model.ResourceList, node *envoy_core.Node) model.ResourceList {
 	features := kds.Features{}
 	for _, value := range node.GetMetadata().GetFields()[kds.MetadataFeatures].GetListValue().GetValues() {
 		features[value.GetStringValue()] = true
@@ -80,7 +80,7 @@ func (s *snapshotGenerator) filter(rs model.ResourceList, node *envoy_core.Node)
 
 	rv, _ := registry.Global().NewList(rs.GetItemType())
 	for _, r := range rs.GetItems() {
-		if s.resourceFilter(node.GetId(), features, r) {
+		if s.resourceFilter(ctx, node.GetId(), features, r) {
 			_ = rv.AddItem(r)
 		}
 	}

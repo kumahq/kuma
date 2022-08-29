@@ -14,5 +14,5 @@ func TestE2E(t *testing.T) {
 }
 
 // arm-not-supported because of https://github.com/kumahq/kuma/issues/4822
-var _ = Describe("Test ZoneEgress for External Services in Hybrid Multizone", Label("arm-not-supported"), externalservices.HybridUniversalGlobal, Ordered)
-var _ = Describe("Test ZoneEgress for External Services in Universal Standalone", externalservices.UniversalStandalone)
+var _ = Describe("Test ZoneEgress for External Services in Hybrid Multizone", Label("job-2"), Label("arm-not-supported"), externalservices.HybridUniversalGlobal, Ordered)
+var _ = Describe("Test ZoneEgress for External Services in Universal Standalone", Label("job-2"), externalservices.UniversalStandalone)

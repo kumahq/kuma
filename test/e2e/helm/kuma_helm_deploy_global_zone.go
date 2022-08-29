@@ -17,13 +17,16 @@ import (
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
 func ZoneAndGlobalWithHelmChart() {
 	var clusters Clusters
 	var c1, c2 Cluster
 	var global, zone ControlPlane
-	BeforeEach(func() {
+
+	BeforeAll(func() {
 		var err error
 		clusters, err = NewK8sClusters(
 			[]string{Kuma1, Kuma2},
@@ -62,6 +65,7 @@ func ZoneAndGlobalWithHelmChart() {
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s("default", TestNamespace)).
+			Install(testserver.Install()).
 			Setup(c2)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -69,7 +73,7 @@ func ZoneAndGlobalWithHelmChart() {
 		Expect(zone).ToNot(BeNil())
 	})
 
-	E2EAfterEach(func() {
+	E2EAfterAll(func() {
 		Expect(c2.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(c1.DeleteKuma()).To(Succeed())
 		Expect(c2.DeleteKuma()).To(Succeed())
@@ -108,5 +112,14 @@ func ZoneAndGlobalWithHelmChart() {
 			Expect(err).ToNot(HaveOccurred())
 			return output
 		}, "5s", "500ms").Should(ContainSubstring("kuma-2-zone.demo-client"))
+	})
+
+	It("communication in between apps in zone works", func() {
+		Eventually(func(g Gomega) {
+			_, err := client.CollectResponse(c2, "demo-client", "http://test-server_kuma-test_svc_80.mesh",
+				client.FromKubernetesPod(TestNamespace, "demo-client"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "1s").Should(Succeed())
 	})
 }

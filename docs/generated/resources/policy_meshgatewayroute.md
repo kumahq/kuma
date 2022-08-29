@@ -12,59 +12,9 @@
 
     Conf specifies the route configuration.    
     
-    - `udp` (optional)    
-        
-        - `rules` (required, repeated)    
-            
-            - `matches` (optional, repeated)    
-            
-            - `backends` (required, repeated)    
-                
-                - `weight` (required)
-                
-                    Weight is the proportion of requests this backend will receive
-                    when a forwarding rules specifies multiple backends. Traffic
-                    weight is computed as "weight/sum(all weights)".
-                    
-                    A weight of 0 means that the destination will be ignored.    
-                
-                - `destination` (required)
-                
-                    Destination is a selector to match the individual endpoints to
-                    which the gateway will forward.    
-    
     - `tcp` (optional)    
         
         - `rules` (required, repeated)    
-            
-            - `matches` (optional, repeated)    
-            
-            - `backends` (required, repeated)    
-                
-                - `weight` (required)
-                
-                    Weight is the proportion of requests this backend will receive
-                    when a forwarding rules specifies multiple backends. Traffic
-                    weight is computed as "weight/sum(all weights)".
-                    
-                    A weight of 0 means that the destination will be ignored.    
-                
-                - `destination` (required)
-                
-                    Destination is a selector to match the individual endpoints to
-                    which the gateway will forward.    
-    
-    - `tls` (optional)    
-        
-        - `hostnames` (optional, repeated)
-        
-            Hostnames lists the server names for which this route is valid. The
-            hostnames are matched against the TLS Server Name Indication extension
-            send by the client.    
-        
-        - `rules` (required, repeated)    
-            
-            - `matches` (optional, repeated)    
             
             - `backends` (required, repeated)    
                 

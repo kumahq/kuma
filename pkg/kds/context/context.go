@@ -45,12 +45,10 @@ type Context struct {
 	EnvoyAdminRPCs service.EnvoyAdminRPCs
 }
 
-func DefaultContext(manager manager.ResourceManager, zone string) *Context {
+func DefaultContext(ctx context.Context, manager manager.ResourceManager, zone string) *Context {
 	configs := map[string]bool{
 		config_manager.ClusterIdConfigKey: true,
 	}
-
-	ctx := context.Background()
 
 	return &Context{
 		ZoneClientCtx:        ctx,
@@ -149,7 +147,7 @@ func MapZoneTokenSigningKeyGlobalToPublicKey(
 // GlobalProvidedFilter returns ResourceFilter which filters Resources provided by Global, specifically
 // excludes Dataplanes, Ingresses and Egresses from 'clusterID' cluster
 func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) reconcile.ResourceFilter {
-	return func(clusterID string, features kds.Features, r model.Resource) bool {
+	return func(ctx context.Context, clusterID string, features kds.Features, r model.Resource) bool {
 		resName := r.GetMeta().GetName()
 
 		switch r.Descriptor().Name {
@@ -175,7 +173,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 			}
 
 			zone := system.NewZoneResource()
-			if err := rm.Get(context.Background(), zone, store.GetByKey(zoneTag, model.NoMesh)); err != nil {
+			if err := rm.Get(ctx, zone, store.GetByKey(zoneTag, model.NoMesh)); err != nil {
 				log.Error(err, "failed to get zone", "zone", zoneTag)
 				// since there is no explicit 'enabled: false' then we don't
 				// make any strong decisions which might affect connectivity
@@ -192,7 +190,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 // ZoneProvidedFilter filter Resources provided by Zone, specifically Ingresses
 // that belongs to another zones
 func ZoneProvidedFilter(clusterName string) reconcile.ResourceFilter {
-	return func(_ string, _ kds.Features, r model.Resource) bool {
+	return func(_ context.Context, _ string, _ kds.Features, r model.Resource) bool {
 		switch r.Descriptor().Name {
 		case mesh.DataplaneType:
 			return clusterName == util.ZoneTag(r)

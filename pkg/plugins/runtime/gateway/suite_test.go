@@ -142,7 +142,7 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 		Mesh:         meshCtx,
 	}
 
-	proxy, err := b.Build(key, meshCtx)
+	proxy, err := b.Build(context.TODO(), key, meshCtx)
 	Expect(err).To(Succeed())
 
 	return &ctx, proxy
@@ -192,13 +192,15 @@ func StoreInlineFixture(rt runtime.Runtime, object []byte) error {
 // StoreFixture stores or updates the given resource in the runtime
 // resource manager.
 func StoreFixture(mgr manager.ResourceManager, r core_model.Resource) error {
+	ctx := context.Background()
+
 	key := core_model.MetaToResourceKey(r.GetMeta())
 	current, err := registry.Global().NewObject(r.Descriptor().Name)
 	if err != nil {
 		return err
 	}
 
-	return manager.Upsert(mgr, key, current,
+	return manager.Upsert(ctx, mgr, key, current,
 		func(resource core_model.Resource) error {
 			return resource.SetSpec(r.GetSpec())
 		},
