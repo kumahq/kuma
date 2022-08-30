@@ -23,8 +23,10 @@ resources:
           - kuma
           combinedValidationContext:
             defaultValidationContext:
-              matchSubjectAltNames:
-              - exact: spiffe://mesh2/api-http
+              matchTypedSubjectAltNames:
+              - matcher:
+                  exact: spiffe://mesh2/api-http
+                sanType: URI
             validationContextSdsSecretConfig:
               name: mesh_ca:secret:mesh2
               sdsConfig:

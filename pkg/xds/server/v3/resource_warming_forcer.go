@@ -118,9 +118,13 @@ func (r *resourceWarmingForcer) forceNewEndpointsVersion(nodeID string) error {
 	if err != nil {
 		return nil // GetSnapshot returns an error if there is no snapshot. We don't need to force on a new snapshot
 	}
-	endpoints := snapshot.Resources[types.Endpoint]
+	cacheSnapshot, ok := snapshot.(*envoy_cache.Snapshot)
+	if !ok {
+		return errors.New("couldn't convert snapshot from cache to envoy Snapshot")
+	}
+	endpoints := cacheSnapshot.Resources[types.Endpoint]
 	endpoints.Version = core.NewUUID()
-	snapshot.Resources[types.Endpoint] = endpoints
+	cacheSnapshot.Resources[types.Endpoint] = endpoints
 	if err := r.cache.SetSnapshot(context.TODO(), nodeID, snapshot); err != nil {
 		return errors.Wrap(err, "could not set snapshot")
 	}

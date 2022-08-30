@@ -7,5 +7,5 @@ import (
 )
 
 func TestSync(t *testing.T) {
-	test.RunSpecs(t, "XDS Server V2 Suite")
+	test.RunSpecs(t, "XDS Server Suite")
 }

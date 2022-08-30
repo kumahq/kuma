@@ -52,7 +52,7 @@ var _ = Describe("HDS Snapshot generator", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			actual, err := util_proto.V1ToYAML(snapshot.GetResources(cache.HealthCheckSpecifierType)["hcs"])
+			actual, err := util_proto.ToYAML(snapshot.GetResources(cache.HealthCheckSpecifierType)["hcs"])
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual).To(matchers.MatchGoldenYAML("testdata", given.goldenFile))
 		},

@@ -24,7 +24,7 @@ type ClusterGenerator struct {
 }
 
 // GenerateHost generates clusters for all the services targeted in the current route table.
-func (c *ClusterGenerator) GenerateClusters(ctx xds_context.Context, info GatewayListenerInfo, hostInfo GatewayHostInfo) (*core_xds.ResourceSet, error) {
+func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_context.Context, info GatewayListenerInfo, hostInfo GatewayHostInfo) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
 	// If there is a service name conflict between external services
@@ -39,12 +39,12 @@ func (c *ClusterGenerator) GenerateClusters(ctx xds_context.Context, info Gatewa
 		matched := match.ExternalService(info.ExternalServices.Items, mesh_proto.TagSelector(dest.Destination))
 		service := dest.Destination[mesh_proto.ServiceTag]
 
-		firstEndpointExternalService := route.HasExternalServiceEndpoint(ctx.Mesh.Resource, info.OutboundEndpoints, *dest)
+		firstEndpointExternalService := route.HasExternalServiceEndpoint(xdsCtx.Mesh.Resource, info.OutboundEndpoints, *dest)
 
 		// If there is Mesh property ZoneEgress enabled we want always to
 		// direct the traffic through them. The condition is, the mesh must
 		// have mTLS enabled and traffic through zoneEgress is enabled.
-		isDirectExternalService := firstEndpointExternalService && !ctx.Mesh.Resource.ZoneEgressEnabled()
+		isDirectExternalService := firstEndpointExternalService && !xdsCtx.Mesh.Resource.ZoneEgressEnabled()
 		isExternalServiceThroughZoneEgress := firstEndpointExternalService && !isDirectExternalService
 
 		var r *core_xds.Resource
@@ -55,7 +55,7 @@ func (c *ClusterGenerator) GenerateClusters(ctx xds_context.Context, info Gatewa
 				"service", service,
 			)
 
-			r, err = c.generateExternalCluster(ctx.Mesh, info, matched, dest, hostInfo.Host.Tags)
+			r, err = c.generateExternalCluster(ctx, xdsCtx.Mesh, info, matched, dest, hostInfo.Host.Tags)
 		} else {
 			log.Info("generating mesh cluster resource",
 				"service", service,
@@ -66,7 +66,7 @@ func (c *ClusterGenerator) GenerateClusters(ctx xds_context.Context, info Gatewa
 				upstreamServiceName = mesh_proto.ZoneEgressServiceName
 			}
 
-			r, err = c.generateMeshCluster(ctx.Mesh.Resource, info, dest, upstreamServiceName, hostInfo.Host.Tags)
+			r, err = c.generateMeshCluster(xdsCtx.Mesh.Resource, info, dest, upstreamServiceName, hostInfo.Host.Tags)
 		}
 
 		if err != nil {
@@ -92,13 +92,13 @@ func (c *ClusterGenerator) GenerateClusters(ctx xds_context.Context, info Gatewa
 			envoy.WithTags(dest.Destination),
 		)
 
-		loadAssignment, err := ctx.ControlPlane.CLACache.GetCLA(
-			context.Background(),
-			ctx.Mesh.Resource.GetMeta().GetName(),
-			ctx.Mesh.Hash,
+		loadAssignment, err := xdsCtx.ControlPlane.CLACache.GetCLA(
+			ctx,
+			xdsCtx.Mesh.Resource.GetMeta().GetName(),
+			xdsCtx.Mesh.Hash,
 			cluster,
 			info.Proxy.APIVersion,
-			ctx.Mesh.EndpointMap,
+			xdsCtx.Mesh.EndpointMap,
 		)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to build LoadAssignment for cluster %q", dest.Name)
@@ -138,7 +138,8 @@ func (c *ClusterGenerator) generateMeshCluster(
 }
 
 func (c *ClusterGenerator) generateExternalCluster(
-	ctx xds_context.MeshContext,
+	ctx context.Context,
+	meshCtx xds_context.MeshContext,
 	info GatewayListenerInfo,
 	externalServices []*core_mesh.ExternalServiceResource,
 	dest *route.Destination,
@@ -147,7 +148,7 @@ func (c *ClusterGenerator) generateExternalCluster(
 	var endpoints []core_xds.Endpoint
 
 	for _, ext := range externalServices {
-		ep, err := topology.NewExternalServiceEndpoint(ext, ctx.Resource, ctx.DataSourceLoader, c.Zone)
+		ep, err := topology.NewExternalServiceEndpoint(ctx, ext, meshCtx.Resource, meshCtx.DataSourceLoader, c.Zone)
 		if err != nil {
 			return nil, err
 		}

@@ -223,7 +223,7 @@ func (cache *snapshotCache) CreateDeltaWatch(*envoy_cache.DeltaRequest, stream.S
 }
 
 // CreateWatch returns a watch for an xDS request.
-func (cache *snapshotCache) CreateWatch(request *envoy_cache.Request, responseChan chan envoy_cache.Response) (cancel func()) {
+func (cache *snapshotCache) CreateWatch(request *envoy_cache.Request, _ stream.StreamState, responseChan chan envoy_cache.Response) (cancel func()) {
 	nodeID := cache.hash.ID(request.Node)
 
 	cache.mu.Lock()
@@ -365,7 +365,7 @@ func (cache *snapshotCache) Fetch(ctx context.Context, request *envoy_cache.Requ
 // blockingFetch will wait until either the context is terminated or new resources become available
 func (cache *snapshotCache) blockingFetch(ctx context.Context, request *envoy_cache.Request) (envoy_cache.Response, error) {
 	responseChan := make(chan envoy_cache.Response, 1)
-	cancelFunc := cache.CreateWatch(request, responseChan)
+	cancelFunc := cache.CreateWatch(request, stream.StreamState{}, responseChan)
 	if cancelFunc != nil {
 		defer cancelFunc()
 	}

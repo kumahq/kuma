@@ -33,8 +33,8 @@ require (
 	github.com/lib/pq v1.10.6
 	github.com/miekg/dns v1.1.50
 	github.com/natefinch/atomic v1.0.1
-	github.com/onsi/ginkgo/v2 v2.1.4
-	github.com/onsi/gomega v1.20.0
+	github.com/onsi/ginkgo/v2 v2.1.5
+	github.com/onsi/gomega v1.20.1
 	github.com/operator-framework/operator-lib v0.11.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
@@ -50,7 +50,7 @@ require (
 	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc
 	github.com/testcontainers/testcontainers-go v0.13.0
 	go.uber.org/multierr v1.8.0
-	go.uber.org/zap v1.22.0
+	go.uber.org/zap v1.23.0
 	golang.org/x/exp v0.0.0-20220407100705-7b9b53b0aca4
 	golang.org/x/net v0.0.0-20220809184613-07c6da5e1ced
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4
@@ -58,17 +58,17 @@ require (
 	golang.org/x/text v0.3.7
 	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9
 	google.golang.org/genproto v0.0.0-20220808204814-fd01256a5276
-	google.golang.org/grpc v1.48.0
+	google.golang.org/grpc v1.49.0
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.8.1
 	istio.io/pkg v0.0.0-20201202160453-b7f8c8c88ca3
-	k8s.io/api v0.24.3
-	k8s.io/apiextensions-apiserver v0.24.3
-	k8s.io/apimachinery v0.24.3
-	k8s.io/client-go v0.24.3
-	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
+	k8s.io/api v0.25.0
+	k8s.io/apiextensions-apiserver v0.25.0
+	k8s.io/apimachinery v0.25.0
+	k8s.io/client-go v0.25.0
+	k8s.io/utils v0.0.0-20220728103510-ee6ede2d64ed
 	sigs.k8s.io/controller-runtime v0.12.3
 	sigs.k8s.io/controller-tools v0.9.2
 	sigs.k8s.io/gateway-api v0.5.0
@@ -108,7 +108,6 @@ require (
 	github.com/docker/docker v20.10.17+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
-	github.com/emicklei/go-restful v2.16.0+incompatible // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
@@ -193,11 +192,11 @@ require (
 	gopkg.in/ini.v1 v1.66.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/v3 v3.1.0 // indirect
-	k8s.io/component-base v0.24.3 // indirect
-	k8s.io/klog/v2 v2.70.0 // indirect
-	k8s.io/kube-openapi v0.0.0-20220328201542-3ee0da9b0b42 // indirect
-	sigs.k8s.io/json v0.0.0-20211208200746-9f7c6b3444d2 // indirect
-	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
+	k8s.io/component-base v0.25.0 // indirect
+	k8s.io/klog/v2 v2.70.1 // indirect
+	k8s.io/kube-openapi v0.0.0-20220803162953-67bda5d908f1 // indirect
+	sigs.k8s.io/json v0.0.0-20220713155537-f223a00ba0e2 // indirect
+	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
@@ -216,4 +215,3 @@ replace sigs.k8s.io/gateway-api => github.com/kumahq/gateway-api v0.0.0-20220822
 //
 //	$ go mod edit -replace github.com/envoyproxy/go-control-plane=github.com/kumahq/go-control-plane@channel-increased-capacity
 //	$ GOPRIVATE=github.com/kumahq/go-control-plane go mod tidy
-replace github.com/envoyproxy/go-control-plane => github.com/kumahq/go-control-plane v0.9.10-0.20211022075049-d35edcf0813a

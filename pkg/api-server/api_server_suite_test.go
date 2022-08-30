@@ -211,7 +211,7 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 		cfg.Mode = config_core.Global
 	}
 
-	apiServer, err := api_server.NewApiServer(
+	apiServer, err := api_server.NewApiServer( //nolint:contextcheck
 		manager.NewResourceManager(t.store),
 		xds_context.NewMeshContextBuilder(
 			manager.NewResourceManager(t.store),
@@ -245,7 +245,7 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 	}
 	errChan := make(chan error)
 	go func() {
-		err := apiServer.Start(ctx.Done())
+		err := apiServer.Start(ctx.Done()) //nolint:contextcheck
 		errChan <- err
 	}()
 

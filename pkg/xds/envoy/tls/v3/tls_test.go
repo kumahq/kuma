@@ -77,8 +77,10 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
                 commonTlsContext:
                   combinedValidationContext:
                     defaultValidationContext:
-                      matchSubjectAltNames:
-                      - prefix: spiffe://default/
+                      matchTypedSubjectAltNames:
+                      - matcher:
+                          prefix: spiffe://default/
+                        sanType: URI
                     validationContextSdsSecretConfig:
                       name: mesh_ca:secret:default
                       sdsConfig:
@@ -133,8 +135,10 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
                   - kuma
                   combinedValidationContext:
                     defaultValidationContext:
-                      matchSubjectAltNames:
-                      - exact: spiffe://default/backend
+                      matchTypedSubjectAltNames:
+                      - matcher:
+                          exact: spiffe://default/backend
+                        sanType: URI
                     validationContextSdsSecretConfig:
                       name: mesh_ca:secret:default
                       sdsConfig:

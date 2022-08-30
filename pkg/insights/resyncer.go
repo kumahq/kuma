@@ -238,6 +238,8 @@ func addDpOverviewToInsight(insight *mesh_proto.ServiceInsight, dpOverview *core
 }
 
 func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
+	ctx := context.TODO()
+
 	r.serviceInsightMux.Lock()
 	defer r.serviceInsightMux.Unlock()
 
@@ -280,7 +282,7 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 		return nil
 	}
 
-	err := manager.Upsert(r.rm, key, core_mesh.NewServiceInsightResource(), func(resource model.Resource) error {
+	err := manager.Upsert(ctx, r.rm, key, core_mesh.NewServiceInsightResource(), func(resource model.Resource) error {
 		return resource.SetSpec(insight)
 	})
 	if err != nil {
@@ -323,6 +325,8 @@ func (r *resyncer) createOrUpdateMeshInsights() error {
 }
 
 func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
+	ctx := context.TODO()
+
 	r.meshInsightMux.Lock()
 	defer r.meshInsightMux.Unlock()
 
@@ -443,7 +447,7 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 		return nil
 	}
 
-	err := manager.Upsert(r.rm, model.ResourceKey{Mesh: model.NoMesh, Name: mesh}, core_mesh.NewMeshInsightResource(), func(resource model.Resource) error {
+	err := manager.Upsert(ctx, r.rm, model.ResourceKey{Mesh: model.NoMesh, Name: mesh}, core_mesh.NewMeshInsightResource(), func(resource model.Resource) error {
 		return resource.SetSpec(insight)
 	})
 	if err != nil {

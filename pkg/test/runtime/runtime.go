@@ -95,7 +95,7 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 	builder.WithAPIManager(customization.NewAPIList())
 	builder.WithXDSHooks(&xds_hooks.Hooks{})
 	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, metrics))
-	builder.WithKDSContext(kds_context.DefaultContext(builder.ResourceManager(), cfg.Multizone.Zone.Name))
+	builder.WithKDSContext(kds_context.DefaultContext(appCtx, builder.ResourceManager(), cfg.Multizone.Zone.Name))
 	caProvider, err := secrets.NewCaProvider(builder.CaManagers(), metrics)
 	if err != nil {
 		return nil, err

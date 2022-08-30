@@ -26,6 +26,7 @@ const (
 
 // BuildEndpointMap creates a map of all endpoints that match given selectors.
 func BuildEndpointMap(
+	ctx context.Context,
 	mesh *core_mesh.MeshResource,
 	zone string,
 	dataplanes []*core_mesh.DataplaneResource,
@@ -37,7 +38,7 @@ func BuildEndpointMap(
 	outbound := BuildEdsEndpointMap(mesh, zone, dataplanes, zoneIngresses, zoneEgresses, externalServices)
 
 	if !mesh.ZoneEgressEnabled() {
-		fillExternalServicesOutbounds(outbound, externalServices, mesh, loader, zone)
+		fillExternalServicesOutbounds(ctx, outbound, externalServices, mesh, loader, zone)
 	}
 
 	return outbound
@@ -47,6 +48,7 @@ func BuildEndpointMap(
 // and are not local for the provided zone (external services and services
 // behind remote zone ingress only)
 func BuildRemoteEndpointMap(
+	ctx context.Context,
 	mesh *core_mesh.MeshResource,
 	zone string,
 	zoneIngresses []*core_mesh.ZoneIngressResource,
@@ -58,9 +60,9 @@ func BuildRemoteEndpointMap(
 	fillIngressOutbounds(outbound, zoneIngresses, nil, zone, mesh, nil)
 
 	if mesh.ZoneEgressEnabled() {
-		fillExternalServicesReachableFromZone(outbound, externalServices, mesh, loader, zone)
+		fillExternalServicesReachableFromZone(ctx, outbound, externalServices, mesh, loader, zone)
 	} else {
-		fillExternalServicesOutbounds(outbound, externalServices, mesh, loader, zone)
+		fillExternalServicesOutbounds(ctx, outbound, externalServices, mesh, loader, zone)
 	}
 
 	for serviceName, endpoints := range outbound {
@@ -379,6 +381,7 @@ func fillIngressOutbounds(
 }
 
 func fillExternalServicesReachableFromZone(
+	ctx context.Context,
 	outbound core_xds.EndpointMap,
 	externalServices []*core_mesh.ExternalServiceResource,
 	mesh *core_mesh.MeshResource,
@@ -387,12 +390,13 @@ func fillExternalServicesReachableFromZone(
 ) {
 	for _, externalService := range externalServices {
 		if externalService.IsReachableFromZone(zone) {
-			createExternalServiceEndpoint(outbound, externalService, mesh, loader, zone)
+			createExternalServiceEndpoint(ctx, outbound, externalService, mesh, loader, zone)
 		}
 	}
 }
 
 func fillExternalServicesOutbounds(
+	ctx context.Context,
 	outbound core_xds.EndpointMap,
 	externalServices []*core_mesh.ExternalServiceResource,
 	mesh *core_mesh.MeshResource,
@@ -400,11 +404,12 @@ func fillExternalServicesOutbounds(
 	zone string,
 ) {
 	for _, externalService := range externalServices {
-		createExternalServiceEndpoint(outbound, externalService, mesh, loader, zone)
+		createExternalServiceEndpoint(ctx, outbound, externalService, mesh, loader, zone)
 	}
 }
 
 func createExternalServiceEndpoint(
+	ctx context.Context,
 	outbound core_xds.EndpointMap,
 	externalService *core_mesh.ExternalServiceResource,
 	mesh *core_mesh.MeshResource,
@@ -412,7 +417,7 @@ func createExternalServiceEndpoint(
 	zone string,
 ) {
 	service := externalService.Spec.GetService()
-	externalServiceEndpoint, err := NewExternalServiceEndpoint(externalService, mesh, loader, zone)
+	externalServiceEndpoint, err := NewExternalServiceEndpoint(ctx, externalService, mesh, loader, zone)
 	if err != nil {
 		core.Log.Error(err, "unable to create ExternalService endpoint. Endpoint won't be included in the XDS.", "name", externalService.Meta.GetName(), "mesh", externalService.Meta.GetMesh())
 		return
@@ -457,6 +462,7 @@ func fillExternalServicesOutboundsThroughEgress(
 
 // NewExternalServiceEndpoint builds a new Endpoint from an ExternalServiceResource.
 func NewExternalServiceEndpoint(
+	ctx context.Context,
 	externalService *core_mesh.ExternalServiceResource,
 	mesh *core_mesh.MeshResource,
 	loader datasource.Loader,
@@ -470,15 +476,15 @@ func NewExternalServiceEndpoint(
 		tags[tag] = value
 	}
 
-	caCert, err := loadBytes(tls.GetCaCert(), meshName, loader)
+	caCert, err := loadBytes(ctx, tls.GetCaCert(), meshName, loader)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not load caCert")
 	}
-	clientCert, err := loadBytes(tls.GetClientCert(), meshName, loader)
+	clientCert, err := loadBytes(ctx, tls.GetClientCert(), meshName, loader)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not load clientCert")
 	}
-	clientKey, err := loadBytes(tls.GetClientKey(), meshName, loader)
+	clientKey, err := loadBytes(ctx, tls.GetClientKey(), meshName, loader)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not load clientKey")
 	}
@@ -514,11 +520,11 @@ func NewExternalServiceEndpoint(
 	}, nil
 }
 
-func loadBytes(ds *v1alpha1.DataSource, mesh string, loader datasource.Loader) ([]byte, error) {
+func loadBytes(ctx context.Context, ds *v1alpha1.DataSource, mesh string, loader datasource.Loader) ([]byte, error) {
 	if ds == nil {
 		return nil, nil
 	}
-	return loader.Load(context.Background(), mesh, ds)
+	return loader.Load(ctx, mesh, ds)
 }
 
 func localityFromTags(mesh *core_mesh.MeshResource, priority uint32, tags map[string]string) *core_xds.Locality {

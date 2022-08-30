@@ -1,16 +1,4 @@
-linters:
-  enable:
-    - bodyclose
-    - contextcheck
-    - gci
-    - gocritic
-    - gofmt
-    - gomodguard
-    - importas
-    - misspell
-    - unconvert
-    - unparam
-    - whitespace
+# mk/check.mk sets the enabled/disable linters
 
 run:
   skip-files:
@@ -33,7 +21,6 @@ linters-settings:
     - default
     - prefix(github.com/kumahq/kuma-net)
     - prefix(github.com/kumahq/kuma)
-    # This doesn't take effect until 1.48.0
     custom-order: true
   importas:
     alias:

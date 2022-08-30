@@ -71,7 +71,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			actual, err := util_proto.V1ToYAML(listener)
+			actual, err := util_proto.ToYAML(listener)
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			Expect(actual).To(MatchYAML(given.expected))
