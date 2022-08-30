@@ -37,6 +37,7 @@ During the weekly meeting we started talking about the appropriate name for this
 - `MeshAccessLog`
 - `MeshLog`
 - `MeshTrafficLog`
+- `MeshLogging`
 
 Please vote on your preferred name in the comments. Feel free to edit this document and add your suggestions.
 
@@ -54,17 +55,22 @@ There are 3 parts to matching, each meaning a different part of the request flow
 Matching on `MeshGatewayRoute` and `MeshHTTPRoute` can be achieved by using a
 [HeaderMatcher](https://github.com/envoyproxy/envoy/blob/23a9a686bb4237934cd575d8e62d3e0df98b59ee/api/envoy/config/accesslog/v3/accesslog.proto#L207)
 with a value of `:path`.
+When using these targets, defining `spec.to.targetRef` is **disallowed** because
+there is no way of knowing if the outgoing request is connected to an incoming route.
 
 #### From level
 
-`spec.from.targetRef` can only have: `Mesh|MeshSubset|MeshService|MeshServiceSubset`.
+`spec.from.targetRef` can only have: `Mesh` for now.
+
+[//]: # (In the future `MeshSubset|MeshService|MeshServiceSubset` might get implemented by passing metadata from an Envoy filter that retrieves that data from a certificate.)
+
 Matching on `MeshGatewayRoute` and `MeshHTTPRoute` does not make sense (there is no `route` that a request originates **from**).
 
 #### To level
 
-`spec.to.targetRef` can have: `Mesh|MeshSubset|MeshService|MeshServiceSubset|MeshHTTPRoute`.
-Matching on `MeshGatewayRoute` and `MeshHTTPRoute` will be achieved the same way as on the top level `targetRef`
-but it will be attached on the `outbound` instead of the `inbound`.
+`spec.to.targetRef` can only have: `Mesh|MeshService` for now.
+
+[//]: # (In the future Matching on `MeshGatewayRoute` and `MeshHTTPRoute` could be achieved the same way as on the top level `targetRef` but it will be attached on the `outbound` instead of the `inbound`.)
 
 ### Examples
 
@@ -165,7 +171,8 @@ spec:
         kind: MeshService
         name: web-frontend
       default:
-        backend: logstash # Forward the logs into the logging backend named `logstash`.
+        backends:
+          - logstash # Forward the logs into the logging backend named `logstash`.
 ```
 
 In the future we will introduce `MeshLoggingBackend` policy that would hold that data.
@@ -178,37 +185,33 @@ In the future the user will re-create (or maybe we could do this automatically) 
 
 ##### Negative Consequences
 
-* breaks the barrier between new / old policies by reusing old policies resources
 * possibly more work for the user in the future
 
 #### Move backend to the `MeshLoggingBackend` policy now
 
 Moving backend to a new policy called `MeshLoggingBackend` immediately.
 That policy would be neither `inbound` nor `outbound` it would just store backend definitions.
-It would support `targetRef` of `Mesh` but could probably support more in the future.
-This allows us to have consistent naming (`enabledBackend`) across all policies and
-would make it easier to have per zone backends.
 
 ```yaml
 type: MeshLoggingBackend
+name: logstash-backend
 mesh: default
 spec:
-  targetRef:
-    kind: Mesh
-    name: default
-  enabledBackend: file # instead of defaultBackend
-  # List of logging backends that can be referred to by name
-  # from MeshLogging policies of that Mesh.
   default:
-    backends:
-      - name: logstash
-        type: tcp
-        conf:
-          address: 127.0.0.1:5000
-      - name: file
-        type: file
-        conf:
-          path: /tmp/access.log
+    name: logstash
+    type: tcp
+    conf:
+      address: 127.0.0.1:5000
+---
+type: MeshLoggingBackend
+name: file-backend
+mesh: default
+spec:
+  default:
+    name: file
+    type: file
+    conf:
+      path: /tmp/access.log
 ---
 type: MeshLogging
 mesh: default
@@ -221,24 +224,38 @@ spec:
         kind: MeshService
         name: web-frontend
       default:
-        backend: logstash # Forward the logs into the logging backend named `logstash`.
+        backends:
+          - logstash # Forward the logs into the logging backend named `logstash`.
 ```
 
 ##### Positive Consequences
 
-* cleaner solution, there is separation between old and new policies
-* consistency in regards to `enabledBackend`
 * easier to have per zone backends
 
 ##### Negative Consequences
 
+* more new policies for users to understand
 * possibly more work to implement
 
 #### Embed backend in `MeshLogging` policy
 
-Another option would be to embed `backend` field inside the `MeshLogging` policy.
+Another option would be to embed `backend` field inside the `MeshLogging` policy,
+but still have the possibility to reference a backend defined in a `Mesh`
 
 ```yaml
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: default
+spec:
+  logging:
+    defaultBackend: aBackendDefinedInMesh
+    backends:
+      - name: aBackendDefinedInMesh
+        type: tcp
+        conf:
+          address: 127.0.0.1:5000
+--- 
 type: MeshLogging
 mesh: default
 spec:
@@ -252,16 +269,17 @@ spec:
         kind: MeshService
         name: web-frontend
       default:
-        backend:
-          name: logstash # Forward the logs into the logging backend named `logstash`.
-          type: tcp
-          conf:
-            address: 127.0.0.1:5000
+        backends:
+          - name: logstash
+            type: tcp
+            conf:
+              address: 127.0.0.1:5000
+          - type: reference
+            name: aBackendDefinedInMesh
 ```
 
 ##### Positive Consequences
 
-* consistency in regards to `enabledBackend`
 * easier to have per zone backends
 
 ##### Negative Consequences
@@ -272,20 +290,10 @@ spec:
 
 #### Format
 
-Format is currently defined on a `backend`, but in reality it's not really tied to a backend 
-(multiple backends can have the same format).
+Format can be tied to a backend for some backends (like a backend that only supports JSON entries)
+or not (a file will accept anything text-like), so for this reason we're leaving format inside a backend.
 
-##### Leave `format` in the `backend`
-
-###### Positive Consequences
-
-* users are familiar with this
-
-###### Negative Consequences
-
-* less dry
-
-##### Move `format` outside of `backend`
+##### Considered option - Move `format` outside of `backend`
 
 ```yaml
 
@@ -308,7 +316,7 @@ default:
 
 ###### Negative Consequences
 
-* new for the user
+* a service owner might use format not accepted by the backed
 
 #### Type
 
@@ -340,17 +348,7 @@ spec:
               match: PREFIX
               value: /apples
 ```
-```yaml
-type: MeshHTTPRoute
-name: web-orange-path
-spec:
-  http:
-    rules:
-      - matches:
-          - path:
-              match: PREFIX
-              value: /oranges
-```
+
 ```yaml
 type: TrafficLog
 mesh: mesh-1
@@ -359,15 +357,6 @@ spec:
   targetRef:
     kind: MeshHTTPRoute
     name: backend-apple-path
-  to:
-    - targetRef:
-        kind: MeshHTTPRoute
-        name: web-orange-path
-      default:
-        backends:
-          - name: logstash
-            format: ""
-          - name: debug-file
   from:
     - targetRef:
         kind: Mesh
@@ -378,4 +367,3 @@ spec:
 
 Outcome:
 - Every request that comes on `/apples` will be logged to "file".
-- Every request that goes to `/oranges` will be logged to "logstash".
