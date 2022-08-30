@@ -123,7 +123,8 @@ directly.
 
 ###### Sampling
 
-At the moment, tracing backends only support Envoy's `overall_sampling`
+At the moment, tracing backends only support Envoy's
+[`overall_sampling`](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-tracing-overall-sampling)
 via the `sampling` field.
 
 Question: should we allow the following instead?
