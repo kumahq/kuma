@@ -2,7 +2,7 @@
 
 IMPORTS_FILE="pkg/plugins/policies/imports.go"
 
-imports=$(for i in "$@"; do [[ -f pkg/plugins/policies/${i}/plugin.go ]] && echo "_ \"github.com/kumahq/kuma/pkg/plugins/policies/${i}\""; done)
+imports=$(for i in "$@"; do [[ -f pkg/plugins/policies/${i}/zz_generated.plugin.go ]] && echo "_ \"github.com/kumahq/kuma/pkg/plugins/policies/${i}\""; done)
 if [[ $imports == "" ]]; then
   rm -f "${IMPORTS_FILE}"
   exit 0
