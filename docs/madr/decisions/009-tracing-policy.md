@@ -64,10 +64,10 @@ in Kuma are limited.
 ##### `targetRef`
 
 This is a new policy so it's based on `targetRef`. Envoy tracing is configured
-on the HTTP connection manager so `Trace` has a single `spec.targetRef` field
-that selects which proxies it applies to.
+on the HTTP connection manager so `Traces` has a single `spec.targetRef` field
+that selects what it applies to. It does not use `to` or `from` fields.
 
-Therefore, `spec.targetRef` supports `Mesh`, `MeshSubset`, `MeshService`,
+Resources supported by `spec.targetRef` are `Mesh`, `MeshSubset`, `MeshService`,
 `MeshServiceSubset`, `MeshGatewayRoute` and eventually the future
 evolution of `TrafficRoute`, which we'll call `MeshTrafficRoute` in this
 document.
