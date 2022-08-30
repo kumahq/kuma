@@ -189,13 +189,9 @@ runuser -u kuma-dp -- \
 
 	// ebpf
 	cmd.Flags().BoolVar(&args.EbpfEnabled, "ebpf-enabled", args.EbpfEnabled, "use ebpf instead of iptables to install transparent proxy")
-	_ = cmd.Flags().MarkHidden("ebpf-enabled")
 	cmd.Flags().StringVar(&args.EbpfProgramsSourcePath, "ebpf-programs-source-path", args.EbpfProgramsSourcePath, "path where compiled ebpf programs and other necessary for ebpf mode files can be found")
-	_ = cmd.Flags().MarkHidden("ebpf-programs-source-path")
 	cmd.Flags().StringVar(&args.EbpfInstanceIP, "ebpf-instance-ip", args.EbpfInstanceIP, "IP address of the instance (pod/vm) where transparent proxy will be installed")
-	_ = cmd.Flags().MarkHidden("ebpf-instance-ip")
 	cmd.Flags().StringVar(&args.EbpfBPFFSPath, "ebpf-bpffs-path", args.EbpfBPFFSPath, "the path of the BPF filesystem")
-	_ = cmd.Flags().MarkHidden("ebpf-bpffs-path")
 
 	return cmd
 }
