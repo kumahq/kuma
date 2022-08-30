@@ -11,7 +11,7 @@ func (t *MeshTrafficPermissionResource) validate() error {
 	path := validators.RootedAt("spec")
 
 	if targetRef := t.Spec.GetTargetRef(); targetRef != nil {
-		common.ValidateTargetRef(path.Field("targetRef"), targetRef, &common.ValidateTargetRefOpts{
+		targetRefErr := common.ValidateTargetRef(path.Field("targetRef"), targetRef, &common.ValidateTargetRefOpts{
 			SupportedKinds: []common_proto.TargetRef_Kind{
 				common_proto.TargetRef_Mesh,
 				common_proto.TargetRef_MeshSubset,
@@ -21,6 +21,7 @@ func (t *MeshTrafficPermissionResource) validate() error {
 				common_proto.TargetRef_MeshHTTPRoute,
 			},
 		})
+		verr.AddError("", targetRefErr)
 	}
 
 	from := path.Field("from")

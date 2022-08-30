@@ -2,6 +2,8 @@ properties:
   type:
     description: ''
     type: string
+    enum:
+      - MeshTrafficPermission
   mesh:
     description: 'Mesh is the name of the Kuma mesh this resource belongs to. It may be omitted for cluster-scoped resources.'
     type: string
