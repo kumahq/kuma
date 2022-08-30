@@ -45,23 +45,7 @@ resource.
 However, we propose configuring sampling and tag options in the `Tracing`
 resource.
 
-#### Custom tags
-
-Envoy can set tags in traces using values from:
-
-- Literal value
-- Request header
-- Environment variable
-- Metadata
-
-We propose allowing users to configure custom tags using only literal values or
-request headers. Using Kuma leaves environment variables and Envoy metadata
-opaque for users so the use cases for configuring them (at least directly)
-in Kuma are limited.
-
-#### Proposed schema
-
-##### `targetRef`
+#### `targetRef`
 
 This is a new policy so it's based on `targetRef`. Envoy tracing is configured
 on the HTTP connection manager so `Tracing` has a single `spec.targetRef` field
@@ -75,7 +59,7 @@ Resources supported by `spec.targetRef` are `Mesh`, `MeshSubset`, `MeshService`,
 evolution of `TrafficRoute`, which we'll call `MeshTrafficRoute` in this
 document.
 
-##### Backends
+#### Backends
 
 We propose keeping backends definable in the `Mesh` resource as is.
 
@@ -92,7 +76,7 @@ configs_](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/htt
 The rationale here is that the provider is likely to be the same provider for all
 traces of a `Mesh` so it makes sense to configure it on the `Mesh`.
 
-###### Further provider config options
+##### Further provider config options
 
 There are two more possibilities worth mentioning.
 
@@ -116,12 +100,12 @@ spec:
       name: <resource-name>
 ```
 
-##### More knobs
+#### Additional configuration
 
-This MADR proposes any additional options be configurable on `Tracing` resources
+This MADR proposes additional options be configurable on `Tracing` resources
 directly.
 
-###### Sampling
+##### Sampling
 
 At the moment, tracing backends only support Envoy's
 [`overall_sampling`](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-tracing-overall-sampling)
@@ -140,10 +124,23 @@ spec:
 
 If users set the simple `sampling` field we have now,
 do they expect it to limit traces started via `x-client-trace-id`?
+Do they want to disable `x-client-trace-id`?
 
 ##### Tags
 
-Tags can be configured as well:
+Envoy can set tags in traces using values from:
+
+- Literal value
+- Request header
+- Environment variable
+- Metadata
+
+We propose allowing users to configure custom tags using only literal values or
+request headers. Using Kuma leaves environment variables and Envoy metadata
+opaque for users so the use cases for configuring them (at least directly)
+in Kuma are limited.
+
+Tags can be configured as follows:
 
 ```yaml
 spec:
@@ -162,7 +159,8 @@ spec:
 Users can set the `spec.targetRef` to be a `MeshGatewayRoute` or
 `MeshTrafficRoute`.
 
-TODO: is this enough?
+Both paths and methods are matchable in `MeshGatewayRoute` and we can ensure
+that `MeshTrafficRoute` also supports this matching.
 
 ### Examples
 
