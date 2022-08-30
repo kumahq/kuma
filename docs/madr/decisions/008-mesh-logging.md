@@ -128,7 +128,7 @@ This will log all the inbound traffic from `web-frontend` and outbound traffic t
 
 ### Backends
 
-#### Keep backends in the `MeshLogging` resource for now, move them into `MeshLoggingBackend` policy in the future
+#### Keep backends in the `Mesh` resource for now, move them into `MeshLoggingBackend` policy in the future
 
 For now new Policy `MeshLogging` will reuse the backend definitions from `Mesh`.
 
