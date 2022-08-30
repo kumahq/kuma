@@ -29,8 +29,10 @@ Clusters:
             - kuma
             combinedValidationContext:
               defaultValidationContext:
-                matchSubjectAltNames:
-                - exact: spiffe://default/api-service
+                matchTypedSubjectAltNames:
+                - matcher:
+                    exact: spiffe://default/api-service
+                  sanType: URI
               validationContextSdsSecretConfig:
                 name: mesh_ca:secret:default
                 sdsConfig:
@@ -72,8 +74,10 @@ Clusters:
             - kuma
             combinedValidationContext:
               defaultValidationContext:
-                matchSubjectAltNames:
-                - exact: spiffe://default/echo-service
+                matchTypedSubjectAltNames:
+                - matcher:
+                    exact: spiffe://default/echo-service
+                  sanType: URI
               validationContextSdsSecretConfig:
                 name: mesh_ca:secret:default
                 sdsConfig:
@@ -115,8 +119,10 @@ Clusters:
             - kuma
             combinedValidationContext:
               defaultValidationContext:
-                matchSubjectAltNames:
-                - exact: spiffe://default/external-httpbin
+                matchTypedSubjectAltNames:
+                - matcher:
+                    exact: spiffe://default/external-httpbin
+                  sanType: URI
               validationContextSdsSecretConfig:
                 name: mesh_ca:secret:default
                 sdsConfig:

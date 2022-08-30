@@ -4,12 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"math/rand"
 	"os"
 	"path"
 	"strconv"
 	"strings"
 
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -40,17 +40,21 @@ func resourceDir() string {
 
 func (v *PostgresContainer) Start() error {
 	ctx := context.Background()
+
 	buildArgs := map[string]*string{}
+
 	mode := "standard"
 	if v.WithTLS {
 		mode = "tls"
 	}
-	uniqueId := strconv.Itoa(rand.Int())
 	buildArgs["MODE"] = &mode
+
 	// Add a uniqueId to make each image different, this was causing flakiness as test-container
 	// deletes the image that it builds unconditionally during teardown and fails if the image doesn't exist.
 	// In the case of parallel tests it's possible that the same image was used in multiple tests and the second teardown would fail.
+	uniqueId := strconv.Itoa(GinkgoParallelProcess())
 	buildArgs["UNIQUEID"] = &uniqueId
+
 	req := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context:   resourceDir(),

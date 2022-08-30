@@ -7,10 +7,11 @@ import (
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-	protov1 "github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/plugins"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -64,7 +65,7 @@ func (r *reconciler) Reconcile(ctx xds_context.Context, proxy *model.Proxy) erro
 	// fallback to UUID otherwise
 	previous, err := r.cacher.Get(node)
 	if err != nil {
-		previous = envoy_cache.Snapshot{}
+		previous = &envoy_cache.Snapshot{}
 	}
 
 	snapshot, changed := autoVersion(previous, snapshot)
@@ -118,7 +119,7 @@ func validateResource(r envoy_types.Resource) error {
 	}
 }
 
-func autoVersion(old envoy_cache.Snapshot, new envoy_cache.Snapshot) (envoy_cache.Snapshot, []string) {
+func autoVersion(old *envoy_cache.Snapshot, new *envoy_cache.Snapshot) (*envoy_cache.Snapshot, []string) {
 	for resourceType, resources := range old.Resources {
 		new.Resources[resourceType] = reuseVersion(resources, new.Resources[resourceType])
 	}
@@ -146,7 +147,7 @@ func equalSnapshots(old, new map[string]envoy_types.ResourceWithTTL) bool {
 		return false
 	}
 	for key, newValue := range new {
-		if oldValue, hasOldValue := old[key]; !hasOldValue || !protov1.Equal(newValue.Resource, oldValue.Resource) {
+		if oldValue, hasOldValue := old[key]; !hasOldValue || !proto.Equal(newValue.Resource, oldValue.Resource) {
 			return false
 		}
 	}
@@ -154,7 +155,7 @@ func equalSnapshots(old, new map[string]envoy_types.ResourceWithTTL) bool {
 }
 
 type snapshotGenerator interface {
-	GenerateSnapshot(ctx xds_context.Context, proxy *model.Proxy) (envoy_cache.Snapshot, error)
+	GenerateSnapshot(ctx xds_context.Context, proxy *model.Proxy) (*envoy_cache.Snapshot, error)
 }
 
 type templateSnapshotGenerator struct {
@@ -162,7 +163,7 @@ type templateSnapshotGenerator struct {
 	ResourceSetHooks      []xds_hooks.ResourceSetHook
 }
 
-func (s *templateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, proxy *model.Proxy) (envoy_cache.Snapshot, error) {
+func (s *templateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, proxy *model.Proxy) (*envoy_cache.Snapshot, error) {
 	template := s.ProxyTemplateResolver.GetTemplate(proxy)
 
 	gen := generator.ProxyTemplateGenerator{ProxyTemplate: template}
@@ -170,15 +171,20 @@ func (s *templateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, pr
 	rs, err := gen.Generate(ctx, proxy)
 	if err != nil {
 		reconcileLog.Error(err, "failed to generate a snapshot", "proxy", proxy, "template", template)
-		return envoy_cache.Snapshot{}, err
+		return nil, err
+	}
+	for name, p := range plugins.Plugins().PolicyPlugins() {
+		if err := p.Apply(rs, ctx, proxy); err != nil {
+			return nil, errors.Wrapf(err, "could not apply policy plugin %s", name)
+		}
 	}
 	for _, hook := range s.ResourceSetHooks {
 		if err := hook.Modify(rs, ctx, proxy); err != nil {
-			return envoy_cache.Snapshot{}, errors.Wrapf(err, "could not apply hook %T", hook)
+			return nil, errors.Wrapf(err, "could not apply hook %T", hook)
 		}
 	}
 	if err := modifications.Apply(rs, template.GetConf().GetModifications(), proxy.APIVersion); err != nil {
-		return envoy_cache.Snapshot{}, errors.Wrap(err, "could not apply modifications")
+		return nil, errors.Wrap(err, "could not apply modifications")
 	}
 
 	version := "" // empty value is a sign to other components to generate the version automatically
@@ -192,8 +198,8 @@ func (s *templateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, pr
 }
 
 type snapshotCacher interface {
-	Get(*envoy_core.Node) (envoy_cache.Snapshot, error)
-	Cache(*envoy_core.Node, envoy_cache.Snapshot) error
+	Get(*envoy_core.Node) (*envoy_cache.Snapshot, error)
+	Cache(*envoy_core.Node, *envoy_cache.Snapshot) error
 	Clear(*envoy_core.Node)
 }
 
@@ -202,11 +208,19 @@ type simpleSnapshotCacher struct {
 	store  envoy_cache.SnapshotCache
 }
 
-func (s *simpleSnapshotCacher) Get(node *envoy_core.Node) (envoy_cache.Snapshot, error) {
-	return s.store.GetSnapshot(s.hasher.ID(node))
+func (s *simpleSnapshotCacher) Get(node *envoy_core.Node) (*envoy_cache.Snapshot, error) {
+	snap, err := s.store.GetSnapshot(s.hasher.ID(node))
+	if snap != nil {
+		snapshot, ok := snap.(*envoy_cache.Snapshot)
+		if !ok {
+			return nil, errors.New("couldn't convert snapshot from cache to envoy Snapshot")
+		}
+		return snapshot, nil
+	}
+	return nil, err
 }
 
-func (s *simpleSnapshotCacher) Cache(node *envoy_core.Node, snapshot envoy_cache.Snapshot) error {
+func (s *simpleSnapshotCacher) Cache(node *envoy_core.Node, snapshot *envoy_cache.Snapshot) error {
 	return s.store.SetSnapshot(context.TODO(), s.hasher.ID(node), snapshot)
 }
 

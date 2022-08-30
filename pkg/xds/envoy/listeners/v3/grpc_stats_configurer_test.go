@@ -23,7 +23,7 @@ var _ = Describe("gRPCStatsConfigurer", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// when
-			actual, err := util_proto.V1ToYAML(filterChain)
+			actual, err := util_proto.ToYAML(filterChain)
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			Expect(actual).To(MatchYAML(given.expected))

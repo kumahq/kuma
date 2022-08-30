@@ -40,7 +40,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			actual, err := util_proto.V1ToYAML(listener)
+			actual, err := util_proto.ToYAML(listener)
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			Expect(actual).To(MatchYAML(given.expected))
@@ -90,8 +90,10 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                   commonTlsContext:
                     combinedValidationContext:
                       defaultValidationContext:
-                        matchSubjectAltNames:
-                        - prefix: spiffe://default/
+                        matchTypedSubjectAltNames:
+                        - matcher:
+                            prefix: spiffe://default/
+                          sanType: URI
                       validationContextSdsSecretConfig:
                         name: mesh_ca:secret:default
                         sdsConfig:
@@ -152,8 +154,10 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                   commonTlsContext:
                     combinedValidationContext:
                       defaultValidationContext:
-                        matchSubjectAltNames:
-                        - prefix: spiffe://default/
+                        matchTypedSubjectAltNames:
+                        - matcher:
+                            prefix: spiffe://default/
+                          sanType: URI
                       validationContextSdsSecretConfig:
                         name: mesh_ca:secret:default
                         sdsConfig:

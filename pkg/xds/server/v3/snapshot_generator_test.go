@@ -177,7 +177,7 @@ var _ = Describe("Reconcile", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			resp, err := util_cache_v3.ToDeltaDiscoveryResponse(s)
+			resp, err := util_cache_v3.ToDeltaDiscoveryResponse(*s)
 			Expect(err).ToNot(HaveOccurred())
 			actual, err := util_proto.ToYAML(resp)
 			Expect(err).ToNot(HaveOccurred())

@@ -88,8 +88,10 @@ resources:
           commonTlsContext:
             combinedValidationContext:
               defaultValidationContext:
-                matchSubjectAltNames:
-                - prefix: spiffe://demo/
+                matchTypedSubjectAltNames:
+                - matcher:
+                    prefix: spiffe://demo/
+                  sanType: URI
               validationContextSdsSecretConfig:
                 name: mesh_ca:secret:demo
                 sdsConfig:
@@ -149,8 +151,10 @@ resources:
           commonTlsContext:
             combinedValidationContext:
               defaultValidationContext:
-                matchSubjectAltNames:
-                - prefix: spiffe://demo/
+                matchTypedSubjectAltNames:
+                - matcher:
+                    prefix: spiffe://demo/
+                  sanType: URI
               validationContextSdsSecretConfig:
                 name: mesh_ca:secret:demo
                 sdsConfig:
@@ -197,8 +201,10 @@ resources:
           commonTlsContext:
             combinedValidationContext:
               defaultValidationContext:
-                matchSubjectAltNames:
-                - prefix: spiffe://demo/
+                matchTypedSubjectAltNames:
+                - matcher:
+                    prefix: spiffe://demo/
+                  sanType: URI
               validationContextSdsSecretConfig:
                 name: mesh_ca:secret:demo
                 sdsConfig:
@@ -245,8 +251,10 @@ resources:
           commonTlsContext:
             combinedValidationContext:
               defaultValidationContext:
-                matchSubjectAltNames:
-                - prefix: spiffe://demo/
+                matchTypedSubjectAltNames:
+                - matcher:
+                    prefix: spiffe://demo/
+                  sanType: URI
               validationContextSdsSecretConfig:
                 name: mesh_ca:secret:demo
                 sdsConfig:

@@ -5,13 +5,13 @@ import (
 
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/ghodss/yaml"
-	protov1 "github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
+	"google.golang.org/protobuf/proto"
 
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-func ResourceFromYaml(resYaml string) (protov1.Message, error) {
+func ResourceFromYaml(resYaml string) (proto.Message, error) {
 	json, err := yaml.YAMLToJSON([]byte(resYaml))
 	if err != nil {
 		json = []byte(resYaml)

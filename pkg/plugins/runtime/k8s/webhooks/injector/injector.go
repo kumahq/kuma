@@ -116,12 +116,30 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		pod.Annotations = map[string]string{}
 	}
 
-	annotations, err := i.NewAnnotations(pod, meshName)
+	annotations, err := i.NewAnnotations(pod, meshName, logger)
 	if err != nil {
 		return errors.Wrap(err, "could not generate annotations for pod")
 	}
 	for key, value := range annotations {
 		pod.Annotations[key] = value
+	}
+
+	if i.cfg.EBPF.Enabled {
+		pod.Spec.Volumes = append(pod.Spec.Volumes, kube_core.Volume{
+			Name: "sys-fs-cgroup",
+			VolumeSource: kube_core.VolumeSource{
+				HostPath: &kube_core.HostPathVolumeSource{
+					Path: "/sys/fs/cgroup",
+				},
+			},
+		}, kube_core.Volume{
+			Name: "bpf-fs",
+			VolumeSource: kube_core.VolumeSource{
+				HostPath: &kube_core.HostPathVolumeSource{
+					Path: i.cfg.EBPF.BPFFSPath,
+				},
+			},
+		})
 	}
 
 	// init container
@@ -388,7 +406,7 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 		return kube_core.Container{}, err
 	}
 
-	return kube_core.Container{
+	container := kube_core.Container{
 		Name:            k8s_util.KumaInitContainerName,
 		Image:           i.cfg.InitContainer.Image,
 		ImagePullPolicy: kube_core.PullIfNotPresent,
@@ -410,14 +428,42 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(50, kube_api.Mega),
 			},
 			Requests: kube_core.ResourceList{
-				kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(10, kube_api.Milli),
-				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(10, kube_api.Mega),
+				kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(20, kube_api.Milli),
+				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(20, kube_api.Mega),
 			},
 		},
-	}, nil
+	}
+
+	if i.cfg.EBPF.Enabled {
+		// container.SecurityContext.Privileged expects to have a reference
+		// to the bool value
+		tru := true
+		bidirectional := kube_core.MountPropagationBidirectional
+
+		container.SecurityContext.Capabilities = &kube_core.Capabilities{}
+		container.SecurityContext.Privileged = &tru
+
+		container.Env = []kube_core.EnvVar{
+			{
+				Name: i.cfg.EBPF.InstanceIPEnvVarName,
+				ValueFrom: &kube_core.EnvVarSource{
+					FieldRef: &kube_core.ObjectFieldSelector{
+						FieldPath: "status.podIP",
+					},
+				},
+			},
+		}
+
+		container.VolumeMounts = []kube_core.VolumeMount{
+			{Name: "sys-fs-cgroup", MountPath: "/sys/fs/cgroup"},
+			{Name: "bpf-fs", MountPath: i.cfg.EBPF.BPFFSPath, MountPropagation: &bidirectional},
+		}
+	}
+
+	return container, nil
 }
 
-func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string) (map[string]string, error) {
+func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger logr.Logger) (map[string]string, error) {
 	annotations := map[string]string{
 		metadata.KumaMeshAnnotation:                             mesh, // either user-defined value or default
 		metadata.KumaSidecarInjectedAnnotation:                  fmt.Sprintf("%t", true),
@@ -432,6 +478,35 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string) (map[stri
 	}
 
 	podAnnotations := metadata.Annotations(pod.Annotations)
+
+	ebpfEnabled, _, err := podAnnotations.GetEnabledWithDefault(i.cfg.EBPF.Enabled, metadata.KumaTransparentProxyingEbpf)
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting %s annotation failed", metadata.KumaTransparentProxyingEbpf)
+	}
+	annotations[metadata.KumaTransparentProxyingEbpf] = metadata.BoolToEnabled(ebpfEnabled)
+
+	if ebpfEnabled {
+		annotations[metadata.KumaTransparentProxyingEbpfBPFFSPath], _ = podAnnotations.GetStringWithDefault(i.cfg.EBPF.BPFFSPath, metadata.KumaTransparentProxyingEbpfBPFFSPath)
+		annotations[metadata.KumaTransparentProxyingEbpfProgramsSourcePath], _ = podAnnotations.GetStringWithDefault(i.cfg.EBPF.ProgramsSourcePath, metadata.KumaTransparentProxyingEbpfProgramsSourcePath)
+		if value, exists := podAnnotations.GetString(i.cfg.EBPF.InstanceIPEnvVarName, metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName); exists {
+			annotations[metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName] = value
+		}
+
+		// ebpf works only with experimental transparent proxy engine, so instead of
+		// failing when no annotation enabling it is present (bad user experience)
+		// we implicitly add it and set to true
+		enabled, exists, err := podAnnotations.GetEnabled(metadata.KumaTransparentProxyingExperimentalEngine)
+		if err != nil {
+			return nil, errors.Wrapf(err, "getting %s annotation failed", metadata.KumaTransparentProxyingExperimentalEngine)
+		}
+		if !exists || !enabled {
+			logger.V(1).Info(fmt.Sprintf("missing %s annotation which has to be %s for ebpf to work. The annotation will be implicitly added",
+				metadata.KumaTransparentProxyingExperimentalEngine, metadata.AnnotationEnabled),
+				"annotation", metadata.KumaTransparentProxyingExperimentalEngine)
+
+			annotations[metadata.KumaTransparentProxyingExperimentalEngine] = metadata.AnnotationEnabled
+		}
+	}
 
 	enabled, _, err := podAnnotations.GetEnabledWithDefault(i.cfg.BuiltinDNS.Enabled, metadata.KumaBuiltinDNSDeprecated, metadata.KumaBuiltinDNS)
 	if err != nil {
