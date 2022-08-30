@@ -168,10 +168,10 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 		ProxyTemplate:      template.SelectProxyTemplate(dataplane, resources.ProxyTemplates().Items),
 		Dynamic:            map[core_model.ResourceType]core_xds.TypedMatchingPolicies{},
 	}
-	for _, p := range plugins.Plugins().PolicyPlugins() {
+	for name, p := range plugins.Plugins().PolicyPlugins() {
 		res, err := p.MatchedPolicies(dataplane, resources)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "could not apply policy plugin %s", name)
 		}
 		matchedPolicies.Dynamic[res.Type] = res
 	}

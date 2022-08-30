@@ -22,13 +22,13 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// DoNothingPolicy defines permission for traffic between dataplanes.
+// DoNothingPolicy a policy that does nothing
 type DoNothingPolicy struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Conf *DoNothingPolicy_Conf `protobuf:"bytes,3,opt,name=conf,proto3" json:"conf,omitempty"`
+	Spec *DoNothingPolicy_Spec `protobuf:"bytes,1,opt,name=spec,proto3" json:"spec,omitempty"`
 }
 
 func (x *DoNothingPolicy) Reset() {
@@ -63,24 +63,25 @@ func (*DoNothingPolicy) Descriptor() ([]byte, []int) {
 	return file_pkg_plugins_policies_donothingpolicy_api_v1alpha1_donothingpolicy_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *DoNothingPolicy) GetConf() *DoNothingPolicy_Conf {
+func (x *DoNothingPolicy) GetSpec() *DoNothingPolicy_Spec {
 	if x != nil {
-		return x.Conf
+		return x.Spec
 	}
 	return nil
 }
 
-type DoNothingPolicy_Conf struct {
+type DoNothingPolicy_Spec struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// User defined fields
 	// Set true in case of doing nothing
 	EnableDoNothing bool `protobuf:"varint,1,opt,name=enableDoNothing,proto3" json:"enableDoNothing,omitempty"`
 }
 
-func (x *DoNothingPolicy_Conf) Reset() {
-	*x = DoNothingPolicy_Conf{}
+func (x *DoNothingPolicy_Spec) Reset() {
+	*x = DoNothingPolicy_Spec{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_pkg_plugins_policies_donothingpolicy_api_v1alpha1_donothingpolicy_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -88,13 +89,13 @@ func (x *DoNothingPolicy_Conf) Reset() {
 	}
 }
 
-func (x *DoNothingPolicy_Conf) String() string {
+func (x *DoNothingPolicy_Spec) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*DoNothingPolicy_Conf) ProtoMessage() {}
+func (*DoNothingPolicy_Spec) ProtoMessage() {}
 
-func (x *DoNothingPolicy_Conf) ProtoReflect() protoreflect.Message {
+func (x *DoNothingPolicy_Spec) ProtoReflect() protoreflect.Message {
 	mi := &file_pkg_plugins_policies_donothingpolicy_api_v1alpha1_donothingpolicy_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -106,12 +107,12 @@ func (x *DoNothingPolicy_Conf) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use DoNothingPolicy_Conf.ProtoReflect.Descriptor instead.
-func (*DoNothingPolicy_Conf) Descriptor() ([]byte, []int) {
+// Deprecated: Use DoNothingPolicy_Spec.ProtoReflect.Descriptor instead.
+func (*DoNothingPolicy_Spec) Descriptor() ([]byte, []int) {
 	return file_pkg_plugins_policies_donothingpolicy_api_v1alpha1_donothingpolicy_proto_rawDescGZIP(), []int{0, 0}
 }
 
-func (x *DoNothingPolicy_Conf) GetEnableDoNothing() bool {
+func (x *DoNothingPolicy_Spec) GetEnableDoNothing() bool {
 	if x != nil {
 		return x.EnableDoNothing
 	}
@@ -132,13 +133,13 @@ var file_pkg_plugins_policies_donothingpolicy_api_v1alpha1_donothingpolicy_proto
 	0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x0c, 0x63,
 	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xa7, 0x01, 0x0a, 0x0f,
 	0x44, 0x6f, 0x4e, 0x6f, 0x74, 0x68, 0x69, 0x6e, 0x67, 0x50, 0x6f, 0x6c, 0x69, 0x63, 0x79, 0x12,
-	0x58, 0x0a, 0x04, 0x63, 0x6f, 0x6e, 0x66, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x44, 0x2e,
+	0x58, 0x0a, 0x04, 0x73, 0x70, 0x65, 0x63, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x44, 0x2e,
 	0x6b, 0x75, 0x6d, 0x61, 0x2e, 0x70, 0x6c, 0x75, 0x67, 0x69, 0x6e, 0x73, 0x2e, 0x70, 0x6f, 0x6c,
 	0x69, 0x63, 0x69, 0x65, 0x73, 0x2e, 0x64, 0x6f, 0x6e, 0x6f, 0x74, 0x68, 0x69, 0x6e, 0x67, 0x70,
 	0x6f, 0x6c, 0x69, 0x63, 0x79, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x44,
-	0x6f, 0x4e, 0x6f, 0x74, 0x68, 0x69, 0x6e, 0x67, 0x50, 0x6f, 0x6c, 0x69, 0x63, 0x79, 0x2e, 0x43,
-	0x6f, 0x6e, 0x66, 0x52, 0x04, 0x63, 0x6f, 0x6e, 0x66, 0x1a, 0x30, 0x0a, 0x04, 0x43, 0x6f, 0x6e,
-	0x66, 0x12, 0x28, 0x0a, 0x0f, 0x65, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x44, 0x6f, 0x4e, 0x6f, 0x74,
+	0x6f, 0x4e, 0x6f, 0x74, 0x68, 0x69, 0x6e, 0x67, 0x50, 0x6f, 0x6c, 0x69, 0x63, 0x79, 0x2e, 0x53,
+	0x70, 0x65, 0x63, 0x52, 0x04, 0x73, 0x70, 0x65, 0x63, 0x1a, 0x30, 0x0a, 0x04, 0x53, 0x70, 0x65,
+	0x63, 0x12, 0x28, 0x0a, 0x0f, 0x65, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x44, 0x6f, 0x4e, 0x6f, 0x74,
 	0x68, 0x69, 0x6e, 0x67, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0f, 0x65, 0x6e, 0x61, 0x62,
 	0x6c, 0x65, 0x44, 0x6f, 0x4e, 0x6f, 0x74, 0x68, 0x69, 0x6e, 0x67, 0x3a, 0x08, 0xb2, 0x8c, 0x89,
 	0xa6, 0x01, 0x02, 0x08, 0x01, 0x42, 0x74, 0x5a, 0x48, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e,
@@ -167,10 +168,10 @@ func file_pkg_plugins_policies_donothingpolicy_api_v1alpha1_donothingpolicy_prot
 var file_pkg_plugins_policies_donothingpolicy_api_v1alpha1_donothingpolicy_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_pkg_plugins_policies_donothingpolicy_api_v1alpha1_donothingpolicy_proto_goTypes = []interface{}{
 	(*DoNothingPolicy)(nil),      // 0: kuma.plugins.policies.donothingpolicy.v1alpha1.DoNothingPolicy
-	(*DoNothingPolicy_Conf)(nil), // 1: kuma.plugins.policies.donothingpolicy.v1alpha1.DoNothingPolicy.Conf
+	(*DoNothingPolicy_Spec)(nil), // 1: kuma.plugins.policies.donothingpolicy.v1alpha1.DoNothingPolicy.Spec
 }
 var file_pkg_plugins_policies_donothingpolicy_api_v1alpha1_donothingpolicy_proto_depIdxs = []int32{
-	1, // 0: kuma.plugins.policies.donothingpolicy.v1alpha1.DoNothingPolicy.conf:type_name -> kuma.plugins.policies.donothingpolicy.v1alpha1.DoNothingPolicy.Conf
+	1, // 0: kuma.plugins.policies.donothingpolicy.v1alpha1.DoNothingPolicy.spec:type_name -> kuma.plugins.policies.donothingpolicy.v1alpha1.DoNothingPolicy.Spec
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
@@ -197,7 +198,7 @@ func file_pkg_plugins_policies_donothingpolicy_api_v1alpha1_donothingpolicy_prot
 			}
 		}
 		file_pkg_plugins_policies_donothingpolicy_api_v1alpha1_donothingpolicy_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DoNothingPolicy_Conf); i {
+			switch v := v.(*DoNothingPolicy_Spec); i {
 			case 0:
 				return &v.state
 			case 1:

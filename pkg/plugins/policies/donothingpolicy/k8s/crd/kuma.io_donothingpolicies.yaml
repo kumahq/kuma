@@ -36,10 +36,10 @@ spec:
           spec:
             description: Spec is the specification of the Kuma DoNothingPolicy resource.
             properties:
-              conf:
+              spec:
                 properties:
                   enableDoNothing:
-                    description: Set true in case of doing nothing
+                    description: User defined fields Set true in case of doing nothing
                     type: boolean
                 type: object
             type: object
