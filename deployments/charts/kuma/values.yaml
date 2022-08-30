@@ -673,6 +673,7 @@ experimental:
     # -- If true, ebpf will be used instead of using iptables to install/configure transparent proxy
     enabled: false
 
+# @ignored for helm-docs
 plugins:
   policies:
     - meshtrafficpermissions

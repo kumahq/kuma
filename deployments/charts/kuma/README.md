@@ -163,7 +163,6 @@ A Helm chart for the Kuma Control Plane
 | experimental.gatewayAPI | bool | `false` | If true, it installs experimental Gateway API support |
 | experimental.cni | bool | `false` | If true, it installs experimental new version of the CNI |
 | experimental.ebpf.enabled | bool | `false` | If true, ebpf will be used instead of using iptables to install/configure transparent proxy |
-| plugins.policies[0] | string | `"meshtrafficpermissions"` |  |
 
 ## Custom Resource Definitions
 
