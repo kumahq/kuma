@@ -86,7 +86,7 @@ spec:
         name: web-frontend
 ```
 
-This will log all the inbound traffic from `web-backend` in `web-backend`.
+This will log all the inbound traffic from `web-frontend` in `web-backend`.
 
 #### Only outbound
 
