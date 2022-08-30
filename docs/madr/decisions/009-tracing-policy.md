@@ -18,7 +18,7 @@ resource for managing traffic tracing.
 
 ## Considered Options
 
-The new resource will be called `Traces` in the rest of this document.
+The new resource will be called `Tracing` in the rest of this document.
 
 Tracing in Kuma is implemented with Envoy's [tracing
 support](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing).
@@ -42,7 +42,7 @@ This MADR proposes leaving the _provider config_ in the `Mesh`.
 It leaves the door open for defining providers inline or in a separate
 resource.
 
-However, we propose configuring sampling and tag options in the `Traces`
+However, we propose configuring sampling and tag options in the `Tracing`
 resource.
 
 #### Custom tags
@@ -64,8 +64,11 @@ in Kuma are limited.
 ##### `targetRef`
 
 This is a new policy so it's based on `targetRef`. Envoy tracing is configured
-on the HTTP connection manager so `Traces` has a single `spec.targetRef` field
+on the HTTP connection manager so `Tracing` has a single `spec.targetRef` field
 that selects what it applies to. It does not use `to` or `from` fields.
+
+All logging configuration happens under `spec.default` so that users are able to
+override settings with more specific `targetRef`s.
 
 Resources supported by `spec.targetRef` are `Mesh`, `MeshSubset`, `MeshService`,
 `MeshServiceSubset`, `MeshGatewayRoute` and eventually the future
@@ -74,12 +77,13 @@ document.
 
 ##### Backends
 
-We propose keeping backends (providers) definable in the `Mesh` resource as is.
+We propose keeping backends definable in the `Mesh` resource as is.
 
 ```yaml
 spec:
- backend:
-  name: <backend defined in `Mesh`>
+  default:
+    backend:
+      name: <backend defined in `Mesh`>
 ```
 
 In particular, these backends contain the [_provider
@@ -92,41 +96,45 @@ traces of a `Mesh` so it makes sense to configure it on the `Mesh`.
 
 There are two more possibilities worth mentioning.
 
-We could easily offer defining a `Traces`-specific backend inline:
+We could easily offer defining a `Tracing`-specific backend inline:
 
 ```yaml
 spec:
-  backendConfig:
-    type: <backend type>
-    <type-specific config>
+  default:
+    backendConfig:
+      type: <backend type>
+      <type-specific config>
 ```
 
-We could create an additional resource `TracingConfig` (name tbc) that can be referenced
-from `Traces`:
+We could create an additional resource `TracingConfig` (name tbd) that can be referenced
+from `Tracing`:
 
 ```yaml
 spec:
- configRef:
-  name: <resource-name>
+  default:
+    configRef:
+      name: <resource-name>
 ```
 
 ##### More knobs
 
-This MADR proposes additional options be configurable on `Traces` resources.
+This MADR proposes any additional options be configurable on `Tracing` resources
+directly.
 
 ###### Sampling
 
-At the moment, tracing backends only support Envoy's `overall_sampling` via the
-`sampling` field.
+At the moment, tracing backends only support Envoy's `overall_sampling`
+via the `sampling` field.
 
-Should we allow the following instead?
+Question: should we allow the following instead?
 
 ```yaml
 spec:
- sampling:
-  overall: <percentage>
-  client: <percentage>
-  random: <percentage>
+  default:
+    sampling:
+      overall: <percentage>
+      client: <percentage>
+      random: <percentage>
 ```
 
 If users set the simple `sampling` field we have now,
@@ -138,13 +146,14 @@ Tags can be configured as well:
 
 ```yaml
 spec:
- tags:
-  - name:
-    # exactly one of the following keys must be set
-    literal: ...
-    header:
-     name:
-     default:
+  default:
+    tags:
+      - name:
+        # exactly one of the following keys must be set
+        literal: ...
+        header:
+          name:
+          default:
 ```
 
 ##### Method/path specific
@@ -153,3 +162,61 @@ Users can set the `spec.targetRef` to be a `MeshGatewayRoute` or
 `MeshTrafficRoute`.
 
 TODO: is this enough?
+
+### Examples
+
+All examples assume Kubernetes.
+
+#### Simple
+
+This configures all `Dataplane` inbounds with `kuma.io/service: backend` to
+trace a maximum of 80% of traffic and adds the custom tag `team` with a value of
+`core` to spans.
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: TrafficLog
+metadata:
+  name: all
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: MeshService
+    name: backend
+  default:
+    backend: jaeger
+    sampling:
+      overall: 80
+    tags:
+      - name: team
+        literal: core
+```
+
+#### Route-specific
+
+This configures any listeners matched by the `MeshGatewayRoute` `prod`
+to trace a maximum of 80% of traffic and adds the custom tag `env`
+with a value from `x-env` and a default value of `prod`.
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: TrafficLog
+metadata:
+  name: all
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: MeshGatewayRoute
+    name: prod
+  default:
+    backend: jaeger
+    sampling:
+      overall: 80
+    tags:
+      - name: env
+        header:
+          name: x-env
+          default: prod
+```
