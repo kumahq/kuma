@@ -195,6 +195,14 @@ var _ = Describe("kumactl install control-plane", func() {
 			},
 			goldenFile: "install-control-plane.cni-experimental-enabled.golden.yaml",
 		}),
+		Entry("should generate Kubernetes resources with new transparent proxy engine "+
+			"using ebpf (experimental)", testCase{
+			extraArgs: []string{
+				"--set", "experimental.ebpf.enabled=true",
+				"--without-kubernetes-connection",
+			},
+			goldenFile: "install-control-plane.tproxy-ebpf-experimental-enabled.golden.yaml",
+		}),
 		Entry("should generate Kubernetes resources for Global", testCase{
 			extraArgs: []string{
 				"--mode", "global",

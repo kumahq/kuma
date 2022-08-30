@@ -672,6 +672,12 @@ experimental:
   ebpf:
     # -- If true, ebpf will be used instead of using iptables to install/configure transparent proxy
     enabled: false
+    # -- Name of the environmental variable which will contain the IP address of a pod
+    instanceIPEnvVarName: INSTANCE_IP
+    # -- Path where BPF file system should be mounted
+    bpffsPath: /run/kuma/bpf
+    # -- Path where compiled eBPF programs which will be installed can be found
+    programsSourcePath: /kuma/ebpf
 
 plugins:
   policies: []
