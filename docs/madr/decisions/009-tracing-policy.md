@@ -1,0 +1,155 @@
+# Traffic tracing policy
+
+- Status: accepted
+
+Technical Story: https://github.com/kumahq/kuma/issues/4732
+
+## Context and Problem Statement
+
+We want to create a [new policy matching compliant](https://github.com/kumahq/kuma/blob/22c157d4adac7f518b1b49939c7e9ea4d2a1876c/docs/madr/decisions/005-policy-matching.md)
+resource for managing traffic tracing.
+
+## Decision Drivers
+
+- Replace existing policies with new policy matching compliant resources
+- [Path/Method filtering on traces](https://github.com/kumahq/kuma/issues/3335)
+- [Custom tags](https://github.com/kumahq/kuma/issues/3275)
+- Not blocking [OpenTelemetry tracing](https://github.com/kumahq/kuma/issues/3690)
+
+## Considered Options
+
+The new resource will be called `Traces` in the rest of this document.
+
+Tracing in Kuma is implemented with Envoy's [tracing
+support](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing).
+At the moment, Kuma supports Zipkin and Datadog.
+
+### Naming
+
+Some potential names:
+
+- `Tracing`
+- `Traces`
+- `MeshTrafficTrace`
+
+#### Backends
+
+Currently, tracing support requires defining _backends_ in the `Mesh` resource. A backend defines where traces are sent, the _provider_. It also defines sampling rates. The `TrafficTrace` resource references these backends and contains no configuration of its own.
+
+### Variant 1
+
+This MADR proposes leaving the _provider config_ in the `Mesh`.
+It leaves the door open for defining providers inline or in a separate
+resource.
+
+However, we propose configuring sampling and tag options in the `Traces`
+resource.
+
+#### Custom tags
+
+Envoy can set tags in traces using values from:
+
+- Literal value
+- Request header
+- Environment variable
+- Metadata
+
+We propose allowing users to configure custom tags using only literal values or
+request headers. Using Kuma leaves environment variables and Envoy metadata
+opaque for users so the use cases for configuring them (at least directly)
+in Kuma are limited.
+
+#### Proposed schema
+
+##### `targetRef`
+
+This is a new policy so it's based on `targetRef`. Envoy tracing is configured
+on the HTTP connection manager so `Trace` has a single `spec.targetRef` field
+that selects which proxies it applies to.
+
+Therefore, `spec.targetRef` supports `Mesh`, `MeshSubset`, `MeshService`,
+`MeshServiceSubset`, `MeshGatewayRoute` and eventually the future
+evolution of `TrafficRoute`, which we'll call `MeshTrafficRoute` in this
+document.
+
+##### Backends
+
+We propose keeping backends (providers) definable in the `Mesh` resource as is.
+
+```yaml
+spec:
+ backend:
+  name: <backend defined in `Mesh`>
+```
+
+In particular, these backends contain the [_provider
+configs_](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/http_tracer.proto#envoy-v3-api-msg-config-trace-v3-tracing-http).
+
+The rationale here is that the provider is likely to be the same provider for all
+traces of a `Mesh` so it makes sense to configure it on the `Mesh`.
+
+###### Further provider config options
+
+There are two more possibilities worth mentioning.
+
+We could easily offer defining a `Traces`-specific backend inline:
+
+```yaml
+spec:
+  backendConfig:
+    type: <backend type>
+    <type-specific config>
+```
+
+We could create an additional resource `TracingConfig` (name tbc) that can be referenced
+from `Traces`:
+
+```yaml
+spec:
+ configRef:
+  name: <resource-name>
+```
+
+##### More knobs
+
+This MADR proposes additional options be configurable on `Traces` resources.
+
+###### Sampling
+
+At the moment, tracing backends only support Envoy's `overall_sampling` via the
+`sampling` field.
+
+Should we allow the following instead?
+
+```yaml
+spec:
+ sampling:
+  overall: <percentage>
+  client: <percentage>
+  random: <percentage>
+```
+
+If users set the simple `sampling` field we have now,
+do they expect it to limit traces started via `x-client-trace-id`?
+
+##### Tags
+
+Tags can be configured as well:
+
+```yaml
+spec:
+ tags:
+  - name:
+    # exactly one of the following keys must be set
+    literal: ...
+    header:
+     name:
+     default:
+```
+
+##### Method/path specific
+
+Users can set the `spec.targetRef` to be a `MeshGatewayRoute` or
+`MeshTrafficRoute`.
+
+TODO: is this enough?
