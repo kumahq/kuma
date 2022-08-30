@@ -5,10 +5,13 @@ import (
 
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/events"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
 type Plugin interface{}
@@ -79,4 +82,14 @@ type CaPlugin interface {
 type AuthnAPIServerPlugin interface {
 	Plugin
 	NewAuthenticator(PluginContext) (authn.Authenticator, error)
+}
+
+// PolicyPlugin a plugin to add a Policy to Kuma
+type PolicyPlugin interface {
+	Plugin
+	// MatchedPolicies return all the policies of the plugins' type matching this dataplane. This is used in the inspect api and accessible in Apply through `proxy.Policies.Dynamic`
+	MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error)
+	// Apply to `rs` using the `ctx` and `proxy` the mutation for all policies of the type this plugin implements.
+	// You can access matching policies by using `proxy.Policies.Dynamic`.
+	Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error
 }

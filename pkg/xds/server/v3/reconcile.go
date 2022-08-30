@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/plugins"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -171,6 +172,11 @@ func (s *templateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, pr
 	if err != nil {
 		reconcileLog.Error(err, "failed to generate a snapshot", "proxy", proxy, "template", template)
 		return nil, err
+	}
+	for name, p := range plugins.Plugins().PolicyPlugins() {
+		if err := p.Apply(rs, ctx, proxy); err != nil {
+			return envoy_cache.Snapshot{}, errors.Wrapf(err, "could not apply policy plugin %s", name)
+		}
 	}
 	for _, hook := range s.ResourceSetHooks {
 		if err := hook.Modify(rs, ctx, proxy); err != nil {

@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/logs"
 	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 	"github.com/kumahq/kuma/pkg/core/permissions"
+	"github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/ratelimits"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -165,6 +166,14 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 		RateLimitsInbound:  ratelimits.Inbound,
 		RateLimitsOutbound: ratelimits.Outbound,
 		ProxyTemplate:      template.SelectProxyTemplate(dataplane, resources.ProxyTemplates().Items),
+		Dynamic:            map[core_model.ResourceType]core_xds.TypedMatchingPolicies{},
+	}
+	for _, p := range plugins.Plugins().PolicyPlugins() {
+		res, err := p.MatchedPolicies(dataplane, resources)
+		if err != nil {
+			return nil, err
+		}
+		matchedPolicies.Dynamic[res.Type] = res
 	}
 	return matchedPolicies, nil
 }
