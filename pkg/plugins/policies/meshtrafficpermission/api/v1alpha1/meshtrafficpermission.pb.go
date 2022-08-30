@@ -76,7 +76,7 @@ func (MeshTrafficPermission_From_Conf_Action) EnumDescriptor() ([]byte, []int) {
 }
 
 // MeshTrafficPermission defines permission for traffic between data planes
-// prxoies.
+// proxies.
 type MeshTrafficPermission struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

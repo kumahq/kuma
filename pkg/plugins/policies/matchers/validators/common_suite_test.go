@@ -1,4 +1,4 @@
-package common_test
+package validators_test
 
 import (
 	"testing"

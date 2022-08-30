@@ -15,9 +15,10 @@ option (doc.config) = {
 };
 
 // MeshTrafficPermission defines permission for traffic between data planes
-// prxoies.
+// proxies.
 message MeshTrafficPermission {
   option (kuma.mesh.policy) = {
+    // Toggle this to have the policy registered or not in Kuma
     skip_registration : false,
   };
 

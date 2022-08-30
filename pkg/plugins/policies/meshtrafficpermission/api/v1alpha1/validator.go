@@ -2,16 +2,16 @@ package v1alpha1
 
 import (
 	common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/common"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
 )
 
-func (t *MeshTrafficPermissionResource) validate() error {
+func (r *MeshTrafficPermissionResource) validate() error {
 	verr := validators.ValidationError{}
 	path := validators.RootedAt("spec")
 
-	if targetRef := t.Spec.GetTargetRef(); targetRef != nil {
-		targetRefErr := common.ValidateTargetRef(path.Field("targetRef"), targetRef, &common.ValidateTargetRefOpts{
+	if targetRef := r.Spec.GetTargetRef(); targetRef != nil {
+		targetRefErr := matcher_validators.ValidateTargetRef(path.Field("targetRef"), targetRef, &matcher_validators.ValidateTargetRefOpts{
 			SupportedKinds: []common_proto.TargetRef_Kind{
 				common_proto.TargetRef_Mesh,
 				common_proto.TargetRef_MeshSubset,
@@ -25,12 +25,12 @@ func (t *MeshTrafficPermissionResource) validate() error {
 	}
 
 	from := path.Field("from")
-	if len(t.Spec.GetFrom()) == 0 {
+	if len(r.Spec.GetFrom()) == 0 {
 		verr.AddViolationAt(from, "cannot be empty")
 	} else {
-		for idx, fromItem := range t.Spec.GetFrom() {
+		for idx, fromItem := range r.Spec.GetFrom() {
 			if targetRef := fromItem.GetTargetRef(); targetRef != nil {
-				targetRefErr := common.ValidateTargetRef(from.Index(idx).Field("targetRef"), targetRef, &common.ValidateTargetRefOpts{
+				targetRefErr := matcher_validators.ValidateTargetRef(from.Index(idx).Field("targetRef"), targetRef, &matcher_validators.ValidateTargetRefOpts{
 					SupportedKinds: []common_proto.TargetRef_Kind{
 						common_proto.TargetRef_Mesh,
 						common_proto.TargetRef_MeshSubset,

@@ -1,4 +1,4 @@
-package common_test
+package validators_test
 
 import (
 	"github.com/ghodss/yaml"
@@ -6,8 +6,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/common"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -17,7 +17,7 @@ var _ = Describe("TargetRef Validator", func() {
 
 		type testCase struct {
 			inputYaml string
-			opts      *common.ValidateTargetRefOpts
+			opts      *matcher_validators.ValidateTargetRefOpts
 		}
 
 		DescribeTable("should pass validation",
@@ -28,7 +28,7 @@ var _ = Describe("TargetRef Validator", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
-				validationErr := common.ValidateTargetRef(validators.RootedAt("targetRef"), targetRef, given.opts)
+				validationErr := matcher_validators.ValidateTargetRef(validators.RootedAt("targetRef"), targetRef, given.opts)
 
 				// then
 				Expect(validationErr.OrNil()).To(BeNil())
@@ -37,7 +37,7 @@ var _ = Describe("TargetRef Validator", func() {
 				inputYaml: `
 kind: Mesh
 `,
-				opts: &common.ValidateTargetRefOpts{
+				opts: &matcher_validators.ValidateTargetRefOpts{
 					SupportedKinds: []common_proto.TargetRef_Kind{
 						common_proto.TargetRef_Mesh,
 					},
@@ -48,7 +48,7 @@ kind: Mesh
 kind: Mesh
 name: mesh-1
 `,
-				opts: &common.ValidateTargetRefOpts{
+				opts: &matcher_validators.ValidateTargetRefOpts{
 					SupportedKinds: []common_proto.TargetRef_Kind{
 						common_proto.TargetRef_Mesh,
 					},
@@ -60,7 +60,7 @@ kind: MeshSubset
 tags:
   kuma.io/zone: us-east
 `,
-				opts: &common.ValidateTargetRefOpts{
+				opts: &matcher_validators.ValidateTargetRefOpts{
 					SupportedKinds: []common_proto.TargetRef_Kind{
 						common_proto.TargetRef_MeshSubset,
 					},
@@ -73,7 +73,7 @@ name: mesh-1
 tags:
   kuma.io/zone: us-east
 `,
-				opts: &common.ValidateTargetRefOpts{
+				opts: &matcher_validators.ValidateTargetRefOpts{
 					SupportedKinds: []common_proto.TargetRef_Kind{
 						common_proto.TargetRef_MeshSubset,
 					},
@@ -84,7 +84,7 @@ tags:
 kind: MeshSubset
 name: mesh-1
 `,
-				opts: &common.ValidateTargetRefOpts{
+				opts: &matcher_validators.ValidateTargetRefOpts{
 					SupportedKinds: []common_proto.TargetRef_Kind{
 						common_proto.TargetRef_MeshSubset,
 					},
@@ -95,7 +95,7 @@ name: mesh-1
 kind: MeshService
 name: backend
 `,
-				opts: &common.ValidateTargetRefOpts{
+				opts: &matcher_validators.ValidateTargetRefOpts{
 					SupportedKinds: []common_proto.TargetRef_Kind{
 						common_proto.TargetRef_MeshService,
 					},
@@ -107,7 +107,7 @@ kind: MeshService
 name: backend
 mesh: mesh-1
 `,
-				opts: &common.ValidateTargetRefOpts{
+				opts: &matcher_validators.ValidateTargetRefOpts{
 					SupportedKinds: []common_proto.TargetRef_Kind{
 						common_proto.TargetRef_MeshService,
 					},
@@ -120,7 +120,7 @@ name: backend
 tags:
   version: v1
 `,
-				opts: &common.ValidateTargetRefOpts{
+				opts: &matcher_validators.ValidateTargetRefOpts{
 					SupportedKinds: []common_proto.TargetRef_Kind{
 						common_proto.TargetRef_MeshServiceSubset,
 					},
@@ -134,7 +134,7 @@ mesh: mesh-1
 tags:
   version: v1
 `,
-				opts: &common.ValidateTargetRefOpts{
+				opts: &matcher_validators.ValidateTargetRefOpts{
 					SupportedKinds: []common_proto.TargetRef_Kind{
 						common_proto.TargetRef_MeshServiceSubset,
 					},
@@ -145,7 +145,7 @@ tags:
 kind: MeshGatewayRoute
 name: backend-gateway-route
 `,
-				opts: &common.ValidateTargetRefOpts{
+				opts: &matcher_validators.ValidateTargetRefOpts{
 					SupportedKinds: []common_proto.TargetRef_Kind{
 						common_proto.TargetRef_MeshGatewayRoute,
 					},
@@ -156,7 +156,7 @@ name: backend-gateway-route
 kind: MeshHTTPRoute
 name: backend-http-route
 `,
-				opts: &common.ValidateTargetRefOpts{
+				opts: &matcher_validators.ValidateTargetRefOpts{
 					SupportedKinds: []common_proto.TargetRef_Kind{
 						common_proto.TargetRef_MeshHTTPRoute,
 					},
@@ -169,7 +169,7 @@ name: backend-http-route
 
 		type testCase struct {
 			inputYaml string
-			opts      *common.ValidateTargetRefOpts
+			opts      *matcher_validators.ValidateTargetRefOpts
 			expected  string
 		}
 
@@ -181,7 +181,7 @@ name: backend-http-route
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
-				validationErr := common.ValidateTargetRef(validators.RootedAt("targetRef"), targetRef, given.opts)
+				validationErr := matcher_validators.ValidateTargetRef(validators.RootedAt("targetRef"), targetRef, given.opts)
 				// and
 				actual, err := yaml.Marshal(validationErr)
 
@@ -193,7 +193,7 @@ name: backend-http-route
 				inputYaml: `
 kind: Mesh
 `,
-				opts: &common.ValidateTargetRefOpts{
+				opts: &matcher_validators.ValidateTargetRefOpts{
 					SupportedKinds: []common_proto.TargetRef_Kind{
 						common_proto.TargetRef_MeshSubset,
 					},
@@ -211,7 +211,7 @@ mesh: mesh-1
 tags:
   tag1: value1
 `,
-				opts: &common.ValidateTargetRefOpts{
+				opts: &matcher_validators.ValidateTargetRefOpts{
 					SupportedKinds: []common_proto.TargetRef_Kind{
 						common_proto.TargetRef_Mesh,
 					},
@@ -228,7 +228,7 @@ violations:
 				inputYaml: `
 kind: MeshSubset
 `,
-				opts: &common.ValidateTargetRefOpts{
+				opts: &matcher_validators.ValidateTargetRefOpts{
 					SupportedKinds: []common_proto.TargetRef_Kind{
 						common_proto.TargetRef_Mesh,
 					},
@@ -243,7 +243,7 @@ violations:
 kind: MeshSubset
 tags: {}
 `,
-				opts: &common.ValidateTargetRefOpts{
+				opts: &matcher_validators.ValidateTargetRefOpts{
 					SupportedKinds: []common_proto.TargetRef_Kind{
 						common_proto.TargetRef_MeshSubset,
 					},
@@ -257,7 +257,7 @@ violations:
 				inputYaml: `
 kind: MeshService
 `,
-				opts: &common.ValidateTargetRefOpts{
+				opts: &matcher_validators.ValidateTargetRefOpts{
 					SupportedKinds: []common_proto.TargetRef_Kind{
 						common_proto.TargetRef_MeshServiceSubset,
 					},
@@ -273,7 +273,7 @@ kind: MeshService
 tags:
   tag1: value1
 `,
-				opts: &common.ValidateTargetRefOpts{
+				opts: &matcher_validators.ValidateTargetRefOpts{
 					SupportedKinds: []common_proto.TargetRef_Kind{
 						common_proto.TargetRef_MeshService,
 					},
@@ -290,7 +290,7 @@ violations:
 				inputYaml: `
 kind: MeshServiceSubset
 `,
-				opts: &common.ValidateTargetRefOpts{
+				opts: &matcher_validators.ValidateTargetRefOpts{
 					SupportedKinds: []common_proto.TargetRef_Kind{
 						common_proto.TargetRef_MeshService,
 					},
@@ -306,7 +306,7 @@ violations:
 kind: MeshServiceSubset
 tags: {}
 `,
-				opts: &common.ValidateTargetRefOpts{
+				opts: &matcher_validators.ValidateTargetRefOpts{
 					SupportedKinds: []common_proto.TargetRef_Kind{
 						common_proto.TargetRef_MeshServiceSubset,
 					},
@@ -323,7 +323,7 @@ violations:
 				inputYaml: `
 kind: MeshGatewayRoute
 `,
-				opts: &common.ValidateTargetRefOpts{
+				opts: &matcher_validators.ValidateTargetRefOpts{
 					SupportedKinds: []common_proto.TargetRef_Kind{
 						common_proto.TargetRef_MeshHTTPRoute,
 					},
@@ -341,7 +341,7 @@ mesh: mesh-1
 tags:
   tag1: value1
 `,
-				opts: &common.ValidateTargetRefOpts{
+				opts: &matcher_validators.ValidateTargetRefOpts{
 					SupportedKinds: []common_proto.TargetRef_Kind{
 						common_proto.TargetRef_MeshGatewayRoute,
 					},
@@ -358,7 +358,7 @@ violations:
 				inputYaml: `
 kind: MeshHTTPRoute
 `,
-				opts: &common.ValidateTargetRefOpts{
+				opts: &matcher_validators.ValidateTargetRefOpts{
 					SupportedKinds: []common_proto.TargetRef_Kind{
 						common_proto.TargetRef_MeshGatewayRoute,
 					},
@@ -376,7 +376,7 @@ mesh: mesh-1
 tags:
   tag1: value1
 `,
-				opts: &common.ValidateTargetRefOpts{
+				opts: &matcher_validators.ValidateTargetRefOpts{
 					SupportedKinds: []common_proto.TargetRef_Kind{
 						common_proto.TargetRef_MeshHTTPRoute,
 					},
