@@ -175,7 +175,7 @@ func (s *templateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, pr
 	}
 	for name, p := range plugins.Plugins().PolicyPlugins() {
 		if err := p.Apply(rs, ctx, proxy); err != nil {
-			return envoy_cache.Snapshot{}, errors.Wrapf(err, "could not apply policy plugin %s", name)
+			return nil, errors.Wrapf(err, "could not apply policy plugin %s", name)
 		}
 	}
 	for _, hook := range s.ResourceSetHooks {
