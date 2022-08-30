@@ -33,7 +33,7 @@ protoc/plugins:
 
 POLICIES_DIR := pkg/plugins/policies
 
-policies = $(foreach dir,$(shell find pkg/plugins/policies -maxdepth 1 -mindepth 1 -type d | grep -v core),$(notdir $(dir)))
+policies = $(foreach dir,$(shell find pkg/plugins/policies -maxdepth 1 -mindepth 1 -type d | grep -v core | grep -v matchers),$(notdir $(dir)))
 generate_policy_targets = $(addprefix generate/policy/,$(policies))
 cleanup_policy_targets = $(addprefix cleanup/policy/,$(policies))
 
@@ -45,7 +45,7 @@ cleanup/crds:
 
 # deletes all files in policy directory except *.proto and validator.go
 cleanup/policy/%:
-	$(shell find $(POLICIES_DIR)/$* -not -name '*.proto' -not -name 'validator.go' -not -name '*_test.go' -type f -delete)
+	$(shell find $(POLICIES_DIR)/$* \( -name '*.pb.go' -o -name '*.yaml' -o -name 'zz_generated.*'  \) -type f -delete)
 	@rm -r $(POLICIES_DIR)/$*/k8s || true
 
 generate/policy/%: generate/schema/%
