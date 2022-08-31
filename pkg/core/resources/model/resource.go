@@ -108,6 +108,8 @@ type ResourceTypeDescriptor struct {
 	PluralDisplayName string
 	// IsExperimental indicates if a policy is in experimental state (might not be production ready).
 	IsExperimental bool
+	// IsPluginOriginated indicates if a policy is implemented as a plugin
+	IsPluginOriginated bool
 }
 
 func (d ResourceTypeDescriptor) NewObject() Resource {

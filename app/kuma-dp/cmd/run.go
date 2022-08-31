@@ -161,7 +161,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			opts := envoy.Opts{
 				Config:    *cfg,
-				Dataplane: rest.NewFromModel(proxyResource),
+				Dataplane: rest.From.Resource(proxyResource),
 				Stdout:    cmd.OutOrStdout(),
 				Stderr:    cmd.OutOrStderr(),
 				Quit:      shouldQuit,

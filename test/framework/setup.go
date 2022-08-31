@@ -2,6 +2,7 @@ package framework
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -195,15 +196,16 @@ func ResourceUniversal(resource model.Resource) InstallFunc {
 			func() (s string, err error) {
 				kumactl := cluster.GetKumactlOptions()
 
-				json, err := core_rest.From.Resource(resource).MarshalJSON()
+				res := core_rest.From.Resource(resource)
+				jsonRes, err := json.Marshal(res)
 				if err != nil {
 					return "", err
 				}
-				yaml, err := yaml.JSONToYAML(json)
+				yamlRes, err := yaml.JSONToYAML(jsonRes)
 				if err != nil {
 					return "", err
 				}
-				return "", kumactl.KumactlApplyFromString(string(yaml))
+				return "", kumactl.KumactlApplyFromString(string(yamlRes))
 			})
 		return err
 	}

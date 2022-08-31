@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/plugins/resources/remote"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
@@ -38,7 +38,7 @@ func (d *httpZoneOverviewClient) List(ctx context.Context) (*system.ZoneOverview
 		return nil, errors.Errorf("(%d): %s", statusCode, string(b))
 	}
 	overviews := system.ZoneOverviewResourceList{}
-	if err := remote.UnmarshalList(b, &overviews); err != nil {
+	if err := rest.JSON.UnmarshalListToCore(b, &overviews); err != nil {
 		return nil, err
 	}
 	return &overviews, nil

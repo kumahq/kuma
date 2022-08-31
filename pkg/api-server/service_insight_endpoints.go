@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	rest_unversioned "github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/pkg/insights"
@@ -43,7 +44,7 @@ func (s *serviceInsightEndpoints) findResource(request *restful.Request, respons
 				Dataplanes: &v1alpha1.ServiceInsight_Service_DataplaneStat{},
 			}
 		}
-		res := rest.From.Resource(serviceInsight)
+		res := rest_unversioned.From.Resource(serviceInsight)
 		res.Meta.Name = service
 		res.Spec = stat
 		if err := response.WriteAsJson(res); err != nil {
@@ -71,8 +72,6 @@ func (s *serviceInsightEndpoints) listResources(request *restful.Request, respon
 	}
 
 	restList := s.expandInsights(serviceInsightList)
-
-	sort.Sort(rest.ByMeta(restList.Items))
 	restList.Total = uint32(len(restList.Items))
 
 	if err := s.paginateResources(request, &restList); err != nil {
@@ -92,14 +91,21 @@ func (s *serviceInsightEndpoints) listResources(request *restful.Request, respon
 // From the API perspective it's better to provide ServiceInsight per Service, not per Mesh.
 // For this reason, this method expand the one ServiceInsight resource for the mesh to resource per service
 func (s *serviceInsightEndpoints) expandInsights(serviceInsightList *mesh.ServiceInsightResourceList) rest.ResourceList {
-	restList := rest.ResourceList{}
+	restItems := []*rest_unversioned.Resource{}
 	for _, insight := range serviceInsightList.Items {
 		for serviceName, stat := range insight.Spec.Services {
-			res := rest.From.Resource(insight)
+			res := rest_unversioned.From.Resource(insight)
 			res.Meta.Name = serviceName
 			res.Spec = stat
-			restList.Items = append(restList.Items, res)
+			restItems = append(restItems, res)
 		}
+	}
+
+	sort.Sort(rest_unversioned.ByMeta(restItems))
+
+	restList := rest.ResourceList{}
+	for _, item := range restItems {
+		restList.Items = append(restList.Items, item)
 	}
 	return restList
 }
