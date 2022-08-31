@@ -37,6 +37,8 @@ During the weekly meeting we started talking about the appropriate name for this
 - `MeshAccessLog`
 - `MeshLog`
 - `MeshTrafficLog`
+- `TrafficLogging`
+- `Logging`
 - `MeshLogging`
 
 Please vote on your preferred name in the comments. Feel free to edit this document and add your suggestions.
@@ -62,15 +64,11 @@ there is no way of knowing if the outgoing request is connected to an incoming r
 
 `spec.from.targetRef` can only have: `Mesh` for now.
 
-[//]: # (In the future `MeshSubset|MeshService|MeshServiceSubset` might get implemented by passing metadata from an Envoy filter that retrieves that data from a certificate.)
-
 Matching on `MeshGatewayRoute` and `MeshHTTPRoute` does not make sense (there is no `route` that a request originates **from**).
 
 #### To level
 
 `spec.to.targetRef` can only have: `Mesh|MeshService` for now.
-
-[//]: # (In the future Matching on `MeshGatewayRoute` and `MeshHTTPRoute` could be achieved the same way as on the top level `targetRef` but it will be attached on the `outbound` instead of the `inbound`.)
 
 ### Examples
 
