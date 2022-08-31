@@ -72,6 +72,7 @@ func KICKubernetes() {
 
 	E2EAfterAll(func() {
 		Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(env.Cluster.TriggerDeleteNamespace(namespaceOutsideMesh)).To(Succeed())
 		Expect(env.Cluster.DeleteMesh(mesh)).To(Succeed())
 	})
 
