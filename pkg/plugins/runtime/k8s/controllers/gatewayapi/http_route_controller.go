@@ -15,6 +15,7 @@ import (
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
+	gatewayapi_alpha "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -217,12 +218,55 @@ func routesForGateway(l logr.Logger, client kube_client.Client) kube_handler.Map
 	}
 }
 
+// routesForGrant returns a function that calculates which HTTPRoutes might
+// be affected by changes in a ReferenceGrant so they can be reconciled.
+func routesForGrant(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
+	l = l.WithName("routesForGrant")
+
+	return func(obj kube_client.Object) []kube_reconcile.Request {
+		grant, ok := obj.(*gatewayapi_alpha.ReferenceGrant)
+		if !ok {
+			l.Error(nil, "unexpected error converting to be mapped %T object to GatewayGrant", obj)
+			return nil
+		}
+
+		var namespaces []gatewayapi_alpha.Namespace
+		for _, from := range grant.Spec.From {
+			if from.Group == gatewayapi_alpha.Group(gatewayapi.GroupVersion.Group) && from.Kind == gatewayapi_alpha.Kind(common.HTTPRouteKind) {
+				namespaces = append(namespaces, from.Namespace)
+			}
+		}
+
+		var requests []kube_reconcile.Request
+
+		for _, namespace := range namespaces {
+			routes := &gatewayapi.HTTPRouteList{}
+			if err := client.List(context.Background(), routes, kube_client.InNamespace(namespace)); err != nil {
+				l.Error(err, "unexpected error listing HTTPRoutes")
+				return nil
+			}
+
+			for _, gateway := range routes.Items {
+				requests = append(requests, kube_reconcile.Request{
+					NamespacedName: kube_client.ObjectKeyFromObject(&gateway),
+				})
+			}
+		}
+
+		return requests
+	}
+}
+
 func (r *HTTPRouteReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&gatewayapi.HTTPRoute{}).
 		Watches(
 			&kube_source.Kind{Type: &gatewayapi.Gateway{}},
 			kube_handler.EnqueueRequestsFromMapFunc(routesForGateway(r.Log, r.Client)),
+		).
+		Watches(
+			&kube_source.Kind{Type: &gatewayapi_alpha.ReferenceGrant{}},
+			kube_handler.EnqueueRequestsFromMapFunc(routesForGrant(r.Log, r.Client)),
 		).
 		Complete(r)
 }

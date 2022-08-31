@@ -17,6 +17,7 @@ import (
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
+	gatewayapi_alpha "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -252,6 +253,45 @@ func gatewaysForConfig(l logr.Logger, client kube_client.Client) kube_handler.Ma
 	}
 }
 
+// gatewaysForGrant returns a function that calculates which Gateways might
+// be affected by changes in a ReferenceGrant so they can be reconciled.
+func gatewaysForGrant(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
+	l = l.WithName("gatewaysForGrant")
+
+	return func(obj kube_client.Object) []kube_reconcile.Request {
+		grant, ok := obj.(*gatewayapi_alpha.ReferenceGrant)
+		if !ok {
+			l.Error(nil, "unexpected error converting to be mapped %T object to GatewayGrant", obj)
+			return nil
+		}
+
+		var namespaces []gatewayapi_alpha.Namespace
+		for _, from := range grant.Spec.From {
+			if from.Group == gatewayapi_alpha.Group(gatewayapi.GroupVersion.Group) && from.Kind == "Gateway" {
+				namespaces = append(namespaces, from.Namespace)
+			}
+		}
+
+		var requests []kube_reconcile.Request
+
+		for _, namespace := range namespaces {
+			gateways := &gatewayapi.GatewayList{}
+			if err := client.List(context.Background(), gateways, kube_client.InNamespace(namespace)); err != nil {
+				l.Error(err, "unexpected error listing Gateways")
+				return nil
+			}
+
+			for _, gateway := range gateways.Items {
+				requests = append(requests, kube_reconcile.Request{
+					NamespacedName: kube_client.ObjectKeyFromObject(&gateway),
+				})
+			}
+		}
+
+		return requests
+	}
+}
+
 func (r *GatewayReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	// This index helps us list routes that point to a MeshGateway in
 	// attachedListenersForMeshGateway.
@@ -292,6 +332,10 @@ func (r *GatewayReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		Watches(
 			&kube_source.Kind{Type: &mesh_k8s.MeshGatewayConfig{}},
 			kube_handler.EnqueueRequestsFromMapFunc(gatewaysForConfig(r.Log, r.Client)),
+		).
+		Watches(
+			&kube_source.Kind{Type: &gatewayapi_alpha.ReferenceGrant{}},
+			kube_handler.EnqueueRequestsFromMapFunc(gatewaysForGrant(r.Log, r.Client)),
 		).
 		Complete(r)
 }
