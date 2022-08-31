@@ -679,6 +679,7 @@ experimental:
     # -- Path where compiled eBPF programs which will be installed can be found
     programsSourcePath: /kuma/ebpf
 
+# @ignored for helm-docs
 plugins:
   policies:
     - meshtrafficpermissions
