@@ -179,7 +179,7 @@ func (d *DataplaneResource) IsIPv6() bool {
 	return ip.To4() == nil
 }
 
-func (d *DataplaneResource) IsUsingInboundTransparentProxy() bool {
+func (d *DataplaneResource) IsUsingTransparentProxy() bool {
 	if d == nil {
 		return false
 	}
@@ -188,7 +188,8 @@ func (d *DataplaneResource) IsUsingInboundTransparentProxy() bool {
 	}
 	isUsingTransparentProxy := false
 	if d.Spec.GetNetworking().GetTransparentProxying() != nil &&
-		d.Spec.GetNetworking().GetTransparentProxying().RedirectPortInbound != 0 {
+		d.Spec.GetNetworking().GetTransparentProxying().RedirectPortInbound != 0 &&
+		d.Spec.GetNetworking().GetTransparentProxying().RedirectPortOutbound != 0 {
 		isUsingTransparentProxy = true
 	}
 	if d.IsIPv6() {

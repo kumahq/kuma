@@ -59,9 +59,9 @@ type Hijacker struct {
 	applicationsToScrape []ApplicationToScrape
 }
 
-func createHttpClient(isUsingInboundTransparentProxy bool, sourceAddress *net.TCPAddr) http.Client {
+func createHttpClient(isUsingTransparentProxy bool, sourceAddress *net.TCPAddr) http.Client {
 	// we need this in case of not localhost requests, it returns fast in iptabels
-	if isUsingInboundTransparentProxy {
+	if isUsingTransparentProxy {
 		dialer := &net.Dialer{
 			LocalAddr: sourceAddress,
 		}
@@ -74,11 +74,11 @@ func createHttpClient(isUsingInboundTransparentProxy bool, sourceAddress *net.TC
 	return http.Client{}
 }
 
-func New(dataplane kumadp.Dataplane, applicationsToScrape []ApplicationToScrape, isUsingInboundTransparentProxy bool) *Hijacker {
+func New(dataplane kumadp.Dataplane, applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool) *Hijacker {
 	return &Hijacker{
 		socketPath:           envoy.MetricsHijackerSocketName(dataplane.Name, dataplane.Mesh),
-		httpClientIPv4:       createHttpClient(isUsingInboundTransparentProxy, inPassThroughIPv4),
-		httpClientIPv6:       createHttpClient(isUsingInboundTransparentProxy, inPassThroughIPv6),
+		httpClientIPv4:       createHttpClient(isUsingTransparentProxy, inPassThroughIPv4),
+		httpClientIPv6:       createHttpClient(isUsingTransparentProxy, inPassThroughIPv6),
 		applicationsToScrape: applicationsToScrape,
 	}
 }

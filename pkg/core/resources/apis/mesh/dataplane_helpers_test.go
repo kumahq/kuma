@@ -552,7 +552,7 @@ var _ = Describe("Dataplane", func() {
 		)
 	})
 
-	Describe("IsUsingInboundTransparentProxy()", func() {
+	Describe("IsUsingTransparentProxy()", func() {
 		type testCase struct {
 			dataplane string
 			expected  bool
@@ -568,7 +568,7 @@ var _ = Describe("Dataplane", func() {
 				}
 
 				// expect
-				Expect(dataplane.IsUsingInboundTransparentProxy()).To(Equal(given.expected))
+				Expect(dataplane.IsUsingTransparentProxy()).To(Equal(given.expected))
 			},
 			Entry("`nil` dataplane", testCase{
 				dataplane: ``,

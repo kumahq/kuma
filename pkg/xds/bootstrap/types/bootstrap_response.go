@@ -22,7 +22,7 @@ type KumaSidecarConfiguration struct {
 }
 
 type NetworkingConfiguration struct {
-	IsUsingInboundTransparentProxy bool `json:"isUsingInboundTransparentProxy"`
+	IsUsingTransparentProxy bool `json:"isUsingTransparentProxy"`
 }
 
 type MetricsConfiguration struct {

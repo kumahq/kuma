@@ -12,7 +12,7 @@ type KumaDpBootstrap struct {
 }
 
 type NetworkingConfig struct {
-	IsUsingInboundTransparentProxy bool
+	IsUsingTransparentProxy bool
 }
 
 type AggregateMetricsConfig struct {

@@ -431,7 +431,7 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 		opts.apply(opt...)
 		args := []string{"ncat", "-lvk", "-p", "3000"}
 		appYaml := opts.appYaml
-		transparent := opts.transparent == nil || *opts.transparent
+		transparent := opts.transparent != nil && *opts.transparent // default false
 		if appYaml == "" {
 			if transparent {
 				appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", name, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound, strings.Join(opts.reachableServices, ","))
@@ -514,7 +514,7 @@ func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 		if opts.serviceInstance == "" {
 			opts.serviceInstance = "1"
 		}
-		transparent := opts.transparent == nil || *opts.transparent
+		transparent := opts.transparent == nil || *opts.transparent // default true
 		transparentProxy := ""
 		if transparent {
 			transparentProxy = fmt.Sprintf(`
