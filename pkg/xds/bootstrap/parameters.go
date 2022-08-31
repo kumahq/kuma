@@ -8,6 +8,11 @@ import (
 
 type KumaDpBootstrap struct {
 	AggregateMetricsConfig []AggregateMetricsConfig
+	NetworkingConfig       NetworkingConfig
+}
+
+type NetworkingConfig struct {
+	IsUsingInboundTransparentProxy bool
 }
 
 type AggregateMetricsConfig struct {

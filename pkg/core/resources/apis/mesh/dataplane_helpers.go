@@ -179,6 +179,26 @@ func (d *DataplaneResource) IsIPv6() bool {
 	return ip.To4() == nil
 }
 
+func (d *DataplaneResource) IsUsingInboundTransparentProxy() bool {
+	if d == nil {
+		return false
+	}
+	if d.Spec.GetNetworking() == nil {
+		return false
+	}
+	isUsingTransparentProxy := false
+	if d.Spec.GetNetworking().GetTransparentProxying() != nil &&
+		d.Spec.GetNetworking().GetTransparentProxying().RedirectPortInbound != 0 {
+		isUsingTransparentProxy = true
+	}
+	if d.IsIPv6() {
+		if d.Spec.GetNetworking().GetTransparentProxying().RedirectPortInboundV6 == 0 {
+			isUsingTransparentProxy = false
+		}
+	}
+	return isUsingTransparentProxy
+}
+
 func (d *DataplaneResource) AdminAddress(defaultAdminPort uint32) string {
 	if d == nil {
 		return ""

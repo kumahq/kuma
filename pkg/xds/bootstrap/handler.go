@@ -127,6 +127,9 @@ func createBootstrapResponse(bootstrap []byte, config *KumaDpBootstrap) *types.B
 		Metrics: types.MetricsConfiguration{
 			Aggregate: aggregate,
 		},
+		Networking: types.NetworkingConfiguration{
+			IsUsingInboundTransparentProxy: config.NetworkingConfig.IsUsingInboundTransparentProxy,
+		},
 	}
 	return &bootstrapConfig
 }
