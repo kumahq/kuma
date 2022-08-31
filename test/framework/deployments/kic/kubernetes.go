@@ -2,8 +2,6 @@ package kic
 
 import (
 	"fmt"
-	"os"
-	"strconv"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/pkg/errors"
@@ -17,42 +15,9 @@ type k8sDeployment struct {
 	mesh             string
 }
 
-var DefaultNodePortHTTP = 30080
-var DefaultNodePortHTTPS = 30443
-
 var _ Deployment = &k8sDeployment{}
 
 var ingressApp = "ingress-kong"
-
-func NodePortHTTP() int {
-	var port int
-	var err error
-	portStr := os.Getenv("E2E_KONG_INGRESS_HTTP_PORT")
-	if portStr == "" {
-		port = DefaultNodePortHTTP
-	} else {
-		port, err = strconv.Atoi(portStr)
-		if err != nil {
-			panic(fmt.Sprintf("Invalid E2E_KONG_INGRESS_HTTP_PORT: %s", portStr))
-		}
-	}
-	return port
-}
-
-func NodePortHTTPS() int {
-	var port int
-	var err error
-	portStr := os.Getenv("E2E_KONG_INGRESS_HTTPS_PORT")
-	if portStr == "" {
-		port = DefaultNodePortHTTPS
-	} else {
-		port, err = strconv.Atoi(portStr)
-		if err != nil {
-			panic(fmt.Sprintf("Invalid E2E_KONG_INGRESS_HTTPS_PORT: %s", portStr))
-		}
-	}
-	return port
-}
 
 func (t *k8sDeployment) Name() string {
 	return DeploymentName
