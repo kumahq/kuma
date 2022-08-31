@@ -10,5 +10,5 @@ import (
 // MatchedPolicies match policies using the standard matchers using targetRef (madr-005)
 func MatchedPolicies(model.ResourceType, *core_mesh.DataplaneResource, xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
 	// TODO @lobkovilya Implement standard matching strategy
-	panic("Not implemented!")
+	return core_xds.TypedMatchingPolicies{}, nil
 }
