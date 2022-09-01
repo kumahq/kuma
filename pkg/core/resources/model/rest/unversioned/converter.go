@@ -9,6 +9,7 @@ var From = &from{}
 
 type from struct{}
 
+// Deprecated: use 'rest.From.Resource()' instead
 func (c *from) Resource(r core_model.Resource) *Resource {
 	var meshName string
 	if r.Descriptor().Scope == core_model.ScopeMesh {

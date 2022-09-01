@@ -11,6 +11,26 @@ var From = &from{}
 
 type from struct{}
 
+// Resource method generates a resource representation to use with API server or CLI.
+// Representation is different depending on the resource type:
+//   - new resources which are provided by plugins are converted to 'v1alpha1.Resource'
+//   - old resources are converted to 'unversioned.Resource'
+//
+// The difference between 'v1alpha1.Resource' and 'unversioned.Resource' is 'spec' field
+// in 'v1alpha1.Resource':
+//   type: MeshTrafficPermission
+//   name: mtp1
+//   mesh: default
+//   spec:
+//     targetRef: {...}
+//     from: [...]
+// while 'unversioned.Resource' is:
+//   type: CircuitBreaker
+//   name: cb1
+//   mesh: default
+//   sources: [...]
+//   destinations: [...]
+//   conf: {...}
 func (f *from) Resource(r core_model.Resource) Resource {
 	if r == nil {
 		return nil
