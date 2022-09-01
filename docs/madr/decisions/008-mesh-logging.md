@@ -53,6 +53,11 @@ There are 3 parts to matching, each meaning a different part of the request flow
 #### Top level
 
 `spec.targetRef` can have the following kinds: `Mesh|MeshSubset|MeshService|MeshServiceSubset|MeshGatewayRoute|MeshHTTPRoute`
+with the following caveats:
+
+`MeshGatewayRoute` can only have `from` (there is no outbound listener).
+
+`MeshHTTPRoute` here is an inbound route and can only have `from` (`to` always goes to the application).
 
 Matching on `MeshGatewayRoute` and `MeshHTTPRoute` can be achieved by using a
 [HeaderMatcher](https://github.com/envoyproxy/envoy/blob/23a9a686bb4237934cd575d8e62d3e0df98b59ee/api/envoy/config/accesslog/v3/accesslog.proto#L207)
@@ -62,13 +67,22 @@ there is no way of knowing if the outgoing request is connected to an incoming r
 
 #### From level
 
-`spec.from.targetRef` can only have: `Mesh` for now.
+`spec.from.targetRef` can only have: `Mesh` for this iteration.
+
+In the future, general use case of targeting `MeshSubset|MeshService|MeshServiceSubset` in TCP/HTTP will be implemented the following way:
+- get SPIFFE info from certificate in a custom Lua Envoy filter (or use something provided if it exists, you can get the info by calling `handle:streamInfo():downstreamSslConnection():uriSanPeerCertificate()` - see example [here](https://github.com/allegro/envoy-control/blob/087a8d3bf9b923f2013dabcf3adef2bfe2d9533f/envoy-control-core/src/main/resources/lua/ingress_client_name_header.lua#L13))
+- pass SPIFFE info into dynamic metadata by calling dynamicMetadata:set(filterName, key, value) (see [docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/lua_filter#set))
+- use [metadata_filter](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-field-config-accesslog-v3-accesslogfilter-metadata-filter) with data from the previous point
 
 Matching on `MeshGatewayRoute` and `MeshHTTPRoute` does not make sense (there is no `route` that a request originates **from**).
 
 #### To level
 
 `spec.to.targetRef` can only have: `Mesh|MeshService` for now.
+
+In the future,
+when `spec.targetRef` is `Mesh|MeshSubset|MeshService|MeshServiceSubset` we can have `MeshHTTPRoute` as an Outbound route,
+and it can only have `to` (`from` always goes from the application).
 
 ### Examples
 
@@ -170,7 +184,8 @@ spec:
         name: web-frontend
       default:
         backends:
-          - logstash # Forward the logs into the logging backend named `logstash`.
+          - name: logstash
+            type: reference # this is the default and only supported value atm, people can ignore this
 ```
 
 In the future we will introduce `MeshLoggingBackend` policy that would hold that data.
@@ -223,7 +238,8 @@ spec:
         name: web-frontend
       default:
         backends:
-          - logstash # Forward the logs into the logging backend named `logstash`.
+          - name: logstash
+            type: reference
 ```
 
 ##### Positive Consequences
@@ -365,3 +381,99 @@ spec:
 
 Outcome:
 - Every request that comes on `/apples` will be logged to "file".
+
+### Zones
+
+#### In mesh
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: default
+spec:
+  logging:
+    backends:
+      - name: logstash-zone-a
+        type: tcp
+        conf:
+          address: 127.0.0.1:5000
+      - name: logstash-zone-b
+        type: tcp
+        conf:
+          address: 127.0.0.2:5000
+---
+type: MeshLogging
+mesh: default
+name: log-zone-a
+spec:
+  targetRef:
+    kind: MeshSubset
+    tags:
+      kuma.io/zone: zone-a
+  from:
+    - targetRef:
+        kind: Mesh
+        name: default
+      default:
+        backends:
+          - name: logstash-zone-a
+---
+type: MeshLogging
+mesh: default
+name: log-zone-b
+spec:
+  targetRef:
+    kind: MeshSubset
+    tags:
+      kuma.io/zone: zone-b
+  from:
+    - targetRef:
+        kind: Mesh
+        name: default
+      default:
+        backends:
+          - name: logstash-zone-b
+```
+
+#### Embedded
+
+```yaml
+type: MeshLogging
+mesh: default
+name: log-zone-a
+spec:
+  targetRef:
+    kind: MeshSubset
+    tags:
+      kuma.io/zone: zone-a
+  from:
+    - targetRef:
+        kind: Mesh
+        name: default
+      default:
+        backends:
+          - name: logstash-zone-a
+            type: tcp
+            conf:
+              address: 127.0.0.1:5000
+---
+type: MeshLogging
+mesh: default
+name: log-zone-b
+spec:
+  targetRef:
+    kind: MeshSubset
+    tags:
+      kuma.io/zone: zone-b
+  from:
+    - targetRef:
+        kind: Mesh
+        name: default
+      default:
+        backends:
+          - name: logstash-zone-b
+            type: tcp
+            conf:
+              address: 127.0.0.2:5000
+```
