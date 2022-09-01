@@ -21,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/k8s_api_bypass"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/kic"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/membership"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/observability"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/reachableservices"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/trafficlog"
@@ -102,3 +103,4 @@ var _ = Describe("Defaults", defaults.Defaults, Ordered)
 var _ = Describe("External Services", externalservices.ExternalServices, Ordered)
 var _ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)
 var _ = Describe("Kong Ingress Controller", Label("arm-not-supported"), kic.KICKubernetes, Ordered)
+var _ = Describe("MeshTrafficPermission API", meshtrafficpermission.API, Ordered)
