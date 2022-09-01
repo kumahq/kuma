@@ -218,8 +218,9 @@ Routes:
               totalWeight: 1
         - match:
             headers:
-            - exactMatch: application/json
-              name: Content-Type
+            - name: Content-Type
+              stringMatch:
+                exact: application/json
             prefix: /
           route:
             retryPolicy:
@@ -241,8 +242,9 @@ Routes:
               totalWeight: 1
         - match:
             headers:
-            - exactMatch: gibberish
-              name: Language
+            - name: Language
+              stringMatch:
+                exact: gibberish
             prefix: /
           route:
             retryPolicy:
