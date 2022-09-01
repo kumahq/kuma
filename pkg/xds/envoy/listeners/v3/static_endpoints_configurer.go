@@ -4,6 +4,7 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
@@ -37,10 +38,15 @@ func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.Filter
 		}
 
 		if p.HeaderExactMatch != "" {
+			matcher := envoy_type_matcher.StringMatcher{
+				MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+					Exact: p.HeaderExactMatch,
+				},
+			}
 			route.Match.Headers = []*envoy_route.HeaderMatcher{{
 				Name: p.Header,
-				HeaderMatchSpecifier: &envoy_route.HeaderMatcher_ExactMatch{
-					ExactMatch: p.HeaderExactMatch,
+				HeaderMatchSpecifier: &envoy_route.HeaderMatcher_StringMatch{
+					StringMatch: &matcher,
 				},
 			}}
 		}

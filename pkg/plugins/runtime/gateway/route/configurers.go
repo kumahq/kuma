@@ -81,11 +81,16 @@ func RouteMatchExactHeader(name string, value string) RouteConfigurer {
 	}
 
 	return RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
+		matcher := envoy_type_matcher.StringMatcher{
+			MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+				Exact: value,
+			},
+		}
 		r.Match.Headers = append(r.Match.Headers,
 			&envoy_config_route.HeaderMatcher{
 				Name: name,
-				HeaderMatchSpecifier: &envoy_config_route.HeaderMatcher_ExactMatch{
-					ExactMatch: value,
+				HeaderMatchSpecifier: &envoy_config_route.HeaderMatcher_StringMatch{
+					StringMatch: &matcher,
 				},
 			},
 		)
@@ -511,11 +516,16 @@ func RouteActionRetryMethods(httpMethod ...string) RouteConfigurer {
 		}
 
 		for _, m := range httpMethod {
+			matcher := envoy_type_matcher.StringMatcher{
+				MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+					Exact: m,
+				},
+			}
 			p.RetriableRequestHeaders = append(p.RetriableRequestHeaders,
 				&envoy_config_route.HeaderMatcher{
 					Name: ":method",
-					HeaderMatchSpecifier: &envoy_config_route.HeaderMatcher_ExactMatch{
-						ExactMatch: m,
+					HeaderMatchSpecifier: &envoy_config_route.HeaderMatcher_StringMatch{
+						StringMatch: &matcher,
 					},
 				})
 		}
