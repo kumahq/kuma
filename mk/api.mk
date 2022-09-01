@@ -72,6 +72,9 @@ PROTOC_GO := $(PROTOC) \
 	--go-grpc_out=$(go_mapping):.
 
 
+protoc/common/v1alpha1:
+	cd api && $(PROTOC_GO) common/v1alpha1/*.proto
+
 protoc/mesh:
 	cd api && $(PROTOC_GO) mesh/*.proto
 

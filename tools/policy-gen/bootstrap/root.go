@@ -172,15 +172,7 @@ message {{ .name }} {
     skip_registration : false,
   };
 
-  message Spec {
-    {{- if not .useCustomMatching }}
-    // TODO @lobkovilya add protobuf for standard matchers
-    {{- end }}
-
-    // User defined fields
-  }
-
-  Spec spec = 1;
+  // User defined fields
 }
 `))
 
@@ -224,15 +216,10 @@ var validatorTemplate = template.Must(template.New("").Option("missingkey=error"
 	`package {{.version}}
 import (
 	"github.com/kumahq/kuma/pkg/core/validators"
-
-	{{ if not .useCustomMatching }}matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"{{end}}
 )
 
 func (r *{{.name}}Resource) validate() error {
 	var err validators.ValidationError
-	{{- if not .useCustomMatching }}
-	matcher_validators.Validate(err, r)
-	{{- end }}
 	err.AddViolationAt(validators.RootedAt(""), "Not implemented!")
 	return err.OrNil()
 }

@@ -43,6 +43,8 @@ Show Kuma resources.
 * [kumactl get meshgatewayroute](kumactl_get_meshgatewayroute.md)	 - Show a single MeshGatewayRoute resource
 * [kumactl get meshgatewayroutes](kumactl_get_meshgatewayroutes.md)	 - Show MeshGatewayRoute
 * [kumactl get meshgateways](kumactl_get_meshgateways.md)	 - Show MeshGateway
+* [kumactl get meshtrafficpermission](kumactl_get_meshtrafficpermission.md)	 - Show a single MeshTrafficPermission resource
+* [kumactl get meshtrafficpermissions](kumactl_get_meshtrafficpermissions.md)	 - Show MeshTrafficPermission
 * [kumactl get proxytemplate](kumactl_get_proxytemplate.md)	 - Show a single ProxyTemplate resource
 * [kumactl get proxytemplates](kumactl_get_proxytemplates.md)	 - Show ProxyTemplate
 * [kumactl get rate-limit](kumactl_get_rate-limit.md)	 - Show a single RateLimit resource
