@@ -43,7 +43,7 @@ type PodRedirect struct {
 	TransparentProxyEbpfProgramsSourcePath   string
 }
 
-func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
+func NewPodRedirectForPod(transparentProxyV2 bool, pod *kube_core.Pod) (*PodRedirect, error) {
 	var err error
 	podRedirect := &PodRedirect{}
 
@@ -87,9 +87,13 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 
 	podRedirect.UID, _ = metadata.Annotations(pod.Annotations).GetString(metadata.KumaSidecarUID)
 
-	podRedirect.ExperimentalTransparentProxyEngine, _, err = metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaTransparentProxyingExperimentalEngine)
-	if err != nil {
+	if transparentProxyV2 {
+		podRedirect.ExperimentalTransparentProxyEngine = true
+	}
+	if transparentProxyV2, exists, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaTransparentProxyingExperimentalEngine); err != nil {
 		return nil, err
+	} else if exists {
+		podRedirect.ExperimentalTransparentProxyEngine = transparentProxyV2
 	}
 
 	if value, exists, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaTransparentProxyingEbpf); err != nil {
