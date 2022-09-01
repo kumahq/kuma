@@ -100,20 +100,6 @@ crd/controller-gen:
 	$(CONTROLLER_GEN) "crd:crdVersions=v1" paths=$(IN_CRD) output:crd:artifacts:config=$(OUT_CRD)
 	$(CONTROLLER_GEN) object:headerFile=./tools/policy-gen/boilerplate.go.txt,year=$$(date +%Y) paths=$(IN_CRD)
 
-
-KUMA_GUI_GIT_URL=https://github.com/kumahq/kuma-gui.git
-KUMA_GUI_VERSION=master
-KUMA_GUI_FOLDER=app/kuma-ui/pkg/resources/data
-KUMA_GUI_WORK_FOLDER=app/kuma-ui/data/work
-
-.PHONY: upgrade/gui
-upgrade/gui:
-	rm -rf $(KUMA_GUI_WORK_FOLDER)
-	git clone --depth 1 -b $(KUMA_GUI_VERSION) $(KUMA_GUI_GIT_URL) $(KUMA_GUI_WORK_FOLDER)
-	cd $(KUMA_GUI_WORK_FOLDER) && yarn install && yarn build
-	rm -rf $(KUMA_GUI_FOLDER) && mv $(KUMA_GUI_WORK_FOLDER)/dist/ $(KUMA_GUI_FOLDER)
-	rm -rf $(KUMA_GUI_WORK_FOLDER)
-
 .PHONY: generate/envoy-imports
 generate/envoy-imports:
 	echo 'package envoy\n' > ${ENVOY_IMPORTS}
