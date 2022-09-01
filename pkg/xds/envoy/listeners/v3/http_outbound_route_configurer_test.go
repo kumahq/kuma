@@ -234,13 +234,15 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
                           headers:
                           - name: x-custom-header-a
                             prefixMatch: prefix
-                          - exactMatch: exact
+                          - stringMatch:
+                              exact: exact
                             name: x-custom-header-b
                           - name: x-custom-header-c
                             safeRegexMatch:
                               googleRe2: {}
                               regex: ^regex$
-                          - exactMatch: GET
+                          - stringMatch:
+                              exact: GET
                             name: :method
                           prefix: /asd
                         requestHeadersToAdd:

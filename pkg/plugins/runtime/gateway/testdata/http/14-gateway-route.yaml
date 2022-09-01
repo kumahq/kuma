@@ -119,8 +119,9 @@ Routes:
         routes:
         - match:
             headers:
-            - exactMatch: PUT
-              name: :method
+            - name: :method
+              stringMatch:
+                exact: PUT
             path: /app/json
           route:
             hostRewriteLiteral: newhost.example.com

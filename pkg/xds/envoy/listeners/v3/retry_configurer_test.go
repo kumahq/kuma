@@ -111,9 +111,11 @@ var _ = Describe("RetryConfigurer", func() {
                       retryPolicy:
                         numRetries: 7
                         retriableRequestHeaders:
-                        - exactMatch: GET
+                        - stringMatch: 
+                            exact: GET
                           name: :method
-                        - exactMatch: POST
+                        - stringMatch: 
+                            exact: POST
                           name: :method
                         retryOn: gateway-error,connect-failure,refused-stream
                       routes:
