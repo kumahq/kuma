@@ -29,12 +29,13 @@ import (
 
 var _ = Describe("kubernetes", func() {
 	type testCaseKumactl struct {
-		pod         *kube_core.Pod
-		commandLine []string
+		transparentProxyV2 bool
+		pod                *kube_core.Pod
+		commandLine        []string
 	}
 
 	DescribeTable("should generate kumactl command line", func(given testCaseKumactl) {
-		podRedirect, err := kubernetes.NewPodRedirectForPod(given.pod)
+		podRedirect, err := kubernetes.NewPodRedirectForPod(given.transparentProxyV2, given.pod)
 		Expect(err).ToNot(HaveOccurred())
 
 		commandLine := podRedirect.AsKumactlCommandLine()
@@ -151,6 +152,33 @@ var _ = Describe("kubernetes", func() {
 				"--experimental-transparent-proxy-engine",
 			},
 		}),
+		Entry("should generate experimental engine if enabled even without annotation", testCaseKumactl{
+			transparentProxyV2: true,
+			pod: &kube_core.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						metadata.KumaTrafficExcludeOutboundPorts:                "11000",
+						metadata.KumaTransparentProxyingOutboundPortAnnotation:  "25100",
+						metadata.KumaTrafficExcludeInboundPorts:                 "12000",
+						metadata.KumaTransparentProxyingInboundPortAnnotation:   "25204",
+						metadata.KumaTransparentProxyingInboundPortAnnotationV6: "25206",
+						metadata.KumaSidecarUID:                                 "12345",
+					},
+				},
+			},
+			commandLine: []string{
+				"--redirect-outbound-port", "25100",
+				"--redirect-inbound=" + "true",
+				"--redirect-inbound-port", "25204",
+				"--redirect-inbound-port-v6", "25206",
+				"--kuma-dp-uid", "12345",
+				"--exclude-inbound-ports", "12000",
+				"--exclude-outbound-ports", "11000",
+				"--verbose",
+				"--skip-resolv-conf",
+				"--experimental-transparent-proxy-engine",
+			},
+		}),
 		Entry("should generate for Gateway", testCaseKumactl{
 			pod: &kube_core.Pod{
 				ObjectMeta: metav1.ObjectMeta{
@@ -222,12 +250,13 @@ var _ = Describe("kubernetes", func() {
 	)
 
 	type testCaseTransparentProxyConfig struct {
-		pod      *kube_core.Pod
-		tpConfig *config.TransparentProxyConfig
+		transparentProxyV2 bool
+		pod                *kube_core.Pod
+		tpConfig           *config.TransparentProxyConfig
 	}
 
 	DescribeTable("should generate transparent proxy config", func(given testCaseTransparentProxyConfig) {
-		podRedirect, err := kubernetes.NewPodRedirectForPod(given.pod)
+		podRedirect, err := kubernetes.NewPodRedirectForPod(given.transparentProxyV2, given.pod)
 		Expect(err).ToNot(HaveOccurred())
 
 		tpConfig := podRedirect.AsTransparentProxyConfig()
@@ -276,6 +305,38 @@ var _ = Describe("kubernetes", func() {
 						metadata.KumaTransparentProxyingInboundPortAnnotationV6: "25206",
 						metadata.KumaSidecarUID:                                 "12345",
 						metadata.KumaTransparentProxyingExperimentalEngine:      metadata.AnnotationEnabled,
+					},
+				},
+			},
+			tpConfig: &config.TransparentProxyConfig{
+				DryRun:                 false,
+				Verbose:                true,
+				RedirectPortOutBound:   "25100",
+				RedirectInBound:        true,
+				RedirectPortInBound:    "25204",
+				RedirectPortInBoundV6:  "25206",
+				ExcludeInboundPorts:    "12000",
+				ExcludeOutboundPorts:   "11000",
+				UID:                    "12345",
+				GID:                    "12345",
+				RedirectDNS:            false,
+				RedirectAllDNSTraffic:  false,
+				AgentDNSListenerPort:   "0",
+				DNSUpstreamTargetChain: "",
+				ExperimentalEngine:     true,
+			},
+		}),
+		Entry("should generate experimental engine if enabled even without annotation", testCaseTransparentProxyConfig{
+			transparentProxyV2: true,
+			pod: &kube_core.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						metadata.KumaTrafficExcludeOutboundPorts:                "11000",
+						metadata.KumaTransparentProxyingOutboundPortAnnotation:  "25100",
+						metadata.KumaTrafficExcludeInboundPorts:                 "12000",
+						metadata.KumaTransparentProxyingInboundPortAnnotation:   "25204",
+						metadata.KumaTransparentProxyingInboundPortAnnotationV6: "25206",
+						metadata.KumaSidecarUID:                                 "12345",
 					},
 				},
 			},
