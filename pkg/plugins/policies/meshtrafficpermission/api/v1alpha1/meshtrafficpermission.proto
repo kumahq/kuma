@@ -55,5 +55,6 @@ message MeshTrafficPermission {
     Conf default = 2;
   }
 
+  // From is a list of pairs – a group of clients and action applied for it
   repeated From from = 3;
 }

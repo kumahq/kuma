@@ -11,6 +11,7 @@ properties:
     description: 'Name of the Kuma resource'
     type: string
   from:
+    description: From is a list of pairs – a group of clients and action applied for it
     items:
       properties:
         default:
