@@ -3,6 +3,7 @@ package kic
 import (
 	"fmt"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -29,26 +30,49 @@ func KICKubernetes() {
 
 	namespace := "kic"
 	mesh := "kic"
+	namespaceOutsideMesh := "kic-external"
+
+	getKICIP := func() string {
+		var ip string
+		Eventually(func(g Gomega) {
+			out, err := k8s.RunKubectlAndGetOutputE(
+				env.Cluster.GetTesting(),
+				env.Cluster.GetKubectlOptions(namespace),
+				"get", "service", "gateway", "-ojsonpath={.spec.clusterIP}",
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(out).ToNot(BeEmpty())
+			ip = out
+		}, "60s", "1s").Should(Succeed(), "could not get the clusterIP of the Service")
+		return ip
+	}
+
+	var kicIP string
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
 			Install(MTLSMeshKubernetes(mesh)).
 			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(Namespace(namespaceOutsideMesh)).
+			Install(DemoClientK8s(mesh, namespaceOutsideMesh)). // this will not be in the mesh
 			Install(kic.KongIngressController(
 				kic.WithNamespace(namespace),
 				kic.WithMesh(mesh),
 			)).
-			Install(kic.KongIngressNodePort(kic.WithNamespace(namespace))).
+			Install(kic.KongIngressService(kic.WithNamespace(namespace))).
 			Install(testserver.Install(
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(mesh),
 				testserver.WithName("test-server"),
 			)).
 			Setup(env.Cluster)).To(Succeed())
+
+		kicIP = getKICIP()
 	})
 
 	E2EAfterAll(func() {
 		Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(env.Cluster.TriggerDeleteNamespace(namespaceOutsideMesh)).To(Succeed())
 		Expect(env.Cluster.DeleteMesh(mesh)).To(Succeed())
 	})
 
@@ -73,7 +97,10 @@ spec:
 		Expect(env.Cluster.Install(YamlK8s(ingress))).To(Succeed())
 
 		Eventually(func(g Gomega) {
-			_, err := client.CollectResponseDirectly(fmt.Sprintf("http://localhost:%d/test-server", kic.NodePortHTTP()))
+			_, err := client.CollectResponse(
+				env.Cluster, "demo-client", fmt.Sprintf("http://%s/test-server", kicIP),
+				client.FromKubernetesPod(namespaceOutsideMesh, "demo-client"),
+			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "30s", "1s").Should(Succeed())
 	})
@@ -110,7 +137,10 @@ spec:
 		Expect(env.Cluster.Install(YamlK8s(ingressMeshDNS))).To(Succeed())
 
 		Eventually(func(g Gomega) {
-			_, err := client.CollectResponseDirectly(fmt.Sprintf("http://localhost:%d/dot-mesh", kic.NodePortHTTP()))
+			_, err := client.CollectResponse(
+				env.Cluster, "demo-client", fmt.Sprintf("http://%s/dot-mesh", kicIP),
+				client.FromKubernetesPod(namespaceOutsideMesh, "demo-client"),
+			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "30s", "1s").Should(Succeed())
 	})
