@@ -37,8 +37,8 @@ message DoNothingPolicy {
     // destinations.
     kuma.common.v1alpha1.TargetRef targetRef = 1;
 
-    // Default is a configuration specific to the group of destinations referenced in
-    // 'targetRef'
+    // Default is a configuration specific to the group of destinations
+    // referenced in 'targetRef'
     Conf default = 2;
   }
 

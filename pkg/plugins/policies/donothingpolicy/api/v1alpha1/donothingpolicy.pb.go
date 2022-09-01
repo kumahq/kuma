@@ -147,8 +147,8 @@ type DoNothingPolicy_To struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// destinations.
 	TargetRef *v1alpha1.TargetRef `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef,omitempty"`
-	// Default is a configuration specific to the group of destinations referenced in
-	// 'targetRef'
+	// Default is a configuration specific to the group of destinations
+	// referenced in 'targetRef'
 	Default *DoNothingPolicy_Conf `protobuf:"bytes,2,opt,name=default,proto3" json:"default,omitempty"`
 }
 
