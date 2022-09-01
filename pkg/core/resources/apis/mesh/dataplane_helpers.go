@@ -186,18 +186,18 @@ func (d *DataplaneResource) IsUsingTransparentProxy() bool {
 	if d.Spec.GetNetworking() == nil {
 		return false
 	}
-	isUsingTransparentProxy := false
-	if d.Spec.GetNetworking().GetTransparentProxying() != nil &&
-		d.Spec.GetNetworking().GetTransparentProxying().RedirectPortInbound != 0 &&
-		d.Spec.GetNetworking().GetTransparentProxying().RedirectPortOutbound != 0 {
-		isUsingTransparentProxy = true
+
+	tproxy := d.Spec.GetNetworking().GetTransparentProxying()
+	if tproxy == nil {
+		return false
 	}
+	
+	isUsingTransparentProxy := tproxy.RedirectPortInbound != 0 && tproxy.RedirectPortOutbound != 0
+	
 	if d.IsIPv6() {
-		if d.Spec.GetNetworking().GetTransparentProxying() == nil ||
-			d.Spec.GetNetworking().GetTransparentProxying().RedirectPortInboundV6 == 0 {
-			isUsingTransparentProxy = false
-		}
+		isUsingTransparentProxy = tproxy.RedirectPortInboundV6 != 0
 	}
+	
 	return isUsingTransparentProxy
 }
 
