@@ -22,6 +22,9 @@ type config struct {
 	gomodule          string
 	version           string
 	useCustomMatching bool
+	generateTargetRef bool
+	generateTo        bool
+	generateFrom      bool
 }
 
 func (c config) policyPath() string {
@@ -95,6 +98,9 @@ func generateProto(c config) error {
 		"module":            path.Join(c.gomodule, c.basePath),
 		"useCustomMatching": c.useCustomMatching,
 		"version":           c.version,
+		"generateTargetRef": c.generateTargetRef,
+		"generateTo":        c.generateTo,
+		"generateFrom":      c.generateFrom,
 	})
 	if err != nil {
 		return err
@@ -147,6 +153,9 @@ func init() {
 	rootCmd.Flags().BoolVar(&cfg.skipValidator, "skip-validator", false, "don't generator a validator empty file")
 	rootCmd.Flags().BoolVar(&cfg.force, "force", false, "Overwrite any existing code")
 	rootCmd.Flags().BoolVar(&cfg.useCustomMatching, "use-custom-matching", false, "Whether to use standard policy type (regular matchers etc)")
+	rootCmd.Flags().BoolVar(&cfg.generateTargetRef, "generate-target-ref", true, "Generate top-level TargetRef for dataplane proxy matching")
+	rootCmd.Flags().BoolVar(&cfg.generateTo, "generate-to", false, "Generate 'to' array for outgoing traffic configuration")
+	rootCmd.Flags().BoolVar(&cfg.generateFrom, "generate-from", false, "Generate 'from' array for incoming traffic configuration")
 }
 
 var protoTemplate = template.Must(template.New("").Option("missingkey=error").Parse(
@@ -157,6 +166,7 @@ package kuma.plugins.policies.{{ .nameLower }}.{{ .version }};
 import "mesh/options.proto";
 option go_package = "{{ .module }}/{{.nameLower}}/api/{{ .version }}";
 
+import "common/v1alpha1/targetref.proto";
 import "config.proto";
 
 option (doc.config) = {
@@ -172,7 +182,48 @@ message {{ .name }} {
     skip_registration : false,
   };
 
-  // User defined fields
+  {{- if .generateTargetRef }}
+
+  // TargetRef is a reference to the resource the policy takes an effect on.
+  // The resource could be either a real store object or virtual resource
+  // defined inplace.
+  kuma.common.v1alpha1.TargetRef targetRef = 1;
+  {{- end }}
+
+  message Conf {
+    // TODO add configuration fields
+  }
+
+  {{- if .generateTo }}
+
+  message To {
+    // TargetRef is a reference to the resource that represents a group of
+    // destinations.
+    kuma.common.v1alpha1.TargetRef targetRef = 1;
+
+    // Default is a configuration specific to the group of destinations referenced in
+    // 'targetRef'
+    Conf default = 2;
+  }
+
+  repeated To to = 2;
+  {{- end}}
+
+  {{- if .generateFrom }}
+
+  message From {
+    // TargetRef is a reference to the resource that represents a group of
+    // clients.
+    kuma.common.v1alpha1.TargetRef targetRef = 1;
+
+    // Default is a configuration specific to the group of clients referenced in
+    // 'targetRef'
+    Conf default = 2;
+  }
+  
+  repeated From from = 3;
+
+  {{- end}}
 }
 `))
 
