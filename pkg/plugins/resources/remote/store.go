@@ -12,7 +12,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
+	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
@@ -34,7 +34,7 @@ type remoteStore struct {
 
 func (s *remoteStore) Create(ctx context.Context, res model.Resource, fs ...store.CreateOptionsFunc) error {
 	opts := store.NewCreateOptions(fs...)
-	meta := v1alpha1.ResourceMeta{
+	meta := rest_v1alpha1.ResourceMeta{
 		Type: string(res.Descriptor().Name),
 		Name: opts.Name,
 		Mesh: opts.Mesh,
@@ -46,7 +46,7 @@ func (s *remoteStore) Create(ctx context.Context, res model.Resource, fs ...stor
 }
 
 func (s *remoteStore) Update(ctx context.Context, res model.Resource, fs ...store.UpdateOptionsFunc) error {
-	meta := v1alpha1.ResourceMeta{
+	meta := rest_v1alpha1.ResourceMeta{
 		Type: string(res.Descriptor().Name),
 		Name: res.GetMeta().GetName(),
 		Mesh: res.GetMeta().GetMesh(),
@@ -57,7 +57,7 @@ func (s *remoteStore) Update(ctx context.Context, res model.Resource, fs ...stor
 	return nil
 }
 
-func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta v1alpha1.ResourceMeta) error {
+func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest_v1alpha1.ResourceMeta) error {
 	resourceApi, err := s.api.GetResourceApi(res.Descriptor().Name)
 	if err != nil {
 		return errors.Wrapf(err, "failed to construct URI to update a %q", res.Descriptor().Name)

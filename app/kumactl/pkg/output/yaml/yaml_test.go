@@ -13,7 +13,7 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/yaml"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
+	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 )
 
@@ -48,7 +48,7 @@ var _ = Describe("printer", func() {
 		}),
 		Entry("format response from Kuma REST API", testCase{
 			obj: &unversioned.Resource{
-				Meta: v1alpha1.ResourceMeta{
+				Meta: rest_v1alpha1.ResourceMeta{
 					Type:             string(core_mesh.MeshType),
 					Name:             "demo",
 					CreationTime:     t1,

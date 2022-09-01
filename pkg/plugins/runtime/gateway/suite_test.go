@@ -24,7 +24,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
+	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
@@ -299,7 +299,7 @@ func (d *DataplaneGenerator) generate(
 	d.NextPort++
 
 	dp := core_mesh.NewDataplaneResource()
-	dp.SetMeta(&v1alpha1.ResourceMeta{
+	dp.SetMeta(&rest_v1alpha1.ResourceMeta{
 		Type:             string(dp.Descriptor().Name),
 		Mesh:             "default",
 		Name:             resourceName,

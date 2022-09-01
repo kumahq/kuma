@@ -14,7 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
+	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/pkg/core/user"
@@ -247,7 +247,7 @@ func (r *resourceEndpoints) deleteResourceReadOnly(request *restful.Request, res
 	}
 }
 
-func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, resourceMeta v1alpha1.ResourceMeta) error {
+func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, resourceMeta rest_v1alpha1.ResourceMeta) error {
 	var err validators.ValidationError
 	name := request.PathParameter("name")
 	meshName := r.meshFromRequest(request)
