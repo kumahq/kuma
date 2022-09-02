@@ -20,7 +20,7 @@ fi
   set -x
   mkdir /tmp/shellcheck
   curl --fail --location -s https://github.com/koalaman/shellcheck/releases/download/v${VERSION}/"${VERSION_NAME}".tar.xz \
-    | tar --no-same-owner --strip-component=1 -C /tmp/shellcheck -x
+    | tar --no-same-owner --strip-component=1 -C /tmp/shellcheck -xJ
   mv /tmp/shellcheck/shellcheck "$SHELLCHECK"
   rm -rf /tmp/shellcheck
   set +x
