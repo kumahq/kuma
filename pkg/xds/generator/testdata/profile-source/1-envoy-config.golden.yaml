@@ -111,10 +111,6 @@ resources:
                 portValue: 8080
     name: localhost:8080
     type: STATIC
-    upstreamBindConfig:
-      sourceAddress:
-        address: 127.0.0.6
-        portValue: 0
 - name: db
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
