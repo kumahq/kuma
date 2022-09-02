@@ -53,14 +53,14 @@ generate/policy/%: generate/schema/%
 
 generate/schema/%: generate/controller-gen/%
 	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \
-		tools/policy-gen/crd-extract-openapi.sh $* $$version ; \
+		PATH=$(CI_TOOLS_BIN_DIR):$$PATH tools/policy-gen/crd-extract-openapi.sh $* $$version ; \
 	done
 
 generate/policy-import:
 	tools/policy-gen/generate-policy-import.sh $(policies)
 
 generate/policy-helm:
-	tools/policy-gen/generate-policy-helm.sh $(policies)
+	PATH=$(CI_TOOLS_BIN_DIR):$$PATH tools/policy-gen/generate-policy-helm.sh $(policies)
 
 generate/controller-gen/%: generate/kumapolicy-gen/%
 	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \
@@ -70,13 +70,10 @@ generate/controller-gen/%: generate/kumapolicy-gen/%
 
 generate/kumapolicy-gen/%: generate/dirs/%
 	cd tools/policy-gen/protoc-gen-kumapolicy && go build && cd - ; \
-	$(PROTOC) \
+	$(PROTOC_GO) \
 		--proto_path=./api \
 		--kumapolicy_opt=endpoints-template=tools/policy-gen/templates/endpoints.yaml \
 		--kumapolicy_out=$(POLICIES_DIR)/$* \
-		--go_out=$(go_mapping):. \
-		--go_opt=paths=source_relative \
-		--go-grpc_out=$(go_mapping):. \
 		--plugin=protoc-gen-kumapolicy=tools/policy-gen/protoc-gen-kumapolicy/protoc-gen-kumapolicy \
 		$(POLICIES_DIR)/$*/api/*/*.proto ; \
 	rm tools/policy-gen/protoc-gen-kumapolicy/protoc-gen-kumapolicy ; \
