@@ -281,6 +281,9 @@ jobs:
               circleci-agent step halt
               exit 0
             }
+            if [[ $(./tools/ci/has_label.sh ci/skip-tests) == "true" ]]; then
+              skip "Not runnings tests on PRs with the “ci/skip-tests” label"
+            fi
             if [[ "<< parameters.k8sVersion >>" == "kind" && "<< parameters.target >>" != "test/e2e-universal" ]]; then
               skip "kind should only be used when testing ipv6 or with test/e2e-universal"
             fi
