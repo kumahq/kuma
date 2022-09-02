@@ -35,6 +35,7 @@ type ApplicationToScrape struct {
 
 type Hijacker struct {
 	socketPath           string
+<<<<<<< HEAD
 	httpClient           http.Client
 	applicationsToScrape []ApplicationToScrape
 }
@@ -43,6 +44,33 @@ func New(dataplane kumadp.Dataplane, applicationsToScrape []ApplicationToScrape)
 	return &Hijacker{
 		socketPath:           envoy.MetricsHijackerSocketName(dataplane.Name, dataplane.Mesh),
 		httpClient:           http.Client{Timeout: 10 * time.Second},
+=======
+	httpClientIPv4       http.Client
+	httpClientIPv6       http.Client
+	applicationsToScrape []ApplicationToScrape
+}
+
+func createHttpClient(isUsingTransparentProxy bool, sourceAddress *net.TCPAddr) http.Client {
+	// we need this in case of not localhost requests, it returns fast in iptabels
+	if isUsingTransparentProxy {
+		dialer := &net.Dialer{
+			LocalAddr: sourceAddress,
+		}
+		return http.Client{
+			Transport: &http.Transport{
+				DialContext: dialer.DialContext,
+			},
+		}
+	}
+	return http.Client{}
+}
+
+func New(dataplane kumadp.Dataplane, applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool) *Hijacker {
+	return &Hijacker{
+		socketPath:           envoy.MetricsHijackerSocketName(dataplane.Name, dataplane.Mesh),
+		httpClientIPv4:       createHttpClient(isUsingTransparentProxy, inPassThroughIPv4),
+		httpClientIPv6:       createHttpClient(isUsingTransparentProxy, inPassThroughIPv6),
+>>>>>>> 7f1125714 (fix(*): do not override source address when TP is not enabled (#4951))
 		applicationsToScrape: applicationsToScrape,
 	}
 }
@@ -134,8 +162,31 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	}
 }
 
+<<<<<<< HEAD
 func (s *Hijacker) getStats(url *url.URL, app ApplicationToScrape) []byte {
 	resp, err := s.httpClient.Get(rewriteMetricsURL(app.Path, app.Port, url))
+=======
+func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app ApplicationToScrape) []byte {
+	req, err := http.NewRequest("GET", rewriteMetricsURL(app.Address, app.Port, app.Path, app.QueryModifier, initReq.URL), nil)
+	if err != nil {
+		logger.Error(err, "failed to create request")
+		return nil
+	}
+	s.passRequestHeaders(req.Header, initReq.Header)
+	req = req.WithContext(ctx)
+	var resp *http.Response
+	if app.IsIPv6 {
+		resp, err = s.httpClientIPv6.Do(req)
+		if err == nil {
+			defer resp.Body.Close()
+		}
+	} else {
+		resp, err = s.httpClientIPv4.Do(req)
+		if err == nil {
+			defer resp.Body.Close()
+		}
+	}
+>>>>>>> 7f1125714 (fix(*): do not override source address when TP is not enabled (#4951))
 	if err != nil {
 		logger.Error(err, "failed call", "name", app.Name, "path", app.Path, "port", app.Port)
 		return nil

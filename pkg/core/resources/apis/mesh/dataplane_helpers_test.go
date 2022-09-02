@@ -552,54 +552,121 @@ var _ = Describe("Dataplane", func() {
 		)
 	})
 
-})
+	Describe("IsUsingTransparentProxy()", func() {
+		type testCase struct {
+			dataplane string
+			expected  bool
+		}
 
-var _ = Describe("ParseProtocol()", func() {
+		DescribeTable("should correctly determine if dataplane is using transparent proxy",
+			func(given testCase) {
+				// given
+				var dataplane *DataplaneResource
+				if given.dataplane != "" {
+					dataplane = NewDataplaneResource()
+					Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane.Spec)).To(Succeed())
+				}
 
-	type testCase struct {
-		tag      string
-		expected Protocol
-	}
+				// expect
+				Expect(dataplane.IsUsingTransparentProxy()).To(Equal(given.expected))
+			},
+			Entry("`nil` dataplane", testCase{
+				dataplane: ``,
+				expected:  false,
+			}),
+			Entry("dataplane without transparent proxy", testCase{
+				dataplane: `
+                networking: {}
+`,
+				expected: false,
+			}),
+			Entry("dataplane with empty transparent proxy", testCase{
+				dataplane: `
+                networking:
+                  transparent_proxying: {}
+`,
+				expected: false,
+			}),
+			Entry("dataplane with transparent proxy configured", testCase{
+				dataplane: `
+                networking:
+                  transparent_proxying:
+                    redirect_port_inbound: 123
+                    redirect_port_outbound: 1234
+`,
+				expected: true,
+			}),
+			Entry("dataplane with transparent proxy configured and ipv6", testCase{
+				dataplane: `
+                networking:
+                  address: fd00::123
+                  transparent_proxying:
+                    redirect_port_inbound: 123
+                    redirect_port_outbound: 1234
+                    redirect_port_inbound_v6: 12345
+`,
+				expected: true,
+			}),
+			Entry("dataplane with transparent proxy configured and ipv6 but no port", testCase{
+				dataplane: `
+                networking:
+                  address: fd00::123
+                  transparent_proxying:
+                    redirect_port_inbound: 123
+                    redirect_port_outbound: 1234
+`,
+				expected: false,
+			}),
+		)
+	})
 
-	DescribeTable("should parse protocol from a tag",
-		func(given testCase) {
-			Expect(ParseProtocol(given.tag)).To(Equal(given.expected))
-		},
-		Entry("http", testCase{
-			tag:      "http",
-			expected: ProtocolHTTP,
-		}),
-		Entry("tcp", testCase{
-			tag:      "tcp",
-			expected: ProtocolTCP,
-		}),
-		Entry("http2", testCase{
-			tag:      "http2",
-			expected: ProtocolHTTP2,
-		}),
-		Entry("grpc", testCase{
-			tag:      "grpc",
-			expected: ProtocolGRPC,
-		}),
-		Entry("kafka", testCase{
-			tag:      "kafka",
-			expected: ProtocolKafka,
-		}),
-		Entry("mongo", testCase{
-			tag:      "mongo",
-			expected: ProtocolUnknown,
-		}),
-		Entry("mysql", testCase{
-			tag:      "mysql",
-			expected: ProtocolUnknown,
-		}),
-		Entry("unknown", testCase{
-			tag:      "unknown",
-			expected: ProtocolUnknown,
-		}),
-		Entry("empty", testCase{
-			tag:      "",
-			expected: ProtocolUnknown,
-		}),
-	)
+	var _ = Describe("ParseProtocol()", func() {
+
+		type testCase struct {
+			tag      string
+			expected Protocol
+		}
+
+		DescribeTable("should parse protocol from a tag",
+			func(given testCase) {
+				Expect(ParseProtocol(given.tag)).To(Equal(given.expected))
+			},
+			Entry("http", testCase{
+				tag:      "http",
+				expected: ProtocolHTTP,
+			}),
+			Entry("tcp", testCase{
+				tag:      "tcp",
+				expected: ProtocolTCP,
+			}),
+			Entry("http2", testCase{
+				tag:      "http2",
+				expected: ProtocolHTTP2,
+			}),
+			Entry("grpc", testCase{
+				tag:      "grpc",
+				expected: ProtocolGRPC,
+			}),
+			Entry("kafka", testCase{
+				tag:      "kafka",
+				expected: ProtocolKafka,
+			}),
+			Entry("mongo", testCase{
+				tag:      "mongo",
+				expected: ProtocolUnknown,
+			}),
+			Entry("mysql", testCase{
+				tag:      "mysql",
+				expected: ProtocolUnknown,
+			}),
+			Entry("unknown", testCase{
+				tag:      "unknown",
+				expected: ProtocolUnknown,
+			}),
+			Entry("empty", testCase{
+				tag:      "",
+				expected: ProtocolUnknown,
+			}),
+		)
+	})
 })

@@ -40,6 +40,18 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 		clusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
 			Configure(envoy_clusters.ProvidedEndpointCluster(localClusterName, false, core_xds.Endpoint{Target: endpoint.WorkloadIP, Port: endpoint.WorkloadPort})).
 			Configure(envoy_clusters.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
+<<<<<<< HEAD
+=======
+		// localhost traffic is routed dirrectly to the application, in case of other interface we are going to set source address to
+		if proxy.Dataplane.IsUsingTransparentProxy() && (endpoint.WorkloadIP != core_mesh.IPv4Loopback.String() || endpoint.WorkloadIP != core_mesh.IPv6Loopback.String()) {
+			switch net.IsAddressIPv6(endpoint.WorkloadIP) {
+			case true:
+				clusterBuilder.Configure(envoy_clusters.UpstreamBindConfig(inPassThroughIPv6, 0))
+			case false:
+				clusterBuilder.Configure(envoy_clusters.UpstreamBindConfig(inPassThroughIPv4, 0))
+			}
+		}
+>>>>>>> 7f1125714 (fix(*): do not override source address when TP is not enabled (#4951))
 
 		switch protocol {
 		case core_mesh.ProtocolHTTP:

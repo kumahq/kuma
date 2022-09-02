@@ -4,6 +4,11 @@ import "time"
 
 type KumaDpBootstrap struct {
 	AggregateMetricsConfig []AggregateMetricsConfig
+	NetworkingConfig       NetworkingConfig
+}
+
+type NetworkingConfig struct {
+	IsUsingTransparentProxy bool
 }
 
 type AggregateMetricsConfig struct {

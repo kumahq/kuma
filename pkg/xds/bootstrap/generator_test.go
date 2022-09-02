@@ -479,6 +479,10 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 							},
 						},
 					},
+					TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
+						RedirectPortInbound:  12345,
+						RedirectPortOutbound: 12346,
+					},
 					Admin: &mesh_proto.EnvoyAdmin{},
 				},
 				Metrics: &mesh_proto.MetricsBackend{
@@ -527,6 +531,7 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 		// and config is as expected
 		_, err = util_proto.ToYAML(bootstrapConfig)
 		Expect(err).ToNot(HaveOccurred())
+		Expect(configParam.NetworkingConfig.IsUsingTransparentProxy).To(BeTrue())
 		Expect(configParam.AggregateMetricsConfig).To(ContainElements([]AggregateMetricsConfig{
 			{
 				Name: "opa",
@@ -618,6 +623,7 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 		// and config is as expected
 		_, err = util_proto.ToYAML(bootstrapConfig)
 		Expect(err).ToNot(HaveOccurred())
+		Expect(configParam.NetworkingConfig.IsUsingTransparentProxy).To(BeFalse())
 		Expect(configParam.AggregateMetricsConfig).To(Equal([]AggregateMetricsConfig{
 			{
 				Name: "opa",

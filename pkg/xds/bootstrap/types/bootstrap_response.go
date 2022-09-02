@@ -17,7 +17,12 @@ type BootstrapResponse struct {
 }
 
 type KumaSidecarConfiguration struct {
-	Metrics MetricsConfiguration `json:"metrics"`
+	Networking NetworkingConfiguration `json:"networking"`
+	Metrics    MetricsConfiguration    `json:"metrics"`
+}
+
+type NetworkingConfiguration struct {
+	IsUsingTransparentProxy bool `json:"isUsingTransparentProxy"`
 }
 
 type MetricsConfiguration struct {

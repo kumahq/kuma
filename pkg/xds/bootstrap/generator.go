@@ -139,6 +139,13 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 			return nil, kumaDpBootstrap, err
 		}
 
+<<<<<<< HEAD
+=======
+		if dataplane.Spec.IsBuiltinGateway() {
+			params.IsGatewayDataplane = true
+		}
+		kumaDpBootstrap.NetworkingConfig.IsUsingTransparentProxy = dataplane.IsUsingTransparentProxy()
+>>>>>>> 7f1125714 (fix(*): do not override source address when TP is not enabled (#4951))
 		params.Service = dataplane.Spec.GetIdentifyingService()
 		setAdminPort(dataplane.Spec.GetNetworking().GetAdmin().GetPort())
 
