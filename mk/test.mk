@@ -18,7 +18,7 @@ GINKGO_UNIT_TEST_FLAGS ?= \
 	--skip-package ./test,./pkg/transparentproxy/istio/tools --race \
 	--cover --covermode atomic --coverpkg ./... --coverprofile $(COVERAGE_PROFILE_FILENAME)
 
-GINKGO_TEST:=ginkgo $(GOFLAGS) $(LD_FLAGS) $(GINKGO_TEST_FLAGS)
+GINKGO_TEST:=$(GINKGO) $(GOFLAGS) $(LD_FLAGS) $(GINKGO_TEST_FLAGS)
 
 .PHONY: test
 test:
