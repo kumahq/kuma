@@ -320,16 +320,18 @@ func (r *PodReconciler) createOrUpdateIngress(ctx context.Context, pod *kube_cor
 		}
 		return nil
 	})
+	log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
 	if err != nil {
-		log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
 		log.Error(err, "unable to create/update Ingress", "operationResult", operationResult)
 		r.EventRecorder.Eventf(pod, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "Failed to generate Kuma Ingress: %s", err.Error())
 		return err
 	}
 	switch operationResult {
 	case kube_controllerutil.OperationResultCreated:
+		log.Info("ZoneIngress created")
 		r.EventRecorder.Eventf(pod, kube_core.EventTypeNormal, CreatedKumaDataplaneReason, "Created Kuma Ingress: %s", pod.Name)
 	case kube_controllerutil.OperationResultUpdated:
+		log.Info("ZoneIngress updated")
 		r.EventRecorder.Eventf(pod, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Updated Kuma Ingress: %s", pod.Name)
 	}
 	return nil
@@ -352,16 +354,18 @@ func (r *PodReconciler) createOrUpdateEgress(ctx context.Context, pod *kube_core
 		}
 		return nil
 	})
+	log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
 	if err != nil {
-		log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
 		log.Error(err, "unable to create/update Egress", "operationResult", operationResult)
 		r.EventRecorder.Eventf(pod, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "Failed to generate Kuma Egress: %s", err.Error())
 		return err
 	}
 	switch operationResult {
 	case kube_controllerutil.OperationResultCreated:
+		log.Info("ZoneEgress created")
 		r.EventRecorder.Eventf(pod, kube_core.EventTypeNormal, CreatedKumaDataplaneReason, "Created Kuma Egress: %s", pod.Name)
 	case kube_controllerutil.OperationResultUpdated:
+		log.Info("ZoneEgress updated")
 		r.EventRecorder.Eventf(pod, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Updated Kuma Egress: %s", pod.Name)
 	}
 	return nil
