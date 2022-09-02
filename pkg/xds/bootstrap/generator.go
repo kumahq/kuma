@@ -138,7 +138,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		if err != nil {
 			return nil, err
 		}
-
+		kumaDpBootstrap.NetworkingConfig.IsUsingTransparentProxy = dataplane.IsUsingTransparentProxy()
 		params.Service = dataplane.Spec.GetIdentifyingService()
 		setAdminPort(dataplane.Spec.GetNetworking().GetAdmin().GetPort())
 	default:

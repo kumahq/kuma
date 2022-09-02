@@ -94,3 +94,30 @@ func handleError(resp http.ResponseWriter, err error, logger logr.Logger) {
 	logger.Error(err, "Could not generate a bootstrap configuration")
 	resp.WriteHeader(http.StatusInternalServerError)
 }
+<<<<<<< HEAD
+=======
+
+func createBootstrapResponse(bootstrap []byte, config *KumaDpBootstrap) *types.BootstrapResponse {
+	bootstrapConfig := types.BootstrapResponse{
+		Bootstrap: bootstrap,
+	}
+	aggregate := []types.Aggregate{}
+	for _, value := range config.AggregateMetricsConfig {
+		aggregate = append(aggregate, types.Aggregate{
+			Address: value.Address,
+			Name:    value.Name,
+			Port:    value.Port,
+			Path:    value.Path,
+		})
+	}
+	bootstrapConfig.KumaSidecarConfiguration = types.KumaSidecarConfiguration{
+		Metrics: types.MetricsConfiguration{
+			Aggregate: aggregate,
+		},
+		Networking: types.NetworkingConfiguration{
+			IsUsingTransparentProxy: config.NetworkingConfig.IsUsingTransparentProxy,
+		},
+	}
+	return &bootstrapConfig
+}
+>>>>>>> 7f1125714 (fix(*): do not override source address when TP is not enabled (#4951))

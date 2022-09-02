@@ -385,4 +385,217 @@ w/vjIriD0mGwwccxbojmEHq4rO4ZrjQNmwvOgxoL2dTm/L9Smr6RXmIgu/0Pnrlq
 Provide CA that was used to sign a certificate used in the control plane by using 'kuma-dp run --ca-cert-file=file' or via KUMA_CONTROL_PLANE_CA_CERT_FILE`,
 		}),
 	)
+<<<<<<< HEAD
+=======
+
+	It("should override configuration from Mesh", func() {
+		// given
+		err := resManager.Create(context.Background(), &core_mesh.MeshResource{
+			Spec: &mesh_proto.Mesh{
+				Metrics: &mesh_proto.Metrics{
+					EnabledBackend: "prometheus-1",
+					Backends: []*mesh_proto.MetricsBackend{
+						{
+							Name: "prometheus-1",
+							Type: mesh_proto.MetricsPrometheusType,
+							Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+								Aggregate: []*mesh_proto.PrometheusAggregateMetricsConfig{
+									{
+										Name: "opa",
+										Port: 123,
+										Path: "/mesh/config",
+									},
+									{
+										Name: "dp-disabled",
+										Port: 999,
+										Path: "/stats/default",
+									},
+								},
+							}),
+						},
+					},
+				},
+			},
+		}, store.CreateByKey("metrics", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		// and
+		dataplane := &core_mesh.DataplaneResource{
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "8.8.8.8",
+					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+						{
+							Port:        443,
+							ServicePort: 8443,
+							Tags: map[string]string{
+								"kuma.io/service": "backend",
+							},
+						},
+					},
+					TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
+						RedirectPortInbound:  12345,
+						RedirectPortOutbound: 12346,
+					},
+					Admin: &mesh_proto.EnvoyAdmin{},
+				},
+				Metrics: &mesh_proto.MetricsBackend{
+					Type: mesh_proto.MetricsPrometheusType,
+					Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+						Aggregate: []*mesh_proto.PrometheusAggregateMetricsConfig{
+							{
+								Name:    "dp-disabled",
+								Enabled: util_proto.Bool(false),
+							},
+							{
+								Name: "app",
+								Port: 12,
+								Path: "/dp/override",
+							},
+						},
+					}),
+				},
+			},
+		}
+
+		config := func() *bootstrap_config.BootstrapServerConfig {
+			cfg := bootstrap_config.DefaultBootstrapServerConfig()
+			cfg.Params.XdsHost = "localhost"
+			cfg.Params.XdsPort = 5678
+			return cfg
+		}
+		proxyCfg := xds_config.DefaultProxyConfig()
+
+		err = resManager.Create(context.Background(), dataplane, store.CreateByKey("name.namespace", "metrics"))
+		Expect(err).ToNot(HaveOccurred())
+
+		generator, err := NewDefaultBootstrapGenerator(resManager, config(), proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true, false, false, 0, false)
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		bootstrapConfig, configParam, err := generator.Generate(context.Background(), types.BootstrapRequest{
+			Mesh:           "metrics",
+			Name:           "name.namespace",
+			DataplaneToken: "token",
+			Version:        defaultVersion,
+		})
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// and config is as expected
+		_, err = util_proto.ToYAML(bootstrapConfig)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(configParam.NetworkingConfig.IsUsingTransparentProxy).To(BeTrue())
+		Expect(configParam.AggregateMetricsConfig).To(ContainElements([]AggregateMetricsConfig{
+			{
+				Address: "8.8.8.8",
+				Name:    "opa",
+				Path:    "/mesh/config",
+				Port:    123,
+			},
+			{
+				Address: "8.8.8.8",
+				Name:    "app",
+				Path:    "/dp/override",
+				Port:    12,
+			},
+		}))
+	})
+
+	It("should take configuration from Mesh when service do not define", func() {
+		// given
+		err := resManager.Create(context.Background(), &core_mesh.MeshResource{
+			Spec: &mesh_proto.Mesh{
+				Metrics: &mesh_proto.Metrics{
+					EnabledBackend: "prometheus-1",
+					Backends: []*mesh_proto.MetricsBackend{
+						{
+							Name: "prometheus-1",
+							Type: mesh_proto.MetricsPrometheusType,
+							Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+								Aggregate: []*mesh_proto.PrometheusAggregateMetricsConfig{
+									{
+										Name: "opa",
+										Port: 123,
+										Path: "/mesh/opa",
+									},
+									{
+										Name: "app",
+										Port: 999,
+										Path: "/mesh/app",
+									},
+								},
+							}),
+						},
+					},
+				},
+			},
+		}, store.CreateByKey("metrics", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		// and
+		dataplane := &core_mesh.DataplaneResource{
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "8.8.8.8",
+					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+						{
+							Port:        443,
+							ServicePort: 8443,
+							Tags: map[string]string{
+								"kuma.io/service": "backend",
+							},
+						},
+					},
+					Admin: &mesh_proto.EnvoyAdmin{},
+				},
+			},
+		}
+
+		config := func() *bootstrap_config.BootstrapServerConfig {
+			cfg := bootstrap_config.DefaultBootstrapServerConfig()
+			cfg.Params.XdsHost = "localhost"
+			cfg.Params.XdsPort = 5678
+			return cfg
+		}
+		proxyCfg := xds_config.DefaultProxyConfig()
+
+		err = resManager.Create(context.Background(), dataplane, store.CreateByKey("name.namespace", "metrics"))
+		Expect(err).ToNot(HaveOccurred())
+
+		generator, err := NewDefaultBootstrapGenerator(resManager, config(), proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true, false, false, 0, false)
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		bootstrapConfig, configParam, err := generator.Generate(context.Background(), types.BootstrapRequest{
+			Mesh:           "metrics",
+			Name:           "name.namespace",
+			DataplaneToken: "token",
+			Version:        defaultVersion,
+		})
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// and config is as expected
+		_, err = util_proto.ToYAML(bootstrapConfig)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(configParam.NetworkingConfig.IsUsingTransparentProxy).To(BeFalse())
+		Expect(configParam.AggregateMetricsConfig).To(Equal([]AggregateMetricsConfig{
+			{
+				Address: "8.8.8.8",
+				Name:    "opa",
+				Path:    "/mesh/opa",
+				Port:    123,
+			},
+			{
+				Address: "8.8.8.8",
+				Name:    "app",
+				Path:    "/mesh/app",
+				Port:    999,
+			},
+		}))
+	})
+>>>>>>> 7f1125714 (fix(*): do not override source address when TP is not enabled (#4951))
 })

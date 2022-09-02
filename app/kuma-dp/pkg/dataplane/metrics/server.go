@@ -22,6 +22,7 @@ var logger = core.Log.WithName("metrics-hijacker")
 var _ component.Component = &Hijacker{}
 
 type Hijacker struct {
+<<<<<<< HEAD
 	envoyAdminPort uint32
 	socketPath     string
 }
@@ -30,6 +31,35 @@ func New(dataplane kumadp.Dataplane, envoyAdminPort uint32) *Hijacker {
 	return &Hijacker{
 		envoyAdminPort: envoyAdminPort,
 		socketPath:     envoy.MetricsHijackerSocketName(dataplane.Name, dataplane.Mesh),
+=======
+	socketPath           string
+	httpClientIPv4       http.Client
+	httpClientIPv6       http.Client
+	applicationsToScrape []ApplicationToScrape
+}
+
+func createHttpClient(isUsingTransparentProxy bool, sourceAddress *net.TCPAddr) http.Client {
+	// we need this in case of not localhost requests, it returns fast in iptabels
+	if isUsingTransparentProxy {
+		dialer := &net.Dialer{
+			LocalAddr: sourceAddress,
+		}
+		return http.Client{
+			Transport: &http.Transport{
+				DialContext: dialer.DialContext,
+			},
+		}
+	}
+	return http.Client{}
+}
+
+func New(dataplane kumadp.Dataplane, applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool) *Hijacker {
+	return &Hijacker{
+		socketPath:           envoy.MetricsHijackerSocketName(dataplane.Name, dataplane.Mesh),
+		httpClientIPv4:       createHttpClient(isUsingTransparentProxy, inPassThroughIPv4),
+		httpClientIPv6:       createHttpClient(isUsingTransparentProxy, inPassThroughIPv6),
+		applicationsToScrape: applicationsToScrape,
+>>>>>>> 7f1125714 (fix(*): do not override source address when TP is not enabled (#4951))
 	}
 }
 
@@ -99,8 +129,31 @@ func rewriteMetricsURL(port uint32, in *url.URL) string {
 func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	resp, err := http.Get(rewriteMetricsURL(s.envoyAdminPort, req.URL))
 	if err != nil {
+<<<<<<< HEAD
 		http.Error(writer, err.Error(), 500)
 		return
+=======
+		logger.Error(err, "failed to create request")
+		return nil
+	}
+	s.passRequestHeaders(req.Header, initReq.Header)
+	req = req.WithContext(ctx)
+	var resp *http.Response
+	if app.IsIPv6 {
+		resp, err = s.httpClientIPv6.Do(req)
+		if err == nil {
+			defer resp.Body.Close()
+		}
+	} else {
+		resp, err = s.httpClientIPv4.Do(req)
+		if err == nil {
+			defer resp.Body.Close()
+		}
+	}
+	if err != nil {
+		logger.Error(err, "failed call", "name", app.Name, "path", app.Path, "port", app.Port)
+		return nil
+>>>>>>> 7f1125714 (fix(*): do not override source address when TP is not enabled (#4951))
 	}
 	defer resp.Body.Close()
 

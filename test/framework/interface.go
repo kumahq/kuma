@@ -86,6 +86,7 @@ type appDeploymentOptions struct {
 	verbose *bool
 
 	// app specific
+<<<<<<< HEAD
 	namespace         string
 	appname           string
 	name              string
@@ -106,6 +107,34 @@ type appDeploymentOptions struct {
 	proxyOnly         bool
 	serviceProbe      bool
 	reachableServices []string
+=======
+	namespace             string
+	appname               string
+	name                  string
+	appYaml               string
+	appArgs               []string
+	token                 string
+	transparent           *bool
+	builtindns            *bool // true by default
+	protocol              string
+	serviceName           string
+	serviceVersion        string
+	serviceInstance       string
+	mesh                  string
+	dpVersion             string
+	kumactlFlow           bool
+	concurrency           int
+	omitDataplane         bool
+	proxyOnly             bool
+	serviceProbe          bool
+	reachableServices     []string
+	appendDataplaneConfig string
+	boundToContainerIp    bool
+	serviceAddress        string
+
+	dockerVolumes       []string
+	dockerContainerName string
+>>>>>>> 7f1125714 (fix(*): do not override source address when TP is not enabled (#4951))
 }
 
 func (d *appDeploymentOptions) apply(opts ...AppDeploymentOption) {
@@ -424,7 +453,7 @@ func WithToken(token string) AppDeploymentOption {
 
 func WithTransparentProxy(transparent bool) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
-		o.transparent = transparent
+		o.transparent = &transparent
 	})
 }
 

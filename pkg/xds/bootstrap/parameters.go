@@ -1,6 +1,30 @@
 package bootstrap
 
+<<<<<<< HEAD
 import "time"
+=======
+import (
+	"time"
+
+	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
+)
+
+type KumaDpBootstrap struct {
+	AggregateMetricsConfig []AggregateMetricsConfig
+	NetworkingConfig       NetworkingConfig
+}
+
+type NetworkingConfig struct {
+	IsUsingTransparentProxy bool
+}
+
+type AggregateMetricsConfig struct {
+	Name    string
+	Path    string
+	Address string
+	Port    uint32
+}
+>>>>>>> 7f1125714 (fix(*): do not override source address when TP is not enabled (#4951))
 
 type configParameters struct {
 	Id                    string

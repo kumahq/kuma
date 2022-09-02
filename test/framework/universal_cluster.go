@@ -285,7 +285,7 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 	opts.apply(opt...)
 	appname := opts.appname
 	token := opts.token
-	transparent := opts.transparent
+	transparent := opts.transparent != nil && *opts.transparent // default false
 	args := opts.appArgs
 
 	if opts.verbose == nil {

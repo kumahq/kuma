@@ -235,8 +235,16 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			components = append(components, dataplane)
+<<<<<<< HEAD
 
 			metricsServer := metrics.New(cfg.Dataplane, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue())
+=======
+			metricsServer := metrics.New(
+				cfg.Dataplane,
+				getApplicationsToScrape(kumaSidecarConfiguration, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()),
+				kumaSidecarConfiguration.Networking.IsUsingTransparentProxy,
+			)
+>>>>>>> 7f1125714 (fix(*): do not override source address when TP is not enabled (#4951))
 			components = append(components, metricsServer)
 
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {
