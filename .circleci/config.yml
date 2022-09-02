@@ -415,13 +415,13 @@ workflows:
     jobs:
       - dev:
           # Avoids running expensive workflow on PRs
-#          filters: &expensive_workflow_filter # only run on tags, master and release-* branches
-#            branches:
-#              only:
-#                - master
-#                - /^release-.*/
-#            tags:
-#              only: /.*/
+          filters: &expensive_workflow_filter # only run on tags, master and release-* branches
+            branches:
+              only:
+                - master
+                - /^release-.*/
+            tags:
+              only: /.*/
           name: dev-<< matrix.executor >>
           matrix:
             alias: dev
