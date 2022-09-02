@@ -166,8 +166,9 @@ package kuma.plugins.policies.{{ .nameLower }}.{{ .version }};
 
 import "mesh/options.proto";
 option go_package = "{{ .module }}/{{.nameLower}}/api/{{ .version }}";
-
+{{ if or .generateTargetRef (or .generateTo .generateFrom) }}
 import "common/v1alpha1/targetref.proto";
+{{- end}}
 import "config.proto";
 
 option (doc.config) = {
@@ -268,15 +269,20 @@ var validatorTemplate = template.Must(template.New("").Option("missingkey=error"
 	`package {{.version}}
 
 import (
+	{{- if or .generateTargetRef (or .generateTo .generateFrom) }}
 	common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/validators"
 	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
+	{{- end}}
+	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
 func (r *{{.name}}Resource) validate() error {
 	var verr validators.ValidationError
+	{{- if or .generateTargetRef (or .generateTo .generateFrom) }}
 	path := validators.RootedAt("spec")
-	
+	{{- else }}
+	// TODO add validation
+	{{- end}}
 	{{- if .generateTargetRef }}
 
 	targetRefErr := matcher_validators.ValidateTargetRef(path.Field("targetRef"), r.Spec.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
