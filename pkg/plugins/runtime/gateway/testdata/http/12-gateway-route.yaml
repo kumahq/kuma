@@ -119,10 +119,12 @@ Routes:
         routes:
         - match:
             headers:
-            - exactMatch: GET
-              name: :method
-            - exactMatch: gibberish
-              name: Language
+            - name: :method
+              stringMatch:
+                exact: GET
+            - name: Language
+              stringMatch:
+                exact: gibberish
             path: /lang/json
           route:
             retryPolicy:
@@ -144,10 +146,12 @@ Routes:
               totalWeight: 1
         - match:
             headers:
-            - exactMatch: PUT
-              name: :method
-            - exactMatch: application/json
-              name: Content-Type
+            - name: :method
+              stringMatch:
+                exact: PUT
+            - name: Content-Type
+              stringMatch:
+                exact: application/json
             path: /app/json
           route:
             retryPolicy:
@@ -169,10 +173,12 @@ Routes:
               totalWeight: 1
         - match:
             headers:
-            - exactMatch: GET
-              name: :method
-            - exactMatch: gibberish
-              name: Language
+            - name: :method
+              stringMatch:
+                exact: GET
+            - name: Language
+              stringMatch:
+                exact: gibberish
             prefix: /lang/json/
           route:
             retryPolicy:

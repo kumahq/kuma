@@ -6,6 +6,7 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -116,11 +117,18 @@ func genHttpRetryPolicy(
 			continue
 		}
 
+		matcher := envoy_type_matcher.StringMatcher{
+			MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+				Exact: method.String(),
+			},
+		}
 		policy.RetriableRequestHeaders = append(policy.RetriableRequestHeaders,
 			&envoy_route.HeaderMatcher{
-				Name:                 ":method",
-				HeaderMatchSpecifier: &envoy_route.HeaderMatcher_ExactMatch{ExactMatch: method.String()},
-				InvertMatch:          false,
+				Name: ":method",
+				HeaderMatchSpecifier: &envoy_route.HeaderMatcher_StringMatch{
+					StringMatch: &matcher,
+				},
+				InvertMatch: false,
 			})
 	}
 
