@@ -146,7 +146,7 @@ func (r *PodReconciler) reconcileBuiltinGatewayDataplane(ctx context.Context, po
 		}
 		if err := r.Client.Delete(ctx, dp); err != nil {
 			if kube_apierrs.IsNotFound(err) {
-				log.V(1).Info("pod IP is empty, but Dataplane is not found, nothing to delete.")
+				log.V(1).Info("pod IP is empty, but Dataplane is not found, nothing to delete")
 				return nil
 			}
 			return errors.Wrap(err, "pod IP is empty. Could not delete Dataplane")
@@ -169,12 +169,12 @@ func (r *PodReconciler) reconcileZoneIngress(ctx context.Context, pod *kube_core
 		}
 		if err := r.Client.Delete(ctx, zi); err != nil {
 			if kube_apierrs.IsNotFound(err) {
-				log.V(1).Info("zone ingress not found, nothing to delete. Skipping")
+				log.V(1).Info("pod IP is empty, but ZoneIngress is not found, nothing to delete")
 				return nil
 			}
-			return errors.Wrap(err, "could not delete zone ingress")
+			return errors.Wrap(err, "could not delete ZoneIngress")
 		}
-		log.V(1).Info("pod IP is empty, object deleted")
+		log.Info("pod IP is empty, ZoneIngress deleted")
 		return nil
 	}
 
@@ -199,12 +199,12 @@ func (r *PodReconciler) reconcileZoneEgress(ctx context.Context, pod *kube_core.
 		}
 		if err := r.Client.Delete(ctx, zi); err != nil {
 			if kube_apierrs.IsNotFound(err) {
-				log.V(1).Info("zone egress not found, nothing to delete. Skipping")
+				log.V(1).Info("pod IP is empty, but ZoneEgress is not found, nothing to delete")
 				return nil
 			}
-			return errors.Wrap(err, "could not delete zone egress")
+			return errors.Wrap(err, "could not delete ZoneEgress")
 		}
-		log.V(1).Info("pod IP is empty, object deleted")
+		log.Info("pod IP is empty, ZoneEgress deleted")
 		return nil
 	}
 
