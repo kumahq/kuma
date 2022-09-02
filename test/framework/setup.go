@@ -431,8 +431,9 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 		opts.apply(opt...)
 		args := []string{"ncat", "-lvk", "-p", "3000"}
 		appYaml := opts.appYaml
+		transparent := opts.transparent != nil && *opts.transparent // default false
 		if appYaml == "" {
-			if opts.transparent {
+			if transparent {
 				appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", name, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound, strings.Join(opts.reachableServices, ","))
 			} else {
 				if opts.serviceProbe {
@@ -513,6 +514,16 @@ func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 		if opts.serviceInstance == "" {
 			opts.serviceInstance = "1"
 		}
+		transparent := opts.transparent == nil || *opts.transparent // default true
+		transparentProxy := ""
+		if transparent {
+			transparentProxy = fmt.Sprintf(`
+  transparentProxying:
+    redirectPortInbound: %s
+    redirectPortInboundV6: %s
+    redirectPortOutbound: %s
+`, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
+		}
 		token := opts.token
 		var err error
 		if token == "" {
@@ -552,18 +563,15 @@ networking:
       instance: '%s'
       team: server-owners
 %s
-  transparentProxying:
-    redirectPortInbound: %s
-    redirectPortInboundV6: %s
-    redirectPortOutbound: %s
 %s
-`, mesh, "80", "8080", serviceAddress, opts.serviceName, opts.protocol, opts.serviceVersion, opts.serviceInstance, serviceProbe, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound, opts.appendDataplaneConfig)
+%s
+`, mesh, "80", "8080", serviceAddress, opts.serviceName, opts.protocol, opts.serviceVersion, opts.serviceInstance, serviceProbe, transparentProxy, opts.appendDataplaneConfig)
 
 		opt = append(opt,
 			WithName(name),
 			WithMesh(mesh),
 			WithAppname(opts.serviceName),
-			WithTransparentProxy(true), // test server is always meant to be used with transparent proxy
+			WithTransparentProxy(transparent),
 			WithToken(token),
 			WithArgs(args),
 			WithYaml(appYaml),
