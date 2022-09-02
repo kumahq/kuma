@@ -23,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
@@ -103,19 +104,15 @@ func (r *PodReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (k
 }
 
 func (r *PodReconciler) reconcileDataplane(ctx context.Context, pod *kube_core.Pod, log logr.Logger) error {
+	dp := &mesh_k8s.Dataplane{
+		ObjectMeta: kube_meta.ObjectMeta{Name: pod.Name, Namespace: pod.Namespace},
+	}
+	if pod.Status.Phase == kube_core.PodSucceeded {
+		// Remove Dataplane object for Pods that are indefinitely in Succeeded phase, i.e. Jobs
+		return r.deleteObjectIfExist(ctx, dp, "pod succeeded", log)
+	}
 	if pod.Status.PodIP == "" {
-		dp := &mesh_k8s.Dataplane{
-			ObjectMeta: kube_meta.ObjectMeta{Name: pod.Name, Namespace: pod.Namespace},
-		}
-		if err := r.Client.Delete(ctx, dp); err != nil {
-			if kube_apierrs.IsNotFound(err) {
-				log.V(1).Info("pod IP is empty, but Dataplane is not found, nothing to delete.")
-				return nil
-			}
-			return errors.Wrap(err, "pod IP is empty. Could not delete Dataplane")
-		}
-		log.Info("pod IP is empty, Dataplane deleted")
-		return nil
+		return r.deleteObjectIfExist(ctx, dp, "pod IP is empty", log)
 	}
 
 	ns := kube_core.Namespace{}
@@ -139,20 +136,30 @@ func (r *PodReconciler) reconcileDataplane(ctx context.Context, pod *kube_core.P
 	return nil
 }
 
+func (r *PodReconciler) deleteObjectIfExist(ctx context.Context, object k8s_model.KubernetesObject, cause string, log logr.Logger) error {
+	log = log.WithValues(
+		"cause", cause,
+		"kind", object.GetObjectKind(),
+		"name", object.GetName(),
+		"namespace", object.GetNamespace(),
+	)
+	if err := r.Client.Delete(ctx, object); err != nil {
+		if kube_apierrs.IsNotFound(err) {
+			log.V(1).Info("Object is not found, nothing to delete")
+			return nil
+		}
+		return errors.Wrapf(err, "could not delete %v %s/%s", object.GetObjectKind(), object.GetName(), object.GetNamespace())
+	}
+	log.Info("Object deleted")
+	return nil
+}
+
 func (r *PodReconciler) reconcileBuiltinGatewayDataplane(ctx context.Context, pod *kube_core.Pod, log logr.Logger) error {
 	if pod.Status.PodIP == "" {
 		dp := &mesh_k8s.Dataplane{
 			ObjectMeta: kube_meta.ObjectMeta{Name: pod.Name, Namespace: pod.Namespace},
 		}
-		if err := r.Client.Delete(ctx, dp); err != nil {
-			if kube_apierrs.IsNotFound(err) {
-				log.V(1).Info("pod IP is empty, but Dataplane is not found, nothing to delete")
-				return nil
-			}
-			return errors.Wrap(err, "pod IP is empty. Could not delete Dataplane")
-		}
-		log.Info("pod IP is empty, Dataplane deleted")
-		return nil
+		return r.deleteObjectIfExist(ctx, dp, "pod IP is empty", log)
 	}
 
 	ns := kube_core.Namespace{}
@@ -167,15 +174,7 @@ func (r *PodReconciler) reconcileZoneIngress(ctx context.Context, pod *kube_core
 		zi := &mesh_k8s.ZoneIngress{
 			ObjectMeta: kube_meta.ObjectMeta{Name: pod.Name},
 		}
-		if err := r.Client.Delete(ctx, zi); err != nil {
-			if kube_apierrs.IsNotFound(err) {
-				log.V(1).Info("pod IP is empty, but ZoneIngress is not found, nothing to delete")
-				return nil
-			}
-			return errors.Wrap(err, "could not delete ZoneIngress")
-		}
-		log.Info("pod IP is empty, ZoneIngress deleted")
-		return nil
+		return r.deleteObjectIfExist(ctx, zi, "pod IP is empty", log)
 	}
 
 	if pod.Namespace != r.SystemNamespace {
@@ -197,15 +196,7 @@ func (r *PodReconciler) reconcileZoneEgress(ctx context.Context, pod *kube_core.
 		zi := &mesh_k8s.ZoneEgress{
 			ObjectMeta: kube_meta.ObjectMeta{Name: pod.Name},
 		}
-		if err := r.Client.Delete(ctx, zi); err != nil {
-			if kube_apierrs.IsNotFound(err) {
-				log.V(1).Info("pod IP is empty, but ZoneEgress is not found, nothing to delete")
-				return nil
-			}
-			return errors.Wrap(err, "could not delete ZoneEgress")
-		}
-		log.Info("pod IP is empty, ZoneEgress deleted")
-		return nil
+		return r.deleteObjectIfExist(ctx, zi, "pod IP is empty", log)
 	}
 
 	if pod.Namespace != r.SystemNamespace {

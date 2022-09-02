@@ -34,6 +34,13 @@ func Jobs() {
 
 		// then CP terminates the job by sending /quitquitquit to Envoy Admin and verifies connection using self-signed certs
 		Expect(err).ToNot(HaveOccurred())
+
+		// and Dataplane object is deleted
+		Eventually(func(g Gomega) {
+			out, err := env.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes", "--mesh", mesh)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(out).ToNot(ContainSubstring("demo-job-client"))
+		}, "30s", "1s")
 	})
 
 	It("should terminate jobs with mTLS", func() {
