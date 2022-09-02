@@ -17,6 +17,10 @@ func ValidateTargetRef(
 	opts *ValidateTargetRefOpts,
 ) validators.ValidationError {
 	verr := validators.ValidationError{}
+	if ref == nil {
+		// Implicitly treat nil targetRef as kind Mesh
+		return verr
+	}
 	if !contains(opts.SupportedKinds, ref.GetKindEnum()) {
 		verr.AddViolationAt(path.Field("kind"), "value is not supported")
 	} else {
