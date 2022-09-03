@@ -27,6 +27,8 @@ import (
 	"github.com/kumahq/kuma/pkg/metrics"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	xds_auth "github.com/kumahq/kuma/pkg/xds/auth"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
@@ -62,6 +64,8 @@ type RuntimeContext interface {
 	Metrics() metrics.Metrics
 	EventReaderFactory() events.ListenerFactory
 	APIInstaller() api_server.APIInstaller
+	XDSAuthenticator() xds_auth.Authenticator
+	XDSCallbacks() util_xds.Callbacks
 	XDSHooks() *xds_hooks.Hooks
 	CAProvider() secrets.CaProvider
 	DpServer() *dp_server.DpServer
@@ -145,6 +149,8 @@ type runtimeContext struct {
 	metrics        metrics.Metrics
 	erf            events.ListenerFactory
 	apim           api_server.APIInstaller
+	xdsauth        xds_auth.Authenticator
+	xdsCallbacks   util_xds.Callbacks
 	xdsh           *xds_hooks.Hooks
 	cap            secrets.CaProvider
 	dps            *dp_server.DpServer
@@ -225,6 +231,14 @@ func (rc *runtimeContext) DpServer() *dp_server.DpServer {
 
 func (rc *runtimeContext) CAProvider() secrets.CaProvider {
 	return rc.cap
+}
+
+func (rc *runtimeContext) XDSAuthenticator() xds_auth.Authenticator {
+	return rc.xdsauth
+}
+
+func (rc *runtimeContext) XDSCallbacks() util_xds.Callbacks {
+	return rc.xdsCallbacks
 }
 
 func (rc *runtimeContext) XDSHooks() *xds_hooks.Hooks {

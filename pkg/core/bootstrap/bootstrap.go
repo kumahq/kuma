@@ -46,6 +46,7 @@ import (
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
+	xds_auth_components "github.com/kumahq/kuma/pkg/xds/auth/components"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
@@ -124,6 +125,15 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 			builder.CaManagers(),
 			builder.Config().GetEnvoyAdminPort(),
 		))
+	}
+
+	if builder.XDSAuthenticator() == nil {
+		authenticator, err := xds_auth_components.DefaultAuthenticator(builder) //nolint:contextcheck
+		if err != nil {
+			return nil, err
+		}
+
+		builder.WithXDSAuthenticator(authenticator)
 	}
 
 	// The setting should be removed, and there is no easy way to set it without breaking most of the code

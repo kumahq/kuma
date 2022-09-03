@@ -25,6 +25,8 @@ import (
 	"github.com/kumahq/kuma/pkg/events"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	xds_auth "github.com/kumahq/kuma/pkg/xds/auth"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
@@ -74,6 +76,8 @@ type Builder struct {
 	metrics        metrics.Metrics
 	erf            events.ListenerFactory
 	apim           api_server.APIManager
+	xdsauth        xds_auth.Authenticator
+	xdsCallbacks   util_xds.Callbacks
 	xdsh           *xds_hooks.Hooks
 	cap            secrets.CaProvider
 	dps            *dp_server.DpServer
@@ -194,6 +198,16 @@ func (b *Builder) WithAPIManager(apim api_server.APIManager) *Builder {
 	return b
 }
 
+func (b *Builder) WithXDSAuthenticator(xdsauth xds_auth.Authenticator) *Builder {
+	b.xdsauth = xdsauth
+	return b
+}
+
+func (b *Builder) WithXDSCallbacks(xdsCallbacks util_xds.Callbacks) *Builder {
+	b.xdsCallbacks = xdsCallbacks
+	return b
+}
+
 func (b *Builder) WithXDSHooks(xdsh *xds_hooks.Hooks) *Builder {
 	b.xdsh = xdsh
 	return b
@@ -310,6 +324,8 @@ func (b *Builder) Build() (Runtime, error) {
 			metrics:        b.metrics,
 			erf:            b.erf,
 			apim:           b.apim,
+			xdsauth:        b.xdsauth,
+			xdsCallbacks:   b.xdsCallbacks,
 			xdsh:           b.xdsh,
 			cap:            b.cap,
 			dps:            b.dps,
@@ -371,6 +387,9 @@ func (b *Builder) EventReaderFactory() events.ListenerFactory {
 }
 func (b *Builder) APIManager() api_server.APIManager {
 	return b.apim
+}
+func (b *Builder) XDSAuthenticator() xds_auth.Authenticator {
+	return b.xdsauth
 }
 func (b *Builder) XDSHooks() *xds_hooks.Hooks {
 	return b.xdsh

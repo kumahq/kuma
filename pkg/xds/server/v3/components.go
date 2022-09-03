@@ -14,7 +14,6 @@ import (
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	"github.com/kumahq/kuma/pkg/xds/auth"
-	auth_components "github.com/kumahq/kuma/pkg/xds/auth/components"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -38,10 +37,7 @@ func RegisterXDS(
 ) error {
 	xdsContext := NewXdsContext()
 
-	authenticator, err := auth_components.DefaultAuthenticator(rt)
-	if err != nil {
-		return err
-	}
+	authenticator := rt.XDSAuthenticator()
 	authCallbacks := auth.NewCallbacks(rt.ReadOnlyResourceManager(), authenticator, auth.DPNotFoundRetry{}) // no need to retry on DP Not Found because we are creating DP in DataplaneLifecycle callback
 
 	metadataTracker := xds_callbacks.NewDataplaneMetadataTracker()
@@ -65,6 +61,10 @@ func RegisterXDS(
 		util_xds_v3.AdaptCallbacks(DefaultDataplaneStatusTracker(rt, envoyCpCtx.Secrets)),
 		util_xds_v3.AdaptCallbacks(xds_callbacks.NewNackBackoff(rt.Config().XdsServer.NACKBackoff)),
 		newResourceWarmingForcer(xdsContext.Cache(), xdsContext.Hasher()),
+	}
+
+	if cb := rt.XDSCallbacks(); cb != nil {
+		callbacks = append(callbacks, util_xds_v3.AdaptCallbacks(cb))
 	}
 
 	srv := envoy_server.NewServer(context.Background(), xdsContext.Cache(), callbacks)
