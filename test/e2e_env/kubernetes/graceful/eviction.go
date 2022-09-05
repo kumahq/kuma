@@ -26,7 +26,7 @@ func Eviction() {
 		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	It("should return envoy config_dump", func() {
+	It("remove Dataplane of evicted Pod", func() {
 		evictionPod := `apiVersion: v1
 kind: Pod
 metadata:
