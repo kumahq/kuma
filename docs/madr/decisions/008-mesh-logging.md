@@ -194,11 +194,13 @@ In the future the user will re-create (or maybe we could do this automatically) 
 
 ##### Positive Consequences 
 
-* easier to implement
+* Easier to implement.
 
 ##### Negative Consequences
 
-* possibly more work for the user in the future
+* Possibly more work for the user in the future.
+* It's impossible to create an observability role using RBAC.
+You need to give access to the whole mesh to such a person.
 
 #### Move backend to the `MeshLoggingBackend` policy now
 
@@ -306,6 +308,48 @@ spec:
 
 Format can be tied to a backend for some backends (like a backend that only supports JSON entries)
 or not (a file will accept anything text-like), so for this reason we're leaving format inside a backend.
+
+##### Improving JSON support
+
+The current support of the format is just a plain string.
+To be more user-friendly to the users of JSON format we could leverage Envoy's [json_format](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/substitution_format_string.proto.html?highlight=json_format).
+
+To keep backward compatibility the current structure:
+
+```yaml
+backends:
+  - name: logstash
+    format: '{"start_time": "%START_TIME%"}' # implicit type=string
+```
+
+Would be equivalent to:
+
+```yaml
+backends:
+  - name: logstash
+    format:
+      type: string
+      value: '{"start_time": "%START_TIME%"}'
+```
+
+And the new format type could be specified by a `type` parameter with a value of `json`:
+
+```yaml
+backends:
+  - name: logstash
+    format:
+      type: json
+      value:
+        start_time: "%START_TIME%"
+```
+
+###### Positive Consequences
+
+* more user-friendly for JSON users
+
+###### Negative Consequences
+
+* needs time to implement (being aware of scope creep)
 
 ##### Considered option - Move `format` outside of `backend`
 
