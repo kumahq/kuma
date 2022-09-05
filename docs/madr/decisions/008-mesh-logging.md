@@ -12,10 +12,10 @@ Current MADR aims to define a `MeshLogging`.
 
 # Considered Options
 
-* Create a MeshLogging policy
-  * Keep backends in the `Mesh` resource for now, move them into `MeshLoggingBackend` policy in the future
-  * Move backend to the `MeshLoggingBackend` policy now
-  * Embed backend in `MeshLogging` policy
+* Create a MeshLogging policy:
+  * Keep backends in the `Mesh` resource for now, move them into `MeshLoggingBackend` policy in the future.
+  * Move backend to the `MeshLoggingBackend` policy now.
+  * Embed backend in `MeshLogging` policy.
 
 # Decision Outcome
 
@@ -25,9 +25,9 @@ To be determined.
 
 MeshLogging allows users to log incoming and outgoing traffic for services.
 This feature is useful in the following scenarios:
-* auditing - services that contain important data might want to log access to its resources for auditing purposes
-* debugging - an engineer might want to see traffic going in/out of a service to debug misbehaviour
-* insights - logs are useful when trying to understand users and their behaviour
+* Auditing - services that contain important data might want to log access to its resources for auditing purposes.
+* Debugging - an engineer might want to see traffic going in/out of a service to debug misbehaviour.
+* Insights - logs are useful when trying to understand users and their behaviour.
 
 ## Specification
 
@@ -246,17 +246,18 @@ spec:
 
 ##### Positive Consequences
 
-* easier to have per zone backends
+* Less duplication.
 
 ##### Negative Consequences
 
-* more new policies for users to understand
-* possibly more work to implement
+* New policies for users to understand.
+* More fragmentation.
+* Possibly more work to implement.
 
 #### Embed backend in `MeshLogging` policy
 
 Another option would be to embed `backend` field inside the `MeshLogging` policy,
-but still have the possibility to reference a backend defined in a `Mesh`
+but still have the possibility to reference a backend defined in a `Mesh`.
 
 ```yaml
 apiVersion: kuma.io/v1alpha1
@@ -296,11 +297,11 @@ spec:
 
 ##### Positive Consequences
 
-* easier to have per zone backends
+* More flexibility.
 
 ##### Negative Consequences
 
-* less dry
+* Multiple ways to do the same thing, might confuse users without clear documentation on which approach is best for which use case.
 
 ### Other configuration options
 
