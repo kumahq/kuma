@@ -18,6 +18,10 @@ import (
 	"github.com/kumahq/kuma/pkg/envoy/admin/access"
 )
 
+const (
+	contentTypeText = "text/plain"
+)
+
 func addInspectEnvoyAdminEndpoints(
 	ws *restful.WebService,
 	cfg *kuma_cp.Config,
@@ -27,60 +31,62 @@ func addInspectEnvoyAdminEndpoints(
 ) {
 	ws.Route(
 		ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/xds").
-			To(inspectDataplaneAdmin(envoyAdminClient.ConfigDump, adminAccess.ValidateViewConfigDump, rm)).
+			To(inspectDataplaneAdmin(envoyAdminClient.ConfigDump, adminAccess.ValidateViewConfigDump, rm, restful.MIME_JSON)).
 			Doc("inspect dataplane XDS configuration").
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 			Param(ws.PathParameter("dataplane", "dataplane name").DataType("string")),
 	)
 	ws.Route(
 		ws.GET("/zoneingresses/{zoneingress}/xds").
-			To(inspectZoneIngressAdmin(cfg.Mode, cfg.Multizone.Zone.Name, envoyAdminClient.ConfigDump, adminAccess.ValidateViewConfigDump, rm)).
+			To(inspectZoneIngressAdmin(cfg.Mode, cfg.Multizone.Zone.Name, envoyAdminClient.ConfigDump, adminAccess.ValidateViewConfigDump, rm, restful.MIME_JSON)).
 			Doc("inspect zone ingresses XDS configuration").
+			Produces("application/json").
 			Param(ws.PathParameter("zoneingress", "zoneingress name").DataType("string")),
 	)
 	ws.Route(
 		ws.GET("/zoneegresses/{zoneegress}/xds").
-			To(inspectZoneEgressAdmin(envoyAdminClient.ConfigDump, adminAccess.ValidateViewConfigDump, rm)).
+			To(inspectZoneEgressAdmin(envoyAdminClient.ConfigDump, adminAccess.ValidateViewConfigDump, rm, restful.MIME_JSON)).
 			Doc("inspect zone egresses XDS configuration").
+			Produces("application/json").
 			Param(ws.PathParameter("zoneegress", "zoneegress name").DataType("string")),
 	)
 
 	ws.Route(
 		ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/stats").
-			To(inspectDataplaneAdmin(envoyAdminClient.Stats, adminAccess.ValidateViewStats, rm)).
+			To(inspectDataplaneAdmin(envoyAdminClient.Stats, adminAccess.ValidateViewStats, rm, contentTypeText)).
 			Doc("inspect dataplane stats").
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 			Param(ws.PathParameter("dataplane", "dataplane name").DataType("string")),
 	)
 	ws.Route(
 		ws.GET("/zoneingresses/{zoneingress}/stats").
-			To(inspectZoneIngressAdmin(cfg.Mode, cfg.Multizone.Zone.Name, envoyAdminClient.Stats, adminAccess.ValidateViewStats, rm)).
+			To(inspectZoneIngressAdmin(cfg.Mode, cfg.Multizone.Zone.Name, envoyAdminClient.Stats, adminAccess.ValidateViewStats, rm, contentTypeText)).
 			Doc("inspect zone ingresses stats").
 			Param(ws.PathParameter("zoneingress", "zoneingress name").DataType("string")),
 	)
 	ws.Route(
 		ws.GET("/zoneegresses/{zoneegress}/stats").
-			To(inspectZoneEgressAdmin(envoyAdminClient.Stats, adminAccess.ValidateViewStats, rm)).
+			To(inspectZoneEgressAdmin(envoyAdminClient.Stats, adminAccess.ValidateViewStats, rm, contentTypeText)).
 			Doc("inspect zone egresses stats").
 			Param(ws.PathParameter("zoneegress", "zoneegress name").DataType("string")),
 	)
 
 	ws.Route(
 		ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/clusters").
-			To(inspectDataplaneAdmin(envoyAdminClient.Clusters, adminAccess.ValidateViewClusters, rm)).
+			To(inspectDataplaneAdmin(envoyAdminClient.Clusters, adminAccess.ValidateViewClusters, rm, contentTypeText)).
 			Doc("inspect dataplane clusters").
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 			Param(ws.PathParameter("dataplane", "dataplane name").DataType("string")),
 	)
 	ws.Route(
 		ws.GET("/zoneingresses/{zoneingress}/clusters").
-			To(inspectZoneIngressAdmin(cfg.Mode, cfg.Multizone.Zone.Name, envoyAdminClient.Clusters, adminAccess.ValidateViewClusters, rm)).
+			To(inspectZoneIngressAdmin(cfg.Mode, cfg.Multizone.Zone.Name, envoyAdminClient.Clusters, adminAccess.ValidateViewClusters, rm, contentTypeText)).
 			Doc("inspect zone ingresses clusters").
 			Param(ws.PathParameter("zoneingress", "zoneingress name").DataType("string")),
 	)
 	ws.Route(
 		ws.GET("/zoneegresses/{zoneegress}/clusters").
-			To(inspectZoneEgressAdmin(envoyAdminClient.Clusters, adminAccess.ValidateViewClusters, rm)).
+			To(inspectZoneEgressAdmin(envoyAdminClient.Clusters, adminAccess.ValidateViewClusters, rm, contentTypeText)).
 			Doc("inspect zone egresses clusters").
 			Param(ws.PathParameter("zoneegress", "zoneegress name").DataType("string")),
 	)
@@ -90,6 +96,7 @@ func inspectDataplaneAdmin(
 	adminFn func(context.Context, core_model.ResourceWithAddress) ([]byte, error),
 	access func(user.User) error,
 	rm manager.ResourceManager,
+	contentType string,
 ) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
 		ctx := request.Request.Context()
@@ -113,6 +120,7 @@ func inspectDataplaneAdmin(
 			return
 		}
 
+		response.AddHeader(restful.HEADER_ContentType, contentType)
 		if _, err := response.Write(stats); err != nil {
 			rest_errors.HandleError(response, err, "Could not write response")
 			return
@@ -126,6 +134,7 @@ func inspectZoneIngressAdmin(
 	adminFn func(context.Context, core_model.ResourceWithAddress) ([]byte, error),
 	access func(user.User) error,
 	rm manager.ResourceManager,
+	contentType string,
 ) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
 		ctx := request.Request.Context()
@@ -154,6 +163,7 @@ func inspectZoneIngressAdmin(
 			return
 		}
 
+		response.AddHeader(restful.HEADER_ContentType, contentType)
 		if _, err := response.Write(stats); err != nil {
 			rest_errors.HandleError(response, err, "Could not write response")
 			return
@@ -165,6 +175,7 @@ func inspectZoneEgressAdmin(
 	adminFn func(context.Context, core_model.ResourceWithAddress) ([]byte, error),
 	access func(user.User) error,
 	rm manager.ResourceManager,
+	contentType string,
 ) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
 		ctx := request.Request.Context()
@@ -187,6 +198,7 @@ func inspectZoneEgressAdmin(
 			return
 		}
 
+		response.AddHeader(restful.HEADER_ContentType, contentType)
 		if _, err := response.Write(stats); err != nil {
 			rest_errors.HandleError(response, err, "Could not write response")
 			return
