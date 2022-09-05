@@ -2,6 +2,9 @@ KUMA_DIR ?= .
 ENVOY_VERSION = $(shell ${KUMA_DIR}/tools/envoy/version.sh)
 
 CI_TOOLS_DIR ?= ${HOME}/.kuma-dev
+ifdef XDG_DATA_HOME
+	CI_TOOLS_DIR := ${XDG_DATA_HOME}/kuma-dev
+endif
 CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 
 GOARCH := $(shell go env GOARCH)
