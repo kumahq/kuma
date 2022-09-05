@@ -69,7 +69,7 @@ require (
 	k8s.io/apimachinery v0.25.0
 	k8s.io/client-go v0.25.0
 	k8s.io/utils v0.0.0-20220728103510-ee6ede2d64ed
-	sigs.k8s.io/controller-runtime v0.12.3
+	sigs.k8s.io/controller-runtime v0.13.0
 	sigs.k8s.io/controller-tools v0.9.2
 	sigs.k8s.io/gateway-api v0.5.0
 	sigs.k8s.io/testing_frameworks v0.1.2
