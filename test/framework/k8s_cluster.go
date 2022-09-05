@@ -864,18 +864,15 @@ func (c *K8sCluster) closePortForwards(name string) {
 }
 
 func (c *K8sCluster) deleteCRDs() (errs error) {
-	var crdsYAML bytes.Buffer
-	cmd := exec.Command("kubectl", "get", "crds", "-o", "yaml", "--kubeconfig", c.kubeconfig)
-	cmd.Stdout = &crdsYAML
-
-	if err := cmd.Run(); err != nil {
-		errs = multierr.Append(errs, err)
-	} else if tmpfile, err := os.CreateTemp("", "crds.yaml"); err != nil {
+	stdout, err := k8s.RunKubectlAndGetOutputE(c.GetTesting(), c.GetKubectlOptions(), "get", "crds", "-o", "yaml")
+	if err != nil {
+		return err
+	}
+	if tmpfile, err := os.CreateTemp("", "crds.yaml"); err != nil {
 		errs = multierr.Append(errs, err)
 	} else {
 		defer os.Remove(tmpfile.Name()) // clean up
-
-		if _, err := tmpfile.Write(crdsYAML.Bytes()); err != nil {
+		if _, err := tmpfile.Write([]byte(stdout)); err != nil {
 			errs = multierr.Append(errs, err)
 		} else if err := tmpfile.Close(); err != nil {
 			errs = multierr.Append(errs, err)

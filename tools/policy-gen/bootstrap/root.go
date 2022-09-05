@@ -169,7 +169,7 @@ option go_package = "{{ .module }}/{{.nameLower}}/api/{{ .version }}";
 {{ if or .generateTargetRef (or .generateTo .generateFrom) }}
 import "common/v1alpha1/targetref.proto";
 {{- end}}
-import "config.proto";
+import "kuma-doc/config.proto";
 
 option (doc.config) = {
   type : Policy,

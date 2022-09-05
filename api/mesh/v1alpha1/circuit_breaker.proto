@@ -8,7 +8,7 @@ import "mesh/options.proto";
 import "mesh/v1alpha1/selector.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
-import "config.proto";
+import "kuma-doc/config.proto";
 
 option (doc.config) = {
   type : Policy,

@@ -8,7 +8,7 @@ docs: helm-docs ## Dev: Generate local documentation
 
 .PHONY: helm-docs
 helm-docs: ## Dev: Runs helm-docs generator
-	$(HELM_DOCS_PATH) -s="file" --chart-search-root=./deployments/charts
+	$(HELM_DOCS) -s="file" --chart-search-root=./deployments/charts
 
 .PHONY: docs/install/markdown
 docs/install/markdown: DESTDIR:=$(DESTDIR)/markdown
@@ -25,5 +25,5 @@ docs/install/resources: DESTDIR:=$(DESTDIR)/resources
 docs/install/resources: ## Generate Mesh API reference
 	mkdir -p $(DESTDIR) && cd api/ && $(PROTOC) \
 		--kumadoc_out=../$(DESTDIR) \
-		--plugin=protoc-gen-kumadoc=$(GOPATH_BIN_DIR)/protoc-gen-kumadoc \
+		--plugin=protoc-gen-kumadoc=$(PROTOC_GEN_KUMADOC) \
 		mesh/v1alpha1/*.proto

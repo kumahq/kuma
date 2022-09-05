@@ -6,7 +6,7 @@ import "mesh/options.proto";
 option go_package = "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1";
 
 import "common/v1alpha1/targetref.proto";
-import "config.proto";
+import "kuma-doc/config.proto";
 
 option (doc.config) = {
   type : Policy,

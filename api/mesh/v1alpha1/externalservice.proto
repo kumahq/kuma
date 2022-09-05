@@ -9,7 +9,7 @@ import "validate/validate.proto";
 import "google/protobuf/wrappers.proto";
 
 import "system/v1alpha1/datasource.proto";
-import "config.proto";
+import "kuma-doc/config.proto";
 
 option (doc.config) = {
   type : Policy,
