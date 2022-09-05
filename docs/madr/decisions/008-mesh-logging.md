@@ -94,6 +94,7 @@ meaning it can have `from`, `to`, or both `from` and `to` sections.
 ```yaml
 type: MeshLogging
 mesh: default
+name: some-logging
 spec:
   targetRef:
     kind: MeshService
@@ -111,6 +112,7 @@ This will log all the inbound traffic from `web-frontend` in `web-backend`.
 ```yaml
 type: MeshLogging
 mesh: default
+name: some-logging
 spec:
   targetRef:
     kind: MeshService
@@ -128,6 +130,7 @@ This will log all the outbound traffic to `web-queue` in `web-backend`.
 ```yaml
 type: MeshLogging
 mesh: default
+name: some-logging
 spec:
   targetRef:
     kind: MeshService
@@ -174,6 +177,7 @@ spec:
 ---
 type: MeshLogging
 mesh: default
+name: some-logging
 spec:
   targetRef:
     kind: MeshService
@@ -230,6 +234,7 @@ spec:
 ---
 type: MeshLogging
 mesh: default
+name: default-logging
 spec:
   targetRef:
     kind: MeshService
@@ -275,6 +280,7 @@ spec:
 --- 
 type: MeshLogging
 mesh: default
+name: some-logging
 spec:
   targetRef:
     kind: MeshService
@@ -393,6 +399,70 @@ It might be worth explicitly pointing out these operators in our docs.
 ## Examples
 
 More full-fledged one using all the options will be described once the desired implementation is chosen.
+
+### Default with override (version for separate entity)
+
+```yaml
+type: MeshLoggingBackend
+name: logstash-backend
+mesh: default
+spec:
+  default:
+    name: logstash
+    type: tcp
+    conf:
+      address: 127.0.0.1:5000
+---
+type: MeshLoggingBackend
+name: file-backend
+mesh: default
+spec:
+  default:
+    name: file
+    type: file
+    conf:
+      path: /tmp/access.log
+---
+type: MeshLogging
+mesh: default
+name: default-logging
+spec:
+  targetRef:
+    kind: Mesh
+    name: default
+  from:
+    - targetRef:
+        kind: Mesh
+        name: default
+      default:
+        backends:
+          - name: logstash
+            type: reference
+  to:
+    - targetRef:
+        kind: Mesh
+        name: default
+      default:
+        backends:
+          - name: logstash
+            type: reference
+---
+type: MeshLogging
+mesh: default
+name: debugging-issue
+spec:
+  targetRef:
+    kind: MeshService
+    name: web-frontend
+  to:
+    - targetRef:
+        kind: MeshService
+        name: web-backend
+      default:
+        backends:
+          - name: file-backend
+            type: reference
+```
 
 ### Apples and oranges 
 
