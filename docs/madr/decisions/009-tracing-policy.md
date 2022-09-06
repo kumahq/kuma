@@ -174,7 +174,7 @@ trace a maximum of 80% of traffic and adds the custom tag `team` with a value of
 
 ```yaml
 apiVersion: kuma.io/v1alpha1
-kind: TrafficLog
+kind: Tracing
 metadata:
   name: all
   labels:
