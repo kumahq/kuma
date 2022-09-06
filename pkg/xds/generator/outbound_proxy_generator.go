@@ -216,7 +216,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 							clusterTags,
 						))
 				} else {
-					endpoints := proxy.Routing.OutboundTargets[serviceName]
+					endpoints := proxy.Routing.ExternalServiceOutboundTargets[serviceName]
 					isIPv6 := proxy.Dataplane.IsIPv6()
 
 					edsClusterBuilder.
@@ -315,6 +315,8 @@ func (OutboundProxyGenerator) inferProtocol(proxy *model.Proxy, clusters []envoy
 		serviceName := cluster.Tags()[mesh_proto.ServiceTag]
 		endpoints := model.EndpointList(proxy.Routing.OutboundTargets[serviceName])
 		allEndpoints = append(allEndpoints, endpoints...)
+		endpoints = proxy.Routing.ExternalServiceOutboundTargets[serviceName]
+		allEndpoints = append(allEndpoints, endpoints...)
 	}
 	return InferServiceProtocol(allEndpoints)
 }
@@ -367,6 +369,9 @@ func (OutboundProxyGenerator) determineRoutes(
 			var isExternalService bool
 			if endpoints := proxy.Routing.OutboundTargets[service]; len(endpoints) > 0 {
 				isExternalService = endpoints[0].IsExternalService()
+			}
+			if endpoints := proxy.Routing.ExternalServiceOutboundTargets[service]; len(endpoints) > 0 {
+				isExternalService = true
 			}
 
 			cluster := envoy_common.NewCluster(
