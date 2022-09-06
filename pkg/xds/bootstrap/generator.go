@@ -145,7 +145,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		if dataplane.Spec.IsBuiltinGateway() {
 			params.IsGatewayDataplane = true
 		}
-
+		kumaDpBootstrap.NetworkingConfig.IsUsingTransparentProxy = dataplane.IsUsingTransparentProxy()
 		params.Service = dataplane.Spec.GetIdentifyingService()
 		setAdminPort(dataplane.Spec.GetNetworking().GetAdmin().GetPort())
 

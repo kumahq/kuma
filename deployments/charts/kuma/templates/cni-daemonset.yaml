@@ -18,13 +18,13 @@ spec:
       labels:
       {{- include "kuma.cniSelectorLabels" . | nindent 8 }}
       annotations:
-        # This, along with the CriticalAddonsOnly toleration below,
-        # marks the pod as a critical add-on, ensuring it gets
-        # priority scheduling and that its resources are reserved
-        # if it ever gets evicted.
-        scheduler.alpha.kubernetes.io/critical-pod: ''
         checksum/config: {{ include (print $.Template.BasePath "/cni-configmap.yaml") . | sha256sum }}
     spec:
+      # This, along with the CriticalAddonsOnly toleration below,
+      # marks the pod as a critical add-on, ensuring it gets
+      # priority scheduling and that its resources are reserved
+      # if it ever gets evicted.
+      priorityClassName: system-cluster-critical
       {{- with .Values.cni.nodeSelector }}
       nodeSelector:
       {{ toYaml . | nindent 8 }}
@@ -39,7 +39,6 @@ spec:
           operator: Exists
         - effect: NoExecute
           operator: Exists
-      priorityClassName: system-cluster-critical
       serviceAccountName: {{ include "kuma.name" . }}-cni
       # Minimize downtime during a rolling upgrade or deletion; tell Kubernetes to do a "force
       # deletion": https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods.

@@ -6,11 +6,6 @@ COVERAGE_PROFILE_FILENAME := coverage.out
 COVERAGE_PROFILE := $(REPORTS_DIR)/$(COVERAGE_PROFILE_FILENAME)
 COVERAGE_REPORT_HTML := $(REPORTS_DIR)/coverage.html
 
-# This environment variable sets where the kubebuilder envtest framework looks
-# for etcd and other tools that is consumes. The `dev/install/kubebuilder` make
-# target guaranteed to link these tools into $CI_TOOLS_DIR.
-export KUBEBUILDER_ASSETS=$(CI_TOOLS_DIR)
-
 GINKGO_TEST_FLAGS += -p --keep-going \
 	--keep-separate-reports \
 	--junit-report results.xml
@@ -23,15 +18,15 @@ GINKGO_UNIT_TEST_FLAGS ?= \
 	--skip-package ./test,./pkg/transparentproxy/istio/tools --race \
 	--cover --covermode atomic --coverpkg ./... --coverprofile $(COVERAGE_PROFILE_FILENAME)
 
-GINKGO_TEST:=$(GOPATH_BIN_DIR)/ginkgo $(GOFLAGS) $(LD_FLAGS) $(GINKGO_TEST_FLAGS)
+GINKGO_TEST:=$(GINKGO) $(GOFLAGS) $(LD_FLAGS) $(GINKGO_TEST_FLAGS)
 
 .PHONY: test
 test:
-	TMPDIR=/tmp UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) go test $(GOFLAGS) $(LD_FLAGS) -race $$(go list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "pkg/transparentproxy/istio/tools")
+	KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) TMPDIR=/tmp UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) go test $(GOFLAGS) $(LD_FLAGS) -race $$(go list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "pkg/transparentproxy/istio/tools")
 
 .PHONY: test-with-reports
 test-with-reports: ${COVERAGE_PROFILE} ## Dev: Run tests for all modules
-	TMPDIR=/tmp UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) $(GINKGO_TEST) $(GINKGO_UNIT_TEST_FLAGS) $(TEST_PKG_LIST)
+	KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) TMPDIR=/tmp UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) $(GINKGO_TEST) $(GINKGO_UNIT_TEST_FLAGS) $(TEST_PKG_LIST)
 	$(MAKE) coverage
 
 ${COVERAGE_PROFILE}:

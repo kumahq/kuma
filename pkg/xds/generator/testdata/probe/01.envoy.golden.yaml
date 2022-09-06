@@ -23,8 +23,9 @@ resources:
               routes:
               - match:
                   headers:
-                  - exactMatch: GET
-                    name: :method
+                  - name: :method
+                    stringMatch:
+                      exact: GET
                   path: /8080/healthz/probe
                 route:
                   cluster: localhost:8080

@@ -53,14 +53,14 @@ generate/policy/%: generate/schema/%
 
 generate/schema/%: generate/controller-gen/%
 	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \
-		tools/policy-gen/crd-extract-openapi.sh $* $$version ; \
+		PATH=$(CI_TOOLS_BIN_DIR):$$PATH tools/policy-gen/crd-extract-openapi.sh $* $$version ; \
 	done
 
 generate/policy-import:
 	tools/policy-gen/generate-policy-import.sh $(policies)
 
 generate/policy-helm:
-	tools/policy-gen/generate-policy-helm.sh $(policies)
+	PATH=$(CI_TOOLS_BIN_DIR):$$PATH tools/policy-gen/generate-policy-helm.sh $(policies)
 
 generate/controller-gen/%: generate/kumapolicy-gen/%
 	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \
@@ -70,13 +70,10 @@ generate/controller-gen/%: generate/kumapolicy-gen/%
 
 generate/kumapolicy-gen/%: generate/dirs/%
 	cd tools/policy-gen/protoc-gen-kumapolicy && go build && cd - ; \
-	$(PROTOC) \
+	$(PROTOC_GO) \
 		--proto_path=./api \
 		--kumapolicy_opt=endpoints-template=tools/policy-gen/templates/endpoints.yaml \
 		--kumapolicy_out=$(POLICIES_DIR)/$* \
-		--go_out=$(go_mapping):. \
-		--go_opt=paths=source_relative \
-		--go-grpc_out=$(go_mapping):. \
 		--plugin=protoc-gen-kumapolicy=tools/policy-gen/protoc-gen-kumapolicy/protoc-gen-kumapolicy \
 		$(POLICIES_DIR)/$*/api/*/*.proto ; \
 	rm tools/policy-gen/protoc-gen-kumapolicy/protoc-gen-kumapolicy ; \
@@ -99,20 +96,6 @@ generate/builtin-crds:
 crd/controller-gen:
 	$(CONTROLLER_GEN) "crd:crdVersions=v1" paths=$(IN_CRD) output:crd:artifacts:config=$(OUT_CRD)
 	$(CONTROLLER_GEN) object:headerFile=./tools/policy-gen/boilerplate.go.txt,year=$$(date +%Y) paths=$(IN_CRD)
-
-
-KUMA_GUI_GIT_URL=https://github.com/kumahq/kuma-gui.git
-KUMA_GUI_VERSION=master
-KUMA_GUI_FOLDER=app/kuma-ui/pkg/resources/data
-KUMA_GUI_WORK_FOLDER=app/kuma-ui/data/work
-
-.PHONY: upgrade/gui
-upgrade/gui:
-	rm -rf $(KUMA_GUI_WORK_FOLDER)
-	git clone --depth 1 -b $(KUMA_GUI_VERSION) $(KUMA_GUI_GIT_URL) $(KUMA_GUI_WORK_FOLDER)
-	cd $(KUMA_GUI_WORK_FOLDER) && yarn install && yarn build
-	rm -rf $(KUMA_GUI_FOLDER) && mv $(KUMA_GUI_WORK_FOLDER)/dist/ $(KUMA_GUI_FOLDER)
-	rm -rf $(KUMA_GUI_WORK_FOLDER)
 
 .PHONY: generate/envoy-imports
 generate/envoy-imports:

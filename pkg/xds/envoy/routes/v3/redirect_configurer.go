@@ -2,6 +2,7 @@ package v3
 
 import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 )
 
 type RedirectConfigurer struct {
@@ -14,11 +15,16 @@ type RedirectConfigurer struct {
 func (c RedirectConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
 	var headersMatcher []*envoy_route.HeaderMatcher
 	if c.AllowGetOnly {
+		matcher := envoy_type_matcher.StringMatcher{
+			MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+				Exact: "GET",
+			},
+		}
 		headersMatcher = []*envoy_route.HeaderMatcher{
 			{
 				Name: ":method",
-				HeaderMatchSpecifier: &envoy_route.HeaderMatcher_ExactMatch{
-					ExactMatch: "GET",
+				HeaderMatchSpecifier: &envoy_route.HeaderMatcher_StringMatch{
+					StringMatch: &matcher,
 				},
 			},
 		}

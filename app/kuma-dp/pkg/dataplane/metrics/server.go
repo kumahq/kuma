@@ -53,32 +53,32 @@ type ApplicationToScrape struct {
 }
 
 type Hijacker struct {
-	socketPath                     string
-	upstreamOverrideHttpClientIPv4 http.Client
-	upstreamOverrideHttpClientIPv6 http.Client
-	applicationsToScrape           []ApplicationToScrape
+	socketPath           string
+	httpClientIPv4       http.Client
+	httpClientIPv6       http.Client
+	applicationsToScrape []ApplicationToScrape
 }
 
-func New(dataplane kumadp.Dataplane, applicationsToScrape []ApplicationToScrape) *Hijacker {
+func createHttpClient(isUsingTransparentProxy bool, sourceAddress *net.TCPAddr) http.Client {
 	// we need this in case of not localhost requests, it returns fast in iptabels
-	dialerV4 := &net.Dialer{
-		LocalAddr: inPassThroughIPv4,
+	if isUsingTransparentProxy {
+		dialer := &net.Dialer{
+			LocalAddr: sourceAddress,
+		}
+		return http.Client{
+			Transport: &http.Transport{
+				DialContext: dialer.DialContext,
+			},
+		}
 	}
-	dialerV6 := &net.Dialer{
-		LocalAddr: inPassThroughIPv6,
-	}
+	return http.Client{}
+}
+
+func New(dataplane kumadp.Dataplane, applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool) *Hijacker {
 	return &Hijacker{
-		socketPath: envoy.MetricsHijackerSocketName(dataplane.Name, dataplane.Mesh),
-		upstreamOverrideHttpClientIPv4: http.Client{
-			Transport: &http.Transport{
-				DialContext: dialerV4.DialContext,
-			},
-		},
-		upstreamOverrideHttpClientIPv6: http.Client{
-			Transport: &http.Transport{
-				DialContext: dialerV6.DialContext,
-			},
-		},
+		socketPath:           envoy.MetricsHijackerSocketName(dataplane.Name, dataplane.Mesh),
+		httpClientIPv4:       createHttpClient(isUsingTransparentProxy, inPassThroughIPv4),
+		httpClientIPv6:       createHttpClient(isUsingTransparentProxy, inPassThroughIPv6),
 		applicationsToScrape: applicationsToScrape,
 	}
 }
@@ -189,12 +189,12 @@ func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app Appl
 	req = req.WithContext(ctx)
 	var resp *http.Response
 	if app.IsIPv6 {
-		resp, err = s.upstreamOverrideHttpClientIPv6.Do(req)
+		resp, err = s.httpClientIPv6.Do(req)
 		if err == nil {
 			defer resp.Body.Close()
 		}
 	} else {
-		resp, err = s.upstreamOverrideHttpClientIPv4.Do(req)
+		resp, err = s.httpClientIPv4.Do(req)
 		if err == nil {
 			defer resp.Body.Close()
 		}

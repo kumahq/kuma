@@ -230,7 +230,11 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			components = append(components, dataplane)
-			metricsServer := metrics.New(cfg.Dataplane, getApplicationsToScrape(kumaSidecarConfiguration, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()))
+			metricsServer := metrics.New(
+				cfg.Dataplane,
+				getApplicationsToScrape(kumaSidecarConfiguration, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()),
+				kumaSidecarConfiguration.Networking.IsUsingTransparentProxy,
+			)
 			components = append(components, metricsServer)
 
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {

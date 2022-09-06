@@ -25,7 +25,7 @@ require (
 	github.com/google/go-cmp v0.5.8
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/gruntwork-io/terratest v0.40.20
+	github.com/gruntwork-io/terratest v0.40.21
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kumahq/kuma-net v0.5.0
@@ -34,7 +34,7 @@ require (
 	github.com/miekg/dns v1.1.50
 	github.com/natefinch/atomic v1.0.1
 	github.com/onsi/ginkgo/v2 v2.1.6
-	github.com/onsi/gomega v1.20.1
+	github.com/onsi/gomega v1.20.2
 	github.com/operator-framework/operator-lib v0.11.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
@@ -201,17 +201,3 @@ require (
 )
 
 replace sigs.k8s.io/gateway-api => github.com/kumahq/gateway-api v0.0.0-20220822185518-e8a3f0be778b
-
-// The following replacement refers to the kuma-release-1.3 branch.
-//
-// There are a few Go module traps to be aware of when dealing with
-// this replacement:
-//
-//	https://github.com/golang/go/issues/32955
-//	https://github.com/golang/go/issues/45413
-//
-// To force Go tooling to update the Git hash of the branch you need to
-// work around the module caching system by doing this:
-//
-//	$ go mod edit -replace github.com/envoyproxy/go-control-plane=github.com/kumahq/go-control-plane@channel-increased-capacity
-//	$ GOPRIVATE=github.com/kumahq/go-control-plane go mod tidy
