@@ -1,4 +1,4 @@
-# MeshLogging
+# MeshAccessLog
 
 * Status: accepted
 
@@ -8,22 +8,30 @@ Technical Story: https://github.com/kumahq/kuma/issues/4733
 
 [New policy matching MADR](./005-policy-matching.md) introduces a new approach how Kuma applies configuration to proxies.
 Rolling out strategy implies creating a new set of policies that satisfy a new policy matching.
-Current MADR aims to define a `MeshLogging`.
+Current MADR aims to define a `MeshAccessLog`.
 
 # Considered Options
 
-* Create a MeshLogging policy:
-  * Keep backends in the `Mesh` resource for now, move them into `MeshLoggingBackend` policy in the future.
-  * Move backend to the `MeshLoggingBackend` policy now.
-  * Embed backend in `MeshLogging` policy.
+* Create a MeshAccessLog policy:
+  * Move backend to the `MeshAccessLogBackend` policy now and allow inlining in the `MeshAccessLog` policy itself.
+  * Move backend to the `MeshAccessLogBackend` policy now.
+  * Keep backends in the `Mesh` resource for now, move them into `MeshAccessLogBackend` policy in the future.
+  * Embed backend in `MeshAccessLog` policy.
 
 # Decision Outcome
 
-To be determined.
+Move backend to the `MeshAccessLogBackend` policy now and allow inlining in the logging policy itself.
+
+## Decision Drivers
+
+* Being able to assign RBAC permissions to an observability role
+(if it was in the `Mesh` object then the "observability" role would have full `Mesh` permissions).
+* The option to inline gives more flexibility and is easier to apply one policy than two.
+* Moving the policy now minimises the work needed in the future.
 
 ## Overview
 
-MeshLogging allows users to log incoming and outgoing traffic for services.
+`MeshAccessLog` allows users to log incoming and outgoing traffic for services.
 This feature is useful in the following scenarios:
 * Auditing - services that contain important data might want to log access to its resources for auditing purposes.
 * Debugging - an engineer might want to see traffic going in/out of a service to debug misbehaviour.
@@ -33,15 +41,29 @@ This feature is useful in the following scenarios:
 
 ### Naming
 
+#### Policy
+
+During the video meeting we decided on `MeshAccessLog`.
+
+##### Decision Drivers
+
+* Matches the Envoy naming.
+
+##### Alternatives considered
+
 During the weekly meeting we started talking about the appropriate name for this policy, here are the names mentioned:
-- `MeshAccessLog`
+
+- `MeshLogging`
 - `MeshLog`
 - `MeshTrafficLog`
 - `TrafficLogging`
 - `Logging`
-- `MeshLogging`
+- `MeshAccessLog`
 
-Please vote on your preferred name in the comments. Feel free to edit this document and add your suggestions.
+#### Backend
+
+During the video meeting we decided on `GlobalAccessLogBackend` for the global scoped policy
+and `MeshAccessLogBackend` for the `Mesh` scoped one.
 
 ### Matching
 
@@ -86,13 +108,13 @@ and it can only have `to` (`from` always goes from the application).
 
 ### Examples
 
-MeshLogging can be an `inbound`, or `outbound` or `inbound/outbound` policy
+`MeshAccessLog` can be an `inbound`, or `outbound` or `inbound/outbound` policy
 meaning it can have `from`, `to`, or both `from` and `to` sections.
 
 #### Only inbound
 
 ```yaml
-type: MeshLogging
+type: MeshAccessLog
 mesh: default
 name: some-logging
 spec:
@@ -110,7 +132,7 @@ This will log all the inbound traffic from `web-frontend` in `web-backend`.
 #### Only outbound
 
 ```yaml
-type: MeshLogging
+type: MeshAccessLog
 mesh: default
 name: some-logging
 spec:
@@ -128,7 +150,7 @@ This will log all the outbound traffic to `web-queue` in `web-backend`.
 #### Both inbound and outbound
 
 ```yaml
-type: MeshLogging
+type: MeshAccessLog
 mesh: default
 name: some-logging
 spec:
@@ -147,11 +169,65 @@ spec:
 
 This will log all the inbound traffic from `web-frontend` and outbound traffic to `web-queue` in `web-backend`.
 
+#### Global scoped version
+
+A global scoped version will be named `GlobalAccessLogBackend`, it has the same properties, but it does not have a `mesh` property.
+
 ### Backends
 
-#### Keep backends in the `Mesh` resource for now, move them into `MeshLoggingBackend` policy in the future
+#### Move backend to the `MeshAccessLogBackend` policy now and allow inlining in the `MeshAccessLog` policy itself.
 
-For now new Policy `MeshLogging` will reuse the backend definitions from `Mesh`.
+This is a hybrid of the approaches mentioned below.
+
+```yaml
+type: MeshAccessLogBackend # mesh scoped
+name: file-backend
+mesh: default
+spec:
+  name: file
+  type: file
+  conf:
+    path: /tmp/access.log
+---
+type: MeshAccessLog
+mesh: default
+name: some-logging
+spec:
+  targetRef:
+    kind: MeshService
+    name: web-backend
+    tags:
+      kuma.io/zone: us-east
+  from:
+    - targetRef:
+        kind: MeshService
+        name: web-frontend
+      default:
+        backends:
+          - type: tcp
+            conf:
+              address: 127.0.0.1:5000
+          - type: reference
+            conf: 
+              kind: MeshAccessLogBackend
+              name: file-backend
+```
+
+##### Positive Consequences
+
+* Being able to assign RBAC permissions to an observability role.
+* The option to inline gives more flexibility and is easier to apply one policy than two.
+* Moving the policy now minimises the work needed in the future.
+
+##### Negative Consequences
+
+* Multiple ways to do the same thing, we need to make sure to clearly document which approach is best for which use case.
+
+#### Alternatives considered
+
+##### Keep backends in the `Mesh` resource for now, move them into `MeshAccessLogBackend` policy in the future
+
+For now new Policy `MeshAccessLog` will reuse the backend definitions from `Mesh`.
 
 ```yaml
 apiVersion: kuma.io/v1alpha1
@@ -160,11 +236,11 @@ metadata:
   name: default
 spec:
   logging:
-    # MeshLogging policies may leave the `backend` field undefined.
+    # MeshAccessLog policies may leave the `backend` field undefined.
     # In that case the logs will be forwarded into the `defaultBackend` of that Mesh.
     defaultBackend: file
     # List of logging backends that can be referred to by name
-    # from MeshLogging policies of that Mesh.
+    # from MeshAccessLog policies of that Mesh.
     backends:
       - name: logstash
         type: tcp
@@ -175,7 +251,7 @@ spec:
         conf:
           path: /tmp/access.log
 ---
-type: MeshLogging
+type: MeshAccessLog
 mesh: default
 name: some-logging
 spec:
@@ -192,27 +268,27 @@ spec:
             type: reference # this is the default and only supported value atm, people can ignore this
 ```
 
-In the future we will introduce `MeshLoggingBackend` policy that would hold that data.
+In the future we will introduce `MeshAccessLogBackend` policy that would hold that data.
 Definitions there will have precedence over definitions in `Mesh`.
-In the future the user will re-create (or maybe we could do this automatically) equivalent `MeshLoggingBackend` policies.
+In the future the user will re-create (or maybe we could do this automatically) equivalent `MeshAccessLogBackend` policies.
 
-##### Positive Consequences 
+###### Positive Consequences 
 
 * Easier to implement.
 
-##### Negative Consequences
+###### Negative Consequences
 
 * Possibly more work for the user in the future.
 * It's impossible to create an observability role using RBAC.
 You need to give access to the whole mesh to such a person.
 
-#### Move backend to the `MeshLoggingBackend` policy now
+##### Move backend to the `MeshAccessLogBackend` policy now
 
-Moving backend to a new policy called `MeshLoggingBackend` immediately.
+Moving backend to a new policy called `MeshAccessLogBackend` immediately.
 That policy would be neither `inbound` nor `outbound` it would just store backend definitions.
 
 ```yaml
-type: MeshLoggingBackend
+type: MeshAccessLogBackend
 name: logstash-backend
 mesh: default
 spec:
@@ -222,7 +298,7 @@ spec:
     conf:
       address: 127.0.0.1:5000
 ---
-type: MeshLoggingBackend
+type: MeshAccessLogBackend
 name: file-backend
 mesh: default
 spec:
@@ -232,7 +308,7 @@ spec:
     conf:
       path: /tmp/access.log
 ---
-type: MeshLogging
+type: MeshAccessLog
 mesh: default
 name: default-logging
 spec:
@@ -249,19 +325,19 @@ spec:
             type: reference
 ```
 
-##### Positive Consequences
+###### Positive Consequences
 
 * Less duplication.
 
-##### Negative Consequences
+###### Negative Consequences
 
 * New policies for users to understand.
 * More fragmentation.
 * Possibly more work to implement.
 
-#### Embed backend in `MeshLogging` policy
+##### Embed backend in `MeshAccessLog` policy
 
-Another option would be to embed `backend` field inside the `MeshLogging` policy,
+Another option would be to embed `backend` field inside the `MeshAccessLog` policy,
 but still have the possibility to reference a backend defined in a `Mesh`.
 
 ```yaml
@@ -278,7 +354,7 @@ spec:
         conf:
           address: 127.0.0.1:5000
 --- 
-type: MeshLogging
+type: MeshAccessLog
 mesh: default
 name: some-logging
 spec:
@@ -301,13 +377,14 @@ spec:
             name: aBackendDefinedInMesh
 ```
 
-##### Positive Consequences
+###### Positive Consequences
 
 * More flexibility.
 
-##### Negative Consequences
+###### Negative Consequences
 
 * Multiple ways to do the same thing, might confuse users without clear documentation on which approach is best for which use case.
+* 
 
 ### Other configuration options
 
@@ -321,7 +398,8 @@ or not (a file will accept anything text-like), so for this reason we're leaving
 The current support of the format is just a plain string.
 To be more user-friendly to the users of JSON format we could leverage Envoy's [json_format](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/substitution_format_string.proto.html?highlight=json_format).
 
-To keep backward compatibility the current structure:
+We decided to have backend in a separate entity, so we don't have to keep backwards compatibility.
+This structure **will no longer** be accepted in the new policy:
 
 ```yaml
 backends:
@@ -329,7 +407,7 @@ backends:
     format: '{"start_time": "%START_TIME%"}' # implicit type=string
 ```
 
-Would be equivalent to:
+New definition will look like this:
 
 ```yaml
 backends:
@@ -347,7 +425,39 @@ backends:
     format:
       type: json
       value:
-        start_time: "%START_TIME%"
+        - key: "start_time"
+          value: "%START_TIME%"
+```
+
+The corresponding OpenAPI v3 schema looks like this:
+
+```yaml
+components:
+  schemas:
+    Backend:
+      type: object
+      properties:
+        name:
+          type: string
+        format:
+          type: object
+          properties:
+            type:
+              type: string
+              enum:
+              - string
+              - json
+            value:
+              oneOf:
+              - type: array
+                items:
+                  type: object
+                  properties: 
+                    key:
+                      type: string
+                    value:
+                      type: string
+              - type: string
 ```
 
 ###### Positive Consequences
@@ -396,6 +506,57 @@ there is no new features for gRPC apart from operators that already existed
 `GRPC_STATUS_NUMBER` - introduced [4 months ago](https://github.com/envoyproxy/envoy/blame/main/docs/root/configuration/observability/access_log/usage.rst#L598)).
 It might be worth explicitly pointing out these operators in our docs.
 
+### Considered Options
+
+#### Additional filtering
+
+For now, we're not implementing filtering options,
+but they are likely to be needed for this feature to be useful.
+Additional filtering could be implemented as a separate property near the backend:
+
+```yaml
+...
+      default:
+        filtering:
+          headers:
+            ":status": 
+              op: "eq"
+              value": "500" # only log requests with status code 500
+        backends:
+...
+```
+
+So the whole policy would look like this:
+
+```yaml
+type: MeshAccessLog
+mesh: default
+name: some-logging
+spec:
+  targetRef:
+    kind: MeshService
+    name: web-backend
+    tags:
+      kuma.io/zone: us-east
+  from:
+    - targetRef:
+        kind: MeshService
+        name: web-frontend
+      default:
+        filtering:
+          headers:
+            ":status":
+              op: "eq"
+              value": "500"
+        backends:
+          - name: logstash
+            type: tcp
+            conf:
+              address: 127.0.0.1:5000
+          - type: reference
+            name: aBackendDefinedInMesh
+```
+
 ## Examples
 
 More full-fledged one using all the options will be described once the desired implementation is chosen.
@@ -403,7 +564,7 @@ More full-fledged one using all the options will be described once the desired i
 ### Default with override (version for separate entity)
 
 ```yaml
-type: MeshLoggingBackend
+type: MeshAccessLogBackend
 name: logstash-backend
 mesh: default
 spec:
@@ -413,7 +574,7 @@ spec:
     conf:
       address: 127.0.0.1:5000
 ---
-type: MeshLoggingBackend
+type: MeshAccessLogBackend
 name: file-backend
 mesh: default
 spec:
@@ -423,7 +584,7 @@ spec:
     conf:
       path: /tmp/access.log
 ---
-type: MeshLogging
+type: MeshAccessLog
 mesh: default
 name: default-logging
 spec:
@@ -447,7 +608,7 @@ spec:
           - name: logstash
             type: reference
 ---
-type: MeshLogging
+type: MeshAccessLog
 mesh: default
 name: debugging-issue
 spec:
@@ -518,7 +679,7 @@ spec:
         conf:
           address: 127.0.0.2:5000
 ---
-type: MeshLogging
+type: MeshAccessLog
 mesh: default
 name: log-zone-a
 spec:
@@ -534,7 +695,7 @@ spec:
         backends:
           - name: logstash-zone-a
 ---
-type: MeshLogging
+type: MeshAccessLog
 mesh: default
 name: log-zone-b
 spec:
@@ -554,7 +715,7 @@ spec:
 #### Embedded
 
 ```yaml
-type: MeshLogging
+type: MeshAccessLog
 mesh: default
 name: log-zone-a
 spec:
@@ -573,7 +734,7 @@ spec:
             conf:
               address: 127.0.0.1:5000
 ---
-type: MeshLogging
+type: MeshAccessLog
 mesh: default
 name: log-zone-b
 spec:
@@ -592,3 +753,4 @@ spec:
             conf:
               address: 127.0.0.2:5000
 ```
+
