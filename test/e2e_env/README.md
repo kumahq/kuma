@@ -30,5 +30,5 @@ Every test suite should run in their own mesh and namespace to not interfere wit
 
 ## Limitations
 
-* (Universal) Getting logs in the test is currently not supported.
+* (Universal) Getting logs in the test is currently not supported. https://github.com/kumahq/kuma/issues/4187
 * (Universal) UniversalCluster#apps is not shared across parallelized processes.
