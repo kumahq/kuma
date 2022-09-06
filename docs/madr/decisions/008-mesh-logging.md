@@ -292,21 +292,19 @@ type: MeshAccessLogBackend
 name: logstash-backend
 mesh: default
 spec:
-  default:
-    name: logstash
-    type: tcp
-    conf:
-      address: 127.0.0.1:5000
+  name: logstash
+  type: tcp
+  conf:
+    address: 127.0.0.1:5000
 ---
 type: MeshAccessLogBackend
 name: file-backend
 mesh: default
 spec:
-  default:
-    name: file
-    type: file
-    conf:
-      path: /tmp/access.log
+  name: file
+  type: file
+  conf:
+    path: /tmp/access.log
 ---
 type: MeshAccessLog
 mesh: default
@@ -559,8 +557,6 @@ spec:
 
 ## Examples
 
-More full-fledged one using all the options will be described once the desired implementation is chosen.
-
 ### Default with override (version for separate entity)
 
 ```yaml
@@ -568,21 +564,19 @@ type: MeshAccessLogBackend
 name: logstash-backend
 mesh: default
 spec:
-  default:
-    name: logstash
-    type: tcp
-    conf:
-      address: 127.0.0.1:5000
+  name: logstash
+  type: tcp
+  conf:
+    address: 127.0.0.1:5000
 ---
 type: MeshAccessLogBackend
 name: file-backend
 mesh: default
 spec:
-  default:
-    name: file
-    type: file
-    conf:
-      path: /tmp/access.log
+  name: file
+  type: file
+  conf:
+    path: /tmp/access.log
 ---
 type: MeshAccessLog
 mesh: default
@@ -597,16 +591,20 @@ spec:
         name: default
       default:
         backends:
-          - name: logstash
-            type: reference
+          - type: reference
+            conf:
+              kind: MeshAccessLogBackend
+              name: logstash-backend
   to:
     - targetRef:
         kind: Mesh
         name: default
       default:
         backends:
-          - name: logstash
-            type: reference
+          - type: reference
+            conf:
+              kind: MeshAccessLogBackend
+              name: logstash-backend
 ---
 type: MeshAccessLog
 mesh: default
@@ -621,8 +619,10 @@ spec:
         name: web-backend
       default:
         backends:
-          - name: file-backend
-            type: reference
+          - type: reference
+            conf:
+              kind: MeshAccessLogBackend
+              name: file-backend
 ```
 
 ### Apples and oranges 
@@ -640,9 +640,9 @@ spec:
 ```
 
 ```yaml
-type: TrafficLog
-mesh: mesh-1
-name: tl-1
+type: MeshAccessLog
+mesh: default
+name: some-logging
 spec:
   targetRef:
     kind: MeshHTTPRoute
@@ -652,7 +652,9 @@ spec:
         kind: Mesh
       default:
         backends:
-          - name: file
+          - type: tcp
+            conf:
+              address: 127.0.0.1:5000
 ```
 
 Outcome:
@@ -663,21 +665,23 @@ Outcome:
 #### In mesh
 
 ```yaml
-apiVersion: kuma.io/v1alpha1
-kind: Mesh
-metadata:
-  name: default
+type: MeshAccessLogBackend
+name: logstash-backend
+mesh: default
 spec:
-  logging:
-    backends:
-      - name: logstash-zone-a
-        type: tcp
-        conf:
-          address: 127.0.0.1:5000
-      - name: logstash-zone-b
-        type: tcp
-        conf:
-          address: 127.0.0.2:5000
+  name: logstash-zone-a
+  type: tcp
+  conf:
+    address: 127.0.0.1:5000
+---
+type: MeshAccessLogBackend
+name: file-backend
+mesh: default
+spec:
+  name: logstash-zone-b
+  type: tcp
+  conf:
+    address: 127.0.0.2:5000
 ---
 type: MeshAccessLog
 mesh: default
@@ -693,7 +697,10 @@ spec:
         name: default
       default:
         backends:
-          - name: logstash-zone-a
+          - type: reference
+            conf:
+              kind: MeshAccessLogBackend
+              name: logstash-zone-a
 ---
 type: MeshAccessLog
 mesh: default
@@ -709,48 +716,8 @@ spec:
         name: default
       default:
         backends:
-          - name: logstash-zone-b
-```
-
-#### Embedded
-
-```yaml
-type: MeshAccessLog
-mesh: default
-name: log-zone-a
-spec:
-  targetRef:
-    kind: MeshSubset
-    tags:
-      kuma.io/zone: zone-a
-  from:
-    - targetRef:
-        kind: Mesh
-        name: default
-      default:
-        backends:
-          - name: logstash-zone-a
-            type: tcp
+          - type: reference
             conf:
-              address: 127.0.0.1:5000
----
-type: MeshAccessLog
-mesh: default
-name: log-zone-b
-spec:
-  targetRef:
-    kind: MeshSubset
-    tags:
-      kuma.io/zone: zone-b
-  from:
-    - targetRef:
-        kind: Mesh
-        name: default
-      default:
-        backends:
-          - name: logstash-zone-b
-            type: tcp
-            conf:
-              address: 127.0.0.2:5000
+              kind: MeshAccessLogBackend
+              name: logstash-zone-b
 ```
-
