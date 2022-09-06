@@ -19,6 +19,8 @@ import (
 	. "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
+	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
@@ -26,7 +28,7 @@ import (
 var _ = Describe("Remote Bootstrap", func() {
 	type testCase struct {
 		config                   kuma_dp.Config
-		dataplane                *rest.Resource
+		dataplane                rest.Resource
 		dynamicMetadata          map[string]string
 		expectedBootstrapRequest string
 		sidecarConfiguration     *types.KumaSidecarConfiguration
@@ -95,8 +97,8 @@ var _ = Describe("Remote Bootstrap", func() {
 				return testCase{
 					config:               cfg,
 					sidecarConfiguration: &types.KumaSidecarConfiguration{},
-					dataplane: &rest.Resource{
-						Meta: rest.ResourceMeta{
+					dataplane: &unversioned.Resource{
+						Meta: rest_v1alpha1.ResourceMeta{
 							Type: "Dataplane",
 							Mesh: "demo",
 							Name: "sample",
@@ -148,8 +150,8 @@ var _ = Describe("Remote Bootstrap", func() {
 				return testCase{
 					config:               cfg,
 					sidecarConfiguration: &types.KumaSidecarConfiguration{},
-					dataplane: &rest.Resource{
-						Meta: rest.ResourceMeta{
+					dataplane: &unversioned.Resource{
+						Meta: rest_v1alpha1.ResourceMeta{
 							Type: "Dataplane",
 							Mesh: "demo",
 							Name: "sample",
@@ -197,8 +199,8 @@ var _ = Describe("Remote Bootstrap", func() {
 				return testCase{
 					config:               cfg,
 					sidecarConfiguration: &types.KumaSidecarConfiguration{},
-					dataplane: &rest.Resource{
-						Meta: rest.ResourceMeta{
+					dataplane: &unversioned.Resource{
+						Meta: rest_v1alpha1.ResourceMeta{
 							Type: "Dataplane",
 							Mesh: "demo",
 							Name: "sample",
@@ -244,8 +246,8 @@ var _ = Describe("Remote Bootstrap", func() {
 				return testCase{
 					config:               cfg,
 					sidecarConfiguration: &types.KumaSidecarConfiguration{},
-					dataplane: &rest.Resource{
-						Meta: rest.ResourceMeta{
+					dataplane: &unversioned.Resource{
+						Meta: rest_v1alpha1.ResourceMeta{
 							Type: "Dataplane",
 							Mesh: "demo",
 							Name: "sample",
@@ -329,8 +331,8 @@ var _ = Describe("Remote Bootstrap", func() {
 		// when
 		cfg := kuma_dp.DefaultConfig()
 		params := BootstrapParams{
-			Dataplane: &rest.Resource{
-				Meta: rest.ResourceMeta{
+			Dataplane: &unversioned.Resource{
+				Meta: rest_v1alpha1.ResourceMeta{
 					Type: "Dataplane",
 					Mesh: "demo",
 					Name: "sample",
@@ -391,8 +393,8 @@ var _ = Describe("Remote Bootstrap", func() {
 		cfg := kuma_dp.DefaultConfig()
 		cfg.ControlPlane.Retry.Backoff = 10 * time.Millisecond
 		params := BootstrapParams{
-			Dataplane: &rest.Resource{
-				Meta: rest.ResourceMeta{
+			Dataplane: &unversioned.Resource{
+				Meta: rest_v1alpha1.ResourceMeta{
 					Type: "Dataplane",
 					Mesh: "default",
 					Name: "dp-1",
@@ -426,8 +428,8 @@ var _ = Describe("Remote Bootstrap", func() {
 		config.ControlPlane.Retry.Backoff = 10 * time.Millisecond
 		config.ControlPlane.Retry.MaxDuration = 100 * time.Millisecond
 		params := BootstrapParams{
-			Dataplane: &rest.Resource{
-				Meta: rest.ResourceMeta{
+			Dataplane: &unversioned.Resource{
+				Meta: rest_v1alpha1.ResourceMeta{
 					Type: "Dataplane",
 					Mesh: "default",
 					Name: "dp-1",

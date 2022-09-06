@@ -13,7 +13,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	rest_unversioned "github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
@@ -314,7 +314,7 @@ func inspectPolicies(
 func routeDestinationToAPIDestination(des route.Destination) api_server_types.Destination {
 	policies := api_server_types.PolicyMap{}
 	for kind, p := range des.Policies {
-		policies[kind] = rest.From.Resource(p)
+		policies[kind] = rest_unversioned.From.Resource(p)
 	}
 
 	return api_server_types.Destination{
@@ -341,11 +341,11 @@ func newDataplaneInspectResponse(matchedPolicies *core_xds.MatchedPolicies, dp *
 				Name:    attachment.Name,
 				Service: attachment.Service,
 			},
-			MatchedPolicies: map[core_model.ResourceType][]*rest.Resource{},
+			MatchedPolicies: map[core_model.ResourceType][]*rest_unversioned.Resource{},
 		}
 		for typ, resList := range attachmentMap[attachment] {
 			for _, res := range resList {
-				entry.MatchedPolicies[typ] = append(entry.MatchedPolicies[typ], rest.From.Resource(res))
+				entry.MatchedPolicies[typ] = append(entry.MatchedPolicies[typ], rest_unversioned.From.Resource(res))
 			}
 		}
 
@@ -422,10 +422,10 @@ func newGatewayDataplaneInspectResponse(
 	// TrafficLog and TrafficeTrace are applied to the entire MeshGateway
 	// see pkg/plugins/runtime/gateway.newFilterChain
 	if logging, ok := proxy.Policies.TrafficLogs[core_mesh.PassThroughService]; ok {
-		gatewayPolicies[core_mesh.TrafficLogType] = rest.From.Resource(logging)
+		gatewayPolicies[core_mesh.TrafficLogType] = rest_unversioned.From.Resource(logging)
 	}
 	if trace := proxy.Policies.TrafficTrace; trace != nil {
-		gatewayPolicies[core_mesh.TrafficTraceType] = rest.From.Resource(trace)
+		gatewayPolicies[core_mesh.TrafficTraceType] = rest_unversioned.From.Resource(trace)
 	}
 
 	if len(gatewayPolicies) > 0 {

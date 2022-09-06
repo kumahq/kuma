@@ -249,7 +249,7 @@ func (b *bootstrapGenerator) validateRequest(request types.BootstrapRequest) err
 // 2) Dataplane is created before kuma-dp run, in this case we access storage to fetch it (ex. Kubernetes)
 func (b *bootstrapGenerator) dataplaneFor(ctx context.Context, request types.BootstrapRequest, proxyId *core_xds.ProxyId) (*core_mesh.DataplaneResource, error) {
 	if request.DataplaneResource != "" {
-		res, err := rest.UnmarshallToCore([]byte(request.DataplaneResource))
+		res, err := rest.YAML.UnmarshalCore([]byte(request.DataplaneResource))
 		if err != nil {
 			return nil, err
 		}
@@ -281,7 +281,7 @@ func (b *bootstrapGenerator) dataplaneFor(ctx context.Context, request types.Boo
 
 func (b *bootstrapGenerator) zoneIngressFor(ctx context.Context, request types.BootstrapRequest, proxyId *core_xds.ProxyId) (*core_mesh.ZoneIngressResource, error) {
 	if request.DataplaneResource != "" {
-		res, err := rest.UnmarshallToCore([]byte(request.DataplaneResource))
+		res, err := rest.YAML.UnmarshalCore([]byte(request.DataplaneResource))
 		if err != nil {
 			return nil, err
 		}
@@ -304,7 +304,7 @@ func (b *bootstrapGenerator) zoneIngressFor(ctx context.Context, request types.B
 
 func (b *bootstrapGenerator) zoneEgressFor(ctx context.Context, request types.BootstrapRequest, proxyId *core_xds.ProxyId) (*core_mesh.ZoneEgressResource, error) {
 	if request.DataplaneResource != "" {
-		res, err := rest.UnmarshallToCore([]byte(request.DataplaneResource))
+		res, err := rest.YAML.UnmarshalCore([]byte(request.DataplaneResource))
 		if err != nil {
 			return nil, err
 		}

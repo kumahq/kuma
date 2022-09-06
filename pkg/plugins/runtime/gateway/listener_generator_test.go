@@ -31,7 +31,7 @@ var _ = Describe("Gateway Listener", func() {
 
 		// Unmarshal the gateway YAML again so that we can figure
 		// out which mesh it's in.
-		r, err := rest.UnmarshallToCore([]byte(gateway))
+		r, err := rest.YAML.UnmarshalCore([]byte(gateway))
 		Expect(err).To(Succeed())
 
 		// We expect there to be a Dataplane fixture named

@@ -13,7 +13,8 @@ import (
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
+	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -328,8 +329,8 @@ var _ = Describe("Resource Endpoints", func() {
 	Describe("On PUT", func() {
 		It("should create a resource when one does not exist", func() {
 			// given
-			res := rest.Resource{
-				Meta: rest.ResourceMeta{
+			res := &unversioned.Resource{
+				Meta: rest_v1alpha1.ResourceMeta{
 					Name: "new-resource",
 					Mesh: mesh,
 					Type: string(sample_model.TrafficRouteType),
@@ -352,8 +353,8 @@ var _ = Describe("Resource Endpoints", func() {
 			putSampleResourceIntoStore(resourceStore, name, mesh)
 
 			// when
-			res := rest.Resource{
-				Meta: rest.ResourceMeta{
+			res := &unversioned.Resource{
+				Meta: rest_v1alpha1.ResourceMeta{
 					Name: name,
 					Mesh: mesh,
 					Type: string(sample_model.TrafficRouteType),
@@ -559,8 +560,8 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// given
-			res := rest.Resource{
-				Meta: rest.ResourceMeta{
+			res := &unversioned.Resource{
+				Meta: rest_v1alpha1.ResourceMeta{
 					Name: "new-resource",
 					Mesh: "default",
 					Type: string(sample_model.TrafficRouteType),

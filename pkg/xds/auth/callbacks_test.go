@@ -2,6 +2,7 @@ package auth_test
 
 import (
 	"context"
+	"encoding/json"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -162,7 +163,8 @@ var _ = Describe("Auth Callbacks", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		json, err := rest.From.Resource(dpRes).MarshalJSON()
+		res := rest.From.Resource(dpRes)
+		jsonRes, err := json.Marshal(res)
 		Expect(err).ToNot(HaveOccurred())
 		err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{
 			Node: &envoy_core.Node{
@@ -171,7 +173,7 @@ var _ = Describe("Auth Callbacks", func() {
 					Fields: map[string]*structpb.Value{
 						"dataplane.resource": {
 							Kind: &structpb.Value_StringValue{
-								StringValue: string(json),
+								StringValue: string(jsonRes),
 							},
 						},
 					},

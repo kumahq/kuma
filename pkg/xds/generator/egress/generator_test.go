@@ -65,7 +65,7 @@ var _ = Describe("EgressGenerator", func() {
 			for _, rawResource := range rawResources {
 				bytes := []byte(rawResource)
 
-				res, err := rest_types.UnmarshallToCore(bytes)
+				res, err := rest_types.YAML.UnmarshalCore(bytes)
 				Expect(err).To(BeNil())
 
 				meshName := res.GetMeta().GetMesh()

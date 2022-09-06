@@ -3,6 +3,7 @@ package api_server_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"net"
 	"net/http"
@@ -76,9 +77,9 @@ func (r *resourceApiClient) delete(name string) *http.Response {
 }
 
 func (r *resourceApiClient) put(res rest.Resource) *http.Response {
-	jsonBytes, err := res.MarshalJSON()
+	jsonBytes, err := json.Marshal(res)
 	Expect(err).ToNot(HaveOccurred())
-	return r.putJson(res.Meta.Name, jsonBytes)
+	return r.putJson(res.GetMeta().Name, jsonBytes)
 }
 
 func (r *resourceApiClient) putJson(name string, json []byte) *http.Response {

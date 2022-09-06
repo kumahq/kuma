@@ -13,7 +13,8 @@ import (
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
+	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -105,8 +106,8 @@ var _ = Describe("Resource Endpoints", func() {
 	Describe("On PUT", func() {
 		It("should create a resource when one does not exist", func() {
 			// given
-			res := rest.Resource{
-				Meta: rest.ResourceMeta{
+			res := &unversioned.Resource{
+				Meta: rest_v1alpha1.ResourceMeta{
 					Name: "new-mesh",
 					Type: string(mesh.MeshType),
 				},
@@ -126,8 +127,8 @@ var _ = Describe("Resource Endpoints", func() {
 			putMeshIntoStore(resourceStore, name, t1)
 
 			// when
-			res := rest.Resource{
-				Meta: rest.ResourceMeta{
+			res := &unversioned.Resource{
+				Meta: rest_v1alpha1.ResourceMeta{
 					Name: "mesh-1",
 					Type: string(mesh.MeshType),
 				},

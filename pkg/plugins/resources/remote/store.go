@@ -12,6 +12,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
@@ -33,7 +34,7 @@ type remoteStore struct {
 
 func (s *remoteStore) Create(ctx context.Context, res model.Resource, fs ...store.CreateOptionsFunc) error {
 	opts := store.NewCreateOptions(fs...)
-	meta := rest.ResourceMeta{
+	meta := rest_v1alpha1.ResourceMeta{
 		Type: string(res.Descriptor().Name),
 		Name: opts.Name,
 		Mesh: opts.Mesh,
@@ -45,7 +46,7 @@ func (s *remoteStore) Create(ctx context.Context, res model.Resource, fs ...stor
 }
 
 func (s *remoteStore) Update(ctx context.Context, res model.Resource, fs ...store.UpdateOptionsFunc) error {
-	meta := rest.ResourceMeta{
+	meta := rest_v1alpha1.ResourceMeta{
 		Type: string(res.Descriptor().Name),
 		Name: res.GetMeta().GetName(),
 		Mesh: res.GetMeta().GetMesh(),
@@ -56,16 +57,18 @@ func (s *remoteStore) Update(ctx context.Context, res model.Resource, fs ...stor
 	return nil
 }
 
-func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest.ResourceMeta) error {
+func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest_v1alpha1.ResourceMeta) error {
 	resourceApi, err := s.api.GetResourceApi(res.Descriptor().Name)
 	if err != nil {
 		return errors.Wrapf(err, "failed to construct URI to update a %q", res.Descriptor().Name)
 	}
-	restRes := rest.Resource{
-		Meta: meta,
-		Spec: res.GetSpec(),
+	resCopy := res.Descriptor().NewObject()
+	resCopy.SetMeta(meta)
+	if err := resCopy.SetSpec(res.GetSpec()); err != nil {
+		return err
 	}
-	b, err := json.Marshal(&restRes)
+	restRes := rest.From.Resource(resCopy)
+	b, err := json.Marshal(restRes)
 	if err != nil {
 		return err
 	}
@@ -85,11 +88,7 @@ func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest.
 			return errors.Errorf("(%d): %s", statusCode, string(b))
 		}
 	}
-	res.SetMeta(remoteMeta{
-		Name:    meta.Name,
-		Mesh:    meta.Mesh,
-		Version: "",
-	})
+	res.SetMeta(meta)
 	return nil
 }
 
@@ -140,7 +139,7 @@ func (s *remoteStore) Get(ctx context.Context, res model.Resource, fs ...store.G
 	if statusCode != 200 {
 		return errors.Errorf("(%d): %s", statusCode, string(b))
 	}
-	return Unmarshal(b, res)
+	return rest.JSON.UnmarshalToCore(b, res)
 }
 
 func (s *remoteStore) List(ctx context.Context, rs model.ResourceList, fs ...store.ListOptionsFunc) error {
@@ -169,7 +168,7 @@ func (s *remoteStore) List(ctx context.Context, rs model.ResourceList, fs ...sto
 	if statusCode != http.StatusOK {
 		return errors.Errorf("(%d): %s", statusCode, string(b))
 	}
-	return UnmarshalList(b, rs)
+	return rest.JSON.UnmarshalListToCore(b, rs)
 }
 
 // execute a request. Returns status code, body, error

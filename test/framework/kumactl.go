@@ -198,16 +198,16 @@ func (k *KumactlOptions) KumactlUpdateObject(
 		return errors.Wrapf(err, "failed to get %q object %q", typeName, objectName)
 	}
 
-	resource, err := rest.UnmarshallToCore([]byte(out))
+	resource, err := rest.YAML.UnmarshalCore([]byte(out))
 	if err != nil {
 		return errors.Wrapf(err, "failed to unmarshal %q object %q: %q", typeName, objectName, out)
 	}
 
-	updated := rest.NewFromModel(update(resource))
-	json, err := updated.MarshalJSON()
+	updated := rest.From.Resource(update(resource))
+	jsonRes, err := json.Marshal(updated)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal JSON for %q object %q", typeName, objectName)
 	}
 
-	return k.KumactlApplyFromString(string(json))
+	return k.KumactlApplyFromString(string(jsonRes))
 }
