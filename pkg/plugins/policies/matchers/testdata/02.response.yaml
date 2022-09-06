@@ -1,0 +1,67 @@
+type: MeshTrafficPermission
+mesh: mesh-1
+name: aaa
+spec:
+  targetRef:
+    kind: MeshServiceSubset
+    name: web
+    tags:
+      version: v1
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: bbb
+spec:
+  targetRef:
+    kind: MeshServiceSubset
+    name: web
+    tags:
+      version: v1
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: 1-my-policy
+spec:
+  targetRef:
+    kind: Mesh
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: 2-my-policy
+spec:
+  targetRef:
+    kind: Mesh
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: my-policy-2
+spec:
+  targetRef:
+    kind: MeshService
+    name: web
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: my-policy-1
+spec:
+  targetRef:
+    kind: MeshService
+    name: web
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: "222"
+spec:
+  targetRef:
+    kind: MeshSubset
+    tags:
+      version: v1
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: "111"
+spec:
+  targetRef:
+    kind: MeshSubset
+    tags:
+      version: v1
