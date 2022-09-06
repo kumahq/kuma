@@ -23,7 +23,7 @@ Every test suite should run in their own mesh and namespace to not interfere wit
   It takes a lot of time to wait for the namespace to be removed.
   We should carry on with other tests while namespace is removed in the background.
 * (Kubernetes): Be conservative about resource limits on Kubernetes.
-  We are deploying a lot of stuff in a parallel, default `DemoClient` and `TestServer` are tuned to have minimal requests/limit.
+  We are deploying a lot of stuff in parallel, default `DemoClient` and `TestServer` are tuned to have minimal requests/limit.
   If you are bringing new deployment to the test, make sure you set a proper resource limits.
 * `KUMA_STORE_UNSAFE_DELETE` is set to true by default, so we can remove the mesh without waiting for all DPPs to be down.
 * (Multizone) Remember about calling `WaitForMesh`, otherwise deploying an application in Zone can fail.
