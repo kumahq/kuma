@@ -7,6 +7,7 @@ ifdef XDG_DATA_HOME
 endif
 CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 
+GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
 
 # The e2e tests depend on Kind kubeconfigs being in this directory,
@@ -15,7 +16,7 @@ KUBECONFIG_DIR := $(HOME)/.kube
 
 PROTOS_DEPS_PATH=$(CI_TOOLS_DIR)/protos
 
-TOOLS_DIR ?= $(shell pwd)/tools
+TOOLS_DIR ?= $(KUMA_DIR)/tools
 CLANG_FORMAT=$(CI_TOOLS_BIN_DIR)/clang-format
 HELM=$(CI_TOOLS_BIN_DIR)/helm
 K3D_BIN=$(CI_TOOLS_BIN_DIR)/k3d
@@ -35,6 +36,9 @@ GOLANGCI_LINT=$(CI_TOOLS_BIN_DIR)/golangci-lint
 HELM_DOCS=$(CI_TOOLS_BIN_DIR)/helm-docs
 KUBE_LINTER=$(CI_TOOLS_BIN_DIR)/kube-linter
 
+TOOLS_DEPS_DIRS=$(KUMA_DIR)/mk/dependencies
+TOOLS_DEPS_LOCK_FILE=mk/dependencies/deps.lock
+
 # Install all dependencies on tools and protobuf files
 # We add one script per tool in the `mk/dependencies` folder. Add a VARIABLE for each binary and use this everywhere in Makefiles
 # ideally the tool should be idempotent to make things quick to rerun.
@@ -42,9 +46,10 @@ KUBE_LINTER=$(CI_TOOLS_BIN_DIR)/kube-linter
 .PHONY: dev/tools
 dev/tools: ## Bootstrap: Install all development tools
 	@mkdir -p $(CI_TOOLS_BIN_DIR) $(CI_TOOLS_DIR)/protos
-	@for i in mk/dependencies/*.sh; do OS=$(GOOS) ARCH=$(GOARCH) $$i $(CI_TOOLS_DIR); done
-	# Compute a hash to use for caching
-	@for i in mk/dependencies/*.sh; do echo "---$${i}"; cat $${i}; done | git hash-object --stdin > mk/dependencies/deps.lock
+	# Also compute a hash to use for caching
+	FILES=`find $(TOOLS_DEPS_DIRS) -name '*.sh' | sort`; \
+		for i in $${FILES}; do OS=$(GOOS) ARCH=$(GOARCH) $$i ${CI_TOOLS_DIR}; done; \
+		for i in $${FILES}; do echo "---$${i}"; cat $${i}; done | git hash-object --stdin > $(TOOLS_DEPS_LOCK_FILE)
 	@echo "All non code dependencies installed, if you use these tools outside of make add $(CI_TOOLS_BIN_DIR) to your PATH"
 
 .PHONY: dev/tools/clean
