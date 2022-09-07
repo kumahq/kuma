@@ -2,7 +2,6 @@ package matchers_test
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"path"
 
@@ -63,7 +62,7 @@ var _ = Describe("Match", func() {
 		return bytesBuffer.String()
 	}
 
-	Describe("MatchedDataplanePolicies", func() {
+	Describe("MatchedPolicies", func() {
 
 		type testCase struct {
 			dppFile                    string
@@ -80,7 +79,7 @@ var _ = Describe("Match", func() {
 				resources := readResourceListResponse(given.resourceListResponseFile)
 
 				// when
-				policies, err := matchers.MatchedDataplanePolicies(policies_api.MeshTrafficPermissionType, dpp, resources)
+				policies, err := matchers.MatchedPolicies(policies_api.MeshTrafficPermissionType, dpp, resources)
 				Expect(err).ToNot(HaveOccurred())
 
 				// then
@@ -108,41 +107,4 @@ var _ = Describe("Match", func() {
 			}),
 		)
 	})
-
-	Describe("MatchedInboundPolicies", func() {
-
-		type testCase struct {
-			dppFile                  string
-			resourceListResponseFile string
-			inboundToGoldenFile      map[string]string
-		}
-
-		DescribeTable("should return a map of inbounds with matched policies",
-			func(given testCase) {
-				// given DPP resource
-				dpp := readDPP(given.dppFile)
-
-				// given MeshTrafficPermissions
-				resources := readResourceListResponse(given.resourceListResponseFile)
-
-				// when
-				policies, err := matchers.MatchedInboundPolicies(policies_api.MeshTrafficPermissionType, dpp, resources)
-				Expect(err).ToNot(HaveOccurred())
-
-				// then
-				for inbound, matched := range policies.InboundPolicies {
-					key := fmt.Sprintf("%v", inbound)
-					Expect(printPolicies(matched)).To(test_matchers.MatchGoldenYAML(path.Join("testdata", given.inboundToGoldenFile[key])))
-				}
-			},
-			Entry("05. each inbound is selected by policies", testCase{
-				dppFile:                  "05.dataplane.yaml",
-				resourceListResponseFile: "05.response.yaml",
-				inboundToGoldenFile: map[string]string{
-					":8080:8080": "05.golden.8080.yaml",
-					":8081:8081": "05.golden.8081.yaml",
-				},
-			}))
-	})
-
 })
