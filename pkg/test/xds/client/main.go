@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/binary"
 	"fmt"
 	"math/rand"
+	"net"
 	"os"
 	"time"
 
@@ -37,11 +39,17 @@ func newRunCmd() *cobra.Command {
 	log := core.Log.WithName("kuma-xds-client").WithName("run")
 	args := struct {
 		xdsServerAddress string
-		total            int32
+		dps              int
+		services         int
+		inbounds         int
+		outbounds        int
 		rampUpPeriod     time.Duration
 	}{
 		xdsServerAddress: "grpcs://localhost:5678",
-		total:            100,
+		dps:              100,
+		services:         50,
+		inbounds:         1,
+		outbounds:        3,
 		rampUpPeriod:     30 * time.Second,
 	}
 	cmd := &cobra.Command{
@@ -49,45 +57,35 @@ func newRunCmd() *cobra.Command {
 		Short: "Start xDS client(s) that simulate Envoy",
 		Long:  `Start xDS client(s) that simulate Envoy.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			log.Info("going to start xDS clients (Envoy simulators)", "total", args.total)
+			log.Info("going to start xDS clients (Envoy simulators)", "dps", args.dps)
 			errCh := make(chan error, 1)
-			for i := 0; i < int(args.total); i++ {
+			for i := 0; i < args.dps; i++ {
 				id := fmt.Sprintf("default.dataplane-%d", i)
 				nodeLog := log.WithName("envoy-simulator").WithValues("idx", i, "ID", id)
 				nodeLog.Info("creating an xDS client ...")
 
 				go func(i int) {
+					dpSpec := &v1alpha1.Dataplane{
+						Networking: &v1alpha1.Dataplane_Networking{
+							Address: randomIP(),
+						},
+					}
+					for j := 0; j < args.inbounds; j++ {
+						service := fmt.Sprintf("service-%d", rand.Int()%args.services)
+						dpSpec.Networking.Inbound = append(dpSpec.Networking.Inbound, &v1alpha1.Dataplane_Networking_Inbound{
+							Port: uint32(8080 + j), Tags: map[string]string{"kuma.io/service": service},
+						})
+					}
+					for j := 0; j < args.outbounds; j++ {
+						service := fmt.Sprintf("service-%d", rand.Int()%args.services)
+						dpSpec.Networking.Outbound = append(dpSpec.Networking.Outbound, &v1alpha1.Dataplane_Networking_Outbound{
+							Port: uint32(10080 + j), Tags: map[string]string{"kuma.io/service": service},
+						})
+					}
+
 					dp := &unversioned.Resource{
 						Meta: rest_v1alpha1.ResourceMeta{Mesh: "default", Name: fmt.Sprintf("dataplane-%d", i), Type: "Dataplane"},
-						Spec: &v1alpha1.Dataplane{
-							Networking: &v1alpha1.Dataplane_Networking{
-								Address: "127.0.0.1",
-								Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
-									{Port: uint32(8080), Tags: map[string]string{"kuma.io/service": "service-0"}},
-									{Port: uint32(8081), Tags: map[string]string{"kuma.io/service": "service-1"}},
-									{Port: uint32(8082), Tags: map[string]string{"kuma.io/service": "service-2"}},
-									{Port: uint32(8083), Tags: map[string]string{"kuma.io/service": "service-3"}},
-									{Port: uint32(8084), Tags: map[string]string{"kuma.io/service": "service-4"}},
-									{Port: uint32(8085), Tags: map[string]string{"kuma.io/service": "service-5"}},
-									{Port: uint32(8086), Tags: map[string]string{"kuma.io/service": "service-6"}},
-									{Port: uint32(8087), Tags: map[string]string{"kuma.io/service": "service-7"}},
-									{Port: uint32(8088), Tags: map[string]string{"kuma.io/service": "service-8"}},
-									{Port: uint32(8089), Tags: map[string]string{"kuma.io/service": "service-9"}},
-								},
-								Outbound: []*v1alpha1.Dataplane_Networking_Outbound{
-									{Address: "127.0.0.1", Port: 11000, Tags: map[string]string{"kuma.io/service": "service-0"}},
-									{Address: "127.0.0.1", Port: 11001, Tags: map[string]string{"kuma.io/service": "service-1"}},
-									{Address: "127.0.0.1", Port: 11002, Tags: map[string]string{"kuma.io/service": "service-2"}},
-									{Address: "127.0.0.1", Port: 11003, Tags: map[string]string{"kuma.io/service": "service-3"}},
-									{Address: "127.0.0.1", Port: 11004, Tags: map[string]string{"kuma.io/service": "service-4"}},
-									{Address: "127.0.0.1", Port: 11005, Tags: map[string]string{"kuma.io/service": "service-5"}},
-									{Address: "127.0.0.1", Port: 11006, Tags: map[string]string{"kuma.io/service": "service-6"}},
-									{Address: "127.0.0.1", Port: 11007, Tags: map[string]string{"kuma.io/service": "service-7"}},
-									{Address: "127.0.0.1", Port: 11008, Tags: map[string]string{"kuma.io/service": "service-8"}},
-									{Address: "127.0.0.1", Port: 11009, Tags: map[string]string{"kuma.io/service": "service-9"}},
-								},
-							},
-						},
+						Spec: dpSpec,
 					}
 
 					// add some jitter
@@ -162,9 +160,19 @@ func newRunCmd() *cobra.Command {
 	}
 	// flags
 	cmd.PersistentFlags().StringVar(&args.xdsServerAddress, "xds-server-address", args.xdsServerAddress, "address of xDS server")
-	cmd.PersistentFlags().Int32Var(&args.total, "total", args.total, "number of dataplanes to emulate")
+	cmd.PersistentFlags().IntVar(&args.dps, "dps", args.dps, "number of dataplanes to emulate")
+	cmd.PersistentFlags().IntVar(&args.services, "services", args.services, "number of services")
+	cmd.PersistentFlags().IntVar(&args.inbounds, "inbounds", args.inbounds, "number of inbounds")
+	cmd.PersistentFlags().IntVar(&args.outbounds, "outbounds", args.outbounds, "number of outbounds")
 	cmd.PersistentFlags().DurationVar(&args.rampUpPeriod, "rampup-period", args.rampUpPeriod, "ramp up period")
 	return cmd
+}
+
+func randomIP() string {
+	buf := make([]byte, 4)
+	ip := rand.Uint32()
+	binary.LittleEndian.PutUint32(buf, ip)
+	return net.IP(buf).String()
 }
 
 func main() {
