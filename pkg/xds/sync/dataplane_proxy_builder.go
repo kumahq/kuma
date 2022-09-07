@@ -90,21 +90,17 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 	// create a map of selectors to match other dataplanes reachable via given routes
 	destinations := xds_topology.BuildDestinationMap(dataplane, routes)
 
-	// resolve all endpoints that match given selectors
-	outbound := xds_topology.BuildEndpointMap(
+	endpointMap := xds_topology.BuildExternalServicesEndpointMap(
 		ctx,
 		meshContext.Resource,
-		p.Zone,
-		meshContext.Resources.Dataplanes().Items,
-		meshContext.Resources.ZoneIngresses().Items,
-		meshContext.Resources.ZoneEgresses().Items,
 		matchedExternalServices,
 		meshContext.DataSourceLoader,
+		p.Zone,
 	)
-
 	routing := &core_xds.Routing{
-		TrafficRoutes:   routes,
-		OutboundTargets: outbound,
+		TrafficRoutes:                  routes,
+		OutboundTargets:                meshContext.EndpointMap,
+		ExternalServiceOutboundTargets: endpointMap,
 	}
 	return routing, destinations, nil
 }

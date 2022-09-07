@@ -193,8 +193,8 @@ var _ = Describe("TrafficRoute", func() {
 			externalServices := &core_mesh.ExternalServiceResourceList{}
 
 			// when
-			targets := BuildEndpointMap(
-				context.Background(), defaultMeshWithMTLS, "zone-1", dataplanes.Items, nil, nil, externalServices.Items, dataSourceLoader,
+			targets := BuildEdsEndpointMap(
+				defaultMeshWithMTLS, "zone-1", dataplanes.Items, nil, nil, externalServices.Items,
 			)
 
 			Expect(targets).To(HaveLen(4))
@@ -282,9 +282,15 @@ var _ = Describe("TrafficRoute", func() {
 		DescribeTable("should include only those dataplanes that match given selectors",
 			func(given testCase) {
 				// when
-				endpoints := BuildEndpointMap(
-					context.Background(), given.mesh, "zone-1", given.dataplanes, given.zoneIngresses, given.zoneEgresses, given.externalServices, dataSourceLoader,
+				endpoints := BuildEdsEndpointMap(
+					given.mesh, "zone-1", given.dataplanes, given.zoneIngresses, given.zoneEgresses, given.externalServices,
 				)
+				esEndpoints := BuildExternalServicesEndpointMap(
+					context.Background(), given.mesh, given.externalServices, dataSourceLoader, "zone-1",
+				)
+				for k, v := range esEndpoints {
+					endpoints[k] = v
+				}
 				// then
 				Expect(endpoints).To(Equal(given.expected))
 			},
