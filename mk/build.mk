@@ -13,8 +13,6 @@ build_info_fields := \
 build_info_ld_flags := $(foreach entry,$(build_info_fields), -X github.com/kumahq/kuma/pkg/version.$(entry))
 
 LD_FLAGS := -ldflags="-s -w $(build_info_ld_flags) $(EXTRA_LD_FLAGS)"
-GOOS := $(shell go env GOOS)
-GOARCH := $(shell go env GOARCH)
 CGO_ENABLED := 0
 GOFLAGS :=
 

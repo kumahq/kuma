@@ -901,7 +901,7 @@ func newFakeServiceReader(services []*kube_core.Service) (fakeServiceReader, err
 
 var _ kube_client.Reader = fakeServiceReader{}
 
-func (r fakeServiceReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_client.Object) error {
+func (r fakeServiceReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_client.Object, _ ...kube_client.GetOption) error {
 	fqName := fmt.Sprintf("%s/%s", key.Namespace, key.Name)
 	data, ok := r[fqName]
 	if !ok {
@@ -916,7 +916,7 @@ func (f fakeServiceReader) List(ctx context.Context, list kube_client.ObjectList
 
 type fakeNodeReader string
 
-func (r fakeNodeReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_client.Object) error {
+func (r fakeNodeReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_client.Object, _ ...kube_client.GetOption) error {
 	return errors.New("not implemented")
 }
 
@@ -947,7 +947,7 @@ func newFakeReplicaSetReader(replicaSets []*kube_apps.ReplicaSet) (fakeReplicaSe
 
 var _ kube_client.Reader = fakeReplicaSetReader{}
 
-func (r fakeReplicaSetReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_client.Object) error {
+func (r fakeReplicaSetReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_client.Object, _ ...kube_client.GetOption) error {
 	fqName := fmt.Sprintf("%s/%s", key.Namespace, key.Name)
 	data, ok := r[fqName]
 	if !ok {
