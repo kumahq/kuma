@@ -1,0 +1,19 @@
+{
+ "total": 1,
+ "items": [
+  {
+   "kind": "SidecarDataplane",
+   "dataplane": {
+    "mesh": "mesh-1",
+    "name": "backend-1"
+   },
+   "attachments": [
+    {
+     "type": "inbound",
+     "name": "192.168.0.1:80:81",
+     "service": "backend"
+    }
+   ]
+  }
+ ]
+}

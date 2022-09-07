@@ -6,8 +6,11 @@ networking:
     - port: 8080
       tags:
         kuma.io/service: web
+        kuma.io/zone: us-east
         version: v1
     - port: 8081
       tags:
-        kuma.io/service: web
-        version: v3
+        kuma.io/service: web-api
+        kuma.io/zone: us-east
+        version: v1
+        env: dev

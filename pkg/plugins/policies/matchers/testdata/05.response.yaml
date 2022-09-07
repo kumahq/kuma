@@ -1,0 +1,36 @@
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-1
+spec:
+  targetRef:
+    kind: MeshServiceSubset
+    name: web
+    tags:
+      version: v1
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-2
+spec:
+  targetRef:
+    kind: MeshServiceSubset
+    name: web-api
+    tags:
+      version: v1
+      env: dev
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-3
+spec:
+  targetRef:
+    kind: Mesh
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-4
+spec:
+  targetRef:
+    kind: MeshSubset
+    tags:
+      kuma.io/zone: us-east
