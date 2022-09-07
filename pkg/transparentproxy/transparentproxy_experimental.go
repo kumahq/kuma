@@ -204,8 +204,8 @@ func parseExcludePortsForUIDs(excludeOutboundPortsForUIDs []string, protocol str
 		}
 
 		uidsToPorts = append(uidsToPorts, kumanet_config.UIDsToPorts{
-			Ports: kumanet_config.ValueOrRangeList(portValuesOrRange),
-			UIDs: kumanet_config.ValueOrRangeList(uidValuesOrRange),
+			Ports:    kumanet_config.ValueOrRangeList(portValuesOrRange),
+			UIDs:     kumanet_config.ValueOrRangeList(uidValuesOrRange),
 			Protocol: protocol,
 		})
 	}
