@@ -172,6 +172,20 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 		"--skip-resolv-conf",
 	}
 
+	for _, exclusion := range pr.ExcludeOutboundTCPPortsForUIDs {
+		result = append(result,
+			"--exclude-outbound-tcp-ports-for-uids",
+			exclusion,
+		)
+	}
+
+	for _, exclusion := range pr.ExcludeOutboundUDPPortsForUIDs {
+		result = append(result,
+			"--exclude-outbound-udp-ports-for-uids",
+			exclusion,
+		)
+	}
+
 	if pr.BuiltinDNSEnabled {
 		result = append(result,
 			"--redirect-all-dns-traffic",
