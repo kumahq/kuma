@@ -73,7 +73,11 @@ func newRunCmd() *cobra.Command {
 					for j := 0; j < args.inbounds; j++ {
 						service := fmt.Sprintf("service-%d", rand.Int()%args.services)
 						dpSpec.Networking.Inbound = append(dpSpec.Networking.Inbound, &v1alpha1.Dataplane_Networking_Inbound{
-							Port: uint32(8080 + j), Tags: map[string]string{"kuma.io/service": service},
+							Port: uint32(8080 + j),
+							Tags: map[string]string{
+								"kuma.io/service":  service,
+								"kuma.io/protocol": "http",
+							},
 						})
 					}
 					for j := 0; j < args.outbounds; j++ {
