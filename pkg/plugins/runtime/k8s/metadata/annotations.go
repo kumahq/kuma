@@ -78,8 +78,8 @@ const (
 	KumaBuiltinDNS     = "kuma.io/builtin-dns"
 	KumaBuiltinDNSPort = "kuma.io/builtin-dns-port"
 
-	KumaTrafficExcludeInboundPorts  = "traffic.kuma.io/exclude-inbound-ports"
-	KumaTrafficExcludeOutboundPorts = "traffic.kuma.io/exclude-outbound-ports"
+	KumaTrafficExcludeInboundPorts            = "traffic.kuma.io/exclude-inbound-ports"
+	KumaTrafficExcludeOutboundPorts           = "traffic.kuma.io/exclude-outbound-ports"
 	KumaTrafficExcludeOutboundTCPPortsForUIDs = "traffic.kuma.io/exclude-outbound-tcp-ports-for-uids"
 	KumaTrafficExcludeOutboundUDPPortsForUIDs = "traffic.kuma.io/exclude-outbound-udp-ports-for-uids"
 
