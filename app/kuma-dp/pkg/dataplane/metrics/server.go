@@ -189,11 +189,6 @@ func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app Appl
 	req = req.WithContext(ctx)
 	var resp *http.Response
 	if app.IsIPv6 {
-<<<<<<< HEAD
-		resp, err = s.upstreamOverrideHttpClientIPv6.Do(req)
-	} else {
-		resp, err = s.upstreamOverrideHttpClientIPv4.Do(req)
-=======
 		resp, err = s.httpClientIPv6.Do(req)
 		if err == nil {
 			defer resp.Body.Close()
@@ -203,7 +198,6 @@ func (s *Hijacker) getStats(ctx context.Context, initReq *http.Request, app Appl
 		if err == nil {
 			defer resp.Body.Close()
 		}
->>>>>>> 7f1125714 (fix(*): do not override source address when TP is not enabled (#4951))
 	}
 	if err != nil {
 		logger.Error(err, "failed call", "name", app.Name, "path", app.Path, "port", app.Port)
