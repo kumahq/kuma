@@ -18,7 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
 	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
-	"github.com/kumahq/kuma/pkg/test/xds/client/stream"
+	"github.com/kumahq/kuma/tools/xds-client/stream"
 )
 
 func newRootCmd() *cobra.Command {
