@@ -134,7 +134,7 @@ var _ = Describe("kumactl install transparent proxy", func() {
 			goldenFile:   "install-transparent-proxy.defaults.golden.txt",
 			errorMessage: "one of --redirect-dns or --redirect-all-dns-traffic should be specified",
 		}),
-		Entry("should generate defaults with username", testCase{
+		Entry("should error out on invalid port value", testCase{
 			extraArgs: []string{
 				"--kuma-dp-user", "root",
 				"--experimental-transparent-proxy-engine",

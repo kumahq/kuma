@@ -8,9 +8,9 @@
 -A OUTPUT -p udp --dport 3900,3902,4000-6000 -m owner --uid-owner 203,204,206-208 -j RETURN
 -A OUTPUT -p tcp -j KUMA_MESH_OUTBOUND
 -A KUMA_MESH_INBOUND -p tcp -j KUMA_MESH_INBOUND_REDIRECT
--A KUMA_MESH_OUTBOUND -s 127\.0\.0\.6/32 -o lo0 -j RETURN
--A KUMA_MESH_OUTBOUND -p tcp -o lo0 ! -d 127\.0\.0\.1/32 -m owner --uid-owner 0 -j KUMA_MESH_INBOUND_REDIRECT
--A KUMA_MESH_OUTBOUND -p tcp -o lo0 -m owner ! --uid-owner 0 -j RETURN
+-A KUMA_MESH_OUTBOUND -s 127\.0\.0\.6/32 -o lo(0){0,1} -j RETURN
+-A KUMA_MESH_OUTBOUND -p tcp -o lo(0){0,1} ! -d 127\.0\.0\.1/32 -m owner --uid-owner 0 -j KUMA_MESH_INBOUND_REDIRECT
+-A KUMA_MESH_OUTBOUND -p tcp -o lo(0){0,1} -m owner ! --uid-owner 0 -j RETURN
 -A KUMA_MESH_OUTBOUND -m owner --uid-owner 0 -j RETURN
 -A KUMA_MESH_OUTBOUND -d 127\.0\.0\.1/32 -j RETURN
 -A KUMA_MESH_OUTBOUND -j KUMA_MESH_OUTBOUND_REDIRECT
