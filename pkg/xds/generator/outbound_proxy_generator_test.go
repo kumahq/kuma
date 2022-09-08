@@ -279,6 +279,9 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						Weight: 1,
 					},
 				},
+			}
+
+			esOutboundTargets := model.EndpointMap{
 				"es": []model.Endpoint{
 					{
 						Target:          "10.0.0.1",
@@ -505,7 +508,8 @@ var _ = Describe("OutboundProxyGenerator", func() {
 							},
 						},
 					},
-					OutboundTargets: outboundTargets,
+					OutboundTargets:                outboundTargets,
+					ExternalServiceOutboundTargets: esOutboundTargets,
 				},
 				Policies: model.MatchedPolicies{
 					TrafficLogs: model.TrafficLogMap{
