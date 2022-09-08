@@ -270,6 +270,8 @@ var _ = Describe("kubernetes", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						metadata.KumaTrafficExcludeOutboundPorts:                "11000",
+						metadata.KumaTrafficExcludeOutboundUDPPortsForUIDs:      "11001:1;11002:2",
+						metadata.KumaTrafficExcludeOutboundTCPPortsForUIDs:      "11003:3",
 						metadata.KumaTransparentProxyingOutboundPortAnnotation:  "25100",
 						metadata.KumaTrafficExcludeInboundPorts:                 "12000",
 						metadata.KumaTransparentProxyingInboundPortAnnotation:   "25204",
@@ -295,6 +297,8 @@ var _ = Describe("kubernetes", func() {
 				AgentDNSListenerPort:   "0",
 				DNSUpstreamTargetChain: "",
 				ExperimentalEngine:     true,
+				ExcludeOutboundUDPPortsForUIDs: []string{"11001:1", "11002:2"},
+				ExcludeOutboundTCPPortsForUIDs: []string{"11003:3"},
 			},
 		}),
 		Entry("should generate no builtin DNS", testCaseTransparentProxyConfig{

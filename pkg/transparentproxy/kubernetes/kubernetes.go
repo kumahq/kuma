@@ -19,6 +19,7 @@ package kubernetes
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	kube_core "k8s.io/api/core/v1"
 
@@ -41,6 +42,8 @@ type PodRedirect struct {
 	TransparentProxyEbpfBPFFSPath            string
 	TransparentProxyEbpfInstanceIPEnvVarName string
 	TransparentProxyEbpfProgramsSourcePath   string
+	ExcludeOutboundTCPPortsForUIDs           []string
+	ExcludeOutboundUDPPortsForUIDs           []string
 }
 
 func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
@@ -58,6 +61,16 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 	}
 
 	podRedirect.ExcludeOutboundPorts, _ = metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeOutboundPorts)
+
+	excludeOutboundTCPPortsForUIDs, exists := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeOutboundTCPPortsForUIDs)
+	if exists {
+		podRedirect.ExcludeOutboundTCPPortsForUIDs = strings.Split(excludeOutboundTCPPortsForUIDs, ";")
+	}
+
+	excludeOutboundUDPPortsForUIDs, exists := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeOutboundUDPPortsForUIDs)
+	if exists {
+		podRedirect.ExcludeOutboundUDPPortsForUIDs = strings.Split(excludeOutboundUDPPortsForUIDs, ";")
+	}
 
 	podRedirect.RedirectPortOutbound, _, err = metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaTransparentProxyingOutboundPortAnnotation)
 	if err != nil {
@@ -115,25 +128,27 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 
 func (pr *PodRedirect) AsTransparentProxyConfig() *config.TransparentProxyConfig {
 	return &config.TransparentProxyConfig{
-		DryRun:                 false,
-		Verbose:                true,
-		RedirectPortOutBound:   fmt.Sprintf("%d", pr.RedirectPortOutbound),
-		RedirectInBound:        pr.RedirectInbound,
-		RedirectPortInBound:    fmt.Sprintf("%d", pr.RedirectPortInbound),
-		RedirectPortInBoundV6:  fmt.Sprintf("%d", pr.RedirectPortInboundV6),
-		ExcludeInboundPorts:    pr.ExcludeInboundPorts,
-		ExcludeOutboundPorts:   pr.ExcludeOutboundPorts,
-		UID:                    pr.UID,
-		GID:                    pr.UID, // TODO: shall we have a separate annotation here?
-		RedirectDNS:            pr.BuiltinDNSEnabled,
-		RedirectAllDNSTraffic:  false,
-		AgentDNSListenerPort:   fmt.Sprintf("%d", pr.BuiltinDNSPort),
-		DNSUpstreamTargetChain: "",
-		ExperimentalEngine:     pr.ExperimentalTransparentProxyEngine,
-		EbpfEnabled:            pr.TransparentProxyEnableEbpf,
-		EbpfInstanceIP:         pr.TransparentProxyEbpfInstanceIPEnvVarName,
-		EbpfBPFFSPath:          pr.TransparentProxyEbpfBPFFSPath,
-		EbpfProgramsSourcePath: pr.TransparentProxyEbpfProgramsSourcePath,
+		DryRun:                         false,
+		Verbose:                        true,
+		RedirectPortOutBound:           fmt.Sprintf("%d", pr.RedirectPortOutbound),
+		RedirectInBound:                pr.RedirectInbound,
+		RedirectPortInBound:            fmt.Sprintf("%d", pr.RedirectPortInbound),
+		RedirectPortInBoundV6:          fmt.Sprintf("%d", pr.RedirectPortInboundV6),
+		ExcludeInboundPorts:            pr.ExcludeInboundPorts,
+		ExcludeOutboundPorts:           pr.ExcludeOutboundPorts,
+		ExcludeOutboundTCPPortsForUIDs: pr.ExcludeOutboundTCPPortsForUIDs,
+		ExcludeOutboundUDPPortsForUIDs: pr.ExcludeOutboundUDPPortsForUIDs,
+		UID:                            pr.UID,
+		GID:                            pr.UID, // TODO: shall we have a separate annotation here?
+		RedirectDNS:                    pr.BuiltinDNSEnabled,
+		RedirectAllDNSTraffic:          false,
+		AgentDNSListenerPort:           fmt.Sprintf("%d", pr.BuiltinDNSPort),
+		DNSUpstreamTargetChain:         "",
+		ExperimentalEngine:             pr.ExperimentalTransparentProxyEngine,
+		EbpfEnabled:                    pr.TransparentProxyEnableEbpf,
+		EbpfInstanceIP:                 pr.TransparentProxyEbpfInstanceIPEnvVarName,
+		EbpfBPFFSPath:                  pr.TransparentProxyEbpfBPFFSPath,
+		EbpfProgramsSourcePath:         pr.TransparentProxyEbpfProgramsSourcePath,
 	}
 }
 
