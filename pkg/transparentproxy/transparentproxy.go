@@ -22,5 +22,5 @@ type TransparentProxy interface {
 }
 
 func DefaultTransparentProxy() TransparentProxy {
-	return istio.NewIstioTransparentProxy()
+	return &istio.IstioTransparentProxy{}
 }
