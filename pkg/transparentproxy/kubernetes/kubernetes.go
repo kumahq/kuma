@@ -24,7 +24,6 @@ import (
 	kube_core "k8s.io/api/core/v1"
 
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 )
 
 type PodRedirect struct {
@@ -124,32 +123,6 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 	}
 
 	return podRedirect, nil
-}
-
-func (pr *PodRedirect) AsTransparentProxyConfig() *config.TransparentProxyConfig {
-	return &config.TransparentProxyConfig{
-		DryRun:                         false,
-		Verbose:                        true,
-		RedirectPortOutBound:           fmt.Sprintf("%d", pr.RedirectPortOutbound),
-		RedirectInBound:                pr.RedirectInbound,
-		RedirectPortInBound:            fmt.Sprintf("%d", pr.RedirectPortInbound),
-		RedirectPortInBoundV6:          fmt.Sprintf("%d", pr.RedirectPortInboundV6),
-		ExcludeInboundPorts:            pr.ExcludeInboundPorts,
-		ExcludeOutboundPorts:           pr.ExcludeOutboundPorts,
-		ExcludeOutboundTCPPortsForUIDs: pr.ExcludeOutboundTCPPortsForUIDs,
-		ExcludeOutboundUDPPortsForUIDs: pr.ExcludeOutboundUDPPortsForUIDs,
-		UID:                            pr.UID,
-		GID:                            pr.UID, // TODO: shall we have a separate annotation here?
-		RedirectDNS:                    pr.BuiltinDNSEnabled,
-		RedirectAllDNSTraffic:          false,
-		AgentDNSListenerPort:           fmt.Sprintf("%d", pr.BuiltinDNSPort),
-		DNSUpstreamTargetChain:         "",
-		ExperimentalEngine:             pr.ExperimentalTransparentProxyEngine,
-		EbpfEnabled:                    pr.TransparentProxyEnableEbpf,
-		EbpfInstanceIP:                 pr.TransparentProxyEbpfInstanceIPEnvVarName,
-		EbpfBPFFSPath:                  pr.TransparentProxyEbpfBPFFSPath,
-		EbpfProgramsSourcePath:         pr.TransparentProxyEbpfProgramsSourcePath,
-	}
 }
 
 func (pr *PodRedirect) AsKumactlCommandLine() []string {
