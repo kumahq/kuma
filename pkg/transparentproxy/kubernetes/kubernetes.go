@@ -87,13 +87,12 @@ func NewPodRedirectForPod(transparentProxyV2 bool, pod *kube_core.Pod) (*PodRedi
 
 	podRedirect.UID, _ = metadata.Annotations(pod.Annotations).GetString(metadata.KumaSidecarUID)
 
-	if transparentProxyV2 {
-		podRedirect.ExperimentalTransparentProxyEngine = true
-	}
-	if transparentProxyV2, exists, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaTransparentProxyingExperimentalEngine); err != nil {
+	podRedirect.ExperimentalTransparentProxyEngine, _, err = metadata.Annotations(pod.Annotations).GetEnabledWithDefault(
+		transparentProxyV2,
+		metadata.KumaTransparentProxyingExperimentalEngine,
+	)
+	if err != nil {
 		return nil, err
-	} else if exists {
-		podRedirect.ExperimentalTransparentProxyEngine = transparentProxyV2
 	}
 
 	if value, exists, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaTransparentProxyingEbpf); err != nil {
