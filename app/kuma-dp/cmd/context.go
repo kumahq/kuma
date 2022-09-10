@@ -19,6 +19,7 @@ type RootContext struct {
 	ComponentManager         component.Manager
 	BootstrapGenerator       envoy.BootstrapConfigFactoryFunc
 	BootstrapDynamicMetadata map[string]string
+	DataplaneTokenGenerator  func() ([]byte, error)
 	Config                   *kumadp.Config
 	LogLevel                 log.LogLevel
 }
@@ -35,5 +36,6 @@ func DefaultRootContext() *RootContext {
 		}, runtime.GOOS, features),
 		Config:                   &config,
 		BootstrapDynamicMetadata: map[string]string{},
+		DataplaneTokenGenerator:  nil,
 	}
 }

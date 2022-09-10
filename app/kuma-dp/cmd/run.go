@@ -142,6 +142,21 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			return nil
 		},
 		PostRunE: func(cmd *cobra.Command, _ []string) error {
+			if rootCtx.DataplaneTokenGenerator != nil {
+				path := filepath.Join(cfg.DataplaneRuntime.ConfigDir, cfg.Dataplane.Name)
+
+				token, err := rootCtx.DataplaneTokenGenerator()
+				if err != nil {
+					return err
+				}
+
+				if err := writeFile(path, token, 0600); err != nil {
+					runLog.Error(err, "unable to create file with dataplane token")
+					return err
+				}
+				cfg.DataplaneRuntime.TokenPath = path
+			}
+
 			if tmpDir != "" { // clean up temp dir if it was created
 				defer func() {
 					if err := os.RemoveAll(tmpDir); err != nil {
