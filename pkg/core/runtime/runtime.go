@@ -64,7 +64,9 @@ type RuntimeContext interface {
 	Metrics() metrics.Metrics
 	EventReaderFactory() events.ListenerFactory
 	APIInstaller() api_server.APIInstaller
+	// XDSAuthenticator is used for any server that communicates via xDS
 	XDSAuthenticator() xds_auth.Authenticator
+	// XDSServerCallbacks is used for callbacks for the Envoy xDS server
 	XDSServerCallbacks() util_xds.Callbacks
 	XDSHooks() *xds_hooks.Hooks
 	CAProvider() secrets.CaProvider
