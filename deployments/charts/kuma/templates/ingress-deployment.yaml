@@ -21,10 +21,8 @@ spec:
     metadata:
       annotations:
         kuma.io/ingress: enabled
-        {{- if .Values.ingress.annotations }}
-        {{- range $key, $value := .Values.ingress.annotations }}
+        {{- range $key, $value := merge .Values.ingress.podAnnotations .Values.ingress.annotations }}
         {{ $key }}: {{ $value | quote }}
-        {{- end }}
         {{- end }}
       labels:
         {{- include "kuma.ingressLabels" . | nindent 8 }}

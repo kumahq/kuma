@@ -182,6 +182,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ReadinessProbe.InitialDelaySeconds).To(Equal(int32(41)))
 			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Enabled).To(Equal(true))
 			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Port).To(Equal(uint32(1053)))
+			Expect(cfg.Runtime.Kubernetes.Injector.TransparentProxyV2).To(Equal(true))
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.Enabled).To(Equal(true))
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.InstanceIPEnvVarName).To(Equal("FOO"))
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.BPFFSPath).To(Equal("/run/kuma/bar"))
@@ -400,6 +401,7 @@ runtime:
       builtinDNS:
         enabled: true
         port: 1053
+      transparentProxyV2: true
       ebpf:
         enabled: true
         instanceIPEnvVarName: FOO
@@ -590,6 +592,7 @@ proxy:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_INITIAL_DELAY_SECONDS": "41",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED":                                     "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_PORT":                                        "1053",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_V2":                                    "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_ENABLED":                                            "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_INSTANCE_IP_ENV_VAR_NAME":                           "FOO",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_BPFFS_PATH":                                         "/run/kuma/bar",

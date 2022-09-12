@@ -19,11 +19,11 @@ package kubernetes
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	kube_core "k8s.io/api/core/v1"
 
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 )
 
 type PodRedirect struct {
@@ -41,9 +41,11 @@ type PodRedirect struct {
 	TransparentProxyEbpfBPFFSPath            string
 	TransparentProxyEbpfInstanceIPEnvVarName string
 	TransparentProxyEbpfProgramsSourcePath   string
+	ExcludeOutboundTCPPortsForUIDs           []string
+	ExcludeOutboundUDPPortsForUIDs           []string
 }
 
-func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
+func NewPodRedirectForPod(transparentProxyV2 bool, pod *kube_core.Pod) (*PodRedirect, error) {
 	var err error
 	podRedirect := &PodRedirect{}
 
@@ -58,6 +60,16 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 	}
 
 	podRedirect.ExcludeOutboundPorts, _ = metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeOutboundPorts)
+
+	excludeOutboundTCPPortsForUIDs, exists := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeOutboundTCPPortsForUIDs)
+	if exists {
+		podRedirect.ExcludeOutboundTCPPortsForUIDs = strings.Split(excludeOutboundTCPPortsForUIDs, ";")
+	}
+
+	excludeOutboundUDPPortsForUIDs, exists := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeOutboundUDPPortsForUIDs)
+	if exists {
+		podRedirect.ExcludeOutboundUDPPortsForUIDs = strings.Split(excludeOutboundUDPPortsForUIDs, ";")
+	}
 
 	podRedirect.RedirectPortOutbound, _, err = metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaTransparentProxyingOutboundPortAnnotation)
 	if err != nil {
@@ -87,7 +99,10 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 
 	podRedirect.UID, _ = metadata.Annotations(pod.Annotations).GetString(metadata.KumaSidecarUID)
 
-	podRedirect.ExperimentalTransparentProxyEngine, _, err = metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaTransparentProxyingExperimentalEngine)
+	podRedirect.ExperimentalTransparentProxyEngine, _, err = metadata.Annotations(pod.Annotations).GetEnabledWithDefault(
+		transparentProxyV2,
+		metadata.KumaTransparentProxyingExperimentalEngine,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -113,30 +128,6 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 	return podRedirect, nil
 }
 
-func (pr *PodRedirect) AsTransparentProxyConfig() *config.TransparentProxyConfig {
-	return &config.TransparentProxyConfig{
-		DryRun:                 false,
-		Verbose:                true,
-		RedirectPortOutBound:   fmt.Sprintf("%d", pr.RedirectPortOutbound),
-		RedirectInBound:        pr.RedirectInbound,
-		RedirectPortInBound:    fmt.Sprintf("%d", pr.RedirectPortInbound),
-		RedirectPortInBoundV6:  fmt.Sprintf("%d", pr.RedirectPortInboundV6),
-		ExcludeInboundPorts:    pr.ExcludeInboundPorts,
-		ExcludeOutboundPorts:   pr.ExcludeOutboundPorts,
-		UID:                    pr.UID,
-		GID:                    pr.UID, // TODO: shall we have a separate annotation here?
-		RedirectDNS:            pr.BuiltinDNSEnabled,
-		RedirectAllDNSTraffic:  false,
-		AgentDNSListenerPort:   fmt.Sprintf("%d", pr.BuiltinDNSPort),
-		DNSUpstreamTargetChain: "",
-		ExperimentalEngine:     pr.ExperimentalTransparentProxyEngine,
-		EbpfEnabled:            pr.TransparentProxyEnableEbpf,
-		EbpfInstanceIP:         pr.TransparentProxyEbpfInstanceIPEnvVarName,
-		EbpfBPFFSPath:          pr.TransparentProxyEbpfBPFFSPath,
-		EbpfProgramsSourcePath: pr.TransparentProxyEbpfProgramsSourcePath,
-	}
-}
-
 func (pr *PodRedirect) AsKumactlCommandLine() []string {
 	result := []string{
 		"--redirect-outbound-port",
@@ -155,6 +146,20 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 		"--verbose",
 		// Remove with https://github.com/kumahq/kuma/issues/4759
 		"--skip-resolv-conf",
+	}
+
+	for _, exclusion := range pr.ExcludeOutboundTCPPortsForUIDs {
+		result = append(result,
+			"--exclude-outbound-tcp-ports-for-uids",
+			exclusion,
+		)
+	}
+
+	for _, exclusion := range pr.ExcludeOutboundUDPPortsForUIDs {
+		result = append(result,
+			"--exclude-outbound-udp-ports-for-uids",
+			exclusion,
+		)
 	}
 
 	if pr.BuiltinDNSEnabled {

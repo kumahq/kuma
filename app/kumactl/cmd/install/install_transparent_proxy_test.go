@@ -99,6 +99,16 @@ var _ = Describe("kumactl install transparent proxy", func() {
 			},
 			goldenFile: "install-transparent-proxy.overrides.golden.txt",
 		}),
+		Entry("should generate defaults with outbound exclude ports", testCase{
+			extraArgs: []string{
+				"--kuma-dp-user", "root",
+				"--experimental-transparent-proxy-engine",
+				"--exclude-outbound-tcp-ports-for-uids", "1900,1902,1000-2000:103,104,106-108",
+				"--exclude-outbound-tcp-ports-for-uids", "2900,2902,3000-5000:203,204,206-208",
+				"--exclude-outbound-udp-ports-for-uids", "3900,3902,4000-6000:303,304,306-308",
+			},
+			goldenFile: "install-transparent-proxy.excludedports.txt",
+		}),
 	)
 
 	DescribeTable("should return error",
@@ -124,6 +134,14 @@ var _ = Describe("kumactl install transparent proxy", func() {
 			},
 			goldenFile:   "install-transparent-proxy.defaults.golden.txt",
 			errorMessage: "one of --redirect-dns or --redirect-all-dns-traffic should be specified",
+		}),
+		Entry("should error out on invalid port value", testCase{
+			extraArgs: []string{
+				"--kuma-dp-user", "root",
+				"--experimental-transparent-proxy-engine",
+				"--exclude-outbound-tcp-ports-for-uids", "a3000-5000:1",
+			},
+			errorMessage: "Error: failed to setup transparent proxy: parsing excluded outbound TCP ports for UIDs failed: values or range a3000-5000 failed validation: value a3000, is not valid uint16",
 		}),
 	)
 })
