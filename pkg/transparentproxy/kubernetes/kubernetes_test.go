@@ -28,12 +28,13 @@ import (
 
 var _ = Describe("kubernetes", func() {
 	type testCaseKumactl struct {
-		pod         *kube_core.Pod
-		commandLine []string
+		transparentProxyV2 bool
+		pod                *kube_core.Pod
+		commandLine        []string
 	}
 
 	DescribeTable("should generate kumactl command line", func(given testCaseKumactl) {
-		podRedirect, err := kubernetes.NewPodRedirectForPod(given.pod)
+		podRedirect, err := kubernetes.NewPodRedirectForPod(given.transparentProxyV2, given.pod)
 		Expect(err).ToNot(HaveOccurred())
 
 		commandLine := podRedirect.AsKumactlCommandLine()
@@ -152,6 +153,33 @@ var _ = Describe("kubernetes", func() {
 				"--exclude-outbound-tcp-ports-for-uids", "11003:3",
 				"--exclude-outbound-udp-ports-for-uids", "11001:1",
 				"--exclude-outbound-udp-ports-for-uids", "11002:2",
+				"--experimental-transparent-proxy-engine",
+			},
+		}),
+		Entry("should generate experimental engine if enabled even without annotation", testCaseKumactl{
+			transparentProxyV2: true,
+			pod: &kube_core.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						metadata.KumaTrafficExcludeOutboundPorts:                "11000",
+						metadata.KumaTransparentProxyingOutboundPortAnnotation:  "25100",
+						metadata.KumaTrafficExcludeInboundPorts:                 "12000",
+						metadata.KumaTransparentProxyingInboundPortAnnotation:   "25204",
+						metadata.KumaTransparentProxyingInboundPortAnnotationV6: "25206",
+						metadata.KumaSidecarUID:                                 "12345",
+					},
+				},
+			},
+			commandLine: []string{
+				"--redirect-outbound-port", "25100",
+				"--redirect-inbound=" + "true",
+				"--redirect-inbound-port", "25204",
+				"--redirect-inbound-port-v6", "25206",
+				"--kuma-dp-uid", "12345",
+				"--exclude-inbound-ports", "12000",
+				"--exclude-outbound-ports", "11000",
+				"--verbose",
+				"--skip-resolv-conf",
 				"--experimental-transparent-proxy-engine",
 			},
 		}),
