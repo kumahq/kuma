@@ -57,6 +57,7 @@ func newRunCmd() *cobra.Command {
 		Short: "Start xDS client(s) that simulate Envoy",
 		Long:  `Start xDS client(s) that simulate Envoy.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			ipRand := rand.Uint32()
 			log.Info("going to start xDS clients (Envoy simulators)", "dps", args.dps)
 			errCh := make(chan error, 1)
 			for i := 0; i < args.dps; i++ {
@@ -65,9 +66,13 @@ func newRunCmd() *cobra.Command {
 				nodeLog.Info("creating an xDS client ...")
 
 				go func(i int) {
+					buf := make([]byte, 4)
+					binary.LittleEndian.PutUint32(buf, ipRand+uint32(i))
+					ip := net.IP(buf).String()
+
 					dpSpec := &v1alpha1.Dataplane{
 						Networking: &v1alpha1.Dataplane_Networking{
-							Address: randomIP(),
+							Address: ip,
 						},
 					}
 					for j := 0; j < args.inbounds; j++ {
@@ -170,13 +175,6 @@ func newRunCmd() *cobra.Command {
 	cmd.PersistentFlags().IntVar(&args.outbounds, "outbounds", args.outbounds, "number of outbounds")
 	cmd.PersistentFlags().DurationVar(&args.rampUpPeriod, "rampup-period", args.rampUpPeriod, "ramp up period")
 	return cmd
-}
-
-func randomIP() string {
-	buf := make([]byte, 4)
-	ip := rand.Uint32()
-	binary.LittleEndian.PutUint32(buf, ip)
-	return net.IP(buf).String()
 }
 
 func main() {
