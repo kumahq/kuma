@@ -153,16 +153,21 @@ func GatewayListenerInfoFromProxy(
 		return nil, errors.Wrap(err, "unable to find external services matched by traffic permissions")
 	}
 
-	outboundEndpoints := xds_topology.BuildEndpointMap(
+	outboundEndpoints := core_xds.EndpointMap{}
+	for k, v := range meshCtx.EndpointMap {
+		outboundEndpoints[k] = v
+	}
+
+	esEndpoints := xds_topology.BuildExternalServicesEndpointMap(
 		ctx,
 		meshCtx.Resource,
-		zone,
-		meshCtx.Resources.Dataplanes().Items,
-		meshCtx.Resources.ZoneIngresses().Items,
-		meshCtx.Resources.ZoneEgresses().Items,
 		matchedExternalServices,
 		meshCtx.DataSourceLoader,
+		zone,
 	)
+	for k, v := range esEndpoints {
+		outboundEndpoints[k] = v
+	}
 
 	// We already validate that listeners are collapsible
 	for _, listeners := range collapsed {

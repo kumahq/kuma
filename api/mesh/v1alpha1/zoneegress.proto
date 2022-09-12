@@ -6,7 +6,7 @@ option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "mesh/options.proto";
 import "mesh/v1alpha1/envoy_admin.proto";
-import "config.proto";
+import "kuma-doc/config.proto";
 
 option (doc.config) = {
   type : Proxy,

@@ -24,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
@@ -183,7 +184,7 @@ func StoreNamedFixture(rt runtime.Runtime, name string) error {
 // StoreInlineFixture stores or updates the given YAML object in the
 // runtime resource manager.
 func StoreInlineFixture(rt runtime.Runtime, object []byte) error {
-	r, err := rest.UnmarshallToCore(object)
+	r, err := rest.YAML.UnmarshalCore(object)
 	if err != nil {
 		return err
 	}
@@ -298,7 +299,7 @@ func (d *DataplaneGenerator) generate(
 	d.NextPort++
 
 	dp := core_mesh.NewDataplaneResource()
-	dp.SetMeta(&rest.ResourceMeta{
+	dp.SetMeta(&rest_v1alpha1.ResourceMeta{
 		Type:             string(dp.Descriptor().Name),
 		Mesh:             "default",
 		Name:             resourceName,

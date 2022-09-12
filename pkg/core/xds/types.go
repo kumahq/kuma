@@ -291,6 +291,10 @@ type VIPDomains struct {
 type Routing struct {
 	TrafficRoutes   RouteMap
 	OutboundTargets EndpointMap
+	// ExternalServiceOutboundTargets contains endpoint map for direct access of external services (without egress)
+	// Since we take into account TrafficPermission to exclude external services from the map,
+	// it is specific for each data plane proxy.
+	ExternalServiceOutboundTargets EndpointMap
 }
 
 type CaSecret struct {

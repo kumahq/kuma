@@ -13,7 +13,8 @@ import (
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
+	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/test/xds/client/stream"
 )
@@ -56,8 +57,8 @@ func newRunCmd() *cobra.Command {
 				nodeLog.Info("creating an xDS client ...")
 
 				go func(i int) {
-					dp := &rest.Resource{
-						Meta: rest.ResourceMeta{Mesh: "default", Name: fmt.Sprintf("dataplane-%d", i), Type: "Dataplane"},
+					dp := &unversioned.Resource{
+						Meta: rest_v1alpha1.ResourceMeta{Mesh: "default", Name: fmt.Sprintf("dataplane-%d", i), Type: "Dataplane"},
 						Spec: &v1alpha1.Dataplane{
 							Networking: &v1alpha1.Dataplane_Networking{
 								Address: "127.0.0.1",

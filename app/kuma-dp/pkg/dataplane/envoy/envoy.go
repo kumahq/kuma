@@ -30,7 +30,7 @@ var (
 )
 
 type BootstrapParams struct {
-	Dataplane       *rest.Resource
+	Dataplane       rest.Resource
 	DNSPort         uint32
 	EmptyDNSPort    uint32
 	EnvoyVersion    EnvoyVersion
@@ -43,7 +43,7 @@ type Opts struct {
 	Config          kuma_dp.Config
 	BootstrapConfig []byte
 	AdminPort       uint32
-	Dataplane       *rest.Resource
+	Dataplane       rest.Resource
 	Stdout          io.Writer
 	Stderr          io.Writer
 	Quit            chan struct{}

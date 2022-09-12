@@ -114,7 +114,7 @@ $ kumactl apply -f https://example.com/resource.yaml
 				if len(ctx.args.vars) > 0 {
 					bytes = template.Render(rawResource, ctx.args.vars)
 				}
-				res, err := rest_types.UnmarshallToCore(bytes)
+				res, err := rest_types.YAML.UnmarshalCore(bytes)
 				if err != nil {
 					return errors.Wrap(err, "YAML contains invalid resource")
 				}

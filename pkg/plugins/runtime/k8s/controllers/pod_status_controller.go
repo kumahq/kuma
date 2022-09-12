@@ -5,7 +5,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"go.uber.org/multierr"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
@@ -64,18 +63,10 @@ func (r *PodStatusReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 		return kube_ctrl.Result{}, err
 	}
 
-	var errs error
-	err := r.EnvoyAdminClient.PostQuit(ctx, dp)
-	if err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, "envoy admin client failed. Most probably the pod is already going down."))
+	if err := r.EnvoyAdminClient.PostQuit(ctx, dp); err != nil {
+		return kube_ctrl.Result{}, errors.Wrap(err, "envoy admin client failed. Most probably the pod is already going down.")
 	}
-
-	err = r.Client.Delete(ctx, dataplane)
-	if err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, "unable to delete the job's dataplane"))
-	}
-
-	return kube_ctrl.Result{}, errs
+	return kube_ctrl.Result{}, nil
 }
 
 func (r *PodStatusReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {

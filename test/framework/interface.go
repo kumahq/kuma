@@ -93,7 +93,7 @@ type appDeploymentOptions struct {
 	appYaml               string
 	appArgs               []string
 	token                 string
-	transparent           bool
+	transparent           *bool
 	builtindns            *bool // true by default
 	protocol              string
 	serviceName           string
@@ -457,7 +457,7 @@ func WithToken(token string) AppDeploymentOption {
 
 func WithTransparentProxy(transparent bool) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
-		o.transparent = transparent
+		o.transparent = &transparent
 	})
 }
 

@@ -26,6 +26,8 @@ type transparentProxyArgs struct {
 	RedirectPortInBoundV6              string
 	ExcludeInboundPorts                string
 	ExcludeOutboundPorts               string
+	ExcludeOutboundTCPPortsForUIDs     []string
+	ExcludeOutboundUDPPortsForUIDs     []string
 	UID                                string
 	User                               string
 	RedirectDNS                        bool
@@ -51,6 +53,8 @@ func newInstallTransparentProxy() *cobra.Command {
 		RedirectPortInBoundV6:              "15010",
 		ExcludeInboundPorts:                "",
 		ExcludeOutboundPorts:               "",
+		ExcludeOutboundTCPPortsForUIDs:     []string{},
+		ExcludeOutboundUDPPortsForUIDs:     []string{},
 		UID:                                "",
 		User:                               "",
 		RedirectDNS:                        false,
@@ -193,6 +197,9 @@ runuser -u kuma-dp -- \
 	cmd.Flags().StringVar(&args.EbpfInstanceIP, "ebpf-instance-ip", args.EbpfInstanceIP, "IP address of the instance (pod/vm) where transparent proxy will be installed")
 	cmd.Flags().StringVar(&args.EbpfBPFFSPath, "ebpf-bpffs-path", args.EbpfBPFFSPath, "the path of the BPF filesystem")
 
+	cmd.Flags().StringArrayVar(&args.ExcludeOutboundTCPPortsForUIDs, "exclude-outbound-tcp-ports-for-uids", []string{}, "tcp outbound ports to exclude for specific UIDs in a format of ports:uids where both ports and uids can be a single value, a list, a range or a combination of all, e.g. 3000-5000:103,104,106-108 would mean exclude ports from 3000 to 5000 for UIDs 103, 104, 106, 107, 108")
+	cmd.Flags().StringArrayVar(&args.ExcludeOutboundUDPPortsForUIDs, "exclude-outbound-udp-ports-for-uids", []string{}, "udp outbound ports to exclude for specific UIDs in a format of ports:uids where both ports and uids can be a single value, a list, a range or a combination of all, e.g. 3000-5000:103,104,106-108 would mean exclude ports from 3000 to 5000 for UIDs 103, 104, 106, 107, 108")
+
 	return cmd
 }
 
@@ -236,27 +243,29 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 	}
 
 	cfg := &config.TransparentProxyConfig{
-		DryRun:                    args.DryRun,
-		Verbose:                   args.Verbose,
-		RedirectPortOutBound:      args.RedirectPortOutBound,
-		RedirectInBound:           args.RedirectInbound,
-		RedirectPortInBound:       args.RedirectPortInBound,
-		RedirectPortInBoundV6:     args.RedirectPortInBoundV6,
-		ExcludeInboundPorts:       args.ExcludeInboundPorts,
-		ExcludeOutboundPorts:      args.ExcludeOutboundPorts,
-		UID:                       uid,
-		GID:                       gid,
-		RedirectDNS:               args.RedirectDNS,
-		RedirectAllDNSTraffic:     args.RedirectAllDNSTraffic,
-		AgentDNSListenerPort:      args.AgentDNSListenerPort,
-		DNSUpstreamTargetChain:    args.DNSUpstreamTargetChain,
-		SkipDNSConntrackZoneSplit: args.SkipDNSConntrackZoneSplit,
-		EbpfEnabled:               args.EbpfEnabled,
-		EbpfInstanceIP:            args.EbpfInstanceIP,
-		EbpfBPFFSPath:             args.EbpfBPFFSPath,
-		EbpfProgramsSourcePath:    args.EbpfProgramsSourcePath,
-		Stdout:                    cmd.OutOrStdout(),
-		Stderr:                    cmd.OutOrStderr(),
+		DryRun:                         args.DryRun,
+		Verbose:                        args.Verbose,
+		RedirectPortOutBound:           args.RedirectPortOutBound,
+		RedirectInBound:                args.RedirectInbound,
+		RedirectPortInBound:            args.RedirectPortInBound,
+		RedirectPortInBoundV6:          args.RedirectPortInBoundV6,
+		ExcludeInboundPorts:            args.ExcludeInboundPorts,
+		ExcludeOutboundPorts:           args.ExcludeOutboundPorts,
+		ExcludeOutboundTCPPortsForUIDs: args.ExcludeOutboundTCPPortsForUIDs,
+		ExcludeOutboundUDPPortsForUIDs: args.ExcludeOutboundUDPPortsForUIDs,
+		UID:                            uid,
+		GID:                            gid,
+		RedirectDNS:                    args.RedirectDNS,
+		RedirectAllDNSTraffic:          args.RedirectAllDNSTraffic,
+		AgentDNSListenerPort:           args.AgentDNSListenerPort,
+		DNSUpstreamTargetChain:         args.DNSUpstreamTargetChain,
+		SkipDNSConntrackZoneSplit:      args.SkipDNSConntrackZoneSplit,
+		EbpfEnabled:                    args.EbpfEnabled,
+		EbpfInstanceIP:                 args.EbpfInstanceIP,
+		EbpfBPFFSPath:                  args.EbpfBPFFSPath,
+		EbpfProgramsSourcePath:         args.EbpfProgramsSourcePath,
+		Stdout:                         cmd.OutOrStdout(),
+		Stderr:                         cmd.OutOrStderr(),
 	}
 
 	output, err := tp.Setup(cfg)

@@ -4,7 +4,7 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
-import "config.proto"; // kumadoc options
+import "kuma-doc/config.proto";
 import "google/protobuf/wrappers.proto";
 import "mesh/options.proto";
 import "mesh/v1alpha1/selector.proto";

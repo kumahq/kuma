@@ -3,25 +3,6 @@
 # Re-usable snippets
 #
 
-define go_mod_latest_version
-	find $(GOPATH_DIR)/pkg/mod/$(1) -maxdepth 1 -name '$(2)@*' | xargs -L 1 basename | sort -r | head -1 | awk -F@ '{print $$2}'
-endef
-
-DATAPLANE_API_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/envoyproxy,data-plane-api))
-UDPA_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/cncf,udpa))
-GOOGLEAPIS_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/googleapis,googleapis))
-KUMADOC_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/kumahq,protoc-gen-kumadoc))
-
-protoc_search_go_packages := \
-	google.golang.org/protobuf@$(GOLANG_PROTOBUF_VERSION) \
-	github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION) \
-	github.com/envoyproxy/data-plane-api@$(DATAPLANE_API_ACTUAL_VERSION) \
-	github.com/cncf/udpa@$(UDPA_ACTUAL_VERSION) \
-	github.com/googleapis/googleapis@$(GOOGLEAPIS_ACTUAL_VERSION) \
-	github.com/kumahq/protoc-gen-kumadoc@$(KUMADOC_ACTUAL_VERSION)/proto
-
-protoc_search_go_paths := $(foreach go_package,$(protoc_search_go_packages),--proto_path=$(GOPATH_DIR)/pkg/mod/$(go_package))
-
 go_import_mapping_entries := \
 	envoy/annotations/deprecation.proto=github.com/envoyproxy/go-control-plane/envoy/annotations \
 	envoy/api/v2/core/address.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2/core \
@@ -60,32 +41,25 @@ space := $(empty) $(empty)
 go_mapping_with_spaces := $(foreach entry,$(go_import_mapping_entries),M$(entry),)
 go_mapping := $(subst $(space),$(empty),$(go_mapping_with_spaces))
 
-PROTOC := protoc \
-	--proto_path=$(PROTOBUF_WKT_DIR)/include \
-	--proto_path=. \
-	$(protoc_search_go_paths)
+PROTOC := $(PROTOC_BIN) \
+	--proto_path=$(PROTOS_DEPS_PATH) \
+	--proto_path=$(KUMA_DIR)/api \
+	--proto_path=.
 
 PROTOC_GO := $(PROTOC) \
+	--plugin=protoc-gen-go=$(PROTOC_GEN_GO) \
+	--plugin=protoc-gen-go-grpc=$(PROTOC_GEN_GO_GRPC) \
 	--go_opt=paths=source_relative \
 	--go_out=$(go_mapping):. \
 	--go-grpc_opt=paths=source_relative \
 	--go-grpc_out=$(go_mapping):.
 
-
-protoc/common/v1alpha1:
-	cd api && $(PROTOC_GO) common/v1alpha1/*.proto
-
-protoc/mesh:
-	cd api && $(PROTOC_GO) mesh/*.proto
-
-protoc/mesh/v1alpha1:
-	cd api && $(PROTOC_GO) mesh/v1alpha1/*.proto
-
-protoc/observability/v1:
-	cd api && $(PROTOC_GO) observability/v1/*.proto
-
-protoc/system/v1alpha1:
-	cd api && $(PROTOC_GO) system/v1alpha1/*.proto
-
-protodoc/mesh/v1alpha1: ## Generate Mesh API reference
-	cd api && $(PROTOC_KUMADOC) mesh/v1alpha1/*.proto
+protoc/%:
+	$(PROTOC) \
+		--plugin=protoc-gen-go=$(PROTOC_GEN_GO) \
+		--plugin=protoc-gen-go-grpc=$(PROTOC_GEN_GO_GRPC) \
+		--go_opt=paths=source_relative \
+		--go_out=$(go_mapping):api/ \
+		--go-grpc_opt=paths=source_relative \
+		--go-grpc_out=$(go_mapping):api/ \
+		api/$*/*.proto

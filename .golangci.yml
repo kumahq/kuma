@@ -89,3 +89,16 @@ issues:
     - linters: # AdminPort is deprecated, but it's used to support backwards compatibility
         - staticcheck
       text: "SA1019: c.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort is deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead."
+    - path: pkg/api-server/inspect_endpoints.go
+      linters:
+        - staticcheck
+      text: "SA1019: rest_unversioned.From.Resource is deprecated"
+    - path: pkg/api-server/types/inspect_test.go
+      linters:
+        - staticcheck
+      text: "SA1019: rest_unversioned.From.Resource is deprecated"
+    - path: pkg/api-server/service_insight_endpoints.go
+      linters:
+        - staticcheck
+      text: "SA1019: rest_unversioned.From.Resource is deprecated"
+

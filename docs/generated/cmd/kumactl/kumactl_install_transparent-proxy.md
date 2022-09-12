@@ -67,6 +67,8 @@ kumactl install transparent-proxy [flags]
       --ebpf-programs-source-path string                                                path where compiled ebpf programs and other necessary for ebpf mode files can be found (default "/kuma/ebpf")
       --exclude-inbound-ports string                                                    a comma separated list of inbound ports to exclude from redirect to Envoy
       --exclude-outbound-ports string                                                   a comma separated list of outbound ports to exclude from redirect to Envoy
+      --exclude-outbound-tcp-ports-for-uids stringArray                                 tcp outbound ports to exclude for specific UIDs in a format of ports:uids where both ports and uids can be a single value, a list, a range or a combination of all, e.g. 3000-5000:103,104,106-108 would mean exclude ports from 3000 to 5000 for UIDs 103, 104, 106, 107, 108
+      --exclude-outbound-udp-ports-for-uids stringArray                                 udp outbound ports to exclude for specific UIDs in a format of ports:uids where both ports and uids can be a single value, a list, a range or a combination of all, e.g. 3000-5000:103,104,106-108 would mean exclude ports from 3000 to 5000 for UIDs 103, 104, 106, 107, 108
       --experimental-transparent-proxy-engine                                           use experimental transparent proxy engine
   -h, --help                                                                            help for transparent-proxy
       --kuma-dp-uid string                                                              the UID of the user that will run kuma-dp

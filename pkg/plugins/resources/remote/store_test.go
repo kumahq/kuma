@@ -14,15 +14,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_rest "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	errors_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/plugins/resources/remote"
-	sample_api "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
-	sample_core "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
@@ -48,8 +47,8 @@ var _ = Describe("RemoteStore", func() {
 		}
 		apis := &core_rest.ApiDescriptor{
 			Resources: map[core_model.ResourceType]core_rest.ResourceApi{
-				sample_core.TrafficRouteType: core_rest.NewResourceApi(core_model.ScopeMesh, "traffic-routes"),
-				mesh.MeshType:                core_rest.NewResourceApi(core_model.ScopeGlobal, "meshes"),
+				core_mesh.TrafficRouteType: core_rest.NewResourceApi(core_model.ScopeMesh, "traffic-routes"),
+				core_mesh.MeshType:         core_rest.NewResourceApi(core_model.ScopeGlobal, "meshes"),
 			},
 		}
 		return remote.NewStore(client, apis)
@@ -66,8 +65,8 @@ var _ = Describe("RemoteStore", func() {
 		}
 		apis := &core_rest.ApiDescriptor{
 			Resources: map[core_model.ResourceType]core_rest.ResourceApi{
-				sample_core.TrafficRouteType: core_rest.NewResourceApi(core_model.ScopeMesh, "traffic-routes"),
-				mesh.MeshType:                core_rest.NewResourceApi(core_model.ScopeMesh, "meshes"),
+				core_mesh.TrafficRouteType: core_rest.NewResourceApi(core_model.ScopeMesh, "traffic-routes"),
+				core_mesh.MeshType:         core_rest.NewResourceApi(core_model.ScopeMesh, "meshes"),
 			},
 		}
 		return remote.NewStore(client, apis)
@@ -81,12 +80,37 @@ var _ = Describe("RemoteStore", func() {
 			})
 
 			// when
-			resource := sample_core.NewTrafficRouteResource()
+			resource := core_mesh.NewTrafficRouteResource()
 			err := store.Get(context.Background(), resource, core_store.GetByKey(name, "default"))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resource.Spec.Path).To(Equal("/example"))
+			Expect(resource.Spec).To(matchers.MatchProto(&mesh_proto.TrafficRoute{
+				Sources: []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							"kuma.io/service": "*",
+						},
+					},
+				},
+				Destinations: []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							"kuma.io/service": "*",
+						},
+					},
+				},
+				Conf: &mesh_proto.TrafficRoute_Conf{
+					LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+						LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{
+							RoundRobin: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin{},
+						},
+					},
+					Destination: map[string]string{
+						"kuma.io/service": "*",
+					},
+				},
+			}))
 
 			Expect(resource.GetMeta().GetName()).To(Equal("res-1"))
 			Expect(resource.GetMeta().GetMesh()).To(Equal("default"))
@@ -101,7 +125,7 @@ var _ = Describe("RemoteStore", func() {
 			})
 
 			// when
-			resource := mesh.NewMeshResource()
+			resource := core_mesh.NewMeshResource()
 			err := store.Get(context.Background(), resource, core_store.GetByKey(meshName, core_model.NoMesh))
 
 			// then
@@ -123,7 +147,7 @@ var _ = Describe("RemoteStore", func() {
 			store := setupErrorStore(400, json)
 
 			// when
-			resource := mesh.NewMeshResource()
+			resource := core_mesh.NewMeshResource()
 			err := store.Get(context.Background(), resource, core_store.GetByKey("test", "test"))
 
 			// then
@@ -145,7 +169,7 @@ var _ = Describe("RemoteStore", func() {
 			store := setupErrorStore(404, json)
 
 			// when
-			resource := mesh.NewMeshResource()
+			resource := core_mesh.NewMeshResource()
 			err := store.Get(context.Background(), resource, core_store.GetByKey("test", "test"))
 
 			// then
@@ -161,13 +185,29 @@ var _ = Describe("RemoteStore", func() {
 				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/default/traffic-routes/%s", name)))
 				bytes, err := io.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(bytes).To(MatchJSON(`{"mesh":"default","name":"res-1","path":"/some-path","type":"SampleTrafficRoute","creationTime": "0001-01-01T00:00:00Z","modificationTime": "0001-01-01T00:00:00Z"}`))
+				Expect(bytes).To(MatchJSON(`
+{
+  "type": "TrafficRoute",
+  "mesh": "default",
+  "name": "res-1",
+  "creationTime": "0001-01-01T00:00:00Z",
+  "modificationTime": "0001-01-01T00:00:00Z",
+  "conf": {
+    "destination": {
+      "kuma.io/service": "*"
+    }
+  }
+}`))
 			})
 
 			// when
-			resource := sample_core.TrafficRouteResource{
-				Spec: &sample_api.TrafficRoute{
-					Path: "/some-path",
+			resource := core_mesh.TrafficRouteResource{
+				Spec: &mesh_proto.TrafficRoute{
+					Conf: &mesh_proto.TrafficRoute_Conf{
+						Destination: map[string]string{
+							"kuma.io/service": "*",
+						},
+					},
 				},
 			}
 			err := store.Create(context.Background(), &resource, core_store.CreateByKey(name, "default"))
@@ -187,8 +227,8 @@ var _ = Describe("RemoteStore", func() {
 			})
 
 			// when
-			resource := mesh.MeshResource{
-				Spec: &v1alpha1.Mesh{},
+			resource := core_mesh.MeshResource{
+				Spec: &mesh_proto.Mesh{},
 			}
 			err := store.Create(context.Background(), &resource, core_store.CreateByKey(meshName, core_model.NoMesh))
 
@@ -212,7 +252,7 @@ var _ = Describe("RemoteStore", func() {
 			store := setupErrorStore(400, json)
 
 			// when
-			err := store.Create(context.Background(), mesh.NewMeshResource(), core_store.CreateByKey("test", core_model.NoMesh))
+			err := store.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey("test", core_model.NoMesh))
 
 			// then
 			Expect(err).To(HaveOccurred())
@@ -237,13 +277,29 @@ var _ = Describe("RemoteStore", func() {
 				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/default/traffic-routes/%s", name)))
 				bytes, err := io.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(bytes).To(MatchJSON(`{"mesh":"default","name":"res-1","path":"/some-path","type":"SampleTrafficRoute","creationTime": "0001-01-01T00:00:00Z","modificationTime": "0001-01-01T00:00:00Z"}`))
+				Expect(bytes).To(MatchJSON(`
+{
+  "type": "TrafficRoute",
+  "mesh": "default",
+  "name": "res-1",
+  "creationTime": "0001-01-01T00:00:00Z",
+  "modificationTime": "0001-01-01T00:00:00Z",
+  "conf": {
+    "destination": {
+      "kuma.io/service": "*"
+    }
+  }
+}`))
 			})
 
 			// when
-			resource := sample_core.TrafficRouteResource{
-				Spec: &sample_api.TrafficRoute{
-					Path: "/some-path",
+			resource := core_mesh.TrafficRouteResource{
+				Spec: &mesh_proto.TrafficRoute{
+					Conf: &mesh_proto.TrafficRoute_Conf{
+						Destination: map[string]string{
+							"kuma.io/service": "*",
+						},
+					},
 				},
 				Meta: &model.ResourceMeta{
 					Mesh: "default",
@@ -267,11 +323,11 @@ var _ = Describe("RemoteStore", func() {
 			})
 
 			// when
-			resource := mesh.MeshResource{
-				Spec: &v1alpha1.Mesh{
-					Mtls: &v1alpha1.Mesh_Mtls{
+			resource := core_mesh.MeshResource{
+				Spec: &mesh_proto.Mesh{
+					Mtls: &mesh_proto.Mesh_Mtls{
 						EnabledBackend: "builtin",
-						Backends: []*v1alpha1.CertificateAuthorityBackend{
+						Backends: []*mesh_proto.CertificateAuthorityBackend{
 							{
 								Name: "builtin",
 								Type: "builtin",
@@ -294,8 +350,8 @@ var _ = Describe("RemoteStore", func() {
 			store := setupErrorStore(400, "some error from the server")
 
 			// when
-			resource := mesh.MeshResource{
-				Spec: &v1alpha1.Mesh{},
+			resource := core_mesh.MeshResource{
+				Spec: &mesh_proto.Mesh{},
 				Meta: &model.ResourceMeta{
 					Name: "default",
 				},
@@ -326,11 +382,11 @@ var _ = Describe("RemoteStore", func() {
 			store := setupErrorStore(400, json)
 
 			// when
-			resource := mesh.MeshResource{
+			resource := core_mesh.MeshResource{
 				Meta: &model.ResourceMeta{
 					Name: "test",
 				},
-				Spec: &v1alpha1.Mesh{},
+				Spec: &mesh_proto.Mesh{},
 			}
 			err := store.Update(context.Background(), &resource)
 
@@ -362,7 +418,7 @@ var _ = Describe("RemoteStore", func() {
 			})
 
 			// when
-			rs := sample_core.TrafficRouteResourceList{}
+			rs := core_mesh.TrafficRouteResourceList{}
 			err := store.List(context.Background(), &rs, core_store.ListByMesh("demo"))
 
 			// then
@@ -372,14 +428,30 @@ var _ = Describe("RemoteStore", func() {
 			Expect(rs.Items[0].Meta.GetName()).To(Equal("one"))
 			Expect(rs.Items[0].Meta.GetMesh()).To(Equal("default"))
 			Expect(rs.Items[0].Meta.GetVersion()).To(Equal(""))
-			Expect(rs.Items[0].Spec.Path).To(Equal("/example"))
+			Expect(rs.Items[0].Spec).To(matchers.MatchProto(&mesh_proto.TrafficRoute{
+				Conf: &mesh_proto.TrafficRoute_Conf{
+					LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+						LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{
+							RoundRobin: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin{},
+						},
+					},
+				},
+			}))
 			Expect(rs.Items[0].Meta.GetCreationTime()).Should(Equal(creationTime))
 			Expect(rs.Items[0].Meta.GetModificationTime()).Should(Equal(modificationTime))
 			// and
 			Expect(rs.Items[1].Meta.GetName()).To(Equal("two"))
 			Expect(rs.Items[1].Meta.GetMesh()).To(Equal("demo"))
 			Expect(rs.Items[1].Meta.GetVersion()).To(Equal(""))
-			Expect(rs.Items[1].Spec.Path).To(Equal("/another"))
+			Expect(rs.Items[1].Spec).To(matchers.MatchProto(&mesh_proto.TrafficRoute{
+				Conf: &mesh_proto.TrafficRoute_Conf{
+					LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+						LbType: &mesh_proto.TrafficRoute_LoadBalancer_LeastRequest_{
+							LeastRequest: &mesh_proto.TrafficRoute_LoadBalancer_LeastRequest{},
+						},
+					},
+				},
+			}))
 			Expect(rs.Items[1].Meta.GetCreationTime()).Should(Equal(creationTime))
 			Expect(rs.Items[1].Meta.GetModificationTime()).Should(Equal(modificationTime))
 		})
@@ -393,7 +465,7 @@ var _ = Describe("RemoteStore", func() {
 			})
 
 			// when
-			rs := sample_core.TrafficRouteResourceList{}
+			rs := core_mesh.TrafficRouteResourceList{}
 			err := store.List(context.Background(), &rs, core_store.ListByMesh("demo"), core_store.ListByPage(1, "2"))
 
 			// then
@@ -403,7 +475,15 @@ var _ = Describe("RemoteStore", func() {
 			Expect(rs.Items[0].Meta.GetName()).To(Equal("one"))
 			Expect(rs.Items[0].Meta.GetMesh()).To(Equal("default"))
 			Expect(rs.Items[0].Meta.GetVersion()).To(Equal(""))
-			Expect(rs.Items[0].Spec.Path).To(Equal("/example"))
+			Expect(rs.Items[0].Spec).To(matchers.MatchProto(&mesh_proto.TrafficRoute{
+				Conf: &mesh_proto.TrafficRoute_Conf{
+					LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+						LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{
+							RoundRobin: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin{},
+						},
+					},
+				},
+			}))
 			Expect(rs.Items[0].Meta.GetCreationTime()).Should(Equal(creationTime))
 			Expect(rs.Items[0].Meta.GetModificationTime()).Should(Equal(modificationTime))
 		})
@@ -415,7 +495,7 @@ var _ = Describe("RemoteStore", func() {
 			})
 
 			// when
-			meshes := mesh.MeshResourceList{}
+			meshes := core_mesh.MeshResourceList{}
 			err := store.List(context.Background(), &meshes)
 
 			// then
@@ -438,7 +518,7 @@ var _ = Describe("RemoteStore", func() {
 			store := setupErrorStore(400, "some error from the server")
 
 			// when
-			meshes := mesh.MeshResourceList{}
+			meshes := core_mesh.MeshResourceList{}
 			err := store.List(context.Background(), &meshes)
 
 			// then
@@ -455,7 +535,7 @@ var _ = Describe("RemoteStore", func() {
 			store := setupErrorStore(400, json)
 
 			// when
-			meshes := mesh.MeshResourceList{}
+			meshes := core_mesh.MeshResourceList{}
 			err := store.List(context.Background(), &meshes)
 
 			// then
@@ -478,7 +558,7 @@ var _ = Describe("RemoteStore", func() {
 			})
 
 			// when
-			resource := sample_core.NewTrafficRouteResource()
+			resource := core_mesh.NewTrafficRouteResource()
 			err := store.Delete(context.Background(), resource, core_store.DeleteByKey(name, meshName))
 
 			// then
@@ -493,7 +573,7 @@ var _ = Describe("RemoteStore", func() {
 			})
 
 			// when
-			resource := mesh.NewMeshResource()
+			resource := core_mesh.NewMeshResource()
 			err := store.Delete(context.Background(), resource, core_store.DeleteByKey(meshName, meshName))
 
 			// then
@@ -505,7 +585,7 @@ var _ = Describe("RemoteStore", func() {
 			store := setupErrorStore(400, "some error from the server")
 
 			// when
-			resource := sample_core.NewTrafficRouteResource()
+			resource := core_mesh.NewTrafficRouteResource()
 			err := store.Delete(context.Background(), resource, core_store.DeleteByKey("tr-1", "mesh-1"))
 
 			// then
@@ -522,7 +602,7 @@ var _ = Describe("RemoteStore", func() {
 			store := setupErrorStore(404, json)
 
 			// when
-			resource := sample_core.NewTrafficRouteResource()
+			resource := core_mesh.NewTrafficRouteResource()
 			err := store.Delete(context.Background(), resource, core_store.DeleteByKey("tr-1", "mesh-1"))
 
 			// then
@@ -538,7 +618,7 @@ var _ = Describe("RemoteStore", func() {
 			store := setupErrorStore(400, json)
 
 			// when
-			resource := sample_core.NewTrafficRouteResource()
+			resource := core_mesh.NewTrafficRouteResource()
 			err := store.Delete(context.Background(), resource, core_store.DeleteByKey("tr-1", "mesh-1"))
 
 			// then

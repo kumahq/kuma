@@ -53,10 +53,10 @@ func ShouldEnableIPv6() (bool, error) {
 	return err == nil, nil
 }
 
-func parsePort(port string) (uint16, error) {
+func parseUint16(port string) (uint16, error) {
 	parsedPort, err := strconv.ParseUint(port, 10, 16)
 	if err != nil {
-		return 0, fmt.Errorf("port %s, is not valid uint16", port)
+		return 0, fmt.Errorf("value %s, is not valid uint16", port)
 	}
 
 	return uint16(parsedPort), nil
@@ -71,7 +71,7 @@ func splitPorts(ports string) ([]uint16, error) {
 	var result []uint16
 
 	for _, port := range strings.Split(ports, ",") {
-		p, err := parsePort(port)
+		p, err := parseUint16(port)
 		if err != nil {
 			return nil, err
 		}
@@ -83,7 +83,7 @@ func splitPorts(ports string) ([]uint16, error) {
 }
 
 func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyConfig) (string, error) {
-	redirectInboundPort, err := parsePort(tpConfig.RedirectPortInBound)
+	redirectInboundPort, err := parseUint16(tpConfig.RedirectPortInBound)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing inbound redirect port failed")
 	}
@@ -91,18 +91,18 @@ func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyC
 	var redirectInboundPortIPv6 uint16
 
 	if tpConfig.RedirectPortInBoundV6 != "" {
-		redirectInboundPortIPv6, err = parsePort(tpConfig.RedirectPortInBoundV6)
+		redirectInboundPortIPv6, err = parseUint16(tpConfig.RedirectPortInBoundV6)
 		if err != nil {
 			return "", errors.Wrap(err, "parsing inbound redirect port IPv6 failed")
 		}
 	}
 
-	redirectOutboundPort, err := parsePort(tpConfig.RedirectPortOutBound)
+	redirectOutboundPort, err := parseUint16(tpConfig.RedirectPortOutBound)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing outbound redirect port failed")
 	}
 
-	agentDNSListenerPort, err := parsePort(tpConfig.AgentDNSListenerPort)
+	agentDNSListenerPort, err := parseUint16(tpConfig.AgentDNSListenerPort)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing agent DNS listener port failed")
 	}
@@ -113,6 +113,23 @@ func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyC
 		if err != nil {
 			return "", errors.Wrap(err, "cannot parse inbound ports to exclude")
 		}
+	}
+
+	var excludePortsForUIDs []kumanet_config.UIDsToPorts
+	if len(tpConfig.ExcludeOutboundTCPPortsForUIDs) > 0 {
+		excludeTCPPortsForUIDs, err := parseExcludePortsForUIDs(tpConfig.ExcludeOutboundTCPPortsForUIDs, "tcp")
+		if err != nil {
+			return "", errors.Wrap(err, "parsing excluded outbound TCP ports for UIDs failed")
+		}
+		excludePortsForUIDs = append(excludePortsForUIDs, excludeTCPPortsForUIDs...)
+	}
+
+	if len(tpConfig.ExcludeOutboundUDPPortsForUIDs) > 0 {
+		excludeUDPPortsForUIDs, err := parseExcludePortsForUIDs(tpConfig.ExcludeOutboundUDPPortsForUIDs, "udp")
+		if err != nil {
+			return "", errors.Wrap(err, "parsing excluded outbound UDP ports for UIDs failed")
+		}
+		excludePortsForUIDs = append(excludePortsForUIDs, excludeUDPPortsForUIDs...)
 	}
 
 	var excludeOutboundPorts []uint16
@@ -141,9 +158,10 @@ func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyC
 				ExcludePorts: excludeInboundPorts,
 			},
 			Outbound: kumanet_config.TrafficFlow{
-				Enabled:      true,
-				Port:         redirectOutboundPort,
-				ExcludePorts: excludeOutboundPorts,
+				Enabled:             true,
+				Port:                redirectOutboundPort,
+				ExcludePorts:        excludeOutboundPorts,
+				ExcludePortsForUIDs: excludePortsForUIDs,
 			},
 			DNS: kumanet_config.DNS{
 				Enabled:            tpConfig.RedirectAllDNSTraffic,
@@ -165,6 +183,59 @@ func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyC
 	}
 
 	return kumanet_tproxy.Setup(cfg)
+}
+
+func parseExcludePortsForUIDs(excludeOutboundPortsForUIDs []string, protocol string) ([]kumanet_config.UIDsToPorts, error) {
+	var uidsToPorts []kumanet_config.UIDsToPorts
+	for _, excludePort := range excludeOutboundPortsForUIDs {
+		parts := strings.Split(excludePort, ":")
+		if len(parts) != 2 {
+			return nil, errors.New("value contains too many \":\" - format for excluding ports by UIDs ports:uids")
+		}
+		portValuesOrRange := parts[0]
+		uidValuesOrRange := parts[1]
+
+		if err := validatePorts(portValuesOrRange); err != nil {
+			return nil, err
+		}
+
+		if err := validateUids(uidValuesOrRange); err != nil {
+			return nil, err
+		}
+
+		uidsToPorts = append(uidsToPorts, kumanet_config.UIDsToPorts{
+			Ports:    kumanet_config.ValueOrRangeList(portValuesOrRange),
+			UIDs:     kumanet_config.ValueOrRangeList(uidValuesOrRange),
+			Protocol: protocol,
+		})
+	}
+
+	return uidsToPorts, nil
+}
+
+func validateUids(uidValuesOrRange string) error {
+	return validateUintValueOrRange(uidValuesOrRange)
+}
+
+func validatePorts(portValuesOrRange string) error {
+	return validateUintValueOrRange(portValuesOrRange)
+}
+
+func validateUintValueOrRange(valueOrRange string) error {
+	elements := strings.Split(valueOrRange, ",")
+
+	for _, element := range elements {
+		portRanges := strings.Split(element, "-")
+
+		for _, port := range portRanges {
+			_, err := parseUint16(port)
+			if err != nil {
+				return errors.Wrapf(err, "values or range %s failed validation", valueOrRange)
+			}
+		}
+	}
+
+	return nil
 }
 
 func (tp *ExperimentalTransparentProxy) Cleanup(dryRun, verbose bool) (string, error) {

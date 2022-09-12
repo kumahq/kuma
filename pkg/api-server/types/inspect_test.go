@@ -12,7 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/api-server/types"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	rest_unversioned "github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -42,9 +42,9 @@ var _ = Describe("Marshal DataplaneInspectEntry", func() {
 					Name:    "192.168.0.1:80",
 					Service: "web",
 				},
-				MatchedPolicies: map[model.ResourceType][]*rest.Resource{
+				MatchedPolicies: map[model.ResourceType][]*rest_unversioned.Resource{
 					core_mesh.TimeoutType: {
-						rest.From.Resource(&core_mesh.TimeoutResource{
+						rest_unversioned.From.Resource(&core_mesh.TimeoutResource{
 							Meta: &test_model.ResourceMeta{Mesh: "mesh-1", Name: "t-1"},
 							Spec: samples.Timeout,
 						}),
@@ -82,7 +82,7 @@ var _ = Describe("Unmarshal DataplaneInspectEntry", func() {
 				Expect(given.output.MatchedPolicies[resType]).ToNot(BeNil())
 				Expect(mp).To(HaveLen(len(given.output.MatchedPolicies[resType])))
 				for i, item := range mp {
-					Expect(item.Spec).To(MatchProto(given.output.MatchedPolicies[resType][i].Spec))
+					Expect(item.GetSpec()).To(MatchProto(given.output.MatchedPolicies[resType][i].GetSpec()))
 				}
 			}
 		},
@@ -98,9 +98,9 @@ var _ = Describe("Unmarshal DataplaneInspectEntry", func() {
 					Name:    "192.168.0.1:80",
 					Service: "web",
 				},
-				MatchedPolicies: map[model.ResourceType][]*rest.Resource{
+				MatchedPolicies: map[model.ResourceType][]*rest_unversioned.Resource{
 					core_mesh.TimeoutType: {
-						rest.From.Resource(&core_mesh.TimeoutResource{
+						rest_unversioned.From.Resource(&core_mesh.TimeoutResource{
 							Meta: &test_model.ResourceMeta{Mesh: "mesh-1", Name: "t-1"},
 							Spec: samples.Timeout,
 						}),
@@ -115,7 +115,7 @@ var _ = Describe("Unmarshal DataplaneInspectEntry", func() {
 					Type: "inbound",
 					Name: "192.168.0.1:80",
 				},
-				MatchedPolicies: map[model.ResourceType][]*rest.Resource{},
+				MatchedPolicies: map[model.ResourceType][]*rest_unversioned.Resource{},
 			},
 		}),
 	)

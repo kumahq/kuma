@@ -3,6 +3,7 @@
 set -o errexit
 set -o pipefail
 set -o nounset
+set -e
 
 POLICY=$1
 VERSION=${2:-"v1alpha1"}

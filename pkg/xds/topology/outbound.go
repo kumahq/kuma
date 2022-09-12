@@ -24,23 +24,17 @@ const (
 	priorityRemote = 1
 )
 
-// BuildEndpointMap creates a map of all endpoints that match given selectors.
-func BuildEndpointMap(
+func BuildExternalServicesEndpointMap(
 	ctx context.Context,
 	mesh *core_mesh.MeshResource,
-	zone string,
-	dataplanes []*core_mesh.DataplaneResource,
-	zoneIngresses []*core_mesh.ZoneIngressResource,
-	zoneEgresses []*core_mesh.ZoneEgressResource,
 	externalServices []*core_mesh.ExternalServiceResource,
 	loader datasource.Loader,
+	zone string,
 ) core_xds.EndpointMap {
-	outbound := BuildEdsEndpointMap(mesh, zone, dataplanes, zoneIngresses, zoneEgresses, externalServices)
-
+	outbound := core_xds.EndpointMap{}
 	if !mesh.ZoneEgressEnabled() {
 		fillExternalServicesOutbounds(ctx, outbound, externalServices, mesh, loader, zone)
 	}
-
 	return outbound
 }
 

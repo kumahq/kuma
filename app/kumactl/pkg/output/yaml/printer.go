@@ -34,12 +34,12 @@ func (p *printer) Print(obj interface{}, out io.Writer) error {
 	// showing fields in an arbitrary order. This partially addresses
 	// https://github.com/kumahq/kuma/issues/679.
 	switch obj := obj.(type) {
-	case *rest.Resource:
-		if err := print(obj.Meta, out); err != nil {
+	case rest.Resource:
+		if err := print(obj.GetMeta(), out); err != nil {
 			return err
 		}
 
-		b, err := util_proto.ToYAML(obj.Spec)
+		b, err := util_proto.ToYAML(obj.GetSpec())
 		if err != nil {
 			return err
 		}

@@ -8,7 +8,8 @@ import (
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	config "github.com/kumahq/kuma/pkg/config/api-server"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
+	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
@@ -61,8 +62,8 @@ var _ = Describe("Read only Resource Endpoints", func() {
 	Describe("On PUT", func() {
 		It("should return 405", func() {
 			// given
-			res := rest.Resource{
-				Meta: rest.ResourceMeta{
+			res := &unversioned.Resource{
+				Meta: rest_v1alpha1.ResourceMeta{
 					Name: "new-resource",
 					Mesh: mesh,
 					Type: string(sample.TrafficRouteType),

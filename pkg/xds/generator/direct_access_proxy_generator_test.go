@@ -10,7 +10,7 @@ import (
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
@@ -23,7 +23,7 @@ import (
 
 func parseResource(bytes []byte, resource core_model.Resource) {
 	Expect(util_proto.FromYAML(bytes, resource.GetSpec())).To(Succeed())
-	resMeta := rest.ResourceMeta{}
+	resMeta := rest_v1alpha1.ResourceMeta{}
 	err := yaml.Unmarshal(bytes, &resMeta)
 	Expect(err).ToNot(HaveOccurred())
 	resource.SetMeta(&model.ResourceMeta{
