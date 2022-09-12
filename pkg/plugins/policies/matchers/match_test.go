@@ -22,46 +22,6 @@ import (
 
 var _ = Describe("Match", func() {
 
-	readDPP := func(file string) *core_mesh.DataplaneResource {
-		dppYaml, err := os.ReadFile(path.Join("testdata", file))
-		Expect(err).ToNot(HaveOccurred())
-
-		dpp, err := rest.YAML.UnmarshalCore(dppYaml)
-		Expect(err).ToNot(HaveOccurred())
-		return dpp.(*core_mesh.DataplaneResource)
-	}
-
-	readResourceListResponse := func(file string) xds_context.Resources {
-		responseBytes, err := os.ReadFile(path.Join("testdata", file))
-		Expect(err).ToNot(HaveOccurred())
-
-		rawResources := yaml.SplitYAML(string(responseBytes))
-		resourceList := &policies_api.MeshTrafficPermissionResourceList{}
-		for _, rawResource := range rawResources {
-			resource, err := rest.YAML.UnmarshalCore([]byte(rawResource))
-			Expect(err).ToNot(HaveOccurred())
-			err = resourceList.AddItem(resource)
-			Expect(err).ToNot(HaveOccurred())
-		}
-
-		return xds_context.Resources{
-			MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
-				policies_api.MeshTrafficPermissionType: resourceList,
-			},
-		}
-	}
-
-	printPolicies := func(policies []core_model.Resource) string {
-		matchedPolicyList := &policies_api.MeshTrafficPermissionResourceList{}
-		for _, policy := range policies {
-			Expect(matchedPolicyList.AddItem(policy)).To(Succeed())
-		}
-		bytesBuffer := &bytes.Buffer{}
-		err := kubectl_output.NewPrinter().Print(rest.From.ResourceList(matchedPolicyList), bytesBuffer)
-		Expect(err).ToNot(HaveOccurred())
-		return bytesBuffer.String()
-	}
-
 	Describe("MatchedPolicies", func() {
 
 		type testCase struct {
@@ -73,17 +33,45 @@ var _ = Describe("Match", func() {
 		DescribeTable("should return a list of policies ordered by levels for the given DPP",
 			func(given testCase) {
 				// given DPP resource
-				dpp := readDPP(given.dppFile)
+				dppYaml, err := os.ReadFile(path.Join("testdata", given.dppFile))
+				Expect(err).ToNot(HaveOccurred())
+
+				resCore, err := rest.YAML.UnmarshalCore(dppYaml)
+				Expect(err).ToNot(HaveOccurred())
+				dpp := resCore.(*core_mesh.DataplaneResource)
 
 				// given MeshTrafficPermissions
-				resources := readResourceListResponse(given.resourceListResponseFile)
+				responseBytes, err := os.ReadFile(path.Join("testdata", given.resourceListResponseFile))
+				Expect(err).ToNot(HaveOccurred())
+
+				rawResources := yaml.SplitYAML(string(responseBytes))
+				resourceList := &policies_api.MeshTrafficPermissionResourceList{}
+				for _, rawResource := range rawResources {
+					resource, err := rest.YAML.UnmarshalCore([]byte(rawResource))
+					Expect(err).ToNot(HaveOccurred())
+					err = resourceList.AddItem(resource)
+					Expect(err).ToNot(HaveOccurred())
+				}
+
+				resources := xds_context.Resources{
+					MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
+						policies_api.MeshTrafficPermissionType: resourceList,
+					},
+				}
 
 				// when
 				policies, err := matchers.MatchedPolicies(policies_api.MeshTrafficPermissionType, dpp, resources)
 				Expect(err).ToNot(HaveOccurred())
 
 				// then
-				Expect(printPolicies(policies.DataplanePolicies)).To(test_matchers.MatchGoldenYAML(path.Join("testdata", given.matchedResourcesGoldenFile)))
+				matchedPolicyList := &policies_api.MeshTrafficPermissionResourceList{}
+				for _, policy := range policies.DataplanePolicies {
+					Expect(matchedPolicyList.AddItem(policy)).To(Succeed())
+				}
+				bytesBuffer := &bytes.Buffer{}
+				err = kubectl_output.NewPrinter().Print(rest.From.ResourceList(matchedPolicyList), bytesBuffer)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(bytesBuffer.String()).To(test_matchers.MatchGoldenYAML(path.Join("testdata", given.matchedResourcesGoldenFile)))
 			},
 			Entry("01. policies select the dataplane without collisions", testCase{
 				dppFile:                    "01.dataplane.yaml",
