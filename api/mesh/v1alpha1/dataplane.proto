@@ -10,7 +10,7 @@ import "mesh/v1alpha1/envoy_admin.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
-import "config.proto";
+import "kuma-doc/config.proto";
 
 option (doc.config) = {
   type : Proxy,

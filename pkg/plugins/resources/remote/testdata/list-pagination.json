@@ -4,9 +4,13 @@
             "type": "TrafficRoute",
             "mesh": "default",
             "name": "one",
-            "path": "/example",
             "creationTime": "2018-07-17T16:05:36.995Z",
-            "modificationTime": "2019-07-17T16:05:36.995Z"
+            "modificationTime": "2019-07-17T16:05:36.995Z",
+            "conf": {
+                "loadBalancer": {
+                    "roundRobin": {}
+                }
+            }
         }
     ],
     "next": "http://localhost:5681/meshes/default/traffic-routes?size=1&offset=2"

@@ -47,7 +47,7 @@ var _ = Describe("RetryConfigurer", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			actual, err := util_proto.V1ToYAML(listener)
+			actual, err := util_proto.ToYAML(listener)
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			Expect(actual).To(MatchYAML(given.expected))
@@ -111,9 +111,11 @@ var _ = Describe("RetryConfigurer", func() {
                       retryPolicy:
                         numRetries: 7
                         retriableRequestHeaders:
-                        - exactMatch: GET
+                        - stringMatch: 
+                            exact: GET
                           name: :method
-                        - exactMatch: POST
+                        - stringMatch: 
+                            exact: POST
                           name: :method
                         retryOn: gateway-error,connect-failure,refused-stream
                       routes:

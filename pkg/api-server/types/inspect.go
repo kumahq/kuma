@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
 )
 
 type AttachmentEntry struct {
@@ -133,7 +133,7 @@ func NewPolicyInspectEntryList() *PolicyInspectEntryList {
 	}
 }
 
-type MatchedPolicies map[core_model.ResourceType][]*rest.Resource
+type MatchedPolicies map[core_model.ResourceType][]*unversioned.Resource
 
 type DataplaneInspectResponseKind interface {
 	dataplaneInspectEntry()

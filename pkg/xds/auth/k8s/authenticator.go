@@ -42,12 +42,8 @@ func (k *kubeAuthenticator) Authenticate(ctx context.Context, resource model.Res
 
 	var err error
 	switch resource := resource.(type) {
-	case *core_mesh.DataplaneResource:
-		err = k.authDataplane(ctx, resource, credential)
-	case *core_mesh.ZoneIngressResource:
-		err = k.authZoneIngress(ctx, resource, credential)
-	case *core_mesh.ZoneEgressResource:
-		err = k.authZoneEgress(ctx, resource, credential)
+	case *core_mesh.DataplaneResource, *core_mesh.ZoneIngressResource, *core_mesh.ZoneEgressResource:
+		err = k.authResource(ctx, resource, credential)
 	default:
 		err = errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}
@@ -57,21 +53,6 @@ func (k *kubeAuthenticator) Authenticate(ctx context.Context, resource model.Res
 	}
 
 	k.authenticated.Set(credential, struct{}{}, 1*time.Hour)
-	return nil
-}
-
-func (k *kubeAuthenticator) authDataplane(ctx context.Context, dataplane *core_mesh.DataplaneResource, credential auth.Credential) error {
-	proxyName, proxyNamespace, err := util_k8s.CoreNameToK8sName(dataplane.Meta.GetName())
-	if err != nil {
-		return err
-	}
-	serviceAccountName, err := k.podServiceAccountName(ctx, proxyName, proxyNamespace)
-	if err != nil {
-		return err
-	}
-	if err := k.verifyToken(ctx, credential, proxyNamespace, serviceAccountName); err != nil {
-		return errors.Wrap(err, "authentication failed")
-	}
 	return nil
 }
 
@@ -105,33 +86,18 @@ func (k *kubeAuthenticator) verifyToken(ctx context.Context, credential auth.Cre
 	return nil
 }
 
-func (k *kubeAuthenticator) authZoneIngress(ctx context.Context, zoneIngress *core_mesh.ZoneIngressResource, credential auth.Credential) error {
-	proxyName, proxyNamespace, err := util_k8s.CoreNameToK8sName(zoneIngress.Meta.GetName())
-	if err != nil {
-		return err
-	}
-	serviceAccountName, err := k.podServiceAccountName(ctx, proxyName, proxyNamespace)
-	if err != nil {
-		return err
-	}
-	if err := k.verifyToken(ctx, credential, proxyNamespace, serviceAccountName); err != nil {
-		return errors.Wrap(err, "authentication failed")
-	}
-	return nil
-}
-
-func (k *kubeAuthenticator) authZoneEgress(ctx context.Context, zoneEgress *core_mesh.ZoneEgressResource, credential auth.Credential) error {
-	proxyName, proxyNamespace, err := util_k8s.CoreNameToK8sName(zoneEgress.Meta.GetName())
+func (k *kubeAuthenticator) authResource(ctx context.Context, resource model.Resource, credential auth.Credential) error {
+	name, namespace, err := util_k8s.CoreNameToK8sName(resource.GetMeta().GetName())
 	if err != nil {
 		return err
 	}
 
-	serviceAccountName, err := k.podServiceAccountName(ctx, proxyName, proxyNamespace)
+	serviceAccountName, err := k.podServiceAccountName(ctx, name, namespace)
 	if err != nil {
 		return err
 	}
 
-	if err := k.verifyToken(ctx, credential, proxyNamespace, serviceAccountName); err != nil {
+	if err := k.verifyToken(ctx, credential, namespace, serviceAccountName); err != nil {
 		return errors.Wrap(err, "authentication failed")
 	}
 

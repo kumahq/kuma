@@ -1,7 +1,6 @@
 package gateway
 
 import (
-	protov1 "github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
@@ -42,6 +41,6 @@ func NewResource(name string, resource proto.Message) *xds.Resource {
 	return &xds.Resource{
 		Name:     name,
 		Origin:   OriginGateway,
-		Resource: protov1.MessageV1(resource),
+		Resource: resource,
 	}
 }

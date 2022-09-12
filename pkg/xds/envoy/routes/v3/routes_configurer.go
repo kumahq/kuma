@@ -105,8 +105,13 @@ func (c RoutesConfigurer) headerMatcher(name string, matcher *mesh_proto.Traffic
 			PrefixMatch: matcher.GetPrefix(),
 		}
 	case *mesh_proto.TrafficRoute_Http_Match_StringMatcher_Exact:
-		headerMatcher.HeaderMatchSpecifier = &envoy_route.HeaderMatcher_ExactMatch{
-			ExactMatch: matcher.GetExact(),
+		stringMatcher := envoy_type_matcher.StringMatcher{
+			MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+				Exact: matcher.GetExact(),
+			},
+		}
+		headerMatcher.HeaderMatchSpecifier = &envoy_route.HeaderMatcher_StringMatch{
+			StringMatch: &stringMatcher,
 		}
 	case *mesh_proto.TrafficRoute_Http_Match_StringMatcher_Regex:
 		headerMatcher.HeaderMatchSpecifier = &envoy_route.HeaderMatcher_SafeRegexMatch{

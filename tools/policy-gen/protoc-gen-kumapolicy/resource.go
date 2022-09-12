@@ -130,6 +130,7 @@ var {{.Name}}ResourceTypeDescriptor = model.ResourceTypeDescriptor{
 		IsExperimental: false,
 		SingularDisplayName: "{{.SingularDisplayName}}",
 		PluralDisplayName: "{{.PluralDisplayName}}",
+		IsPluginOriginated: true,
 	}
 {{end}}
 `))

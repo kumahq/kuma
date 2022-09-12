@@ -272,6 +272,18 @@ runtime:
         enabled: true # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED
         # Redirect port for DNS
         port: 15053 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_PORT
+      transparentProxyV2: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_V2
+      # EBPF defines configuration for the ebpf, when transparent proxy is marked to be
+      # installed using ebpf instead of iptables
+      ebpf:
+        # Install transparent proxy using ebpf
+        enabled: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_ENABLED
+        # Name of the environmental variable which will include IP address of the pod
+        instanceIPEnvVarName: INSTANCE_IP # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_INSTANCE_IP_ENV_VAR_NAME
+        # Path where BPF file system will be mounted for pinning ebpf programs and maps
+        bpffsPath: /run/kuma/bpf # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_BPFFS_PATH
+        # Path where compiled eBPF programs are placed
+        programsSourcePath: /kuma/ebpf # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH
     marshalingCacheExpirationTime: 5m # ENV: KUMA_RUNTIME_KUBERNETES_MARSHALING_CACHE_EXPIRATION_TIME
   # Universal-specific configuration
   universal:
@@ -290,15 +302,11 @@ defaults:
 # Metrics configuration
 metrics:
   dataplane:
-    # Enables collecting metrics from Dataplane
-    enabled: true # ENV: KUMA_METRICS_DATAPLANE_ENABLED
     # How many latest subscriptions will be stored in DataplaneInsight object, if equals 0 then unlimited
     subscriptionLimit: 2 # ENV: KUMA_METRICS_DATAPLANE_SUBSCRIPTION_LIMIT
     # How long data plane proxy can stay Online without active xDS connection
     idleTimeout: 5m # ENV: KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT
   zone:
-    # Enables collecting metrics from Zone
-    enabled: true # ENV: KUMA_METRICS_ZONE_ENABLED
     # How many latest subscriptions will be stored in ZoneInsights object, if equals 0 then unlimited
     subscriptionLimit: 10 # ENV: KUMA_METRICS_ZONE_SUBSCRIPTION_LIMIT
     # How long zone can stay Online without active KDS connection

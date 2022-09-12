@@ -21,10 +21,8 @@ spec:
     metadata:
       annotations:
         kuma.io/egress: enabled
-        {{- if .Values.egress.annotations }}
-        {{- range $key, $value := .Values.egress.annotations }}
+        {{- range $key, $value := merge .Values.egress.podAnnotations .Values.egress.annotations }}
         {{ $key }}: {{ $value | quote }}
-        {{- end }}
         {{- end }}
       labels:
         {{- include "kuma.egressLabels" . | nindent 8 }}

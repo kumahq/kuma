@@ -15,31 +15,32 @@ import (
 )
 
 var (
-	gcLog = core.Log.WithName("garbage-collector")
+	gcLog = core.Log.WithName("dataplane-gc")
 )
 
 type collector struct {
 	rm         manager.ResourceManager
 	cleanupAge time.Duration
-	polling    time.Duration
+	newTicker  func() *time.Ticker
 }
 
-func NewCollector(rm manager.ResourceManager, polling, cleanupAge time.Duration) component.Component {
+func NewCollector(rm manager.ResourceManager, newTicker func() *time.Ticker, cleanupAge time.Duration) component.Component {
 	return &collector{
 		cleanupAge: cleanupAge,
 		rm:         rm,
-		polling:    polling,
+		newTicker:  newTicker,
 	}
 }
 
 func (d *collector) Start(stop <-chan struct{}) error {
-	ticker := time.NewTicker(d.polling)
+	ticker := d.newTicker()
 	defer ticker.Stop()
 	gcLog.Info("started")
+	ctx := context.Background()
 	for {
 		select {
-		case <-ticker.C:
-			if err := d.cleanup(); err != nil {
+		case now := <-ticker.C:
+			if err := d.cleanup(ctx, now); err != nil {
 				gcLog.Error(err, "unable to cleanup")
 				continue
 			}
@@ -50,8 +51,7 @@ func (d *collector) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (d *collector) cleanup() error {
-	ctx := context.Background()
+func (d *collector) cleanup(ctx context.Context, now time.Time) error {
 	dataplaneInsights := &core_mesh.DataplaneInsightResourceList{}
 	if err := d.rm.List(ctx, dataplaneInsights); err != nil {
 		return err
@@ -63,10 +63,10 @@ func (d *collector) cleanup() error {
 		}
 		if s := di.Spec.GetLastSubscription().(*mesh_proto.DiscoverySubscription); s != nil {
 			if err := s.GetDisconnectTime().CheckValid(); err != nil {
-				gcLog.Error(err, "unable to parse DisconnectTime", "disconnect time", s.GetDisconnectTime())
+				gcLog.Error(err, "unable to parse DisconnectTime", "disconnect time", s.GetDisconnectTime(), "mesh", di.GetMeta().GetMesh(), "dataplane", di.GetMeta().GetName())
 				continue
 			}
-			if core.Now().Sub(s.GetDisconnectTime().AsTime()) > d.cleanupAge {
+			if now.Sub(s.GetDisconnectTime().AsTime()) > d.cleanupAge {
 				onDelete = append(onDelete, model.ResourceKey{Name: di.GetMeta().GetName(), Mesh: di.GetMeta().GetMesh()})
 			}
 		}

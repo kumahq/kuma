@@ -36,12 +36,122 @@ spec:
           spec:
             description: Spec is the specification of the Kuma DoNothingPolicy resource.
             properties:
-              conf:
+              from:
+                items:
+                  properties:
+                    default:
+                      description: Default is a configuration specific to the group
+                        of clients referenced in 'targetRef'
+                      properties:
+                        enableDoNothing:
+                          description: User defined fields Set true in case of doing
+                            nothing
+                          type: boolean
+                      type: object
+                    targetRef:
+                      description: TargetRef is a reference to the resource that represents
+                        a group of clients.
+                      properties:
+                        kind:
+                          description: Kind of the referenced resource
+                          enum:
+                          - Mesh
+                          - MeshSubset
+                          - MeshService
+                          - MeshServiceSubset
+                          - MeshGatewayRoute
+                          - MeshHTTPRoute
+                          type: string
+                        mesh:
+                          description: Mesh is used with MeshService and MeshServiceSubset
+                            to identify the service from another mesh. Could be useful
+                            when implementing policies with cross-mesh support.
+                          type: string
+                        name:
+                          description: Name of the referenced resource
+                          type: string
+                        tags:
+                          additionalProperties:
+                            type: string
+                          description: Tags are used with MeshSubset and MeshServiceSubset
+                            to define a subset of proxies
+                          type: object
+                      type: object
+                  type: object
+                type: array
+              targetRef:
+                description: TargetRef is a reference to the resource the policy takes
+                  an effect on. The resource could be either a real store object or
+                  virtual resource defined inplace.
                 properties:
-                  enableDoNothing:
-                    description: Set true in case of doing nothing
-                    type: boolean
+                  kind:
+                    description: Kind of the referenced resource
+                    enum:
+                    - Mesh
+                    - MeshSubset
+                    - MeshService
+                    - MeshServiceSubset
+                    - MeshGatewayRoute
+                    - MeshHTTPRoute
+                    type: string
+                  mesh:
+                    description: Mesh is used with MeshService and MeshServiceSubset
+                      to identify the service from another mesh. Could be useful when
+                      implementing policies with cross-mesh support.
+                    type: string
+                  name:
+                    description: Name of the referenced resource
+                    type: string
+                  tags:
+                    additionalProperties:
+                      type: string
+                    description: Tags are used with MeshSubset and MeshServiceSubset
+                      to define a subset of proxies
+                    type: object
                 type: object
+              to:
+                items:
+                  properties:
+                    default:
+                      description: Default is a configuration specific to the group
+                        of destinations referenced in 'targetRef'
+                      properties:
+                        enableDoNothing:
+                          description: User defined fields Set true in case of doing
+                            nothing
+                          type: boolean
+                      type: object
+                    targetRef:
+                      description: TargetRef is a reference to the resource that represents
+                        a group of destinations.
+                      properties:
+                        kind:
+                          description: Kind of the referenced resource
+                          enum:
+                          - Mesh
+                          - MeshSubset
+                          - MeshService
+                          - MeshServiceSubset
+                          - MeshGatewayRoute
+                          - MeshHTTPRoute
+                          type: string
+                        mesh:
+                          description: Mesh is used with MeshService and MeshServiceSubset
+                            to identify the service from another mesh. Could be useful
+                            when implementing policies with cross-mesh support.
+                          type: string
+                        name:
+                          description: Name of the referenced resource
+                          type: string
+                        tags:
+                          additionalProperties:
+                            type: string
+                          description: Tags are used with MeshSubset and MeshServiceSubset
+                            to define a subset of proxies
+                          type: object
+                      type: object
+                  type: object
+                type: array
             type: object
         type: object
     served: true

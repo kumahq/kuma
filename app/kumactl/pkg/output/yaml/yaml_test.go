@@ -12,7 +12,8 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/yaml"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_rest "github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
+	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 )
 
@@ -46,8 +47,8 @@ var _ = Describe("printer", func() {
 			goldenFile: "nil.golden.yaml",
 		}),
 		Entry("format response from Kuma REST API", testCase{
-			obj: &core_rest.Resource{
-				Meta: core_rest.ResourceMeta{
+			obj: &unversioned.Resource{
+				Meta: rest_v1alpha1.ResourceMeta{
 					Type:             string(core_mesh.MeshType),
 					Name:             "demo",
 					CreationTime:     t1,

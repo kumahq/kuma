@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
@@ -29,14 +27,6 @@ routing:
 `, mesh, localityAware)
 	}
 
-	meshMTLSOff := func(mesh string) string {
-		return fmt.Sprintf(`
-type: Mesh
-name: %s
-`, mesh)
-	}
-
-	const defaultMesh = "default"
 	const nonDefaultMesh = "non-default"
 
 	var global, zone1, zone2 Cluster
@@ -52,7 +42,6 @@ name: %s
 		err = NewClusterSetup().
 			Install(Kuma(core.Global)).
 			Install(YamlUniversal(meshMTLSOn(nonDefaultMesh, "false"))).
-			Install(YamlUniversal(meshMTLSOff(defaultMesh))).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -93,36 +82,6 @@ name: %s
 		Expect(zone1.DismissCluster()).To(Succeed())
 		Expect(zone2.DismissCluster()).To(Succeed())
 		Expect(global.DismissCluster()).To(Succeed())
-	})
-
-	It("should access service locally and remotely", func() {
-		retry.DoWithRetry(zone1.GetTesting(), "curl local service",
-			DefaultRetries, DefaultTimeout,
-			func() (string, error) {
-				stdout, _, err := zone1.ExecWithRetries("", "", "demo-client",
-					"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
-				if err != nil {
-					return "should retry", err
-				}
-				if strings.Contains(stdout, "HTTP/1.1 200 OK") {
-					return "Accessing service successful", nil
-				}
-				return "should retry", errors.Errorf("should retry")
-			})
-
-		retry.DoWithRetry(zone2.GetTesting(), "curl remote service",
-			DefaultRetries, DefaultTimeout,
-			func() (string, error) {
-				stdout, _, err := zone2.ExecWithRetries("", "", "demo-client",
-					"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
-				if err != nil {
-					return "should retry", err
-				}
-				if strings.Contains(stdout, "HTTP/1.1 200 OK") {
-					return "Accessing service successful", nil
-				}
-				return "should retry", errors.Errorf("should retry")
-			})
 	})
 
 	It("should access only local service if zone is disabled", func() {

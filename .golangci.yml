@@ -1,16 +1,4 @@
-linters:
-  enable:
-    - bodyclose
-    - contextcheck
-    - gci
-    - gocritic
-    - gofmt
-    - gomodguard
-    - importas
-    - misspell
-    - unconvert
-    - unparam
-    - whitespace
+# mk/check.mk sets the enabled/disable linters
 
 run:
   skip-files:
@@ -33,7 +21,6 @@ linters-settings:
     - default
     - prefix(github.com/kumahq/kuma-net)
     - prefix(github.com/kumahq/kuma)
-    # This doesn't take effect until 1.48.0
     custom-order: true
   importas:
     alias:
@@ -102,3 +89,16 @@ issues:
     - linters: # AdminPort is deprecated, but it's used to support backwards compatibility
         - staticcheck
       text: "SA1019: c.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort is deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead."
+    - path: pkg/api-server/inspect_endpoints.go
+      linters:
+        - staticcheck
+      text: "SA1019: rest_unversioned.From.Resource is deprecated"
+    - path: pkg/api-server/types/inspect_test.go
+      linters:
+        - staticcheck
+      text: "SA1019: rest_unversioned.From.Resource is deprecated"
+    - path: pkg/api-server/service_insight_endpoints.go
+      linters:
+        - staticcheck
+      text: "SA1019: rest_unversioned.From.Resource is deprecated"
+

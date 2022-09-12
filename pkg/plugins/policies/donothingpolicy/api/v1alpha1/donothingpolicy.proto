@@ -5,7 +5,8 @@ package kuma.plugins.policies.donothingpolicy.v1alpha1;
 import "mesh/options.proto";
 option go_package = "github.com/kumahq/kuma/pkg/plugins/policies/donothingpolicy/api/v1alpha1";
 
-import "config.proto";
+import "common/v1alpha1/targetref.proto";
+import "kuma-doc/config.proto";
 
 option (doc.config) = {
   type : Policy,
@@ -13,16 +14,45 @@ option (doc.config) = {
   file_name : "donothingpolicy"
 };
 
-// DoNothingPolicy defines permission for traffic between dataplanes.
+// DoNothingPolicy a policy that does nothing
 message DoNothingPolicy {
   option (kuma.mesh.policy) = {
+    // Toggle this to have the policy registered or not in Kuma
     skip_registration : true,
   };
 
+  // TargetRef is a reference to the resource the policy takes an effect on.
+  // The resource could be either a real store object or virtual resource
+  // defined inplace.
+  kuma.common.v1alpha1.TargetRef targetRef = 1;
+
   message Conf {
+    // User defined fields
     // Set true in case of doing nothing
     bool enableDoNothing = 1;
   }
 
-  Conf conf = 3;
+  message To {
+    // TargetRef is a reference to the resource that represents a group of
+    // destinations.
+    kuma.common.v1alpha1.TargetRef targetRef = 1;
+
+    // Default is a configuration specific to the group of destinations
+    // referenced in 'targetRef'
+    Conf default = 2;
+  }
+
+  repeated To to = 2;
+
+  message From {
+    // TargetRef is a reference to the resource that represents a group of
+    // clients.
+    kuma.common.v1alpha1.TargetRef targetRef = 1;
+
+    // Default is a configuration specific to the group of clients referenced in
+    // 'targetRef'
+    Conf default = 2;
+  }
+
+  repeated From from = 3;
 }

@@ -78,8 +78,10 @@ const (
 	KumaBuiltinDNS     = "kuma.io/builtin-dns"
 	KumaBuiltinDNSPort = "kuma.io/builtin-dns-port"
 
-	KumaTrafficExcludeInboundPorts  = "traffic.kuma.io/exclude-inbound-ports"
-	KumaTrafficExcludeOutboundPorts = "traffic.kuma.io/exclude-outbound-ports"
+	KumaTrafficExcludeInboundPorts            = "traffic.kuma.io/exclude-inbound-ports"
+	KumaTrafficExcludeOutboundPorts           = "traffic.kuma.io/exclude-outbound-ports"
+	KumaTrafficExcludeOutboundTCPPortsForUIDs = "traffic.kuma.io/exclude-outbound-tcp-ports-for-uids"
+	KumaTrafficExcludeOutboundUDPPortsForUIDs = "traffic.kuma.io/exclude-outbound-udp-ports-for-uids"
 
 	// KumaSidecarTokenVolumeAnnotation allows to specify which volume contains the service account token
 	KumaSidecarTokenVolumeAnnotation = "kuma.io/service-account-token-volume"
@@ -141,11 +143,16 @@ const (
 	KumaTransparentProxyingReachableServicesAnnotation = "kuma.io/transparent-proxying-reachable-services"
 	CNCFNetworkAnnotation                              = "k8s.v1.cni.cncf.io/networks"
 	KumaCNI                                            = "kuma-cni"
+	KumaTransparentProxyingEbpf                        = "kuma.io/transparent-proxying-ebpf"
+	KumaTransparentProxyingEbpfBPFFSPath               = "kuma.io/transparent-proxying-ebpf-bpf-fs-path"
+	KumaTransparentProxyingEbpfInstanceIPEnvVarName    = "kuma.io/transparent-proxying-ebpf-instance-ip-env-var-name"
+	KumaTransparentProxyingEbpfProgramsSourcePath      = "kuma.io/transparent-proxying-ebpf-programs-source-path"
 )
 
 // Annotations related to the gateway
 const (
-	IngressServiceUpstream = "ingress.kubernetes.io/service-upstream"
+	IngressServiceUpstream      = "ingress.kubernetes.io/service-upstream"
+	NginxIngressServiceUpstream = "nginx.ingress.kubernetes.io/service-upstream"
 )
 
 const (
@@ -160,6 +167,14 @@ const (
 	AnnotationTrue     = "true"
 	AnnotationFalse    = "false"
 )
+
+func BoolToEnabled(b bool) string {
+	if b {
+		return AnnotationEnabled
+	}
+
+	return AnnotationDisabled
+}
 
 type Annotations map[string]string
 

@@ -148,7 +148,7 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 	metadata.DNSPort = uint32Metadata(xdsMetadata, fieldDataplaneDNSPort)
 	metadata.EmptyDNSPort = uint32Metadata(xdsMetadata, fieldDataplaneDNSEmptyPort)
 	if value := xdsMetadata.Fields[fieldDataplaneDataplaneResource]; value != nil {
-		res, err := rest.UnmarshallToCore([]byte(value.GetStringValue()))
+		res, err := rest.YAML.UnmarshalCore([]byte(value.GetStringValue()))
 		if err != nil {
 			metadataLog.Error(err, "invalid value in dataplane metadata", "field", fieldDataplaneDataplaneResource, "value", value)
 		}

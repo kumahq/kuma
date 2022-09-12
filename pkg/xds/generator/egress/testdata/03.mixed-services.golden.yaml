@@ -235,8 +235,10 @@ resources:
           commonTlsContext:
             combinedValidationContext:
               defaultValidationContext:
-                matchSubjectAltNames:
-                - prefix: spiffe://mesh-1/
+                matchTypedSubjectAltNames:
+                - matcher:
+                    prefix: spiffe://mesh-1/
+                  sanType: URI
               validationContextSdsSecretConfig:
                 name: mesh_ca:secret:mesh-1
                 sdsConfig:
@@ -292,8 +294,10 @@ resources:
           commonTlsContext:
             combinedValidationContext:
               defaultValidationContext:
-                matchSubjectAltNames:
-                - prefix: spiffe://mesh-1/
+                matchTypedSubjectAltNames:
+                - matcher:
+                    prefix: spiffe://mesh-1/
+                  sanType: URI
               validationContextSdsSecretConfig:
                 name: mesh_ca:secret:mesh-1
                 sdsConfig:

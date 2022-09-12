@@ -4,7 +4,7 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
-import "config.proto"; // kumadoc options
+import "kuma-doc/config.proto";
 import "google/protobuf/wrappers.proto";
 import "mesh/options.proto";
 import "mesh/v1alpha1/selector.proto";
@@ -49,57 +49,16 @@ message MeshGatewayRoute {
     ];
   };
 
-  // UDP routes are valid for UDP listeners.
-  message UdpRoute {
-    option (doc.hide) = true;
-
-    message Match {};
-
-    message Rule {
-      repeated Match matches = 1;
-      repeated Backend backends = 2
-          [ (doc.required) = true, (validate.rules).repeated .min_items = 1 ];
-    };
-
-    repeated Rule rules = 1
-        [ (doc.required) = true, (validate.rules).repeated .min_items = 1 ];
-  };
-
-  // TLS routes are valid for listeners that accept connections over TLS.
+  // TCP routes are valid for listeners that accept connections over TCP.
   message TcpRoute {
-    option (doc.hide) = true;
-
-    message Match {};
-
     message Rule {
-      repeated Match matches = 1;
+      // repeated Match matches = 1;
+
       repeated Backend backends = 2
           [ (doc.required) = true, (validate.rules).repeated .min_items = 1 ];
     };
 
     repeated Rule rules = 1
-        [ (doc.required) = true, (validate.rules).repeated .min_items = 1 ];
-  };
-
-  // TLS routes are valid for listeners that accept connections over TLS.
-  // This can be a raw TLS connection, but can also be used to forward
-  // HTTP and other protocols that layer on top of TLS.
-  message TlsRoute {
-    option (doc.hide) = true;
-
-    message Match {};
-
-    message Rule {
-      repeated Match matches = 1;
-      repeated Backend backends = 2
-          [ (doc.required) = true, (validate.rules).repeated .min_items = 1 ];
-    };
-
-    // Hostnames lists the server names for which this route is valid. The
-    // hostnames are matched against the TLS Server Name Indication extension
-    // send by the client.
-    repeated string hostnames = 1;
-    repeated Rule rules = 2
         [ (doc.required) = true, (validate.rules).repeated .min_items = 1 ];
   };
 
@@ -296,9 +255,12 @@ message MeshGatewayRoute {
     // Each route resource may contain routing table entries for exactly one
     // protocol type.
     oneof route {
-      UdpRoute udp = 1;
+      // UdpRoute udp = 1;
+
       TcpRoute tcp = 2;
-      TlsRoute tls = 3;
+
+      // TlsRoute tls = 3;
+
       HttpRoute http = 4;
     };
   };

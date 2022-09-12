@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -55,7 +54,7 @@ func getPids(name string) []int {
 				continue
 			}
 
-			cmdline, err := ioutil.ReadFile(filepath.Join("/proc", entry.Name(), "cmdline"))
+			cmdline, err := os.ReadFile(filepath.Join("/proc", entry.Name(), "cmdline"))
 			if err != nil {
 				continue
 			}

@@ -124,10 +124,10 @@ func NewUpsertOpts(fs ...UpsertFunc) UpsertOpts {
 	return opts
 }
 
-func Upsert(manager ResourceManager, key model.ResourceKey, resource model.Resource, fn func(resource model.Resource) error, fs ...UpsertFunc) error {
-	upsert := func() error {
+func Upsert(ctx context.Context, manager ResourceManager, key model.ResourceKey, resource model.Resource, fn func(resource model.Resource) error, fs ...UpsertFunc) error {
+	upsert := func(ctx context.Context) error {
 		create := false
-		err := manager.Get(context.Background(), resource, store.GetBy(key))
+		err := manager.Get(ctx, resource, store.GetBy(key))
 		if err != nil {
 			if store.IsResourceNotFound(err) {
 				create = true
@@ -139,21 +139,21 @@ func Upsert(manager ResourceManager, key model.ResourceKey, resource model.Resou
 			return err
 		}
 		if create {
-			return manager.Create(context.Background(), resource, store.CreateBy(key))
+			return manager.Create(ctx, resource, store.CreateBy(key))
 		} else {
-			return manager.Update(context.Background(), resource)
+			return manager.Update(ctx, resource)
 		}
 	}
 
 	opts := NewUpsertOpts(fs...)
 	if opts.ConflictRetry.BaseBackoff <= 0 || opts.ConflictRetry.MaxTimes == 0 {
-		return upsert()
+		return upsert(ctx)
 	}
 	backoff := retry.WithMaxRetries(uint64(opts.ConflictRetry.MaxTimes), retry.NewExponential(opts.ConflictRetry.BaseBackoff))
-	return retry.Do(context.Background(), backoff, func(ctx context.Context) error {
+	return retry.Do(ctx, backoff, func(ctx context.Context) error {
 		resource.SetMeta(nil)
 		proto.Reset(resource.GetSpec())
-		err := upsert()
+		err := upsert(ctx)
 		if store.IsResourceConflict(err) {
 			return retry.RetryableError(err)
 		}

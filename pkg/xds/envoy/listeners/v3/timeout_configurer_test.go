@@ -62,7 +62,7 @@ var _ = Describe("TimeoutConfigurer", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			actual, err := util_proto.V1ToYAML(listener)
+			actual, err := util_proto.ToYAML(listener)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
@@ -119,7 +119,7 @@ trafficDirection: OUTBOUND`,
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			actual, err := util_proto.V1ToYAML(listener)
+			actual, err := util_proto.ToYAML(listener)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
@@ -208,7 +208,7 @@ trafficDirection: OUTBOUND`,
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			actual, err := util_proto.V1ToYAML(listener)
+			actual, err := util_proto.ToYAML(listener)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
@@ -296,7 +296,7 @@ trafficDirection: OUTBOUND`,
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		actual, err := util_proto.V1ToYAML(listener)
+		actual, err := util_proto.ToYAML(listener)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -331,7 +331,7 @@ trafficDirection: INBOUND
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		actual, err := util_proto.V1ToYAML(listener)
+		actual, err := util_proto.ToYAML(listener)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then

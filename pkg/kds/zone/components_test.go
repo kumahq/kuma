@@ -63,7 +63,7 @@ var _ = Describe("Zone Sync", func() {
 		globalStore = memory.NewStore()
 		wg := &sync.WaitGroup{}
 
-		kdsCtx := kds_context.DefaultContext(manager.NewResourceManager(globalStore), "global")
+		kdsCtx := kds_context.DefaultContext(context.Background(), manager.NewResourceManager(globalStore), "global")
 		wg.Add(1)
 		serverStream := setup.StartServer(globalStore, wg, "global", registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kdsCtx.GlobalProvidedFilter, kdsCtx.GlobalResourceMapper)
 

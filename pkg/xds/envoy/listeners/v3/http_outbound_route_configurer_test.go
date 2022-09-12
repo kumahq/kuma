@@ -38,7 +38,7 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			actual, err := util_proto.V1ToYAML(listener)
+			actual, err := util_proto.ToYAML(listener)
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			Expect(actual).To(MatchYAML(given.expected))
@@ -234,13 +234,15 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
                           headers:
                           - name: x-custom-header-a
                             prefixMatch: prefix
-                          - exactMatch: exact
+                          - stringMatch:
+                              exact: exact
                             name: x-custom-header-b
                           - name: x-custom-header-c
                             safeRegexMatch:
                               googleRe2: {}
                               regex: ^regex$
-                          - exactMatch: GET
+                          - stringMatch:
+                              exact: GET
                             name: :method
                           prefix: /asd
                         requestHeadersToAdd:

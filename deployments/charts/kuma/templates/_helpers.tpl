@@ -112,15 +112,6 @@ app: {{ include "kuma.name" . }}-control-plane
 {{- end }}
 
 {{/*
-control plane pod annotations
-*/}}
-{{- define "kuma.cpPodAnnotations" -}}
-{{ range $key, $value := $.Values.controlPlane.podAnnotations }}
-{{- $key }}: {{ $value -}}
-{{ end }}
-{{- end }}
-
-{{/*
 ingress labels
 */}}
 {{- define "kuma.ingressLabels" -}}
@@ -278,6 +269,20 @@ env:
   value: "true"
 - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_APP
   value: "{{ include "kuma.name" . }}-cni"
+{{- end }}
+{{- if .Values.experimental.transparentProxy }}
+- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_V2
+  value: "true"
+{{- end }}
+{{- if .Values.experimental.ebpf.enabled }}
+- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_ENABLED
+  value: "true"
+- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_INSTANCE_IP_ENV_VAR_NAME
+  value: {{ .Values.experimental.ebpf.instanceIPEnvVarName }}
+- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_BPFFS_PATH
+  value: {{ .Values.experimental.ebpf.bpffsPath }}
+- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH
+  value: {{ .Values.experimental.ebpf.programsSourcePath }}
 {{- end }}
 {{- end }}
 

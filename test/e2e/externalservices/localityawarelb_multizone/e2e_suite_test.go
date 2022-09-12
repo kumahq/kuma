@@ -13,4 +13,4 @@ func TestE2E(t *testing.T) {
 	test.RunSpecs(t, "E2E External Services Locality Hybrid Suite")
 }
 
-var _ = Describe("Test ExternalServices on Multizone Hybrid with LocalityAwareLb", localityawarelb_multizone.ExternalServicesOnMultizoneHybridWithLocalityAwareLb, Ordered)
+var _ = Describe("Test ExternalServices on Multizone Hybrid with LocalityAwareLb", Label("job-2"), localityawarelb_multizone.ExternalServicesOnMultizoneHybridWithLocalityAwareLb, Ordered)

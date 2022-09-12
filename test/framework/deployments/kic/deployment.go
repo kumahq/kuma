@@ -69,32 +69,28 @@ func KongIngressController(fs ...deployOptionsFunc) framework.InstallFunc {
 	return Install(fs...)
 }
 
-func KongIngressNodePort(fs ...deployOptionsFunc) framework.InstallFunc {
-	proxy_port := NodePortHTTP()
-	proxy_ssl_port := NodePortHTTPS()
+func KongIngressService(fs ...deployOptionsFunc) framework.InstallFunc {
 	opts := newDeployOpt(fs...)
 	if opts.namespace == "" {
 		opts.namespace = framework.Config.DefaultGatewayNamespace
 	}
-	nodeport := `
+	svc := `
 apiVersion: v1
 kind: Service
 metadata:
-  name: gateway-nodeport
+  name: gateway
   namespace: %s
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
     app: ingress-kong
   ports:
     - name: proxy
       targetPort: 8000
-      nodePort: %d
-      port: %d
+      port: 80
     - name: proxy-ssl
       targetPort: 8443
-      nodePort: %d
-      port: %d
+      port: 443
 `
-	return framework.YamlK8s(fmt.Sprintf(nodeport, opts.namespace, proxy_port, proxy_port, proxy_ssl_port, proxy_ssl_port))
+	return framework.YamlK8s(fmt.Sprintf(svc, opts.namespace))
 }

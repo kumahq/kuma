@@ -29,7 +29,7 @@ var _ = Describe("Miscellaneous Listener configurers", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			actual, err := util_proto.V1ToYAML(resource)
+			actual, err := util_proto.ToYAML(resource)
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			Expect(actual).To(MatchYAML(given.expected))

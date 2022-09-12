@@ -86,6 +86,7 @@ ifdef K8SCLUSTERS
 E2E_ENV_VARS += K8SCLUSTERS="$(K8SCLUSTERS)"
 endif
 E2E_ENV_VARS += KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl
+E2E_ENV_VARS += PATH=$(CI_TOOLS_BIN_DIR):$$PATH
 .PHONY: test/e2e/list
 test/e2e/list:
 	@echo $(ALL_TESTS)

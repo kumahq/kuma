@@ -9,7 +9,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/dns"
 )
 
@@ -19,7 +19,7 @@ func vob(idx int, selectors ...map[string]string) *core_mesh.VirtualOutboundReso
 		sels = append(sels, &mesh_proto.Selector{Match: v})
 	}
 	return &core_mesh.VirtualOutboundResource{
-		Meta: &rest.ResourceMeta{
+		Meta: &rest_v1alpha1.ResourceMeta{
 			Name:         strconv.Itoa(idx),
 			CreationTime: time.Date(2021, 12, 12, idx, 0, 0, 0, time.UTC),
 		},

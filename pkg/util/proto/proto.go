@@ -24,10 +24,6 @@ func FromYAML(content []byte, pb proto.Message) error {
 	return FromJSON(json, pb)
 }
 
-func V1ToYAML(pb protov1.Message) ([]byte, error) {
-	return ToYAML(protov1.MessageV2(pb))
-}
-
 func ToYAML(pb proto.Message) ([]byte, error) {
 	marshaler := &jsonpb.Marshaler{}
 	json, err := marshaler.MarshalToString(protov1.MessageV1(pb))

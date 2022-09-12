@@ -680,8 +680,8 @@ spec:
                   description: "Condition contains details for one aspect of the current
                     state of this API Resource. --- This struct is intended for direct
                     use as an array at the field path .status.conditions.  For example,
-                    type FooStatus struct{ // Represents the observations of a foo's
-                    current state. // Known .status.conditions.type are: \"Available\",
+                    \n type FooStatus struct{ // Represents the observations of a
+                    foo's current state. // Known .status.conditions.type are: \"Available\",
                     \"Progressing\", and \"Degraded\" // +patchMergeKey=type // +patchStrategy=merge
                     // +listType=map // +listMapKey=type Conditions []metav1.Condition
                     `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\"
@@ -943,6 +943,133 @@ spec:
           spec:
             description: Spec is the specification of the Kuma MeshInsight resource.
             x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.9.2
+  creationTimestamp: null
+  name: meshtrafficpermissions.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: MeshTrafficPermission
+    listKind: MeshTrafficPermissionList
+    plural: meshtrafficpermissions
+    singular: meshtrafficpermission
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma MeshTrafficPermission
+              resource.
+            properties:
+              from:
+                description: From is a list of pairs – a group of clients and action
+                  applied for it
+                items:
+                  properties:
+                    default:
+                      description: Default is a configuration specific to the group
+                        of clients referenced in 'targetRef'
+                      properties:
+                        action:
+                          description: 'Action defines a behaviour for the specified
+                            group of clients: * ALLOW - lets the requests pass * DENY
+                            - blocks the requests * ALLOW_WITH_SHADOW_DENY - lets
+                            the requests pass but emits logs as if requests are denied
+                            * DENY_WITH_SHADOW_ALLOW - blocks the requests but emits
+                            logs as if requests are allowed'
+                          enum:
+                          - ALLOW
+                          - DENY
+                          - ALLOW_WITH_SHADOW_DENY
+                          - DENY_WITH_SHADOW_ALLOW
+                          type: string
+                      type: object
+                    targetRef:
+                      description: TargetRef is a reference to the resource that represents
+                        a group of clients.
+                      properties:
+                        kind:
+                          description: Kind of the referenced resource
+                          enum:
+                          - Mesh
+                          - MeshSubset
+                          - MeshService
+                          - MeshServiceSubset
+                          - MeshGatewayRoute
+                          - MeshHTTPRoute
+                          type: string
+                        mesh:
+                          description: Mesh is used with MeshService and MeshServiceSubset
+                            to identify the service from another mesh. Could be useful
+                            when implementing policies with cross-mesh support.
+                          type: string
+                        name:
+                          description: Name of the referenced resource
+                          type: string
+                        tags:
+                          additionalProperties:
+                            type: string
+                          description: Tags are used with MeshSubset and MeshServiceSubset
+                            to define a subset of proxies
+                          type: object
+                      type: object
+                  type: object
+                type: array
+              targetRef:
+                description: TargetRef is a reference to the resource the policy takes
+                  an effect on. The resource could be either a real store object or
+                  virtual resource defined inplace.
+                properties:
+                  kind:
+                    description: Kind of the referenced resource
+                    enum:
+                    - Mesh
+                    - MeshSubset
+                    - MeshService
+                    - MeshServiceSubset
+                    - MeshGatewayRoute
+                    - MeshHTTPRoute
+                    type: string
+                  mesh:
+                    description: Mesh is used with MeshService and MeshServiceSubset
+                      to identify the service from another mesh. Could be useful when
+                      implementing policies with cross-mesh support.
+                    type: string
+                  name:
+                    description: Name of the referenced resource
+                    type: string
+                  tags:
+                    additionalProperties:
+                      type: string
+                    description: Tags are used with MeshSubset and MeshServiceSubset
+                      to define a subset of proxies
+                    type: object
+                type: object
+            type: object
         type: object
     served: true
     storage: true

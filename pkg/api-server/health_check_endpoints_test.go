@@ -14,7 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
@@ -73,7 +73,7 @@ var _ = Describe("HealthCheck Endpoints", func() {
 `
 		It("GET should return data saved by PUT", func() {
 			// given
-			resource := rest.Resource{
+			resource := &unversioned.Resource{
 				Spec: &mesh_proto.HealthCheck{},
 			}
 

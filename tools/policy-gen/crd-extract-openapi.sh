@@ -3,6 +3,7 @@
 set -o errexit
 set -o pipefail
 set -o nounset
+set -e
 
 POLICY=$1
 VERSION=${2:-"v1alpha1"}
@@ -47,3 +48,5 @@ CRD_FILE=$(find "${POLICIES_CRD_DIR}" -type f)
 yq e '.spec.versions[] | select (.name == "'"${VERSION}"'") | .schema.openAPIV3Schema.properties.spec | del(.type) | del(.description)' \
 "${CRD_FILE}" | yq eval-all -i '. as $item ireduce ({}; . * $item )' \
 "${POLICIES_API_DIR}"/schema.yaml -
+
+yq e -i ".properties.type.enum = [load(\"${CRD_FILE}\") | .spec.names.kind]" "${POLICIES_API_DIR}"/schema.yaml

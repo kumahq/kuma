@@ -3,8 +3,6 @@ package generator
 import (
 	"sort"
 
-	protov1 "github.com/golang/protobuf/proto"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -139,12 +137,6 @@ func (_ IngressGenerator) destinations(
 		for _, rule := range route.Spec.GetConf().GetTcp().GetRules() {
 			backends = append(backends, rule.Backends...)
 		}
-		for _, rule := range route.Spec.GetConf().GetTls().GetRules() {
-			backends = append(backends, rule.Backends...)
-		}
-		for _, rule := range route.Spec.GetConf().GetUdp().GetRules() {
-			backends = append(backends, rule.Backends...)
-		}
 	}
 
 	for _, backend := range backends {
@@ -218,7 +210,7 @@ func (_ IngressGenerator) generateEDS(
 		resources = append(resources, &core_xds.Resource{
 			Name:     service,
 			Origin:   OriginIngress,
-			Resource: protov1.MessageV1(cla),
+			Resource: cla,
 		})
 	}
 	return

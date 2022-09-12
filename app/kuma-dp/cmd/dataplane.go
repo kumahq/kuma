@@ -41,7 +41,7 @@ func readResource(cmd *cobra.Command, r *kuma_dp.DataplaneRuntime) (model.Resour
 	b = template.Render(string(b), r.ResourceVars)
 	runLog.Info("rendered resource", "resource", string(b))
 
-	res, err := rest.UnmarshallToCore(b)
+	res, err := rest.YAML.UnmarshalCore(b)
 	if err != nil {
 		return nil, err
 	}

@@ -5,7 +5,7 @@ import (
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/plugins/resources/remote"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 )
 
 func DeleteAllResourcesUniversal(kumactl KumactlOptions, descriptor core_model.ResourceTypeDescriptor, mesh string) error {
@@ -14,7 +14,7 @@ func DeleteAllResourcesUniversal(kumactl KumactlOptions, descriptor core_model.R
 		return err
 	}
 	list := descriptor.NewList()
-	if err := remote.UnmarshalList([]byte(dpps), list); err != nil {
+	if err := rest.JSON.UnmarshalListToCore([]byte(dpps), list); err != nil {
 		return err
 	}
 	for _, item := range list.GetItems() {

@@ -30,11 +30,11 @@ var _ = Describe("Gateway Route", func() {
 	var rt runtime.Runtime
 	var dataplanes *DataplaneGenerator
 
-	Do := func() (cache.Snapshot, error) {
+	Do := func() (cache.ResourceSnapshot, error) {
 		serverCtx := xds_server.NewXdsContext()
 		statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "xds")
 		if err != nil {
-			return cache.Snapshot{}, err
+			return nil, err
 		}
 		reconciler := xds_server.DefaultReconciler(rt, serverCtx, statsCallbacks)
 
@@ -51,7 +51,7 @@ var _ = Describe("Gateway Route", func() {
 		Expect(proxy.Dataplane.Spec.IsBuiltinGateway()).To(BeTrue())
 
 		if err := reconciler.Reconcile(*ctx, proxy); err != nil {
-			return cache.Snapshot{}, err
+			return nil, err
 		}
 
 		return serverCtx.Cache().GetSnapshot(proxy.Id.String())
@@ -1661,7 +1661,7 @@ conf:
 					To(matchers.MatchGoldenYAML(path.Join("testdata", "http", goldenFileName)))
 
 				// then
-				Expect(snap.Consistent()).To(Succeed())
+				Expect(snap.(*cache.Snapshot).Consistent()).To(Succeed())
 			},
 			entries,
 		)

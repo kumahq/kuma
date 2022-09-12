@@ -1,12 +1,32 @@
 package config
 
 import (
-	"github.com/kumahq/kuma/pkg/transparentproxy/istio/config"
+	"io"
 )
 
-// TransparentProxyConfig defines the configuration for all transparent
-// proxy configurations, not just the Istio one.
-//
-// We alias the types in reverse here to avoid an import loop (the Istio
-// submodule depending on Kuma for the config type).
-type TransparentProxyConfig = config.TransparentProxyConfig
+type TransparentProxyConfig struct {
+	DryRun                         bool
+	Verbose                        bool
+	RedirectPortOutBound           string
+	RedirectInBound                bool
+	RedirectPortInBound            string
+	RedirectPortInBoundV6          string
+	ExcludeInboundPorts            string
+	ExcludeOutboundPorts           string
+	ExcludeOutboundTCPPortsForUIDs []string
+	ExcludeOutboundUDPPortsForUIDs []string
+	UID                            string
+	GID                            string
+	RedirectDNS                    bool
+	RedirectAllDNSTraffic          bool
+	AgentDNSListenerPort           string
+	DNSUpstreamTargetChain         string
+	SkipDNSConntrackZoneSplit      bool
+	ExperimentalEngine             bool
+	EbpfEnabled                    bool
+	EbpfInstanceIP                 string
+	EbpfBPFFSPath                  string
+	EbpfProgramsSourcePath         string
+	Stdout                         io.Writer
+	Stderr                         io.Writer
+}

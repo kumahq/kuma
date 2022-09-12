@@ -1,4 +1,3 @@
-CI_K3D_VERSION ?= v5.3.0
 CI_K3S_VERSION ?= v1.21.1-k3s1
 
 
@@ -64,7 +63,7 @@ k3d/network/create:
 k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create
 	@echo "PORT_PREFIX=$(PORT_PREFIX)"
 	@KUBECONFIG=$(KIND_KUBECONFIG) \
-		k3d cluster create "$(KIND_CLUSTER_NAME)" $(K3D_CLUSTER_CREATE_OPTS)
+		$(K3D_BIN) cluster create "$(KIND_CLUSTER_NAME)" $(K3D_CLUSTER_CREATE_OPTS)
 	$(MAKE) k3d/wait
 	@echo
 	@echo '>>> You need to manually run the following command in your shell: >>>'
@@ -77,21 +76,21 @@ k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create
 .PHONY: k3d/wait
 k3d/wait:
 	until \
-		 KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \
+		 KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \
 	do echo "Waiting for the cluster to come up" && sleep 1; done
 
 .PHONY: k3d/stop
 k3d/stop:
-	@KUBECONFIG=$(KIND_KUBECONFIG) k3d cluster delete "$(KIND_CLUSTER_NAME)"
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(K3D_BIN) cluster delete "$(KIND_CLUSTER_NAME)"
 
 .PHONY: k3d/stop/all
 k3d/stop/all:
-	@KUBECONFIG=$(KIND_KUBECONFIG) k3d cluster delete --all
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(K3D_BIN) cluster delete --all
 
 .PHONY: k3d/load/images
 k3d/load/images:
 	# https://github.com/k3d-io/k3d/issues/900 can cause failures that simple retry will fix
-	@k3d image import $(KUMA_IMAGES) --cluster=$(KIND_CLUSTER_NAME) --verbose || k3d image import $(KUMA_IMAGES) --cluster=$(KIND_CLUSTER_NAME) --verbose
+	@$(K3D_BIN) image import $(KUMA_IMAGES) --cluster=$(KIND_CLUSTER_NAME) --verbose || $(K3D_BIN) image import $(KUMA_IMAGES) --cluster=$(KIND_CLUSTER_NAME) --verbose
 
 .PHONY: k3d/load
 k3d/load:
@@ -100,17 +99,17 @@ k3d/load:
 
 .PHONY: k3d/deploy/kuma
 k3d/deploy/kuma: build/kumactl k3d/load
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(BUILD_ARTIFACTS_DIR)/kumactl/kumactl install --mode $(KUMA_MODE) control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
-	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n $(KUMA_NAMESPACE) deployment/kuma-control-plane
-	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(KUMA_NAMESPACE) pods -l app=kuma-control-plane
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(BUILD_ARTIFACTS_DIR)/kumactl/kumactl install --mode $(KUMA_MODE) control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | KUBECONFIG=$(KIND_KUBECONFIG)  $(KUBECTL) apply -f -
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=60s --for=condition=Available -n $(KUMA_NAMESPACE) deployment/kuma-control-plane
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=60s --for=condition=Ready -n $(KUMA_NAMESPACE) pods -l app=kuma-control-plane
 	until \
-		 KUBECONFIG=$(KIND_KUBECONFIG) kubectl get mesh default ; \
+		 KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) get mesh default ; \
 	do echo "Waiting for default mesh to be present" && sleep 1; done
 
 .PHONY: k3d/deploy/helm
 k3d/deploy/helm: k3d/load
-	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete namespace $(KUMA_NAMESPACE) | true
-	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace $(KUMA_NAMESPACE)
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) delete namespace $(KUMA_NAMESPACE) | true
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) create namespace $(KUMA_NAMESPACE)
 	@KUBECONFIG=$(KIND_KUBECONFIG) helm install --namespace $(KUMA_NAMESPACE) \
                 --set global.image.registry="$(DOCKER_REGISTRY)" \
                 --set global.image.tag="$(BUILD_INFO_VERSION)-${GOARCH}" \
@@ -120,13 +119,13 @@ k3d/deploy/helm: k3d/load
                 --set cni.binDir=/bin/ \
                 --set cni.confName=10-flannel.conflist \
                 kuma ./deployments/charts/kuma
-	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n $(KUMA_NAMESPACE) deployment/kuma-control-plane
-	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(KUMA_NAMESPACE) pods -l app=kuma-control-plane
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=60s --for=condition=Available -n $(KUMA_NAMESPACE) deployment/kuma-control-plane
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=60s --for=condition=Ready -n $(KUMA_NAMESPACE) pods -l app=kuma-control-plane
 
 .PHONY: k3d/deploy/demo
 k3d/deploy/demo: build/kumactl
-	@$(BUILD_ARTIFACTS_DIR)/kumactl/kumactl install demo | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
-	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n kuma-demo --all pods
+	@$(BUILD_ARTIFACTS_DIR)/kumactl/kumactl install demo | KUBECONFIG=$(KIND_KUBECONFIG)  $(KUBECTL) apply -f -
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=60s --for=condition=Ready -n kuma-demo --all pods
 
 .PHONY: k3d/restart
 k3d/restart:

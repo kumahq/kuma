@@ -22,10 +22,6 @@ resources:
           idleTimeout: 7200s
         explicitHttpConfig:
           httpProtocolOptions: {}
-    upstreamBindConfig:
-      sourceAddress:
-        address: 127.0.0.6
-        portValue: 0
 - name: localhost:8443
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
@@ -42,10 +38,6 @@ resources:
                 portValue: 8443
     name: localhost:8443
     type: STATIC
-    upstreamBindConfig:
-      sourceAddress:
-        address: 127.0.0.6
-        portValue: 0
 - name: inbound:192.168.0.1:443
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
@@ -74,8 +66,10 @@ resources:
           commonTlsContext:
             combinedValidationContext:
               defaultValidationContext:
-                matchSubjectAltNames:
-                - prefix: spiffe://default/
+                matchTypedSubjectAltNames:
+                - matcher:
+                    prefix: spiffe://default/
+                  sanType: URI
               validationContextSdsSecretConfig:
                 name: mesh_ca:secret:default
                 sdsConfig:
@@ -232,8 +226,10 @@ resources:
           commonTlsContext:
             combinedValidationContext:
               defaultValidationContext:
-                matchSubjectAltNames:
-                - prefix: spiffe://default/
+                matchTypedSubjectAltNames:
+                - matcher:
+                    prefix: spiffe://default/
+                  sanType: URI
               validationContextSdsSecretConfig:
                 name: mesh_ca:secret:default
                 sdsConfig:
@@ -280,8 +276,10 @@ resources:
           commonTlsContext:
             combinedValidationContext:
               defaultValidationContext:
-                matchSubjectAltNames:
-                - prefix: spiffe://default/
+                matchTypedSubjectAltNames:
+                - matcher:
+                    prefix: spiffe://default/
+                  sanType: URI
               validationContextSdsSecretConfig:
                 name: mesh_ca:secret:default
                 sdsConfig:
@@ -350,8 +348,10 @@ resources:
           commonTlsContext:
             combinedValidationContext:
               defaultValidationContext:
-                matchSubjectAltNames:
-                - prefix: spiffe://default/
+                matchTypedSubjectAltNames:
+                - matcher:
+                    prefix: spiffe://default/
+                  sanType: URI
               validationContextSdsSecretConfig:
                 name: mesh_ca:secret:default
                 sdsConfig:

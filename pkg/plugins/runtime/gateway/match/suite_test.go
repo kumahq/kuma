@@ -10,7 +10,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	"github.com/kumahq/kuma/pkg/test"
@@ -22,7 +22,7 @@ func TestMatches(t *testing.T) {
 
 var _ = Describe("Match Destination Policy", func() {
 	Named := func(name string, resource model.Resource) model.Resource {
-		resource.SetMeta(&rest.ResourceMeta{
+		resource.SetMeta(&rest_v1alpha1.ResourceMeta{
 			Type:             string(resource.Descriptor().Name),
 			Mesh:             "default",
 			Name:             name,
@@ -122,7 +122,7 @@ var _ = Describe("Match Destination Policy", func() {
 		}
 
 		SetCreationTime := func(r model.Resource, t time.Time) {
-			meta := r.GetMeta().(*rest.ResourceMeta)
+			meta := r.GetMeta().(*rest_v1alpha1.ResourceMeta)
 			meta.CreationTime = t
 			r.SetMeta(meta)
 		}

@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/plugins/resources/remote"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
@@ -39,7 +39,7 @@ func (d *httpServiceOverviewClient) List(ctx context.Context, meshName string) (
 		return nil, errors.Errorf("(%d): %s", statusCode, string(b))
 	}
 	overviews := &mesh.ServiceOverviewResourceList{}
-	if err := remote.UnmarshalList(b, overviews); err != nil {
+	if err := rest.JSON.UnmarshalListToCore(b, overviews); err != nil {
 		return nil, err
 	}
 	return overviews, nil

@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -104,11 +105,11 @@ func (g *filterChainGenerators) For(ctx xds_context.Context, info GatewayListene
 // Gateway and returns information about the listeners, routes and applied
 // policies.
 func GatewayListenerInfoFromProxy(
-	ctx xds_context.MeshContext, proxy *core_xds.Proxy, zone string,
+	ctx context.Context, meshCtx xds_context.MeshContext, proxy *core_xds.Proxy, zone string,
 ) (
 	[]GatewayListenerInfo, error,
 ) {
-	gateway := xds_topology.SelectGateway(ctx.Resources.Gateways().Items, proxy.Dataplane.Spec.Matches)
+	gateway := xds_topology.SelectGateway(meshCtx.Resources.Gateways().Items, proxy.Dataplane.Spec.Matches)
 
 	if gateway == nil {
 		log.V(1).Info("no matching gateway for dataplane",
@@ -141,30 +142,36 @@ func GatewayListenerInfoFromProxy(
 		collapsed[ep.GetPort()] = append(collapsed[ep.GetPort()], ep)
 	}
 
-	externalServices := ctx.Resources.ExternalServices()
+	externalServices := meshCtx.Resources.ExternalServices()
 
 	var listenerInfos []GatewayListenerInfo
 
 	matchedExternalServices, err := permissions.MatchExternalServicesTrafficPermissions(
-		proxy.Dataplane, ctx.Resources.ExternalServices(), ctx.Resources.TrafficPermissions(),
+		proxy.Dataplane, meshCtx.Resources.ExternalServices(), meshCtx.Resources.TrafficPermissions(),
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to find external services matched by traffic permissions")
 	}
 
-	outboundEndpoints := xds_topology.BuildEndpointMap(
-		ctx.Resource,
-		zone,
-		ctx.Resources.Dataplanes().Items,
-		ctx.Resources.ZoneIngresses().Items,
-		ctx.Resources.ZoneEgresses().Items,
+	outboundEndpoints := core_xds.EndpointMap{}
+	for k, v := range meshCtx.EndpointMap {
+		outboundEndpoints[k] = v
+	}
+
+	esEndpoints := xds_topology.BuildExternalServicesEndpointMap(
+		ctx,
+		meshCtx.Resource,
 		matchedExternalServices,
-		ctx.DataSourceLoader,
+		meshCtx.DataSourceLoader,
+		zone,
 	)
+	for k, v := range esEndpoints {
+		outboundEndpoints[k] = v
+	}
 
 	// We already validate that listeners are collapsible
 	for _, listeners := range collapsed {
-		listener, hosts := MakeGatewayListener(ctx, gateway, proxy.Dataplane, listeners)
+		listener, hosts := MakeGatewayListener(meshCtx, gateway, proxy.Dataplane, listeners)
 
 		var hostInfos []GatewayHostInfo
 		for _, host := range hosts {
@@ -195,7 +202,7 @@ func GatewayListenerInfoFromProxy(
 func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
-	listenerInfos, err := GatewayListenerInfoFromProxy(ctx.Mesh, proxy, g.Zone)
+	listenerInfos, err := GatewayListenerInfoFromProxy(context.TODO(), ctx.Mesh, proxy, g.Zone)
 	if err != nil {
 		return nil, errors.Wrap(err, "error generating listener info from Proxy")
 	}
@@ -291,7 +298,7 @@ func (g Generator) generateCDS(ctx xds_context.Context, info GatewayListenerInfo
 	resources := core_xds.NewResourceSet()
 
 	for _, hostInfo := range hostInfos {
-		clusterRes, err := g.ClusterGenerator.GenerateClusters(ctx, info, hostInfo)
+		clusterRes, err := g.ClusterGenerator.GenerateClusters(context.TODO(), ctx, info, hostInfo)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to generate clusters for dataplane %q", info.Proxy.Id)
 		}

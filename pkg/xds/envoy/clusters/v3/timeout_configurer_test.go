@@ -60,7 +60,7 @@ var _ = Describe("TimeoutConfigurer", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			actual, err := util_proto.V1ToYAML(cluster)
+			actual, err := util_proto.ToYAML(cluster)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
@@ -127,7 +127,7 @@ typedExtensionProtocolOptions:
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			actual, err := util_proto.V1ToYAML(cluster)
+			actual, err := util_proto.ToYAML(cluster)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
@@ -194,7 +194,7 @@ typedExtensionProtocolOptions:
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		actual, err := util_proto.V1ToYAML(cluster)
+		actual, err := util_proto.ToYAML(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then

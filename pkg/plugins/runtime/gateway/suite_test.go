@@ -10,9 +10,11 @@ import (
 	"github.com/Nordix/simple-ipam/pkg/ipam"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	cache_v3 "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	protov1 "github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -22,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
@@ -44,7 +47,7 @@ func TestGateway(t *testing.T) {
 }
 
 type ProtoMessage struct {
-	Message protov1.Message
+	Message proto.Message
 }
 
 func (p ProtoMessage) MarshalJSON() ([]byte, error) {
@@ -68,12 +71,12 @@ type ProtoSnapshot struct {
 // implements the json.Marshaler so that the resulting JSON fully
 // expands embedded Any protobufs (which are otherwise serialized
 // as byte arrays).
-func MakeProtoResource(resources cache_v3.Resources) ProtoResource {
+func MakeProtoResource(resources map[string]envoy_types.ResourceWithTTL) ProtoResource {
 	result := ProtoResource{
 		Resources: map[string]ProtoMessage{},
 	}
 
-	for name, values := range resources.Items {
+	for name, values := range resources {
 		result.Resources[name] = ProtoMessage{
 			Message: values.Resource,
 		}
@@ -82,14 +85,14 @@ func MakeProtoResource(resources cache_v3.Resources) ProtoResource {
 	return result
 }
 
-func MakeProtoSnapshot(snap cache_v3.Snapshot) ProtoSnapshot {
+func MakeProtoSnapshot(snap cache_v3.ResourceSnapshot) ProtoSnapshot {
 	return ProtoSnapshot{
-		Clusters:  MakeProtoResource(snap.Resources[envoy_types.Cluster]),
-		Endpoints: MakeProtoResource(snap.Resources[envoy_types.Endpoint]),
-		Listeners: MakeProtoResource(snap.Resources[envoy_types.Listener]),
-		Routes:    MakeProtoResource(snap.Resources[envoy_types.Route]),
-		Runtimes:  MakeProtoResource(snap.Resources[envoy_types.Runtime]),
-		Secrets:   MakeProtoResource(snap.Resources[envoy_types.Secret]),
+		Clusters:  MakeProtoResource(snap.GetResourcesAndTTL(resource.ClusterType)),
+		Endpoints: MakeProtoResource(snap.GetResourcesAndTTL(resource.EndpointType)),
+		Listeners: MakeProtoResource(snap.GetResourcesAndTTL(resource.ListenerType)),
+		Routes:    MakeProtoResource(snap.GetResourcesAndTTL(resource.RouteType)),
+		Runtimes:  MakeProtoResource(snap.GetResourcesAndTTL(resource.RuntimeType)),
+		Secrets:   MakeProtoResource(snap.GetResourcesAndTTL(resource.SecretType)),
 	}
 }
 
@@ -142,7 +145,7 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 		Mesh:         meshCtx,
 	}
 
-	proxy, err := b.Build(key, meshCtx)
+	proxy, err := b.Build(context.TODO(), key, meshCtx)
 	Expect(err).To(Succeed())
 
 	return &ctx, proxy
@@ -181,7 +184,7 @@ func StoreNamedFixture(rt runtime.Runtime, name string) error {
 // StoreInlineFixture stores or updates the given YAML object in the
 // runtime resource manager.
 func StoreInlineFixture(rt runtime.Runtime, object []byte) error {
-	r, err := rest.UnmarshallToCore(object)
+	r, err := rest.YAML.UnmarshalCore(object)
 	if err != nil {
 		return err
 	}
@@ -192,13 +195,15 @@ func StoreInlineFixture(rt runtime.Runtime, object []byte) error {
 // StoreFixture stores or updates the given resource in the runtime
 // resource manager.
 func StoreFixture(mgr manager.ResourceManager, r core_model.Resource) error {
+	ctx := context.Background()
+
 	key := core_model.MetaToResourceKey(r.GetMeta())
 	current, err := registry.Global().NewObject(r.Descriptor().Name)
 	if err != nil {
 		return err
 	}
 
-	return manager.Upsert(mgr, key, current,
+	return manager.Upsert(ctx, mgr, key, current,
 		func(resource core_model.Resource) error {
 			return resource.SetSpec(r.GetSpec())
 		},
@@ -294,7 +299,7 @@ func (d *DataplaneGenerator) generate(
 	d.NextPort++
 
 	dp := core_mesh.NewDataplaneResource()
-	dp.SetMeta(&rest.ResourceMeta{
+	dp.SetMeta(&rest_v1alpha1.ResourceMeta{
 		Type:             string(dp.Descriptor().Name),
 		Mesh:             "default",
 		Name:             resourceName,

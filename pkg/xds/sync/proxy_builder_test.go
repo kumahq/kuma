@@ -48,7 +48,7 @@ func initializeStore(ctx context.Context, resourceManager core_manager.ResourceM
 	for _, rawResource := range rawResources {
 		bytes := []byte(rawResource)
 
-		res, err := rest_types.UnmarshallToCore(bytes)
+		res, err := rest_types.YAML.UnmarshalCore(bytes)
 		Expect(err).To(BeNil())
 
 		switch res.Descriptor().Name {
@@ -120,7 +120,7 @@ var _ = Describe("Proxy Builder", func() {
 			rk := core_model.ResourceKey{Name: "zone-egress-1"}
 
 			// when
-			proxy, err := egressProxyBuilder.Build(rk)
+			proxy, err := egressProxyBuilder.Build(ctx, rk)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
@@ -208,7 +208,7 @@ var _ = Describe("Proxy Builder", func() {
 			rk := core_model.ResourceKey{Name: "zone-ingress-zone-1"}
 
 			// when
-			proxy, err := ingressProxyBuilder.Build(rk)
+			proxy, err := ingressProxyBuilder.Build(ctx, rk)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then

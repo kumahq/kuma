@@ -17,8 +17,10 @@ resources:
           - kuma
           combinedValidationContext:
             defaultValidationContext:
-              matchSubjectAltNames:
-              - exact: spiffe://demo/db
+              matchTypedSubjectAltNames:
+              - matcher:
+                  exact: spiffe://demo/db
+                sanType: URI
             validationContextSdsSecretConfig:
               name: mesh_ca:secret:demo
               sdsConfig:
@@ -60,8 +62,10 @@ resources:
           - kuma
           combinedValidationContext:
             defaultValidationContext:
-              matchSubjectAltNames:
-              - exact: spiffe://demo/elastic
+              matchTypedSubjectAltNames:
+              - matcher:
+                  exact: spiffe://demo/elastic
+                sanType: URI
             validationContextSdsSecretConfig:
               name: mesh_ca:secret:demo
               sdsConfig:
@@ -133,10 +137,6 @@ resources:
           idleTimeout: 7200s
         explicitHttpConfig:
           httpProtocolOptions: {}
-    upstreamBindConfig:
-      sourceAddress:
-        address: 127.0.0.6
-        portValue: 0
 - name: db
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
@@ -218,8 +218,10 @@ resources:
           commonTlsContext:
             combinedValidationContext:
               defaultValidationContext:
-                matchSubjectAltNames:
-                - prefix: spiffe://demo/
+                matchTypedSubjectAltNames:
+                - matcher:
+                    prefix: spiffe://demo/
+                  sanType: URI
               validationContextSdsSecretConfig:
                 name: mesh_ca:secret:demo
                 sdsConfig:
@@ -380,8 +382,10 @@ resources:
           commonTlsContext:
             combinedValidationContext:
               defaultValidationContext:
-                matchSubjectAltNames:
-                - prefix: spiffe://demo/
+                matchTypedSubjectAltNames:
+                - matcher:
+                    prefix: spiffe://demo/
+                  sanType: URI
               validationContextSdsSecretConfig:
                 name: mesh_ca:secret:demo
                 sdsConfig:

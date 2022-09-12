@@ -8,6 +8,7 @@ import (
 	"path"
 	"time"
 
+	"github.com/emicklei/go-restful/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
@@ -208,10 +209,11 @@ func serviceSelector(name, protocol string) *mesh_proto.Selector {
 var _ = Describe("Inspect WS", func() {
 
 	type testCase struct {
-		path      string
-		matcher   types.GomegaMatcher
-		resources []core_model.Resource
-		global    bool
+		path        string
+		matcher     types.GomegaMatcher
+		resources   []core_model.Resource
+		global      bool
+		contentType string
 	}
 	AfterEach(func() {
 		core.Now = time.Now
@@ -253,6 +255,8 @@ var _ = Describe("Inspect WS", func() {
 			bytes, err := io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(given.matcher)
+
+			Expect(resp.Header.Get("content-type")).To(Equal(given.contentType))
 		},
 		Entry("inspect dataplane", testCase{
 			path:    "/meshes/default/dataplanes/backend-1/policies",
@@ -325,6 +329,7 @@ var _ = Describe("Inspect WS", func() {
 					},
 				},
 			},
+			contentType: restful.MIME_JSON,
 		}),
 		Entry("inspect dataplane, empty response", testCase{
 			path:    "/meshes/default/dataplanes/backend-1/policies",
@@ -340,6 +345,7 @@ var _ = Describe("Inspect WS", func() {
 					outbound8080("web", "192.168.0.2").
 					build(),
 			},
+			contentType: restful.MIME_JSON,
 		}),
 		Entry("inspect gateway dataplane", testCase{
 			path:    "/meshes/default/dataplanes/gateway-1/policies",
@@ -449,6 +455,7 @@ var _ = Describe("Inspect WS", func() {
 					},
 				},
 			},
+			contentType: restful.MIME_JSON,
 		}),
 		Entry("inspect meshgateway dataplanes", testCase{
 			path:    "/meshes/default/meshgateways/gateway/dataplanes",
@@ -486,6 +493,7 @@ var _ = Describe("Inspect WS", func() {
 					},
 				},
 			},
+			contentType: restful.MIME_JSON,
 		}),
 		Entry("inspect meshgatewayroute dataplanes", testCase{
 			path:    "/meshes/default/meshgatewayroutes/gatewayroute/dataplanes",
@@ -554,6 +562,7 @@ var _ = Describe("Inspect WS", func() {
 					},
 				},
 			},
+			contentType: restful.MIME_JSON,
 		}),
 		Entry("inspect traffic permission", testCase{
 			path:    "/meshes/default/traffic-permissions/tp-1/dataplanes",
@@ -594,6 +603,7 @@ var _ = Describe("Inspect WS", func() {
 						inbound80to81("web", "192.168.0.1").
 						build(),
 			},
+			contentType: restful.MIME_JSON,
 		}),
 		Entry("inspect fault injection", testCase{
 			path:    "/meshes/mesh-1/fault-injections/fi-1/dataplanes",
@@ -628,6 +638,7 @@ var _ = Describe("Inspect WS", func() {
 						inbound80to81("web", "192.168.0.1").
 						build(),
 			},
+			contentType: restful.MIME_JSON,
 		}),
 		Entry("inspect rate limit", testCase{
 			path:    "/meshes/mesh-1/rate-limits/rl-1/dataplanes",
@@ -668,6 +679,7 @@ var _ = Describe("Inspect WS", func() {
 					},
 				},
 			},
+			contentType: restful.MIME_JSON,
 		}),
 		Entry("inspect traffic log", testCase{
 			path:    "/meshes/mesh-1/traffic-logs/tl-1/dataplanes",
@@ -699,6 +711,7 @@ var _ = Describe("Inspect WS", func() {
 					outbound8080("web", "192.168.0.4").
 					build(),
 			},
+			contentType: restful.MIME_JSON,
 		}),
 		Entry("inspect health check", testCase{
 			path:    "/meshes/mesh-1/health-checks/hc-1/dataplanes",
@@ -730,6 +743,7 @@ var _ = Describe("Inspect WS", func() {
 					outbound8080("web", "192.168.0.4").
 					build(),
 			},
+			contentType: restful.MIME_JSON,
 		}),
 		Entry("inspect circuit breaker", testCase{
 			path:    "/meshes/mesh-1/circuit-breakers/cb-1/dataplanes",
@@ -761,6 +775,7 @@ var _ = Describe("Inspect WS", func() {
 					outbound8080("web", "192.168.0.4").
 					build(),
 			},
+			contentType: restful.MIME_JSON,
 		}),
 		Entry("inspect retry", testCase{
 			path:    "/meshes/mesh-1/retries/r-1/dataplanes",
@@ -858,6 +873,7 @@ var _ = Describe("Inspect WS", func() {
 					outbound8080("web", "192.168.0.4").
 					build(),
 			},
+			contentType: restful.MIME_JSON,
 		}),
 		Entry("inspect timeout", testCase{
 			path:    "/meshes/mesh-1/timeouts/t-1/dataplanes",
@@ -889,6 +905,7 @@ var _ = Describe("Inspect WS", func() {
 					outbound8080("web", "192.168.0.4").
 					build(),
 			},
+			contentType: restful.MIME_JSON,
 		}),
 		Entry("inspect traffic route", testCase{
 			path:    "/meshes/mesh-1/traffic-routes/t-1/dataplanes",
@@ -916,6 +933,7 @@ var _ = Describe("Inspect WS", func() {
 					outbound8080("web", "192.168.0.4").
 					build(),
 			},
+			contentType: restful.MIME_JSON,
 		}),
 		Entry("inspect traffic trace", testCase{
 			path:    "/meshes/mesh-1/traffic-traces/tt-1/dataplanes",
@@ -1000,6 +1018,7 @@ var _ = Describe("Inspect WS", func() {
 					outbound8080("backend", "192.168.0.4").
 					build(),
 			},
+			contentType: restful.MIME_JSON,
 		}),
 		Entry("inspect proxytemplate", testCase{
 			path:    "/meshes/mesh-1/proxytemplates/tt-1/dataplanes",
@@ -1033,6 +1052,7 @@ var _ = Describe("Inspect WS", func() {
 					outbound8080("backend", "192.168.0.4").
 					build(),
 			},
+			contentType: restful.MIME_JSON,
 		}),
 		Entry("inspect traffic trace, empty response", testCase{
 			path:    "/meshes/mesh-1/traffic-traces/tt-1/dataplanes",
@@ -1047,6 +1067,7 @@ var _ = Describe("Inspect WS", func() {
 					},
 				},
 			},
+			contentType: restful.MIME_JSON,
 		}),
 		Entry("inspect xds for dataplane", testCase{
 			path:    "/meshes/mesh-1/dataplanes/backend-1/xds",
@@ -1062,6 +1083,7 @@ var _ = Describe("Inspect WS", func() {
 					outbound8080("web", "192.168.0.4").
 					build(),
 			},
+			contentType: restful.MIME_JSON,
 		}),
 		Entry("inspect xds for local zone ingress", testCase{
 			path:    "/zoneingresses/zi-1/xds",
@@ -1075,6 +1097,7 @@ var _ = Describe("Inspect WS", func() {
 					advertisedAddress("3.3.3.3").advertisedPort(80).
 					build(),
 			},
+			contentType: restful.MIME_JSON,
 		}),
 		Entry("inspect xds for zone ingress from another zone", testCase{
 			path:    "/zoneingresses/zi-1/xds",
@@ -1088,6 +1111,7 @@ var _ = Describe("Inspect WS", func() {
 					advertisedAddress("3.3.3.3").advertisedPort(80).
 					build(),
 			},
+			contentType: restful.MIME_JSON,
 		}),
 		Entry("inspect xds for zone ingress on global", testCase{
 			global:  true,
@@ -1102,6 +1126,7 @@ var _ = Describe("Inspect WS", func() {
 					advertisedAddress("3.3.3.3").advertisedPort(80).
 					build(),
 			},
+			contentType: restful.MIME_JSON,
 		}),
 		Entry("inspect xds for dataplane on global", testCase{
 			global:  true,
@@ -1118,6 +1143,7 @@ var _ = Describe("Inspect WS", func() {
 					outbound8080("web", "192.168.0.4").
 					build(),
 			},
+			contentType: restful.MIME_JSON,
 		}),
 		Entry("inspect xds for zone egress", testCase{
 			path:    "/zoneegresses/ze-1/xds",
@@ -1130,6 +1156,7 @@ var _ = Describe("Inspect WS", func() {
 					admin(4321).
 					build(),
 			},
+			contentType: restful.MIME_JSON,
 		}),
 		Entry("inspect stats for dataplane", testCase{
 			path:    "/meshes/mesh-1/dataplanes/backend-1/stats",
@@ -1145,6 +1172,7 @@ var _ = Describe("Inspect WS", func() {
 					outbound8080("web", "192.168.0.4").
 					build(),
 			},
+			contentType: "text/plain",
 		}),
 		Entry("inspect clusters for dataplane", testCase{
 			path:    "/meshes/mesh-1/dataplanes/backend-1/clusters",
@@ -1160,6 +1188,7 @@ var _ = Describe("Inspect WS", func() {
 					outbound8080("web", "192.168.0.4").
 					build(),
 			},
+			contentType: "text/plain",
 		}),
 	)
 

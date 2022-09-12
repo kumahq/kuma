@@ -19,11 +19,11 @@ import (
 var _ = Describe("Gateway Listener", func() {
 	var rt runtime.Runtime
 
-	Do := func(gateway string) (cache.Snapshot, error) {
+	Do := func(gateway string) (cache.ResourceSnapshot, error) {
 		serverCtx := xds_server.NewXdsContext()
 		statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "xds")
 		if err != nil {
-			return cache.Snapshot{}, err
+			return nil, err
 		}
 		reconciler := xds_server.DefaultReconciler(rt, serverCtx, statsCallbacks)
 
@@ -31,7 +31,7 @@ var _ = Describe("Gateway Listener", func() {
 
 		// Unmarshal the gateway YAML again so that we can figure
 		// out which mesh it's in.
-		r, err := rest.UnmarshallToCore([]byte(gateway))
+		r, err := rest.YAML.UnmarshalCore([]byte(gateway))
 		Expect(err).To(Succeed())
 
 		// We expect there to be a Dataplane fixture named
@@ -42,7 +42,7 @@ var _ = Describe("Gateway Listener", func() {
 		Expect(proxy.Dataplane.Spec.IsBuiltinGateway()).To(BeTrue())
 
 		if err := reconciler.Reconcile(*ctx, proxy); err != nil {
-			return cache.Snapshot{}, err
+			return nil, err
 		}
 
 		return serverCtx.Cache().GetSnapshot(proxy.Id.String())

@@ -21,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/k8s_api_bypass"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/kic"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/membership"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/observability"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/reachableservices"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/trafficlog"
@@ -89,6 +90,7 @@ var _ = Describe("Gateway - Gateway API", gateway.GatewayAPI, Ordered)
 var _ = Describe("Gateway - mTLS", gateway.Mtls, Ordered)
 var _ = Describe("Gateway - Resources", gateway.Resources, Ordered)
 var _ = Describe("Graceful", graceful.Graceful, Ordered)
+var _ = Describe("Eviction", graceful.Eviction, Ordered)
 var _ = Describe("Jobs", jobs.Jobs)
 var _ = Describe("Membership", membership.Membership, Ordered)
 var _ = Describe("Container Patch", container_patch.ContainerPatch, Ordered)
@@ -102,3 +104,4 @@ var _ = Describe("Defaults", defaults.Defaults, Ordered)
 var _ = Describe("External Services", externalservices.ExternalServices, Ordered)
 var _ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)
 var _ = Describe("Kong Ingress Controller", Label("arm-not-supported"), kic.KICKubernetes, Ordered)
+var _ = Describe("MeshTrafficPermission API", meshtrafficpermission.API, Ordered)

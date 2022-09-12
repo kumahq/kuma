@@ -32,7 +32,7 @@ var _ = Describe("ListenerFilterChainConfigurer", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
-				actual, err := util_proto.V1ToYAML(listener)
+				actual, err := util_proto.ToYAML(listener)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and

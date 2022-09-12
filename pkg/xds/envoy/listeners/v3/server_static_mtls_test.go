@@ -37,7 +37,7 @@ var _ = Describe("ServerSideStaticMTLS", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		actual, err := util_proto.V1ToYAML(listener)
+		actual, err := util_proto.ToYAML(listener)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(actual).To(MatchYAML(`
             address:

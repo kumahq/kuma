@@ -32,12 +32,13 @@ type EgressProxyBuilder struct {
 }
 
 func (p *EgressProxyBuilder) Build(
+	ctx context.Context,
 	key core_model.ResourceKey,
 ) (*xds.Proxy, error) {
 	zoneEgress := core_mesh.NewZoneEgressResource()
 
 	if err := p.ReadOnlyResManager.Get(
-		p.ctx,
+		ctx,
 		zoneEgress,
 		core_store.GetBy(key),
 	); err != nil {
@@ -45,7 +46,7 @@ func (p *EgressProxyBuilder) Build(
 	}
 
 	var meshList core_mesh.MeshResourceList
-	if err := p.ReadOnlyResManager.List(p.ctx, &meshList); err != nil {
+	if err := p.ReadOnlyResManager.List(ctx, &meshList); err != nil {
 		return nil, err
 	}
 
@@ -59,7 +60,7 @@ func (p *EgressProxyBuilder) Build(
 	}
 
 	var zoneIngressesList core_mesh.ZoneIngressResourceList
-	if err := p.ReadOnlyResManager.List(p.ctx, &zoneIngressesList); err != nil {
+	if err := p.ReadOnlyResManager.List(ctx, &zoneIngressesList); err != nil {
 		return nil, err
 	}
 
@@ -84,7 +85,7 @@ func (p *EgressProxyBuilder) Build(
 	for _, mesh := range meshes {
 		meshName := mesh.GetMeta().GetName()
 
-		meshCtx, err := p.meshCache.GetMeshContext(p.ctx, syncLog, meshName)
+		meshCtx, err := p.meshCache.GetMeshContext(ctx, syncLog, meshName)
 		if err != nil {
 			return nil, err
 		}
@@ -105,6 +106,7 @@ func (p *EgressProxyBuilder) Build(
 			TrafficRoutes:    trafficRoutes,
 			ExternalServices: externalServices,
 			EndpointMap: xds_topology.BuildRemoteEndpointMap(
+				ctx,
 				mesh,
 				p.zone,
 				zoneIngresses,

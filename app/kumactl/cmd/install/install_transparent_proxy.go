@@ -11,10 +11,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/kumahq/kuma-net/firewalld"
+
 	"github.com/kumahq/kuma/pkg/transparentproxy"
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
-
-	"github.com/kumahq/kuma-net/firewalld"
 )
 
 type transparentProxyArgs struct {
@@ -26,6 +26,8 @@ type transparentProxyArgs struct {
 	RedirectPortInBoundV6              string
 	ExcludeInboundPorts                string
 	ExcludeOutboundPorts               string
+	ExcludeOutboundTCPPortsForUIDs     []string
+	ExcludeOutboundUDPPortsForUIDs     []string
 	UID                                string
 	User                               string
 	RedirectDNS                        bool
@@ -35,6 +37,10 @@ type transparentProxyArgs struct {
 	StoreFirewalld                     bool
 	SkipDNSConntrackZoneSplit          bool
 	ExperimentalTransparentProxyEngine bool
+	EbpfEnabled                        bool
+	EbpfProgramsSourcePath             string
+	EbpfInstanceIP                     string
+	EbpfBPFFSPath                      string
 }
 
 func newInstallTransparentProxy() *cobra.Command {
@@ -47,6 +53,8 @@ func newInstallTransparentProxy() *cobra.Command {
 		RedirectPortInBoundV6:              "15010",
 		ExcludeInboundPorts:                "",
 		ExcludeOutboundPorts:               "",
+		ExcludeOutboundTCPPortsForUIDs:     []string{},
+		ExcludeOutboundUDPPortsForUIDs:     []string{},
 		UID:                                "",
 		User:                               "",
 		RedirectDNS:                        false,
@@ -56,6 +64,9 @@ func newInstallTransparentProxy() *cobra.Command {
 		StoreFirewalld:                     false,
 		SkipDNSConntrackZoneSplit:          false,
 		ExperimentalTransparentProxyEngine: false,
+		EbpfEnabled:                        false,
+		EbpfProgramsSourcePath:             "/kuma/ebpf",
+		EbpfBPFFSPath:                      "/run/kuma/bpf",
 	}
 	cmd := &cobra.Command{
 		Use:   "transparent-proxy",
@@ -129,6 +140,24 @@ runuser -u kuma-dp -- \
 				_, _ = cmd.ErrOrStderr().Write([]byte("# `--redirect-dns-upstream-target-chain` is deprecated, please avoid using it"))
 			}
 
+			if args.EbpfEnabled {
+				if args.EbpfInstanceIP == "" {
+					return errors.Errorf("--ebpf-instance-ip flag has to be specified --ebpf-enabled is provided")
+				}
+
+				if !args.ExperimentalTransparentProxyEngine {
+					return errors.Errorf("--experimental-transparent-proxy-engine flag has to be specified when --ebpf-enabled is provided")
+				}
+
+				if args.StoreFirewalld {
+					_, _ = cmd.ErrOrStderr().Write([]byte("# --store-firewalld will be ignored when --ebpf-enabled is being used"))
+				}
+
+				if args.SkipDNSConntrackZoneSplit {
+					_, _ = cmd.ErrOrStderr().Write([]byte("# --skip-dns-conntrack-zone-split will be ignored when --ebpf-enabled is being used"))
+				}
+			}
+
 			if err := configureTransparentProxy(cmd, &args); err != nil {
 				return err
 			}
@@ -161,6 +190,15 @@ runuser -u kuma-dp -- \
 	_ = cmd.Flags().MarkDeprecated("kuma-cp-ip", "Running a DNS inside the CP is not possible anymore")
 	cmd.Flags().BoolVar(&args.SkipDNSConntrackZoneSplit, "skip-dns-conntrack-zone-split", args.SkipDNSConntrackZoneSplit, "skip applying conntrack zone splitting iptables rules")
 	cmd.Flags().BoolVar(&args.ExperimentalTransparentProxyEngine, "experimental-transparent-proxy-engine", args.ExperimentalTransparentProxyEngine, "use experimental transparent proxy engine")
+
+	// ebpf
+	cmd.Flags().BoolVar(&args.EbpfEnabled, "ebpf-enabled", args.EbpfEnabled, "use ebpf instead of iptables to install transparent proxy")
+	cmd.Flags().StringVar(&args.EbpfProgramsSourcePath, "ebpf-programs-source-path", args.EbpfProgramsSourcePath, "path where compiled ebpf programs and other necessary for ebpf mode files can be found")
+	cmd.Flags().StringVar(&args.EbpfInstanceIP, "ebpf-instance-ip", args.EbpfInstanceIP, "IP address of the instance (pod/vm) where transparent proxy will be installed")
+	cmd.Flags().StringVar(&args.EbpfBPFFSPath, "ebpf-bpffs-path", args.EbpfBPFFSPath, "the path of the BPF filesystem")
+
+	cmd.Flags().StringArrayVar(&args.ExcludeOutboundTCPPortsForUIDs, "exclude-outbound-tcp-ports-for-uids", []string{}, "tcp outbound ports to exclude for specific UIDs in a format of ports:uids where both ports and uids can be a single value, a list, a range or a combination of all, e.g. 3000-5000:103,104,106-108 would mean exclude ports from 3000 to 5000 for UIDs 103, 104, 106, 107, 108")
+	cmd.Flags().StringArrayVar(&args.ExcludeOutboundUDPPortsForUIDs, "exclude-outbound-udp-ports-for-uids", []string{}, "udp outbound ports to exclude for specific UIDs in a format of ports:uids where both ports and uids can be a single value, a list, a range or a combination of all, e.g. 3000-5000:103,104,106-108 would mean exclude ports from 3000 to 5000 for UIDs 103, 104, 106, 107, 108")
 
 	return cmd
 }
@@ -205,23 +243,29 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 	}
 
 	cfg := &config.TransparentProxyConfig{
-		DryRun:                    args.DryRun,
-		Verbose:                   args.Verbose,
-		RedirectPortOutBound:      args.RedirectPortOutBound,
-		RedirectInBound:           args.RedirectInbound,
-		RedirectPortInBound:       args.RedirectPortInBound,
-		RedirectPortInBoundV6:     args.RedirectPortInBoundV6,
-		ExcludeInboundPorts:       args.ExcludeInboundPorts,
-		ExcludeOutboundPorts:      args.ExcludeOutboundPorts,
-		UID:                       uid,
-		GID:                       gid,
-		RedirectDNS:               args.RedirectDNS,
-		RedirectAllDNSTraffic:     args.RedirectAllDNSTraffic,
-		AgentDNSListenerPort:      args.AgentDNSListenerPort,
-		DNSUpstreamTargetChain:    args.DNSUpstreamTargetChain,
-		SkipDNSConntrackZoneSplit: args.SkipDNSConntrackZoneSplit,
-		Stdout:                    cmd.OutOrStdout(),
-		Stderr:                    cmd.OutOrStderr(),
+		DryRun:                         args.DryRun,
+		Verbose:                        args.Verbose,
+		RedirectPortOutBound:           args.RedirectPortOutBound,
+		RedirectInBound:                args.RedirectInbound,
+		RedirectPortInBound:            args.RedirectPortInBound,
+		RedirectPortInBoundV6:          args.RedirectPortInBoundV6,
+		ExcludeInboundPorts:            args.ExcludeInboundPorts,
+		ExcludeOutboundPorts:           args.ExcludeOutboundPorts,
+		ExcludeOutboundTCPPortsForUIDs: args.ExcludeOutboundTCPPortsForUIDs,
+		ExcludeOutboundUDPPortsForUIDs: args.ExcludeOutboundUDPPortsForUIDs,
+		UID:                            uid,
+		GID:                            gid,
+		RedirectDNS:                    args.RedirectDNS,
+		RedirectAllDNSTraffic:          args.RedirectAllDNSTraffic,
+		AgentDNSListenerPort:           args.AgentDNSListenerPort,
+		DNSUpstreamTargetChain:         args.DNSUpstreamTargetChain,
+		SkipDNSConntrackZoneSplit:      args.SkipDNSConntrackZoneSplit,
+		EbpfEnabled:                    args.EbpfEnabled,
+		EbpfInstanceIP:                 args.EbpfInstanceIP,
+		EbpfBPFFSPath:                  args.EbpfBPFFSPath,
+		EbpfProgramsSourcePath:         args.EbpfProgramsSourcePath,
+		Stdout:                         cmd.OutOrStdout(),
+		Stderr:                         cmd.OutOrStderr(),
 	}
 
 	output, err := tp.Setup(cfg)
@@ -229,7 +273,7 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 		return errors.Wrap(err, "failed to setup transparent proxy")
 	}
 
-	if args.StoreFirewalld {
+	if !args.EbpfEnabled && args.StoreFirewalld {
 		if _, err := firewalld.NewIptablesTranslator().
 			WithDryRun(args.DryRun).
 			WithOutput(cmd.OutOrStdout()).

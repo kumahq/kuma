@@ -107,8 +107,6 @@ jobs:
         description: The env in which we execute.
         type: string
         default: linux
-    environment:
-      CLANG_FORMAT_PATH: clang-format-13
     steps:
     - checkout
     - install_build_tools:
@@ -117,13 +115,6 @@ jobs:
         name: "Install all development tools"
         command: |
           make dev/tools
-    - unless:
-        # Do NOT install `clang-format` on Mac since it takes unreasonable amount of time
-        condition: {equal: [ darwin, << parameters.executor >>]}
-        steps:
-        - run:
-            name: "Install check tools (clang-format, ...)"
-            command: sudo apt update && sudo apt install -y clang-format
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: |
@@ -157,16 +148,19 @@ jobs:
               go_arch: arm64
     - checkout
     - restore_cache:
-        key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}
+        key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}
+    - run:
+        command: make dev/tools
     - run:
         name: "Download Go modules"
         command: |
           go mod download -x
     # since execution of go commands might change contents of "go.sum", we have to save cache immediately
     - save_cache:
-        key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}
+        key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}
         paths:
         - "/home/circleci/go/pkg/mod"
+        - "/home/circleci/.kuma-dev"
 
   check:
     executor: golang
@@ -175,13 +169,7 @@ jobs:
     - restore_cache:
         keys:
         # prefer the exact match
-        - golang_go.mod_{{ checksum "go.sum" }}
-    - run:
-        name: "Install all development tools"
-        command: make dev/tools
-    - run:
-        name: "Install check tools (clang-format, ...)"
-        command: sudo apt update && sudo apt install -y clang-format
+        - golang_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: make check
@@ -206,11 +194,7 @@ jobs:
     - restore_cache:
         keys:
         # prefer the exact match
-        - vm-<< parameters.arch >>_go.mod_{{ checksum "go.sum" }}
-    - run:
-        name: "Install all development tools"
-        command: |
-          make dev/tools
+        - vm-<< parameters.arch >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}
     - run:
         name: "Run tests"
         command: |
@@ -300,18 +284,14 @@ jobs:
       - restore_cache:
           keys:
             # prefer the exact match
-            - vm-<< parameters.arch >>_go.mod_{{ checksum "go.sum" }}
+            - vm-<< parameters.arch >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}
       # Mount files from the upstream jobs
       - attach_workspace:
           at: build
       - run:
-          name: "Install all development tools"
-          command: |
-            make dev/tools
-      - run:
           name: "Setup Helm"
           command: |
-            helm repo add kuma https://kumahq.github.io/charts
+            /home/circleci/.kuma-dev/bin/helm repo add kuma https://kumahq.github.io/charts
       - when: # CircleCI's DNS on IPV6 prevents resolving inside Kind. When change to 8.8.8.8 and remove "search" section (. removes it), resolving works again
           condition:
             equal: [<< parameters.k8sVersion >>, "kindIpv6"]
@@ -349,7 +329,11 @@ jobs:
             fi
 
             if [[ "<< parameters.target >>" == "test/e2e" ]]; then
-              export E2E_PKG_LIST=${E2E_PKG_LIST:-$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")}
+              if [[ "<< parameters.arch >>" == "arm64" ]]; then
+                export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX && !arm-not-supported"
+              else
+                export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX"
+              fi
             fi
             env
             make ${MAKE_PARAMETERS} CI=true << parameters.target >>
@@ -371,7 +355,7 @@ jobs:
     - restore_cache:
         keys:
         # prefer the exact match
-        - golang_go.mod_{{ checksum "go.sum" }}
+        - golang_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}
     - run:
         name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp)
         command: make build
@@ -458,44 +442,44 @@ workflows:
             parameters:
               arch: [ amd64, arm64 ]
           requires: [ go_cache-golang ]
-#      - test:
-#          name: test-<< matrix.arch >>
-#          matrix:
-#            alias: test
-#            parameters:
-#              arch: [ amd64, arm64 ]
-#          requires: [ check ]
-#      - e2e:
-#          name: test/e2e-legacy-k8s:<< matrix.arch >>-<< matrix.k8sVersion >>
-#          matrix:
-#            alias: test/e2e-legacy
-#            parameters:
-#              k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
-#              arch: [ amd64, arm64 ]
-#          parallelism: 8
-#          target: test/e2e
-#          requires: [ build-<< matrix.arch >>, check ]
+      - test:
+          name: test-<< matrix.arch >>
+          matrix:
+            alias: test
+            parameters:
+              arch: [ amd64, arm64 ]
+          requires: [ check ]
+      - e2e:
+          name: test/e2e-legacy-k8s:<< matrix.arch >>-<< matrix.k8sVersion >>
+          matrix:
+            alias: test/e2e-legacy
+            parameters:
+              k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
+              arch: [ amd64, arm64 ]
+          parallelism: 5
+          target: test/e2e
+          requires: [ build-<< matrix.arch >>, check ]
       - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>
           matrix:
             alias: test/e2e
             parameters:
               k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
-              target: [ test/e2e-multizone ]
+              target: [ test/e2e-kubernetes, test/e2e-universal, test/e2e-multizone ]
               arch: [ amd64, arm64 ]
           parallelism: 1
           requires: [ build-<< matrix.arch >>, check ]
-#      - e2e:
-#          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
-#          matrix:
-#            alias: test/e2e-calico
-#            parameters:
-#              k8sVersion: [ v1.21.7-k3s1 ]
-#              target: [ test/e2e-multizone ]
-#              arch: [ amd64 ]
-#              cniNetworkPlugin: [ calico ]
-#          parallelism: 1
-#          requires: [ build-<< matrix.arch >>, check ]
+      - e2e:
+          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
+          matrix:
+            alias: test/e2e-calico
+            parameters:
+              k8sVersion: [ v1.21.7-k3s1 ]
+              target: [ test/e2e-multizone ]
+              arch: [ amd64 ]
+              cniNetworkPlugin: [ calico ]
+          parallelism: 1
+          requires: [ build-<< matrix.arch >>, check ]
       - release:
           # publish artifacts speculatively for normal commits
           filters: # only on master and release-* branches (never on PRs and tags)
@@ -513,4 +497,4 @@ workflows:
               ignore: /.*/
             tags:
               only: /.*/
-          requires: [ dev, test/e2e ]
+          requires: [ dev, test, test/e2e, test/e2e-legacy ]

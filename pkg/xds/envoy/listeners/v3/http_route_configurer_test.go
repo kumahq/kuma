@@ -23,7 +23,7 @@ var _ = Describe("HttpDynamicRouteConfigurer", func() {
 
 		Expect(err).ToNot(HaveOccurred())
 
-		config, err := util_proto.V1ToYAML(listener)
+		config, err := util_proto.ToYAML(listener)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(config).To(MatchYAML(`
       address:

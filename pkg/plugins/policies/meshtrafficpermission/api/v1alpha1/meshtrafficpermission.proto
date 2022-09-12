@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package kuma.plugins.policies.meshtrafficpermission.v1alpha1;
+
+import "mesh/options.proto";
+option go_package = "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1";
+
+import "common/v1alpha1/targetref.proto";
+import "kuma-doc/config.proto";
+
+option (doc.config) = {
+  type : Policy,
+  name : "MeshTrafficPermission",
+  file_name : "meshtrafficpermission"
+};
+
+// MeshTrafficPermission defines permission for traffic between data planes
+// proxies.
+message MeshTrafficPermission {
+  option (kuma.mesh.policy) = {
+    // Toggle this to have the policy registered or not in Kuma
+    skip_registration : false,
+  };
+
+  // TargetRef is a reference to the resource the policy takes an effect on.
+  // The resource could be either a real store object or virtual resource
+  // defined inplace.
+  kuma.common.v1alpha1.TargetRef targetRef = 1;
+
+  message Conf {
+    enum Action {
+      ALLOW = 0;
+      DENY = 1;
+      ALLOW_WITH_SHADOW_DENY = 2;
+      DENY_WITH_SHADOW_ALLOW = 3;
+    }
+    // Action defines a behaviour for the specified group of clients:
+    //  * ALLOW - lets the requests pass
+    //  * DENY - blocks the requests
+    //  * ALLOW_WITH_SHADOW_DENY - lets the requests pass but emits logs as if
+    //  requests are denied
+    //  * DENY_WITH_SHADOW_ALLOW - blocks the requests but emits logs as if
+    //  requests are allowed
+    // +kubebuilder:validation:Enum=ALLOW;DENY;ALLOW_WITH_SHADOW_DENY;DENY_WITH_SHADOW_ALLOW
+    string action = 1;
+  }
+
+  message From {
+    // TargetRef is a reference to the resource that represents a group of
+    // clients.
+    kuma.common.v1alpha1.TargetRef targetRef = 1;
+
+    // Default is a configuration specific to the group of clients referenced in
+    // 'targetRef'
+    Conf default = 2;
+  }
+
+  // From is a list of pairs – a group of clients and action applied for it
+  repeated From from = 3;
+}

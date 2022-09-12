@@ -158,6 +158,7 @@ var (
 			},
 		}},
 		Conf: &mesh_proto.CircuitBreaker_Conf{
+			Interval: util_proto.Duration(99 * time.Second),
 			Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
 				TotalErrors: &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{Consecutive: util_proto.UInt32(3)},
 			},

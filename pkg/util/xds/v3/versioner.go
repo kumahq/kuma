@@ -2,7 +2,7 @@ package v3
 
 import (
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
-	protov1 "github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 // SnapshotVersioner assigns versions to xDS resources in a new Snapshot.
@@ -43,7 +43,7 @@ func (_ SnapshotAutoVersioner) equal(new, old map[string]envoy_types.Resource) b
 		return false
 	}
 	for key, newValue := range new {
-		if oldValue, hasOldValue := old[key]; !hasOldValue || !protov1.Equal(newValue, oldValue) {
+		if oldValue, hasOldValue := old[key]; !hasOldValue || !proto.Equal(newValue, oldValue) {
 			return false
 		}
 	}
