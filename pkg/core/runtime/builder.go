@@ -203,7 +203,7 @@ func (b *Builder) WithXDSAuthenticator(xdsauth xds_auth.Authenticator) *Builder 
 	return b
 }
 
-func (b *Builder) WithXDSCallbacks(xdsCallbacks util_xds.Callbacks) *Builder {
+func (b *Builder) WithXDSServerCallbacks(xdsCallbacks util_xds.Callbacks) *Builder {
 	b.xdsCallbacks = xdsCallbacks
 	return b
 }

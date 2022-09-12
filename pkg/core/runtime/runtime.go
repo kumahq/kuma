@@ -65,7 +65,7 @@ type RuntimeContext interface {
 	EventReaderFactory() events.ListenerFactory
 	APIInstaller() api_server.APIInstaller
 	XDSAuthenticator() xds_auth.Authenticator
-	XDSCallbacks() util_xds.Callbacks
+	XDSServerCallbacks() util_xds.Callbacks
 	XDSHooks() *xds_hooks.Hooks
 	CAProvider() secrets.CaProvider
 	DpServer() *dp_server.DpServer
@@ -237,7 +237,7 @@ func (rc *runtimeContext) XDSAuthenticator() xds_auth.Authenticator {
 	return rc.xdsauth
 }
 
-func (rc *runtimeContext) XDSCallbacks() util_xds.Callbacks {
+func (rc *runtimeContext) XDSServerCallbacks() util_xds.Callbacks {
 	return rc.xdsCallbacks
 }
 

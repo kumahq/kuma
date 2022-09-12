@@ -63,7 +63,7 @@ func RegisterXDS(
 		newResourceWarmingForcer(xdsContext.Cache(), xdsContext.Hasher()),
 	}
 
-	if cb := rt.XDSCallbacks(); cb != nil {
+	if cb := rt.XDSServerCallbacks(); cb != nil {
 		callbacks = append(callbacks, util_xds_v3.AdaptCallbacks(cb))
 	}
 
