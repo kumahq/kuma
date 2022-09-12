@@ -148,7 +148,7 @@ jobs:
               go_arch: arm64
     - checkout
     - restore_cache:
-        key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ arch }}
+        key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}
     - run:
         command: make dev/tools
     - run:
@@ -157,7 +157,7 @@ jobs:
           go mod download -x
     # since execution of go commands might change contents of "go.sum", we have to save cache immediately
     - save_cache:
-        key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ arch }}
+        key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}
         paths:
         - "/home/circleci/go/pkg/mod"
         - "/home/circleci/.kuma-dev"
@@ -169,7 +169,7 @@ jobs:
     - restore_cache:
         keys:
         # prefer the exact match
-        - golang_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ arch }}
+        - golang_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: make check
@@ -194,7 +194,7 @@ jobs:
     - restore_cache:
         keys:
         # prefer the exact match
-        - vm-<< parameters.arch >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ arch }}
+        - vm-<< parameters.arch >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}
     - run:
         name: "Run tests"
         command: |
@@ -284,7 +284,7 @@ jobs:
       - restore_cache:
           keys:
             # prefer the exact match
-            - vm-<< parameters.arch >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ arch }}
+            - vm-<< parameters.arch >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}
       # Mount files from the upstream jobs
       - attach_workspace:
           at: build
@@ -355,7 +355,7 @@ jobs:
     - restore_cache:
         keys:
         # prefer the exact match
-        - golang_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ arch }}
+        - golang_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}
     - run:
         name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp)
         command: make build

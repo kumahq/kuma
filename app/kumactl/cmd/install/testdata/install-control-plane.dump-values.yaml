@@ -668,6 +668,8 @@ experimental:
   gatewayAPI: false
   # -- If true, it installs experimental new version of the CNI
   cni: false
+  # -- If true, use the new transparent proxy engine
+  transparentProxy: false
   # Configuration for the experimental ebpf mode for transparent proxy
   ebpf:
     # -- If true, ebpf will be used instead of using iptables to install/configure transparent proxy
