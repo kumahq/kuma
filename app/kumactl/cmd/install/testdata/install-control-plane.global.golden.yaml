@@ -2096,10 +2096,12 @@ spec:
             - containerPort: 5682
             - containerPort: 5443
           livenessProbe:
+            timeoutSeconds: 10
             httpGet:
               path: /healthy
               port: 5680
           readinessProbe:
+            timeoutSeconds: 10
             httpGet:
               path: /ready
               port: 5680
