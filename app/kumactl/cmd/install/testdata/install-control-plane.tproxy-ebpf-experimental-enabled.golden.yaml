@@ -3,7 +3,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: kuma
+  name: kuma-system
   labels:
     kuma.io/system-namespace: "true"
 ---
@@ -11,7 +11,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: kuma-control-plane
-  namespace: kuma
+  namespace: kuma-system
   labels: 
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -21,7 +21,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: kuma-control-plane-config
-  namespace: kuma
+  namespace: kuma-system
   labels: 
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -193,51 +193,6 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
-  name: meshgatewayroutes.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: MeshGatewayRoute
-    listKind: MeshGatewayRouteList
-    plural: meshgatewayroutes
-    singular: meshgatewayroute
-  scope: Cluster
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-            type: string
-          kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-            type: string
-          mesh:
-            description: Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma MeshGatewayRoute resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
-  creationTimestamp: null
   name: meshgateways.kuma.io
 spec:
   group: kuma.io
@@ -318,6 +273,133 @@ spec:
           spec:
             description: Spec is the specification of the Kuma MeshInsight resource.
             x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.9.2
+  creationTimestamp: null
+  name: meshtrafficpermissions.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: MeshTrafficPermission
+    listKind: MeshTrafficPermissionList
+    plural: meshtrafficpermissions
+    singular: meshtrafficpermission
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma MeshTrafficPermission
+              resource.
+            properties:
+              from:
+                description: From is a list of pairs – a group of clients and action
+                  applied for it
+                items:
+                  properties:
+                    default:
+                      description: Default is a configuration specific to the group
+                        of clients referenced in 'targetRef'
+                      properties:
+                        action:
+                          description: 'Action defines a behaviour for the specified
+                            group of clients: * ALLOW - lets the requests pass * DENY
+                            - blocks the requests * ALLOW_WITH_SHADOW_DENY - lets
+                            the requests pass but emits logs as if requests are denied
+                            * DENY_WITH_SHADOW_ALLOW - blocks the requests but emits
+                            logs as if requests are allowed'
+                          enum:
+                          - ALLOW
+                          - DENY
+                          - ALLOW_WITH_SHADOW_DENY
+                          - DENY_WITH_SHADOW_ALLOW
+                          type: string
+                      type: object
+                    targetRef:
+                      description: TargetRef is a reference to the resource that represents
+                        a group of clients.
+                      properties:
+                        kind:
+                          description: Kind of the referenced resource
+                          enum:
+                          - Mesh
+                          - MeshSubset
+                          - MeshService
+                          - MeshServiceSubset
+                          - MeshGatewayRoute
+                          - MeshHTTPRoute
+                          type: string
+                        mesh:
+                          description: Mesh is used with MeshService and MeshServiceSubset
+                            to identify the service from another mesh. Could be useful
+                            when implementing policies with cross-mesh support.
+                          type: string
+                        name:
+                          description: Name of the referenced resource
+                          type: string
+                        tags:
+                          additionalProperties:
+                            type: string
+                          description: Tags are used with MeshSubset and MeshServiceSubset
+                            to define a subset of proxies
+                          type: object
+                      type: object
+                  type: object
+                type: array
+              targetRef:
+                description: TargetRef is a reference to the resource the policy takes
+                  an effect on. The resource could be either a real store object or
+                  virtual resource defined inplace.
+                properties:
+                  kind:
+                    description: Kind of the referenced resource
+                    enum:
+                    - Mesh
+                    - MeshSubset
+                    - MeshService
+                    - MeshServiceSubset
+                    - MeshGatewayRoute
+                    - MeshHTTPRoute
+                    type: string
+                  mesh:
+                    description: Mesh is used with MeshService and MeshServiceSubset
+                      to identify the service from another mesh. Could be useful when
+                      implementing policies with cross-mesh support.
+                    type: string
+                  name:
+                    description: Name of the referenced resource
+                    type: string
+                  tags:
+                    additionalProperties:
+                      type: string
+                    description: Tags are used with MeshSubset and MeshServiceSubset
+                      to define a subset of proxies
+                    type: object
+                type: object
+            type: object
         type: object
     served: true
     storage: true
@@ -1319,134 +1401,6 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
-  name: meshgatewayconfigs.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: MeshGatewayConfig
-    listKind: MeshGatewayConfigList
-    plural: meshgatewayconfigs
-    singular: meshgatewayconfig
-  scope: Cluster
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        description: MeshGatewayConfig holds the configuration of a MeshGateway. A
-          GatewayClass can refer to a MeshGatewayConfig via parametersRef.
-        properties:
-          apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-            type: string
-          kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: MeshGatewayConfigSpec specifies the options available for
-              a Kuma MeshGateway.
-            properties:
-              replicas:
-                default: 1
-                description: Replicas is the number of dataplane proxy replicas to
-                  create. For now this is a fixed number, but in the future it could
-                  be automatically scaled based on metrics.
-                format: int32
-                minimum: 1
-                type: integer
-              resources:
-                description: Resources specifies the compute resources for the proxy
-                  container. The default can be set in the control plane config.
-                properties:
-                  limits:
-                    additionalProperties:
-                      anyOf:
-                      - type: integer
-                      - type: string
-                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                      x-kubernetes-int-or-string: true
-                    description: 'Limits describes the maximum amount of compute resources
-                      allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
-                    type: object
-                  requests:
-                    additionalProperties:
-                      anyOf:
-                      - type: integer
-                      - type: string
-                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                      x-kubernetes-int-or-string: true
-                    description: 'Requests describes the minimum amount of compute
-                      resources required. If Requests is omitted for a container,
-                      it defaults to Limits if that is explicitly specified, otherwise
-                      to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
-                    type: object
-                type: object
-              serviceTemplate:
-                description: ServiceTemplate configures the Service owned by this
-                  config.
-                properties:
-                  metadata:
-                    description: Metadata holds metadata configuration for a Service.
-                    properties:
-                      annotations:
-                        additionalProperties:
-                          type: string
-                        description: Annotations holds annotations to be set on a
-                          Service.
-                        type: object
-                    type: object
-                  spec:
-                    description: Spec holds some customizable fields of a Service.
-                    properties:
-                      loadBalancerIP:
-                        description: LoadBalancerIP corresponds to ServiceSpec.LoadBalancerIP.
-                        type: string
-                    type: object
-                type: object
-              serviceType:
-                default: LoadBalancer
-                description: ServiceType specifies the type of managed Service that
-                  will be created to expose the dataplane proxies to traffic from
-                  outside the cluster. The ports to expose will be taken from the
-                  matching Gateway resource. If there is no matching Gateway, the
-                  managed Service will be deleted.
-                enum:
-                - LoadBalancer
-                - ClusterIP
-                - NodePort
-                type: string
-              tags:
-                additionalProperties:
-                  type: string
-                description: Tags specifies a set of Kuma tags that are included in
-                  the MeshGatewayInstance and thus propagated to every Dataplane generated
-                  to serve the MeshGateway. These tags should include a maximum of
-                  one `kuma.io/service` tag.
-                type: object
-            type: object
-          status:
-            description: MeshGatewayConfigStatus holds information about the status
-              of the gateway instance.
-            type: object
-        type: object
-    served: true
-    storage: true
-    subresources:
-      status: {}
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
-  creationTimestamp: null
   name: meshgatewayinstances.kuma.io
 spec:
   group: kuma.io
@@ -1568,8 +1522,8 @@ spec:
                   description: "Condition contains details for one aspect of the current
                     state of this API Resource. --- This struct is intended for direct
                     use as an array at the field path .status.conditions.  For example,
-                    type FooStatus struct{ // Represents the observations of a foo's
-                    current state. // Known .status.conditions.type are: \"Available\",
+                    \n type FooStatus struct{ // Represents the observations of a
+                    foo's current state. // Known .status.conditions.type are: \"Available\",
                     \"Progressing\", and \"Degraded\" // +patchMergeKey=type // +patchStrategy=merge
                     // +listType=map // +listMapKey=type Conditions []metav1.Condition
                     `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\"
@@ -1700,6 +1654,51 @@ spec:
     subresources:
       status: {}
 ---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.9.2
+  creationTimestamp: null
+  name: meshgatewayroutes.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: MeshGatewayRoute
+    listKind: MeshGatewayRouteList
+    plural: meshgatewayroutes
+    singular: meshgatewayroute
+  scope: Cluster
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          mesh:
+            description: Mesh is the name of the Kuma mesh this resource belongs to.
+              It may be omitted for cluster-scoped resources.
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma MeshGatewayRoute resource.
+            x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -1716,7 +1715,6 @@ rules:
       - pods
       - configmaps
       - nodes
-      - secrets
     verbs:
       - get
       - list
@@ -1820,7 +1818,7 @@ rules:
       - meshgateways
       - meshgatewayroutes
       - meshgatewayinstances
-      - meshgatewayconfigs
+      - meshtrafficpermissions
     verbs:
       - get
       - list
@@ -1871,13 +1869,13 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: kuma-control-plane
-    namespace: kuma
+    namespace: kuma-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: kuma-control-plane
-  namespace: kuma
+  namespace: kuma-system
   labels: 
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -1919,7 +1917,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: kuma-control-plane
-  namespace: kuma
+  namespace: kuma-system
   labels: 
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -1931,13 +1929,13 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: kuma-control-plane
-    namespace: kuma
+    namespace: kuma-system
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: kuma-ctrl-plane
-  namespace: kuma
+  name: kuma-control-plane
+  namespace: kuma-system
   labels: 
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -1970,7 +1968,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kuma-control-plane
-  namespace: kuma
+  namespace: kuma-system
   labels: 
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -1989,13 +1987,8 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 1ddb2793e3c20c70cd0520f7a4fde01d98a29f277eb94d778097c8d1c992128f
-<<<<<<< HEAD
-        checksum/tls-secrets: 5b3dd63d42b0e6d365c6994bd5a8ba510930dbd2210faed54076f103fede067c
-        
-=======
-        checksum/tls-secrets: 7f615c364a983efeb4034f3aa765835f7d5f11ca524e62608f396a8a92b824f6
->>>>>>> c5223c833 (fix(helm): use `podAnnotations` everywhere possible (#4991))
+        checksum/config: c52be51867deb8823a422dc1d188c7a2ab7fc5e501f620467d7fdd8fc4637d47
+        checksum/tls-secrets: 0f778cb0c1f035e562a58b0fac0af5eb78fa2ed5d89f26c9e7968d50cea2a1dd
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -2030,17 +2023,11 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: control-plane
-          image: "kuma-ci/kuma-cp:greatest"
-          imagePullPolicy: Never
+          image: "docker.io/kumahq/kuma-cp:0.0.1"
+          imagePullPolicy: IfNotPresent
           env:
             - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
               value: "false"
-            - name: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
-              value: "/var/run/secrets/kuma.io/api-server-client-certs/"
-            - name: KUMA_API_SERVER_HTTPS_TLS_CERT_FILE
-              value: "/var/run/secrets/kuma.io/api-server-tls-cert/tls.crt"
-            - name: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
-              value: "/var/run/secrets/kuma.io/api-server-tls-cert/tls.key"
             - name: KUMA_API_SERVER_READ_ONLY
               value: "true"
             - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
@@ -2049,38 +2036,38 @@ spec:
               value: "false"
             - name: KUMA_ENVIRONMENT
               value: "kubernetes"
-            - name: KUMA_EXPERIMENTAL_GATEWAY_API
-              value: "true"
             - name: KUMA_GENERAL_TLS_CERT_FILE
               value: "/var/run/secrets/kuma.io/tls-cert/tls.crt"
             - name: KUMA_GENERAL_TLS_KEY_FILE
               value: "/var/run/secrets/kuma.io/tls-cert/tls.key"
             - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
-              value: "kuma-ci/kuma-init:greatest"
+              value: "docker.io/kumahq/kuma-init:0.0.1"
             - name: KUMA_MODE
-              value: "zone"
-            - name: KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS
-              value: "grpcs://192.168.0.1:5685"
-            - name: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
-              value: "/var/run/secrets/kuma.io/kds-client-tls-cert/ca.crt"
-            - name: KUMA_MULTIZONE_ZONE_NAME
-              value: "zone-1"
+              value: "standalone"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
               value: "/var/run/secrets/kuma.io/tls-cert"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
               value: "5443"
             - name: KUMA_RUNTIME_KUBERNETES_CONTROL_PLANE_SERVICE_NAME
-              value: "kuma-ctrl-plane"
+              value: "kuma-control-plane"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
               value: "/var/run/secrets/kuma.io/tls-cert/ca.crt"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
               value: "false"
+            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_BPFFS_PATH
+              value: "/run/kuma/bpf"
+            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_ENABLED
+              value: "true"
+            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_INSTANCE_IP_ENV_VAR_NAME
+              value: "INSTANCE_IP"
+            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH
+              value: "/kuma/ebpf"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
-              value: "kuma-ci/kuma-dp:greatest"
+              value: "docker.io/kumahq/kuma-dp:0.0.1"
             - name: KUMA_RUNTIME_KUBERNETES_SERVICE_ACCOUNT_NAME
-              value: "system:serviceaccount:kuma:kuma-control-plane"
+              value: "system:serviceaccount:kuma-system:kuma-control-plane"
             - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
-              value: "kuma"
+              value: "kuma-system"
             - name: KUMA_STORE_TYPE
               value: "kubernetes"
             - name: POD_NAME
@@ -2100,10 +2087,12 @@ spec:
             - containerPort: 5443
             - containerPort: 5678
           livenessProbe:
+            timeoutSeconds: 10
             httpGet:
               path: /healthy
               port: 5680
           readinessProbe:
+            timeoutSeconds: 10
             httpGet:
               path: /ready
               port: 5680
@@ -2121,38 +2110,17 @@ spec:
               mountPath: /var/run/secrets/kuma.io/tls-cert/tls.key
               subPath: tls.key
               readOnly: true
-            - name: general-tls-cert-ca
+            - name: general-tls-cert
               mountPath: /var/run/secrets/kuma.io/tls-cert/ca.crt
               subPath: ca.crt
               readOnly: true
             - name: kuma-control-plane-config
               mountPath: /etc/kuma.io/kuma-control-plane
               readOnly: true
-            - name: api-server-tls-cert
-              mountPath: /var/run/secrets/kuma.io/api-server-tls-cert
-              readOnly: true
-            - name: api-server-client-certs
-              mountPath: /var/run/secrets/kuma.io/api-server-client-certs
-              readOnly: true
-            - name: kds-client-tls-cert
-              mountPath: /var/run/secrets/kuma.io/kds-client-tls-cert
-              readOnly: true
       volumes:
         - name: general-tls-cert
           secret:
             secretName: general-tls-secret
-        - name: general-tls-cert-ca
-          secret:
-            secretName: general-tls-secret-ca
-        - name: api-server-tls-cert
-          secret:
-            secretName: api-server-secret
-        - name: api-server-client-certs
-          secret:
-            secretName: api-server-client-secret
-        - name: kds-client-tls-cert
-          secret:
-            secretName: kds-ca-secret
         - name: kuma-control-plane-config
           configMap:
             name: kuma-control-plane-config
@@ -2161,7 +2129,7 @@ apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
   name: kuma-admission-mutating-webhook-configuration
-  namespace: kuma
+  namespace: kuma-system
   labels: 
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -2173,8 +2141,8 @@ webhooks:
     clientConfig:
       caBundle: XYZ
       service:
-        namespace: kuma
-        name: kuma-ctrl-plane
+        namespace: kuma-system
+        name: kuma-control-plane
         path: /default-kuma-io-v1alpha1-mesh
     rules:
       - apiGroups:
@@ -2186,6 +2154,7 @@ webhooks:
           - UPDATE
         resources:
           - meshes
+          - meshtrafficpermissions
     sideEffects: None
   - name: owner-reference.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
@@ -2193,8 +2162,8 @@ webhooks:
     clientConfig:
       caBundle: XYZ
       service:
-        namespace: kuma
-        name: kuma-ctrl-plane
+        namespace: kuma-system
+        name: kuma-control-plane
         path: /owner-reference-kuma-io-v1alpha1
     rules:
       - apiGroups:
@@ -2219,20 +2188,21 @@ webhooks:
           - trafficroutes
           - traffictraces
           - virtualoutbounds
+          - meshtrafficpermissions
   
       
     sideEffects: None
   - name: namespace-kuma-injector.kuma.io
     admissionReviewVersions: ["v1"]
-    failurePolicy: Crash
+    failurePolicy: Fail
     namespaceSelector:
       matchLabels:
         kuma.io/sidecar-injection: enabled
     clientConfig:
       caBundle: XYZ
       service:
-        namespace: kuma
-        name: kuma-ctrl-plane
+        namespace: kuma-system
+        name: kuma-control-plane
         path: /inject-sidecar
     rules:
       - apiGroups:
@@ -2246,15 +2216,15 @@ webhooks:
     sideEffects: None
   - name: pods-kuma-injector.kuma.io
     admissionReviewVersions: ["v1"]
-    failurePolicy: Crash
+    failurePolicy: Fail
     objectSelector:
       matchLabels:
         kuma.io/sidecar-injection: enabled
     clientConfig:
       caBundle: XYZ
       service:
-        namespace: kuma
-        name: kuma-ctrl-plane
+        namespace: kuma-system
+        name: kuma-control-plane
         path: /inject-sidecar
     rules:
       - apiGroups:
@@ -2272,8 +2242,8 @@ webhooks:
     clientConfig:
       caBundle: XYZ
       service:
-        namespace: kuma
-        name: kuma-ctrl-plane
+        namespace: kuma-system
+        name: kuma-control-plane
         path: /inject-sidecar
     rules:
       - apiGroups:
@@ -2290,7 +2260,7 @@ apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
   name: kuma-validating-webhook-configuration
-  namespace: kuma
+  namespace: kuma-system
   labels: 
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -2302,8 +2272,8 @@ webhooks:
     clientConfig:
       caBundle: XYZ
       service:
-        namespace: kuma
-        name: kuma-ctrl-plane
+        namespace: kuma-system
+        name: kuma-control-plane
         path: /validate-kuma-io-v1alpha1
     rules:
       - apiGroups:
@@ -2334,6 +2304,7 @@ webhooks:
           - virtualoutbounds
           - zones
           - containerpatches
+          - meshtrafficpermissions
     
       
     sideEffects: None
@@ -2343,8 +2314,8 @@ webhooks:
     clientConfig:
       caBundle: XYZ
       service:
-        namespace: kuma
-        name: kuma-ctrl-plane
+        namespace: kuma-system
+        name: kuma-control-plane
         path: /validate-v1-service
     rules:
       - apiGroups:
@@ -2366,8 +2337,8 @@ webhooks:
     clientConfig:
       caBundle: XYZ
       service:
-        namespace: kuma
-        name: kuma-ctrl-plane
+        namespace: kuma-system
+        name: kuma-control-plane
         path: /validate-v1-secret
     rules:
       - apiGroups:
@@ -2387,8 +2358,8 @@ webhooks:
     clientConfig:
       caBundle: XYZ
       service:
-        namespace: kuma
-        name: kuma-ctrl-plane
+        namespace: kuma-system
+        name: kuma-control-plane
         path: /validate-gatewayclass
     rules:
       - apiGroups:

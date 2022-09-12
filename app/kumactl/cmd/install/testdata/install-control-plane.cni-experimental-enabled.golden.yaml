@@ -2057,8 +2057,12 @@ spec:
     metadata:
       annotations:
         checksum/config: c52be51867deb8823a422dc1d188c7a2ab7fc5e501f620467d7fdd8fc4637d47
+<<<<<<< HEAD
         checksum/tls-secrets: c18b5a13b515430c78db0471417d72df2b8f0a38f63eccc5ba15ea98469dc670
         
+=======
+        checksum/tls-secrets: 0f778cb0c1f035e562a58b0fac0af5eb78fa2ed5d89f26c9e7968d50cea2a1dd
+>>>>>>> c5223c833 (fix(helm): use `podAnnotations` everywhere possible (#4991))
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma

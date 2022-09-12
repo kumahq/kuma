@@ -8,6 +8,20 @@ does not have any particular instructions.
 
 ## Upcoming release
 
+<<<<<<< HEAD
+=======
+### `kuma-prometheus-sd`
+
+This component has been removed
+after [a long period of deprecation](https://github.com/kumahq/kuma/issues/2851).
+
+### Helm
+
+`ingress.annotations` and `egress.annotations` are deprecated in favour of `ingress.podAnnotations` and `egress.podAnnotations` which is a better name and aligne with the existing `controlPlane.podAnnoations`.
+
+## Upgrade to `1.8.x`
+
+>>>>>>> c5223c833 (fix(helm): use `podAnnotations` everywhere possible (#4991))
 ### Kumactl
 
 * `kumactl inspect dataplane --config-dump` was deprecated in favour of `kumactl inspect dataplane --type config-dump`. The behaviour of the new flag is unchanged but you should migrate.

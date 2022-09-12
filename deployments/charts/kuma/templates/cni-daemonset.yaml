@@ -24,6 +24,9 @@ spec:
         # if it ever gets evicted.
         scheduler.alpha.kubernetes.io/critical-pod: ''
         checksum/config: {{ include (print $.Template.BasePath "/cni-configmap.yaml") . | sha256sum }}
+        {{- range $key, $value := .Values.cni.podAnnotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
     spec:
       {{- with .Values.cni.nodeSelector }}
       nodeSelector:
