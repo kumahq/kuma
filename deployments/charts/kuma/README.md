@@ -85,6 +85,7 @@ A Helm chart for the Kuma Control Plane
 | cni.confName | string | `"kuma-cni.conf"` | Set the CNI configuration name |
 | cni.logLevel | string | `"info"` | CNI log level: one of off,info,debug |
 | cni.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node Selector for the CNI pods |
+| cni.podAnnotations | object | `{}` | Additional pod annotations |
 | cni.image.registry | string | `"docker.io/kumahq"` | CNI image registry |
 | cni.image.repository | string | `"install-cni"` | CNI image repository |
 | cni.image.tag | string | `"0.0.10"` | CNI image tag |
@@ -121,7 +122,8 @@ A Helm chart for the Kuma Control Plane
 | ingress.service.annotations | object | `{}` | Additional annotations to put on the Ingress service |
 | ingress.service.port | int | `10001` | Port on which Ingress is exposed |
 | ingress.service.nodePort | string | `nil` | Port on which service is exposed on Node for service of type NodePort |
-| ingress.annotations | object | `{}` | Additional deployment annotation |
+| ingress.annotations | object | `{}` | Additional pod annotations (deprecated favor `podAnnotations`) |
+| ingress.podAnnotations | object | `{}` | Additional pod annotations |
 | ingress.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node Selector for the Ingress pods |
 | ingress.podDisruptionBudget.enabled | bool | `false` | Whether to create a pod disruption budget |
 | ingress.podDisruptionBudget.maxUnavailable | int | `1` | The maximum number of unavailable pods allowed by the budget |
@@ -144,7 +146,8 @@ A Helm chart for the Kuma Control Plane
 | egress.service.annotations | object | `{}` | Additional annotations to put on the Egress service |
 | egress.service.port | int | `10002` | Port on which Egress is exposed |
 | egress.service.nodePort | string | `nil` | Port on which service is exposed on Node for service of type NodePort |
-| egress.annotations | object | `{}` | Additional deployment annotation |
+| egress.annotations | object | `{}` | Additional pod annotations (deprecated favor `podAnnotations`) |
+| egress.podAnnotations | object | `{}` | Additional pod annotations |
 | egress.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node Selector for the Egress pods |
 | egress.podDisruptionBudget.enabled | bool | `false` | Whether to create a pod disruption budget |
 | egress.podDisruptionBudget.maxUnavailable | int | `1` | The maximum number of unavailable pods allowed by the budget |

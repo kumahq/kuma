@@ -1,0 +1,52 @@
+# Test all possible annotations in the chart
+controlPlane:
+  mode: zone
+  zone: zone1
+  kdsGlobalAddress: "grpcs://localhost:5678"
+  podAnnotations:
+    foo: '{"bar": "baz"}'
+    bim: "bam"
+  annotations:
+    zoom: zam
+  service:
+    annotations:
+      foo: '{"bar": "baz"}'
+      service: "annotation"
+  ingress:
+    enabled: true
+    annotations:
+      foo: '{"bar": "baz"}'
+      service: "ingress"
+  globalZoneSyncService:
+    annotations:
+      foo: '{"bar": "baz"}'
+      service: "globalSync"
+ingress:
+  enabled: true
+  annotations:
+    foo: '{"bar": "baz"}'
+    pod: "zone-ingress"
+  podAnnotations:
+    foo: '{"bar": "baz"}'
+    pod2: "zone-ingress"
+  service:
+    annotations:
+      foo: '{"bar": "baz"}'
+      service: "zone-ingress"
+egress:
+  enabled: true
+  annotations:
+    foo: '{"bar": "baz"}'
+    pod: "zone-egress"
+  podAnnotations:
+    foo: '{"bar": "baz"}'
+    pod2: "zone-ingress"
+  service:
+    annotations:
+      foo: '{"bar": "baz"}'
+      service: "zone-egress"
+cni:
+  enabled: true
+  podAnnotations:
+    foo: '{"bar": "baz"}'
+    pod: "cni"
