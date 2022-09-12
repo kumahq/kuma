@@ -14,6 +14,9 @@ type MatchingPolicyMap map[core_model.ResourceType][]core_model.Resource
 // TypedMatchingPolicies all policies of this type matching
 type TypedMatchingPolicies struct {
 	Type              core_model.ResourceType
+	InboundPolicies   map[mesh_proto.InboundInterface][]core_model.Resource
+	OutboundPolicies  map[mesh_proto.OutboundInterface][]core_model.Resource
+	ServicePolicies   map[ServiceName][]core_model.Resource
 	DataplanePolicies []core_model.Resource
 }
 
@@ -211,6 +214,11 @@ func getInboundMatchedPolicies(matchedPolicies *MatchedPolicies) map[mesh_proto.
 			result[inbound] = append(result[inbound], customList)
 		}
 	}
+	for _, tpe := range matchedPolicies.orderedDynamicPolicies() {
+		for inbound, elts := range matchedPolicies.Dynamic[tpe].InboundPolicies {
+			result[inbound] = append(result[inbound], elts...)
+		}
+	}
 
 	return result
 }
@@ -226,6 +234,11 @@ func getOutboundMatchedPolicies(matchedPolicies *MatchedPolicies) map[mesh_proto
 	}
 	for outbound, tr := range matchedPolicies.TrafficRoutes {
 		result[outbound] = append(result[outbound], tr)
+	}
+	for _, tpe := range matchedPolicies.orderedDynamicPolicies() {
+		for outbound, elts := range matchedPolicies.Dynamic[tpe].OutboundPolicies {
+			result[outbound] = append(result[outbound], elts...)
+		}
 	}
 
 	return result
@@ -245,6 +258,11 @@ func getServiceMatchedPolicies(matchedPolicies *MatchedPolicies) map[ServiceName
 	}
 	for service, retry := range matchedPolicies.Retries {
 		result[service] = append(result[service], retry)
+	}
+	for _, tpe := range matchedPolicies.orderedDynamicPolicies() {
+		for serviceName, elts := range matchedPolicies.Dynamic[tpe].ServicePolicies {
+			result[serviceName] = append(result[serviceName], elts...)
+		}
 	}
 
 	return result
