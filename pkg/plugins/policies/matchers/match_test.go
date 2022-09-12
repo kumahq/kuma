@@ -75,22 +75,22 @@ var _ = Describe("Match", func() {
 			},
 			Entry("01. policies select the dataplane without collisions", testCase{
 				dppFile:                    "01.dataplane.yaml",
-				resourceListResponseFile:   "01.response.yaml",
+				resourceListResponseFile:   "01.policies.yaml",
 				matchedResourcesGoldenFile: "01.golden.yaml",
 			}),
 			Entry("02. policies with the same levels select the dataplane", testCase{
 				dppFile:                    "02.dataplane.yaml",
-				resourceListResponseFile:   "02.response.yaml",
+				resourceListResponseFile:   "02.policies.yaml",
 				matchedResourcesGoldenFile: "02.golden.yaml",
 			}),
 			Entry("03. policy doesn't selects a union of inbound tags", testCase{
 				dppFile:                    "03.dataplane.yaml",
-				resourceListResponseFile:   "03.response.yaml",
+				resourceListResponseFile:   "03.policies.yaml",
 				matchedResourcesGoldenFile: "03.golden.yaml",
 			}),
 			Entry("04. policy doesn't select dataplane if at least one tag is not presented", testCase{
 				dppFile:                    "04.dataplane.yaml",
-				resourceListResponseFile:   "04.response.yaml",
+				resourceListResponseFile:   "04.policies.yaml",
 				matchedResourcesGoldenFile: "04.golden.yaml",
 			}),
 		)
