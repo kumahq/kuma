@@ -12,9 +12,10 @@ KUMA_DP_SERVER_AUTH_TYPE=none KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS=true ./build/arti
 Run XDS Test Client:
 
 ```shell script
-make run -C ./pkg/test/xds/client
+make run/xds-client
 ```
 
 ## Env
 - `NUM_OF_DATAPLANES` - total number of Dataplanes to emulate
+- `NUM_OF_SERVICES` - total number of services to emulate
 - `KUMA_CP_ADDRESS` - address of Kuma CP 
