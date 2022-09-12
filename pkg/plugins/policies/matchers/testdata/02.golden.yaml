@@ -62,7 +62,6 @@ items:
       kind: MeshServiceSubset
       name: web
       tags:
-        kuma.io/service: web
         version: v1
   type: MeshTrafficPermission
 - creationTime: "0001-01-01T00:00:00Z"
@@ -74,7 +73,6 @@ items:
       kind: MeshServiceSubset
       name: web
       tags:
-        kuma.io/service: web
         version: v1
   type: MeshTrafficPermission
 next: null

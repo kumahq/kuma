@@ -54,9 +54,13 @@ func isDataplaneSelectedByTargetRef(tr *common_proto.TargetRef, dpp *core_mesh.D
 			mesh_proto.ServiceTag: tr.GetName(),
 		}, dpp)
 	case common_proto.TargetRef_MeshServiceSubset:
-		trTags := tr.GetTags()
-		trTags[mesh_proto.ServiceTag] = tr.GetName()
-		return isDataplaneSelectedByTags(trTags, dpp)
+		tags := map[string]string{
+			mesh_proto.ServiceTag: tr.GetName(),
+		}
+		for k, v := range tr.GetTags() {
+			tags[k] = v
+		}
+		return isDataplaneSelectedByTags(tags, dpp)
 	default:
 		return false
 	}

@@ -35,7 +35,6 @@ items:
       kind: MeshServiceSubset
       name: web
       tags:
-        kuma.io/service: web
         version: v1
   type: MeshTrafficPermission
 next: null
