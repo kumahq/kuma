@@ -1,0 +1,37 @@
+properties:
+  type:
+    description: ''
+    type: string
+    enum:
+      - MeshAccessLog
+  mesh:
+    description: 'Mesh is the name of the Kuma mesh this resource belongs to. It may be omitted for cluster-scoped resources.'
+    type: string
+  name:
+    description: 'Name of the Kuma resource'
+    type: string
+  targetRef:
+    description: TargetRef is a reference to the resource the policy takes an effect on. The resource could be either a real store object or virtual resource defined inplace.
+    properties:
+      kind:
+        description: Kind of the referenced resource
+        enum:
+          - Mesh
+          - MeshSubset
+          - MeshService
+          - MeshServiceSubset
+          - MeshGatewayRoute
+          - MeshHTTPRoute
+        type: string
+      mesh:
+        description: Mesh is used with MeshService and MeshServiceSubset to identify the service from another mesh. Could be useful when implementing policies with cross-mesh support.
+        type: string
+      name:
+        description: Name of the referenced resource
+        type: string
+      tags:
+        additionalProperties:
+          type: string
+        description: Tags are used with MeshSubset and MeshServiceSubset to define a subset of proxies
+        type: object
+    type: object

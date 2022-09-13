@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package kuma.plugins.policies.meshaccesslog.v1alpha1;
+
+import "mesh/options.proto";
+option go_package = "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1";
+
+import "common/v1alpha1/targetref.proto";
+import "kuma-doc/config.proto";
+
+option (doc.config) = {
+  type : Policy,
+  name : "MeshAccessLog",
+  file_name : "meshaccesslog"
+};
+
+// MeshAccessLog
+message MeshAccessLog {
+  option (kuma.mesh.policy) = {
+    // Toggle this to have the policy registered or not in Kuma
+    skip_registration : false,
+  };
+
+  // TargetRef is a reference to the resource the policy takes an effect on.
+  // The resource could be either a real store object or virtual resource
+  // defined inplace.
+  kuma.common.v1alpha1.TargetRef targetRef = 1;
+
+  message Conf {
+    // TODO add configuration fields
+  }
+}
