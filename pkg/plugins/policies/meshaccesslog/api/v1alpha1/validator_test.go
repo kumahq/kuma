@@ -166,6 +166,83 @@ violations:
   - field: spec.from[0].default.backend[0].json[0].value
     message: value cannot be empty`,
 			}),
+			Entry("both 'plain' and 'json' defined", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+      name: default
+    default:
+      backends:
+        - tcp:
+            address: 127.0.0.1:5000
+            format:
+              plain: '{"start_time": "%START_TIME%"}'
+              json:
+                - key: "start_time"
+                  value: "%START_TIME%"
+`,
+				expected: `
+violations:
+- field: spec.from[0].default.backend[0]
+  message: 'format can only have one type defined: plain, json'`,
+			}),
+			Entry("both 'tcp' and 'reference' defined", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+      name: default
+    default:
+      backends:
+        - tcp:
+            address: 127.0.0.1:5000
+            format:
+              json:
+                - key: "start_time"
+                  value: "%START_TIME%"
+          reference:
+            kind: MeshAccessLogBackend
+            name: file-backend
+`,
+				expected: `
+violations:
+- field: spec.from[0].default.backend[0]
+  message: 'backend can have only one type type defined: tcp, file, reference'`,
+			}),
+
+			Entry("both 'tcp' and 'reference' defined", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+      name: default
+    default:
+      backends:
+        - tcp:
+            address: 127.0.0.1:5000
+            format:
+              json:
+                - key: "start_time"
+                  value: "%START_TIME%"
+          reference:
+            kind: MeshAccessLogBackend
+            name: file-backend
+`,
+				expected: `
+violations:
+- field: spec.from[0].default.backend[0]
+  message: 'backend can have only one type type defined: tcp, file, reference'`,
+			}),
 		)
 	})
 })
