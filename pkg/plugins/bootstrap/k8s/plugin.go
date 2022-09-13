@@ -23,6 +23,7 @@ import (
 	kube_ctrlr "sigs.k8s.io/controller-runtime/pkg/controller"
 	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
 
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
@@ -44,7 +45,10 @@ func init() {
 	core_plugins.Register(core_plugins.Kubernetes, &plugin{})
 }
 
-func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig) error {
+func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.PluginConfig) error {
+	if b.Config().Environment != config_core.KubernetesEnvironment {
+		return nil
+	}
 	scheme, err := NewScheme()
 	if err != nil {
 		return err
@@ -149,6 +153,9 @@ func createSecretClient(appCtx context.Context, scheme *kube_runtime.Scheme, sys
 }
 
 func (p *plugin) AfterBootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig) error {
+	if b.Config().Environment != config_core.KubernetesEnvironment {
+		return nil
+	}
 	apiServerAddress := os.Getenv("KUBERNETES_SERVICE_HOST")
 	port := os.Getenv("KUBERNETES_SERVICE_PORT")
 	apiServerPort, err := strconv.ParseUint(port, 10, 32)

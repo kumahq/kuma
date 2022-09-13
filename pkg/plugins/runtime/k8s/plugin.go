@@ -40,6 +40,9 @@ func init() {
 }
 
 func (p *plugin) Customize(rt core_runtime.Runtime) error {
+	if rt.Config().Environment != config_core.KubernetesEnvironment {
+		return nil
+	}
 	mgr, ok := k8s_extensions.FromManagerContext(rt.Extensions())
 	if !ok {
 		return errors.Errorf("k8s controller runtime Manager hasn't been configured")
