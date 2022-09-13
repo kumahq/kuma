@@ -34,16 +34,19 @@ Some potential names:
 
 #### Backends
 
-Currently, tracing support requires defining _backends_ in the `Mesh` resource. A backend defines where traces are sent, the _provider_. It also defines sampling rates. The `TrafficTrace` resource references these backends and contains no configuration of its own.
+Currently, tracing support requires defining _backends_ in the `Mesh` resource.
+A backend defines where traces are sent, the _provider_. For `TrafficTrace`, it also contains the sampling rates settings.
+The `TrafficTrace` resource references these backends and contains no configuration of its own.
 
-### Variant 1
+The proposed `Tracing` policy follows the decisions about backends as laid out in
+[the MADR for `MeshAccessLog`](docs/madr/decisions/009-tracing-policy.md#backends). This
+means creating a new `TracingBackend` resource and allowing inline backend
+definitions.
 
-This MADR proposes leaving the _provider config_ in the `Mesh`.
-It leaves the door open for defining providers inline or in a separate
-resource.
-
-However, we propose configuring sampling and tag options in the `Tracing`
-resource.
+However, we propose moving configuring sampling and tag configuration
+from the backend (the `TrafficTrace` status quo) to the `Tracing` resource.
+Backends can contain the same settings but they can be set or overriden in
+specific `Tracing` resources.
 
 #### `targetRef`
 
@@ -59,48 +62,7 @@ Resources supported by `spec.targetRef` are `Mesh`, `MeshSubset`, `MeshService`,
 evolution of `TrafficRoute`, which we'll call `MeshTrafficRoute` in this
 document.
 
-#### Backends
-
-We propose keeping backends definable in the `Mesh` resource as is.
-
-```yaml
-spec:
-  default:
-    backend:
-      name: <backend defined in `Mesh`>
-```
-
-In particular, these backends contain the [_provider
-configs_](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/http_tracer.proto#envoy-v3-api-msg-config-trace-v3-tracing-http).
-
-The rationale here is that the provider is likely to be the same provider for all
-traces of a `Mesh` so it makes sense to configure it on the `Mesh`.
-
-##### Further provider config options
-
-There are two more possibilities worth mentioning.
-
-We could easily offer defining a `Tracing`-specific backend inline:
-
-```yaml
-spec:
-  default:
-    backendConfig:
-      type: <backend type>
-      <type-specific config>
-```
-
-We could create an additional resource `TracingConfig` (name tbd) that can be referenced
-from `Tracing`:
-
-```yaml
-spec:
-  default:
-    configRef:
-      name: <resource-name>
-```
-
-#### Additional configuration
+#### Policy-specific configuration
 
 This MADR proposes additional options be configurable on `Tracing` resources
 directly.
@@ -111,20 +73,21 @@ At the moment, tracing backends only support Envoy's
 [`overall_sampling`](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-tracing-overall-sampling)
 via the `sampling` field.
 
-Question: should we allow the following instead?
+This MADR proposes instead the following:
 
 ```yaml
 spec:
-  default:
-    sampling:
-      overall: <percentage>
-      client: <percentage>
-      random: <percentage>
+ default:
+  sampling:
+   overall: <percentage>
+   client: <percentage>
+   random: <percentage>
 ```
 
-If users set the simple `sampling` field we have now,
-do they expect it to limit traces started via `x-client-trace-id`?
-Do they want to disable `x-client-trace-id`?
+with the justification that it's not clear to users
+that when they set the simple `sampling` field we have now,
+whether traces started via `x-client-trace-id` are limited.
+This also enables disabling `x-client-trace-id`.
 
 ##### Tags
 
@@ -144,14 +107,14 @@ Tags can be configured as follows:
 
 ```yaml
 spec:
-  default:
-    tags:
-      - name:
-        # exactly one of the following keys must be set
-        literal: ...
-        header:
-          name:
-          default:
+ default:
+  tags:
+   - name:
+     # exactly one of the following keys must be set
+     literal: ...
+     header:
+      name:
+      default:
 ```
 
 ##### Method/path specific
@@ -176,20 +139,20 @@ trace a maximum of 80% of traffic and adds the custom tag `team` with a value of
 apiVersion: kuma.io/v1alpha1
 kind: Tracing
 metadata:
-  name: all
-  labels:
-    kuma.io/mesh: default
+ name: all
+ labels:
+  kuma.io/mesh: default
 spec:
-  targetRef:
-    kind: MeshService
-    name: backend
-  default:
-    backend: jaeger
-    sampling:
-      overall: 80
-    tags:
-      - name: team
-        literal: core
+ targetRef:
+  kind: MeshService
+  name: backend
+ default:
+  backend: jaeger
+  sampling:
+   overall: 80
+  tags:
+   - name: team
+     literal: core
 ```
 
 #### Route-specific
@@ -202,20 +165,20 @@ with a value from `x-env` and a default value of `prod`.
 apiVersion: kuma.io/v1alpha1
 kind: TrafficLog
 metadata:
-  name: all
-  labels:
-    kuma.io/mesh: default
+ name: all
+ labels:
+  kuma.io/mesh: default
 spec:
-  targetRef:
-    kind: MeshGatewayRoute
-    name: prod
-  default:
-    backend: jaeger
-    sampling:
-      overall: 80
-    tags:
-      - name: env
-        header:
-          name: x-env
-          default: prod
+ targetRef:
+  kind: MeshGatewayRoute
+  name: prod
+ default:
+  backend: jaeger
+  sampling:
+   overall: 80
+  tags:
+   - name: env
+     header:
+      name: x-env
+      default: prod
 ```
