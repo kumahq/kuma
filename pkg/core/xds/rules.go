@@ -152,6 +152,10 @@ func BuildRules(list []PolicyItem) Rules {
 }
 
 func asSubset(tr *common_api.TargetRef) Subset {
+	if tr == nil {
+		// syntactic sugar, empty targetRef means targetRef{kind: Mesh}
+		return Subset{}
+	}
 	switch tr.GetKindEnum() {
 	case common_api.TargetRef_Mesh:
 		return Subset{}
