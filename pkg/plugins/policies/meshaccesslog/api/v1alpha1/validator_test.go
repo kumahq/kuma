@@ -25,7 +25,7 @@ var _ = Describe("MeshAccessLog", func() {
 				// then
 				Expect(verr).To(BeNil())
 			},
-            Entry("mesh from/to example", `
+			Entry("mesh from/to example", `
 targetRef:
   kind: MeshService
   name: web-frontend
@@ -68,7 +68,7 @@ from:
         - file:
            path: '/tmp/logs.txt'
 `),
-        )
+		)
 
 		type testCase struct {
 			inputYaml string

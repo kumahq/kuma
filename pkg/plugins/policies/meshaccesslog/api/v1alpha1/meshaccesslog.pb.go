@@ -152,7 +152,8 @@ type MeshAccessLog_TCPAccessLogBackend struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+	// Format of access logs. Placeholders available on
+	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
 	Format *MeshAccessLog_Format `protobuf:"bytes,1,opt,name=format,proto3" json:"format,omitempty"`
 	// Type of the backend (Kuma ships with 'tcp' and 'file')
 	Address string `protobuf:"bytes,2,opt,name=address,proto3" json:"address,omitempty"`
@@ -210,7 +211,8 @@ type MeshAccessLog_FileAccessLogBackend struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+	// Format of access logs. Placeholders available on
+	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
 	Format *MeshAccessLog_Format `protobuf:"bytes,1,opt,name=format,proto3" json:"format,omitempty"`
 	// Path to a file that logs will be written to
 	Path string `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
@@ -432,9 +434,11 @@ type MeshAccessLog_From struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// TargetRef is a reference to the resource that represents a group of clients.
+	// TargetRef is a reference to the resource that represents a group of
+	// clients.
 	TargetRef *v1alpha1.TargetRef `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef,omitempty"`
-	// Default is a configuration specific to the group of clients referenced in 'targetRef'
+	// Default is a configuration specific to the group of clients referenced in
+	// 'targetRef'
 	Default *MeshAccessLog_Conf `protobuf:"bytes,2,opt,name=default,proto3" json:"default,omitempty"`
 }
 
@@ -489,9 +493,11 @@ type MeshAccessLog_To struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// TargetRef is a reference to the resource that represents a group of clients.
+	// TargetRef is a reference to the resource that represents a group of
+	// clients.
 	TargetRef *v1alpha1.TargetRef `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef,omitempty"`
-	// Default is a configuration specific to the group of clients referenced in 'targetRef'
+	// Default is a configuration specific to the group of clients referenced in
+	// 'targetRef'
 	Default *MeshAccessLog_Conf `protobuf:"bytes,2,opt,name=default,proto3" json:"default,omitempty"`
 }
 

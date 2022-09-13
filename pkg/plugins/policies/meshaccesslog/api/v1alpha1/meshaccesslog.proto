@@ -38,7 +38,8 @@ message MeshAccessLog {
 
   // Backend defines logging backend.
   message TCPAccessLogBackend {
-    // Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+    // Format of access logs. Placeholders available on
+    // https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
     Format format = 1 [ (doc.required) = true ];
 
     // Type of the backend (Kuma ships with 'tcp' and 'file')
@@ -47,7 +48,8 @@ message MeshAccessLog {
 
   // FileBackend defines configuration for file based access logs
   message FileAccessLogBackend {
-    // Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+    // Format of access logs. Placeholders available on
+    // https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
     Format format = 1 [ (doc.required) = true ];
 
     // Path to a file that logs will be written to
@@ -65,15 +67,15 @@ message MeshAccessLog {
     ReferenceAccessLogBackend reference = 3;
   }
 
-  message Conf {
-    repeated Backend backends = 1 [ (doc.required) = true ];
-  }
+  message Conf { repeated Backend backends = 1 [ (doc.required) = true ]; }
 
   message From {
-    // TargetRef is a reference to the resource that represents a group of clients.
-    kuma.common.v1alpha1.TargetRef targetRef = 1  [ (doc.required) = true ];
+    // TargetRef is a reference to the resource that represents a group of
+    // clients.
+    kuma.common.v1alpha1.TargetRef targetRef = 1 [ (doc.required) = true ];
 
-    // Default is a configuration specific to the group of clients referenced in 'targetRef'
+    // Default is a configuration specific to the group of clients referenced in
+    // 'targetRef'
     Conf default = 2 [ (doc.required) = true ];
   }
 
@@ -81,10 +83,12 @@ message MeshAccessLog {
   repeated From from = 3;
 
   message To {
-    // TargetRef is a reference to the resource that represents a group of clients.
+    // TargetRef is a reference to the resource that represents a group of
+    // clients.
     kuma.common.v1alpha1.TargetRef targetRef = 1 [ (doc.required) = true ];
 
-    // Default is a configuration specific to the group of clients referenced in 'targetRef'
+    // Default is a configuration specific to the group of clients referenced in
+    // 'targetRef'
     Conf default = 2 [ (doc.required) = true ];
   }
 

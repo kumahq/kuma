@@ -27,38 +27,38 @@ func NewMeshAccessLogResource() *MeshAccessLogResource {
 	}
 }
 
-func (r *MeshAccessLogResource) GetMeta() model.ResourceMeta {
-	return r.Meta
+func (t *MeshAccessLogResource) GetMeta() model.ResourceMeta {
+	return t.Meta
 }
 
-func (r *MeshAccessLogResource) SetMeta(m model.ResourceMeta) {
-	r.Meta = m
+func (t *MeshAccessLogResource) SetMeta(m model.ResourceMeta) {
+	t.Meta = m
 }
 
-func (r *MeshAccessLogResource) GetSpec() model.ResourceSpec {
-	return r.Spec
+func (t *MeshAccessLogResource) GetSpec() model.ResourceSpec {
+	return t.Spec
 }
 
-func (r *MeshAccessLogResource) SetSpec(spec model.ResourceSpec) error {
+func (t *MeshAccessLogResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*MeshAccessLog)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
 		if protoType == nil {
-			r.Spec = &MeshAccessLog{}
+			t.Spec = &MeshAccessLog{}
 		} else {
-			r.Spec = protoType
+			t.Spec = protoType
 		}
 		return nil
 	}
 }
 
-func (r *MeshAccessLogResource) Descriptor() model.ResourceTypeDescriptor {
+func (t *MeshAccessLogResource) Descriptor() model.ResourceTypeDescriptor {
 	return MeshAccessLogResourceTypeDescriptor
 }
 
-func (r *MeshAccessLogResource) Validate() error {
-	if v, ok := interface{}(r).(interface{ validate() error }); !ok {
+func (t *MeshAccessLogResource) Validate() error {
+	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
 		return nil
 	} else {
 		return v.validate()
