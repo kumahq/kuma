@@ -1,3 +1,4 @@
+# 03. policy doesn't selects a union of inbound tags
 type: MeshTrafficPermission
 mesh: mesh-1
 name: mtp-1

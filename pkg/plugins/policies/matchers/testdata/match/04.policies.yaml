@@ -1,3 +1,4 @@
+# 04. policy doesn't select dataplane if at least one tag is not presented
 type: MeshTrafficPermission
 mesh: mesh-1
 name: mtp-1

@@ -1,6 +1,7 @@
+# 01. policies select the dataplane without collisions
 type: MeshTrafficPermission
 mesh: mesh-1
-name: aaa
+name: mtp-1
 spec:
   targetRef:
     kind: MeshServiceSubset
@@ -10,58 +11,52 @@ spec:
 ---
 type: MeshTrafficPermission
 mesh: mesh-1
-name: bbb
+name: mtp-2
+spec:
+  targetRef:
+    kind: Mesh
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-3
+spec:
+  targetRef:
+    kind: MeshService
+    name: web
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-4
+spec:
+  targetRef:
+    kind: MeshSubset
+    tags:
+      version: v1
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-5
+spec:
+  targetRef:
+    kind: MeshService
+    name: backend
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-6
 spec:
   targetRef:
     kind: MeshServiceSubset
     name: web
     tags:
-      version: v1
+      version: v2
 ---
 type: MeshTrafficPermission
 mesh: mesh-1
-name: 1-my-policy
+name: mtp-7
 spec:
   targetRef:
-    kind: Mesh
----
-type: MeshTrafficPermission
-mesh: mesh-1
-name: 2-my-policy
-spec:
-  targetRef:
-    kind: Mesh
----
-type: MeshTrafficPermission
-mesh: mesh-1
-name: my-policy-2
-spec:
-  targetRef:
-    kind: MeshService
+    kind: MeshServiceSubset
     name: web
----
-type: MeshTrafficPermission
-mesh: mesh-1
-name: my-policy-1
-spec:
-  targetRef:
-    kind: MeshService
-    name: web
----
-type: MeshTrafficPermission
-mesh: mesh-1
-name: "222"
-spec:
-  targetRef:
-    kind: MeshSubset
     tags:
-      version: v1
----
-type: MeshTrafficPermission
-mesh: mesh-1
-name: "111"
-spec:
-  targetRef:
-    kind: MeshSubset
-    tags:
-      version: v1
+      env: dev

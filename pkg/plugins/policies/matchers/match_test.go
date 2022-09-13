@@ -3,7 +3,8 @@ package matchers_test
 import (
 	"bytes"
 	"os"
-	"path"
+	"path/filepath"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -33,7 +34,7 @@ var _ = Describe("Match", func() {
 		DescribeTable("should return a list of policies ordered by levels for the given DPP",
 			func(given testCase) {
 				// given DPP resource
-				dppYaml, err := os.ReadFile(path.Join("testdata", given.dppFile))
+				dppYaml, err := os.ReadFile(given.dppFile)
 				Expect(err).ToNot(HaveOccurred())
 
 				resCore, err := rest.YAML.UnmarshalCore(dppYaml)
@@ -41,7 +42,7 @@ var _ = Describe("Match", func() {
 				dpp := resCore.(*core_mesh.DataplaneResource)
 
 				// given MeshTrafficPermissions
-				responseBytes, err := os.ReadFile(path.Join("testdata", given.resourceListResponseFile))
+				responseBytes, err := os.ReadFile(given.resourceListResponseFile)
 				Expect(err).ToNot(HaveOccurred())
 
 				rawResources := yaml.SplitYAML(string(responseBytes))
@@ -71,28 +72,36 @@ var _ = Describe("Match", func() {
 				bytesBuffer := &bytes.Buffer{}
 				err = kubectl_output.NewPrinter().Print(rest.From.ResourceList(matchedPolicyList), bytesBuffer)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(bytesBuffer.String()).To(test_matchers.MatchGoldenYAML(path.Join("testdata", given.matchedResourcesGoldenFile)))
-			},
-			Entry("01. policies select the dataplane without collisions", testCase{
-				dppFile:                    "01.dataplane.yaml",
-				resourceListResponseFile:   "01.policies.yaml",
-				matchedResourcesGoldenFile: "01.golden.yaml",
-			}),
-			Entry("02. policies with the same levels select the dataplane", testCase{
-				dppFile:                    "02.dataplane.yaml",
-				resourceListResponseFile:   "02.policies.yaml",
-				matchedResourcesGoldenFile: "02.golden.yaml",
-			}),
-			Entry("03. policy doesn't selects a union of inbound tags", testCase{
-				dppFile:                    "03.dataplane.yaml",
-				resourceListResponseFile:   "03.policies.yaml",
-				matchedResourcesGoldenFile: "03.golden.yaml",
-			}),
-			Entry("04. policy doesn't select dataplane if at least one tag is not presented", testCase{
-				dppFile:                    "04.dataplane.yaml",
-				resourceListResponseFile:   "04.policies.yaml",
-				matchedResourcesGoldenFile: "04.golden.yaml",
-			}),
+				Expect(bytesBuffer.String()).To(test_matchers.MatchGoldenYAML(given.matchedResourcesGoldenFile))
+			}, func() []TableEntry {
+				var res []TableEntry
+				testDir := filepath.Join("testdata", "match")
+				files, err := os.ReadDir(testDir)
+				Expect(err).ToNot(HaveOccurred())
+
+				testCaseMap := map[string]*testCase{}
+				for _, f := range files {
+					parts := strings.Split(f.Name(), ".")
+					// file name has a format 01.golden.yaml
+					num, fileType := parts[0], parts[1]
+					if _, ok := testCaseMap[num]; !ok {
+						testCaseMap[num] = &testCase{}
+					}
+					switch fileType {
+					case "dataplane":
+						testCaseMap[num].dppFile = filepath.Join(testDir, f.Name())
+					case "policies":
+						testCaseMap[num].resourceListResponseFile = filepath.Join(testDir, f.Name())
+					case "golden":
+						testCaseMap[num].matchedResourcesGoldenFile = filepath.Join(testDir, f.Name())
+					}
+				}
+
+				for num, tc := range testCaseMap {
+					res = append(res, Entry(num, *tc))
+				}
+				return res
+			}(),
 		)
 	})
 })

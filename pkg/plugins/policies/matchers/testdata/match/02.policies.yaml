@@ -1,6 +1,7 @@
+# 02. policies with the same levels select the dataplane
 type: MeshTrafficPermission
 mesh: mesh-1
-name: mtp-1
+name: aaa
 spec:
   targetRef:
     kind: MeshServiceSubset
@@ -10,14 +11,31 @@ spec:
 ---
 type: MeshTrafficPermission
 mesh: mesh-1
-name: mtp-2
+name: bbb
+spec:
+  targetRef:
+    kind: MeshServiceSubset
+    name: web
+    tags:
+      version: v1
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: 1-my-policy
 spec:
   targetRef:
     kind: Mesh
 ---
 type: MeshTrafficPermission
 mesh: mesh-1
-name: mtp-3
+name: 2-my-policy
+spec:
+  targetRef:
+    kind: Mesh
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: my-policy-2
 spec:
   targetRef:
     kind: MeshService
@@ -25,7 +43,15 @@ spec:
 ---
 type: MeshTrafficPermission
 mesh: mesh-1
-name: mtp-4
+name: my-policy-1
+spec:
+  targetRef:
+    kind: MeshService
+    name: web
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: "222"
 spec:
   targetRef:
     kind: MeshSubset
@@ -34,28 +60,9 @@ spec:
 ---
 type: MeshTrafficPermission
 mesh: mesh-1
-name: mtp-5
+name: "111"
 spec:
   targetRef:
-    kind: MeshService
-    name: backend
----
-type: MeshTrafficPermission
-mesh: mesh-1
-name: mtp-6
-spec:
-  targetRef:
-    kind: MeshServiceSubset
-    name: web
+    kind: MeshSubset
     tags:
-      version: v2
----
-type: MeshTrafficPermission
-mesh: mesh-1
-name: mtp-7
-spec:
-  targetRef:
-    kind: MeshServiceSubset
-    name: web
-    tags:
-      env: dev
+      version: v1
