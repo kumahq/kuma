@@ -94,7 +94,7 @@ func (r *MeshAccessLogResource) validateTo(spec validators.PathBuilder, verr *va
 		verr.AddError("", targetRefErr)
 
 		if toItem.GetDefault() == nil {
-			verr.AddViolationAt(to.Index(idx).Field("default"), "cannot be nil")
+			verr.AddViolationAt(to.Index(idx).Field("default"), "must be defined")
 		}
 
 		toIndexed := to.Index(idx)
@@ -116,7 +116,7 @@ func (r *MeshAccessLogResource) validateFrom(spec validators.PathBuilder, verr *
 		verr.AddError("", targetRefErr)
 
 		if fromItem.GetDefault() == nil {
-			verr.AddViolationAt(from.Index(idx).Field("default"), "cannot be nil")
+			verr.AddViolationAt(from.Index(idx).Field("default"), "must be defined")
 		}
 
 		toIndexed := from.Index(idx)

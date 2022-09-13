@@ -237,6 +237,56 @@ violations:
 - field: spec.to
   message: 'cannot use "to" when "targetRef" is "MeshGatewayRoute" - there is no outbound'`,
 			}),
+			Entry("'to' defined in MeshHTTPRoute", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshHTTPRoute
+  name: some-mesh-http-route
+to:
+  - targetRef:
+      kind: Mesh
+      name: default
+    default:
+      backends:
+        - reference:
+            kind: MeshAccessLogBackend
+            name: file-backend
+`,
+				expected: `
+violations:
+- field: spec.to
+  message: 'cannot use "to" when "targetRef" is "MeshHTTPRoute" - "to" always goes to the application'`,
+			}),
+			Entry("'default' not defined in to", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+  name: default
+to:
+  - targetRef:
+      kind: Mesh
+      name: default
+`,
+				expected: `
+violations:
+- field: spec.to[0].default
+  message: 'must be defined'`,
+			}),
+			Entry("'default' not defined in from", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+  name: default
+from:
+  - targetRef:
+      kind: Mesh
+      name: default
+`,
+				expected: `
+violations:
+- field: spec.from[0].default
+  message: 'must be defined'`,
+			}),
 		)
 	})
 })
