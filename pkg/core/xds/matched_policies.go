@@ -19,6 +19,7 @@ type TypedMatchingPolicies struct {
 	ServicePolicies   map[ServiceName][]core_model.Resource
 	DataplanePolicies []core_model.Resource
 }
+
 type MatchedPolicies struct {
 	// Inbound(Listener) -> Policy
 	TrafficPermissions    TrafficPermissionMap
