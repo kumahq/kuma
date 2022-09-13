@@ -9,7 +9,6 @@ import (
 	"github.com/spf13/cobra"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	kumadp_config "github.com/kumahq/kuma/app/kuma-dp/pkg/config"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsserver"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
@@ -117,21 +116,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				runLog.Info("generated configurations will be stored in a temporary directory", "dir", tmpDir)
 			}
 
-			if cfg.DataplaneRuntime.Token != "" {
-				path := filepath.Join(cfg.DataplaneRuntime.ConfigDir, cfg.Dataplane.Name)
-				if err := writeFile(path, []byte(cfg.DataplaneRuntime.Token), 0600); err != nil {
-					runLog.Error(err, "unable to create file with dataplane token")
-					return err
-				}
-				cfg.DataplaneRuntime.TokenPath = path
-			}
-
-			if cfg.DataplaneRuntime.TokenPath != "" {
-				if err := kumadp_config.ValidateTokenPath(cfg.DataplaneRuntime.TokenPath); err != nil {
-					return errors.Wrapf(err, "dataplane token is invalid, in Kubernetes you must mount a serviceAccount token, in universal you must start your proxy with a generated token.")
-				}
-			}
-
 			if cfg.ControlPlane.CaCert == "" && cfg.ControlPlane.CaCertFile != "" {
 				cert, err := os.ReadFile(cfg.ControlPlane.CaCertFile)
 				if err != nil {
@@ -142,19 +126,9 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			return nil
 		},
 		PostRunE: func(cmd *cobra.Command, _ []string) error {
-			if rootCtx.DataplaneTokenGenerator != nil {
-				path := filepath.Join(cfg.DataplaneRuntime.ConfigDir, cfg.Dataplane.Name)
-
-				token, err := rootCtx.DataplaneTokenGenerator()
-				if err != nil {
-					return err
-				}
-
-				if err := writeFile(path, token, 0600); err != nil {
-					runLog.Error(err, "unable to create file with dataplane token")
-					return err
-				}
-				cfg.DataplaneRuntime.TokenPath = path
+			if err := rootCtx.DataplaneTokenGenerator(cfg); err != nil {
+				runLog.Error(err, "unable to get or generate dataplane token")
+				return err
 			}
 
 			if tmpDir != "" { // clean up temp dir if it was created
