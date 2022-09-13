@@ -1,6 +1,7 @@
 package xds
 
 import (
+	"encoding"
 	"fmt"
 	"sort"
 
@@ -28,8 +29,25 @@ type ResourceSpecWithTargetRef interface {
 	core_model.ResourceSpec
 }
 
+type InboundListener struct {
+	Address string
+	Port    uint32
+}
+
+// We need to implement TextMarshaler because InboundListener is used
+// as a key for maps that are JSON encoded for logging.
+var _ encoding.TextMarshaler = InboundListener{}
+
+func (i InboundListener) MarshalText() ([]byte, error) {
+	return []byte(i.String()), nil
+}
+
+func (i InboundListener) String() string {
+	return fmt.Sprintf("%s:%d", i.Address, i.Port)
+}
+
 type FromRules struct {
-	Rules map[mesh_proto.InboundInterface]Rules
+	Rules map[InboundListener]Rules
 }
 
 type ToRules struct {

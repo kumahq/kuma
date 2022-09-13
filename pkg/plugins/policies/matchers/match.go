@@ -17,7 +17,7 @@ import (
 func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneResource, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
 	policies := resources.ListOrEmpty(rType)
 
-	matchedPoliciesByInbound := map[mesh_proto.InboundInterface][]core_model.Resource{}
+	matchedPoliciesByInbound := map[core_xds.InboundListener][]core_model.Resource{}
 	dpPolicies := []core_model.Resource{}
 
 	for _, policy := range policies.GetItems() {
@@ -59,9 +59,9 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 }
 
 func fromRules(
-	matchedPoliciesByInbound map[mesh_proto.InboundInterface][]core_model.Resource,
-) map[mesh_proto.InboundInterface]core_xds.Rules {
-	rules := map[mesh_proto.InboundInterface]core_xds.Rules{}
+	matchedPoliciesByInbound map[core_xds.InboundListener][]core_model.Resource,
+) map[core_xds.InboundListener]core_xds.Rules {
+	rules := map[core_xds.InboundListener]core_xds.Rules{}
 	for inbound, policies := range matchedPoliciesByInbound {
 		fromList := []core_xds.PolicyItem{}
 		for _, p := range policies {
@@ -91,13 +91,17 @@ func toRules(matchedPolicies []core_model.Resource) core_xds.Rules {
 }
 
 // inboundsSelectedByTargetRef returns a list of inbounds of DPP that are selected by the targetRef
-func inboundsSelectedByTargetRef(tr *common_proto.TargetRef, dpp *core_mesh.DataplaneResource) []mesh_proto.InboundInterface {
+func inboundsSelectedByTargetRef(tr *common_proto.TargetRef, dpp *core_mesh.DataplaneResource) []core_xds.InboundListener {
 	switch tr.GetKindEnum() {
 	case common_proto.TargetRef_Mesh:
 		// return all inbounds interfaces of the DPP
-		result := []mesh_proto.InboundInterface{}
+		result := []core_xds.InboundListener{}
 		for _, inbound := range dpp.Spec.GetNetworking().GetInbound() {
-			result = append(result, dpp.Spec.GetNetworking().ToInboundInterface(inbound))
+			intf := dpp.Spec.GetNetworking().ToInboundInterface(inbound)
+			result = append(result, core_xds.InboundListener{
+				Address: intf.DataplaneIP,
+				Port:    intf.DataplanePort,
+			})
 		}
 		return result
 	case common_proto.TargetRef_MeshSubset:
@@ -115,15 +119,19 @@ func inboundsSelectedByTargetRef(tr *common_proto.TargetRef, dpp *core_mesh.Data
 		}
 		return inboundsSelectedByTags(tags, dpp)
 	default:
-		return []mesh_proto.InboundInterface{}
+		return []core_xds.InboundListener{}
 	}
 }
 
-func inboundsSelectedByTags(tags map[string]string, dpp *core_mesh.DataplaneResource) []mesh_proto.InboundInterface {
-	result := []mesh_proto.InboundInterface{}
+func inboundsSelectedByTags(tags map[string]string, dpp *core_mesh.DataplaneResource) []core_xds.InboundListener {
+	result := []core_xds.InboundListener{}
 	for _, inbound := range dpp.Spec.GetNetworking().GetInbound() {
 		if isInboundSelectedByTags(tags, inbound) {
-			result = append(result, dpp.Spec.GetNetworking().ToInboundInterface(inbound))
+			intf := dpp.Spec.GetNetworking().ToInboundInterface(inbound)
+			result = append(result, core_xds.InboundListener{
+				Address: intf.DataplaneIP,
+				Port:    intf.DataplanePort,
+			})
 		}
 	}
 	return result

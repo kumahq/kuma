@@ -1,5 +1,5 @@
 Rules:
-  :8080:8080:
+  :8080:
   - Conf:
       action: ALLOW_WITH_SHADOW_DENY
     Origin: null
@@ -24,7 +24,7 @@ Rules:
     - Key: kuma.io/service
       Not: true
       Value: orders
-  :8081:8081:
+  :8081:
   - Conf:
       action: DENY
     Origin: null
