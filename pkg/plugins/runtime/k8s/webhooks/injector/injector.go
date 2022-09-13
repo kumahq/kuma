@@ -401,7 +401,7 @@ func (i *KumaInjector) FindServiceAccountToken(podSpec *kube_core.PodSpec) *kube
 }
 
 func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container, error) {
-	podRedirect, err := tp_k8s.NewPodRedirectForPod(pod)
+	podRedirect, err := tp_k8s.NewPodRedirectForPod(i.cfg.TransparentProxyV2, pod)
 	if err != nil {
 		return kube_core.Container{}, err
 	}

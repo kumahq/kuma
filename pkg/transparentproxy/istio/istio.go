@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
-	"github.com/kumahq/kuma/pkg/transparentproxy/istio/config"
+	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	uninstall "github.com/kumahq/kuma/pkg/transparentproxy/istio/tools/istio-clean-iptables/pkg/cmd"
 	install "github.com/kumahq/kuma/pkg/transparentproxy/istio/tools/istio-iptables/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/transparentproxy/istio/tools/istio-iptables/pkg/constants"
@@ -17,10 +17,6 @@ type IstioTransparentProxy struct {
 	stdout *os.File
 	stderr *os.File
 	reader *os.File
-}
-
-func NewIstioTransparentProxy() *IstioTransparentProxy {
-	return &IstioTransparentProxy{}
 }
 
 func (tp *IstioTransparentProxy) Setup(cfg *config.TransparentProxyConfig) (string, error) {

@@ -62,8 +62,8 @@ func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Contex
 		return nil
 	})
 
+	log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
 	if err != nil {
-		log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
 		log.Error(err, "unable to create/update Dataplane", "operationResult", operationResult)
 		r.EventRecorder.Eventf(pod, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "Failed to generate Kuma Dataplane: %s", err.Error())
 		return err
@@ -71,8 +71,10 @@ func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Contex
 
 	switch operationResult {
 	case kube_controllerutil.OperationResultCreated:
+		log.Info("Dataplane created")
 		r.EventRecorder.Eventf(pod, kube_core.EventTypeNormal, CreatedKumaDataplaneReason, "Created Kuma Dataplane: %s", dataplane.Name)
 	case kube_controllerutil.OperationResultUpdated:
+		log.Info("Dataplane updated")
 		r.EventRecorder.Eventf(pod, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Updated Kuma Dataplane: %s", dataplane.Name)
 	}
 	return nil

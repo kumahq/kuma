@@ -2006,7 +2006,6 @@ spec:
       annotations:
         checksum/config: c52be51867deb8823a422dc1d188c7a2ab7fc5e501f620467d7fdd8fc4637d47
         checksum/tls-secrets: fd5cb26395594662e1f976f50c10bee12480e1d1f27ab49903572bdc3bb43e7c
-        
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -2096,10 +2095,12 @@ spec:
             - containerPort: 5682
             - containerPort: 5443
           livenessProbe:
+            timeoutSeconds: 10
             httpGet:
               path: /healthy
               port: 5680
           readinessProbe:
+            timeoutSeconds: 10
             httpGet:
               path: /ready
               port: 5680

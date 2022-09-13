@@ -272,6 +272,7 @@ runtime:
         enabled: true # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED
         # Redirect port for DNS
         port: 15053 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_PORT
+      transparentProxyV2: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_V2
       # EBPF defines configuration for the ebpf, when transparent proxy is marked to be
       # installed using ebpf instead of iptables
       ebpf:
