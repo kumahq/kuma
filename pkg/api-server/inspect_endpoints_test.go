@@ -14,6 +14,7 @@ import (
 	"github.com/onsi/gomega/types"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"github.com/kumahq/kuma/pkg/core"
@@ -21,6 +22,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	_ "github.com/kumahq/kuma/pkg/plugins/policies"
+	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
 	"github.com/kumahq/kuma/pkg/test/matchers"
@@ -326,6 +329,21 @@ var _ = Describe("Inspect WS", func() {
 						},
 						Destinations: anyService(),
 						Conf:         samples.HealthCheck.Conf,
+					},
+				},
+				&policies_api.MeshTrafficPermissionResource{
+					Meta: &test_model.ResourceMeta{Name: "mtp-1", Mesh: "default"},
+					Spec: &policies_api.MeshTrafficPermission{
+						TargetRef: &common_api.TargetRef{
+							Kind: "Mesh",
+						},
+						From: []*policies_api.MeshTrafficPermission_From{
+							{
+								Default: &policies_api.MeshTrafficPermission_Conf{
+									Action: "ALLOW",
+								},
+							},
+						},
 					},
 				},
 			},
@@ -1064,6 +1082,34 @@ var _ = Describe("Inspect WS", func() {
 					Spec: &mesh_proto.TrafficTrace{
 						Selectors: anyService(),
 						Conf:      samples.TrafficTrace.Conf,
+					},
+				},
+			},
+			contentType: restful.MIME_JSON,
+		}),
+		Entry("inspect meshtrafficpermission", testCase{
+			path:    "/meshes/mesh-1/meshtrafficpermissions/mtp-1/dataplanes",
+			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_meshtrafficpermission.json")),
+			resources: []core_model.Resource{
+				newMesh("mesh-1"),
+				newDataplane().
+					meta("backend-1", "mesh-1").
+					inbound80to81("backend", "192.168.0.1").
+					build(),
+				&policies_api.MeshTrafficPermissionResource{
+					Meta: &test_model.ResourceMeta{Name: "mtp-1", Mesh: "mesh-1"},
+					Spec: &policies_api.MeshTrafficPermission{
+						TargetRef: &common_api.TargetRef{
+							Kind: "MeshService",
+							Name: "backend",
+						},
+						From: []*policies_api.MeshTrafficPermission_From{
+							{
+								Default: &policies_api.MeshTrafficPermission_Conf{
+									Action: "ALLOW",
+								},
+							},
+						},
 					},
 				},
 			},
