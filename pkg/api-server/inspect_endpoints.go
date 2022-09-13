@@ -26,8 +26,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/sync"
 )
 
-var CustomizeProxy func(meshContext xds_context.MeshContext, proxy *core_xds.Proxy) error
-
 // getMatchedPolicies returns information about either sidecar dataplanes or
 // builtin gateway dataplanes as well as the proxy and a potential error.
 func getMatchedPolicies(
@@ -42,11 +40,6 @@ func getMatchedPolicies(
 	if proxy, err := proxyBuilder.Build(ctx, dataplaneKey, meshContext); err != nil {
 		return nil, nil, core_xds.Proxy{}, err
 	} else {
-		if CustomizeProxy != nil {
-			if err := CustomizeProxy(meshContext, proxy); err != nil {
-				return nil, nil, core_xds.Proxy{}, err
-			}
-		}
 		if proxy.Dataplane.Spec.IsBuiltinGateway() {
 			entries, err := gateway.GatewayListenerInfoFromProxy(
 				ctx, meshContext, proxy, proxyBuilder.Zone,

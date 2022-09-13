@@ -169,6 +169,9 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not apply policy plugin %s", name)
 		}
+		if res.Type == "" {
+			return nil, errors.Wrapf(err, "matched policy didn't set type for policy plugin %s", name)
+		}
 		matchedPolicies.Dynamic[res.Type] = res
 	}
 	return matchedPolicies, nil
