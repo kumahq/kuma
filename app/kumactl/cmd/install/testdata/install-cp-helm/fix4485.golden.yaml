@@ -209,6 +209,51 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
+  name: meshgatewayroutes.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: MeshGatewayRoute
+    listKind: MeshGatewayRouteList
+    plural: meshgatewayroutes
+    singular: meshgatewayroute
+  scope: Cluster
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          mesh:
+            description: Mesh is the name of the Kuma mesh this resource belongs to.
+              It may be omitted for cluster-scoped resources.
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma MeshGatewayRoute resource.
+            x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.9.2
+  creationTimestamp: null
   name: meshgateways.kuma.io
 spec:
   group: kuma.io
@@ -696,51 +741,6 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
-  name: trafficpermissions.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: TrafficPermission
-    listKind: TrafficPermissionList
-    plural: trafficpermissions
-    singular: trafficpermission
-  scope: Cluster
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-            type: string
-          kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-            type: string
-          mesh:
-            description: Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma TrafficPermission resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
-  creationTimestamp: null
   name: dataplaneinsights.kuma.io
 spec:
   group: kuma.io
@@ -775,6 +775,51 @@ spec:
             type: object
           status:
             description: Status is the status the Kuma resource.
+            x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.9.2
+  creationTimestamp: null
+  name: trafficpermissions.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: TrafficPermission
+    listKind: TrafficPermissionList
+    plural: trafficpermissions
+    singular: trafficpermission
+  scope: Cluster
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          mesh:
+            description: Mesh is the name of the Kuma mesh this resource belongs to.
+              It may be omitted for cluster-scoped resources.
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma TrafficPermission resource.
             x-kubernetes-preserve-unknown-fields: true
         type: object
     served: true
@@ -1372,6 +1417,280 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
+  name: meshaccesslogs.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: MeshAccessLog
+    listKind: MeshAccessLogList
+    plural: meshaccesslogs
+    singular: meshaccesslog
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma MeshAccessLog resource.
+            properties:
+              from:
+                description: From is a list of pairs – a group of clients and action
+                  applied for it
+                items:
+                  properties:
+                    default:
+                      description: Default is a configuration specific to the group
+                        of clients referenced in 'targetRef'
+                      properties:
+                        backends:
+                          items:
+                            properties:
+                              file:
+                                description: FileBackend defines configuration for
+                                  file based access logs
+                                properties:
+                                  format:
+                                    description: Format of access logs. Placeholders
+                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                                    properties:
+                                      json:
+                                        items:
+                                          properties:
+                                            key:
+                                              type: string
+                                            value:
+                                              type: string
+                                          type: object
+                                        type: array
+                                      plain:
+                                        type: string
+                                    type: object
+                                  path:
+                                    description: Path to a file that logs will be
+                                      written to
+                                    type: string
+                                type: object
+                              reference:
+                                properties:
+                                  kind:
+                                    type: string
+                                  name:
+                                    type: string
+                                type: object
+                              tcp:
+                                description: Backend defines logging backend.
+                                properties:
+                                  address:
+                                    description: Type of the backend (Kuma ships with
+                                      'tcp' and 'file')
+                                    type: string
+                                  format:
+                                    description: Format of access logs. Placeholders
+                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                                    properties:
+                                      json:
+                                        items:
+                                          properties:
+                                            key:
+                                              type: string
+                                            value:
+                                              type: string
+                                          type: object
+                                        type: array
+                                      plain:
+                                        type: string
+                                    type: object
+                                type: object
+                            type: object
+                          type: array
+                      type: object
+                    targetRef:
+                      description: TargetRef is a reference to the resource that represents
+                        a group of clients.
+                      properties:
+                        kind:
+                          description: Kind of the referenced resource
+                          enum:
+                          - Mesh
+                          - MeshSubset
+                          - MeshService
+                          - MeshServiceSubset
+                          - MeshGatewayRoute
+                          - MeshHTTPRoute
+                          type: string
+                        mesh:
+                          description: Mesh is used with MeshService and MeshServiceSubset
+                            to identify the service from another mesh. Could be useful
+                            when implementing policies with cross-mesh support.
+                          type: string
+                        name:
+                          description: Name of the referenced resource
+                          type: string
+                        tags:
+                          additionalProperties:
+                            type: string
+                          description: Tags are used with MeshSubset and MeshServiceSubset
+                            to define a subset of proxies
+                          type: object
+                      type: object
+                  type: object
+                type: array
+              targetRef:
+                description: TargetRef is a reference to the resource the policy takes
+                  an effect on. The resource could be either a real store object or
+                  virtual resource defined inplace.
+                properties:
+                  kind:
+                    description: Kind of the referenced resource
+                    enum:
+                    - Mesh
+                    - MeshSubset
+                    - MeshService
+                    - MeshServiceSubset
+                    - MeshGatewayRoute
+                    - MeshHTTPRoute
+                    type: string
+                  mesh:
+                    description: Mesh is used with MeshService and MeshServiceSubset
+                      to identify the service from another mesh. Could be useful when
+                      implementing policies with cross-mesh support.
+                    type: string
+                  name:
+                    description: Name of the referenced resource
+                    type: string
+                  tags:
+                    additionalProperties:
+                      type: string
+                    description: Tags are used with MeshSubset and MeshServiceSubset
+                      to define a subset of proxies
+                    type: object
+                type: object
+              to:
+                items:
+                  properties:
+                    default:
+                      description: Default is a configuration specific to the group
+                        of clients referenced in 'targetRef'
+                      properties:
+                        backends:
+                          items:
+                            properties:
+                              file:
+                                description: FileBackend defines configuration for
+                                  file based access logs
+                                properties:
+                                  format:
+                                    description: Format of access logs. Placeholders
+                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                                    properties:
+                                      json:
+                                        items:
+                                          properties:
+                                            key:
+                                              type: string
+                                            value:
+                                              type: string
+                                          type: object
+                                        type: array
+                                      plain:
+                                        type: string
+                                    type: object
+                                  path:
+                                    description: Path to a file that logs will be
+                                      written to
+                                    type: string
+                                type: object
+                              reference:
+                                properties:
+                                  kind:
+                                    type: string
+                                  name:
+                                    type: string
+                                type: object
+                              tcp:
+                                description: Backend defines logging backend.
+                                properties:
+                                  address:
+                                    description: Type of the backend (Kuma ships with
+                                      'tcp' and 'file')
+                                    type: string
+                                  format:
+                                    description: Format of access logs. Placeholders
+                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                                    properties:
+                                      json:
+                                        items:
+                                          properties:
+                                            key:
+                                              type: string
+                                            value:
+                                              type: string
+                                          type: object
+                                        type: array
+                                      plain:
+                                        type: string
+                                    type: object
+                                type: object
+                            type: object
+                          type: array
+                      type: object
+                    targetRef:
+                      description: TargetRef is a reference to the resource that represents
+                        a group of clients.
+                      properties:
+                        kind:
+                          description: Kind of the referenced resource
+                          enum:
+                          - Mesh
+                          - MeshSubset
+                          - MeshService
+                          - MeshServiceSubset
+                          - MeshGatewayRoute
+                          - MeshHTTPRoute
+                          type: string
+                        mesh:
+                          description: Mesh is used with MeshService and MeshServiceSubset
+                            to identify the service from another mesh. Could be useful
+                            when implementing policies with cross-mesh support.
+                          type: string
+                        name:
+                          description: Name of the referenced resource
+                          type: string
+                        tags:
+                          additionalProperties:
+                            type: string
+                          description: Tags are used with MeshSubset and MeshServiceSubset
+                            to define a subset of proxies
+                          type: object
+                      type: object
+                  type: object
+                type: array
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.9.2
+  creationTimestamp: null
   name: meshes.kuma.io
 spec:
   group: kuma.io
@@ -1670,51 +1989,6 @@ spec:
     subresources:
       status: {}
 ---
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
-  creationTimestamp: null
-  name: meshgatewayroutes.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: MeshGatewayRoute
-    listKind: MeshGatewayRouteList
-    plural: meshgatewayroutes
-    singular: meshgatewayroute
-  scope: Cluster
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-            type: string
-          kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-            type: string
-          mesh:
-            description: Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma MeshGatewayRoute resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -1835,6 +2109,7 @@ rules:
       - meshgateways
       - meshgatewayroutes
       - meshgatewayinstances
+      - meshaccesslogs
       - meshtrafficpermissions
     verbs:
       - get
@@ -2010,7 +2285,7 @@ spec:
     metadata:
       annotations:
         checksum/config: a339f834847039f79aed19d73fd8903aeb736f152c512a641f4fb907dbad1429
-        checksum/tls-secrets: 6c59f080c0827192e886efb995ae009149bee063ab26e28eac17b70cfd7ae974
+        checksum/tls-secrets: d4fe8d8c11082db886259be6f0d966db192fb51bb893de8afba38016de18cc87
       labels: 
         app: kuma-control-plane
         "foo": "baz"
@@ -2176,6 +2451,7 @@ webhooks:
           - UPDATE
         resources:
           - meshes
+          - meshaccesslogs
           - meshtrafficpermissions
     sideEffects: None
   - name: owner-reference.kuma-admission.kuma.io
@@ -2210,6 +2486,7 @@ webhooks:
           - trafficroutes
           - traffictraces
           - virtualoutbounds
+          - meshaccesslogs
           - meshtrafficpermissions
   
       
@@ -2327,6 +2604,7 @@ webhooks:
           - virtualoutbounds
           - zones
           - containerpatches
+          - meshaccesslogs
           - meshtrafficpermissions
     
       
