@@ -46,7 +46,6 @@ import (
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
-	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
 
@@ -56,119 +55,117 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	if err := autoconfigure(&cfg); err != nil {
 		return nil, err
 	}
-	builder, err := core_runtime.BuilderFor(appCtx, cfg)
+	runtime, err := core_runtime.NewRuntime(appCtx, cfg)
 	if err != nil {
 		return nil, err
 	}
-	if err := initializeMetrics(builder); err != nil {
+	if err := core_runtime.ApplyOpts(runtime, initializeMetrics); err != nil {
 		return nil, err
 	}
 	for _, plugin := range core_plugins.Plugins().BootstrapPlugins() {
-		if err := plugin.BeforeBootstrap(builder, cfg); err != nil {
+		if err := plugin.BeforeBootstrap(runtime, cfg); err != nil {
 			return nil, errors.Wrapf(err, "failed to run beforeBootstrap plugin:'%s'", plugin.Name())
 		}
 	}
-	if err := initializeResourceStore(cfg, builder); err != nil {
-		return nil, err
-	}
-	if err := initializeSecretStore(cfg, builder); err != nil {
-		return nil, err
-	}
-	if err := initializeConfigStore(cfg, builder); err != nil {
-		return nil, err
-	}
-	// we add Secret store to unified ResourceStore so global<->zone synchronizer can use unified interface
-	builder.WithResourceStore(core_store.NewCustomizableResourceStore(builder.ResourceStore(), map[core_model.ResourceType]core_store.ResourceStore{
-		system.SecretType:       builder.SecretStore(),
-		system.GlobalSecretType: builder.SecretStore(),
-		system.ConfigType:       builder.ConfigStore(),
-	}))
-
-	initializeConfigManager(builder)
-
-	builder.WithResourceValidators(core_runtime.ResourceValidators{
-		Dataplane: dataplane.NewMembershipValidator(),
-		Mesh:      mesh_managers.NewMeshValidator(builder.CaManagers(), builder.ResourceStore()),
-	})
-
-	if err := initializeResourceManager(cfg, builder); err != nil {
-		return nil, err
-	}
-
-	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.ReadOnlyResourceManager()))
-
-	if err := initializeCaManagers(builder); err != nil {
-		return nil, err
-	}
-
 	leaderInfoComponent := &component.LeaderInfoComponent{}
-	builder.WithLeaderInfo(leaderInfoComponent)
-
-	builder.WithLookupIP(lookup.CachedLookupIP(net.LookupIP, cfg.General.DNSCacheTTL))
-	builder.WithAPIManager(customization.NewAPIList())
-	builder.WithXDSHooks(&xds_hooks.Hooks{})
-	caProvider, err := secrets.NewCaProvider(builder.CaManagers(), builder.Metrics())
+	err = core_runtime.ApplyOpts(runtime,
+		initializeResourceStore,
+		initializeSecretStore,
+		initializeConfigStore,
+		initializeResourceStore,
+		initializeSecretStore,
+		initializeConfigStore)
 	if err != nil {
 		return nil, err
 	}
-	builder.WithCAProvider(caProvider)
-	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, builder.Metrics()))
-	builder.WithKDSContext(kds_context.DefaultContext(appCtx, builder.ResourceManager(), cfg.Multizone.Zone.Name))
-
-	if cfg.Mode == config_core.Global {
-		builder.WithEnvoyAdminClient(admin.NewKDSEnvoyAdminClient(
-			builder.KDSContext().EnvoyAdminRPCs,
-			cfg.Store.Type == store.KubernetesStore,
-		))
-	} else {
-		builder.WithEnvoyAdminClient(admin.NewEnvoyAdminClient(
-			builder.ResourceManager(),
-			builder.CaManagers(),
-			builder.Config().GetEnvoyAdminPort(),
-		))
+	err = core_runtime.ApplyOpts(runtime,
+		// we add Secret store to unified ResourceStore so global<->zone synchronizer can use unified interface
+		core_runtime.WithResourceStore(core_store.NewCustomizableResourceStore(runtime.ResourceStore(), map[core_model.ResourceType]core_store.ResourceStore{
+			system.SecretType:       runtime.SecretStore(),
+			system.GlobalSecretType: runtime.SecretStore(),
+			system.ConfigType:       runtime.ConfigStore(),
+		})),
+		core_runtime.WithConfigManager(config_manager.NewConfigManager(runtime.ConfigStore())),
+		core_runtime.WithResourceValidators(core_runtime.ResourceValidators{
+			Dataplane: dataplane.NewMembershipValidator(),
+			Mesh:      mesh_managers.NewMeshValidator(runtime.CaManagers(), runtime.ResourceStore()),
+		}),
+		initializeResourceManager,
+		core_runtime.WithDataSourceLoader(datasource.NewDataSourceLoader(runtime.ReadOnlyResourceManager())),
+		initializeCaManagers,
+		core_runtime.WithLeaderInfo(leaderInfoComponent),
+		core_runtime.WithLookupIP(lookup.CachedLookupIP(net.LookupIP, cfg.General.DNSCacheTTL)),
+		core_runtime.WithAPIManager(customization.NewAPIList()),
+		initializeCaProvider,
+		core_runtime.WithDpServer(server.NewDpServer(*cfg.DpServer, runtime.Metrics())),
+		core_runtime.WithKDSContext(kds_context.DefaultContext(appCtx, runtime.ResourceManager(), cfg.Multizone.Zone.Name)),
+		intializeEnvoyAdminClient,
+		core_runtime.WithAccess(core_runtime.Access{
+			ResourceAccess:       resources_access.NewAdminResourceAccess(runtime.Config().Access.Static.AdminResources),
+			DataplaneTokenAccess: tokens_access.NewStaticGenerateDataplaneTokenAccess(runtime.Config().Access.Static.GenerateDPToken),
+			ZoneTokenAccess:      zone_access.NewStaticZoneTokenAccess(runtime.Config().Access.Static.GenerateZoneToken),
+			EnvoyAdminAccess: access.NewStaticEnvoyAdminAccess(
+				runtime.Config().Access.Static.ViewConfigDump,
+				runtime.Config().Access.Static.ViewStats,
+				runtime.Config().Access.Static.ViewClusters,
+			),
+		}),
+		initializeAPIServerAuthenticator,
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	// The setting should be removed, and there is no easy way to set it without breaking most of the code
-	mesh_proto.EnableLocalhostInboundClusters = builder.Config().Defaults.EnableLocalhostInboundClusters
-
-	builder.WithAccess(core_runtime.Access{
-		ResourceAccess:       resources_access.NewAdminResourceAccess(builder.Config().Access.Static.AdminResources),
-		DataplaneTokenAccess: tokens_access.NewStaticGenerateDataplaneTokenAccess(builder.Config().Access.Static.GenerateDPToken),
-		ZoneTokenAccess:      zone_access.NewStaticZoneTokenAccess(builder.Config().Access.Static.GenerateZoneToken),
-		EnvoyAdminAccess: access.NewStaticEnvoyAdminAccess(
-			builder.Config().Access.Static.ViewConfigDump,
-			builder.Config().Access.Static.ViewStats,
-			builder.Config().Access.Static.ViewClusters,
-		),
-	})
-
-	if err := initializeAPIServerAuthenticator(builder); err != nil {
-		return nil, err
-	}
+	mesh_proto.EnableLocalhostInboundClusters = runtime.Config().Defaults.EnableLocalhostInboundClusters
 
 	for _, plugin := range core_plugins.Plugins().BootstrapPlugins() {
-		if err := plugin.AfterBootstrap(builder, cfg); err != nil {
+		if err := plugin.AfterBootstrap(runtime, cfg); err != nil {
 			return nil, errors.Wrapf(err, "failed to run afterBootstrap plugin:'%s'", plugin.Name())
 		}
 	}
-	rt, err := builder.Build()
-	if err != nil {
+	if err := core_runtime.ValidateRuntime(runtime); err != nil {
 		return nil, err
 	}
 
-	if err := rt.Add(leaderInfoComponent); err != nil {
+	if err := runtime.Add(leaderInfoComponent); err != nil {
 		return nil, err
 	}
 
 	for name, plugin := range core_plugins.Plugins().RuntimePlugins() {
-		if err := plugin.Customize(rt); err != nil {
+		if err := plugin.Customize(runtime); err != nil {
 			return nil, errors.Wrapf(err, "failed to configure runtime plugin:'%s'", name)
 		}
 	}
 
-	logWarnings(rt.Config())
+	logWarnings(runtime.Config())
 
-	return rt, nil
+	return runtime, nil
+}
+
+func intializeEnvoyAdminClient(r core_runtime.Runtime) error {
+	var adminClient admin.EnvoyAdminClient
+	if r.Config().Mode == config_core.Global {
+		adminClient = admin.NewKDSEnvoyAdminClient(
+			r.KDSContext().EnvoyAdminRPCs,
+			r.Config().Store.Type == store.KubernetesStore,
+		)
+	} else {
+		adminClient = admin.NewEnvoyAdminClient(
+			r.ResourceManager(),
+			r.CaManagers(),
+			r.Config().GetEnvoyAdminPort(),
+		)
+	}
+	return core_runtime.WithEnvoyAdminClient(adminClient)(r)
+}
+
+func initializeCaProvider(r core_runtime.Runtime) error {
+	caProvider, err := secrets.NewCaProvider(r.CaManagers(), r.Metrics())
+	if err != nil {
+		return err
+	}
+	return core_runtime.WithCAProvider(caProvider)(r)
 }
 
 func logWarnings(config kuma_cp.Config) {
@@ -177,22 +174,21 @@ func logWarnings(config kuma_cp.Config) {
 	}
 }
 
-func initializeMetrics(builder *core_runtime.Builder) error {
+func initializeMetrics(r core_runtime.Runtime) error {
 	zoneName := ""
-	switch builder.Config().Mode {
+	switch r.Config().Mode {
 	case config_core.Zone:
-		zoneName = builder.Config().Multizone.Zone.Name
+		zoneName = r.Config().Multizone.Zone.Name
 	case config_core.Global:
 		zoneName = "Global"
 	case config_core.Standalone:
 		zoneName = "Standalone"
 	}
-	metrics, err := metrics.NewMetrics(zoneName)
+	m, err := metrics.NewMetrics(zoneName)
 	if err != nil {
 		return err
 	}
-	builder.WithMetrics(metrics)
-	return nil
+	return core_runtime.WithMetrics(m)(r)
 }
 
 func Bootstrap(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runtime, error) {
@@ -216,7 +212,8 @@ func startReporter(runtime core_runtime.Runtime) error {
 	}))
 }
 
-func initializeResourceStore(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
+func initializeResourceStore(r core_runtime.Runtime) error {
+	cfg := r.Config()
 	var pluginName core_plugins.PluginName
 	var pluginConfig core_plugins.PluginConfig
 	switch cfg.Store.Type {
@@ -237,30 +234,34 @@ func initializeResourceStore(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 		return errors.Wrapf(err, "could not retrieve store %s plugin", pluginName)
 	}
 
-	rs, err := plugin.NewResourceStore(builder, pluginConfig)
+	rs, err := plugin.NewResourceStore(r, pluginConfig)
 	if err != nil {
 		return err
 	}
-	builder.WithResourceStore(rs)
 	eventBus := events.NewEventBus()
-	if err := plugin.EventListener(builder, eventBus); err != nil {
+	if err := plugin.EventListener(r, eventBus); err != nil {
 		return err
 	}
-	builder.WithEventReaderFactory(eventBus)
 
 	paginationStore := core_store.NewPaginationStore(rs)
-	meteredStore, err := metrics_store.NewMeteredStore(paginationStore, builder.Metrics())
+	meteredStore, err := metrics_store.NewMeteredStore(paginationStore, r.Metrics())
 	if err != nil {
 		return err
 	}
 
-	builder.WithResourceStore(meteredStore)
+	if err := core_runtime.WithEventReaderFactory(eventBus)(r); err != nil {
+		return err
+	}
+	if err := core_runtime.WithResourceStore(meteredStore)(r); err != nil {
+		return err
+	}
 	return nil
 }
 
-func initializeSecretStore(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
+func initializeSecretStore(r core_runtime.Runtime) error {
 	var pluginName core_plugins.PluginName
 	var pluginConfig core_plugins.PluginConfig
+	cfg := r.Config()
 	switch cfg.Store.Type {
 	case store.KubernetesStore:
 		pluginName = core_plugins.Kubernetes
@@ -273,15 +274,15 @@ func initializeSecretStore(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 	if err != nil {
 		return errors.Wrapf(err, "could not retrieve secret store %s plugin", pluginName)
 	}
-	if ss, err := plugin.NewSecretStore(builder, pluginConfig); err != nil {
+	ss, err := plugin.NewSecretStore(r, pluginConfig)
+	if err != nil {
 		return err
-	} else {
-		builder.WithSecretStore(ss)
-		return nil
 	}
+	return core_runtime.WithSecretStore(ss)(r)
 }
 
-func initializeConfigStore(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
+func initializeConfigStore(r core_runtime.Runtime) error {
+	cfg := r.Config()
 	var pluginName core_plugins.PluginName
 	var pluginConfig core_plugins.PluginConfig
 	switch cfg.Store.Type {
@@ -296,99 +297,100 @@ func initializeConfigStore(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 	if err != nil {
 		return errors.Wrapf(err, "could not retrieve secret store %s plugin", pluginName)
 	}
-	if cs, err := plugin.NewConfigStore(builder, pluginConfig); err != nil {
+	cs, err := plugin.NewConfigStore(r, pluginConfig)
+	if err != nil {
 		return err
-	} else {
-		builder.WithConfigStore(cs)
-		return nil
 	}
+	return core_runtime.WithConfigStore(cs)(r)
 }
 
-func initializeCaManagers(builder *core_runtime.Builder) error {
+func initializeCaManagers(r core_runtime.Runtime) error {
 	for pluginName, caPlugin := range core_plugins.Plugins().CaPlugins() {
-		caManager, err := caPlugin.NewCaManager(builder, nil)
+		caManager, err := caPlugin.NewCaManager(r, nil)
 		if err != nil {
 			return errors.Wrapf(err, "could not create CA manager for plugin %q", pluginName)
 		}
-		builder.WithCaManager(string(pluginName), caManager)
+		if err = core_runtime.WithCaManager(string(pluginName), caManager)(r); err != nil {
+			return errors.Wrapf(err, "could not create CA manager for plugin %q", pluginName)
+		}
 	}
 	return nil
 }
 
-func initializeAPIServerAuthenticator(builder *core_runtime.Builder) error {
-	authnType := builder.Config().ApiServer.Authn.Type
+func initializeAPIServerAuthenticator(r core_runtime.Runtime) error {
+	authnType := r.Config().ApiServer.Authn.Type
 	plugin, ok := core_plugins.Plugins().AuthnAPIServer()[core_plugins.PluginName(authnType)]
 	if !ok {
 		return errors.Errorf("there is not implementation of authn named %s", authnType)
 	}
-	authenticator, err := plugin.NewAuthenticator(builder)
+	authenticator, err := plugin.NewAuthenticator(r)
 	if err != nil {
 		return errors.Wrapf(err, "could not initiate authenticator %s", authnType)
 	}
-	builder.WithAPIServerAuthenticator(authenticator)
-	return nil
+	return core_runtime.WithAPIServerAuthenticator(authenticator)(r)
 }
 
-func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	defaultManager := core_manager.NewResourceManager(builder.ResourceStore())
+func initializeResourceManager(r core_runtime.Runtime) error {
+	defaultManager := core_manager.NewResourceManager(r.ResourceStore())
 	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, nil)
+	cfg := r.Config()
 
 	customizableManager.Customize(
 		mesh.MeshType,
 		mesh_managers.NewMeshManager(
-			builder.ResourceStore(),
+			r.ResourceStore(),
 			customizableManager,
-			builder.CaManagers(),
+			r.CaManagers(),
 			registry.Global(),
-			builder.ResourceValidators().Mesh,
+			r.ResourceValidators().Mesh,
 			cfg.Store.UnsafeDelete,
 		),
 	)
 
 	rateLimitValidator := ratelimit_managers.RateLimitValidator{
-		Store: builder.ResourceStore(),
+		Store: r.ResourceStore(),
 	}
 	customizableManager.Customize(
 		mesh.RateLimitType,
-		ratelimit_managers.NewRateLimitManager(builder.ResourceStore(), rateLimitValidator),
+		ratelimit_managers.NewRateLimitManager(r.ResourceStore(), rateLimitValidator),
 	)
 
 	externalServiceValidator := externalservice_managers.ExternalServiceValidator{
-		Store: builder.ResourceStore(),
+		Store: r.ResourceStore(),
 	}
 	customizableManager.Customize(
 		mesh.ExternalServiceType,
-		externalservice_managers.NewExternalServiceManager(builder.ResourceStore(), externalServiceValidator),
+		externalservice_managers.NewExternalServiceManager(r.ResourceStore(), externalServiceValidator),
 	)
 
 	customizableManager.Customize(
 		mesh.DataplaneType,
-		dataplane.NewDataplaneManager(builder.ResourceStore(), builder.Config().Multizone.Zone.Name, builder.ResourceValidators().Dataplane),
+		dataplane.NewDataplaneManager(r.ResourceStore(), cfg.Multizone.Zone.Name, r.ResourceValidators().Dataplane),
 	)
 
 	customizableManager.Customize(
 		mesh.DataplaneInsightType,
-		dataplaneinsight.NewDataplaneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane),
+		dataplaneinsight.NewDataplaneInsightManager(r.ResourceStore(), cfg.Metrics.Dataplane),
 	)
 
 	customizableManager.Customize(
 		system.ZoneType,
-		zone.NewZoneManager(builder.ResourceStore(), zone.Validator{Store: builder.ResourceStore()}, builder.Config().Store.UnsafeDelete),
+		zone.NewZoneManager(r.ResourceStore(), zone.Validator{Store: r.ResourceStore()}, cfg.Store.UnsafeDelete),
 	)
 
 	customizableManager.Customize(
 		system.ZoneInsightType,
-		zoneinsight.NewZoneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Zone),
+		zoneinsight.NewZoneInsightManager(r.ResourceStore(), cfg.Metrics.Zone),
 	)
 
 	customizableManager.Customize(
 		mesh.ZoneIngressInsightType,
-		zoneingressinsight.NewZoneIngressInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane),
+		zoneingressinsight.NewZoneIngressInsightManager(r.ResourceStore(), cfg.Metrics.Dataplane),
 	)
 
 	customizableManager.Customize(
 		mesh.ZoneEgressInsightType,
-		zoneegressinsight.NewZoneEgressInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane),
+		zoneegressinsight.NewZoneEgressInsightManager(r.ResourceStore(), cfg.Metrics.Dataplane),
 	)
 
 	var cipher secret_cipher.Cipher
@@ -405,33 +407,30 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	case config_core.Zone:
 		secretValidator = secret_manager.ValidateDelete(func(ctx context.Context, secretName string, secretMesh string) error { return nil })
 	default:
-		secretValidator = secret_manager.NewSecretValidator(builder.CaManagers(), builder.ResourceStore())
+		secretValidator = secret_manager.NewSecretValidator(r.CaManagers(), r.ResourceStore())
 	}
 
 	customizableManager.Customize(
 		system.SecretType,
-		secret_manager.NewSecretManager(builder.SecretStore(), cipher, secretValidator, cfg.Store.UnsafeDelete),
+		secret_manager.NewSecretManager(r.SecretStore(), cipher, secretValidator, cfg.Store.UnsafeDelete),
 	)
 
 	customizableManager.Customize(
 		system.GlobalSecretType,
-		secret_manager.NewGlobalSecretManager(builder.SecretStore(), cipher),
+		secret_manager.NewGlobalSecretManager(r.SecretStore(), cipher),
 	)
 
-	builder.WithResourceManager(customizableManager)
+	if err := core_runtime.WithResourceManager(customizableManager)(r); err != nil {
+		return err
+	}
 
-	if builder.Config().Store.Cache.Enabled {
-		cachedManager, err := core_manager.NewCachedManager(customizableManager, builder.Config().Store.Cache.ExpirationTime, builder.Metrics())
+	opt := core_runtime.WithReadOnlyResourceManager(customizableManager)
+	if cfg.Store.Cache.Enabled {
+		cachedManager, err := core_manager.NewCachedManager(customizableManager, cfg.Store.Cache.ExpirationTime, r.Metrics())
 		if err != nil {
 			return err
 		}
-		builder.WithReadOnlyResourceManager(cachedManager)
-	} else {
-		builder.WithReadOnlyResourceManager(customizableManager)
+		opt = core_runtime.WithReadOnlyResourceManager(cachedManager)
 	}
-	return nil
-}
-
-func initializeConfigManager(builder *core_runtime.Builder) {
-	builder.WithConfigManager(config_manager.NewConfigManager(builder.ConfigStore()))
+	return opt(r)
 }

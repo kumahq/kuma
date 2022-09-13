@@ -18,9 +18,9 @@ type Plugin interface{}
 
 type PluginConfig interface{}
 
-type PluginContext = core_runtime.BuilderContext
+type PluginContext = core_runtime.Runtime
 
-type MutablePluginContext = core_runtime.Builder
+type MutablePluginContext = core_runtime.Runtime
 
 // EnvironmentPreparingOrder describes an order at which base environment plugins (Universal/Kubernetes) configure the control plane.
 var EnvironmentPreparingOrder = 0
@@ -34,8 +34,8 @@ var EnvironmentPreparedOrder = EnvironmentPreparingOrder + 1
 // Unlike other plugins, can mutate plugin context directly.
 type BootstrapPlugin interface {
 	Plugin
-	BeforeBootstrap(*MutablePluginContext, PluginConfig) error
-	AfterBootstrap(*MutablePluginContext, PluginConfig) error
+	BeforeBootstrap(MutablePluginContext, PluginConfig) error
+	AfterBootstrap(MutablePluginContext, PluginConfig) error
 	Name() PluginName
 	// Order defines an order in which plugins are applied on the control plane.
 	// If you don't have specific need, consider using EnvironmentPreparedOrder

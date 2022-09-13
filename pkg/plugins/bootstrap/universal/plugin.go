@@ -16,19 +16,18 @@ func init() {
 	core_plugins.Register(core_plugins.Universal, &plugin{})
 }
 
-func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig) error {
-	if b.Config().Environment != config_core.UniversalEnvironment {
+func (p *plugin) BeforeBootstrap(r core_runtime.Runtime, _ core_plugins.PluginConfig) error {
+	if r.Config().Environment != config_core.UniversalEnvironment {
 		return nil
 	}
-	leaderElector, err := plugin_leader.NewLeaderElector(b)
+	leaderElector, err := plugin_leader.NewLeaderElector(r.Config(), r.GetInstanceId())
 	if err != nil {
 		return err
 	}
-	b.WithComponentManager(component.NewManager(leaderElector))
-	return nil
+	return core_runtime.ApplyOpts(r, core_runtime.WithComponentManager(component.NewManager(leaderElector)))
 }
 
-func (p *plugin) AfterBootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig) error {
+func (p *plugin) AfterBootstrap(_ core_runtime.Runtime, _ core_plugins.PluginConfig) error {
 	return nil
 }
 

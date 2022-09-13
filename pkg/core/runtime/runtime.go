@@ -62,7 +62,7 @@ type RuntimeContext interface {
 	Metrics() metrics.Metrics
 	EventReaderFactory() events.ListenerFactory
 	APIInstaller() api_server.APIInstaller
-	XDSHooks() *xds_hooks.Hooks
+	XDSHooks() []xds_hooks.ResourceSetHook
 	CAProvider() secrets.CaProvider
 	DpServer() *dp_server.DpServer
 	KDSContext() *kds_context.Context
@@ -94,6 +94,7 @@ type runtime struct {
 	RuntimeInfo
 	RuntimeContext
 	component.Manager
+	validated bool
 }
 
 var _ RuntimeInfo = &runtimeInfo{}
@@ -144,8 +145,8 @@ type runtimeContext struct {
 	eac            admin.EnvoyAdminClient
 	metrics        metrics.Metrics
 	erf            events.ListenerFactory
-	apim           api_server.APIInstaller
-	xdsh           *xds_hooks.Hooks
+	apim           api_server.APIManager
+	xdsh           []xds_hooks.ResourceSetHook
 	cap            secrets.CaProvider
 	dps            *dp_server.DpServer
 	kdsctx         *kds_context.Context
@@ -227,7 +228,7 @@ func (rc *runtimeContext) CAProvider() secrets.CaProvider {
 	return rc.cap
 }
 
-func (rc *runtimeContext) XDSHooks() *xds_hooks.Hooks {
+func (rc *runtimeContext) XDSHooks() []xds_hooks.ResourceSetHook {
 	return rc.xdsh
 }
 

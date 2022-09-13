@@ -39,7 +39,7 @@ func (p *plugin) EventListener(pc core_plugins.PluginContext, writer events.Emit
 	if !ok {
 		return errors.Errorf("k8s controller runtime Manager hasn't been configured")
 	}
-	if err := pc.ComponentManager().Add(k8s_events.NewListener(mgr, writer)); err != nil {
+	if err := pc.Add(k8s_events.NewListener(mgr, writer)); err != nil {
 		return err
 	}
 	return nil

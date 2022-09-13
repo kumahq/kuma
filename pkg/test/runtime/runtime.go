@@ -34,7 +34,6 @@ import (
 	leader_memory "github.com/kumahq/kuma/pkg/plugins/leader/memory"
 	resources_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
-	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
 
@@ -62,76 +61,92 @@ func (i *TestRuntimeInfo) GetStartTime() time.Time {
 	return i.StartTime
 }
 
-func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Builder, error) {
-	builder, err := core_runtime.BuilderFor(appCtx, cfg)
+func RuntimeFor(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runtime, error) {
+	r, err := core_runtime.NewRuntime(appCtx, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	builder.
-		WithComponentManager(component.NewManager(leader_memory.NewAlwaysLeaderElector())).
-		WithResourceStore(resources_memory.NewStore()).
-		WithSecretStore(secret_store.NewSecretStore(builder.ResourceStore())).
-		WithResourceValidators(core_runtime.ResourceValidators{
+	m, _ := metrics.NewMetrics("Standalone")
+	err = core_runtime.ApplyOpts(r,
+		core_runtime.WithMetrics(m),
+		core_runtime.WithComponentManager(component.NewManager(leader_memory.NewAlwaysLeaderElector())),
+		core_runtime.WithResourceStore(resources_memory.NewStore()),
+	)
+	if err != nil {
+		return nil, err
+	}
+	err = core_runtime.ApplyOpts(r,
+		core_runtime.WithSecretStore(secret_store.NewSecretStore(r.ResourceStore())),
+		core_runtime.WithResourceValidators(core_runtime.ResourceValidators{
 			Dataplane: dataplane.NewMembershipValidator(),
-			Mesh:      mesh_managers.NewMeshValidator(builder.CaManagers(), builder.ResourceStore()),
-		})
-
-	rm := newResourceManager(builder)
-	builder.WithResourceManager(rm).
-		WithReadOnlyResourceManager(rm)
-
-	metrics, _ := metrics.NewMetrics("Standalone")
-	builder.WithMetrics(metrics)
-
-	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.ResourceManager()))
-	builder.WithCaManager("builtin", builtin.NewBuiltinCaManager(builder.ResourceManager()))
-	builder.WithLeaderInfo(&component.LeaderInfoComponent{})
-	builder.WithLookupIP(func(s string) ([]net.IP, error) {
-		return nil, errors.New("LookupIP not set, set one in your test to resolve things")
-	})
-	builder.WithEnvoyAdminClient(&DummyEnvoyAdminClient{})
-	builder.WithEventReaderFactory(events.NewEventBus())
-	builder.WithAPIManager(customization.NewAPIList())
-	builder.WithXDSHooks(&xds_hooks.Hooks{})
-	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, metrics))
-	builder.WithKDSContext(kds_context.DefaultContext(appCtx, builder.ResourceManager(), cfg.Multizone.Zone.Name))
-	caProvider, err := secrets.NewCaProvider(builder.CaManagers(), metrics)
+			Mesh:      mesh_managers.NewMeshValidator(r.CaManagers(), r.ResourceStore()),
+		}),
+	)
 	if err != nil {
 		return nil, err
 	}
-	builder.WithCAProvider(caProvider)
-	builder.WithAPIServerAuthenticator(certs.ClientCertAuthenticator)
-	builder.WithAccess(core_runtime.Access{
-		ResourceAccess:       resources_access.NewAdminResourceAccess(builder.Config().Access.Static.AdminResources),
-		DataplaneTokenAccess: tokens_access.NewStaticGenerateDataplaneTokenAccess(builder.Config().Access.Static.GenerateDPToken),
-	})
 
-	initializeConfigManager(builder)
+	rm := newResourceManager(r)
+	err = core_runtime.ApplyOpts(r, core_runtime.WithResourceManager(rm), core_runtime.WithReadOnlyResourceManager(rm))
+	if err != nil {
+		return nil, err
+	}
+	err = core_runtime.ApplyOpts(r,
+		core_runtime.WithCaManager("builtin", builtin.NewBuiltinCaManager(r.ResourceManager())),
+	)
+	if err != nil {
+		return nil, err
+	}
+	caProvider, err := secrets.NewCaProvider(r.CaManagers(), m)
+	if err != nil {
+		return nil, err
+	}
+	err = core_runtime.ApplyOpts(r, core_runtime.WithCAProvider(caProvider))
+	if err != nil {
+		return nil, err
+	}
 
-	return builder, nil
+	err = core_runtime.ApplyOpts(r,
+		core_runtime.WithDataSourceLoader(datasource.NewDataSourceLoader(r.ResourceManager())),
+		core_runtime.WithLeaderInfo(&component.LeaderInfoComponent{}),
+		core_runtime.WithLookupIP(func(s string) ([]net.IP, error) {
+			return nil, errors.New("LookupIP not set, set one in your test to resolve things")
+		}),
+		core_runtime.WithEnvoyAdminClient(&DummyEnvoyAdminClient{}),
+		core_runtime.WithEventReaderFactory(events.NewEventBus()),
+		core_runtime.WithAPIManager(customization.NewAPIList()),
+		core_runtime.WithDpServer(server.NewDpServer(*cfg.DpServer, m)),
+		core_runtime.WithKDSContext(kds_context.DefaultContext(appCtx, r.ResourceManager(), cfg.Multizone.Zone.Name)),
+		core_runtime.WithAPIServerAuthenticator(certs.ClientCertAuthenticator),
+		core_runtime.WithAccess(core_runtime.Access{
+			ResourceAccess:       resources_access.NewAdminResourceAccess(r.Config().Access.Static.AdminResources),
+			DataplaneTokenAccess: tokens_access.NewStaticGenerateDataplaneTokenAccess(r.Config().Access.Static.GenerateDPToken),
+		}),
+		core_runtime.WithConfigManager(config_manager.NewConfigManager(r.ResourceStore())),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return r, nil
 }
 
-func initializeConfigManager(builder *core_runtime.Builder) {
-	configm := config_manager.NewConfigManager(builder.ResourceStore())
-	builder.WithConfigManager(configm)
-}
-
-func newResourceManager(builder *core_runtime.Builder) core_manager.CustomizableResourceManager {
-	defaultManager := core_manager.NewResourceManager(builder.ResourceStore())
+func newResourceManager(r core_runtime.Runtime) core_manager.CustomizableResourceManager {
+	defaultManager := core_manager.NewResourceManager(r.ResourceStore())
 	customManagers := map[core_model.ResourceType]core_manager.ResourceManager{}
 	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, customManagers)
 	meshManager := mesh_managers.NewMeshManager(
-		builder.ResourceStore(),
+		r.ResourceStore(),
 		customizableManager,
-		builder.CaManagers(),
+		r.CaManagers(),
 		registry.Global(),
-		builder.ResourceValidators().Mesh,
-		builder.Config().Store.UnsafeDelete,
+		r.ResourceValidators().Mesh,
+		r.Config().Store.UnsafeDelete,
 	)
 	customManagers[core_mesh.MeshType] = meshManager
 
-	secretManager := secret_manager.NewSecretManager(builder.SecretStore(), secret_cipher.None(), nil, builder.Config().Store.UnsafeDelete)
+	secretManager := secret_manager.NewSecretManager(r.SecretStore(), secret_cipher.None(), nil, r.Config().Store.UnsafeDelete)
 	customManagers[system.SecretType] = secretManager
 	return customizableManager
 }

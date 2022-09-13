@@ -45,8 +45,8 @@ func init() {
 	core_plugins.Register(core_plugins.Kubernetes, &plugin{})
 }
 
-func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.PluginConfig) error {
-	if b.Config().Environment != config_core.KubernetesEnvironment {
+func (p *plugin) BeforeBootstrap(r core_runtime.Runtime, cfg core_plugins.PluginConfig) error {
+	if r.Config().Environment != config_core.KubernetesEnvironment {
 		return nil
 	}
 	scheme, err := NewScheme()
@@ -60,9 +60,9 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 			Scheme:   scheme,
 			NewCache: kuma_kube_cache.New,
 			// Admission WebHook Server
-			Host:           b.Config().Runtime.Kubernetes.AdmissionServer.Address,
-			Port:           int(b.Config().Runtime.Kubernetes.AdmissionServer.Port),
-			CertDir:        b.Config().Runtime.Kubernetes.AdmissionServer.CertDir,
+			Host:           r.Config().Runtime.Kubernetes.AdmissionServer.Address,
+			Port:           int(r.Config().Runtime.Kubernetes.AdmissionServer.Port),
+			CertDir:        r.Config().Runtime.Kubernetes.AdmissionServer.CertDir,
 			LeaderElection: false,
 
 			// Disable metrics bind address as we serve metrics some other way.
@@ -73,9 +73,9 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 		return err
 	}
 
-	systemNamespace := b.Config().Store.Kubernetes.SystemNamespace
+	systemNamespace := r.Config().Store.Kubernetes.SystemNamespace
 
-	secretClient, err := createSecretClient(b.AppCtx(), scheme, systemNamespace, config, mgr.GetRESTMapper())
+	secretClient, err := createSecretClient(r.AppContext(), scheme, systemNamespace, config, mgr.GetRESTMapper())
 	if err != nil {
 		return err
 	}
@@ -86,23 +86,22 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 		Manager:     mgr,
 		controllers: nil,
 	}
-	b.WithExtensions(k8s_extensions.NewManagerContext(b.Extensions(), kubeManagerWrapper))
-
-	kcm := &kubeComponentManager{
-		kubeManagerWrapper:         kubeManagerWrapper,
-		oldLeaderElectionNamespace: systemNamespace,
-		leaderComponents:           nil,
-	}
-	b.WithComponentManager(kcm)
-
-	b.WithExtensions(k8s_extensions.NewSecretClientContext(b.Extensions(), secretClient))
-	if expTime := b.Config().Runtime.Kubernetes.MarshalingCacheExpirationTime; expTime > 0 {
-		b.WithExtensions(k8s_extensions.NewResourceConverterContext(b.Extensions(), k8s.NewCachingConverter(expTime)))
+	extensions := k8s_extensions.NewManagerContext(r.Extensions(), kubeManagerWrapper)
+	extensions = k8s_extensions.NewSecretClientContext(extensions, secretClient)
+	if expTime := r.Config().Runtime.Kubernetes.MarshalingCacheExpirationTime; expTime > 0 {
+		extensions = k8s_extensions.NewResourceConverterContext(extensions, k8s.NewCachingConverter(expTime))
 	} else {
-		b.WithExtensions(k8s_extensions.NewResourceConverterContext(b.Extensions(), k8s.NewSimpleConverter()))
+		extensions = k8s_extensions.NewResourceConverterContext(extensions, k8s.NewSimpleConverter())
 	}
-	b.WithExtensions(k8s_extensions.NewCompositeValidatorContext(b.Extensions(), &k8s_common.CompositeValidator{}))
-	return nil
+	extensions = k8s_extensions.NewCompositeValidatorContext(extensions, &k8s_common.CompositeValidator{})
+	return core_runtime.ApplyOpts(r,
+		core_runtime.WithExtensions(extensions),
+		core_runtime.WithComponentManager(&kubeComponentManager{
+			kubeManagerWrapper:         kubeManagerWrapper,
+			oldLeaderElectionNamespace: systemNamespace,
+			leaderComponents:           nil,
+		}),
+	)
 }
 
 // We need separate client for Secrets, because we don't have (get/list/watch) RBAC for all namespaces / cluster scope.
@@ -152,8 +151,8 @@ func createSecretClient(appCtx context.Context, scheme *kube_runtime.Scheme, sys
 	})
 }
 
-func (p *plugin) AfterBootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig) error {
-	if b.Config().Environment != config_core.KubernetesEnvironment {
+func (p *plugin) AfterBootstrap(r core_runtime.Runtime, _ core_plugins.PluginConfig) error {
+	if r.Config().Environment != config_core.KubernetesEnvironment {
 		return nil
 	}
 	apiServerAddress := os.Getenv("KUBERNETES_SERVICE_HOST")
@@ -163,9 +162,7 @@ func (p *plugin) AfterBootstrap(b *core_runtime.Builder, _ core_plugins.PluginCo
 		return errors.Wrapf(err, "could not parse KUBERNETES_SERVICE_PORT environment variable")
 	}
 
-	b.XDSHooks().AddResourceSetHook(hooks.NewApiServerBypass(apiServerAddress, uint32(apiServerPort)))
-
-	return nil
+	return core_runtime.ApplyOpts(r, core_runtime.WithXDSResourceSetHook(hooks.NewApiServerBypass(apiServerAddress, uint32(apiServerPort))))
 }
 
 func (p *plugin) Name() core_plugins.PluginName {

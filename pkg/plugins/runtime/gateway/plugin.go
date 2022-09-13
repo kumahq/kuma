@@ -29,7 +29,7 @@ type plugin struct{}
 
 var _ core_plugins.BootstrapPlugin = &plugin{}
 
-func (p *plugin) BeforeBootstrap(context *core_plugins.MutablePluginContext, config core_plugins.PluginConfig) error {
+func (p *plugin) BeforeBootstrap(context core_plugins.MutablePluginContext, config core_plugins.PluginConfig) error {
 	if context.Config().Environment == config_core.KubernetesEnvironment {
 		mesh_k8s.RegisterK8sGatewayTypes()
 
@@ -40,7 +40,7 @@ func (p *plugin) BeforeBootstrap(context *core_plugins.MutablePluginContext, con
 	return nil
 }
 
-func (p *plugin) AfterBootstrap(context *core_plugins.MutablePluginContext, config core_plugins.PluginConfig) error {
+func (p *plugin) AfterBootstrap(context core_plugins.MutablePluginContext, config core_plugins.PluginConfig) error {
 	// Insert our resolver before the default so that we can intercept
 	// builtin gateway dataplanes.
 	generator.DefaultTemplateResolver = template.SequentialResolver(

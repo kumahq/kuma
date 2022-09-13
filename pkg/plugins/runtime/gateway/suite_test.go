@@ -214,7 +214,7 @@ func StoreFixture(mgr manager.ResourceManager, r core_model.Resource) error {
 // the gateway plugin is registered.
 func BuildRuntime() (runtime.Runtime, error) {
 	config := kuma_cp.DefaultConfig()
-	builder, err := test_runtime.BuilderFor(context.Background(), config)
+	r, err := test_runtime.RuntimeFor(context.Background(), config)
 	if err != nil {
 		return nil, err
 	}
@@ -229,19 +229,19 @@ func BuildRuntime() (runtime.Runtime, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := plugin.BeforeBootstrap(builder, config); err != nil {
+	if err = plugin.BeforeBootstrap(r, config); err != nil {
 		return nil, err
 	}
-	if err := plugin.AfterBootstrap(builder, config); err != nil {
+	if err = plugin.AfterBootstrap(r, config); err != nil {
 		return nil, err
 	}
 
-	rt, err := builder.Build()
+	err = runtime.ValidateRuntime(r)
 	if err != nil {
 		return nil, err
 	}
 
-	return rt, nil
+	return r, nil
 }
 
 // DataplaneGenerator generates Dataplane resources and stores them in the resource manager.

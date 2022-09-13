@@ -18,6 +18,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
@@ -81,16 +82,15 @@ var _ = Describe("Proxy Builder", func() {
 	ctx := context.Background()
 	config := kuma_cp.DefaultConfig()
 	config.Multizone.Zone.Name = localZone
-	builder, err := test_runtime.BuilderFor(ctx, config)
+	rt, err := test_runtime.RuntimeFor(ctx, config)
 	Expect(err).ToNot(HaveOccurred())
-	builder.WithLookupIP(func(s string) ([]net.IP, error) {
+	Expect(core_runtime.WithLookupIP(func(s string) ([]net.IP, error) {
 		if s == "one.one.one.one" {
 			return []net.IP{net.ParseIP("1.1.1.1")}, nil
 		}
 		return nil, errors.New("No such host to resolve:" + s)
-	})
-	rt, err := builder.Build()
-	Expect(err).ToNot(HaveOccurred())
+	})(rt)).To(Succeed())
+	Expect(core_runtime.ValidateRuntime(rt)).To(Succeed())
 
 	meshCtxBuilder := xds_context.NewMeshContextBuilder(
 		rt.ReadOnlyResourceManager(),

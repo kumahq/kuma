@@ -88,7 +88,7 @@ func DefaultReconciler(
 
 	return &reconciler{
 		generator: &templateSnapshotGenerator{
-			ResourceSetHooks:      rt.XDSHooks().ResourceSetHooks(),
+			ResourceSetHooks:      rt.XDSHooks(),
 			ProxyTemplateResolver: resolver,
 		},
 		cacher:         &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
@@ -113,7 +113,7 @@ func DefaultIngressReconciler(
 
 	return &reconciler{
 		generator: &templateSnapshotGenerator{
-			ResourceSetHooks:      rt.XDSHooks().ResourceSetHooks(),
+			ResourceSetHooks:      rt.XDSHooks(),
 			ProxyTemplateResolver: resolver,
 		},
 		cacher:         &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
@@ -138,7 +138,7 @@ func DefaultEgressReconciler(
 
 	return &reconciler{
 		generator: &templateSnapshotGenerator{
-			ResourceSetHooks:      rt.XDSHooks().ResourceSetHooks(),
+			ResourceSetHooks:      rt.XDSHooks(),
 			ProxyTemplateResolver: resolver,
 		},
 		cacher:         &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
