@@ -42,7 +42,10 @@ var _ = SynchronizedBeforeSuite(
 		Expect(env.Cluster.Install(
 			Kuma(core.Standalone,
 				WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
-				WithCtlOpts(map[string]string{"--experimental-gatewayapi": "true"}),
+				WithCtlOpts(map[string]string{
+					"--experimental-gatewayapi": "true",
+					"--set":                     "experimental.transparentProxy=true",
+				}),
 				WithEgress(),
 			)),
 		).To(Succeed())
