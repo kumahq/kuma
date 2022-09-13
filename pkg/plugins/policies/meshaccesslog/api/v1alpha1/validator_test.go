@@ -55,6 +55,19 @@ to:
              plain: '{"start_time": "%START_TIME%"}'
            path: '/tmp/logs.txt'
 `),
+			Entry("empty format", `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+      name: default
+    default:
+      backends:
+        - file:
+           path: '/tmp/logs.txt'
+`),
         )
 
 		type testCase struct {
@@ -88,6 +101,26 @@ targetRef:
 violations:
   - field: spec
     message: at lest one of "from", "to" has to be defined`,
+			}),
+			Entry("empty 'path'", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+      name: default
+    default:
+      backends:
+        - file:
+           format:
+             plain: '{"start_time": "%START_TIME%"}'
+`,
+				expected: `
+violations:
+  - field: spec.from[0].default.backend[0].file.path
+    message: file backend requires a path`,
 			}),
 		)
 	})

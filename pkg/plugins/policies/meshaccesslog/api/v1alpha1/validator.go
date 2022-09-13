@@ -16,40 +16,54 @@ func (r *MeshAccessLogResource) validate() error {
 	r.validateIncompatibleCombinations(spec, &verr)
 	r.validateToOrFromDefined(spec, &verr)
 
-	to := spec.Field("to")
-	for toIdx, toItem := range r.Spec.GetTo() {
-		toIndexed := to.Index(toIdx)
-		for backendIdx, backend := range toItem.GetDefault().GetBackends() {
-			backendIndexed := toIndexed.Field("default").Field("backend").Index(backendIdx)
 
-			reference := bool2int(backend.GetReference() != nil)
-			file := bool2int(backend.GetFile() != nil)
-			tcp := bool2int(backend.GetTcp() != nil)
+	return verr.OrNil()
+}
 
-			if reference + file + tcp != 1 {
-				verr.AddViolationAt(backendIndexed, `backend can have only one type type defined: tcp, file, reference`)
-			}
+func (r *MeshAccessLogResource) validateBackend(backend *MeshAccessLog_Backend, verr *validators.ValidationError, backendIndexed validators.PathBuilder) {
+	reference := bool2int(backend.GetReference() != nil)
+	file := bool2int(backend.GetFile() != nil)
+	tcp := bool2int(backend.GetTcp() != nil)
 
-			var formats []*MeshAccessLog_Format
-			if backend.GetFile() != nil {
-				formats = append(formats, backend.GetFile().Format)
-			}
-			if backend.GetTcp() != nil {
-				formats = append(formats, backend.GetTcp().Format)
-			}
+	if reference+file+tcp != 1 {
+		verr.AddViolationAt(backendIndexed, `backend can have only one type type defined: tcp, file, reference`)
+	}
 
-			for _, format := range formats {
-				plain := bool2int(format.GetPlain() != "")
-				json := bool2int(format.GetJson() != nil)
+	r.validateFormats(backend, verr, backendIndexed)
 
-				if plain + json != 1 {
-					verr.AddViolationAt(backendIndexed, `format can only have one type defined: plain, json`)
+	if backend.GetFile() != nil && backend.GetFile().Path == "" {
+		verr.AddViolationAt(backendIndexed.Field("file").Field("path"), `file backend requires a path`)
+	}
+}
+
+func (r *MeshAccessLogResource) validateFormats(backend *MeshAccessLog_Backend, verr *validators.ValidationError, backendIndexed validators.PathBuilder) {
+	var formats []*MeshAccessLog_Format
+	if backend.GetFile() != nil {
+		formats = append(formats, backend.GetFile().Format)
+	}
+	if backend.GetTcp() != nil {
+		formats = append(formats, backend.GetTcp().Format)
+	}
+	for _, format := range formats {
+		plain := bool2int(format.GetPlain() != "")
+		json := bool2int(format.GetJson() != nil)
+
+		if plain+json > 1 {
+			verr.AddViolationAt(backendIndexed, `format can only have one type defined: plain, json`)
+		}
+
+		if format.GetJson() != nil {
+			for idx, field := range format.GetJson() {
+				indexedField := backendIndexed.Field("json").Index(idx)
+				if field.GetKey() == "" {
+					verr.AddViolationAt(indexedField.Field("key"), `key cannot be empty`)
+				}
+				if field.GetValue() == "" {
+					verr.AddViolationAt(indexedField.Field("value"), `value cannot be empty`)
 				}
 			}
 		}
 	}
-
-	return verr.OrNil()
 }
 
 func (r *MeshAccessLogResource) validateToOrFromDefined(spec validators.PathBuilder, verr *validators.ValidationError) {
@@ -83,6 +97,12 @@ func (r *MeshAccessLogResource) validateTo(spec validators.PathBuilder, verr *va
 		if toItem.GetDefault() == nil {
 			verr.AddViolationAt(to.Index(idx).Field("default"), "cannot be nil")
 		}
+
+		toIndexed := to.Index(idx)
+		for backendIdx, backend := range toItem.GetDefault().GetBackends() {
+			backendIndexed := toIndexed.Field("default").Field("backend").Index(backendIdx)
+			r.validateBackend(backend, verr, backendIndexed)
+		}
 	}
 }
 
@@ -98,6 +118,12 @@ func (r *MeshAccessLogResource) validateFrom(spec validators.PathBuilder, verr *
 
 		if fromItem.GetDefault() == nil {
 			verr.AddViolationAt(from.Index(idx).Field("default"), "cannot be nil")
+		}
+
+		toIndexed := from.Index(idx)
+		for backendIdx, backend := range fromItem.GetDefault().GetBackends() {
+			backendIndexed := toIndexed.Field("default").Field("backend").Index(backendIdx)
+			r.validateBackend(backend, verr, backendIndexed)
 		}
 	}
 }
