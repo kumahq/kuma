@@ -1,0 +1,31 @@
+Rules:
+  :8080:8080:
+  - Conf:
+      action: ALLOW_WITH_SHADOW_DENY
+    Origin: null
+    Subset:
+    - Key: kuma.io/service
+      Not: false
+      Value: orders
+  - Conf:
+      action: ALLOW
+    Origin: null
+    Subset:
+    - Key: kuma.io/service
+      Not: false
+      Value: backend
+  - Conf:
+      action: DENY
+    Origin: null
+    Subset:
+    - Key: kuma.io/service
+      Not: true
+      Value: backend
+    - Key: kuma.io/service
+      Not: true
+      Value: orders
+  :8081:8081:
+  - Conf:
+      action: DENY
+    Origin: null
+    Subset: []

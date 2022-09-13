@@ -13,44 +13,102 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
-type ResourceSpecWithTargetRef interface {
-	core_model.ResourceSpec
-	GetTargetRef() *common_proto.TargetRef
-}
-
 // MatchedPolicies match policies using the standard matchers using targetRef (madr-005)
 func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneResource, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
+	result := core_xds.TypedMatchingPolicies{
+		Type: rType,
+	}
+
 	policies := resources.ListOrEmpty(rType)
 
-	matchedPolicies := []core_model.Resource{}
+	matchedPoliciesByInbound := map[mesh_proto.InboundInterface][]core_model.Resource{}
 	for _, policy := range policies.GetItems() {
-		spec, ok := policy.GetSpec().(ResourceSpecWithTargetRef)
+		spec, ok := policy.GetSpec().(core_xds.ResourceSpecWithTargetRef)
 		if !ok {
 			return core_xds.TypedMatchingPolicies{}, errors.Errorf("resource type %v doesn't support TargetRef matching", rType)
 		}
 
 		targetRef := spec.GetTargetRef()
-		if isDataplaneSelectedByTargetRef(targetRef, dpp) {
-			matchedPolicies = append(matchedPolicies, policy)
+		selectedInbounds := inboundsSelectedByTargetRef(targetRef, dpp)
+		if len(selectedInbounds) == 0 {
+			// DPP is not matched by the policy
+			continue
+		}
+
+		result.DataplanePolicies = append(result.DataplanePolicies, policy)
+
+		for _, inbound := range selectedInbounds {
+			matchedPoliciesByInbound[inbound] = append(matchedPoliciesByInbound[inbound], policy)
 		}
 	}
 
-	sort.Sort(ByTargetRef(matchedPolicies))
+	sort.Sort(ByTargetRef(result.DataplanePolicies))
 
-	return core_xds.TypedMatchingPolicies{
-		Type:              rType,
-		DataplanePolicies: matchedPolicies,
-	}, nil
+	for _, ps := range matchedPoliciesByInbound {
+		sort.Sort(ByTargetRef(ps))
+	}
+
+	fillFromRules(&result, matchedPoliciesByInbound)
+	fillToRules(&result, result.DataplanePolicies)
+	return result, nil
 }
 
-func isDataplaneSelectedByTargetRef(tr *common_proto.TargetRef, dpp *core_mesh.DataplaneResource) bool {
+func fillFromRules(
+	tpm *core_xds.TypedMatchingPolicies,
+	matchedPoliciesByInbound map[mesh_proto.InboundInterface][]core_model.Resource,
+) {
+	fromRules := core_xds.FromRules{
+		Rules: map[mesh_proto.InboundInterface]core_xds.Rules{},
+	}
+	for inbound, policies := range matchedPoliciesByInbound {
+		fromList := []core_xds.PolicyItem{}
+		for _, p := range policies {
+			policyWithFrom, ok := p.GetSpec().(interface{ GetFromList() []core_xds.PolicyItem })
+			if !ok {
+				// policy doesn't support 'from' list
+				return
+			}
+			fromList = append(fromList, policyWithFrom.GetFromList()...)
+		}
+		fromRules.Rules[inbound] = core_xds.BuildRules(fromList)
+	}
+
+	tpm.FromRules = fromRules
+}
+
+func fillToRules(
+	tpm *core_xds.TypedMatchingPolicies,
+	matchedPolicies []core_model.Resource,
+) {
+	toList := []core_xds.PolicyItem{}
+	for _, mp := range matchedPolicies {
+		policyWithTo, ok := mp.GetMeta().(interface{ GetToList() []core_xds.PolicyItem })
+		if !ok {
+			// policy doesn't support 'to' list
+			return
+		}
+		toList = append(toList, policyWithTo.GetToList()...)
+	}
+
+	tpm.ToRules = core_xds.ToRules{
+		Rules: core_xds.BuildRules(toList),
+	}
+}
+
+// inboundsSelectedByTargetRef returns a list of inbounds of DPP that are selected by the targetRef
+func inboundsSelectedByTargetRef(tr *common_proto.TargetRef, dpp *core_mesh.DataplaneResource) []mesh_proto.InboundInterface {
 	switch tr.GetKindEnum() {
 	case common_proto.TargetRef_Mesh:
-		return true
+		// return all inbounds interfaces of the DPP
+		result := []mesh_proto.InboundInterface{}
+		for _, inbound := range dpp.Spec.GetNetworking().GetInbound() {
+			result = append(result, dpp.Spec.GetNetworking().ToInboundInterface(inbound))
+		}
+		return result
 	case common_proto.TargetRef_MeshSubset:
-		return isDataplaneSelectedByTags(tr.GetTags(), dpp)
+		return inboundsSelectedByTags(tr.GetTags(), dpp)
 	case common_proto.TargetRef_MeshService:
-		return isDataplaneSelectedByTags(map[string]string{
+		return inboundsSelectedByTags(map[string]string{
 			mesh_proto.ServiceTag: tr.GetName(),
 		}, dpp)
 	case common_proto.TargetRef_MeshServiceSubset:
@@ -60,22 +118,23 @@ func isDataplaneSelectedByTargetRef(tr *common_proto.TargetRef, dpp *core_mesh.D
 		for k, v := range tr.GetTags() {
 			tags[k] = v
 		}
-		return isDataplaneSelectedByTags(tags, dpp)
+		return inboundsSelectedByTags(tags, dpp)
 	default:
-		return false
+		return []mesh_proto.InboundInterface{}
 	}
 }
 
-func isDataplaneSelectedByTags(tags map[string]string, dpp *core_mesh.DataplaneResource) bool {
+func inboundsSelectedByTags(tags map[string]string, dpp *core_mesh.DataplaneResource) []mesh_proto.InboundInterface {
+	result := []mesh_proto.InboundInterface{}
 	for _, inbound := range dpp.Spec.GetNetworking().GetInbound() {
-		if isInboundSelectedBy(tags, inbound) {
-			return true
+		if isInboundSelectedByTags(tags, inbound) {
+			result = append(result, dpp.Spec.GetNetworking().ToInboundInterface(inbound))
 		}
 	}
-	return false
+	return result
 }
 
-func isInboundSelectedBy(tags map[string]string, inbound *mesh_proto.Dataplane_Networking_Inbound) bool {
+func isInboundSelectedByTags(tags map[string]string, inbound *mesh_proto.Dataplane_Networking_Inbound) bool {
 	for k, v := range tags {
 		if inboundValue, ok := inbound.Tags[k]; !ok || inboundValue != v {
 			return false
@@ -89,8 +148,8 @@ type ByTargetRef []core_model.Resource
 func (b ByTargetRef) Len() int { return len(b) }
 
 func (b ByTargetRef) Less(i, j int) bool {
-	r1, ok1 := b[i].GetSpec().(ResourceSpecWithTargetRef)
-	r2, ok2 := b[j].GetSpec().(ResourceSpecWithTargetRef)
+	r1, ok1 := b[i].GetSpec().(core_xds.ResourceSpecWithTargetRef)
+	r2, ok2 := b[j].GetSpec().(core_xds.ResourceSpecWithTargetRef)
 	if !(ok1 && ok2) {
 		panic("resource doesn't support TargetRef matching")
 	}

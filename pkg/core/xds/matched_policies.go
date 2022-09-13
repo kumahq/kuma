@@ -4,12 +4,37 @@ import (
 	"fmt"
 	"sort"
 
+	"google.golang.org/protobuf/proto"
+
+	common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 type MatchingPolicyMap map[core_model.ResourceType][]core_model.Resource
+
+type GetTargetRef interface {
+	GetTargetRef() *common_proto.TargetRef
+}
+
+type PolicyItem interface {
+	GetTargetRef
+	GetDefaultAsProto() proto.Message
+}
+
+type ResourceSpecWithTargetRef interface {
+	GetTargetRef
+	core_model.ResourceSpec
+}
+
+type FromRules struct {
+	Rules map[mesh_proto.InboundInterface]Rules
+}
+
+type ToRules struct {
+	Rules Rules
+}
 
 // TypedMatchingPolicies all policies of this type matching
 type TypedMatchingPolicies struct {
@@ -18,6 +43,8 @@ type TypedMatchingPolicies struct {
 	OutboundPolicies  map[mesh_proto.OutboundInterface][]core_model.Resource
 	ServicePolicies   map[ServiceName][]core_model.Resource
 	DataplanePolicies []core_model.Resource
+	FromRules         FromRules
+	ToRules           ToRules
 }
 
 type MatchedPolicies struct {
