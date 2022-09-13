@@ -15,13 +15,11 @@ import (
 
 // MatchedPolicies match policies using the standard matchers using targetRef (madr-005)
 func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneResource, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
-	result := core_xds.TypedMatchingPolicies{
-		Type: rType,
-	}
-
 	policies := resources.ListOrEmpty(rType)
 
 	matchedPoliciesByInbound := map[mesh_proto.InboundInterface][]core_model.Resource{}
+	dpPolicies := []core_model.Resource{}
+
 	for _, policy := range policies.GetItems() {
 		spec, ok := policy.GetSpec().(core_xds.ResourceSpecWithTargetRef)
 		if !ok {
@@ -35,64 +33,61 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 			continue
 		}
 
-		result.DataplanePolicies = append(result.DataplanePolicies, policy)
+		dpPolicies = append(dpPolicies, policy)
 
 		for _, inbound := range selectedInbounds {
 			matchedPoliciesByInbound[inbound] = append(matchedPoliciesByInbound[inbound], policy)
 		}
 	}
 
-	sort.Sort(ByTargetRef(result.DataplanePolicies))
+	sort.Sort(ByTargetRef(dpPolicies))
 
 	for _, ps := range matchedPoliciesByInbound {
 		sort.Sort(ByTargetRef(ps))
 	}
 
-	fillFromRules(&result, matchedPoliciesByInbound)
-	fillToRules(&result, result.DataplanePolicies)
-	return result, nil
+	return core_xds.TypedMatchingPolicies{
+		Type:              rType,
+		DataplanePolicies: dpPolicies,
+		FromRules: core_xds.FromRules{
+			Rules: fromRules(matchedPoliciesByInbound),
+		},
+		ToRules: core_xds.ToRules{
+			Rules: toRules(dpPolicies),
+		},
+	}, nil
 }
 
-func fillFromRules(
-	tpm *core_xds.TypedMatchingPolicies,
+func fromRules(
 	matchedPoliciesByInbound map[mesh_proto.InboundInterface][]core_model.Resource,
-) {
-	fromRules := core_xds.FromRules{
-		Rules: map[mesh_proto.InboundInterface]core_xds.Rules{},
-	}
+) map[mesh_proto.InboundInterface]core_xds.Rules {
+	rules := map[mesh_proto.InboundInterface]core_xds.Rules{}
 	for inbound, policies := range matchedPoliciesByInbound {
 		fromList := []core_xds.PolicyItem{}
 		for _, p := range policies {
 			policyWithFrom, ok := p.GetSpec().(interface{ GetFromList() []core_xds.PolicyItem })
 			if !ok {
 				// policy doesn't support 'from' list
-				return
+				return nil
 			}
 			fromList = append(fromList, policyWithFrom.GetFromList()...)
 		}
-		fromRules.Rules[inbound] = core_xds.BuildRules(fromList)
+		rules[inbound] = core_xds.BuildRules(fromList)
 	}
-
-	tpm.FromRules = fromRules
+	return rules
 }
 
-func fillToRules(
-	tpm *core_xds.TypedMatchingPolicies,
-	matchedPolicies []core_model.Resource,
-) {
+func toRules(matchedPolicies []core_model.Resource) core_xds.Rules {
 	toList := []core_xds.PolicyItem{}
 	for _, mp := range matchedPolicies {
 		policyWithTo, ok := mp.GetMeta().(interface{ GetToList() []core_xds.PolicyItem })
 		if !ok {
 			// policy doesn't support 'to' list
-			return
+			return nil
 		}
 		toList = append(toList, policyWithTo.GetToList()...)
 	}
-
-	tpm.ToRules = core_xds.ToRules{
-		Rules: core_xds.BuildRules(toList),
-	}
+	return core_xds.BuildRules(toList)
 }
 
 // inboundsSelectedByTargetRef returns a list of inbounds of DPP that are selected by the targetRef
