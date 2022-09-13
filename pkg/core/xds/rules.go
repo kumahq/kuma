@@ -18,10 +18,6 @@ type Tag struct {
 	Not   bool
 }
 
-func (t *Tag) IsNegative() bool {
-	return t.Not
-}
-
 // Subset represents a group of proxies
 type Subset []*Tag
 
@@ -56,7 +52,7 @@ func (ss Subset) IsSubset(other Subset) bool {
 func (ss Subset) NumPositive() int {
 	pos := 0
 	for _, t := range ss {
-		if !t.IsNegative() {
+		if !t.Not {
 			pos++
 		}
 	}
@@ -65,7 +61,7 @@ func (ss Subset) NumPositive() int {
 
 func (ss Subset) IndexOfPositive() int {
 	for i, t := range ss {
-		if !t.IsNegative() {
+		if !t.Not {
 			return i
 		}
 	}
