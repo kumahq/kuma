@@ -1515,76 +1515,6 @@ _kumactl_get_mesh()
     noun_aliases=()
 }
 
-_kumactl_get_meshaccesslog()
-{
-    last_command="kumactl_get_meshaccesslog"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--mesh=")
-    two_word_flags+=("--mesh")
-    two_word_flags+=("-m")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-    flags+=("--output=")
-    two_word_flags+=("--output")
-    two_word_flags+=("-o")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_kumactl_get_meshaccesslogs()
-{
-    last_command="kumactl_get_meshaccesslogs"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--mesh=")
-    two_word_flags+=("--mesh")
-    two_word_flags+=("-m")
-    flags+=("--offset=")
-    two_word_flags+=("--offset")
-    flags+=("--size=")
-    two_word_flags+=("--size")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-    flags+=("--output=")
-    two_word_flags+=("--output")
-    two_word_flags+=("-o")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
 _kumactl_get_meshes()
 {
     last_command="kumactl_get_meshes"
@@ -2762,8 +2692,6 @@ _kumactl_get()
     commands+=("healthcheck")
     commands+=("healthchecks")
     commands+=("mesh")
-    commands+=("meshaccesslog")
-    commands+=("meshaccesslogs")
     commands+=("meshes")
     commands+=("meshgateway")
     commands+=("meshgatewayroute")
@@ -2983,36 +2911,6 @@ _kumactl_inspect_fault-injection()
 _kumactl_inspect_healthcheck()
 {
     last_command="kumactl_inspect_healthcheck"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-    flags+=("--output=")
-    two_word_flags+=("--output")
-    two_word_flags+=("-o")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_kumactl_inspect_meshaccesslog()
-{
-    last_command="kumactl_inspect_meshaccesslog"
 
     command_aliases=()
 
@@ -3569,7 +3467,6 @@ _kumactl_inspect()
     commands+=("dataplanes")
     commands+=("fault-injection")
     commands+=("healthcheck")
-    commands+=("meshaccesslog")
     commands+=("meshes")
     commands+=("meshgateway")
     commands+=("meshtrafficpermission")
