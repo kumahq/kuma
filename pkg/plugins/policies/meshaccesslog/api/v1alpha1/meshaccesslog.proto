@@ -26,7 +26,71 @@ message MeshAccessLog {
   // defined inplace.
   kuma.common.v1alpha1.TargetRef targetRef = 1;
 
-  message Conf {
-    // TODO add configuration fields
+  message Format {
+    message JsonValue {
+      string key = 1 [ (doc.required) = true ];
+      string value = 2 [ (doc.required) = true ];
+    }
+
+    message JsonValueArray {
+      repeated JsonValue json = 1 [ (doc.required) = true ];
+    }
+
+    string plain = 1;
+    JsonValueArray json = 2;
   }
+
+  // Backend defines logging backend.
+  message TCPAccessLogBackend {
+    // Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+    Format format = 1 [ (doc.required) = true ];
+
+    // Type of the backend (Kuma ships with 'tcp' and 'file')
+    string address = 2 [ (doc.required) = true ];
+  }
+
+  // FileBackend defines configuration for file based access logs
+  message FileAccessLogBackend {
+    // Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+    Format format = 1 [ (doc.required) = true ];
+
+    // Path to a file that logs will be written to
+    string path = 2 [ (doc.required) = true ];
+  }
+
+  message ReferenceAccessLogBackend {
+    string kind = 1 [ (doc.required) = true ];
+    string name = 2 [ (doc.required) = true ];
+  }
+
+  message Backend {
+    TCPAccessLogBackend tcp = 1;
+    FileAccessLogBackend file = 2;
+    ReferenceAccessLogBackend reference = 3;
+  }
+
+  message Conf {
+    repeated Backend backends = 1 [ (doc.required) = true ];
+  }
+
+  message From {
+    // TargetRef is a reference to the resource that represents a group of clients.
+    kuma.common.v1alpha1.TargetRef targetRef = 1  [ (doc.required) = true ];
+
+    // Default is a configuration specific to the group of clients referenced in 'targetRef'
+    Conf default = 2 [ (doc.required) = true ];
+  }
+
+  // From is a list of pairs – a group of clients and action applied for it
+  repeated From from = 3;
+
+  message To {
+    // TargetRef is a reference to the resource that represents a group of clients.
+    kuma.common.v1alpha1.TargetRef targetRef = 1 [ (doc.required) = true ];
+
+    // Default is a configuration specific to the group of clients referenced in 'targetRef'
+    Conf default = 2 [ (doc.required) = true ];
+  }
+
+  repeated To to = 4;
 }

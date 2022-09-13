@@ -10,6 +10,103 @@ properties:
   name:
     description: 'Name of the Kuma resource'
     type: string
+  from:
+    description: From is a list of pairs – a group of clients and action applied for it
+    items:
+      properties:
+        default:
+          description: Default is a configuration specific to the group of clients referenced in 'targetRef'
+          properties:
+            backends:
+              items:
+                properties:
+                  file:
+                    description: FileBackend defines configuration for file based access logs
+                    properties:
+                      format:
+                        description: Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                        properties:
+                          json:
+                            properties:
+                              json:
+                                items:
+                                  properties:
+                                    key:
+                                      type: string
+                                    value:
+                                      type: string
+                                  type: object
+                                type: array
+                            type: object
+                          plain:
+                            type: string
+                        type: object
+                      path:
+                        description: Path to a file that logs will be written to
+                        type: string
+                    type: object
+                  reference:
+                    properties:
+                      kind:
+                        type: string
+                      name:
+                        type: string
+                    type: object
+                  tcp:
+                    description: Backend defines logging backend.
+                    properties:
+                      address:
+                        description: Type of the backend (Kuma ships with 'tcp' and 'file')
+                        type: string
+                      format:
+                        description: Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                        properties:
+                          json:
+                            properties:
+                              json:
+                                items:
+                                  properties:
+                                    key:
+                                      type: string
+                                    value:
+                                      type: string
+                                  type: object
+                                type: array
+                            type: object
+                          plain:
+                            type: string
+                        type: object
+                    type: object
+                type: object
+              type: array
+          type: object
+        targetRef:
+          description: TargetRef is a reference to the resource that represents a group of clients.
+          properties:
+            kind:
+              description: Kind of the referenced resource
+              enum:
+                - Mesh
+                - MeshSubset
+                - MeshService
+                - MeshServiceSubset
+                - MeshGatewayRoute
+                - MeshHTTPRoute
+              type: string
+            mesh:
+              description: Mesh is used with MeshService and MeshServiceSubset to identify the service from another mesh. Could be useful when implementing policies with cross-mesh support.
+              type: string
+            name:
+              description: Name of the referenced resource
+              type: string
+            tags:
+              additionalProperties:
+                type: string
+              description: Tags are used with MeshSubset and MeshServiceSubset to define a subset of proxies
+              type: object
+          type: object
+      type: object
+    type: array
   targetRef:
     description: TargetRef is a reference to the resource the policy takes an effect on. The resource could be either a real store object or virtual resource defined inplace.
     properties:
@@ -35,3 +132,99 @@ properties:
         description: Tags are used with MeshSubset and MeshServiceSubset to define a subset of proxies
         type: object
     type: object
+  to:
+    items:
+      properties:
+        default:
+          description: Default is a configuration specific to the group of clients referenced in 'targetRef'
+          properties:
+            backends:
+              items:
+                properties:
+                  file:
+                    description: FileBackend defines configuration for file based access logs
+                    properties:
+                      format:
+                        description: Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                        properties:
+                          json:
+                            properties:
+                              json:
+                                items:
+                                  properties:
+                                    key:
+                                      type: string
+                                    value:
+                                      type: string
+                                  type: object
+                                type: array
+                            type: object
+                          plain:
+                            type: string
+                        type: object
+                      path:
+                        description: Path to a file that logs will be written to
+                        type: string
+                    type: object
+                  reference:
+                    properties:
+                      kind:
+                        type: string
+                      name:
+                        type: string
+                    type: object
+                  tcp:
+                    description: Backend defines logging backend.
+                    properties:
+                      address:
+                        description: Type of the backend (Kuma ships with 'tcp' and 'file')
+                        type: string
+                      format:
+                        description: Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                        properties:
+                          json:
+                            properties:
+                              json:
+                                items:
+                                  properties:
+                                    key:
+                                      type: string
+                                    value:
+                                      type: string
+                                  type: object
+                                type: array
+                            type: object
+                          plain:
+                            type: string
+                        type: object
+                    type: object
+                type: object
+              type: array
+          type: object
+        targetRef:
+          description: TargetRef is a reference to the resource that represents a group of clients.
+          properties:
+            kind:
+              description: Kind of the referenced resource
+              enum:
+                - Mesh
+                - MeshSubset
+                - MeshService
+                - MeshServiceSubset
+                - MeshGatewayRoute
+                - MeshHTTPRoute
+              type: string
+            mesh:
+              description: Mesh is used with MeshService and MeshServiceSubset to identify the service from another mesh. Could be useful when implementing policies with cross-mesh support.
+              type: string
+            name:
+              description: Name of the referenced resource
+              type: string
+            tags:
+              additionalProperties:
+                type: string
+              description: Tags are used with MeshSubset and MeshServiceSubset to define a subset of proxies
+              type: object
+          type: object
+      type: object
+    type: array
