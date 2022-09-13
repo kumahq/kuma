@@ -690,5 +690,5 @@ experimental:
 # @ignored for helm-docs
 plugins:
   policies:
-    - meshtrafficpermissions
     - meshaccesslogs
+    - meshtrafficpermissions
