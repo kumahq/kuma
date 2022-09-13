@@ -187,6 +187,9 @@ spec:
   name: file
   type: file
   conf:
+    format:
+      plain:
+        value: '{"start_time": "%START_TIME%"}'
     path: /tmp/access.log
 ---
 type: MeshAccessLog
@@ -204,13 +207,17 @@ spec:
         name: web-frontend
       default:
         backends:
-          - type: tcp
-            conf:
-              address: 127.0.0.1:5000
-          - type: reference
-            conf: 
-              kind: MeshAccessLogBackend
-              name: file-backend
+          - tcp:
+              conf:
+                format:
+                  json:
+                    - key: "start_time"
+                      value: "%START_TIME%"
+                address: 127.0.0.1:5000
+          - reference:
+              conf: 
+                kind: MeshAccessLogBackend
+                name: file-backend
 ```
 
 ##### Positive Consequences
@@ -411,8 +418,8 @@ New definition will look like this:
 backends:
   - name: logstash
     format:
-      type: string
-      value: '{"start_time": "%START_TIME%"}'
+      plain:
+        value: '{"start_time": "%START_TIME%"}'
 ```
 
 And the new format type could be specified by a `type` parameter with a value of `json`:
@@ -421,8 +428,7 @@ And the new format type could be specified by a `type` parameter with a value of
 backends:
   - name: logstash
     format:
-      type: json
-      value:
+      json:
         - key: "start_time"
           value: "%START_TIME%"
 ```
@@ -565,8 +571,7 @@ name: logstash-backend
 mesh: default
 spec:
   name: logstash
-  type: tcp
-  conf:
+  tcp:
     address: 127.0.0.1:5000
 ---
 type: MeshAccessLogBackend
@@ -574,8 +579,7 @@ name: file-backend
 mesh: default
 spec:
   name: file
-  type: file
-  conf:
+  file:
     path: /tmp/access.log
 ---
 type: MeshAccessLog
@@ -591,8 +595,7 @@ spec:
         name: default
       default:
         backends:
-          - type: reference
-            conf:
+          - reference:
               kind: MeshAccessLogBackend
               name: logstash-backend
   to:
@@ -601,8 +604,7 @@ spec:
         name: default
       default:
         backends:
-          - type: reference
-            conf:
+          - reference:
               kind: MeshAccessLogBackend
               name: logstash-backend
 ---
@@ -619,8 +621,7 @@ spec:
         name: web-backend
       default:
         backends:
-          - type: reference
-            conf:
+          - reference:
               kind: MeshAccessLogBackend
               name: file-backend
 ```
@@ -652,8 +653,7 @@ spec:
         kind: Mesh
       default:
         backends:
-          - type: tcp
-            conf:
+          - tcp:
               address: 127.0.0.1:5000
 ```
 
@@ -670,8 +670,7 @@ name: logstash-backend
 mesh: default
 spec:
   name: logstash-zone-a
-  type: tcp
-  conf:
+  tcp:
     address: 127.0.0.1:5000
 ---
 type: MeshAccessLogBackend
@@ -679,8 +678,7 @@ name: file-backend
 mesh: default
 spec:
   name: logstash-zone-b
-  type: tcp
-  conf:
+  tcp:
     address: 127.0.0.2:5000
 ---
 type: MeshAccessLog
@@ -697,8 +695,7 @@ spec:
         name: default
       default:
         backends:
-          - type: reference
-            conf:
+          - reference:
               kind: MeshAccessLogBackend
               name: logstash-zone-a
 ---
@@ -716,8 +713,7 @@ spec:
         name: default
       default:
         backends:
-          - type: reference
-            conf:
+          - reference:
               kind: MeshAccessLogBackend
               name: logstash-zone-b
 ```
