@@ -205,16 +205,14 @@ spec:
       default:
         backends:
           - tcp:
-              conf:
-                format:
-                  json:
-                    - key: "start_time"
-                      value: "%START_TIME%"
-                address: 127.0.0.1:5000
+              format:
+                json:
+                  - key: "start_time"
+                    value: "%START_TIME%"
+              address: 127.0.0.1:5000
           - reference:
-              conf: 
-                kind: MeshAccessLogBackend
-                name: file-backend
+              kind: MeshAccessLogBackend
+              name: file-backend
 ```
 
 ##### Positive Consequences
