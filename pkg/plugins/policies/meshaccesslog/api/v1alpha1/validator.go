@@ -16,7 +16,6 @@ func (r *MeshAccessLogResource) validate() error {
 	r.validateIncompatibleCombinations(spec, &verr)
 	r.validateToOrFromDefined(spec, &verr)
 
-
 	return verr.OrNil()
 }
 

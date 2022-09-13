@@ -122,6 +122,50 @@ violations:
   - field: spec.from[0].default.backend[0].file.path
     message: file backend requires a path`,
 			}),
+			Entry("empty 'key'", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+      name: default
+    default:
+      backends:
+        - file:
+           path: '/tmp/logs.txt'
+           format:
+             json:
+                - value: "%START_TIME%"
+`,
+				expected: `
+violations:
+  - field: spec.from[0].default.backend[0].json[0].key
+    message: key cannot be empty`,
+			}),
+			Entry("empty 'value'", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+      name: default
+    default:
+      backends:
+        - file:
+           path: '/tmp/logs.txt'
+           format:
+             json:
+                - key: "start_time"
+`,
+				expected: `
+violations:
+  - field: spec.from[0].default.backend[0].json[0].value
+    message: value cannot be empty`,
+			}),
 		)
 	})
 })
