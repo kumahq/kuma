@@ -217,31 +217,25 @@ violations:
   message: 'backend can have only one type type defined: tcp, file, reference'`,
 			}),
 
-			Entry("both 'tcp' and 'reference' defined", testCase{
+			Entry("'to' defined in MeshGatewayRoute", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
+  kind: MeshGatewayRoute
+  name: some-mesh-gateway-route
+to:
   - targetRef:
       kind: Mesh
       name: default
     default:
       backends:
-        - tcp:
-            address: 127.0.0.1:5000
-            format:
-              json:
-                - key: "start_time"
-                  value: "%START_TIME%"
-          reference:
+        - reference:
             kind: MeshAccessLogBackend
             name: file-backend
 `,
 				expected: `
 violations:
-- field: spec.from[0].default.backend[0]
-  message: 'backend can have only one type type defined: tcp, file, reference'`,
+- field: spec.to
+  message: 'cannot use "to" when "targetRef" is "MeshGatewayRoute" - there is no outbound'`,
 			}),
 		)
 	})

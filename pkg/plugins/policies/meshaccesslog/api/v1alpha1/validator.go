@@ -75,10 +75,10 @@ func (r *MeshAccessLogResource) validateIncompatibleCombinations(spec validators
 	to := spec.Field("to")
 	targetRef := r.Spec.GetTargetRef().GetKindEnum()
 	if targetRef == common_proto.TargetRef_MeshGatewayRoute && len(r.Spec.GetTo()) > 0 {
-		verr.AddViolationAt(to.Index(0), `cannot use "to" when "targetRef" is "MeshGatewayRoute" - there is no outbound`)
+		verr.AddViolationAt(to, `cannot use "to" when "targetRef" is "MeshGatewayRoute" - there is no outbound`)
 	}
 	if targetRef == common_proto.TargetRef_MeshHTTPRoute && len(r.Spec.GetTo()) > 0 {
-		verr.AddViolationAt(to.Index(0), `cannot use "to" when "targetRef" is "MeshHTTPRoute" - "to" always goes to the application`)
+		verr.AddViolationAt(to, `cannot use "to" when "targetRef" is "MeshHTTPRoute" - "to" always goes to the application`)
 	}
 }
 
