@@ -188,8 +188,7 @@ spec:
   type: file
   conf:
     format:
-      plain:
-        value: '{"start_time": "%START_TIME%"}'
+      plain: '{"start_time": "%START_TIME%"}'
     path: /tmp/access.log
 ---
 type: MeshAccessLog
@@ -199,8 +198,6 @@ spec:
   targetRef:
     kind: MeshService
     name: web-backend
-    tags:
-      kuma.io/zone: us-east
   from:
     - targetRef:
         kind: MeshService
@@ -418,8 +415,7 @@ New definition will look like this:
 backends:
   - name: logstash
     format:
-      plain:
-        value: '{"start_time": "%START_TIME%"}'
+      plain: '{"start_time": "%START_TIME%"}'
 ```
 
 And the new format type could be specified by a `type` parameter with a value of `json`:

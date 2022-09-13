@@ -57,17 +57,14 @@ spec:
                                       available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
                                     properties:
                                       json:
-                                        properties:
-                                          json:
-                                            items:
-                                              properties:
-                                                key:
-                                                  type: string
-                                                value:
-                                                  type: string
-                                              type: object
-                                            type: array
-                                        type: object
+                                        items:
+                                          properties:
+                                            key:
+                                              type: string
+                                            value:
+                                              type: string
+                                          type: object
+                                        type: array
                                       plain:
                                         type: string
                                     type: object
@@ -95,17 +92,14 @@ spec:
                                       available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
                                     properties:
                                       json:
-                                        properties:
-                                          json:
-                                            items:
-                                              properties:
-                                                key:
-                                                  type: string
-                                                value:
-                                                  type: string
-                                              type: object
-                                            type: array
-                                        type: object
+                                        items:
+                                          properties:
+                                            key:
+                                              type: string
+                                            value:
+                                              type: string
+                                          type: object
+                                        type: array
                                       plain:
                                         type: string
                                     type: object
@@ -193,17 +187,14 @@ spec:
                                       available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
                                     properties:
                                       json:
-                                        properties:
-                                          json:
-                                            items:
-                                              properties:
-                                                key:
-                                                  type: string
-                                                value:
-                                                  type: string
-                                              type: object
-                                            type: array
-                                        type: object
+                                        items:
+                                          properties:
+                                            key:
+                                              type: string
+                                            value:
+                                              type: string
+                                          type: object
+                                        type: array
                                       plain:
                                         type: string
                                     type: object
@@ -231,17 +222,14 @@ spec:
                                       available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
                                     properties:
                                       json:
-                                        properties:
-                                          json:
-                                            items:
-                                              properties:
-                                                key:
-                                                  type: string
-                                                value:
-                                                  type: string
-                                              type: object
-                                            type: array
-                                        type: object
+                                        items:
+                                          properties:
+                                            key:
+                                              type: string
+                                            value:
+                                              type: string
+                                          type: object
+                                        type: array
                                       plain:
                                         type: string
                                     type: object

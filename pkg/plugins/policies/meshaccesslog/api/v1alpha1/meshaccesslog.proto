@@ -32,12 +32,8 @@ message MeshAccessLog {
       string value = 2 [ (doc.required) = true ];
     }
 
-    message JsonValueArray {
-      repeated JsonValue json = 1 [ (doc.required) = true ];
-    }
-
     string plain = 1;
-    JsonValueArray json = 2;
+    repeated JsonValue json = 2;
   }
 
   // Backend defines logging backend.

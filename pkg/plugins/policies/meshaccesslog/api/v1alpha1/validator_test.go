@@ -25,31 +25,37 @@ var _ = Describe("MeshAccessLog", func() {
 				// then
 				Expect(verr).To(BeNil())
 			},
-			Entry("example", `
+            Entry("mesh from/to example", `
 targetRef:
   kind: MeshService
-  name: web-backend
-  tags:
-    kuma.io/zone: us-east
+  name: web-frontend
 from:
   - targetRef:
-      kind: MeshService
-      name: web-frontend
+      kind: Mesh
+      name: default
     default:
       backends:
         - tcp:
-            conf:
-              format:
-                json:
-                  - key: "start_time"
-                    value: "%START_TIME%"
-              address: 127.0.0.1:5000
+            format:
+              json:
+                - key: "start_time"
+                  value: "%START_TIME%"
+            address: 127.0.0.1:5000
         - reference:
-            conf: 
-              kind: MeshAccessLogBackend
-              name: file-backend
+            kind: MeshAccessLogBackend
+            name: file-backend
+to:
+  - targetRef:
+      kind: MeshService
+      name: web-backend
+    default:
+      backends:
+        - file:
+           format:
+             plain: '{"start_time": "%START_TIME%"}'
+           path: '/tmp/logs.txt'
 `),
-		)
+        )
 
 		type testCase struct {
 			inputYaml string
@@ -72,17 +78,16 @@ from:
 				// then
 				Expect(actual).To(MatchYAML(given.expected))
 			},
-			Entry("empty 'from' array", testCase{
+			Entry("empty 'from' and 'to' array", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
-from: []
+  kind: Mesh
+  name: default
 `,
 				expected: `
 violations:
-  - field: spec.from
-    message: cannot be empty`,
+  - field: spec
+    message: at lest one of "from", "to" has to be defined`,
 			}),
 		)
 	})

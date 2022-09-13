@@ -31,8 +31,12 @@ func (r *MeshAccessLogResource) validate() error {
 			}
 
 			var formats []*MeshAccessLog_Format
-			formats = append(formats, backend.GetFile().Format)
-			formats = append(formats, backend.GetTcp().Format)
+			if backend.GetFile() != nil {
+				formats = append(formats, backend.GetFile().Format)
+			}
+			if backend.GetTcp() != nil {
+				formats = append(formats, backend.GetTcp().Format)
+			}
 
 			for _, format := range formats {
 				plain := bool2int(format.GetPlain() != "")
@@ -71,7 +75,7 @@ func (r *MeshAccessLogResource) validateTo(spec validators.PathBuilder, verr *va
 		targetRefErr := matcher_validators.ValidateTargetRef(to.Index(idx).Field("targetRef"), toItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
 			SupportedKinds: []common_proto.TargetRef_Kind{
 				common_proto.TargetRef_Mesh,
-				common_proto.TargetRef_MeshSubset,
+				common_proto.TargetRef_MeshService,
 			},
 		})
 		verr.AddError("", targetRefErr)
