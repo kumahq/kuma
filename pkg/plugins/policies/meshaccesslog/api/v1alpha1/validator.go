@@ -25,7 +25,7 @@ func (r *MeshAccessLogResource) validateBackend(backend *MeshAccessLog_Backend, 
 	tcp := bool2int(backend.GetTcp() != nil)
 
 	if reference+file+tcp != 1 {
-		verr.AddViolationAt(backendIndexed, `backend can have only one type type defined: tcp, file, reference`)
+		verr.AddViolationAt(backendIndexed, `backend can have only one type defined: tcp, file, reference`)
 	}
 
 	r.validateFormats(backend, verr, backendIndexed)
@@ -67,7 +67,7 @@ func (r *MeshAccessLogResource) validateFormats(backend *MeshAccessLog_Backend, 
 
 func (r *MeshAccessLogResource) validateToOrFromDefined(spec validators.PathBuilder, verr *validators.ValidationError) {
 	if len(r.Spec.GetFrom()) == 0 && len(r.Spec.GetTo()) == 0 {
-		verr.AddViolationAt(spec, `at lest one of "from", "to" has to be defined`)
+		verr.AddViolationAt(spec, `at least one of "from", "to" has to be defined`)
 	}
 }
 
