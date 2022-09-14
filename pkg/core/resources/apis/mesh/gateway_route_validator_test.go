@@ -36,6 +36,10 @@ conf:
     - foo.example.com
     rules:
     - matches:
+      - method: POST
+        path:
+          match: PREFIX
+          value: /
       - method: GET
         path:
           match: EXACT
@@ -649,6 +653,31 @@ conf:
         - weight: 5
           destination:
             kuma.io/service: target-2
+`),
+		ErrorCases("prefix with trailing slash", []validators.Violation{{
+			Field:   "conf.http.rules[0].matches[0].value",
+			Message: "does not need a trailing slash because only a `/`-separated prefix or an entire path is matched",
+		}, {
+			Field:   "conf.http.rules[0].matches[0].value",
+			Message: "must be an absolute path",
+		}}, `
+type: MeshGatewayRoute
+name: route
+mesh: default
+selectors:
+- match:
+    kuma.io/service: gateway
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: prefix/
+      backends:
+      - weight: 5
+        destination:
+          kuma.io/service: target-2
 `),
 		ErrorCase("prefix match replacement without prefix match filter", validators.Violation{
 			Field:   "conf.http.rules[0].filters[0].rewrite.replacePrefixMatch",
