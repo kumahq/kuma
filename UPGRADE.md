@@ -8,6 +8,11 @@ does not have any particular instructions.
 
 ## Upcoming release
 
+### Universal
+
+A `lib/pq` change enables SNI by default when connecting to Postgres over TLS.
+Make sure your certificates contain a valid CN or SANs.
+
 ### `kuma-prometheus-sd`
 
 This component has been removed
