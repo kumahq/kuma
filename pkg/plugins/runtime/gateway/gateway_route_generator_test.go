@@ -345,6 +345,30 @@ conf:
 `,
 		),
 
+		Entry("should be able to rewrite a prefix",
+			"drop-prefix-gateway-route.yaml", `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: /prefix/a
+      filters:
+        - rewrite:
+            replacePrefixMatch: "/a"
+      backends:
+      - destination:
+          kuma.io/service: echo-service
+`,
+		),
+
 		Entry("should disambiguate path prefix and exact matches",
 			"08-gateway-route.yaml", `
 type: MeshGatewayRoute
