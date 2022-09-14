@@ -77,14 +77,10 @@ spec:
       - matches:
         - path:
             match: PREFIX
-            value: /prefix/
+            value: /prefix/middle
         filters:
-        - requestHeader:
-            set:
-              - name: Host
-                value: other.example.kuma.io
         - rewrite:
-            replacePrefixMatch: "/"
+            replacePrefixMatch: /middle
         backends:
         - destination:
             kuma.io/service: echo-server_gateway-mtls_svc_80
@@ -136,18 +132,45 @@ spec:
 			}, "30s", "1s").Should(Succeed())
 		})
 
-		It("should rewrite HTTP requests", func() {
-			Eventually(func(g Gomega) {
-				response, err := client.CollectResponse(
-					env.Cluster, "demo-client", "http://mtls-edge-gateway.gateway-mtls:8080/prefix/xyz",
-					client.WithHeader("host", "example.kuma.io"),
-					client.FromKubernetesPod(clientNamespace, "demo-client"),
-				)
+		Describe("replacing a path prefix", func() {
+			Specify("when the prefix is the entire path", func() {
+				Eventually(func(g Gomega) {
+					response, err := client.CollectResponse(
+						env.Cluster, "demo-client", "http://mtls-edge-gateway.gateway-mtls:8080/prefix/middle",
+						client.WithHeader("host", "example.kuma.io"),
+						client.FromKubernetesPod(clientNamespace, "demo-client"),
+					)
 
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(response.Received.Headers["Host"]).To(ContainElement("other.example.kuma.io"))
-				g.Expect(response.Received.Path).To(Equal("/xyz"))
-			}, "30s", "1s").Should(Succeed())
+					g.Expect(err).ToNot(HaveOccurred())
+					g.Expect(response.Received.Path).To(Equal("/middle"))
+				}, "30s", "1s").Should(Succeed())
+			})
+
+			Specify("when it's a non-trivial prefix", func() {
+				Eventually(func(g Gomega) {
+					response, err := client.CollectResponse(
+						env.Cluster, "demo-client", "http://mtls-edge-gateway.gateway-mtls:8080/prefix/middle/tail",
+						client.WithHeader("host", "example.kuma.io"),
+						client.FromKubernetesPod(clientNamespace, "demo-client"),
+					)
+
+					g.Expect(err).ToNot(HaveOccurred())
+					g.Expect(response.Received.Path).To(Equal("/middle/tail"))
+				}, "30s", "1s").Should(Succeed())
+			})
+
+			Specify("ignoring non-path-separated prefixes", func() {
+				Eventually(func(g Gomega) {
+					response, err := client.CollectResponse(
+						env.Cluster, "demo-client", "http://mtls-edge-gateway.gateway-mtls:8080/prefix/middle_andmore",
+						client.WithHeader("host", "example.kuma.io"),
+						client.FromKubernetesPod(clientNamespace, "demo-client"),
+					)
+
+					g.Expect(err).ToNot(HaveOccurred())
+					g.Expect(response.Received.Path).To(Equal("/prefix/middle_andmore"))
+				}, "30s", "1s").Should(Succeed())
+			})
 		})
 
 		It("should not access a service for which we don't have traffic permission", func() {
