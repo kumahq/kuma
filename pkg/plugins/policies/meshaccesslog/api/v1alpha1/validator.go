@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"fmt"
+	"github.com/asaskevich/govalidator"
 	common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
@@ -30,8 +32,17 @@ func (r *MeshAccessLogResource) validateBackend(backend *MeshAccessLog_Backend, 
 
 	r.validateFormats(backend, verr, backendIndexed)
 
-	if backend.GetFile() != nil && backend.GetFile().Path == "" {
-		verr.AddViolationAt(backendIndexed.Field("file").Field("path"), `file backend requires a path`)
+	if backend.GetFile() != nil {
+		isFilePath, _ := govalidator.IsFilePath(backend.GetFile().GetPath())
+		if !isFilePath {
+			verr.AddViolationAt(backendIndexed.Field("file").Field("path"), `file backend requires a valid path`)
+		}
+	}
+
+	if backend.GetTcp() != nil {
+		if !govalidator.IsURL(backend.GetTcp().GetAddress()) {
+			verr.AddViolationAt(backendIndexed.Field("tcp").Field("address"), `tcp backend requires valid address`)
+		}
 	}
 }
 
@@ -59,6 +70,9 @@ func (r *MeshAccessLogResource) validateFormats(backend *MeshAccessLog_Backend, 
 				}
 				if field.GetValue() == "" {
 					verr.AddViolationAt(indexedField.Field("value"), `value cannot be empty`)
+				}
+				if !govalidator.IsJSON(fmt.Sprintf(`{"%s": "%s"}`, field.GetKey(), field.GetValue())) {
+					verr.AddViolationAt(indexedField, `is not a valid JSON object`)
 				}
 			}
 		}

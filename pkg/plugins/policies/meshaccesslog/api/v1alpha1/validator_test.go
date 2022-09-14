@@ -120,7 +120,28 @@ from:
 				expected: `
 violations:
   - field: spec.from[0].default.backend[0].file.path
-    message: file backend requires a path`,
+    message: file backend requires a valid path`,
+			}),
+			Entry("invalid 'path'", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+      name: default
+    default:
+      backends:
+        - file:
+           format:
+             plain: '{"start_time": "%START_TIME%"}'
+           path: '#not_valid'
+`,
+				expected: `
+violations:
+  - field: spec.from[0].default.backend[0].file.path
+    message: file backend requires a valid path`,
 			}),
 			Entry("empty 'key'", testCase{
 				inputYaml: `
@@ -165,6 +186,29 @@ from:
 violations:
   - field: spec.from[0].default.backend[0].json[0].value
     message: value cannot be empty`,
+			}),
+			Entry("invalid 'key'", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+      name: default
+    default:
+      backends:
+        - file:
+           path: '/tmp/logs.txt'
+           format:
+             json:
+                - key: '"'
+                  value: "%START_TIME%"
+`,
+				expected: `
+violations:
+  - field: spec.from[0].default.backend[0].json[0]
+    message: is not a valid JSON object`,
 			}),
 			Entry("both 'plain' and 'json' defined", testCase{
 				inputYaml: `
@@ -286,6 +330,29 @@ from:
 violations:
 - field: spec.from[0].default
   message: 'must be defined'`,
+			}),
+			Entry("'address' not valid", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+      name: default
+    default:
+      backends:
+        - tcp:
+            format:
+              json:
+                - key: "start_time"
+                  value: "%START_TIME%"
+            address: not_valid_url
+`,
+				expected: `
+violations:
+- field: spec.from[0].default.backend[0].tcp.address
+  message: 'tcp backend requires valid address'`,
 			}),
 		)
 	})
