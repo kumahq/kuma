@@ -95,6 +95,10 @@ func GenerateEnvoyRouteEntries(host GatewayHost) []route.Entry {
 			// Make sure the prefix has a trailing '/' so that it only matches
 			// complete path components.
 			e.Match.PrefixPath = exactPath + "/"
+			if rw := e.Rewrite; rw != nil && rw.ReplacePrefixMatch != nil {
+				prefix := strings.TrimRight(*rw.ReplacePrefixMatch, "/") + "/"
+				rw.ReplacePrefixMatch = &prefix
+			}
 			entries = append(entries, e)
 
 			// If the prefix is '/', it matches everything anyway,
@@ -109,6 +113,13 @@ func GenerateEnvoyRouteEntries(host GatewayHost) []route.Entry {
 				exactMatch := e
 				exactMatch.Match.PrefixPath = ""
 				exactMatch.Match.ExactPath = exactPath
+
+				if rw := exactMatch.Rewrite; rw != nil && rw.ReplacePrefixMatch != nil {
+					path := strings.TrimRight(*rw.ReplacePrefixMatch, "/")
+					exactMatch.Rewrite = &route.Rewrite{
+						ReplaceFullPath: &path,
+					}
+				}
 				exactEntries[exactPath] = append(exactEntries[exactPath], exactMatch)
 			}
 		}
