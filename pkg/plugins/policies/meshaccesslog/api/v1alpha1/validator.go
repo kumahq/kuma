@@ -44,6 +44,12 @@ func (r *MeshAccessLogResource) validateBackend(backend *MeshAccessLog_Backend, 
 			verr.AddViolationAt(backendIndexed.Field("tcp").Field("address"), `tcp backend requires valid address`)
 		}
 	}
+
+	if backend.GetReference() != nil {
+		if backend.GetReference().GetName() == "" {
+			verr.AddViolationAt(backendIndexed.Field("reference").Field("name"), `reference name cannot be empty`)
+		}
+	}
 }
 
 func (r *MeshAccessLogResource) validateFormats(backend *MeshAccessLog_Backend, verr *validators.ValidationError, backendIndexed validators.PathBuilder) {
