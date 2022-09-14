@@ -6,6 +6,10 @@ ENVOY_ADMIN_PORT ?= 9901
 
 POSTGRES_SSL_MODE ?= disable
 
+NUM_OF_DATAPLANES ?= 100
+NUM_OF_SERVICES ?= 80
+KUMA_CP_ADDRESS ?= grpcs://localhost:5678
+
 run/universal/postgres/ssl: ## Dev: Run Control Plane locally in universal mode with Postgres store and SSL enabled
 	POSTGRES_SSL_MODE=verifyCa \
 	POSTGRES_SSL_CERT_PATH=$(TOOLS_DIR)/postgres/certs/postgres.client.crt \
@@ -88,3 +92,7 @@ run/kuma-dp: build/kumactl ## Dev: Run `kuma-dp` locally
 	KUMA_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
 	KUMA_DATAPLANE_RUNTIME_TOKEN_PATH=/tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token \
 	$(GO_RUN) ./app/kuma-dp/main.go run --log-level=debug
+
+.PHONY: run/xds-client
+run/xds-client:
+	go run ./tools/xds-client/... run --dps "${NUM_OF_DATAPLANES}" --services "${NUM_OF_SERVICES}" --xds-server-address "${KUMA_CP_ADDRESS}"

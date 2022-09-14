@@ -20,6 +20,9 @@ func init() {
 }
 
 func (p *plugin) Customize(rt core_runtime.Runtime) error {
+	if rt.Config().Environment != core.UniversalEnvironment {
+		return nil
+	}
 	if rt.Config().Mode == core.Global {
 		return nil
 	}

@@ -47,6 +47,7 @@ injector:
   builtinDNS:
     enabled: true
     port: 15053
+  transparentProxyV2: false
   ebpf:
     enabled: false
     instanceIPEnvVarName: INSTANCE_IP

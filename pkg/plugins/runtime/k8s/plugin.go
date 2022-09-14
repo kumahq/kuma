@@ -40,6 +40,9 @@ func init() {
 }
 
 func (p *plugin) Customize(rt core_runtime.Runtime) error {
+	if rt.Config().Environment != config_core.KubernetesEnvironment {
+		return nil
+	}
 	mgr, ok := k8s_extensions.FromManagerContext(rt.Extensions())
 	if !ok {
 		return errors.Errorf("k8s controller runtime Manager hasn't been configured")
@@ -145,6 +148,7 @@ func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter
 	}
 	defaultsReconciller := &k8s_controllers.MeshDefaultsReconciler{
 		ResourceManager: rt.ResourceManager(),
+		Log:             core.Log.WithName("controllers").WithName("mesh-defaults"),
 	}
 	if err := defaultsReconciller.SetupWithManager(mgr); err != nil {
 		return errors.Wrap(err, "could not setup mesh defaults reconciller")

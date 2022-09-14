@@ -219,14 +219,20 @@ func BuildRuntime() (runtime.Runtime, error) {
 		return nil, err
 	}
 
-	plugin, err := plugins.Plugins().BootstrapPlugin(gateway.PluginName)
+	var plugin plugins.BootstrapPlugin
+	for _, p := range plugins.Plugins().BootstrapPlugins() {
+		if p.Name() == gateway.PluginName {
+			plugin = p
+			break
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
-	if err := plugin.BeforeBootstrap(builder, nil); err != nil {
+	if err := plugin.BeforeBootstrap(builder, config); err != nil {
 		return nil, err
 	}
-	if err := plugin.AfterBootstrap(builder, nil); err != nil {
+	if err := plugin.AfterBootstrap(builder, config); err != nil {
 		return nil, err
 	}
 
@@ -329,6 +335,12 @@ func (d *DataplaneGenerator) generate(
 var _ = BeforeSuite(func() {
 	// Ensure that the plugin is registered so that tests at least
 	// have a chance of working.
-	_, err := plugins.Plugins().BootstrapPlugin(gateway.PluginName)
-	Expect(err).ToNot(HaveOccurred(), "gateway plugin is registered")
+	Expect(plugins.Plugins().BootstrapPlugins()).To(
+		WithTransform(func(in []plugins.BootstrapPlugin) []plugins.PluginName {
+			var out []plugins.PluginName
+			for _, p := range in {
+				out = append(out, p.Name())
+			}
+			return out
+		}, ContainElement(gateway.PluginName)))
 })

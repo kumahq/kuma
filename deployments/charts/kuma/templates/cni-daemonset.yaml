@@ -19,6 +19,9 @@ spec:
       {{- include "kuma.cniSelectorLabels" . | nindent 8 }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/cni-configmap.yaml") . | sha256sum }}
+        {{- range $key, $value := .Values.cni.podAnnotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
     spec:
       # This, along with the CriticalAddonsOnly toleration below,
       # marks the pod as a critical add-on, ensuring it gets

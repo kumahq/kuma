@@ -311,6 +311,8 @@ cni:
   # -- Node Selector for the CNI pods
   nodeSelector:
     kubernetes.io/os: linux
+  # -- Additional pod annotations
+  podAnnotations: { }
 
   image:
     # -- CNI image registry
@@ -444,8 +446,10 @@ ingress:
     port: 10001
     # -- Port on which service is exposed on Node for service of type NodePort
     nodePort:
-  # -- Additional deployment annotation
+  # -- Additional pod annotations (deprecated favor `podAnnotations`)
   annotations: { }
+  # -- Additional pod annotations
+  podAnnotations: { }
   # -- Node Selector for the Ingress pods
   nodeSelector:
     kubernetes.io/os: linux
@@ -553,8 +557,10 @@ egress:
     port: 10002
     # -- Port on which service is exposed on Node for service of type NodePort
     nodePort:
-  # -- Additional deployment annotation
+  # -- Additional pod annotations (deprecated favor `podAnnotations`)
   annotations: { }
+  # -- Additional pod annotations
+  podAnnotations: { }
   # -- Node Selector for the Egress pods
   nodeSelector:
     kubernetes.io/os: linux
@@ -668,6 +674,8 @@ experimental:
   gatewayAPI: false
   # -- If true, it installs experimental new version of the CNI
   cni: false
+  # -- If true, use the new transparent proxy engine
+  transparentProxy: false
   # Configuration for the experimental ebpf mode for transparent proxy
   ebpf:
     # -- If true, ebpf will be used instead of using iptables to install/configure transparent proxy

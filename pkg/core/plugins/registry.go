@@ -33,7 +33,6 @@ const (
 
 type Registry interface {
 	BootstrapPlugins() []BootstrapPlugin
-	BootstrapPlugin(name PluginName) (BootstrapPlugin, error)
 	ResourceStore(name PluginName) (ResourceStorePlugin, error)
 	SecretStore(name PluginName) (SecretStorePlugin, error)
 	ConfigStore(name PluginName) (ConfigStorePlugin, error)

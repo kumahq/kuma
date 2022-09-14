@@ -41,6 +41,14 @@
    "isExperimental": true
   },
   {
+   "name": "MeshTrafficPermission",
+   "readOnly": false,
+   "path": "meshtrafficpermissions",
+   "singularDisplayName": "Mesh Traffic Permission",
+   "pluralDisplayName": "Mesh Traffic Permissions",
+   "isExperimental": false
+  },
+  {
    "name": "ProxyTemplate",
    "readOnly": false,
    "path": "proxytemplates",

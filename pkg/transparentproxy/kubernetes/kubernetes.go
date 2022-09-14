@@ -45,7 +45,7 @@ type PodRedirect struct {
 	ExcludeOutboundUDPPortsForUIDs           []string
 }
 
-func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
+func NewPodRedirectForPod(transparentProxyV2 bool, pod *kube_core.Pod) (*PodRedirect, error) {
 	var err error
 	podRedirect := &PodRedirect{}
 
@@ -99,7 +99,10 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 
 	podRedirect.UID, _ = metadata.Annotations(pod.Annotations).GetString(metadata.KumaSidecarUID)
 
-	podRedirect.ExperimentalTransparentProxyEngine, _, err = metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaTransparentProxyingExperimentalEngine)
+	podRedirect.ExperimentalTransparentProxyEngine, _, err = metadata.Annotations(pod.Annotations).GetEnabledWithDefault(
+		transparentProxyV2,
+		metadata.KumaTransparentProxyingExperimentalEngine,
+	)
 	if err != nil {
 		return nil, err
 	}

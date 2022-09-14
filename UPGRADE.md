@@ -13,6 +13,10 @@ does not have any particular instructions.
 This component has been removed
 after [a long period of deprecation](https://github.com/kumahq/kuma/issues/2851).
 
+### Helm
+
+`ingress.annotations` and `egress.annotations` are deprecated in favour of `ingress.podAnnotations` and `egress.podAnnotations` which is a better name and aligne with the existing `controlPlane.podAnnoations`.
+
 ## Upgrade to `1.8.x`
 
 ### Kumactl

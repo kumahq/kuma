@@ -43,6 +43,7 @@ func renderHelmFiles(
 	namespace string,
 	overrideValues chartutil.Values,
 	kubeClientConfig *rest.Config,
+	capabilities chartutil.Capabilities,
 ) ([]data.File, error) {
 	kumaChart, err := loadCharts(templates)
 	if err != nil {
@@ -55,7 +56,7 @@ func renderHelmFiles(
 
 	options := generateReleaseOptions(kumaChart.Metadata.Name, namespace)
 
-	valuesToRender, err := chartutil.ToRenderValues(kumaChart, overrideValues, options, nil)
+	valuesToRender, err := chartutil.ToRenderValues(kumaChart, overrideValues, options, &capabilities)
 	if err != nil {
 		return nil, errors.Errorf("Failed to render values: %s", err)
 	}
