@@ -46,12 +46,20 @@ import (
 type MergeFunction func(dst, src protoreflect.Message)
 type mergeOptions struct {
 	customMergeFn map[protoreflect.FullName]MergeFunction
+	replaceList   bool
 }
 type OptionFn func(options mergeOptions) mergeOptions
 
 func MergeFunctionOptionFn(name protoreflect.FullName, function MergeFunction) OptionFn {
 	return func(options mergeOptions) mergeOptions {
 		options.customMergeFn[name] = function
+		return options
+	}
+}
+
+func ReplaceListOptionFn() OptionFn {
+	return func(options mergeOptions) mergeOptions {
+		options.replaceList = true
 		return options
 	}
 }
@@ -73,6 +81,13 @@ func Merge(dst, src proto.Message) {
 	merge(dst, src, MergeFunctionOptionFn(duration.ProtoReflect().Descriptor().FullName(), ReplaceMergeFn))
 }
 
+func MergeWithListReplacement(dst, src proto.Message) {
+	duration := &durationpb.Duration{}
+	merge(dst, src,
+		MergeFunctionOptionFn(duration.ProtoReflect().Descriptor().FullName(), ReplaceMergeFn),
+		ReplaceListOptionFn())
+}
+
 // Merge Code of proto.Merge with modifications to support custom types
 func merge(dst, src proto.Message, opts ...OptionFn) {
 	mo := mergeOptions{customMergeFn: map[protoreflect.FullName]MergeFunction{}}
@@ -89,10 +104,30 @@ func (o mergeOptions) mergeMessage(dst, src protoreflect.Message) {
 		panic(fmt.Sprintf("cannot merge into invalid %v message", dst.Descriptor().FullName()))
 	}
 
+	if o.replaceList {
+		fields := src.Descriptor().Fields()
+		// separate loop to support empty lists in 'src'
+		// because 'src.Range' doesn't return empty fields
+		for i := 0; i < fields.Len(); i++ {
+			fd := fields.Get(i)
+			if !fd.IsList() {
+				continue
+			}
+			v := src.Get(fd)
+			if v.List().Len() == 0 {
+				dst.Mutable(fd).List().Truncate(0)
+			} else {
+				dst.Set(fd, v)
+			}
+		}
+	}
+
 	src.Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
 		switch {
 		case fd.IsList():
-			o.mergeList(dst.Mutable(fd).List(), v.List(), fd)
+			if !o.replaceList {
+				o.mergeList(dst.Mutable(fd).List(), v.List(), fd)
+			}
 		case fd.IsMap():
 			o.mergeMap(dst.Mutable(fd).Map(), v.Map(), fd.MapValue())
 		case fd.Message() != nil:

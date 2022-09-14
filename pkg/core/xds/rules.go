@@ -132,9 +132,7 @@ func BuildRules(list []PolicyItem) Rules {
 					if conf == nil {
 						conf = proto.Clone(item.GetDefaultAsProto())
 					} else {
-						// todo(lobkovilya): util_proto.Merge appends lists,
-						// create a custom Merge func for list replacements
-						util_proto.Merge(conf, item.GetDefaultAsProto())
+						util_proto.MergeWithListReplacement(conf, item.GetDefaultAsProto())
 					}
 				}
 			}
