@@ -41,9 +41,6 @@ from:
                 - key: "start_time"
                   value: "%START_TIME%"
             address: 127.0.0.1:5000
-        - reference:
-            kind: MeshAccessLogBackend
-            name: file-backend
 to:
   - targetRef:
       kind: MeshService
@@ -234,7 +231,7 @@ violations:
 - field: spec.from[0].default.backend[0]
   message: 'format can only have one type defined: plain, json'`,
 			}),
-			Entry("both 'tcp' and 'reference' defined", testCase{
+			Entry("both 'tcp' and 'file' defined", testCase{
 				inputYaml: `
 targetRef:
   kind: MeshService
@@ -251,14 +248,15 @@ from:
               json:
                 - key: "start_time"
                   value: "%START_TIME%"
-          reference:
-            kind: MeshAccessLogBackend
-            name: file-backend
+          file:
+           format:
+             plain: '{"start_time": "%START_TIME%"}'
+           path: '/tmp/logs.txt'
 `,
 				expected: `
 violations:
 - field: spec.from[0].default.backend[0]
-  message: 'backend can have only one type defined: tcp, file, reference'`,
+  message: 'backend can have only one type defined: tcp, file'`,
 			}),
 
 			Entry("'to' defined in MeshGatewayRoute", testCase{
@@ -272,9 +270,10 @@ to:
       name: default
     default:
       backends:
-        - reference:
-            kind: MeshAccessLogBackend
-            name: file-backend
+        - file:
+           format:
+             plain: '{"start_time": "%START_TIME%"}'
+           path: '/tmp/logs.txt'
 `,
 				expected: `
 violations:
@@ -292,9 +291,10 @@ to:
       name: default
     default:
       backends:
-        - reference:
-            kind: MeshAccessLogBackend
-            name: file-backend
+        - file:
+           format:
+             plain: '{"start_time": "%START_TIME%"}'
+           path: '/tmp/logs.txt'
 `,
 				expected: `
 violations:

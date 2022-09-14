@@ -57,15 +57,9 @@ message MeshAccessLog {
     string path = 2 [ (doc.required) = true ];
   }
 
-  message ReferenceBackend {
-    string kind = 1 [ (doc.required) = true ];
-    string name = 2 [ (doc.required) = true ];
-  }
-
   message Backend {
     TCPBackend tcp = 1;
     FileBackend file = 2;
-    ReferenceBackend reference = 3;
   }
 
   message Conf { repeated Backend backends = 1 [ (doc.required) = true ]; }

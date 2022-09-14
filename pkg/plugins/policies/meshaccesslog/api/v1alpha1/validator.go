@@ -22,12 +22,11 @@ func (r *MeshAccessLogResource) validate() error {
 }
 
 func (r *MeshAccessLogResource) validateBackend(backend *MeshAccessLog_Backend, verr *validators.ValidationError, backendIndexed validators.PathBuilder) {
-	reference := bool2int(backend.GetReference() != nil)
 	file := bool2int(backend.GetFile() != nil)
 	tcp := bool2int(backend.GetTcp() != nil)
 
-	if reference+file+tcp != 1 {
-		verr.AddViolationAt(backendIndexed, `backend can have only one type defined: tcp, file, reference`)
+	if file+tcp != 1 {
+		verr.AddViolationAt(backendIndexed, `backend can have only one type defined: tcp, file`)
 	}
 
 	r.validateFormats(backend, verr, backendIndexed)
@@ -42,12 +41,6 @@ func (r *MeshAccessLogResource) validateBackend(backend *MeshAccessLog_Backend, 
 	if backend.GetTcp() != nil {
 		if !govalidator.IsURL(backend.GetTcp().GetAddress()) {
 			verr.AddViolationAt(backendIndexed.Field("tcp").Field("address"), `tcp backend requires valid address`)
-		}
-	}
-
-	if backend.GetReference() != nil {
-		if backend.GetReference().GetName() == "" {
-			verr.AddViolationAt(backendIndexed.Field("reference").Field("name"), `reference name cannot be empty`)
 		}
 	}
 }
