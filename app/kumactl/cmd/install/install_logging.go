@@ -7,9 +7,9 @@ import (
 	"github.com/spf13/cobra"
 
 	kumactl_data "github.com/kumahq/kuma/app/kumactl/data"
+	"github.com/kumahq/kuma/app/kumactl/pkg/client/k8s"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
-	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
 )
 
 type loggingTemplateArgs struct {

@@ -8,8 +8,8 @@ import (
 
 	install_context "github.com/kumahq/kuma/app/kumactl/cmd/install/context"
 	kumactl_data "github.com/kumahq/kuma/app/kumactl/data"
+	"github.com/kumahq/kuma/app/kumactl/pkg/client/k8s"
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
-	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
 )
 
 type demoTemplateArgs struct {

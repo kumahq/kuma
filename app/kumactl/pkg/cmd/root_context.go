@@ -10,7 +10,7 @@ import (
 	get_context "github.com/kumahq/kuma/app/kumactl/cmd/get/context"
 	inspect_context "github.com/kumahq/kuma/app/kumactl/cmd/inspect/context"
 	install_context "github.com/kumahq/kuma/app/kumactl/cmd/install/context"
-	"github.com/kumahq/kuma/app/kumactl/pkg/client"
+	client "github.com/kumahq/kuma/app/kumactl/pkg/client/cp"
 	"github.com/kumahq/kuma/app/kumactl/pkg/config"
 	"github.com/kumahq/kuma/app/kumactl/pkg/plugins"
 	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
