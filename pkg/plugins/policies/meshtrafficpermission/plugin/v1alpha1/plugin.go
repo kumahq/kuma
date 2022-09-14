@@ -1,13 +1,17 @@
 package v1alpha1
 
 import (
-	"github.com/kumahq/kuma/pkg/core"
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/matchers"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -24,6 +28,42 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
-	core.Log.V(1).Info("MeshTrafficPermission apply is not implemented")
+	if !ctx.Mesh.Resource.MTLSEnabled() {
+		return nil
+	}
+
+	mtp, ok := proxy.Policies.Dynamic[api.MeshTrafficPermissionType]
+	if !ok {
+		return nil
+	}
+
+	for _, res := range rs.Resources(envoy_resource.ListenerType) {
+		if res.Origin != generator.OriginInbound {
+			continue
+		}
+
+		listener := res.Resource.(*envoy_listener.Listener)
+		dpAddress := listener.GetAddress().GetSocketAddress()
+
+		key := core_xds.InboundListener{
+			Address: dpAddress.GetAddress(),
+			Port:    dpAddress.GetPortValue(),
+		}
+		rules, ok := mtp.FromRules.Rules[key]
+		if !ok {
+			continue
+		}
+
+		configurer := &v3.RBACConfigurer{
+			StatsName: res.Name,
+			Rules:     rules,
+			Mesh:      proxy.Dataplane.GetMeta().GetMesh(),
+		}
+		for _, filterChain := range listener.FilterChains {
+			if err := configurer.Configure(filterChain); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
