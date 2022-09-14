@@ -23,7 +23,8 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// MeshAccessLog defines access log policies between different data plane proxies entities.
+// MeshAccessLog defines access log policies between different data plane
+// proxies entities.
 type MeshAccessLog struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

@@ -14,7 +14,8 @@ option (doc.config) = {
   file_name : "meshaccesslog"
 };
 
-// MeshAccessLog defines access log policies between different data plane proxies entities.
+// MeshAccessLog defines access log policies between different data plane
+// proxies entities.
 message MeshAccessLog {
   option (kuma.mesh.policy) = {
     // Toggle this to have the policy registered or not in Kuma
