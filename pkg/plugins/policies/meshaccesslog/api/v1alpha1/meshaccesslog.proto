@@ -18,7 +18,7 @@ option (doc.config) = {
 message MeshAccessLog {
   option (kuma.mesh.policy) = {
     // Toggle this to have the policy registered or not in Kuma
-    skip_registration : true,
+    skip_registration : false,
   };
 
   // TargetRef is a reference to the resource the policy takes an effect on.
