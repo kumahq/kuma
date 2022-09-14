@@ -106,6 +106,5 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		trafficAllowed()
-
 	})
 }

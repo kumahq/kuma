@@ -13,7 +13,7 @@ import (
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 )
 
-var _ = FDescribe("RBACConfigurer", func() {
+var _ = Describe("RBACConfigurer", func() {
 
 	type testCase struct {
 		rules    core_xds.Rules
