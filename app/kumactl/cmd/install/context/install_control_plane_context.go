@@ -63,9 +63,11 @@ type InstallControlPlaneArgs struct {
 	ExperimentalGatewayAPI                       bool              `helm:"experimental.gatewayAPI"`
 	ValueFiles                                   []string
 	Values                                       []string
-	DumpValues                                   bool
-	UseNodePort                                  bool
-	IngressUseNodePort                           bool
+	// APIVersions is a hidden, internal option
+	APIVersions        []string
+	DumpValues         bool
+	UseNodePort        bool
+	IngressUseNodePort bool
 }
 
 type ImageEnvSecret struct {
