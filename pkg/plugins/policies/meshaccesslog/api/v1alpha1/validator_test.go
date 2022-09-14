@@ -100,7 +100,7 @@ targetRef:
 				expected: `
 violations:
   - field: spec
-    message: at lest one of "from", "to" has to be defined`,
+    message: at least one of "from", "to" has to be defined`,
 			}),
 			Entry("empty 'path'", testCase{
 				inputYaml: `
@@ -214,7 +214,7 @@ from:
 				expected: `
 violations:
 - field: spec.from[0].default.backend[0]
-  message: 'backend can have only one type type defined: tcp, file, reference'`,
+  message: 'backend can have only one type defined: tcp, file, reference'`,
 			}),
 
 			Entry("'to' defined in MeshGatewayRoute", testCase{
