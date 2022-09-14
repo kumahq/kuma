@@ -1728,13 +1728,6 @@ spec:
                                       written to
                                     type: string
                                 type: object
-                              reference:
-                                properties:
-                                  kind:
-                                    type: string
-                                  name:
-                                    type: string
-                                type: object
                               tcp:
                                 description: Backend defines logging backend.
                                 properties:
@@ -1856,13 +1849,6 @@ spec:
                                   path:
                                     description: Path to a file that logs will be
                                       written to
-                                    type: string
-                                type: object
-                              reference:
-                                properties:
-                                  kind:
-                                    type: string
-                                  name:
                                     type: string
                                 type: object
                               tcp:
