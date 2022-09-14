@@ -110,34 +110,13 @@ func generateProto(c config) error {
 	if err != nil {
 		return err
 	}
-
-	err = validatorTemplate.Execute(f, map[string]interface{}{
+	return validatorTemplate.Execute(f, map[string]interface{}{
 		"name":              c.name,
 		"version":           c.version,
 		"generateTargetRef": c.generateTargetRef,
 		"generateTo":        c.generateTo,
 		"generateFrom":      c.generateFrom,
 	})
-	if err != nil {
-		return err
-	}
-
-	f, err = os.Create(path.Join(apiPath, c.lowercase()+"_helpers.go"))
-	if err != nil {
-		return err
-	}
-	err = helperTemplate.Execute(f, map[string]interface{}{
-		"name":              c.name,
-		"version":           c.version,
-		"generateTargetRef": c.generateTargetRef,
-		"generateTo":        c.generateTo,
-		"generateFrom":      c.generateFrom,
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func generatePlugin(c config) error {
@@ -366,40 +345,4 @@ func (r *{{.name}}Resource) validate() error {
 
 	return verr.OrNil()
 }
-`))
-
-var helperTemplate = template.Must(template.New("missingkey=error").Parse(
-	`package {{.version}}
-
-import (
-	"google.golang.org/protobuf/proto"
-
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-)
-{{ if .generateFrom }}
-func (x *{{.name}}_From) GetDefaultAsProto() proto.Message {
-	return x.Default
-}
-
-func (x *{{.name}}) GetFromList() []core_xds.PolicyItem {
-	var result []core_xds.PolicyItem
-	for _, item := range x.From {
-		result = append(result, item)
-	}
-	return result
-}
-{{- end }}
-{{ if .generateTo }}
-func (x *{{.name}}_To) GetDefaultAsProto() proto.Message {
-	return x.Default
-}
-
-func (x *{{.name}}) GetToList() []core_xds.PolicyItem {
-	var result []core_xds.PolicyItem
-	for _, item := range x.To {
-		result = append(result, item)
-	}
-	return result
-}
-{{- end }}
 `))

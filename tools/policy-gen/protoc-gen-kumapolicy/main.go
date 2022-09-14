@@ -38,6 +38,9 @@ func main() {
 			if err := generateEndpoints(plugin, file, *endpointsTemplate); err != nil {
 				return err
 			}
+			if err := generateHelpers(plugin, file); err != nil {
+				return err
+			}
 		}
 
 		if err := generatePluginFile(plugin, filesToGenerate); err != nil {
