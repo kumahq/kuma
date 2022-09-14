@@ -14,7 +14,7 @@ option (doc.config) = {
   file_name : "meshaccesslog"
 };
 
-// MeshAccessLog
+// MeshAccessLog defines access log policies between different data plane proxies entities.
 message MeshAccessLog {
   option (kuma.mesh.policy) = {
     // Toggle this to have the policy registered or not in Kuma
@@ -37,7 +37,7 @@ message MeshAccessLog {
   }
 
   // Backend defines logging backend.
-  message TCPAccessLogBackend {
+  message TCPBackend {
     // Format of access logs. Placeholders available on
     // https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
     Format format = 1 [ (doc.required) = true ];
@@ -47,7 +47,7 @@ message MeshAccessLog {
   }
 
   // FileBackend defines configuration for file based access logs
-  message FileAccessLogBackend {
+  message FileBackend {
     // Format of access logs. Placeholders available on
     // https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
     Format format = 1 [ (doc.required) = true ];
@@ -56,15 +56,15 @@ message MeshAccessLog {
     string path = 2 [ (doc.required) = true ];
   }
 
-  message ReferenceAccessLogBackend {
+  message ReferenceBackend {
     string kind = 1 [ (doc.required) = true ];
     string name = 2 [ (doc.required) = true ];
   }
 
   message Backend {
-    TCPAccessLogBackend tcp = 1;
-    FileAccessLogBackend file = 2;
-    ReferenceAccessLogBackend reference = 3;
+    TCPBackend tcp = 1;
+    FileBackend file = 2;
+    ReferenceBackend reference = 3;
   }
 
   message Conf { repeated Backend backends = 1 [ (doc.required) = true ]; }
