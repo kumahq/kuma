@@ -679,7 +679,7 @@ experimental:
   # Configuration for the experimental ebpf mode for transparent proxy
   ebpf:
     # -- If true, ebpf will be used instead of using iptables to install/configure transparent proxy
-    enabled: false 
+    enabled: false
     # -- Name of the environmental variable which will contain the IP address of a pod
     instanceIPEnvVarName: INSTANCE_IP
     # -- Path where BPF file system should be mounted
