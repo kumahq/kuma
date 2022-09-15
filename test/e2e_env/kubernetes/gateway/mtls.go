@@ -87,6 +87,16 @@ spec:
       - matches:
         - path:
             match: PREFIX
+            value: /drop-prefix
+        filters:
+        - rewrite:
+            replacePrefixMatch: /
+        backends:
+        - destination:
+            kuma.io/service: echo-server_gateway-mtls_svc_80
+      - matches:
+        - path:
+            match: PREFIX
             value: /non-accessible
         backends:
         - destination:
@@ -169,6 +179,47 @@ spec:
 
 					g.Expect(err).ToNot(HaveOccurred())
 					g.Expect(response.Received.Path).To(Equal("/prefix/middle_andmore"))
+				}, "30s", "1s").Should(Succeed())
+			})
+		})
+
+		Describe("replacing a path prefix with /", func() {
+			Specify("when the prefix is the entire path", func() {
+				Eventually(func(g Gomega) {
+					response, err := client.CollectResponse(
+						env.Cluster, "demo-client", "http://mtls-edge-gateway.gateway-mtls:8080/drop-prefix",
+						client.WithHeader("host", "example.kuma.io"),
+						client.FromKubernetesPod(clientNamespace, "demo-client"),
+					)
+
+					g.Expect(err).ToNot(HaveOccurred())
+					g.Expect(response.Received.Path).To(Equal("/"))
+				}, "30s", "1s").Should(Succeed())
+			})
+
+			Specify("when it's a non-trivial prefix", func() {
+				Eventually(func(g Gomega) {
+					response, err := client.CollectResponse(
+						env.Cluster, "demo-client", "http://mtls-edge-gateway.gateway-mtls:8080/drop-prefix/tail",
+						client.WithHeader("host", "example.kuma.io"),
+						client.FromKubernetesPod(clientNamespace, "demo-client"),
+					)
+
+					g.Expect(err).ToNot(HaveOccurred())
+					g.Expect(response.Received.Path).To(Equal("/tail"))
+				}, "30s", "1s").Should(Succeed())
+			})
+
+			Specify("ignoring non-path-separated prefixes", func() {
+				Eventually(func(g Gomega) {
+					response, err := client.CollectResponse(
+						env.Cluster, "demo-client", "http://mtls-edge-gateway.gateway-mtls:8080/drop-prefix_andmore",
+						client.WithHeader("host", "example.kuma.io"),
+						client.FromKubernetesPod(clientNamespace, "demo-client"),
+					)
+
+					g.Expect(err).ToNot(HaveOccurred())
+					g.Expect(response.Received.Path).To(Equal("/drop-prefix_andmore"))
 				}, "30s", "1s").Should(Succeed())
 			})
 		})
