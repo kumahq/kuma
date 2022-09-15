@@ -118,13 +118,13 @@ Routes:
         name: echo.example.com
         routes:
         - match:
-            path: /prefix
+            path: /prefix/a
           route:
             regexRewrite:
               pattern:
                 googleRe2: {}
                 regex: .*
-              substitution: /
+              substitution: /a
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -143,9 +143,9 @@ Routes:
                 weight: 1
               totalWeight: 1
         - match:
-            prefix: /prefix/
+            prefix: /prefix/a/
           route:
-            prefixRewrite: /
+            prefixRewrite: /a/
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
