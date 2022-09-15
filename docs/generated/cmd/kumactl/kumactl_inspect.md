@@ -30,6 +30,7 @@ Inspect Kuma resources.
 * [kumactl inspect dataplanes](kumactl_inspect_dataplanes.md)	 - Inspect Dataplanes
 * [kumactl inspect fault-injection](kumactl_inspect_fault-injection.md)	 - Inspect FaultInjection
 * [kumactl inspect healthcheck](kumactl_inspect_healthcheck.md)	 - Inspect HealthCheck
+* [kumactl inspect meshaccesslog](kumactl_inspect_meshaccesslog.md)	 - Inspect MeshAccessLog
 * [kumactl inspect meshes](kumactl_inspect_meshes.md)	 - Inspect Meshes
 * [kumactl inspect meshgateway](kumactl_inspect_meshgateway.md)	 - Inspect MeshGateway
 * [kumactl inspect meshtrafficpermission](kumactl_inspect_meshtrafficpermission.md)	 - Inspect MeshTrafficPermission

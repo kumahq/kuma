@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+package kuma.plugins.policies.meshaccesslog.v1alpha1;
+
+import "mesh/options.proto";
+option go_package = "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1";
+
+import "common/v1alpha1/targetref.proto";
+import "kuma-doc/config.proto";
+
+option (doc.config) = {
+  type : Policy,
+  name : "MeshAccessLog",
+  file_name : "meshaccesslog"
+};
+
+// MeshAccessLog defines access log policies between different data plane
+// proxies entities.
+message MeshAccessLog {
+  option (kuma.mesh.policy) = {
+    // Toggle this to have the policy registered or not in Kuma
+    skip_registration : false,
+  };
+
+  // TargetRef is a reference to the resource the policy takes an effect on.
+  // The resource could be either a real store object or virtual resource
+  // defined inplace.
+  kuma.common.v1alpha1.TargetRef targetRef = 1;
+
+  message Format {
+    message JsonValue {
+      string key = 1 [ (doc.required) = true ];
+      string value = 2 [ (doc.required) = true ];
+    }
+
+    string plain = 1;
+    repeated JsonValue json = 2;
+  }
+
+  // Backend defines logging backend.
+  message TCPBackend {
+    // Format of access logs. Placeholders available on
+    // https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+    Format format = 1 [ (doc.required) = true ];
+
+    // Type of the backend (Kuma ships with 'tcp' and 'file')
+    string address = 2 [ (doc.required) = true ];
+  }
+
+  // FileBackend defines configuration for file based access logs
+  message FileBackend {
+    // Format of access logs. Placeholders available on
+    // https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+    Format format = 1 [ (doc.required) = true ];
+
+    // Path to a file that logs will be written to
+    string path = 2 [ (doc.required) = true ];
+  }
+
+  message Backend {
+    TCPBackend tcp = 1;
+    FileBackend file = 2;
+  }
+
+  message Conf { repeated Backend backends = 1 [ (doc.required) = true ]; }
+
+  message From {
+    // TargetRef is a reference to the resource that represents a group of
+    // clients.
+    kuma.common.v1alpha1.TargetRef targetRef = 1 [ (doc.required) = true ];
+
+    // Default is a configuration specific to the group of clients referenced in
+    // 'targetRef'
+    Conf default = 2 [ (doc.required) = true ];
+  }
+
+  // From is a list of pairs – a group of clients and action applied for it
+  repeated From from = 3;
+
+  message To {
+    // TargetRef is a reference to the resource that represents a group of
+    // clients.
+    kuma.common.v1alpha1.TargetRef targetRef = 1 [ (doc.required) = true ];
+
+    // Default is a configuration specific to the group of clients referenced in
+    // 'targetRef'
+    Conf default = 2 [ (doc.required) = true ];
+  }
+
+  repeated To to = 4;
+}
