@@ -46,6 +46,7 @@ import (
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
+	xds_auth_components "github.com/kumahq/kuma/pkg/xds/auth/components"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
@@ -63,8 +64,10 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	if err := initializeMetrics(builder); err != nil {
 		return nil, err
 	}
-	if err := initializeBeforeBootstrap(cfg, builder); err != nil {
-		return nil, err
+	for _, plugin := range core_plugins.Plugins().BootstrapPlugins() {
+		if err := plugin.BeforeBootstrap(builder, cfg); err != nil {
+			return nil, errors.Wrapf(err, "failed to run beforeBootstrap plugin:'%s'", plugin.Name())
+		}
 	}
 	if err := initializeResourceStore(cfg, builder); err != nil {
 		return nil, err
@@ -126,6 +129,15 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		))
 	}
 
+	if builder.XDSAuthenticator() == nil {
+		authenticator, err := xds_auth_components.DefaultAuthenticator(builder) //nolint:contextcheck
+		if err != nil {
+			return nil, err
+		}
+
+		builder.WithXDSAuthenticator(authenticator)
+	}
+
 	// The setting should be removed, and there is no easy way to set it without breaking most of the code
 	mesh_proto.EnableLocalhostInboundClusters = builder.Config().Defaults.EnableLocalhostInboundClusters
 
@@ -144,10 +156,11 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		return nil, err
 	}
 
-	if err := initializeAfterBootstrap(cfg, builder); err != nil {
-		return nil, err
+	for _, plugin := range core_plugins.Plugins().BootstrapPlugins() {
+		if err := plugin.AfterBootstrap(builder, cfg); err != nil {
+			return nil, errors.Wrapf(err, "failed to run afterBootstrap plugin:'%s'", plugin.Name())
+		}
 	}
-
 	rt, err := builder.Build()
 	if err != nil {
 		return nil, err
@@ -157,8 +170,10 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		return nil, err
 	}
 
-	if err := customizeRuntime(rt); err != nil {
-		return nil, err
+	for name, plugin := range core_plugins.Plugins().RuntimePlugins() {
+		if err := plugin.Customize(rt); err != nil {
+			return nil, errors.Wrapf(err, "failed to configure runtime plugin:'%s'", name)
+		}
 	}
 
 	logWarnings(rt.Config())
@@ -209,32 +224,6 @@ func startReporter(runtime core_runtime.Runtime) error {
 		<-stop
 		return nil
 	}))
-}
-
-func initializeBeforeBootstrap(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	for _, plugin := range core_plugins.Plugins().BootstrapPlugins() {
-		if (cfg.Environment == config_core.KubernetesEnvironment && plugin.Name() == core_plugins.Universal) ||
-			(cfg.Environment == config_core.UniversalEnvironment && plugin.Name() == core_plugins.Kubernetes) {
-			continue
-		}
-		if err := plugin.BeforeBootstrap(builder, nil); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func initializeAfterBootstrap(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	for _, plugin := range core_plugins.Plugins().BootstrapPlugins() {
-		if (cfg.Environment == config_core.KubernetesEnvironment && plugin.Name() == core_plugins.Universal) ||
-			(cfg.Environment == config_core.UniversalEnvironment && plugin.Name() == core_plugins.Kubernetes) {
-			continue
-		}
-		if err := plugin.AfterBootstrap(builder, nil); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func initializeResourceStore(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
@@ -455,18 +444,4 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 
 func initializeConfigManager(builder *core_runtime.Builder) {
 	builder.WithConfigManager(config_manager.NewConfigManager(builder.ConfigStore()))
-}
-
-func customizeRuntime(rt core_runtime.Runtime) error {
-	env := rt.Config().Environment
-	for name, plugin := range core_plugins.Plugins().RuntimePlugins() {
-		if (env == config_core.KubernetesEnvironment && name == core_plugins.Universal) ||
-			(env == config_core.UniversalEnvironment && name == core_plugins.Kubernetes) {
-			continue
-		}
-		if err := plugin.Customize(rt); err != nil {
-			return err
-		}
-	}
-	return nil
 }

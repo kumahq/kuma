@@ -33,6 +33,8 @@ func isMoreSpecific(lhs *Match, rhs *Match) bool {
 		if len(lhs.ExactPath) < len(rhs.ExactPath) {
 			return false
 		}
+	case rhs.ExactPath != "":
+		return false
 	case lhs.PrefixPath != "":
 		// Prefix match is more specific than regex.
 		if rhs.PrefixPath == "" {
@@ -46,7 +48,9 @@ func isMoreSpecific(lhs *Match, rhs *Match) bool {
 		if len(lhs.PrefixPath) < len(rhs.PrefixPath) {
 			return false
 		}
-	case lhs.RegexPath != "":
+	case rhs.PrefixPath != "":
+		return false
+	default:
 		// Regex match is more specific than no path match.
 		if rhs.RegexPath == "" {
 			return true

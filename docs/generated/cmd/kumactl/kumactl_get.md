@@ -38,6 +38,8 @@ Show Kuma resources.
 * [kumactl get healthcheck](kumactl_get_healthcheck.md)	 - Show a single HealthCheck resource
 * [kumactl get healthchecks](kumactl_get_healthchecks.md)	 - Show HealthCheck
 * [kumactl get mesh](kumactl_get_mesh.md)	 - Show a single Mesh resource
+* [kumactl get meshaccesslog](kumactl_get_meshaccesslog.md)	 - Show a single MeshAccessLog resource
+* [kumactl get meshaccesslogs](kumactl_get_meshaccesslogs.md)	 - Show MeshAccessLog
 * [kumactl get meshes](kumactl_get_meshes.md)	 - Show Mesh
 * [kumactl get meshgateway](kumactl_get_meshgateway.md)	 - Show a single MeshGateway resource
 * [kumactl get meshgatewayroute](kumactl_get_meshgatewayroute.md)	 - Show a single MeshGatewayRoute resource

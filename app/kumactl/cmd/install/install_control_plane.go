@@ -9,6 +9,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/strvals"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
@@ -135,7 +136,13 @@ This command requires that the KUBECONFIG environment is set`,
 					return errors.Wrap(err, "could not detect Kubernetes configuration")
 				}
 			}
-			renderedFiles, err := renderHelmFiles(templateFiles, args.Namespace, vals, kubeClientConfig)
+
+			capabilities := *chartutil.DefaultCapabilities
+			for _, version := range args.APIVersions {
+				capabilities.APIVersions = append(capabilities.APIVersions, version)
+			}
+
+			renderedFiles, err := renderHelmFiles(templateFiles, args.Namespace, vals, kubeClientConfig, capabilities)
 			if err != nil {
 				return errors.Wrap(err, "Failed to render helm template files")
 			}
@@ -210,6 +217,13 @@ This command requires that the KUBECONFIG environment is set`,
 	cmd.Flags().BoolVar(&args.ExperimentalGatewayAPI, "experimental-gatewayapi", false, "install experimental Gateway API support")
 	cmd.Flags().StringSliceVarP(&args.ValueFiles, "values", "f", []string{}, "specify values in a YAML file or '-' for stdin. This is similar to `helm template <chart> -f ...`")
 	cmd.Flags().StringArrayVar(&args.Values, "set", []string{}, "set values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2), This is similar to `helm template <chart> --set ...` to use set-file or set-string just use helm instead")
+
+	// This is used for testing the install command without a cluster
+	cmd.Flags().StringArrayVar(&args.APIVersions, "api-versions", []string{}, "INTERNAL: Kubernetes api versions used for Capabilities.APIVersions")
+	if err := cmd.Flags().MarkHidden("api-versions"); err != nil {
+		panic(err.Error())
+	}
+
 	cmd.Flags().BoolVar(&args.DumpValues, "dump-values", false, "output all possible values for the configuration. This is similar to `helm show values <chart>")
 	return cmd
 }

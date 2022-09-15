@@ -63,10 +63,12 @@ type InstallControlPlaneArgs struct {
 	ExperimentalGatewayAPI                       bool              `helm:"experimental.gatewayAPI"`
 	ValueFiles                                   []string
 	Values                                       []string
-	DumpValues                                   bool
-	UseNodePort                                  bool
-	IngressUseNodePort                           bool
-	Ebpf_bpffspath                               string
+	// APIVersions is a hidden, internal option
+	APIVersions        []string
+	DumpValues         bool
+	UseNodePort        bool
+	IngressUseNodePort bool
+	Ebpf_bpffspath     string
 }
 
 type ImageEnvSecret struct {

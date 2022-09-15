@@ -1,7 +1,33 @@
 {
  "kind": "SidecarDataplane",
- "total": 6,
+ "total": 7,
  "items": [
+  {
+   "type": "dataplane",
+   "name": "",
+   "service": "",
+   "matchedPolicies": {
+    "MeshTrafficPermission": [
+     {
+      "type": "MeshTrafficPermission",
+      "mesh": "default",
+      "name": "mtp-1",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "targetRef": {
+       "kind": "Mesh"
+      },
+      "from": [
+       {
+        "default": {
+         "action": "ALLOW"
+        }
+       }
+      ]
+     }
+    ]
+   }
+  },
   {
    "type": "inbound",
    "name": "192.168.0.1:80:81",

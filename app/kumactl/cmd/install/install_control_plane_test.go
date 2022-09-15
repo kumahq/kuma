@@ -2,6 +2,7 @@ package install_test
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
@@ -17,7 +19,6 @@ import (
 )
 
 var _ = Describe("kumactl install control-plane", func() {
-
 	var backupBuildInfo kuma_version.BuildInfo
 	BeforeEach(func() {
 		backupBuildInfo = kuma_version.Build
@@ -264,6 +265,21 @@ controlPlane:
 				"--dump-values",
 			},
 			goldenFile: "install-control-plane.dump-values.yaml",
+		}),
+		Entry("should add GatewayClass if CRDs are present and enabled", testCase{
+			extraArgs: []string{
+				"--without-kubernetes-connection",
+				"--api-versions", fmt.Sprintf("%s/%s", gatewayapi.GroupVersion.String(), "GatewayClass"),
+				"--experimental-gatewayapi",
+			},
+			goldenFile: "install-control-plane.gateway-api-present.yaml",
+		}),
+		Entry("should not add GatewayClass if experimental not enabled", testCase{
+			extraArgs: []string{
+				"--without-kubernetes-connection",
+				"--api-versions", fmt.Sprintf("%s/%s", gatewayapi.GroupVersion.String(), "GatewayClass"),
+			},
+			goldenFile: "install-control-plane.gateway-api-present-not-enabled.yaml",
 		}),
 	)
 

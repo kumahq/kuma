@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"hash/fnv"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -33,6 +34,7 @@ func hashNamespacedName(name kube_types.NamespacedName) string {
 // ownedSpec should be set to nil if the object shouldn't exist.
 func ReconcileLabelledObject(
 	ctx context.Context,
+	logger logr.Logger,
 	registry k8s_registry.TypeRegistry,
 	client kube_client.Client,
 	owner kube_types.NamespacedName,
@@ -40,6 +42,7 @@ func ReconcileLabelledObject(
 	ownedType k8s_registry.ResourceType,
 	ownedSpec proto.Message,
 ) error {
+	log := logger.WithValues("type", ownedType, "name", owner.Name, "namespace", owner.Namespace)
 	// First we list which existing objects are owned by this owner.
 	// We expect either 0 or 1 and depending on whether routeSpec is nil
 	// we either create an object or update or delete the existing one.
@@ -68,7 +71,13 @@ func ReconcileLabelledObject(
 
 	if ownedSpec == nil {
 		if existing != nil {
-			if err := client.Delete(ctx, existing); err != nil && !kube_apierrs.IsNotFound(err) {
+			err := client.Delete(ctx, existing)
+			switch {
+			case kube_apierrs.IsNotFound(err):
+				log.V(1).Info("object not found. Nothing to delete")
+			case err == nil:
+				log.Info("object deleted")
+			default:
 				return err
 			}
 		}
@@ -81,11 +90,20 @@ func ReconcileLabelledObject(
 	}
 
 	if existing != nil {
+		existingSpec, err := existing.GetSpec()
+		if err != nil {
+			return err
+		}
+		if proto.Equal(existingSpec, ownedSpec) {
+			log.V(1).Info("object is the same. Nothing to update")
+			return nil
+		}
 		existing.SetSpec(ownedSpec)
 
 		if err := client.Update(ctx, existing); err != nil {
 			return errors.Wrapf(err, "could not update owned %T", ownedType)
 		}
+		log.Info("object updated")
 		return nil
 	}
 
@@ -109,6 +127,7 @@ func ReconcileLabelledObject(
 	if err := client.Create(ctx, owned); err != nil {
 		return errors.Wrapf(err, "could not create owned %T", ownedType)
 	}
+	logger.Info("object created")
 
 	return nil
 }
