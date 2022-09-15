@@ -19,7 +19,7 @@ type Tag struct {
 }
 
 // Subset represents a group of proxies
-type Subset []*Tag
+type Subset []Tag
 
 // IsSubset returns true if 'other' is a subset of the current set.
 // Empty set is a superset for all subsets.
@@ -27,7 +27,7 @@ func (ss Subset) IsSubset(other Subset) bool {
 	if len(ss) == 0 {
 		return true
 	}
-	otherByKeys := map[string][]*Tag{}
+	otherByKeys := map[string][]Tag{}
 	for _, t := range other {
 		otherByKeys[t.Key] = append(otherByKeys[t.Key], t)
 	}
@@ -103,13 +103,12 @@ func BuildRules(list []PolicyItem) Rules {
 	tagSet := map[Tag]bool{}
 	for _, item := range list {
 		for _, t := range asSubset(item.GetTargetRef()) {
-			tagSet[*t] = true
+			tagSet[t] = true
 		}
 	}
-	tags := []*Tag{}
+	tags := []Tag{}
 	for tag := range tagSet {
-		v := tag
-		tags = append(tags, &v)
+		tags = append(tags, tag)
 	}
 
 	sort.Slice(tags, func(i, j int) bool {
@@ -164,7 +163,7 @@ func asSubset(tr *common_api.TargetRef) Subset {
 	case common_api.TargetRef_MeshSubset:
 		ss := Subset{}
 		for k, v := range tr.GetTags() {
-			ss = append(ss, &Tag{Key: k, Value: v})
+			ss = append(ss, Tag{Key: k, Value: v})
 		}
 		return ss
 	case common_api.TargetRef_MeshService:
@@ -172,7 +171,7 @@ func asSubset(tr *common_api.TargetRef) Subset {
 	case common_api.TargetRef_MeshServiceSubset:
 		ss := Subset{{Key: mesh_proto.ServiceTag, Value: tr.GetName()}}
 		for k, v := range tr.GetTags() {
-			ss = append(ss, &Tag{Key: k, Value: v})
+			ss = append(ss, Tag{Key: k, Value: v})
 		}
 		return ss
 	default:
@@ -181,13 +180,13 @@ func asSubset(tr *common_api.TargetRef) Subset {
 }
 
 type SubsetIter struct {
-	current  Subset
+	current  []Tag
 	finished bool
 }
 
-func NewSubsetIter(ss Subset) *SubsetIter {
+func NewSubsetIter(tags []Tag) *SubsetIter {
 	return &SubsetIter{
-		current: ss,
+		current: tags,
 	}
 }
 
@@ -236,7 +235,7 @@ func (c *SubsetIter) simplified() Subset {
 		if _, ok := ssByKey[t.Key]; !ok {
 			keyOrder = append(keyOrder, t.Key)
 		}
-		ssByKey[t.Key] = append(ssByKey[t.Key], &Tag{Key: t.Key, Value: t.Value, Not: t.Not})
+		ssByKey[t.Key] = append(ssByKey[t.Key], Tag{Key: t.Key, Value: t.Value, Not: t.Not})
 	}
 
 	for _, key := range keyOrder {
