@@ -109,9 +109,8 @@ spec:
 ```
 
 with the justification that it's not clear to users
-that when they set the simple `sampling` field we have now,
-whether traces started via `x-client-trace-id` are limited.
-This also enables disabling `x-client-trace-id`.
+whether traces started via `x-client-trace-id` are limited
+when they set the simple `sampling` field we have now.
 
 #### Tags
 
