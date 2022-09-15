@@ -36,10 +36,6 @@ conf:
     - foo.example.com
     rules:
     - matches:
-      - method: POST
-        path:
-          match: PREFIX
-          value: /
       - method: GET
         path:
           match: EXACT
