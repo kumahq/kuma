@@ -9,6 +9,10 @@ Technical Story: https://github.com/kumahq/kuma/issues/4732
 We want to create a [new policy matching compliant](https://github.com/kumahq/kuma/blob/22c157d4adac7f518b1b49939c7e9ea4d2a1876c/docs/madr/decisions/005-policy-matching.md)
 resource for managing traffic tracing.
 
+Tracing in Kuma is implemented with Envoy's [tracing
+support](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing).
+At the moment, Kuma supports Zipkin and Datadog.
+
 ## Decision Drivers
 
 - Replace existing policies with new policy matching compliant resources
@@ -18,20 +22,14 @@ resource for managing traffic tracing.
 
 ## Considered Options
 
-The new resource will be called `Tracing` in the rest of this document.
-
-Tracing in Kuma is implemented with Envoy's [tracing
-support](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing).
-At the moment, Kuma supports Zipkin and Datadog.
-
 ### Naming
 
 Some potential names:
 
-- `Tracing`
-- `Traces`
-- `MeshTrafficTrace`
-- `MeshTrace`
+- ~`Tracing`~
+- ~`Traces`~
+- ~`MeshTrafficTrace`~
+- **Chosen**: `MeshTrace`
 
 ### Backends
 
@@ -39,21 +37,21 @@ Currently, tracing support requires defining _backends_ in the `Mesh` resource.
 A backend defines where traces are sent, the _provider_. For `TrafficTrace`, it also contains the sampling rates settings.
 The `TrafficTrace` resource references these backends and contains no configuration of its own.
 
-The proposed `Tracing` policy follows the decisions about backends as laid out in
+The proposed `MeshTrace` policy follows the decisions about backends as laid out in
 [the MADR for `MeshAccessLog`](docs/madr/decisions/009-tracing-policy.md#backends). This
-means creating a new `TracingBackend` resource and allowing inline backend
+means creating a new `MeshTraceBackend` resource and allowing inline backend
 definitions.
 
 However, we propose moving configuring sampling and tag configuration
-from the backend (the `TrafficTrace` status quo) to the `Tracing` resource.
+from the backend (the `TrafficTrace` status quo) to the `MeshTrace` resource.
 Backends can contain the same settings but they can be set or overriden in
-specific `Tracing` resources.
+specific `MeshTrace` resources.
 
 We continue to support Zipkin and Datadog:
 
 ```
 apiVersion: kuma.io/v1alpha1
-kind: TracingBackend
+kind: MeshTraceBackend
 metadata:
  name: jaeger
 spec:
@@ -63,7 +61,7 @@ spec:
 
 ```
 apiVersion: kuma.io/v1alpha1
-kind: TracingBackend
+kind: MeshTraceBackend
 metadata:
  name: datadog
 spec:
@@ -72,11 +70,15 @@ spec:
     port: 8126
 ```
 
+There are still open discussions about how exactly we can best represent these
+sum types, for example `kind: zipkin` vs `zipkin: ...`, but we chose the union
+type discriminated by field name.
+
 ### `targetRef`
 
 This is a new policy so it's based on `targetRef`. Envoy tracing can be configured
 on both HTTP connection managers and routes.
-This proposal gives `Tracing` a single `spec.targetRef` field
+This proposal gives `MeshTrace` a single `spec.targetRef` field
 that selects what it applies to. It does not use `to` or `from` fields.
 
 It is theoretically possible to suport `to` fields but we omit them from this
@@ -92,7 +94,7 @@ document.
 
 ### Policy-specific configuration
 
-This MADR proposes additional options be configurable on `Tracing` resources
+This MADR proposes additional options be configurable on `MeshTrace` resources
 directly.
 
 #### Sampling
@@ -130,6 +132,9 @@ request headers. Using Kuma leaves environment variables and Envoy metadata
 opaque for users so the use cases for configuring them (at least directly)
 in Kuma are limited.
 
+One future feature might be adding tags from the `Dataplane` object to the
+trace.
+
 Tags can be configured as follows:
 
 ```yaml
@@ -160,11 +165,11 @@ All examples assume Kubernetes.
 
 This configures all `Dataplane` inbounds with `kuma.io/service: backend` to
 trace a maximum of 80% of traffic and adds the custom tag `team` with a value of
-`core` to spans. The backend is specified in a `TracingBackend` object.
+`core` to spans. The backend is specified in a `MeshTraceBackend` object.
 
 ```yaml
 apiVersion: kuma.io/v1alpha1
-kind: Tracing
+kind: MeshTrace
 metadata:
  name: all
  labels:
@@ -175,8 +180,8 @@ spec:
   name: backend
  default:
   backend:
-   ref:
-    kind: TracingBackend
+   reference:
+    kind: MeshTraceBackend
     name: jaeger
   sampling:
    overall: 80
@@ -191,7 +196,7 @@ This specifies the backend directly:
 
 ```yaml
 apiVersion: kuma.io/v1alpha1
-kind: Tracing
+kind: MeshTrace
 metadata:
  name: all
  labels:
@@ -216,7 +221,7 @@ with a value from `x-env` and a default value of `prod`.
 
 ```yaml
 apiVersion: kuma.io/v1alpha1
-kind: Tracing
+kind: MeshTrace
 metadata:
  name: all
  labels:
@@ -228,7 +233,7 @@ spec:
  default:
   backend:
    ref:
-    kind: TracingBackend
+    kind: MeshTraceBackend
     name: jaeger
   sampling:
    overall: 80
