@@ -201,11 +201,11 @@ message {{ .name }} {
   message To {
     // TargetRef is a reference to the resource that represents a group of
     // destinations.
-    kuma.common.v1alpha1.TargetRef targetRef = 1;
+    kuma.common.v1alpha1.TargetRef targetRef = 1 [ (doc.required) = true ];
 
     // Default is a configuration specific to the group of destinations referenced in
     // 'targetRef'
-    Conf default = 2;
+    Conf default = 2 [ (doc.required) = true ];
   }
 
   repeated To to = 2;
@@ -216,11 +216,11 @@ message {{ .name }} {
   message From {
     // TargetRef is a reference to the resource that represents a group of
     // clients.
-    kuma.common.v1alpha1.TargetRef targetRef = 1;
+    kuma.common.v1alpha1.TargetRef targetRef = 1 [ (doc.required) = true ];
 
     // Default is a configuration specific to the group of clients referenced in
     // 'targetRef'
-    Conf default = 2;
+    Conf default = 2 [ (doc.required) = true ];
   }
 
   repeated From from = 3;
@@ -233,6 +233,8 @@ var pluginTemplate = template.Must(template.New("").Option("missingkey=error").P
 	`package {{ .version }}
 
 import (
+	"github.com/kumahq/kuma/pkg/core"
+
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -244,6 +246,7 @@ import (
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
+var log = core.Log.WithName("{{.name}}")
 
 type plugin struct {
 }
@@ -261,7 +264,8 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
-	panic("implement me")
+	log.Info("apply is not implemented")
+	return nil
 }
 `))
 
@@ -278,71 +282,90 @@ import (
 
 func (r *{{.name}}Resource) validate() error {
 	var verr validators.ValidationError
-	{{- if or .generateTargetRef (or .generateTo .generateFrom) }}
 	path := validators.RootedAt("spec")
-	{{- else }}
-	// TODO add validation
-	{{- end}}
 	{{- if .generateTargetRef }}
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.GetTargetRef()))
+	{{- end }}
+	{{- if and .generateTo .generateFrom }}
+	if len(r.Spec.GetTo()) == 0 && len(r.Spec.GetFrom()) == 0 {
+		verr.AddViolationAt(path, "at least one of 'from', 'to' has to be defined")
+	}
+	{{- else if .generateTo }}
+	if len(r.Spec.GetTo()) == 0 {
+		verr.AddErrorAt(path.Field("to"), "needs at least one item")
+	}
+	{{- else if .generateFrom }}
+	if len(r.Spec.GetFrom()) == 0 {
+		verr.AddErrorAt(path.Field("from"), "needs at least one item")
+	}
+	{{- end }}
+	{{- if .generateTo }}
+	verr.AddErrorAt(path, validateTo(r.Spec.GetTo()))
+	{{- end }}
+	{{- if .generateFrom }}
+	verr.AddErrorAt(path, validateFrom(r.Spec.GetFrom()))
+	{{- end }}
+	return verr.OrNil()
+}
 
-	targetRefErr := matcher_validators.ValidateTargetRef(path.Field("targetRef"), r.Spec.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
+{{- if .generateTargetRef }}
+func validateTop(targetRef *common_proto.TargetRef) validators.ValidationError {
+	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
 		SupportedKinds: []common_proto.TargetRef_Kind{
 			// TODO add supported TargetRef kinds for this policy
 		},
 	})
-	verr.AddError("", targetRefErr)
-	{{- end}}
-	
-	{{- if .generateFrom }}
+	return targetRefErr
+}
+{{- end }}
 
-	from := path.Field("from")
-	if len(r.Spec.GetFrom()) == 0 {
-		verr.AddViolationAt(from, "cannot be empty")
-	} else {
-		for idx, fromItem := range r.Spec.GetFrom() {
-			targetRefErr := matcher_validators.ValidateTargetRef(from.Index(idx).Field("targetRef"), fromItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					// TODO add supported TargetRef for 'from' item
-				},
-			})
-			verr.AddError("", targetRefErr)
+{{- if .generateFrom }}
+func validateFrom(from []*{{.name}}_From) validators.ValidationError {
+	var verr validators.ValidationError
+	for idx, fromItem := range from {
+		path := validators.RootedAt("from").Index(idx)
+		 verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(fromItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
+			 SupportedKinds: []common_proto.TargetRef_Kind{
+				 // TODO add supported TargetRef for 'from' item
+			 },
+		 }))
 
-			defaultField := from.Index(idx).Field("default")
-			if fromItem.GetDefault() == nil {
-				verr.AddViolationAt(defaultField, "cannot be nil")
-			} else {
-				// TODO add default conf validation
-				verr.AddViolationAt(defaultField, "")
-			}
-		}
+		 defaultField := path.Field("default")
+		 if fromItem.GetDefault() == nil {
+			 verr.AddViolationAt(defaultField, "must be defined")
+		 } else {
+			 verr.AddErrorAt(defaultField, validateDefault(fromItem.Default))
+		 }
 	}
-	{{- end}}
+	return verr
+}
+{{- end }}
 
-	{{- if .generateTo }}
+{{- if .generateTo }}
+func validateTo(to []*{{.name}}_To) validators.ValidationError {
+	var verr validators.ValidationError
+	for idx, toItem := range to {
+		path := validators.RootedAt("to").Index(idx)
+		 verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(toItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
+			 SupportedKinds: []common_proto.TargetRef_Kind{
+				 // TODO add supported TargetRef for 'to' item
+			 },
+		 }))
 
-	to := path.Field("to")
-	if len(r.Spec.GetTo()) == 0 {
-		verr.AddViolationAt(to, "cannot be empty")
-	} else {
-		for idx, toItem := range r.Spec.GetTo() {
-			targetRefErr := matcher_validators.ValidateTargetRef(from.Index(idx).Field("targetRef"), toItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					// TODO add supported TargetRef for 'to' item
-				},
-			})
-			verr.AddError("", targetRefErr)
-
-			defaultField := to.Index(idx).Field("default")
-			if toItem.GetDefault() == nil {
-				verr.AddViolationAt(defaultField, "cannot be nil")
-			} else {
-				// TODO add default conf validation 
-				verr.AddViolationAt(defaultField, "")
-			}
-		}
+		 defaultField := path.Field("default")
+		 if toItem.GetDefault() == nil {
+			 verr.AddViolationAt(defaultField, "must be defined")
+		 } else {
+			 verr.AddErrorAt(defaultField, validateDefault(toItem.Default))
+		 }
 	}
-	{{- end}}
+	return verr
+}
+{{- end }}
 
-	return verr.OrNil()
+func validateDefault(conf *{{.name}}_Conf) validators.ValidationError {
+	var verr validators.ValidationError
+	// TODO add default conf validation
+	return verr
 }
 `))

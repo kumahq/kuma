@@ -35,11 +35,11 @@ message DoNothingPolicy {
   message To {
     // TargetRef is a reference to the resource that represents a group of
     // destinations.
-    kuma.common.v1alpha1.TargetRef targetRef = 1;
+    kuma.common.v1alpha1.TargetRef targetRef = 1 [ (doc.required) = true ];
 
     // Default is a configuration specific to the group of destinations
     // referenced in 'targetRef'
-    Conf default = 2;
+    Conf default = 2 [ (doc.required) = true ];
   }
 
   repeated To to = 2;
@@ -47,11 +47,11 @@ message DoNothingPolicy {
   message From {
     // TargetRef is a reference to the resource that represents a group of
     // clients.
-    kuma.common.v1alpha1.TargetRef targetRef = 1;
+    kuma.common.v1alpha1.TargetRef targetRef = 1 [ (doc.required) = true ];
 
     // Default is a configuration specific to the group of clients referenced in
     // 'targetRef'
-    Conf default = 2;
+    Conf default = 2 [ (doc.required) = true ];
   }
 
   repeated From from = 3;

@@ -97,7 +97,7 @@ targetRef:
 				expected: `
 violations:
   - field: spec
-    message: at least one of "from", "to" has to be defined`,
+    message: at least one of 'from', 'to' has to be defined`,
 			}),
 			Entry("empty 'path'", testCase{
 				inputYaml: `
@@ -116,7 +116,7 @@ from:
 `,
 				expected: `
 violations:
-  - field: spec.from[0].default.backend[0].file.path
+  - field: spec.from[0].default.backends[0].file.path
     message: file backend requires a valid path`,
 			}),
 			Entry("invalid 'path'", testCase{
@@ -137,7 +137,7 @@ from:
 `,
 				expected: `
 violations:
-  - field: spec.from[0].default.backend[0].file.path
+  - field: spec.from[0].default.backends[0].file.path
     message: file backend requires a valid path`,
 			}),
 			Entry("empty 'key'", testCase{
@@ -159,7 +159,7 @@ from:
 `,
 				expected: `
 violations:
-  - field: spec.from[0].default.backend[0].json[0].key
+  - field: spec.from[0].default.backends[0].file.format.json[0].key
     message: key cannot be empty`,
 			}),
 			Entry("empty 'value'", testCase{
@@ -181,7 +181,7 @@ from:
 `,
 				expected: `
 violations:
-  - field: spec.from[0].default.backend[0].json[0].value
+  - field: spec.from[0].default.backends[0].file.format.json[0].value
     message: value cannot be empty`,
 			}),
 			Entry("invalid 'key'", testCase{
@@ -204,7 +204,7 @@ from:
 `,
 				expected: `
 violations:
-  - field: spec.from[0].default.backend[0].json[0]
+  - field: spec.from[0].default.backends[0].file.format.json[0]
     message: is not a valid JSON object`,
 			}),
 			Entry("both 'plain' and 'json' defined", testCase{
@@ -228,7 +228,7 @@ from:
 `,
 				expected: `
 violations:
-- field: spec.from[0].default.backend[0]
+- field: spec.from[0].default.backends[0].tcp.format
   message: 'format can only have one type defined: plain, json'`,
 			}),
 			Entry("both 'tcp' and 'file' defined", testCase{
@@ -255,7 +255,7 @@ from:
 `,
 				expected: `
 violations:
-- field: spec.from[0].default.backend[0]
+- field: spec.from[0].default.backends[0]
   message: 'backend can have only one type defined: tcp, file'`,
 			}),
 
@@ -351,7 +351,7 @@ from:
 `,
 				expected: `
 violations:
-- field: spec.from[0].default.backend[0].tcp.address
+- field: spec.from[0].default.backends[0].tcp.address
   message: 'tcp backend requires valid address'`,
 			}),
 		)
