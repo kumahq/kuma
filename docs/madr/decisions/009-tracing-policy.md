@@ -72,8 +72,8 @@ spec:
 ```
 
 There are still open discussions about how exactly we can best represent these
-sum types, for example `kind: zipkin` vs `zipkin: ...`, but we chose the union
-type discriminated by field name.
+sum types, for example `kind: zipkin` vs `zipkin: ...`, but we chose the field
+name discriminator option as above.
 
 ### `targetRef`
 
@@ -82,7 +82,7 @@ on both HTTP connection managers and routes.
 This proposal gives `MeshTrace` a single `spec.targetRef` field
 that selects what it applies to. It does not use `to` or `from` fields.
 
-It is theoretically possible to suport `to` fields but we omit them from this
+It is theoretically possible to support `to` fields but we omit them from this
 proposal.
 
 All logging configuration happens under `spec.default` so that users are able to
