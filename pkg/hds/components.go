@@ -17,7 +17,6 @@ import (
 	"github.com/kumahq/kuma/pkg/hds/tracker"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
-	"github.com/kumahq/kuma/pkg/xds/auth/components"
 )
 
 var (
@@ -47,10 +46,7 @@ func Setup(rt core_runtime.Runtime) error {
 }
 
 func DefaultCallbacks(rt core_runtime.Runtime, cache util_xds_v3.SnapshotCache) (hds_callbacks.Callbacks, error) {
-	authenticator, err := components.DefaultAuthenticator(rt)
-	if err != nil {
-		return nil, err
-	}
+	authenticator := rt.XDSAuthenticator()
 
 	metrics, err := hds_metrics.NewMetrics(rt.Metrics())
 	if err != nil {
