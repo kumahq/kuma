@@ -44,8 +44,9 @@ definitions.
 
 However, we propose moving configuring sampling and tag configuration
 from the backend (the `TrafficTrace` status quo) to the `MeshTrace` resource.
-Backends can contain the same settings but they can be set or overriden in
-specific `MeshTrace` resources.
+
+In the future, we may support the same settings as defaults in backends
+and overrides from specific `MeshTrace` resources.
 
 We continue to support Zipkin and Datadog:
 
