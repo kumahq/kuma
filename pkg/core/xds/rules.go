@@ -191,6 +191,7 @@ func NewSubsetIter(ss Subset) *SubsetIter {
 	}
 }
 
+// Next returns the next subset of the partition. When reaches the end Next returns 'nil'
 func (c *SubsetIter) Next() Subset {
 	if c.finished {
 		return nil
