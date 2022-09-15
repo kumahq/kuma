@@ -190,7 +190,11 @@
                     
                     - `replaceFull` (optional)    
                     
-                    - `replacePrefixMatch` (optional)    
+                    - `replacePrefixMatch` (optional)
+                    
+                        Note that rewriting "/prefix" to "/" will do the right thing:
+                        - the path "/prefix" is rewritten to "/"
+                        - the path "/prefix/rest" is rewritten to "/rest"    
             
             - `backends` (optional, repeated)
             

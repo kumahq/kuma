@@ -208,6 +208,9 @@ message MeshGatewayRoute {
       message Rewrite {
         oneof path {
           string replace_full = 1;
+          // Note that rewriting "/prefix" to "/" will do the right thing:
+          // - the path "/prefix" is rewritten to "/"
+          // - the path "/prefix/rest" is rewritten to "/rest"
           string replace_prefix_match = 2;
         }
       }
