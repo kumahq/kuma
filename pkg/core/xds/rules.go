@@ -122,30 +122,28 @@ func BuildRules(list []PolicyItem) Rules {
 	// 2. Iterate over all possible combinations with negations
 	iter := NewSubsetIter(tags)
 	for {
-		ss, next := iter.Next()
-		// 3. For each combination determine a configuration
-		if ss != nil {
-			var conf proto.Message
-			for i := 0; i < len(list); i++ {
-				item := list[i]
-				if asSubset(item.GetTargetRef()).IsSubset(ss) {
-					if conf == nil {
-						conf = proto.Clone(item.GetDefaultAsProto())
-					} else {
-						// todo(lobkovilya): util_proto.Merge appends lists,
-						// create a custom Merge func for list replacements
-						util_proto.Merge(conf, item.GetDefaultAsProto())
-					}
-				}
-			}
-			rules = append(rules, &Rule{
-				Subset: ss,
-				Conf:   conf,
-			})
-		}
-		if !next {
+		ss := iter.Next()
+		if ss == nil {
 			break
 		}
+		// 3. For each combination determine a configuration
+		var conf proto.Message
+		for i := 0; i < len(list); i++ {
+			item := list[i]
+			if asSubset(item.GetTargetRef()).IsSubset(ss) {
+				if conf == nil {
+					conf = proto.Clone(item.GetDefaultAsProto())
+				} else {
+					// todo(lobkovilya): util_proto.Merge appends lists,
+					// create a custom Merge func for list replacements
+					util_proto.Merge(conf, item.GetDefaultAsProto())
+				}
+			}
+		}
+		rules = append(rules, &Rule{
+			Subset: ss,
+			Conf:   conf,
+		})
 	}
 
 	sort.Slice(rules, func(i, j int) bool {
@@ -183,7 +181,8 @@ func asSubset(tr *common_api.TargetRef) Subset {
 }
 
 type SubsetIter struct {
-	current Subset
+	current  Subset
+	finished bool
 }
 
 func NewSubsetIter(ss Subset) *SubsetIter {
@@ -192,20 +191,41 @@ func NewSubsetIter(ss Subset) *SubsetIter {
 	}
 }
 
-func (c *SubsetIter) Next() ([]*Tag, bool) {
+func (c *SubsetIter) Next() Subset {
+	if c.finished {
+		return nil
+	}
+	for {
+		hasNext := c.next()
+		if !hasNext {
+			c.finished = true
+			return c.simplified()
+		}
+		if result := c.simplified(); result != nil {
+			return result
+		}
+	}
+}
+
+func (c *SubsetIter) next() bool {
 	for idx := 0; idx < len(c.current); idx++ {
 		if c.current[idx].Not {
 			c.current[idx].Not = false
-			continue
 		} else {
 			c.current[idx].Not = true
-			return c.simplified(), true
+			return true
 		}
 	}
-
-	return c.simplified(), false
+	return false
 }
 
+// simplified returns copy of c.current and deletes redundant tags, for example:
+//   * env: dev
+//   * env: !prod
+// could be simplified to:
+//   * env: dev
+// If tags are contradicted (same keys have different positive value) then the function
+// returns nil.
 func (c *SubsetIter) simplified() Subset {
 	result := Subset{}
 

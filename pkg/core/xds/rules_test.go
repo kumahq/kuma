@@ -74,11 +74,11 @@ var _ = Describe("Rules", func() {
 					{Key: "k3", Value: "v3"},
 				},
 			}
-			for i, expectedTags := range expected {
-				actual, next := iter.Next()
+			for _, expectedTags := range expected {
+				actual := iter.Next()
 				Expect(actual).To(ConsistOf(expectedTags))
-				Expect(next).To(Equal(i < len(expected)-1))
 			}
+			Expect(iter.Next()).To(BeNil())
 		})
 
 		It("should handle empty tags", func() {
@@ -89,40 +89,55 @@ var _ = Describe("Rules", func() {
 			iter := xds.NewSubsetIter(tags)
 
 			// then
-			empty, next := iter.Next()
-			Expect(next).To(BeFalse())
-			Expect(empty).To(Equal([]*xds.Tag{}))
+			empty := iter.Next()
+			Expect(empty).To(Equal(xds.Subset{}))
 		})
 
 		It("should handle tags with equal keys", func() {
 			// given
 			tags := []*xds.Tag{
-				{Key: "k1", Value: "v1"},
-				{Key: "k1", Value: "v2"},
+				{Key: "zone", Value: "us-east"},
+				{Key: "env", Value: "dev"},
+				{Key: "env", Value: "prod"},
 			}
 
 			// when
 			iter := xds.NewSubsetIter(tags)
 
 			// then
-			expected := [][]*xds.Tag{
+			expected := []xds.Subset{
 				{
-					{Key: "k1", Value: "v2"},
+					{Key: "zone", Value: "us-east"},
+					{Key: "env", Value: "prod"},
 				},
 				{
-					{Key: "k1", Value: "v1"},
+					{Key: "zone", Value: "us-east", Not: true},
+					{Key: "env", Value: "prod"},
 				},
 				{
-					{Key: "k1", Not: true, Value: "v1"},
-					{Key: "k1", Not: true, Value: "v2"},
+					{Key: "zone", Value: "us-east"},
+					{Key: "env", Value: "dev"},
 				},
-				nil,
+				{
+					{Key: "zone", Value: "us-east", Not: true},
+					{Key: "env", Value: "dev"},
+				},
+				{
+					{Key: "zone", Value: "us-east"},
+					{Key: "env", Value: "dev", Not: true},
+					{Key: "env", Value: "prod", Not: true},
+				},
+				{
+					{Key: "zone", Value: "us-east", Not: true},
+					{Key: "env", Value: "dev", Not: true},
+					{Key: "env", Value: "prod", Not: true},
+				},
 			}
-			for i, expectedTags := range expected {
-				actual, next := iter.Next()
+			for _, expectedTags := range expected {
+				actual := iter.Next()
 				Expect(actual).To(Equal(expectedTags))
-				Expect(next).To(Equal(i < len(expected)-1))
 			}
+			Expect(iter.Next()).To(BeNil())
 		})
 	})
 
