@@ -1,4 +1,4 @@
-{{- if .Values.cni.enabled }}
+{{- if .Values.experimental.cni }}
 kind: DaemonSet
 apiVersion: apps/v1
 metadata:

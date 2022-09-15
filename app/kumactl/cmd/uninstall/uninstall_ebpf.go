@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/client/k8s"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
@@ -39,20 +40,27 @@ type JobResource struct {
 }
 
 type ebpfArgs struct {
-	BPFFsPath string
+	BPFFsPath           string
+	Timeout             time.Duration
+	CleanupImageVersion string
+	RemoveOnly          bool
+	Namespace           string
 }
 
 func newUninstallEbpf(root *kumactl_cmd.RootContext) *cobra.Command {
 	args := ebpfArgs{
 		// default value that we inject in pod injector
-		BPFFsPath: root.InstallCpContext.Args.Ebpf_bpffspath,
+		BPFFsPath:           root.InstallCpContext.Args.Ebpf_bpffspath,
+		Timeout:             time.Duration(120 * time.Second),
+		CleanupImageVersion: kuma_version.Build.Version,
+		RemoveOnly:          false,
+		Namespace:           root.InstallCpContext.Args.Namespace,
 	}
 	cmd := &cobra.Command{
 		Use:   "ebpf",
 		Short: "Uninstall BPF files from the nodes",
 		Long:  `Uninstall BPF files from the nodes by removing BPF programs from all the nodes`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-
 			kubeClientConfig, err := k8s.DefaultClientConfig("", "")
 			if err != nil {
 				return errors.Wrap(err, "Could not detect Kubernetes configuration")
@@ -62,29 +70,32 @@ func newUninstallEbpf(root *kumactl_cmd.RootContext) *cobra.Command {
 			if err != nil {
 				return errors.Wrap(err, "Could not create Kubernetes client")
 			}
+			ctx, cancel := context.WithTimeout(cmd.Context(), args.Timeout)
+			defer cancel()
 
-			nodes, err := k8sClient.CoreV1().Nodes().List(cmd.Root().Context(), metav1.ListOptions{})
+			nodes, err := k8sClient.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 			if err != nil {
 				return errors.Wrap(err, "Failed obtaining nodes from Kubernetes cluster")
 			}
 			jobResource := JobResource{
-				jobClient: k8sClient.BatchV1().Jobs("default"),
-				podClient: k8sClient.CoreV1().Pods("default"),
+				jobClient: k8sClient.BatchV1().Jobs(args.Namespace),
+				podClient: k8sClient.CoreV1().Pods(args.Namespace),
+			}
+
+			if args.RemoveOnly {
+				if err := jobResource.Cleanup(ctx); err != nil {
+					return errors.Wrap(err, "Failed cleaning jobs")
+				}
+				return nil
 			}
 
 			for id, node := range nodes.Items {
-				_, err := jobResource.jobClient.Create(cmd.Root().Context(), getJobSpec(id, node.Name, args.BPFFsPath), metav1.CreateOptions{})
+				_, err := jobResource.jobClient.Create(ctx, getJobSpec(id, node.Name, args.BPFFsPath, args.CleanupImageVersion), metav1.CreateOptions{})
 				if err != nil {
 					return errors.Wrap(err, "Failed creating jobs")
 				}
 			}
-
-			defer func() {
-				if err := jobResource.Cleanup(context.Background()); err != nil {
-					errors.Wrap(err, "Failed cleaning jobs")
-				}
-			}()
-			watcher, err := jobResource.podClient.Watch(cmd.Root().Context(), metav1.ListOptions{
+			watcher, err := jobResource.podClient.Watch(ctx, metav1.ListOptions{
 				LabelSelector: KumaBpfLabelSelector,
 				Watch:         true,
 			})
@@ -92,19 +103,36 @@ func newUninstallEbpf(root *kumactl_cmd.RootContext) *cobra.Command {
 				return errors.Wrap(err, "failed to create pod watcher")
 			}
 
-			err = jobResource.Watch(cmd.Root().Context(), watcher)
-			if err != nil {
+			defer func() {
+				if e := jobResource.Cleanup(context.Background()); e != nil {
+					err = e
+				}
+			}()
+
+			errCh := make(chan error, 1)
+			go func() {
+				errCh <- jobResource.Watch(ctx, watcher)
+			}()
+
+			select {
+			case <-ctx.Done():
+				return nil
+			case err := <-errCh:
 				return err
 			}
-
 			return nil
 		},
 	}
+
+	cmd.Flags().StringVar(&args.Namespace, "namespace", args.Namespace, "namespace where job is created")
 	cmd.Flags().StringVar(&args.BPFFsPath, "bpf-fs-path", args.BPFFsPath, "path where bpf programs were installed")
+	cmd.Flags().DurationVar(&args.Timeout, "timeout", args.Timeout, "timeout for whole process of removing left files")
+	cmd.Flags().StringVar(&args.CleanupImageVersion, "cleanup-image-version", args.CleanupImageVersion, "version of cleanup ebpf job image")
+	cmd.Flags().BoolVar(&args.RemoveOnly, "remove-only", args.RemoveOnly, "cleanup jobs and pods only")
 	return cmd
 }
 
-func getJobSpec(id int, nodeName string, mountPath string) *batchv1.Job {
+func getJobSpec(id int, nodeName, mountPath, version string) *batchv1.Job {
 	return &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: fmt.Sprintf("%s-%d", BpfCleanupJobName, id),
@@ -121,8 +149,8 @@ func getJobSpec(id int, nodeName string, mountPath string) *batchv1.Job {
 					Containers: []corev1.Container{
 						{
 							Name:    BpfCleanupJobName,
-							Image:   fmt.Sprintf("%s:%s", BpfCleanupImage, kuma_version.Build.Version),
-							Command: strings.Split("sleep 30", " "),
+							Image:   fmt.Sprintf("%s:%s", BpfCleanupImage, version),
+							Command: strings.Split("sleep 15", " "),
 							SecurityContext: &corev1.SecurityContext{
 								Privileged: new(bool),
 							},
@@ -164,7 +192,7 @@ func getJobSpec(id int, nodeName string, mountPath string) *batchv1.Job {
 }
 
 func (j *JobResource) Watch(ctx context.Context, watcher watch.Interface) (e error) {
-	var eg errgroup.Group
+	eg, _ := errgroup.WithContext(ctx)
 	eg.Go(func() error {
 		var phase corev1.PodPhase
 		for event := range watcher.ResultChan() {
@@ -192,17 +220,13 @@ func (j *JobResource) Watch(ctx context.Context, watcher watch.Interface) (e err
 }
 
 func (jr *JobResource) Cleanup(ctx context.Context) error {
-	var errs []error
 	err := jr.jobClient.DeleteCollection(ctx, DeleteImmediately, KumaBpfCleanupAppSelector)
 	if err != nil {
-		errs = append(errs, fmt.Errorf("failed to delete jobs %s", err))
+		return fmt.Errorf("failed to delete jobs %s", err)
 	}
 	err = jr.podClient.DeleteCollection(ctx, DeleteImmediately, KumaBpfCleanupAppSelector)
 	if err != nil {
-		errs = append(errs, fmt.Errorf("failed to delete pods %s", err))
-	}
-	if len(errs) > 0 {
-		return errs[0]
+		return fmt.Errorf("failed to delete pods %s", err)
 	}
 	return nil
 }
