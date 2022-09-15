@@ -116,6 +116,9 @@ func GenerateEnvoyRouteEntries(host GatewayHost) []route.Entry {
 
 				if rw := exactMatch.Rewrite; rw != nil && rw.ReplacePrefixMatch != nil {
 					path := strings.TrimRight(*rw.ReplacePrefixMatch, "/")
+					if path == "" {
+						path = "/"
+					}
 					exactMatch.Rewrite = &route.Rewrite{
 						ReplaceFullPath: &path,
 					}
