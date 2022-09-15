@@ -92,12 +92,21 @@ func GenerateEnvoyRouteEntries(host GatewayHost) []route.Entry {
 		_, hasExactMatch := exactEntries[exactPath]
 
 		for _, e := range pathEntries {
+			var exactPathRewrite *string
+			if rw := e.Rewrite; rw != nil && rw.ReplacePrefixMatch != nil {
+				rewrite := strings.TrimRight(*rw.ReplacePrefixMatch, "/")
+				exactPathRewrite = &rewrite
+			}
+
 			// Make sure the prefix has a trailing '/' so that it only matches
 			// complete path components.
 			e.Match.PrefixPath = exactPath + "/"
-			if rw := e.Rewrite; rw != nil && rw.ReplacePrefixMatch != nil {
-				prefix := strings.TrimRight(*rw.ReplacePrefixMatch, "/") + "/"
-				rw.ReplacePrefixMatch = &prefix
+
+			// We need to make sure the prefix replacement
+			// _also_ gets a trailing slash
+			if exactPathRewrite != nil {
+				replace := *exactPathRewrite + "/"
+				e.Rewrite.ReplacePrefixMatch = &replace
 			}
 			entries = append(entries, e)
 
@@ -114,8 +123,10 @@ func GenerateEnvoyRouteEntries(host GatewayHost) []route.Entry {
 				exactMatch.Match.PrefixPath = ""
 				exactMatch.Match.ExactPath = exactPath
 
-				if rw := exactMatch.Rewrite; rw != nil && rw.ReplacePrefixMatch != nil {
-					path := strings.TrimRight(*rw.ReplacePrefixMatch, "/")
+				// We need to make sure this prefix replacement
+				// does _not_ get a trailing slash (unless it is "/")
+				if exactPathRewrite != nil {
+					path := *exactPathRewrite
 					if path == "" {
 						path = "/"
 					}
