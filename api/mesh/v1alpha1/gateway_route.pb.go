@@ -1255,6 +1255,9 @@ type MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplaceFull struct {
 }
 
 type MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplacePrefixMatch struct {
+	// Note that rewriting "/prefix" to "/" will do the right thing:
+	// - the path "/prefix" is rewritten to "/"
+	// - the path "/prefix/rest" is rewritten to "/rest"
 	ReplacePrefixMatch string `protobuf:"bytes,2,opt,name=replace_prefix_match,json=replacePrefixMatch,proto3,oneof"`
 }
 
