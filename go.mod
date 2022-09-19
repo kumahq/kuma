@@ -14,7 +14,7 @@ require (
 	github.com/containernetworking/plugins v1.1.1
 	github.com/emicklei/go-restful/v3 v3.9.0
 	github.com/envoyproxy/go-control-plane v0.10.3
-	github.com/envoyproxy/protoc-gen-validate v0.6.7
+	github.com/envoyproxy/protoc-gen-validate v0.6.8
 	github.com/evanphx/json-patch/v5 v5.6.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-logr/logr v1.2.3
@@ -52,9 +52,9 @@ require (
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 	golang.org/x/exp v0.0.0-20220407100705-7b9b53b0aca4
-	golang.org/x/net v0.0.0-20220809184613-07c6da5e1ced
+	golang.org/x/net v0.0.0-20220907135653-1e95f45603a7
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4
-	golang.org/x/sys v0.0.0-20220808155132-1c4a2a72c664
+	golang.org/x/sys v0.0.0-20220908150016-7ac13a9a928d
 	golang.org/x/text v0.3.7
 	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9
 	google.golang.org/genproto v0.0.0-20220808204814-fd01256a5276
@@ -167,7 +167,7 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
-	github.com/spf13/afero v1.8.2 // indirect
+	github.com/spf13/afero v1.9.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
