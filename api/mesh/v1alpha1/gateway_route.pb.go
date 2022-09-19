@@ -794,6 +794,9 @@ type MeshGatewayRoute_HttpRoute_Match_Path struct {
 	// Value is the path to match against. For EXACT and PREFIX match
 	// types, it must be a HTTP URI path. For the REGEX match type,
 	// it must be a RE2 regular expression.
+	// Note that a PREFIX match succeeds only if the prefix is the
+	// the entire path or is followed by a /. I.e. a prefix of the
+	// path in terms of path elements.
 	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 }
 
