@@ -9,57 +9,63 @@ import (
 func (r *DoNothingPolicyResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-
-	targetRefErr := matcher_validators.ValidateTargetRef(path.Field("targetRef"), r.Spec.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.GetTargetRef()))
+	if len(r.Spec.GetTo()) == 0 && len(r.Spec.GetFrom()) == 0 {
+		verr.AddViolationAt(path, "at least one of 'from', 'to' has to be defined")
+	}
+	verr.AddErrorAt(path, validateTo(r.Spec.GetTo()))
+	verr.AddErrorAt(path, validateFrom(r.Spec.GetFrom()))
+	return verr.OrNil()
+}
+func validateTop(targetRef *common_proto.TargetRef) validators.ValidationError {
+	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
 		SupportedKinds: []common_proto.TargetRef_Kind{
 			// TODO add supported TargetRef kinds for this policy
 		},
 	})
-	verr.AddError("", targetRefErr)
+	return targetRefErr
+}
+func validateFrom(from []*DoNothingPolicy_From) validators.ValidationError {
+	var verr validators.ValidationError
+	for idx, fromItem := range from {
+		path := validators.RootedAt("from").Index(idx)
+		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(fromItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
+			SupportedKinds: []common_proto.TargetRef_Kind{
+				// TODO add supported TargetRef for 'from' item
+			},
+		}))
 
-	from := path.Field("from")
-	if len(r.Spec.GetFrom()) == 0 {
-		verr.AddViolationAt(from, "cannot be empty")
-	} else {
-		for idx, fromItem := range r.Spec.GetFrom() {
-			targetRefErr := matcher_validators.ValidateTargetRef(from.Index(idx).Field("targetRef"), fromItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					// TODO add supported TargetRef for 'from' item
-				},
-			})
-			verr.AddError("", targetRefErr)
-
-			defaultField := from.Index(idx).Field("default")
-			if fromItem.GetDefault() == nil {
-				verr.AddViolationAt(defaultField, "cannot be nil")
-			} else {
-				// TODO add default conf validation
-				verr.AddViolationAt(defaultField, "")
-			}
+		defaultField := path.Field("default")
+		if fromItem.GetDefault() == nil {
+			verr.AddViolationAt(defaultField, "must be defined")
+		} else {
+			verr.AddErrorAt(defaultField, validateDefault(fromItem.Default))
 		}
 	}
+	return verr
+}
+func validateTo(to []*DoNothingPolicy_To) validators.ValidationError {
+	var verr validators.ValidationError
+	for idx, toItem := range to {
+		path := validators.RootedAt("to").Index(idx)
+		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(toItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
+			SupportedKinds: []common_proto.TargetRef_Kind{
+				// TODO add supported TargetRef for 'to' item
+			},
+		}))
 
-	to := path.Field("to")
-	if len(r.Spec.GetTo()) == 0 {
-		verr.AddViolationAt(to, "cannot be empty")
-	} else {
-		for idx, toItem := range r.Spec.GetTo() {
-			targetRefErr := matcher_validators.ValidateTargetRef(from.Index(idx).Field("targetRef"), toItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					// TODO add supported TargetRef for 'to' item
-				},
-			})
-			verr.AddError("", targetRefErr)
-
-			defaultField := to.Index(idx).Field("default")
-			if toItem.GetDefault() == nil {
-				verr.AddViolationAt(defaultField, "cannot be nil")
-			} else {
-				// TODO add default conf validation
-				verr.AddViolationAt(defaultField, "")
-			}
+		defaultField := path.Field("default")
+		if toItem.GetDefault() == nil {
+			verr.AddViolationAt(defaultField, "must be defined")
+		} else {
+			verr.AddErrorAt(defaultField, validateDefault(toItem.Default))
 		}
 	}
+	return verr
+}
 
-	return verr.OrNil()
+func validateDefault(conf *DoNothingPolicy_Conf) validators.ValidationError {
+	var verr validators.ValidationError
+	// TODO add default conf validation
+	return verr
 }
