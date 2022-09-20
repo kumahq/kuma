@@ -33,7 +33,7 @@ require (
 	github.com/lib/pq v1.10.7
 	github.com/miekg/dns v1.1.50
 	github.com/natefinch/atomic v1.0.1
-	github.com/onsi/ginkgo/v2 v2.1.6
+	github.com/onsi/ginkgo/v2 v2.2.0
 	github.com/onsi/gomega v1.20.2
 	github.com/operator-framework/operator-lib v0.11.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -64,9 +64,9 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.8.1
 	istio.io/pkg v0.0.0-20201202160453-b7f8c8c88ca3
-	k8s.io/api v0.25.0
+	k8s.io/api v0.25.1
 	k8s.io/apiextensions-apiserver v0.25.0
-	k8s.io/apimachinery v0.25.0
+	k8s.io/apimachinery v0.25.1
 	k8s.io/client-go v0.25.0
 	k8s.io/utils v0.0.0-20220728103510-ee6ede2d64ed
 	sigs.k8s.io/controller-runtime v0.13.0
