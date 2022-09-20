@@ -138,13 +138,15 @@ func BuildRules(list []PolicyItem) Rules {
 				}
 			}
 		}
-		rules = append(rules, &Rule{
-			Subset: ss,
-			Conf:   conf,
-		})
+		if conf != nil {
+			rules = append(rules, &Rule{
+				Subset: ss,
+				Conf:   conf,
+			})
+		}
 	}
 
-	sort.Slice(rules, func(i, j int) bool {
+	sort.SliceStable(rules, func(i, j int) bool {
 		return rules[i].Subset.NumPositive() > rules[j].Subset.NumPositive()
 	})
 

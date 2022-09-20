@@ -26,18 +26,3 @@
   - Key: kuma.io/service
     Not: false
     Value: api
-- Conf: null
-  Origin: null
-  Subset:
-  - Key: kuma.io/service
-    Not: true
-    Value: api
-  - Key: kuma.io/service
-    Not: true
-    Value: backend
-  - Key: kuma.io/service
-    Not: true
-    Value: orders
-  - Key: kuma.io/service
-    Not: true
-    Value: web
