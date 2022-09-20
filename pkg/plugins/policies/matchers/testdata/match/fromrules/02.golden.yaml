@@ -1,0 +1,62 @@
+Rules:
+  :8080:
+  - Conf:
+      action: ALLOW
+    Origin: null
+    Subset:
+    - Key: kuma.io/service
+      Not: false
+      Value: backend
+    - Key: kuma.io/zone
+      Not: false
+      Value: us-east
+    - Key: version
+      Not: false
+      Value: v2
+  - Conf:
+      action: DENY
+    Origin: null
+    Subset:
+    - Key: kuma.io/service
+      Not: true
+      Value: backend
+    - Key: kuma.io/zone
+      Not: false
+      Value: us-east
+    - Key: version
+      Not: false
+      Value: v2
+  - Conf:
+      action: DENY
+    Origin: null
+    Subset:
+    - Key: kuma.io/service
+      Not: false
+      Value: backend
+    - Key: kuma.io/zone
+      Not: false
+      Value: us-east
+    - Key: version
+      Not: true
+      Value: v2
+  - Conf:
+      action: DENY
+    Origin: null
+    Subset:
+    - Key: kuma.io/service
+      Not: true
+      Value: backend
+    - Key: kuma.io/zone
+      Not: false
+      Value: us-east
+    - Key: version
+      Not: true
+      Value: v2
+  :8081:
+  - Conf:
+      action: DENY
+    Origin: null
+    Subset:
+    - Key: kuma.io/zone
+      Not: false
+      Value: us-east

@@ -1,0 +1,32 @@
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-1
+spec:
+  targetRef:
+    kind: MeshServiceSubset
+    name: web
+    tags:
+      version: v1
+  from:
+    - targetRef:
+        kind: MeshService
+        name: backend
+      default:
+        action: ALLOW
+    - targetRef:
+        kind: MeshService
+        name: orders
+      default:
+        action: ALLOW_WITH_SHADOW_DENY
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-2
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: DENY

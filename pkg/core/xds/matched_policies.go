@@ -1,15 +1,64 @@
 package xds
 
 import (
+	"encoding"
 	"fmt"
 	"sort"
 
+	"google.golang.org/protobuf/proto"
+
+	common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 type MatchingPolicyMap map[core_model.ResourceType][]core_model.Resource
+
+type PolicyItem interface {
+	GetTargetRef() *common_proto.TargetRef
+	GetDefaultAsProto() proto.Message
+}
+
+type Policy interface {
+	core_model.ResourceSpec
+	GetTargetRef() *common_proto.TargetRef
+}
+
+type PolicyWithToList interface {
+	Policy
+	GetToList() []PolicyItem
+}
+
+type PolicyWithFromList interface {
+	Policy
+	GetFromList() []PolicyItem
+}
+
+type InboundListener struct {
+	Address string
+	Port    uint32
+}
+
+// We need to implement TextMarshaler because InboundListener is used
+// as a key for maps that are JSON encoded for logging.
+var _ encoding.TextMarshaler = InboundListener{}
+
+func (i InboundListener) MarshalText() ([]byte, error) {
+	return []byte(i.String()), nil
+}
+
+func (i InboundListener) String() string {
+	return fmt.Sprintf("%s:%d", i.Address, i.Port)
+}
+
+type FromRules struct {
+	Rules map[InboundListener]Rules
+}
+
+type ToRules struct {
+	Rules Rules
+}
 
 // TypedMatchingPolicies all policies of this type matching
 type TypedMatchingPolicies struct {
@@ -18,6 +67,8 @@ type TypedMatchingPolicies struct {
 	OutboundPolicies  map[mesh_proto.OutboundInterface][]core_model.Resource
 	ServicePolicies   map[ServiceName][]core_model.Resource
 	DataplanePolicies []core_model.Resource
+	FromRules         FromRules
+	ToRules           ToRules
 }
 
 type MatchedPolicies struct {

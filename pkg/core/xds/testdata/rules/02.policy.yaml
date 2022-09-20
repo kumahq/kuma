@@ -1,0 +1,25 @@
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-1
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          version: v1
+      default:
+        action: ALLOW
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          zone: us-east
+      default:
+        action: DENY
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          env: dev
+      default:
+        action: ALLOW
