@@ -34,6 +34,7 @@ import (
 	leader_memory "github.com/kumahq/kuma/pkg/plugins/leader/memory"
 	resources_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
+	xds_auth_components "github.com/kumahq/kuma/pkg/xds/auth/components"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
@@ -83,6 +84,13 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 
 	metrics, _ := metrics.NewMetrics("Standalone")
 	builder.WithMetrics(metrics)
+
+	authenticator, err := xds_auth_components.DefaultAuthenticator(builder) //nolint:contextcheck
+	if err != nil {
+		return nil, err
+	}
+
+	builder.WithXDSAuthenticator(authenticator)
 
 	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.ResourceManager()))
 	builder.WithCaManager("builtin", builtin.NewBuiltinCaManager(builder.ResourceManager()))
