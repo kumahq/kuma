@@ -30,6 +30,10 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
+	if proxy.Dataplane == nil {
+		// MeshTrafficPermission policy is applied only on DPP
+		return nil
+	}
 	if !ctx.Mesh.Resource.MTLSEnabled() {
 		log.V(1).Info("skip applying MeshTrafficPermission, MTLS is disabled",
 			"proxyName", proxy.Dataplane.GetMeta().GetName(),
