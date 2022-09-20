@@ -3,6 +3,7 @@ package controllers_test
 import (
 	"context"
 
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	kube_types "k8s.io/apimachinery/pkg/types"
@@ -50,6 +51,7 @@ var _ = Describe("MeshDefaultsReconciler", func() {
 
 		reconciler = &controllers.MeshDefaultsReconciler{
 			ResourceManager: customizableManager,
+			Log:             logr.Discard(),
 		}
 	})
 
