@@ -15,10 +15,6 @@ import (
 
 type MatchingPolicyMap map[core_model.ResourceType][]core_model.Resource
 
-type GetTargetRef interface {
-	GetTargetRef() *common_proto.TargetRef
-}
-
 type PolicyItem interface {
 	GetTargetRef() *common_proto.TargetRef
 	GetDefaultAsProto() proto.Message
