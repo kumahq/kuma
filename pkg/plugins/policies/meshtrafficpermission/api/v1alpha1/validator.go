@@ -9,8 +9,15 @@ import (
 func (r *MeshTrafficPermissionResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-
-	targetRefErr := matcher_validators.ValidateTargetRef(path.Field("targetRef"), r.Spec.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.GetTargetRef()))
+	if len(r.Spec.GetFrom()) == 0 {
+		verr.AddViolationAt(path.Field("from"), "needs at least one item")
+	}
+	verr.AddErrorAt(path, validateFrom(r.Spec.GetFrom()))
+	return verr.OrNil()
+}
+func validateTop(targetRef *common_proto.TargetRef) validators.ValidationError {
+	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
 		SupportedKinds: []common_proto.TargetRef_Kind{
 			common_proto.TargetRef_Mesh,
 			common_proto.TargetRef_MeshSubset,
@@ -20,28 +27,32 @@ func (r *MeshTrafficPermissionResource) validate() error {
 			common_proto.TargetRef_MeshHTTPRoute,
 		},
 	})
-	verr.AddError("", targetRefErr)
+	return targetRefErr
+}
+func validateFrom(from []*MeshTrafficPermission_From) validators.ValidationError {
+	var verr validators.ValidationError
+	for idx, fromItem := range from {
+		path := validators.RootedAt("from").Index(idx)
+		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(fromItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
+			SupportedKinds: []common_proto.TargetRef_Kind{
+				common_proto.TargetRef_Mesh,
+				common_proto.TargetRef_MeshSubset,
+				common_proto.TargetRef_MeshService,
+				common_proto.TargetRef_MeshServiceSubset,
+			},
+		}))
 
-	from := path.Field("from")
-	if len(r.Spec.GetFrom()) == 0 {
-		verr.AddViolationAt(from, "cannot be empty")
-	} else {
-		for idx, fromItem := range r.Spec.GetFrom() {
-			targetRefErr := matcher_validators.ValidateTargetRef(from.Index(idx).Field("targetRef"), fromItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					common_proto.TargetRef_Mesh,
-					common_proto.TargetRef_MeshSubset,
-					common_proto.TargetRef_MeshService,
-					common_proto.TargetRef_MeshServiceSubset,
-				},
-			})
-			verr.AddError("", targetRefErr)
-
-			if fromItem.GetDefault() == nil {
-				verr.AddViolationAt(from.Index(idx).Field("default"), "cannot be nil")
-			}
+		defaultField := path.Field("default")
+		if fromItem.GetDefault() == nil {
+			verr.AddViolationAt(defaultField, "must be defined")
+		} else {
+			verr.AddErrorAt(defaultField, validateDefault(fromItem.Default))
 		}
 	}
+	return verr
+}
 
-	return verr.OrNil()
+func validateDefault(conf *MeshTrafficPermission_Conf) validators.ValidationError {
+	var verr validators.ValidationError
+	return verr
 }

@@ -28,7 +28,8 @@ var _ = Describe("TargetRef Validator", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
-				validationErr := matcher_validators.ValidateTargetRef(validators.RootedAt("targetRef"), targetRef, given.opts)
+				validationErr := validators.ValidationError{}
+				validationErr.AddError("targetRef", matcher_validators.ValidateTargetRef(targetRef, given.opts))
 
 				// then
 				Expect(validationErr.OrNil()).To(BeNil())
@@ -181,7 +182,8 @@ name: backend-http-route
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
-				validationErr := matcher_validators.ValidateTargetRef(validators.RootedAt("targetRef"), targetRef, given.opts)
+				validationErr := validators.ValidationError{}
+				validationErr.AddError("targetRef", matcher_validators.ValidateTargetRef(targetRef, given.opts))
 				// and
 				actual, err := yaml.Marshal(validationErr)
 

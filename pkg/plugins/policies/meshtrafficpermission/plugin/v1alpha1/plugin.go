@@ -11,6 +11,7 @@ import (
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
+var log = core.Log.WithName("MeshTrafficPermission")
 
 type plugin struct {
 }
@@ -24,6 +25,6 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
-	core.Log.V(1).Info("MeshTrafficPermission apply is not implemented")
+	log.Info("apply is not implemented")
 	return nil
 }
