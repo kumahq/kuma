@@ -21,7 +21,7 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 	dpPolicies := []core_model.Resource{}
 
 	for _, policy := range policies.GetItems() {
-		spec, ok := policy.GetSpec().(core_xds.ResourceSpecWithTargetRef)
+		spec, ok := policy.GetSpec().(core_xds.Policy)
 		if !ok {
 			return core_xds.TypedMatchingPolicies{}, errors.Errorf("resource type %v doesn't support TargetRef matching", rType)
 		}
@@ -65,7 +65,7 @@ func fromRules(
 	for inbound, policies := range matchedPoliciesByInbound {
 		fromList := []core_xds.PolicyItem{}
 		for _, p := range policies {
-			policyWithFrom, ok := p.GetSpec().(interface{ GetFromList() []core_xds.PolicyItem })
+			policyWithFrom, ok := p.GetSpec().(core_xds.PolicyWithFromList)
 			if !ok {
 				// policy doesn't support 'from' list
 				return nil
@@ -80,7 +80,7 @@ func fromRules(
 func toRules(matchedPolicies []core_model.Resource) core_xds.Rules {
 	toList := []core_xds.PolicyItem{}
 	for _, mp := range matchedPolicies {
-		policyWithTo, ok := mp.GetMeta().(interface{ GetToList() []core_xds.PolicyItem })
+		policyWithTo, ok := mp.GetSpec().(core_xds.PolicyWithToList)
 		if !ok {
 			// policy doesn't support 'to' list
 			return nil
@@ -151,8 +151,8 @@ type ByTargetRef []core_model.Resource
 func (b ByTargetRef) Len() int { return len(b) }
 
 func (b ByTargetRef) Less(i, j int) bool {
-	r1, ok1 := b[i].GetSpec().(core_xds.ResourceSpecWithTargetRef)
-	r2, ok2 := b[j].GetSpec().(core_xds.ResourceSpecWithTargetRef)
+	r1, ok1 := b[i].GetSpec().(core_xds.Policy)
+	r2, ok2 := b[j].GetSpec().(core_xds.Policy)
 	if !(ok1 && ok2) {
 		panic("resource doesn't support TargetRef matching")
 	}

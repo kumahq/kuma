@@ -39,30 +39,6 @@ Rules:
     - Key: version
       Not: true
       Value: v2
-  - Conf: null
-    Origin: null
-    Subset:
-    - Key: kuma.io/service
-      Not: false
-      Value: backend
-    - Key: kuma.io/zone
-      Not: true
-      Value: us-east
-    - Key: version
-      Not: false
-      Value: v2
-  - Conf: null
-    Origin: null
-    Subset:
-    - Key: kuma.io/service
-      Not: true
-      Value: backend
-    - Key: kuma.io/zone
-      Not: true
-      Value: us-east
-    - Key: version
-      Not: false
-      Value: v2
   - Conf:
       action: DENY
     Origin: null
@@ -72,30 +48,6 @@ Rules:
       Value: backend
     - Key: kuma.io/zone
       Not: false
-      Value: us-east
-    - Key: version
-      Not: true
-      Value: v2
-  - Conf: null
-    Origin: null
-    Subset:
-    - Key: kuma.io/service
-      Not: false
-      Value: backend
-    - Key: kuma.io/zone
-      Not: true
-      Value: us-east
-    - Key: version
-      Not: true
-      Value: v2
-  - Conf: null
-    Origin: null
-    Subset:
-    - Key: kuma.io/service
-      Not: true
-      Value: backend
-    - Key: kuma.io/zone
-      Not: true
       Value: us-east
     - Key: version
       Not: true
@@ -107,10 +59,4 @@ Rules:
     Subset:
     - Key: kuma.io/zone
       Not: false
-      Value: us-east
-  - Conf: null
-    Origin: null
-    Subset:
-    - Key: kuma.io/zone
-      Not: true
       Value: us-east

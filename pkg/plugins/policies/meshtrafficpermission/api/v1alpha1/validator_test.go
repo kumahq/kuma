@@ -134,7 +134,7 @@ from: []
 				expected: `
 violations:
   - field: spec.from
-    message: cannot be empty`,
+    message: needs at least one item`,
 			}),
 			Entry("empty 'from' array", testCase{
 				inputYaml: `
@@ -146,7 +146,7 @@ from: []
 				expected: `
 violations:
   - field: spec.from
-    message: cannot be empty`,
+    message: needs at least one item`,
 			}),
 			Entry("not supported kinds in 'from' array", testCase{
 				inputYaml: `
@@ -182,7 +182,7 @@ from:
 				expected: `
 violations:
   - field: spec.from[0].default
-    message: cannot be nil
+    message: must be defined 
 `,
 			}),
 		)

@@ -4,6 +4,7 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
+	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -15,6 +16,7 @@ import (
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
+var log = core.Log.WithName("MeshTrafficPermission")
 
 type plugin struct {
 }
@@ -29,6 +31,9 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
 	if !ctx.Mesh.Resource.MTLSEnabled() {
+		log.V(1).Info("skip applying MeshTrafficPermission, MTLS is disabled",
+			"proxyName", proxy.Dataplane.GetMeta().GetName(),
+			"mesh", ctx.Mesh.Resource.GetMeta().GetName())
 		return nil
 	}
 

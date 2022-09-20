@@ -15,18 +15,24 @@ import (
 
 type MatchingPolicyMap map[core_model.ResourceType][]core_model.Resource
 
-type GetTargetRef interface {
-	GetTargetRef() *common_proto.TargetRef
-}
-
 type PolicyItem interface {
-	GetTargetRef
+	GetTargetRef() *common_proto.TargetRef
 	GetDefaultAsProto() proto.Message
 }
 
-type ResourceSpecWithTargetRef interface {
-	GetTargetRef
+type Policy interface {
 	core_model.ResourceSpec
+	GetTargetRef() *common_proto.TargetRef
+}
+
+type PolicyWithToList interface {
+	Policy
+	GetToList() []PolicyItem
+}
+
+type PolicyWithFromList interface {
+	Policy
+	GetFromList() []PolicyItem
 }
 
 type InboundListener struct {

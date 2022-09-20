@@ -19,7 +19,7 @@ type Tag struct {
 }
 
 // Subset represents a group of proxies
-type Subset []*Tag
+type Subset []Tag
 
 // IsSubset returns true if 'other' is a subset of the current set.
 // Empty set is a superset for all subsets.
@@ -27,7 +27,7 @@ func (ss Subset) IsSubset(other Subset) bool {
 	if len(ss) == 0 {
 		return true
 	}
-	otherByKeys := map[string][]*Tag{}
+	otherByKeys := map[string][]Tag{}
 	for _, t := range other {
 		otherByKeys[t.Key] = append(otherByKeys[t.Key], t)
 	}
@@ -91,9 +91,8 @@ func (rs Rules) Compute(sub Subset) proto.Message {
 }
 
 // BuildRules creates a list of rules with negations sorted by the number of positive tags.
-// If filter out rules with negative tags the order becomes from the most specific to the less
-// specific rules. Filtering out of negative rules could be useful for XDS generators that
-// don't have a way to configure negations.
+// If rules with negative tags are filtered out then the order becomes 'most specific to less specific'.
+// Filtering out of negative rules could be useful for XDS generators that don't have a way to configure negations.
 //
 // See the detailed algorithm description in docs/madr/decisions/007-mesh-traffic-permission.md
 func BuildRules(list []PolicyItem) Rules {
@@ -103,13 +102,12 @@ func BuildRules(list []PolicyItem) Rules {
 	tagSet := map[Tag]bool{}
 	for _, item := range list {
 		for _, t := range asSubset(item.GetTargetRef()) {
-			tagSet[*t] = true
+			tagSet[t] = true
 		}
 	}
-	tags := []*Tag{}
+	tags := []Tag{}
 	for tag := range tagSet {
-		v := tag
-		tags = append(tags, &v)
+		tags = append(tags, tag)
 	}
 
 	sort.Slice(tags, func(i, j int) bool {
@@ -122,33 +120,33 @@ func BuildRules(list []PolicyItem) Rules {
 	// 2. Iterate over all possible combinations with negations
 	iter := NewSubsetIter(tags)
 	for {
-		ss, next := iter.Next()
+		ss := iter.Next()
+		if ss == nil {
+			break
+		}
 		// 3. For each combination determine a configuration
-		if ss != nil {
-			var conf proto.Message
-			for i := 0; i < len(list); i++ {
-				item := list[i]
-				if asSubset(item.GetTargetRef()).IsSubset(ss) {
-					if conf == nil {
-						conf = proto.Clone(item.GetDefaultAsProto())
-					} else {
-						// todo(lobkovilya): util_proto.Merge appends lists,
-						// create a custom Merge func for list replacements
-						util_proto.Merge(conf, item.GetDefaultAsProto())
-					}
+		var conf proto.Message
+		for i := 0; i < len(list); i++ {
+			item := list[i]
+			if asSubset(item.GetTargetRef()).IsSubset(ss) {
+				if conf == nil {
+					conf = proto.Clone(item.GetDefaultAsProto())
+				} else {
+					// todo(lobkovilya): util_proto.Merge appends lists,
+					// create a custom Merge func for list replacements
+					util_proto.Merge(conf, item.GetDefaultAsProto())
 				}
 			}
+		}
+		if conf != nil {
 			rules = append(rules, &Rule{
 				Subset: ss,
 				Conf:   conf,
 			})
 		}
-		if !next {
-			break
-		}
 	}
 
-	sort.Slice(rules, func(i, j int) bool {
+	sort.SliceStable(rules, func(i, j int) bool {
 		return rules[i].Subset.NumPositive() > rules[j].Subset.NumPositive()
 	})
 
@@ -166,7 +164,7 @@ func asSubset(tr *common_api.TargetRef) Subset {
 	case common_api.TargetRef_MeshSubset:
 		ss := Subset{}
 		for k, v := range tr.GetTags() {
-			ss = append(ss, &Tag{Key: k, Value: v})
+			ss = append(ss, Tag{Key: k, Value: v})
 		}
 		return ss
 	case common_api.TargetRef_MeshService:
@@ -174,7 +172,7 @@ func asSubset(tr *common_api.TargetRef) Subset {
 	case common_api.TargetRef_MeshServiceSubset:
 		ss := Subset{{Key: mesh_proto.ServiceTag, Value: tr.GetName()}}
 		for k, v := range tr.GetTags() {
-			ss = append(ss, &Tag{Key: k, Value: v})
+			ss = append(ss, Tag{Key: k, Value: v})
 		}
 		return ss
 	default:
@@ -183,29 +181,52 @@ func asSubset(tr *common_api.TargetRef) Subset {
 }
 
 type SubsetIter struct {
-	current Subset
+	current  []Tag
+	finished bool
 }
 
-func NewSubsetIter(ss Subset) *SubsetIter {
+func NewSubsetIter(tags []Tag) *SubsetIter {
 	return &SubsetIter{
-		current: ss,
+		current: tags,
 	}
 }
 
-func (c *SubsetIter) Next() ([]*Tag, bool) {
+// Next returns the next subset of the partition. When reaches the end Next returns 'nil'
+func (c *SubsetIter) Next() Subset {
+	if c.finished {
+		return nil
+	}
+	for {
+		hasNext := c.next()
+		if !hasNext {
+			c.finished = true
+			return c.simplified()
+		}
+		if result := c.simplified(); result != nil {
+			return result
+		}
+	}
+}
+
+func (c *SubsetIter) next() bool {
 	for idx := 0; idx < len(c.current); idx++ {
 		if c.current[idx].Not {
 			c.current[idx].Not = false
-			continue
 		} else {
 			c.current[idx].Not = true
-			return c.simplified(), true
+			return true
 		}
 	}
-
-	return c.simplified(), false
+	return false
 }
 
+// simplified returns copy of c.current and deletes redundant tags, for example:
+//   * env: dev
+//   * env: !prod
+// could be simplified to:
+//   * env: dev
+// If tags are contradicted (same keys have different positive value) then the function
+// returns nil.
 func (c *SubsetIter) simplified() Subset {
 	result := Subset{}
 
@@ -215,7 +236,7 @@ func (c *SubsetIter) simplified() Subset {
 		if _, ok := ssByKey[t.Key]; !ok {
 			keyOrder = append(keyOrder, t.Key)
 		}
-		ssByKey[t.Key] = append(ssByKey[t.Key], &Tag{Key: t.Key, Value: t.Value, Not: t.Not})
+		ssByKey[t.Key] = append(ssByKey[t.Key], Tag{Key: t.Key, Value: t.Value, Not: t.Not})
 	}
 
 	for _, key := range keyOrder {

@@ -47,7 +47,7 @@ var _ = Describe("RBACConfigurer", func() {
 			mesh:  "allow_all_mesh",
 			rules: []*core_xds.Rule{
 				{
-					Subset: []*core_xds.Tag{},
+					Subset: []core_xds.Tag{},
 					Conf: &v1alpha1.MeshTrafficPermission_Conf{
 						Action: "ALLOW",
 					},
@@ -72,7 +72,7 @@ filters:
 			mesh:  "deny_all_mesh",
 			rules: []*core_xds.Rule{
 				{
-					Subset: []*core_xds.Tag{},
+					Subset: []core_xds.Tag{},
 					Conf: &v1alpha1.MeshTrafficPermission_Conf{
 						Action: "DENY",
 					},
@@ -91,7 +91,7 @@ filters:
 			mesh:  "allow_2_service_mesh",
 			rules: []*core_xds.Rule{
 				{
-					Subset: []*core_xds.Tag{
+					Subset: []core_xds.Tag{
 						{Key: "kuma.io/service", Value: "backend"},
 						{Key: "version", Value: "v1"},
 					},
@@ -100,7 +100,7 @@ filters:
 					},
 				},
 				{
-					Subset: []*core_xds.Tag{
+					Subset: []core_xds.Tag{
 						{Key: "kuma.io/service", Value: "web"},
 						{Key: "kuma.io/zone", Value: "us-east"},
 					},
@@ -143,7 +143,7 @@ filters:
 			mesh:  "allow_negation_mesh",
 			rules: []*core_xds.Rule{
 				{
-					Subset: []*core_xds.Tag{
+					Subset: []core_xds.Tag{
 						{Key: "kuma.io/service", Value: "backend"},
 						{Key: "version", Value: "v2", Not: true},
 					},
@@ -179,7 +179,7 @@ filters:
 			mesh:  "allow_negation_mesh",
 			rules: []*core_xds.Rule{
 				{
-					Subset: []*core_xds.Tag{
+					Subset: []core_xds.Tag{
 						{Key: "kuma.io/service", Value: "backend", Not: true},
 						{Key: "version", Value: "v2"},
 					},
@@ -215,7 +215,7 @@ filters:
 			mesh:  "shadow_allow_mesh",
 			rules: []*core_xds.Rule{
 				{
-					Subset: []*core_xds.Tag{
+					Subset: []core_xds.Tag{
 						{Key: "kuma.io/service", Value: "backend"},
 					},
 					Conf: &v1alpha1.MeshTrafficPermission_Conf{
