@@ -91,9 +91,8 @@ func (rs Rules) Compute(sub Subset) proto.Message {
 }
 
 // BuildRules creates a list of rules with negations sorted by the number of positive tags.
-// If filter out rules with negative tags the order becomes from the most specific to the less
-// specific rules. Filtering out of negative rules could be useful for XDS generators that
-// don't have a way to configure negations.
+// If rules with negative tags are filtered out then the order becomes 'most specific to less specific'.
+// Filtering out of negative rules could be useful for XDS generators that don't have a way to configure negations.
 //
 // See the detailed algorithm description in docs/madr/decisions/007-mesh-traffic-permission.md
 func BuildRules(list []PolicyItem) Rules {
