@@ -21,10 +21,10 @@ if [[ ${currentBranch} == release-* ]]; then
     lastGitTag=$(git tag -l | grep -E "^v?${releasePrefix}\.[0-9]+$" | sed 's/^v//'| sort -V | tail -1)
     if [[ ${lastGitTag} ]]; then
       IFS=. read -r major minor patch <<< "${lastGitTag}"
-      echo "${major}.${minor}.$((++patch))-preview.${shortHash}"
+      echo "${major}.${minor}.$((++patch))-preview.v${shortHash}"
     else
-      echo "${releasePrefix}.0-preview.${shortHash}"
+      echo "${releasePrefix}.0-preview.v${shortHash}"
     fi
 else
-  echo "0.0.0-preview.${shortHash}"
+  echo "0.0.0-preview.v${shortHash}"
 fi

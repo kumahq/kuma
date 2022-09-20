@@ -25,6 +25,14 @@
    "isExperimental": false
   },
   {
+   "name": "MeshAccessLog",
+   "readOnly": false,
+   "path": "meshaccesslogs",
+   "singularDisplayName": "Mesh Access Log",
+   "pluralDisplayName": "Mesh Access Logs",
+   "isExperimental": false
+  },
+  {
    "name": "MeshGateway",
    "readOnly": false,
    "path": "meshgateways",

@@ -8,6 +8,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	ca_issuer "github.com/kumahq/kuma/pkg/core/ca/issuer"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -19,6 +20,8 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/ca/builtin/config"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
+
+var log = core.Log.WithName("ca").WithName("builtin")
 
 type builtinCaManager struct {
 	secretManager manager.ResourceManager
@@ -35,7 +38,8 @@ var _ core_ca.Manager = &builtinCaManager{}
 func (b *builtinCaManager) EnsureBackends(ctx context.Context, mesh string, backends []*mesh_proto.CertificateAuthorityBackend) error {
 	for _, backend := range backends {
 		_, err := b.getCa(ctx, mesh, backend.Name)
-		if err == nil { // CA is there, nothing to ensure
+		if err == nil {
+			log.V(1).Info("CA already exist. Nothing to create", "mesh", mesh)
 			continue
 		}
 
@@ -46,6 +50,7 @@ func (b *builtinCaManager) EnsureBackends(ctx context.Context, mesh string, back
 		if err := b.create(ctx, mesh, backend); err != nil {
 			return errors.Wrapf(err, "failed to create CA for mesh %q and backend %q", mesh, backend.Name)
 		}
+		log.Info("CA created", "mesh", mesh)
 	}
 	return nil
 }

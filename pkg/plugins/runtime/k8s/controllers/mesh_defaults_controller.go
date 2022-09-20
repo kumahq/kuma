@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
@@ -24,6 +25,7 @@ import (
 // MeshDefaultsReconciler creates default resources for created Mesh
 type MeshDefaultsReconciler struct {
 	ResourceManager manager.ResourceManager
+	Log             logr.Logger
 }
 
 func (r *MeshDefaultsReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -42,6 +44,7 @@ func (r *MeshDefaultsReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 		return kube_ctrl.Result{}, nil
 	}
 
+	r.Log.Info("ensuring that default mesh resources exist", "mesh", req.Name)
 	if err := defaults_mesh.EnsureDefaultMeshResources(ctx, r.ResourceManager, req.Name); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "could not create default mesh resources")
 	}
@@ -50,6 +53,7 @@ func (r *MeshDefaultsReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 		mesh.GetMeta().(*k8s.KubernetesMetaAdapter).Annotations = map[string]string{}
 	}
 	mesh.GetMeta().(*k8s.KubernetesMetaAdapter).GetAnnotations()[common_k8s.K8sMeshDefaultsGenerated] = "true"
+	r.Log.Info("marking mesh that default resources were generated", "mesh", req.Name)
 	if err := r.ResourceManager.Update(ctx, mesh, store.ModifiedAt(core.Now())); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "could not update default mesh resources")
 	}

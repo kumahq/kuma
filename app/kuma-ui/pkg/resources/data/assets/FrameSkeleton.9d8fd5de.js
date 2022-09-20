@@ -1,0 +1,1 @@
+import{_ as o,o as t,f as n,u as s}from"./index.6180ff6f.js";const a={name:"FrameSkeleton"},_={class:"component-frame"};function c(e,r,d,l,p,m){return t(),n("div",_,[s(e.$slots,"default",{},void 0,!0)])}const u=o(a,[["render",c],["__scopeId","data-v-4bc0522a"]]);export{u as F};
