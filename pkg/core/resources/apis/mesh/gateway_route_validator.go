@@ -147,6 +147,16 @@ func validateMeshGatewayRouteHTTPMatch(
 			if p.GetValue() == "" {
 				err.AddViolationAt(path.Field("value"), "cannot be empty")
 			}
+		case mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_PREFIX:
+			if p.GetValue() == "/" {
+				break
+			}
+			if strings.HasSuffix(p.GetValue(), "/") {
+				err.AddViolationAt(path.Field("value"), "does not need a trailing slash because only a `/`-separated prefix or an entire path is matched")
+			}
+			if !strings.HasPrefix(p.GetValue(), "/") {
+				err.AddViolationAt(path.Field("value"), "must be an absolute path")
+			}
 		default:
 			if !strings.HasPrefix(p.GetValue(), "/") {
 				err.AddViolationAt(path.Field("value"), "must be an absolute path")

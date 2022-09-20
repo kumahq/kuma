@@ -63,7 +63,10 @@
                     
                         Value is the path to match against. For EXACT and PREFIX match
                         types, it must be a HTTP URI path. For the REGEX match type,
-                        it must be a RE2 regular expression.    
+                        it must be a RE2 regular expression.
+                        Note that a PREFIX match succeeds only if the prefix is the
+                        the entire path or is followed by a /. I.e. a prefix of the
+                        path in terms of path elements.    
                 
                 - `method` (optional, enum)
                 
@@ -190,7 +193,11 @@
                     
                     - `replaceFull` (optional)    
                     
-                    - `replacePrefixMatch` (optional)    
+                    - `replacePrefixMatch` (optional)
+                    
+                        Note that rewriting "/prefix" to "/" will do the right thing:
+                        - the path "/prefix" is rewritten to "/"
+                        - the path "/prefix/rest" is rewritten to "/rest"    
             
             - `backends` (optional, repeated)
             
