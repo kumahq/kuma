@@ -231,7 +231,7 @@ filters:
       rules: {}
       shadowRules:
           policies:
-              ShadowMeshTrafficPermission:
+              MeshTrafficPermission:
                   permissions:
                       - any: true
                   principals:

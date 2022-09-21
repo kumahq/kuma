@@ -43,9 +43,13 @@ func (c *RBACConfigurer) Configure(filterChain *envoy_listener.FilterChain) erro
 }
 
 func (c *RBACConfigurer) createRBACFilter() (*envoy_listener.Filter, error) {
-	policies := make(map[string]*rbac_config.Policy)
+	// 'rules' always RBAC with 'action: ALLOW' regardless the number of principals
+	rules := &rbac_config.RBAC{
+		Action:   rbac_config.RBAC_ALLOW,
+		Policies: map[string]*rbac_config.Policy{},
+	}
 	if principals := c.createPrincipals(false); len(principals) != 0 {
-		policies["MeshTrafficPermission"] = &rbac_config.Policy{
+		rules.Policies["MeshTrafficPermission"] = &rbac_config.Policy{
 			Permissions: []*rbac_config.Permission{
 				{
 					Rule: &rbac_config.Permission_Any{
@@ -57,12 +61,13 @@ func (c *RBACConfigurer) createRBACFilter() (*envoy_listener.Filter, error) {
 		}
 	}
 
+	// 'shadowRules' could be nil if there are no shadow principals
 	var shadowRules *rbac_config.RBAC
 	if shadowPrincipals := c.createPrincipals(true); len(shadowPrincipals) != 0 {
 		shadowRules = &rbac_config.RBAC{
 			Action: rbac_config.RBAC_ALLOW,
 			Policies: map[string]*rbac_config.Policy{
-				"ShadowMeshTrafficPermission": {
+				"MeshTrafficPermission": {
 					Permissions: []*rbac_config.Permission{
 						{
 							Rule: &rbac_config.Permission_Any{
@@ -78,11 +83,8 @@ func (c *RBACConfigurer) createRBACFilter() (*envoy_listener.Filter, error) {
 
 	rbacMarshalled, err := util_proto.MarshalAnyDeterministic(&rbac.RBAC{
 		// we include dot to change "inbound:127.0.0.1:21011rbac.allowed" metric to "inbound:127.0.0.1:21011.rbac.allowed"
-		StatPrefix: fmt.Sprintf("%s.", util_xds.SanitizeMetric(c.StatsName)),
-		Rules: &rbac_config.RBAC{
-			Action:   rbac_config.RBAC_ALLOW,
-			Policies: policies,
-		},
+		StatPrefix:  fmt.Sprintf("%s.", util_xds.SanitizeMetric(c.StatsName)),
+		Rules:       rules,
 		ShadowRules: shadowRules,
 	})
 	if err != nil {
@@ -105,7 +107,7 @@ func (c *RBACConfigurer) createPrincipals(shadow bool) []*rbac_config.Principal 
 			continue
 		}
 		action := rule.Conf.(*policies_api.MeshTrafficPermission_Conf).GetActionEnum()
-		if c.shouldGenerateRuleForAction(action, shadow) {
+		if shouldGenerateRuleForAction(action, shadow) {
 			allowSubset = append(allowSubset, rule.Subset)
 		}
 	}
@@ -118,7 +120,7 @@ func (c *RBACConfigurer) createPrincipals(shadow bool) []*rbac_config.Principal 
 	return principals
 }
 
-func (c *RBACConfigurer) shouldGenerateRuleForAction(
+func shouldGenerateRuleForAction(
 	action policies_api.MeshTrafficPermission_Conf_Action,
 	shadow bool,
 ) bool {
