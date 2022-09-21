@@ -22,6 +22,8 @@ COPY /tools/releases/templates/NOTICE-kumactl /kuma/NOTICE
 
 COPY --from=ebpf /mb_* /kuma/ebpf/
 
+RUN update-alternatives --set iptables /usr/sbin/iptables-legacy
+
 RUN adduser --system --disabled-password --group kumactl --uid 5678
 
 ENTRYPOINT ["/usr/bin/kumactl", "install", "transparent-proxy"]
