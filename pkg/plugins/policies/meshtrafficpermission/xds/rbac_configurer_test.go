@@ -1,4 +1,4 @@
-package v3_test
+package xds_test
 
 import (
 	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -7,7 +7,7 @@ import (
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/xds/v3"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -25,7 +25,7 @@ var _ = Describe("RBACConfigurer", func() {
 	DescribeTable("should generate proper envoy config",
 		func(given testCase) {
 			// given
-			configurer := &v3.RBACConfigurer{
+			configurer := &xds.RBACConfigurer{
 				Rules:     given.rules,
 				Mesh:      given.mesh,
 				StatsName: given.stats,

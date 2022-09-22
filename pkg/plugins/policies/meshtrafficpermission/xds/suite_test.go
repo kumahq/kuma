@@ -1,4 +1,4 @@
-package v3_test
+package xds_test
 
 import (
 	"testing"

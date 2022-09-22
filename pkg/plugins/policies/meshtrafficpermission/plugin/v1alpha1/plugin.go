@@ -10,7 +10,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/matchers"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	v3 "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/xds/v3"
+	v3 "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
