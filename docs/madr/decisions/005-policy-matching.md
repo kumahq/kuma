@@ -620,18 +620,19 @@ that are reasonable for that particular mesh:
 type: UpstreamTimeout
 mesh: mesh-1
 name: 00-base-timeouts
-targetRef:
-  kind: Mesh
-  name: mesh-1
-to:
-  - targetRef:
-      kind: Mesh
-      name: mesh-1
-    default:
-      connectTimeout: 10s
-      http:
-        requestTimeout: 5s
-        streamIdleTimeout: 1h
+spec:
+  targetRef:
+    kind: Mesh
+    name: mesh-1
+  to:
+    - targetRef:
+        kind: Mesh
+        name: mesh-1
+      default:
+        connectTimeout: 10s
+        http:
+          requestTimeout: 5s
+          streamIdleTimeout: 1h
 ```
 
 Service owners would like to propagate recommendations
@@ -641,17 +642,18 @@ how other services should interact with their service:
 type: UpstreamTimeout
 mesh: mesh-1
 name: 01-consume-backend-timeouts
-targetRef:
-  kind: Mesh
-  name: mesh-1
-to: 
-  - targetRef:
-      kind: MeshService
-      name: backend
-    default:
-      connectTimeout: 20s
-      http:
-        idleTimeout: 0s
+spec:
+  targetRef:
+    kind: Mesh
+    name: mesh-1
+  to: 
+    - targetRef:
+        kind: MeshService
+        name: backend
+      default:
+        connectTimeout: 20s
+        http:
+          idleTimeout: 0s
 ```
 
 Service owners would like to set timeouts
@@ -661,21 +663,22 @@ for the outgoing traffic of their service:
 type: UpstreamTimeout
 mesh: mesh-1
 name: web-timeouts
-targetRef:
-  kind: MeshService
-  name: web
-to:
-  - targetRef:
-      kind: Mesh
-      name: mesh-1
-    default:
-      connectTimeout: 5s
-  - targetRef:
-      kind: MeshService
-      name: backend
-    default:
-      http:
-        requestTimeout: 15s
+spec:
+  targetRef:
+    kind: MeshService
+    name: web
+  to:
+    - targetRef:
+        kind: Mesh
+        name: mesh-1
+      default:
+        connectTimeout: 5s
+    - targetRef:
+        kind: MeshService
+        name: backend
+      default:
+        http:
+          requestTimeout: 15s
 ```
 
 Now we want to figure
@@ -823,25 +826,26 @@ to all workloads in the mesh to scrape data:
 type: MeshTrafficPermission
 mesh: mesh-1
 name: allow-only-infra
-targetRef:
-  kind: Mesh
-  name: mesh-1
-from:
-  - targetRef:
-      kind: Mesh
-      name: mesh-1
-    default:
-      action: DENY
-  - targetRef:
-      kind: MeshService
-      name: infra-monitoring
-    default:
-      action: ALLOW
-  - targetRef:
-      kind: MeshService
-      name: infra-logger
-    default:
-      action: ALLOW
+spec:
+  targetRef:
+    kind: Mesh
+    name: mesh-1
+  from:
+    - targetRef:
+        kind: Mesh
+        name: mesh-1
+      default:
+        action: DENY
+    - targetRef:
+        kind: MeshService
+        name: infra-monitoring
+      default:
+        action: ALLOW
+    - targetRef:
+        kind: MeshService
+        name: infra-logger
+      default:
+        action: ALLOW
 ```
 
 Service owner of "backend" changes behaviour to allow-by-default
@@ -851,22 +855,23 @@ and denies requests from old versions of "web".
 type: MeshTrafficPermission
 mesh: mesh-1
 name: backend-permissions
-targetRef:
-  kind: MeshService
-  name: backend
-from:
-  - targetRef:
-      kind: Mesh
-      name: mesh-1
-    default:
-      action: ALLOW
-  - targetRef:
-      kind: MeshServiceSubset
-      name: web
-      tags:
-        version: v1
-    default:
-      action: DENY
+spec:
+  targetRef:
+    kind: MeshService
+    name: backend
+  from:
+    - targetRef:
+        kind: Mesh
+        name: mesh-1
+      default:
+        action: ALLOW
+    - targetRef:
+        kind: MeshServiceSubset
+        name: web
+        tags:
+          version: v1
+      default:
+        action: DENY
 ```
 
 Now we want to figure
@@ -992,23 +997,24 @@ Traffic log is a policy that contains both "to" and "from" arrays:
 type: TrafficLog
 mesh: mesh-1
 name: tl-1
-targetRef:
-  kind: Mesh
-  name: mesh-1
-to:
-  - targetRef:
-      kind: MeshService
-      name: web
-    default:
-      backends:
-        - name: logstash
-from:
-  - targetRef:
-      kind: Mesh
-      name: mesh-1
-    default:
-      backends:
-        - name: file
+spec:
+  targetRef:
+    kind: Mesh
+    name: mesh-1
+  to:
+    - targetRef:
+        kind: MeshService
+        name: web
+      default:
+        backends:
+          - name: logstash
+  from:
+    - targetRef:
+        kind: Mesh
+        name: mesh-1
+      default:
+        backends:
+          - name: file
 ```
 
 This policy specifies the following behaviour:
