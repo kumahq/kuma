@@ -173,6 +173,62 @@ var _ = Describe("MeshAccessLog", func() {
             name: outbound:127.0.0.1:27777
             trafficDirection: OUTBOUND`,
 			}}),
+		Entry("basic outbound tcp", testCase{
+			resources: []core_xds.Resource{{
+				Name:   "outbound",
+				Origin: generator.OriginOutbound,
+				Resource: NewListenerBuilder(envoy_common.APIV3).
+					Configure(OutboundListener("outbound:127.0.0.1:27777", "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP)).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+						Configure(TcpProxy(
+							"127.0.0.1:27777",
+							envoy_common.NewCluster(
+								envoy_common.WithService("backend"),
+								envoy_common.WithWeight(100),
+							),
+						)),
+					)).MustBuild(),
+			}},
+			toRules: core_xds.ToRules{
+				Rules: []*core_xds.Rule{
+					{
+						Subset: []core_xds.Tag{},
+						Conf: &api.MeshAccessLog_Conf{
+							Backends: []*api.MeshAccessLog_Backend{{
+								File: &api.MeshAccessLog_FileBackend{
+									Format: &api.MeshAccessLog_Format{
+										Plain: "",
+									},
+									Path: "/tmp/log",
+								},
+							}},
+						},
+					},
+				}},
+			expectedListeners: []string{`
+            address:
+              socketAddress:
+                address: 127.0.0.1
+                portValue: 27777
+            filterChains:
+                - filters:
+                    - name: envoy.filters.network.tcp_proxy
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+                        accessLog:
+                            - name: envoy.access_loggers.file
+                              typedConfig:
+                                '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
+                                logFormat:
+                                    textFormatSource:
+                                        inlineString: |
+                                            [%START_TIME%] %RESPONSE_FLAGS% default (backend)->%UPSTREAM_HOST%(other-service) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
+                                path: /tmp/log
+                        cluster: backend
+                        statPrefix: "127_0_0_1_27777"
+            name: outbound:127.0.0.1:27777
+            trafficDirection: OUTBOUND`,
+			}}),
 		Entry("basic outbound route without match", testCase{
 			resources: []core_xds.Resource{{
 				Name:   "outbound",
