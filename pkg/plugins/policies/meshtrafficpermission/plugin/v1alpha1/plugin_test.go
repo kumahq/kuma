@@ -96,7 +96,7 @@ var _ = Describe("Apply", func() {
 					policies_api.MeshTrafficPermissionType: {
 						FromRules: core_xds.FromRules{
 							Rules: map[core_xds.InboundListener]core_xds.Rules{
-								core_xds.InboundListener{
+								{
 									Address: "192.168.0.1", Port: 8080,
 								}: {
 									{

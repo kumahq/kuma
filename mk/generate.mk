@@ -45,7 +45,7 @@ cleanup/crds:
 
 # deletes all files in policy directory except *.proto and validator.go
 cleanup/policy/%:
-	$(shell find $(POLICIES_DIR)/$* \( -name '*.pb.go' -o -name '*.yaml' -o -name 'zz_generated.*'  \) -type f -delete)
+	$(shell find $(POLICIES_DIR)/$* \( -name '*.pb.go' -o -name '*.yaml' -o -name 'zz_generated.*'  \) -not -path '*/testdata/*' -type f -delete)
 	@rm -fr $(POLICIES_DIR)/$*/k8s
 
 generate/policy/%: generate/schema/%
