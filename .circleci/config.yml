@@ -187,10 +187,19 @@ jobs:
     executor:
       name: vm-<< parameters.arch >>
     steps:
+    - checkout
+    - run:
+        # Label based skip-test runs
+        name: "Check if skip"
+        command: |
+          if [[ $(./tools/ci/has_label.sh ci/skip-test) == "true" ]]; then
+            echo "Not running tests as the PR has label: ci/skip-test"
+            circleci-agent step halt
+            exit 0
+          fi
     - install_build_tools:
         go_arch: << parameters.arch >>
         go_os: linux
-    - checkout
     - restore_cache:
         keys:
         # prefer the exact match
@@ -265,6 +274,13 @@ jobs:
               circleci-agent step halt
               exit 0
             }
+            if [[ $(./tools/ci/has_label.sh ci/skip-test) == "true" ]]; then
+              skip "Not running tests as the PR has label: ci/skip-test"
+            fi
+            if [[ $(./tools/ci/has_label.sh ci/skip-e2e-test) == "true" ]]; then
+              skip "Not running tests as the PR has label: ci/skip-e2e-test"
+            fi
+            fi
             if [[ "<< parameters.k8sVersion >>" == "kind" && "<< parameters.target >>" != "test/e2e-universal" ]]; then
               skip "kind should only be used when testing ipv6 or with test/e2e-universal"
             fi

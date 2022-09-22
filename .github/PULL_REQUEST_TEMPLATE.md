@@ -17,6 +17,6 @@ If something doesn't apply please check the box and add a justification after th
 - [ ] Manual Kubernetes Tests --
 - [ ] Do you need to update [`UPGRADE.md`](../blob/master/UPGRADE.md)? --
 - [ ] Does it need to be backported according to the [backporting policy](../blob/master/CONTRIBUTING.md#backporting)? --
-- [ ] Do you need to explicitly set a [`> Changelog:` entry here](../blob/master/CONTRIBUTING.md#submitting-a-patch)?
+- [ ] Do you need to explicitly set a [`> Changelog:` entry here](../blob/master/CONTRIBUTING.md#submitting-a-patch) or add a `ci/` label to run less/more tests?
 
 [1]: https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword
