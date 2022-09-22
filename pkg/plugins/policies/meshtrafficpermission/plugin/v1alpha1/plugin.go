@@ -32,6 +32,7 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
 	if proxy.Dataplane == nil {
 		// MeshTrafficPermission policy is applied only on DPP
+		// todo(lobkovilya): add support for ExternalService and ZoneEgress, https://github.com/kumahq/kuma/issues/5050
 		return nil
 	}
 
