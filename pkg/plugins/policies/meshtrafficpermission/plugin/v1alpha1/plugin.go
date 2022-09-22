@@ -34,15 +34,16 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		// MeshTrafficPermission policy is applied only on DPP
 		return nil
 	}
+
+	mtp, ok := proxy.Policies.Dynamic[api.MeshTrafficPermissionType]
+	if !ok {
+		return nil
+	}
+
 	if !ctx.Mesh.Resource.MTLSEnabled() {
 		log.V(1).Info("skip applying MeshTrafficPermission, MTLS is disabled",
 			"proxyName", proxy.Dataplane.GetMeta().GetName(),
 			"mesh", ctx.Mesh.Resource.GetMeta().GetName())
-		return nil
-	}
-
-	mtp, ok := proxy.Policies.Dynamic[api.MeshTrafficPermissionType]
-	if !ok {
 		return nil
 	}
 
