@@ -7,10 +7,10 @@ import (
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/xds/v3"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 )
 
 var _ = Describe("RBACConfigurer", func() {
