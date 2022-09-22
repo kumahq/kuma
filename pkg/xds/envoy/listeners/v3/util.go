@@ -1,6 +1,7 @@
 package v3
 
 import (
+	"fmt"
 	"math"
 	"regexp"
 	"strconv"
@@ -63,8 +64,20 @@ func UpdateFilterConfig(filterChain *envoy_listener.FilterChain, filterName stri
 	return nil
 }
 
+type UnexpectedFilterConfigTypeError struct {
+	actual   proto.Message
+	expected proto.Message
+}
+
+func (e *UnexpectedFilterConfigTypeError) Error() string {
+	return fmt.Sprintf("filter config has unexpected type: expected %T, got %T", e.expected, e.actual)
+}
+
 func NewUnexpectedFilterConfigTypeError(actual, expected proto.Message) error {
-	return errors.Errorf("filter config has unexpected type: expected %T, got %T", expected, actual)
+	return &UnexpectedFilterConfigTypeError{
+		actual:   actual,
+		expected: expected,
+	}
 }
 
 func ConvertPercentage(percentage *wrapperspb.DoubleValue) *envoy_type.FractionalPercent {

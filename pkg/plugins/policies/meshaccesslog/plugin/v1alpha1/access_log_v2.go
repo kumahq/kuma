@@ -11,7 +11,6 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	accesslog "github.com/kumahq/kuma/pkg/envoy/accesslog/v3"
@@ -119,29 +118,30 @@ func fileAccessLog(format string, path string) (*envoy_accesslog.AccessLog, erro
 }
 
 func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
-	return listeners_v3.UpdateFilterConfig(filterChain, "envoy.filters.network.http_connection_manager", func(filterConfig proto.Message) error {
-		hcm, ok := filterConfig.(*envoy_hcm.HttpConnectionManager)
-		if ok {
-			accessLog, err := c.envoyAccessLog(defaultHttpAccessLogFormat)
-			if err != nil {
-				return err
-			}
-
-			hcm.AccessLog = append(hcm.AccessLog, accessLog)
-			return nil
+	httpAccessLog := func(hcm *envoy_hcm.HttpConnectionManager) error {
+		accessLog, err := c.envoyAccessLog(defaultHttpAccessLogFormat)
+		if err != nil {
+			return err
 		}
-
-		tcpProxy, ok := filterConfig.(*envoy_tcp.TcpProxy)
-		if ok {
-			accessLog, err := c.envoyAccessLog(defaultNetworkAccessLogFormat)
-			if err != nil {
-				return err
-			}
-
-			tcpProxy.AccessLog = append(tcpProxy.AccessLog, accessLog)
-			return nil
-		}
-
+		hcm.AccessLog = append(hcm.AccessLog, accessLog)
 		return nil
-	})
+	}
+	tcpAccessLog := func(tcpProxy *envoy_tcp.TcpProxy) error {
+		accessLog, err := c.envoyAccessLog(defaultNetworkAccessLogFormat)
+		if err != nil {
+			return err
+		}
+
+		tcpProxy.AccessLog = append(tcpProxy.AccessLog, accessLog)
+		return nil
+	}
+
+	if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, httpAccessLog); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
+		return err
+	}
+	if err := listeners_v3.UpdateTCPProxy(filterChain, tcpAccessLog); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
+		return err
+	}
+
+	return nil
 }
