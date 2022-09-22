@@ -18,7 +18,7 @@ func MeshTrafficPermissionUniversal() {
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Setup(env.Cluster)).To(Succeed())
 
-		// remote default traffic permission
+		// remove default traffic permission
 		err := env.Cluster.GetKumactlOptions().KumactlDelete("traffic-permission", "allow-all-"+meshName, meshName)
 		Expect(err).ToNot(HaveOccurred())
 	})
