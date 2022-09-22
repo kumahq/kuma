@@ -2316,7 +2316,9 @@ spec:
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
               value: "false"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_BPFFS_PATH
-              value: "/run/kuma/bpf"
+              value: "/sys/fs/bpf"
+            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_CGROUP_PATH
+              value: "/sys/fs/cgroup"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_ENABLED
               value: "true"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_INSTANCE_IP_ENV_VAR_NAME

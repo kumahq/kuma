@@ -26,6 +26,8 @@ type TransparentProxyConfig struct {
 	EbpfEnabled                    bool
 	EbpfInstanceIP                 string
 	EbpfBPFFSPath                  string
+	EbpfCgroupPath                 string
+	EbpfTCAttachIface              string
 	EbpfProgramsSourcePath         string
 	Stdout                         io.Writer
 	Stderr                         io.Writer

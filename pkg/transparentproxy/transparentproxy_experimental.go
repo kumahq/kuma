@@ -173,6 +173,8 @@ func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyC
 			Enabled:            tpConfig.EbpfEnabled,
 			InstanceIP:         tpConfig.EbpfInstanceIP,
 			BPFFSPath:          tpConfig.EbpfBPFFSPath,
+			CgroupPath:         tpConfig.EbpfCgroupPath,
+			TCAttachIface:      tpConfig.EbpfTCAttachIface,
 			ProgramsSourcePath: tpConfig.EbpfProgramsSourcePath,
 		},
 		RuntimeStdout: tpConfig.Stdout,

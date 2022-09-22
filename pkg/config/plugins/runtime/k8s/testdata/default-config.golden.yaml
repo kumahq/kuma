@@ -51,7 +51,8 @@ injector:
   ebpf:
     enabled: false
     instanceIPEnvVarName: INSTANCE_IP
-    bpffsPath: /run/kuma/bpf
+    bpffsPath: /sys/fs/bpf
+    cgroupPath: /sys/fs/cgroup
     programsSourcePath: /kuma/ebpf
 marshalingCacheExpirationTime: 5m0s
 serviceAccountName: system:serviceaccount:kuma-system:kuma-control-plane

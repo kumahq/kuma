@@ -80,7 +80,8 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			EBPF: EBPF{
 				Enabled:              false,
 				InstanceIPEnvVarName: "INSTANCE_IP",
-				BPFFSPath:            "/run/kuma/bpf",
+				BPFFSPath:            "/sys/fs/bpf",
+				CgroupPath:           "/sys/fs/cgroup",
 				ProgramsSourcePath:   "/kuma/ebpf",
 			},
 		},
@@ -273,6 +274,11 @@ type EBPF struct {
 	InstanceIPEnvVarName string `yaml:"instanceIPEnvVarName,omitempty" envconfig:"kuma_runtime_kubernetes_injector_ebpf_instance_ip_env_var_name"`
 	// Path where BPF file system will be mounted for pinning ebpf programs and maps
 	BPFFSPath string `yaml:"bpffsPath,omitempty" envconfig:"kuma_runtime_kubernetes_injector_ebpf_bpffs_path"`
+	// Path of mounted cgroup2
+	CgroupPath string `yaml:"cgroupPath,omitempty" envconfig:"kuma_runtime_kubernetes_injector_ebpf_cgroup_path"`
+	// Name of the network interface which should be used to attach to it TC programs
+	// when not specified, we will try to automatically determine it
+	TCAttachIface string `yaml:"tcAttachIface,omitempty" envconfig:"kuma_runtime_kubernetes_injector_ebpf_tc_attach_iface"`
 	// Path where compiled eBPF programs are placed
 	ProgramsSourcePath string `yaml:"programsSourcePath,omitempty" envconfig:"kuma_runtime_kubernetes_injector_ebpf_programs_source_path"`
 }

@@ -683,7 +683,11 @@ experimental:
     # -- Name of the environmental variable which will contain the IP address of a pod
     instanceIPEnvVarName: INSTANCE_IP
     # -- Path where BPF file system should be mounted
-    bpffsPath: /run/kuma/bpf
+    bpffsPath: /sys/fs/bpf
+    # -- Host's cgroup2 path
+    cgroupPath: /sys/fs/cgroup
+    # -- Name of the network interface which TC programs should be attached to, we'll try to automatically determine it if empty
+    tcAttachIface: ""
     # -- Path where compiled eBPF programs which will be installed can be found
     programsSourcePath: /kuma/ebpf
 

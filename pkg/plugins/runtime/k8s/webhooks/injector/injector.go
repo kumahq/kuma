@@ -129,7 +129,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 			Name: "sys-fs-cgroup",
 			VolumeSource: kube_core.VolumeSource{
 				HostPath: &kube_core.HostPathVolumeSource{
-					Path: "/sys/fs/cgroup",
+					Path: i.cfg.EBPF.CgroupPath,
 				},
 			},
 		}, kube_core.Volume{
@@ -455,7 +455,7 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 		}
 
 		container.VolumeMounts = []kube_core.VolumeMount{
-			{Name: "sys-fs-cgroup", MountPath: "/sys/fs/cgroup"},
+			{Name: "sys-fs-cgroup", MountPath: i.cfg.EBPF.CgroupPath},
 			{Name: "bpf-fs", MountPath: i.cfg.EBPF.BPFFSPath, MountPropagation: &bidirectional},
 		}
 	}
@@ -486,7 +486,23 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 	annotations[metadata.KumaTransparentProxyingEbpf] = metadata.BoolToEnabled(ebpfEnabled)
 
 	if ebpfEnabled {
-		annotations[metadata.KumaTransparentProxyingEbpfBPFFSPath], _ = podAnnotations.GetStringWithDefault(i.cfg.EBPF.BPFFSPath, metadata.KumaTransparentProxyingEbpfBPFFSPath)
+		podAnnotations.GetString()
+
+		bpffsPath, _ := podAnnotations.GetStringWithDefault(i.cfg.EBPF.BPFFSPath, metadata.KumaTransparentProxyingEbpfBPFFSPath)
+		if bpffsPath != "" {
+			annotations[metadata.KumaTransparentProxyingEbpfBPFFSPath] = bpffsPath
+		}
+
+		cgroupPath, _ := podAnnotations.GetStringWithDefault(i.cfg.EBPF.CgroupPath, metadata.KumaTransparentProxyingEbpfCgroupPath)
+		if cgroupPath != "" {
+			annotations[metadata.KumaTransparentProxyingEbpfCgroupPath] = cgroupPath
+		}
+
+		tcAttachIface, _ := podAnnotations.GetStringWithDefault(i.cfg.EBPF.TCAttachIface, metadata.KumaTransparentProxyingEbpfTCAttachIface)
+		if tcAttachIface != "" {
+			annotations[metadata.KumaTransparentProxyingEbpfTCAttachIface] = tcAttachIface
+		}
+
 		annotations[metadata.KumaTransparentProxyingEbpfProgramsSourcePath], _ = podAnnotations.GetStringWithDefault(i.cfg.EBPF.ProgramsSourcePath, metadata.KumaTransparentProxyingEbpfProgramsSourcePath)
 		if value, exists := podAnnotations.GetString(i.cfg.EBPF.InstanceIPEnvVarName, metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName); exists {
 			annotations[metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName] = value
