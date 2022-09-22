@@ -100,6 +100,7 @@ to verify a few things:
   comment `/format` or `/golden_files`.
 - If you are introducing a change that might break on ipv6 or old k8s kubernetes (v1.19.16-k3s1)
   consider creating PR with a label `ci/run-full-matrix` that will trigger the full test matrix
+- If your PR doesn't need to run e2e tests or tests at all use: `ci/skip-test` or `ci/skip-e2e-test` labels on the PR.
 - If you are introducing a change which requires specific attention when
   upgrading update UPGRADE.md
 - Do not update CHANGELOG.md yourself. Your change will be included there when we release, no worries!

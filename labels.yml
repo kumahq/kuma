@@ -3,6 +3,7 @@ default:
     - color: 5319e7
       name: "backport-to-stable"
       description: "Automatically backport this PR to the latest stable branch"
+      delete: true
     - color: 0052cc
       name: "area/kuma-cp"
     - color: 0052cc
@@ -37,3 +38,13 @@ default:
     - color: 0052cc
       name: "area/gateway"
       description: "Built-in Kuma gateway support"
+    # CI specific labels
+    - color: 965E20
+      name: "ci/run-full-matrix"
+      description: "PR: Runs all possible e2e test combination (expensive use carefully)"
+    - color: 965E20
+      name: "ci/skip-test"
+      description: "PR: Don't run unit and e2e tests (maybe this is just a doc change)"
+    - color: 965E20
+      name: "ci/skip-e2e-test"
+      description: "PR: Don't run e2e tests"
