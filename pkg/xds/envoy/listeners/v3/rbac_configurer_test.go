@@ -240,5 +240,17 @@ filters:
                               exact: spiffe://shadow_allow_mesh/backend
       statPrefix: shadow_allow_prefix.`,
 		}),
+		Entry("no rules", testCase{
+			stats: "no",
+			mesh:  "nothing",
+			rules: []*core_xds.Rule{},
+			expected: `
+filters:
+  - name: envoy.filters.network.rbac
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+      rules: {}
+      statPrefix: no.`,
+		}),
 	)
 })
