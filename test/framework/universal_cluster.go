@@ -3,6 +3,8 @@ package framework
 import (
 	"fmt"
 	"net"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -135,15 +137,25 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		env["KUMA_DNS_SERVER_CIDR"] = Config.CIDR
 	}
 
-	cmd := []string{"kuma-cp", "run"}
-	switch mode {
-	case core.Zone:
-		env["KUMA_MULTIZONE_ZONE_NAME"] = c.name
-	case core.Global:
-		cmd = append(cmd, "--config-file", "/kuma/kuma-cp.conf")
+	var dockerVolumes []string
+	if c.opts.yamlConfig != "" {
+		path, err := os.MkdirTemp("", "e2e-cp-cfg-*")
+		if err != nil {
+			return err
+		}
+		path = filepath.Join(path, "kuma-cp.conf")
+		if err := os.WriteFile(path, []byte(c.opts.yamlConfig), 0777); err != nil {
+			return err
+		}
+		dockerVolumes = append(dockerVolumes, path+":/kuma/kuma-cp.conf")
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppModeCP, "", AppModeCP, c.opts.isipv6, true, []string{}, nil, "")
+	cmd := []string{"kuma-cp", "run", "--config-file", "/kuma/kuma-cp.conf"}
+	if mode == core.Zone {
+		env["KUMA_MULTIZONE_ZONE_NAME"] = c.name
+	}
+
+	app, err := NewUniversalApp(c.t, c.name, AppModeCP, "", AppModeCP, c.opts.isipv6, true, []string{}, dockerVolumes, "")
 	if err != nil {
 		return err
 	}

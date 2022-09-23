@@ -50,6 +50,7 @@ type kumaDeploymentOptions struct {
 	cpReplicas                  int
 	hdsDisabled                 bool
 	runPostgresMigration        bool
+	yamlConfig                  string
 
 	// Functions to apply to each mesh after the control plane
 	// is provisioned.
@@ -262,6 +263,12 @@ func WithEnvs(entries map[string]string) KumaDeploymentOption {
 		for k, v := range entries {
 			o.env[k] = v
 		}
+	})
+}
+
+func WithYamlConfig(cfg string) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.yamlConfig = cfg
 	})
 }
 
