@@ -48,6 +48,12 @@ func (ss Subset) IsSubset(other Subset) bool {
 	return true
 }
 
+func MeshService(name string) Subset {
+	return Subset{{
+		Key: mesh_proto.ServiceTag, Value: name,
+	}}
+}
+
 // NumPositive returns a number of tags without negation
 func (ss Subset) NumPositive() int {
 	pos := 0
