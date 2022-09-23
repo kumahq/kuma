@@ -53,6 +53,15 @@ func (b *ListenerBuilder) Build() (envoy.NamedResource, error) {
 	}
 }
 
+func (b *ListenerBuilder) MustBuild() envoy.NamedResource {
+	listener, err := b.Build()
+	if err != nil {
+		panic(errors.Wrap(err, "failed to build Envoy Listener").Error())
+	}
+
+	return listener
+}
+
 // ListenerBuilderConfig holds configuration of a ListenerBuilder.
 type ListenerBuilderConfig struct {
 	// A series of ListenerConfigurers to apply to Envoy listener.

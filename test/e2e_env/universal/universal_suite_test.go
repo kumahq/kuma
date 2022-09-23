@@ -19,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/inspect"
 	"github.com/kumahq/kuma/test/e2e_env/universal/matching"
 	"github.com/kumahq/kuma/test/e2e_env/universal/membership"
+	"github.com/kumahq/kuma/test/e2e_env/universal/meshaccesslog"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/universal/mtls"
 	"github.com/kumahq/kuma/test/e2e_env/universal/observability"
@@ -97,6 +98,7 @@ var _ = Describe("Applications Metrics", observability.ApplicationsMetrics, Orde
 var _ = Describe("Tracing", observability.Tracing, Ordered)
 var _ = Describe("Membership", membership.Membership, Ordered)
 var _ = Describe("Traffic Logging", trafficlog.TCPLogging, Ordered)
+var _ = Describe("MeshAccessLog", meshaccesslog.TestPlugin, Ordered)
 var _ = Describe("Timeout", timeout.Policy, Ordered)
 var _ = Describe("Retry", retry.Policy, Ordered)
 var _ = Describe("RateLimit", ratelimit.Policy, Ordered)

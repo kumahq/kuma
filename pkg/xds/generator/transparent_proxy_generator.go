@@ -14,10 +14,10 @@ import (
 // OriginTransparent is a marker to indicate by which ProxyGenerator resources were generated.
 const (
 	OriginTransparent = "transparent"
-	outboundNameIPv4  = "outbound:passthrough:ipv4"
-	outboundNameIPv6  = "outbound:passthrough:ipv6"
-	inboundNameIPv4   = "inbound:passthrough:ipv4"
-	inboundNameIPv6   = "inbound:passthrough:ipv6"
+	OutboundNameIPv4  = "outbound:passthrough:ipv4"
+	OutboundNameIPv6  = "outbound:passthrough:ipv6"
+	InboundNameIPv4   = "inbound:passthrough:ipv4"
+	InboundNameIPv6   = "inbound:passthrough:ipv6"
 	allIPv4           = "0.0.0.0"
 	allIPv6           = "::"
 	inPassThroughIPv4 = "127.0.0.6"
@@ -35,7 +35,7 @@ func (tpg TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mo
 	}
 
 	redirectPortInbound := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInbound()
-	resourcesIPv4, err := tpg.generate(ctx, proxy, outboundNameIPv4, inboundNameIPv4, allIPv4, inPassThroughIPv4, redirectPortOutbound, redirectPortInbound)
+	resourcesIPv4, err := tpg.generate(ctx, proxy, OutboundNameIPv4, InboundNameIPv4, allIPv4, inPassThroughIPv4, redirectPortOutbound, redirectPortInbound)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func (tpg TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mo
 
 	redirectPortInboundV6 := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInboundV6()
 	if redirectPortInboundV6 != 0 {
-		resourcesIPv6, err := tpg.generate(ctx, proxy, outboundNameIPv6, inboundNameIPv6, allIPv6, inPassThroughIPv6, redirectPortOutbound, redirectPortInboundV6)
+		resourcesIPv6, err := tpg.generate(ctx, proxy, OutboundNameIPv6, InboundNameIPv6, allIPv6, inPassThroughIPv6, redirectPortOutbound, redirectPortInboundV6)
 		if err != nil {
 			return nil, err
 		}
