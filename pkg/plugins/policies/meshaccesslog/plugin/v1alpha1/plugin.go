@@ -11,6 +11,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/matchers"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/plugin/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
@@ -88,7 +89,7 @@ func configureInbound(
 	}
 
 	for _, backend := range conf.Backends {
-		configurer := Configurer{
+		configurer := plugin_xds.Configurer{
 			Mesh:               dataplane.GetMeta().GetMesh(),
 			TrafficDirection:   envoy.TrafficDirectionInbound,
 			SourceService:      mesh_proto.ServiceUnknown,
@@ -124,7 +125,7 @@ func configureOutbound(
 	}
 
 	for _, backend := range conf.Backends {
-		configurer := Configurer{
+		configurer := plugin_xds.Configurer{
 			Mesh:               dataplane.GetMeta().GetMesh(),
 			TrafficDirection:   envoy.TrafficDirectionOutbound,
 			SourceService:      sourceService,
