@@ -83,7 +83,7 @@ destinations:
 				parts := strings.Split(stdout, ",")
 				g.Expect(parts).To(HaveLen(3))
 				startTimeStr, src, dst = parts[0], parts[1], parts[2]
-			}, "30s", "1ms").Should(Succeed())
+			}, "30s", "1s").Should(Succeed())
 
 			// then
 			startTimeInt, err := strconv.Atoi(startTimeStr)

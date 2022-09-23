@@ -72,7 +72,7 @@ func TestPlugin() {
 			Expect(startTime).To(BeTemporally("~", time.Now(), time.Hour))
 
 			src, dst = parts[1], parts[2]
-		}, "30s", "1ms").Should(Succeed())
+		}, "30s", "1s").Should(Succeed())
 
 		return strings.TrimSpace(src), strings.TrimSpace(dst)
 	}
