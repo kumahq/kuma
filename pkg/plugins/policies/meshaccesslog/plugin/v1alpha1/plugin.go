@@ -30,6 +30,121 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 	return matchers.MatchedPolicies(api.MeshAccessLogType, dataplane, resources)
 }
 
+func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
+	policies, ok := proxy.Policies.Dynamic[api.MeshAccessLogType]
+	if !ok {
+		return nil
+	}
+
+	listeners := gatherListeners(rs)
+
+	if err := applyToInbounds(policies.FromRules, listeners.inbound, proxy.Dataplane); err != nil {
+		return err
+	}
+	if err := applyToOutbounds(policies.ToRules, listeners.outbound, proxy.Dataplane); err != nil {
+		return err
+	}
+	if err := applyToTransparentProxyListeners(policies, listeners.ipv4Passthrough, listeners.ipv6Passthrough, proxy.Dataplane); err != nil {
+		return err
+	}
+	if err := applyToDirectAccess(policies.ToRules, listeners.directAccess, proxy.Dataplane); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func applyToInbounds(
+	rules xds.FromRules, inboundListeners map[xds.InboundListener]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
+) error {
+	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
+		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
+
+		listenerKey := xds.InboundListener{
+			Address: iface.DataplaneIP,
+			Port:    iface.DataplanePort,
+		}
+		listener, ok := inboundListeners[listenerKey]
+		if !ok {
+			continue
+		}
+
+		serviceName := inbound.GetTags()[mesh_proto.ServiceTag]
+
+		if err := configureInbound(rules.Rules[listenerKey], dataplane, xds.MeshService(serviceName), listener); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func applyToOutbounds(
+	rules xds.ToRules, outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
+) error {
+	for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
+		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound)
+
+		listener, ok := outboundListeners[oface]
+		if !ok {
+			continue
+		}
+
+		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
+
+		if err := configureOutbound(rules, dataplane, xds.MeshService(serviceName), serviceName, listener); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func applyToTransparentProxyListeners(
+	policies xds.TypedMatchingPolicies, ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
+) error {
+	// TODO inbound listener?
+	if ipv4 != nil {
+		if err := configureOutbound(
+			policies.ToRules,
+			dataplane,
+			xds.MeshService(core_mesh.PassThroughService),
+			"external",
+			ipv4,
+		); err != nil {
+			return err
+		}
+	}
+
+	if ipv6 != nil {
+		return configureOutbound(
+			policies.ToRules,
+			dataplane,
+			xds.MeshService(core_mesh.PassThroughService),
+			"external",
+			ipv6,
+		)
+	}
+
+	return nil
+}
+
+func applyToDirectAccess(
+	rules xds.ToRules, directAccess map[generator.Endpoint]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
+) error {
+	for endpoint, listener := range directAccess {
+		name := generator.DirectAccessEndpointName(endpoint)
+		return configureOutbound(
+			rules,
+			dataplane,
+			xds.MeshService(core_mesh.PassThroughService),
+			name,
+			listener,
+		)
+	}
+
+	return nil
+}
+
 type listeners struct {
 	inbound         map[xds.InboundListener]*envoy_listener.Listener
 	outbound        map[mesh_proto.OutboundInterface]*envoy_listener.Listener
@@ -146,121 +261,6 @@ func configureOutbound(
 				return err
 			}
 		}
-	}
-
-	return nil
-}
-
-func applyToInbounds(
-	rules xds.FromRules, inboundListeners map[xds.InboundListener]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
-) error {
-	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
-		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
-
-		listenerKey := xds.InboundListener{
-			Address: iface.DataplaneIP,
-			Port:    iface.DataplanePort,
-		}
-		listener, ok := inboundListeners[listenerKey]
-		if !ok {
-			continue
-		}
-
-		serviceName := inbound.GetTags()[mesh_proto.ServiceTag]
-
-		if err := configureInbound(rules.Rules[listenerKey], dataplane, xds.MeshService(serviceName), listener); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func applyToOutbounds(
-	rules xds.ToRules, outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
-) error {
-	for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
-		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound)
-
-		listener, ok := outboundListeners[oface]
-		if !ok {
-			continue
-		}
-
-		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
-
-		if err := configureOutbound(rules, dataplane, xds.MeshService(serviceName), serviceName, listener); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func applyToTransparentProxyListeners(
-	policies xds.TypedMatchingPolicies, ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
-) error {
-	// TODO inbound listener?
-	if ipv4 != nil {
-		if err := configureOutbound(
-			policies.ToRules,
-			dataplane,
-			xds.MeshService(core_mesh.PassThroughService),
-			"external",
-			ipv4,
-		); err != nil {
-			return err
-		}
-	}
-
-	if ipv6 != nil {
-		return configureOutbound(
-			policies.ToRules,
-			dataplane,
-			xds.MeshService(core_mesh.PassThroughService),
-			"external",
-			ipv6,
-		)
-	}
-
-	return nil
-}
-
-func applyToDirectAccess(
-	rules xds.ToRules, directAccess map[generator.Endpoint]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
-) error {
-	for endpoint, listener := range directAccess {
-		name := generator.DirectAccessEndpointName(endpoint)
-		return configureOutbound(
-			rules,
-			dataplane,
-			xds.MeshService(core_mesh.PassThroughService),
-			name,
-			listener,
-		)
-	}
-
-	return nil
-}
-
-func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
-	policies, ok := proxy.Policies.Dynamic[api.MeshAccessLogType]
-	if !ok {
-		return nil
-	}
-
-	listeners := gatherListeners(rs)
-
-	if err := applyToInbounds(policies.FromRules, listeners.inbound, proxy.Dataplane); err != nil {
-		return err
-	}
-	if err := applyToOutbounds(policies.ToRules, listeners.outbound, proxy.Dataplane); err != nil {
-		return err
-	}
-	if err := applyToTransparentProxyListeners(policies, listeners.ipv4Passthrough, listeners.ipv6Passthrough, proxy.Dataplane); err != nil {
-		return err
-	}
-	if err := applyToDirectAccess(policies.ToRules, listeners.directAccess, proxy.Dataplane); err != nil {
-		return err
 	}
 
 	return nil
