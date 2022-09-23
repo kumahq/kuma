@@ -168,7 +168,9 @@ func applyToInbounds(
 
 		serviceName := inbound.GetTags()[mesh_proto.ServiceTag]
 
-		return configureInbound(rules.Rules[listenerKey], dataplane, xds.MeshService(serviceName), listener)
+		if err := configureInbound(rules.Rules[listenerKey], dataplane, xds.MeshService(serviceName), listener); err != nil {
+			return err
+		}
 	}
 	return nil
 }
