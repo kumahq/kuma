@@ -29,6 +29,10 @@ const OriginDirectAccess = "direct-access"
 type DirectAccessProxyGenerator struct {
 }
 
+func DirectAccessEndpointName(endpoint Endpoint) string {
+	return fmt.Sprintf("direct_access_%s:%d", endpoint.Address, endpoint.Port)
+}
+
 func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	tproxy := proxy.Dataplane.Spec.Networking.GetTransparentProxying()
 	resources := core_xds.NewResourceSet()
@@ -45,7 +49,7 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 	}
 
 	for _, endpoint := range endpoints {
-		name := fmt.Sprintf("direct_access_%s:%d", endpoint.Address, endpoint.Port)
+		name := DirectAccessEndpointName(endpoint)
 		listener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
 			Configure(envoy_listeners.OutboundListener(name, endpoint.Address, endpoint.Port, core_xds.SocketAddressProtocolTCP)).
 			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).

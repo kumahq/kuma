@@ -35,12 +35,14 @@ type listeners struct {
 	outbound        map[mesh_proto.OutboundInterface]*envoy_listener.Listener
 	ipv4Passthrough *envoy_listener.Listener
 	ipv6Passthrough *envoy_listener.Listener
+	directAccess    map[generator.Endpoint]*envoy_listener.Listener
 }
 
 func gatherListeners(rs *core_xds.ResourceSet) listeners {
 	listeners := listeners{
-		inbound:  map[xds.InboundListener]*envoy_listener.Listener{},
-		outbound: map[mesh_proto.OutboundInterface]*envoy_listener.Listener{},
+		inbound:      map[xds.InboundListener]*envoy_listener.Listener{},
+		outbound:     map[mesh_proto.OutboundInterface]*envoy_listener.Listener{},
+		directAccess: map[generator.Endpoint]*envoy_listener.Listener{},
 	}
 
 	for _, res := range rs.Resources(envoy_resource.ListenerType) {
@@ -65,6 +67,11 @@ func gatherListeners(rs *core_xds.ResourceSet) listeners {
 			case generator.OutboundNameIPv6:
 				listeners.ipv6Passthrough = listener
 			}
+		case generator.OriginDirectAccess:
+			listeners.directAccess[generator.Endpoint{
+				Address: address.GetAddress(),
+				Port:    address.GetPortValue(),
+			}] = listener
 		default:
 			continue
 		}
@@ -216,6 +223,23 @@ func applyToTransparentProxyListeners(
 	return nil
 }
 
+func applyToDirectAccess(
+	rules xds.ToRules, directAccess map[generator.Endpoint]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
+) error {
+	for endpoint, listener := range directAccess {
+		name := generator.DirectAccessEndpointName(endpoint)
+		return configureOutbound(
+			rules,
+			dataplane,
+			xds.MeshService(core_mesh.PassThroughService),
+			name,
+			listener,
+		)
+	}
+
+	return nil
+}
+
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
 	policies, ok := proxy.Policies.Dynamic[api.MeshAccessLogType]
 	if !ok {
@@ -231,6 +255,9 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return err
 	}
 	if err := applyToTransparentProxyListeners(policies, listeners.ipv4Passthrough, listeners.ipv6Passthrough, proxy.Dataplane); err != nil {
+		return err
+	}
+	if err := applyToDirectAccess(policies.ToRules, listeners.directAccess, proxy.Dataplane); err != nil {
 		return err
 	}
 
