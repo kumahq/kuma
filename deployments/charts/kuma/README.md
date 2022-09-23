@@ -168,7 +168,9 @@ A Helm chart for the Kuma Control Plane
 | experimental.transparentProxy | bool | `false` | If true, use the new transparent proxy engine |
 | experimental.ebpf.enabled | bool | `false` | If true, ebpf will be used instead of using iptables to install/configure transparent proxy |
 | experimental.ebpf.instanceIPEnvVarName | string | `"INSTANCE_IP"` | Name of the environmental variable which will contain the IP address of a pod |
-| experimental.ebpf.bpffsPath | string | `"/run/kuma/bpf"` | Path where BPF file system should be mounted |
+| experimental.ebpf.bpffsPath | string | `"/sys/fs/bpf"` | Path where BPF file system should be mounted |
+| experimental.ebpf.cgroupPath | string | `"/sys/fs/cgroup"` | Host's cgroup2 path |
+| experimental.ebpf.tcAttachIface | string | `""` | Name of the network interface which TC programs should be attached to, we'll try to automatically determine it if empty |
 | experimental.ebpf.programsSourcePath | string | `"/kuma/ebpf"` | Path where compiled eBPF programs which will be installed can be found |
 
 ## Custom Resource Definitions

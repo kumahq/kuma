@@ -61,10 +61,12 @@ kumactl install transparent-proxy [flags]
 
 ```
       --dry-run                                                                         dry run
-      --ebpf-bpffs-path string                                                          the path of the BPF filesystem (default "/run/kuma/bpf")
+      --ebpf-bpffs-path string                                                          the path of the BPF filesystem (default "/sys/fs/bpf")
+      --ebpf-cgroup-path string                                                         the path of cgroup2 (default "/sys/fs/cgroup")
       --ebpf-enabled                                                                    use ebpf instead of iptables to install transparent proxy
       --ebpf-instance-ip string                                                         IP address of the instance (pod/vm) where transparent proxy will be installed
       --ebpf-programs-source-path string                                                path where compiled ebpf programs and other necessary for ebpf mode files can be found (default "/kuma/ebpf")
+      --ebpf-tc-attach-iface string                                                     name of the interface which TC eBPF programs should be attached to
       --exclude-inbound-ports string                                                    a comma separated list of inbound ports to exclude from redirect to Envoy
       --exclude-outbound-ports string                                                   a comma separated list of outbound ports to exclude from redirect to Envoy
       --exclude-outbound-tcp-ports-for-uids stringArray                                 tcp outbound ports to exclude for specific UIDs in a format of ports:uids where both ports and uids can be a single value, a list, a range or a combination of all, e.g. 3000-5000:103,104,106-108 would mean exclude ports from 3000 to 5000 for UIDs 103, 104, 106, 107, 108

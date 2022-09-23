@@ -281,6 +281,10 @@ env:
   value: {{ .Values.experimental.ebpf.instanceIPEnvVarName }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_BPFFS_PATH
   value: {{ .Values.experimental.ebpf.bpffsPath }}
+- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_CGROUP_PATH
+  value: {{ .Values.experimental.ebpf.cgroupPath }}
+- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_TC_ATTACH_IFACE
+  value: {{ .Values.experimental.ebpf.tcAttachIface }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH
   value: {{ .Values.experimental.ebpf.programsSourcePath }}
 {{- end }}

@@ -39,6 +39,8 @@ type PodRedirect struct {
 	ExperimentalTransparentProxyEngine       bool
 	TransparentProxyEnableEbpf               bool
 	TransparentProxyEbpfBPFFSPath            string
+	TransparentProxyEbpfCgroupPath           string
+	TransparentProxyEbpfTCAttachIface        string
 	TransparentProxyEbpfInstanceIPEnvVarName string
 	TransparentProxyEbpfProgramsSourcePath   string
 	ExcludeOutboundTCPPortsForUIDs           []string
@@ -117,6 +119,14 @@ func NewPodRedirectForPod(transparentProxyV2 bool, pod *kube_core.Pod) (*PodRedi
 		podRedirect.TransparentProxyEbpfBPFFSPath = value
 	}
 
+	if value, exists := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTransparentProxyingEbpfCgroupPath); exists {
+		podRedirect.TransparentProxyEbpfCgroupPath = value
+	}
+
+	if value, exists := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTransparentProxyingEbpfTCAttachIface); exists {
+		podRedirect.TransparentProxyEbpfTCAttachIface = value
+	}
+
 	if value, exists := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName); exists {
 		podRedirect.TransparentProxyEbpfInstanceIPEnvVarName = value
 	}
@@ -184,6 +194,14 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 
 		if pr.TransparentProxyEbpfBPFFSPath != "" {
 			result = append(result, "--ebpf-bpffs-path", pr.TransparentProxyEbpfBPFFSPath)
+		}
+
+		if pr.TransparentProxyEbpfCgroupPath != "" {
+			result = append(result, "--ebpf-cgroup-path", pr.TransparentProxyEbpfCgroupPath)
+		}
+
+		if pr.TransparentProxyEbpfTCAttachIface != "" {
+			result = append(result, "--ebpf-tc-attach-iface", pr.TransparentProxyEbpfTCAttachIface)
 		}
 
 		if pr.TransparentProxyEbpfProgramsSourcePath != "" {

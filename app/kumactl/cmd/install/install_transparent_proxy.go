@@ -41,6 +41,8 @@ type transparentProxyArgs struct {
 	EbpfProgramsSourcePath             string
 	EbpfInstanceIP                     string
 	EbpfBPFFSPath                      string
+	EbpfCgroupPath                     string
+	EbpfTCAttachIface                  string
 }
 
 func newInstallTransparentProxy() *cobra.Command {
@@ -66,7 +68,9 @@ func newInstallTransparentProxy() *cobra.Command {
 		ExperimentalTransparentProxyEngine: false,
 		EbpfEnabled:                        false,
 		EbpfProgramsSourcePath:             "/kuma/ebpf",
-		EbpfBPFFSPath:                      "/run/kuma/bpf",
+		EbpfBPFFSPath:                      "/sys/fs/bpf",
+		EbpfCgroupPath:                     "/sys/fs/cgroup",
+		EbpfTCAttachIface:                  "",
 	}
 	cmd := &cobra.Command{
 		Use:   "transparent-proxy",
@@ -196,6 +200,8 @@ runuser -u kuma-dp -- \
 	cmd.Flags().StringVar(&args.EbpfProgramsSourcePath, "ebpf-programs-source-path", args.EbpfProgramsSourcePath, "path where compiled ebpf programs and other necessary for ebpf mode files can be found")
 	cmd.Flags().StringVar(&args.EbpfInstanceIP, "ebpf-instance-ip", args.EbpfInstanceIP, "IP address of the instance (pod/vm) where transparent proxy will be installed")
 	cmd.Flags().StringVar(&args.EbpfBPFFSPath, "ebpf-bpffs-path", args.EbpfBPFFSPath, "the path of the BPF filesystem")
+	cmd.Flags().StringVar(&args.EbpfCgroupPath, "ebpf-cgroup-path", args.EbpfCgroupPath, "the path of cgroup2")
+	cmd.Flags().StringVar(&args.EbpfTCAttachIface, "ebpf-tc-attach-iface", args.EbpfTCAttachIface, "name of the interface which TC eBPF programs should be attached to")
 
 	cmd.Flags().StringArrayVar(&args.ExcludeOutboundTCPPortsForUIDs, "exclude-outbound-tcp-ports-for-uids", []string{}, "tcp outbound ports to exclude for specific UIDs in a format of ports:uids where both ports and uids can be a single value, a list, a range or a combination of all, e.g. 3000-5000:103,104,106-108 would mean exclude ports from 3000 to 5000 for UIDs 103, 104, 106, 107, 108")
 	cmd.Flags().StringArrayVar(&args.ExcludeOutboundUDPPortsForUIDs, "exclude-outbound-udp-ports-for-uids", []string{}, "udp outbound ports to exclude for specific UIDs in a format of ports:uids where both ports and uids can be a single value, a list, a range or a combination of all, e.g. 3000-5000:103,104,106-108 would mean exclude ports from 3000 to 5000 for UIDs 103, 104, 106, 107, 108")
@@ -263,6 +269,8 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 		EbpfEnabled:                    args.EbpfEnabled,
 		EbpfInstanceIP:                 args.EbpfInstanceIP,
 		EbpfBPFFSPath:                  args.EbpfBPFFSPath,
+		EbpfCgroupPath:                 args.EbpfCgroupPath,
+		EbpfTCAttachIface:              args.EbpfTCAttachIface,
 		EbpfProgramsSourcePath:         args.EbpfProgramsSourcePath,
 		Stdout:                         cmd.OutOrStdout(),
 		Stderr:                         cmd.OutOrStderr(),
