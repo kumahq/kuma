@@ -20,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/matching"
 	"github.com/kumahq/kuma/test/e2e_env/universal/membership"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshaccesslog"
+	"github.com/kumahq/kuma/test/e2e_env/universal/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/universal/mtls"
 	"github.com/kumahq/kuma/test/e2e_env/universal/observability"
 	"github.com/kumahq/kuma/test/e2e_env/universal/proxytemplate"
@@ -111,3 +112,4 @@ var _ = Describe("Traffic Route", trafficroute.TrafficRoute, Ordered)
 var _ = Describe("Zone Egress", zoneegress.ExternalServices, Ordered)
 var _ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)
 var _ = Describe("Transparent Proxy", transparentproxy.TransparentProxy, Ordered)
+var _ = Describe("Mesh Traffic Permission", meshtrafficpermission.MeshTrafficPermissionUniversal, Ordered)
