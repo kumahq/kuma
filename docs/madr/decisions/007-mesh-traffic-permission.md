@@ -473,7 +473,7 @@ List of principals generated based on the list from step 3. Each principal is ma
 ```yaml
 action: ALLOW
 policies:
-  "ShadowMeshTrafficPermission":
+  "MeshTrafficPermission":
     permissions:
       - any: true
     principals:

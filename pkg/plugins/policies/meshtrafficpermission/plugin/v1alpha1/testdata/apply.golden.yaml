@@ -1,0 +1,74 @@
+resources:
+- name: test_listener
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.1
+        portValue: 8080
+    enableReusePort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.rbac
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+          rules:
+            policies:
+              MeshTrafficPermission:
+                permissions:
+                - any: true
+                principals:
+                - authenticated:
+                    principalName:
+                      exact: spiffe://mesh-1/frontend
+          statPrefix: test_listener.
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          statPrefix: test_listener
+    name: test_listener
+    trafficDirection: INBOUND
+- name: test_listener2
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.1
+        portValue: 8081
+    enableReusePort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          statPrefix: test_listener2
+    name: test_listener2
+    trafficDirection: INBOUND
+- name: test_listener3
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.1
+        portValue: 8082
+    enableReusePort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          statPrefix: test_listener3
+    name: test_listener3
+    trafficDirection: INBOUND
