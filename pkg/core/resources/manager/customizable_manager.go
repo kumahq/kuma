@@ -7,10 +7,13 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
+type ResourceManagerWrapper = func(delegate ResourceManager) ResourceManager
+
 type CustomizableResourceManager interface {
 	ResourceManager
 	Customize(model.ResourceType, ResourceManager)
 	ResourceManager(model.ResourceType) ResourceManager
+	WrapAll(ResourceManagerWrapper)
 }
 
 func NewCustomizableResourceManager(defaultManager ResourceManager, customManagers map[model.ResourceType]ResourceManager) CustomizableResourceManager {
@@ -65,4 +68,11 @@ func (m *customizableResourceManager) ResourceManager(typ model.ResourceType) Re
 		return customManager
 	}
 	return m.defaultManager
+}
+
+func (m *customizableResourceManager) WrapAll(wrapper ResourceManagerWrapper) {
+	m.defaultManager = wrapper(m.defaultManager)
+	for key, manager := range m.customManagers {
+		m.customManagers[key] = wrapper(manager)
+	}
 }
