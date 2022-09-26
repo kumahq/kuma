@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package kuma.plugins.policies.meshtrace.v1alpha1;
+
+import "mesh/options.proto";
+option go_package = "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1";
+
+import "common/v1alpha1/targetref.proto";
+import "kuma-doc/config.proto";
+
+option (doc.config) = {
+  type : Policy,
+  name : "MeshTrace",
+  file_name : "meshtrace"
+};
+
+// MeshTrace
+message MeshTrace {
+  option (kuma.mesh.policy) = {
+    // Toggle this to have the policy registered or not in Kuma
+    skip_registration : false,
+  };
+
+  // TargetRef is a reference to the resource the policy takes an effect on.
+  // The resource could be either a real store object or virtual resource
+  // defined inplace.
+  kuma.common.v1alpha1.TargetRef targetRef = 1;
+
+  message ZipkinBackend {
+    string url = 1;
+  }
+
+  message DatadogBackend {
+    string url = 1;
+  }
+
+  message Backend {
+    ZipkinBackend zipkin = 1;
+    DatadogBackend datadog = 2;
+  }
+
+  message Sampling {
+      uint32 overall = 1;
+      uint32 client = 2;
+      uint32 random = 3;
+  }
+
+  message HeaderTag {
+    string name = 1;
+    string default = 2;
+  }
+
+  message Tag {
+    string name = 1;
+    string literal = 2;
+    HeaderTag header = 3;
+  }
+
+  message Conf {
+    Backend backend = 1;
+    Sampling sampling = 2;
+    repeated Tag tags = 3;
+  }
+}

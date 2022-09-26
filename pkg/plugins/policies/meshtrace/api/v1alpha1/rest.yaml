@@ -1,0 +1,129 @@
+openapi: 3.0.1
+info:
+  version: v1alpha1
+  title: Kuma API
+  description: Kuma API
+
+paths:
+  /meshes/{mesh}/meshtraces/{name}:
+    get:
+      summary: Returns MeshTrace entity
+      tags: [ "MeshTrace" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshTrace
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: 'schema.yaml'
+
+    put:
+      summary: Creates or Updates MeshTrace entity
+      tags: [ "MeshTrace" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshTrace
+      requestBody:
+        description: MeshTrace entity
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'schema.yaml'
+      responses:
+        '200':
+          description: Updated
+        '201':
+          description: Created
+
+    delete:
+      summary: Deletes MeshTrace entity
+      tags: [ "MeshTrace" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshTrace
+      responses:
+        '200':
+          description: Successful response
+
+
+  /meshes/{mesh}/meshtraces:
+    get:
+      summary: Returns a list of MeshTrace in the mesh.
+      tags: [ "MeshTrace" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: 'schema.yaml'
+                  next:
+                    type: string
+                    description: URL to the next page
+
+
+  /meshtraces:
+    get:
+      summary: Returns a list of MeshTrace from all meshes
+      tags: [ "MeshTrace" ]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: 'schema.yaml'
+                  next:
+                    type: string
+                    description: URL to the next page

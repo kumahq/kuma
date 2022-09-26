@@ -77,15 +77,15 @@ name discriminator option as above.
 
 ### `targetRef`
 
-This is a new policy so it's based on `targetRef`. Envoy tracing can be configured
+This is a new policy, so it's based on `targetRef`. Envoy tracing can be configured
 on both HTTP connection managers and routes.
 This proposal gives `MeshTrace` a single `spec.targetRef` field
 that selects what it applies to. It does not use `to` or `from` fields.
 
-It is theoretically possible to support `to` fields but we omit them from this
+It is theoretically possible to support `to` fields, but we omit them from this
 proposal.
 
-All logging configuration happens under `spec.default` so that users are able to
+All tracing configuration happens under `spec.default` so that users are able to
 override settings with more specific `targetRef`s.
 
 Resources supported by `spec.targetRef` are `Mesh`, `MeshSubset`, `MeshService`,
