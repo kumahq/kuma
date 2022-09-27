@@ -1,7 +1,6 @@
 package v3
 
 import (
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	net_url "net/url"
 	"strings"
 
@@ -14,6 +13,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 

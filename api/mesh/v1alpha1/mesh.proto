@@ -200,7 +200,8 @@ message DatadogTracingBackendConfig {
   // Port of datadog collector
   uint32 port = 2 [ (doc.required) = true ];
 
-  // Determines if datadog service name should be split based on traffic direction and destination. Default: false
+  // Determines if datadog service name should be split based on traffic
+  // direction and destination. Default: false
   bool splitService = 3;
 }
 

@@ -478,7 +478,8 @@ type DatadogTracingBackendConfig struct {
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	// Port of datadog collector
 	Port uint32 `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`
-	// Determines if datadog service name should be split based on traffic direction and destination. Default: false
+	// Determines if datadog service name should be split based on traffic
+	// direction and destination. Default: false
 	SplitService bool `protobuf:"varint,3,opt,name=splitService,proto3" json:"splitService,omitempty"`
 }
 

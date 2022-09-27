@@ -314,6 +314,11 @@
 - `port` (required)
 
     Port of datadog collector
+
+- `splitService` (optional)
+
+    Determines if datadog service name should be split based on traffic
+    direction and destination. Default: false
 ## ZipkinTracingBackendConfig
 
 - `url` (required)
