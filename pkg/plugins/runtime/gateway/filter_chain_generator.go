@@ -14,6 +14,7 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_extensions_transport_sockets_tls_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -300,7 +301,7 @@ func newFilterChain(ctx xds_context.MeshContext, info GatewayListenerInfo) *envo
 		// is a no-op unless we later add a per-route configuration.
 		envoy_listeners.RateLimit([]*core_mesh.RateLimitResource{nil}),
 		envoy_listeners.DefaultCompressorFilter(),
-		envoy_listeners.Tracing(ctx.GetTracingBackend(info.Proxy.Policies.TrafficTrace), service),
+		envoy_listeners.Tracing(ctx.GetTracingBackend(info.Proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionUnspecified, ""),
 		// In mesh proxies, the access log is configured on the outbound
 		// listener, which is why we index the Logs slice by destination
 		// service name.  A Gateway listener by definition forwards traffic
