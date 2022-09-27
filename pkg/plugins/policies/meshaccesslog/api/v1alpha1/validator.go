@@ -48,7 +48,7 @@ func validateFrom(from []*MeshAccessLog_From) validators.ValidationError {
 
 		defaultField := path.Field("default")
 		if fromItem.GetDefault() == nil {
-			verr.AddViolationAt(defaultField, "must be defined")
+			verr.AddViolationAt(defaultField, validation.MustBeDefined())
 		} else {
 			verr.AddErrorAt(defaultField, validateDefault(fromItem.Default))
 		}
@@ -68,7 +68,7 @@ func validateTo(to []*MeshAccessLog_To) validators.ValidationError {
 
 		defaultField := path.Field("default")
 		if toItem.GetDefault() == nil {
-			verr.AddViolationAt(defaultField, "must be defined")
+			verr.AddViolationAt(defaultField, validation.MustBeDefined())
 		} else {
 			verr.AddErrorAt(defaultField, validateDefault(toItem.Default))
 		}
@@ -90,7 +90,7 @@ func validateBackend(backend *MeshAccessLog_Backend) validators.ValidationError 
 	tcp := validation.Bool2Int(backend.GetTcp() != nil)
 
 	if file+tcp != 1 {
-		verr.AddViolation("", validation.MustHaveOnlyOneMessage("backend", "tcp", "file"))
+		verr.AddViolation("", validation.MustHaveOnlyOne("backend", "tcp", "file"))
 	}
 
 	verr.AddErrorAt(validators.RootedAt("file").Field("format"), validateFormat(backend.GetFile().GetFormat()))
@@ -120,7 +120,7 @@ func validateFormat(format *MeshAccessLog_Format) validators.ValidationError {
 	json := validation.Bool2Int(format.GetJson() != nil)
 
 	if plain+json != 1 {
-		verr.AddViolation("", validation.MustHaveOnlyOneMessage("format", "plain", "json"))
+		verr.AddViolation("", validation.MustHaveOnlyOne("format", "plain", "json"))
 	}
 
 	if format.GetJson() != nil {

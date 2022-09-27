@@ -12,6 +12,10 @@ func Bool2Int(b bool) int {
     return 0
 }
 
-func MustHaveOnlyOneMessage(entity string, allowedValues... string) string {
-    return fmt.Sprintf(`%s must have only one type defined: %s`, entity, strings.Join(allowedValues, ","))
+func MustHaveOnlyOne(entity string, allowedValues... string) string {
+    return fmt.Sprintf(`%s must have only one type defined: %s`, entity, strings.Join(allowedValues, ", "))
+}
+
+func MustBeDefined() string {
+    return "must be defined"
 }

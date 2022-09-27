@@ -30,20 +30,24 @@ func validateTop(targetRef *common_proto.TargetRef) validators.ValidationError {
 func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 	var verr validators.ValidationError
 
-	if len(conf.GetBackends()) != 1 {
-		verr.AddViolation("backend", "must have only one backend")
+	if conf == nil {
+		verr.AddViolation("", validation.MustBeDefined())
+		return verr
 	}
 
-	backend := conf.GetBackends()[0]
-	datadog := validation.Bool2Int(backend.GetDatadog() != nil)
-	zipkin := validation.Bool2Int(backend.GetZipkin() != nil)
+	if len(conf.GetBackends()) != 1 {
+		verr.AddViolation("backends", "must have only one backend")
+	} else {
+		backend := conf.GetBackends()[0]
+		datadog := validation.Bool2Int(backend.GetDatadog() != nil)
+		zipkin := validation.Bool2Int(backend.GetZipkin() != nil)
 
-	if datadog + zipkin != 1 {
-		verr.AddViolation("backend", validation.MustHaveOnlyOneMessage("backend[0]", "datadog", "zipkin"))
+		if datadog + zipkin != 1 {
+			verr.AddViolation("backend", validation.MustHaveOnlyOne("backend[0]", "datadog", "zipkin"))
+		}
 	}
 
 	tags := conf.GetTags()
-
 	for tagIndex, tag := range tags {
 		indexedField := validators.RootedAt("tags").Index(tagIndex)
 		if tag.GetName() == "" {
@@ -54,13 +58,16 @@ func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 		literal := validation.Bool2Int(tag.GetLiteral() != "")
 
 		if header + literal != 1 {
-			verr.AddViolationAt(indexedField, validation.MustHaveOnlyOneMessage("tag", "header", "literal"))
+			verr.AddViolationAt(indexedField, validation.MustHaveOnlyOne("tag", "header", "literal"))
 		}
 	}
 
-	verr.AddErrorAt(validators.RootedAt("sampling").Field("client"), validateSampling(conf.GetSampling().GetClient()))
-	verr.AddErrorAt(validators.RootedAt("sampling").Field("random"), validateSampling(conf.GetSampling().GetRandom()))
-	verr.AddErrorAt(validators.RootedAt("sampling").Field("overall"), validateSampling(conf.GetSampling().GetOverall()))
+	sampling := conf.GetSampling()
+	if sampling != nil {
+		verr.AddErrorAt(validators.RootedAt("sampling").Field("client"), validateSampling(sampling.GetClient()))
+		verr.AddErrorAt(validators.RootedAt("sampling").Field("random"), validateSampling(sampling.GetRandom()))
+		verr.AddErrorAt(validators.RootedAt("sampling").Field("overall"), validateSampling(sampling.GetOverall()))
+	}
 
 	return verr
 }

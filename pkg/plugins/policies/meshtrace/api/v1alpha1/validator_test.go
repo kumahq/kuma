@@ -26,31 +26,24 @@ var _ = Describe("MeshTrace", func() {
 				Expect(verr).To(BeNil())
 			},
 			Entry("full example", `
-apiVersion: kuma.io/v1alpha1
-kind: MeshTrace
-metadata:
-  name: all
-  labels:
-    kuma.io/mesh: default
-spec:
-  targetRef:
-    kind: MeshService
-    name: backend
-  default:
-    backend:
-      zipkin:
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - zipkin:
         url: http://jaeger-collector.mesh-observability:9411/api/v2/spans
-    tags:
-	  - name: team
-		literal: core
-	  - name: env
-        header:
-		  name: x-env
-		  default: prod
-    sampling:
-      overall: 80
-      random: 60
-      client: 40
+  tags:
+    - name: team
+      literal: core
+    - name: env
+      header:
+        name: x-env
+        default: prod
+  sampling:
+    overall: 80
+    random: 60
+    client: 40
 `),
 		)
 
@@ -75,16 +68,16 @@ spec:
 				// then
 				Expect(actual).To(MatchYAML(given.expected))
 			},
-			Entry("empty 'from' and 'to' array", testCase{
+			Entry("no default", testCase{
 				inputYaml: `
 targetRef:
-  kind: Mesh
-  name: default
+  kind: MeshService
+  name: backend
 `,
 				expected: `
 violations:
-  - field: spec
-    message: at least one of 'from', 'to' has to be defined`,
+  - field: spec.default
+    message: must be defined`,
 			}),
 		)
 	})
