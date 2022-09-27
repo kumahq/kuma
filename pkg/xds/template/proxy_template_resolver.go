@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/user"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 )
 
@@ -27,7 +28,7 @@ type SimpleProxyTemplateResolver struct {
 
 func (r *SimpleProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *mesh_proto.ProxyTemplate {
 	log := templateResolverLog.WithValues("dataplane", core_model.MetaToResourceKey(proxy.Dataplane.Meta))
-	ctx := context.Background()
+	ctx := user.Ctx(context.Background(), user.ControlPlane)
 	templateList := &core_mesh.ProxyTemplateResourceList{}
 	if err := r.ReadOnlyResourceManager.List(ctx, templateList, core_store.ListByMesh(proxy.Dataplane.Meta.GetMesh())); err != nil {
 		templateResolverLog.Error(err, "failed to list ProxyTemplates")
