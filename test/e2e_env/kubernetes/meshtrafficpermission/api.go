@@ -1,6 +1,9 @@
 package meshtrafficpermission
 
 import (
+	"fmt"
+
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -18,6 +21,19 @@ func API() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	E2EAfterEach(func() {
+		Expect(
+			k8s.RunKubectlE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(), "delete", "meshtrafficpermissions", "-A", "--all"),
+		).To(Succeed())
+
+		// mtps, err := env.Cluster.GetKumactlOptions().KumactlList("meshtrafficpermissions", meshName)
+		//Expect(err).ToNot(HaveOccurred())
+		//for _, mtp := range mtps {
+		//	Expect(k8s.RunKubectlE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(), "delete", "meshtrafficpermissions", "-A", "--all")).To(Succeed())
+		//	Expect(env.Cluster.GetKubectlOptions()
+		//}
+	})
+
 	E2EAfterAll(func() {
 		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
@@ -29,12 +45,12 @@ func API() {
 		Expect(mtps).To(HaveLen(0))
 
 		// when
-		Expect(YamlK8s(`
+		Expect(YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshTrafficPermission
 metadata:
   name: mtp1
-  namespace: kuma-system
+  namespace: %s
   labels:
     kuma.io/mesh: meshtrafficpermission-api
 spec:
@@ -64,12 +80,62 @@ spec:
           version: v1
       default:
         action: DENY
-`)(env.Cluster)).To(Succeed())
+`, Config.KumaNamespace))(env.Cluster)).To(Succeed())
 
 		// then
 		mtps, err = env.Cluster.GetKumactlOptions().KumactlList("meshtrafficpermissions", meshName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(mtps).To(HaveLen(1))
 		Expect(mtps[0]).To(Equal("mtp1.kuma-system"))
+	})
+
+	It("should deny creating policy in the non-system namespace", func() {
+		// given no MeshTrafficPermissions
+		mtps, err := env.Cluster.GetKumactlOptions().KumactlList("meshtrafficpermissions", meshName)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(mtps).To(HaveLen(0))
+
+		// when
+		err = k8s.KubectlApplyFromStringE(
+			env.Cluster.GetTesting(),
+			env.Cluster.GetKubectlOptions(), `
+apiVersion: kuma.io/v1alpha1
+kind: MeshTrafficPermission
+metadata:
+  name: mtp1
+  namespace: default
+  labels:
+    kuma.io/mesh: meshtrafficpermission-api
+spec:
+  targetRef:
+    kind: MeshService
+    name: backend
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: ALLOW
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          kuma.io/zone: us-east
+      default:
+        action: DENY_WITH_SHADOW_ALLOW
+    - targetRef:
+        kind: MeshService
+        name: backend
+      default:
+        action: ALLOW_WITH_SHADOW_DENY
+    - targetRef:
+        kind: MeshServiceSubset
+        name: backend
+        tags:
+          version: v1
+      default:
+        action: DENY
+`)
+
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("policies could be created only in %s", Config.KumaNamespace)))
 	})
 }
