@@ -25,13 +25,6 @@ func API() {
 		Expect(
 			k8s.RunKubectlE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(), "delete", "meshtrafficpermissions", "-A", "--all"),
 		).To(Succeed())
-
-		// mtps, err := env.Cluster.GetKumactlOptions().KumactlList("meshtrafficpermissions", meshName)
-		//Expect(err).ToNot(HaveOccurred())
-		//for _, mtp := range mtps {
-		//	Expect(k8s.RunKubectlE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(), "delete", "meshtrafficpermissions", "-A", "--all")).To(Succeed())
-		//	Expect(env.Cluster.GetKubectlOptions()
-		//}
 	})
 
 	E2EAfterAll(func() {
