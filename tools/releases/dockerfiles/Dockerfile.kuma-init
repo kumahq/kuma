@@ -1,5 +1,5 @@
 ARG BASE_IMAGE_ARCH=amd64
-ARG EBPF_IMAGE=kumahq/kuma-net-ebpf:0.7.1
+ARG EBPF_IMAGE=kumahq/kuma-net-ebpf:0.7.2
 
 FROM --platform=linux/$BASE_IMAGE_ARCH $EBPF_IMAGE as ebpf
 FROM --platform=linux/$BASE_IMAGE_ARCH ubuntu:jammy
