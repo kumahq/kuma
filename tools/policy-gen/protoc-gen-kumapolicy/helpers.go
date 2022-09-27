@@ -31,6 +31,10 @@ func generateHelpers(
 		}
 	}
 
+	if !hasFrom || !hasTo {
+		return nil
+	}
+
 	info := NewPolicyConfig(msg.Desc)
 
 	outBuf := bytes.Buffer{}
