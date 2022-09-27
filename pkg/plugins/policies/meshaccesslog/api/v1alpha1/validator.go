@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"github.com/kumahq/kuma/pkg/util/validation"
 
 	"github.com/asaskevich/govalidator"
 
@@ -85,11 +86,11 @@ func validateDefault(conf *MeshAccessLog_Conf) validators.ValidationError {
 
 func validateBackend(backend *MeshAccessLog_Backend) validators.ValidationError {
 	var verr validators.ValidationError
-	file := bool2int(backend.GetFile() != nil)
-	tcp := bool2int(backend.GetTcp() != nil)
+	file := validation.Bool2Int(backend.GetFile() != nil)
+	tcp := validation.Bool2Int(backend.GetTcp() != nil)
 
 	if file+tcp != 1 {
-		verr.AddViolation("", `backend can have only one type defined: tcp, file`)
+		verr.AddViolation("", validation.MustHaveOnlyOneMessage("backend", "tcp", "file"))
 	}
 
 	verr.AddErrorAt(validators.RootedAt("file").Field("format"), validateFormat(backend.GetFile().GetFormat()))
@@ -115,11 +116,11 @@ func validateFormat(format *MeshAccessLog_Format) validators.ValidationError {
 	if format == nil {
 		return verr
 	}
-	plain := bool2int(format.GetPlain() != "")
-	json := bool2int(format.GetJson() != nil)
+	plain := validation.Bool2Int(format.GetPlain() != "")
+	json := validation.Bool2Int(format.GetJson() != nil)
 
-	if plain+json > 1 {
-		verr.AddViolation("", `format can only have one type defined: plain, json`)
+	if plain+json != 1 {
+		verr.AddViolation("", validation.MustHaveOnlyOneMessage("format", "plain", "json"))
 	}
 
 	if format.GetJson() != nil {
@@ -149,11 +150,4 @@ func validateIncompatibleCombinations(spec *MeshAccessLog) validators.Validation
 		verr.AddViolation("to", `cannot use "to" when "targetRef" is "MeshHTTPRoute" - "to" always goes to the application`)
 	}
 	return verr
-}
-
-func bool2int(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
 }

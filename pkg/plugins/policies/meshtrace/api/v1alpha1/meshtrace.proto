@@ -6,6 +6,7 @@ import "mesh/options.proto";
 option go_package = "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1";
 
 import "common/v1alpha1/targetref.proto";
+import "google/protobuf/wrappers.proto";
 import "kuma-doc/config.proto";
 
 option (doc.config) = {
@@ -26,23 +27,44 @@ message MeshTrace {
   // defined inplace.
   kuma.common.v1alpha1.TargetRef targetRef = 1;
 
-  message ZipkinBackend {
-    string url = 1;
+  // a mirror of api/mesh/v1alpha1/mesh.proto DatadogTracingBackendConfig / ZipkinTracingBackendConfig
+  // make generate/policies failed when trying to re-use these
+  message DatadogBackend {
+    // Address of datadog collector.
+    string address = 1 [ (doc.required) = true ];
+
+    // Port of datadog collector
+    uint32 port = 2 [ (doc.required) = true ];
   }
 
-  message DatadogBackend {
-    string url = 1;
+  message ZipkinBackend {
+    // Address of Zipkin collector.
+    string url = 1 [ (doc.required) = true ];
+
+    // Generate 128bit traces. Default: false
+    bool traceId128bit = 2;
+
+    // Version of the API. values: httpJson, httpJsonV1, httpProto. Default:
+    // httpJson see
+    // https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L66
+    string apiVersion = 3 [ (doc.required) = true ];
+
+    // Determines whether client and server spans will share the same span
+    // context. Default: true.
+    // https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L63
+    google.protobuf.BoolValue sharedSpanContext = 4;
   }
 
   message Backend {
+    // only one of zipkin or datadog can be used
     ZipkinBackend zipkin = 1;
     DatadogBackend datadog = 2;
   }
 
   message Sampling {
-      uint32 overall = 1;
-      uint32 client = 2;
-      uint32 random = 3;
+    double overall = 1;
+    double client = 2;
+    double random = 3;
   }
 
   message HeaderTag {
@@ -52,13 +74,17 @@ message MeshTrace {
 
   message Tag {
     string name = 1;
+
+    // only one of literal or header can be used
     string literal = 2;
     HeaderTag header = 3;
   }
 
   message Conf {
-    Backend backend = 1;
+    repeated Backend backends = 1;
     Sampling sampling = 2;
     repeated Tag tags = 3;
   }
+
+  Conf default = 2;
 }

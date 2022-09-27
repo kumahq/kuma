@@ -10,6 +10,71 @@ properties:
   name:
     description: 'Name of the Kuma resource'
     type: string
+  default:
+    properties:
+      backends:
+        items:
+          properties:
+            datadog:
+              description: a mirror of api/mesh/v1alpha1/mesh.proto DatadogTracingBackendConfig / ZipkinTracingBackendConfig make generate/policies failed when trying to re-use these
+              properties:
+                address:
+                  description: Address of datadog collector.
+                  type: string
+                port:
+                  description: Port of datadog collector
+                  format: int32
+                  type: integer
+              type: object
+            zipkin:
+              description: only one of zipkin or datadog can be used
+              properties:
+                apiVersion:
+                  description: 'Version of the API. values: httpJson, httpJsonV1, httpProto. Default: httpJson see https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L66'
+                  type: string
+                sharedSpanContext:
+                  description: 'Determines whether client and server spans will share the same span context. Default: true. https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L63'
+                  properties:
+                    value:
+                      description: The bool value.
+                      type: boolean
+                  type: object
+                traceId128bit:
+                  description: 'Generate 128bit traces. Default: false'
+                  type: boolean
+                url:
+                  description: Address of Zipkin collector.
+                  type: string
+              type: object
+          type: object
+        type: array
+      sampling:
+        properties:
+          client:
+            type: number
+          overall:
+            type: number
+          random:
+            type: number
+        type: object
+      tags:
+        items:
+          properties:
+            header:
+              properties:
+                default:
+                  type: string
+                name:
+                  type: string
+              type: object
+            literal:
+              description: only one of literal or header can be used
+              type: string
+            name:
+              type: string
+          type: object
+        type: array
+    type: object
   targetRef:
     description: TargetRef is a reference to the resource the policy takes an effect on. The resource could be either a real store object or virtual resource defined inplace.
     properties:
