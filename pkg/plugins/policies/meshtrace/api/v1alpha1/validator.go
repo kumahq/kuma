@@ -50,19 +50,19 @@ func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 		zipkin := validation.Bool2Int(backend.GetZipkin() != nil)
 
 		if datadog+zipkin != 1 {
-			verr.AddViolation("backend[0]", validation.MustHaveOnlyOne("backend", "datadog", "zipkin"))
+			verr.AddViolation("backends[0]", validation.MustHaveOnlyOne("backend", "datadog", "zipkin"))
 		}
 
 		if backend.GetDatadog() != nil {
 			datadogBackend := backend.GetDatadog()
 			if datadogBackend.Address == "" {
-				verr.AddViolation("backend[0].datadog.address", "must not be empty")
+				verr.AddViolation("backends[0].datadog.address", "must not be empty")
 			} else if !govalidator.IsURL(datadogBackend.Address) {
-				verr.AddViolation("backend[0].datadog.address", "must be a valid address")
+				verr.AddViolation("backends[0].datadog.address", "must be a valid address")
 			}
 
 			if datadogBackend.Port == 0 || datadogBackend.Port > math.MaxUint16 {
-				verr.AddViolation("backend[0].datadog.port", fmt.Sprintf("must be a valid port (0-%d)", math.MaxUint16))
+				verr.AddViolation("backends[0].datadog.port", fmt.Sprintf("must be a valid port (0-%d)", math.MaxUint16))
 			}
 		}
 
@@ -70,15 +70,15 @@ func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 			zipkinBackend := backend.GetZipkin()
 
 			if zipkinBackend.Url == "" {
-				verr.AddViolation("backend[0].zipkin.url", validation.MustNotBeEmpty())
+				verr.AddViolation("backends[0].zipkin.url", validation.MustNotBeEmpty())
 			} else if !govalidator.IsURL(zipkinBackend.Url) {
-				verr.AddViolation("backend[0].zipkin.url", "must be a valid url")
+				verr.AddViolation("backends[0].zipkin.url", "must be a valid url")
 			}
 
 			if zipkinBackend.ApiVersion != "" {
 				validZipkinApiVersions := []string{"httpJson", "httpJsonV1", "httpProto"}
 				if !slices.Contains(validZipkinApiVersions, zipkinBackend.ApiVersion) {
-					verr.AddViolation("backend[0].zipkin.apiVersion", fmt.Sprintf("must be one of %s", strings.Join(validZipkinApiVersions, ", ")))
+					verr.AddViolation("backends[0].zipkin.apiVersion", fmt.Sprintf("must be one of %s", strings.Join(validZipkinApiVersions, ", ")))
 				}
 			}
 		}
