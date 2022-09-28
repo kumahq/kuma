@@ -138,7 +138,6 @@ var _ = Describe("Proxy Builder", func() {
 						{
 							Tags: map[string]string{
 								mesh_proto.ServiceTag: "service-in-zone-2",
-								"mesh":                "default",
 							},
 							Instances: 1,
 							Mesh:      "default",
@@ -147,7 +146,6 @@ var _ = Describe("Proxy Builder", func() {
 							Tags: map[string]string{
 								mesh_proto.ServiceTag: "external-service-in-zone-2",
 								mesh_proto.ZoneTag:    "zone-2",
-								"mesh":                "default",
 							},
 							Instances:       1,
 							Mesh:            "default",
@@ -168,7 +166,6 @@ var _ = Describe("Proxy Builder", func() {
 						{
 							Tags: map[string]string{
 								mesh_proto.ServiceTag: "service-in-zone-2",
-								"mesh":                "default",
 							},
 							Instances: 1,
 							Mesh:      "default",
@@ -177,7 +174,6 @@ var _ = Describe("Proxy Builder", func() {
 							Tags: map[string]string{
 								mesh_proto.ServiceTag: "external-service-in-zone-2",
 								mesh_proto.ZoneTag:    "zone-2",
-								"mesh":                "default",
 							},
 							Instances:       1,
 							Mesh:            "default",
