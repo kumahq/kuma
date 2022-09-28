@@ -48,7 +48,7 @@ func (c *RBACConfigurer) createRBACFilter() (*envoy_listener.Filter, error) {
 		Action:   rbac_config.RBAC_ALLOW,
 		Policies: map[string]*rbac_config.Policy{},
 	}
-	if principals := c.createPrincipals(false); len(principals) != 0 {
+	if principals := c.createPrincipals(); len(principals) != 0 {
 		rules.Policies["MeshTrafficPermission"] = &rbac_config.Policy{
 			Permissions: []*rbac_config.Permission{
 				{
@@ -63,7 +63,7 @@ func (c *RBACConfigurer) createRBACFilter() (*envoy_listener.Filter, error) {
 
 	// 'shadowRules' could be nil if there are no shadow principals
 	var shadowRules *rbac_config.RBAC
-	if shadowPrincipals := c.createPrincipals(true); len(shadowPrincipals) != 0 {
+	if shadowPrincipals, hasShadowRule := c.createShadowPrincipals(); len(shadowPrincipals) != 0 {
 		shadowRules = &rbac_config.RBAC{
 			Action: rbac_config.RBAC_ALLOW,
 			Policies: map[string]*rbac_config.Policy{
@@ -78,6 +78,11 @@ func (c *RBACConfigurer) createRBACFilter() (*envoy_listener.Filter, error) {
 					Principals: shadowPrincipals,
 				},
 			},
+		}
+	} else if hasShadowRule {
+		shadowRules = &rbac_config.RBAC{
+			Action:   rbac_config.RBAC_ALLOW,
+			Policies: map[string]*rbac_config.Policy{},
 		}
 	}
 
@@ -99,37 +104,42 @@ func (c *RBACConfigurer) createRBACFilter() (*envoy_listener.Filter, error) {
 	}, nil
 }
 
-func (c *RBACConfigurer) createPrincipals(shadow bool) []*rbac_config.Principal {
+func (c *RBACConfigurer) createPrincipals() []*rbac_config.Principal {
 	allowSubset := []core_xds.Subset{}
 	for _, rule := range c.Rules {
-		if rule.Conf == nil {
-			// the default action when no conf provided is DENY
-			continue
-		}
 		action := rule.Conf.(*policies_api.MeshTrafficPermission_Conf).GetActionEnum()
-		if shouldGenerateRuleForAction(action, shadow) {
+		switch action {
+		case
+			policies_api.MeshTrafficPermission_Conf_ALLOW,
+			policies_api.MeshTrafficPermission_Conf_ALLOW_WITH_SHADOW_DENY:
 			allowSubset = append(allowSubset, rule.Subset)
 		}
 	}
-
-	principals := []*rbac_config.Principal{}
-	for _, ss := range allowSubset {
-		principals = append(principals, c.principalFromSubset(ss, c.Mesh))
-	}
-
-	return principals
+	return c.principalsFromSubsets(allowSubset)
 }
 
-func shouldGenerateRuleForAction(
-	action policies_api.MeshTrafficPermission_Conf_Action,
-	shadow bool,
-) bool {
-	if shadow {
-		return action == policies_api.MeshTrafficPermission_Conf_DENY_WITH_SHADOW_ALLOW
-	} else {
-		return action == policies_api.MeshTrafficPermission_Conf_ALLOW ||
-			action == policies_api.MeshTrafficPermission_Conf_ALLOW_WITH_SHADOW_DENY
+func (c *RBACConfigurer) createShadowPrincipals() ([]*rbac_config.Principal, bool) {
+	allowSubset := []core_xds.Subset{}
+	hasShadowRule := false
+	for _, rule := range c.Rules {
+		action := rule.Conf.(*policies_api.MeshTrafficPermission_Conf).GetActionEnum()
+		switch action {
+		case policies_api.MeshTrafficPermission_Conf_DENY_WITH_SHADOW_ALLOW:
+			allowSubset = append(allowSubset, rule.Subset)
+			hasShadowRule = true
+		case policies_api.MeshTrafficPermission_Conf_ALLOW_WITH_SHADOW_DENY:
+			hasShadowRule = true
+		}
 	}
+	return c.principalsFromSubsets(allowSubset), hasShadowRule
+}
+
+func (c *RBACConfigurer) principalsFromSubsets(subsets []core_xds.Subset) []*rbac_config.Principal {
+	principals := []*rbac_config.Principal{}
+	for _, ss := range subsets {
+		principals = append(principals, c.principalFromSubset(ss, c.Mesh))
+	}
+	return principals
 }
 
 func (c *RBACConfigurer) principalFromSubset(ss core_xds.Subset, mesh string) *rbac_config.Principal {

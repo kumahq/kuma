@@ -252,5 +252,35 @@ filters:
       rules: {}
       statPrefix: no.`,
 		}),
+		Entry("shadow deny rule", testCase{
+			stats: "shadow_deny_prefix",
+			mesh:  "shadow_deny_mesh",
+			rules: []*core_xds.Rule{
+				{
+					Subset: []core_xds.Tag{
+						{Key: "kuma.io/service", Value: "backend"},
+					},
+					Conf: &v1alpha1.MeshTrafficPermission_Conf{
+						Action: "ALLOW_WITH_SHADOW_DENY",
+					},
+				},
+			},
+			expected: `
+filters:
+  - name: envoy.filters.network.rbac
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+      rules:
+          policies:
+              MeshTrafficPermission:
+                  permissions:
+                      - any: true
+                  principals:
+                      - authenticated:
+                          principalName:
+                              exact: spiffe://shadow_deny_mesh/backend
+      shadowRules: {}
+      statPrefix: shadow_deny_prefix.`,
+		}),
 	)
 })
