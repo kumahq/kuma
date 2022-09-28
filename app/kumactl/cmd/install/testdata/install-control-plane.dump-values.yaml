@@ -695,4 +695,5 @@ experimental:
 plugins:
   policies:
     - meshaccesslogs
+    - meshtraces
     - meshtrafficpermissions
