@@ -70,7 +70,8 @@ message MeshTrace {
 
   message HeaderTag {
     string name = 1 [ (doc.required) = true ];
-    // if the default is missing and there is no value the tag will not be included
+    // if the default is missing and there is no value the tag will not be
+    // included
     string default = 2;
   }
 

@@ -347,7 +347,8 @@ type MeshTrace_HeaderTag struct {
 	unknownFields protoimpl.UnknownFields
 
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// if the default is missing and there is no value the tag will not be included
+	// if the default is missing and there is no value the tag will not be
+	// included
 	Default string `protobuf:"bytes,2,opt,name=default,proto3" json:"default,omitempty"`
 }
 
