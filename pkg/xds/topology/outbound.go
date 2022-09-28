@@ -511,9 +511,6 @@ func NewExternalServiceEndpoint(
 	}, nil
 }
 
-<<<<<<< HEAD
-func loadBytes(ds *v1alpha1.DataSource, mesh string, loader datasource.Loader) ([]byte, error) {
-=======
 func cloneTags(tags map[string]string) map[string]string {
 	result := map[string]string{}
 	for tag, value := range tags {
@@ -522,8 +519,7 @@ func cloneTags(tags map[string]string) map[string]string {
 	return result
 }
 
-func loadBytes(ctx context.Context, ds *v1alpha1.DataSource, mesh string, loader datasource.Loader) ([]byte, error) {
->>>>>>> 81ccca0f6 (fix(kuma-cp): deep copy tags when gen. outbounds (#5070))
+func loadBytes(ds *v1alpha1.DataSource, mesh string, loader datasource.Loader) ([]byte, error) {
 	if ds == nil {
 		return nil, nil
 	}
