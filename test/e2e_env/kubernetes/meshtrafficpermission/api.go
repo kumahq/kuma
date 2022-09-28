@@ -79,7 +79,7 @@ spec:
 		mtps, err = env.Cluster.GetKumactlOptions().KumactlList("meshtrafficpermissions", meshName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(mtps).To(HaveLen(1))
-		Expect(mtps[0]).To(Equal("mtp1.kuma-system"))
+		Expect(mtps[0]).To(Equal(fmt.Sprintf("mtp1.%s", Config.KumaNamespace)))
 	})
 
 	It("should deny creating policy in the non-system namespace", func() {
