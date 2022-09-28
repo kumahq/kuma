@@ -2,14 +2,16 @@ package v1alpha1
 
 import (
 	"fmt"
-	"github.com/asaskevich/govalidator"
-	common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
-    "github.com/kumahq/kuma/pkg/core/validators"
-    matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
-    "github.com/kumahq/kuma/pkg/util/validation"
-	"golang.org/x/exp/slices"
 	"math"
 	"strings"
+
+	"github.com/asaskevich/govalidator"
+	"golang.org/x/exp/slices"
+
+	common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/validators"
+	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
+	"github.com/kumahq/kuma/pkg/util/validation"
 )
 
 func (r *MeshTraceResource) validate() error {
@@ -47,7 +49,7 @@ func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 		datadog := validation.Bool2Int(backend.GetDatadog() != nil)
 		zipkin := validation.Bool2Int(backend.GetZipkin() != nil)
 
-		if datadog + zipkin != 1 {
+		if datadog+zipkin != 1 {
 			verr.AddViolation("backend[0]", validation.MustHaveOnlyOne("backend", "datadog", "zipkin"))
 		}
 
@@ -92,7 +94,7 @@ func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 		header := validation.Bool2Int(tag.GetHeader() != nil)
 		literal := validation.Bool2Int(tag.GetLiteral() != "")
 
-		if header + literal != 1 {
+		if header+literal != 1 {
 			verr.AddViolationAt(indexedField, validation.MustHaveOnlyOne("tag", "header", "literal"))
 		}
 	}

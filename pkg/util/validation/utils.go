@@ -1,25 +1,25 @@
 package validation
 
 import (
-    "fmt"
-    "strings"
+	"fmt"
+	"strings"
 )
 
 func Bool2Int(b bool) int {
-    if b {
-        return 1
-    }
-    return 0
+	if b {
+		return 1
+	}
+	return 0
 }
 
-func MustHaveOnlyOne(entity string, allowedValues... string) string {
-    return fmt.Sprintf(`%s must have only one type defined: %s`, entity, strings.Join(allowedValues, ", "))
+func MustHaveOnlyOne(entity string, allowedValues ...string) string {
+	return fmt.Sprintf(`%s must have only one type defined: %s`, entity, strings.Join(allowedValues, ", "))
 }
 
 func MustBeDefined() string {
-    return "must be defined"
+	return "must be defined"
 }
 
 func MustNotBeEmpty() string {
-    return "must not be empty"
+	return "must not be empty"
 }

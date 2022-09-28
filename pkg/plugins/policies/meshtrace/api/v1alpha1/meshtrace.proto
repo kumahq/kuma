@@ -27,8 +27,9 @@ message MeshTrace {
   // defined inplace.
   kuma.common.v1alpha1.TargetRef targetRef = 1;
 
-  // a mirror of api/mesh/v1alpha1/mesh.proto DatadogTracingBackendConfig / ZipkinTracingBackendConfig
-  // make generate/policies failed when trying to re-use these
+  // a mirror of api/mesh/v1alpha1/mesh.proto DatadogTracingBackendConfig /
+  // ZipkinTracingBackendConfig make generate/policies failed when trying to
+  // re-use these
   message DatadogBackend {
     // Address of datadog collector.
     string address = 1 [ (doc.required) = true ];
@@ -69,6 +70,7 @@ message MeshTrace {
 
   message HeaderTag {
     string name = 1 [ (doc.required) = true ];
+    // if the default is missing and there is no value the tag will not be included
     string default = 2;
   }
 
@@ -81,7 +83,7 @@ message MeshTrace {
   }
 
   message Conf {
-    repeated Backend backends = 1  [ (doc.required) = true ];
+    repeated Backend backends = 1 [ (doc.required) = true ];
     Sampling sampling = 2;
     repeated Tag tags = 3;
   }

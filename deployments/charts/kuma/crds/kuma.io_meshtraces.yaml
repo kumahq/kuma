@@ -93,6 +93,8 @@ spec:
                         header:
                           properties:
                             default:
+                              description: if the default is missing and there is
+                                no value the tag will not be included
                               type: string
                             name:
                               type: string
