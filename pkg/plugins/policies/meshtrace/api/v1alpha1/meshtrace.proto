@@ -68,12 +68,12 @@ message MeshTrace {
   }
 
   message HeaderTag {
-    string name = 1;
-    string default = 2;
+    string name = 1 [ (doc.required) = true ];
+    string default = 2 [ (doc.required) = true ];
   }
 
   message Tag {
-    string name = 1;
+    string name = 1 [ (doc.required) = true ];
 
     // only one of literal or header can be used
     string literal = 2;
@@ -81,7 +81,7 @@ message MeshTrace {
   }
 
   message Conf {
-    repeated Backend backends = 1;
+    repeated Backend backends = 1  [ (doc.required) = true ];
     Sampling sampling = 2;
     repeated Tag tags = 3;
   }

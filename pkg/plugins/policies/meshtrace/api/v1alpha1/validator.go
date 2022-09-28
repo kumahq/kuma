@@ -1,10 +1,15 @@
 package v1alpha1
 
 import (
-    common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
+	"fmt"
+	"github.com/asaskevich/govalidator"
+	common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
     "github.com/kumahq/kuma/pkg/core/validators"
     matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
     "github.com/kumahq/kuma/pkg/util/validation"
+	"golang.org/x/exp/slices"
+	"math"
+	"strings"
 )
 
 func (r *MeshTraceResource) validate() error {
@@ -36,7 +41,7 @@ func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 	}
 
 	if len(conf.GetBackends()) != 1 {
-		verr.AddViolation("backends", "must have only one backend")
+		verr.AddViolation("backends", "must have one backend defined")
 	} else {
 		backend := conf.GetBackends()[0]
 		datadog := validation.Bool2Int(backend.GetDatadog() != nil)
@@ -44,6 +49,38 @@ func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 
 		if datadog + zipkin != 1 {
 			verr.AddViolation("backend", validation.MustHaveOnlyOne("backend[0]", "datadog", "zipkin"))
+		}
+
+		if backend.GetDatadog() != nil {
+			datadogBackend := backend.GetDatadog()
+			if datadogBackend.Address == "" {
+				verr.AddViolation("backend[0].datadog.address", "must not be empty")
+			}
+
+			if !govalidator.IsURL(datadogBackend.Address) {
+				verr.AddViolation("backend[0].datadog.address", "must be a valid address")
+			}
+
+			if datadogBackend.Port == 0 || datadogBackend.Port > math.MaxUint16 {
+				verr.AddViolation("backend[0].datadog.port", fmt.Sprintf("must be a valid port (0-%d)", math.MaxUint16))
+			}
+		}
+
+		if backend.GetZipkin() != nil {
+			zipkinBackend := backend.GetZipkin()
+
+			if zipkinBackend.Url == "" {
+				verr.AddViolation("backend[0].zipkin.url", "must not be empty")
+			} else if !govalidator.IsURL(zipkinBackend.Url) {
+				verr.AddViolation("backend[0].zipkin.url", "must be a valid url")
+			}
+
+			if zipkinBackend.ApiVersion != "" {
+				validZipkinApiVersions := []string{"httpJson", "httpJsonV1", "httpProto"}
+				if !slices.Contains(validZipkinApiVersions, zipkinBackend.ApiVersion) {
+					verr.AddViolation("backend[0].zipkin.apiVersion", fmt.Sprintf("must be one of %s", strings.Join(validZipkinApiVersions, ", ")))
+				}
+			}
 		}
 	}
 

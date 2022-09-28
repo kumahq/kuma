@@ -79,6 +79,74 @@ violations:
   - field: spec.default
     message: must be defined`,
 			}),
+			Entry("default empty", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+default: {}
+`,
+				expected: `
+violations:
+  - field: spec.default.backends
+    message: must have one backend defined`,
+			}),
+			Entry("no backends", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends: []
+`,
+				expected: `
+violations:
+  - field: spec.default.backends
+    message: must have one backend defined`,
+			}),
+			Entry("no valid backends", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - unknown: {}
+`,
+				expected: `
+violations:
+  - field: spec.default.backend
+    message: 'backend[0] must have only one type defined: datadog, zipkin'`,
+			}),
+			Entry("no url for zipkin backend", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - zipkin: {}
+`,
+				expected: `
+violations:
+  - field: spec.default.backend[0].zipkin.url
+    message: must not be empty`,
+			}),
+			Entry("invalid url for zipkin backend", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - zipkin:
+        url: not_valid_url
+`,
+				expected: `
+violations:
+  - field: spec.default.backend[0].zipkin.url
+    message: must be a valid url`,
+			}),
 		)
 	})
 })
