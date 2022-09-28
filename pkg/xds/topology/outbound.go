@@ -135,7 +135,7 @@ func fillDataplaneOutbounds(
 		dpNetworking := dpSpec.GetNetworking()
 
 		for _, inbound := range dpNetworking.GetHealthyInbounds() {
-			inboundTags := inbound.GetTags()
+			inboundTags := cloneTags(inbound.GetTags())
 			serviceName := inboundTags[mesh_proto.ServiceTag]
 			inboundInterface := dpNetworking.ToInboundInterface(inbound)
 			inboundAddress := inboundInterface.DataplaneAdvertisedIP
@@ -210,7 +210,13 @@ func fillIngressOutbounds(
 			if service.Mesh != mesh.GetMeta().GetName() {
 				continue
 			}
+<<<<<<< HEAD
 			serviceTags := service.GetTags()
+=======
+
+			// deep copy map to not modify tags in BuildRemoteEndpointMap
+			serviceTags := cloneTags(service.GetTags())
+>>>>>>> 81ccca0f6 (fix(kuma-cp): deep copy tags when gen. outbounds (#5070))
 			serviceName := serviceTags[mesh_proto.ServiceTag]
 			serviceInstances := service.GetInstances()
 			locality := localityFromTags(mesh, priorityRemote, serviceTags)
@@ -237,7 +243,7 @@ func fillIngressOutbounds(
 					}
 					// this is necessary for correct spiffe generation for dp when
 					// traffic is routed: egress -> ingress -> egress
-					if mesh.ZoneEgressEnabled() && service.ExternalService {
+					if service.ExternalService {
 						endpoint.ExternalService = &core_xds.ExternalService{}
 					}
 
@@ -312,7 +318,12 @@ func fillExternalServicesOutboundsThroughEgress(
 	mesh *core_mesh.MeshResource,
 ) {
 	for _, externalService := range externalServices {
+<<<<<<< HEAD
 		serviceTags := externalService.Spec.GetTags()
+=======
+		// deep copy map to not modify tags in ExternalService.
+		serviceTags := cloneTags(externalService.Spec.GetTags())
+>>>>>>> 81ccca0f6 (fix(kuma-cp): deep copy tags when gen. outbounds (#5070))
 		serviceName := serviceTags[mesh_proto.ServiceTag]
 		locality := localityFromTags(mesh, priorityRemote, serviceTags)
 
@@ -347,7 +358,25 @@ func NewExternalServiceEndpoint(
 	spec := externalService.Spec
 	tls := spec.GetNetworking().GetTls()
 	meshName := mesh.GetMeta().GetName()
+<<<<<<< HEAD
 	tags := spec.GetTags()
+=======
+	// deep copy map to not modify tags in ExternalService.
+	tags := cloneTags(spec.GetTags())
+
+	caCert, err := loadBytes(ctx, tls.GetCaCert(), meshName, loader)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not load caCert")
+	}
+	clientCert, err := loadBytes(ctx, tls.GetClientCert(), meshName, loader)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not load clientCert")
+	}
+	clientKey, err := loadBytes(ctx, tls.GetClientKey(), meshName, loader)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not load clientKey")
+	}
+>>>>>>> 81ccca0f6 (fix(kuma-cp): deep copy tags when gen. outbounds (#5070))
 
 	es := &core_xds.ExternalService{
 		TLSEnabled:         tls.GetEnabled(),
@@ -380,7 +409,19 @@ func NewExternalServiceEndpoint(
 	}, nil
 }
 
+<<<<<<< HEAD
 func convertToEnvoy(ds *v1alpha1.DataSource, mesh string, loader datasource.Loader) []byte {
+=======
+func cloneTags(tags map[string]string) map[string]string {
+	result := map[string]string{}
+	for tag, value := range tags {
+		result[tag] = value
+	}
+	return result
+}
+
+func loadBytes(ctx context.Context, ds *v1alpha1.DataSource, mesh string, loader datasource.Loader) ([]byte, error) {
+>>>>>>> 81ccca0f6 (fix(kuma-cp): deep copy tags when gen. outbounds (#5070))
 	if ds == nil {
 		return nil
 	}
