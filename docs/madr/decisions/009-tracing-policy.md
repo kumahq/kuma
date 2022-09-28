@@ -13,6 +13,22 @@ Tracing in Kuma is implemented with Envoy's [tracing
 support](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing).
 At the moment, Kuma supports Zipkin and Datadog.
 
+### Sampling in Envoy
+
+Envoy implements head-based sampling, meaning the originating service (called also `head` or `first`)
+is responsible for deciding if the request is traced or not.
+You can read about this in the [docs](https://github.com/envoyproxy/envoy/blame/a36b06a92634463f76689b5bb04338105527d5c7/docs/root/configuration/http/http_conn_man/headers.rst#L496):
+
+> When the Sampled flag is either not specified or set to 1,
+> the span will be reported to the tracing system.
+> Once Sampled is set to 0 or 1, the same value should be consistently sent downstream.
+
+This means that the `sampling` value in a service that is not the first one to receive traffic
+does not change the behaviour.
+This makes it somewhat unintuitive when targeting services lower down the chain.
+The easiest solution is just to set tracing on a `Mesh` level,
+but this limits the users' abilities.
+
 ## Decision Drivers
 
 - Replace existing policies with new policy matching compliant resources
@@ -75,6 +91,14 @@ There are still open discussions about how exactly we can best represent these
 sum types, for example `kind: zipkin` vs `zipkin: ...`, but we chose the field
 name discriminator option as above.
 
+#### Backend array with one element
+
+Envoy allows configuring only 1 backend,
+so the natural way of representing that would be just one object.
+Unfortunately, to make merging for rule based view work properly
+we had to change it to be an array `backends`
+with a validation that checks if it contains only one object.
+
 ### `targetRef`
 
 This is a new policy, so it's based on `targetRef`. Envoy tracing can be configured
@@ -92,6 +116,66 @@ Resources supported by `spec.targetRef` are `Mesh`, `MeshSubset`, `MeshService`,
 `MeshServiceSubset`, `MeshGatewayRoute` and eventually the future
 evolution of `TrafficRoute`, which we'll call `MeshTrafficRoute` in this
 document.
+
+#### Considered alternatives
+
+We considered implementing `to` field to support a case
+where we want to set different sampling for different outbound traffic.
+
+Without `to` field trying to set sampling to `0%` to `Analytics` would not be possible:
+- targeting `Client` as a `MeshService` would set sampling for both `Database` and `Analytics`
+- targeting `Database` and `Analytics` would not make a difference 
+because they are not the originating the traffic (see [Sampling in Envoy](#sampling-in-envoy))
+
+```text
+Gateway -> Client --(constant traffic - second in chain)------> Server         # set sampling to 10%
+              \-----(once every 1h - originating)-------------> Database       # set sampling to 100%
+               \----(once every 1m - originating)-------------> Analytics      # set sampling to 0%
+```
+
+Implementing `to` implicitly requires implementing `from`,
+otherwise the traces would be missing inbound spans.
+Implementing `from` implicitly (as a syntax sugar, not actually requiring to have `from` field) 
+is not possible in a case where `to` has multiple different backends,
+because we wouldn't know which backend to use.
+
+Example:
+
+```yaml
+apiVersion: kuma.io/v1alpha2
+kind: MeshTrace
+spec:
+  targetRef:
+    kind: Mesh
+# !implicit definition
+#  from: 
+#  - targetRef:
+#     kind: Mesh
+#    default:
+#      backend:
+#        reference:
+#          kind: MeshTraceBackend
+#          name: jaeger-? which to choose here?
+  to:
+  - targetRef:
+     kind: MeshService
+     name: database
+    default:
+      backends:
+        - reference:
+          kind: MeshTraceBackend
+          name: jaeger-1
+  - targetRef:
+      kind: MeshService
+      name: analytics
+    default:
+      backends:
+        - reference:
+          kind: MeshTraceBackend
+          name: jaeger-2
+```
+
+This makes the config quite verbose and that's why we decided not to got down this route.
 
 ### Policy-specific configuration
 
@@ -180,10 +264,10 @@ spec:
   kind: MeshService
   name: backend
  default:
-  backend:
-   reference:
-    kind: MeshTraceBackend
-    name: jaeger
+  backends:
+   - reference:
+     kind: MeshTraceBackend
+     name: jaeger
   sampling:
    overall: 80
   tags:
@@ -207,9 +291,9 @@ spec:
   kind: MeshService
   name: backend
  default:
-  backend:
-   zipkin:
-    url: http://jaeger-collector.mesh-observability:9411/api/v2/spans
+  backends:
+   - zipkin:
+     url: http://jaeger-collector.mesh-observability:9411/api/v2/spans
   sampling:
    overall: 80
 ```
@@ -232,10 +316,10 @@ spec:
   kind: MeshGatewayRoute
   name: prod
  default:
-  backend:
-   ref:
-    kind: MeshTraceBackend
-    name: jaeger
+  backends:
+   - reference:
+     kind: MeshTraceBackend
+     name: jaeger
   sampling:
    overall: 80
   tags:
