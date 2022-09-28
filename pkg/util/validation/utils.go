@@ -19,3 +19,7 @@ func MustHaveOnlyOne(entity string, allowedValues... string) string {
 func MustBeDefined() string {
     return "must be defined"
 }
+
+func MustNotBeEmpty() string {
+    return "must not be empty"
+}

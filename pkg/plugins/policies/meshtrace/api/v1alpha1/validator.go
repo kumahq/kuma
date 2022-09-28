@@ -48,16 +48,14 @@ func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 		zipkin := validation.Bool2Int(backend.GetZipkin() != nil)
 
 		if datadog + zipkin != 1 {
-			verr.AddViolation("backend", validation.MustHaveOnlyOne("backend[0]", "datadog", "zipkin"))
+			verr.AddViolation("backend[0]", validation.MustHaveOnlyOne("backend", "datadog", "zipkin"))
 		}
 
 		if backend.GetDatadog() != nil {
 			datadogBackend := backend.GetDatadog()
 			if datadogBackend.Address == "" {
 				verr.AddViolation("backend[0].datadog.address", "must not be empty")
-			}
-
-			if !govalidator.IsURL(datadogBackend.Address) {
+			} else if !govalidator.IsURL(datadogBackend.Address) {
 				verr.AddViolation("backend[0].datadog.address", "must be a valid address")
 			}
 
@@ -70,7 +68,7 @@ func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 			zipkinBackend := backend.GetZipkin()
 
 			if zipkinBackend.Url == "" {
-				verr.AddViolation("backend[0].zipkin.url", "must not be empty")
+				verr.AddViolation("backend[0].zipkin.url", validation.MustNotBeEmpty())
 			} else if !govalidator.IsURL(zipkinBackend.Url) {
 				verr.AddViolation("backend[0].zipkin.url", "must be a valid url")
 			}
@@ -88,7 +86,7 @@ func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 	for tagIndex, tag := range tags {
 		indexedField := validators.RootedAt("tags").Index(tagIndex)
 		if tag.GetName() == "" {
-			verr.AddViolationAt(indexedField, "tag's name must not be empty")
+			verr.AddViolationAt(indexedField.Field("name"), validation.MustNotBeEmpty())
 		}
 
 		header := validation.Bool2Int(tag.GetHeader() != nil)

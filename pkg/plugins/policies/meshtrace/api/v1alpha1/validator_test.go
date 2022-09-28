@@ -33,6 +33,7 @@ default:
   backends:
     - zipkin:
         url: http://jaeger-collector.mesh-observability:9411/api/v2/spans
+        apiVersion: httpJson
   tags:
     - name: team
       literal: core
@@ -40,6 +41,9 @@ default:
       header:
         name: x-env
         default: prod
+    - name: version
+      header:
+        name: x-version
   sampling:
     overall: 80
     random: 60
@@ -115,8 +119,8 @@ default:
 `,
 				expected: `
 violations:
-  - field: spec.default.backend
-    message: 'backend[0] must have only one type defined: datadog, zipkin'`,
+  - field: spec.default.backend[0]
+    message: 'backend must have only one type defined: datadog, zipkin'`,
 			}),
 			Entry("no url for zipkin backend", testCase{
 				inputYaml: `
@@ -146,6 +150,144 @@ default:
 violations:
   - field: spec.default.backend[0].zipkin.url
     message: must be a valid url`,
+			}),
+			Entry("invalid apiVersion for zipkin backend", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - zipkin:
+        url: http://jaeger-collector.mesh-observability:9411/api/v2/spans
+        apiVersion: invalid_api_version
+`,
+				expected: `
+violations:
+  - field: spec.default.backend[0].zipkin.apiVersion
+    message: must be one of httpJson, httpJsonV1, httpProto`,
+			}),
+			Entry("missing address for datadog backend", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - datadog:
+        port: 443
+`,
+				expected: `
+violations:
+  - field: spec.default.backend[0].datadog.address
+    message: must not be empty`,
+			}),
+			Entry("invalid address for datadog backend", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - datadog:
+        address: not_a_valid_address
+        port: 443
+`,
+				expected: `
+violations:
+  - field: spec.default.backend[0].datadog.address
+    message: must be a valid address`,
+			}),
+			Entry("missing port for datadog backend", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - datadog:
+        address: intake.logs.datadoghq.eu
+`,
+				expected: `
+violations:
+  - field: spec.default.backend[0].datadog.port
+    message: must be a valid port (0-65535)`,
+			}),
+			Entry("invalid port for datadog backend", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - datadog:
+        address: intake.logs.datadoghq.eu
+        port: 999999
+`,
+				expected: `
+violations:
+  - field: spec.default.backend[0].datadog.port
+    message: must be a valid port (0-65535)`,
+			}),
+			Entry("tag missing name", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - datadog:
+        address: intake.logs.datadoghq.eu
+        port: 443
+  tags:
+    - literal: example
+    - header:
+        default: example
+`,
+				expected: `
+violations:
+  - field: spec.default.tags[0].name
+    message: must not be empty
+  - field: spec.default.tags[1].name
+    message: must not be empty`,
+			}),
+			Entry("tag missing type", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - datadog:
+        address: intake.logs.datadoghq.eu
+        port: 443
+  tags:
+    - name: example
+`,
+				expected: `
+violations:
+  - field: spec.default.tags[0]
+    message: 'tag must have only one type defined: header, literal'
+`,
+			}),
+			Entry("sampling out of range", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - datadog:
+        address: intake.logs.datadoghq.eu
+        port: 443
+  sampling:
+    overall: 101
+`,
+				expected: `
+violations:
+  - field: spec.default.sampling.overall
+    message: must be between 0 and 100
+`,
 			}),
 		)
 	})
