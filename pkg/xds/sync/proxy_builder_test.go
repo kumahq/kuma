@@ -249,7 +249,6 @@ var _ = Describe("Proxy Builder", func() {
 						Tags: map[string]string{
 							mesh_proto.ServiceTag: "external-service-zone-1",
 							mesh_proto.ZoneTag:    "zone-1",
-							"mesh":                "default",
 						},
 						Instances:       1,
 						Mesh:            "default",
