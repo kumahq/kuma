@@ -135,7 +135,7 @@ func fillDataplaneOutbounds(
 		dpNetworking := dpSpec.GetNetworking()
 
 		for _, inbound := range dpNetworking.GetHealthyInbounds() {
-			inboundTags := inbound.GetTags()
+			inboundTags := cloneTags(inbound.GetTags())
 			serviceName := inboundTags[mesh_proto.ServiceTag]
 			inboundInterface := dpNetworking.ToInboundInterface(inbound)
 			inboundAddress := inboundInterface.DataplaneAdvertisedIP
@@ -257,7 +257,9 @@ func fillIngressOutbounds(
 			if service.Mesh != mesh.GetMeta().GetName() {
 				continue
 			}
-			serviceTags := service.GetTags()
+
+			// deep copy map to not modify tags in BuildRemoteEndpointMap
+			serviceTags := cloneTags(service.GetTags())
 			serviceName := serviceTags[mesh_proto.ServiceTag]
 			serviceInstances := service.GetInstances()
 			locality := localityFromTags(mesh, priorityRemote, serviceTags)
@@ -284,7 +286,7 @@ func fillIngressOutbounds(
 					}
 					// this is necessary for correct spiffe generation for dp when
 					// traffic is routed: egress -> ingress -> egress
-					if mesh.ZoneEgressEnabled() && service.ExternalService {
+					if service.ExternalService {
 						endpoint.ExternalService = &core_xds.ExternalService{}
 					}
 
@@ -359,7 +361,8 @@ func fillExternalServicesOutboundsThroughEgress(
 	mesh *core_mesh.MeshResource,
 ) {
 	for _, externalService := range externalServices {
-		serviceTags := externalService.Spec.GetTags()
+		// deep copy map to not modify tags in ExternalService.
+		serviceTags := cloneTags(externalService.Spec.GetTags())
 		serviceName := serviceTags[mesh_proto.ServiceTag]
 		locality := localityFromTags(mesh, priorityRemote, serviceTags)
 
@@ -394,7 +397,9 @@ func NewExternalServiceEndpoint(
 	spec := externalService.Spec
 	tls := spec.GetNetworking().GetTls()
 	meshName := mesh.GetMeta().GetName()
-	tags := spec.GetTags()
+
+	// deep copy map to not modify tags in ExternalService.
+	tags := cloneTags(spec.GetTags())
 
 	es := &core_xds.ExternalService{
 		TLSEnabled:         tls.GetEnabled(),
@@ -425,6 +430,14 @@ func NewExternalServiceEndpoint(
 		ExternalService: es,
 		Locality:        localityFromTags(mesh, priority, tags),
 	}, nil
+}
+
+func cloneTags(tags map[string]string) map[string]string {
+	result := map[string]string{}
+	for tag, value := range tags {
+		result[tag] = value
+	}
+	return result
 }
 
 func convertToEnvoy(ds *v1alpha1.DataSource, mesh string, loader datasource.Loader) []byte {
