@@ -68,7 +68,7 @@ make test/kumactl
 ```
 For even more specific tests you can specify the package you want to run tests from:
 ```bash
-make test PKG_LIST=<pkgPath>
+make test TEST_PKG_LIST=<pkgPath>
 ```
 `pkgPath` is a package list selector for example: `./pkg/xds/...` will run all tests in the `pkg/xds` subtree.
 
