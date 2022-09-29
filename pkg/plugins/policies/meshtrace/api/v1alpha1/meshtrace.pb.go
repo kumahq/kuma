@@ -34,7 +34,8 @@ type MeshTrace struct {
 	// The resource could be either a real store object or virtual resource
 	// defined inplace.
 	TargetRef *v1alpha1.TargetRef `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef,omitempty"`
-	Default   *MeshTrace_Conf     `protobuf:"bytes,2,opt,name=default,proto3" json:"default,omitempty"`
+	// MeshTrace configuration.
+	Default *MeshTrace_Conf `protobuf:"bytes,2,opt,name=default,proto3" json:"default,omitempty"`
 }
 
 func (x *MeshTrace) Reset() {
@@ -83,9 +84,7 @@ func (x *MeshTrace) GetDefault() *MeshTrace_Conf {
 	return nil
 }
 
-// a mirror of api/mesh/v1alpha1/mesh.proto DatadogTracingBackendConfig /
-// ZipkinTracingBackendConfig make generate/policies failed when trying to
-// re-use these
+// Datadog tracing backend configuration.
 type MeshTrace_DatadogBackend struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -143,6 +142,7 @@ func (x *MeshTrace_DatadogBackend) GetPort() uint32 {
 	return 0
 }
 
+// Zipkin tracing backend configuration.
 type MeshTrace_ZipkinBackend struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -152,7 +152,7 @@ type MeshTrace_ZipkinBackend struct {
 	Url string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
 	// Generate 128bit traces. Default: false
 	TraceId128Bit bool `protobuf:"varint,2,opt,name=traceId128bit,proto3" json:"traceId128bit,omitempty"`
-	// Version of the API. values: httpJson, httpJsonV1, httpProto. Default:
+	// Version of the API. values: httpJson, httpProto. Default:
 	// httpJson see
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L66
 	ApiVersion string `protobuf:"bytes,3,opt,name=apiVersion,proto3" json:"apiVersion,omitempty"`
@@ -222,13 +222,15 @@ func (x *MeshTrace_ZipkinBackend) GetSharedSpanContext() *wrapperspb.BoolValue {
 	return nil
 }
 
+// Only one of zipkin or datadog can be used.
 type MeshTrace_Backend struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// only one of zipkin or datadog can be used
-	Zipkin  *MeshTrace_ZipkinBackend  `protobuf:"bytes,1,opt,name=zipkin,proto3" json:"zipkin,omitempty"`
+	// Zipkin backend configuration.
+	Zipkin *MeshTrace_ZipkinBackend `protobuf:"bytes,1,opt,name=zipkin,proto3" json:"zipkin,omitempty"`
+	// Datadog backend configuration.
 	Datadog *MeshTrace_DatadogBackend `protobuf:"bytes,2,opt,name=datadog,proto3" json:"datadog,omitempty"`
 }
 
@@ -278,14 +280,31 @@ func (x *MeshTrace_Backend) GetDatadog() *MeshTrace_DatadogBackend {
 	return nil
 }
 
+// Sampling configuration.
 type MeshTrace_Sampling struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Overall float64 `protobuf:"fixed64,1,opt,name=overall,proto3" json:"overall,omitempty"`
-	Client  float64 `protobuf:"fixed64,2,opt,name=client,proto3" json:"client,omitempty"`
-	Random  float64 `protobuf:"fixed64,3,opt,name=random,proto3" json:"random,omitempty"`
+	// Target percentage of requests will be traced
+	// after all other sampling checks have been applied (client, force tracing,
+	// random sampling). This field functions as an upper limit on the total
+	// configured sampling rate. For instance, setting client_sampling to 100%
+	// but overall_sampling to 1% will result in only 1% of client requests with
+	// the appropriate headers to be force traced. Default: 100% Mirror of
+	// overall_sampling in Envoy
+	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L142-L150
+	Overall uint32 `protobuf:"varint,1,opt,name=overall,proto3" json:"overall,omitempty"`
+	// Target percentage of requests that will be force traced if the
+	// 'x-client-trace-id' header is set. Default: 100% Mirror of
+	// client_sampling in Envoy
+	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L127-L133
+	Client uint32 `protobuf:"varint,2,opt,name=client,proto3" json:"client,omitempty"`
+	// Target percentage of requests that will be randomly selected for trace
+	// generation, if not requested by the client or not forced. Default: 100%
+	// Mirror of random_sampling in Envoy
+	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L135-L140
+	Random uint32 `protobuf:"varint,3,opt,name=random,proto3" json:"random,omitempty"`
 }
 
 func (x *MeshTrace_Sampling) Reset() {
@@ -320,35 +339,38 @@ func (*MeshTrace_Sampling) Descriptor() ([]byte, []int) {
 	return file_pkg_plugins_policies_meshtrace_api_v1alpha1_meshtrace_proto_rawDescGZIP(), []int{0, 3}
 }
 
-func (x *MeshTrace_Sampling) GetOverall() float64 {
+func (x *MeshTrace_Sampling) GetOverall() uint32 {
 	if x != nil {
 		return x.Overall
 	}
 	return 0
 }
 
-func (x *MeshTrace_Sampling) GetClient() float64 {
+func (x *MeshTrace_Sampling) GetClient() uint32 {
 	if x != nil {
 		return x.Client
 	}
 	return 0
 }
 
-func (x *MeshTrace_Sampling) GetRandom() float64 {
+func (x *MeshTrace_Sampling) GetRandom() uint32 {
 	if x != nil {
 		return x.Random
 	}
 	return 0
 }
 
+// Tag taken from a header configuration.
 type MeshTrace_HeaderTag struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Name of the header.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// if the default is missing and there is no value the tag will not be
-	// included
+	// Default value to use if header is missing.
+	// If the default is missing and there is no value the tag will not be
+	// included.
 	Default string `protobuf:"bytes,2,opt,name=default,proto3" json:"default,omitempty"`
 }
 
@@ -398,15 +420,19 @@ func (x *MeshTrace_HeaderTag) GetDefault() string {
 	return ""
 }
 
+// Custom tags configuration.
+// Only one of literal or header can be used.
 type MeshTrace_Tag struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Name of the tag.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// only one of literal or header can be used
-	Literal string               `protobuf:"bytes,2,opt,name=literal,proto3" json:"literal,omitempty"`
-	Header  *MeshTrace_HeaderTag `protobuf:"bytes,3,opt,name=header,proto3" json:"header,omitempty"`
+	// Tag taken from literal value.
+	Literal string `protobuf:"bytes,2,opt,name=literal,proto3" json:"literal,omitempty"`
+	// Tag taken from a header.
+	Header *MeshTrace_HeaderTag `protobuf:"bytes,3,opt,name=header,proto3" json:"header,omitempty"`
 }
 
 func (x *MeshTrace_Tag) Reset() {
@@ -467,9 +493,19 @@ type MeshTrace_Conf struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// A one element array of backend definition.
+	// Envoy allows configuring only 1 backend, so the natural way of
+	// representing that would be just one object. Unfortunately due to the
+	// reasons explained in MADR 009-tracing-policy this has to be a one element
+	// array for now.
 	Backends []*MeshTrace_Backend `protobuf:"bytes,1,rep,name=backends,proto3" json:"backends,omitempty"`
-	Sampling *MeshTrace_Sampling  `protobuf:"bytes,2,opt,name=sampling,proto3" json:"sampling,omitempty"`
-	Tags     []*MeshTrace_Tag     `protobuf:"bytes,3,rep,name=tags,proto3" json:"tags,omitempty"`
+	// Sampling configuration.
+	// Sampling is the process by which a decision is made on whether to
+	// process/export a span or not.
+	Sampling *MeshTrace_Sampling `protobuf:"bytes,2,opt,name=sampling,proto3" json:"sampling,omitempty"`
+	// Custom tags configuration. You can add custom tags to traces based on
+	// headers or literal values.
+	Tags []*MeshTrace_Tag `protobuf:"bytes,3,rep,name=tags,proto3" json:"tags,omitempty"`
 }
 
 func (x *MeshTrace_Conf) Reset() {
@@ -582,10 +618,10 @@ var file_pkg_plugins_policies_meshtrace_api_v1alpha1_meshtrace_proto_rawDesc = [
 	0x74, 0x61, 0x64, 0x6f, 0x67, 0x42, 0x61, 0x63, 0x6b, 0x65, 0x6e, 0x64, 0x52, 0x07, 0x64, 0x61,
 	0x74, 0x61, 0x64, 0x6f, 0x67, 0x1a, 0x54, 0x0a, 0x08, 0x53, 0x61, 0x6d, 0x70, 0x6c, 0x69, 0x6e,
 	0x67, 0x12, 0x18, 0x0a, 0x07, 0x6f, 0x76, 0x65, 0x72, 0x61, 0x6c, 0x6c, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x01, 0x52, 0x07, 0x6f, 0x76, 0x65, 0x72, 0x61, 0x6c, 0x6c, 0x12, 0x16, 0x0a, 0x06, 0x63,
-	0x6c, 0x69, 0x65, 0x6e, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x01, 0x52, 0x06, 0x63, 0x6c, 0x69,
+	0x28, 0x0d, 0x52, 0x07, 0x6f, 0x76, 0x65, 0x72, 0x61, 0x6c, 0x6c, 0x12, 0x16, 0x0a, 0x06, 0x63,
+	0x6c, 0x69, 0x65, 0x6e, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x06, 0x63, 0x6c, 0x69,
 	0x65, 0x6e, 0x74, 0x12, 0x16, 0x0a, 0x06, 0x72, 0x61, 0x6e, 0x64, 0x6f, 0x6d, 0x18, 0x03, 0x20,
-	0x01, 0x28, 0x01, 0x52, 0x06, 0x72, 0x61, 0x6e, 0x64, 0x6f, 0x6d, 0x1a, 0x3f, 0x0a, 0x09, 0x48,
+	0x01, 0x28, 0x0d, 0x52, 0x06, 0x72, 0x61, 0x6e, 0x64, 0x6f, 0x6d, 0x1a, 0x3f, 0x0a, 0x09, 0x48,
 	0x65, 0x61, 0x64, 0x65, 0x72, 0x54, 0x61, 0x67, 0x12, 0x18, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65,
 	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x04, 0x88, 0xb5, 0x18, 0x01, 0x52, 0x04, 0x6e, 0x61,
 	0x6d, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x64, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x18, 0x02, 0x20,

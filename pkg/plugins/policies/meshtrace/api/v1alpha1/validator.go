@@ -102,10 +102,10 @@ func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 	return verr
 }
 
-func validateSampling(sampling float64) validators.ValidationError {
+func validateSampling(sampling uint32) validators.ValidationError {
 	var verr validators.ValidationError
 
-	if sampling < 0 || sampling > 100 {
+	if sampling > 100 {
 		verr.AddViolation("", "must be between 0 and 100")
 	}
 
