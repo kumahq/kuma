@@ -47,7 +47,7 @@ func validateFrom(from []*MeshAccessLog_From) validators.ValidationError {
 
 		defaultField := path.Field("default")
 		if fromItem.GetDefault() == nil {
-			verr.AddViolationAt(defaultField, validators.MustBeDefined())
+			verr.AddViolationAt(defaultField, validators.MustBeDefined)
 		} else {
 			verr.AddErrorAt(defaultField, validateDefault(fromItem.Default))
 		}
@@ -67,7 +67,7 @@ func validateTo(to []*MeshAccessLog_To) validators.ValidationError {
 
 		defaultField := path.Field("default")
 		if toItem.GetDefault() == nil {
-			verr.AddViolationAt(defaultField, validators.MustBeDefined())
+			verr.AddViolationAt(defaultField, validators.MustBeDefined)
 		} else {
 			verr.AddErrorAt(defaultField, validateDefault(toItem.Default))
 		}

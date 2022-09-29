@@ -37,7 +37,7 @@ func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 	var verr validators.ValidationError
 
 	if conf == nil {
-		verr.AddViolation("", validators.MustBeDefined())
+		verr.AddViolation("", validators.MustBeDefined)
 		return verr
 	}
 
@@ -66,7 +66,7 @@ func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 			zipkinBackend := backend.GetZipkin()
 
 			if zipkinBackend.Url == "" {
-				verr.AddViolation("backends[0].zipkin.url", validators.MustNotBeEmpty())
+				verr.AddViolation("backends[0].zipkin.url", validators.MustNotBeEmpty)
 			} else if !govalidator.IsURL(zipkinBackend.Url) {
 				verr.AddViolation("backends[0].zipkin.url", "must be a valid url")
 			}
@@ -84,7 +84,7 @@ func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 	for tagIndex, tag := range tags {
 		path := validators.RootedAt("tags").Index(tagIndex)
 		if tag.GetName() == "" {
-			verr.AddViolationAt(path.Field("name"), validators.MustNotBeEmpty())
+			verr.AddViolationAt(path.Field("name"), validators.MustNotBeEmpty)
 		}
 
 		if (tag.GetHeader() != nil) == (tag.GetLiteral() != "") {

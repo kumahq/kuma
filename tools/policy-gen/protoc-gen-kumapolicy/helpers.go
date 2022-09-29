@@ -31,7 +31,6 @@ func generateHelpers(
 		}
 	}
 
-	// workaround for now for policies that do not have from and to
 	if !hasFrom && !hasTo {
 		return nil
 	}
