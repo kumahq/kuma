@@ -182,7 +182,7 @@ default:
 				expected: `
 violations:
   - field: spec.default.backends[0].zipkin.apiVersion
-    message: must be one of httpJson, httpJsonV1, httpProto`,
+    message: must be one of httpJson, httpProto`,
 			}),
 			Entry("missing address for datadog backend", testCase{
 				inputYaml: `

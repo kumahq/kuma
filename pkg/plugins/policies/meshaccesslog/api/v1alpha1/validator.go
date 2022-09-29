@@ -86,7 +86,7 @@ func validateDefault(conf *MeshAccessLog_Conf) validators.ValidationError {
 func validateBackend(backend *MeshAccessLog_Backend) validators.ValidationError {
 	var verr validators.ValidationError
 
-	if (backend.GetFile() != nil) != (backend.GetTcp() != nil) {
+	if (backend.GetFile() != nil) == (backend.GetTcp() != nil) {
 		verr.AddViolation("", validators.MustHaveOnlyOne("backend", "tcp", "file"))
 	}
 
@@ -114,7 +114,7 @@ func validateFormat(format *MeshAccessLog_Format) validators.ValidationError {
 		return verr
 	}
 
-	if (format.GetPlain() != "") != (format.GetJson() != nil) {
+	if (format.GetPlain() != "") == (format.GetJson() != nil) {
 		verr.AddViolation("", validators.MustHaveOnlyOne("format", "plain", "json"))
 	}
 

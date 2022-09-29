@@ -45,7 +45,7 @@ func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 		verr.AddViolation("backends", "must have exactly one backend defined")
 	} else {
 		backend := conf.GetBackends()[0]
-		if (backend.GetDatadog() != nil) != (backend.GetZipkin() != nil) {
+		if (backend.GetDatadog() != nil) == (backend.GetZipkin() != nil) {
 			verr.AddViolation("backends[0]", validators.MustHaveOnlyOne("backend", "datadog", "zipkin"))
 		}
 
@@ -87,7 +87,7 @@ func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 			verr.AddViolationAt(path.Field("name"), validators.MustNotBeEmpty())
 		}
 
-		if (tag.GetHeader() != nil) != (tag.GetLiteral() != "") {
+		if (tag.GetHeader() != nil) == (tag.GetLiteral() != "") {
 			verr.AddViolationAt(path, validators.MustHaveOnlyOne("tag", "header", "literal"))
 		}
 	}
