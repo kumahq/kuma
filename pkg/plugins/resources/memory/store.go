@@ -2,6 +2,7 @@ package memory
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"sync"
@@ -306,7 +307,24 @@ func (c *memoryStore) findRecords(
 
 func (c *memoryStore) marshalRecord(resourceType string, meta memoryMeta, spec model.ResourceSpec) (*memoryStoreRecord, error) {
 	// convert spec into storage representation
-	content, err := util_proto.ToJSON(spec)
+	desc, err := registry.Global().DescriptorFor(model.ResourceType(resourceType))
+	if err != nil {
+		return nil, err
+	}
+	var content string
+	if desc.IsPluginOriginated {
+		c, err := json.Marshal(spec)
+		if err != nil {
+			return nil, err
+		}
+		content = string(c)
+	} else {
+		c, err := util_proto.ToJSON(spec)
+		if err != nil {
+			return nil, err
+		}
+		content = string(c)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -332,5 +350,9 @@ func (c *memoryStore) unmarshalRecord(s *memoryStoreRecord, r model.Resource) er
 		CreationTime:     s.CreationTime,
 		ModificationTime: s.ModificationTime,
 	})
-	return util_proto.FromJSON([]byte(s.Spec), r.GetSpec())
+	if r.Descriptor().IsPluginOriginated {
+		return json.Unmarshal([]byte(s.Spec), r.GetSpec())
+	} else {
+		return util_proto.FromJSON([]byte(s.Spec), r.GetSpec())
+	}
 }

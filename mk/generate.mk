@@ -78,7 +78,8 @@ generate/kumapolicy-gen/%: build/protoc-gen-kumapolicy generate/dirs/%
 		--kumapolicy_opt=endpoints-template=$(TOOLS_DIR)/policy-gen/templates/endpoints.yaml \
 		--kumapolicy_out=$(POLICIES_DIR)/$* \
 		--plugin=protoc-gen-kumapolicy=$(BUILD_ARTIFACTS_DIR)/protoc/protoc-gen-kumapolicy \
-		$(POLICIES_DIR)/$*/api/*/*.proto ;
+		$(POLICIES_DIR)/$*/api/*/*.proto ; \
+	sed -i "" -e "s/,omitempty//g" $(POLICIES_DIR)/$*/api/*/*.go
 
 generate/dirs/%:
 	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \

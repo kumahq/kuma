@@ -1,11 +1,13 @@
 package util
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -29,7 +31,7 @@ func ToCoreResourceList(response *envoy_sd.DiscoveryResponse) (model.ResourceLis
 func ToEnvoyResources(rlist model.ResourceList) ([]envoy_types.Resource, error) {
 	rv := make([]envoy_types.Resource, 0, len(rlist.GetItems()))
 	for _, r := range rlist.GetItems() {
-		pbany, err := util_proto.MarshalAnyDeterministic(r.GetSpec())
+		pbany, err := toAny(r)
 		if err != nil {
 			return nil, err
 		}
@@ -43,6 +45,21 @@ func ToEnvoyResources(rlist model.ResourceList) ([]envoy_types.Resource, error) 
 		})
 	}
 	return rv, nil
+}
+
+func toAny(r model.Resource) (*anypb.Any, error) {
+	if r.Descriptor().IsPluginOriginated {
+		bytes, err := json.Marshal(r.GetSpec())
+		if err != nil {
+			return nil, err
+		}
+		return &anypb.Any{
+			TypeUrl: string(r.Descriptor().Name),
+			Value:   bytes,
+		}, nil
+	} else {
+		return util_proto.MarshalAnyDeterministic(r.GetSpec())
+	}
 }
 
 func AddPrefixToNames(rs []model.Resource, prefix string) {
@@ -97,7 +114,7 @@ func toResources(resourceType model.ResourceType, krs []*mesh_proto.KumaResource
 		if err != nil {
 			return nil, err
 		}
-		if err = util_proto.UnmarshalAnyToV2(kr.Spec, obj.GetSpec()); err != nil {
+		if err = fromAny(kr.Spec, obj); err != nil {
 			return nil, err
 		}
 		obj.SetMeta(kumaResourceMetaToResourceMeta(kr.Meta))
@@ -106,6 +123,19 @@ func toResources(resourceType model.ResourceType, krs []*mesh_proto.KumaResource
 		}
 	}
 	return list, nil
+}
+
+func fromAny(a *anypb.Any, r model.Resource) error {
+	if r.Descriptor().IsPluginOriginated {
+		if err := json.Unmarshal(a.Value, r.GetSpec()); err != nil {
+			return err
+		}
+	} else {
+		if err := util_proto.UnmarshalAnyTo(a, r.GetSpec()); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func StatsOf(status *system_proto.KDSSubscriptionStatus, resourceType model.ResourceType) *system_proto.KDSServiceStats {

@@ -32,9 +32,9 @@ type DoNothingPolicy struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
 	// defined inplace.
-	TargetRef *v1alpha1.TargetRef     `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef,omitempty"`
-	To        []*DoNothingPolicy_To   `protobuf:"bytes,2,rep,name=to,proto3" json:"to,omitempty"`
-	From      []*DoNothingPolicy_From `protobuf:"bytes,3,rep,name=from,proto3" json:"from,omitempty"`
+	TargetRef *v1alpha1.TargetRef     `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef"`
+	To        []*DoNothingPolicy_To   `protobuf:"bytes,2,rep,name=to,proto3" json:"to"`
+	From      []*DoNothingPolicy_From `protobuf:"bytes,3,rep,name=from,proto3" json:"from"`
 }
 
 func (x *DoNothingPolicy) Reset() {
@@ -97,7 +97,7 @@ type DoNothingPolicy_Conf struct {
 
 	// User defined fields
 	// Set true in case of doing nothing
-	EnableDoNothing bool `protobuf:"varint,1,opt,name=enableDoNothing,proto3" json:"enableDoNothing,omitempty"`
+	EnableDoNothing bool `protobuf:"varint,1,opt,name=enableDoNothing,proto3" json:"enableDoNothing"`
 }
 
 func (x *DoNothingPolicy_Conf) Reset() {
@@ -146,10 +146,10 @@ type DoNothingPolicy_To struct {
 
 	// TargetRef is a reference to the resource that represents a group of
 	// destinations.
-	TargetRef *v1alpha1.TargetRef `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef,omitempty"`
+	TargetRef *v1alpha1.TargetRef `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef"`
 	// Default is a configuration specific to the group of destinations
 	// referenced in 'targetRef'
-	Default *DoNothingPolicy_Conf `protobuf:"bytes,2,opt,name=default,proto3" json:"default,omitempty"`
+	Default *DoNothingPolicy_Conf `protobuf:"bytes,2,opt,name=default,proto3" json:"default"`
 }
 
 func (x *DoNothingPolicy_To) Reset() {
@@ -205,10 +205,10 @@ type DoNothingPolicy_From struct {
 
 	// TargetRef is a reference to the resource that represents a group of
 	// clients.
-	TargetRef *v1alpha1.TargetRef `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef,omitempty"`
+	TargetRef *v1alpha1.TargetRef `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef"`
 	// Default is a configuration specific to the group of clients referenced in
 	// 'targetRef'
-	Default *DoNothingPolicy_Conf `protobuf:"bytes,2,opt,name=default,proto3" json:"default,omitempty"`
+	Default *DoNothingPolicy_Conf `protobuf:"bytes,2,opt,name=default,proto3" json:"default"`
 }
 
 func (x *DoNothingPolicy_From) Reset() {
