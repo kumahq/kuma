@@ -42,46 +42,14 @@ func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 	}
 
 	backendsPath := validators.RootedAt("backends")
-	if len(conf.GetBackends()) != 1 {
-		verr.AddViolationAt(backendsPath, "must have exactly one backend defined")
-	} else {
-		backend := conf.GetBackends()[0]
-		firstBackendPath := backendsPath.Index(0)
-		if (backend.GetDatadog() != nil) == (backend.GetZipkin() != nil) {
-			verr.AddViolationAt(firstBackendPath, validators.MustHaveOnlyOne("backend", "datadog", "zipkin"))
-		}
 
-		if backend.GetDatadog() != nil {
-			datadogBackend := backend.GetDatadog()
-			datadogPath := firstBackendPath.Field("datadog")
-			if datadogBackend.Address == "" {
-				verr.AddViolationAt(datadogPath.Field("address"), "must not be empty")
-			} else if !govalidator.IsURL(datadogBackend.Address) {
-				verr.AddViolationAt(datadogPath.Field("address"), "must be a valid address")
-			}
-
-			if datadogBackend.Port == 0 || datadogBackend.Port > math.MaxUint16 {
-				verr.AddViolationAt(datadogPath.Field("port"), fmt.Sprintf("must be a valid port (0-%d)", math.MaxUint16))
-			}
-		}
-
-		if backend.GetZipkin() != nil {
-			zipkinBackend := backend.GetZipkin()
-			zipkinPath := firstBackendPath.Field("zipkin")
-
-			if zipkinBackend.Url == "" {
-				verr.AddViolationAt(zipkinPath.Field("url"), validators.MustNotBeEmpty)
-			} else if !govalidator.IsURL(zipkinBackend.Url) {
-				verr.AddViolationAt(zipkinPath.Field("url"), "must be a valid url")
-			}
-
-			if zipkinBackend.ApiVersion != "" {
-				validZipkinApiVersions := []string{"httpJson", "httpProto"}
-				if !slices.Contains(validZipkinApiVersions, zipkinBackend.ApiVersion) {
-					verr.AddViolationAt(zipkinPath.Field("apiVersion"), fmt.Sprintf("must be one of %s", strings.Join(validZipkinApiVersions, ", ")))
-				}
-			}
-		}
+	switch len(conf.GetBackends()) {
+	case 0:
+		break
+	case 1:
+		verr.AddError("", validateBackend(conf, backendsPath))
+	default:
+		verr.AddViolationAt(backendsPath, "must have zero or one backend defined")
 	}
 
 	tags := conf.GetTags()
@@ -101,6 +69,49 @@ func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 		verr.AddErrorAt(validators.RootedAt("sampling").Field("client"), validateSampling(sampling.GetClient()))
 		verr.AddErrorAt(validators.RootedAt("sampling").Field("random"), validateSampling(sampling.GetRandom()))
 		verr.AddErrorAt(validators.RootedAt("sampling").Field("overall"), validateSampling(sampling.GetOverall()))
+	}
+
+	return verr
+}
+
+func validateBackend(conf *MeshTrace_Conf, backendsPath validators.PathBuilder) validators.ValidationError {
+	var verr validators.ValidationError
+	backend := conf.GetBackends()[0]
+	firstBackendPath := backendsPath.Index(0)
+	if (backend.GetDatadog() != nil) == (backend.GetZipkin() != nil) {
+		verr.AddViolationAt(firstBackendPath, validators.MustHaveOnlyOne("backend", "datadog", "zipkin"))
+	}
+
+	if backend.GetDatadog() != nil {
+		datadogBackend := backend.GetDatadog()
+		datadogPath := firstBackendPath.Field("datadog")
+		if datadogBackend.Address == "" {
+			verr.AddViolationAt(datadogPath.Field("address"), "must not be empty")
+		} else if !govalidator.IsURL(datadogBackend.Address) {
+			verr.AddViolationAt(datadogPath.Field("address"), "must be a valid address")
+		}
+
+		if datadogBackend.Port == 0 || datadogBackend.Port > math.MaxUint16 {
+			verr.AddViolationAt(datadogPath.Field("port"), fmt.Sprintf("must be a valid port (0-%d)", math.MaxUint16))
+		}
+	}
+
+	if backend.GetZipkin() != nil {
+		zipkinBackend := backend.GetZipkin()
+		zipkinPath := firstBackendPath.Field("zipkin")
+
+		if zipkinBackend.Url == "" {
+			verr.AddViolationAt(zipkinPath.Field("url"), validators.MustNotBeEmpty)
+		} else if !govalidator.IsURL(zipkinBackend.Url) {
+			verr.AddViolationAt(zipkinPath.Field("url"), "must be a valid url")
+		}
+
+		if zipkinBackend.ApiVersion != "" {
+			validZipkinApiVersions := []string{"httpJson", "httpProto"}
+			if !slices.Contains(validZipkinApiVersions, zipkinBackend.ApiVersion) {
+				verr.AddViolationAt(zipkinPath.Field("apiVersion"), fmt.Sprintf("must be one of %s", strings.Join(validZipkinApiVersions, ", ")))
+			}
+		}
 	}
 
 	return verr

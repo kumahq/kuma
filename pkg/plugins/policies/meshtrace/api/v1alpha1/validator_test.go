@@ -49,6 +49,27 @@ default:
     random: 60
     client: 40
 `),
+			Entry("with empty backends", `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends: []
+  tags:
+    - name: team
+      literal: core
+    - name: env
+      header:
+        name: x-env
+        default: prod
+    - name: version
+      header:
+        name: x-version
+  sampling:
+    overall: 80
+    random: 60
+    client: 40
+`),
 		)
 
 		type testCase struct {
@@ -83,31 +104,6 @@ violations:
   - field: spec.default
     message: must be defined`,
 			}),
-			Entry("default empty", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: backend
-default: {}
-`,
-				expected: `
-violations:
-  - field: spec.default.backends
-    message: must have exactly one backend defined`,
-			}),
-			Entry("no backends", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: backend
-default:
-  backends: []
-`,
-				expected: `
-violations:
-  - field: spec.default.backends
-    message: must have exactly one backend defined`,
-			}),
 			Entry("no valid backends", testCase{
 				inputYaml: `
 targetRef:
@@ -137,7 +133,7 @@ default:
 				expected: `
 violations:
   - field: spec.default.backends
-    message: 'must have exactly one backend defined'`,
+    message: 'must have zero or one backend defined'`,
 			}),
 			Entry("no url for zipkin backend", testCase{
 				inputYaml: `
