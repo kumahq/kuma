@@ -314,6 +314,14 @@
 - `port` (required)
 
     Port of datadog collector
+
+- `splitService` (optional)
+
+    Determines if datadog service name should be split based on traffic
+    direction and destination. For example, with `splitService: true` and a
+    `backend` service that communicates with a couple of databases, you would
+    get service names like `backend_INBOUND`, `backend_OUTBOUND_db1`, and
+    `backend_OUTBOUND_db2` in Datadog. Default: false
 ## ZipkinTracingBackendConfig
 
 - `url` (required)
