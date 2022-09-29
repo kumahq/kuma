@@ -41,40 +41,44 @@ func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 		return verr
 	}
 
+	backendsPath := validators.RootedAt("backends")
 	if len(conf.GetBackends()) != 1 {
-		verr.AddViolation("backends", "must have exactly one backend defined")
+		verr.AddViolationAt(backendsPath, "must have exactly one backend defined")
 	} else {
 		backend := conf.GetBackends()[0]
+		firstBackendPath := backendsPath.Index(0)
 		if (backend.GetDatadog() != nil) == (backend.GetZipkin() != nil) {
-			verr.AddViolation("backends[0]", validators.MustHaveOnlyOne("backend", "datadog", "zipkin"))
+			verr.AddViolationAt(firstBackendPath, validators.MustHaveOnlyOne("backend", "datadog", "zipkin"))
 		}
 
 		if backend.GetDatadog() != nil {
 			datadogBackend := backend.GetDatadog()
+			datadogPath := firstBackendPath.Field("datadog")
 			if datadogBackend.Address == "" {
-				verr.AddViolation("backends[0].datadog.address", "must not be empty")
+				verr.AddViolationAt(datadogPath.Field("address"), "must not be empty")
 			} else if !govalidator.IsURL(datadogBackend.Address) {
-				verr.AddViolation("backends[0].datadog.address", "must be a valid address")
+				verr.AddViolationAt(datadogPath.Field("address"), "must be a valid address")
 			}
 
 			if datadogBackend.Port == 0 || datadogBackend.Port > math.MaxUint16 {
-				verr.AddViolation("backends[0].datadog.port", fmt.Sprintf("must be a valid port (0-%d)", math.MaxUint16))
+				verr.AddViolationAt(datadogPath.Field("port"), fmt.Sprintf("must be a valid port (0-%d)", math.MaxUint16))
 			}
 		}
 
 		if backend.GetZipkin() != nil {
 			zipkinBackend := backend.GetZipkin()
+			zipkinPath := firstBackendPath.Field("zipkin")
 
 			if zipkinBackend.Url == "" {
-				verr.AddViolation("backends[0].zipkin.url", validators.MustNotBeEmpty)
+				verr.AddViolationAt(zipkinPath.Field("url"), validators.MustNotBeEmpty)
 			} else if !govalidator.IsURL(zipkinBackend.Url) {
-				verr.AddViolation("backends[0].zipkin.url", "must be a valid url")
+				verr.AddViolationAt(zipkinPath.Field("url"), "must be a valid url")
 			}
 
 			if zipkinBackend.ApiVersion != "" {
 				validZipkinApiVersions := []string{"httpJson", "httpProto"}
 				if !slices.Contains(validZipkinApiVersions, zipkinBackend.ApiVersion) {
-					verr.AddViolation("backends[0].zipkin.apiVersion", fmt.Sprintf("must be one of %s", strings.Join(validZipkinApiVersions, ", ")))
+					verr.AddViolationAt(zipkinPath.Field("apiVersion"), fmt.Sprintf("must be one of %s", strings.Join(validZipkinApiVersions, ", ")))
 				}
 			}
 		}

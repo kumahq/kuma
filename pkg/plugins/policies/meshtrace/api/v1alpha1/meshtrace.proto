@@ -15,7 +15,8 @@ option (doc.config) = {
   file_name : "meshtrace"
 };
 
-// MeshTrace
+// MeshTrace allows users to enable request tracing between services in the mesh
+// and sending these traces to a third party storage.
 message MeshTrace {
   option (kuma.mesh.policy) = {
     // Toggle this to have the policy registered or not in Kuma

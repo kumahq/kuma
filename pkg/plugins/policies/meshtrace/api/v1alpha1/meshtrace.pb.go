@@ -24,7 +24,8 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// MeshTrace
+// MeshTrace allows users to enable request tracing between services in the mesh
+// and sending these traces to a third party storage.
 type MeshTrace struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
