@@ -93,7 +93,7 @@ default: {}
 				expected: `
 violations:
   - field: spec.default.backends
-    message: must have one backend defined`,
+    message: must have exactly one backend defined`,
 			}),
 			Entry("no backends", testCase{
 				inputYaml: `
@@ -106,7 +106,7 @@ default:
 				expected: `
 violations:
   - field: spec.default.backends
-    message: must have one backend defined`,
+    message: must have exactly one backend defined`,
 			}),
 			Entry("no valid backends", testCase{
 				inputYaml: `
@@ -137,7 +137,7 @@ default:
 				expected: `
 violations:
   - field: spec.default.backends
-    message: 'must have one backend defined'`,
+    message: 'must have exactly one backend defined'`,
 			}),
 			Entry("no url for zipkin backend", testCase{
 				inputYaml: `

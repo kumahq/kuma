@@ -8,7 +8,6 @@ import (
 	common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
-	"github.com/kumahq/kuma/pkg/util/validation"
 )
 
 func (r *MeshAccessLogResource) validate() error {
@@ -48,7 +47,7 @@ func validateFrom(from []*MeshAccessLog_From) validators.ValidationError {
 
 		defaultField := path.Field("default")
 		if fromItem.GetDefault() == nil {
-			verr.AddViolationAt(defaultField, validation.MustBeDefined())
+			verr.AddViolationAt(defaultField, validators.MustBeDefined())
 		} else {
 			verr.AddErrorAt(defaultField, validateDefault(fromItem.Default))
 		}
@@ -68,7 +67,7 @@ func validateTo(to []*MeshAccessLog_To) validators.ValidationError {
 
 		defaultField := path.Field("default")
 		if toItem.GetDefault() == nil {
-			verr.AddViolationAt(defaultField, validation.MustBeDefined())
+			verr.AddViolationAt(defaultField, validators.MustBeDefined())
 		} else {
 			verr.AddErrorAt(defaultField, validateDefault(toItem.Default))
 		}
@@ -86,11 +85,9 @@ func validateDefault(conf *MeshAccessLog_Conf) validators.ValidationError {
 
 func validateBackend(backend *MeshAccessLog_Backend) validators.ValidationError {
 	var verr validators.ValidationError
-	file := validation.Bool2Int(backend.GetFile() != nil)
-	tcp := validation.Bool2Int(backend.GetTcp() != nil)
 
-	if file+tcp != 1 {
-		verr.AddViolation("", validation.MustHaveOnlyOne("backend", "tcp", "file"))
+	if (backend.GetFile() != nil) != (backend.GetTcp() != nil) {
+		verr.AddViolation("", validators.MustHaveOnlyOne("backend", "tcp", "file"))
 	}
 
 	verr.AddErrorAt(validators.RootedAt("file").Field("format"), validateFormat(backend.GetFile().GetFormat()))
@@ -116,24 +113,22 @@ func validateFormat(format *MeshAccessLog_Format) validators.ValidationError {
 	if format == nil {
 		return verr
 	}
-	plain := validation.Bool2Int(format.GetPlain() != "")
-	json := validation.Bool2Int(format.GetJson() != nil)
 
-	if plain+json != 1 {
-		verr.AddViolation("", validation.MustHaveOnlyOne("format", "plain", "json"))
+	if (format.GetPlain() != "") != (format.GetJson() != nil) {
+		verr.AddViolation("", validators.MustHaveOnlyOne("format", "plain", "json"))
 	}
 
 	if format.GetJson() != nil {
 		for idx, field := range format.GetJson() {
-			indexedField := validators.RootedAt("json").Index(idx)
+			path := validators.RootedAt("json").Index(idx)
 			if field.GetKey() == "" {
-				verr.AddViolationAt(indexedField.Field("key"), `key cannot be empty`)
+				verr.AddViolationAt(path.Field("key"), `key cannot be empty`)
 			}
 			if field.GetValue() == "" {
-				verr.AddViolationAt(indexedField.Field("value"), `value cannot be empty`)
+				verr.AddViolationAt(path.Field("value"), `value cannot be empty`)
 			}
 			if !govalidator.IsJSON(fmt.Sprintf(`{"%s": "%s"}`, field.GetKey(), field.GetValue())) {
-				verr.AddViolationAt(indexedField, `is not a valid JSON object`)
+				verr.AddViolationAt(path, `is not a valid JSON object`)
 			}
 		}
 	}

@@ -64,7 +64,7 @@ generate/policy-helm:
 
 generate/controller-gen/%: generate/kumapolicy-gen/%
 	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \
-		$(CONTROLLER_GEN) "crd:crdVersions=v1,ignoreUnexportedFields=true,allowDangerousTypes=true" paths="./$(POLICIES_DIR)/$*/k8s/..." output:crd:artifacts:config=$(POLICIES_DIR)/$*/k8s/crd && \
+		$(CONTROLLER_GEN) "crd:crdVersions=v1,ignoreUnexportedFields=true" paths="./$(POLICIES_DIR)/$*/k8s/..." output:crd:artifacts:config=$(POLICIES_DIR)/$*/k8s/crd && \
 		$(CONTROLLER_GEN) object:headerFile=$(TOOLS_DIR)/policy-gen/boilerplate.go.txt,year=$$(date +%Y) paths=$(POLICIES_DIR)/$*/k8s/$$version/zz_generated.types.go ; \
 	done
 

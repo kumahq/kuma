@@ -11,7 +11,6 @@ import (
 	common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
-	"github.com/kumahq/kuma/pkg/util/validation"
 )
 
 func (r *MeshTraceResource) validate() error {
@@ -38,19 +37,16 @@ func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 	var verr validators.ValidationError
 
 	if conf == nil {
-		verr.AddViolation("", validation.MustBeDefined())
+		verr.AddViolation("", validators.MustBeDefined())
 		return verr
 	}
 
 	if len(conf.GetBackends()) != 1 {
-		verr.AddViolation("backends", "must have one backend defined")
+		verr.AddViolation("backends", "must have exactly one backend defined")
 	} else {
 		backend := conf.GetBackends()[0]
-		datadog := validation.Bool2Int(backend.GetDatadog() != nil)
-		zipkin := validation.Bool2Int(backend.GetZipkin() != nil)
-
-		if datadog+zipkin != 1 {
-			verr.AddViolation("backends[0]", validation.MustHaveOnlyOne("backend", "datadog", "zipkin"))
+		if (backend.GetDatadog() != nil) != (backend.GetZipkin() != nil) {
+			verr.AddViolation("backends[0]", validators.MustHaveOnlyOne("backend", "datadog", "zipkin"))
 		}
 
 		if backend.GetDatadog() != nil {
@@ -70,13 +66,13 @@ func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 			zipkinBackend := backend.GetZipkin()
 
 			if zipkinBackend.Url == "" {
-				verr.AddViolation("backends[0].zipkin.url", validation.MustNotBeEmpty())
+				verr.AddViolation("backends[0].zipkin.url", validators.MustNotBeEmpty())
 			} else if !govalidator.IsURL(zipkinBackend.Url) {
 				verr.AddViolation("backends[0].zipkin.url", "must be a valid url")
 			}
 
 			if zipkinBackend.ApiVersion != "" {
-				validZipkinApiVersions := []string{"httpJson", "httpJsonV1", "httpProto"}
+				validZipkinApiVersions := []string{"httpJson", "httpProto"}
 				if !slices.Contains(validZipkinApiVersions, zipkinBackend.ApiVersion) {
 					verr.AddViolation("backends[0].zipkin.apiVersion", fmt.Sprintf("must be one of %s", strings.Join(validZipkinApiVersions, ", ")))
 				}
@@ -86,16 +82,13 @@ func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 
 	tags := conf.GetTags()
 	for tagIndex, tag := range tags {
-		indexedField := validators.RootedAt("tags").Index(tagIndex)
+		path := validators.RootedAt("tags").Index(tagIndex)
 		if tag.GetName() == "" {
-			verr.AddViolationAt(indexedField.Field("name"), validation.MustNotBeEmpty())
+			verr.AddViolationAt(path.Field("name"), validators.MustNotBeEmpty())
 		}
 
-		header := validation.Bool2Int(tag.GetHeader() != nil)
-		literal := validation.Bool2Int(tag.GetLiteral() != "")
-
-		if header+literal != 1 {
-			verr.AddViolationAt(indexedField, validation.MustHaveOnlyOne("tag", "header", "literal"))
+		if (tag.GetHeader() != nil) != (tag.GetLiteral() != "") {
+			verr.AddViolationAt(path, validators.MustHaveOnlyOne("tag", "header", "literal"))
 		}
 	}
 
