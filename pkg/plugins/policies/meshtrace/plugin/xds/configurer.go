@@ -38,7 +38,7 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
         
         if c.Conf.Sampling != nil {
             hcm.Tracing.OverallSampling = &envoy_type.Percent{
-                Value: float64(c.Conf.Sampling.Overall),
+                Value: float64(c.Conf.Sampling.Overall), // how do we do defaults in this case (type default is 0 but we want Envoy default i.e. missing field)? a wrapper type and check null?
             }
             hcm.Tracing.ClientSampling = &envoy_type.Percent{
                 Value: float64(c.Conf.Sampling.Client),

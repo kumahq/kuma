@@ -126,6 +126,9 @@ var _ = Describe("MeshTrace", func() {
 					{
 						Subset: []core_xds.Tag{},
 						Conf: &api.MeshTrace_Conf{
+							Sampling: &api.MeshTrace_Sampling{
+								Random: 50,
+							},
 							Backends: []*api.MeshTrace_Backend{{
 								Zipkin: &api.MeshTrace_ZipkinBackend{
 									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
@@ -180,6 +183,8 @@ var _ = Describe("MeshTrace", func() {
                               collectorHostname: jaeger-collector.mesh-observability:9411
                               sharedSpanContext: true
                               traceId128bit: true
+                      randomSampling:
+                          value: 50
             name: outbound:127.0.0.1:27777
             trafficDirection: OUTBOUND`,
 			},

@@ -21,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/k8s_api_bypass"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/kic"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/membership"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshtrace"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/observability"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/reachableservices"
@@ -99,6 +100,7 @@ var _ = Describe("Membership", membership.Membership, Ordered)
 var _ = Describe("Container Patch", container_patch.ContainerPatch, Ordered)
 var _ = Describe("Metrics", observability.ApplicationsMetrics, Ordered)
 var _ = Describe("Tracing", observability.Tracing, Ordered)
+var _ = Describe("MeshTrace", meshtrace.PluginTest, Ordered)
 var _ = Describe("Traffic Log", trafficlog.TCPLogging, Ordered)
 var _ = Describe("Inspect", inspect.Inspect, Ordered)
 var _ = Describe("K8S API Bypass", k8s_api_bypass.K8sApiBypass, Ordered)
