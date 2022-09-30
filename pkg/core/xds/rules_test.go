@@ -181,7 +181,7 @@ var _ = Describe("Rules", func() {
 				policyFile: "03.policy.yaml",
 				goldenFile: "03.golden.yaml",
 			}),
-			FEntry("04. MeshAccessLog with overriding empty backend list", testCase{
+			Entry("04. MeshAccessLog with overriding empty backend list", testCase{
 				policyFile: "04.policy.yaml",
 				goldenFile: "04.golden.yaml",
 			}),

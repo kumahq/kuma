@@ -336,7 +336,7 @@ func (c *memoryStore) marshalRecord(resourceType string, meta memoryMeta, spec m
 			Mesh: meta.Mesh,
 		},
 		Version:          meta.Version,
-		Spec:             string(content),
+		Spec:             content,
 		CreationTime:     meta.CreationTime,
 		ModificationTime: meta.ModificationTime,
 	}, nil
