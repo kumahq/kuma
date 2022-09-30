@@ -1,8 +1,13 @@
 package v1alpha1
 
 import (
+	net_url "net/url"
+	"strconv"
+
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	"github.com/pkg/errors"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -14,9 +19,6 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	"github.com/kumahq/kuma/pkg/xds/generator"
-	"github.com/pkg/errors"
-	net_url "net/url"
-	"strconv"
 )
 
 const MeshTraceCluster = "meshTrace"
@@ -64,8 +66,8 @@ type listeners struct {
 
 func gatherListeners(rs *xds.ResourceSet) listeners {
 	listeners := listeners{
-		inbound:      map[xds.InboundListener]*envoy_listener.Listener{},
-		outbound:     map[mesh_proto.OutboundInterface]*envoy_listener.Listener{},
+		inbound:  map[xds.InboundListener]*envoy_listener.Listener{},
+		outbound: map[mesh_proto.OutboundInterface]*envoy_listener.Listener{},
 	}
 
 	for _, res := range rs.Resources(envoy_resource.ListenerType) {
@@ -91,7 +93,7 @@ func gatherListeners(rs *xds.ResourceSet) listeners {
 	return listeners
 }
 
-func applyToInbounds(rules xds.SingleItemRules, inboundListeners map[xds.InboundListener]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource, ) error {
+func applyToInbounds(rules xds.SingleItemRules, inboundListeners map[xds.InboundListener]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource) error {
 	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
 		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
 
@@ -151,8 +153,8 @@ func configureListener(
 	}
 
 	configurer := plugin_xds.Configurer{
-		Conf: conf,
-		Service: serviceName,
+		Conf:        conf,
+		Service:     serviceName,
 		ClusterName: MeshTraceCluster,
 	}
 
