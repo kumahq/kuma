@@ -1194,6 +1194,9 @@ spec:
                               description: Port of datadog collector
                               format: int32
                               type: integer
+                          required:
+                          - address
+                          - port
                           type: object
                         zipkin:
                           description: Zipkin backend configuration.
@@ -1216,7 +1219,15 @@ spec:
                             url:
                               description: Address of Zipkin collector.
                               type: string
+                          required:
+                          - apiVersion
+                          - sharedSpanContext
+                          - traceId128bit
+                          - url
                           type: object
+                      required:
+                      - datadog
+                      - zipkin
                       type: object
                     type: array
                   sampling:
@@ -1248,6 +1259,10 @@ spec:
                           Envoy https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L135-L140'
                         format: int32
                         type: integer
+                    required:
+                    - client
+                    - overall
+                    - random
                     type: object
                   tags:
                     description: Custom tags configuration. You can add custom tags
@@ -1267,6 +1282,9 @@ spec:
                             name:
                               description: Name of the header.
                               type: string
+                          required:
+                          - default
+                          - name
                           type: object
                         literal:
                           description: Tag taken from literal value.
@@ -1274,8 +1292,16 @@ spec:
                         name:
                           description: Name of the tag.
                           type: string
+                      required:
+                      - header
+                      - literal
+                      - name
                       type: object
                     type: array
+                required:
+                - backends
+                - sampling
+                - tags
                 type: object
               targetRef:
                 description: TargetRef is a reference to the resource the policy takes
@@ -1307,6 +1333,9 @@ spec:
                       to define a subset of proxies
                     type: object
                 type: object
+            required:
+            - default
+            - targetRef
             type: object
         type: object
     served: true
