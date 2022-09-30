@@ -14,9 +14,13 @@ import (
 
 func traceAll(meshName string, url string) string {
 	return fmt.Sprintf(`
-type: MeshTrace
-name: trace-all
-mesh: %s
+apiVersion: kuma.io/v1alpha1
+kind: MeshTrace
+metadata:
+  name: trace-all
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: %s
 spec:
   targetRef:
     kind: Mesh

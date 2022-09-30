@@ -173,6 +173,8 @@ var _ = Describe("MeshTrace", func() {
                           timeout: 0s
                   statPrefix: "127_0_0_1_27777"
                   tracing:
+                      clientSampling: {}
+                      overallSampling: {}
                       provider:
                           name: envoy.zipkin
                           typedConfig:
