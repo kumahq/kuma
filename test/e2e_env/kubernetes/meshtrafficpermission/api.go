@@ -108,24 +108,6 @@ spec:
         kind: Mesh
       default:
         action: ALLOW
-    - targetRef:
-        kind: MeshSubset
-        tags:
-          kuma.io/zone: us-east
-      default:
-        action: DENY_WITH_SHADOW_ALLOW
-    - targetRef:
-        kind: MeshService
-        name: backend
-      default:
-        action: ALLOW_WITH_SHADOW_DENY
-    - targetRef:
-        kind: MeshServiceSubset
-        name: backend
-        tags:
-          version: v1
-      default:
-        action: DENY
 `)
 
 		Expect(err).To(HaveOccurred())
