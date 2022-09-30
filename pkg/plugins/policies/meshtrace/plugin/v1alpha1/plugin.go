@@ -37,11 +37,13 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 
 	listeners := gatherListeners(rs)
 
-	if err := applyToInbounds(policies.FromRules, listeners.inbound, proxy.Dataplane); err != nil {
+	if err := applyToInbounds(policies.SingleItemRules, listeners.inbound, proxy.Dataplane); err != nil {
+		return err
+	}
+	if err := applyToOutbounds(policies.SingleItemRules, listeners.outbound, proxy.Dataplane); err != nil {
 		return err
 	}
 
-	log.Info("apply is not implemented")
 	return nil
 }
 
@@ -79,9 +81,7 @@ func gatherListeners(rs *xds.ResourceSet) listeners {
 	return listeners
 }
 
-func applyToInbounds(
-	rules xds.FromRules, inboundListeners map[xds.InboundListener]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
-) error {
+func applyToInbounds(rules xds.SingleItemRules, inboundListeners map[xds.InboundListener]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource, ) error {
 	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
 		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
 
@@ -96,7 +96,7 @@ func applyToInbounds(
 
 		serviceName := inbound.GetTags()[mesh_proto.ServiceTag]
 
-		if err := configureInbound(rules.Rules[listenerKey], dataplane, xds.MeshService(serviceName), listener); err != nil {
+		if err := configureListener(rules.Rules, dataplane, xds.MeshService(serviceName), listener); err != nil {
 			return err
 		}
 	}
@@ -104,8 +104,29 @@ func applyToInbounds(
 	return nil
 }
 
-func configureInbound(
-	fromRules xds.Rules,
+func applyToOutbounds(
+	rules xds.SingleItemRules, outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
+) error {
+	for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
+		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound)
+
+		listener, ok := outboundListeners[oface]
+		if !ok {
+			continue
+		}
+
+		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
+
+		if err := configureListener(rules.Rules, dataplane, xds.MeshService(serviceName), listener); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func configureListener(
+	rules xds.Rules,
 	dataplane *core_mesh.DataplaneResource,
 	subset xds.Subset,
 	listener *envoy_listener.Listener,
@@ -113,7 +134,7 @@ func configureInbound(
 	serviceName := dataplane.Spec.GetIdentifyingService()
 
 	var conf *api.MeshTrace_Conf
-	if computed := fromRules.Compute(subset); computed != nil {
+	if computed := rules.Compute(subset); computed != nil {
 		conf = computed.(*api.MeshTrace_Conf)
 	} else {
 		return nil
