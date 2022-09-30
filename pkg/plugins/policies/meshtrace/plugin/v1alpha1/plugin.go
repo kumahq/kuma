@@ -12,8 +12,15 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/plugin/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/pkg/errors"
+	net_url "net/url"
+	"strconv"
 )
+
+const MeshTraceCluster = "meshTrace"
+const MeshTraceOrigin = "meshTrace"
 
 var _ core_plugins.PolicyPlugin = &plugin{}
 var log = core.Log.WithName("MeshTrace")
@@ -41,6 +48,9 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 		return err
 	}
 	if err := applyToOutbounds(policies.SingleItemRules, listeners.outbound, proxy.Dataplane); err != nil {
+		return err
+	}
+	if err := applyToClusters(policies.SingleItemRules, rs, proxy); err != nil {
 		return err
 	}
 
@@ -143,6 +153,7 @@ func configureListener(
 	configurer := plugin_xds.Configurer{
 		Conf: conf,
 		Service: serviceName,
+		ClusterName: MeshTraceCluster,
 	}
 
 	for _, chain := range listener.FilterChains {
@@ -152,4 +163,67 @@ func configureListener(
 	}
 
 	return nil
+}
+
+func applyToClusters(rules xds.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy) error {
+	for _, rule := range rules.Rules {
+		conf := rule.Conf.(*api.MeshTrace_Conf)
+		backend := conf.GetBackends()[0]
+		var endpoint *xds.Endpoint
+		var err error
+
+		if backend.GetZipkin() != nil {
+			endpoint, err = endpointForZipkin(backend.GetZipkin())
+			if err != nil {
+				return errors.Wrap(err, "could not generate zipkin cluster")
+			}
+		} else {
+			endpoint, err = endpointForDatadog(backend.GetDatadog())
+			if err != nil {
+				return errors.Wrap(err, "could not generate zipkin cluster")
+			}
+		}
+
+		res, err := clusters.NewClusterBuilder(proxy.APIVersion).
+			Configure(clusters.ProvidedEndpointCluster(MeshTraceCluster, proxy.Dataplane.IsIPv6(), *endpoint)).
+			Configure(clusters.ClientSideTLS([]xds.Endpoint{*endpoint})).
+			Configure(clusters.DefaultTimeout()).
+			Build()
+		if err != nil {
+			return err
+		}
+
+		rs.Add(&xds.Resource{Name: MeshTraceCluster, Origin: MeshTraceOrigin, Resource: res})
+	}
+
+	return nil
+}
+
+func endpointForZipkin(cfg *api.MeshTrace_ZipkinBackend) (*xds.Endpoint, error) {
+	url, err := net_url.ParseRequestURI(cfg.Url)
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid URL of Zipkin")
+	}
+	port, err := strconv.Atoi(url.Port())
+	if err != nil {
+		return nil, err
+	}
+	return &xds.Endpoint{
+		Target: url.Hostname(),
+		Port:   uint32(port),
+		ExternalService: &xds.ExternalService{
+			TLSEnabled:         url.Scheme == "https",
+			AllowRenegotiation: true,
+		},
+	}, nil
+}
+
+func endpointForDatadog(cfg *api.MeshTrace_DatadogBackend) (*xds.Endpoint, error) {
+	if cfg.Port > 0xFFFF || cfg.Port < 1 {
+		return nil, errors.Errorf("invalid Datadog port number %d. Must be in range 1-65535", cfg.Port)
+	}
+	return &xds.Endpoint{
+		Target: cfg.Address,
+		Port:   cfg.Port,
+	}, nil
 }

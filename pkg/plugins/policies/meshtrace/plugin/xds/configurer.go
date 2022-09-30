@@ -21,6 +21,7 @@ type Configurer struct {
     // Opaque string which envoy will assign to tracer collector cluster, on those
     // which support association of named "service" tags on traces. Consumed by datadog.
     Service          string
+    ClusterName      string
 }
 
 var _ v3.FilterChainConfigurer = &Configurer{}
@@ -52,7 +53,7 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
         }
 
         if backend.GetZipkin() != nil {
-            tracing, err := zipkinConfig(backend.Zipkin)
+            tracing, err := zipkinConfig(backend.Zipkin, c.ClusterName)
             if err != nil {
                 return err
             }
@@ -61,7 +62,7 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
         }
 
         if backend.GetDatadog() != nil {
-            tracing, err := datadogConfig(c.Service)
+            tracing, err := datadogConfig(c.Service, c.ClusterName)
             if err != nil {
                 return err
             }
@@ -72,9 +73,9 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
     })
 }
 
-func datadogConfig(serviceName string) (*envoy_trace.Tracing_Http, error) {
+func datadogConfig(serviceName, clusterName string) (*envoy_trace.Tracing_Http, error) {
     datadogConfig := envoy_trace.DatadogConfig{
-        CollectorCluster: getTracingClusterName("datadog"),
+        CollectorCluster: clusterName,
         ServiceName:      serviceName,
     }
     datadogConfigAny, err := proto.MarshalAnyDeterministic(&datadogConfig)
@@ -90,14 +91,14 @@ func datadogConfig(serviceName string) (*envoy_trace.Tracing_Http, error) {
     return tracingConfig, nil
 }
 
-func zipkinConfig(zipkin *api.MeshTrace_ZipkinBackend) (*envoy_trace.Tracing_Http, error) {
+func zipkinConfig(zipkin *api.MeshTrace_ZipkinBackend, clusterName string) (*envoy_trace.Tracing_Http, error) {
     url, err := net_url.ParseRequestURI(zipkin.Url)
     if err != nil {
         return nil, errors.Wrap(err, "invalid URL of Zipkin")
     }
 
     zipkinConfig := envoy_trace.ZipkinConfig{
-        CollectorCluster:         getTracingClusterName("zipkin"),
+        CollectorCluster:         clusterName,
         CollectorEndpoint:        url.Path,
         TraceId_128Bit:           zipkin.TraceId128Bit,
         CollectorEndpointVersion: apiVersion(zipkin, url),
@@ -131,10 +132,6 @@ func apiVersion(zipkin *api.MeshTrace_ZipkinBackend, url *net_url.URL) envoy_tra
         }
     }
     return envoy_trace.ZipkinConfig_HTTP_JSON
-}
-
-func getTracingClusterName(name string) string {
-    return "meshtrace:" + name
 }
 
 func mapTags(tags []*api.MeshTrace_Tag) []*tracingv3.CustomTag {
