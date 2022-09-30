@@ -31,18 +31,15 @@ func generateHelpers(
 		}
 	}
 
-	if !hasFrom && !hasTo {
-		return nil
-	}
-
 	info := NewPolicyConfig(msg.Desc)
 
 	outBuf := bytes.Buffer{}
 	err := helperTemplate.Execute(&outBuf, map[string]interface{}{
-		"name":         info.Name,
-		"version":      file.GoPackageName,
-		"generateTo":   hasTo,
-		"generateFrom": hasFrom,
+		"name":                  info.Name,
+		"version":               file.GoPackageName,
+		"generateTo":            hasTo,
+		"generateFrom":          hasFrom,
+		"generateGetPolicyItem": !hasFrom && !hasTo,
 	})
 	if err != nil {
 		return err
@@ -97,6 +94,16 @@ func (x *{{.name}}) GetToList() []core_xds.PolicyItem {
 		result = append(result, item)
 	}
 	return result
+}
+{{- end }}
+
+{{ if .generateGetPolicyItem}}
+func (x *{{.name}}) GetDefaultAsProto() proto.Message {
+	return x.Default
+}
+
+func (x *{{.name}}) GetPolicyItem() core_xds.PolicyItem {
+	return x
 }
 {{- end }}
 `))
