@@ -35,6 +35,7 @@ import (
 	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
 	sample_model "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 	test_runtime "github.com/kumahq/kuma/pkg/test/runtime"
+	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/server"
 )
@@ -212,14 +213,15 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 		cfg.Mode = config_core.Global
 	}
 
+	resManager := manager.NewResourceManager(t.store)
 	apiServer, err := api_server.NewApiServer( //nolint:contextcheck
-		manager.NewResourceManager(t.store),
+		resManager,
 		xds_context.NewMeshContextBuilder(
-			manager.NewResourceManager(t.store),
+			resManager,
 			server.MeshResourceTypes(server.HashMeshExcludedResources),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			vips.NewPersistence(manager.NewResourceManager(t.store), config_manager.NewConfigManager(t.store)),
+			vips.NewPersistence(resManager, config_manager.NewConfigManager(t.store)),
 			cfg.DNSServer.Domain,
 		),
 		customization.NewAPIList(),
@@ -240,6 +242,11 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 			),
 		},
 		&test_runtime.DummyEnvoyAdminClient{},
+		builtin.TokenIssuers{
+			DataplaneToken:   builtin.NewDataplaneTokenIssuer(resManager),
+			ZoneIngressToken: builtin.NewZoneIngressTokenIssuer(resManager),
+			ZoneToken:        builtin.NewZoneTokenIssuer(resManager),
+		},
 	)
 	if err != nil {
 		return nil, cfg, stop, err

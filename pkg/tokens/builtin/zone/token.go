@@ -16,22 +16,22 @@ var TokenRevocationsGlobalSecretKey = core_model.ResourceKey{
 	Mesh: core_model.NoMesh,
 }
 
-type zoneClaims struct {
+type ZoneClaims struct {
 	Zone  string
 	Scope []string
 	jwt.RegisteredClaims
 }
 
-var _ core_tokens.Claims = &zoneClaims{}
+var _ core_tokens.Claims = &ZoneClaims{}
 
-func (c *zoneClaims) ID() string {
+func (c *ZoneClaims) ID() string {
 	return c.RegisteredClaims.ID
 }
 
-func (c *zoneClaims) KeyIDFallback() (int, error) {
+func (c *ZoneClaims) KeyIDFallback() (int, error) {
 	return 0, errors.New("missing Key ID")
 }
 
-func (c *zoneClaims) SetRegisteredClaims(claims jwt.RegisteredClaims) {
+func (c *ZoneClaims) SetRegisteredClaims(claims jwt.RegisteredClaims) {
 	c.RegisteredClaims = claims
 }

@@ -44,6 +44,7 @@ import (
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
+	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
 	xds_auth_components "github.com/kumahq/kuma/pkg/xds/auth/components"
@@ -155,6 +156,12 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	if err := initializeAPIServerAuthenticator(builder); err != nil {
 		return nil, err
 	}
+
+	builder.WithTokenIssuers(builtin.TokenIssuers{
+		DataplaneToken:   builtin.NewDataplaneTokenIssuer(builder.ResourceManager()),
+		ZoneIngressToken: builtin.NewZoneIngressTokenIssuer(builder.ResourceManager()),
+		ZoneToken:        builtin.NewZoneTokenIssuer(builder.ResourceManager()),
+	})
 
 	for _, plugin := range core_plugins.Plugins().BootstrapPlugins() {
 		if err := plugin.AfterBootstrap(builder, cfg); err != nil {
