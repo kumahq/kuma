@@ -4,6 +4,7 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: 1-my-policy
   spec:
+    from: null
     targetRef:
       kind: Mesh
   type: MeshTrafficPermission
@@ -12,6 +13,7 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: 2-my-policy
   spec:
+    from: null
     targetRef:
       kind: Mesh
   type: MeshTrafficPermission
@@ -20,6 +22,7 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: "111"
   spec:
+    from: null
     targetRef:
       kind: MeshSubset
       tags:
@@ -30,6 +33,7 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: "222"
   spec:
+    from: null
     targetRef:
       kind: MeshSubset
       tags:
@@ -40,6 +44,7 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: my-policy-1
   spec:
+    from: null
     targetRef:
       kind: MeshService
       name: web
@@ -49,6 +54,7 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: my-policy-2
   spec:
+    from: null
     targetRef:
       kind: MeshService
       name: web
@@ -58,6 +64,7 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: aaa
   spec:
+    from: null
     targetRef:
       kind: MeshServiceSubset
       name: web
@@ -69,6 +76,7 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: bbb
   spec:
+    from: null
     targetRef:
       kind: MeshServiceSubset
       name: web

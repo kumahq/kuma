@@ -26,13 +26,13 @@ var _ = Describe("Rest Resource", func() {
 				// given
 				res := &v1alpha1.Resource{
 					ResourceMeta: v1alpha1.ResourceMeta{
-						Type:             "CircuitBreaker",
+						Type:             "MeshTrafficPermission",
 						Mesh:             "default",
 						Name:             "one",
 						CreationTime:     t1,
 						ModificationTime: t2,
 					},
-					Spec: samples.CircuitBreaker,
+					Spec: samples.MeshTrafficPermission,
 				}
 
 				// when
@@ -44,34 +44,25 @@ var _ = Describe("Rest Resource", func() {
 				// and
 				expected := `
 {
-  "type": "CircuitBreaker",
+  "type": "MeshTrafficPermission",
   "mesh": "default",
   "name": "one",
   "creationTime": "2018-07-17T16:05:36.995Z",
   "modificationTime": "2019-07-17T16:05:36.995Z",
   "spec": {
-    "sources": [
+    "targetRef": {
+      "kind": "Mesh"
+    },
+    "from": [
       {
-        "match": {
-          "kuma.io/service": "*"
+        "targetRef": {
+          "kind": "Mesh"
+        },
+        "default": {
+          "action": "ALLOW"
         }
       }
-    ],
-    "destinations": [
-      {
-        "match": {
-          "kuma.io/service": "*"
-        }
-      }
-    ],
-    "conf": {
-      "interval": "99s",
-      "detectors": {
-        "totalErrors": {
-          "consecutive": 3
-        }
-      }
-    }
+    ]
   }
 }`
 				Expect(string(bytes)).To(MatchJSON(expected))
@@ -81,7 +72,7 @@ var _ = Describe("Rest Resource", func() {
 				// given
 				res := &v1alpha1.Resource{
 					ResourceMeta: v1alpha1.ResourceMeta{
-						Type:             "CircuitBreaker",
+						Type:             "MeshTrafficPermission",
 						Mesh:             "default",
 						Name:             "one",
 						CreationTime:     t1,
@@ -98,7 +89,7 @@ var _ = Describe("Rest Resource", func() {
 				// and
 				expected := `
 {
-  "type": "CircuitBreaker",
+  "type": "MeshTrafficPermission",
   "mesh": "default",
   "name": "one",
   "creationTime": "2018-07-17T16:05:36.995Z",

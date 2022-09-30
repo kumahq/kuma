@@ -77,7 +77,7 @@ func fromRules(
 		for _, p := range policies {
 			policyWithFrom, ok := p.GetSpec().(core_xds.PolicyWithFromList)
 			if !ok {
-				return nil, errors.Errorf("%s doesn't support 'from' list", p.Descriptor().Name)
+				return nil, nil
 			}
 			fromList = append(fromList, policyWithFrom.GetFromList()...)
 		}
@@ -95,7 +95,7 @@ func toRules(matchedPolicies []core_model.Resource) (core_xds.Rules, error) {
 	for _, mp := range matchedPolicies {
 		policyWithTo, ok := mp.GetSpec().(core_xds.PolicyWithToList)
 		if !ok {
-			return nil, errors.Errorf("%s doesn't support 'to' list", mp.Descriptor().Name)
+			return nil, nil
 		}
 		toList = append(toList, policyWithTo.GetToList()...)
 	}
