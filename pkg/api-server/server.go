@@ -94,6 +94,7 @@ func NewApiServer(
 	authenticator authn.Authenticator,
 	access runtime.Access,
 	envoyAdminClient admin.EnvoyAdminClient,
+	tokenIssuers builtin.TokenIssuers,
 ) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
@@ -140,7 +141,7 @@ func NewApiServer(
 	}
 	container.Add(configWs)
 	container.Add(zonesWs(resManager))
-	container.Add(tokenWs(resManager, access))
+	container.Add(tokenWs(tokenIssuers, access))
 
 	container.Filter(cors.Filter)
 
@@ -235,11 +236,11 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 	}
 }
 
-func tokenWs(resManager manager.ResourceManager, access runtime.Access) *restful.WebService {
+func tokenWs(tokenIssuers builtin.TokenIssuers, access runtime.Access) *restful.WebService {
 	return tokens_server.NewWebservice(
-		builtin.NewDataplaneTokenIssuer(resManager),
-		builtin.NewZoneIngressTokenIssuer(resManager),
-		builtin.NewZoneTokenIssuer(resManager),
+		tokenIssuers.DataplaneToken,
+		tokenIssuers.ZoneIngressToken,
+		tokenIssuers.ZoneToken,
 		access.DataplaneTokenAccess,
 		access.ZoneTokenAccess,
 	)
@@ -393,6 +394,7 @@ func SetupServer(rt runtime.Runtime) error {
 		rt.APIServerAuthenticator(),
 		rt.Access(),
 		rt.EnvoyAdminClient(),
+		rt.TokenIssuers(),
 	)
 	if err != nil {
 		return err
