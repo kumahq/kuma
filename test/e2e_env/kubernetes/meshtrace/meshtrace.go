@@ -36,10 +36,10 @@ spec:
 }
 
 func PluginTest() {
-	ns := "tracing"
-	obsNs := "obs-tracing"
-	obsDeployment := "obs-tracing-deployment"
-	mesh := "tracing"
+	ns := "trace"
+	obsNs := "obs-trace"
+	obsDeployment := "obs-trace-deployment"
+	mesh := "trace"
 
 	var obsClient obs.Observability
 	BeforeAll(func() {
