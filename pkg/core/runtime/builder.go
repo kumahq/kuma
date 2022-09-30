@@ -433,3 +433,6 @@ func (b *Builder) ExtraReportsFn() ExtraReportsFn {
 func (b *Builder) TokenIssuers() builtin.TokenIssuers {
 	return b.tokenIssuers
 }
+func (b *Builder) EnvoyAdminClient() admin.EnvoyAdminClient {
+	return b.eac
+}
