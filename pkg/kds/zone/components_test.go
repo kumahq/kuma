@@ -34,7 +34,12 @@ var _ = Describe("Zone Sync", func() {
 	zoneName := "zone-1"
 
 	newPolicySink := func(zoneName string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockClientStream, configs map[string]bool) kds_client.KDSSink {
-		return kds_client.NewKDSSink(core.Log.WithName("kds-sink"), registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client.NewKDSStream(cs, zoneName, ""), zone.Callbacks(configs, resourceSyncer, false, zoneName, nil))
+		return kds_client.NewKDSSink(
+			core.Log.WithName("kds-sink"),
+			registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)),
+			kds_client.NewKDSStream(cs, zoneName, ""),
+			zone.Callbacks(configs, resourceSyncer, false, zoneName, nil, "kuma-system"),
+		)
 	}
 	ingressFunc := func(zone string) *mesh_proto.ZoneIngress {
 		return &mesh_proto.ZoneIngress{

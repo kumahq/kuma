@@ -258,6 +258,10 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 		composite.AddValidator(validator)
 	}
 
+	composite.AddValidator(&k8s_webhooks.PolicyNamespaceValidator{
+		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace},
+	)
+
 	mgr.GetWebhookServer().Register("/validate-kuma-io-v1alpha1", composite.WebHook())
 	mgr.GetWebhookServer().Register("/validate-v1-service", &kube_webhook.Admission{Handler: &k8s_webhooks.ServiceValidator{}})
 
