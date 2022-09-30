@@ -34,9 +34,9 @@ type MeshTrace struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
 	// defined inplace.
-	TargetRef *v1alpha1.TargetRef `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef,omitempty"`
+	TargetRef *v1alpha1.TargetRef `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef"`
 	// MeshTrace configuration.
-	Default *MeshTrace_Conf `protobuf:"bytes,2,opt,name=default,proto3" json:"default,omitempty"`
+	Default *MeshTrace_Conf `protobuf:"bytes,2,opt,name=default,proto3" json:"default"`
 }
 
 func (x *MeshTrace) Reset() {
@@ -92,9 +92,9 @@ type MeshTrace_DatadogBackend struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Address of datadog collector.
-	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address"`
 	// Port of datadog collector
-	Port uint32 `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`
+	Port uint32 `protobuf:"varint,2,opt,name=port,proto3" json:"port"`
 }
 
 func (x *MeshTrace_DatadogBackend) Reset() {
@@ -150,17 +150,17 @@ type MeshTrace_ZipkinBackend struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Address of Zipkin collector.
-	Url string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
+	Url string `protobuf:"bytes,1,opt,name=url,proto3" json:"url"`
 	// Generate 128bit traces. Default: false
-	TraceId128Bit bool `protobuf:"varint,2,opt,name=traceId128bit,proto3" json:"traceId128bit,omitempty"`
+	TraceId128Bit bool `protobuf:"varint,2,opt,name=traceId128bit,proto3" json:"traceId128bit"`
 	// Version of the API. values: httpJson, httpProto. Default:
 	// httpJson see
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L66
-	ApiVersion string `protobuf:"bytes,3,opt,name=apiVersion,proto3" json:"apiVersion,omitempty"`
+	ApiVersion string `protobuf:"bytes,3,opt,name=apiVersion,proto3" json:"apiVersion"`
 	// Determines whether client and server spans will share the same span
 	// context. Default: true.
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L63
-	SharedSpanContext *wrapperspb.BoolValue `protobuf:"bytes,4,opt,name=sharedSpanContext,proto3" json:"sharedSpanContext,omitempty"`
+	SharedSpanContext *wrapperspb.BoolValue `protobuf:"bytes,4,opt,name=sharedSpanContext,proto3" json:"sharedSpanContext"`
 }
 
 func (x *MeshTrace_ZipkinBackend) Reset() {
@@ -230,9 +230,9 @@ type MeshTrace_Backend struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Zipkin backend configuration.
-	Zipkin *MeshTrace_ZipkinBackend `protobuf:"bytes,1,opt,name=zipkin,proto3" json:"zipkin,omitempty"`
+	Zipkin *MeshTrace_ZipkinBackend `protobuf:"bytes,1,opt,name=zipkin,proto3" json:"zipkin"`
 	// Datadog backend configuration.
-	Datadog *MeshTrace_DatadogBackend `protobuf:"bytes,2,opt,name=datadog,proto3" json:"datadog,omitempty"`
+	Datadog *MeshTrace_DatadogBackend `protobuf:"bytes,2,opt,name=datadog,proto3" json:"datadog"`
 }
 
 func (x *MeshTrace_Backend) Reset() {
@@ -295,17 +295,17 @@ type MeshTrace_Sampling struct {
 	// the appropriate headers to be force traced. Default: 100% Mirror of
 	// overall_sampling in Envoy
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L142-L150
-	Overall uint32 `protobuf:"varint,1,opt,name=overall,proto3" json:"overall,omitempty"`
+	Overall uint32 `protobuf:"varint,1,opt,name=overall,proto3" json:"overall"`
 	// Target percentage of requests that will be force traced if the
 	// 'x-client-trace-id' header is set. Default: 100% Mirror of
 	// client_sampling in Envoy
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L127-L133
-	Client uint32 `protobuf:"varint,2,opt,name=client,proto3" json:"client,omitempty"`
+	Client uint32 `protobuf:"varint,2,opt,name=client,proto3" json:"client"`
 	// Target percentage of requests that will be randomly selected for trace
 	// generation, if not requested by the client or not forced. Default: 100%
 	// Mirror of random_sampling in Envoy
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L135-L140
-	Random uint32 `protobuf:"varint,3,opt,name=random,proto3" json:"random,omitempty"`
+	Random uint32 `protobuf:"varint,3,opt,name=random,proto3" json:"random"`
 }
 
 func (x *MeshTrace_Sampling) Reset() {
@@ -368,11 +368,11 @@ type MeshTrace_HeaderTag struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Name of the header.
-	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name"`
 	// Default value to use if header is missing.
 	// If the default is missing and there is no value the tag will not be
 	// included.
-	Default string `protobuf:"bytes,2,opt,name=default,proto3" json:"default,omitempty"`
+	Default string `protobuf:"bytes,2,opt,name=default,proto3" json:"default"`
 }
 
 func (x *MeshTrace_HeaderTag) Reset() {
@@ -429,11 +429,11 @@ type MeshTrace_Tag struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Name of the tag.
-	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name"`
 	// Tag taken from literal value.
-	Literal string `protobuf:"bytes,2,opt,name=literal,proto3" json:"literal,omitempty"`
+	Literal string `protobuf:"bytes,2,opt,name=literal,proto3" json:"literal"`
 	// Tag taken from a header.
-	Header *MeshTrace_HeaderTag `protobuf:"bytes,3,opt,name=header,proto3" json:"header,omitempty"`
+	Header *MeshTrace_HeaderTag `protobuf:"bytes,3,opt,name=header,proto3" json:"header"`
 }
 
 func (x *MeshTrace_Tag) Reset() {
@@ -499,14 +499,14 @@ type MeshTrace_Conf struct {
 	// representing that would be just one object. Unfortunately due to the
 	// reasons explained in MADR 009-tracing-policy this has to be a one element
 	// array for now.
-	Backends []*MeshTrace_Backend `protobuf:"bytes,1,rep,name=backends,proto3" json:"backends,omitempty"`
+	Backends []*MeshTrace_Backend `protobuf:"bytes,1,rep,name=backends,proto3" json:"backends"`
 	// Sampling configuration.
 	// Sampling is the process by which a decision is made on whether to
 	// process/export a span or not.
-	Sampling *MeshTrace_Sampling `protobuf:"bytes,2,opt,name=sampling,proto3" json:"sampling,omitempty"`
+	Sampling *MeshTrace_Sampling `protobuf:"bytes,2,opt,name=sampling,proto3" json:"sampling"`
 	// Custom tags configuration. You can add custom tags to traces based on
 	// headers or literal values.
-	Tags []*MeshTrace_Tag `protobuf:"bytes,3,rep,name=tags,proto3" json:"tags,omitempty"`
+	Tags []*MeshTrace_Tag `protobuf:"bytes,3,rep,name=tags,proto3" json:"tags"`
 }
 
 func (x *MeshTrace_Conf) Reset() {

@@ -28,6 +28,9 @@ properties:
                   description: Port of datadog collector
                   format: int32
                   type: integer
+              required:
+                - address
+                - port
               type: object
             zipkin:
               description: Zipkin backend configuration.
@@ -48,7 +51,15 @@ properties:
                 url:
                   description: Address of Zipkin collector.
                   type: string
+              required:
+                - apiVersion
+                - sharedSpanContext
+                - traceId128bit
+                - url
               type: object
+          required:
+            - datadog
+            - zipkin
           type: object
         type: array
       sampling:
@@ -66,6 +77,10 @@ properties:
             description: 'Target percentage of requests that will be randomly selected for trace generation, if not requested by the client or not forced. Default: 100% Mirror of random_sampling in Envoy https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L135-L140'
             format: int32
             type: integer
+        required:
+          - client
+          - overall
+          - random
         type: object
       tags:
         description: Custom tags configuration. You can add custom tags to traces based on headers or literal values.
@@ -81,6 +96,9 @@ properties:
                 name:
                   description: Name of the header.
                   type: string
+              required:
+                - default
+                - name
               type: object
             literal:
               description: Tag taken from literal value.
@@ -88,8 +106,16 @@ properties:
             name:
               description: Name of the tag.
               type: string
+          required:
+            - header
+            - literal
+            - name
           type: object
         type: array
+    required:
+      - backends
+      - sampling
+      - tags
     type: object
   targetRef:
     description: TargetRef is a reference to the resource the policy takes an effect on. The resource could be either a real store object or virtual resource defined inplace.
@@ -116,3 +142,6 @@ properties:
         description: Tags are used with MeshSubset and MeshServiceSubset to define a subset of proxies
         type: object
     type: object
+required:
+  - default
+  - targetRef
