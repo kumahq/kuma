@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	hds_callbacks "github.com/kumahq/kuma/pkg/hds/callbacks"
 	hds_metrics "github.com/kumahq/kuma/pkg/hds/metrics"
@@ -185,6 +186,7 @@ func (t *tracker) OnEndpointHealthResponse(streamID xds.StreamID, resp *envoy_se
 }
 
 func (t *tracker) updateDataplane(streamID xds.StreamID, healthMap map[uint32]bool, envoyHealth bool) error {
+	ctx := user.Ctx(context.Background(), user.ControlPlane)
 	t.RLock()
 	defer t.RUnlock()
 	dataplaneKey, hasAssociation := t.streamsAssociation[streamID]
@@ -193,7 +195,7 @@ func (t *tracker) updateDataplane(streamID xds.StreamID, healthMap map[uint32]bo
 	}
 
 	dp := mesh.NewDataplaneResource()
-	if err := t.resourceManager.Get(context.Background(), dp, store.GetBy(dataplaneKey)); err != nil {
+	if err := t.resourceManager.Get(ctx, dp, store.GetBy(dataplaneKey)); err != nil {
 		return err
 	}
 
@@ -216,7 +218,7 @@ func (t *tracker) updateDataplane(streamID xds.StreamID, healthMap map[uint32]bo
 
 	if changed {
 		t.log.V(1).Info("status updated", "dataplaneKey", dataplaneKey)
-		return t.resourceManager.Update(context.Background(), dp)
+		return t.resourceManager.Update(ctx, dp)
 	}
 
 	return nil

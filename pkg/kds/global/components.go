@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/kds/client"
 	"github.com/kumahq/kuma/pkg/kds/mux"
 	kds_server "github.com/kumahq/kuma/pkg/kds/server"
@@ -82,7 +83,8 @@ func Setup(rt runtime.Runtime) (err error) {
 }
 
 func createZoneIfAbsent(name string, resManager manager.ResourceManager) error {
-	if err := resManager.Get(context.Background(), system.NewZoneResource(), store.GetByKey(name, model.NoMesh)); err != nil {
+	ctx := user.Ctx(context.Background(), user.ControlPlane)
+	if err := resManager.Get(ctx, system.NewZoneResource(), store.GetByKey(name, model.NoMesh)); err != nil {
 		if !store.IsResourceNotFound(err) {
 			return err
 		}
@@ -92,7 +94,7 @@ func createZoneIfAbsent(name string, resManager manager.ResourceManager) error {
 				Enabled: util_proto.Bool(true),
 			},
 		}
-		if err := resManager.Create(context.Background(), zone, store.CreateByKey(name, model.NoMesh)); err != nil {
+		if err := resManager.Create(ctx, zone, store.CreateByKey(name, model.NoMesh)); err != nil {
 			return err
 		}
 	}
