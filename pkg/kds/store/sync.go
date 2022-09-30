@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/user"
 )
 
 // ResourceSyncer allows to synchronize resources in Store
@@ -67,7 +68,7 @@ func NewResourceSyncer(log logr.Logger, resourceStore store.ResourceStore) Resou
 
 func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFunc) error {
 	opts := NewSyncOptions(fs...)
-	ctx := context.Background()
+	ctx := user.Ctx(context.TODO(), user.ControlPlane)
 	log := s.log.WithValues("type", upstream.GetItemType())
 	downstream, err := registry.Global().NewList(upstream.GetItemType())
 	if err != nil {

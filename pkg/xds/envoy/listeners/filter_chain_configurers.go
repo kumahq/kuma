@@ -25,10 +25,12 @@ func Kafka(statsName string) FilterChainBuilderOpt {
 	})
 }
 
-func Tracing(backend *mesh_proto.TracingBackend, service string) FilterChainBuilderOpt {
+func Tracing(backend *mesh_proto.TracingBackend, service string, direction envoy_common.TrafficDirection, destination string) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.TracingConfigurer{
-		Backend: backend,
-		Service: service,
+		Backend:          backend,
+		Service:          service,
+		TrafficDirection: direction,
+		Destination:      destination,
 	})
 }
 

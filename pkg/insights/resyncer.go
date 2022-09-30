@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/events"
 )
 
@@ -101,16 +102,17 @@ func NewResyncer(config *Config) component.Component {
 }
 
 func (r *resyncer) Start(stop <-chan struct{}) error {
+	ctx := user.Ctx(context.Background(), user.ControlPlane)
 	r.clearInfos() // clear the map if component is restarted
 	go func(stop <-chan struct{}) {
 		ticker := r.tick(r.maxResyncTimeout - r.minResyncTimeout)
 		for {
 			select {
 			case <-ticker:
-				if err := r.createOrUpdateMeshInsights(); err != nil {
+				if err := r.createOrUpdateMeshInsights(ctx); err != nil {
 					log.Error(err, "unable to resync MeshInsight")
 				}
-				if err := r.createOrUpdateServiceInsights(); err != nil {
+				if err := r.createOrUpdateServiceInsights(ctx); err != nil {
 					log.Error(err, "unable to resync ServiceInsight")
 				}
 			case <-stop:
@@ -156,7 +158,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 			// because that's how we find online/offline Dataplane's status
 			continue
 		}
-		if err := r.createOrUpdateMeshInsight(resourceChanged.Key.Mesh); err != nil {
+		if err := r.createOrUpdateMeshInsight(ctx, resourceChanged.Key.Mesh); err != nil {
 			log.Error(err, "unable to resync MeshInsight", "mesh", resourceChanged.Key.Mesh)
 			continue
 		}
@@ -177,9 +179,9 @@ func (r *resyncer) deleteRateLimiter(mesh string) {
 	delete(r.rateLimiters, mesh)
 }
 
-func (r *resyncer) createOrUpdateServiceInsights() error {
+func (r *resyncer) createOrUpdateServiceInsights(ctx context.Context) error {
 	meshes := &core_mesh.MeshResourceList{}
-	if err := r.rm.List(context.Background(), meshes); err != nil {
+	if err := r.rm.List(ctx, meshes); err != nil {
 		return err
 	}
 	for _, mesh := range meshes.Items {
@@ -247,11 +249,11 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 		Services: map[string]*mesh_proto.ServiceInsight_Service{},
 	}
 	dp := &core_mesh.DataplaneResourceList{}
-	if err := r.rm.List(context.Background(), dp, store.ListByMesh(mesh)); err != nil {
+	if err := r.rm.List(ctx, dp, store.ListByMesh(mesh)); err != nil {
 		return err
 	}
 	dpInsights := &core_mesh.DataplaneInsightResourceList{}
-	if err := r.rm.List(context.Background(), dpInsights, store.ListByMesh(mesh)); err != nil {
+	if err := r.rm.List(ctx, dpInsights, store.ListByMesh(mesh)); err != nil {
 		return err
 	}
 	dpOverviews := core_mesh.NewDataplaneOverviews(*dp, *dpInsights)
@@ -306,16 +308,16 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 	return nil
 }
 
-func (r *resyncer) createOrUpdateMeshInsights() error {
+func (r *resyncer) createOrUpdateMeshInsights(ctx context.Context) error {
 	meshes := &core_mesh.MeshResourceList{}
-	if err := r.rm.List(context.Background(), meshes); err != nil {
+	if err := r.rm.List(ctx, meshes); err != nil {
 		return err
 	}
 	for _, mesh := range meshes.Items {
 		if need := r.needResyncMeshInsight(mesh.GetMeta().GetName()); !need {
 			continue
 		}
-		err := r.createOrUpdateMeshInsight(mesh.GetMeta().GetName())
+		err := r.createOrUpdateMeshInsight(ctx, mesh.GetMeta().GetName())
 		if err != nil {
 			log.Error(err, "unable to resync resources", "mesh", mesh.GetMeta().GetName())
 			continue
@@ -324,9 +326,7 @@ func (r *resyncer) createOrUpdateMeshInsights() error {
 	return nil
 }
 
-func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
-	ctx := context.TODO()
-
+func (r *resyncer) createOrUpdateMeshInsight(ctx context.Context, mesh string) error {
 	r.meshInsightMux.Lock()
 	defer r.meshInsightMux.Unlock()
 
@@ -348,14 +348,14 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 	}
 
 	dataplanes := &core_mesh.DataplaneResourceList{}
-	if err := r.rm.List(context.Background(), dataplanes, store.ListByMesh(mesh)); err != nil {
+	if err := r.rm.List(ctx, dataplanes, store.ListByMesh(mesh)); err != nil {
 		return err
 	}
 
 	insight.Dataplanes.Total = uint32(len(dataplanes.GetItems()))
 
 	dpInsights := &core_mesh.DataplaneInsightResourceList{}
-	if err := r.rm.List(context.Background(), dpInsights, store.ListByMesh(mesh)); err != nil {
+	if err := r.rm.List(ctx, dpInsights, store.ListByMesh(mesh)); err != nil {
 		return err
 	}
 
@@ -414,7 +414,7 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 	}
 
 	externalServices := &core_mesh.ExternalServiceResourceList{}
-	if err := r.rm.List(context.Background(), externalServices, store.ListByMesh(mesh)); err != nil {
+	if err := r.rm.List(ctx, externalServices, store.ListByMesh(mesh)); err != nil {
 		return err
 	}
 
@@ -427,7 +427,7 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 	for _, resDesc := range r.registry.ObjectDescriptors(model.HasScope(model.ScopeMesh), model.Not(model.Named(core_mesh.DataplaneType, core_mesh.DataplaneInsightType))) {
 		list := resDesc.NewList()
 
-		if err := r.rm.List(context.Background(), list, store.ListByMesh(mesh)); err != nil {
+		if err := r.rm.List(ctx, list, store.ListByMesh(mesh)); err != nil {
 			return err
 		}
 

@@ -17,21 +17,21 @@ var UserTokenRevocationsGlobalSecretKey = core_model.ResourceKey{
 	Mesh: core_model.NoMesh,
 }
 
-type userClaims struct {
+type UserClaims struct {
 	user.User
 	jwt.RegisteredClaims
 }
 
-var _ tokens.Claims = &userClaims{}
+var _ tokens.Claims = &UserClaims{}
 
-func (c *userClaims) ID() string {
+func (c *UserClaims) ID() string {
 	return c.RegisteredClaims.ID
 }
 
-func (c *userClaims) KeyIDFallback() (int, error) {
+func (c *UserClaims) KeyIDFallback() (int, error) {
 	return 0, errors.New("kid is required") // kid was required when we introduced User Token
 }
 
-func (c *userClaims) SetRegisteredClaims(claims jwt.RegisteredClaims) {
+func (c *UserClaims) SetRegisteredClaims(claims jwt.RegisteredClaims) {
 	c.RegisteredClaims = claims
 }

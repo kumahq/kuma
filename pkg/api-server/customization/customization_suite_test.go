@@ -24,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/test"
 	test_runtime "github.com/kumahq/kuma/pkg/test/runtime"
+	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/server"
 )
@@ -53,14 +54,15 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 	}
 	cfg := kuma_cp.DefaultConfig()
 	cfg.ApiServer = config
+	resManager := manager.NewResourceManager(store)
 	apiServer, err := api_server.NewApiServer(
-		manager.NewResourceManager(store),
+		resManager,
 		xds_context.NewMeshContextBuilder(
-			manager.NewResourceManager(store),
+			resManager,
 			server.MeshResourceTypes(server.HashMeshExcludedResources),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			vips.NewPersistence(manager.NewResourceManager(store), config_manager.NewConfigManager(store)),
+			vips.NewPersistence(resManager, config_manager.NewConfigManager(store)),
 			cfg.DNSServer.Domain,
 		),
 		wsManager,
@@ -77,6 +79,11 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 			EnvoyAdminAccess:     access.NoopEnvoyAdminAccess{},
 		},
 		&test_runtime.DummyEnvoyAdminClient{},
+		builtin.TokenIssuers{
+			DataplaneToken:   builtin.NewDataplaneTokenIssuer(resManager),
+			ZoneIngressToken: builtin.NewZoneIngressTokenIssuer(resManager),
+			ZoneToken:        builtin.NewZoneTokenIssuer(resManager),
+		},
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer

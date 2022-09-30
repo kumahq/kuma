@@ -14,6 +14,7 @@ import (
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/user"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
@@ -90,7 +91,7 @@ func (a *authCallbacks) OnStreamRequest(streamID core_xds.StreamID, req util_xds
 	if err != nil {
 		return errors.Wrap(err, "could not extract credential from DiscoveryRequest")
 	}
-	if err := a.authenticator.Authenticate(context.Background(), s.resource, credential); err != nil {
+	if err := a.authenticator.Authenticate(user.Ctx(s.ctx, user.ControlPlane), s.resource, credential); err != nil {
 		return errors.Wrap(err, "authentication failed")
 	}
 	a.Lock()
@@ -117,7 +118,7 @@ func (a *authCallbacks) stream(streamID core_xds.StreamID, req util_xds.Discover
 
 	if s.resource == nil {
 		md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata())
-		res, err := a.resource(md, req.NodeId())
+		res, err := a.resource(user.Ctx(s.ctx, user.ControlPlane), md, req.NodeId())
 		if err != nil {
 			return stream{}, err
 		}
@@ -126,7 +127,7 @@ func (a *authCallbacks) stream(streamID core_xds.StreamID, req util_xds.Discover
 	return s, nil
 }
 
-func (a *authCallbacks) resource(md *core_xds.DataplaneMetadata, nodeID string) (model.Resource, error) {
+func (a *authCallbacks) resource(ctx context.Context, md *core_xds.DataplaneMetadata, nodeID string) (model.Resource, error) {
 	if md.Resource != nil {
 		return md.Resource, nil
 	}
@@ -150,7 +151,7 @@ func (a *authCallbacks) resource(md *core_xds.DataplaneMetadata, nodeID string) 
 	}
 
 	backoff := retry.WithMaxRetries(uint64(a.dpNotFoundRetry.MaxTimes), retry.NewConstant(a.dpNotFoundRetry.Backoff))
-	err = retry.Do(context.Background(), backoff, func(ctx context.Context) error {
+	err = retry.Do(ctx, backoff, func(ctx context.Context) error {
 		err := a.resManager.Get(ctx, resource, core_store.GetBy(proxyId.ToResourceKey()))
 		if core_store.IsResourceNotFound(err) {
 			return retry.RetryableError(errors.Errorf(

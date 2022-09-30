@@ -12,6 +12,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/core/user"
 )
 
 var (
@@ -68,13 +69,14 @@ func NewSubscriptionFinalizer(rm manager.ResourceManager, newTicker func() *time
 func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 	ticker := f.newTicker()
 	defer ticker.Stop()
+	ctx := user.Ctx(context.Background(), user.ControlPlane)
 
 	finalizerLog.Info("started")
 	for {
 		select {
 		case now := <-ticker.C:
 			for _, typ := range f.types {
-				if err := f.checkGeneration(typ, now); err != nil {
+				if err := f.checkGeneration(ctx, typ, now); err != nil {
 					finalizerLog.Error(err, "unable to check subscription's generation", "type", typ)
 				}
 			}
@@ -85,12 +87,10 @@ func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (f *subscriptionFinalizer) checkGeneration(typ core_model.ResourceType, now time.Time) error {
-	ctx := context.TODO()
-
+func (f *subscriptionFinalizer) checkGeneration(ctx context.Context, typ core_model.ResourceType, now time.Time) error {
 	// get all the insights for provided type
 	insights, _ := registry.Global().NewList(typ)
-	if err := f.rm.List(context.Background(), insights); err != nil {
+	if err := f.rm.List(ctx, insights); err != nil {
 		return err
 	}
 

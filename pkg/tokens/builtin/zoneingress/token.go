@@ -14,21 +14,21 @@ var ZoneIngressTokenRevocationsGlobalSecretKey = core_model.ResourceKey{
 	Mesh: core_model.NoMesh,
 }
 
-type zoneIngressClaims struct {
+type ZoneIngressClaims struct {
 	Zone string
 	jwt.RegisteredClaims
 }
 
-var _ core_tokens.Claims = &zoneIngressClaims{}
+var _ core_tokens.Claims = &ZoneIngressClaims{}
 
-func (c *zoneIngressClaims) ID() string {
+func (c *ZoneIngressClaims) ID() string {
 	return c.RegisteredClaims.ID
 }
 
-func (c *zoneIngressClaims) KeyIDFallback() (int, error) {
+func (c *ZoneIngressClaims) KeyIDFallback() (int, error) {
 	return 0, nil
 }
 
-func (c *zoneIngressClaims) SetRegisteredClaims(claims jwt.RegisteredClaims) {
+func (c *ZoneIngressClaims) SetRegisteredClaims(claims jwt.RegisteredClaims) {
 	c.RegisteredClaims = claims
 }

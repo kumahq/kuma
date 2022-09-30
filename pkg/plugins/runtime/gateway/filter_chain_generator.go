@@ -19,6 +19,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
@@ -27,6 +28,7 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
@@ -200,7 +202,7 @@ func (g *HTTPSFilterChainGenerator) generateCertificateSecret(
 	host GatewayHost,
 	secret *system_proto.DataSource,
 ) (*envoy_extensions_transport_sockets_tls_v3.Secret, error) {
-	data, err := ctx.DataSourceLoader.Load(context.Background(), ctx.Resource.GetMeta().GetName(), secret)
+	data, err := ctx.DataSourceLoader.Load(user.Ctx(context.TODO(), user.ControlPlane), ctx.Resource.GetMeta().GetName(), secret)
 	if err != nil {
 		return nil, err
 	}
@@ -300,7 +302,7 @@ func newFilterChain(ctx xds_context.MeshContext, info GatewayListenerInfo) *envo
 		// is a no-op unless we later add a per-route configuration.
 		envoy_listeners.RateLimit([]*core_mesh.RateLimitResource{nil}),
 		envoy_listeners.DefaultCompressorFilter(),
-		envoy_listeners.Tracing(ctx.GetTracingBackend(info.Proxy.Policies.TrafficTrace), service),
+		envoy_listeners.Tracing(ctx.GetTracingBackend(info.Proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionUnspecified, ""),
 		// In mesh proxies, the access log is configured on the outbound
 		// listener, which is why we index the Logs slice by destination
 		// service name.  A Gateway listener by definition forwards traffic

@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/core/user"
 )
 
 var (
@@ -36,7 +37,7 @@ func (d *collector) Start(stop <-chan struct{}) error {
 	ticker := d.newTicker()
 	defer ticker.Stop()
 	gcLog.Info("started")
-	ctx := context.Background()
+	ctx := user.Ctx(context.Background(), user.ControlPlane)
 	for {
 		select {
 		case now := <-ticker.C:

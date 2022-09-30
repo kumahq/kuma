@@ -6,6 +6,7 @@ import (
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
@@ -75,7 +76,7 @@ func DefaultDataplaneWatchdogFactory(
 	envoyCpCtx *xds_context.ControlPlaneContext,
 	apiVersion envoy.APIVersion,
 ) (DataplaneWatchdogFactory, error) {
-	ctx := context.Background()
+	ctx := user.Ctx(context.Background(), user.ControlPlane)
 	config := rt.Config()
 
 	dataplaneProxyBuilder := DefaultDataplaneProxyBuilder(

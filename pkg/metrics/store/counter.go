@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/metrics"
 )
 
@@ -46,15 +47,16 @@ func (s *storeCounter) Start(stop <-chan struct{}) error {
 
 func (s *storeCounter) StartWithTicker(stop <-chan struct{}, ticker *time.Ticker) error {
 	defer ticker.Stop()
+	ctx := user.Ctx(context.Background(), user.ControlPlane)
 
 	log.Info("starting the resource counter")
-	if err := s.count(); err != nil {
+	if err := s.count(ctx); err != nil {
 		log.Error(err, "unable to count resources")
 	}
 	for {
 		select {
 		case <-ticker.C:
-			if err := s.count(); err != nil {
+			if err := s.count(ctx); err != nil {
 				log.Error(err, "unable to count resources")
 			}
 		case <-stop:
@@ -68,12 +70,12 @@ func (s *storeCounter) NeedLeaderElection() bool {
 	return true
 }
 
-func (s *storeCounter) count() error {
+func (s *storeCounter) count(ctx context.Context) error {
 	resourceCount := map[string]uint32{}
-	if err := s.countGlobalScopedResources(resourceCount); err != nil {
+	if err := s.countGlobalScopedResources(ctx, resourceCount); err != nil {
 		return err
 	}
-	if err := s.countMeshScopedResources(resourceCount); err != nil {
+	if err := s.countMeshScopedResources(ctx, resourceCount); err != nil {
 		return err
 	}
 	for resType, counter := range resourceCount {
@@ -82,13 +84,13 @@ func (s *storeCounter) count() error {
 	return nil
 }
 
-func (s *storeCounter) countGlobalScopedResources(resourceCount map[string]uint32) error {
+func (s *storeCounter) countGlobalScopedResources(ctx context.Context, resourceCount map[string]uint32) error {
 	for _, resDesc := range registry.Global().ObjectDescriptors() {
 		if resDesc.Scope == model.ScopeMesh {
 			continue
 		}
 		list := resDesc.NewList()
-		if err := s.resManager.List(context.Background(), list); err != nil {
+		if err := s.resManager.List(ctx, list); err != nil {
 			return err
 		}
 		resourceCount[string(resDesc.Name)] += uint32(len(list.GetItems()))
@@ -96,9 +98,9 @@ func (s *storeCounter) countGlobalScopedResources(resourceCount map[string]uint3
 	return nil
 }
 
-func (s *storeCounter) countMeshScopedResources(resourceCount map[string]uint32) error {
+func (s *storeCounter) countMeshScopedResources(ctx context.Context, resourceCount map[string]uint32) error {
 	insights := &mesh.MeshInsightResourceList{}
-	if err := s.resManager.List(context.Background(), insights); err != nil {
+	if err := s.resManager.List(ctx, insights); err != nil {
 		return err
 	}
 	for _, meshInsight := range insights.Items {
