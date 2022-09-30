@@ -61,7 +61,7 @@ func PluginTest() {
 
 	It("should emit traces to jaeger", func() {
 		// given MeshTrace and with tracing backend
-		err := YamlUniversal(traceAll(mesh, obsClient.ZipkinCollectorURL()))(env.Cluster)
+		err := YamlK8s(traceAll(mesh, obsClient.ZipkinCollectorURL()))(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when client sends requests to server
