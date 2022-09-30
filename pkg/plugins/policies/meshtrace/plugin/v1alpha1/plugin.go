@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
@@ -25,7 +24,6 @@ const MeshTraceCluster = "meshTrace"
 const MeshTraceOrigin = "meshTrace"
 
 var _ core_plugins.PolicyPlugin = &plugin{}
-var log = core.Log.WithName("MeshTrace")
 
 type plugin struct {
 }
