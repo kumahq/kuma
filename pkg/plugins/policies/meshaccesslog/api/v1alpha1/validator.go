@@ -47,7 +47,7 @@ func validateFrom(from []*MeshAccessLog_From) validators.ValidationError {
 
 		defaultField := path.Field("default")
 		if fromItem.GetDefault() == nil {
-			verr.AddViolationAt(defaultField, "must be defined")
+			verr.AddViolationAt(defaultField, validators.MustBeDefined)
 		} else {
 			verr.AddErrorAt(defaultField, validateDefault(fromItem.Default))
 		}
@@ -67,7 +67,7 @@ func validateTo(to []*MeshAccessLog_To) validators.ValidationError {
 
 		defaultField := path.Field("default")
 		if toItem.GetDefault() == nil {
-			verr.AddViolationAt(defaultField, "must be defined")
+			verr.AddViolationAt(defaultField, validators.MustBeDefined)
 		} else {
 			verr.AddErrorAt(defaultField, validateDefault(toItem.Default))
 		}
@@ -85,11 +85,9 @@ func validateDefault(conf *MeshAccessLog_Conf) validators.ValidationError {
 
 func validateBackend(backend *MeshAccessLog_Backend) validators.ValidationError {
 	var verr validators.ValidationError
-	file := bool2int(backend.GetFile() != nil)
-	tcp := bool2int(backend.GetTcp() != nil)
 
-	if file+tcp != 1 {
-		verr.AddViolation("", `backend can have only one type defined: tcp, file`)
+	if (backend.GetFile() != nil) == (backend.GetTcp() != nil) {
+		verr.AddViolation("", validators.MustHaveOnlyOne("backend", "tcp", "file"))
 	}
 
 	verr.AddErrorAt(validators.RootedAt("file").Field("format"), validateFormat(backend.GetFile().GetFormat()))
@@ -115,24 +113,22 @@ func validateFormat(format *MeshAccessLog_Format) validators.ValidationError {
 	if format == nil {
 		return verr
 	}
-	plain := bool2int(format.GetPlain() != "")
-	json := bool2int(format.GetJson() != nil)
 
-	if plain+json > 1 {
-		verr.AddViolation("", `format can only have one type defined: plain, json`)
+	if (format.GetPlain() != "") == (format.GetJson() != nil) {
+		verr.AddViolation("", validators.MustHaveOnlyOne("format", "plain", "json"))
 	}
 
 	if format.GetJson() != nil {
 		for idx, field := range format.GetJson() {
-			indexedField := validators.RootedAt("json").Index(idx)
+			path := validators.RootedAt("json").Index(idx)
 			if field.GetKey() == "" {
-				verr.AddViolationAt(indexedField.Field("key"), `key cannot be empty`)
+				verr.AddViolationAt(path.Field("key"), `key cannot be empty`)
 			}
 			if field.GetValue() == "" {
-				verr.AddViolationAt(indexedField.Field("value"), `value cannot be empty`)
+				verr.AddViolationAt(path.Field("value"), `value cannot be empty`)
 			}
 			if !govalidator.IsJSON(fmt.Sprintf(`{"%s": "%s"}`, field.GetKey(), field.GetValue())) {
-				verr.AddViolationAt(indexedField, `is not a valid JSON object`)
+				verr.AddViolationAt(path, `is not a valid JSON object`)
 			}
 		}
 	}
@@ -149,11 +145,4 @@ func validateIncompatibleCombinations(spec *MeshAccessLog) validators.Validation
 		verr.AddViolation("to", `cannot use "to" when "targetRef" is "MeshHTTPRoute" - "to" always goes to the application`)
 	}
 	return verr
-}
-
-func bool2int(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
 }

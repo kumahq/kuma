@@ -49,6 +49,14 @@
    "isExperimental": true
   },
   {
+   "name": "MeshTrace",
+   "readOnly": false,
+   "path": "meshtraces",
+   "singularDisplayName": "Mesh Trace",
+   "pluralDisplayName": "Mesh Traces",
+   "isExperimental": false
+  },
+  {
    "name": "MeshTrafficPermission",
    "readOnly": false,
    "path": "meshtrafficpermissions",
