@@ -224,7 +224,7 @@ default:
 				expected: `
 violations:
   - field: spec.default.backends[0].datadog.port
-    message: must be a valid port (0-65535)`,
+    message: must be a valid port (1-65535)`,
 			}),
 			Entry("invalid port for datadog backend", testCase{
 				inputYaml: `
@@ -240,7 +240,7 @@ default:
 				expected: `
 violations:
   - field: spec.default.backends[0].datadog.port
-    message: must be a valid port (0-65535)`,
+    message: must be a valid port (1-65535)`,
 			}),
 			Entry("tag missing name", testCase{
 				inputYaml: `
