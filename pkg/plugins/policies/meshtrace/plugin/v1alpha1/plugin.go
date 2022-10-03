@@ -88,9 +88,6 @@ func configureListener(
 	serviceName := dataplane.Spec.GetIdentifyingService()
 
 	rawConf := rules.Rules[0].Conf
-	if rawConf == nil {
-		return nil
-	}
 	conf := rawConf.(*api.MeshTrace_Conf)
 
 	configurer := plugin_xds.Configurer{
@@ -109,9 +106,6 @@ func configureListener(
 
 func applyToClusters(rules xds.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy) error {
 	rawConf := rules.Rules[0].Conf
-	if rawConf == nil {
-		return nil
-	}
 	conf := rawConf.(*api.MeshTrace_Conf)
 
 	backend := conf.GetBackends()[0]

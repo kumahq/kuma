@@ -68,6 +68,9 @@ package {{.version}}
 import (
 	"google.golang.org/protobuf/proto"
 
+{{ if .generateGetPolicyItem}}
+	"github.com/kumahq/kuma/api/common/v1alpha1"
+{{- end }}
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 {{ if .generateFrom }}
@@ -103,7 +106,20 @@ func (x *{{.name}}) GetDefaultAsProto() proto.Message {
 }
 
 func (x *{{.name}}) GetPolicyItem() core_xds.PolicyItem {
-	return x
+	return &policyItem{
+		{{.name}}: x,
+	}
+}
+
+// policyItem is an auxiliary struct with the implementation of the GetTargetRef() to always return empty result
+type policyItem struct {
+	*{{.name}}
+}
+
+var _ core_xds.PolicyItem = &policyItem{}
+
+func (p *policyItem) GetTargetRef() *v1alpha1.TargetRef {
+	return &v1alpha1.TargetRef{}
 }
 {{- end }}
 `))

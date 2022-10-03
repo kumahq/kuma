@@ -7,6 +7,7 @@ package v1alpha1
 import (
 	"google.golang.org/protobuf/proto"
 
+	"github.com/kumahq/kuma/api/common/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
@@ -15,5 +16,18 @@ func (x *MeshTrace) GetDefaultAsProto() proto.Message {
 }
 
 func (x *MeshTrace) GetPolicyItem() core_xds.PolicyItem {
-	return x
+	return &policyItem{
+		MeshTrace: x,
+	}
+}
+
+// policyItem is an auxiliary struct with the implementation of the GetTargetRef() to always return empty result
+type policyItem struct {
+	*MeshTrace
+}
+
+var _ core_xds.PolicyItem = &policyItem{}
+
+func (p *policyItem) GetTargetRef() *v1alpha1.TargetRef {
+	return &v1alpha1.TargetRef{}
 }

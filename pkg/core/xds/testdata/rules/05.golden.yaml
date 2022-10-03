@@ -11,19 +11,4 @@
     - literal: support
       name: team
   Origin: null
-  Subset:
-  - Key: kuma.io/service
-    Not: false
-    Value: backend
-- Conf:
-    backends:
-    - zipkin:
-        url: http://jaeger-collector.mesh-observability:9411/api/v2/spans
-    tags:
-    - literal: core
-      name: team
-  Origin: null
-  Subset:
-  - Key: kuma.io/service
-    Not: true
-    Value: backend
+  Subset: []
