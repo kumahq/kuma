@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	_ "github.com/kumahq/kuma/pkg/plugins/policies"
+	meshtrace_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -179,6 +180,32 @@ var _ = Describe("Rules", func() {
 			Entry("03. MeshTrafficPermission with MeshService targets", testCase{
 				policyFile: "03.policy.yaml",
 				goldenFile: "03.golden.yaml",
+			}),
+		)
+
+		DescribeTable("should build a rule-based view for single item policy",
+			func(given testCase) {
+				// given
+				policyBytes, err := os.ReadFile(path.Join("testdata", "rules", given.policyFile))
+				Expect(err).ToNot(HaveOccurred())
+
+				policy, err := rest.YAML.UnmarshalCore(policyBytes)
+				Expect(err).ToNot(HaveOccurred())
+				mtp, ok := policy.(*meshtrace_api.MeshTraceResource)
+				Expect(ok).To(BeTrue())
+
+				// when
+				rules := xds.BuildRules([]xds.PolicyItem{mtp.Spec.GetPolicyItem()})
+
+				// then
+				bytes, err := yaml.Marshal(rules)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "rules", given.goldenFile)))
+			},
+			Entry("04. MeshTrace", testCase{
+				policyFile: "04.policy.yaml",
+				goldenFile: "04.golden.yaml",
 			}),
 		)
 	})
