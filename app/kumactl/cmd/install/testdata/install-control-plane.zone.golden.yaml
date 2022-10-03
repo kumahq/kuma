@@ -328,6 +328,183 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
+  name: meshtraces.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: MeshTrace
+    listKind: MeshTraceList
+    plural: meshtraces
+    singular: meshtrace
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma MeshTrace resource.
+            properties:
+              default:
+                description: MeshTrace configuration.
+                properties:
+                  backends:
+                    description: A one element array of backend definition. Envoy
+                      allows configuring only 1 backend, so the natural way of representing
+                      that would be just one object. Unfortunately due to the reasons
+                      explained in MADR 009-tracing-policy this has to be a one element
+                      array for now.
+                    items:
+                      description: Only one of zipkin or datadog can be used.
+                      properties:
+                        datadog:
+                          description: Datadog backend configuration.
+                          properties:
+                            address:
+                              description: Address of datadog collector.
+                              type: string
+                            port:
+                              description: Port of datadog collector
+                              format: int32
+                              type: integer
+                          type: object
+                        zipkin:
+                          description: Zipkin backend configuration.
+                          properties:
+                            apiVersion:
+                              description: 'Version of the API. values: httpJson,
+                                httpProto. Default: httpJson see https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L66'
+                              type: string
+                            sharedSpanContext:
+                              description: 'Determines whether client and server spans
+                                will share the same span context. Default: true. https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L63'
+                              properties:
+                                value:
+                                  description: The bool value.
+                                  type: boolean
+                              type: object
+                            traceId128bit:
+                              description: 'Generate 128bit traces. Default: false'
+                              type: boolean
+                            url:
+                              description: Address of Zipkin collector.
+                              type: string
+                          type: object
+                      type: object
+                    type: array
+                  sampling:
+                    description: Sampling configuration. Sampling is the process by
+                      which a decision is made on whether to process/export a span
+                      or not.
+                    properties:
+                      client:
+                        description: 'Target percentage of requests that will be force
+                          traced if the ''x-client-trace-id'' header is set. Default:
+                          100% Mirror of client_sampling in Envoy https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L127-L133'
+                        format: int32
+                        type: integer
+                      overall:
+                        description: 'Target percentage of requests will be traced
+                          after all other sampling checks have been applied (client,
+                          force tracing, random sampling). This field functions as
+                          an upper limit on the total configured sampling rate. For
+                          instance, setting client_sampling to 100% but overall_sampling
+                          to 1% will result in only 1% of client requests with the
+                          appropriate headers to be force traced. Default: 100% Mirror
+                          of overall_sampling in Envoy https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L142-L150'
+                        format: int32
+                        type: integer
+                      random:
+                        description: 'Target percentage of requests that will be randomly
+                          selected for trace generation, if not requested by the client
+                          or not forced. Default: 100% Mirror of random_sampling in
+                          Envoy https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L135-L140'
+                        format: int32
+                        type: integer
+                    type: object
+                  tags:
+                    description: Custom tags configuration. You can add custom tags
+                      to traces based on headers or literal values.
+                    items:
+                      description: Custom tags configuration. Only one of literal
+                        or header can be used.
+                      properties:
+                        header:
+                          description: Tag taken from a header.
+                          properties:
+                            default:
+                              description: Default value to use if header is missing.
+                                If the default is missing and there is no value the
+                                tag will not be included.
+                              type: string
+                            name:
+                              description: Name of the header.
+                              type: string
+                          type: object
+                        literal:
+                          description: Tag taken from literal value.
+                          type: string
+                        name:
+                          description: Name of the tag.
+                          type: string
+                      type: object
+                    type: array
+                type: object
+              targetRef:
+                description: TargetRef is a reference to the resource the policy takes
+                  an effect on. The resource could be either a real store object or
+                  virtual resource defined inplace.
+                properties:
+                  kind:
+                    description: Kind of the referenced resource
+                    enum:
+                    - Mesh
+                    - MeshSubset
+                    - MeshService
+                    - MeshServiceSubset
+                    - MeshGatewayRoute
+                    - MeshHTTPRoute
+                    type: string
+                  mesh:
+                    description: Mesh is used with MeshService and MeshServiceSubset
+                      to identify the service from another mesh. Could be useful when
+                      implementing policies with cross-mesh support.
+                    type: string
+                  name:
+                    description: Name of the referenced resource
+                    type: string
+                  tags:
+                    additionalProperties:
+                      type: string
+                    description: Tags are used with MeshSubset and MeshServiceSubset
+                      to define a subset of proxies
+                    type: object
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.9.2
+  creationTimestamp: null
   name: meshtrafficpermissions.kuma.io
 spec:
   group: kuma.io
@@ -680,51 +857,6 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
-  name: trafficlogs.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: TrafficLog
-    listKind: TrafficLogList
-    plural: trafficlogs
-    singular: trafficlog
-  scope: Cluster
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-            type: string
-          kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-            type: string
-          mesh:
-            description: Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma TrafficLog resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
-  creationTimestamp: null
   name: dataplaneinsights.kuma.io
 spec:
   group: kuma.io
@@ -759,6 +891,51 @@ spec:
             type: object
           status:
             description: Status is the status the Kuma resource.
+            x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.9.2
+  creationTimestamp: null
+  name: trafficlogs.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: TrafficLog
+    listKind: TrafficLogList
+    plural: trafficlogs
+    singular: trafficlog
+  scope: Cluster
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          mesh:
+            description: Mesh is the name of the Kuma mesh this resource belongs to.
+              It may be omitted for cluster-scoped resources.
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma TrafficLog resource.
             x-kubernetes-preserve-unknown-fields: true
         type: object
     served: true
@@ -1176,51 +1353,6 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
-  name: zones.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: Zone
-    listKind: ZoneList
-    plural: zones
-    singular: zone
-  scope: Cluster
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-            type: string
-          kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-            type: string
-          mesh:
-            description: Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma Zone resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
-  creationTimestamp: null
   name: dataplanes.kuma.io
 spec:
   group: kuma.io
@@ -1255,6 +1387,51 @@ spec:
             type: object
           spec:
             description: Spec is the specification of the Kuma Dataplane resource.
+            x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.9.2
+  creationTimestamp: null
+  name: zones.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: Zone
+    listKind: ZoneList
+    plural: zones
+    singular: zone
+  scope: Cluster
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          mesh:
+            description: Mesh is the name of the Kuma mesh this resource belongs to.
+              It may be omitted for cluster-scoped resources.
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma Zone resource.
             x-kubernetes-preserve-unknown-fields: true
         type: object
     served: true
@@ -2079,6 +2256,7 @@ rules:
       - meshgatewayroutes
       - meshgatewayinstances
       - meshaccesslogs
+      - meshtraces
       - meshtrafficpermissions
     verbs:
       - get
@@ -2249,7 +2427,7 @@ spec:
     metadata:
       annotations:
         checksum/config: c52be51867deb8823a422dc1d188c7a2ab7fc5e501f620467d7fdd8fc4637d47
-        checksum/tls-secrets: f1f8dc94ccd3ec63acaf5294783d13152ed681236aa62c6049b391f0d8965476
+        checksum/tls-secrets: 0ba784d2b167dfda86979b636ad66c25c71e8a5fc80126ac10e97e65496ed6b2
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -2412,6 +2590,7 @@ webhooks:
         resources:
           - meshes
           - meshaccesslogs
+          - meshtraces
           - meshtrafficpermissions
     sideEffects: None
   - name: owner-reference.kuma-admission.kuma.io
@@ -2447,6 +2626,7 @@ webhooks:
           - traffictraces
           - virtualoutbounds
           - meshaccesslogs
+          - meshtraces
           - meshtrafficpermissions
   
       
@@ -2564,6 +2744,7 @@ webhooks:
           - zones
           - containerpatches
           - meshaccesslogs
+          - meshtraces
           - meshtrafficpermissions
     
       

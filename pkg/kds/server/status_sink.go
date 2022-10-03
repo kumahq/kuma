@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/user"
 )
 
 type ZoneInsightSink interface {
@@ -107,7 +108,7 @@ type zoneInsightStore struct {
 }
 
 func (s *zoneInsightStore) Upsert(zone string, subscription *system_proto.KDSSubscription) error {
-	ctx := context.TODO()
+	ctx := user.Ctx(context.TODO(), user.ControlPlane)
 
 	key := core_model.ResourceKey{
 		Name: zone,

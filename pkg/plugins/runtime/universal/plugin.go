@@ -8,6 +8,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/dns"
 )
 
@@ -53,7 +54,7 @@ func addDNS(rt core_runtime.Runtime) error {
 		defer ticker.Stop()
 
 		dns.Log.Info("starting the DNS VIPs allocator")
-		ctx := context.Background()
+		ctx := user.Ctx(context.Background(), user.ControlPlane)
 		for {
 			select {
 			case <-ticker.C:

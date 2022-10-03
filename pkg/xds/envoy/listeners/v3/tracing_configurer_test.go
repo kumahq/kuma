@@ -8,14 +8,17 @@ import (
 	"github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 )
 
 var _ = Describe("TracingConfigurer", func() {
 
 	type testCase struct {
-		backend  *mesh_proto.TracingBackend
-		expected string
+		backend     *mesh_proto.TracingBackend
+		direction   envoy_common.TrafficDirection
+		destination string
+		expected    string
 	}
 
 	DescribeTable("should generate proper Envoy config",
@@ -25,7 +28,7 @@ var _ = Describe("TracingConfigurer", func() {
 				Configure(InboundListener("inbound:192.168.0.1:8080", "192.168.0.1", 8080, xds.SocketAddressProtocolTCP)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3).
 					Configure(HttpConnectionManager("localhost:8080", false)).
-					Configure(Tracing(given.backend, "service")))).
+					Configure(Tracing(given.backend, "service", given.direction, given.destination)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -116,8 +119,9 @@ var _ = Describe("TracingConfigurer", func() {
 				Name: "datadog",
 				Type: mesh_proto.TracingDatadogType,
 				Conf: util_proto.MustToStruct(&mesh_proto.DatadogTracingBackendConfig{
-					Address: "1.1.1.1",
-					Port:    1111,
+					Address:      "1.1.1.1",
+					Port:         1111,
+					SplitService: true,
 				}),
 			},
 			expected: `
@@ -146,7 +150,81 @@ var _ = Describe("TracingConfigurer", func() {
         name: inbound:192.168.0.1:8080
         trafficDirection: INBOUND`,
 		}),
-
+		Entry("datadog backend with splitBacked for inbound traffic", testCase{
+			backend: &mesh_proto.TracingBackend{
+				Name: "datadog",
+				Type: mesh_proto.TracingDatadogType,
+				Conf: util_proto.MustToStruct(&mesh_proto.DatadogTracingBackendConfig{
+					Address:      "1.1.1.1",
+					Port:         1111,
+					SplitService: true,
+				}),
+			},
+			direction: envoy_common.TrafficDirectionInbound,
+			expected: `
+        address:
+          socketAddress:
+            address: 192.168.0.1
+            portValue: 8080
+        enableReusePort: false
+        filterChains:
+        - filters:
+          - name: envoy.filters.network.http_connection_manager
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+              httpFilters:
+              - name: envoy.filters.http.router
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+              statPrefix: localhost_8080
+              tracing:
+                provider:
+                  name: envoy.datadog
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.config.trace.v3.DatadogConfig
+                    collectorCluster: tracing:datadog
+                    serviceName: service_INBOUND
+        name: inbound:192.168.0.1:8080
+        trafficDirection: INBOUND`,
+		}),
+		Entry("datadog backend with splitBacked for outbound traffic", testCase{
+			backend: &mesh_proto.TracingBackend{
+				Name: "datadog",
+				Type: mesh_proto.TracingDatadogType,
+				Conf: util_proto.MustToStruct(&mesh_proto.DatadogTracingBackendConfig{
+					Address:      "1.1.1.1",
+					Port:         1111,
+					SplitService: true,
+				}),
+			},
+			direction:   envoy_common.TrafficDirectionOutbound,
+			destination: "db",
+			expected: `
+        address:
+          socketAddress:
+            address: 192.168.0.1
+            portValue: 8080
+        enableReusePort: false
+        filterChains:
+        - filters:
+          - name: envoy.filters.network.http_connection_manager
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+              httpFilters:
+              - name: envoy.filters.http.router
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+              statPrefix: localhost_8080
+              tracing:
+                provider:
+                  name: envoy.datadog
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.config.trace.v3.DatadogConfig
+                    collectorCluster: tracing:datadog
+                    serviceName: service_OUTBOUND_db
+        name: inbound:192.168.0.1:8080
+        trafficDirection: INBOUND`,
+		}),
 		Entry("no backend specified", testCase{
 			backend: nil,
 			expected: `

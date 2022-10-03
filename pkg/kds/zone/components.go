@@ -63,7 +63,14 @@ func Setup(rt core_runtime.Runtime) error {
 			}
 		}()
 		sink := kds_client.NewKDSSink(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client.NewKDSStream(session.ClientStream(), zone, string(cfgJson)),
-			Callbacks(rt.KDSContext().Configs, resourceSyncer, rt.Config().Store.Type == store.KubernetesStore, zone, kubeFactory),
+			Callbacks(
+				rt.KDSContext().Configs,
+				resourceSyncer,
+				rt.Config().Store.Type == store.KubernetesStore,
+				zone,
+				kubeFactory,
+				rt.Config().Store.Kubernetes.SystemNamespace,
+			),
 		)
 		go func() {
 			if err := sink.Receive(); err != nil {
@@ -89,7 +96,14 @@ func Setup(rt core_runtime.Runtime) error {
 	return rt.Add(component.NewResilientComponent(kdsZoneLog.WithName("kds-mux-client"), muxClient))
 }
 
-func Callbacks(configToSync map[string]bool, syncer sync_store.ResourceSyncer, k8sStore bool, localZone string, kubeFactory resources_k8s.KubeFactory) *kds_client.Callbacks {
+func Callbacks(
+	configToSync map[string]bool,
+	syncer sync_store.ResourceSyncer,
+	k8sStore bool,
+	localZone string,
+	kubeFactory resources_k8s.KubeFactory,
+	systemNamespace string,
+) *kds_client.Callbacks {
 	return &kds_client.Callbacks{
 		OnResourcesReceived: func(clusterID string, rs model.ResourceList) error {
 			if k8sStore && rs.GetItemType() != system.ConfigType && rs.GetItemType() != system.SecretType && rs.GetItemType() != system.GlobalSecretType {
@@ -100,8 +114,13 @@ func Callbacks(configToSync map[string]bool, syncer sync_store.ResourceSyncer, k
 				if err != nil {
 					return errors.Wrap(err, "could not convert object")
 				}
+				desc := rs.NewItem().Descriptor()
 				if kubeObject.Scope() == k8s_model.ScopeNamespace {
-					util.AddSuffixToNames(rs.GetItems(), "default")
+					if desc.IsPluginOriginated {
+						util.AddSuffixToNames(rs.GetItems(), systemNamespace)
+					} else {
+						util.AddSuffixToNames(rs.GetItems(), "default")
+					}
 				}
 			}
 			if rs.GetItemType() == mesh.ZoneIngressType {

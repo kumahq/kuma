@@ -25,6 +25,7 @@ import (
 	"github.com/kumahq/kuma/pkg/events"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	xds_auth "github.com/kumahq/kuma/pkg/xds/auth"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
@@ -53,6 +54,7 @@ type BuilderContext interface {
 	KDSContext() *kds_context.Context
 	APIServerAuthenticator() authn.Authenticator
 	Access() Access
+	TokenIssuers() builtin.TokenIssuers
 }
 
 var _ BuilderContext = &Builder{}
@@ -87,6 +89,7 @@ type Builder struct {
 	acc            Access
 	appCtx         context.Context
 	extraReportsFn ExtraReportsFn
+	tokenIssuers   builtin.TokenIssuers
 	*runtimeInfo
 }
 
@@ -248,6 +251,11 @@ func (b *Builder) WithExtraReportsFn(fn ExtraReportsFn) *Builder {
 	return b
 }
 
+func (b *Builder) WithTokenIssuers(tokenIssuers builtin.TokenIssuers) *Builder {
+	b.tokenIssuers = tokenIssuers
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -306,6 +314,9 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.acc == (Access{}) {
 		return nil, errors.Errorf("Access has not been configured")
 	}
+	if b.tokenIssuers == (builtin.TokenIssuers{}) {
+		return nil, errors.Errorf("TokenIssuers has not been configured")
+	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
@@ -335,6 +346,7 @@ func (b *Builder) Build() (Runtime, error) {
 			acc:            b.acc,
 			appCtx:         b.appCtx,
 			extraReportsFn: b.extraReportsFn,
+			tokenIssuers:   b.tokenIssuers,
 		},
 		Manager: b.cm,
 	}, nil
@@ -417,4 +429,10 @@ func (b *Builder) AppCtx() context.Context {
 }
 func (b *Builder) ExtraReportsFn() ExtraReportsFn {
 	return b.extraReportsFn
+}
+func (b *Builder) TokenIssuers() builtin.TokenIssuers {
+	return b.tokenIssuers
+}
+func (b *Builder) EnvoyAdminClient() admin.EnvoyAdminClient {
+	return b.eac
 }

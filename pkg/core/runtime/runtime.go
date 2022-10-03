@@ -25,6 +25,7 @@ import (
 	"github.com/kumahq/kuma/pkg/events"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
@@ -78,6 +79,7 @@ type RuntimeContext interface {
 	// AppContext returns a context.Context which tracks the lifetime of the apps, it gets cancelled when the app is starting to shutdown.
 	AppContext() context.Context
 	ExtraReportsFn() ExtraReportsFn
+	TokenIssuers() builtin.TokenIssuers
 }
 
 type Access struct {
@@ -162,6 +164,7 @@ type runtimeContext struct {
 	acc            Access
 	appCtx         context.Context
 	extraReportsFn ExtraReportsFn
+	tokenIssuers   builtin.TokenIssuers
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
@@ -269,4 +272,8 @@ func (rc *runtimeContext) AppContext() context.Context {
 
 func (rc *runtimeContext) ExtraReportsFn() ExtraReportsFn {
 	return rc.extraReportsFn
+}
+
+func (rc *runtimeContext) TokenIssuers() builtin.TokenIssuers {
+	return rc.tokenIssuers
 }

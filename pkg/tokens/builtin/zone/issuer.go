@@ -33,7 +33,7 @@ type jwtTokenIssuer struct {
 }
 
 func (j *jwtTokenIssuer) Generate(ctx context.Context, identity Identity, validFor time.Duration) (Token, error) {
-	claims := &zoneClaims{
+	claims := &ZoneClaims{
 		Zone:  identity.Zone,
 		Scope: identity.Scope,
 	}

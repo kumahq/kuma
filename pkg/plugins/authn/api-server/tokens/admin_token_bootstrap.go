@@ -39,7 +39,7 @@ func NewAdminTokenBootstrap(issuer issuer.UserTokenIssuer, resManager manager.Re
 }
 
 func (a *adminTokenBootstrap) Start(stop <-chan struct{}) error {
-	ctx, cancelFn := context.WithCancel(context.Background())
+	ctx, cancelFn := context.WithCancel(user.Ctx(context.Background(), user.ControlPlane))
 	go func() {
 		if err := a.generateTokenIfNotExist(ctx); err != nil {
 			// just log, do not exist control plane

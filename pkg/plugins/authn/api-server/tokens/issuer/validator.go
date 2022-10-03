@@ -22,7 +22,7 @@ type jwtTokenValidator struct {
 }
 
 func (j *jwtTokenValidator) Validate(ctx context.Context, rawToken tokens.Token) (user.User, error) {
-	claims := &userClaims{}
+	claims := &UserClaims{}
 	if err := j.validator.ParseWithValidation(ctx, rawToken, claims); err != nil {
 		return user.User{}, err
 	}

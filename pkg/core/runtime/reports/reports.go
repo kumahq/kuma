@@ -21,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/core/user"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
@@ -45,39 +46,39 @@ type reportsBuffer struct {
 	immutable map[string]string
 }
 
-func fetchDataplanes(rt core_runtime.Runtime) (*mesh.DataplaneResourceList, error) {
+func fetchDataplanes(ctx context.Context, rt core_runtime.Runtime) (*mesh.DataplaneResourceList, error) {
 	dataplanes := mesh.DataplaneResourceList{}
-	if err := rt.ReadOnlyResourceManager().List(context.Background(), &dataplanes); err != nil {
+	if err := rt.ReadOnlyResourceManager().List(ctx, &dataplanes); err != nil {
 		return nil, errors.Wrap(err, "could not fetch dataplanes")
 	}
 
 	return &dataplanes, nil
 }
 
-func fetchMeshes(rt core_runtime.Runtime) (*mesh.MeshResourceList, error) {
+func fetchMeshes(ctx context.Context, rt core_runtime.Runtime) (*mesh.MeshResourceList, error) {
 	meshes := mesh.MeshResourceList{}
-	if err := rt.ReadOnlyResourceManager().List(context.Background(), &meshes); err != nil {
+	if err := rt.ReadOnlyResourceManager().List(ctx, &meshes); err != nil {
 		return nil, errors.Wrap(err, "could not fetch meshes")
 	}
 
 	return &meshes, nil
 }
 
-func fetchZones(rt core_runtime.Runtime) (*system.ZoneResourceList, error) {
+func fetchZones(ctx context.Context, rt core_runtime.Runtime) (*system.ZoneResourceList, error) {
 	zones := system.ZoneResourceList{}
-	if err := rt.ReadOnlyResourceManager().List(context.Background(), &zones); err != nil {
+	if err := rt.ReadOnlyResourceManager().List(ctx, &zones); err != nil {
 		return nil, errors.Wrap(err, "could not fetch zones")
 	}
 	return &zones, nil
 }
 
-func fetchNumPolicies(rt core_runtime.Runtime) (map[string]string, error) {
+func fetchNumPolicies(ctx context.Context, rt core_runtime.Runtime) (map[string]string, error) {
 	policyCounts := map[string]string{}
 
 	for _, descr := range registry.Global().ObjectDescriptors() {
 		typedList := descr.NewList()
 		k := "n_" + strings.ToLower(string(descr.Name))
-		if err := rt.ReadOnlyResourceManager().List(context.Background(), typedList); err != nil {
+		if err := rt.ReadOnlyResourceManager().List(ctx, typedList); err != nil {
 			return nil, errors.Wrap(err, fmt.Sprintf("could not fetch %s", k))
 		}
 		policyCounts[k] = strconv.Itoa(len(typedList.GetItems()))
@@ -85,9 +86,9 @@ func fetchNumPolicies(rt core_runtime.Runtime) (map[string]string, error) {
 	return policyCounts, nil
 }
 
-func fetchNumOfServices(rt core_runtime.Runtime) (int, int, error) {
+func fetchNumOfServices(ctx context.Context, rt core_runtime.Runtime) (int, int, error) {
 	insights := mesh.ServiceInsightResourceList{}
-	if err := rt.ReadOnlyResourceManager().List(context.Background(), &insights); err != nil {
+	if err := rt.ReadOnlyResourceManager().List(ctx, &insights); err != nil {
 		return 0, 0, errors.Wrap(err, "could not fetch service insights")
 	}
 	internalServices := 0
@@ -96,7 +97,7 @@ func fetchNumOfServices(rt core_runtime.Runtime) (int, int, error) {
 	}
 
 	externalServicesList := mesh.ExternalServiceResourceList{}
-	if err := rt.ReadOnlyResourceManager().List(context.Background(), &externalServicesList); err != nil {
+	if err := rt.ReadOnlyResourceManager().List(ctx, &externalServicesList); err != nil {
 		return 0, 0, errors.Wrap(err, "could not fetch external services")
 	}
 	return internalServices, len(externalServicesList.Items), nil
@@ -131,7 +132,8 @@ func (b *reportsBuffer) marshall() (string, error) {
 // ideally, the number of dataplanes and number of meshes
 // should be pushed from the outside rather than pulled
 func (b *reportsBuffer) updateEntitiesReport(rt core_runtime.Runtime) error {
-	dps, err := fetchDataplanes(rt)
+	ctx := user.Ctx(context.Background(), user.ControlPlane)
+	dps, err := fetchDataplanes(ctx, rt)
 	if err != nil {
 		return err
 	}
@@ -153,7 +155,7 @@ func (b *reportsBuffer) updateEntitiesReport(rt core_runtime.Runtime) error {
 		b.mutable[gtype] = strconv.Itoa(n)
 	}
 
-	meshes, err := fetchMeshes(rt)
+	meshes, err := fetchMeshes(ctx, rt)
 	if err != nil {
 		return err
 	}
@@ -163,14 +165,14 @@ func (b *reportsBuffer) updateEntitiesReport(rt core_runtime.Runtime) error {
 	case config_core.Standalone:
 		b.mutable["zones_total"] = strconv.Itoa(1)
 	case config_core.Global:
-		zones, err := fetchZones(rt)
+		zones, err := fetchZones(ctx, rt)
 		if err != nil {
 			return err
 		}
 		b.mutable["zones_total"] = strconv.Itoa(len(zones.Items))
 	}
 
-	internalServices, externalServices, err := fetchNumOfServices(rt)
+	internalServices, externalServices, err := fetchNumOfServices(ctx, rt)
 	if err != nil {
 		return err
 	}
@@ -178,7 +180,7 @@ func (b *reportsBuffer) updateEntitiesReport(rt core_runtime.Runtime) error {
 	b.mutable["external_services"] = strconv.Itoa(externalServices)
 	b.mutable["services_total"] = strconv.Itoa(internalServices + externalServices)
 
-	policyCounts, err := fetchNumPolicies(rt)
+	policyCounts, err := fetchNumPolicies(ctx, rt)
 	if err != nil {
 		return err
 	}

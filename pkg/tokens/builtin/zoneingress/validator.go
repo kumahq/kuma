@@ -23,7 +23,7 @@ func NewValidator(validator core_tokens.Validator) Validator {
 }
 
 func (j *jwtValidator) Validate(ctx context.Context, token Token) (Identity, error) {
-	claims := &zoneIngressClaims{}
+	claims := &ZoneIngressClaims{}
 	if err := j.validator.ParseWithValidation(ctx, token, claims); err != nil {
 		return Identity{}, err
 	}

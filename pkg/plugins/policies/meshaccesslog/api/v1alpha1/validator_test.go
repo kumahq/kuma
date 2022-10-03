@@ -229,7 +229,7 @@ from:
 				expected: `
 violations:
 - field: spec.from[0].default.backends[0].tcp.format
-  message: 'format can only have one type defined: plain, json'`,
+  message: 'format must have only one type defined: plain, json'`,
 			}),
 			Entry("both 'tcp' and 'file' defined", testCase{
 				inputYaml: `
@@ -256,7 +256,7 @@ from:
 				expected: `
 violations:
 - field: spec.from[0].default.backends[0]
-  message: 'backend can have only one type defined: tcp, file'`,
+  message: 'backend must have only one type defined: tcp, file'`,
 			}),
 
 			Entry("'to' defined in MeshGatewayRoute", testCase{

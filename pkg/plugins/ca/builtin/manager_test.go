@@ -6,6 +6,7 @@ import (
 	"encoding/pem"
 	"time"
 
+	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -144,6 +145,63 @@ var _ = Describe("Builtin CA Manager", func() {
 			secretRes = system.NewSecretResource()
 			err = secretManager.Get(context.Background(), secretRes, core_store.GetByKey("default.ca-builtin-cert-builtin-2", "default"))
 			Expect(err).ToNot(HaveOccurred())
+		})
+	})
+
+	Context("ValidateBackend", func() {
+		It("should validate backend", func() {
+			// given
+			mesh := "default"
+			backend := &mesh_proto.CertificateAuthorityBackend{
+				Name: "builtin-1",
+				Type: "builtin",
+			}
+
+			// when
+			err := caManager.ValidateBackend(context.Background(), mesh, backend)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should fail validation when name too long", func() {
+			// given
+			mesh := "default"
+			backend := &mesh_proto.CertificateAuthorityBackend{
+				Name: "backend-long.backend-long.backend-long.backend-long.backend-long.backend-long.backend-long.backend-long.backend-long.backend-long.backend-long.backend-long.backend-long.backend-long.backend-long.backend-long.backend-long.backend-long.backend-long",
+				Type: "builtin",
+			}
+
+			// when
+			verr := caManager.ValidateBackend(context.Background(), mesh, backend)
+
+			// then
+			actual, err := yaml.Marshal(verr)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual).To(MatchYAML(`
+              violations:
+                - field: mtls.backends.name
+                  message: 'Backend name is too long. Max length: 255'`))
+		})
+
+		It("should fail validation when backend name contains uppercase letters", func() {
+			// given
+			mesh := "default"
+			backend := &mesh_proto.CertificateAuthorityBackend{
+				Name: "builtinCA",
+				Type: "builtin",
+			}
+
+			// when
+			verr := caManager.ValidateBackend(context.Background(), mesh, backend)
+
+			// then
+			actual, err := yaml.Marshal(verr)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual).To(MatchYAML(`
+              violations:
+                - field: mtls.backends.name
+                  message: '"builtinCA" name must be valid dns name'`))
 		})
 	})
 

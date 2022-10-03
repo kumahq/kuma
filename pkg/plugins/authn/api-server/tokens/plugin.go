@@ -27,6 +27,10 @@ var AccessStrategies = map[string]func(*plugins.MutablePluginContext) access.Gen
 	},
 }
 
+var NewUserTokenIssuer = func(signingKeyManager core_tokens.SigningKeyManager) issuer.UserTokenIssuer {
+	return issuer.NewUserTokenIssuer(core_tokens.NewTokenIssuer(signingKeyManager))
+}
+
 func init() {
 	plugins.Register(PluginName, &plugin{})
 }
@@ -56,7 +60,7 @@ func (c plugin) AfterBootstrap(context *plugins.MutablePluginContext, config plu
 	if !ok {
 		return errors.Errorf("no Access strategy for type %q", context.Config().Access.Type)
 	}
-	tokenIssuer := issuer.NewUserTokenIssuer(core_tokens.NewTokenIssuer(signingKeyManager))
+	tokenIssuer := NewUserTokenIssuer(signingKeyManager)
 	if context.Config().ApiServer.Authn.Tokens.BootstrapAdminToken {
 		if err := context.ComponentManager().Add(NewAdminTokenBootstrap(tokenIssuer, context.ResourceManager(), context.Config())); err != nil {
 			return err
@@ -72,5 +76,5 @@ func (c plugin) Name() plugins.PluginName {
 }
 
 func (c plugin) Order() int {
-	return plugins.EnvironmentPreparedOrder
+	return plugins.EnvironmentPreparedOrder + 1
 }

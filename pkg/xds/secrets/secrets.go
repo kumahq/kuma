@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/user"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/metrics"
 )
@@ -266,6 +267,7 @@ func (s *secrets) generateCerts(
 	oldCerts *certs,
 	updateKinds UpdateKinds,
 ) (*certs, error) {
+	ctx := user.Ctx(context.TODO(), user.ControlPlane)
 	var identity *core_xds.IdentitySecret
 	var ownCa MeshCa
 	var otherCas []MeshCa
@@ -288,7 +290,7 @@ func (s *secrets) generateCerts(
 			Mesh:     meshName,
 		}
 
-		identitySecret, issuedBackend, err := s.identityProvider.Get(context.Background(), requester, mesh)
+		identitySecret, issuedBackend, err := s.identityProvider.Get(ctx, requester, mesh)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not get Dataplane cert pair")
 		}
@@ -309,7 +311,7 @@ func (s *secrets) generateCerts(
 	}
 
 	if updateKinds.HasType(OwnMeshChange) {
-		caSecret, supportedBackends, err := s.caProvider.Get(context.Background(), mesh)
+		caSecret, supportedBackends, err := s.caProvider.Get(ctx, mesh)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not get mesh CA cert")
 		}
@@ -341,7 +343,7 @@ func (s *secrets) generateCerts(
 				continue
 			}
 
-			otherCa, _, err := s.caProvider.Get(context.Background(), otherMesh)
+			otherCa, _, err := s.caProvider.Get(ctx, otherMesh)
 			if err != nil {
 				failedOtherMeshes = true
 				// The other CA is misconfigured but this can not affect
