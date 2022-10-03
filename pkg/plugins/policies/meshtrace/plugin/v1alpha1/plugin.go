@@ -94,8 +94,8 @@ func configureListener(
 	conf := rawConf.(*api.MeshTrace_Conf)
 
 	configurer := plugin_xds.Configurer{
-		Conf:        conf,
-		Service:     serviceName,
+		Conf:    conf,
+		Service: serviceName,
 	}
 
 	for _, chain := range listener.FilterChains {

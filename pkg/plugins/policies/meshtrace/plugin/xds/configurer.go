@@ -20,7 +20,7 @@ type Configurer struct {
 
 	// Opaque string which envoy will assign to tracer collector cluster, on those
 	// which support association of named "service" tags on traces. Consumed by datadog.
-	Service     string
+	Service string
 }
 
 var _ v3.FilterChainConfigurer = &Configurer{}

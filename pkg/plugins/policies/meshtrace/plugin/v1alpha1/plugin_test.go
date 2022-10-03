@@ -169,7 +169,7 @@ var _ = Describe("MeshTrace", func() {
                       randomSampling:
                           value: 50
             name: inbound:127.0.0.1:17777
-            trafficDirection: INBOUND`,`
+            trafficDirection: INBOUND`, `
             address:
               socketAddress:
                 address: 127.0.0.1
@@ -232,7 +232,7 @@ var _ = Describe("MeshTrace", func() {
 							Backends: []*api.MeshTrace_Backend{{
 								Datadog: &api.MeshTrace_DatadogBackend{
 									Address: "ingest.datadog.eu",
-									Port: 8126,
+									Port:    8126,
 								},
 							}},
 						},
@@ -266,7 +266,7 @@ var _ = Describe("MeshTrace", func() {
                       randomSampling:
                           value: 50
             name: inbound:127.0.0.1:17777
-            trafficDirection: INBOUND`,`
+            trafficDirection: INBOUND`, `
             address:
               socketAddress:
                 address: 127.0.0.1
