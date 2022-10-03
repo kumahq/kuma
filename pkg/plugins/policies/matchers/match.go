@@ -4,6 +4,7 @@ import (
 	"sort"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -14,8 +15,12 @@ import (
 )
 
 // MatchedPolicies match policies using the standard matchers using targetRef (madr-005)
-func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneResource, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
-	policies := resources.ListOrEmpty(rType)
+func MatchedPolicies(
+	rDesc core_model.ResourceTypeDescriptor,
+	dpp *core_mesh.DataplaneResource,
+	resources xds_context.Resources,
+) (core_xds.TypedMatchingPolicies, error) {
+	policies := resources.ListOrEmpty(rDesc.Name)
 
 	matchedPoliciesByInbound := map[core_xds.InboundListener][]core_model.Resource{}
 	dpPolicies := []core_model.Resource{}
@@ -23,7 +28,7 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 	for _, policy := range policies.GetItems() {
 		spec, ok := policy.GetSpec().(core_xds.Policy)
 		if !ok {
-			return core_xds.TypedMatchingPolicies{}, errors.Errorf("resource type %v doesn't support TargetRef matching", rType)
+			return core_xds.TypedMatchingPolicies{}, errors.Errorf("resource type %v doesn't support TargetRef matching", rDesc.Name)
 		}
 
 		targetRef := spec.GetTargetRef()
@@ -46,18 +51,18 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 		sort.Sort(ByTargetRef(ps))
 	}
 
-	fr, err := fromRules(matchedPoliciesByInbound)
+	fr, err := fromRules(rDesc, matchedPoliciesByInbound)
 	if err != nil {
 		return core_xds.TypedMatchingPolicies{}, err
 	}
 
-	tr, err := toRules(dpPolicies)
+	tr, err := toRules(rDesc, dpPolicies)
 	if err != nil {
 		return core_xds.TypedMatchingPolicies{}, err
 	}
 
 	return core_xds.TypedMatchingPolicies{
-		Type:              rType,
+		Type:              rDesc.Name,
 		DataplanePolicies: dpPolicies,
 		FromRules: core_xds.FromRules{
 			Rules: fr,
@@ -69,6 +74,7 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 }
 
 func fromRules(
+	rDesc core_model.ResourceTypeDescriptor,
 	matchedPoliciesByInbound map[core_xds.InboundListener][]core_model.Resource,
 ) (map[core_xds.InboundListener]core_xds.Rules, error) {
 	rulesByInbound := map[core_xds.InboundListener]core_xds.Rules{}
@@ -81,7 +87,9 @@ func fromRules(
 			}
 			fromList = append(fromList, policyWithFrom.GetFromList()...)
 		}
-		rules, err := core_xds.BuildRules(fromList)
+		rules, err := core_xds.BuildRules(fromList, func() proto.Message {
+			return rDesc.NewObject().GetSpec()
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -90,7 +98,10 @@ func fromRules(
 	return rulesByInbound, nil
 }
 
-func toRules(matchedPolicies []core_model.Resource) (core_xds.Rules, error) {
+func toRules(
+	rDesc core_model.ResourceTypeDescriptor,
+	matchedPolicies []core_model.Resource,
+) (core_xds.Rules, error) {
 	toList := []core_xds.PolicyItem{}
 	for _, mp := range matchedPolicies {
 		policyWithTo, ok := mp.GetSpec().(core_xds.PolicyWithToList)
@@ -99,7 +110,9 @@ func toRules(matchedPolicies []core_model.Resource) (core_xds.Rules, error) {
 		}
 		toList = append(toList, policyWithTo.GetToList()...)
 	}
-	return core_xds.BuildRules(toList)
+	return core_xds.BuildRules(toList, func() proto.Message {
+		return rDesc.NewObject().GetSpec()
+	})
 }
 
 // inboundsSelectedByTargetRef returns a list of inbounds of DPP that are selected by the targetRef

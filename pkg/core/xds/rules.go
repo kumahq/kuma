@@ -103,7 +103,7 @@ func (rs Rules) Compute(sub Subset) proto.Message {
 // Filtering out of negative rules could be useful for XDS generators that don't have a way to configure negations.
 //
 // See the detailed algorithm description in docs/madr/decisions/007-mesh-traffic-permission.md
-func BuildRules(list []PolicyItem) (Rules, error) {
+func BuildRules(list []PolicyItem, newConf func() proto.Message) (Rules, error) {
 	rules := Rules{}
 
 	// 1. Each targetRef should be represented as a list of tags
@@ -148,9 +148,11 @@ func BuildRules(list []PolicyItem) (Rules, error) {
 				if conf == nil {
 					conf = proto.Clone(item.GetDefaultAsProto())
 				} else {
-					if err := Merge(conf, item.GetDefaultAsProto()); err != nil {
+					mergeResult := newConf()
+					if err := Merge(conf, item.GetDefaultAsProto(), mergeResult); err != nil {
 						return nil, err
 					}
+					conf = mergeResult
 				}
 			}
 		}
@@ -169,20 +171,20 @@ func BuildRules(list []PolicyItem) (Rules, error) {
 	return rules, nil
 }
 
-func Merge(dst, src proto.Message) error {
-	dstBytes, err := json.Marshal(dst)
+func Merge(target, patch, result proto.Message) error {
+	targetBytes, err := json.Marshal(target)
 	if err != nil {
 		return err
 	}
-	srcBytes, err := json.Marshal(src)
+	patchBytes, err := json.Marshal(patch)
 	if err != nil {
 		return err
 	}
-	result, err := jsonpatch.MergeMergePatches(dstBytes, srcBytes)
+	resultBytes, err := jsonpatch.MergePatch(targetBytes, patchBytes)
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(result, dst)
+	return json.Unmarshal(resultBytes, result)
 }
 
 func asSubset(tr *common_api.TargetRef) (Subset, error) {

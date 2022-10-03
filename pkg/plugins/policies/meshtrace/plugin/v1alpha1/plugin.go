@@ -21,7 +21,7 @@ func NewPlugin() core_plugins.Plugin {
 }
 
 func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.MatchedPolicies(api.MeshTraceType, dataplane, resources)
+	return matchers.MatchedPolicies(api.MeshTraceResourceTypeDescriptor, dataplane, resources)
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {

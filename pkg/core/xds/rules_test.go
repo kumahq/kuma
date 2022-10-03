@@ -7,10 +7,12 @@ import (
 	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	_ "github.com/kumahq/kuma/pkg/plugins/policies"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -160,7 +162,9 @@ var _ = Describe("Rules", func() {
 				Expect(ok).To(BeTrue())
 
 				// when
-				rules, err := xds.BuildRules(mtp.GetFromList())
+				rules, err := xds.BuildRules(mtp.GetFromList(), func() proto.Message {
+					return &v1alpha1.MeshAccessLog_Conf{}
+				})
 				Expect(err).ToNot(HaveOccurred())
 
 				// then
@@ -184,6 +188,10 @@ var _ = Describe("Rules", func() {
 			Entry("04. MeshAccessLog with overriding empty backend list", testCase{
 				policyFile: "04.policy.yaml",
 				goldenFile: "04.golden.yaml",
+			}),
+			Entry("05. MeshAccessLog with overriding list of different backend type", testCase{
+				policyFile: "05.policy.yaml",
+				goldenFile: "05.golden.yaml",
 			}),
 		)
 	})

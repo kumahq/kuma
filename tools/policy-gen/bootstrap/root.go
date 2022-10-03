@@ -259,7 +259,7 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 	{{- if not .generateTargetRef }}
 	panic("implement me")
 	{{- else }}
-	return matchers.MatchedPolicies(api.{{ .name }}Type, dataplane, resources)
+	return matchers.MatchedPolicies(api.{{ .name }}ResourceTypeDescriptor, dataplane, resources)
 	{{- end }}
 }
 
