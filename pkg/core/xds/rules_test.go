@@ -15,6 +15,7 @@ import (
 	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 )
 
 var _ = Describe("Rules", func() {
@@ -191,11 +192,11 @@ var _ = Describe("Rules", func() {
 
 				policy, err := rest.YAML.UnmarshalCore(policyBytes)
 				Expect(err).ToNot(HaveOccurred())
-				mtp, ok := policy.(*meshtrace_api.MeshTraceResource)
+				mt, ok := policy.(*meshtrace_api.MeshTraceResource)
 				Expect(ok).To(BeTrue())
 
 				// when
-				rules := xds.BuildRules([]xds.PolicyItem{mtp.Spec.GetPolicyItem()})
+				rules := xds.BuildRules([]xds.PolicyItem{mt.Spec.GetPolicyItem()})
 
 				// then
 				bytes, err := yaml.Marshal(rules)
@@ -206,6 +207,37 @@ var _ = Describe("Rules", func() {
 			Entry("04. MeshTrace", testCase{
 				policyFile: "04.policy.yaml",
 				goldenFile: "04.golden.yaml",
+			}),
+		)
+
+		DescribeTable("should build a rule-based view for list of single item policies",
+			func(given testCase) {
+				// given
+				policyBytes, err := os.ReadFile(path.Join("testdata", "rules", given.policyFile))
+				Expect(err).ToNot(HaveOccurred())
+
+				yamls := util_yaml.SplitYAML(string(policyBytes))
+				policies := []xds.PolicyItem{}
+				for _, yaml := range yamls {
+					policy, err := rest.YAML.UnmarshalCore([]byte(yaml))
+					Expect(err).ToNot(HaveOccurred())
+					mt, ok := policy.(*meshtrace_api.MeshTraceResource)
+					Expect(ok).To(BeTrue())
+					policies = append(policies, mt.Spec.GetPolicyItem())
+				}
+
+				// when
+				rules := xds.BuildRules(policies)
+
+				// then
+				bytes, err := yaml.Marshal(rules)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "rules", given.goldenFile)))
+			},
+			Entry("05. MeshTrace list", testCase{
+				policyFile: "05.policy.yaml",
+				goldenFile: "05.golden.yaml",
 			}),
 		)
 	})
