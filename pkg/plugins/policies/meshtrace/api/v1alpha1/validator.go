@@ -92,7 +92,7 @@ func validateBackend(conf *MeshTrace_Conf, backendsPath validators.PathBuilder) 
 		}
 
 		if datadogBackend.Port == 0 || datadogBackend.Port > math.MaxUint16 {
-			verr.AddViolationAt(datadogPath.Field("port"), fmt.Sprintf("must be a valid port (0-%d)", math.MaxUint16))
+			verr.AddViolationAt(datadogPath.Field("port"), fmt.Sprintf("must be a valid port (1-%d)", math.MaxUint16))
 		}
 	}
 

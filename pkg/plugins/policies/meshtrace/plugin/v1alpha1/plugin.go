@@ -8,7 +8,6 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
@@ -20,7 +19,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
-const MeshTraceCluster = "meshTrace"
 const MeshTraceOrigin = "meshTrace"
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -43,11 +41,7 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 	}
 
 	listeners := gatherListeners(rs)
-
-	if err := applyToInbounds(policies.SingleItemRules, listeners.inbound, proxy.Dataplane); err != nil {
-		return err
-	}
-	if err := applyToOutbounds(policies.SingleItemRules, listeners.outbound, proxy.Dataplane); err != nil {
+	if err := applyToListeners(policies.SingleItemRules, listeners, proxy.Dataplane); err != nil {
 		return err
 	}
 	if err := applyToClusters(policies.SingleItemRules, rs, proxy); err != nil {
@@ -57,32 +51,17 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 	return nil
 }
 
-type listeners struct {
-	inbound  map[xds.InboundListener]*envoy_listener.Listener
-	outbound map[mesh_proto.OutboundInterface]*envoy_listener.Listener
-}
-
-func gatherListeners(rs *xds.ResourceSet) listeners {
-	listeners := listeners{
-		inbound:  map[xds.InboundListener]*envoy_listener.Listener{},
-		outbound: map[mesh_proto.OutboundInterface]*envoy_listener.Listener{},
-	}
+func gatherListeners(rs *xds.ResourceSet) []*envoy_listener.Listener {
+	listeners := []*envoy_listener.Listener{}
 
 	for _, res := range rs.Resources(envoy_resource.ListenerType) {
 		listener := res.Resource.(*envoy_listener.Listener)
-		address := listener.GetAddress().GetSocketAddress()
 
 		switch res.Origin {
 		case generator.OriginOutbound:
-			listeners.outbound[mesh_proto.OutboundInterface{
-				DataplaneIP:   address.GetAddress(),
-				DataplanePort: address.GetPortValue(),
-			}] = listener
+			listeners = append(listeners, listener)
 		case generator.OriginInbound:
-			listeners.inbound[xds.InboundListener{
-				Address: address.GetAddress(),
-				Port:    address.GetPortValue(),
-			}] = listener
+			listeners = append(listeners, listener)
 		default:
 			continue
 		}
@@ -91,43 +70,9 @@ func gatherListeners(rs *xds.ResourceSet) listeners {
 	return listeners
 }
 
-func applyToInbounds(rules xds.SingleItemRules, inboundListeners map[xds.InboundListener]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource) error {
-	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
-		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
-
-		listenerKey := xds.InboundListener{
-			Address: iface.DataplaneIP,
-			Port:    iface.DataplanePort,
-		}
-		listener, ok := inboundListeners[listenerKey]
-		if !ok {
-			continue
-		}
-
-		serviceName := inbound.GetTags()[mesh_proto.ServiceTag]
-
-		if err := configureListener(rules.Rules, dataplane, xds.MeshService(serviceName), listener); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func applyToOutbounds(
-	rules xds.SingleItemRules, outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
-) error {
-	for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
-		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound)
-
-		listener, ok := outboundListeners[oface]
-		if !ok {
-			continue
-		}
-
-		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
-
-		if err := configureListener(rules.Rules, dataplane, xds.MeshService(serviceName), listener); err != nil {
+func applyToListeners(rules xds.SingleItemRules, inboundListeners []*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource) error {
+	for _, inboundListener := range inboundListeners {
+		if err := configureListener(rules, dataplane, inboundListener); err != nil {
 			return err
 		}
 	}
@@ -136,24 +81,21 @@ func applyToOutbounds(
 }
 
 func configureListener(
-	rules xds.Rules,
+	rules xds.SingleItemRules,
 	dataplane *core_mesh.DataplaneResource,
-	subset xds.Subset,
 	listener *envoy_listener.Listener,
 ) error {
 	serviceName := dataplane.Spec.GetIdentifyingService()
 
-	var conf *api.MeshTrace_Conf
-	if computed := rules.Compute(subset); computed != nil {
-		conf = computed.(*api.MeshTrace_Conf)
-	} else {
+	rawConf := rules.Rules[0].Conf
+	if rawConf == nil {
 		return nil
 	}
+	conf := rawConf.(*api.MeshTrace_Conf)
 
 	configurer := plugin_xds.Configurer{
 		Conf:        conf,
 		Service:     serviceName,
-		ClusterName: MeshTraceCluster,
 	}
 
 	for _, chain := range listener.FilterChains {
@@ -166,35 +108,45 @@ func configureListener(
 }
 
 func applyToClusters(rules xds.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy) error {
-	for _, rule := range rules.Rules {
-		conf := rule.Conf.(*api.MeshTrace_Conf)
-		backend := conf.GetBackends()[0]
-		var endpoint *xds.Endpoint
-		var err error
-
-		if backend.GetZipkin() != nil {
-			endpoint, err = endpointForZipkin(backend.GetZipkin())
-			if err != nil {
-				return errors.Wrap(err, "could not generate zipkin cluster")
-			}
-		} else {
-			endpoint, err = endpointForDatadog(backend.GetDatadog())
-			if err != nil {
-				return errors.Wrap(err, "could not generate zipkin cluster")
-			}
-		}
-
-		res, err := clusters.NewClusterBuilder(proxy.APIVersion).
-			Configure(clusters.ProvidedEndpointCluster(MeshTraceCluster, proxy.Dataplane.IsIPv6(), *endpoint)).
-			Configure(clusters.ClientSideTLS([]xds.Endpoint{*endpoint})).
-			Configure(clusters.DefaultTimeout()).
-			Build()
-		if err != nil {
-			return err
-		}
-
-		rs.Add(&xds.Resource{Name: MeshTraceCluster, Origin: MeshTraceOrigin, Resource: res})
+	rawConf := rules.Rules[0].Conf
+	if rawConf == nil {
+		return nil
 	}
+	conf := rawConf.(*api.MeshTrace_Conf)
+
+	backend := conf.GetBackends()[0]
+	if backend == nil {
+		return nil
+	}
+
+	var endpoint *xds.Endpoint
+	var err error
+	var provider string
+
+	if backend.GetZipkin() != nil {
+		endpoint, err = endpointForZipkin(backend.GetZipkin())
+		provider = "zipkin"
+		if err != nil {
+			return errors.Wrap(err, "could not generate zipkin cluster")
+		}
+	} else {
+		endpoint, err = endpointForDatadog(backend.GetDatadog())
+		provider = "datadog"
+		if err != nil {
+			return errors.Wrap(err, "could not generate zipkin cluster")
+		}
+	}
+
+	res, err := clusters.NewClusterBuilder(proxy.APIVersion).
+		Configure(clusters.ProvidedEndpointCluster(plugin_xds.GetTracingClusterName(provider), proxy.Dataplane.IsIPv6(), *endpoint)).
+		Configure(clusters.ClientSideTLS([]xds.Endpoint{*endpoint})).
+		Configure(clusters.DefaultTimeout()).
+		Build()
+	if err != nil {
+		return err
+	}
+
+	rs.Add(&xds.Resource{Name: plugin_xds.GetTracingClusterName(provider), Origin: MeshTraceOrigin, Resource: res})
 
 	return nil
 }

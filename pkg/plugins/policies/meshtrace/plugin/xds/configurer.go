@@ -21,7 +21,6 @@ type Configurer struct {
 	// Opaque string which envoy will assign to tracer collector cluster, on those
 	// which support association of named "service" tags on traces. Consumed by datadog.
 	Service     string
-	ClusterName string
 }
 
 var _ v3.FilterChainConfigurer = &Configurer{}
@@ -53,7 +52,7 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 		}
 
 		if backend.GetZipkin() != nil {
-			tracing, err := zipkinConfig(backend.Zipkin, c.ClusterName)
+			tracing, err := zipkinConfig(backend.Zipkin, GetTracingClusterName("zipkin"))
 			if err != nil {
 				return err
 			}
@@ -61,7 +60,7 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 		}
 
 		if backend.GetDatadog() != nil {
-			tracing, err := datadogConfig(c.Service, c.ClusterName)
+			tracing, err := datadogConfig(c.Service, GetTracingClusterName("datadog"))
 			if err != nil {
 				return err
 			}
@@ -168,4 +167,8 @@ func mapHeaderTag(name string, header *api.MeshTrace_HeaderTag) *tracingv3.Custo
 			},
 		},
 	}
+}
+
+func GetTracingClusterName(provider string) string {
+	return "meshtrace:" + provider
 }
