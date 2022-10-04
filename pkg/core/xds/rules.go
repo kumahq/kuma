@@ -2,6 +2,7 @@ package xds
 
 import (
 	"encoding/json"
+	"reflect"
 	"sort"
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
@@ -103,7 +104,7 @@ func (rs Rules) Compute(sub Subset) proto.Message {
 // Filtering out of negative rules could be useful for XDS generators that don't have a way to configure negations.
 //
 // See the detailed algorithm description in docs/madr/decisions/007-mesh-traffic-permission.md
-func BuildRules(list []PolicyItem, newConf func() proto.Message) (Rules, error) {
+func BuildRules(list []PolicyItem) (Rules, error) {
 	rules := Rules{}
 
 	// 1. Each targetRef should be represented as a list of tags
@@ -148,7 +149,10 @@ func BuildRules(list []PolicyItem, newConf func() proto.Message) (Rules, error) 
 				if conf == nil {
 					conf = proto.Clone(item.GetDefaultAsProto())
 				} else {
-					mergeResult := newConf()
+					mergeResult, err := newConf(reflect.TypeOf(conf))
+					if err != nil {
+						return nil, err
+					}
 					if err := Merge(conf, item.GetDefaultAsProto(), mergeResult); err != nil {
 						return nil, err
 					}
@@ -169,6 +173,13 @@ func BuildRules(list []PolicyItem, newConf func() proto.Message) (Rules, error) 
 	})
 
 	return rules, nil
+}
+
+func newConf(t reflect.Type) (proto.Message, error) {
+	if t.Kind() != reflect.Pointer {
+		return nil, errors.New("conf expected to have a pointer type")
+	}
+	return reflect.New(t.Elem()).Interface().(proto.Message), nil
 }
 
 func Merge(target, patch, result proto.Message) error {

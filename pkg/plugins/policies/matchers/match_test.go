@@ -99,7 +99,7 @@ var _ = Describe("Match", func() {
 				resources := readPolicies(given.policiesFile)
 
 				// when
-				policies, err := matchers.MatchedPolicies(policies_api.MeshTrafficPermissionResourceTypeDescriptor, dpp, resources)
+				policies, err := matchers.MatchedPolicies(policies_api.MeshTrafficPermissionType, dpp, resources)
 				Expect(err).ToNot(HaveOccurred())
 
 				// then
@@ -124,7 +124,7 @@ var _ = Describe("Match", func() {
 				resources := readPolicies(given.policiesFile)
 
 				// when
-				policies, err := matchers.MatchedPolicies(policies_api.MeshTrafficPermissionResourceTypeDescriptor, dpp, resources)
+				policies, err := matchers.MatchedPolicies(policies_api.MeshTrafficPermissionType, dpp, resources)
 				Expect(err).ToNot(HaveOccurred())
 
 				// then
