@@ -339,7 +339,7 @@ jobs:
         name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp, kuma-prometheus-sd)
         command: make build
     - setup_remote_docker:
-        version: 20.10.7
+        version: 20.10.14
     - run:
         name: Build Docker images
         command: |
