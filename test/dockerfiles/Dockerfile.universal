@@ -4,8 +4,8 @@ RUN mkdir /kuma
 RUN echo "# use this file to override default configuration of \`kuma-cp\`" > /kuma/kuma-cp.conf \
     && chmod a+rw /kuma/kuma-cp.conf
 
-RUN apt update \
-  && apt dist-upgrade -y \
+RUN apt-get update \
+  && apt-get dist-upgrade -y \
   && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     curl \
     dnsutils \
