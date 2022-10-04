@@ -41,6 +41,9 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 	if !ok {
 		return nil
 	}
+	if len(policies.SingleItemRules.Rules) == 0 {
+		return nil
+	}
 
 	listeners := gatherListeners(rs)
 	if err := applyToListeners(policies.SingleItemRules, listeners, proxy.Dataplane); err != nil {
@@ -118,6 +121,7 @@ func configureListener(rules xds.SingleItemRules, dataplane *core_mesh.Dataplane
 
 func applyToClusters(rules xds.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy) error {
 	rawConf := rules.Rules[0].Conf
+
 	conf := rawConf.(*api.MeshTrace_Conf)
 
 	backend := conf.GetBackends()[0]
