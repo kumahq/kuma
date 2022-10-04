@@ -4,7 +4,7 @@ EXAMPLE_DATAPLANE_MESH ?= default
 EXAMPLE_DATAPLANE_NAME ?= example
 EXAMPLE_DATAPLANE_INBOUND_PORT ?= 8000
 EXAMPLE_DATAPLANE_SERVICE_PORT ?= 10011
-define KUMA_DATAPLANE_RUNTIME_RESOURCE
+define EXAMPLE_DATAPLANE_RESOURCE
 type: Dataplane
 mesh: $(EXAMPLE_DATAPLANE_MESH)
 name: $(EXAMPLE_DATAPLANE_NAME)
@@ -64,8 +64,8 @@ run/universal/postgres: ## Dev: Run Control Plane locally in universal mode with
 .PHONY: run/example/envoy/universal
 run/example/envoy/universal: run/echo-server run/example/envoy
 
-export KUMA_DATAPLANE_RUNTIME_RESOURCE
 .PHONY: run/example/envoy
+run/example/envoy: export KUMA_DATAPLANE_RUNTIME_RESOURCE=$(EXAMPLE_DATAPLANE_RESOURCE)
 run/example/envoy: build/kuma-dp build/kumactl ## Dev: Run Envoy configured against local Control Plane
 	${BUILD_ARTIFACTS_DIR}/kumactl/kumactl generate dataplane-token --name=$(EXAMPLE_DATAPLANE_NAME) --mesh=$(EXAMPLE_DATAPLANE_MESH) > /tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token
 	KUMA_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
