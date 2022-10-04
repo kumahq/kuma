@@ -210,36 +210,6 @@ filters:
                                       exact: kuma://version/v2
       statPrefix: allow_negation_prefix.`,
 		}),
-		Entry("shadow allow rule", testCase{
-			stats: "shadow_allow_prefix",
-			mesh:  "shadow_allow_mesh",
-			rules: []*core_xds.Rule{
-				{
-					Subset: []core_xds.Tag{
-						{Key: "kuma.io/service", Value: "backend"},
-					},
-					Conf: &v1alpha1.MeshTrafficPermission_Conf{
-						Action: "DENY_WITH_SHADOW_ALLOW",
-					},
-				},
-			},
-			expected: `
-filters:
-  - name: envoy.filters.network.rbac
-    typedConfig:
-      '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-      rules: {}
-      shadowRules:
-          policies:
-              MeshTrafficPermission:
-                  permissions:
-                      - any: true
-                  principals:
-                      - authenticated:
-                          principalName:
-                              exact: spiffe://shadow_allow_mesh/backend
-      statPrefix: shadow_allow_prefix.`,
-		}),
 		Entry("no rules", testCase{
 			stats: "no",
 			mesh:  "nothing",
@@ -279,7 +249,16 @@ filters:
                       - authenticated:
                           principalName:
                               exact: spiffe://shadow_deny_mesh/backend
-      shadowRules: {}
+      shadowRules:
+          action: DENY
+          policies:
+              MeshTrafficPermission:
+                  permissions:
+                      - any: true
+                  principals:
+                      - authenticated:
+                          principalName:
+                              exact: spiffe://shadow_deny_mesh/backend
       statPrefix: shadow_deny_prefix.`,
 		}),
 	)

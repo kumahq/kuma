@@ -42,13 +42,51 @@ func (c *RBACConfigurer) Configure(filterChain *envoy_listener.FilterChain) erro
 	return nil
 }
 
+type PrincipalMap map[policies_api.MeshTrafficPermission_Conf_Action][]*rbac_config.Principal
+
+func (c *RBACConfigurer) principalsByAction() PrincipalMap {
+	pm := PrincipalMap{}
+	for _, rule := range c.Rules {
+		action := rule.Conf.(*policies_api.MeshTrafficPermission_Conf).GetActionEnum()
+		pm[action] = append(pm[action], c.principalFromSubset(rule.Subset))
+	}
+	return pm
+}
+
 func (c *RBACConfigurer) createRBACFilter() (*envoy_listener.Filter, error) {
-	// 'rules' always RBAC with 'action: ALLOW' regardless the number of principals
+	principalByAction := c.principalsByAction()
+
+	rbacMarshalled, err := util_proto.MarshalAnyDeterministic(&rbac.RBAC{
+		// we include dot to change "inbound:127.0.0.1:21011rbac.allowed" metric to "inbound:127.0.0.1:21011.rbac.allowed"
+		StatPrefix:  fmt.Sprintf("%s.", util_xds.SanitizeMetric(c.StatsName)),
+		Rules:       createRules(principalByAction),
+		ShadowRules: createShadowRules(principalByAction),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &envoy_listener.Filter{
+		// todo(lobkovilya): use 'envoy.filters.http.rbac' for HTTP traffic to have proper stats
+		Name: "envoy.filters.network.rbac",
+		ConfigType: &envoy_listener.Filter_TypedConfig{
+			TypedConfig: rbacMarshalled,
+		},
+	}, nil
+}
+
+// createRules always returns not-nil result regardless the number of principals
+func createRules(pm PrincipalMap) *rbac_config.RBAC {
 	rules := &rbac_config.RBAC{
 		Action:   rbac_config.RBAC_ALLOW,
 		Policies: map[string]*rbac_config.Policy{},
 	}
-	if principals := c.createPrincipals(); len(principals) != 0 {
+
+	principals := []*rbac_config.Principal{}
+	principals = append(principals, pm[policies_api.MeshTrafficPermission_Conf_ALLOW]...)
+	principals = append(principals, pm[policies_api.MeshTrafficPermission_Conf_ALLOW_WITH_SHADOW_DENY]...)
+
+	if len(principals) != 0 {
 		rules.Policies["MeshTrafficPermission"] = &rbac_config.Policy{
 			Permissions: []*rbac_config.Permission{
 				{
@@ -61,88 +99,118 @@ func (c *RBACConfigurer) createRBACFilter() (*envoy_listener.Filter, error) {
 		}
 	}
 
-	// 'shadowRules' could be nil if there are no shadow principals
-	var shadowRules *rbac_config.RBAC
-	if shadowPrincipals, hasShadowRule := c.createShadowPrincipals(); len(shadowPrincipals) != 0 {
-		shadowRules = &rbac_config.RBAC{
-			Action: rbac_config.RBAC_ALLOW,
-			Policies: map[string]*rbac_config.Policy{
-				"MeshTrafficPermission": {
-					Permissions: []*rbac_config.Permission{
-						{
-							Rule: &rbac_config.Permission_Any{
-								Any: true,
-							},
+	return rules
+}
+
+func createShadowRules(pm PrincipalMap) *rbac_config.RBAC {
+	deny := pm[policies_api.MeshTrafficPermission_Conf_ALLOW_WITH_SHADOW_DENY]
+	if len(deny) == 0 {
+		return nil
+	}
+	return &rbac_config.RBAC{
+		Action: rbac_config.RBAC_DENY,
+		Policies: map[string]*rbac_config.Policy{
+			"MeshTrafficPermission": {
+				Permissions: []*rbac_config.Permission{
+					{
+						Rule: &rbac_config.Permission_Any{
+							Any: true,
 						},
 					},
-					Principals: shadowPrincipals,
 				},
+				Principals: deny,
 			},
-		}
-	} else if hasShadowRule {
-		shadowRules = &rbac_config.RBAC{
-			Action:   rbac_config.RBAC_ALLOW,
-			Policies: map[string]*rbac_config.Policy{},
-		}
-	}
-
-	rbacMarshalled, err := util_proto.MarshalAnyDeterministic(&rbac.RBAC{
-		// we include dot to change "inbound:127.0.0.1:21011rbac.allowed" metric to "inbound:127.0.0.1:21011.rbac.allowed"
-		StatPrefix:  fmt.Sprintf("%s.", util_xds.SanitizeMetric(c.StatsName)),
-		Rules:       rules,
-		ShadowRules: shadowRules,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &envoy_listener.Filter{
-		// todo(lobkovilya): use 'envoy.filters.http.rbac' for HTTP traffic to have proper stats
-		Name: "envoy.filters.network.rbac",
-		ConfigType: &envoy_listener.Filter_TypedConfig{
-			TypedConfig: rbacMarshalled,
 		},
-	}, nil
-}
-
-func (c *RBACConfigurer) createPrincipals() []*rbac_config.Principal {
-	allowSubset := []core_xds.Subset{}
-	for _, rule := range c.Rules {
-		action := rule.Conf.(*policies_api.MeshTrafficPermission_Conf).GetActionEnum()
-		switch action {
-		case
-			policies_api.MeshTrafficPermission_Conf_ALLOW,
-			policies_api.MeshTrafficPermission_Conf_ALLOW_WITH_SHADOW_DENY:
-			allowSubset = append(allowSubset, rule.Subset)
-		}
 	}
-	return c.principalsFromSubsets(allowSubset)
 }
 
-func (c *RBACConfigurer) createShadowPrincipals() ([]*rbac_config.Principal, bool) {
-	allowSubset := []core_xds.Subset{}
-	hasShadowRule := false
-	for _, rule := range c.Rules {
-		action := rule.Conf.(*policies_api.MeshTrafficPermission_Conf).GetActionEnum()
-		switch action {
-		case policies_api.MeshTrafficPermission_Conf_DENY_WITH_SHADOW_ALLOW:
-			allowSubset = append(allowSubset, rule.Subset)
-			hasShadowRule = true
-		case policies_api.MeshTrafficPermission_Conf_ALLOW_WITH_SHADOW_DENY:
-			hasShadowRule = true
-		}
-	}
-	return c.principalsFromSubsets(allowSubset), hasShadowRule
-}
+// func (c *RBACConfigurer) createRules() *rbac_config.RBAC {
+//	// 'rules' is always an RBAC with 'action: ALLOW' regardless the number of principals
+//	rules := &rbac_config.RBAC{
+//		Action:   rbac_config.RBAC_ALLOW,
+//		Policies: map[string]*rbac_config.Policy{},
+//	}
+//	if principals := c.createAllowPrincipals(); len(principals) != 0 {
+//		rules.Policies["MeshTrafficPermission"] = &rbac_config.Policy{
+//			Permissions: []*rbac_config.Permission{
+//				{
+//					Rule: &rbac_config.Permission_Any{
+//						Any: true,
+//					},
+//				},
+//			},
+//			Principals: principals,
+//		}
+//	}
+//	return rules
+//}
 
-func (c *RBACConfigurer) principalsFromSubsets(subsets []core_xds.Subset) []*rbac_config.Principal {
-	principals := []*rbac_config.Principal{}
-	for _, ss := range subsets {
-		principals = append(principals, c.principalFromSubset(ss, c.Mesh))
-	}
-	return principals
-}
+// func (c *RBACConfigurer) createShadowRules() []*rbac_config.RBAC {
+//	var shadowRules *rbac_config.RBAC
+//	if shadowPrincipals, hasShadowRule := c.createShadowPrincipals(); len(shadowPrincipals) != 0 {
+//		shadowRules = &rbac_config.RBAC{
+//			Action: rbac_config.RBAC_ALLOW,
+//			Policies: map[string]*rbac_config.Policy{
+//				"MeshTrafficPermission": {
+//					Permissions: []*rbac_config.Permission{
+//						{
+//							Rule: &rbac_config.Permission_Any{
+//								Any: true,
+//							},
+//						},
+//					},
+//					Principals: shadowPrincipals,
+//				},
+//			},
+//		}
+//	} else if hasShadowRule {
+//		shadowRules = &rbac_config.RBAC{
+//			Action:   rbac_config.RBAC_ALLOW,
+//			Policies: map[string]*rbac_config.Policy{},
+//		}
+//	}
+//	return shadowRules
+//}
 
-func (c *RBACConfigurer) principalFromSubset(ss core_xds.Subset, mesh string) *rbac_config.Principal {
+// func (c *RBACConfigurer) createAllowPrincipals() []*rbac_config.Principal {
+//	allowSubset := []core_xds.Subset{}
+//	for _, rule := range c.Rules {
+//		action := rule.Conf.(*policies_api.MeshTrafficPermission_Conf).GetActionEnum()
+//		switch action {
+//		case
+//			policies_api.MeshTrafficPermission_Conf_ALLOW,
+//			policies_api.MeshTrafficPermission_Conf_ALLOW_WITH_SHADOW_DENY:
+//			allowSubset = append(allowSubset, rule.Subset)
+//		}
+//	}
+//	return c.principalsFromSubsets(allowSubset)
+//}
+//
+//func (c *RBACConfigurer) createShadowAllowPrincipals() ([]*rbac_config.Principal, bool) {
+//	allowSubset := []core_xds.Subset{}
+//	hasShadowRule := false
+//	for _, rule := range c.Rules {
+//		action := rule.Conf.(*policies_api.MeshTrafficPermission_Conf).GetActionEnum()
+//		switch action {
+//		case policies_api.MeshTrafficPermission_Conf_DENY_WITH_SHADOW_ALLOW:
+//			allowSubset = append(allowSubset, rule.Subset)
+//			hasShadowRule = true
+//		case policies_api.MeshTrafficPermission_Conf_ALLOW_WITH_SHADOW_DENY:
+//			hasShadowRule = true
+//		}
+//	}
+//	return c.principalsFromSubsets(allowSubset), hasShadowRule
+//}
+
+// func (c *RBACConfigurer) principalsFromSubsets(subsets []core_xds.Subset) []*rbac_config.Principal {
+//	principals := []*rbac_config.Principal{}
+//	for _, ss := range subsets {
+//		principals = append(principals, c.principalFromSubset(ss))
+//	}
+//	return principals
+//}
+
+func (c *RBACConfigurer) principalFromSubset(ss core_xds.Subset) *rbac_config.Principal {
 	principals := []*rbac_config.Principal{}
 
 	for _, t := range ss {
@@ -150,7 +218,7 @@ func (c *RBACConfigurer) principalFromSubset(ss core_xds.Subset, mesh string) *r
 		switch t.Key {
 		case mesh_proto.ServiceTag:
 			service := t.Value
-			principalName = tls.ServiceSpiffeIDMatcher(mesh, service)
+			principalName = tls.ServiceSpiffeIDMatcher(c.Mesh, service)
 		default:
 			principalName = tls.KumaIDMatcher(t.Key, t.Value)
 		}
