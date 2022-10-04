@@ -2,7 +2,9 @@ package xds
 
 import (
 	net_url "net/url"
+	"strings"
 
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_trace "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -12,6 +14,7 @@ import (
 
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/envoy"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 )
 
@@ -20,7 +23,9 @@ type Configurer struct {
 
 	// Opaque string which envoy will assign to tracer collector cluster, on those
 	// which support association of named "service" tags on traces. Consumed by datadog.
-	Service string
+	Service          string
+	TrafficDirection envoy_core.TrafficDirection
+	Destination      string
 }
 
 var _ v3.FilterChainConfigurer = &Configurer{}
@@ -52,15 +57,16 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 		}
 
 		if backend.GetZipkin() != nil {
-			tracing, err := zipkinConfig(backend.Zipkin, GetTracingClusterName("zipkin"))
+			tracing, err := c.zipkinConfig(GetTracingClusterName("zipkin"))
 			if err != nil {
 				return err
 			}
 			hcm.Tracing.Provider = tracing
 		}
 
-		if backend.GetDatadog() != nil {
-			tracing, err := datadogConfig(c.Service, GetTracingClusterName("datadog"))
+		datadog := backend.GetDatadog()
+		if datadog != nil {
+			tracing, err := c.datadogConfig(GetTracingClusterName("datadog"))
 			if err != nil {
 				return err
 			}
@@ -71,10 +77,10 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	})
 }
 
-func datadogConfig(serviceName, clusterName string) (*envoy_trace.Tracing_Http, error) {
+func (c *Configurer) datadogConfig(clusterName string) (*envoy_trace.Tracing_Http, error) {
 	datadogConfig := envoy_trace.DatadogConfig{
 		CollectorCluster: clusterName,
-		ServiceName:      serviceName,
+		ServiceName:      c.createDatadogServiceName(),
 	}
 	datadogConfigAny, err := proto.MarshalAnyDeterministic(&datadogConfig)
 	if err != nil {
@@ -89,7 +95,8 @@ func datadogConfig(serviceName, clusterName string) (*envoy_trace.Tracing_Http, 
 	return tracingConfig, nil
 }
 
-func zipkinConfig(zipkin *api.MeshTrace_ZipkinBackend, clusterName string) (*envoy_trace.Tracing_Http, error) {
+func (c *Configurer) zipkinConfig(clusterName string) (*envoy_trace.Tracing_Http, error) {
+	zipkin := c.Conf.GetBackends()[0].GetZipkin()
 	url, err := net_url.ParseRequestURI(zipkin.Url)
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid URL of Zipkin")
@@ -114,6 +121,25 @@ func zipkinConfig(zipkin *api.MeshTrace_ZipkinBackend, clusterName string) (*env
 		},
 	}
 	return tracingConfig, nil
+}
+
+func (c *Configurer) createDatadogServiceName() string {
+	datadog := c.Conf.GetBackends()[0].GetDatadog()
+
+	if datadog.SplitService {
+		var datadogServiceName []string
+		switch c.TrafficDirection {
+		case envoy_core.TrafficDirection_INBOUND:
+			datadogServiceName = []string{c.Service, string(envoy.TrafficDirectionInbound)}
+		case envoy_core.TrafficDirection_OUTBOUND:
+			datadogServiceName = []string{c.Service, string(envoy.TrafficDirectionOutbound), c.Destination}
+		default:
+			return c.Service
+		}
+		return strings.Join(datadogServiceName, "_")
+	} else {
+		return c.Service
+	}
 }
 
 func apiVersion(zipkin *api.MeshTrace_ZipkinBackend, url *net_url.URL) envoy_trace.ZipkinConfig_CollectorEndpointVersion {

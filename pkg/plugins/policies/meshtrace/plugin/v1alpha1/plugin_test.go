@@ -231,8 +231,9 @@ var _ = Describe("MeshTrace", func() {
 							},
 							Backends: []*api.MeshTrace_Backend{{
 								Datadog: &api.MeshTrace_DatadogBackend{
-									Address: "ingest.datadog.eu",
-									Port:    8126,
+									Address:      "ingest.datadog.eu",
+									Port:         8126,
+									SplitService: true,
 								},
 							}},
 						},
@@ -262,7 +263,7 @@ var _ = Describe("MeshTrace", func() {
                           typedConfig:
                               '@type': type.googleapis.com/envoy.config.trace.v3.DatadogConfig
                               collectorCluster: meshtrace:datadog
-                              serviceName: backend
+                              serviceName: backend_INBOUND
                       randomSampling:
                           value: 50
             name: inbound:127.0.0.1:17777
@@ -289,7 +290,7 @@ var _ = Describe("MeshTrace", func() {
                           typedConfig:
                               '@type': type.googleapis.com/envoy.config.trace.v3.DatadogConfig
                               collectorCluster: meshtrace:datadog
-                              serviceName: backend
+                              serviceName: backend_OUTBOUND_other-service
                       randomSampling:
                           value: 50
             name: outbound:127.0.0.1:27777
