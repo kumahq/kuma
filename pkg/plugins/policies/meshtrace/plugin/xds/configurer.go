@@ -40,15 +40,21 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	return v3.UpdateHTTPConnectionManager(filterChain, func(hcm *envoy_hcm.HttpConnectionManager) error {
 		hcm.Tracing = &envoy_hcm.HttpConnectionManager_Tracing{}
 
-		if c.Conf.Sampling != nil {
-			hcm.Tracing.OverallSampling = &envoy_type.Percent{
-				Value: float64(c.Conf.Sampling.Overall), // how do we do defaults in this case (type default is 0 but we want Envoy default i.e. missing field)? a wrapper type and check null?
+		if c.Conf.GetSampling() != nil {
+			if c.Conf.GetSampling().GetOverall() != nil {
+				hcm.Tracing.OverallSampling = &envoy_type.Percent{
+					Value: float64(c.Conf.Sampling.Overall.Value), // missing value will
+				}
 			}
-			hcm.Tracing.ClientSampling = &envoy_type.Percent{
-				Value: float64(c.Conf.Sampling.Client),
+			if c.Conf.GetSampling().GetClient() != nil {
+				hcm.Tracing.ClientSampling = &envoy_type.Percent{
+					Value: float64(c.Conf.Sampling.Client.Value),
+				}
 			}
-			hcm.Tracing.RandomSampling = &envoy_type.Percent{
-				Value: float64(c.Conf.Sampling.Random),
+			if c.Conf.GetSampling().GetRandom() != nil {
+				hcm.Tracing.RandomSampling = &envoy_type.Percent{
+					Value: float64(c.Conf.Sampling.Random.Value),
+				}
 			}
 		}
 

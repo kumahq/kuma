@@ -9,9 +9,9 @@ type: Dataplane
 mesh: $(EXAMPLE_DATAPLANE_MESH)
 name: $(EXAMPLE_DATAPLANE_NAME)
 networking:
-  address: localhost
+  address: 127.0.0.1
   inbound:
-  - port: $(EXAMPLE_DATAPLANE_SERVICE_PORT)
+  - port: $(EXAMPLE_DATAPLANE_INBOUND_PORT)
     servicePort: $(EXAMPLE_DATAPLANE_SERVICE_PORT)
     tags:
       kuma.io/service: echo-service

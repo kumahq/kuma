@@ -66,9 +66,15 @@ func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 
 	sampling := conf.GetSampling()
 	if sampling != nil {
-		verr.AddErrorAt(validators.RootedAt("sampling").Field("client"), validateSampling(sampling.GetClient()))
-		verr.AddErrorAt(validators.RootedAt("sampling").Field("random"), validateSampling(sampling.GetRandom()))
-		verr.AddErrorAt(validators.RootedAt("sampling").Field("overall"), validateSampling(sampling.GetOverall()))
+		if sampling.GetClient() != nil {
+			verr.AddErrorAt(validators.RootedAt("sampling").Field("client"), validateSampling(sampling.GetClient().GetValue()))
+		}
+		if sampling.GetRandom() != nil {
+			verr.AddErrorAt(validators.RootedAt("sampling").Field("random"), validateSampling(sampling.GetRandom().GetValue()))
+		}
+		if sampling.GetOverall() != nil {
+			verr.AddErrorAt(validators.RootedAt("sampling").Field("overall"), validateSampling(sampling.GetOverall().GetValue()))
+		}
 	}
 
 	return verr

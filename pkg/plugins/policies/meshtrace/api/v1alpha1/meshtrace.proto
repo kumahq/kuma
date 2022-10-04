@@ -81,19 +81,19 @@ message MeshTrace {
     // the appropriate headers to be force traced. Default: 100% Mirror of
     // overall_sampling in Envoy
     // https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L142-L150
-    uint32 overall = 1;
+    google.protobuf.UInt32Value overall = 1;
 
     // Target percentage of requests that will be force traced if the
     // 'x-client-trace-id' header is set. Default: 100% Mirror of
     // client_sampling in Envoy
     // https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L127-L133
-    uint32 client = 2;
+    google.protobuf.UInt32Value client = 2;
 
     // Target percentage of requests that will be randomly selected for trace
     // generation, if not requested by the client or not forced. Default: 100%
     // Mirror of random_sampling in Envoy
     // https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L135-L140
-    uint32 random = 3;
+    google.protobuf.UInt32Value random = 3;
   }
 
   // Tag taken from a header configuration.

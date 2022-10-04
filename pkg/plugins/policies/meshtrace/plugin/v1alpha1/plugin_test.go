@@ -124,7 +124,7 @@ var _ = Describe("MeshTrace", func() {
 						Subset: []core_xds.Tag{},
 						Conf: &api.MeshTrace_Conf{
 							Sampling: &api.MeshTrace_Sampling{
-								Random: 50,
+								Random: wrapperspb.UInt32(50),
 							},
 							Backends: []*api.MeshTrace_Backend{{
 								Zipkin: &api.MeshTrace_ZipkinBackend{
@@ -154,8 +154,6 @@ var _ = Describe("MeshTrace", func() {
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: "127_0_0_1_17777"
                   tracing:
-                      clientSampling: {}
-                      overallSampling: {}
                       provider:
                           name: envoy.zipkin
                           typedConfig:
@@ -185,8 +183,6 @@ var _ = Describe("MeshTrace", func() {
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: "127_0_0_1_27777"
                   tracing:
-                      clientSampling: {}
-                      overallSampling: {}
                       provider:
                           name: envoy.zipkin
                           typedConfig:
@@ -227,7 +223,7 @@ var _ = Describe("MeshTrace", func() {
 						Subset: []core_xds.Tag{},
 						Conf: &api.MeshTrace_Conf{
 							Sampling: &api.MeshTrace_Sampling{
-								Random: 50,
+								Random: wrapperspb.UInt32(50),
 							},
 							Backends: []*api.MeshTrace_Backend{{
 								Datadog: &api.MeshTrace_DatadogBackend{
@@ -256,8 +252,6 @@ var _ = Describe("MeshTrace", func() {
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: "127_0_0_1_17777"
                   tracing:
-                      clientSampling: {}
-                      overallSampling: {}
                       provider:
                           name: envoy.datadog
                           typedConfig:
@@ -283,8 +277,6 @@ var _ = Describe("MeshTrace", func() {
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: "127_0_0_1_27777"
                   tracing:
-                      clientSampling: {}
-                      overallSampling: {}
                       provider:
                           name: envoy.datadog
                           typedConfig:
