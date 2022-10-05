@@ -10,6 +10,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/core/user"
 )
 
 var log = core.Log.WithName("clusterID")
@@ -23,11 +24,12 @@ type clusterIDReader struct {
 }
 
 func (c *clusterIDReader) Start(stop <-chan struct{}) error {
+	ctx := user.Ctx(context.Background(), user.ControlPlane)
 	ticker := time.NewTicker(1 * time.Second)
 	for {
 		select {
 		case <-ticker.C:
-			clusterID, err := c.read()
+			clusterID, err := c.read(ctx)
 			if err != nil {
 				log.Error(err, "could not read cluster ID") // just log, do not exit to retry operation
 			}
@@ -46,9 +48,9 @@ func (c *clusterIDReader) NeedLeaderElection() bool {
 	return false
 }
 
-func (c *clusterIDReader) read() (string, error) {
+func (c *clusterIDReader) read(ctx context.Context) (string, error) {
 	resource := config_model.NewConfigResource()
-	err := c.rt.ConfigManager().Get(context.Background(), resource, store.GetByKey(config_manager.ClusterIdConfigKey, core_model.NoMesh))
+	err := c.rt.ConfigManager().Get(ctx, resource, store.GetByKey(config_manager.ClusterIdConfigKey, core_model.NoMesh))
 	if err != nil {
 		if store.IsResourceNotFound(err) {
 			return "", nil

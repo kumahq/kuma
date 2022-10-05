@@ -10,6 +10,7 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/hds/authn"
 	hds_callbacks "github.com/kumahq/kuma/pkg/hds/callbacks"
 	hds_metrics "github.com/kumahq/kuma/pkg/hds/metrics"
@@ -38,7 +39,7 @@ func Setup(rt core_runtime.Runtime) error {
 		return err
 	}
 
-	srv := hds_server.New(context.Background(), snapshotCache, callbacks)
+	srv := hds_server.New(user.Ctx(context.Background(), user.ControlPlane), snapshotCache, callbacks)
 
 	hdsServerLog.Info("registering Health Discovery Service in Dataplane Server")
 	envoy_service_health.RegisterHealthDiscoveryServiceServer(rt.DpServer().GrpcServer(), srv)

@@ -19,6 +19,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
@@ -201,7 +202,7 @@ func (g *HTTPSFilterChainGenerator) generateCertificateSecret(
 	host GatewayHost,
 	secret *system_proto.DataSource,
 ) (*envoy_extensions_transport_sockets_tls_v3.Secret, error) {
-	data, err := ctx.DataSourceLoader.Load(context.Background(), ctx.Resource.GetMeta().GetName(), secret)
+	data, err := ctx.DataSourceLoader.Load(user.Ctx(context.TODO(), user.ControlPlane), ctx.Resource.GetMeta().GetName(), secret)
 	if err != nil {
 		return nil, err
 	}

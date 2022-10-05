@@ -25,7 +25,7 @@ func NewUserTokenIssuer(issuer tokens.Issuer) UserTokenIssuer {
 var _ UserTokenIssuer = &jwtTokenIssuer{}
 
 func (j *jwtTokenIssuer) Generate(ctx context.Context, identity user.User, validFor time.Duration) (tokens.Token, error) {
-	c := userClaims{
+	c := UserClaims{
 		User: identity,
 	}
 	return j.issuer.Generate(ctx, &c, validFor)

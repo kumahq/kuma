@@ -29,3 +29,10 @@ var Anonymous = User{
 	Name:   "mesh-system:anonymous",
 	Groups: []string{"mesh-system:unauthenticated"},
 }
+
+// ControlPlane is a static user that is used whenever the control plane itself executes operations.
+// For example: update of DataplaneInsight, creation of default resources etc.
+var ControlPlane = User{
+	Name:   "mesh-system:control-plane",
+	Groups: []string{},
+}

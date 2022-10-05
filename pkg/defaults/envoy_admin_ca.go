@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/envoy/admin/tls"
 )
 
@@ -20,7 +21,7 @@ type EnvoyAdminCaDefaultComponent struct {
 var _ component.Component = &EnvoyAdminCaDefaultComponent{}
 
 func (e *EnvoyAdminCaDefaultComponent) Start(stop <-chan struct{}) error {
-	ctx, cancelFn := context.WithCancel(context.Background())
+	ctx, cancelFn := context.WithCancel(user.Ctx(context.Background(), user.ControlPlane))
 	go func() {
 		<-stop
 		cancelFn()

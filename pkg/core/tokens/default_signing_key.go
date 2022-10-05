@@ -9,6 +9,7 @@ import (
 	"github.com/sethvargo/go-retry"
 
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/core/user"
 )
 
 type defaultSigningKeyComponent struct {
@@ -26,7 +27,7 @@ func NewDefaultSigningKeyComponent(signingKeyManager SigningKeyManager, log logr
 }
 
 func (d *defaultSigningKeyComponent) Start(stop <-chan struct{}) error {
-	ctx, cancelFn := context.WithCancel(context.Background())
+	ctx, cancelFn := context.WithCancel(user.Ctx(context.Background(), user.ControlPlane))
 	defer cancelFn()
 	errChan := make(chan error)
 	go func() {

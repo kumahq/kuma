@@ -13,6 +13,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/user"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	hds_callbacks "github.com/kumahq/kuma/pkg/hds/callbacks"
 	xds_auth "github.com/kumahq/kuma/pkg/xds/auth"
@@ -136,6 +137,7 @@ func extractCredential(ctx context.Context) (xds_auth.Credential, error) {
 }
 
 func (a *authn) authenticate(credential xds_auth.Credential, nodeID string) error {
+	ctx := user.Ctx(context.TODO(), user.ControlPlane)
 	dataplane := core_mesh.NewDataplaneResource()
 
 	proxyId, err := core_xds.ParseProxyIdFromString(nodeID)
@@ -145,7 +147,7 @@ func (a *authn) authenticate(credential xds_auth.Credential, nodeID string) erro
 	// Retry on DP not found because HDS is initiated in the parallel with XDS.
 	// It is very likely that Dataplane is not yet created.
 	// We could just close the stream with an error and Envoy would retry, but to have better UX (not printing confusing logs) it's better to retry
-	err = retry.Do(context.Background(), retry.WithMaxRetries(uint64(a.dpNotFoundRetry.MaxTimes), retry.NewConstant(a.dpNotFoundRetry.Backoff)), func(ctx context.Context) error {
+	err = retry.Do(ctx, retry.WithMaxRetries(uint64(a.dpNotFoundRetry.MaxTimes), retry.NewConstant(a.dpNotFoundRetry.Backoff)), func(ctx context.Context) error {
 		err := a.resManager.Get(ctx, dataplane, core_store.GetBy(proxyId.ToResourceKey()))
 		if core_store.IsResourceNotFound(err) {
 			return retry.RetryableError(errors.New("dataplane not found. Create Dataplane in Kuma CP first or pass it as an argument to kuma-dp"))
@@ -156,7 +158,7 @@ func (a *authn) authenticate(credential xds_auth.Credential, nodeID string) erro
 		return err
 	}
 
-	if err := a.authenticator.Authenticate(context.Background(), dataplane, credential); err != nil {
+	if err := a.authenticator.Authenticate(ctx, dataplane, credential); err != nil {
 		return errors.Wrap(err, "authentication failed")
 	}
 	return nil

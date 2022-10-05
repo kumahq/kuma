@@ -1,18 +1,18 @@
-package trafficpermission
+package meshtrafficpermission
 
 import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/env"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-func TrafficPermission() {
-	const meshName = "tp-test"
-	const namespace = "tp-test"
+func MeshTrafficPermission() {
+	const meshName = "mtp-test"
+	const namespace = "mtp-test"
 
 	var clientPodName string
 
@@ -21,6 +21,8 @@ func TrafficPermission() {
 		err := env.Global.Install(MTLSMeshUniversal(meshName))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, env.Zones())).To(Succeed())
+		// remove default traffic permission
+		Expect(env.Global.GetKumactlOptions().KumactlDelete("traffic-permission", "allow-all-"+meshName, meshName)).To(Succeed())
 
 		// Universal Zone 1
 		err = env.UniZone1.Install(TestServerUniversal("test-server", meshName,
@@ -42,7 +44,7 @@ func TrafficPermission() {
 	BeforeEach(func() {
 		Expect(DeleteAllResourcesUniversal(
 			*env.Global.GetKumactlOptions(),
-			core_mesh.TrafficPermissionResourceTypeDescriptor,
+			policies_api.MeshTrafficPermissionResourceTypeDescriptor,
 			meshName),
 		).To(Succeed())
 	})
@@ -67,21 +69,23 @@ func TrafficPermission() {
 		}, "30s", "1s").Should(HaveOccurred())
 	}
 
-	It("should allow the traffic with default traffic permission", func() {
-		// given
+	It("should allow the traffic with allow-all meshtrafficpermission", func() {
+		// given no mesh traffic permissions
 		trafficBlocked()
 
-		// when
+		// when mesh traffic permission with MeshService
 		yaml := `
-type: TrafficPermission
-mesh: tp-test
-name: allow-all-tp-test
-sources:
-  - match:
-      kuma.io/service: '*'
-destinations:
-  - match:
-      kuma.io/service: '*'
+type: MeshTrafficPermission
+name: mtp-1
+mesh: mtp-test
+spec:
+ targetRef:
+   kind: Mesh
+ from:
+   - targetRef:
+       kind: Mesh
+     default:
+       action: ALLOW
 `
 		err := YamlUniversal(yaml)(env.Global)
 		Expect(err).ToNot(HaveOccurred())
@@ -91,20 +95,25 @@ destinations:
 	})
 
 	It("should allow the traffic with kuma.io/zone", func() {
-		// given
+		// given no mesh traffic permissions
 		trafficBlocked()
 
-		// when
+		// when mesh traffic permission with MeshService
 		yaml := `
-type: TrafficPermission
-mesh: tp-test
-name: example-on-zone
-sources:
- - match:
-     kuma.io/zone: kuma-1-zone
-destinations:
- - match:
-     kuma.io/zone: kuma-4
+type: MeshTrafficPermission
+name: mtp-2
+mesh: mtp-test
+spec:
+ targetRef:
+   kind: MeshService
+   name: test-server
+ from:
+   - targetRef:
+       kind: MeshSubset
+       tags:
+         kuma.io/zone: kuma-1-zone
+     default:
+       action: ALLOW
 `
 		err := YamlUniversal(yaml)(env.Global)
 		Expect(err).ToNot(HaveOccurred())
@@ -114,20 +123,25 @@ destinations:
 	})
 
 	It("should allow the traffic with k8s.kuma.io/namespace", func() {
-		// given
+		// given no mesh traffic permissions
 		trafficBlocked()
 
-		// when
+		// when mesh traffic permission with MeshSubset
 		yaml := `
-type: TrafficPermission
-mesh: tp-test
-name: example-on-namespace
-sources:
- - match:
-     k8s.kuma.io/namespace: tp-test
-destinations:
- - match:
-     kuma.io/service: test-server
+type: MeshTrafficPermission
+name: mtp-3
+mesh: mtp-test
+spec:
+ targetRef:
+   kind: MeshService
+   name: test-server
+ from:
+   - targetRef:
+       kind: MeshSubset
+       tags:
+         k8s.kuma.io/namespace: mtp-test
+     default:
+       action: ALLOW
 `
 		err := YamlUniversal(yaml)(env.Global)
 		Expect(err).ToNot(HaveOccurred())
@@ -137,20 +151,25 @@ destinations:
 	})
 
 	It("should allow the traffic with tags added dynamically on Kubernetes", func() {
-		// given
+		// given no mesh traffic permissions
 		trafficBlocked()
 
-		// when
+		// when mesh traffic permission with MeshSubset
 		yaml := `
-type: TrafficPermission
-mesh: tp-test
-name: example-on-new-tag
-sources:
- - match:
-     newtag: client
-destinations:
- - match:
-     kuma.io/service: test-server
+type: MeshTrafficPermission
+name: mtp-4
+mesh: mtp-test
+spec:
+ targetRef:
+   kind: MeshService
+   name: test-server
+ from:
+   - targetRef:
+       kind: MeshSubset
+       tags:
+         newtag: client
+     default:
+       action: ALLOW
 `
 		err := YamlUniversal(yaml)(env.Global)
 		Expect(err).ToNot(HaveOccurred())
