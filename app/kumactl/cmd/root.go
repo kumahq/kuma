@@ -87,7 +87,7 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.AddCommand(get.NewGetCmd(root))
 	cmd.AddCommand(inspect.NewInspectCmd(root))
 	cmd.AddCommand(install.NewInstallCmd(root))
-	cmd.AddCommand(uninstall.NewUninstallCmd())
+	cmd.AddCommand(uninstall.NewUninstallCmd(root))
 	cmd.AddCommand(version.NewCmd(root))
 
 	kumactl_cmd.WrapRunnables(cmd, kumactl_errors.FormatErrorWrapper)

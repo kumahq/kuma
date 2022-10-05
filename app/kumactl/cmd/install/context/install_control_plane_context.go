@@ -68,6 +68,7 @@ type InstallControlPlaneArgs struct {
 	DumpValues         bool
 	UseNodePort        bool
 	IngressUseNodePort bool
+	Ebpf_bpffs_path    string
 }
 
 type ImageEnvSecret struct {
@@ -123,6 +124,7 @@ func DefaultInstallCpContext() InstallCpContext {
 			Egress_enabled:                          false,
 			Egress_drainTime:                        "30s",
 			Egress_service_type:                     "ClusterIP",
+			Ebpf_bpffs_path:                         "/sys/fs/bpf",
 		},
 		InstallCpTemplateFiles: func(args *InstallControlPlaneArgs) (data.FileList, error) {
 			files, err := data.ReadFiles(deployments.KumaChartFS())

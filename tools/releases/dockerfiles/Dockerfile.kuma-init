@@ -1,5 +1,5 @@
 ARG BASE_IMAGE_ARCH=amd64
-ARG EBPF_IMAGE=kumahq/kuma-net-ebpf:0.7.2
+ARG EBPF_IMAGE=kumahq/kuma-net-ebpf:0.8.0
 
 FROM --platform=linux/$BASE_IMAGE_ARCH $EBPF_IMAGE as ebpf
 FROM --platform=linux/$BASE_IMAGE_ARCH ubuntu:jammy
@@ -17,7 +17,6 @@ COPY /tools/releases/templates/LICENSE \
     /kuma/
 
 COPY /tools/releases/templates/NOTICE-kumactl /kuma/NOTICE
-
 # ebpf
 
 COPY --from=ebpf /mb_* /kuma/ebpf/

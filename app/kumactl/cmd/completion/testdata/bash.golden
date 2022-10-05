@@ -4407,6 +4407,51 @@ _kumactl_install()
     noun_aliases=()
 }
 
+_kumactl_uninstall_ebpf()
+{
+    last_command="kumactl_uninstall_ebpf"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--bpffs-path=")
+    two_word_flags+=("--bpffs-path")
+    local_nonpersistent_flags+=("--bpffs-path")
+    local_nonpersistent_flags+=("--bpffs-path=")
+    flags+=("--cleanup-image-version=")
+    two_word_flags+=("--cleanup-image-version")
+    local_nonpersistent_flags+=("--cleanup-image-version")
+    local_nonpersistent_flags+=("--cleanup-image-version=")
+    flags+=("--namespace=")
+    two_word_flags+=("--namespace")
+    local_nonpersistent_flags+=("--namespace")
+    local_nonpersistent_flags+=("--namespace=")
+    flags+=("--remove-only")
+    local_nonpersistent_flags+=("--remove-only")
+    flags+=("--timeout=")
+    two_word_flags+=("--timeout")
+    local_nonpersistent_flags+=("--timeout")
+    local_nonpersistent_flags+=("--timeout=")
+    flags+=("--api-timeout=")
+    two_word_flags+=("--api-timeout")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--no-config")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _kumactl_uninstall_transparent-proxy()
 {
     last_command="kumactl_uninstall_transparent-proxy"
@@ -4423,6 +4468,12 @@ _kumactl_uninstall_transparent-proxy()
 
     flags+=("--dry-run")
     local_nonpersistent_flags+=("--dry-run")
+    flags+=("--ebpf-bpffs-path=")
+    two_word_flags+=("--ebpf-bpffs-path")
+    local_nonpersistent_flags+=("--ebpf-bpffs-path")
+    local_nonpersistent_flags+=("--ebpf-bpffs-path=")
+    flags+=("--ebpf-enabled")
+    local_nonpersistent_flags+=("--ebpf-enabled")
     flags+=("--verbose")
     local_nonpersistent_flags+=("--verbose")
     flags+=("--api-timeout=")
@@ -4445,6 +4496,7 @@ _kumactl_uninstall()
     command_aliases=()
 
     commands=()
+    commands+=("ebpf")
     commands+=("transparent-proxy")
 
     flags=()

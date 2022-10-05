@@ -1,0 +1,118 @@
+{{- if and (.Values.experimental.ebpf.enabled) (not .Values.cni.enabled) }}
+  {{- $serviceAccountName := printf "%s-cleanup-node-ebpf-job" (include "kuma.name" .) }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $serviceAccountName }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": "post-delete"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
+  labels:
+  {{- include "kuma.labels" . | nindent 4 }}
+{{- with .Values.global.imagePullSecrets }}
+imagePullSecrets:
+  {{- range . }}
+  - name: {{ . | quote }}
+  {{- end }}
+{{- end }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "kuma.name" . }}-cleanup-node-ebpf-job
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": "post-delete"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
+  labels:
+  {{- include "kuma.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources:
+      - nodes
+    verbs:
+      - list
+  - apiGroups: [""]
+    resources:
+      - pods
+    verbs:
+      - watch 
+      - delete
+      - deletecollection
+  - apiGroups: ["batch"]
+    resources:
+      - jobs
+    verbs:
+      - watch 
+      - create
+      - delete
+      - deletecollection
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "kuma.name" . }}-cleanup-node-ebpf-job
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": "post-delete"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
+  labels:
+  {{- include "kuma.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "kuma.name" . }}-cleanup-node-ebpf-job
+subjects:
+  - kind: ServiceAccount
+    name: {{ $serviceAccountName }}
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ template "kuma.name" . }}-cleanup-node-ebpf-job
+  namespace: {{ .Release.Namespace }}
+  labels:
+  {{ include "kuma.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": "post-delete"
+    {{/* Ensure the job is created after the RBAC resources */}}
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
+spec:
+  template:
+    metadata:
+      name: {{ template "kuma.name" . }}-cleanup-node-ebpf-job
+      labels:
+    {{ include "kuma.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ $serviceAccountName }}
+      {{- with .Values.hooks.nodeSelector }}
+      nodeSelector:
+      {{ toYaml . | nindent 8 }}
+      {{- end }}
+      restartPolicy: OnFailure
+      {{- if .Values.hooks.podSecurityContext }}
+      securityContext:
+      {{ toYaml .Values.hooks.podSecurityContext | trim | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: post-delete-job
+          image: {{ include "kubectl.formatImage" (dict "image" .Values.dataPlane.initImage "root" $) | quote }}
+          {{- if .Values.hooks.containerSecurityContext }}
+          securityContext:
+          {{ toYaml .Values.hooks.containerSecurityContext | trim | nindent 12 }}
+          {{- end }}
+          resources:
+             requests:
+               cpu: "20m"
+               memory: "20Mi"
+             limits:
+               cpu: "40m"
+               memory: "40Mi"
+          command:
+            - 'kumactl'
+            - 'uninstall'
+            - 'ebpf'
+  {{- end }}
