@@ -138,7 +138,7 @@ func BuildRules(list []PolicyItem) (Rules, error) {
 			break
 		}
 		// 3. For each combination determine a configuration
-		var conf proto.Message
+		confs := []proto.Message{}
 		for i := 0; i < len(list); i++ {
 			item := list[i]
 			itemSubset, err := asSubset(item.GetTargetRef())
@@ -146,24 +146,17 @@ func BuildRules(list []PolicyItem) (Rules, error) {
 				return nil, err
 			}
 			if itemSubset.IsSubset(ss) {
-				if conf == nil {
-					conf = proto.Clone(item.GetDefaultAsProto())
-				} else {
-					mergeResult, err := newConf(reflect.TypeOf(conf))
-					if err != nil {
-						return nil, err
-					}
-					if err := Merge(conf, item.GetDefaultAsProto(), mergeResult); err != nil {
-						return nil, err
-					}
-					conf = mergeResult
-				}
+				confs = append(confs, item.GetDefaultAsProto())
 			}
 		}
-		if conf != nil {
+		merged, err := merge(confs)
+		if err != nil {
+			return nil, err
+		}
+		if merged != nil {
 			rules = append(rules, &Rule{
 				Subset: ss,
-				Conf:   conf,
+				Conf:   merged,
 			})
 		}
 	}
@@ -175,27 +168,44 @@ func BuildRules(list []PolicyItem) (Rules, error) {
 	return rules, nil
 }
 
+func merge(confs []proto.Message) (proto.Message, error) {
+	if len(confs) == 0 {
+		return nil, nil
+	}
+
+	resultBytes := []byte{}
+	for _, conf := range confs {
+		confBytes, err := json.Marshal(conf)
+		if err != nil {
+			return nil, err
+		}
+		if len(resultBytes) == 0 {
+			resultBytes = confBytes
+			continue
+		}
+		resultBytes, err = jsonpatch.MergePatch(resultBytes, confBytes)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	result, err := newConf(reflect.TypeOf(confs[0]))
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(resultBytes, result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 func newConf(t reflect.Type) (proto.Message, error) {
 	if t.Kind() != reflect.Pointer {
 		return nil, errors.New("conf expected to have a pointer type")
 	}
 	return reflect.New(t.Elem()).Interface().(proto.Message), nil
-}
-
-func Merge(target, patch, result proto.Message) error {
-	targetBytes, err := json.Marshal(target)
-	if err != nil {
-		return err
-	}
-	patchBytes, err := json.Marshal(patch)
-	if err != nil {
-		return err
-	}
-	resultBytes, err := jsonpatch.MergePatch(targetBytes, patchBytes)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(resultBytes, result)
 }
 
 func asSubset(tr *common_api.TargetRef) (Subset, error) {
