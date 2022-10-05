@@ -41,24 +41,16 @@ func genGrpcRetryPolicy(
 		policy.NumRetries = util_proto.UInt32(conf.NumRetries.Value)
 	}
 
+	retryOn := GrpcRetryOn(conf.GetRetryOn())
+	if retryOn != "" {
+		policy.RetryOn = retryOn
+	}
+
 	if conf.BackOff != nil {
 		policy.RetryBackOff = &envoy_route.RetryPolicy_RetryBackOff{
 			BaseInterval: conf.BackOff.BaseInterval,
 			MaxInterval:  conf.BackOff.MaxInterval,
 		}
-	}
-
-	if conf.RetryOn != nil {
-		var retryOn []string
-
-		for _, item := range conf.RetryOn {
-			// As `retryOn` is an enum value, and as in protobuf we can't use
-			// hyphens we are using underscores instead, but as envoy expect
-			// values with hyphens it's being changed here
-			retryOn = append(retryOn, strings.ReplaceAll(item.String(), "_", "-"))
-		}
-
-		policy.RetryOn = strings.Join(retryOn, ",")
 	}
 
 	return &policy
@@ -87,23 +79,9 @@ func genHttpRetryPolicy(
 		}
 	}
 
-	if conf.RetryOn != nil {
-		var retryOn []string
-
-		for _, item := range conf.RetryOn {
-			key := item.String()
-			// Protobuf fields cannot start with a number so convert to the correct
-			// value before appending
-			if key == "all_5xx" {
-				key = "5xx"
-			}
-			// As `retryOn` is an enum value, and as in protobuf we can't use
-			// hyphens we are using underscores instead, but as envoy expect
-			// values with hyphens it's being changed here
-			retryOn = append(retryOn, strings.ReplaceAll(key, "_", "-"))
-		}
-
-		policy.RetryOn = strings.Join(retryOn, ",")
+	retryOn := HttpRetryOn(conf.GetRetryOn())
+	if retryOn != "" {
+		policy.RetryOn = retryOn
 	}
 
 	if conf.RetriableStatusCodes != nil {
@@ -125,6 +103,43 @@ func genHttpRetryPolicy(
 	}
 
 	return &policy
+}
+
+func HttpRetryOn(conf []mesh_proto.HttpRetryOn) string {
+	if conf == nil {
+		return ""
+	}
+	var retryOn []string
+
+	for _, item := range conf {
+		key := item.String()
+		// Protobuf fields cannot start with a number so convert to the correct
+		// value before appending
+		if key == "all_5xx" {
+			key = "5xx"
+		}
+		// As `retryOn` is an enum value, and as in protobuf we can't use
+		// hyphens we are using underscores instead, but as envoy expect
+		// values with hyphens it's being changed here
+		retryOn = append(retryOn, strings.ReplaceAll(key, "_", "-"))
+	}
+	return strings.Join(retryOn, ",")
+}
+
+func GrpcRetryOn(conf []mesh_proto.Retry_Conf_Grpc_RetryOn) string {
+	if len(conf) == 0 {
+		return ""
+	}
+	var retryOn []string
+
+	for _, item := range conf {
+		// As `retryOn` is an enum value, and as in protobuf we can't use
+		// hyphens we are using underscores instead, but as envoy expect
+		// values with hyphens it's being changed here
+		retryOn = append(retryOn, strings.ReplaceAll(item.String(), "_", "-"))
+	}
+
+	return strings.Join(retryOn, ",")
 }
 
 func (c *RetryConfigurer) Configure(
