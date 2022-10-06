@@ -62,22 +62,16 @@ func init() {
 		if err != nil {
 			panic(err)
 		}
-
-		name, err := getName(unmarshalled)
-		if err != nil {
-			panic(err)
-		}
-
+		name := getName(unmarshalled)
 		schema, err := yamlToJsonSchemaLoader(rawSchema)
 		if err != nil {
 			panic(err)
 		}
-
 		resourceToSchema[model.ResourceType(name)] = schema
 	}
 }
 
-func getName(unmarshalled map[string]interface{}) (string, error) {
+func getName(unmarshalled map[string]interface{}) string {
 	rawProperties := unmarshalled["properties"]
 	properties := rawProperties.(map[string]interface{})
 	rawType := properties["type"]
@@ -86,7 +80,7 @@ func getName(unmarshalled map[string]interface{}) (string, error) {
 	names := enums.([]interface{})
 	name := names[0].(string)
 
-	return name, nil
+	return name
 }
 
 func yamlToJsonSchemaLoader(rawSchema []byte) (*gojsonschema.JSONLoader, error) {
