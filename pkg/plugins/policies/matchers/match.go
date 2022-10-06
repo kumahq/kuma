@@ -124,7 +124,7 @@ func inboundsSelectedByTargetRef(tr *common_proto.TargetRef, dpp *core_mesh.Data
 func inboundsSelectedByTags(tags map[string]string, dpp *core_mesh.DataplaneResource, gateway *core_mesh.MeshGatewayResource) []core_xds.InboundListener {
 	result := []core_xds.InboundListener{}
 	for _, inbound := range dpp.Spec.GetNetworking().GetInbound() {
-		if isInboundSelectedByTags(tags, inbound) {
+		if mesh_proto.TagSelector(tags).Matches(inbound.Tags) {
 			intf := dpp.Spec.GetNetworking().ToInboundInterface(inbound)
 			result = append(result, core_xds.InboundListener{
 				Address: intf.DataplaneIP,
@@ -148,15 +148,6 @@ func inboundsSelectedByTags(tags map[string]string, dpp *core_mesh.DataplaneReso
 		}
 	}
 	return result
-}
-
-func isInboundSelectedByTags(tags map[string]string, inbound *mesh_proto.Dataplane_Networking_Inbound) bool {
-	for k, v := range tags {
-		if inboundValue, ok := inbound.Tags[k]; !ok || inboundValue != v {
-			return false
-		}
-	}
-	return true
 }
 
 type ByTargetRef []core_model.Resource
