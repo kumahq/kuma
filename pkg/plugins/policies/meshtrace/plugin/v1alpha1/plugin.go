@@ -1,11 +1,12 @@
 package v1alpha1
 
 import (
-	"github.com/kumahq/kuma/pkg/plugins/policies/utils"
 	net_url "net/url"
 	"strconv"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	"github.com/pkg/errors"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -13,9 +14,9 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/matchers"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/plugin/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/utils"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-	"github.com/pkg/errors"
 )
 
 const MeshTraceOrigin = "meshTrace"
