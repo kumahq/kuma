@@ -184,32 +184,6 @@ var _ = Describe("Rules", func() {
 			}),
 		)
 
-		DescribeTable("should build a rule-based view for single item policy",
-			func(given testCase) {
-				// given
-				policyBytes, err := os.ReadFile(path.Join("testdata", "rules", given.policyFile))
-				Expect(err).ToNot(HaveOccurred())
-
-				policy, err := rest.YAML.UnmarshalCore(policyBytes)
-				Expect(err).ToNot(HaveOccurred())
-				mt, ok := policy.(*meshtrace_api.MeshTraceResource)
-				Expect(ok).To(BeTrue())
-
-				// when
-				rules := xds.BuildRules([]xds.PolicyItem{mt.Spec.GetPolicyItem()})
-
-				// then
-				bytes, err := yaml.Marshal(rules)
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "rules", given.goldenFile)))
-			},
-			Entry("04. MeshTrace", testCase{
-				policyFile: "04.policy.yaml",
-				goldenFile: "04.golden.yaml",
-			}),
-		)
-
 		DescribeTable("should build a rule-based view for list of single item policies",
 			func(given testCase) {
 				// given
@@ -235,6 +209,10 @@ var _ = Describe("Rules", func() {
 
 				Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "rules", given.goldenFile)))
 			},
+			Entry("04. MeshTrace", testCase{
+				policyFile: "04.policy.yaml",
+				goldenFile: "04.golden.yaml",
+			}),
 			Entry("05. MeshTrace list", testCase{
 				policyFile: "05.policy.yaml",
 				goldenFile: "05.golden.yaml",
