@@ -1,14 +1,11 @@
 package v1alpha1
 
 import (
+	"github.com/kumahq/kuma/pkg/plugins/policies/utils"
 	net_url "net/url"
 	"strconv"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-	"github.com/pkg/errors"
-	"golang.org/x/exp/slices"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -18,7 +15,7 @@ import (
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/plugin/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/pkg/errors"
 )
 
 const MeshTraceOrigin = "meshTrace"
@@ -45,8 +42,11 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 		return nil
 	}
 
-	listeners := gatherListeners(rs)
-	if err := applyToListeners(policies.SingleItemRules, listeners, proxy.Dataplane); err != nil {
+	listeners := utils.GatherListeners(rs)
+	if err := applyToInbounds(policies.SingleItemRules, listeners.Inbound, proxy.Dataplane); err != nil {
+		return err
+	}
+	if err := applyToOutbounds(policies.SingleItemRules, listeners.Outbound, proxy.Dataplane); err != nil {
 		return err
 	}
 	if err := applyToClusters(policies.SingleItemRules, rs, proxy); err != nil {
@@ -56,26 +56,9 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 	return nil
 }
 
-func gatherListeners(rs *xds.ResourceSet) []*xds.Resource {
-	listeners := []*xds.Resource{}
-
-	for _, res := range rs.Resources(envoy_resource.ListenerType) {
-		switch res.Origin {
-		case generator.OriginOutbound:
-			listeners = append(listeners, res)
-		case generator.OriginInbound:
-			listeners = append(listeners, res)
-		default:
-			continue
-		}
-	}
-
-	return listeners
-}
-
-func applyToListeners(rules xds.SingleItemRules, inboundListeners []*xds.Resource, dataplane *core_mesh.DataplaneResource) error {
+func applyToInbounds(rules xds.SingleItemRules, inboundListeners map[xds.InboundListener]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource) error {
 	for _, inboundListener := range inboundListeners {
-		if err := configureListener(rules, dataplane, inboundListener); err != nil {
+		if err := configureListener(rules, dataplane, inboundListener, ""); err != nil {
 			return err
 		}
 	}
@@ -83,25 +66,29 @@ func applyToListeners(rules xds.SingleItemRules, inboundListeners []*xds.Resourc
 	return nil
 }
 
-func configureListener(rules xds.SingleItemRules, dataplane *core_mesh.DataplaneResource, listenerResource *xds.Resource) error {
-	serviceName := dataplane.Spec.GetIdentifyingService()
-	listener := listenerResource.Resource.(*envoy_listener.Listener)
-	rawConf := rules.Rules[0].Conf
-	conf := rawConf.(*api.MeshTrace_Conf)
-	destination := ""
+func applyToOutbounds(rules xds.SingleItemRules, outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource) error {
+	for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
+		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound)
 
-	if listenerResource.Origin == generator.OriginOutbound {
-		i := slices.IndexFunc(dataplane.Spec.Networking.Outbound, func(outbound *mesh_proto.Dataplane_Networking_Outbound) bool {
-			outboundInterface := dataplane.Spec.Networking.ToOutboundInterface(outbound)
-			address := listener.GetAddress().GetSocketAddress()
-			return outboundInterface.DataplaneIP == address.GetAddress() && outboundInterface.DataplanePort == address.GetPortValue()
-		})
+		listener, ok := outboundListeners[oface]
+		if !ok {
+			continue
+		}
 
-		if i != -1 {
-			outbound := dataplane.Spec.Networking.GetOutbound()[i]
-			destination = outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
+		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
+
+		if err := configureListener(rules, dataplane, listener, serviceName); err != nil {
+			return err
 		}
 	}
+
+	return nil
+}
+
+func configureListener(rules xds.SingleItemRules, dataplane *core_mesh.DataplaneResource, listener *envoy_listener.Listener, destination string) error {
+	serviceName := dataplane.Spec.GetIdentifyingService()
+	rawConf := rules.Rules[0].Conf
+	conf := rawConf.(*api.MeshTrace_Conf)
 
 	configurer := plugin_xds.Configurer{
 		Conf:             conf,
