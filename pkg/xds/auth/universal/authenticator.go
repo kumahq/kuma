@@ -10,16 +10,14 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	builtin_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 	"github.com/kumahq/kuma/pkg/xds/auth"
 )
 
-func NewAuthenticator(dataplaneValidator builtin_issuer.Validator, zoneIngressValidator zoneingress.Validator, zoneValidator zone.Validator, zone string) auth.Authenticator {
+func NewAuthenticator(dataplaneValidator builtin_issuer.Validator, zoneValidator zone.Validator, zone string) auth.Authenticator {
 	return &universalAuthenticator{
-		dataplaneValidator:   dataplaneValidator,
-		zoneIngressValidator: zoneIngressValidator,
-		zoneValidator:        zoneValidator,
-		zone:                 zone,
+		dataplaneValidator: dataplaneValidator,
+		zoneValidator:      zoneValidator,
+		zone:               zone,
 	}
 }
 
@@ -33,10 +31,9 @@ func NewAuthenticator(dataplaneValidator builtin_issuer.Validator, zoneIngressVa
 // with inbounds: 1) kuma.io/service:web 2) kuma.io/service:web-api, you need token for both values kuma.io/service=web,web-api
 // Dataplane also needs to have all tags defined in the token
 type universalAuthenticator struct {
-	dataplaneValidator   builtin_issuer.Validator
-	zoneIngressValidator zoneingress.Validator
-	zoneValidator        zone.Validator
-	zone                 string
+	dataplaneValidator builtin_issuer.Validator
+	zoneValidator      zone.Validator
+	zone               string
 }
 
 var _ auth.Authenticator = &universalAuthenticator{}
@@ -46,9 +43,9 @@ func (u *universalAuthenticator) Authenticate(ctx context.Context, resource mode
 	case *core_mesh.DataplaneResource:
 		return u.authDataplane(ctx, resource, credential)
 	case *core_mesh.ZoneIngressResource:
-		return u.authZoneIngress(ctx, credential)
+		return u.authZoneEntity(ctx, credential, zone.IngressScope)
 	case *core_mesh.ZoneEgressResource:
-		return u.authZoneEgress(ctx, credential)
+		return u.authZoneEntity(ctx, credential, zone.EgressScope)
 	default:
 		return errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}
@@ -72,37 +69,26 @@ func (u *universalAuthenticator) authDataplane(ctx context.Context, dataplane *c
 	return nil
 }
 
-func (u *universalAuthenticator) authZoneIngress(ctx context.Context, credential auth.Credential) error {
-	identity, err := u.zoneIngressValidator.Validate(ctx, credential)
-	if err != nil {
-		return err
-	}
-	if u.zone != identity.Zone {
-		return errors.Errorf("zone ingress zone from requestor: %s is different than in token: %s", u.zone, identity.Zone)
-	}
-
-	return nil
-}
-
-func (u *universalAuthenticator) authZoneEgress(
+func (u *universalAuthenticator) authZoneEntity(
 	ctx context.Context,
 	credential auth.Credential,
+	scope string,
 ) error {
 	identity, err := u.zoneValidator.Validate(ctx, credential)
 	if err != nil {
 		return err
 	}
 
-	if !zone.InScope(identity.Scope, zone.EgressScope) {
+	if !zone.InScope(identity.Scope, scope) {
 		return errors.Errorf(
-			"token cannot be used to authenticate zone egresses (%s is out of token's scope: %+v)",
-			zone.EgressScope,
+			"token cannot be used to authenticate zone entity (%s is out of token's scope: %+v)",
+			scope,
 			identity.Scope,
 		)
 	}
 
 	if identity.Zone != "" && u.zone != identity.Zone {
-		return errors.Errorf("zone egress zone from requestor: %s is different than in token: %s", u.zone, identity.Zone)
+		return errors.Errorf("zone from requestor: %s is different than in token: %s", u.zone, identity.Zone)
 	}
 
 	return nil

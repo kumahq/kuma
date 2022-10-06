@@ -626,3 +626,32 @@ func VirtualHostRoute(route *RouteBuilder) envoy_routes.VirtualHostBuilderOpt {
 		}),
 	)
 }
+
+// RouteActionHttpRetryOn configure retry on for http
+func RouteActionHttpRetryOn(retryOn []mesh_proto.HttpRetryOn) RouteConfigurer {
+	if len(retryOn) == 0 {
+		return RouteConfigureFunc(nil)
+	}
+
+	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+		if p := r.GetRoute().GetRetryPolicy(); p != nil {
+			p.RetryOn = envoy_listeners.HttpRetryOn(retryOn)
+		}
+
+		return nil
+	})
+}
+
+// RouteActionGrpcRetryOn configure retry on for grpc
+func RouteActionGrpcRetryOn(retryOn []mesh_proto.Retry_Conf_Grpc_RetryOn) RouteConfigurer {
+	if len(retryOn) == 0 {
+		return RouteConfigureFunc(nil)
+	}
+
+	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+		if p := r.GetRoute().GetRetryPolicy(); p != nil {
+			p.RetryOn = envoy_listeners.GrpcRetryOn(retryOn)
+		}
+		return nil
+	})
+}

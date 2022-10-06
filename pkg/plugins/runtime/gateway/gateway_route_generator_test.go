@@ -1528,6 +1528,55 @@ conf:
           kuma.io/service: service
 `,
 		),
+
+		Entry("match retry policy",
+			"retry-policy.yaml", `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: /
+      filters:
+      - mirror:
+          percentage: 1
+          backend:
+            destination:
+              kuma.io/service: echo-mirror
+      backends:
+      - destination:
+          kuma.io/service: echo-service
+    - matches:
+      - path:
+          match: PREFIX
+          value: /api
+      backends:
+      - destination:
+          kuma.io/service: api-service
+`, `
+type: Retry
+mesh: default
+name: echo-service
+sources:
+- match:
+    kuma.io/service: gateway-default
+destinations:
+- match:
+    kuma.io/service: "*" 
+conf:
+  http:
+    retryOn:
+      - all_5xx
+    numRetries: 20
+`,
+		),
 	}
 
 	tcpEntries := []TableEntry{

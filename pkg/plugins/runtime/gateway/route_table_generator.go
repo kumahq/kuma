@@ -184,6 +184,7 @@ func retryRouteConfigurers(protocol core_mesh.Protocol, policy model.Resource) [
 			route.RouteActionRetryBackoff(
 				conf.GetBackOff().GetBaseInterval().AsDuration(),
 				conf.GetBackOff().GetMaxInterval().AsDuration()),
+			route.RouteActionHttpRetryOn(conf.GetRetryOn()),
 		)
 	case core_mesh.ProtocolGRPC:
 		conf := retry.Spec.GetConf().GetGrpc()
@@ -194,6 +195,7 @@ func retryRouteConfigurers(protocol core_mesh.Protocol, policy model.Resource) [
 			route.RouteActionRetryBackoff(
 				conf.GetBackOff().GetBaseInterval().AsDuration(),
 				conf.GetBackOff().GetMaxInterval().AsDuration()),
+			route.RouteActionGrpcRetryOn(conf.GetRetryOn()),
 		)
 	}
 

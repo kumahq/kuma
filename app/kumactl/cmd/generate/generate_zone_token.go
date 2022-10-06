@@ -1,6 +1,7 @@
 package generate
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -29,12 +30,12 @@ func NewGenerateZoneTokenCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "zone-token",
 		Short: "Generate Zone Token",
-		// TODO (bartsmykla): update descriptions when this token will be able to
-		//  be used to prove identities of zone dataplanes and ingresses as well
-		Long: `Generate Zone Token that is used to prove identity of Zone egresses.`,
+		Long:  `Generate Zone Token that is used to prove identity of zone components (Zone Ingress, Zone Egress).`,
 		Example: `Generate token bound by zone
 $ kumactl generate zone-token --zone zone-1 --valid-for 24h
-$ kumactl generate zone-token --zone zone-1 --valid-for 24h --scope egress`,
+$ kumactl generate zone-token --zone zone-1 --valid-for 24h --scope egress
+$ kumactl generate zone-token --zone zone-1 --valid-for 24h --scope ingress
+$ kumactl generate zone-token --zone zone-1 --valid-for 24h --scope ingress --scope egress`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := validateArgs(ctx.args); err != nil {
@@ -58,8 +59,7 @@ $ kumactl generate zone-token --zone zone-1 --valid-for 24h --scope egress`,
 	}
 
 	cmd.Flags().StringVar(&ctx.args.zone, "zone", "", "name of the zone where resides")
-	// TODO (bartsmykla): update when Zone Token will be available for dataplanes and ingresses
-	cmd.Flags().StringSliceVar(&ctx.args.scope, "scope", zone.FullScope, "scope of resources which the token will be able to identify (can be 'egress')")
+	cmd.Flags().StringSliceVar(&ctx.args.scope, "scope", zone.FullScope, fmt.Sprintf("scope of resources which the token will be able to identify (can be: %v)", zone.FullScope))
 	cmd.Flags().DurationVar(&ctx.args.validFor, "valid-for", 0, `how long the token will be valid (for example "24h")`)
 
 	_ = cmd.MarkFlagRequired("valid-for")
@@ -71,8 +71,7 @@ func validateArgs(args *generateZoneTokenContextArgs) error {
 	var unsupportedScopes []string
 
 	for _, s := range args.scope {
-		// TODO (bartsmykla): update when Zone Token will be available for dataplanes and ingresses
-		if s != zone.EgressScope {
+		if !zone.InScope(zone.FullScope, s) {
 			unsupportedScopes = append(unsupportedScopes, s)
 		}
 	}
