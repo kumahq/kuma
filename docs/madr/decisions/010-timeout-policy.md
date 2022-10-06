@@ -1,6 +1,6 @@
-# MeshUpstreamTimeout policy
+# Timeout policy compliant with 2.0 model
 
-* Status: ?
+* Status: accepted
 
 Technical Story: [#4739](https://github.com/kumahq/kuma/issues/4739)
 
@@ -8,15 +8,17 @@ Technical Story: [#4739](https://github.com/kumahq/kuma/issues/4739)
 
 [New policy matching MADR](https://github.com/kumahq/kuma/blob/master/docs/madr/decisions/005-policy-matching.md) introduces 
 a new approach how Kuma applies configuration to proxies. Rolling out strategy implies creating a new set of policies that 
-satisfy a new policy matching. Current MADR aims to define a `MeshUpstreamTimeout`.
+satisfy a new policy matching. Current MADR aims to define a timeout policy that will be compliant with 2.0 policies model.
 
 ## Considered Options
 
 * Create `MeshUpstreamTimeout` policy
+* Create two separate policies: `MeshUpstreamTimeout` and `MeshDownstreamTimeout`
+* Create single `MeshTimeout` policy
 
 ## Decision Outcome
 
-TBD.
+We will be crating single `MeshTimeout` policy that will cover both downstream and upstream timeouts.
 
 ## Solution
 
@@ -69,7 +71,7 @@ Ad 1. It gives clients more fine-tuning of timeouts, but it can cause chaos
 Ad 2. Simpler config and you can still achieve the same result as previously by configuring it for `MeshSubset|MeshService|MeshServiceSubset`
 
 #### Connection and stream timeout
-I understand that `max connection timeout` and `max stream timeout ` are basically doing the same thing, since every 
+I understand that `max connection timeout` and `max stream duration` are basically doing the same thing, since every 
 connection event in HTTP 1 are treated as streams in Envoy according to the docs.
 
 #### Route timeouts
@@ -78,26 +80,48 @@ are retry related timeouts and should be configured in retry policy.
 
 #### Request headers timeout
 Last one specific timeout is `request headers timeout` but this timeout makes no sense on outbound connections. 
-This only can be used to protect yourself from malicious inbound clients.
+This only can be used to protect yourself from malicious inbound clients. We can add this timeout to `from` configuration
 
 #### Scaled timeouts
 Moreover, there is a mechanism of scaled timeout in envoy, which I am not sure if we want to expose to our users, at least not at first.
 
 ### Specification
+
+#### Top level
 Top-level targetRef can have all available kinds:
 ```yaml
 targetRef:
   kind: Mesh|MeshSubset|MeshService|MeshServiceSubset|MeshGatewayRoute|MeshHTTPRoute
   name: ...
 ```
+In this policy same limitations applies as in `MeshAccessLog` [policy](https://github.com/kumahq/kuma/blob/master/docs/madr/decisions/008-mesh-logging.md#top-level):
+- `MeshGatewayRoute` can only have from (there is no outbound listener).
+- `MeshHTTPRoute` here is an inbound route and can only have from (to always goes to the application).
 
-MeshUpstreamTimeout is outbound policy, that's why it has a "to" array:
+
+#### From level
+
+```yaml
+from:
+  - targetRef:
+      kind: Mesh|MeshSubset|MeshService|MeshServiceSubset
+      name: ...
+```
+
+Matching on MeshGatewayRoute and MeshHTTPRoute does not make sense (there is no route that a request originates from).
+
+#### To level
+
 ```yaml
 to:
   - targetRef:
-      kind: Mesh|MeshSubset|MeshService|MeshServiceSubset|MeshHTTPRoute
+      kind: Mesh|MeshService|MeshHTTPRoute
       name: ...
 ```
+
+For now this policy will be implemented only for `Mesh` and `MeshService` in the future support for `MeshHTTPRoute` can be added.
+For `MeshHTTPRoute` there are few limitations. According to docs for route we can only configure: `idleTimeout`,
+`requestTimeout` and `maxStreamDuration`. In the future when adding support for `MeshHTTPRoute` we can validate if only allowed timeouts are used.
 
 #### Minimal configuration
 Taking into account previous considerations, the minimal configuration for `MeshUpstreamTimeout` policy should look like this:
@@ -122,6 +146,17 @@ spec:
   targetRef:  
     kind: Mesh  
     name: default  
+  from:
+    - targetRef:
+        kind: Mesh
+        name: default
+      default:
+        connectTimeout: 10s
+        idleTimeout: 2h
+        http:
+          requestTimeout: 0s
+          streamIdleTimeout: 1h
+          maxStreamDuration: 0s
   to:  
     - targetRef:  
         kind: Mesh  
@@ -138,7 +173,7 @@ spec:
 #### Configuration with overridden TCP specific timeouts for database
 
 ```yaml
-type: MeshUpstreamTimeout  
+type: MeshTimeout  
 mesh: default  
 name: default-timeouts  
 spec:  
@@ -157,7 +192,7 @@ spec:
           streamIdleTimeout: 30m  
           maxStreamDuration: 0s  
 ---  
-type: MeshUpstreamTimeout  
+type: MeshTimeout  
 mesh: default  
 name: database-tcp-timeouts  
 spec:  
@@ -171,4 +206,25 @@ spec:
       default:  
         connectTimeout: 1s  
         idleTimeout: 10m
+```
+
+#### Configuration of MeshHTTPRoute for single service
+
+```yaml
+type: MeshTimeout  
+mesh: default  
+name: default-timeouts  
+spec:  
+  targetRef:  
+    kind: MeshService  
+    name: backend  
+  to:  
+    - targetRef:  
+        kind: MeshHTTPRoute  
+        name: payment-v1-route  
+      default:  
+        idleTimeout: 1h  
+        http:  
+          requestTimeout: 2s    
+          maxStreamDuration: 0s
 ```
