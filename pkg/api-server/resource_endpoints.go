@@ -3,11 +3,10 @@ package api_server
 import (
 	"context"
 	"fmt"
-	"github.com/kumahq/kuma/pkg/plugins/policies"
-	"google.golang.org/protobuf/encoding/protojson"
 	"net/http"
 
 	"github.com/emicklei/go-restful/v3"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
@@ -20,6 +19,7 @@ import (
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/plugins/policies"
 )
 
 const (
