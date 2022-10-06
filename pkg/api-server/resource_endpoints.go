@@ -3,6 +3,7 @@ package api_server
 import (
 	"context"
 	"fmt"
+	"github.com/kumahq/kuma/pkg/plugins/policies"
 	"net/http"
 
 	"github.com/emicklei/go-restful/v3"
@@ -14,7 +15,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/pkg/core/user"
@@ -33,6 +33,7 @@ const (
 
 type resourceEndpoints struct {
 	mode           config_core.CpMode
+	environment    config_core.EnvironmentType
 	resManager     manager.ResourceManager
 	descriptor     model.ResourceTypeDescriptor
 	resourceAccess access.ResourceAccess
@@ -132,7 +133,7 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 		return
 	}
 
-	if err := r.validateResourceRequest(request, resourceRest.GetMeta()); err != nil {
+	if err := r.validateResourceRequest(request, resourceRest); err != nil {
 		rest_errors.HandleError(response, err, "Could not process a resource")
 		return
 	}
@@ -247,10 +248,11 @@ func (r *resourceEndpoints) deleteResourceReadOnly(request *restful.Request, res
 	}
 }
 
-func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, resourceMeta rest_v1alpha1.ResourceMeta) error {
+func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, resource rest.Resource) error {
 	var err validators.ValidationError
 	name := request.PathParameter("name")
 	meshName := r.meshFromRequest(request)
+	resourceMeta := resource.GetMeta()
 
 	if name != resourceMeta.Name {
 		err.AddViolation("name", "name from the URL has to be the same as in body")
@@ -261,6 +263,11 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 	if r.descriptor.Scope == model.ScopeMesh && meshName != resourceMeta.Mesh {
 		err.AddViolation("mesh", "mesh from the URL has to be the same as in body")
 	}
+	// TODO: here
+	if r.environment == config_core.UniversalEnvironment {
+		policies.ValidateSchema(resource.GetSpec(), resource.GetMeta().Type)
+	}
+
 	err.AddError("", mesh.ValidateMeta(name, meshName, r.descriptor.Scope))
 	return err.OrNil()
 }
