@@ -4,7 +4,7 @@ Generate Zone Token
 
 ### Synopsis
 
-Generate Zone Token that is used to prove identity of Zone egresses.
+Generate Zone Token that is used to prove identity of zone (Zone Ingress, Zone Egress).
 
 ```
 kumactl generate zone-token [flags]
@@ -16,13 +16,15 @@ kumactl generate zone-token [flags]
 Generate token bound by zone
 $ kumactl generate zone-token --zone zone-1 --valid-for 24h
 $ kumactl generate zone-token --zone zone-1 --valid-for 24h --scope egress
+$ kumactl generate zone-token --zone zone-1 --valid-for 24h --scope ingress
+$ kumactl generate zone-token --zone zone-1 --valid-for 24h --scope ingress --scope egress
 ```
 
 ### Options
 
 ```
   -h, --help                 help for zone-token
-      --scope strings        scope of resources which the token will be able to identify (can be 'egress') (default [egress])
+      --scope strings        scope of resources which the token will be able to identify (can be: [ingress egress]) (default [ingress,egress])
       --valid-for duration   how long the token will be valid (for example "24h")
       --zone string          name of the zone where resides
 ```
