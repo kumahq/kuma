@@ -169,9 +169,6 @@ func endpointForZipkin(cfg *api.MeshTrace_ZipkinBackend) (*xds.Endpoint, error) 
 }
 
 func endpointForDatadog(cfg *api.MeshTrace_DatadogBackend) (*xds.Endpoint, error) {
-	if cfg.Port > 0xFFFF || cfg.Port < 1 {
-		return nil, errors.Errorf("invalid Datadog port number %d. Must be in range 1-65535", cfg.Port)
-	}
 	return &xds.Endpoint{
 		Target: cfg.Address,
 		Port:   cfg.Port,
