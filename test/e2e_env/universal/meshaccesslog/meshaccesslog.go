@@ -110,7 +110,7 @@ spec:
 	})
 
 	// This is flaky, may have something to do with access-log-streamer
-	XIt("should log outgoing passthrough traffic", func() {
+	It("should log outgoing passthrough traffic", FlakeAttempts(3), func() {
 		yaml := fmt.Sprintf(`
 type: MeshAccessLog
 name: client-outgoing
