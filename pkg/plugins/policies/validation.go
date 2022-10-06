@@ -14,13 +14,14 @@ var content embed.FS
 
 var resourceToSchema map[model.ResourceType]*gojsonschema.JSONLoader
 
-func ValidateSchema(document model.ResourceSpec, type_ string) error {
+func ValidateSchema(document string, type_ string) error {
     schema := resourceToSchema[model.ResourceType(type_)]
     if schema == nil {
+        // we only validate new policies so for old or unknown ones we return no errors
         return nil
     }
 
-    documentLoader := gojsonschema.NewRawLoader(document)
+    documentLoader := gojsonschema.NewStringLoader(document)
     result, err := gojsonschema.Validate(*schema, documentLoader)
 
     if err != nil {
