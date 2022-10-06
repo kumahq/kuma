@@ -23,7 +23,7 @@ after [a long period of deprecation](https://github.com/kumahq/kuma/issues/2851)
 This is only relevant to Multizone deployment with Universal zones.
 Zone Token that was previously used for authenticating Zone Egress, can now be used to authenticate Zone Ingress.
 Please regenerate Zone Ingress token using `kumactl generate zone-token --scope=ingress`.
-For this time being you can still use the old Zone Ingress token and Zone Token with scope ingress.
+For the time being you can still use the old Zone Ingress token and Zone Token with scope ingress.
 However, Zone Ingress Token is now deprecated and will be removed in the future.
 
 ### Helm

@@ -4,7 +4,7 @@ Generate Zone Token
 
 ### Synopsis
 
-Generate Zone Token that is used to prove identity of zone (Zone Ingress, Zone Egress).
+Generate Zone Token that is used to prove identity of zone components (Zone Ingress, Zone Egress).
 
 ```
 kumactl generate zone-token [flags]
