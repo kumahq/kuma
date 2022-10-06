@@ -70,10 +70,6 @@ As we can see, `connection` and `idle timeout` can be configured for every conne
 Ad 1. It gives clients more fine-tuning of timeouts, but it can cause chaos
 Ad 2. Simpler config and you can still achieve the same result as previously by configuring it for `MeshSubset|MeshService|MeshServiceSubset`
 
-#### Connection and stream timeout
-I understand that `max connection timeout` and `max stream duration` are basically doing the same thing, since every 
-connection event in HTTP 1 are treated as streams in Envoy according to the docs.
-
 #### Route timeouts
 As for the route timeouts, we only care about `idle timeout` and `timeout` since `per try timeout` and `per try idle timeout` 
 are retry related timeouts and should be configured in retry policy.
@@ -133,6 +129,7 @@ default:
     requestTimeout: ... 
     streamIdleTimeout: ...
     maxStreamDuration: ...
+    maxConnectionDuration: ...
 ```
 
 
@@ -157,6 +154,7 @@ spec:
           requestTimeout: 0s
           streamIdleTimeout: 1h
           maxStreamDuration: 0s
+          maxConnectionDuration: 0s
   to:  
     - targetRef:  
         kind: Mesh  
@@ -168,6 +166,7 @@ spec:
           requestTimeout: 15s  
           streamIdleTimeout: 30m  
           maxStreamDuration: 0s
+          maxConnectionDuration: 0s
 ```
 
 #### Configuration with overridden TCP specific timeouts for database
@@ -190,7 +189,8 @@ spec:
         http:  
           requestTimeout: 15s  
           streamIdleTimeout: 30m  
-          maxStreamDuration: 0s  
+          maxStreamDuration: 0s
+          maxConnectionDuration: 0s
 ---  
 type: MeshTimeout  
 mesh: default  
