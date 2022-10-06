@@ -1,4 +1,4 @@
-package meshtrace
+package observability
 
 import (
 	"fmt"

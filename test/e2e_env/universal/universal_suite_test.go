@@ -20,7 +20,6 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/matching"
 	"github.com/kumahq/kuma/test/e2e_env/universal/membership"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshaccesslog"
-	"github.com/kumahq/kuma/test/e2e_env/universal/meshtrace"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/universal/mtls"
 	"github.com/kumahq/kuma/test/e2e_env/universal/observability"
@@ -97,7 +96,7 @@ var _ = Describe("External Services", externalservices.Policy, Ordered)
 var _ = Describe("Inspect", inspect.Inspect, Ordered)
 var _ = Describe("Applications Metrics", observability.ApplicationsMetrics, Ordered)
 var _ = Describe("Tracing", observability.Tracing, Ordered)
-var _ = Describe("MeshTrace", meshtrace.PluginTest, Ordered)
+var _ = Describe("MeshTrace", observability.PluginTest, Ordered)
 var _ = Describe("Membership", membership.Membership, Ordered)
 var _ = Describe("Traffic Logging", trafficlog.TCPLogging, Ordered)
 var _ = Describe("MeshAccessLog", meshaccesslog.TestPlugin, Ordered)
