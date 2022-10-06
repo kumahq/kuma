@@ -25,7 +25,7 @@ func Gateway() {
 	BeforeAll(func() {
 		setup := NewClusterSetup().
 			Install(MeshUniversal(mesh)).
-			Install(gatewayClientAppUniversal("gateway-client")).
+			Install(GatewayClientAppUniversal("gateway-client")).
 			Install(echoServerApp(mesh, "echo-server", "echo-service", "universal")).
 			Install(GatewayProxyUniversal(mesh, "gateway-proxy")).
 			Install(YamlUniversal(MkGateway("edge-gateway", mesh, false, "example.kuma.io", "echo-service", gatewayPort)))
@@ -49,7 +49,7 @@ func Gateway() {
 
 	Context("when mTLS is disabled", func() {
 		It("should proxy simple HTTP requests", func() {
-			proxySimpleRequests(env.Cluster, "universal",
+			ProxySimpleRequests(env.Cluster, "universal",
 				GatewayAddressPort("gateway-proxy", gatewayPort), "example.kuma.io")
 		})
 	})
@@ -58,7 +58,7 @@ func Gateway() {
 		It("should proxy simple HTTP requests", func() {
 			Expect(env.Cluster.Install(MTLSMeshUniversal(mesh))).To(Succeed())
 
-			proxySimpleRequests(env.Cluster, "universal",
+			ProxySimpleRequests(env.Cluster, "universal",
 				GatewayAddressPort("gateway-proxy", gatewayPort), "example.kuma.io")
 		})
 	})
@@ -109,7 +109,7 @@ networking:
 		})
 
 		It("should proxy simple HTTP requests", func() {
-			proxySimpleRequests(env.Cluster, "external-echo",
+			ProxySimpleRequests(env.Cluster, "external-echo",
 				GatewayAddressPort("gateway-proxy", gatewayPort), "example.kuma.io",
 				client.WithPathPrefix("/external"))
 		})
