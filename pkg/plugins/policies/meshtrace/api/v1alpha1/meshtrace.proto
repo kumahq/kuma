@@ -30,18 +30,16 @@ message MeshTrace {
 
   // Datadog tracing backend configuration.
   message DatadogBackend {
-    // Address of datadog collector.
-    string address = 1 [ (doc.required) = true ];
-
-    // Port of datadog collector
-    uint32 port = 2 [ (doc.required) = true ];
+    // Address of Datadog collector, only host and port are allowed (no paths,
+    // fragments etc.)
+    string url = 1 [ (doc.required) = true ];
 
     // Determines if datadog service name should be split based on traffic
     // direction and destination. For example, with `splitService: true` and a
     // `backend` service that communicates with a couple of databases, you would
     // get service names like `backend_INBOUND`, `backend_OUTBOUND_db1`, and
     // `backend_OUTBOUND_db2` in Datadog. Default: false
-    bool splitService = 3;
+    bool splitService = 2;
   }
 
   // Zipkin tracing backend configuration.

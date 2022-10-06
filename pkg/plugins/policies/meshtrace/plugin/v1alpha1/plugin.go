@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -118,21 +117,14 @@ func applyToClusters(rules xds.SingleItemRules, rs *xds.ResourceSet, proxy *xds.
 	}
 
 	var endpoint *xds.Endpoint
-	var err error
 	var provider string
 
 	if backend.GetZipkin() != nil {
-		endpoint, err = endpointForZipkin(backend.GetZipkin())
+		endpoint = endpointForZipkin(backend.GetZipkin())
 		provider = "zipkin"
-		if err != nil {
-			return errors.Wrap(err, "could not generate zipkin cluster")
-		}
 	} else {
-		endpoint, err = endpointForDatadog(backend.GetDatadog())
+		endpoint = endpointForDatadog(backend.GetDatadog())
 		provider = "datadog"
-		if err != nil {
-			return errors.Wrap(err, "could not generate zipkin cluster")
-		}
 	}
 
 	res, err := clusters.NewClusterBuilder(proxy.APIVersion).
@@ -149,15 +141,9 @@ func applyToClusters(rules xds.SingleItemRules, rs *xds.ResourceSet, proxy *xds.
 	return nil
 }
 
-func endpointForZipkin(cfg *api.MeshTrace_ZipkinBackend) (*xds.Endpoint, error) {
-	url, err := net_url.ParseRequestURI(cfg.Url)
-	if err != nil {
-		return nil, errors.Wrap(err, "invalid URL of Zipkin")
-	}
-	port, err := strconv.Atoi(url.Port())
-	if err != nil {
-		return nil, err
-	}
+func endpointForZipkin(cfg *api.MeshTrace_ZipkinBackend) *xds.Endpoint {
+	url, _ := net_url.ParseRequestURI(cfg.Url)
+	port, _ := strconv.Atoi(url.Port())
 	return &xds.Endpoint{
 		Target: url.Hostname(),
 		Port:   uint32(port),
@@ -165,12 +151,15 @@ func endpointForZipkin(cfg *api.MeshTrace_ZipkinBackend) (*xds.Endpoint, error) 
 			TLSEnabled:         url.Scheme == "https",
 			AllowRenegotiation: true,
 		},
-	}, nil
+	}
 }
 
-func endpointForDatadog(cfg *api.MeshTrace_DatadogBackend) (*xds.Endpoint, error) {
+func endpointForDatadog(cfg *api.MeshTrace_DatadogBackend) *xds.Endpoint {
+	url, _ := net_url.ParseRequestURI(cfg.Url)
+	port, _ := strconv.Atoi(url.Port())
+
 	return &xds.Endpoint{
-		Target: cfg.Address,
-		Port:   cfg.Port,
-	}, nil
+		Target: url.Hostname(),
+		Port:   uint32(port),
+	}
 }

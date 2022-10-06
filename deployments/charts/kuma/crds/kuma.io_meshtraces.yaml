@@ -51,13 +51,6 @@ spec:
                         datadog:
                           description: Datadog backend configuration.
                           properties:
-                            address:
-                              description: Address of datadog collector.
-                              type: string
-                            port:
-                              description: Port of datadog collector
-                              format: int32
-                              type: integer
                             splitService:
                               description: 'Determines if datadog service name should
                                 be split based on traffic direction and destination.
@@ -67,6 +60,10 @@ spec:
                                 `backend_OUTBOUND_db1`, and `backend_OUTBOUND_db2`
                                 in Datadog. Default: false'
                               type: boolean
+                            url:
+                              description: Address of Datadog collector, only host
+                                and port are allowed (no paths, fragments etc.)
+                              type: string
                           type: object
                         zipkin:
                           description: Zipkin backend configuration.

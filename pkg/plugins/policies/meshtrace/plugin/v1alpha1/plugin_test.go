@@ -227,8 +227,7 @@ var _ = Describe("MeshTrace", func() {
 							},
 							Backends: []*api.MeshTrace_Backend{{
 								Datadog: &api.MeshTrace_DatadogBackend{
-									Address:      "ingest.datadog.eu",
-									Port:         8126,
+									Url:          "http://ingest.datadog.eu:8126",
 									SplitService: true,
 								},
 							}},

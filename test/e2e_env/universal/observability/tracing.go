@@ -25,7 +25,7 @@ tracing:
 `, meshName, zipkinURL)
 }
 
-func traceAll(meshName string) string {
+func traceAllUniversal(meshName string) string {
 	return fmt.Sprintf(`
 type: TrafficTrace
 name: traffic-trace-all
@@ -62,7 +62,7 @@ func Tracing() {
 		// given TrafficTrace and mesh with tracing backend
 		err := YamlUniversal(meshWithTracing(mesh, obsClient.ZipkinCollectorURL()))(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
-		err = YamlUniversal(traceAll(mesh))(env.Cluster)
+		err = YamlUniversal(traceAllUniversal(mesh))(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() ([]string, error) {
