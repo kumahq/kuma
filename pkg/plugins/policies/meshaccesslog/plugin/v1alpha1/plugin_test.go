@@ -13,8 +13,8 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/plugin/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/policies/utils"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -79,13 +79,7 @@ var _ = Describe("MeshAccessLog", func() {
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
 			Expect(plugin.Apply(resources, context, &proxy)).To(Succeed())
-
-			for i, r := range resources.ListOf(envoy_resource.ListenerType) {
-				actual, err := util_proto.ToYAML(r.Resource)
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(actual).To(MatchYAML(given.expectedListeners[i]))
-			}
+			utils.ResourceArrayShouldEqual(resources.ListOf(envoy_resource.ListenerType), given.expectedListeners)
 		},
 		Entry("basic outbound route", testCase{
 			resources: []core_xds.Resource{{
