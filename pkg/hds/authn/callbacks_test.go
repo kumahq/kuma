@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -18,7 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/hds/authn"
 	hds_callbacks "github.com/kumahq/kuma/pkg/hds/callbacks"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/pkg/xds/auth"
 )
 
@@ -47,27 +46,7 @@ var _ = Describe("Authn Callbacks", func() {
 	var resManager core_manager.ResourceManager
 	var callbacks hds_callbacks.Callbacks
 
-	dpRes := &core_mesh.DataplaneResource{
-		Meta: &test_model.ResourceMeta{
-			Name: "web-01",
-			Mesh: "default",
-		},
-		Spec: &mesh_proto.Dataplane{
-			Networking: &mesh_proto.Dataplane_Networking{
-				Address: "127.0.0.1",
-				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-					{
-						Port:        8080,
-						ServicePort: 8081,
-						Tags: map[string]string{
-							"kuma.io/service":  "web",
-							"kuma.io/protocol": "http",
-						},
-					},
-				},
-			},
-		},
-	}
+	dpRes := samples.DataplaneWeb()
 
 	BeforeEach(func() {
 		memStore := memory.NewStore()

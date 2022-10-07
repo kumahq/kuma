@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/topology"
@@ -30,20 +31,12 @@ var _ = Describe("Timeout", func() {
 		err := rm.Create(ctx, core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
-		dataplane = &core_mesh.DataplaneResource{
-			Meta: &test_model.ResourceMeta{Mesh: "mesh-1", Name: "dp-1"},
-			Spec: &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{
-				Address: "192.168.0.1",
-				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-					{Port: 8080, ServicePort: 80, Tags: map[string]string{mesh_proto.ServiceTag: "frontend", "version": "v1"}}},
-				Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-					{Address: "1.1.1.1", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "backend"}},
-					{Address: "1.1.1.2", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "web"}},
-					{Address: "1.1.1.3", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "redis"}},
-					{Address: "1.1.1.4", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "db"}},
-				},
-			}},
-		}
+		dataplane = builders.Dataplane().
+			WithAddress("192.168.0.1").
+			WithMesh("mesh-1").
+			WithInboundOfTags(mesh_proto.ServiceTag, "frontend", "version", "v1").
+			AddOutboundsToServices("backend", "web", "redis", "db").
+			Build()
 
 		err = rm.Create(ctx, dataplane, store.CreateBy(model.MetaToResourceKey(dataplane.GetMeta())))
 		Expect(err).ToNot(HaveOccurred())
@@ -68,7 +61,7 @@ var _ = Describe("Timeout", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(timeoutMap).To(HaveLen(1))
 			Expect(timeoutMap).To(HaveKeyWithValue(
-				mesh_proto.OutboundInterface{DataplaneIP: "1.1.1.3", DataplanePort: uint32(80)},
+				mesh_proto.OutboundInterface{DataplaneIP: "127.0.0.1", DataplanePort: builders.FirstOutboundPort + 2},
 				timeoutsFrontendV1ToRedis,
 			))
 		})
@@ -91,19 +84,19 @@ var _ = Describe("Timeout", func() {
 			Expect(timeoutMap).To(HaveLen(4))
 
 			Expect(timeoutMap).To(HaveKeyWithValue(
-				mesh_proto.OutboundInterface{DataplaneIP: "1.1.1.1", DataplanePort: uint32(80)},
+				mesh_proto.OutboundInterface{DataplaneIP: "127.0.0.1", DataplanePort: builders.FirstOutboundPort},
 				timeoutsAllToAll,
 			))
 			Expect(timeoutMap).To(HaveKeyWithValue(
-				mesh_proto.OutboundInterface{DataplaneIP: "1.1.1.2", DataplanePort: uint32(80)},
+				mesh_proto.OutboundInterface{DataplaneIP: "127.0.0.1", DataplanePort: builders.FirstOutboundPort + 1},
 				timeoutsAllToAll,
 			))
 			Expect(timeoutMap).To(HaveKeyWithValue(
-				mesh_proto.OutboundInterface{DataplaneIP: "1.1.1.3", DataplanePort: uint32(80)},
+				mesh_proto.OutboundInterface{DataplaneIP: "127.0.0.1", DataplanePort: builders.FirstOutboundPort + 2},
 				timeoutsAllToAll,
 			))
 			Expect(timeoutMap).To(HaveKeyWithValue(
-				mesh_proto.OutboundInterface{DataplaneIP: "1.1.1.4", DataplanePort: uint32(80)},
+				mesh_proto.OutboundInterface{DataplaneIP: "127.0.0.1", DataplanePort: builders.FirstOutboundPort + 3},
 				timeoutsAllToAll,
 			))
 		})

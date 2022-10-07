@@ -22,7 +22,9 @@ import (
 	errors_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/plugins/resources/remote"
 	"github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 )
 
 var _ = Describe("RemoteStore", func() {
@@ -350,13 +352,7 @@ var _ = Describe("RemoteStore", func() {
 			store := setupErrorStore(400, "some error from the server")
 
 			// when
-			resource := core_mesh.MeshResource{
-				Spec: &mesh_proto.Mesh{},
-				Meta: &model.ResourceMeta{
-					Name: "default",
-				},
-			}
-			err := store.Create(context.Background(), &resource)
+			err := samples.MeshDefaultBuilder().Create(store)
 
 			// then
 			Expect(err).To(MatchError("(400): some error from the server"))
@@ -382,13 +378,8 @@ var _ = Describe("RemoteStore", func() {
 			store := setupErrorStore(400, json)
 
 			// when
-			resource := core_mesh.MeshResource{
-				Meta: &model.ResourceMeta{
-					Name: "test",
-				},
-				Spec: &mesh_proto.Mesh{},
-			}
-			err := store.Update(context.Background(), &resource)
+			resource := builders.Mesh().WithName("test").Build()
+			err := store.Update(context.Background(), resource)
 
 			// then
 			Expect(err).To(HaveOccurred())

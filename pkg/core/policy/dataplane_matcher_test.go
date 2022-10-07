@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/policy"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
@@ -158,26 +159,19 @@ var _ = Describe("Dataplane matcher", func() {
 				},
 			}),
 			Entry("policies have non-empty selectors (the one with the highest number of matching key-value pairs should become the best match)", testCase{
-				proxy: &model.Proxy{Dataplane: &core_mesh.DataplaneResource{
-					Spec: &mesh_proto.Dataplane{
-						Networking: &mesh_proto.Dataplane_Networking{
-							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-								{
-									Tags: map[string]string{
-										"app": "example",
-									},
-								},
-								{
-									Tags: map[string]string{
-										"app":     "example",
-										"version": "1.0",
-										"env":     "prod",
-									},
-								},
-							},
-						},
-					},
-				}},
+				proxy: &model.Proxy{Dataplane: builders.Dataplane().
+					WithAddress("192.168.0.1").
+					AddInboundOfTags(
+						mesh_proto.ServiceTag, "example",
+						"app", "example",
+					).
+					AddInboundOfTags(
+						mesh_proto.ServiceTag, "example",
+						"app", "example",
+						"version", "1.0",
+						"env", "prod",
+					).
+					Build()},
 				policies: []policy.DataplanePolicy{
 					&core_mesh.ProxyTemplateResource{
 						Meta: &test_model.ResourceMeta{
