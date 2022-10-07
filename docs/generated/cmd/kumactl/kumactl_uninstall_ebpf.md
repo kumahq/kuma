@@ -13,12 +13,15 @@ kumactl uninstall ebpf [flags]
 ### Options
 
 ```
-      --bpffs-path string              path where bpf programs were installed (default "/sys/fs/bpf")
-      --cleanup-image-version string   version of cleanup ebpf job image (default "unknown")
-  -h, --help                           help for ebpf
-      --namespace string               namespace where job is created (default "kuma-system")
-      --remove-only                    cleanup jobs and pods only
-      --timeout duration               timeout for whole process of removing left files (default 2m0s)
+      --bpffs-path string                 path where bpf programs were installed (default "/sys/fs/bpf")
+      --cleanup-image-registry string     image registry for ebpf cleanup job (default "kumahq")
+      --cleanup-image-repository string   image repository for ebpf cleanup job (default "kuma-init")
+      --cleanup-image-tag string          image tag for ebpf cleanup job (default "unknown")
+      --cleanup-job-name string           name of the cleanup job (default "kuma-bpf-cleanup")
+  -h, --help                              help for ebpf
+      --namespace string                  namespace where job is created (default "kuma-system")
+      --remove-only                       cleanup jobs and pods only
+      --timeout duration                  timeout for whole process of removing left files (default 2m0s)
 ```
 
 ### Options inherited from parent commands
