@@ -34,7 +34,6 @@ func TestPlugin() {
 			Install(TestServerUniversal(
 				"test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}), WithDockerContainerName(externalServiceDockerName)),
 			).
-			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Install(GatewayProxyUniversal(meshName, "edge-gateway")).
 			Install(YamlUniversal(gateway.MkGateway("edge-gateway", meshName, false, "example.kuma.io", "test-server", 8080))).
 			Install(gateway.GatewayClientAppUniversal("gateway-client")).
@@ -48,9 +47,9 @@ func TestPlugin() {
 	// Always have new MeshAccessLog resources and log sink
 	BeforeEach(func() {
 		Expect(NewClusterSetup().
-			Install(
-				externalservice.Install(externalServiceName, externalservice.UniversalTCPSink),
-			).Setup(env.Cluster),
+			Install(externalservice.Install(externalServiceName, externalservice.UniversalTCPSink)).
+			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
+			Setup(env.Cluster),
 		).To(Succeed())
 	})
 	E2EAfterEach(func() {
@@ -62,8 +61,8 @@ func TestPlugin() {
 			Expect(err).ToNot(HaveOccurred())
 		}
 
-		sinkDeployment := env.Cluster.Deployment(externalServiceDeployment).(*externalservice.UniversalDeployment)
-		Expect(sinkDeployment.Delete(env.Cluster)).To(Succeed())
+		Expect(env.Cluster.DeleteApp(AppModeDemoClient)).To(Succeed())
+		Expect(env.Cluster.DeleteDeployment(externalServiceDeployment)).To(Succeed())
 	})
 
 	trafficLogFormat := "%START_TIME(%s)%,%KUMA_SOURCE_SERVICE%,%KUMA_DESTINATION_SERVICE%"
@@ -121,8 +120,9 @@ spec:
 		Expect(dst).To(Equal("test-server"))
 	})
 
-	// This is flaky, may have something to do with access-log-streamer
-	It("should log outgoing passthrough traffic", FlakeAttempts(3), func() {
+	// This is flaky if we don't redeploy demo-client in BeforeEach/E2EAfterEach
+	// This may have something to do with access-log-streamer
+	It("should log outgoing passthrough traffic", func() {
 		yaml := fmt.Sprintf(`
 type: MeshAccessLog
 name: client-outgoing
