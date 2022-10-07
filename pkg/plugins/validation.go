@@ -1,4 +1,4 @@
-package policies
+package plugins
 
 import (
 	"embed"
@@ -6,18 +6,34 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/xeipuuv/gojsonschema"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
-//go:embed */api/v1alpha1/schema.yaml
+// we only need schema.yaml but during make check we delete all of them and that makes compilation fail
+// so this catches also policies/donothingpolicy/api/v1alpha1/rest.yaml and makes compilation succeed
+//go:embed policies/*/api/v1alpha1/*.yaml
 var content embed.FS
 
-var resourceToSchema map[model.ResourceType]*gojsonschema.JSONLoader
+var resourceToSchema map[string]*gojsonschema.JSONLoader
 
-func ValidateSchema(document string, type_ string) error {
-	schema := resourceToSchema[model.ResourceType(type_)]
+func ValidateResourceSchema(message proto.Message, type_ string) error {
+	json, err := protojson.Marshal(message)
+	if err != nil {
+		return err
+	}
+
+	if err := validateSchema(string(json), type_); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func validateSchema(document string, type_ string) error {
+	schema := resourceToSchema[type_]
 	if schema == nil {
 		// we only validate new policies so for old or unknown ones we return no errors
 		return nil
@@ -48,13 +64,16 @@ func mapSchemaToValidatorErrors(errors []gojsonschema.ResultError) error {
 }
 
 func init() {
-	resourceToSchema = map[model.ResourceType]*gojsonschema.JSONLoader{}
-	dirs, err := content.ReadDir(".")
+	resourceToSchema = map[string]*gojsonschema.JSONLoader{}
+	dirs, err := content.ReadDir(path.Join("policies"))
 	if err != nil {
 		panic(err)
 	}
 	for _, dir := range dirs {
-		rawSchema, err := content.ReadFile(path.Join(".", dir.Name(), "api", "v1alpha1", "schema.yaml"))
+		if !dir.IsDir() {
+			continue
+		}
+		rawSchema, err := content.ReadFile(path.Join("policies", dir.Name(), "api", "v1alpha1", "schema.yaml"))
 		if err != nil {
 			panic(err)
 		}
@@ -67,7 +86,7 @@ func init() {
 		if err != nil {
 			panic(err)
 		}
-		resourceToSchema[model.ResourceType(name)] = schema
+		resourceToSchema[name] = schema
 	}
 }
 

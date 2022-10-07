@@ -1,4 +1,4 @@
-package policies_test
+package plugins_test
 
 import (
 	"testing"
@@ -7,5 +7,5 @@ import (
 )
 
 func TestCommonAPI(t *testing.T) {
-	test.RunSpecs(t, "Policies Suite")
+	test.RunSpecs(t, "Plugins Suite")
 }

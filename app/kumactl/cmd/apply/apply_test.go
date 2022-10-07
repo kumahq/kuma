@@ -483,5 +483,21 @@ networking:
 			resource: ``,
 			err:      "no resource(s) passed to apply",
 		}),
+		Entry("data not passing schema validation", testCase{
+			resource: `
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-1
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: foo
+`,
+			err: `YAML contains invalid resource: from.0.default.action: from.0.default.action must be one of the following: "ALLOW", "DENY", "ALLOW_WITH_SHADOW_DENY", "DENY_WITH_SHADOW_ALLOW"`,
+		}),
 	)
 })

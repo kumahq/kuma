@@ -10,6 +10,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/pkg/plugins"
 )
 
 var YAML = &unmarshaler{unmarshalFn: yaml.Unmarshal}
@@ -62,6 +63,11 @@ func (u *unmarshaler) Unmarshal(bytes []byte) (Resource, error) {
 	if err := u.unmarshalFn(bytes, restResource); err != nil {
 		return nil, errors.Wrapf(err, "invalid %s object %q", meta.Type, meta.Name)
 	}
+
+	if err := plugins.ValidateResourceSchema(restResource.GetSpec(), meta.Type); err != nil {
+		return nil, err
+	}
+
 	return restResource, nil
 }
 

@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/emicklei/go-restful/v3"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
@@ -19,7 +18,7 @@ import (
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	"github.com/kumahq/kuma/pkg/plugins/policies"
+	"github.com/kumahq/kuma/pkg/plugins"
 )
 
 const (
@@ -159,16 +158,7 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 }
 
 func (r *resourceEndpoints) validateResourceSchema(resourceRest rest.Resource) error {
-	json, err := protojson.Marshal(resourceRest.GetSpec())
-	if err != nil {
-		return err
-	}
-
-	if err := policies.ValidateSchema(string(json), string(r.descriptor.Name)); err != nil {
-		return err
-	}
-
-	return nil
+	return plugins.ValidateResourceSchema(resourceRest.GetSpec(), string(r.descriptor.Name))
 }
 
 func (r *resourceEndpoints) createResource(ctx context.Context, name string, meshName string, spec model.ResourceSpec, response *restful.Response) {
