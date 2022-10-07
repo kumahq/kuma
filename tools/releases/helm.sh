@@ -18,6 +18,11 @@ GH_PAGES_BRANCH="gh-pages"
 #  version:
 #    with the git commit suffix, if the kuma version has a git commit suffix
 #    otherwise it leaves version alone, assuming it's been chosen intentionally
+#  dependencies:
+#    for any dependency $chart where charts/$chart exists, it deletes $chart from
+#    .dependencies so that the embedded $chart is used and not the one fetched
+#    from the repository. `cr` fetches explicit dependencies and they take
+#    precedence over embedded files.
 function dev_version {
   for dir in "${CHARTS_DIR}"/*; do
     if [ ! -d "${dir}" ]; then
@@ -29,20 +34,15 @@ function dev_version {
 
     kuma_version=$("${SCRIPT_DIR}/version.sh")
     yq -i ".appVersion = \"${kuma_version}\"" "${dir}/Chart.yaml"
+    yq -i ".version = \"${kuma_version}\"" "${dir}/Chart.yaml"
 
-    IFS=- read -r _version_core version_extra <<< "${kuma_version}"
+    for chart in $(yq e '.dependencies[].name' "${dir}/Chart.yaml"); do
+        if [ ! -d "${dir}/charts/${chart}" ]; then
+            continue
+        fi
+        yq -i e "del(.dependencies[] | select(.name == \"${chart}\"))" "${dir}/Chart.yaml"
+    done
 
-    chart_version=$(yq '.version' "${dir}/Chart.yaml")
-
-    # helm is semver-friendly, so we tweak the version.sh output a bit
-    short_hash=$(git rev-parse --short HEAD)
-
-    chart_version_extra=""
-    if [[ "${short_hash}" == "${version_extra}" ]]; then
-        chart_version_extra="+${version_extra}"
-    fi
-
-    yq -i ".version = \"${chart_version}${chart_version_extra}\"" "${dir}/Chart.yaml"
   done
 }
 
@@ -56,10 +56,10 @@ function package {
     # Fail if there are uncommitted changes
     git diff --exit-code HEAD -- "${dir}"
 
-    # TODO remove this when Gateway is no longer experimental
+    # TODO remove this when Gateway API is no longer experimental
     # Gateway CRDs are installed conditionally via install missing CRDs job
     if [[ $(basename "${dir}") == "kuma" ]]; then
-      find "${dir}/crds" -name "*gateway*.yaml" -delete
+      find "${dir}/crds" -name "*meshgatewayconfigs.yaml" -delete
     fi
 
     cr package \
