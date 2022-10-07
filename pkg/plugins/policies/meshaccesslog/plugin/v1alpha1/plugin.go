@@ -12,9 +12,11 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/matchers"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/plugin/xds"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
+	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -48,6 +50,9 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return err
 	}
 	if err := applyToDirectAccess(policies.ToRules, listeners.directAccess, proxy.Dataplane); err != nil {
+		return err
+	}
+	if err := applyToGateway(policies.ToRules, listeners.gateway, ctx.Mesh.Resources.MeshLocalResources, proxy.Dataplane); err != nil {
 		return err
 	}
 
@@ -145,9 +150,50 @@ func applyToDirectAccess(
 	return nil
 }
 
+func applyToGateway(
+	rules xds.ToRules, gatewayListeners map[xds.InboundListener]*envoy_listener.Listener, resources xds_context.ResourceMap, dataplane *core_mesh.DataplaneResource,
+) error {
+	var gateways *core_mesh.MeshGatewayResourceList
+	if rawList := resources[core_mesh.MeshGatewayType]; rawList != nil {
+		gateways = rawList.(*core_mesh.MeshGatewayResourceList)
+	} else {
+		return nil
+	}
+
+	gateway := xds_topology.SelectGateway(gateways.Items, dataplane.Spec.Matches)
+	if gateway == nil {
+		return nil
+	}
+
+	for _, listener := range gateway.Spec.GetConf().GetListeners() {
+		address := dataplane.Spec.GetNetworking().Address
+		port := listener.GetPort()
+		listener, ok := gatewayListeners[xds.InboundListener{
+			Address: address,
+			Port:    port,
+		}]
+		if !ok {
+			continue
+		}
+
+		if err := configureOutbound(
+			rules,
+			dataplane,
+			xds.Subset{},
+			mesh_proto.MatchAllTag,
+			listener,
+		); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 type listeners struct {
 	inbound         map[xds.InboundListener]*envoy_listener.Listener
 	outbound        map[mesh_proto.OutboundInterface]*envoy_listener.Listener
+	gateway         map[xds.InboundListener]*envoy_listener.Listener
 	ipv4Passthrough *envoy_listener.Listener
 	ipv6Passthrough *envoy_listener.Listener
 	directAccess    map[generator.Endpoint]*envoy_listener.Listener
@@ -157,6 +203,7 @@ func gatherListeners(rs *core_xds.ResourceSet) listeners {
 	listeners := listeners{
 		inbound:      map[xds.InboundListener]*envoy_listener.Listener{},
 		outbound:     map[mesh_proto.OutboundInterface]*envoy_listener.Listener{},
+		gateway:      map[xds.InboundListener]*envoy_listener.Listener{},
 		directAccess: map[generator.Endpoint]*envoy_listener.Listener{},
 	}
 
@@ -184,6 +231,11 @@ func gatherListeners(rs *core_xds.ResourceSet) listeners {
 			}
 		case generator.OriginDirectAccess:
 			listeners.directAccess[generator.Endpoint{
+				Address: address.GetAddress(),
+				Port:    address.GetPortValue(),
+			}] = listener
+		case gateway.OriginGateway:
+			listeners.gateway[xds.InboundListener{
 				Address: address.GetAddress(),
 				Port:    address.GetPortValue(),
 			}] = listener
