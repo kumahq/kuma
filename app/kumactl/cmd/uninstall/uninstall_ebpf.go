@@ -27,14 +27,10 @@ import (
 )
 
 const (
-	AppLabel          = "kuma.io/bpf-cleanup"
-	BpfCleanupJobName = "kuma-bpf-cleanup"
-	BpfCleanupImage   = "kumahq/kuma-init"
-)
-
-var (
-	KumaBpfLabelSelector      = fmt.Sprintf("%s=%s", AppLabel, BpfCleanupJobName)
-	KumaBpfCleanupAppSelector = metav1.ListOptions{LabelSelector: KumaBpfLabelSelector}
+	AppLabel                         = "kuma.io/bpf-cleanup"
+	BpfDefaultCleanupJobName         = "kuma-bpf-cleanup"
+	BpfDefaultCleanupImageRegistry   = "kumahq"
+	BpfDefaultCleanupImageRepository = "kuma-init"
 )
 
 type CleanupJobProps struct {
@@ -52,21 +48,27 @@ type CleanupJob struct {
 }
 
 type ebpfArgs struct {
-	BPFFsPath           string
-	Timeout             time.Duration
-	CleanupImageVersion string
-	RemoveOnly          bool
-	Namespace           string
+	BPFFsPath              string
+	Timeout                time.Duration
+	CleanupImageRegistry   string
+	CleanupImageRepository string
+	CleanupImageTag        string
+	CleanupJobName         string
+	RemoveOnly             bool
+	Namespace              string
 }
 
 func newUninstallEbpf(root *kumactl_cmd.RootContext) *cobra.Command {
 	args := ebpfArgs{
 		// default value that we inject in pod injector
-		BPFFsPath:           root.InstallCpContext.Args.Ebpf_bpffs_path,
-		Timeout:             120 * time.Second,
-		CleanupImageVersion: kuma_version.Build.Version,
-		RemoveOnly:          false,
-		Namespace:           root.InstallCpContext.Args.Namespace,
+		BPFFsPath:              root.InstallCpContext.Args.Ebpf_bpffs_path,
+		Timeout:                120 * time.Second,
+		CleanupImageRegistry:   BpfDefaultCleanupImageRegistry,
+		CleanupImageRepository: BpfDefaultCleanupImageRepository,
+		CleanupImageTag:        kuma_version.Build.Version,
+		CleanupJobName:         BpfDefaultCleanupJobName,
+		RemoveOnly:             false,
+		Namespace:              root.InstallCpContext.Args.Namespace,
 	}
 
 	cmd := &cobra.Command{
@@ -101,8 +103,13 @@ func newUninstallEbpf(root *kumactl_cmd.RootContext) *cobra.Command {
 				RWMutex:     &sync.RWMutex{},
 			}
 
+			labelSelector := fmt.Sprintf("%s=%s", AppLabel, args.CleanupJobName)
+			cleanupAppSelector := metav1.ListOptions{
+				LabelSelector: labelSelector,
+			}
+
 			if args.RemoveOnly {
-				if err := jobResource.Cleanup(ctx); err != nil {
+				if err := jobResource.Cleanup(ctx, cleanupAppSelector); err != nil {
 					return errors.Wrap(err, "Failed cleaning jobs")
 				}
 
@@ -110,7 +117,7 @@ func newUninstallEbpf(root *kumactl_cmd.RootContext) *cobra.Command {
 			}
 
 			for id, node := range nodes.Items {
-				jobName := fmt.Sprintf("%s-%d", BpfCleanupJobName, id)
+				jobName := fmt.Sprintf("%s-%d", args.CleanupJobName, id)
 				jobSpec := genJobSpec(jobName, node.Name, &args)
 
 				if _, err := jobResource.jobClient.Create(ctx, jobSpec, metav1.CreateOptions{}); err != nil {
@@ -123,7 +130,7 @@ func newUninstallEbpf(root *kumactl_cmd.RootContext) *cobra.Command {
 			}
 
 			watcher, err := jobResource.podClient.Watch(ctx, metav1.ListOptions{
-				LabelSelector: KumaBpfLabelSelector,
+				LabelSelector: labelSelector,
 				Watch:         true,
 			})
 			if err != nil {
@@ -133,7 +140,7 @@ func newUninstallEbpf(root *kumactl_cmd.RootContext) *cobra.Command {
 			errCh := make(chan error, 1)
 
 			defer func() {
-				if e := jobResource.Cleanup(ctx); e != nil {
+				if e := jobResource.Cleanup(ctx, cleanupAppSelector); e != nil {
 					errCh <- e
 				}
 			}()
@@ -154,7 +161,10 @@ func newUninstallEbpf(root *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().StringVar(&args.Namespace, "namespace", args.Namespace, "namespace where job is created")
 	cmd.Flags().StringVar(&args.BPFFsPath, "bpffs-path", args.BPFFsPath, "path where bpf programs were installed")
 	cmd.Flags().DurationVar(&args.Timeout, "timeout", args.Timeout, "timeout for whole process of removing left files")
-	cmd.Flags().StringVar(&args.CleanupImageVersion, "cleanup-image-version", args.CleanupImageVersion, "version of cleanup ebpf job image")
+	cmd.Flags().StringVar(&args.CleanupImageRegistry, "cleanup-image-registry", args.CleanupImageRegistry, "image registry for ebpf cleanup job")
+	cmd.Flags().StringVar(&args.CleanupImageRepository, "cleanup-image-repository", args.CleanupImageRepository, "image repository for ebpf cleanup job")
+	cmd.Flags().StringVar(&args.CleanupImageTag, "cleanup-image-tag", args.CleanupImageTag, "image tag for ebpf cleanup job")
+	cmd.Flags().StringVar(&args.CleanupJobName, "cleanup-job-name", args.CleanupJobName, "name of the cleanup job")
 	cmd.Flags().BoolVar(&args.RemoveOnly, "remove-only", args.RemoveOnly, "cleanup jobs and pods only")
 
 	return cmd
@@ -169,15 +179,20 @@ func genJobSpec(jobName, nodeName string, args *ebpfArgs) *batchv1.Job {
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						AppLabel: BpfCleanupJobName,
+						AppLabel: args.CleanupJobName,
 					},
 				},
 				Spec: corev1.PodSpec{
 					NodeName: nodeName,
 					Containers: []corev1.Container{
 						{
-							Name:  BpfCleanupJobName,
-							Image: fmt.Sprintf("%s:%s", BpfCleanupImage, args.CleanupImageVersion),
+							Name: args.CleanupJobName,
+							Image: fmt.Sprintf(
+								"%s/%s:%s",
+								args.CleanupImageRegistry,
+								args.CleanupImageRepository,
+								args.CleanupImageTag,
+							),
 							Command: []string{
 								"kumactl",
 								"uninstall",
@@ -293,18 +308,18 @@ func (r *CleanupJob) Watch(ctx context.Context, watcher watch.Interface) error {
 	return nil
 }
 
-func (r *CleanupJob) Cleanup(ctx context.Context) error {
+func (r *CleanupJob) Cleanup(ctx context.Context, selector metav1.ListOptions) error {
 	policy := metav1.DeletePropagationBackground
 	deleteImmediately := metav1.DeleteOptions{
 		GracePeriodSeconds: new(int64),
 		PropagationPolicy:  &policy,
 	}
 
-	if err := r.jobClient.DeleteCollection(ctx, deleteImmediately, KumaBpfCleanupAppSelector); err != nil {
+	if err := r.jobClient.DeleteCollection(ctx, deleteImmediately, selector); err != nil {
 		return fmt.Errorf("failed to delete jobs %s", err)
 	}
 
-	if err := r.podClient.DeleteCollection(ctx, deleteImmediately, KumaBpfCleanupAppSelector); err != nil {
+	if err := r.podClient.DeleteCollection(ctx, deleteImmediately, selector); err != nil {
 		return fmt.Errorf("failed to delete pods %s", err)
 	}
 
