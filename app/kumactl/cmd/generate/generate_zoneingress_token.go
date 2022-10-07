@@ -23,7 +23,10 @@ func NewGenerateZoneIngressTokenCmd(pctx *kumactl_cmd.RootContext) *cobra.Comman
 	cmd := &cobra.Command{
 		Use:   "zone-ingress-token",
 		Short: "Generate Zone Ingress Token",
-		Long:  `Generate Zone Ingress Token that is used to prove Zone Ingress identity.`,
+		Long: `Generate Zone Ingress Token that is used to prove Zone Ingress identity.
+
+DEPRECATED: Use kumactl generate zone-token --scope=ingress instead.
+`,
 		Example: `
 Generate token bound by zone
 $ kumactl generate zone-ingress-token --zone zone-1 --valid-for 30d

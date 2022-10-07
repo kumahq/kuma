@@ -109,7 +109,8 @@ spec:
 		Expect(dst).To(Equal("test-server"))
 	})
 
-	It("should log outgoing passthrough traffic", func() {
+	// This is flaky, may have something to do with access-log-streamer
+	It("should log outgoing passthrough traffic", FlakeAttempts(3), func() {
 		yaml := fmt.Sprintf(`
 type: MeshAccessLog
 name: client-outgoing
