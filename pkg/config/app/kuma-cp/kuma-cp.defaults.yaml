@@ -348,6 +348,8 @@ dnsServer:
   CIDR: "240.0.0.0/4" # ENV: KUMA_DNS_SERVER_CIDR
   # Will create a service "<kuma.io/service>.mesh" dns entry for every service.
   serviceVipEnabled: true # ENV: KUMA_DNS_SERVER_SERVICE_VIP_ENABLED
+  # The port to use along with the `<kuma.io/service>.mesh` dns entry
+  serviceVipPort: 80 # ENV: KUMA_DNS_SERVICE_SERVICE_VIP_PORT
 
 # Multizone mode
 multizone:

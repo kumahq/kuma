@@ -30,6 +30,7 @@ type meshContextBuilder struct {
 	zone            string
 	vipsPersistence *vips.Persistence
 	topLevelDomain  string
+	vipPort         uint32
 }
 
 type MeshContextBuilder interface {
@@ -48,6 +49,7 @@ func NewMeshContextBuilder(
 	zone string,
 	vipsPersistence *vips.Persistence,
 	topLevelDomain string,
+	vipPort uint32,
 ) MeshContextBuilder {
 	typeSet := map[core_model.ResourceType]struct{}{}
 	for _, typ := range types {
@@ -61,6 +63,7 @@ func NewMeshContextBuilder(
 		zone:            zone,
 		vipsPersistence: vipsPersistence,
 		topLevelDomain:  topLevelDomain,
+		vipPort:         vipPort,
 	}
 }
 
@@ -102,7 +105,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		return nil, err
 	}
 	// resolve all the domains
-	domains, outbounds := xds_topology.VIPOutbounds(virtualOutboundView, m.topLevelDomain)
+	domains, outbounds := xds_topology.VIPOutbounds(virtualOutboundView, m.topLevelDomain, m.vipPort)
 
 	zoneIngresses := resources.ZoneIngresses().Items
 	zoneEgresses := resources.ZoneEgresses().Items

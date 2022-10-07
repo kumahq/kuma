@@ -40,13 +40,15 @@ func MeshInsightKey(mesh string) model.ResourceKey {
 }
 
 type Config struct {
-	Registry           registry.TypeRegistry
-	ResourceManager    manager.ResourceManager
-	EventReaderFactory events.ListenerFactory
-	MinResyncTimeout   time.Duration
-	MaxResyncTimeout   time.Duration
-	Tick               func(d time.Duration) <-chan time.Time
-	RateLimiterFactory func() *rate.Limiter
+	Registry             registry.TypeRegistry
+	ResourceManager      manager.ResourceManager
+	EventReaderFactory   events.ListenerFactory
+	MinResyncTimeout     time.Duration
+	MaxResyncTimeout     time.Duration
+	Tick                 func(d time.Duration) <-chan time.Time
+	RateLimiterFactory   func() *rate.Limiter
+	AddressPortGenerator func(string) string
+	Now                  func() time.Time
 }
 
 type resyncer struct {
@@ -62,10 +64,12 @@ type resyncer struct {
 	// info provides an information about the last sync for both ServiceInsight and MeshInsight
 	// Previously this data was stored in the Resource itself, but since resyncer runs only on leader
 	// we can just save this in memory and save requests to the DB.
-	infos    map[model.ResourceKey]syncInfo
-	infosMux sync.RWMutex
+	infos                map[model.ResourceKey]syncInfo
+	infosMux             sync.RWMutex
+	addressPortGenerator func(string) string
 
 	registry registry.TypeRegistry
+	now      func() time.Time
 }
 
 type syncInfo struct {
@@ -83,14 +87,16 @@ type syncInfo struct {
 // resync every t = MaxResyncTimeout - MinResyncTimeout.
 func NewResyncer(config *Config) component.Component {
 	r := &resyncer{
-		minResyncTimeout:   config.MinResyncTimeout,
-		maxResyncTimeout:   config.MaxResyncTimeout,
-		eventFactory:       config.EventReaderFactory,
-		rm:                 config.ResourceManager,
-		rateLimiterFactory: config.RateLimiterFactory,
-		rateLimiters:       map[string]*rate.Limiter{},
-		infos:              map[model.ResourceKey]syncInfo{},
-		registry:           config.Registry,
+		minResyncTimeout:     config.MinResyncTimeout,
+		maxResyncTimeout:     config.MaxResyncTimeout,
+		eventFactory:         config.EventReaderFactory,
+		rm:                   config.ResourceManager,
+		rateLimiterFactory:   config.RateLimiterFactory,
+		rateLimiters:         map[string]*rate.Limiter{},
+		infos:                map[model.ResourceKey]syncInfo{},
+		registry:             config.Registry,
+		addressPortGenerator: config.AddressPortGenerator,
+		now:                  config.Now,
 	}
 
 	r.tick = config.Tick
@@ -108,11 +114,11 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 		ticker := r.tick(r.maxResyncTimeout - r.minResyncTimeout)
 		for {
 			select {
-			case <-ticker:
-				if err := r.createOrUpdateMeshInsights(ctx); err != nil {
+			case now := <-ticker:
+				if err := r.createOrUpdateMeshInsights(ctx, now); err != nil {
 					log.Error(err, "unable to resync MeshInsight")
 				}
-				if err := r.createOrUpdateServiceInsights(ctx); err != nil {
+				if err := r.createOrUpdateServiceInsights(ctx, now); err != nil {
 					log.Error(err, "unable to resync ServiceInsight")
 				}
 			case <-stop:
@@ -146,7 +152,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 			continue
 		}
 		if resourceChanged.Type == core_mesh.DataplaneType || resourceChanged.Type == core_mesh.DataplaneInsightType {
-			if err := r.createOrUpdateServiceInsight(resourceChanged.Key.Mesh); err != nil {
+			if err := r.createOrUpdateServiceInsight(ctx, resourceChanged.Key.Mesh, time.Now()); err != nil {
 				log.Error(err, "unable to resync ServiceInsight", "mesh", resourceChanged.Key.Mesh)
 			}
 		}
@@ -158,7 +164,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 			// because that's how we find online/offline Dataplane's status
 			continue
 		}
-		if err := r.createOrUpdateMeshInsight(ctx, resourceChanged.Key.Mesh); err != nil {
+		if err := r.createOrUpdateMeshInsight(ctx, resourceChanged.Key.Mesh, time.Now()); err != nil {
 			log.Error(err, "unable to resync MeshInsight", "mesh", resourceChanged.Key.Mesh)
 			continue
 		}
@@ -179,7 +185,7 @@ func (r *resyncer) deleteRateLimiter(mesh string) {
 	delete(r.rateLimiters, mesh)
 }
 
-func (r *resyncer) createOrUpdateServiceInsights(ctx context.Context) error {
+func (r *resyncer) createOrUpdateServiceInsights(ctx context.Context, now time.Time) error {
 	meshes := &core_mesh.MeshResourceList{}
 	if err := r.rm.List(ctx, meshes); err != nil {
 		return err
@@ -188,7 +194,7 @@ func (r *resyncer) createOrUpdateServiceInsights(ctx context.Context) error {
 		if need := r.needResyncServiceInsight(mesh.GetMeta().GetName()); !need {
 			continue
 		}
-		err := r.createOrUpdateServiceInsight(mesh.GetMeta().GetName())
+		err := r.createOrUpdateServiceInsight(ctx, mesh.GetMeta().GetName(), now)
 		if err != nil {
 			log.Error(err, "unable to resync resources", "mesh", mesh.GetMeta().GetName())
 			continue
@@ -197,12 +203,17 @@ func (r *resyncer) createOrUpdateServiceInsights(ctx context.Context) error {
 	return nil
 }
 
-func addDpStatusToInsight(insight *mesh_proto.ServiceInsight, svcName string, status core_mesh.Status) {
+func populateInsight(serviceType mesh_proto.ServiceInsight_Service_Type, insight *mesh_proto.ServiceInsight, svcName string, status core_mesh.Status, backend string, addressPort string) {
 	if _, ok := insight.Services[svcName]; !ok {
 		insight.Services[svcName] = &mesh_proto.ServiceInsight_Service{
 			IssuedBackends: map[string]uint32{},
 			Dataplanes:     &mesh_proto.ServiceInsight_Service_DataplaneStat{},
+			ServiceType:    serviceType,
+			AddressPort:    addressPort,
 		}
+	}
+	if backend != "" {
+		insight.Services[svcName].IssuedBackends[backend]++
 	}
 
 	dataplanes := insight.Services[svcName].Dataplanes
@@ -219,29 +230,7 @@ func addDpStatusToInsight(insight *mesh_proto.ServiceInsight, svcName string, st
 	}
 }
 
-func addDpOverviewToInsight(insight *mesh_proto.ServiceInsight, dpOverview *core_mesh.DataplaneOverviewResource) {
-	status, _ := dpOverview.GetStatus()
-	networking := dpOverview.Spec.GetDataplane().GetNetworking()
-	backend := dpOverview.Spec.GetDataplaneInsight().GetMTLS().GetIssuedBackend()
-
-	if svc := networking.GetGateway().GetTags()[mesh_proto.ServiceTag]; svc != "" {
-		addDpStatusToInsight(insight, svc, status)
-		if backend != "" {
-			insight.Services[svc].IssuedBackends[backend]++
-		}
-	}
-
-	for _, inbound := range networking.GetInbound() {
-		addDpStatusToInsight(insight, inbound.GetService(), status)
-		if backend != "" {
-			insight.Services[inbound.GetService()].IssuedBackends[backend]++
-		}
-	}
-}
-
-func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
-	ctx := context.TODO()
-
+func (r *resyncer) createOrUpdateServiceInsight(ctx context.Context, mesh string, now time.Time) error {
 	r.serviceInsightMux.Lock()
 	defer r.serviceInsightMux.Unlock()
 
@@ -259,13 +248,40 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 	dpOverviews := core_mesh.NewDataplaneOverviews(*dp, *dpInsights)
 
 	for _, dpOverview := range dpOverviews.Items {
-		addDpOverviewToInsight(insight, dpOverview)
+		status, _ := dpOverview.GetStatus()
+		networking := dpOverview.Spec.GetDataplane().GetNetworking()
+		backend := dpOverview.Spec.GetDataplaneInsight().GetMTLS().GetIssuedBackend()
+
+		if gw := networking.GetGateway(); gw != nil {
+			var svcType mesh_proto.ServiceInsight_Service_Type
+			switch gw.Type {
+			case mesh_proto.Dataplane_Networking_Gateway_BUILTIN:
+				svcType = mesh_proto.ServiceInsight_Service_gateway_builtin
+			case mesh_proto.Dataplane_Networking_Gateway_DELEGATED:
+				svcType = mesh_proto.ServiceInsight_Service_gateway_delegated
+			}
+			populateInsight(svcType, insight, gw.GetTags()[mesh_proto.ServiceTag], status, backend, "")
+		}
+
+		for _, inbound := range networking.GetInbound() {
+			populateInsight(mesh_proto.ServiceInsight_Service_internal, insight, inbound.GetService(), status, backend, r.addressPortGenerator(inbound.GetService()))
+		}
+	}
+
+	extServices := &core_mesh.ExternalServiceResourceList{}
+	if err := r.rm.List(ctx, extServices, store.ListByMesh(mesh)); err != nil {
+		return err
+	}
+	for _, es := range extServices.Items {
+		populateInsight(mesh_proto.ServiceInsight_Service_external, insight, es.Spec.GetService(), "", "", es.Spec.Networking.GetAddress())
 	}
 
 	for _, svc := range insight.Services {
 		online, total := svc.Dataplanes.Online, svc.Dataplanes.Total
 
 		switch {
+		case svc.ServiceType == mesh_proto.ServiceInsight_Service_external:
+			svc.Status = mesh_proto.ServiceInsight_Service_not_available
 		case online == 0:
 			svc.Status = mesh_proto.ServiceInsight_Service_offline
 		case online == total:
@@ -279,7 +295,7 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 	info, _ := r.getInfo(key)
 	if proto.Equal(info.resource, insight) {
 		log.V(1).Info("no need to update ServiceInsight because the resource is the same")
-		info.lastSync = core.Now()
+		info.lastSync = now
 		r.setInfo(key, info)
 		return nil
 	}
@@ -303,12 +319,12 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 	log.V(1).Info("ServiceInsights updated")
 	r.setInfo(key, syncInfo{
 		resource: insight,
-		lastSync: core.Now(),
+		lastSync: now,
 	})
 	return nil
 }
 
-func (r *resyncer) createOrUpdateMeshInsights(ctx context.Context) error {
+func (r *resyncer) createOrUpdateMeshInsights(ctx context.Context, now time.Time) error {
 	meshes := &core_mesh.MeshResourceList{}
 	if err := r.rm.List(ctx, meshes); err != nil {
 		return err
@@ -317,7 +333,7 @@ func (r *resyncer) createOrUpdateMeshInsights(ctx context.Context) error {
 		if need := r.needResyncMeshInsight(mesh.GetMeta().GetName()); !need {
 			continue
 		}
-		err := r.createOrUpdateMeshInsight(ctx, mesh.GetMeta().GetName())
+		err := r.createOrUpdateMeshInsight(ctx, mesh.GetMeta().GetName(), now)
 		if err != nil {
 			log.Error(err, "unable to resync resources", "mesh", mesh.GetMeta().GetName())
 			continue
@@ -326,7 +342,7 @@ func (r *resyncer) createOrUpdateMeshInsights(ctx context.Context) error {
 	return nil
 }
 
-func (r *resyncer) createOrUpdateMeshInsight(ctx context.Context, mesh string) error {
+func (r *resyncer) createOrUpdateMeshInsight(ctx context.Context, mesh string, now time.Time) error {
 	r.meshInsightMux.Lock()
 	defer r.meshInsightMux.Unlock()
 
@@ -442,7 +458,7 @@ func (r *resyncer) createOrUpdateMeshInsight(ctx context.Context, mesh string) e
 	info, _ := r.getInfo(key)
 	if proto.Equal(info.resource, insight) {
 		log.V(1).Info("no need to update MeshInsight because the resource is the same")
-		info.lastSync = core.Now()
+		info.lastSync = now
 		r.setInfo(key, info)
 		return nil
 	}
@@ -466,7 +482,7 @@ func (r *resyncer) createOrUpdateMeshInsight(ctx context.Context, mesh string) e
 	log.V(1).Info("MeshInsight updated")
 	r.setInfo(key, syncInfo{
 		resource: insight,
-		lastSync: core.Now(),
+		lastSync: now,
 	})
 	return nil
 }

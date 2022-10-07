@@ -29,6 +29,7 @@ message ServiceInsight {
       offline = 1;
       partially_degraded = 2;
       online = 3;
+      not_available = 4;
     }
 
     Status status = 1;
@@ -42,6 +43,15 @@ message ServiceInsight {
     DataplaneStat dataplanes = 2;
 
     map<string, uint32> issuedBackends = 3;
+
+    enum Type {
+      internal = 0;
+      external = 1;
+      gateway_delegated = 2;
+      gateway_builtin = 3;
+    }
+    Type serviceType = 4;
+    string addressPort = 5;
   }
 
   map<string, Service> services = 2;
