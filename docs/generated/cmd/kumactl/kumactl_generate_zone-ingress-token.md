@@ -6,6 +6,9 @@ Generate Zone Ingress Token
 
 Generate Zone Ingress Token that is used to prove Zone Ingress identity.
 
+DEPRECATED: Use kumactl generate zone-token --scope=ingress instead.
+
+
 ```
 kumactl generate zone-ingress-token [flags]
 ```

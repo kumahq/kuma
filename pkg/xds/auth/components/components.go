@@ -10,6 +10,7 @@ import (
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 	"github.com/kumahq/kuma/pkg/xds/auth"
 	k8s_auth "github.com/kumahq/kuma/pkg/xds/auth/k8s"
 	universal_auth "github.com/kumahq/kuma/pkg/xds/auth/universal"
@@ -35,8 +36,9 @@ func NewUniversalAuthenticator(rt Context) (auth.Authenticator, error) {
 	dataplaneValidator := builtin.NewDataplaneTokenValidator(rt.ReadOnlyResourceManager(), config.Store.Type)
 	zoneIngressValidator := builtin.NewZoneIngressTokenValidator(rt.ReadOnlyResourceManager(), config.Store.Type)
 	zoneTokenValidator := builtin.NewZoneTokenValidator(rt.ReadOnlyResourceManager(), config.Mode, config.Store.Type)
+	adaptedValidator := zoneingress.NewZoneValidatorAdapter(zoneIngressValidator, zoneTokenValidator)
 
-	return universal_auth.NewAuthenticator(dataplaneValidator, zoneIngressValidator, zoneTokenValidator, config.Multizone.Zone.Name), nil
+	return universal_auth.NewAuthenticator(dataplaneValidator, adaptedValidator, config.Multizone.Zone.Name), nil
 }
 
 func DefaultAuthenticator(rt Context) (auth.Authenticator, error) {

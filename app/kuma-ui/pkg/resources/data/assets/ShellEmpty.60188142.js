@@ -1,1 +1,0 @@
-import{_ as r,b as e,w as o,r as s,o as t,e as c,a6 as _,cN as l}from"./index.f2463021.js";const p={name:"ShellEmpty"};function m(i,u,d,f,h,v){const a=s("router-view");return t(),e(a,null,{default:o(({Component:n})=>[c(l,{mode:"out-in",name:"fade"},{default:o(()=>[(t(),e(_(n)))]),_:2},1024)]),_:1})}const x=r(p,[["render",m]]);export{x as default};

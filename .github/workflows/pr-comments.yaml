@@ -14,7 +14,7 @@ jobs:
       - name: check-maintainer
         run:  |
           # Ensure the commenter is a maintainer
-          USER=`gh api ${{ github.event.comment.url }} --jq .user.login`
+          USER="${{ github.event.comment.user.login }}"
           if [[ `gh api  /repos/kumahq/kuma/collaborators --jq '.[] | select (.permissions.maintain == true) | .login' | grep $USER` ]]; then
             gh api --method POST -f content='+1' ${{ github.event.comment.url }}/reactions
           else
