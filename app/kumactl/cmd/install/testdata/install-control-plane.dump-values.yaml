@@ -394,7 +394,6 @@ kumactl:
 kubectl:
   # bitnami maintains an image for all k8s versions */ } }
   # see: https://hub.docker.com/r/bitnami/kubectl */ } }
->>>>>>> bb4e42b31 (chore(kuma-cni): upgrade to 0.0.10 (#4313))
   image:
     # -- The kubectl image registry
     registry: bitnami
