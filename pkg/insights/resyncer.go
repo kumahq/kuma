@@ -25,6 +25,12 @@ var (
 	log = core.Log.WithName("mesh-insight-resyncer")
 )
 
+var resourcesAffectingServiceInsights = map[model.ResourceType]struct{}{
+	core_mesh.DataplaneType:        {},
+	core_mesh.DataplaneInsightType: {},
+	core_mesh.ExternalServiceType:  {},
+}
+
 func ServiceInsightKey(mesh string) model.ResourceKey {
 	return model.ResourceKey{
 		Name: fmt.Sprintf("all-services-%s", mesh),
@@ -151,7 +157,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 		if !r.getRateLimiter(resourceChanged.Key.Mesh).Allow() {
 			continue
 		}
-		if resourceChanged.Type == core_mesh.DataplaneType || resourceChanged.Type == core_mesh.DataplaneInsightType {
+		if _, ok := resourcesAffectingServiceInsights[resourceChanged.Type]; ok {
 			if err := r.createOrUpdateServiceInsight(ctx, resourceChanged.Key.Mesh, time.Now()); err != nil {
 				log.Error(err, "unable to resync ServiceInsight", "mesh", resourceChanged.Key.Mesh)
 			}
