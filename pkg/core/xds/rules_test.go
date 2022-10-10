@@ -210,7 +210,8 @@ var _ = Describe("Rules", func() {
 				}
 
 				// when
-				rules := xds.BuildRules(policies)
+				rules, err := xds.BuildRules(policies)
+				Expect(err).ToNot(HaveOccurred())
 
 				// then
 				bytes, err := yaml.Marshal(rules)
@@ -218,13 +219,13 @@ var _ = Describe("Rules", func() {
 
 				Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "rules", given.goldenFile)))
 			},
-			Entry("04. MeshTrace", testCase{
-				policyFile: "04.policy.yaml",
-				goldenFile: "04.golden.yaml",
+			Entry("06. MeshTrace", testCase{
+				policyFile: "06.policy.yaml",
+				goldenFile: "06.golden.yaml",
 			}),
-			Entry("05. MeshTrace list", testCase{
-				policyFile: "05.policy.yaml",
-				goldenFile: "05.golden.yaml",
+			Entry("07. MeshTrace list", testCase{
+				policyFile: "07.policy.yaml",
+				goldenFile: "07.golden.yaml",
 			}),
 		)
 	})

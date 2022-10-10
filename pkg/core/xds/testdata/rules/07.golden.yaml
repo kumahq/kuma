@@ -1,0 +1,13 @@
+- Conf:
+    backends:
+    - datadog:
+        splitService: false
+        url: ingest.datadoghq.eu
+      zipkin: null
+    sampling: null
+    tags:
+    - header: null
+      literal: support
+      name: team
+  Origin: null
+  Subset: []

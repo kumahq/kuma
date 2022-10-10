@@ -63,6 +63,11 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 		return core_xds.TypedMatchingPolicies{}, err
 	}
 
+	sr, err := singleItemRules(dpPolicies)
+	if err != nil {
+		return core_xds.TypedMatchingPolicies{}, err
+	}
+
 	return core_xds.TypedMatchingPolicies{
 		Type:              rType,
 		DataplanePolicies: dpPolicies,
@@ -73,7 +78,7 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 			Rules: tr,
 		},
 		SingleItemRules: core_xds.SingleItemRules{
-			Rules: singleItem(dpPolicies),
+			Rules: sr,
 		},
 	}, nil
 }
@@ -112,13 +117,13 @@ func toRules(matchedPolicies []core_model.Resource) (core_xds.Rules, error) {
 	return core_xds.BuildRules(toList)
 }
 
-func singleItem(matchedPolicies []core_model.Resource) core_xds.Rules {
+func singleItemRules(matchedPolicies []core_model.Resource) (core_xds.Rules, error) {
 	item := []core_xds.PolicyItem{}
 	for _, mp := range matchedPolicies {
 		policyWithSingleItem, ok := mp.GetSpec().(core_xds.PolicyWithSingleItem)
 		if !ok {
 			// policy doesn't support single item
-			return nil
+			return nil, nil
 		}
 		item = append(item, policyWithSingleItem.GetPolicyItem())
 	}

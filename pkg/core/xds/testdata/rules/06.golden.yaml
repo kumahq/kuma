@@ -1,0 +1,15 @@
+- Conf:
+    backends:
+    - datadog: null
+      zipkin:
+        apiVersion: ""
+        sharedSpanContext: null
+        traceId128bit: false
+        url: http://jaeger-collector.mesh-observability:9411/api/v2/spans
+    sampling: null
+    tags:
+    - header: null
+      literal: core
+      name: team
+  Origin: null
+  Subset: []
