@@ -18,7 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 )
 
-const MeshTraceOrigin = "mesh-trace"
+const OriginMeshTrace = "mesh-trace"
 
 var _ core_plugins.PolicyPlugin = &plugin{}
 
@@ -136,7 +136,7 @@ func applyToClusters(rules xds.SingleItemRules, rs *xds.ResourceSet, proxy *xds.
 		return err
 	}
 
-	rs.Add(&xds.Resource{Name: plugin_xds.GetTracingClusterName(provider), Origin: MeshTraceOrigin, Resource: res})
+	rs.Add(&xds.Resource{Name: plugin_xds.GetTracingClusterName(provider), Origin: OriginMeshTrace, Resource: res})
 
 	return nil
 }
