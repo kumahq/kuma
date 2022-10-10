@@ -2,12 +2,13 @@ package model
 
 import (
 	"fmt"
-	"github.com/kumahq/kuma/pkg/plugins"
 	"reflect"
 	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/kumahq/kuma/pkg/plugins"
 )
 
 const (

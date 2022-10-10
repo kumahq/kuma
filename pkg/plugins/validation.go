@@ -12,9 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
-// we only need schema.yaml but during make check we delete all of them and that makes compilation fail
-// so this catches also policies/donothingpolicy/api/v1alpha1/rest.yaml and makes compilation succeed
-//go:embed policies/*/api/v1alpha1/*.yaml
+//go:embed policies/*/api/v1alpha1/schema.yaml
 var content embed.FS
 
 var resourceToSchema map[string]*gojsonschema.JSONLoader
@@ -70,7 +68,8 @@ func init() {
 		panic(err)
 	}
 	for _, dir := range dirs {
-		if !dir.IsDir() {
+		// workaround described in pkg/plugins/policies/embedworkaround/api/v1alpha1/schema.yaml
+		if !dir.IsDir() || dir.Name() == "embedworkaround" {
 			continue
 		}
 		rawSchema, err := content.ReadFile(path.Join("policies", dir.Name(), "api", "v1alpha1", "schema.yaml"))
