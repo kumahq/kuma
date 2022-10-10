@@ -89,7 +89,7 @@ var _ = SynchronizedBeforeSuite(
 					WithEgressEnvoyAdminTunnel(),
 					WithIngressEnvoyAdminTunnel(),
 				)).
-				Install(IngressUniversal(env.Global.GetKuma().GenerateZoneIngressToken)).
+				Install(IngressUniversal(env.Global.GetKuma().GenerateZoneIngressLegacyToken)).
 				Install(EgressUniversal(env.Global.GetKuma().GenerateZoneEgressToken)).
 				Setup(env.UniZone1)
 			Expect(err).ToNot(HaveOccurred())

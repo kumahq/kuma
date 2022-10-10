@@ -36,6 +36,10 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
+	if proxy.Dataplane.Spec.IsBuiltinGateway() {
+		return nil
+	}
+
 	mtp, ok := proxy.Policies.Dynamic[api.MeshTrafficPermissionType]
 	if !ok {
 		return nil

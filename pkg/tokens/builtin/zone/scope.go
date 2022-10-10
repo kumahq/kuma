@@ -1,18 +1,12 @@
 package zone
 
 const (
-	// TODO (bartsmykla): uncomment when Zone Token will be available for dataplanes
-	// 	and ingresses
-	// DataplaneScope string = "dataplane
-	// IngressScope string = "ingress"
-	EgressScope string = "egress"
+	IngressScope string = "ingress"
+	EgressScope  string = "egress"
 )
 
 var FullScope = []string{
-	// TODO (bartsmykla): uncomment when Zone Token will be available for dataplanes
-	// 	and ingresses
-	// DataplaneScope,
-	// IngressScope,
+	IngressScope,
 	EgressScope,
 }
 
