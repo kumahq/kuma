@@ -46,8 +46,8 @@ from:
       name: ...
 ```
 
-Configuration for MeshTrafficPermission has a single field "action" with values "ALLOW", "DENY", 
-"ALLOW_WITH_SHADOW_DENY" and "DENY_WITH_SHADOW_ALLOW".
+Configuration for MeshTrafficPermission has a single field "action" with values "ALLOW", "DENY" and 
+"ALLOW_WITH_SHADOW_DENY".
 So the overall specification looks like this:
 
 ```yaml
@@ -62,7 +62,7 @@ spec:
         kind: Mesh|MeshSubset|MeshService|MeshServiceSubset
         name: ...
       default:
-        action: ALLOW|DENY|ALLOW_WITH_SHADOW_DENY|DENY_WITH_SHADOW_ALLOW
+        action: ALLOW|DENY|ALLOW_WITH_SHADOW_DENY
 ```
 
 We don't want to mix mTLS configs (like permissive mTLS or TLS version) with MeshTrafficPermission. 
@@ -73,6 +73,10 @@ The main reason is that mTLS settings are applied for the entire inbound, while 
 Shadow actions are not enforced but emit stats and can be used for rule testing.
 For example, before creating "action: DENY" rule, user creates "action: ALLOW_WITH_SHADOW_DENY" rule and checks the stats.
 If there are no unexpected denied requests from the clients then it's safe to change "action" to "DENY".
+
+Note: We deliberately excluded `DENY_WITH_SHADOW_ALLOW` for 2 reasons:
+1. Haven't found a use-case for this action.
+2. Impossible to configure Envoy properly when 1 proxy has both `ALLOW_WITH_SHADOW_DENY` and `DENY_WITH_SHADOW_ALLOW` rules.
 
 #### Other considered options
 
@@ -167,7 +171,7 @@ spec:
         tags:
           kuma.io/zone: us-east
       default:
-        action: DENY_WITH_SHADOW_ALLOW
+        action: DENY
 ---
 type: MeshTrafficPermission
 name: backend
@@ -201,7 +205,7 @@ from:
       tags:
         kuma.io/zone: us-east
     default:
-      action: DENY_WITH_SHADOW_ALLOW
+      action: DENY
   - targetRef: # from 'backend'
       kind: MeshSubset
       tags:
@@ -258,7 +262,7 @@ rules:
         env: !dev
         kuma.io/service: !web
     default:
-      action: DENY_WITH_SHADOW_ALLOW
+      action: DENY
   - targetRef:
       kind: MeshSubset
       tags:
@@ -452,7 +456,7 @@ policies:
 ```
 Set this policy as "rules" into NetworkFilter.
 
-4. Shadow rules. Take only rules that have "DENY_WITH_SHADOW_ALLOW":
+4. Shadow rules. Take only rules that have "ALLOW_WITH_SHADOW_DENY"
 
 ```yaml
 rules:
@@ -460,18 +464,42 @@ rules:
       kind: MeshSubset
       tags:
         kuma.io/zone: us-east
-        env: !dev
-        kuma.io/service: !web
+        env: dev
+        kuma.io/service: web
     default:
-      action: DENY_WITH_SHADOW_ALLOW
+      action: ALLOW_WITH_SHADOW_DENY
+  - targetRef:
+      kind: MeshSubset
+      tags:
+        kuma.io/zone: us-east
+        env: !dev
+        kuma.io/service: web
+    default:
+      action: ALLOW_WITH_SHADOW_DENY
+  - targetRef:
+      kind: MeshSubset
+      tags:
+        kuma.io/zone: !us-east
+        env: dev
+        kuma.io/service: web
+    default:
+      action: ALLOW_WITH_SHADOW_DENY
+  - targetRef:
+      kind: MeshSubset
+      tags:
+        kuma.io/zone: !us-east
+        env: !dev
+        kuma.io/service: web
+    default:
+      action: ALLOW_WITH_SHADOW_DENY 
 ```
 
 Generate [config.rbac.v3.RBAC](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/rbac/v3/rbac.proto#envoy-v3-api-msg-config-rbac-v3-rbac)
-with "ALLOW" action and with a single "MeshTrafficPermission" policy. The policy has permission "any: true" and the list of "principals".
+with "DENY" action and with a single "MeshTrafficPermission" policy. The policy has permission "any: true" and the list of "principals".
 List of principals generated based on the list from step 3. Each principal is matched with OR semantic:
 
 ```yaml
-action: ALLOW
+action: DENY
 policies:
   "MeshTrafficPermission":
     permissions:
@@ -482,14 +510,49 @@ policies:
             - authenticated:
                 principal_name:
                   exact: "kuma://kuma.io/zone/us-east"
+            - authenticated:
+                  principal_name:
+                    exact: "kuma://env/dev"
+            - authenticated:
+                  principal_name:
+                    exact: "kuma://kuma.io/service/web"
+      - and_ids:
+          ids:
+            - authenticated:
+                principal_name:
+                  exact: "kuma://kuma.io/zone/us-east"
             - not_id:
                 authenticated:
                   principal_name:
                     exact: "kuma://env/dev"
+            - authenticated:
+                  principal_name:
+                    exact: "kuma://kuma.io/service/web"
+      - and_ids:
+          ids:
             - not_id:
                 authenticated:
                   principal_name:
-                    exact: "kuma://kuma.io/service/web"
+                    exact: "kuma://kuma.io/zone/us-east"
+            - authenticated:
+                principal_name:
+                  exact: "kuma://env/dev"
+            - authenticated:
+                principal_name:
+                  exact: "kuma://kuma.io/service/web"
+      - and_ids:
+          ids:
+            - not_id:
+                authenticated:
+                  principal_name:
+                    exact: "kuma://kuma.io/zone/us-east"
+            - not_id:
+                authenticated:
+                  principal_name:
+                    exact: "kuma://env/dev"
+            - authenticated:
+                principal_name:
+                  exact: "kuma://kuma.io/service/web"
 ```
 Set this policy as "shadow_rules" into NetworkFilter.
 
