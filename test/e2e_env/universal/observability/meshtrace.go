@@ -11,32 +11,26 @@ import (
 	obs "github.com/kumahq/kuma/test/framework/deployments/observability"
 )
 
-func meshWithTracing(meshName, zipkinURL string) string {
+func traceAll(meshName string, url string) string {
 	return fmt.Sprintf(`
-type: Mesh
-name: %s
-tracing:
-  defaultBackend: zipkin
-  backends:
-  - name: zipkin
-    type: zipkin
-    conf:
-      url: %s
-`, meshName, zipkinURL)
-}
-
-func traceAllUniversal(meshName string) string {
-	return fmt.Sprintf(`
-type: TrafficTrace
-name: traffic-trace-all
+type: MeshTrace
+name: trace-all
 mesh: %s
-selectors:
-- match:
-   kuma.io/service: "*"
-`, meshName)
+spec:
+  targetRef:
+    kind: Mesh
+    name: %s
+  default:
+    tags:
+      - name: team
+        literal: core
+    backends:
+      - zipkin:
+          url: %s
+`, meshName, meshName, url)
 }
 
-func Tracing() {
+func PluginTest() {
 	mesh := "tracing"
 	obsDeployment := "obs-tracing"
 	var obsClient obs.Observability
@@ -59,10 +53,8 @@ func Tracing() {
 	})
 
 	It("should emit traces to jaeger", func() {
-		// given TrafficTrace and mesh with tracing backend
-		err := YamlUniversal(meshWithTracing(mesh, obsClient.ZipkinCollectorURL()))(env.Cluster)
-		Expect(err).ToNot(HaveOccurred())
-		err = YamlUniversal(traceAllUniversal(mesh))(env.Cluster)
+		// given MeshTrace and with tracing backend
+		err := YamlUniversal(traceAll(mesh, obsClient.ZipkinCollectorURL()))(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() ([]string, error) {

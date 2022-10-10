@@ -62,6 +62,9 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 		ToRules: core_xds.ToRules{
 			Rules: toRules(dpPolicies),
 		},
+		SingleItemRules: core_xds.SingleItemRules{
+			Rules: singleItem(dpPolicies),
+		},
 	}, nil
 }
 
@@ -95,6 +98,19 @@ func toRules(matchedPolicies []core_model.Resource) core_xds.Rules {
 		toList = append(toList, policyWithTo.GetToList()...)
 	}
 	return core_xds.BuildRules(toList)
+}
+
+func singleItem(matchedPolicies []core_model.Resource) core_xds.Rules {
+	item := []core_xds.PolicyItem{}
+	for _, mp := range matchedPolicies {
+		policyWithSingleItem, ok := mp.GetSpec().(core_xds.PolicyWithSingleItem)
+		if !ok {
+			// policy doesn't support single item
+			return nil
+		}
+		item = append(item, policyWithSingleItem.GetPolicyItem())
+	}
+	return core_xds.BuildRules(item)
 }
 
 // inboundsSelectedByTargetRef returns a list of inbounds of DPP that are selected by the targetRef

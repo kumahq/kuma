@@ -128,10 +128,10 @@ test/e2e/debug-fast:
 # test/e2e/debug-universal is the same target as 'test/e2e/debug' but builds only 'kuma-universal' image
 # and doesn't start Kind clusters
 .PHONY: test/e2e/debug-universal
-test/e2e/debug-universal: build/kumactl images/test
+test/e2e/debug-universal: build/kumactl images/test k3d/network/create
 	$(E2E_ENV_VARS) \
 	GINKGO_EDITOR_INTEGRATION=true \
-		$(GINKGO_TEST_E2E) --keep-going=false --fail-fast $(E2E_PKG_LIST)
+		$(GINKGO_TEST_E2E) --keep-going=false --fail-fast $(UNIVERSAL_E2E_PKG_LIST)
 
 
 .PHONY: test/e2e

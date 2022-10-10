@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -12,7 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/matchers"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/plugin/xds"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
+	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
@@ -38,21 +37,21 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
-	listeners := gatherListeners(rs)
+	listeners := policies_xds.GatherListeners(rs)
 
-	if err := applyToInbounds(policies.FromRules, listeners.inbound, proxy.Dataplane); err != nil {
+	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy.Dataplane); err != nil {
 		return err
 	}
-	if err := applyToOutbounds(policies.ToRules, listeners.outbound, proxy.Dataplane); err != nil {
+	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Dataplane); err != nil {
 		return err
 	}
-	if err := applyToTransparentProxyListeners(policies, listeners.ipv4Passthrough, listeners.ipv6Passthrough, proxy.Dataplane); err != nil {
+	if err := applyToTransparentProxyListeners(policies, listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, proxy.Dataplane); err != nil {
 		return err
 	}
-	if err := applyToDirectAccess(policies.ToRules, listeners.directAccess, proxy.Dataplane); err != nil {
+	if err := applyToDirectAccess(policies.ToRules, listeners.DirectAccess, proxy.Dataplane); err != nil {
 		return err
 	}
-	if err := applyToGateway(policies.ToRules, listeners.gateway, ctx.Mesh.Resources.MeshLocalResources, proxy.Dataplane); err != nil {
+	if err := applyToGateway(policies.ToRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy.Dataplane); err != nil {
 		return err
 	}
 
@@ -188,63 +187,6 @@ func applyToGateway(
 	}
 
 	return nil
-}
-
-type listeners struct {
-	inbound         map[xds.InboundListener]*envoy_listener.Listener
-	outbound        map[mesh_proto.OutboundInterface]*envoy_listener.Listener
-	gateway         map[xds.InboundListener]*envoy_listener.Listener
-	ipv4Passthrough *envoy_listener.Listener
-	ipv6Passthrough *envoy_listener.Listener
-	directAccess    map[generator.Endpoint]*envoy_listener.Listener
-}
-
-func gatherListeners(rs *core_xds.ResourceSet) listeners {
-	listeners := listeners{
-		inbound:      map[xds.InboundListener]*envoy_listener.Listener{},
-		outbound:     map[mesh_proto.OutboundInterface]*envoy_listener.Listener{},
-		gateway:      map[xds.InboundListener]*envoy_listener.Listener{},
-		directAccess: map[generator.Endpoint]*envoy_listener.Listener{},
-	}
-
-	for _, res := range rs.Resources(envoy_resource.ListenerType) {
-		listener := res.Resource.(*envoy_listener.Listener)
-		address := listener.GetAddress().GetSocketAddress()
-
-		switch res.Origin {
-		case generator.OriginOutbound:
-			listeners.outbound[mesh_proto.OutboundInterface{
-				DataplaneIP:   address.GetAddress(),
-				DataplanePort: address.GetPortValue(),
-			}] = listener
-		case generator.OriginInbound:
-			listeners.inbound[xds.InboundListener{
-				Address: address.GetAddress(),
-				Port:    address.GetPortValue(),
-			}] = listener
-		case generator.OriginTransparent:
-			switch listener.Name {
-			case generator.OutboundNameIPv4:
-				listeners.ipv4Passthrough = listener
-			case generator.OutboundNameIPv6:
-				listeners.ipv6Passthrough = listener
-			}
-		case generator.OriginDirectAccess:
-			listeners.directAccess[generator.Endpoint{
-				Address: address.GetAddress(),
-				Port:    address.GetPortValue(),
-			}] = listener
-		case gateway.OriginGateway:
-			listeners.gateway[xds.InboundListener{
-				Address: address.GetAddress(),
-				Port:    address.GetPortValue(),
-			}] = listener
-		default:
-			continue
-		}
-	}
-
-	return listeners
 }
 
 func configureInbound(
