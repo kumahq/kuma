@@ -30,6 +30,11 @@ type Configurer struct {
 
 var _ v3.FilterChainConfigurer = &Configurer{}
 
+const (
+	ZipkinProviderName  = "zipkin"
+	DatadogProviderName = "datadog"
+)
+
 func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	if c.Conf.Backends[0] == nil {
 		return nil
@@ -43,7 +48,7 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 		if c.Conf.GetSampling() != nil {
 			if c.Conf.GetSampling().GetOverall() != nil {
 				hcm.Tracing.OverallSampling = &envoy_type.Percent{
-					Value: float64(c.Conf.Sampling.Overall.Value), // missing value will
+					Value: float64(c.Conf.Sampling.Overall.Value),
 				}
 			}
 			if c.Conf.GetSampling().GetClient() != nil {
@@ -63,7 +68,7 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 		}
 
 		if backend.GetZipkin() != nil {
-			tracing, err := c.zipkinConfig(GetTracingClusterName("zipkin"))
+			tracing, err := c.zipkinConfig(GetTracingClusterName(ZipkinProviderName))
 			if err != nil {
 				return err
 			}
@@ -72,7 +77,7 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 
 		datadog := backend.GetDatadog()
 		if datadog != nil {
-			tracing, err := c.datadogConfig(GetTracingClusterName("datadog"))
+			tracing, err := c.datadogConfig(GetTracingClusterName(DatadogProviderName))
 			if err != nil {
 				return err
 			}

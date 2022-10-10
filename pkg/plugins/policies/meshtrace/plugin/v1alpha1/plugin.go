@@ -18,7 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 )
 
-const MeshTraceOrigin = "meshTrace"
+const MeshTraceOrigin = "mesh-trace"
 
 var _ core_plugins.PolicyPlugin = &plugin{}
 
@@ -121,10 +121,10 @@ func applyToClusters(rules xds.SingleItemRules, rs *xds.ResourceSet, proxy *xds.
 
 	if backend.GetZipkin() != nil {
 		endpoint = endpointForZipkin(backend.GetZipkin())
-		provider = "zipkin"
+		provider = plugin_xds.ZipkinProviderName
 	} else {
 		endpoint = endpointForDatadog(backend.GetDatadog())
-		provider = "datadog"
+		provider = plugin_xds.DatadogProviderName
 	}
 
 	res, err := clusters.NewClusterBuilder(proxy.APIVersion).
