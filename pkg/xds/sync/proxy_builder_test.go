@@ -99,6 +99,7 @@ var _ = Describe("Proxy Builder", func() {
 		rt.Config().Multizone.Zone.Name,
 		vips.NewPersistence(rt.ReadOnlyResourceManager(), rt.ConfigManager()),
 		rt.Config().DNSServer.Domain,
+		rt.Config().DNSServer.ServiceVipPort,
 	)
 	metrics, err := core_metrics.NewMetrics("cache")
 	Expect(err).ToNot(HaveOccurred())
