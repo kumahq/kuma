@@ -14,7 +14,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/plugin/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/policies/utils"
+	xds_utils "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -99,8 +99,8 @@ var _ = Describe("MeshTrace", func() {
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
 			Expect(plugin.Apply(resources, context, &proxy)).To(Succeed())
-			utils.ResourceArrayShouldEqual(resources.ListOf(envoy_resource.ListenerType), given.expectedListeners)
-			utils.ResourceArrayShouldEqual(resources.ListOf(envoy_resource.ClusterType), given.expectedClusters)
+			xds_utils.ResourceArrayShouldEqual(resources.ListOf(envoy_resource.ListenerType), given.expectedListeners)
+			xds_utils.ResourceArrayShouldEqual(resources.ListOf(envoy_resource.ClusterType), given.expectedClusters)
 		},
 		Entry("inbound/outbound for zipkin", testCase{
 			resources: inboundAndOutbound,

@@ -1,4 +1,4 @@
-package utils
+package xds
 
 import (
 	. "github.com/onsi/gomega"

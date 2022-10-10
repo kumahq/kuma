@@ -13,7 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/matchers"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/plugin/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/utils"
+	xds_utils "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 )
@@ -42,7 +42,7 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 		return nil
 	}
 
-	listeners := utils.GatherListeners(rs)
+	listeners := xds_utils.GatherListeners(rs)
 	if err := applyToInbounds(policies.SingleItemRules, listeners.Inbound, proxy.Dataplane); err != nil {
 		return err
 	}

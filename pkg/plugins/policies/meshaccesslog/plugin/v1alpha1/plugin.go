@@ -11,7 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/matchers"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/plugin/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/utils"
+	xds_utils "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
@@ -36,7 +36,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
-	listeners := utils.GatherListeners(rs)
+	listeners := xds_utils.GatherListeners(rs)
 
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy.Dataplane); err != nil {
 		return err

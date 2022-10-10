@@ -1,4 +1,4 @@
-package utils
+package xds
 
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"

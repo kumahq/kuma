@@ -33,7 +33,7 @@ protoc/plugins:
 
 POLICIES_DIR := pkg/plugins/policies
 
-policies = $(foreach dir,$(shell find pkg/plugins/policies -maxdepth 1 -mindepth 1 -type d | grep -v core | grep -v matchers | grep -v utils | sort),$(notdir $(dir)))
+policies = $(foreach dir,$(shell find pkg/plugins/policies -maxdepth 1 -mindepth 1 -type d | grep -v core | grep -v matchers | grep -v xds | sort),$(notdir $(dir)))
 generate_policy_targets = $(addprefix generate/policy/,$(policies))
 cleanup_policy_targets = $(addprefix cleanup/policy/,$(policies))
 
