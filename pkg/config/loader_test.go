@@ -223,6 +223,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DNSServer.Domain).To(Equal("test-domain"))
 			Expect(cfg.DNSServer.CIDR).To(Equal("127.1.0.0/16"))
 			Expect(cfg.DNSServer.ServiceVipEnabled).To(BeFalse())
+			Expect(cfg.DNSServer.ServiceVipPort).To(Equal(uint32(9090)))
 
 			Expect(cfg.XdsServer.DataplaneStatusFlushInterval).To(Equal(7 * time.Second))
 			Expect(cfg.XdsServer.DataplaneConfigurationRefreshInterval).To(Equal(21 * time.Second))
@@ -439,6 +440,7 @@ dnsServer:
   domain: test-domain
   CIDR: 127.1.0.0/16
   serviceVipEnabled: false
+  serviceVipPort: 9090
 defaults:
   skipMeshCreation: true
   enableLocalhostInboundClusters: true
@@ -615,6 +617,7 @@ proxy:
 				"KUMA_DNS_SERVER_DOMAIN":                                                                   "test-domain",
 				"KUMA_DNS_SERVER_CIDR":                                                                     "127.1.0.0/16",
 				"KUMA_DNS_SERVER_SERVICE_VIP_ENABLED":                                                      "false",
+				"KUMA_DNS_SERVER_SERVICE_VIP_PORT":                                                         "9090",
 				"KUMA_MODE":                                                                                "zone",
 				"KUMA_MULTIZONE_GLOBAL_KDS_GRPC_PORT":                                                      "1234",
 				"KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL":                                               "2s",

@@ -70,7 +70,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: circuitbreakers.kuma.io
 spec:
@@ -115,7 +115,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: containerpatches.kuma.io
 spec:
@@ -225,7 +225,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: meshgatewayroutes.kuma.io
 spec:
@@ -270,7 +270,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: meshgateways.kuma.io
 spec:
@@ -315,7 +315,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: meshinsights.kuma.io
 spec:
@@ -360,7 +360,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: meshtraces.kuma.io
 spec:
@@ -408,16 +408,19 @@ spec:
                         datadog:
                           description: Datadog backend configuration.
                           properties:
-                            address:
-                              description: Address of datadog collector.
+                            splitService:
+                              description: 'Determines if datadog service name should
+                                be split based on traffic direction and destination.
+                                For example, with `splitService: true` and a `backend`
+                                service that communicates with a couple of databases,
+                                you would get service names like `backend_INBOUND`,
+                                `backend_OUTBOUND_db1`, and `backend_OUTBOUND_db2`
+                                in Datadog. Default: false'
+                              type: boolean
+                            url:
+                              description: Address of Datadog collector, only host
+                                and port are allowed (no paths, fragments etc.)
                               type: string
-                            port:
-                              description: Port of datadog collector
-                              format: int32
-                              type: integer
-                          required:
-                          - address
-                          - port
                           type: object
                         zipkin:
                           description: Zipkin backend configuration.
@@ -440,15 +443,7 @@ spec:
                             url:
                               description: Address of Zipkin collector.
                               type: string
-                          required:
-                          - apiVersion
-                          - sharedSpanContext
-                          - traceId128bit
-                          - url
                           type: object
-                      required:
-                      - datadog
-                      - zipkin
                       type: object
                     type: array
                   sampling:
@@ -460,8 +455,12 @@ spec:
                         description: 'Target percentage of requests that will be force
                           traced if the ''x-client-trace-id'' header is set. Default:
                           100% Mirror of client_sampling in Envoy https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L127-L133'
-                        format: int32
-                        type: integer
+                        properties:
+                          value:
+                            description: The uint32 value.
+                            format: int32
+                            type: integer
+                        type: object
                       overall:
                         description: 'Target percentage of requests will be traced
                           after all other sampling checks have been applied (client,
@@ -471,19 +470,23 @@ spec:
                           to 1% will result in only 1% of client requests with the
                           appropriate headers to be force traced. Default: 100% Mirror
                           of overall_sampling in Envoy https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L142-L150'
-                        format: int32
-                        type: integer
+                        properties:
+                          value:
+                            description: The uint32 value.
+                            format: int32
+                            type: integer
+                        type: object
                       random:
                         description: 'Target percentage of requests that will be randomly
                           selected for trace generation, if not requested by the client
                           or not forced. Default: 100% Mirror of random_sampling in
                           Envoy https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L135-L140'
-                        format: int32
-                        type: integer
-                    required:
-                    - client
-                    - overall
-                    - random
+                        properties:
+                          value:
+                            description: The uint32 value.
+                            format: int32
+                            type: integer
+                        type: object
                     type: object
                   tags:
                     description: Custom tags configuration. You can add custom tags
@@ -503,9 +506,6 @@ spec:
                             name:
                               description: Name of the header.
                               type: string
-                          required:
-                          - default
-                          - name
                           type: object
                         literal:
                           description: Tag taken from literal value.
@@ -513,16 +513,8 @@ spec:
                         name:
                           description: Name of the tag.
                           type: string
-                      required:
-                      - header
-                      - literal
-                      - name
                       type: object
                     type: array
-                required:
-                - backends
-                - sampling
-                - tags
                 type: object
               targetRef:
                 description: TargetRef is a reference to the resource the policy takes
@@ -554,9 +546,6 @@ spec:
                       to define a subset of proxies
                     type: object
                 type: object
-            required:
-            - default
-            - targetRef
             type: object
         type: object
     served: true
@@ -566,7 +555,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: meshtrafficpermissions.kuma.io
 spec:
@@ -622,8 +611,6 @@ spec:
                           - ALLOW_WITH_SHADOW_DENY
                           - DENY_WITH_SHADOW_ALLOW
                           type: string
-                      required:
-                      - action
                       type: object
                     targetRef:
                       description: TargetRef is a reference to the resource that represents
@@ -654,9 +641,6 @@ spec:
                             to define a subset of proxies
                           type: object
                       type: object
-                  required:
-                  - default
-                  - targetRef
                   type: object
                 type: array
               targetRef:
@@ -689,9 +673,6 @@ spec:
                       to define a subset of proxies
                     type: object
                 type: object
-            required:
-            - from
-            - targetRef
             type: object
         type: object
     served: true
@@ -701,7 +682,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: proxytemplates.kuma.io
 spec:
@@ -746,7 +727,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: ratelimits.kuma.io
 spec:
@@ -791,7 +772,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: retries.kuma.io
 spec:
@@ -836,7 +817,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: serviceinsights.kuma.io
 spec:
@@ -881,7 +862,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: timeouts.kuma.io
 spec:
@@ -926,7 +907,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: dataplaneinsights.kuma.io
 spec:
@@ -971,7 +952,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: trafficlogs.kuma.io
 spec:
@@ -1016,7 +997,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: trafficpermissions.kuma.io
 spec:
@@ -1061,7 +1042,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: trafficroutes.kuma.io
 spec:
@@ -1106,7 +1087,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: traffictraces.kuma.io
 spec:
@@ -1151,7 +1132,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: virtualoutbounds.kuma.io
 spec:
@@ -1196,7 +1177,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: zoneegresses.kuma.io
 spec:
@@ -1241,7 +1222,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: zoneegressinsights.kuma.io
 spec:
@@ -1286,7 +1267,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: zoneingresses.kuma.io
 spec:
@@ -1331,7 +1312,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: zoneingressinsights.kuma.io
 spec:
@@ -1377,7 +1358,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: zoneinsights.kuma.io
 spec:
@@ -1422,7 +1403,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: dataplanes.kuma.io
 spec:
@@ -1467,7 +1448,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: zones.kuma.io
 spec:
@@ -1512,7 +1493,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: externalservices.kuma.io
 spec:
@@ -1557,7 +1538,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: faultinjections.kuma.io
 spec:
@@ -1602,7 +1583,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: healthchecks.kuma.io
 spec:
@@ -1647,7 +1628,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: meshaccesslogs.kuma.io
 spec:
@@ -1707,24 +1688,15 @@ spec:
                                               type: string
                                             value:
                                               type: string
-                                          required:
-                                          - key
-                                          - value
                                           type: object
                                         type: array
                                       plain:
                                         type: string
-                                    required:
-                                    - json
-                                    - plain
                                     type: object
                                   path:
                                     description: Path to a file that logs will be
                                       written to
                                     type: string
-                                required:
-                                - format
-                                - path
                                 type: object
                               tcp:
                                 description: Backend defines logging backend.
@@ -1744,28 +1716,14 @@ spec:
                                               type: string
                                             value:
                                               type: string
-                                          required:
-                                          - key
-                                          - value
                                           type: object
                                         type: array
                                       plain:
                                         type: string
-                                    required:
-                                    - json
-                                    - plain
                                     type: object
-                                required:
-                                - address
-                                - format
                                 type: object
-                            required:
-                            - file
-                            - tcp
                             type: object
                           type: array
-                      required:
-                      - backends
                       type: object
                     targetRef:
                       description: TargetRef is a reference to the resource that represents
@@ -1796,9 +1754,6 @@ spec:
                             to define a subset of proxies
                           type: object
                       type: object
-                  required:
-                  - default
-                  - targetRef
                   type: object
                 type: array
               targetRef:
@@ -1856,24 +1811,15 @@ spec:
                                               type: string
                                             value:
                                               type: string
-                                          required:
-                                          - key
-                                          - value
                                           type: object
                                         type: array
                                       plain:
                                         type: string
-                                    required:
-                                    - json
-                                    - plain
                                     type: object
                                   path:
                                     description: Path to a file that logs will be
                                       written to
                                     type: string
-                                required:
-                                - format
-                                - path
                                 type: object
                               tcp:
                                 description: Backend defines logging backend.
@@ -1893,28 +1839,14 @@ spec:
                                               type: string
                                             value:
                                               type: string
-                                          required:
-                                          - key
-                                          - value
                                           type: object
                                         type: array
                                       plain:
                                         type: string
-                                    required:
-                                    - json
-                                    - plain
                                     type: object
-                                required:
-                                - address
-                                - format
                                 type: object
-                            required:
-                            - file
-                            - tcp
                             type: object
                           type: array
-                      required:
-                      - backends
                       type: object
                     targetRef:
                       description: TargetRef is a reference to the resource that represents
@@ -1945,15 +1877,8 @@ spec:
                             to define a subset of proxies
                           type: object
                       type: object
-                  required:
-                  - default
-                  - targetRef
                   type: object
                 type: array
-            required:
-            - from
-            - targetRef
-            - to
             type: object
         type: object
     served: true
@@ -1963,7 +1888,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: meshes.kuma.io
 spec:
@@ -2008,7 +1933,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: meshgatewayinstances.kuma.io
 spec:

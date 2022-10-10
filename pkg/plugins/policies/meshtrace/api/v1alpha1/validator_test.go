@@ -25,7 +25,7 @@ var _ = Describe("MeshTrace", func() {
 				// then
 				Expect(verr).To(BeNil())
 			},
-			Entry("full example", `
+			Entry("full zipkin example", `
 targetRef:
   kind: MeshService
   name: backend
@@ -69,6 +69,16 @@ default:
     overall: 80
     random: 60
     client: 40
+`),
+			Entry("with datadog backend", `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - datadog:
+        url: http://intake.datadoghq.eu:8126
+        splitService: true
 `),
 		)
 
@@ -180,7 +190,7 @@ violations:
   - field: spec.default.backends[0].zipkin.apiVersion
     message: must be one of httpJson, httpProto`,
 			}),
-			Entry("missing address for datadog backend", testCase{
+			Entry("invalid url for datadog backend", testCase{
 				inputYaml: `
 targetRef:
   kind: MeshService
@@ -188,14 +198,14 @@ targetRef:
 default:
   backends:
     - datadog:
-        port: 443
+        url: not_valid_url
 `,
 				expected: `
 violations:
-  - field: spec.default.backends[0].datadog.address
-    message: must not be empty`,
+  - field: spec.default.backends[0].datadog.url
+    message: must be a valid url`,
 			}),
-			Entry("invalid address for datadog backend", testCase{
+			Entry("no port for datadog backend url", testCase{
 				inputYaml: `
 targetRef:
   kind: MeshService
@@ -203,28 +213,12 @@ targetRef:
 default:
   backends:
     - datadog:
-        address: not_a_valid_address
-        port: 443
+        url: http://intake.datadoghq.eu
 `,
 				expected: `
 violations:
-  - field: spec.default.backends[0].datadog.address
-    message: must be a valid address`,
-			}),
-			Entry("missing port for datadog backend", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: backend
-default:
-  backends:
-    - datadog:
-        address: intake.logs.datadoghq.eu
-`,
-				expected: `
-violations:
-  - field: spec.default.backends[0].datadog.port
-    message: must be a valid port (0-65535)`,
+  - field: spec.default.backends[0].datadog.url
+    message: port must be defined`,
 			}),
 			Entry("invalid port for datadog backend", testCase{
 				inputYaml: `
@@ -234,13 +228,42 @@ targetRef:
 default:
   backends:
     - datadog:
-        address: intake.logs.datadoghq.eu
-        port: 999999
+        url: http://intake.datadoghq.eu:999999
 `,
 				expected: `
 violations:
-  - field: spec.default.backends[0].datadog.port
-    message: must be a valid port (0-65535)`,
+  - field: spec.default.backends[0].datadog.url
+    message: port must be a valid (1-65535)`,
+			}),
+			Entry("invalid scheme for datadog backend", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - datadog:
+        url: sql://intake.datadoghq.eu:8126
+`,
+				expected: `
+violations:
+  - field: spec.default.backends[0].datadog.url
+    message: scheme must be http`,
+			}),
+			Entry("path provided for datadog backend", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - datadog:
+        url: http://intake.datadoghq.eu:8126/some/path
+`,
+				expected: `
+violations:
+  - field: spec.default.backends[0].datadog.url
+    message: path must not be defined`,
 			}),
 			Entry("tag missing name", testCase{
 				inputYaml: `
@@ -250,8 +273,7 @@ targetRef:
 default:
   backends:
     - datadog:
-        address: intake.logs.datadoghq.eu
-        port: 443
+        url: http://intake.datadoghq.eu:443
   tags:
     - literal: example
     - header:
@@ -272,8 +294,7 @@ targetRef:
 default:
   backends:
     - datadog:
-        address: intake.logs.datadoghq.eu
-        port: 443
+        url: http://intake.datadoghq.eu:443
   tags:
     - name: example
 `,
@@ -291,8 +312,7 @@ targetRef:
 default:
   backends:
     - datadog:
-        address: intake.logs.datadoghq.eu
-        port: 443
+        url: http://intake.datadoghq.eu:443
   sampling:
     overall: 101
 `,

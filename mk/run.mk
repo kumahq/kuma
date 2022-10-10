@@ -2,6 +2,22 @@ GO_RUN := CGO_ENABLED=0 go run $(GOFLAGS) $(LD_FLAGS)
 
 EXAMPLE_DATAPLANE_MESH ?= default
 EXAMPLE_DATAPLANE_NAME ?= example
+EXAMPLE_DATAPLANE_INBOUND_PORT ?= 8000
+EXAMPLE_DATAPLANE_SERVICE_PORT ?= 10011
+define EXAMPLE_DATAPLANE_RESOURCE
+type: Dataplane
+mesh: $(EXAMPLE_DATAPLANE_MESH)
+name: $(EXAMPLE_DATAPLANE_NAME)
+networking:
+  address: 127.0.0.1
+  inbound:
+  - port: $(EXAMPLE_DATAPLANE_INBOUND_PORT)
+    servicePort: $(EXAMPLE_DATAPLANE_SERVICE_PORT)
+    tags:
+      kuma.io/service: echo-service
+      kuma.io/protocol: http
+endef
+
 ENVOY_ADMIN_PORT ?= 9901
 
 POSTGRES_SSL_MODE ?= disable
@@ -46,14 +62,12 @@ run/universal/postgres: ## Dev: Run Control Plane locally in universal mode with
 	$(GO_RUN) ./app/kuma-cp/main.go run --log-level=debug
 
 .PHONY: run/example/envoy/universal
-run/example/envoy/universal: run/example/envoy
+run/example/envoy/universal: run/echo-server run/example/envoy
 
 .PHONY: run/example/envoy
+run/example/envoy: export KUMA_DATAPLANE_RUNTIME_RESOURCE=$(EXAMPLE_DATAPLANE_RESOURCE)
 run/example/envoy: build/kuma-dp build/kumactl ## Dev: Run Envoy configured against local Control Plane
 	${BUILD_ARTIFACTS_DIR}/kumactl/kumactl generate dataplane-token --name=$(EXAMPLE_DATAPLANE_NAME) --mesh=$(EXAMPLE_DATAPLANE_MESH) > /tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token
-	KUMA_DATAPLANE_MESH=$(EXAMPLE_DATAPLANE_MESH) \
-	KUMA_DATAPLANE_NAME=$(EXAMPLE_DATAPLANE_NAME) \
-	KUMA_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
 	KUMA_DATAPLANE_RUNTIME_TOKEN_PATH=/tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token \
 	${BUILD_ARTIFACTS_DIR}/kuma-dp/kuma-dp run --log-level=debug
 
@@ -89,10 +103,13 @@ run/kuma-dp: build/kumactl ## Dev: Run `kuma-dp` locally
 	${BUILD_ARTIFACTS_DIR}/kumactl/kumactl generate dataplane-token --name=$(EXAMPLE_DATAPLANE_NAME) --mesh=$(EXAMPLE_DATAPLANE_MESH) > /tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token
 	KUMA_DATAPLANE_MESH=$(EXAMPLE_DATAPLANE_MESH) \
 	KUMA_DATAPLANE_NAME=$(EXAMPLE_DATAPLANE_NAME) \
-	KUMA_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
 	KUMA_DATAPLANE_RUNTIME_TOKEN_PATH=/tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token \
 	$(GO_RUN) ./app/kuma-dp/main.go run --log-level=debug
 
 .PHONY: run/xds-client
 run/xds-client:
 	go run ./tools/xds-client/... run --dps "${NUM_OF_DATAPLANES}" --services "${NUM_OF_SERVICES}" --xds-server-address "${KUMA_CP_ADDRESS}"
+
+.PHONY: run/echo-server
+run/echo-server:
+	go run test/server/main.go echo --port=$(EXAMPLE_DATAPLANE_SERVICE_PORT) &

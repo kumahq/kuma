@@ -6,8 +6,9 @@ import (
 )
 
 const (
-	MustNotBeEmpty = "must not be empty"
-	MustBeDefined  = "must be defined"
+	MustNotBeEmpty   = "must not be empty"
+	MustBeDefined    = "must be defined"
+	MustNotBeDefined = "must not be defined"
 )
 
 func MustHaveOnlyOne(entity string, allowedValues ...string) string {

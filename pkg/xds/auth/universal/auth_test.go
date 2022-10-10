@@ -20,12 +20,14 @@ import (
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	builtin_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 	"github.com/kumahq/kuma/pkg/xds/auth"
 	"github.com/kumahq/kuma/pkg/xds/auth/universal"
 )
 
 var _ = Describe("Authentication flow", func() {
-	var issuer builtin_issuer.DataplaneTokenIssuer
+	var dpTokenIssuer builtin_issuer.DataplaneTokenIssuer
 	var authenticator auth.Authenticator
 	var resStore core_store.ResourceStore
 	var resManager manager.ResourceManager
@@ -70,11 +72,12 @@ var _ = Describe("Authentication flow", func() {
 		Expect(resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey("demo", model.NoMesh))).To(Succeed())
 		Expect(resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey("demo-2", model.NoMesh))).To(Succeed())
 
+		dpTokenIssuer = builtin.NewDataplaneTokenIssuer(resManager)
 		dataplaneValidator := builtin.NewDataplaneTokenValidator(resManager, store_config.MemoryStore)
 		zoneIngressValidator := builtin.NewZoneIngressTokenValidator(resManager, store_config.MemoryStore)
 		zoneTokenValidator := builtin.NewZoneTokenValidator(resManager, config_core.Global, store_config.MemoryStore)
-		issuer = builtin.NewDataplaneTokenIssuer(resManager)
-		authenticator = universal.NewAuthenticator(dataplaneValidator, zoneIngressValidator, zoneTokenValidator, "zone-1")
+		adaptedValidator := zoneingress.NewZoneValidatorAdapter(zoneIngressValidator, zoneTokenValidator)
+		authenticator = universal.NewAuthenticator(dataplaneValidator, adaptedValidator, "zone-1")
 
 		signingKeyManager := tokens.NewMeshedSigningKeyManager(resManager, builtin_issuer.DataplaneTokenSigningKeyPrefix("default"), "default")
 		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
@@ -93,7 +96,7 @@ var _ = Describe("Authentication flow", func() {
 	DescribeTable("should correctly authenticate dataplane",
 		func(given testCase) {
 			// when
-			credential, err := issuer.Generate(ctx, given.id, 24*time.Hour)
+			credential, err := dpTokenIssuer.Generate(ctx, given.id, 24*time.Hour)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -134,7 +137,7 @@ var _ = Describe("Authentication flow", func() {
 	DescribeTable("should fail auth",
 		func(given testCase) {
 			// when
-			token, err := issuer.Generate(ctx, given.id, 24*time.Hour)
+			token, err := dpTokenIssuer.Generate(ctx, given.id, 24*time.Hour)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -212,7 +215,7 @@ var _ = Describe("Authentication flow", func() {
 
 	It("should throw an error when signing key used for validation is different than for generation", func() {
 		// given
-		credential, err := issuer.Generate(ctx, builtin_issuer.DataplaneIdentity{
+		credential, err := dpTokenIssuer.Generate(ctx, builtin_issuer.DataplaneIdentity{
 			Name: "dp-1",
 			Mesh: "default",
 		}, 24*time.Hour)
@@ -233,11 +236,72 @@ var _ = Describe("Authentication flow", func() {
 
 	It("should throw an error when signing key is not found", func() {
 		// when
-		_, err := issuer.Generate(ctx, builtin_issuer.DataplaneIdentity{
+		_, err := dpTokenIssuer.Generate(ctx, builtin_issuer.DataplaneIdentity{
 			Mesh: "demo-2",
 		}, 24*time.Hour)
 
 		// then
 		Expect(err.Error()).To(ContainSubstring(`there is no signing key`))
 	})
+
+	Context("Zone Ingress", func() {
+		ziRes := core_mesh.ZoneIngressResource{
+			Meta: &test_model.ResourceMeta{
+				Mesh: "zi-1",
+			},
+			Spec: &mesh_proto.ZoneIngress{
+				Networking: &mesh_proto.ZoneIngress_Networking{
+					Address: "127.0.0.1",
+				},
+			},
+		}
+
+		var zoneTokenIssuer zone.TokenIssuer
+		var zoneIngressTokenIssuer zoneingress.TokenIssuer
+
+		BeforeEach(func() {
+			err := resStore.Create(context.Background(), &ziRes, core_store.CreateByKey("zi-1", model.NoMesh))
+			Expect(err).ToNot(HaveOccurred())
+
+			zoneKeyManager := tokens.NewSigningKeyManager(resManager, zone.SigningKeyPrefix)
+			Expect(zoneKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
+			zoneTokenIssuer = builtin.NewZoneTokenIssuer(resManager)
+
+			ziKeyManager := tokens.NewSigningKeyManager(resManager, zoneingress.ZoneIngressSigningKeyPrefix)
+			Expect(ziKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
+			zoneIngressTokenIssuer = builtin.NewZoneIngressTokenIssuer(resManager)
+		})
+
+		It("should authenticate zone ingress with zone token", func() {
+			// given
+			identity := zone.Identity{
+				Zone:  "zone-1",
+				Scope: []string{zone.IngressScope},
+			}
+			token, err := zoneTokenIssuer.Generate(ctx, identity, time.Hour)
+			Expect(err).ToNot(HaveOccurred())
+
+			// when
+			err = authenticator.Authenticate(ctx, &ziRes, token)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should authenticate zone ingress with zoneingress token", func() { // backwards compatibility
+			// given
+			identity := zoneingress.Identity{
+				Zone: "zone-1",
+			}
+			token, err := zoneIngressTokenIssuer.Generate(ctx, identity, time.Hour)
+			Expect(err).ToNot(HaveOccurred())
+
+			// when
+			err = authenticator.Authenticate(ctx, &ziRes, token)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+		})
+	})
+
 })

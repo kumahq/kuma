@@ -276,10 +276,12 @@ func (c *SubsetIter) next() bool {
 }
 
 // simplified returns copy of c.current and deletes redundant tags, for example:
-//   * env: dev
-//   * env: !prod
+//   - env: dev
+//   - env: !prod
+//
 // could be simplified to:
-//   * env: dev
+//   - env: dev
+//
 // If tags are contradicted (same keys have different positive value) then the function
 // returns nil.
 func (c *SubsetIter) simplified() Subset {
