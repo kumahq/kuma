@@ -15,6 +15,8 @@ type Config struct {
 	CIDR string `yaml:"CIDR" envconfig:"kuma_dns_server_cidr"`
 	// ServiceVipEnabled will create a service "<kuma.io/service>.mesh" dns entry for every service.
 	ServiceVipEnabled bool `yaml:"serviceVipEnabled" envconfig:"kuma_dns_server_service_vip_enabled"`
+	// ServiceVipPort the port to use for virtual IP
+	ServiceVipPort uint32 `yaml:"serviceVipPort" envconfig:"kuma_dns_server_service_vip_port"`
 }
 
 func (g *Config) Sanitize() {
@@ -23,7 +25,10 @@ func (g *Config) Sanitize() {
 func (g *Config) Validate() error {
 	_, _, err := net.ParseCIDR(g.CIDR)
 	if err != nil {
-		return errors.New("Must provide a valid CIDR")
+		return errors.New("CIDR must be valid")
+	}
+	if g.ServiceVipPort == 0 {
+		return errors.New("port can't be 0")
 	}
 	return nil
 }
@@ -35,5 +40,6 @@ func DefaultDNSServerConfig() *Config {
 		ServiceVipEnabled: true,
 		Domain:            "mesh",
 		CIDR:              "240.0.0.0/4",
+		ServiceVipPort:    80,
 	}
 }

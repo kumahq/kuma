@@ -22,7 +22,7 @@ var _ = Describe("VIPOutbounds", func() {
 			vobView, err := vips.NewVirtualOutboundView(tc.whenOutbounds)
 			Expect(err).ToNot(HaveOccurred())
 
-			vips, outbounds := topology.VIPOutbounds(vobView, "mesh")
+			vips, outbounds := topology.VIPOutbounds(vobView, "mesh", 80)
 
 			Expect(vips).To(Equal(tc.thenVips))
 			Expect(outbounds).To(Equal(tc.thenOutbounds))
