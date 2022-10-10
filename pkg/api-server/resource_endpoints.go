@@ -18,7 +18,6 @@ import (
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	"github.com/kumahq/kuma/pkg/plugins"
 )
 
 const (
@@ -33,7 +32,6 @@ const (
 
 type resourceEndpoints struct {
 	mode           config_core.CpMode
-	environment    config_core.EnvironmentType
 	resManager     manager.ResourceManager
 	descriptor     model.ResourceTypeDescriptor
 	resourceAccess access.ResourceAccess
@@ -138,13 +136,6 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 		return
 	}
 
-	if r.environment == config_core.UniversalEnvironment {
-		if err := r.validateResourceSchema(resourceRest); err != nil {
-			rest_errors.HandleError(response, err, "Could not process a resource")
-			return
-		}
-	}
-
 	resource := r.descriptor.NewObject()
 	if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName)); err != nil {
 		if store.IsResourceNotFound(err) {
@@ -155,10 +146,6 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 	} else {
 		r.updateResource(request.Request.Context(), resource, resourceRest.GetSpec(), response)
 	}
-}
-
-func (r *resourceEndpoints) validateResourceSchema(resourceRest rest.Resource) error {
-	return plugins.ValidateResourceSchema(resourceRest.GetSpec(), string(r.descriptor.Name))
 }
 
 func (r *resourceEndpoints) createResource(ctx context.Context, name string, meshName string, spec model.ResourceSpec, response *restful.Response) {

@@ -205,7 +205,6 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 		}
 		endpoints := resourceEndpoints{
 			mode:           cfg.Mode,
-			environment:    cfg.Environment,
 			resManager:     resManager,
 			descriptor:     definition,
 			resourceAccess: resourceAccess,

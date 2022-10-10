@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"github.com/kumahq/kuma/pkg/plugins"
 	"reflect"
 	"time"
 
@@ -71,6 +72,12 @@ type ResourceValidator interface {
 }
 
 func Validate(resource Resource) error {
+	if resource.GetSpec() != nil {
+		if err := plugins.ValidateResourceSchema(resource.GetSpec(), string(resource.Descriptor().Name)); err != nil {
+			return err
+		}
+	}
+
 	if rv, ok := resource.(ResourceValidator); ok {
 		return rv.Validate()
 	}
