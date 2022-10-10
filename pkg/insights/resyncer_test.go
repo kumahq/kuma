@@ -2,8 +2,8 @@ package insights_test
 
 import (
 	"context"
+	"fmt"
 	"strconv"
-	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -11,7 +11,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -26,52 +25,42 @@ import (
 
 var _ = Describe("Insight Persistence", func() {
 	var rm manager.ResourceManager
-	nowMtx := &sync.RWMutex{}
-	var now time.Time
+	start := time.Now()
 
-	var eventCh chan events.Event
 	var stopCh chan struct{}
-
-	tickMtx := &sync.RWMutex{}
 	var tickCh chan time.Time
-
-	core.Now = func() time.Time {
-		nowMtx.RLock()
-		defer nowMtx.RUnlock()
-		return now
-	}
 
 	BeforeEach(func() {
 		rm = manager.NewResourceManager(memory.NewStore())
 
-		nowMtx.Lock()
-		now = time.Now()
-		nowMtx.Unlock()
-
-		eventCh = make(chan events.Event)
 		stopCh = make(chan struct{})
-
-		tickMtx.Lock()
 		tickCh = make(chan time.Time)
-		tickMtx.Unlock()
 
 		resyncer := insights.NewResyncer(&insights.Config{
 			MinResyncTimeout:   5 * time.Second,
 			MaxResyncTimeout:   1 * time.Minute,
 			ResourceManager:    rm,
-			EventReaderFactory: &test_insights.TestEventReaderFactory{Reader: &test_insights.TestEventReader{Ch: eventCh}},
+			EventReaderFactory: &test_insights.TestEventReaderFactory{Reader: &test_insights.TestEventReader{Ch: make(chan events.Event)}},
 			Tick: func(d time.Duration) (rv <-chan time.Time) {
-				tickMtx.RLock()
-				defer tickMtx.RUnlock()
 				Expect(d).To(Equal(55 * time.Second)) // should be equal MaxResyncTimeout - MinResyncTimeout
 				return tickCh
 			},
+			Now: func() time.Time {
+				Fail("This shouldn't be used as not tests use the event factory")
+				return start
+			},
 			Registry: registry.Global(),
+			AddressPortGenerator: func(s string) string {
+				return fmt.Sprintf("%s.mesh:80", s)
+			},
 		})
-		go func(stopCh chan struct{}) {
+		go func() {
 			err := resyncer.Start(stopCh)
 			Expect(err).ToNot(HaveOccurred())
-		}(stopCh)
+		}()
+	})
+	AfterEach(func() {
+		close(stopCh)
 	})
 
 	It("should sync more often than MaxResyncTimeout", func() {
@@ -81,16 +70,14 @@ var _ = Describe("Insight Persistence", func() {
 		err = rm.Create(context.Background(), &core_mesh.TrafficPermissionResource{Spec: samples.TrafficPermission}, store.CreateByKey("tp-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		nowMtx.Lock()
-		now = now.Add(61 * time.Second)
-		nowMtx.Unlock()
-		tickCh <- now
+		tickCh <- start.Add(61 * time.Second)
 
-		insight := core_mesh.NewMeshInsightResource()
-		Eventually(func() error {
-			return rm.Get(context.Background(), insight, store.GetByKey("mesh-1", model.NoMesh))
-		}, "10s", "100ms").Should(BeNil())
-		Expect(insight.Spec.Policies[string(core_mesh.TrafficPermissionType)].Total).To(Equal(uint32(1)))
+		Eventually(func(g Gomega) {
+			insight := core_mesh.NewMeshInsightResource()
+			err := rm.Get(context.Background(), insight, store.GetByKey("mesh-1", model.NoMesh))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(insight.Spec.Policies[string(core_mesh.TrafficPermissionType)].Total).To(Equal(uint32(1)))
+		}).Should(Succeed())
 	})
 
 	It("should count dataplanes by version", func() {
@@ -144,31 +131,29 @@ var _ = Describe("Insight Persistence", func() {
 		err = rm.Create(context.Background(), dp3, store.CreateByKey("dp3", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		nowMtx.Lock()
-		now = now.Add(60 * time.Second)
-		nowMtx.Unlock()
-		tickCh <- now
+		tickCh <- start.Add(60 * time.Second)
 
 		// when
-		meshInsight := core_mesh.NewMeshInsightResource()
-		Eventually(func() error {
-			return rm.Get(context.Background(), meshInsight, store.GetByKey("mesh-1", model.NoMesh))
-		}, "10s", "100ms").Should(BeNil())
+		Eventually(func(g Gomega) {
+			meshInsight := core_mesh.NewMeshInsightResource()
+			err := rm.Get(context.Background(), meshInsight, store.GetByKey("mesh-1", model.NoMesh))
+			g.Expect(err).ToNot(HaveOccurred())
 
-		// then
-		kumaDp := meshInsight.Spec.DpVersions.KumaDp
-		Expect(kumaDp["unknown"].Total).To(Equal(uint32(1)))
-		Expect(kumaDp["unknown"].Offline).To(Equal(uint32(1)))
-		Expect(kumaDp["1.0.3"].Total).To(Equal(uint32(1)))
-		Expect(kumaDp["1.0.3"].Offline).To(Equal(uint32(1)))
-		Expect(kumaDp["1.0.4"].Total).To(Equal(uint32(1)))
-		Expect(kumaDp["1.0.4"].Offline).To(Equal(uint32(1)))
+			// then
+			kumaDp := meshInsight.Spec.DpVersions.KumaDp
+			g.Expect(kumaDp["unknown"].Total).To(Equal(uint32(1)))
+			g.Expect(kumaDp["unknown"].Offline).To(Equal(uint32(1)))
+			g.Expect(kumaDp["1.0.3"].Total).To(Equal(uint32(1)))
+			g.Expect(kumaDp["1.0.3"].Offline).To(Equal(uint32(1)))
+			g.Expect(kumaDp["1.0.4"].Total).To(Equal(uint32(1)))
+			g.Expect(kumaDp["1.0.4"].Offline).To(Equal(uint32(1)))
 
-		envoy := meshInsight.Spec.DpVersions.Envoy
-		Expect(envoy["unknown"].Total).To(Equal(uint32(1)))
-		Expect(envoy["unknown"].Offline).To(Equal(uint32(1)))
-		Expect(envoy["1.15.0"].Total).To(Equal(uint32(2)))
-		Expect(envoy["1.15.0"].Offline).To(Equal(uint32(2)))
+			envoy := meshInsight.Spec.DpVersions.Envoy
+			g.Expect(envoy["unknown"].Total).To(Equal(uint32(1)))
+			g.Expect(envoy["unknown"].Offline).To(Equal(uint32(1)))
+			g.Expect(envoy["1.15.0"].Total).To(Equal(uint32(2)))
+			g.Expect(envoy["1.15.0"].Offline).To(Equal(uint32(2)))
+		}).Should(Succeed())
 	})
 
 	It("should count dataplanes by type", func() {
@@ -232,27 +217,25 @@ var _ = Describe("Insight Persistence", func() {
 		err = rm.Create(context.Background(), dp4, store.CreateByKey("dp4", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		nowMtx.Lock()
-		now = now.Add(60 * time.Second)
-		nowMtx.Unlock()
-		tickCh <- now
+		tickCh <- start.Add(time.Minute)
 
 		// when
-		meshInsight := core_mesh.NewMeshInsightResource()
-		Eventually(func() error {
-			return rm.Get(context.Background(), meshInsight, store.GetByKey("mesh-1", model.NoMesh))
-		}, "10s", "100ms").Should(BeNil())
+		Eventually(func(g Gomega) {
+			meshInsight := core_mesh.NewMeshInsightResource()
+			err := rm.Get(context.Background(), meshInsight, store.GetByKey("mesh-1", model.NoMesh))
+			g.Expect(err).ToNot(HaveOccurred())
 
-		// then
-		standardDP := meshInsight.Spec.GetDataplanesByType().GetStandard()
-		Expect(standardDP.GetTotal()).To(Equal(uint32(3)))
-		Expect(standardDP.GetOnline()).To(Equal(uint32(1)))
-		Expect(standardDP.GetOffline()).To(Equal(uint32(2)))
+			// then
+			standardDP := meshInsight.Spec.GetDataplanesByType().GetStandard()
+			g.Expect(standardDP.GetTotal()).To(Equal(uint32(3)))
+			g.Expect(standardDP.GetOnline()).To(Equal(uint32(1)))
+			g.Expect(standardDP.GetOffline()).To(Equal(uint32(2)))
 
-		gatewayDP := meshInsight.Spec.GetDataplanesByType().GetGateway()
-		Expect(gatewayDP.GetTotal()).To(Equal(uint32(1)))
-		Expect(gatewayDP.GetOffline()).To(Equal(uint32(0)))
-		Expect(gatewayDP.GetOnline()).To(Equal(uint32(1)))
+			gatewayDP := meshInsight.Spec.GetDataplanesByType().GetGateway()
+			g.Expect(gatewayDP.GetTotal()).To(Equal(uint32(1)))
+			g.Expect(gatewayDP.GetOffline()).To(Equal(uint32(0)))
+			g.Expect(gatewayDP.GetOnline()).To(Equal(uint32(1)))
+		}).Should(Succeed())
 	})
 
 	It("should count dataplanes by mTLS backends", func() {
@@ -290,29 +273,27 @@ var _ = Describe("Insight Persistence", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when resyncer generates insight
-		nowMtx.Lock()
-		now = now.Add(60 * time.Second)
-		nowMtx.Unlock()
-		tickCh <- now
+		tickCh <- start.Add(time.Minute)
 
-		meshInsight := core_mesh.NewMeshInsightResource()
-		Eventually(func() error {
-			return rm.Get(context.Background(), meshInsight, store.GetByKey("mesh-1", model.NoMesh))
-		}, "10s", "100ms").Should(BeNil())
+		Eventually(func(g Gomega) {
+			meshInsight := core_mesh.NewMeshInsightResource()
+			err := rm.Get(context.Background(), meshInsight, store.GetByKey("mesh-1", model.NoMesh))
+			g.Expect(err).ToNot(HaveOccurred())
 
-		// then
-		Expect(meshInsight.Spec.MTLS.IssuedBackends).To(HaveLen(2))
-		Expect(meshInsight.Spec.MTLS.IssuedBackends["ca-1"].Total).To(Equal(uint32(1)))
-		Expect(meshInsight.Spec.MTLS.IssuedBackends["ca-1"].Offline).To(Equal(uint32(1)))
-		Expect(meshInsight.Spec.MTLS.IssuedBackends["ca-2"].Total).To(Equal(uint32(1)))
-		Expect(meshInsight.Spec.MTLS.IssuedBackends["ca-2"].Online).To(Equal(uint32(1)))
+			// then
+			g.Expect(meshInsight.Spec.MTLS.IssuedBackends).To(HaveLen(2))
+			g.Expect(meshInsight.Spec.MTLS.IssuedBackends["ca-1"].Total).To(Equal(uint32(1)))
+			g.Expect(meshInsight.Spec.MTLS.IssuedBackends["ca-1"].Offline).To(Equal(uint32(1)))
+			g.Expect(meshInsight.Spec.MTLS.IssuedBackends["ca-2"].Total).To(Equal(uint32(1)))
+			g.Expect(meshInsight.Spec.MTLS.IssuedBackends["ca-2"].Online).To(Equal(uint32(1)))
 
-		Expect(meshInsight.Spec.MTLS.SupportedBackends).To(HaveLen(2))
-		Expect(meshInsight.Spec.MTLS.SupportedBackends["ca-1"].Total).To(Equal(uint32(2)))
-		Expect(meshInsight.Spec.MTLS.SupportedBackends["ca-1"].Offline).To(Equal(uint32(1)))
-		Expect(meshInsight.Spec.MTLS.SupportedBackends["ca-1"].Online).To(Equal(uint32(1)))
-		Expect(meshInsight.Spec.MTLS.SupportedBackends["ca-2"].Total).To(Equal(uint32(1)))
-		Expect(meshInsight.Spec.MTLS.SupportedBackends["ca-2"].Online).To(Equal(uint32(1)))
+			g.Expect(meshInsight.Spec.MTLS.SupportedBackends).To(HaveLen(2))
+			g.Expect(meshInsight.Spec.MTLS.SupportedBackends["ca-1"].Total).To(Equal(uint32(2)))
+			g.Expect(meshInsight.Spec.MTLS.SupportedBackends["ca-1"].Offline).To(Equal(uint32(1)))
+			g.Expect(meshInsight.Spec.MTLS.SupportedBackends["ca-1"].Online).To(Equal(uint32(1)))
+			g.Expect(meshInsight.Spec.MTLS.SupportedBackends["ca-2"].Total).To(Equal(uint32(1)))
+			g.Expect(meshInsight.Spec.MTLS.SupportedBackends["ca-2"].Online).To(Equal(uint32(1)))
+		}).Should(Succeed())
 	})
 
 	It("should not count dataplane as a policy", func() {
@@ -322,10 +303,7 @@ var _ = Describe("Insight Persistence", func() {
 		err = rm.Create(context.Background(), &core_mesh.DataplaneResource{Spec: samples.Dataplane}, store.CreateByKey("dp-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		nowMtx.Lock()
-		now = now.Add(61 * time.Second)
-		nowMtx.Unlock()
-		tickCh <- now
+		tickCh <- start.Add(time.Minute + time.Second)
 
 		insight := core_mesh.NewMeshInsightResource()
 		Eventually(func() error {
@@ -480,24 +458,105 @@ var _ = Describe("Insight Persistence", func() {
 		err = rm.Create(context.Background(), dpi4, store.CreateByKey("dp4", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		nowMtx.Lock()
-		now = now.Add(61 * time.Second)
-		nowMtx.Unlock()
-		tickCh <- now
+		tickCh <- start.Add(time.Minute + time.Second)
 
 		// when
-		serviceInsight := core_mesh.NewServiceInsightResource()
-		Eventually(func() error {
-			return rm.Get(context.Background(), serviceInsight, store.GetByKey("all-services-mesh-1", "mesh-1"))
-		}, "10s", "100ms").Should(BeNil())
+		Eventually(func(g Gomega) {
+			serviceInsight := core_mesh.NewServiceInsightResource()
+			err := rm.Get(context.Background(), serviceInsight, store.GetByKey("all-services-mesh-1", "mesh-1"))
+			g.Expect(err).ToNot(HaveOccurred())
 
-		service := serviceInsight.Spec.Services["backend-1"]
+			service := serviceInsight.Spec.Services["backend-1"]
+			// then
+			g.Expect(service.Status).To(Equal(mesh_proto.ServiceInsight_Service_partially_degraded))
+			g.Expect(service.Dataplanes.Total).To(Equal(uint32(4)))
+			g.Expect(service.Dataplanes.Online).To(Equal(uint32(2)))
+			g.Expect(service.Dataplanes.Offline).To(Equal(uint32(2)))
+		}).Should(Succeed())
+	})
 
-		// then
-		Expect(service.Status).To(Equal(mesh_proto.ServiceInsight_Service_partially_degraded))
-		Expect(service.Dataplanes.Total).To(Equal(uint32(4)))
-		Expect(service.Dataplanes.Online).To(Equal(uint32(2)))
-		Expect(service.Dataplanes.Offline).To(Equal(uint32(2)))
+	It("should return correct service types in serviceInsights", func() {
+		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		dp1 := core_mesh.NewDataplaneResource()
+		dp1.Spec = &mesh_proto.Dataplane{
+			Networking: &mesh_proto.Dataplane_Networking{
+				Address: "10.0.0.1",
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+					{
+						Port: 5000,
+						Tags: map[string]string{
+							"kuma.io/service": "internal",
+						},
+					},
+				},
+			},
+		}
+		builtinGw := core_mesh.NewDataplaneResource()
+		builtinGw.Spec = &mesh_proto.Dataplane{
+			Networking: &mesh_proto.Dataplane_Networking{
+				Address: "10.0.0.1",
+				Gateway: &mesh_proto.Dataplane_Networking_Gateway{
+					Tags: map[string]string{
+						"kuma.io/service": "gw1",
+					},
+					Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
+				},
+			},
+		}
+		delegatedGw := core_mesh.NewDataplaneResource()
+		delegatedGw.Spec = &mesh_proto.Dataplane{
+			Networking: &mesh_proto.Dataplane_Networking{
+				Address: "10.0.0.1",
+				Gateway: &mesh_proto.Dataplane_Networking_Gateway{
+					Tags: map[string]string{
+						"kuma.io/service": "gw2",
+					},
+					Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
+				},
+			},
+		}
+		externalService := core_mesh.NewExternalServiceResource()
+		externalService.Spec = &mesh_proto.ExternalService{
+			Tags: map[string]string{"kuma.io/service": "external-service"},
+			Networking: &mesh_proto.ExternalService_Networking{
+				Address: "foobar:8080",
+			},
+		}
+
+		for n, entity := range map[string]model.Resource{"dp1": dp1, "dgw": delegatedGw, "bgw": builtinGw, "externalService": externalService} {
+			err = rm.Create(context.Background(), entity, store.CreateByKey(n, "mesh-1"))
+			Expect(err).ToNot(HaveOccurred(), n)
+		}
+
+		tickCh <- start.Add(time.Minute + time.Second)
+
+		// when
+		Eventually(func(g Gomega) {
+			serviceInsight := core_mesh.NewServiceInsightResource()
+			err := rm.Get(context.Background(), serviceInsight, store.GetBy(insights.ServiceInsightKey("mesh-1")))
+			g.Expect(err).ToNot(HaveOccurred())
+			internal := serviceInsight.Spec.Services["internal"]
+			g.Expect(internal).ToNot(BeNil())
+			g.Expect(internal.ServiceType).To(Equal(mesh_proto.ServiceInsight_Service_internal))
+			g.Expect(internal.AddressPort).To(Equal("internal.mesh:80"))
+
+			gw1 := serviceInsight.Spec.Services["gw1"]
+			g.Expect(gw1).ToNot(BeNil())
+			g.Expect(gw1.ServiceType).To(Equal(mesh_proto.ServiceInsight_Service_gateway_builtin))
+			g.Expect(gw1.AddressPort).To(Equal(""))
+
+			gw2 := serviceInsight.Spec.Services["gw2"]
+			g.Expect(gw2).ToNot(BeNil())
+			g.Expect(gw2.ServiceType).To(Equal(mesh_proto.ServiceInsight_Service_gateway_delegated))
+			g.Expect(gw2.AddressPort).To(Equal(""))
+
+			ext := serviceInsight.Spec.Services["external-service"]
+			g.Expect(ext).ToNot(BeNil())
+			g.Expect(ext.ServiceType).To(Equal(mesh_proto.ServiceInsight_Service_external))
+			g.Expect(ext.AddressPort).To(Equal("foobar:8080"))
+		}).Should(Succeed())
 	})
 
 	It("should return correct dataplanes statuses in mesh insights", func() {
@@ -654,22 +713,20 @@ var _ = Describe("Insight Persistence", func() {
 		err = rm.Create(context.Background(), dpi4, store.CreateByKey("dp4", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		nowMtx.Lock()
-		now = now.Add(61 * time.Second)
-		nowMtx.Unlock()
-		tickCh <- now
+		tickCh <- start.Add(time.Minute + time.Second)
 
 		// when
-		meshInsight := core_mesh.NewMeshInsightResource()
-		Eventually(func() error {
-			return rm.Get(context.Background(), meshInsight, store.GetByKey("mesh-1", model.NoMesh))
-		}, "10s", "100ms").Should(BeNil())
+		Eventually(func(g Gomega) {
+			meshInsight := core_mesh.NewMeshInsightResource()
+			err := rm.Get(context.Background(), meshInsight, store.GetByKey("mesh-1", model.NoMesh))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(meshInsight.Spec.Dataplanes.Total).To(Equal(uint32(4)))
+			g.Expect(meshInsight.Spec.Dataplanes.Online).To(Equal(uint32(2)))
+			g.Expect(meshInsight.Spec.Dataplanes.PartiallyDegraded).To(Equal(uint32(1)))
+			g.Expect(meshInsight.Spec.Dataplanes.Offline).To(Equal(uint32(1)))
+		}).Should(Succeed())
 
 		// then
-		Expect(meshInsight.Spec.Dataplanes.Total).To(Equal(uint32(4)))
-		Expect(meshInsight.Spec.Dataplanes.Online).To(Equal(uint32(2)))
-		Expect(meshInsight.Spec.Dataplanes.PartiallyDegraded).To(Equal(uint32(1)))
-		Expect(meshInsight.Spec.Dataplanes.Offline).To(Equal(uint32(1)))
 	})
 
 	It("should return correct amounts of internal/external services in mesh insights", func() {
@@ -852,21 +909,17 @@ var _ = Describe("Insight Persistence", func() {
 		err = rm.Create(context.Background(), es2, store.CreateByKey("es2", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		nowMtx.Lock()
-		now = now.Add(61 * time.Second)
-		nowMtx.Unlock()
-		tickCh <- now
+		tickCh <- start.Add(time.Minute + time.Second)
 
 		// when
-		meshInsight := core_mesh.NewMeshInsightResource()
-		Eventually(func() error {
-			return rm.Get(context.Background(), meshInsight, store.GetByKey("mesh-1", model.NoMesh))
-		}, "10s", "100ms").Should(BeNil())
-
-		// then
-		Expect(meshInsight.Spec.Services.Total).To(Equal(uint32(4)))
-		Expect(meshInsight.Spec.Services.Internal).To(Equal(uint32(2)))
-		Expect(meshInsight.Spec.Services.External).To(Equal(uint32(2)))
+		Eventually(func(g Gomega) {
+			meshInsight := core_mesh.NewMeshInsightResource()
+			err := rm.Get(context.Background(), meshInsight, store.GetByKey("mesh-1", model.NoMesh))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(meshInsight.Spec.Services.Total).To(Equal(uint32(4)))
+			g.Expect(meshInsight.Spec.Services.Internal).To(Equal(uint32(2)))
+			g.Expect(meshInsight.Spec.Services.External).To(Equal(uint32(2)))
+		}).Should(Succeed())
 	})
 
 	It("should return gateway in services", func() {
@@ -932,32 +985,28 @@ var _ = Describe("Insight Persistence", func() {
 		err = rm.Create(context.Background(), dpNoInsights, store.CreateByKey("dpNoInsights", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		nowMtx.Lock()
-		now = now.Add(61 * time.Second)
-		nowMtx.Unlock()
-		tickCh <- now
+		tickCh <- start.Add(61 * time.Second)
 
 		// when
-		meshInsight := core_mesh.NewMeshInsightResource()
-		Eventually(func() error {
-			return rm.Get(context.Background(), meshInsight, store.GetByKey("mesh-1", model.NoMesh))
-		}, "10s", "100ms").Should(BeNil())
+		Eventually(func(g Gomega) {
+			meshInsight := core_mesh.NewMeshInsightResource()
+			err := rm.Get(context.Background(), meshInsight, store.GetByKey("mesh-1", model.NoMesh))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(meshInsight.Spec.Dataplanes.Total).To(Equal(uint32(3)))
+			g.Expect(meshInsight.Spec.Dataplanes.Online).To(Equal(uint32(1)))
+			g.Expect(meshInsight.Spec.Dataplanes.PartiallyDegraded).To(Equal(uint32(0)))
+			g.Expect(meshInsight.Spec.Dataplanes.Offline).To(Equal(uint32(2)))
+		}).Should(Succeed())
 
-		// then
-		Expect(meshInsight.Spec.Dataplanes.Total).To(Equal(uint32(3)))
-		Expect(meshInsight.Spec.Dataplanes.Online).To(Equal(uint32(1)))
-		Expect(meshInsight.Spec.Dataplanes.PartiallyDegraded).To(Equal(uint32(0)))
-		Expect(meshInsight.Spec.Dataplanes.Offline).To(Equal(uint32(2)))
-
-		serviceInsight := core_mesh.NewServiceInsightResource()
-		Eventually(func() error {
-			return rm.Get(context.Background(), serviceInsight, store.GetBy(insights.ServiceInsightKey("mesh-1")))
-		}, "10s", "100ms").Should(BeNil())
-
-		Expect(serviceInsight.Spec.Services).To(HaveKey("gateway"))
-		Expect(serviceInsight.Spec.Services["gateway"].Dataplanes.Total).To(Equal(uint32(3)))
-		Expect(serviceInsight.Spec.Services["gateway"].Dataplanes.Online).To(Equal(uint32(1)))
-		Expect(serviceInsight.Spec.Services["gateway"].Dataplanes.Offline).To(Equal(uint32(2)))
-		Expect(serviceInsight.Spec.Services["gateway"].Status).To(Equal(mesh_proto.ServiceInsight_Service_partially_degraded))
+		Eventually(func(g Gomega) {
+			serviceInsight := core_mesh.NewServiceInsightResource()
+			err := rm.Get(context.Background(), serviceInsight, store.GetBy(insights.ServiceInsightKey("mesh-1")))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(serviceInsight.Spec.Services).To(HaveKey("gateway"))
+			g.Expect(serviceInsight.Spec.Services["gateway"].Dataplanes.Total).To(Equal(uint32(3)))
+			g.Expect(serviceInsight.Spec.Services["gateway"].Dataplanes.Online).To(Equal(uint32(1)))
+			g.Expect(serviceInsight.Spec.Services["gateway"].Dataplanes.Offline).To(Equal(uint32(2)))
+			g.Expect(serviceInsight.Spec.Services["gateway"].Status).To(Equal(mesh_proto.ServiceInsight_Service_partially_degraded))
+		}).Should(Succeed())
 	})
 })

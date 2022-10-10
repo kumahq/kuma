@@ -383,6 +383,7 @@ func SetupServer(rt runtime.Runtime) error {
 			cfg.Multizone.Zone.Name,
 			vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager()),
 			cfg.DNSServer.Domain,
+			cfg.DNSServer.ServiceVipPort,
 		),
 		rt.APIInstaller(),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
