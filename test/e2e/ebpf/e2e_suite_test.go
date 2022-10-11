@@ -13,4 +13,4 @@ func TestE2E(t *testing.T) {
 	test.RunSpecs(t, "E2E Ebpf Suite")
 }
 
-var _ = Describe("Test Cleanup eBPF", Label("kind-supported"), ebpf.CleanupEbpfConfigFromNode)
+var _ = Describe("Test Cleanup eBPF", Label("kind-only"), ebpf.CleanupEbpfConfigFromNode)

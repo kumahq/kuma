@@ -279,7 +279,11 @@ func (r *CleanupJob) Watch(ctx context.Context, watcher watch.Interface) error {
 				_, _ = fmt.Fprintf(r.stdout,
 					"cleanup for node: %s finished successfully\n", job.nodeName)
 				delete(r.startedJobs, jobName)
-				continue
+				if len(r.startedJobs) == 0 {
+					return nil
+				} else {
+					continue
+				}
 			case corev1.PodFailed:
 				if logs, err := r.getPodLogs(ctx, pod); err != nil {
 					_, _ = fmt.Fprintf(r.stdout,
@@ -290,7 +294,11 @@ func (r *CleanupJob) Watch(ctx context.Context, watcher watch.Interface) error {
 						"cleanup for node: %s failed: %s", job.nodeName, logs)
 				}
 				delete(r.startedJobs, jobName)
-				continue
+				if len(r.startedJobs) == 0 {
+					return nil
+				} else {
+					continue
+				}
 			}
 
 			job.phase = pod.Status.Phase

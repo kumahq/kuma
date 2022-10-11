@@ -161,7 +161,7 @@ func (k *K8sDeployment) podSpec() corev1.PodTemplateSpec {
 					Name:            k.Name(),
 					ImagePullPolicy: "IfNotPresent",
 					Image:           fmt.Sprintf("%s/%s:%s", framework.Config.KumaImageRegistry, framework.Config.KumactlImageRepo, framework.Config.KumaImageTag),
-					Command:         []string{"kumactl", "uninstall", "ebpf"},
+					Command:         []string{"kumactl", "uninstall", "ebpf", "--namespace", k.Namespace},
 					Args:            args,
 					Resources: corev1.ResourceRequirements{
 						Limits: corev1.ResourceList{

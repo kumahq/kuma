@@ -99,7 +99,7 @@ spec:
       {{- end }}
       containers:
         - name: post-delete-job
-          image: {{ include "kubectl.formatImage" (dict "image" .Values.dataPlane.initImage "root" $) | quote }}
+          image: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.initImage "root" $) | quote }}
           {{- if .Values.hooks.containerSecurityContext }}
           securityContext:
           {{ toYaml .Values.hooks.containerSecurityContext | trim | nindent 12 }}
