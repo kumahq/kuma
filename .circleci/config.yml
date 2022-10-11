@@ -252,10 +252,6 @@ jobs:
         description: The CNI networking plugin to use [flannel | calico]
         type: string
         default: flannel
-      ebpf:
-        description: eBPF tests works only with Kind
-        type: boolean
-        default: false
     executor:
       name: vm-<< parameters.arch >>
     parallelism: << parameters.parallelism >>
@@ -285,9 +281,7 @@ jobs:
             if [[ $(./tools/ci/has_label.sh ci/skip-e2e-test) == "true" ]]; then
               skip "Not running tests as the PR has label: ci/skip-e2e-test"
             fi
-            if [[ "<< parameters.k8sVersion >>" == "kind" && "<< parameters.target >>" != "test/e2e-universal" && "<< parameters.ebpf >>" == "false" ]]; then
-              skip "kind should only be used when testing ipv6 or with test/e2e-universal"
-            fi
+            
             if [[ "<< parameters.k8sVersion >>" != kind* && "<< parameters.target >>" == "test/e2e-universal" ]]; then
               skip "universal only runs on kind"
             fi
@@ -514,8 +508,7 @@ workflows:
             alias: test/e2e-legacy-ebpf
             parameters:
               k8sVersion: [ kind ]
-              arch: [ amd64, arm64 ]
-              ebpf: true
+              arch: [ amd64 ]
           target: test/e2e
           parallelism: 1
           requires: [ build-<< matrix.arch >>, check ]
