@@ -345,9 +345,17 @@ jobs:
 
             if [[ "<< parameters.target >>" == "test/e2e" ]]; then
               if [[ "<< parameters.arch >>" == "arm64" ]]; then
-                export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX && !arm-not-supported"
+                if [[ "<< parameters.k8sVersion >>" != "kind" ]]; then
+                  export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX && !arm-not-supported && !kind-supported"
+                else
+                  export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX && !arm-not-supported"
+                fi
               else
-                export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX"
+                if [[ "<< parameters.k8sVersion >>" != "kind" ]]; then
+                  export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX && !kind-supported"
+                else
+                  export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX"
+                fi
               fi
             fi
             env

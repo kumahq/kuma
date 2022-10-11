@@ -32,6 +32,7 @@ type E2eConfig struct {
 	KumaZoneK8sCtlFlags           map[string]string `yaml:"k8sZoneCtlFlags,omitempty"`
 	DefaultObservabilityNamespace string            `yaml:"observabilityNamespace,omitempty"`
 	DefaultGatewayNamespace       string            `yaml:"gatewayNamespace,omitempty"`
+	KumactlImageRepo              string            `yaml:"ctlImageRepo,omitempty" envconfig:"KUMACTL_IMAGE_REPOSITORY"`
 	KumaCPImageRepo               string            `yaml:"cpImageRepo,omitempty" envconfig:"KUMA_CP_IMAGE_REPOSITORY"`
 	KumaDPImageRepo               string            `yaml:"dpImageRepo,omitempty" envconfig:"KUMA_DP_IMAGE_REPOSITORY"`
 	KumaInitImageRepo             string            `yaml:"initImageRepo,omitempty" envconfig:"KUMA_INIT_IMAGE_REPOSITORY"`
@@ -167,6 +168,7 @@ var defaultConf = E2eConfig{
 	KumaCPImageRepo:        "kuma-cp",
 	KumaDPImageRepo:        "kuma-dp",
 	KumaInitImageRepo:      "kuma-init",
+	KumactlImageRepo:       "kumactl",
 
 	KumaUniversalEnvVars: map[string]string{},
 	KumaK8sCtlFlags:      map[string]string{},
