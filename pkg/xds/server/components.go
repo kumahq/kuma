@@ -64,6 +64,7 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 		rt.Config().Multizone.Zone.Name,
 		vips.NewPersistence(rt.ReadOnlyResourceManager(), rt.ConfigManager()),
 		rt.Config().DNSServer.Domain,
+		rt.Config().DNSServer.ServiceVipPort,
 	)
 	meshSnapshotCache, err := mesh.NewCache(
 		rt.Config().Store.Cache.ExpirationTime,

@@ -135,6 +135,7 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 		rt.Config().Multizone.Zone.Name,
 		vips.NewPersistence(rt.ReadOnlyResourceManager(), rt.ConfigManager()),
 		rt.Config().DNSServer.Domain,
+		rt.Config().DNSServer.ServiceVipPort,
 	)
 
 	meshCtx, err := meshCtxBuilder.Build(context.TODO(), key.Mesh)

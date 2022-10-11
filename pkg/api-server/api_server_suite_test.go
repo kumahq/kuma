@@ -223,6 +223,7 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 			cfg.Multizone.Zone.Name,
 			vips.NewPersistence(resManager, config_manager.NewConfigManager(t.store)),
 			cfg.DNSServer.Domain,
+			80,
 		),
 		customization.NewAPIList(),
 		append(registry.Global().ObjectDescriptors(model.HasWsEnabled()), sample_model.TrafficRouteResourceTypeDescriptor),
