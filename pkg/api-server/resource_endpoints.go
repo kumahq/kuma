@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/pkg/core/user"
@@ -124,14 +125,14 @@ func (r *resourceEndpoints) addCreateOrUpdateEndpoint(ws *restful.WebService, pa
 func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, response *restful.Response) {
 	name := request.PathParameter("name")
 	meshName := r.meshFromRequest(request)
-	resourceRest := rest.From.Resource(r.descriptor.NewObject())
 
+	resourceRest := rest.From.Resource(r.descriptor.NewObject())
 	if err := request.ReadEntity(resourceRest); err != nil {
 		rest_errors.HandleError(response, err, "Could not process a resource")
 		return
 	}
 
-	if err := r.validateResourceRequest(request, resourceRest); err != nil {
+	if err := r.validateResourceRequest(request, resourceRest.GetMeta()); err != nil {
 		rest_errors.HandleError(response, err, "Could not process a resource")
 		return
 	}
@@ -246,11 +247,10 @@ func (r *resourceEndpoints) deleteResourceReadOnly(request *restful.Request, res
 	}
 }
 
-func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, resource rest.Resource) error {
+func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, resourceMeta rest_v1alpha1.ResourceMeta) error {
 	var err validators.ValidationError
 	name := request.PathParameter("name")
 	meshName := r.meshFromRequest(request)
-	resourceMeta := resource.GetMeta()
 
 	if name != resourceMeta.Name {
 		err.AddViolation("name", "name from the URL has to be the same as in body")
@@ -261,7 +261,6 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 	if r.descriptor.Scope == model.ScopeMesh && meshName != resourceMeta.Mesh {
 		err.AddViolation("mesh", "mesh from the URL has to be the same as in body")
 	}
-
 	err.AddError("", mesh.ValidateMeta(name, meshName, r.descriptor.Scope))
 	return err.OrNil()
 }
