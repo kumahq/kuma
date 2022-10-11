@@ -268,7 +268,6 @@ jobs:
               parallelism:<< parameters.parallelism >> \
               arch:<< parameters.arch >> \
               cniNetworkPlugin:<< parameters.cniNetworkPlugin >> \
-              eBPF:<< parameters.ebpf >> \
             "
             function skip() {
               echo "Non valid job combination halting job reason: $1"
