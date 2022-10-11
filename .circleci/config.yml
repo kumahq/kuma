@@ -285,9 +285,6 @@ jobs:
             if [[ $(./tools/ci/has_label.sh ci/skip-e2e-test) == "true" ]]; then
               skip "Not running tests as the PR has label: ci/skip-e2e-test"
             fi
-            if [[ "<< parameters.k8sVersion >>" == "kind" && "<< parameters.target >>" != "test/e2e-universal" ]]; then
-              skip "kind should only be used when testing ipv6 or with test/e2e-universal"
-            fi
             if [[ "<< parameters.k8sVersion >>" == "kind" && "<< parameters.target >>" != "test/e2e-universal" && "<< parameters.ebpf >>" == "false" ]]; then
               skip "kind should only be used when testing ipv6 or with test/e2e-universal"
             fi
@@ -514,12 +511,12 @@ workflows:
       - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-ebpf
           matrix:
-            alias: test/e2e-ebpf
+            alias: test/e2e-legacy-ebpf
             parameters:
               k8sVersion: [ kind ]
-              target: [ test/e2e ]
               arch: [ amd64, arm64 ]
               ebpf: true
+          target: test/e2e
           parallelism: 1
           requires: [ build-<< matrix.arch >>, check ]
       - release:
