@@ -63,24 +63,18 @@ spec:
                                               type: string
                                             value:
                                               type: string
-                                          required:
-                                          - key
-                                          - value
                                           type: object
+                                        nullable: true
                                         type: array
                                       plain:
                                         type: string
                                     required:
                                     - json
-                                    - plain
                                     type: object
                                   path:
                                     description: Path to a file that logs will be
                                       written to
                                     type: string
-                                required:
-                                - format
-                                - path
                                 type: object
                               tcp:
                                 description: Backend defines logging backend.
@@ -100,25 +94,17 @@ spec:
                                               type: string
                                             value:
                                               type: string
-                                          required:
-                                          - key
-                                          - value
                                           type: object
+                                        nullable: true
                                         type: array
                                       plain:
                                         type: string
                                     required:
                                     - json
-                                    - plain
                                     type: object
-                                required:
-                                - address
-                                - format
                                 type: object
-                            required:
-                            - file
-                            - tcp
                             type: object
+                          nullable: true
                           type: array
                       required:
                       - backends
@@ -152,10 +138,8 @@ spec:
                             to define a subset of proxies
                           type: object
                       type: object
-                  required:
-                  - default
-                  - targetRef
                   type: object
+                nullable: true
                 type: array
               targetRef:
                 description: TargetRef is a reference to the resource the policy takes
@@ -212,24 +196,18 @@ spec:
                                               type: string
                                             value:
                                               type: string
-                                          required:
-                                          - key
-                                          - value
                                           type: object
+                                        nullable: true
                                         type: array
                                       plain:
                                         type: string
                                     required:
                                     - json
-                                    - plain
                                     type: object
                                   path:
                                     description: Path to a file that logs will be
                                       written to
                                     type: string
-                                required:
-                                - format
-                                - path
                                 type: object
                               tcp:
                                 description: Backend defines logging backend.
@@ -249,25 +227,17 @@ spec:
                                               type: string
                                             value:
                                               type: string
-                                          required:
-                                          - key
-                                          - value
                                           type: object
+                                        nullable: true
                                         type: array
                                       plain:
                                         type: string
                                     required:
                                     - json
-                                    - plain
                                     type: object
-                                required:
-                                - address
-                                - format
                                 type: object
-                            required:
-                            - file
-                            - tcp
                             type: object
+                          nullable: true
                           type: array
                       required:
                       - backends
@@ -301,14 +271,11 @@ spec:
                             to define a subset of proxies
                           type: object
                       type: object
-                  required:
-                  - default
-                  - targetRef
                   type: object
+                nullable: true
                 type: array
             required:
             - from
-            - targetRef
             - to
             type: object
         type: object

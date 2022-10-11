@@ -1,5 +1,6 @@
 syntax = "proto3";
 
+// +kubebuilder:validation:Optional
 package kuma.plugins.policies.meshtrace.v1alpha1;
 
 import "mesh/options.proto";
@@ -122,7 +123,7 @@ message MeshTrace {
     // representing that would be just one object. Unfortunately due to the
     // reasons explained in MADR 009-tracing-policy this has to be a one element
     // array for now.
-    repeated Backend backends = 1 [ (doc.required) = true ];
+    repeated Backend backends = 1;
 
     // Sampling configuration.
     // Sampling is the process by which a decision is made on whether to

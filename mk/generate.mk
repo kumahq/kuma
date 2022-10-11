@@ -79,7 +79,7 @@ generate/kumapolicy-gen/%: build/protoc-gen-kumapolicy generate/dirs/%
 		--kumapolicy_out=$(POLICIES_DIR)/$* \
 		--plugin=protoc-gen-kumapolicy=$(BUILD_ARTIFACTS_DIR)/protoc/protoc-gen-kumapolicy \
 		$(POLICIES_DIR)/$*/api/*/*.proto ; \
-	sed -i.bak 's/,omitempty//g' $(POLICIES_DIR)/$*/api/*/*.go && rm $(POLICIES_DIR)/$*/api/*/*.bak
+	$(TOOLS_DIR)/policy-gen/workaround-omitempty.sh $(POLICIES_DIR)/$*/api/*/*.go
 
 generate/dirs/%:
 	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \

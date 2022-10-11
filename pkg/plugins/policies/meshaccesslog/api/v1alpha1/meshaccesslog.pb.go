@@ -33,10 +33,12 @@ type MeshAccessLog struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
 	// defined inplace.
-	TargetRef *v1alpha1.TargetRef `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef"`
+	TargetRef *v1alpha1.TargetRef `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef,omitempty"`
 	// From is a list of pairs – a group of clients and action applied for it
+	// +nullable
 	From []*MeshAccessLog_From `protobuf:"bytes,3,rep,name=from,proto3" json:"from"`
-	To   []*MeshAccessLog_To   `protobuf:"bytes,4,rep,name=to,proto3" json:"to"`
+	// +nullable
+	To []*MeshAccessLog_To `protobuf:"bytes,4,rep,name=to,proto3" json:"to"`
 }
 
 func (x *MeshAccessLog) Reset() {
@@ -97,8 +99,9 @@ type MeshAccessLog_Format struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Plain string                            `protobuf:"bytes,1,opt,name=plain,proto3" json:"plain"`
-	Json  []*MeshAccessLog_Format_JsonValue `protobuf:"bytes,2,rep,name=json,proto3" json:"json"`
+	Plain string `protobuf:"bytes,1,opt,name=plain,proto3" json:"plain,omitempty"`
+	// +nullable
+	Json []*MeshAccessLog_Format_JsonValue `protobuf:"bytes,2,rep,name=json,proto3" json:"json"`
 }
 
 func (x *MeshAccessLog_Format) Reset() {
@@ -155,9 +158,9 @@ type MeshAccessLog_TCPBackend struct {
 
 	// Format of access logs. Placeholders available on
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
-	Format *MeshAccessLog_Format `protobuf:"bytes,1,opt,name=format,proto3" json:"format"`
+	Format *MeshAccessLog_Format `protobuf:"bytes,1,opt,name=format,proto3" json:"format,omitempty"`
 	// Type of the backend (Kuma ships with 'tcp' and 'file')
-	Address string `protobuf:"bytes,2,opt,name=address,proto3" json:"address"`
+	Address string `protobuf:"bytes,2,opt,name=address,proto3" json:"address,omitempty"`
 }
 
 func (x *MeshAccessLog_TCPBackend) Reset() {
@@ -214,9 +217,9 @@ type MeshAccessLog_FileBackend struct {
 
 	// Format of access logs. Placeholders available on
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
-	Format *MeshAccessLog_Format `protobuf:"bytes,1,opt,name=format,proto3" json:"format"`
+	Format *MeshAccessLog_Format `protobuf:"bytes,1,opt,name=format,proto3" json:"format,omitempty"`
 	// Path to a file that logs will be written to
-	Path string `protobuf:"bytes,2,opt,name=path,proto3" json:"path"`
+	Path string `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
 }
 
 func (x *MeshAccessLog_FileBackend) Reset() {
@@ -270,8 +273,8 @@ type MeshAccessLog_Backend struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Tcp  *MeshAccessLog_TCPBackend  `protobuf:"bytes,1,opt,name=tcp,proto3" json:"tcp"`
-	File *MeshAccessLog_FileBackend `protobuf:"bytes,2,opt,name=file,proto3" json:"file"`
+	Tcp  *MeshAccessLog_TCPBackend  `protobuf:"bytes,1,opt,name=tcp,proto3" json:"tcp,omitempty"`
+	File *MeshAccessLog_FileBackend `protobuf:"bytes,2,opt,name=file,proto3" json:"file,omitempty"`
 }
 
 func (x *MeshAccessLog_Backend) Reset() {
@@ -325,6 +328,7 @@ type MeshAccessLog_Conf struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// +nullable
 	Backends []*MeshAccessLog_Backend `protobuf:"bytes,1,rep,name=backends,proto3" json:"backends"`
 }
 
@@ -374,10 +378,10 @@ type MeshAccessLog_From struct {
 
 	// TargetRef is a reference to the resource that represents a group of
 	// clients.
-	TargetRef *v1alpha1.TargetRef `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef"`
+	TargetRef *v1alpha1.TargetRef `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef,omitempty"`
 	// Default is a configuration specific to the group of clients referenced in
 	// 'targetRef'
-	Default *MeshAccessLog_Conf `protobuf:"bytes,2,opt,name=default,proto3" json:"default"`
+	Default *MeshAccessLog_Conf `protobuf:"bytes,2,opt,name=default,proto3" json:"default,omitempty"`
 }
 
 func (x *MeshAccessLog_From) Reset() {
@@ -433,10 +437,10 @@ type MeshAccessLog_To struct {
 
 	// TargetRef is a reference to the resource that represents a group of
 	// clients.
-	TargetRef *v1alpha1.TargetRef `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef"`
+	TargetRef *v1alpha1.TargetRef `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef,omitempty"`
 	// Default is a configuration specific to the group of clients referenced in
 	// 'targetRef'
-	Default *MeshAccessLog_Conf `protobuf:"bytes,2,opt,name=default,proto3" json:"default"`
+	Default *MeshAccessLog_Conf `protobuf:"bytes,2,opt,name=default,proto3" json:"default,omitempty"`
 }
 
 func (x *MeshAccessLog_To) Reset() {
@@ -490,8 +494,8 @@ type MeshAccessLog_Format_JsonValue struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Key   string `protobuf:"bytes,1,opt,name=key,proto3" json:"key"`
-	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value"`
+	Key   string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 }
 
 func (x *MeshAccessLog_Format_JsonValue) Reset() {

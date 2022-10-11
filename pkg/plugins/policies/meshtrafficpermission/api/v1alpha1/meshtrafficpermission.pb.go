@@ -82,8 +82,9 @@ type MeshTrafficPermission struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
 	// defined inplace.
-	TargetRef *v1alpha1.TargetRef `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef"`
+	TargetRef *v1alpha1.TargetRef `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef,omitempty"`
 	// From is a list of pairs – a group of clients and action applied for it
+	// +nullable
 	From []*MeshTrafficPermission_From `protobuf:"bytes,3,rep,name=from,proto3" json:"from"`
 }
 
@@ -146,7 +147,7 @@ type MeshTrafficPermission_Conf struct {
 	//  * DENY_WITH_SHADOW_ALLOW - blocks the requests but emits logs as if
 	//  requests are allowed
 	// +kubebuilder:validation:Enum=ALLOW;DENY;ALLOW_WITH_SHADOW_DENY;DENY_WITH_SHADOW_ALLOW
-	Action string `protobuf:"bytes,1,opt,name=action,proto3" json:"action"`
+	Action string `protobuf:"bytes,1,opt,name=action,proto3" json:"action,omitempty"`
 }
 
 func (x *MeshTrafficPermission_Conf) Reset() {
@@ -195,10 +196,10 @@ type MeshTrafficPermission_From struct {
 
 	// TargetRef is a reference to the resource that represents a group of
 	// clients.
-	TargetRef *v1alpha1.TargetRef `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef"`
+	TargetRef *v1alpha1.TargetRef `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef,omitempty"`
 	// Default is a configuration specific to the group of clients referenced in
 	// 'targetRef'
-	Default *MeshTrafficPermission_Conf `protobuf:"bytes,2,opt,name=default,proto3" json:"default"`
+	Default *MeshTrafficPermission_Conf `protobuf:"bytes,2,opt,name=default,proto3" json:"default,omitempty"`
 }
 
 func (x *MeshTrafficPermission_From) Reset() {

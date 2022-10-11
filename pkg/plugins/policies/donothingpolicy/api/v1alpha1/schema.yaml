@@ -19,8 +19,6 @@ properties:
             enableDoNothing:
               description: User defined fields Set true in case of doing nothing
               type: boolean
-          required:
-            - enableDoNothing
           type: object
         targetRef:
           description: TargetRef is a reference to the resource that represents a group of clients.
@@ -47,10 +45,8 @@ properties:
               description: Tags are used with MeshSubset and MeshServiceSubset to define a subset of proxies
               type: object
           type: object
-      required:
-        - default
-        - targetRef
       type: object
+    nullable: true
     type: array
   targetRef:
     description: TargetRef is a reference to the resource the policy takes an effect on. The resource could be either a real store object or virtual resource defined inplace.
@@ -86,8 +82,6 @@ properties:
             enableDoNothing:
               description: User defined fields Set true in case of doing nothing
               type: boolean
-          required:
-            - enableDoNothing
           type: object
         targetRef:
           description: TargetRef is a reference to the resource that represents a group of destinations.
@@ -114,12 +108,9 @@ properties:
               description: Tags are used with MeshSubset and MeshServiceSubset to define a subset of proxies
               type: object
           type: object
-      required:
-        - default
-        - targetRef
       type: object
+    nullable: true
     type: array
 required:
   - from
-  - targetRef
   - to
