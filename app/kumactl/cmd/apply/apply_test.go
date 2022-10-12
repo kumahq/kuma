@@ -31,6 +31,13 @@ import (
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
+const defaultNetworkingSection = `networking:
+  address: 2.2.2.2
+  inbound:
+    - port: 80
+      tags:
+        "kuma.io/service": "web"`
+
 var _ = Describe("kumactl apply", func() {
 
 	var rootCtx *kumactl_cmd.RootContext
@@ -400,7 +407,7 @@ var _ = Describe("kumactl apply", func() {
 		Expect(resource.Spec.Networking.Address).To(Equal("1.1.1.1"))
 
 		// then
-		Expect(buf.String()).To(Equal(
+		Expect(buf.String()).To(MatchYAML(
 			`creationTime: "0001-01-01T00:00:00Z"
 mesh: default
 modificationTime: "0001-01-01T00:00:00Z"
@@ -408,6 +415,10 @@ name: sample
 type: Dataplane
 networking:
   address: 2.2.2.2
+  inbound:
+    - port: 80
+      tags:
+        "kuma.io/service": "web"
 `))
 	})
 
@@ -459,14 +470,14 @@ networking:
 			resource: `
 type: Dataplane
 name: dp-1
-`,
+`+defaultNetworkingSection,
 			err: "mesh: cannot be empty",
 		}),
 		Entry("no name", testCase{
 			resource: `
 type: Dataplane
 mesh: default
-`,
+`+defaultNetworkingSection,
 			err: "name: cannot be empty",
 		}),
 		Entry("invalid data", testCase{

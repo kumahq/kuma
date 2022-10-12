@@ -116,6 +116,10 @@ generate/api: protoc/common/v1alpha1 protoc/mesh protoc/mesh/v1alpha1 protoc/obs
 generate/test-server:
 	$(PROTOC_GO) test/server/grpc/api/*.proto
 
+# this is a fix for controller-gen complaining that there is no schema.yaml file
+# controller-gen it imports a policy package and then the //go:embed match is triggered and causes an error
+# the workaround works by having _DELETE_GO_EMBED_WORKAROUND_go:embed that is not evaluated and removing the
+# _DELETE_GO_EMBED_WORKAROUND_ part after generation
 .PHONY: generate/fix-embed
 generate/fix-embed:
 	find $(POLICIES_DIR) -name zz_generated.resource.go -type f -exec $(SHELL) -c "sed -i.bak 's/_DELETE_GO_EMBED_WORKAROUND_//g' {} && rm {}.bak" \;
