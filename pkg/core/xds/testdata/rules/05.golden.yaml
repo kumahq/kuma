@@ -2,7 +2,8 @@
     backends:
     - zipkin:
         url: http://jaeger-collector.mesh-observability:9411/api/v2/spans
-    - datadog: {}
+    - datadog:
+        url: http://ingest.datadoghq.eu:8126
     tags:
     - literal: core
       name: team

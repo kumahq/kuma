@@ -8,6 +8,12 @@ spec:
     name: web
     tags:
       version: v1
+  from:
+    - targetRef:
+        kind: Mesh
+        name: default
+      default:
+        action: ALLOW
 ---
 type: MeshTrafficPermission
 mesh: mesh-1
@@ -15,6 +21,12 @@ name: mtp-2
 spec:
   targetRef:
     kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+        name: default
+      default:
+        action: ALLOW
 ---
 type: MeshTrafficPermission
 mesh: mesh-1
@@ -23,6 +35,12 @@ spec:
   targetRef:
     kind: MeshService
     name: web
+  from:
+    - targetRef:
+        kind: Mesh
+        name: default
+      default:
+        action: ALLOW
 ---
 type: MeshTrafficPermission
 mesh: mesh-1
@@ -32,6 +50,12 @@ spec:
     kind: MeshSubset
     tags:
       version: v1
+  from:
+    - targetRef:
+        kind: Mesh
+        name: default
+      default:
+        action: ALLOW
 ---
 type: MeshTrafficPermission
 mesh: mesh-1
@@ -40,6 +64,12 @@ spec:
   targetRef:
     kind: MeshService
     name: backend
+  from:
+    - targetRef:
+        kind: Mesh
+        name: default
+      default:
+        action: ALLOW
 ---
 type: MeshTrafficPermission
 mesh: mesh-1
@@ -50,6 +80,12 @@ spec:
     name: web
     tags:
       version: v2
+  from:
+    - targetRef:
+        kind: Mesh
+        name: default
+      default:
+        action: ALLOW
 ---
 type: MeshTrafficPermission
 mesh: mesh-1
@@ -60,3 +96,9 @@ spec:
     name: web
     tags:
       env: dev
+  from:
+    - targetRef:
+        kind: Mesh
+        name: default
+      default:
+        action: ALLOW
