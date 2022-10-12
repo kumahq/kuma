@@ -1,12 +1,12 @@
-package plugins_test
+package validation_test
 
 import (
 	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/plugins"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	meshtrace_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/policies/validation"
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -14,10 +14,10 @@ var _ = Describe("plugins validation", func() {
 	Describe("ValidateResourceSchema()", func() {
 		DescribeTable("valid MeshTrafficPermission should pass validation",
 			func(resourceYaml string) {
-				mtp := v1alpha1.MeshTrafficPermission{}
-				err := proto.FromYAML([]byte(resourceYaml), &mtp)
+				mtp := meshtrace_proto.NewMeshTrafficPermissionResource()
+				err := proto.FromYAML([]byte(resourceYaml), mtp.Spec)
 				Expect(err).To(Not(HaveOccurred()))
-				verr := plugins.ValidateResourceSchema(&mtp, "MeshTrafficPermission")
+				verr := validation.ValidateSchema(mtp.GetSpec(), mtp.GetSchema())
 
 				Expect(verr).To(BeNil())
 			},
@@ -40,10 +40,10 @@ from:
 		DescribeTable("should validate schema and return as accurate errors as possible",
 			func(given testCase) {
 				// and
-				mtp := v1alpha1.MeshTrafficPermission{}
-				err := proto.FromYAML([]byte(given.inputYaml), &mtp)
+				mtp := meshtrace_proto.NewMeshTrafficPermissionResource()
+				err := proto.FromYAML([]byte(given.inputYaml), mtp.Spec)
 				Expect(err).To(Not(HaveOccurred()))
-				verr := plugins.ValidateResourceSchema(&mtp, "MeshTrafficPermission")
+				verr := validation.ValidateSchema(mtp.GetSpec(), mtp.GetSchema())
 				actual, err := yaml.Marshal(verr)
 				Expect(err).ToNot(HaveOccurred())
 

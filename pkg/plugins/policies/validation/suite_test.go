@@ -1,4 +1,4 @@
-package plugins_test
+package validation_test
 
 import (
 	"testing"

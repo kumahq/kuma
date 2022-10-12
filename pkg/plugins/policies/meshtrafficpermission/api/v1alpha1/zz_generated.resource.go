@@ -5,10 +5,26 @@
 package v1alpha1
 
 import (
+	_ "embed"
 	"fmt"
 
+	"github.com/xeipuuv/gojsonschema"
+
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/plugins/policies/validation"
 )
+
+//go:embed schema.yaml
+var rawSchema []byte
+var schema *gojsonschema.JSONLoader
+
+func init() {
+	sch, err := validation.YamlToJsonSchemaLoader(rawSchema)
+	if err != nil {
+		panic(err)
+	}
+	schema = sch
+}
 
 const (
 	MeshTrafficPermissionType model.ResourceType = "MeshTrafficPermission"
@@ -58,11 +74,19 @@ func (t *MeshTrafficPermissionResource) Descriptor() model.ResourceTypeDescripto
 }
 
 func (t *MeshTrafficPermissionResource) Validate() error {
+	if err := validation.ValidateSchema(t.GetSpec(), t.GetSchema()); err != nil {
+		return err
+	}
+
 	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
 		return nil
 	} else {
 		return v.validate()
 	}
+}
+
+func (r *MeshTrafficPermissionResource) GetSchema() *gojsonschema.JSONLoader {
+	return schema
 }
 
 var _ model.ResourceList = &MeshTrafficPermissionResourceList{}

@@ -7,8 +7,6 @@ import (
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
-
-	"github.com/kumahq/kuma/pkg/plugins"
 )
 
 const (
@@ -73,12 +71,6 @@ type ResourceValidator interface {
 }
 
 func Validate(resource Resource) error {
-	if resource.GetSpec() != nil {
-		if err := plugins.ValidateResourceSchema(resource.GetSpec(), string(resource.Descriptor().Name)); err != nil {
-			return err
-		}
-	}
-
 	if rv, ok := resource.(ResourceValidator); ok {
 		return rv.Validate()
 	}
