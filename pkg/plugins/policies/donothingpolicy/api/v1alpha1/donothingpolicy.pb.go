@@ -32,13 +32,13 @@ type DoNothingPolicy struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
 	// defined inplace.
-	TargetRef *v1alpha1.TargetRef `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef,omitempty"`
+	TargetRef *v1alpha1.TargetRef     `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef,omitempty"`
 	// +optional
 	// +nullable
-	To []*DoNothingPolicy_To `protobuf:"bytes,2,rep,name=to,proto3" json:"to"`
+	To        []*DoNothingPolicy_To   `protobuf:"bytes,2,rep,name=to,proto3" json:"to"`
 	// +optional
 	// +nullable
-	From []*DoNothingPolicy_From `protobuf:"bytes,3,rep,name=from,proto3" json:"from"`
+	From      []*DoNothingPolicy_From `protobuf:"bytes,3,rep,name=from,proto3" json:"from"`
 }
 
 func (x *DoNothingPolicy) Reset() {
