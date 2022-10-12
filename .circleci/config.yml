@@ -252,6 +252,10 @@ jobs:
         description: The CNI networking plugin to use [flannel | calico]
         type: string
         default: flannel
+      ebpf:
+        description: The ebpf test are supposed to run only with kind
+        type: string
+        default: disabled
     executor:
       name: vm-<< parameters.arch >>
     parallelism: << parameters.parallelism >>
@@ -268,6 +272,7 @@ jobs:
               parallelism:<< parameters.parallelism >> \
               arch:<< parameters.arch >> \
               cniNetworkPlugin:<< parameters.cniNetworkPlugin >> \
+              ebpf:<< parameters.ebpf >> \
             "
             function skip() {
               echo "Non valid job combination halting job reason: $1"
@@ -280,7 +285,9 @@ jobs:
             if [[ $(./tools/ci/has_label.sh ci/skip-e2e-test) == "true" ]]; then
               skip "Not running tests as the PR has label: ci/skip-e2e-test"
             fi
-            
+            if [[ "<< parameters.k8sVersion >>" == "kind" && "<< parameters.target >>" != "test/e2e-universal" && "<< parameters.ebpf >>" == "disabled" ]]; then
+              skip "kind should only be used when testing ipv6 or with test/e2e-universal"
+            fi
             if [[ "<< parameters.k8sVersion >>" != kind* && "<< parameters.target >>" == "test/e2e-universal" ]]; then
               skip "universal only runs on kind"
             fi
@@ -343,16 +350,16 @@ jobs:
 
             if [[ "<< parameters.target >>" == "test/e2e" ]]; then
               if [[ "<< parameters.arch >>" == "arm64" ]]; then
-                if [[ "<< parameters.k8sVersion >>" != "kind" ]]; then
-                  export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX && !arm-not-supported && !kind-supported"
-                else
+                if [[ "<< parameters.k8sVersion >>" == "kind" ]]; then
                   export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX && !arm-not-supported"
+                else
+                  export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX && !arm-not-supported && !kind-only"
                 fi
               else
-                if [[ "<< parameters.k8sVersion >>" != "kind" ]]; then
-                  export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX && !kind-supported"
-                else
+                if [[ "<< parameters.k8sVersion >>" == "kind" ]]; then
                   export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX"
+                else
+                  export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX && !kind-only"
                 fi
               fi
             fi
@@ -509,6 +516,7 @@ workflows:
               k8sVersion: [ kind ]
               target: [ test/e2e ]
               arch: [ amd64 ]
+              ebpf: [ enabled ]
           parallelism: 1
           requires: [ build-<< matrix.arch >>, check ]
       - release:
