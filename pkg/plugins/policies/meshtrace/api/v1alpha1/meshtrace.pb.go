@@ -4,8 +4,6 @@
 // 	protoc        v3.20.0
 // source: pkg/plugins/policies/meshtrace/api/v1alpha1/meshtrace.proto
 
-// +kubebuilder:validation:Optional
-
 package v1alpha1
 
 import (

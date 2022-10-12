@@ -1,6 +1,5 @@
 syntax = "proto3";
 
-// +kubebuilder:validation:Optional
 package kuma.plugins.policies.meshtrace.v1alpha1;
 
 import "mesh/options.proto";
