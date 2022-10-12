@@ -37,7 +37,7 @@ var _ = Describe("kumactl get external-services", func() {
 						Address: "127.0.0.1",
 					},
 					Tags: map[string]string{
-						"service": "mobile",
+						"kuma.io/service": "mobile",
 						"version": "v1",
 					},
 				},
@@ -52,7 +52,7 @@ var _ = Describe("kumactl get external-services", func() {
 						Address: "127.0.0.2",
 					},
 					Tags: map[string]string{
-						"service": "web",
+						"kuma.io/service": "web",
 						"version": "v2",
 					},
 				},

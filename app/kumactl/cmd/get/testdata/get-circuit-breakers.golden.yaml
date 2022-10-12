@@ -12,13 +12,13 @@ items:
   creationTime: "0001-01-01T00:00:00Z"
   destinations:
   - match:
-      service: backend
+      "kuma.io/service": backend
   mesh: default
   modificationTime: "0001-01-01T00:00:00Z"
   name: cb1
   sources:
   - match:
-      service: frontend
+      "kuma.io/service": frontend
       version: "0.1"
   type: CircuitBreaker
 - conf:
@@ -43,13 +43,13 @@ items:
   creationTime: "0001-01-01T00:00:00Z"
   destinations:
   - match:
-      service: redis
+      "kuma.io/service": redis
   mesh: default
   modificationTime: "0001-01-01T00:00:00Z"
   name: cb2
   sources:
   - match:
-      service: web
+      "kuma.io/service": web
       version: "0.1"
   type: CircuitBreaker
 next: null

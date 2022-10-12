@@ -40,7 +40,7 @@ var _ = Describe("kumactl get dataplanes", func() {
 								Port:        8080,
 								ServicePort: 80,
 								Tags: map[string]string{
-									"service": "mobile",
+									"kuma.io/service": "mobile",
 									"version": "v1",
 								},
 							},
@@ -48,7 +48,7 @@ var _ = Describe("kumactl get dataplanes", func() {
 								Port:        8090,
 								ServicePort: 90,
 								Tags: map[string]string{
-									"service": "metrics",
+									"kuma.io/service": "metrics",
 									"version": "v1",
 								},
 							},
@@ -69,7 +69,7 @@ var _ = Describe("kumactl get dataplanes", func() {
 								Port:        8080,
 								ServicePort: 80,
 								Tags: map[string]string{
-									"service": "web",
+									"kuma.io/service": "web",
 									"version": "v2",
 								},
 							},

@@ -30,7 +30,7 @@ var _ = Describe("kumactl get fault-injections", func() {
 				Sources: []*v1alpha1.Selector{
 					{
 						Match: map[string]string{
-							"service": "frontend",
+							"kuma.io/service": "frontend",
 							"version": "0.1",
 						},
 					},
@@ -38,7 +38,7 @@ var _ = Describe("kumactl get fault-injections", func() {
 				Destinations: []*v1alpha1.Selector{
 					{
 						Match: map[string]string{
-							"service": "backend",
+							"kuma.io/service": "backend",
 						},
 					},
 				},
@@ -67,7 +67,7 @@ var _ = Describe("kumactl get fault-injections", func() {
 				Sources: []*v1alpha1.Selector{
 					{
 						Match: map[string]string{
-							"service": "web",
+							"kuma.io/service": "web",
 							"version": "0.1",
 						},
 					},
@@ -75,7 +75,7 @@ var _ = Describe("kumactl get fault-injections", func() {
 				Destinations: []*v1alpha1.Selector{
 					{
 						Match: map[string]string{
-							"service": "redis",
+							"kuma.io/service": "redis",
 						},
 					},
 				},

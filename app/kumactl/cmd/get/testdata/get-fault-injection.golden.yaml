@@ -9,5 +9,5 @@ conf:
     percentage: 50
 sources:
 - match:
-    service: frontend
+    "kuma.io/service": frontend
     version: "0.1"

@@ -9,10 +9,10 @@ networking:
   - port: 8080
     servicePort: 80
     tags:
-      service: mobile
+      "kuma.io/service": mobile
       version: v1
   - port: 8090
     servicePort: 90
     tags:
-      service: metrics
+      "kuma.io/service": metrics
       version: v1
