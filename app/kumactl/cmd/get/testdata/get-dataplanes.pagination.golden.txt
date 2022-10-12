@@ -1,4 +1,4 @@
-MESH      NAME      TAGS                     ADDRESS     AGE
-default   example   service=web version=v2   127.0.0.2   292y
+MESH      NAME      TAGS                             ADDRESS     AGE
+default   example   kuma.io/service=web version=v2   127.0.0.2   292y
 
 Rerun command with --offset=1 argument to retrieve more resources

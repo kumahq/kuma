@@ -3,26 +3,26 @@ items:
   destinations:
   - match:
       env: dev
-      "kuma.io/service": backend1
+      kuma.io/service: backend1
   mesh: default
   modificationTime: "0001-01-01T00:00:00Z"
   name: web1-to-backend1
   sources:
   - match:
-      "kuma.io/service": web1
+      kuma.io/service: web1
       version: "1.0"
   type: TrafficPermission
 - creationTime: "0001-01-01T00:00:00Z"
   destinations:
   - match:
       env: dev
-      "kuma.io/service": backend2
+      kuma.io/service: backend2
   mesh: default
   modificationTime: "0001-01-01T00:00:00Z"
   name: web2-to-backend2
   sources:
   - match:
-      "kuma.io/service": web2
+      kuma.io/service: web2
       version: "1.0"
   type: TrafficPermission
 next: null
