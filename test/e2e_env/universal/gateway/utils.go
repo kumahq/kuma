@@ -148,9 +148,9 @@ networking:
 	}
 }
 
-// gatewayClientAppUniversal runs an empty container that will
+// GatewayClientAppUniversal runs an empty container that will
 // function as a client for a gateway.
-func gatewayClientAppUniversal(name string) InstallFunc {
+func GatewayClientAppUniversal(name string) InstallFunc {
 	return func(cluster Cluster) error {
 		return cluster.DeployApp(
 			WithName(name),
@@ -171,7 +171,7 @@ func echoServerApp(mesh, name, service, instance string) InstallFunc {
 	}
 }
 
-func proxySimpleRequests(cluster Cluster, instance, gateway, host string, opts ...client.CollectResponsesOptsFn) {
+func ProxySimpleRequests(cluster Cluster, instance, gateway, host string, opts ...client.CollectResponsesOptsFn) {
 	targetPath := path.Join("test", GinkgoT().Name())
 
 	Logf("expecting 200 response from %q", gateway)

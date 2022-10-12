@@ -1,0 +1,9 @@
+- Conf:
+    backends:
+    - zipkin:
+        url: http://jaeger-collector.mesh-observability:9411/api/v2/spans
+    tags:
+    - literal: core
+      name: team
+  Origin: null
+  Subset: []

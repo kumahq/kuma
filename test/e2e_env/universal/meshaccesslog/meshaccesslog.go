@@ -2,15 +2,16 @@ package meshaccesslog
 
 import (
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	gomega_types "github.com/onsi/gomega/types"
 
 	"github.com/kumahq/kuma/test/e2e_env/universal/env"
+	"github.com/kumahq/kuma/test/e2e_env/universal/gateway"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
 )
@@ -21,6 +22,11 @@ func TestPlugin() {
 	externalServiceDeployment := "externalservice-" + externalServiceName
 	var externalServiceDockerName string
 
+	GatewayAddressPort := func(appName string, port int) string {
+		ip := env.Cluster.GetApp(appName).GetIP()
+		return net.JoinHostPort(ip, strconv.Itoa(port))
+	}
+
 	BeforeAll(func() {
 		externalServiceDockerName = fmt.Sprintf("%s_%s-%s", env.Cluster.Name(), meshName, "test-server")
 		Expect(NewClusterSetup().
@@ -28,7 +34,9 @@ func TestPlugin() {
 			Install(TestServerUniversal(
 				"test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}), WithDockerContainerName(externalServiceDockerName)),
 			).
-			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
+			Install(GatewayProxyUniversal(meshName, "edge-gateway")).
+			Install(YamlUniversal(gateway.MkGateway("edge-gateway", meshName, false, "example.kuma.io", "test-server", 8080))).
+			Install(gateway.GatewayClientAppUniversal("gateway-client")).
 			Setup(env.Cluster)).To(Succeed())
 	})
 	E2EAfterAll(func() {
@@ -39,9 +47,9 @@ func TestPlugin() {
 	// Always have new MeshAccessLog resources and log sink
 	BeforeEach(func() {
 		Expect(NewClusterSetup().
-			Install(
-				externalservice.Install(externalServiceName, externalservice.UniversalTCPSink),
-			).Setup(env.Cluster),
+			Install(externalservice.Install(externalServiceName, externalservice.UniversalTCPSink)).
+			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
+			Setup(env.Cluster),
 		).To(Succeed())
 	})
 	E2EAfterEach(func() {
@@ -53,18 +61,16 @@ func TestPlugin() {
 			Expect(err).ToNot(HaveOccurred())
 		}
 
-		sinkDeployment := env.Cluster.Deployment(externalServiceDeployment).(*externalservice.UniversalDeployment)
-		Expect(sinkDeployment.Delete(env.Cluster)).To(Succeed())
+		Expect(env.Cluster.DeleteApp(AppModeDemoClient)).To(Succeed())
+		Expect(env.Cluster.DeleteDeployment(externalServiceDeployment)).To(Succeed())
 	})
 
 	trafficLogFormat := "%START_TIME(%s)%,%KUMA_SOURCE_SERVICE%,%KUMA_DESTINATION_SERVICE%"
-	expectTrafficLogged := func(target string, curlErr gomega_types.GomegaMatcher) (src, dst string) {
+	expectTrafficLogged := func(makeRequest func(g Gomega)) (src, dst string) {
 		sinkDeployment := env.Cluster.Deployment(externalServiceDeployment).(*externalservice.UniversalDeployment)
 
 		Eventually(func(g Gomega) {
-			_, _, err := env.Cluster.Exec("", "", AppModeDemoClient,
-				"curl", "-v", "--fail", target)
-			g.Expect(err).To(curlErr)
+			makeRequest(g)
 
 			stdout, _, err := sinkDeployment.Exec("", "", "head", "-1", "/nc.out")
 			g.Expect(err).ToNot(HaveOccurred())
@@ -103,14 +109,20 @@ spec:
 `, trafficLogFormat, env.Cluster.Name(), externalServiceDeployment)
 		Expect(YamlUniversal(yaml)(env.Cluster)).To(Succeed())
 
-		src, dst := expectTrafficLogged("test-server.mesh", Succeed())
+		makeRequest := func(g Gomega) {
+			_, _, err := env.Cluster.Exec("", "", AppModeDemoClient,
+				"curl", "-v", "--fail", "test-server.mesh")
+			g.Expect(err).ToNot(HaveOccurred())
+		}
+		src, dst := expectTrafficLogged(makeRequest)
 
 		Expect(src).To(Equal(AppModeDemoClient))
 		Expect(dst).To(Equal("test-server"))
 	})
 
-	// This is flaky, may have something to do with access-log-streamer
-	It("should log outgoing passthrough traffic", FlakeAttempts(3), func() {
+	// This is flaky if we don't redeploy demo-client in BeforeEach/E2EAfterEach
+	// This may have something to do with access-log-streamer
+	It("should log outgoing passthrough traffic", func() {
 		yaml := fmt.Sprintf(`
 type: MeshAccessLog
 name: client-outgoing
@@ -132,7 +144,12 @@ spec:
 		Expect(YamlUniversal(yaml)(env.Cluster)).To(Succeed())
 
 		// 52 is empty response but the TCP connection succeeded
-		src, dst := expectTrafficLogged(externalServiceDockerName, ContainSubstring("exit status 52"))
+		makeRequest := func(g Gomega) {
+			_, _, err := env.Cluster.Exec("", "", AppModeDemoClient,
+				"curl", "-v", "--fail", externalServiceDockerName)
+			g.Expect(err).To(ContainSubstring("exit status 52"))
+		}
+		src, dst := expectTrafficLogged(makeRequest)
 
 		Expect(src).To(Equal(AppModeDemoClient))
 		Expect(dst).To(Equal("external"))
@@ -160,9 +177,45 @@ spec:
 
 		Expect(YamlUniversal(yaml)(env.Cluster)).To(Succeed())
 
-		src, dst := expectTrafficLogged("test-server.mesh", Succeed())
+		makeRequest := func(g Gomega) {
+			_, _, err := env.Cluster.Exec("", "", AppModeDemoClient,
+				"curl", "-v", "--fail", "test-server.mesh")
+			g.Expect(err).ToNot(HaveOccurred())
+		}
+		src, dst := expectTrafficLogged(makeRequest)
 
 		Expect(src).To(Equal("unknown"))
 		Expect(dst).To(Equal("test-server"))
+	})
+
+	It("should log traffic from MeshGateway", func() {
+		yaml := fmt.Sprintf(`
+type: MeshAccessLog
+name: gateway-outgoing
+mesh: meshaccesslog
+spec:
+ targetRef:
+   kind: MeshService
+   name: edge-gateway
+ to:
+   - targetRef:
+       kind: Mesh
+     default:
+       backends:
+       - tcp:
+           format:
+             plain: '%s'
+           address: "%s_%s:9999"
+`, trafficLogFormat, env.Cluster.Name(), externalServiceDeployment)
+		Expect(YamlUniversal(yaml)(env.Cluster)).To(Succeed())
+
+		makeRequest := func(g Gomega) {
+			gateway.ProxySimpleRequests(env.Cluster, "echo-v1",
+				GatewayAddressPort("edge-gateway", 8080), "example.kuma.io")
+		}
+		src, dst := expectTrafficLogged(makeRequest)
+
+		Expect(src).To(Equal("edge-gateway"))
+		Expect(dst).To(Equal("*"))
 	})
 }

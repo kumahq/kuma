@@ -132,7 +132,6 @@ services:
     - KUMA_CONTROL_PLANE_URL=https://kuma-control-plane:5678
     - KUMA_DATAPLANE_MESH=default
     - KUMA_DATAPLANE_NAME=kuma-example-app
-    - KUMA_DATAPLANE_ADMIN_PORT=9901
     - KUMA_DATAPLANE_RUNTIME_TOKEN_PATH=/token-example-app/token
     # the following setting instructs Docker Compose to add `kuma-example-app-sidecar` container
     # to the network namespace of `kuma-example-app-namespace` container
@@ -207,7 +206,6 @@ services:
     - KUMA_CONTROL_PLANE_URL=https://kuma-control-plane:5678
     - KUMA_DATAPLANE_MESH=default
     - KUMA_DATAPLANE_NAME=kuma-example-client
-    - KUMA_DATAPLANE_ADMIN_PORT=9901
     - KUMA_DATAPLANE_RUNTIME_TOKEN_PATH=/token-example-client/token
     # the following setting instructs Docker Compose to add `kuma-example-app-sidecar` container
     # to the network namespace of `kuma-example-app-namespace` container
@@ -287,7 +285,6 @@ services:
     - KUMA_CONTROL_PLANE_URL=https://kuma-control-plane:5678
     - KUMA_DATAPLANE_MESH=default
     - KUMA_DATAPLANE_NAME=kuma-example-web
-    - KUMA_DATAPLANE_ADMIN_PORT=9901
     - KUMA_DATAPLANE_RUNTIME_TOKEN_PATH=/var/kuma.io/kuma-dp/kuma-example-web/token
     # the following setting instructs Docker Compose to add `kuma-example-web-sidecar` container
     # to the network namespace of `kuma-example-web-namespace` container
@@ -353,7 +350,6 @@ services:
     - KUMA_CONTROL_PLANE_URL=https://kuma-control-plane:5678
     - KUMA_DATAPLANE_MESH=default
     - KUMA_DATAPLANE_NAME=kuma-example-backend-v1
-    - KUMA_DATAPLANE_ADMIN_PORT=9901
     - KUMA_DATAPLANE_RUNTIME_TOKEN_PATH=/var/kuma.io/kuma-dp/kuma-example-backend-v1/token
     # the following setting instructs Docker Compose to add `kuma-example-backend-v1-sidecar` container
     # to the network namespace of `kuma-example-backend-v1-namespace` container
@@ -419,7 +415,6 @@ services:
     - KUMA_CONTROL_PLANE_URL=https://kuma-control-plane:5678
     - KUMA_DATAPLANE_MESH=default
     - KUMA_DATAPLANE_NAME=kuma-example-backend-v2
-    - KUMA_DATAPLANE_ADMIN_PORT=9901
     - KUMA_DATAPLANE_RUNTIME_TOKEN_PATH=/var/kuma.io/kuma-dp/kuma-example-backend-v2/token
     # the following setting instructs Docker Compose to add `kuma-example-backend-v2-sidecar` container
     # to the network namespace of `kuma-example-backend-v2-namespace` container

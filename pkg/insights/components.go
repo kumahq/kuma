@@ -1,9 +1,12 @@
 package insights
 
 import (
+	"fmt"
+
 	"golang.org/x/time/rate"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
@@ -22,6 +25,10 @@ func Setup(rt runtime.Runtime) error {
 			return rate.NewLimiter(rate.Every(rt.Config().Metrics.Mesh.MinResyncTimeout), 0)
 		},
 		Registry: registry.Global(),
+		AddressPortGenerator: func(svc string) string {
+			return fmt.Sprintf("%s.%s:%d", svc, rt.Config().DNSServer.Domain, rt.Config().DNSServer.ServiceVipPort)
+		},
+		Now: core.Now,
 	})
 	return rt.Add(component.NewResilientComponent(log, resyncer))
 }
