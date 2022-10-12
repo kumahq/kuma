@@ -21,6 +21,7 @@ package {{.PolicyVersion}}
 import (
 	_ "embed"
 	"fmt"
+
 	"github.com/xeipuuv/gojsonschema"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -88,7 +89,7 @@ func (t *{{.Name}}Resource) Descriptor() model.ResourceTypeDescriptor {
 }
 
 func (t *{{.Name}}Resource) Validate() error {
-	if err := validation.ValidateSchema(t.GetSpec(), t.GetSchema()); err != nil {
+	if err := validation.ValidateSchema(t.GetSpec(), schema); err != nil {
 		return err
 	}
 
@@ -97,10 +98,6 @@ func (t *{{.Name}}Resource) Validate() error {
 	} else {
 		return v.validate()
 	}
-}
-
-func (r *{{.Name}}Resource) GetSchema() *gojsonschema.JSONLoader {
-	return schema
 }
 
 var _ model.ResourceList = &{{.Name}}ResourceList{}

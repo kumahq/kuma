@@ -74,7 +74,7 @@ func (t *MeshAccessLogResource) Descriptor() model.ResourceTypeDescriptor {
 }
 
 func (t *MeshAccessLogResource) Validate() error {
-	if err := validation.ValidateSchema(t.GetSpec(), t.GetSchema()); err != nil {
+	if err := validation.ValidateSchema(t.GetSpec(), schema); err != nil {
 		return err
 	}
 
@@ -83,10 +83,6 @@ func (t *MeshAccessLogResource) Validate() error {
 	} else {
 		return v.validate()
 	}
-}
-
-func (r *MeshAccessLogResource) GetSchema() *gojsonschema.JSONLoader {
-	return schema
 }
 
 var _ model.ResourceList = &MeshAccessLogResourceList{}

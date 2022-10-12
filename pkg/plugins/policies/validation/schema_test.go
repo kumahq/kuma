@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	meshtrace_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/policies/validation"
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -17,7 +16,7 @@ var _ = Describe("plugins validation", func() {
 				mtp := meshtrace_proto.NewMeshTrafficPermissionResource()
 				err := proto.FromYAML([]byte(resourceYaml), mtp.Spec)
 				Expect(err).To(Not(HaveOccurred()))
-				verr := validation.ValidateSchema(mtp.GetSpec(), mtp.GetSchema())
+				verr := mtp.Validate()
 
 				Expect(verr).To(BeNil())
 			},
@@ -43,7 +42,7 @@ from:
 				mtp := meshtrace_proto.NewMeshTrafficPermissionResource()
 				err := proto.FromYAML([]byte(given.inputYaml), mtp.Spec)
 				Expect(err).To(Not(HaveOccurred()))
-				verr := validation.ValidateSchema(mtp.GetSpec(), mtp.GetSchema())
+				verr := mtp.Validate()
 				actual, err := yaml.Marshal(verr)
 				Expect(err).ToNot(HaveOccurred())
 

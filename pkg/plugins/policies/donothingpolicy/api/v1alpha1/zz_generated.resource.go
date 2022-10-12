@@ -74,7 +74,7 @@ func (t *DoNothingPolicyResource) Descriptor() model.ResourceTypeDescriptor {
 }
 
 func (t *DoNothingPolicyResource) Validate() error {
-	if err := validation.ValidateSchema(t.GetSpec(), t.GetSchema()); err != nil {
+	if err := validation.ValidateSchema(t.GetSpec(), schema); err != nil {
 		return err
 	}
 
@@ -83,10 +83,6 @@ func (t *DoNothingPolicyResource) Validate() error {
 	} else {
 		return v.validate()
 	}
-}
-
-func (r *DoNothingPolicyResource) GetSchema() *gojsonschema.JSONLoader {
-	return schema
 }
 
 var _ model.ResourceList = &DoNothingPolicyResourceList{}
