@@ -30,7 +30,7 @@ var _ = Describe("kumactl get traffic-traces", func() {
 					{
 						Match: map[string]string{
 							"kuma.io/service": "web1",
-							"version": "1.0",
+							"version":         "1.0",
 						},
 					},
 				},
@@ -49,7 +49,7 @@ var _ = Describe("kumactl get traffic-traces", func() {
 					{
 						Match: map[string]string{
 							"kuma.io/service": "web2",
-							"version": "1.0",
+							"version":         "1.0",
 						},
 					},
 				},

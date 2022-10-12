@@ -470,14 +470,14 @@ networking:
 			resource: `
 type: Dataplane
 name: dp-1
-`+defaultNetworkingSection,
+` + defaultNetworkingSection,
 			err: "mesh: cannot be empty",
 		}),
 		Entry("no name", testCase{
 			resource: `
 type: Dataplane
 mesh: default
-`+defaultNetworkingSection,
+` + defaultNetworkingSection,
 			err: "name: cannot be empty",
 		}),
 		Entry("invalid data", testCase{

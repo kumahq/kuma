@@ -30,7 +30,7 @@ var _ = Describe("kumactl get traffic-logs", func() {
 					{
 						Match: map[string]string{
 							"kuma.io/service": "web1",
-							"version": "1.0",
+							"version":         "1.0",
 						},
 					},
 				},
@@ -38,7 +38,7 @@ var _ = Describe("kumactl get traffic-logs", func() {
 					{
 						Match: map[string]string{
 							"kuma.io/service": "backend1",
-							"env":     "dev",
+							"env":             "dev",
 						},
 					},
 				},
@@ -57,7 +57,7 @@ var _ = Describe("kumactl get traffic-logs", func() {
 					{
 						Match: map[string]string{
 							"kuma.io/service": "web2",
-							"version": "1.0",
+							"version":         "1.0",
 						},
 					},
 				},
@@ -65,7 +65,7 @@ var _ = Describe("kumactl get traffic-logs", func() {
 					{
 						Match: map[string]string{
 							"kuma.io/service": "backend2",
-							"env":     "dev",
+							"env":             "dev",
 						},
 					},
 				},
