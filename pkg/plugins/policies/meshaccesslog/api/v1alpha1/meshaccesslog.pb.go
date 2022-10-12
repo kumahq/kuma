@@ -38,7 +38,7 @@ type MeshAccessLog struct {
 	// +nullable
 	From []*MeshAccessLog_From `protobuf:"bytes,3,rep,name=from,proto3" json:"from"`
 	// +nullable
-	To []*MeshAccessLog_To `protobuf:"bytes,4,rep,name=to,proto3" json:"to"`
+	To   []*MeshAccessLog_To   `protobuf:"bytes,4,rep,name=to,proto3" json:"to"`
 }
 
 func (x *MeshAccessLog) Reset() {
@@ -99,9 +99,9 @@ type MeshAccessLog_Format struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Plain string `protobuf:"bytes,1,opt,name=plain,proto3" json:"plain,omitempty"`
+	Plain string                            `protobuf:"bytes,1,opt,name=plain,proto3" json:"plain,omitempty"`
 	// +nullable
-	Json []*MeshAccessLog_Format_JsonValue `protobuf:"bytes,2,rep,name=json,proto3" json:"json"`
+	Json  []*MeshAccessLog_Format_JsonValue `protobuf:"bytes,2,rep,name=json,proto3" json:"json"`
 }
 
 func (x *MeshAccessLog_Format) Reset() {
