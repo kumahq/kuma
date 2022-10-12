@@ -421,9 +421,6 @@ spec:
                               description: Address of Datadog collector, only host
                                 and port are allowed (no paths, fragments etc.)
                               type: string
-                          required:
-                          - splitService
-                          - url
                           type: object
                         zipkin:
                           description: Zipkin backend configuration.
@@ -446,16 +443,9 @@ spec:
                             url:
                               description: Address of Zipkin collector.
                               type: string
-                          required:
-                          - apiVersion
-                          - sharedSpanContext
-                          - traceId128bit
-                          - url
                           type: object
-                      required:
-                      - datadog
-                      - zipkin
                       type: object
+                    nullable: true
                     type: array
                   sampling:
                     description: Sampling configuration. Sampling is the process by
@@ -498,10 +488,6 @@ spec:
                             format: int32
                             type: integer
                         type: object
-                    required:
-                    - client
-                    - overall
-                    - random
                     type: object
                   tags:
                     description: Custom tags configuration. You can add custom tags
@@ -521,9 +507,6 @@ spec:
                             name:
                               description: Name of the header.
                               type: string
-                          required:
-                          - default
-                          - name
                           type: object
                         literal:
                           description: Tag taken from literal value.
@@ -531,16 +514,9 @@ spec:
                         name:
                           description: Name of the tag.
                           type: string
-                      required:
-                      - header
-                      - literal
-                      - name
                       type: object
+                    nullable: true
                     type: array
-                required:
-                - backends
-                - sampling
-                - tags
                 type: object
               targetRef:
                 description: TargetRef is a reference to the resource the policy takes
@@ -572,9 +548,6 @@ spec:
                       to define a subset of proxies
                     type: object
                 type: object
-            required:
-            - default
-            - targetRef
             type: object
         type: object
     served: true
@@ -640,8 +613,6 @@ spec:
                           - ALLOW_WITH_SHADOW_DENY
                           - DENY_WITH_SHADOW_ALLOW
                           type: string
-                      required:
-                      - action
                       type: object
                     targetRef:
                       description: TargetRef is a reference to the resource that represents
@@ -672,10 +643,8 @@ spec:
                             to define a subset of proxies
                           type: object
                       type: object
-                  required:
-                  - default
-                  - targetRef
                   type: object
+                nullable: true
                 type: array
               targetRef:
                 description: TargetRef is a reference to the resource the policy takes
@@ -709,7 +678,6 @@ spec:
                 type: object
             required:
             - from
-            - targetRef
             type: object
         type: object
     served: true
@@ -1725,24 +1693,18 @@ spec:
                                               type: string
                                             value:
                                               type: string
-                                          required:
-                                          - key
-                                          - value
                                           type: object
+                                        nullable: true
                                         type: array
                                       plain:
                                         type: string
                                     required:
                                     - json
-                                    - plain
                                     type: object
                                   path:
                                     description: Path to a file that logs will be
                                       written to
                                     type: string
-                                required:
-                                - format
-                                - path
                                 type: object
                               tcp:
                                 description: Backend defines logging backend.
@@ -1762,25 +1724,17 @@ spec:
                                               type: string
                                             value:
                                               type: string
-                                          required:
-                                          - key
-                                          - value
                                           type: object
+                                        nullable: true
                                         type: array
                                       plain:
                                         type: string
                                     required:
                                     - json
-                                    - plain
                                     type: object
-                                required:
-                                - address
-                                - format
                                 type: object
-                            required:
-                            - file
-                            - tcp
                             type: object
+                          nullable: true
                           type: array
                       required:
                       - backends
@@ -1814,10 +1768,8 @@ spec:
                             to define a subset of proxies
                           type: object
                       type: object
-                  required:
-                  - default
-                  - targetRef
                   type: object
+                nullable: true
                 type: array
               targetRef:
                 description: TargetRef is a reference to the resource the policy takes
@@ -1874,24 +1826,18 @@ spec:
                                               type: string
                                             value:
                                               type: string
-                                          required:
-                                          - key
-                                          - value
                                           type: object
+                                        nullable: true
                                         type: array
                                       plain:
                                         type: string
                                     required:
                                     - json
-                                    - plain
                                     type: object
                                   path:
                                     description: Path to a file that logs will be
                                       written to
                                     type: string
-                                required:
-                                - format
-                                - path
                                 type: object
                               tcp:
                                 description: Backend defines logging backend.
@@ -1911,25 +1857,17 @@ spec:
                                               type: string
                                             value:
                                               type: string
-                                          required:
-                                          - key
-                                          - value
                                           type: object
+                                        nullable: true
                                         type: array
                                       plain:
                                         type: string
                                     required:
                                     - json
-                                    - plain
                                     type: object
-                                required:
-                                - address
-                                - format
                                 type: object
-                            required:
-                            - file
-                            - tcp
                             type: object
+                          nullable: true
                           type: array
                       required:
                       - backends
@@ -1963,14 +1901,11 @@ spec:
                             to define a subset of proxies
                           type: object
                       type: object
-                  required:
-                  - default
-                  - targetRef
                   type: object
+                nullable: true
                 type: array
             required:
             - from
-            - targetRef
             - to
             type: object
         type: object
