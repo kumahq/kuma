@@ -7,7 +7,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/user"
-	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
@@ -33,7 +32,6 @@ func DefaultIngressProxyBuilder(
 	rt core_runtime.Runtime,
 	metadataTracker DataplaneMetadataTracker,
 	apiVersion envoy.APIVersion,
-	meshCache *mesh.Cache,
 ) *IngressProxyBuilder {
 	return &IngressProxyBuilder{
 		ResManager:         rt.ResourceManager(),
@@ -41,7 +39,7 @@ func DefaultIngressProxyBuilder(
 		LookupIP:           rt.LookupIP(),
 		MetadataTracker:    metadataTracker,
 		apiVersion:         apiVersion,
-		meshCache:          meshCache,
+		meshCache:          rt.MeshCache(),
 		zone:               rt.Config().Multizone.Zone.Name,
 	}
 }
@@ -50,7 +48,6 @@ func DefaultEgressProxyBuilder(
 	ctx context.Context,
 	rt core_runtime.Runtime,
 	metadataTracker DataplaneMetadataTracker,
-	meshCache *mesh.Cache,
 	apiVersion envoy.APIVersion,
 ) *EgressProxyBuilder {
 	return &EgressProxyBuilder{
@@ -59,7 +56,7 @@ func DefaultEgressProxyBuilder(
 		ReadOnlyResManager: rt.ReadOnlyResourceManager(),
 		LookupIP:           rt.LookupIP(),
 		MetadataTracker:    metadataTracker,
-		meshCache:          meshCache,
+		meshCache:          rt.MeshCache(),
 		apiVersion:         apiVersion,
 		zone:               rt.Config().Multizone.Zone.Name,
 	}
@@ -72,7 +69,6 @@ func DefaultDataplaneWatchdogFactory(
 	ingressReconciler SnapshotReconciler,
 	egressReconciler SnapshotReconciler,
 	xdsMetrics *xds_metrics.Metrics,
-	meshSnapshotCache *mesh.Cache,
 	envoyCpCtx *xds_context.ControlPlaneContext,
 	apiVersion envoy.APIVersion,
 ) (DataplaneWatchdogFactory, error) {
@@ -89,14 +85,12 @@ func DefaultDataplaneWatchdogFactory(
 		rt,
 		metadataTracker,
 		apiVersion,
-		meshSnapshotCache,
 	)
 
 	egressProxyBuilder := DefaultEgressProxyBuilder(
 		ctx,
 		rt,
 		metadataTracker,
-		meshSnapshotCache,
 		apiVersion,
 	)
 
@@ -108,7 +102,7 @@ func DefaultDataplaneWatchdogFactory(
 		egressProxyBuilder:    egressProxyBuilder,
 		egressReconciler:      egressReconciler,
 		envoyCpCtx:            envoyCpCtx,
-		meshCache:             meshSnapshotCache,
+		meshCache:             rt.MeshCache(),
 		metadataTracker:       metadataTracker,
 		resManager:            rt.ReadOnlyResourceManager(),
 	}
