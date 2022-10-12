@@ -19,5 +19,11 @@
         "kuma.io/service": "backend1"
       }
     }
-  ]
+  ],
+  "conf": {
+    "http": {
+      "requests": 5,
+      "interval": "10s"
+    }
+  }
 }

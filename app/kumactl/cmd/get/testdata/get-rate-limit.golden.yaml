@@ -3,11 +3,15 @@ mesh: default
 modificationTime: "0001-01-01T00:00:00Z"
 name: rate-limit-1
 type: RateLimit
+conf:
+  http:
+    interval: 10s
+    requests: 5
 destinations:
 - match:
     env: dev
-    "kuma.io/service": backend1
+    kuma.io/service: backend1
 sources:
 - match:
-    "kuma.io/service": web1
+    kuma.io/service: web1
     version: "1.0"

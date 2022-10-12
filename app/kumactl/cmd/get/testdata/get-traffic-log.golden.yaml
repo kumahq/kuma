@@ -7,9 +7,7 @@ conf:
   backend: file
 destinations:
 - match:
-    env: dev
-    "kuma.io/service": backend1
+    kuma.io/service: backend1
 sources:
 - match:
-    "kuma.io/service": web1
-    version: "1.0"
+    kuma.io/service: web1

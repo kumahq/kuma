@@ -15,8 +15,8 @@ conf:
   maxEjectionPercent: 50
 destinations:
 - match:
-    "kuma.io/service": backend
+    kuma.io/service: backend
 sources:
 - match:
-    "kuma.io/service": frontend
+    kuma.io/service: frontend
     version: "0.1"

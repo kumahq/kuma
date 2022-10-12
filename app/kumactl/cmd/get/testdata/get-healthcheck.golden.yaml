@@ -10,7 +10,7 @@ conf:
   unhealthyThreshold: 3
 destinations:
 - match:
-    "kuma.io/service": backend
+    kuma.io/service: backend
 sources:
 - match:
-    "kuma.io/service": web
+    kuma.io/service: web

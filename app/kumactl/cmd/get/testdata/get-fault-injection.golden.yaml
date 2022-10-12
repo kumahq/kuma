@@ -7,7 +7,13 @@ conf:
   abort:
     httpStatus: 500
     percentage: 50
+destinations:
+- match:
+    kuma.io/protocol: http
+    kuma.io/service: backend
+    version: "0.1"
 sources:
 - match:
-    "kuma.io/service": frontend
+    kuma.io/protocol: http
+    kuma.io/service: frontend
     version: "0.1"

@@ -6,12 +6,12 @@ type: TrafficRoute
 conf:
   split:
   - destination:
-      "kuma.io/service": redis
+      kuma.io/service: redis
       version: "1.0"
     weight: 90
 destinations:
 - match:
-    "kuma.io/service": redis
+    kuma.io/service: redis
 sources:
 - match:
-    "kuma.io/service": backend
+    kuma.io/service: backend
