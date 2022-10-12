@@ -228,3 +228,24 @@ spec:
           requestTimeout: 2s    
           maxStreamDuration: 0s
 ```
+
+#### Configuration of MeshGatewayRoute on cross mesh communication
+
+```yaml
+type: MeshTimeout  
+mesh: expose  
+name: default-gateway-timeouts
+spec:
+  targetRef:
+    kind: MeshGatewayRoute
+    name: default-gateway-route
+  from:
+    - targetRef:
+        kind: MeshService
+        name: backend
+        mesh: consume
+      default:
+        idleTimeout: 30m
+        http:
+          requestTimeout: 2s
+```
