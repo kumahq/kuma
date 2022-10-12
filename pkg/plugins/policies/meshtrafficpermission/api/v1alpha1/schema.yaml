@@ -79,5 +79,3 @@ properties:
         description: Tags are used with MeshSubset and MeshServiceSubset to define a subset of proxies
         type: object
     type: object
-required:
-  - from

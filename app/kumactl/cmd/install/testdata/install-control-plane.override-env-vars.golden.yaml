@@ -642,8 +642,6 @@ spec:
                       to define a subset of proxies
                     type: object
                 type: object
-            required:
-            - from
             type: object
         type: object
     served: true
@@ -1664,8 +1662,6 @@ spec:
                                         type: array
                                       plain:
                                         type: string
-                                    required:
-                                    - json
                                     type: object
                                   path:
                                     description: Path to a file that logs will be
@@ -1695,15 +1691,11 @@ spec:
                                         type: array
                                       plain:
                                         type: string
-                                    required:
-                                    - json
                                     type: object
                                 type: object
                             type: object
                           nullable: true
                           type: array
-                      required:
-                      - backends
                       type: object
                     targetRef:
                       description: TargetRef is a reference to the resource that represents
@@ -1797,8 +1789,6 @@ spec:
                                         type: array
                                       plain:
                                         type: string
-                                    required:
-                                    - json
                                     type: object
                                   path:
                                     description: Path to a file that logs will be
@@ -1828,15 +1818,11 @@ spec:
                                         type: array
                                       plain:
                                         type: string
-                                    required:
-                                    - json
                                     type: object
                                 type: object
                             type: object
                           nullable: true
                           type: array
-                      required:
-                      - backends
                       type: object
                     targetRef:
                       description: TargetRef is a reference to the resource that represents
@@ -1870,9 +1856,6 @@ spec:
                   type: object
                 nullable: true
                 type: array
-            required:
-            - from
-            - to
             type: object
         type: object
     served: true

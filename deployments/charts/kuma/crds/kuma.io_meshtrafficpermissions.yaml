@@ -122,8 +122,6 @@ spec:
                       to define a subset of proxies
                     type: object
                 type: object
-            required:
-            - from
             type: object
         type: object
     served: true

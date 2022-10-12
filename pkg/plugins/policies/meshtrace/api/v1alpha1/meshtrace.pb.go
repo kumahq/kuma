@@ -506,6 +506,7 @@ type MeshTrace_Conf struct {
 	// representing that would be just one object. Unfortunately due to the
 	// reasons explained in MADR 009-tracing-policy this has to be a one element
 	// array for now.
+	// +optional
 	// +nullable
 	Backends []*MeshTrace_Backend `protobuf:"bytes,1,rep,name=backends,proto3" json:"backends"`
 	// Sampling configuration.
@@ -514,6 +515,7 @@ type MeshTrace_Conf struct {
 	Sampling *MeshTrace_Sampling `protobuf:"bytes,2,opt,name=sampling,proto3" json:"sampling,omitempty"`
 	// Custom tags configuration. You can add custom tags to traces based on
 	// headers or literal values.
+	// +optional
 	// +nullable
 	Tags []*MeshTrace_Tag `protobuf:"bytes,3,rep,name=tags,proto3" json:"tags"`
 }

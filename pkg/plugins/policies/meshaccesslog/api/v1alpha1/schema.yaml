@@ -38,8 +38,6 @@ properties:
                             type: array
                           plain:
                             type: string
-                        required:
-                          - json
                         type: object
                       path:
                         description: Path to a file that logs will be written to
@@ -66,15 +64,11 @@ properties:
                             type: array
                           plain:
                             type: string
-                        required:
-                          - json
                         type: object
                     type: object
                 type: object
               nullable: true
               type: array
-          required:
-            - backends
           type: object
         targetRef:
           description: TargetRef is a reference to the resource that represents a group of clients.
@@ -156,8 +150,6 @@ properties:
                             type: array
                           plain:
                             type: string
-                        required:
-                          - json
                         type: object
                       path:
                         description: Path to a file that logs will be written to
@@ -184,15 +176,11 @@ properties:
                             type: array
                           plain:
                             type: string
-                        required:
-                          - json
                         type: object
                     type: object
                 type: object
               nullable: true
               type: array
-          required:
-            - backends
           type: object
         targetRef:
           description: TargetRef is a reference to the resource that represents a group of clients.
@@ -222,6 +210,3 @@ properties:
       type: object
     nullable: true
     type: array
-required:
-  - from
-  - to

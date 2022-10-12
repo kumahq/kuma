@@ -111,6 +111,3 @@ properties:
       type: object
     nullable: true
     type: array
-required:
-  - from
-  - to

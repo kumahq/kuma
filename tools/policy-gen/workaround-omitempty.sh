@@ -12,6 +12,11 @@ function os_agnostic_sed() {
   fi
 }
 
+# add 'optional' marker for all fields with type list
+os_agnostic_sed '/.*\[\].*omitempty/ i\
+	// +optional
+' "${PB_GO_FILE}"
+
 # add 'nullable' marker for all fields with type list
 os_agnostic_sed '/.*\[\].*omitempty/ i\
 	// +nullable
