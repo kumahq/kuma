@@ -10,11 +10,10 @@ import (
 	"github.com/kumahq/kuma/pkg/dns/vips"
 )
 
-const VIPListenPort = uint32(80)
-
 func VIPOutbounds(
 	virtualOutboundView *vips.VirtualOutboundMeshView,
 	tldomain string,
+	vipPort uint32,
 ) ([]xds.VIPDomains, []*mesh_proto.Dataplane_Networking_Outbound) {
 	var vipDomains []xds.VIPDomains
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
@@ -32,7 +31,7 @@ func VIPOutbounds(
 			}
 			seenGlobalVip := false
 			for _, ob := range voutbound.Outbounds {
-				seenGlobalVip = seenGlobalVip || ob.Port == VIPListenPort
+				seenGlobalVip = seenGlobalVip || ob.Port == vipPort
 				if ob.Port != 0 {
 					outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
 						Address: voutbound.Address,
@@ -45,7 +44,7 @@ func VIPOutbounds(
 			if key.Type == vips.Host && !seenGlobalVip && len(voutbound.Outbounds) > 0 && len(domain.Domains) > 0 {
 				outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
 					Address: voutbound.Address,
-					Port:    VIPListenPort,
+					Port:    vipPort,
 					Tags:    voutbound.Outbounds[0].TagSet,
 				})
 			}
@@ -65,10 +64,10 @@ func VIPOutbounds(
 				})
 			}
 			// TODO this should be a else once we remove backward compatibility
-			if ob.Port != VIPListenPort {
+			if ob.Port != vipPort {
 				outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
 					Address: voutbound.Address,
-					Port:    VIPListenPort,
+					Port:    vipPort,
 					Tags:    ob.TagSet,
 				})
 			}

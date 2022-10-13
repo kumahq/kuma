@@ -38,17 +38,30 @@ var _ = Describe("Match", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		rawResources := util_yaml.SplitYAML(string(responseBytes))
-		resourceList := &policies_api.MeshTrafficPermissionResourceList{}
+
+		var trafficPermissions []*policies_api.MeshTrafficPermissionResource
+		var gateways []*core_mesh.MeshGatewayResource
+
 		for _, rawResource := range rawResources {
 			resource, err := rest.YAML.UnmarshalCore([]byte(rawResource))
 			Expect(err).ToNot(HaveOccurred())
-			err = resourceList.AddItem(resource)
-			Expect(err).ToNot(HaveOccurred())
+
+			switch resource.Descriptor().Name {
+			case policies_api.MeshTrafficPermissionType:
+				trafficPermissions = append(trafficPermissions, resource.(*policies_api.MeshTrafficPermissionResource))
+			case core_mesh.MeshGatewayType:
+				gateways = append(gateways, resource.(*core_mesh.MeshGatewayResource))
+			}
 		}
 
 		return xds_context.Resources{
 			MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
-				policies_api.MeshTrafficPermissionType: resourceList,
+				policies_api.MeshTrafficPermissionType: &policies_api.MeshTrafficPermissionResourceList{
+					Items: trafficPermissions,
+				},
+				core_mesh.MeshGatewayType: &core_mesh.MeshGatewayResourceList{
+					Items: gateways,
+				},
 			},
 		}
 	}
@@ -133,6 +146,22 @@ var _ = Describe("Match", func() {
 				Expect(bytes).To(test_matchers.MatchGoldenYAML(given.goldenFile))
 			},
 			generateTableEntries(filepath.Join("testdata", "match", "fromrules")),
+		)
+
+		DescribeTable("should match MeshGateways",
+			func(given testCase) {
+				dpp := readDPP(given.dppFile)
+
+				resources := readPolicies(given.policiesFile)
+
+				policies, err := matchers.MatchedPolicies(policies_api.MeshTrafficPermissionType, dpp, resources)
+				Expect(err).ToNot(HaveOccurred())
+
+				bytes, err := yaml.Marshal(policies.FromRules)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(bytes).To(test_matchers.MatchGoldenYAML(given.goldenFile))
+			},
+			generateTableEntries(filepath.Join("testdata", "match", "meshgateways")),
 		)
 	})
 

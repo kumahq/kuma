@@ -273,19 +273,19 @@ func (c *K8sControlPlane) GenerateDpToken(mesh, service string) (string, error) 
 }
 
 func (c *K8sControlPlane) GenerateZoneIngressToken(zone string) (string, error) {
-	data := fmt.Sprintf(`'{"zone": "%s", "scope": ["ingress"]}'`, zone)
+	data := fmt.Sprintf(`{"zone": "%s", "scope": ["ingress"]}`, zone)
 
 	return c.generateToken("/zone", data)
 }
 
 func (c *K8sControlPlane) GenerateZoneIngressLegacyToken(zone string) (string, error) {
-	data := fmt.Sprintf(`'{"zone": "%s"}'`, zone)
+	data := fmt.Sprintf(`{"zone": "%s"}`, zone)
 
 	return c.generateToken("/zone-ingress", data)
 }
 
 func (c *K8sControlPlane) GenerateZoneEgressToken(zone string) (string, error) {
-	data := fmt.Sprintf(`'{"zone": "%s", "scope": ["egress"]}'`, zone)
+	data := fmt.Sprintf(`{"zone": "%s", "scope": ["egress"]}`, zone)
 
 	return c.generateToken("/zone", data)
 }
