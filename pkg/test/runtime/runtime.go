@@ -117,12 +117,12 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 		ZoneToken:        tokens_builtin.NewZoneTokenIssuer(builder.ResourceManager()),
 	})
 
+	initializeConfigManager(builder)
+
 	err = initializeMeshCache(builder)
 	if err != nil {
 		return nil, err
 	}
-
-	initializeConfigManager(builder)
 
 	return builder, nil
 }
