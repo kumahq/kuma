@@ -66,22 +66,6 @@ var _ = BeforeSuite(test.Within(time.Minute, func() {
 	k8sClient, err = client.New(cfg, client.Options{Scheme: k8sClientScheme})
 	Expect(err).ToNot(HaveOccurred())
 	Expect(k8sClient).ToNot(BeNil())
-
-	// err = k8s_registry.Global().RegisterObjectType(&mesh_proto.TrafficRoute{}, &mesh_k8s.TrafficRoute{
-	//	TypeMeta: kube_meta.TypeMeta{
-	//		APIVersion: mesh_k8s.GroupVersion.String(),
-	//		Kind:       "TrafficRoute",
-	//	},
-	// })
-	// Expect(err).ToNot(HaveOccurred())
-	//err = k8s_registry.Global().RegisterListType(&mesh_proto.TrafficRoute{}, &mesh_k8s.TrafficRouteList{
-	//	TypeMeta: kube_meta.TypeMeta{
-	//		APIVersion: mesh_k8s.GroupVersion.String(),
-	//		Kind:       "TrafficRouteList",
-	//	},
-	//})
-	//Expect(err).ToNot(HaveOccurred())
-
 	Expect(k8sClient.Create(context.Background(), &kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: "demo"}})).To(Succeed())
 }))
 
