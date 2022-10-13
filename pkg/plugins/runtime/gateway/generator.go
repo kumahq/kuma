@@ -16,6 +16,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/merge"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -251,7 +252,7 @@ func (g Generator) generateRTDS(limits []RuntimeResoureLimitListener) *core_xds.
 
 	res := &core_xds.Resource{
 		Name:   "gateway.listeners",
-		Origin: OriginGateway,
+		Origin: metadata.OriginGateway,
 		Resource: &envoy_service_runtime_v3.Runtime{
 			Name:  "gateway.listeners",
 			Layer: util_proto.MustStruct(layer),
