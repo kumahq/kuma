@@ -8,6 +8,7 @@ networking:
     port: 80
     servicePort: 8080
     tags:
+      "kuma.io/service": "web"
       service: web
       version: "1.0"
       env: production

@@ -6,6 +6,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
+	gateway_metadata "github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	util_envoy "github.com/kumahq/kuma/pkg/util/envoy"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/generator/core"
@@ -118,6 +119,21 @@ func init() {
 	RegisterProfile(core_mesh.ProfileDefaultProxy, NewDefaultProxyProfile())
 	RegisterProfile(IngressProxy, core.CompositeResourceGenerator{AdminProxyGenerator{}, IngressGenerator{}})
 	RegisterProfile(egress.EgressProxy, NewEgressProxyProfile())
+	// we register this so that kumactl does not fail validation of profiles registered by plugins (only "gateway-proxy" for now)
+	// a proper solution for this is to rewrite as a custom ResourceManager
+	// TODO: https://github.com/kumahq/kuma/issues/5144
+	RegisterProfile(gateway_metadata.ProfileGatewayProxy, NewFailingProfile())
+}
+
+type FailingResourceGenerator struct {
+}
+
+func (c FailingResourceGenerator) Generate(xds_context.Context, *model.Proxy) (*model.ResourceSet, error) {
+	panic("generator for this resource should not be called")
+}
+
+func NewFailingProfile() core.ResourceGenerator {
+	return FailingResourceGenerator{}
 }
 
 func RegisterProfile(profileName string, generator core.ResourceGenerator) {

@@ -7,7 +7,7 @@
   "sources": [
     {
       "match": {
-        "service": "frontend",
+        "kuma.io/service": "frontend",
         "version": "0.1"
       }
     }
@@ -15,7 +15,7 @@
   "destinations": [
     {
       "match": {
-        "service": "backend"
+        "kuma.io/service": "backend"
       }
     }
   ],

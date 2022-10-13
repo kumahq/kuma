@@ -7,7 +7,7 @@
   "selectors": [
     {
       "match": {
-        "service": "web1",
+        "kuma.io/service": "web1",
         "version": "1.0"
       }
     }
