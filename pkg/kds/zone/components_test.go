@@ -26,7 +26,6 @@ import (
 	"github.com/kumahq/kuma/pkg/test/grpc"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
 	"github.com/kumahq/kuma/pkg/test/kds/setup"
-	"github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 )
 
 var _ = Describe("Zone Sync", func() {
@@ -139,7 +138,6 @@ var _ = Describe("Zone Sync", func() {
 			mesh.DataplaneOverviewType: true,
 			mesh.ServiceOverviewType:   true,
 			mesh.DataplaneType:         true,
-			sample.TrafficRouteType:    true,
 		}
 
 		// take all mesh-scoped types and exclude types that won't be synced
