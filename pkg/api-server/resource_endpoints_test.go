@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -18,9 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
-	sample_model "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 )
 
 var _ = Describe("Resource Endpoints", func() {
@@ -41,7 +40,7 @@ var _ = Describe("Resource Endpoints", func() {
 		}))
 		client = resourceApiClient{
 			address: apiServer.Address(),
-			path:    "/meshes/" + mesh + "/sample-traffic-routes",
+			path:    "/meshes/" + mesh + "/traffic-routes",
 		}
 	})
 
@@ -69,12 +68,16 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(err).ToNot(HaveOccurred())
 			json := `
 			{
-				"type": "SampleTrafficRoute",
+				"type": "TrafficRoute",
 				"name": "tr-1",
 				"mesh": "default",
 				"creationTime": "0001-01-01T00:00:00Z",
 				"modificationTime": "0001-01-01T00:00:00Z",
-				"path": "/sample-path"
+				"conf": {
+				  "destination": {
+					"path": "/sample-path"
+				  }
+				}
 			}`
 			Expect(body).To(MatchJSON(json))
 		})
@@ -109,21 +112,29 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(response.StatusCode).To(Equal(200))
 			json1 := `
 			{
-				"type": "SampleTrafficRoute",
+				"type": "TrafficRoute",
 				"name": "tr-1",
 				"mesh": "default",
 				"creationTime": "0001-01-01T00:00:00Z",
 				"modificationTime": "0001-01-01T00:00:00Z",
-				"path": "/sample-path"
+				"conf": {
+				  "destination": {
+					"path": "/sample-path"
+				  }
+				}
 			}`
 			json2 := `
 			{
-				"type": "SampleTrafficRoute",
+				"type": "TrafficRoute",
 				"name": "tr-2",
 				"mesh": "default",
 				"creationTime": "0001-01-01T00:00:00Z",
 				"modificationTime": "0001-01-01T00:00:00Z",
-				"path": "/sample-path"
+				"conf": {
+				  "destination": {
+					"path": "/sample-path"
+				  }
+				}
 			}`
 			body, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
@@ -141,7 +152,7 @@ var _ = Describe("Resource Endpoints", func() {
 			// when
 			client = resourceApiClient{
 				address: apiServer.Address(),
-				path:    "/sample-traffic-routes",
+				path:    "/traffic-routes",
 			}
 			response := client.list()
 
@@ -149,21 +160,29 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(response.StatusCode).To(Equal(200))
 			json1 := `
 			{
-				"type": "SampleTrafficRoute",
+				"type": "TrafficRoute",
 				"name": "tr-1",
 				"mesh": "mesh-1",
 				"creationTime": "0001-01-01T00:00:00Z",
 				"modificationTime": "0001-01-01T00:00:00Z",
-				"path": "/sample-path"
+				"conf": {
+				  "destination": {
+					"path": "/sample-path"
+				  }
+				}
 			}`
 			json2 := `
 			{
-				"type": "SampleTrafficRoute",
+				"type": "TrafficRoute",
 				"name": "tr-2",
 				"mesh": "mesh-2",
 				"creationTime": "0001-01-01T00:00:00Z",
 				"modificationTime": "0001-01-01T00:00:00Z",
-				"path": "/sample-path"
+				"conf": {
+				  "destination": {
+					"path": "/sample-path"
+				  }
+				}
 			}`
 			body, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
@@ -182,7 +201,7 @@ var _ = Describe("Resource Endpoints", func() {
 			// when ask for page with size 2
 			client = resourceApiClient{
 				address: apiServer.Address(),
-				path:    "/sample-traffic-routes?size=2",
+				path:    "/traffic-routes?size=2",
 			}
 			response := client.list()
 
@@ -193,23 +212,31 @@ var _ = Describe("Resource Endpoints", func() {
 				"total": 3,
 				"items": [
 					{
-						"type": "SampleTrafficRoute",
+						"type": "TrafficRoute",
 						"name": "tr-1",
 						"mesh": "mesh-1",
 						"creationTime": "0001-01-01T00:00:00Z",
 						"modificationTime": "0001-01-01T00:00:00Z",
-						"path": "/sample-path"
+						"conf": {
+						  "destination": {
+							"path": "/sample-path"
+						  }
+						}
 					},
 					{
-						"type": "SampleTrafficRoute",
+						"type": "TrafficRoute",
 						"name": "tr-2",
 						"mesh": "mesh-1",
 						"creationTime": "0001-01-01T00:00:00Z",
 						"modificationTime": "0001-01-01T00:00:00Z",
-						"path": "/sample-path"
+						"conf": {
+						  "destination": {
+							"path": "/sample-path"
+						  }
+						}
 					}
 				],
-				"next": "http://%s/sample-traffic-routes?offset=2&size=2"
+				"next": "http://%s/traffic-routes?offset=2&size=2"
 			}`, client.address)
 			body, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
@@ -218,7 +245,7 @@ var _ = Describe("Resource Endpoints", func() {
 			// when query for next page
 			client = resourceApiClient{
 				address: apiServer.Address(),
-				path:    "/sample-traffic-routes?size=2&offset=2",
+				path:    "/traffic-routes?size=2&offset=2",
 			}
 			response = client.list()
 
@@ -229,12 +256,16 @@ var _ = Describe("Resource Endpoints", func() {
 				"total": 3,
 				"items": [
 					{
-						"type": "SampleTrafficRoute",
+						"type": "TrafficRoute",
 						"name": "tr-3",
 						"mesh": "mesh-1",
 						"creationTime": "0001-01-01T00:00:00Z",
 				        "modificationTime": "0001-01-01T00:00:00Z",
-						"path": "/sample-path"
+						"conf": {
+						  "destination": {
+							"path": "/sample-path"
+						  }
+						}
 					}
 				],
 				"next": null
@@ -248,7 +279,7 @@ var _ = Describe("Resource Endpoints", func() {
 			// when
 			client = resourceApiClient{
 				address: apiServer.Address(),
-				path:    "/sample-traffic-routes?size=2&offset=invalidoffset",
+				path:    "/traffic-routes?size=2&offset=invalidoffset",
 			}
 			response := client.list()
 
@@ -275,7 +306,7 @@ var _ = Describe("Resource Endpoints", func() {
 			// when
 			client = resourceApiClient{
 				address: apiServer.Address(),
-				path:    "/sample-traffic-routes?size=invalid",
+				path:    "/traffic-routes?size=invalid",
 			}
 			response := client.list()
 
@@ -302,7 +333,7 @@ var _ = Describe("Resource Endpoints", func() {
 			// when
 			client = resourceApiClient{
 				address: apiServer.Address(),
-				path:    "/sample-traffic-routes?size=2000",
+				path:    "/traffic-routes?size=2000",
 			}
 			response := client.list()
 
@@ -333,10 +364,21 @@ var _ = Describe("Resource Endpoints", func() {
 				Meta: rest_v1alpha1.ResourceMeta{
 					Name: "new-resource",
 					Mesh: mesh,
-					Type: string(sample_model.TrafficRouteType),
+					Type: string(core_mesh.TrafficRouteType),
 				},
-				Spec: &sample_proto.TrafficRoute{
-					Path: "/sample-path",
+				Spec: &mesh_proto.TrafficRoute{
+					Sources: []*mesh_proto.Selector{{Match: map[string]string{
+						mesh_proto.ServiceTag: "*",
+					}}},
+					Destinations: []*mesh_proto.Selector{{Match: map[string]string{
+						mesh_proto.ServiceTag: "*",
+					}}},
+					Conf: &mesh_proto.TrafficRoute_Conf{
+						Destination: map[string]string{
+							mesh_proto.ServiceTag: "*",
+							"path":                "/sample-path",
+						},
+					},
 				},
 			}
 
@@ -357,20 +399,31 @@ var _ = Describe("Resource Endpoints", func() {
 				Meta: rest_v1alpha1.ResourceMeta{
 					Name: name,
 					Mesh: mesh,
-					Type: string(sample_model.TrafficRouteType),
+					Type: string(core_mesh.TrafficRouteType),
 				},
-				Spec: &sample_proto.TrafficRoute{
-					Path: "/update-sample-path",
+				Spec: &mesh_proto.TrafficRoute{
+					Sources: []*mesh_proto.Selector{{Match: map[string]string{
+						mesh_proto.ServiceTag: "*",
+					}}},
+					Destinations: []*mesh_proto.Selector{{Match: map[string]string{
+						mesh_proto.ServiceTag: "*",
+					}}},
+					Conf: &mesh_proto.TrafficRoute_Conf{
+						Destination: map[string]string{
+							mesh_proto.ServiceTag: "*",
+							"path":                "/update-sample-path",
+						},
+					},
 				},
 			}
 			response := client.put(res)
 			Expect(response.StatusCode).To(Equal(200))
 
 			// then
-			resource := sample_model.NewTrafficRouteResource()
+			resource := core_mesh.NewTrafficRouteResource()
 			err := resourceStore.Get(context.Background(), resource, store.GetByKey(name, mesh))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resource.Spec.Path).To(Equal("/update-sample-path"))
+			Expect(resource.Spec.Conf.Destination["path"]).To(Equal("/update-sample-path"))
 		})
 
 		It("should return 400 on the type in url that is different from request", func() {
@@ -411,10 +464,9 @@ var _ = Describe("Resource Endpoints", func() {
 			// given
 			json := `
 			{
-				"type": "SampleTrafficRoute",
+				"type": "TrafficRoute",
 				"name": "different-name",
-				"mesh": "default",
-				"path": "/sample-path"
+				"mesh": "default"
 			}
 			`
 
@@ -445,10 +497,9 @@ var _ = Describe("Resource Endpoints", func() {
 			// given
 			json := `
 			{
-				"type": "SampleTrafficRoute",
+				"type": "TrafficRoute",
 				"name": "tr-1",
-				"mesh": "different-mesh",
-				"path": "/sample-path"
+				"mesh": "different-mesh"
 			}
 			`
 
@@ -478,10 +529,24 @@ var _ = Describe("Resource Endpoints", func() {
 			// given
 			json := `
 			{
-				"type": "SampleTrafficRoute",
+				"type": "TrafficRoute",
 				"name": "tr-1",
 				"mesh": "default",
-				"path": ""
+				"sources": [
+				  {
+					"match": {
+					  "kuma.io/service": "*"
+					}
+				  }
+				],
+				"destinations": [
+				  {
+					"match": {
+					  "kuma.io/service": "*"
+					}
+				  }
+				],
+				"conf": {}
 			}
 			`
 
@@ -502,8 +567,8 @@ var _ = Describe("Resource Endpoints", func() {
 				"details": "Resource is not valid",
 				"causes": [
 					{
-						"field": "path",
-						"message": "cannot be empty"
+						"field": "conf",
+						"message": "requires either \"destination\" or \"split\""
 					}
 				]
 			}
@@ -514,17 +579,16 @@ var _ = Describe("Resource Endpoints", func() {
 			// given
 			json := `
 			{
-				"type": "SampleTrafficRoute",
+				"type": "TrafficRoute",
 				"name": "invalid@",
-				"mesh": "invalid$",
-				"path": "/path"
+				"mesh": "invalid$"
 			}
 			`
 
 			// when
 			client = resourceApiClient{
 				address: apiServer.Address(),
-				path:    "/meshes/invalid$/sample-traffic-routes",
+				path:    "/meshes/invalid$/traffic-routes",
 			}
 			response := client.putJson("invalid@", []byte(json))
 
@@ -564,10 +628,21 @@ var _ = Describe("Resource Endpoints", func() {
 				Meta: rest_v1alpha1.ResourceMeta{
 					Name: "new-resource",
 					Mesh: "default",
-					Type: string(sample_model.TrafficRouteType),
+					Type: string(core_mesh.TrafficRouteType),
 				},
-				Spec: &sample_proto.TrafficRoute{
-					Path: "/sample-path",
+				Spec: &mesh_proto.TrafficRoute{
+					Sources: []*mesh_proto.Selector{{Match: map[string]string{
+						mesh_proto.ServiceTag: "*",
+					}}},
+					Destinations: []*mesh_proto.Selector{{Match: map[string]string{
+						mesh_proto.ServiceTag: "*",
+					}}},
+					Conf: &mesh_proto.TrafficRoute_Conf{
+						Destination: map[string]string{
+							mesh_proto.ServiceTag: "*",
+							"path":                "/sample-path",
+						},
+					},
 				},
 			}
 
@@ -607,7 +682,7 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(response.StatusCode).To(Equal(200))
 
 			// and
-			resource := sample_model.NewTrafficRouteResource()
+			resource := core_mesh.NewTrafficRouteResource()
 			err := resourceStore.Get(context.Background(), resource, store.GetByKey(name, mesh))
 			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.Descriptor().Name, name, mesh)))
 		})
@@ -633,7 +708,7 @@ var _ = Describe("Resource Endpoints", func() {
 
 	It("should support CORS", func() {
 		// given
-		req, err := http.NewRequest("GET", fmt.Sprintf("http://%s/meshes/%s/sample-traffic-routes", apiServer.Address(), mesh), nil)
+		req, err := http.NewRequest("GET", fmt.Sprintf("http://%s/meshes/%s/traffic-routes", apiServer.Address(), mesh), nil)
 		Expect(err).NotTo(HaveOccurred())
 		req.Header.Add(restful.HEADER_Origin, "test")
 
@@ -652,7 +727,7 @@ var _ = Describe("Resource Endpoints", func() {
 
 	It("should expose metrics", func() {
 		// given
-		req, err := http.NewRequest("GET", fmt.Sprintf("http://%s/meshes/%s/sample-traffic-routes", apiServer.Address(), mesh), nil)
+		req, err := http.NewRequest("GET", fmt.Sprintf("http://%s/meshes/%s/traffic-routes", apiServer.Address(), mesh), nil)
 		Expect(err).NotTo(HaveOccurred())
 
 		// when

@@ -11,7 +11,7 @@ clean/proto: ## Dev: Remove auto-generated Protobuf files
 
 .PHONY: generate
 generate:  ## Dev: Run code generators
-generate: clean/proto generate/api protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 protoc/plugins resources/type generate/policies
+generate: clean/proto generate/api protoc/pkg/config/app/kumactl/v1alpha1 protoc/plugins resources/type generate/policies
 
 .PHONY: resources/type
 resources/type:
@@ -21,10 +21,6 @@ resources/type:
 .PHONY: protoc/pkg/config/app/kumactl/v1alpha1
 protoc/pkg/config/app/kumactl/v1alpha1:
 	$(PROTOC_GO) pkg/config/app/kumactl/v1alpha1/*.proto
-
-.PHONY: protoc/pkg/test/apis/sample/v1alpha1
-protoc/pkg/test/apis/sample/v1alpha1:
-	$(PROTOC_GO) pkg/test/apis/sample/v1alpha1/*.proto
 
 .PHONY: protoc/plugins
 protoc/plugins:
@@ -94,7 +90,6 @@ generate/builtin-crds:
 	$(RESOURCE_GEN) -package mesh -generator crd > ./pkg/plugins/resources/k8s/native/api/v1alpha1/zz_generated.mesh.go
 	$(RESOURCE_GEN) -package system -generator crd > ./pkg/plugins/resources/k8s/native/api/v1alpha1/zz_generated.system.go
 	$(MAKE) OUT_CRD=./deployments/charts/kuma/crds IN_CRD=./pkg/plugins/resources/k8s/native/api/... crd/controller-gen
-	$(MAKE) OUT_CRD=./pkg/plugins/resources/k8s/native/test/config/crd/bases IN_CRD=./pkg/plugins/resources/k8s/native/test/api/sample/... crd/controller-gen
 
 .PHONY: crd/controller-gen
 crd/controller-gen:

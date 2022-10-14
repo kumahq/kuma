@@ -15,8 +15,6 @@ import (
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
-	sample_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/test/api/sample/v1alpha1"
-	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
 )
 
 type denyingValidator struct {
@@ -33,7 +31,7 @@ func (d *denyingValidator) Handle(context.Context, kube_admission.Request) kube_
 }
 
 func (d *denyingValidator) Supports(req kube_admission.Request) bool {
-	gvk := sample_k8s.GroupVersion.WithKind("SampleTrafficRoute")
+	gvk := mesh_k8s.GroupVersion.WithKind("TrafficRoute")
 	return req.Kind.Group == gvk.Group && req.Kind.Kind == gvk.Kind && req.Kind.Version == gvk.Version
 }
 
@@ -49,10 +47,10 @@ var _ = Describe("Composite Validator", func() {
 		handler = composite.WebHook()
 
 		kubeTypes = k8s_registry.NewTypeRegistry()
-		err := kubeTypes.RegisterObjectType(&sample_proto.TrafficRoute{}, &sample_k8s.SampleTrafficRoute{
+		err := kubeTypes.RegisterObjectType(&mesh_proto.TrafficRoute{}, &mesh_k8s.TrafficRoute{
 			TypeMeta: kube_meta.TypeMeta{
-				APIVersion: sample_k8s.GroupVersion.String(),
-				Kind:       "SampleTrafficRoute",
+				APIVersion: mesh_k8s.GroupVersion.String(),
+				Kind:       "TrafficRoute",
 			},
 		})
 		Expect(err).ToNot(HaveOccurred())
@@ -65,8 +63,8 @@ var _ = Describe("Composite Validator", func() {
 		// given
 		yaml := `
 			{
-			  "apiVersion": "sample.test.kuma.io/v1alpha1",
-			  "kind": "SampleTrafficRoute",
+			  "apiVersion": "kuma.io/v1alpha1",
+			  "kind": "TrafficRoute",
 			  "mesh": "demo",
 			  "metadata": {
 				"namespace": "example",
@@ -74,11 +72,15 @@ var _ = Describe("Composite Validator", func() {
 				"creationTimestamp": null
 			  },
 			  "spec": {
-				"path": "/random"
+				"conf": {
+				  "destination": {
+				    "path": "/random"
+				  }
+				}
 			  }
 			}
 			`
-		obj, err := kubeTypes.NewObject(&sample_proto.TrafficRoute{})
+		obj, err := kubeTypes.NewObject(&mesh_proto.TrafficRoute{})
 		Expect(err).ToNot(HaveOccurred())
 
 		req := kube_admission.Request{
