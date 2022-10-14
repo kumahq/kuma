@@ -56,7 +56,7 @@ require (
 	golang.org/x/net v0.0.0-20220920203100-d0c6ba3f52d9
 	golang.org/x/sync v0.0.0-20220907140024-f12130a52804
 	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8
-	golang.org/x/text v0.3.7
+	golang.org/x/text v0.3.8
 	golang.org/x/time v0.0.0-20220920022843-2ce7c2934d45
 	google.golang.org/genproto v0.0.0-20220920201722-2b89144ce006
 	google.golang.org/grpc v1.50.0
