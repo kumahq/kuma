@@ -8,4 +8,4 @@ conf:
   - default-proxy
 selectors:
 - match:
-    service: backend
+    kuma.io/service: backend

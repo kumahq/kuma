@@ -33,17 +33,19 @@ protoc/plugins:
 
 POLICIES_DIR := pkg/plugins/policies
 
-policies = $(foreach dir,$(shell find pkg/plugins/policies -maxdepth 1 -mindepth 1 -type d | grep -v core | grep -v matchers | grep -v xds | sort),$(notdir $(dir)))
+policies = $(foreach dir,$(shell find pkg/plugins/policies -maxdepth 1 -mindepth 1 -type d | grep -v -e core -e matchers -e xds -e validation | sort),$(notdir $(dir)))
 generate_policy_targets = $(addprefix generate/policy/,$(policies))
 cleanup_policy_targets = $(addprefix cleanup/policy/,$(policies))
 
-generate/policies: cleanup/crds $(cleanup_policy_targets) $(generate_policy_targets) generate/policy-import generate/policy-helm generate/builtin-crds
+generate/policies: cleanup/crds cleanup/policies $(generate_policy_targets) generate/policy-import generate/policy-helm generate/builtin-crds generate/fix-embed
 
 cleanup/crds:
 	rm -f ./deployments/charts/kuma/crds/*
 	rm -f ./pkg/plugins/resources/k8s/native/test/config/crd/bases/*
 
-# deletes all files in policy directory except *.proto and validator.go
+cleanup/policies: $(cleanup_policy_targets)
+
+# deletes all files in policy directory except *.proto, validator.go and schema.yaml
 cleanup/policy/%:
 	$(shell find $(POLICIES_DIR)/$* \( -name '*.pb.go' -o -name '*.yaml' -o -name 'zz_generated.*'  \) -not -path '*/testdata/*' -type f -delete)
 	@rm -fr $(POLICIES_DIR)/$*/k8s
@@ -113,3 +115,11 @@ generate/api: protoc/common/v1alpha1 protoc/mesh protoc/mesh/v1alpha1 protoc/obs
 
 generate/test-server:
 	$(PROTOC_GO) test/server/grpc/api/*.proto
+
+# this is a fix for controller-gen complaining that there is no schema.yaml file
+# controller-gen it imports a policy package and then the //go:embed match is triggered and causes an error
+# the workaround works by having _DELETE_GO_EMBED_WORKAROUND_go:embed that is not evaluated and removing the
+# _DELETE_GO_EMBED_WORKAROUND_ part after generation
+.PHONY: generate/fix-embed
+generate/fix-embed:
+	find $(POLICIES_DIR) -name zz_generated.resource.go -type f -exec $(SHELL) -c "sed -i.bak 's/_DELETE_GO_EMBED_WORKAROUND_//g' {} && rm {}.bak" \;

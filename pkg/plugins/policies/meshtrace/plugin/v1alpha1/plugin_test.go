@@ -110,7 +110,9 @@ var _ = Describe("MeshTrace", func() {
 						Subset: []core_xds.Tag{},
 						Conf: &api.MeshTrace_Conf{
 							Sampling: &api.MeshTrace_Sampling{
-								Random: wrapperspb.UInt32(50),
+								Random: &api.MeshTrace_UInt32Value{
+									Value: 50,
+								},
 							},
 							Backends: []*api.MeshTrace_Backend{{
 								Zipkin: &api.MeshTrace_ZipkinBackend{
@@ -209,7 +211,9 @@ var _ = Describe("MeshTrace", func() {
 						Subset: []core_xds.Tag{},
 						Conf: &api.MeshTrace_Conf{
 							Sampling: &api.MeshTrace_Sampling{
-								Random: wrapperspb.UInt32(50),
+								Random: &api.MeshTrace_UInt32Value{
+									Value: 50,
+								},
 							},
 							Backends: []*api.MeshTrace_Backend{{
 								Datadog: &api.MeshTrace_DatadogBackend{

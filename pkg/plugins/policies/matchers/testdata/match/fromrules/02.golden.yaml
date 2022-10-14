@@ -1,5 +1,5 @@
 Rules:
-  :8080:
+  1.1.1.1:8080:
   - Conf:
       action: ALLOW
     Origin: null
@@ -52,7 +52,7 @@ Rules:
     - Key: version
       Not: true
       Value: v2
-  :8081:
+  1.1.1.1:8081:
   - Conf:
       action: DENY
     Origin: null
