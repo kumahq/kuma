@@ -8,11 +8,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
-	sample_model "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 )
 
 func ExecuteOwnerTests(
@@ -37,9 +36,13 @@ func ExecuteOwnerTests(
 		Expect(err).ToNot(HaveOccurred())
 
 		name := "resource-1"
-		trRes := sample_model.TrafficRouteResource{
-			Spec: &sample_proto.TrafficRoute{
-				Path: "demo",
+		trRes := core_mesh.TrafficRouteResource{
+			Spec: &v1alpha1.TrafficRoute{
+				Conf: &v1alpha1.TrafficRoute_Conf{
+					Destination: map[string]string{
+						"path": "demo",
+					},
+				},
 			},
 		}
 		err = s.Create(context.Background(), &trRes,
@@ -53,7 +56,7 @@ func ExecuteOwnerTests(
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		actual := sample_model.NewTrafficRouteResource()
+		actual := core_mesh.NewTrafficRouteResource()
 		err = s.Get(context.Background(), actual, store.GetByKey(name, mesh))
 		Expect(store.IsResourceNotFound(err)).To(BeTrue())
 	})
@@ -65,9 +68,13 @@ func ExecuteOwnerTests(
 		Expect(err).ToNot(HaveOccurred())
 
 		for i := 0; i < 10; i++ {
-			tr := sample_model.TrafficRouteResource{
-				Spec: &sample_proto.TrafficRoute{
-					Path: "demo",
+			tr := core_mesh.TrafficRouteResource{
+				Spec: &v1alpha1.TrafficRoute{
+					Conf: &v1alpha1.TrafficRoute_Conf{
+						Destination: map[string]string{
+							"path": "demo",
+						},
+					},
 				},
 			}
 			err = s.Create(context.Background(), &tr,
@@ -76,7 +83,7 @@ func ExecuteOwnerTests(
 				store.CreateWithOwner(meshRes))
 			Expect(err).ToNot(HaveOccurred())
 		}
-		actual := sample_model.TrafficRouteResourceList{}
+		actual := core_mesh.TrafficRouteResourceList{}
 		err = s.List(context.Background(), &actual, store.ListByMesh(mesh))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(actual.Items).To(HaveLen(10))
@@ -86,7 +93,7 @@ func ExecuteOwnerTests(
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		actual = sample_model.TrafficRouteResourceList{}
+		actual = core_mesh.TrafficRouteResourceList{}
 		err = s.List(context.Background(), &actual, store.ListByMesh(mesh))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(actual.Items).To(BeEmpty())
@@ -100,9 +107,13 @@ func ExecuteOwnerTests(
 
 		var prev model.Resource = meshRes
 		for i := 0; i < 10; i++ {
-			curr := &sample_model.TrafficRouteResource{
-				Spec: &sample_proto.TrafficRoute{
-					Path: "demo",
+			curr := &core_mesh.TrafficRouteResource{
+				Spec: &v1alpha1.TrafficRoute{
+					Conf: &v1alpha1.TrafficRoute_Conf{
+						Destination: map[string]string{
+							"path": "demo",
+						},
+					},
 				},
 			}
 			err := s.Create(context.Background(), curr,
@@ -113,7 +124,7 @@ func ExecuteOwnerTests(
 			prev = curr
 		}
 
-		actual := sample_model.TrafficRouteResourceList{}
+		actual := core_mesh.TrafficRouteResourceList{}
 		err = s.List(context.Background(), &actual, store.ListByMesh(mesh))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(actual.Items).To(HaveLen(10))
@@ -123,7 +134,7 @@ func ExecuteOwnerTests(
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		actual = sample_model.TrafficRouteResourceList{}
+		actual = core_mesh.TrafficRouteResourceList{}
 		err = s.List(context.Background(), &actual, store.ListByMesh(mesh))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(actual.Items).To(BeEmpty())
@@ -136,9 +147,13 @@ func ExecuteOwnerTests(
 		Expect(err).ToNot(HaveOccurred())
 
 		name := "resource-1"
-		trRes := &sample_model.TrafficRouteResource{
-			Spec: &sample_proto.TrafficRoute{
-				Path: "demo",
+		trRes := &core_mesh.TrafficRouteResource{
+			Spec: &v1alpha1.TrafficRoute{
+				Conf: &v1alpha1.TrafficRoute_Conf{
+					Destination: map[string]string{
+						"path": "demo",
+					},
+				},
 			},
 		}
 		err = s.Create(context.Background(), trRes,
@@ -148,7 +163,7 @@ func ExecuteOwnerTests(
 		Expect(err).ToNot(HaveOccurred())
 
 		// when children is deleted
-		err = s.Delete(context.Background(), sample_model.NewTrafficRouteResource(), store.DeleteByKey(name, mesh))
+		err = s.Delete(context.Background(), core_mesh.NewTrafficRouteResource(), store.DeleteByKey(name, mesh))
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

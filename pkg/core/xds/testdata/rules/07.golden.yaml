@@ -1,7 +1,7 @@
 - Conf:
     backends:
     - datadog:
-        url: ingest.datadoghq.eu
+        url: http://ingest.datadoghq.eu:8126
     tags:
     - literal: support
       name: team

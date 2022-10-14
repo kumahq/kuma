@@ -14,7 +14,7 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/plugin/v1alpha1"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -486,7 +486,7 @@ var _ = Describe("MeshAccessLog", func() {
 		Entry("basic gateway", gatewayTestCase{
 			resources: []core_xds.Resource{{
 				Name:   "gateway",
-				Origin: gateway.OriginGateway,
+				Origin: metadata.OriginGateway,
 				Resource: NewListenerBuilder(envoy_common.APIV3).
 					Configure(
 						InboundListener(

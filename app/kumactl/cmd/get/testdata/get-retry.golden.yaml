@@ -15,7 +15,7 @@ conf:
     - 501
 destinations:
 - match:
-    service: backend
+    kuma.io/service: backend
 sources:
 - match:
-    service: web
+    kuma.io/service: web
