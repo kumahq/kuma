@@ -30,6 +30,7 @@ import (
 	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	xds_auth "github.com/kumahq/kuma/pkg/xds/auth"
+	mesh "github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
@@ -80,6 +81,7 @@ type RuntimeContext interface {
 	AppContext() context.Context
 	ExtraReportsFn() ExtraReportsFn
 	TokenIssuers() builtin.TokenIssuers
+	MeshCache() *mesh.Cache
 }
 
 type Access struct {
@@ -165,6 +167,7 @@ type runtimeContext struct {
 	appCtx         context.Context
 	extraReportsFn ExtraReportsFn
 	tokenIssuers   builtin.TokenIssuers
+	meshCache      *mesh.Cache
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
@@ -276,4 +279,8 @@ func (rc *runtimeContext) ExtraReportsFn() ExtraReportsFn {
 
 func (rc *runtimeContext) TokenIssuers() builtin.TokenIssuers {
 	return rc.tokenIssuers
+}
+
+func (rc *runtimeContext) MeshCache() *mesh.Cache {
+	return rc.meshCache
 }

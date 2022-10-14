@@ -8,10 +8,8 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/dns/vips"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
-	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
@@ -57,23 +55,6 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 	if err != nil {
 		return err
 	}
-	meshContextBuilder := xds_context.NewMeshContextBuilder(
-		rt.ReadOnlyResourceManager(),
-		MeshResourceTypes(HashMeshExcludedResources),
-		rt.LookupIP(),
-		rt.Config().Multizone.Zone.Name,
-		vips.NewPersistence(rt.ReadOnlyResourceManager(), rt.ConfigManager()),
-		rt.Config().DNSServer.Domain,
-		rt.Config().DNSServer.ServiceVipPort,
-	)
-	meshSnapshotCache, err := mesh.NewCache(
-		rt.Config().Store.Cache.ExpirationTime,
-		meshContextBuilder,
-		rt.Metrics(),
-	)
-	if err != nil {
-		return err
-	}
 	claCache, err := cla.NewCache(rt.Config().Store.Cache.ExpirationTime, rt.Metrics())
 	if err != nil {
 		return err
@@ -99,7 +80,7 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 		Zone:     rt.Config().Multizone.Zone.Name,
 	}
 
-	if err := v3.RegisterXDS(statsCallbacks, xdsMetrics, meshSnapshotCache, envoyCpCtx, rt); err != nil {
+	if err := v3.RegisterXDS(statsCallbacks, xdsMetrics, envoyCpCtx, rt); err != nil {
 		return errors.Wrap(err, "could not register V3 XDS")
 	}
 	return nil

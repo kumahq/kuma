@@ -37,6 +37,7 @@ import (
 	runtime_reports "github.com/kumahq/kuma/pkg/core/runtime/reports"
 	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/dp-server/server"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/envoy/admin/access"
@@ -48,8 +49,11 @@ import (
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
 	xds_auth_components "github.com/kumahq/kuma/pkg/xds/auth/components"
+	mesh_cache "github.com/kumahq/kuma/pkg/xds/cache/mesh"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
+	xds_server "github.com/kumahq/kuma/pkg/xds/server"
 )
 
 var log = core.Log.WithName("bootstrap")
@@ -162,6 +166,10 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		ZoneIngressToken: builtin.NewZoneIngressTokenIssuer(builder.ResourceManager()),
 		ZoneToken:        builtin.NewZoneTokenIssuer(builder.ResourceManager()),
 	})
+
+	if err := initializeMeshCache(builder); err != nil {
+		return nil, err
+	}
 
 	for _, plugin := range core_plugins.Plugins().BootstrapPlugins() {
 		if err := plugin.AfterBootstrap(builder, cfg); err != nil {
@@ -451,4 +459,28 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 
 func initializeConfigManager(builder *core_runtime.Builder) {
 	builder.WithConfigManager(config_manager.NewConfigManager(builder.ConfigStore()))
+}
+
+func initializeMeshCache(builder *core_runtime.Builder) error {
+	meshContextBuilder := xds_context.NewMeshContextBuilder(
+		builder.ReadOnlyResourceManager(),
+		xds_server.MeshResourceTypes(xds_server.HashMeshExcludedResources),
+		builder.LookupIP(),
+		builder.Config().Multizone.Zone.Name,
+		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager()),
+		builder.Config().DNSServer.Domain,
+		builder.Config().DNSServer.ServiceVipPort,
+	)
+
+	meshSnapshotCache, err := mesh_cache.NewCache(
+		builder.Config().Store.Cache.ExpirationTime,
+		meshContextBuilder,
+		builder.Metrics(),
+	)
+	if err != nil {
+		return err
+	}
+
+	builder.WithMeshCache(meshSnapshotCache)
+	return nil
 }

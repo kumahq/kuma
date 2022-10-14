@@ -89,21 +89,22 @@ var _ = Describe("Proxy Builder", func() {
 		}
 		return nil, errors.New("No such host to resolve:" + s)
 	})
-	rt, err := builder.Build()
-	Expect(err).ToNot(HaveOccurred())
-
 	meshCtxBuilder := xds_context.NewMeshContextBuilder(
-		rt.ReadOnlyResourceManager(),
+		builder.ReadOnlyResourceManager(),
 		server.MeshResourceTypes(server.HashMeshExcludedResources),
-		rt.LookupIP(),
-		rt.Config().Multizone.Zone.Name,
-		vips.NewPersistence(rt.ReadOnlyResourceManager(), rt.ConfigManager()),
-		rt.Config().DNSServer.Domain,
-		rt.Config().DNSServer.ServiceVipPort,
+		builder.LookupIP(),
+		builder.Config().Multizone.Zone.Name,
+		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager()),
+		builder.Config().DNSServer.Domain,
+		builder.Config().DNSServer.ServiceVipPort,
 	)
 	metrics, err := core_metrics.NewMetrics("cache")
 	Expect(err).ToNot(HaveOccurred())
-	meshCache, err := mesh.NewCache(rt.Config().Store.Cache.ExpirationTime, meshCtxBuilder, metrics)
+	meshCache, err := mesh.NewCache(builder.Config().Store.Cache.ExpirationTime, meshCtxBuilder, metrics)
+	Expect(err).ToNot(HaveOccurred())
+	builder.WithMeshCache(meshCache)
+
+	rt, err := builder.Build()
 	Expect(err).ToNot(HaveOccurred())
 	initializeStore(ctx, rt.ResourceManager(), "default_resources.yaml")
 
@@ -112,7 +113,6 @@ var _ = Describe("Proxy Builder", func() {
 			ctx,
 			rt,
 			tracker,
-			meshCache,
 			envoy_common.APIV3,
 		)
 
@@ -197,7 +197,6 @@ var _ = Describe("Proxy Builder", func() {
 			rt,
 			tracker,
 			envoy_common.APIV3,
-			meshCache,
 		)
 
 		It("should build proxy object for ingress", func() {
