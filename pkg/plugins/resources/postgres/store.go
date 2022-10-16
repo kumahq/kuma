@@ -13,11 +13,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	common_postgres "github.com/kumahq/kuma/pkg/plugins/common/postgres"
-	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 const duplicateKeyErrorMsg = "duplicate key value violates unique constraint"
@@ -43,10 +42,10 @@ func NewStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig) (
 	}, nil
 }
 
-func (r *postgresResourceStore) Create(_ context.Context, resource model.Resource, fs ...store.CreateOptionsFunc) error {
+func (r *postgresResourceStore) Create(_ context.Context, resource core_model.Resource, fs ...store.CreateOptionsFunc) error {
 	opts := store.NewCreateOptions(fs...)
 
-	bytes, err := proto.ToJSON(resource.GetSpec())
+	bytes, err := core_model.ToJSON.ResourceSpec(resource.Descriptor(), resource.GetSpec())
 	if err != nil {
 		return errors.Wrap(err, "failed to convert spec to json")
 	}
@@ -83,8 +82,8 @@ func (r *postgresResourceStore) Create(_ context.Context, resource model.Resourc
 	return nil
 }
 
-func (r *postgresResourceStore) Update(_ context.Context, resource model.Resource, fs ...store.UpdateOptionsFunc) error {
-	bytes, err := proto.ToJSON(resource.GetSpec())
+func (r *postgresResourceStore) Update(_ context.Context, resource core_model.Resource, fs ...store.UpdateOptionsFunc) error {
+	bytes, err := core_model.ToJSON.ResourceSpec(resource.Descriptor(), resource.GetSpec())
 	if err != nil {
 		return err
 	}
@@ -125,7 +124,7 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 	return nil
 }
 
-func (r *postgresResourceStore) Delete(_ context.Context, resource model.Resource, fs ...store.DeleteOptionsFunc) error {
+func (r *postgresResourceStore) Delete(_ context.Context, resource core_model.Resource, fs ...store.DeleteOptionsFunc) error {
 	opts := store.NewDeleteOptions(fs...)
 
 	statement := `DELETE FROM resources WHERE name=$1 AND type=$2 AND mesh=$3`
@@ -140,7 +139,7 @@ func (r *postgresResourceStore) Delete(_ context.Context, resource model.Resourc
 	return nil
 }
 
-func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, fs ...store.GetOptionsFunc) error {
+func (r *postgresResourceStore) Get(_ context.Context, resource core_model.Resource, fs ...store.GetOptionsFunc) error {
 	opts := store.NewGetOptions(fs...)
 
 	statement := `SELECT spec, version, creation_time, modification_time FROM resources WHERE name=$1 AND mesh=$2 AND type=$3;`
@@ -157,7 +156,7 @@ func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, 
 		return errors.Wrapf(err, "failed to execute query: %s", statement)
 	}
 
-	if err := proto.FromJSON([]byte(spec), resource.GetSpec()); err != nil {
+	if err := core_model.FromJSON.ResourceSpec(resource.Descriptor(), []byte(spec), resource.GetSpec()); err != nil {
 		return errors.Wrap(err, "failed to convert json to spec")
 	}
 
@@ -176,7 +175,7 @@ func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, 
 	return nil
 }
 
-func (r *postgresResourceStore) List(_ context.Context, resources model.ResourceList, args ...store.ListOptionsFunc) error {
+func (r *postgresResourceStore) List(_ context.Context, resources core_model.ResourceList, args ...store.ListOptionsFunc) error {
 	opts := store.NewListOptions(args...)
 
 	statement := `SELECT name, mesh, spec, version, creation_time, modification_time FROM resources WHERE type=$1`
@@ -212,7 +211,7 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 	return nil
 }
 
-func rowToItem(resources model.ResourceList, rows *sql.Rows) (model.Resource, error) {
+func rowToItem(resources core_model.ResourceList, rows *sql.Rows) (core_model.Resource, error) {
 	var name, mesh, spec string
 	var version int
 	var creationTime, modificationTime time.Time
@@ -221,7 +220,7 @@ func rowToItem(resources model.ResourceList, rows *sql.Rows) (model.Resource, er
 	}
 
 	item := resources.NewItem()
-	if err := proto.FromJSON([]byte(spec), item.GetSpec()); err != nil {
+	if err := core_model.FromJSON.ResourceSpec(item.Descriptor(), []byte(spec), item.GetSpec()); err != nil {
 		return nil, errors.Wrap(err, "failed to convert json to spec")
 	}
 
@@ -249,14 +248,14 @@ type resourceMetaObject struct {
 	ModificationTime time.Time
 }
 
-var _ model.ResourceMeta = &resourceMetaObject{}
+var _ core_model.ResourceMeta = &resourceMetaObject{}
 
 func (r *resourceMetaObject) GetName() string {
 	return r.Name
 }
 
-func (r *resourceMetaObject) GetNameExtensions() model.ResourceNameExtensions {
-	return model.ResourceNameExtensionsUnsupported
+func (r *resourceMetaObject) GetNameExtensions() core_model.ResourceNameExtensions {
+	return core_model.ResourceNameExtensionsUnsupported
 }
 
 func (r *resourceMetaObject) GetVersion() string {
