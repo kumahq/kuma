@@ -10,7 +10,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"golang.org/x/sync/errgroup"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -107,6 +106,7 @@ func newUninstallEbpf(root *kumactl_cmd.RootContext) *cobra.Command {
 			}
 
 			if args.RemoveOnly {
+				_, _ = fmt.Fprintf(jobResource.stdout, "cleaning ups Jobs")
 				if err := jobResource.Cleanup(ctx, cleanupAppSelector); err != nil {
 					return errors.Wrap(err, "Failed cleaning jobs")
 				}
@@ -114,10 +114,17 @@ func newUninstallEbpf(root *kumactl_cmd.RootContext) *cobra.Command {
 				return nil
 			}
 
+			errCh := make(chan error, 1)
+			defer func() {
+				if e := jobResource.Cleanup(ctx, cleanupAppSelector); e != nil {
+					_, _ = fmt.Fprintf(jobResource.stdout, "failed to cleanup jobs %s \n", err)
+				}
+			}()
+
 			for id, node := range nodes.Items {
 				jobName := fmt.Sprintf("%s-%d", args.CleanupJobName, id)
 				jobSpec := genJobSpec(jobName, node.Name, &args)
-
+				_, _ = fmt.Fprintf(jobResource.stdout, "creating job %s, on node %s \n", jobName, node.Name)
 				if _, err := jobResource.jobClient.Create(ctx, jobSpec, metav1.CreateOptions{}); err != nil {
 					return errors.Wrap(err, "failed creating cleanup job")
 				}
@@ -134,14 +141,6 @@ func newUninstallEbpf(root *kumactl_cmd.RootContext) *cobra.Command {
 			if err != nil {
 				return errors.Wrap(err, "failed to create pod watcher")
 			}
-
-			errCh := make(chan error, 1)
-
-			defer func() {
-				if e := jobResource.Cleanup(ctx, cleanupAppSelector); e != nil {
-					errCh <- e
-				}
-			}()
 
 			go func() {
 				errCh <- jobResource.Watch(ctx, watcher)
@@ -163,7 +162,7 @@ func newUninstallEbpf(root *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().StringVar(&args.CleanupImageRepository, "cleanup-image-repository", args.CleanupImageRepository, "image repository for ebpf cleanup job")
 	cmd.Flags().StringVar(&args.CleanupImageTag, "cleanup-image-tag", args.CleanupImageTag, "image tag for ebpf cleanup job")
 	cmd.Flags().StringVar(&args.CleanupJobName, "cleanup-job-name", args.CleanupJobName, "name of the cleanup job")
-	cmd.Flags().BoolVar(&args.RemoveOnly, "remove-only", args.RemoveOnly, "cleanup jobs and pods only")
+	cmd.Flags().BoolVar(&args.RemoveOnly, "remove-only", args.RemoveOnly, "only remove existing eBPF cleanup jobs without running any new jobs")
 
 	return cmd
 }
@@ -171,7 +170,8 @@ func newUninstallEbpf(root *kumactl_cmd.RootContext) *cobra.Command {
 func genJobSpec(jobName, nodeName string, args *ebpfArgs) *batchv1.Job {
 	return &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: jobName,
+			Name:      jobName,
+			Namespace: args.Namespace,
 		},
 		Spec: batchv1.JobSpec{
 			Template: corev1.PodTemplateSpec{
@@ -251,66 +251,47 @@ func (r *CleanupJob) getPodLogs(
 }
 
 func (r *CleanupJob) Watch(ctx context.Context, watcher watch.Interface) error {
-	eg, _ := errgroup.WithContext(ctx)
-
-	eg.Go(func() error {
-		r.Lock()
-		defer r.Unlock()
-
-		for event := range watcher.ResultChan() {
+	for event := range watcher.ResultChan() {
+		if len(r.startedJobs) == 0 {
+			break
+		}
+		pod, ok := event.Object.(*corev1.Pod)
+		if !ok {
+			return nil
+		}
+		jobName := pod.Labels["job-name"]
+		job, ok := r.startedJobs[jobName]
+		if !ok || pod.Status.Phase == job.phase {
+			continue
+		}
+		switch pod.Status.Phase {
+		case corev1.PodSucceeded:
+			_, _ = fmt.Fprintf(r.stdout,
+				"cleanup for node: %s finished successfully\n", job.nodeName)
+			delete(r.startedJobs, jobName)
 			if len(r.startedJobs) == 0 {
-				break
-			}
-
-			pod, ok := event.Object.(*corev1.Pod)
-			if !ok {
 				return nil
-			}
-
-			jobName := pod.Labels["job-name"]
-
-			job, ok := r.startedJobs[jobName]
-			if !ok || pod.Status.Phase == job.phase {
+			} else {
 				continue
 			}
-
-			switch pod.Status.Phase {
-			case corev1.PodSucceeded:
+		case corev1.PodFailed:
+			if logs, err := r.getPodLogs(ctx, pod); err != nil {
 				_, _ = fmt.Fprintf(r.stdout,
-					"cleanup for node: %s finished successfully\n", job.nodeName)
-				delete(r.startedJobs, jobName)
-				if len(r.startedJobs) == 0 {
-					return nil
-				} else {
-					continue
-				}
-			case corev1.PodFailed:
-				if logs, err := r.getPodLogs(ctx, pod); err != nil {
-					_, _ = fmt.Fprintf(r.stdout,
-						"cleanup for node: %s failed but couldn't get any logs",
-						job.nodeName)
-				} else {
-					_, _ = fmt.Fprintf(r.stdout,
-						"cleanup for node: %s failed: %s", job.nodeName, logs)
-				}
-				delete(r.startedJobs, jobName)
-				if len(r.startedJobs) == 0 {
-					return nil
-				} else {
-					continue
-				}
+					"cleanup for node: %s failed but couldn't get any logs",
+					job.nodeName)
+			} else {
+				_, _ = fmt.Fprintf(r.stdout,
+					"cleanup for node: %s failed: %s", job.nodeName, logs)
 			}
-
-			job.phase = pod.Status.Phase
+			delete(r.startedJobs, jobName)
+			if len(r.startedJobs) == 0 {
+				return nil
+			} else {
+				continue
+			}
 		}
-
-		return nil
-	})
-
-	if err := eg.Wait(); err != nil {
-		return err
+		job.phase = pod.Status.Phase
 	}
-
 	return nil
 }
 
@@ -320,14 +301,8 @@ func (r *CleanupJob) Cleanup(ctx context.Context, selector metav1.ListOptions) e
 		GracePeriodSeconds: new(int64),
 		PropagationPolicy:  &policy,
 	}
-
 	if err := r.jobClient.DeleteCollection(ctx, deleteImmediately, selector); err != nil {
 		return fmt.Errorf("failed to delete jobs %s", err)
 	}
-
-	if err := r.podClient.DeleteCollection(ctx, deleteImmediately, selector); err != nil {
-		return fmt.Errorf("failed to delete pods %s", err)
-	}
-
 	return nil
 }

@@ -3,6 +3,7 @@ package ebpf
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gruntwork-io/terratest/modules/random"
 	. "github.com/onsi/ginkgo/v2"
@@ -10,88 +11,69 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/test/e2e/ebpf/ebpf_checker"
-	"github.com/kumahq/kuma/test/e2e/ebpf/ebpf_cleaner"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
 func CleanupEbpfConfigFromNode() {
-	cleanupNamespace := "cleanup"
-	meshName := "cleanup-ebpf"
-	defaultMesh := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: Mesh
-metadata:
-  name: %s
-`, meshName)
-
 	var cluster Cluster
+	var k8sCluster *K8sCluster
+	releaseName := fmt.Sprintf(
+		"kuma-%s",
+		strings.ToLower(random.UniqueId()),
+	)
 
-	BeforeEach(func() {
-		clusters, err := NewK8sClusters(
-			[]string{Kuma1},
-			Silent)
-		Expect(err).ToNot(HaveOccurred())
+	var setup = func() {
+		k8sCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
+		cluster = k8sCluster.
+			WithTimeout(6 * time.Second).
+			WithRetries(60)
 
-		releaseName := fmt.Sprintf(
-			"kuma-%s",
-			strings.ToLower(random.UniqueId()),
-		)
-
-		cluster = clusters.GetCluster(Kuma1)
 		Expect(NewClusterSetup().
 			Install(Kuma(core.Standalone,
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
-				WithSkipDefaultMesh(true), // it's common case for HELM deployments that Mesh is also managed by HELM therefore it's not created by default
 				WithHelmOpt("experimental.ebpf.enabled", "true"))).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(Namespace(cleanupNamespace)).
-			Setup(cluster)).To(Succeed())
-		Expect(YamlK8s(defaultMesh)(cluster)).To(Succeed())
-		Expect(NewClusterSetup().
 			Install(testserver.Install(
 				testserver.WithNamespace(TestNamespace),
-				testserver.WithMesh(meshName),
+				testserver.WithMesh("default"),
 				testserver.WithName("test-server"),
 			)).
 			Install(ebpf_checker.Install(
-				ebpf_checker.WithNamespace(cleanupNamespace),
+				ebpf_checker.WithNamespace(TestNamespace),
+				ebpf_checker.WithoutSidecar(),
 			)).
-			Setup(cluster)).To(Succeed())
-	})
+			Setup(cluster)).ToNot(HaveOccurred())
+	}
 
 	E2EAfterEach(func() {
 		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
-		Expect(cluster.DeleteNamespace(cleanupNamespace)).To(Succeed())
-		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
 	It("should cleanup ebpf files from node", func() {
-		ebpfCheckerPodName, err := PodNameOfApp(cluster, "ebpf-checker", cleanupNamespace)
+		setup()
+
+		ebpfCheckerPodName, err := PodNameOfApp(cluster, "ebpf-checker", TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when remove application
 		Expect(cluster.DeleteDeployment("test-server")).To(Succeed())
 
 		// then should have bpf files left on the node
-		stdout, _, err := cluster.Exec(cleanupNamespace, ebpfCheckerPodName, "ebpf-checker", "ls", "/sys/fs/bpf")
+		stdout, _, err := cluster.Exec(TestNamespace, ebpfCheckerPodName, "ebpf-checker", "ls", "/sys/fs/bpf")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("netns_cleanup_link"))
 
-		// when run uninstall ebpf program
-		Expect(NewClusterSetup().
-			Install(ebpf_cleaner.Install(ebpf_cleaner.WithNamespace(cleanupNamespace))).
-			Setup(cluster)).To(Succeed())
+		// when kuma is deleted
+		Expect(cluster.DeleteKuma()).To(Succeed())
 
 		// then should not have ebpf files left
-		Eventually(func() bool {
-			stdout, _, err = cluster.Exec(cleanupNamespace, ebpfCheckerPodName, "ebpf-checker", "ls", "/sys/fs/bpf")
-			if err != nil {
-				return false
-			}
-			return !strings.Contains(stdout, "netns_cleanup_link")
-		}, "30s", "1s").Should(BeTrue())
+		Eventually(func(g Gomega) {
+			stdout, _, err = cluster.Exec(TestNamespace, ebpfCheckerPodName, "ebpf-checker", "ls", "/sys/fs/bpf")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).ToNot(ContainSubstring("netns_cleanup_link"))
+		}, "30s", "1s").Should(Succeed())
 	})
 }

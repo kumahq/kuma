@@ -7,16 +7,15 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/kumahq/kuma/test/framework"
 )
 
 type K8sDeployment struct {
-	ServiceName      string
-	Namespace        string
-	Replicas         int32
-	WaitingToBeReady bool
+	ServiceName    string
+	Namespace      string
+	Replicas       int32
+	DisableSidecar bool // uses default namespace settings
 }
 type Deployment interface {
 	framework.Deployment
@@ -36,24 +35,18 @@ func WithNamespace(namespace string) DeploymentOptsFn {
 	}
 }
 
-func WithReplicas(n int32) DeploymentOptsFn {
+func WithoutSidecar() DeploymentOptsFn {
 	return func(opts *K8sDeployment) {
-		opts.Replicas = n
-	}
-}
-
-func WithoutWaitingToBeReady() DeploymentOptsFn {
-	return func(opts *K8sDeployment) {
-		opts.WaitingToBeReady = false
+		opts.DisableSidecar = true
 	}
 }
 
 func Install(fn ...DeploymentOptsFn) framework.InstallFunc {
 	deployment := K8sDeployment{
-		ServiceName:      "ebpf-checker",
-		Namespace:        "default",
-		Replicas:         1,
-		WaitingToBeReady: true,
+		ServiceName:    "ebpf-checker",
+		Namespace:      "default",
+		DisableSidecar: false,
+		Replicas:       1,
 	}
 	for _, f := range fn {
 		f(&deployment)
@@ -79,12 +72,6 @@ func (k *K8sDeployment) deployment() *appsv1.Deployment {
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{"app": k.Name()},
 			},
-			Strategy: appsv1.DeploymentStrategy{
-				RollingUpdate: &appsv1.RollingUpdateDeployment{
-					MaxSurge:       &intstr.IntOrString{Type: intstr.Int, IntVal: 1},
-					MaxUnavailable: &intstr.IntOrString{Type: intstr.Int, IntVal: 0},
-				},
-			},
 			Template: k.podSpec(),
 		},
 	}
@@ -92,16 +79,20 @@ func (k *K8sDeployment) deployment() *appsv1.Deployment {
 
 func (k *K8sDeployment) podSpec() corev1.PodTemplateSpec {
 	var args []string
+	labels := map[string]string{"app": k.Name()}
+	if k.DisableSidecar {
+		labels["kuma.io/sidecar-injection"] = "false"
+	}
 	spec := corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels: map[string]string{"app": k.Name()},
+			Labels: labels,
 		},
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
 				{
 					Name:            k.Name(),
 					ImagePullPolicy: "IfNotPresent",
-					Image:           fmt.Sprintf("%s/%s:%s", framework.Config.KumaImageRegistry, framework.Config.KumaInitImageRepo, framework.Config.KumaImageTag),
+					Image:           fmt.Sprintf("%s/%s:%s", framework.Config.KumaImageRegistry, framework.Config.KumaUniversalImageRepo, framework.Config.KumaImageTag),
 					Ports: []corev1.ContainerPort{
 						{ContainerPort: 80},
 					},
@@ -141,13 +132,10 @@ func (k *K8sDeployment) Name() string {
 }
 
 func (k *K8sDeployment) Deploy(cluster framework.Cluster) error {
-	var funcs []framework.InstallFunc
-	funcs = append(funcs, framework.YamlK8sObject(k.deployment()))
-	if k.WaitingToBeReady {
-		funcs = append(funcs,
-			framework.WaitNumPods(k.Namespace, 1, k.Name()),
-			framework.WaitPodsAvailable(k.Namespace, k.Name()),
-		)
+	funcs := []framework.InstallFunc{
+		framework.YamlK8sObject(k.deployment()),
+		framework.WaitNumPods(k.Namespace, 1, k.Name()),
+		framework.WaitPodsAvailable(k.Namespace, k.Name()),
 	}
 	return framework.Combine(funcs...)(cluster)
 }
