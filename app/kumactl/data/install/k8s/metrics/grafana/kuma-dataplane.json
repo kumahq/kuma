@@ -351,7 +351,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "Prometheus"
+        "uid": "prometheus"
       },
       "description": "Note that if Control Plane does not sent FIN segment, Dataplanes can still think that connection is up waiting for new update even that Control Plane is down.",
       "fieldConfig": {
@@ -433,6 +433,105 @@
       }
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "hidden",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 10,
+            "pointSize": 11,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "max": 1,
+          "min": -1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 9,
+        "x": 0,
+        "y": 8
+      },
+      "id": 57,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "8.5.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "envoy_control_plane_identifier{dataplane=\"$dataplane\", kuma_io_zone=~\"$zone\", mesh=\"$mesh\"}",
+          "format": "time_series",
+          "instant": false,
+          "interval": "",
+          "legendFormat": "{{text_value}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Connection to specific Control Plane",
+      "type": "timeseries"
+    },
+    {
       "collapsed": false,
       "datasource": {
         "type": "prometheus",
@@ -442,7 +541,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 8
+        "y": 13
       },
       "id": 10,
       "panels": [],
@@ -470,7 +569,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 9
+        "y": 14
       },
       "hiddenSeries": false,
       "id": 6,
@@ -557,7 +656,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 9
+        "y": 14
       },
       "hiddenSeries": false,
       "id": 4,
@@ -648,7 +747,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 9
+        "y": 14
       },
       "hiddenSeries": false,
       "id": 32,
@@ -739,7 +838,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 17
+        "y": 22
       },
       "hiddenSeries": false,
       "id": 31,
@@ -826,7 +925,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 17
+        "y": 22
       },
       "hiddenSeries": false,
       "id": 13,
@@ -915,7 +1014,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 17
+        "y": 22
       },
       "hiddenSeries": false,
       "id": 28,
@@ -1022,7 +1121,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 25
+        "y": 30
       },
       "hiddenSeries": false,
       "id": 30,
@@ -1146,7 +1245,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 33
+        "y": 38
       },
       "id": 12,
       "panels": [],
@@ -1174,7 +1273,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 34
+        "y": 39
       },
       "hiddenSeries": false,
       "id": 8,
@@ -1266,7 +1365,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 34
+        "y": 39
       },
       "hiddenSeries": false,
       "id": 33,
@@ -1356,7 +1455,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 34
+        "y": 39
       },
       "hiddenSeries": false,
       "id": 34,
@@ -1447,7 +1546,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 42
+        "y": 47
       },
       "hiddenSeries": false,
       "id": 14,
@@ -1536,7 +1635,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 42
+        "y": 47
       },
       "hiddenSeries": false,
       "id": 3,
@@ -1616,7 +1715,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 42
+        "y": 47
       },
       "id": 24,
       "showHeader": true,
@@ -1684,7 +1783,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 50
+        "y": 55
       },
       "hiddenSeries": false,
       "id": 29,
@@ -1808,7 +1907,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 58
+        "y": 63
       },
       "id": 49,
       "panels": [],
@@ -1830,7 +1929,7 @@
         "h": 9,
         "w": 8,
         "x": 0,
-        "y": 59
+        "y": 64
       },
       "hiddenSeries": false,
       "id": 51,
@@ -1931,7 +2030,7 @@
         "h": 9,
         "w": 8,
         "x": 8,
-        "y": 59
+        "y": 64
       },
       "hiddenSeries": false,
       "id": 53,
@@ -1961,6 +2060,7 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": "Prometheus",
           "expr": "sum(rate(envoy_cluster_upstream_rq_total{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\",dataplane=\"$dataplane\"}[1m]))",
           "hide": false,
           "interval": "",
@@ -2024,7 +2124,7 @@
         "h": 9,
         "w": 8,
         "x": 16,
-        "y": 59
+        "y": 64
       },
       "hiddenSeries": false,
       "id": 55,
@@ -2113,7 +2213,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 68
+        "y": 73
       },
       "id": 36,
       "panels": [],
@@ -2142,7 +2242,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 69
+        "y": 74
       },
       "hiddenSeries": false,
       "id": 38,
@@ -2234,7 +2334,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 69
+        "y": 74
       },
       "hiddenSeries": false,
       "id": 39,
@@ -2314,7 +2414,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 77
+        "y": 82
       },
       "id": 45,
       "panels": [],
@@ -2337,7 +2437,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 78
+        "y": 83
       },
       "hiddenSeries": false,
       "id": 43,
@@ -2445,7 +2545,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 78
+        "y": 83
       },
       "hiddenSeries": false,
       "id": 47,
