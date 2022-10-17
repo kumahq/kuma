@@ -7,8 +7,9 @@ import (
 	"github.com/ghodss/yaml"
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 )
 
 func NewPrinter() output.Printer {
@@ -39,10 +40,16 @@ func (p *printer) Print(obj interface{}, out io.Writer) error {
 			return err
 		}
 
-		b, err := util_proto.ToYAML(obj.GetSpec())
+		desc, err := registry.Global().DescriptorFor(model.ResourceType(obj.GetMeta().Type))
 		if err != nil {
 			return err
 		}
+
+		b, err := model.ToYAML.ResourceSpec(desc, obj.GetSpec())
+		if err != nil {
+			return err
+		}
+
 		// Don't emit an empty YAML object that would cause a
 		// subsequent parse failure.
 		if len(b) == 0 || bytes.HasPrefix(b, []byte("{}")) {
