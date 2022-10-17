@@ -6,33 +6,24 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	kube_core "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
-	sample_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/test/api/sample/v1alpha1"
-	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
-	sample_core "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
-	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
 )
 
 var _ = Describe("KubernetesStore", func() {
 
 	var ks *k8s.KubernetesStore
 	var s store.ResourceStore
-	var ns string // each test should run in a dedicated k8s namespace
-	var coreName string
 	const name = "demo"
 	const mesh = "default"
 
@@ -80,9 +71,9 @@ var _ = Describe("KubernetesStore", func() {
 
 	BeforeEach(func() {
 		kubeTypes := k8s_registry.NewTypeRegistry()
-		Expect(kubeTypes.RegisterObjectType(&sample_proto.TrafficRoute{}, &sample_k8s.SampleTrafficRoute{})).To(Succeed())
+		Expect(kubeTypes.RegisterObjectType(&mesh_proto.TrafficRoute{}, &mesh_k8s.TrafficRoute{})).To(Succeed())
 		Expect(kubeTypes.RegisterObjectType(&mesh_proto.Mesh{}, &mesh_k8s.Mesh{})).To(Succeed())
-		Expect(kubeTypes.RegisterListType(&sample_proto.TrafficRoute{}, &sample_k8s.SampleTrafficRouteList{})).To(Succeed())
+		Expect(kubeTypes.RegisterListType(&mesh_proto.TrafficRoute{}, &mesh_k8s.TrafficRouteList{})).To(Succeed())
 		Expect(kubeTypes.RegisterListType(&mesh_proto.Mesh{}, &mesh_k8s.MeshList{})).To(Succeed())
 
 		ks = &k8s.KubernetesStore{
@@ -95,52 +86,50 @@ var _ = Describe("KubernetesStore", func() {
 			Scheme: k8sClientScheme,
 		}
 		s = store.NewStrictResourceStore(store.NewPaginationStore(ks))
-		ns = core.NewUUID()
-
-		err := k8sClient.Create(context.Background(), &kube_core.Namespace{
-			ObjectMeta: metav1.ObjectMeta{Name: ns},
-		})
-		Expect(err).ToNot(HaveOccurred())
-
-		coreName = util_k8s.K8sNamespacedNameToCoreName(name, ns)
 	})
 
 	AfterEach(func() {
-		err := k8sClient.DeleteAllOf(context.Background(), &sample_k8s.SampleTrafficRoute{}, client.InNamespace(ns))
+		err := k8sClient.DeleteAllOf(context.Background(), &mesh_k8s.TrafficRoute{})
 		Expect(err).ToNot(HaveOccurred())
-		err = k8sClient.DeleteAllOf(context.Background(), &mesh_k8s.Mesh{}, client.InNamespace(ns))
+		err = k8sClient.DeleteAllOf(context.Background(), &mesh_k8s.Mesh{})
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	Describe("Create()", func() {
 		It("should create a new resource", func() {
 			// given
-			tr := &sample_core.TrafficRouteResource{
-				Spec: &sample_proto.TrafficRoute{
-					Path: "/example",
+			tr := &core_mesh.TrafficRouteResource{
+				Spec: &mesh_proto.TrafficRoute{
+					Conf: &mesh_proto.TrafficRoute_Conf{
+						Destination: map[string]string{
+							"path": "/example",
+						},
+					},
 				},
 			}
 			expected := backend.ParseYAML(`
-            apiVersion: sample.test.kuma.io/v1alpha1
-            kind: SampleTrafficRoute
+            apiVersion: kuma.io/v1alpha1
+            kind: TrafficRoute
             mesh: default
             spec:
-              path: /example
-`).(*sample_k8s.SampleTrafficRoute)
+              conf:
+                destination:
+                  path: /example
+`).(*mesh_k8s.TrafficRoute)
 
 			// when
-			err := s.Create(context.Background(), tr, store.CreateByKey(coreName, mesh))
+			err := s.Create(context.Background(), tr, store.CreateByKey(name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(tr.Meta.GetName()).To(Equal(coreName))
+			Expect(tr.Meta.GetName()).To(Equal(name))
 			Expect(tr.Meta.GetMesh()).To(Equal(mesh))
 			Expect(tr.Meta.GetVersion()).ToNot(Equal(""))
 
 			// when
-			actual := sample_k8s.SampleTrafficRoute{}
-			backend.Get(&actual, ns, name)
+			actual := mesh_k8s.TrafficRoute{}
+			backend.Get(&actual, "", name)
 
 			// then
 			Expect(actual.Spec).To(Equal(expected.Spec))
@@ -185,7 +174,7 @@ var _ = Describe("KubernetesStore", func() {
 
 			// when
 			actual := mesh_k8s.Mesh{}
-			backend.Get(&actual, ns, name)
+			backend.Get(&actual, "", name)
 
 			// then
 			Expect(actual.Spec).To(Equal(expected.Spec))
@@ -195,19 +184,19 @@ var _ = Describe("KubernetesStore", func() {
 
 		It("should not create a duplicate resource", func() {
 			// setup
-			backend.AssertNotExists(&sample_k8s.SampleTrafficRoute{}, ns, name)
+			backend.AssertNotExists(&mesh_k8s.TrafficRoute{}, "", name)
 
 			// when
-			err := s.Create(context.Background(), sample_core.NewTrafficRouteResource(), store.CreateByKey(coreName, mesh))
+			err := s.Create(context.Background(), core_mesh.NewTrafficRouteResource(), store.CreateByKey(name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			err = s.Create(context.Background(), sample_core.NewTrafficRouteResource(), store.CreateByKey(coreName, mesh))
+			err = s.Create(context.Background(), core_mesh.NewTrafficRouteResource(), store.CreateByKey(name, mesh))
 
 			// then
-			Expect(err).To(MatchError(store.ErrorResourceAlreadyExists(sample_core.TrafficRouteType, coreName, mesh)))
+			Expect(err).To(MatchError(store.ErrorResourceAlreadyExists(core_mesh.TrafficRouteType, name, mesh)))
 		})
 
 		It("should set owner reference", func() {
@@ -216,21 +205,25 @@ var _ = Describe("KubernetesStore", func() {
 			err := s.Create(context.Background(), mesh, store.CreateByKey("mesh", core_model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
-			err = k8sClient.Get(context.Background(), client.ObjectKey{Namespace: ns, Name: "mesh"}, &mesh_k8s.Mesh{})
+			err = k8sClient.Get(context.Background(), client.ObjectKey{Name: "mesh"}, &mesh_k8s.Mesh{})
 			Expect(err).ToNot(HaveOccurred())
 
-			tr := sample_core.TrafficRouteResource{
-				Spec: &sample_proto.TrafficRoute{
-					Path: "/example",
+			tr := core_mesh.TrafficRouteResource{
+				Spec: &mesh_proto.TrafficRoute{
+					Conf: &mesh_proto.TrafficRoute_Conf{
+						Destination: map[string]string{
+							"path": "/example",
+						},
+					},
 				},
 			}
 			// when
-			err = s.Create(context.Background(), &tr, store.CreateByKey(coreName, "mesh"), store.CreateWithOwner(mesh))
+			err = s.Create(context.Background(), &tr, store.CreateByKey(name, "mesh"), store.CreateWithOwner(mesh))
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			obj := sample_k8s.SampleTrafficRoute{}
-			err = k8sClient.Get(context.Background(), client.ObjectKey{Namespace: ns, Name: name}, &obj)
+			obj := mesh_k8s.TrafficRoute{}
+			err = k8sClient.Get(context.Background(), client.ObjectKey{Name: name}, &obj)
 			Expect(err).ToNot(HaveOccurred())
 			owners := obj.GetOwnerReferences()
 			Expect(owners).To(HaveLen(1))
@@ -243,36 +236,39 @@ var _ = Describe("KubernetesStore", func() {
 		It("should update an existing resource", func() {
 			// setup
 			initial := backend.ParseYAML(fmt.Sprintf(`
-            apiVersion: sample.test.kuma.io/v1alpha1
-            kind: SampleTrafficRoute
+            apiVersion: kuma.io/v1alpha1
+            kind: TrafficRoute
             mesh: default
             metadata:
-              namespace: %s
               name: %s
             spec:
-              path: /example
-`, ns, name))
+              conf:
+                destination:
+                  path: /example
+`, name))
 			backend.Create(initial)
 			// and
 			expected := backend.ParseYAML(`
-            apiVersion: sample.test.kuma.io/v1alpha1
-            kind: SampleTrafficRoute
+            apiVersion: kuma.io/v1alpha1
+            kind: TrafficRoute
             mesh: default
             spec:
-              path: /another
-`).(*sample_k8s.SampleTrafficRoute)
+              conf:
+                destination:
+                  path: /another
+`).(*mesh_k8s.TrafficRoute)
 
 			// given
-			tr := sample_core.NewTrafficRouteResource()
+			tr := core_mesh.NewTrafficRouteResource()
 
 			// when
-			err := s.Get(context.Background(), tr, store.GetByKey(coreName, mesh))
+			err := s.Get(context.Background(), tr, store.GetByKey(name, mesh))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			version := tr.Meta.GetVersion()
 
 			// when
-			tr.Spec.Path = "/another"
+			tr.Spec.Conf.Destination["path"] = "/another"
 			err = s.Update(context.Background(), tr)
 
 			// then
@@ -282,8 +278,8 @@ var _ = Describe("KubernetesStore", func() {
 			Expect(tr.Meta.GetVersion()).ToNot(Equal(version))
 
 			// when
-			actual := sample_k8s.SampleTrafficRoute{}
-			backend.Get(&actual, ns, name)
+			actual := mesh_k8s.TrafficRoute{}
+			backend.Get(&actual, "", name)
 
 			// then
 			Expect(actual.Spec).To(Equal(expected.Spec))
@@ -344,7 +340,7 @@ var _ = Describe("KubernetesStore", func() {
 
 			// when
 			actual := mesh_k8s.Mesh{}
-			backend.Get(&actual, ns, name)
+			backend.Get(&actual, "", name)
 
 			// then
 			Expect(actual.Spec).To(Equal(expected.Spec))
@@ -355,20 +351,19 @@ var _ = Describe("KubernetesStore", func() {
 		It("should return an error if resource is not found", func() {
 			// setup
 			initial := backend.ParseYAML(fmt.Sprintf(`
-            apiVersion: sample.test.kuma.io/v1alpha1
-            kind: SampleTrafficRoute
+            apiVersion: kuma.io/v1alpha1
+            kind: TrafficRoute
             mesh: default
             metadata:
-              namespace: %s
               name: %s
-`, ns, name))
+`, name))
 			backend.Create(initial)
 
 			// given
-			tr := sample_core.NewTrafficRouteResource()
+			tr := core_mesh.NewTrafficRouteResource()
 
 			// when
-			err := s.Get(context.Background(), tr, store.GetByKey(coreName, mesh))
+			err := s.Get(context.Background(), tr, store.GetByKey(name, mesh))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -378,94 +373,100 @@ var _ = Describe("KubernetesStore", func() {
 			err = s.Update(context.Background(), tr)
 
 			// then
-			Expect(err).To(MatchError(store.ErrorResourceConflict(sample_core.TrafficRouteType, coreName, mesh)))
+			Expect(err).To(MatchError(store.ErrorResourceConflict(core_mesh.TrafficRouteType, name, mesh)))
 		})
 
 		It("should return an error if resource has changed", func() {
 			// setup
 			initial := backend.ParseYAML(fmt.Sprintf(`
-            apiVersion: sample.test.kuma.io/v1alpha1
-            kind: SampleTrafficRoute
+            apiVersion: kuma.io/v1alpha1
+            kind: TrafficRoute
             mesh: default
             metadata:
-              namespace: %s
               name: %s
-`, ns, name))
+            spec:
+              conf: {}
+`, name))
 			backend.Create(initial)
 
 			// given
-			tr1 := sample_core.NewTrafficRouteResource()
+			tr1 := core_mesh.NewTrafficRouteResource()
 
 			// when
-			err := s.Get(context.Background(), tr1, store.GetByKey(coreName, mesh))
+			err := s.Get(context.Background(), tr1, store.GetByKey(name, mesh))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// given
-			tr2 := sample_core.NewTrafficRouteResource()
+			tr2 := core_mesh.NewTrafficRouteResource()
 
 			// when
-			err = s.Get(context.Background(), tr2, store.GetByKey(coreName, mesh))
+			err = s.Get(context.Background(), tr2, store.GetByKey(name, mesh))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			tr1.Spec.Path = "/example"
+			tr1.Spec.Conf.Destination = map[string]string{
+				"path": "/example",
+			}
 			err = s.Update(context.Background(), tr1)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			tr2.Spec.Path = "/another"
+			tr2.Spec.Conf.Destination = map[string]string{
+				"path": "/another",
+			}
 			err = s.Update(context.Background(), tr2)
 			// then
-			Expect(err).To(MatchError(store.ErrorResourceConflict(sample_core.TrafficRouteType, coreName, mesh)))
+			Expect(err).To(MatchError(store.ErrorResourceConflict(core_mesh.TrafficRouteType, name, mesh)))
 		})
 	})
 
 	Describe("Get()", func() {
 		It("should return an error if resource is not found", func() {
 			// setup
-			backend.AssertNotExists(&sample_k8s.SampleTrafficRoute{}, ns, name)
+			backend.AssertNotExists(&mesh_k8s.TrafficRoute{}, "", name)
 
 			// when
-			err := s.Get(context.Background(), sample_core.NewTrafficRouteResource(), store.GetByKey(coreName, mesh))
+			err := s.Get(context.Background(), core_mesh.NewTrafficRouteResource(), store.GetByKey(name, mesh))
 
 			// then
-			Expect(err).To(MatchError(store.ErrorResourceNotFound(sample_core.TrafficRouteType, coreName, mesh)))
+			Expect(err).To(MatchError(store.ErrorResourceNotFound(core_mesh.TrafficRouteType, name, mesh)))
 		})
 
 		It("should return an existing resource", func() {
 			// setup
 			expected := backend.ParseYAML(fmt.Sprintf(`
-            apiVersion: sample.test.kuma.io/v1alpha1
-            kind: SampleTrafficRoute
+            apiVersion: kuma.io/v1alpha1
+            kind: TrafficRoute
             mesh: default
             metadata:
-              namespace: %s
               name: %s
             spec:
-              path: /example
-`, ns, name))
+              conf:
+                destination:
+                  path: /example
+`, name))
 			backend.Create(expected)
 
 			// given
-			actual := sample_core.NewTrafficRouteResource()
+			actual := core_mesh.NewTrafficRouteResource()
 
 			// when
-			err := s.Get(context.Background(), actual, store.GetByKey(coreName, mesh))
+			err := s.Get(context.Background(), actual, store.GetByKey(name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(actual.Meta.GetName()).To(Equal(coreName))
+			Expect(actual.Meta.GetName()).To(Equal(name))
 			// and
 			Expect(actual.Meta.GetNameExtensions()).To(Equal(core_model.ResourceNameExtensions{
-				"k8s.kuma.io/namespace": ns,
+				"k8s.kuma.io/namespace": "",
 				"k8s.kuma.io/name":      name,
 			}))
 			// and
-			Expect(actual.Spec.Path).To(Equal("/example"))
+			Expect(actual.Spec.Conf.Destination["path"]).To(Equal("/example"))
 		})
 
 		It("should return Mesh", func() {
@@ -517,36 +518,35 @@ var _ = Describe("KubernetesStore", func() {
 	Describe("Delete()", func() {
 		It("should return en error if resource is not found", func() {
 			// setup
-			backend.AssertNotExists(&sample_k8s.SampleTrafficRoute{}, ns, name)
-			resource := sample_core.NewTrafficRouteResource()
+			backend.AssertNotExists(&mesh_k8s.TrafficRoute{}, "", name)
+			resource := core_mesh.NewTrafficRouteResource()
 
 			// when
-			err := s.Delete(context.Background(), resource, store.DeleteByKey(coreName, mesh))
+			err := s.Delete(context.Background(), resource, store.DeleteByKey(name, mesh))
 
 			// then
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.Descriptor().Name, coreName, mesh)))
+			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.Descriptor().Name, name, mesh)))
 		})
 
 		It("should delete an existing resource", func() {
 			// setup
 			initial := backend.ParseYAML(fmt.Sprintf(`
-            apiVersion: sample.test.kuma.io/v1alpha1
-            kind: SampleTrafficRoute
+            apiVersion: kuma.io/v1alpha1
+            kind: TrafficRoute
             mesh: default
             metadata:
-              namespace: %s
               name: %s
-`, ns, name))
+`, name))
 			backend.Create(initial)
 
 			// when
-			err := s.Delete(context.Background(), sample_core.NewTrafficRouteResource(), store.DeleteByKey(coreName, mesh))
+			err := s.Delete(context.Background(), core_mesh.NewTrafficRouteResource(), store.DeleteByKey(name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			backend.AssertNotExists(&sample_k8s.SampleTrafficRoute{}, ns, name)
+			backend.AssertNotExists(&mesh_k8s.TrafficRoute{}, "", name)
 		})
 
 		It("should delete Mesh", func() {
@@ -565,14 +565,14 @@ var _ = Describe("KubernetesStore", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			backend.AssertNotExists(&mesh_k8s.Mesh{}, ns, "demo")
+			backend.AssertNotExists(&mesh_k8s.Mesh{}, "", "demo")
 		})
 	})
 
 	Describe("List()", func() {
 		It("should return an empty list if there are no matching resources", func() {
 			// given
-			trl := &sample_core.TrafficRouteResourceList{}
+			trl := &core_mesh.TrafficRouteResourceList{}
 
 			// when
 			err := s.List(context.Background(), trl, store.ListByMesh(mesh))
@@ -595,44 +595,47 @@ var _ = Describe("KubernetesStore", func() {
 
 			// and
 			one := backend.ParseYAML(fmt.Sprintf(`
-            apiVersion: sample.test.kuma.io/v1alpha1
-            kind: SampleTrafficRoute
+            apiVersion: kuma.io/v1alpha1
+            kind: TrafficRoute
             mesh: default
             metadata:
-              namespace: %s
               name: %s
             spec:
-              path: /example
-`, ns, "one"))
+              conf:
+                destination:
+                  path: /example
+`, "one"))
 			backend.Create(one)
 			// and
 			two := backend.ParseYAML(fmt.Sprintf(`
-            apiVersion: sample.test.kuma.io/v1alpha1
-            kind: SampleTrafficRoute
+            apiVersion: kuma.io/v1alpha1
+            kind: TrafficRoute
             mesh: default
             metadata:
-              namespace: %s
               name: %s
             spec:
-              path: /another
-`, ns, "two"))
+              conf:
+                destination:
+                  path: /another
+`, "two"))
 			backend.Create(two)
 			// and
 			three := backend.ParseYAML(fmt.Sprintf(`
-            apiVersion: sample.test.kuma.io/v1alpha1
-            kind: SampleTrafficRoute
+            apiVersion: kuma.io/v1alpha1
+            kind: TrafficRoute
             mesh: demo
             metadata:
-              namespace: %s
               name: %s
             spec:
-              path: /third
-`, ns, "three"))
+              conf:
+                destination:
+                  path: /third
+`, "three"))
 			backend.Create(three)
 
 			By("listing resources from default mesh")
 			// given
-			trl := &sample_core.TrafficRouteResourceList{}
+			trl := &core_mesh.TrafficRouteResourceList{}
 
 			// when
 			err := s.List(context.Background(), trl, store.ListByMesh(mesh))
@@ -645,30 +648,30 @@ var _ = Describe("KubernetesStore", func() {
 			Expect(trl.Items).To(HaveLen(2))
 
 			// when
-			actualResources := map[string]*sample_core.TrafficRouteResource{
+			actualResources := map[string]*core_mesh.TrafficRouteResource{
 				trl.Items[0].Meta.GetName(): trl.Items[0],
 				trl.Items[1].Meta.GetName(): trl.Items[1],
 			}
 			// then
-			actualResourceOne := actualResources[fmt.Sprintf("one.%s", ns)]
-			Expect(actualResourceOne.Spec.Path).To(Equal("/example"))
+			actualResourceOne := actualResources["one"]
+			Expect(actualResourceOne.Spec.Conf.Destination["path"]).To(Equal("/example"))
 			Expect(actualResourceOne.Meta.GetNameExtensions()).To(Equal(core_model.ResourceNameExtensions{
-				"k8s.kuma.io/namespace": ns,
+				"k8s.kuma.io/namespace": "",
 				"k8s.kuma.io/name":      "one",
 			}))
 
 			// and
-			actualResourceTwo := actualResources[fmt.Sprintf("two.%s", ns)]
-			Expect(actualResourceTwo.Spec.Path).To(Equal("/another"))
+			actualResourceTwo := actualResources["two"]
+			Expect(actualResourceTwo.Spec.Conf.Destination["path"]).To(Equal("/another"))
 			Expect(actualResourceTwo.Meta.GetNameExtensions()).To(Equal(core_model.ResourceNameExtensions{
-				"k8s.kuma.io/namespace": ns,
+				"k8s.kuma.io/namespace": "",
 				"k8s.kuma.io/name":      "two",
 			}))
 
 			By("listing resources from demo mesh")
 
 			// given
-			trl = &sample_core.TrafficRouteResourceList{}
+			trl = &core_mesh.TrafficRouteResourceList{}
 
 			// when
 			err = s.List(context.Background(), trl, store.ListByMesh(name))
@@ -681,14 +684,14 @@ var _ = Describe("KubernetesStore", func() {
 			Expect(trl.Items).To(HaveLen(1))
 
 			// when
-			actualResources = map[string]*sample_core.TrafficRouteResource{
+			actualResources = map[string]*core_mesh.TrafficRouteResource{
 				trl.Items[0].Meta.GetName(): trl.Items[0],
 			}
 			// then
-			actualResourceThree := actualResources[fmt.Sprintf("three.%s", ns)]
-			Expect(actualResourceThree.Spec.Path).To(Equal("/third"))
+			actualResourceThree := actualResources["three"]
+			Expect(actualResourceThree.Spec.Conf.Destination["path"]).To(Equal("/third"))
 			Expect(actualResourceThree.Meta.GetNameExtensions()).To(Equal(core_model.ResourceNameExtensions{
-				"k8s.kuma.io/namespace": ns,
+				"k8s.kuma.io/namespace": "",
 				"k8s.kuma.io/name":      "three",
 			}))
 
@@ -698,7 +701,7 @@ var _ = Describe("KubernetesStore", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			backend.AssertNotExists(&mesh_k8s.Mesh{}, ns, "demo")
+			backend.AssertNotExists(&mesh_k8s.Mesh{}, "", "demo")
 
 		})
 

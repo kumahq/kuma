@@ -5,6 +5,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
@@ -30,7 +31,7 @@ func BuildResourceSet(b ResourceBuilder) (*xds.ResourceSet, error) {
 	set := xds.NewResourceSet()
 	set.Add(&xds.Resource{
 		Name:     resource.GetName(),
-		Origin:   OriginGateway,
+		Origin:   metadata.OriginGateway,
 		Resource: resource,
 	})
 
@@ -40,7 +41,7 @@ func BuildResourceSet(b ResourceBuilder) (*xds.ResourceSet, error) {
 func NewResource(name string, resource proto.Message) *xds.Resource {
 	return &xds.Resource{
 		Name:     name,
-		Origin:   OriginGateway,
+		Origin:   metadata.OriginGateway,
 		Resource: resource,
 	}
 }

@@ -6,7 +6,7 @@ items:
   networking:
     address: 127.0.0.1
   tags:
-    service: mobile
+    kuma.io/service: mobile
     version: v1
   type: ExternalService
 - creationTime: "0001-01-01T00:00:00Z"
@@ -16,7 +16,7 @@ items:
   networking:
     address: 127.0.0.2
   tags:
-    service: web
+    kuma.io/service: web
     version: v2
   type: ExternalService
 next: null

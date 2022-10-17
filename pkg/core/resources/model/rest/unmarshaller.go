@@ -62,6 +62,13 @@ func (u *unmarshaler) Unmarshal(bytes []byte) (Resource, error) {
 	if err := u.unmarshalFn(bytes, restResource); err != nil {
 		return nil, errors.Wrapf(err, "invalid %s object %q", meta.Type, meta.Name)
 	}
+
+	if rv, ok := resource.(core_model.ResourceValidator); ok {
+		if err := rv.Validate(); err != nil {
+			return nil, err
+		}
+	}
+
 	return restResource, nil
 }
 

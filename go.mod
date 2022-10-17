@@ -33,8 +33,8 @@ require (
 	github.com/lib/pq v1.10.7
 	github.com/miekg/dns v1.1.50
 	github.com/natefinch/atomic v1.0.1
-	github.com/onsi/ginkgo/v2 v2.2.0
-	github.com/onsi/gomega v1.21.1
+	github.com/onsi/ginkgo/v2 v2.3.1
+	github.com/onsi/gomega v1.22.0
 	github.com/operator-framework/operator-lib v0.11.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
@@ -45,20 +45,21 @@ require (
 	github.com/sethvargo/go-retry v0.2.3
 	github.com/slok/go-http-metrics v0.10.0
 	github.com/soheilhy/cmux v0.1.5
-	github.com/spf13/cobra v1.5.0
+	github.com/spf13/cobra v1.6.0
 	github.com/spf13/viper v1.13.0
 	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc
 	github.com/testcontainers/testcontainers-go v0.14.0
+	github.com/xeipuuv/gojsonschema v1.2.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 	golang.org/x/exp v0.0.0-20220407100705-7b9b53b0aca4
 	golang.org/x/net v0.0.0-20220920203100-d0c6ba3f52d9
 	golang.org/x/sync v0.0.0-20220907140024-f12130a52804
 	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8
-	golang.org/x/text v0.3.7
+	golang.org/x/text v0.3.8
 	golang.org/x/time v0.0.0-20220920022843-2ce7c2934d45
 	google.golang.org/genproto v0.0.0-20220920201722-2b89144ce006
-	google.golang.org/grpc v1.49.0
+	google.golang.org/grpc v1.50.1
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -130,7 +131,7 @@ require (
 	github.com/hashicorp/hcl v1.0.1-0.20190430135223-99e2f22d1c94 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
@@ -178,7 +179,6 @@ require (
 	github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
-	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect

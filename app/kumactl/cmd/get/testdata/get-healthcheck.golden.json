@@ -7,14 +7,14 @@
   "sources": [
     {
       "match": {
-        "service": "web"
+        "kuma.io/service": "web"
       }
     }
   ],
   "destinations": [
     {
       "match": {
-        "service": "backend"
+        "kuma.io/service": "backend"
       }
     }
   ],

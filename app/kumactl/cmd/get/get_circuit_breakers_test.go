@@ -30,15 +30,15 @@ var _ = Describe("kumactl get circuit-breakers", func() {
 				Sources: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service": "frontend",
-							"version": "0.1",
+							"kuma.io/service": "frontend",
+							"version":         "0.1",
 						},
 					},
 				},
 				Destinations: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service": "backend",
+							"kuma.io/service": "backend",
 						},
 					},
 				},
@@ -66,15 +66,15 @@ var _ = Describe("kumactl get circuit-breakers", func() {
 				Sources: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service": "web",
-							"version": "0.1",
+							"kuma.io/service": "web",
+							"version":         "0.1",
 						},
 					},
 				},
 				Destinations: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service": "redis",
+							"kuma.io/service": "redis",
 						},
 					},
 				},

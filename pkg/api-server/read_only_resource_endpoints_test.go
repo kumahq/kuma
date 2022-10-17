@@ -6,14 +6,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	config "github.com/kumahq/kuma/pkg/config/api-server"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
 	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
-	"github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 )
 
 var _ = Describe("Read only Resource Endpoints", func() {
@@ -32,7 +32,7 @@ var _ = Describe("Read only Resource Endpoints", func() {
 		}))
 		client = resourceApiClient{
 			address: apiServer.Address(),
-			path:    "/meshes/" + mesh + "/sample-traffic-routes",
+			path:    "/meshes/" + mesh + "/traffic-routes",
 		}
 		putSampleResourceIntoStore(resourceStore, resourceName, mesh)
 	})
@@ -66,10 +66,14 @@ var _ = Describe("Read only Resource Endpoints", func() {
 				Meta: rest_v1alpha1.ResourceMeta{
 					Name: "new-resource",
 					Mesh: mesh,
-					Type: string(sample.TrafficRouteType),
+					Type: string(core_mesh.TrafficRouteType),
 				},
-				Spec: &sample_proto.TrafficRoute{
-					Path: "/sample-path",
+				Spec: &mesh_proto.TrafficRoute{
+					Conf: &mesh_proto.TrafficRoute_Conf{
+						Destination: map[string]string{
+							"path": "/sample-path",
+						},
+					},
 				},
 			}
 

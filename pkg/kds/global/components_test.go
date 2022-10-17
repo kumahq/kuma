@@ -22,7 +22,6 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/grpc"
 	kds_setup "github.com/kumahq/kuma/pkg/test/kds/setup"
-	"github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -170,7 +169,6 @@ var _ = Describe("Global Sync", func() {
 			mesh.DataplaneType:         true,
 			mesh.DataplaneOverviewType: true,
 			mesh.ServiceOverviewType:   true,
-			sample.TrafficRouteType:    true,
 		}
 
 		// take all mesh-scoped types and exclude types that won't be synced

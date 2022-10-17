@@ -7,7 +7,17 @@
   "sources": [
     {
       "match": {
-        "service": "frontend",
+        "kuma.io/protocol": "http",
+        "kuma.io/service": "frontend",
+        "version": "0.1"
+      }
+    }
+  ],
+  "destinations": [
+    {
+      "match": {
+        "kuma.io/protocol": "http",
+        "kuma.io/service": "backend",
         "version": "0.1"
       }
     }

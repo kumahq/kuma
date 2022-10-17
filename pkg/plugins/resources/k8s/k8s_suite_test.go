@@ -31,11 +31,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
-	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
-	// +kubebuilder:scaffold:imports
-	sample_v1alpha1 "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/test/api/sample/v1alpha1"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test"
-	"github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
 )
 
 var k8sClient client.Client
@@ -62,29 +59,13 @@ var _ = BeforeSuite(test.Within(time.Minute, func() {
 	k8sClientScheme, err = k8s.NewScheme()
 	Expect(err).ToNot(HaveOccurred())
 
-	Expect(sample_v1alpha1.AddToScheme(k8sClientScheme)).To(Succeed())
+	Expect(mesh_k8s.AddToScheme(k8sClientScheme)).To(Succeed())
 
 	// +kubebuilder:scaffold:scheme
 
 	k8sClient, err = client.New(cfg, client.Options{Scheme: k8sClientScheme})
 	Expect(err).ToNot(HaveOccurred())
 	Expect(k8sClient).ToNot(BeNil())
-
-	err = k8s_registry.Global().RegisterObjectType(&v1alpha1.TrafficRoute{}, &sample_v1alpha1.SampleTrafficRoute{
-		TypeMeta: kube_meta.TypeMeta{
-			APIVersion: sample_v1alpha1.GroupVersion.String(),
-			Kind:       "SampleTrafficRoute",
-		},
-	})
-	Expect(err).ToNot(HaveOccurred())
-	err = k8s_registry.Global().RegisterListType(&v1alpha1.TrafficRoute{}, &sample_v1alpha1.SampleTrafficRouteList{
-		TypeMeta: kube_meta.TypeMeta{
-			APIVersion: sample_v1alpha1.GroupVersion.String(),
-			Kind:       "SampleTrafficRouteList",
-		},
-	})
-	Expect(err).ToNot(HaveOccurred())
-
 	Expect(k8sClient.Create(context.Background(), &kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: "demo"}})).To(Succeed())
 }))
 

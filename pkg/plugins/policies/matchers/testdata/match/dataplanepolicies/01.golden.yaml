@@ -4,6 +4,12 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: mtp-2
   spec:
+    from:
+    - default:
+        action: ALLOW
+      targetRef:
+        kind: Mesh
+        name: default
     targetRef:
       kind: Mesh
   type: MeshTrafficPermission
@@ -12,6 +18,12 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: mtp-4
   spec:
+    from:
+    - default:
+        action: ALLOW
+      targetRef:
+        kind: Mesh
+        name: default
     targetRef:
       kind: MeshSubset
       tags:
@@ -22,6 +34,12 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: mtp-3
   spec:
+    from:
+    - default:
+        action: ALLOW
+      targetRef:
+        kind: Mesh
+        name: default
     targetRef:
       kind: MeshService
       name: web
@@ -31,6 +49,12 @@ items:
   modificationTime: "0001-01-01T00:00:00Z"
   name: mtp-1
   spec:
+    from:
+    - default:
+        action: ALLOW
+      targetRef:
+        kind: Mesh
+        name: default
     targetRef:
       kind: MeshServiceSubset
       name: web

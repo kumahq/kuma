@@ -7,16 +7,14 @@
   "sources": [
     {
       "match": {
-        "service": "web1",
-        "version": "1.0"
+        "kuma.io/service": "web1"
       }
     }
   ],
   "destinations": [
     {
       "match": {
-        "env": "dev",
-        "service": "backend1"
+        "kuma.io/service": "backend1"
       }
     }
   ],

@@ -26,5 +26,4 @@ spec:
         literal: support
     backends:
       - datadog:
-          address: ingest.datadoghq.eu
-          port: 8126
+          url: http://ingest.datadoghq.eu:8126

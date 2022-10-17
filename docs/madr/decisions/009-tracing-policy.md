@@ -194,9 +194,12 @@ This MADR proposes instead the following:
 spec:
  default:
   sampling:
-   overall: <percentage>
-   client: <percentage>
-   random: <percentage>
+   overall:
+    value: <percentage>
+   client:
+    value: <percentage>
+   random:
+    value: <percentage>
 ```
 
 with the justification that it's not clear to users
@@ -269,7 +272,8 @@ spec:
      kind: MeshTraceBackend
      name: jaeger
   sampling:
-   overall: 80
+   overall:
+     value: 80
   tags:
    - name: team
      literal: core
@@ -295,7 +299,8 @@ spec:
    - zipkin:
      url: http://jaeger-collector.mesh-observability:9411/api/v2/spans
   sampling:
-   overall: 80
+   overall:
+     value: 80
 ```
 
 ### Route-specific
@@ -321,7 +326,8 @@ spec:
      kind: MeshTraceBackend
      name: jaeger
   sampling:
-   overall: 80
+   overall:
+     value: 80
   tags:
    - name: env
      header:

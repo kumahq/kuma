@@ -29,8 +29,8 @@ var _ = Describe("kumactl get traffic-traces", func() {
 				Selectors: []*v1alpha1.Selector{
 					{
 						Match: map[string]string{
-							"service": "web1",
-							"version": "1.0",
+							"kuma.io/service": "web1",
+							"version":         "1.0",
 						},
 					},
 				},
@@ -48,8 +48,8 @@ var _ = Describe("kumactl get traffic-traces", func() {
 				Selectors: []*v1alpha1.Selector{
 					{
 						Match: map[string]string{
-							"service": "web2",
-							"version": "1.0",
+							"kuma.io/service": "web2",
+							"version":         "1.0",
 						},
 					},
 				},
