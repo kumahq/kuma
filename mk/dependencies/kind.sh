@@ -1,6 +1,6 @@
 #!/bin/bash
 OUTPUT_DIR=$1/bin
-VERSION="0.14.0"
+VERSION="0.11.1"
 KIND=${OUTPUT_DIR}/kind
 if [ -e "$KIND" ] && [ "v$($KIND --version | cut -d ' ' -f3)" == v${VERSION} ]; then
   echo "$($KIND --version ) is already installed at ${OUTPUT_DIR}" ;

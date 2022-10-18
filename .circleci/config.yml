@@ -347,7 +347,11 @@ jobs:
               if [[ "<< parameters.arch >>" == "arm64" ]]; then
                 export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX && !arm-not-supported"
               else
-                export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX"
+                if [[ "<< parameters.k8sVersion >>" != "v1.19.16"* ]]; then
+                  export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX && !old-k3d-not-supported"
+                else
+                  export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX"
+                fi
               fi
             fi
             env
