@@ -25,7 +25,7 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/gruntwork-io/terratest v0.40.22
+	github.com/gruntwork-io/terratest v0.40.24
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kumahq/kuma-net v0.7.2
@@ -34,7 +34,7 @@ require (
 	github.com/miekg/dns v1.1.50
 	github.com/natefinch/atomic v1.0.1
 	github.com/onsi/ginkgo/v2 v2.3.1
-	github.com/onsi/gomega v1.22.0
+	github.com/onsi/gomega v1.22.1
 	github.com/operator-framework/operator-lib v0.11.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
@@ -56,10 +56,10 @@ require (
 	golang.org/x/net v0.0.0-20220920203100-d0c6ba3f52d9
 	golang.org/x/sync v0.0.0-20220907140024-f12130a52804
 	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8
-	golang.org/x/text v0.3.8
+	golang.org/x/text v0.4.0
 	golang.org/x/time v0.0.0-20220920022843-2ce7c2934d45
 	google.golang.org/genproto v0.0.0-20220920201722-2b89144ce006
-	google.golang.org/grpc v1.50.0
+	google.golang.org/grpc v1.50.1
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.4.0

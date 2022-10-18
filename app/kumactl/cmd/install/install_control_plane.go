@@ -147,7 +147,7 @@ This command requires that the KUBECONFIG environment is set`,
 				return errors.Wrap(err, "Failed to render helm template files")
 			}
 
-			sortedResources, err := k8s.SortResourcesByKind(renderedFiles)
+			sortedResources, err := k8s.SortResourcesByKind(renderedFiles, args.SkipKinds...)
 			if err != nil {
 				return errors.Wrap(err, "Failed to sort resources by kind")
 			}
@@ -217,6 +217,10 @@ This command requires that the KUBECONFIG environment is set`,
 	cmd.Flags().BoolVar(&args.ExperimentalGatewayAPI, "experimental-gatewayapi", false, "install experimental Gateway API support")
 	cmd.Flags().StringSliceVarP(&args.ValueFiles, "values", "f", []string{}, "specify values in a YAML file or '-' for stdin. This is similar to `helm template <chart> -f ...`")
 	cmd.Flags().StringArrayVar(&args.Values, "set", []string{}, "set values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2), This is similar to `helm template <chart> --set ...` to use set-file or set-string just use helm instead")
+	cmd.Flags().StringArrayVar(&args.SkipKinds, "skip-kinds", []string{}, "INTERNAL: A list of kubernetes kinds to not generate (useful, to ignore CRDs for example)")
+	if err := cmd.Flags().MarkHidden("skip-kinds"); err != nil {
+		panic(err.Error())
+	}
 
 	// This is used for testing the install command without a cluster
 	cmd.Flags().StringArrayVar(&args.APIVersions, "api-versions", []string{}, "INTERNAL: Kubernetes api versions used for Capabilities.APIVersions")
