@@ -138,7 +138,7 @@ func BuildRules(list []PolicyItem) (Rules, error) {
 			break
 		}
 		// 3. For each combination determine a configuration
-		confs := []proto.Message{}
+		confs := []any{}
 		for i := 0; i < len(list); i++ {
 			item := list[i]
 			itemSubset, err := asSubset(item.GetTargetRef())
@@ -168,7 +168,7 @@ func BuildRules(list []PolicyItem) (Rules, error) {
 	return rules, nil
 }
 
-func merge(confs []proto.Message) (proto.Message, error) {
+func merge(confs []any) (proto.Message, error) {
 	if len(confs) == 0 {
 		return nil, nil
 	}
