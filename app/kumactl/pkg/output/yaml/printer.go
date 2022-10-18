@@ -45,7 +45,7 @@ func (p *printer) Print(obj interface{}, out io.Writer) error {
 			return err
 		}
 
-		b, err := model.ToYAML.ResourceSpec(desc, obj.GetSpec())
+		b, err := model.ToYAML(desc, obj.GetSpec())
 		if err != nil {
 			return err
 		}

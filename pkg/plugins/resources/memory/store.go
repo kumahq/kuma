@@ -309,7 +309,7 @@ func (c *memoryStore) marshalRecord(resourceType string, meta memoryMeta, spec c
 	if err != nil {
 		return nil, err
 	}
-	content, err := core_model.ToJSON.ResourceSpec(desc, spec)
+	content, err := core_model.ToJSON(desc, spec)
 	if err != nil {
 		return nil, err
 	}
@@ -335,5 +335,5 @@ func (c *memoryStore) unmarshalRecord(s *memoryStoreRecord, r core_model.Resourc
 		CreationTime:     s.CreationTime,
 		ModificationTime: s.ModificationTime,
 	})
-	return core_model.FromJSON.ResourceSpec(r.Descriptor(), []byte(s.Spec), r.GetSpec())
+	return core_model.FromJSON(r.Descriptor(), []byte(s.Spec), r.GetSpec())
 }
