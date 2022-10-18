@@ -443,8 +443,9 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisGridShow": true,
             "axisLabel": "",
-            "axisPlacement": "hidden",
+            "axisPlacement": "left",
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -490,7 +491,20 @@
             ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "hidden"
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 5,
@@ -528,7 +542,7 @@
           "refId": "A"
         }
       ],
-      "title": "Connection to specific Control Plane",
+      "title": "Control Plane connected to",
       "type": "timeseries"
     },
     {
