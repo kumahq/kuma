@@ -5,6 +5,7 @@ package accesslogs
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"io"
 	"os"
 	"sync"
@@ -105,12 +106,39 @@ func (s *accessLogStreamer) streamAccessLogs(reader *bufio.Reader) (err error) {
 			return err
 		}
 
-		parts := bytes.SplitN(msg, []byte(";"), 2)
-		if len(parts) != 2 {
-			logger.Error(nil, "log format invalid expected 2 components separated by ';'", "ncomponents", len(parts))
-			continue
+		var address string
+		var accessLogMsg []byte
+
+		type wrappedMessage struct {
+			Address string      `json:"address"`
+			Message interface{} `json:"message"`
 		}
-		address, accessLogMsg := string(parts[0]), parts[1]
+
+		var wrappedMsg wrappedMessage
+		if err := json.Unmarshal(msg, &wrappedMsg); err != nil {
+			parts := bytes.SplitN(msg, []byte(";"), 2)
+			if len(parts) != 2 {
+				logger.Error(nil, "log format invalid: expected 2 components separated by ';' or a JSON object")
+				continue
+			}
+
+			address, accessLogMsg = string(parts[0]), parts[1]
+		} else {
+			address = wrappedMsg.Address
+
+			if embeddedString, ok := wrappedMsg.Message.(string); ok {
+				accessLogMsg = []byte(embeddedString)
+			} else {
+				accessLogMsg, err = json.Marshal(wrappedMsg.Message)
+				if err != nil {
+					logger.Error(err, "unable to marshal embedded message")
+					continue
+				}
+			}
+
+			accessLogMsg = append(accessLogMsg, '\n')
+		}
+
 		s.RLock()
 		sender, initialized := s.senders[address]
 		s.RUnlock()
