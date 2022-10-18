@@ -16,6 +16,13 @@ import (
 )
 
 func CleanupEbpfConfigFromNode() {
+	// IPv6 currently not supported by our eBPF
+	// https://github.com/kumahq/kuma-net/issues/72
+	if Config.IPV6 {
+		fmt.Println("Test not supported on IPv6")
+		return
+	}
+
 	var cluster Cluster
 	var k8sCluster *K8sCluster
 	releaseName := fmt.Sprintf(
