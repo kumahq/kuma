@@ -14,28 +14,26 @@ jobs:
       - name: check-maintainer
         run:  |
           # Ensure the commenter is a maintainer
-          USER="${{ github.event.comment.user.login }}"
-          if [[ `gh api  /repos/kumahq/kuma/collaborators --jq '.[] | select (.permissions.maintain == true) | .login' | grep $USER` ]]; then
+          if [[ `gh api  /repos/kumahq/kuma/collaborators --jq '.[] | select (.permissions.maintain == true) | .login' | grep ${{ github.event.comment.user.login }}` ]]; then
             gh api --method POST -f content='+1' ${{ github.event.comment.url }}/reactions
           else
             gh api --method POST -f content='-1' ${{ github.event.comment.url }}/reactions
+            echo "${{ github.event.comment.user.login }} is not a maintainer of the repo, can't run this action"
             exit 1
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - id: get-branch
         run: |
-          echo ::set-output name=branch::$(gh pr view $PR_NO --repo $REPO --json headRefName --jq '.headRefName')
-          echo ::set-output name=repo::$(gh pr view $PR_NO --repo $REPO --json headRepository,headRepositoryOwner --jq '[.headRepositoryOwner.login,.headRepository.name] | join("/")')
+          echo "BRANCH_NAME=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRefName --jq '.headRefName')" >> $GITHUB_ENV
+          echo "REPO=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRepository,headRepositoryOwner --jq '[.headRepositoryOwner.login,.headRepository.name] | join("/")')" >> $GITHUB_ENV
         env:
-          REPO: ${{ github.repository }}
-          PR_NO: ${{ github.event.issue.number }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-          repository: ${{ steps.get-branch.outputs.repo }}
-          ref: ${{ steps.get-branch.outputs.branch }}
+          repository: ${{ env.REPO }}
+          ref: ${{ env.BRANCH_NAME }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/setup-go@v3
