@@ -28,6 +28,7 @@ import (
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	xds_auth "github.com/kumahq/kuma/pkg/xds/auth"
+	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
@@ -55,6 +56,7 @@ type BuilderContext interface {
 	APIServerAuthenticator() authn.Authenticator
 	Access() Access
 	TokenIssuers() builtin.TokenIssuers
+	MeshCache() *mesh.Cache
 }
 
 var _ BuilderContext = &Builder{}
@@ -90,6 +92,7 @@ type Builder struct {
 	appCtx         context.Context
 	extraReportsFn ExtraReportsFn
 	tokenIssuers   builtin.TokenIssuers
+	meshCache      *mesh.Cache
 	*runtimeInfo
 }
 
@@ -256,6 +259,11 @@ func (b *Builder) WithTokenIssuers(tokenIssuers builtin.TokenIssuers) *Builder {
 	return b
 }
 
+func (b *Builder) WithMeshCache(meshCache *mesh.Cache) *Builder {
+	b.meshCache = meshCache
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -317,6 +325,9 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.tokenIssuers == (builtin.TokenIssuers{}) {
 		return nil, errors.Errorf("TokenIssuers has not been configured")
 	}
+	if b.meshCache == nil {
+		return nil, errors.Errorf("MeshCache has not been configured")
+	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
@@ -347,6 +358,7 @@ func (b *Builder) Build() (Runtime, error) {
 			appCtx:         b.appCtx,
 			extraReportsFn: b.extraReportsFn,
 			tokenIssuers:   b.tokenIssuers,
+			meshCache:      b.meshCache,
 		},
 		Manager: b.cm,
 	}, nil
@@ -435,4 +447,8 @@ func (b *Builder) TokenIssuers() builtin.TokenIssuers {
 }
 func (b *Builder) EnvoyAdminClient() admin.EnvoyAdminClient {
 	return b.eac
+}
+
+func (b *Builder) MeshCache() *mesh.Cache {
+	return b.meshCache
 }
