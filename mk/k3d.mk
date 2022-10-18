@@ -44,6 +44,7 @@ K3D_CLUSTER_CREATE_OPTS ?= -i rancher/k3s:$(CI_K3S_VERSION) \
 	--k3s-arg '--no-deploy=traefik@server:0' \
 	--k3s-arg '--disable=metrics-server@server:0' \
 	--network kind \
+	--volume /sys/fs/bpf:/sys/fs/bpf:shared \
 	--port "$(PORT_PREFIX)80-$(PORT_PREFIX)89:30080-30089@server:0" \
 	--timeout 120s
 
@@ -72,12 +73,6 @@ k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create
 	@echo
 	@echo '<<< ------------------------------------------------------------- <<<'
 	@echo
-	$(MAKE) k3d/configure/ebpf
-
-.PHONY: k3d/configure/ebpf
-k3d/configure/ebpf:
-	docker exec -it "k3d-$(KIND_CLUSTER_NAME)-server-0" mount bpffs /sys/fs/bpf -t bpf && \
-	docker exec -it "k3d-$(KIND_CLUSTER_NAME)-server-0" mount --make-shared /sys/fs/bpf
 
 .PHONY: k3d/wait
 k3d/wait:
