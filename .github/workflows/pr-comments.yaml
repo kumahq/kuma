@@ -11,6 +11,12 @@ jobs:
     if: github.event.issue.pull_request != '' && (contains(github.event.comment.body, '/format') || contains(github.event.comment.body, '/golden_files'))
     runs-on: ubuntu-latest
     steps:
+      - name: Generate GitHub app token
+        id: github-app-token
+        uses: tibdex/github-app-token@f717b5ecd4534d3c4df4ce9b5c1c2214f0f7cd06 # v1.6.0
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: check-maintainer
         run:  |
           # Ensure the commenter is a maintainer
@@ -22,20 +28,20 @@ jobs:
             exit 1
           fi
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
       - id: get-branch
         run: |
           echo "BRANCH_NAME=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRefName --jq '.headRefName')" >> $GITHUB_ENV
           echo "REPO=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRepository,headRepositoryOwner --jq '[.headRepositoryOwner.login,.headRepository.name] | join("/")')" >> $GITHUB_ENV
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
           repository: ${{ env.REPO }}
           ref: ${{ env.BRANCH_NAME }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
       - uses: actions/setup-go@v3
         with:
           go-version: 1.18
@@ -60,7 +66,7 @@ jobs:
           make test UPDATE_GOLDEN_FILES=true
       - name: commit and push fixes
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
         run: |
           if git diff --exit-code --stat; then
             echo "No change detected, skipping git push"
@@ -72,4 +78,4 @@ jobs:
           fi
       - run: gh api --method POST -f content='hooray' ${{ github.event.comment.url }}/reactions
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
