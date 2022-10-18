@@ -63,6 +63,7 @@ type InstallControlPlaneArgs struct {
 	ExperimentalGatewayAPI                       bool              `helm:"experimental.gatewayAPI"`
 	ValueFiles                                   []string
 	Values                                       []string
+	SkipKinds                                    []string
 	// APIVersions is a hidden, internal option
 	APIVersions        []string
 	DumpValues         bool
