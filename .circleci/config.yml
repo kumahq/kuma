@@ -345,7 +345,7 @@ jobs:
 
             if [[ "<< parameters.target >>" == "test/e2e" ]]; then
               if [[ "<< parameters.arch >>" == "arm64" ]]; then
-                export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX && !arm-not-supported "
+                export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX && !arm-not-supported"
               else
                 export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX"
               fi
