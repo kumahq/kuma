@@ -106,15 +106,12 @@ func newUninstallEbpf(root *kumactl_cmd.RootContext) *cobra.Command {
 			}
 
 			if args.RemoveOnly {
-				_, _ = fmt.Fprintf(jobResource.stdout, "cleaning ups Jobs")
 				if err := jobResource.Cleanup(ctx, cleanupAppSelector); err != nil {
 					return errors.Wrap(err, "Failed cleaning jobs")
 				}
-
 				return nil
 			}
 
-			errCh := make(chan error, 1)
 			defer func() {
 				if e := jobResource.Cleanup(ctx, cleanupAppSelector); e != nil {
 					_, _ = fmt.Fprintf(jobResource.stdout, "failed to cleanup jobs %s \n", err)
@@ -142,16 +139,8 @@ func newUninstallEbpf(root *kumactl_cmd.RootContext) *cobra.Command {
 				return errors.Wrap(err, "failed to create pod watcher")
 			}
 
-			go func() {
-				errCh <- jobResource.Watch(ctx, watcher)
-			}()
-
-			select {
-			case <-ctx.Done():
-				return nil
-			case err := <-errCh:
-				return err
-			}
+			jobResource.Watch(ctx, watcher)
+			return nil
 		},
 	}
 
@@ -250,52 +239,57 @@ func (r *CleanupJob) getPodLogs(
 	return buf.String(), nil
 }
 
-func (r *CleanupJob) Watch(ctx context.Context, watcher watch.Interface) error {
-	for event := range watcher.ResultChan() {
-		if len(r.startedJobs) == 0 {
-			break
-		}
-		pod, ok := event.Object.(*corev1.Pod)
-		if !ok {
-			return nil
-		}
-		jobName := pod.Labels["job-name"]
-		job, ok := r.startedJobs[jobName]
-		if !ok || pod.Status.Phase == job.phase {
-			continue
-		}
-		switch pod.Status.Phase {
-		case corev1.PodSucceeded:
-			_, _ = fmt.Fprintf(r.stdout,
-				"cleanup for node: %s finished successfully\n", job.nodeName)
-			delete(r.startedJobs, jobName)
+func (r *CleanupJob) Watch(ctx context.Context, watcher watch.Interface) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case event := <-watcher.ResultChan():
 			if len(r.startedJobs) == 0 {
-				return nil
-			} else {
+				break
+			}
+			pod, ok := event.Object.(*corev1.Pod)
+			if !ok {
+				return
+			}
+			jobName := pod.Labels["job-name"]
+			job, ok := r.startedJobs[jobName]
+			if !ok || pod.Status.Phase == job.phase {
 				continue
 			}
-		case corev1.PodFailed:
-			if logs, err := r.getPodLogs(ctx, pod); err != nil {
+			switch pod.Status.Phase {
+			case corev1.PodSucceeded:
 				_, _ = fmt.Fprintf(r.stdout,
-					"cleanup for node: %s failed but couldn't get any logs",
-					job.nodeName)
-			} else {
-				_, _ = fmt.Fprintf(r.stdout,
-					"cleanup for node: %s failed: %s", job.nodeName, logs)
+					"cleanup for node: %s finished successfully\n", job.nodeName)
+				delete(r.startedJobs, jobName)
+				if len(r.startedJobs) == 0 {
+					return
+				} else {
+					continue
+				}
+			case corev1.PodFailed:
+				if logs, err := r.getPodLogs(ctx, pod); err != nil {
+					_, _ = fmt.Fprintf(r.stdout,
+						"cleanup for node: %s failed but couldn't get any logs",
+						job.nodeName)
+				} else {
+					_, _ = fmt.Fprintf(r.stdout,
+						"cleanup for node: %s failed: %s", job.nodeName, logs)
+				}
+				delete(r.startedJobs, jobName)
+				if len(r.startedJobs) == 0 {
+					return
+				} else {
+					continue
+				}
 			}
-			delete(r.startedJobs, jobName)
-			if len(r.startedJobs) == 0 {
-				return nil
-			} else {
-				continue
-			}
+			job.phase = pod.Status.Phase
 		}
-		job.phase = pod.Status.Phase
 	}
-	return nil
 }
 
 func (r *CleanupJob) Cleanup(ctx context.Context, selector metav1.ListOptions) error {
+	_, _ = fmt.Fprintf(r.stdout, "cleaning up Jobs")
 	policy := metav1.DeletePropagationBackground
 	deleteImmediately := metav1.DeleteOptions{
 		GracePeriodSeconds: new(int64),
