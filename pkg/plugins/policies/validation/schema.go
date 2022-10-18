@@ -9,8 +9,12 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
-func ValidateSchema(spec core_model.ResourceSpec, schema *spec.Schema) error {
-	res := validate.NewSchemaValidator(schema, nil, "", strfmt.Default).Validate(spec)
+func ValidateSchema(rspec core_model.ResourceSpec, schema *spec.Schema) error {
+	var rootSchema *spec.Schema = nil
+	var root = ""
+	validator := validate.NewSchemaValidator(schema, rootSchema, root, strfmt.Default)
+
+	res := validator.Validate(rspec)
 	if res.IsValid() {
 		return nil
 	}
