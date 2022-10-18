@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"fmt"
 	"net"
 
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
@@ -11,6 +10,7 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	accesslog "github.com/kumahq/kuma/pkg/envoy/accesslog/v3"
@@ -34,9 +34,8 @@ type Configurer struct {
 	Dataplane          *core_mesh.DataplaneResource
 }
 
-func (c *Configurer) handlePlain(formatString string) (*accesslog.AccessLogFormat, error) {
-	envoyFormat, err := accesslog.ParseFormat(formatString + "\n")
-
+func (c *Configurer) interpolateKumaVariables(formatString string) (*accesslog.AccessLogFormat, error) {
+	envoyFormat, err := accesslog.ParseFormat(formatString)
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid access log format string: %s", formatString)
 	}
@@ -60,47 +59,92 @@ func (c *Configurer) handlePlain(formatString string) (*accesslog.AccessLogForma
 
 func (c *Configurer) envoyAccessLog(defaultFormat string) (*envoy_accesslog.AccessLog, error) {
 	var format *api.MeshAccessLog_Format
-	if f := c.Backend.GetFile().GetFormat(); f != nil {
-		format = f
-	} else if f := c.Backend.GetTcp().GetFormat(); f != nil {
-		format = f
+	var logPath string
+
+	if f := c.Backend.GetFile(); f != nil {
+		format = f.GetFormat()
+		logPath = f.Path
+	} else if f := c.Backend.GetTcp(); f != nil {
+		format = f.GetFormat()
+		logPath = envoy.AccessLogSocketName(c.Dataplane.Meta.GetName(), c.Mesh)
 	}
 
-	// TODO json
+	var substitutionFormatString envoy_core.SubstitutionFormatString
 
 	if len(format.GetJson()) == 0 {
 		formatString := format.GetPlain()
 		if formatString == "" {
 			formatString = defaultFormat
 		}
-		envoyFormat, err := c.handlePlain(formatString)
+		formatString += "\n"
+
+		envoyFormat, err := c.interpolateKumaVariables(formatString)
 		if err != nil {
 			return nil, err
 		}
 
 		if file := c.Backend.GetFile(); file != nil {
-			return fileAccessLog(envoyFormat.String(), file.Path)
-		} else if tcp := c.Backend.GetTcp(); tcp != nil {
-			path := envoy.AccessLogSocketName(c.Dataplane.Meta.GetName(), c.Mesh)
-			return fileAccessLog(fmt.Sprintf("%s;%s", tcp.Address, envoyFormat.String()), path)
-		}
-	}
-
-	panic("impossible backend type")
-}
-
-func fileAccessLog(format string, path string) (*envoy_accesslog.AccessLog, error) {
-	fileAccessLog := &access_loggers_file.FileAccessLog{
-		AccessLogFormat: &access_loggers_file.FileAccessLog_LogFormat{
-			LogFormat: &envoy_core.SubstitutionFormatString{
+			substitutionFormatString = envoy_core.SubstitutionFormatString{
 				Format: &envoy_core.SubstitutionFormatString_TextFormatSource{
 					TextFormatSource: &envoy_core.DataSource{
 						Specifier: &envoy_core.DataSource_InlineString{
-							InlineString: format,
+							InlineString: envoyFormat.String(),
 						},
 					},
 				},
+			}
+		} else if tcp := c.Backend.GetTcp(); tcp != nil {
+			substitutionFormatString = envoy_core.SubstitutionFormatString{
+				Format: &envoy_core.SubstitutionFormatString_JsonFormat{
+					JsonFormat: &structpb.Struct{
+						Fields: map[string]*structpb.Value{
+							"address": structpb.NewStringValue(tcp.Address),
+							"message": structpb.NewStringValue(envoyFormat.String()),
+						},
+					},
+				},
+			}
+		}
+	} else {
+		fields := map[string]*structpb.Value{}
+		for _, kv := range format.GetJson() {
+			interpolated, err := c.interpolateKumaVariables(kv.Value)
+			if err != nil {
+				return nil, err
+			}
+
+			fields[kv.Key] = structpb.NewStringValue(interpolated.String())
+		}
+
+		var jsonFormat structpb.Struct
+		if file := c.Backend.GetFile(); file != nil {
+			jsonFormat = structpb.Struct{
+				Fields: fields,
+			}
+		} else if tcp := c.Backend.GetTcp(); tcp != nil {
+			jsonFormat = structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					"address": structpb.NewStringValue(tcp.Address),
+					"message": structpb.NewStructValue(&structpb.Struct{
+						Fields: fields,
+					}),
+				},
+			}
+		}
+		substitutionFormatString = envoy_core.SubstitutionFormatString{
+			Format: &envoy_core.SubstitutionFormatString_JsonFormat{
+				JsonFormat: &jsonFormat,
 			},
+		}
+	}
+
+	return fileAccessLog(&substitutionFormatString, logPath)
+}
+
+func fileAccessLog(logFormat *envoy_core.SubstitutionFormatString, path string) (*envoy_accesslog.AccessLog, error) {
+	fileAccessLog := &access_loggers_file.FileAccessLog{
+		AccessLogFormat: &access_loggers_file.FileAccessLog_LogFormat{
+			LogFormat: logFormat,
 		},
 		Path: path,
 	}
