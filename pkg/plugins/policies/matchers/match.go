@@ -53,60 +53,77 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 		sort.Sort(ByTargetRef(ps))
 	}
 
+	fr, err := fromRules(matchedPoliciesByInbound)
+	if err != nil {
+		return core_xds.TypedMatchingPolicies{}, err
+	}
+
+	tr, err := toRules(dpPolicies)
+	if err != nil {
+		return core_xds.TypedMatchingPolicies{}, err
+	}
+
+	sr, err := singleItemRules(dpPolicies)
+	if err != nil {
+		return core_xds.TypedMatchingPolicies{}, err
+	}
+
 	return core_xds.TypedMatchingPolicies{
 		Type:              rType,
 		DataplanePolicies: dpPolicies,
 		FromRules: core_xds.FromRules{
-			Rules: fromRules(matchedPoliciesByInbound),
+			Rules: fr,
 		},
 		ToRules: core_xds.ToRules{
-			Rules: toRules(dpPolicies),
+			Rules: tr,
 		},
 		SingleItemRules: core_xds.SingleItemRules{
-			Rules: singleItem(dpPolicies),
+			Rules: sr,
 		},
 	}, nil
 }
 
 func fromRules(
 	matchedPoliciesByInbound map[core_xds.InboundListener][]core_model.Resource,
-) map[core_xds.InboundListener]core_xds.Rules {
-	rules := map[core_xds.InboundListener]core_xds.Rules{}
+) (map[core_xds.InboundListener]core_xds.Rules, error) {
+	rulesByInbound := map[core_xds.InboundListener]core_xds.Rules{}
 	for inbound, policies := range matchedPoliciesByInbound {
 		fromList := []core_xds.PolicyItem{}
 		for _, p := range policies {
 			policyWithFrom, ok := p.GetSpec().(core_xds.PolicyWithFromList)
 			if !ok {
-				// policy doesn't support 'from' list
-				return nil
+				return nil, nil
 			}
 			fromList = append(fromList, policyWithFrom.GetFromList()...)
 		}
-		rules[inbound] = core_xds.BuildRules(fromList)
+		rules, err := core_xds.BuildRules(fromList)
+		if err != nil {
+			return nil, err
+		}
+		rulesByInbound[inbound] = rules
 	}
-	return rules
+	return rulesByInbound, nil
 }
 
-func toRules(matchedPolicies []core_model.Resource) core_xds.Rules {
+func toRules(matchedPolicies []core_model.Resource) (core_xds.Rules, error) {
 	toList := []core_xds.PolicyItem{}
 	for _, mp := range matchedPolicies {
 		policyWithTo, ok := mp.GetSpec().(core_xds.PolicyWithToList)
 		if !ok {
-			// policy doesn't support 'to' list
-			return nil
+			return nil, nil
 		}
 		toList = append(toList, policyWithTo.GetToList()...)
 	}
 	return core_xds.BuildRules(toList)
 }
 
-func singleItem(matchedPolicies []core_model.Resource) core_xds.Rules {
+func singleItemRules(matchedPolicies []core_model.Resource) (core_xds.Rules, error) {
 	item := []core_xds.PolicyItem{}
 	for _, mp := range matchedPolicies {
 		policyWithSingleItem, ok := mp.GetSpec().(core_xds.PolicyWithSingleItem)
 		if !ok {
 			// policy doesn't support single item
-			return nil
+			return nil, nil
 		}
 		item = append(item, policyWithSingleItem.GetPolicyItem())
 	}
