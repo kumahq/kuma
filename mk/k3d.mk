@@ -44,13 +44,16 @@ K3D_CLUSTER_CREATE_OPTS ?= -i rancher/k3s:$(CI_K3S_VERSION) \
 	--k3s-arg '--no-deploy=traefik@server:0' \
 	--k3s-arg '--disable=metrics-server@server:0' \
 	--network kind \
-	--volume /sys/fs/bpf:/sys/fs/bpf:shared \
 	--port "$(PORT_PREFIX)80-$(PORT_PREFIX)89:30080-30089@server:0" \
 	--timeout 120s
 
 ifeq ($(K3D_NETWORK_CNI),calico)
 	K3D_CLUSTER_CREATE_OPTS += --volume "$(TOP)/test/k3d/calico.yaml.kubelint-excluded:/var/lib/rancher/k3s/server/manifests/calico.yaml" \
 		--k3s-arg '--flannel-backend=none@server:*'
+endif
+
+ifeq ($(GOOS),linux)
+	K3D_CLUSTER_CREATE_OPTS += --volume "/sys/fs/bpf:/sys/fs/bpf:shared"
 endif
 
 .PHONY: k3d/network/create
@@ -73,6 +76,14 @@ k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create
 	@echo
 	@echo '<<< ------------------------------------------------------------- <<<'
 	@echo
+	$(MAKE) k3d/configure/ebpf
+
+.PHONY: k3d/configure/ebpf
+k3d/configure/ebpf:
+ifeq ($(GOOS),darwin)
+	docker exec -it k3d-$(KIND_CLUSTER_NAME)-server-0 mount bpffs /sys/fs/bpf -t bpf && \
+	docker exec -it k3d-$(KIND_CLUSTER_NAME)-server-0 mount --make-shared /sys/fs/bpf
+endif
 
 .PHONY: k3d/wait
 k3d/wait:
