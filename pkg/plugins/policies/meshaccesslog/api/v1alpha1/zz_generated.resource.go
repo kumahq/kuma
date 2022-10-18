@@ -8,7 +8,8 @@ import (
 	_ "embed"
 	"fmt"
 
-	"github.com/xeipuuv/gojsonschema"
+	"github.com/ghodss/yaml"
+	"k8s.io/kube-openapi/pkg/validation/spec"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/validation"
@@ -16,14 +17,12 @@ import (
 
 //go:embed schema.yaml
 var rawSchema []byte
-var schema *gojsonschema.JSONLoader
+var schema = &spec.Schema{}
 
 func init() {
-	sch, err := validation.YamlToJsonSchemaLoader(rawSchema)
-	if err != nil {
+	if err := yaml.Unmarshal(rawSchema, schema); err != nil {
 		panic(err)
 	}
-	schema = sch
 }
 
 const (
