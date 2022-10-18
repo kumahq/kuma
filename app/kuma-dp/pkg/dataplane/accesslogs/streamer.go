@@ -116,6 +116,7 @@ func (s *accessLogStreamer) streamAccessLogs(reader *bufio.Reader) (err error) {
 
 		var wrappedMsg wrappedMessage
 		if err := json.Unmarshal(msg, &wrappedMsg); err != nil {
+			// This is for compatibility if using TrafficLog
 			parts := bytes.SplitN(msg, []byte(";"), 2)
 			if len(parts) != 2 {
 				logger.Error(nil, "log format invalid: expected 2 components separated by ';' or a JSON object")
