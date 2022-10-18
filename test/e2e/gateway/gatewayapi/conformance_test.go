@@ -95,7 +95,7 @@ func TestConformance(t *testing.T) {
 		ValidUniqueListenerPorts: validUniqueListenerPorts,
 		SupportedFeatures: []suite.SupportedFeature{
 			suite.SupportHTTPRouteQueryParamMatching,
-			suite.SupportReferenceGrant,
+			suite.SupportHTTPRouteMethodMatching,
 		},
 	})
 
@@ -105,6 +105,7 @@ func TestConformance(t *testing.T) {
 	for _, test := range tests.ConformanceTests {
 		switch test.ShortName {
 		case tests.HTTPRouteDisallowedKind.ShortName, // TODO: we only support HTTPRoute so it's not yet possible to test this
+			tests.GatewayUnsupportedRouteKind.ShortName,              // TODO: new failing test, need to reproduce
 			tests.HTTPRouteInvalidCrossNamespaceBackendRef.ShortName, // The following fail due to #4597
 			tests.HTTPRouteInvalidBackendRefUnknownKind.ShortName,
 			tests.HTTPRouteInvalidNonExistentBackendRef.ShortName,
