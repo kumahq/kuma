@@ -252,10 +252,6 @@ jobs:
         description: The CNI networking plugin to use [flannel | calico]
         type: string
         default: flannel
-      ebpf:
-        description: The ebpf test are supposed to run only with kind
-        type: string
-        default: disabled
     executor:
       name: vm-<< parameters.arch >>
     parallelism: << parameters.parallelism >>
@@ -272,7 +268,6 @@ jobs:
               parallelism:<< parameters.parallelism >> \
               arch:<< parameters.arch >> \
               cniNetworkPlugin:<< parameters.cniNetworkPlugin >> \
-              ebpf:<< parameters.ebpf >> \
             "
             function skip() {
               echo "Non valid job combination halting job reason: $1"
@@ -350,16 +345,16 @@ jobs:
 
             if [[ "<< parameters.target >>" == "test/e2e" ]]; then
               if [[ "<< parameters.arch >>" == "arm64" ]]; then
-                if [[ "<< parameters.k8sVersion >>" == "kind" ]]; then
-                  export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX && !arm-not-supported"
+                if [[ "<< parameters.k8sVersion >>" == "kindIpv6" ]]; then
+                  export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX && !arm-not-supported && !ipv4-only"
                 else
-                  export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX && !arm-not-supported && !kind-only"
+                  export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX && !arm-not-supported "
                 fi
               else
-                if [[ "<< parameters.k8sVersion >>" == "kind" ]]; then
-                  export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX"
+                if [[ "<< parameters.k8sVersion >>" == "kindIpv6" ]]; then
+                  export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX && !ipv4-only"
                 else
-                  export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX && !kind-only"
+                  export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX"
                 fi
               fi
             fi
@@ -506,17 +501,6 @@ workflows:
               target: [ test/e2e-multizone ]
               arch: [ amd64 ]
               cniNetworkPlugin: [ calico ]
-          parallelism: 1
-          requires: [ build-<< matrix.arch >>, check ]
-      - e2e:
-          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-ebpf
-          matrix:
-            alias: test/e2e-legacy-ebpf
-            parameters:
-              k8sVersion: [ kind ]
-              target: [ test/e2e ]
-              arch: [ amd64 ]
-              ebpf: [ enabled ]
           parallelism: 1
           requires: [ build-<< matrix.arch >>, check ]
       - release:
