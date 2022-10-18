@@ -30,7 +30,7 @@ func CleanupEbpfConfigFromNode() {
 		strings.ToLower(random.UniqueId()),
 	)
 
-	var setup = func() {
+	BeforeAll(func() {
 		k8sCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 		cluster = k8sCluster.
 			WithTimeout(6 * time.Second).
@@ -52,16 +52,14 @@ func CleanupEbpfConfigFromNode() {
 				ebpf_checker.WithoutSidecar(),
 			)).
 			Setup(cluster)).ToNot(HaveOccurred())
-	}
+	})
 
-	E2EAfterEach(func() {
+	AfterAll(func() {
 		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
 	It("should cleanup ebpf files from node", func() {
-		setup()
-
 		ebpfCheckerPodName, err := PodNameOfApp(cluster, "ebpf-checker", TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
 
