@@ -1,6 +1,7 @@
 package meshaccesslog
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"strconv"
@@ -115,6 +116,59 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 		}
 		src, dst := expectTrafficLogged(makeRequest)
+
+		Expect(src).To(Equal(AppModeDemoClient))
+		Expect(dst).To(Equal("test-server"))
+	})
+
+	It("should log outgoing traffic with JSON formatting", func() {
+		yaml := fmt.Sprintf(`
+type: MeshAccessLog
+name: client-outgoing
+mesh: meshaccesslog
+spec:
+ targetRef:
+   kind: MeshService
+   name: demo-client
+ to:
+   - targetRef:
+       kind: Mesh
+     default:
+       backends:
+       - tcp:
+           format:
+             json:
+             - key: Source
+               value: '%%KUMA_SOURCE_SERVICE%%'
+             - key: Destination
+               value: '%%KUMA_DESTINATION_SERVICE%%'
+             - key: Start
+               value: '%%START_TIME(%%s)%%'
+           address: "%s_%s:9999"
+`, env.Cluster.Name(), externalServiceDeployment)
+		Expect(YamlUniversal(yaml)(env.Cluster)).To(Succeed())
+
+		var src, dst string
+		sinkDeployment := env.Cluster.Deployment(externalServiceDeployment).(*externalservice.UniversalDeployment)
+		Eventually(func(g Gomega) {
+			_, _, err := env.Cluster.Exec("", "", AppModeDemoClient,
+				"curl", "-v", "--fail", "test-server.mesh")
+			g.Expect(err).ToNot(HaveOccurred())
+
+			stdout, _, err := sinkDeployment.Exec("", "", "head", "-1", "/nc.out")
+			g.Expect(err).ToNot(HaveOccurred())
+
+			type log struct {
+				Source      string
+				Destination string
+				Start       string
+			}
+			var line log
+			g.Expect(json.Unmarshal([]byte(stdout), &line)).To(Succeed())
+
+			src = line.Source
+			dst = line.Destination
+		}, "30s", "1s").Should(Succeed())
 
 		Expect(src).To(Equal(AppModeDemoClient))
 		Expect(dst).To(Equal("test-server"))

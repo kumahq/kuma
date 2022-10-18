@@ -670,6 +670,7 @@ spec:
                               type: string
                           type: object
                       type: object
+                    nullable: true
                     type: array
                   sampling:
                     description: Sampling configuration. Sampling is the process by
@@ -739,6 +740,7 @@ spec:
                           description: Name of the tag.
                           type: string
                       type: object
+                    nullable: true
                     type: array
                 type: object
               targetRef:
@@ -867,6 +869,7 @@ spec:
                           type: object
                       type: object
                   type: object
+                nullable: true
                 type: array
               targetRef:
                 description: TargetRef is a reference to the resource the policy takes
@@ -1914,6 +1917,7 @@ spec:
                                             value:
                                               type: string
                                           type: object
+                                        nullable: true
                                         type: array
                                       plain:
                                         type: string
@@ -1942,12 +1946,14 @@ spec:
                                             value:
                                               type: string
                                           type: object
+                                        nullable: true
                                         type: array
                                       plain:
                                         type: string
                                     type: object
                                 type: object
                             type: object
+                          nullable: true
                           type: array
                       type: object
                     targetRef:
@@ -1980,6 +1986,7 @@ spec:
                           type: object
                       type: object
                   type: object
+                nullable: true
                 type: array
               targetRef:
                 description: TargetRef is a reference to the resource the policy takes
@@ -2037,6 +2044,7 @@ spec:
                                             value:
                                               type: string
                                           type: object
+                                        nullable: true
                                         type: array
                                       plain:
                                         type: string
@@ -2065,12 +2073,14 @@ spec:
                                             value:
                                               type: string
                                           type: object
+                                        nullable: true
                                         type: array
                                       plain:
                                         type: string
                                     type: object
                                 type: object
                             type: object
+                          nullable: true
                           type: array
                       type: object
                     targetRef:
@@ -2103,6 +2113,7 @@ spec:
                           type: object
                       type: object
                   type: object
+                nullable: true
                 type: array
             type: object
         type: object

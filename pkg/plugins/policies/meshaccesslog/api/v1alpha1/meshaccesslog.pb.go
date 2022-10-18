@@ -35,8 +35,12 @@ type MeshAccessLog struct {
 	// defined inplace.
 	TargetRef *v1alpha1.TargetRef `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef,omitempty"`
 	// From is a list of pairs – a group of clients and action applied for it
-	From []*MeshAccessLog_From `protobuf:"bytes,3,rep,name=from,proto3" json:"from,omitempty"`
-	To   []*MeshAccessLog_To   `protobuf:"bytes,4,rep,name=to,proto3" json:"to,omitempty"`
+	// +optional
+	// +nullable
+	From []*MeshAccessLog_From `protobuf:"bytes,3,rep,name=from,proto3" json:"from"`
+	// +optional
+	// +nullable
+	To []*MeshAccessLog_To `protobuf:"bytes,4,rep,name=to,proto3" json:"to"`
 }
 
 func (x *MeshAccessLog) Reset() {
@@ -97,8 +101,10 @@ type MeshAccessLog_Format struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Plain string                            `protobuf:"bytes,1,opt,name=plain,proto3" json:"plain,omitempty"`
-	Json  []*MeshAccessLog_Format_JsonValue `protobuf:"bytes,2,rep,name=json,proto3" json:"json,omitempty"`
+	Plain string `protobuf:"bytes,1,opt,name=plain,proto3" json:"plain,omitempty"`
+	// +optional
+	// +nullable
+	Json []*MeshAccessLog_Format_JsonValue `protobuf:"bytes,2,rep,name=json,proto3" json:"json"`
 }
 
 func (x *MeshAccessLog_Format) Reset() {
@@ -325,7 +331,9 @@ type MeshAccessLog_Conf struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Backends []*MeshAccessLog_Backend `protobuf:"bytes,1,rep,name=backends,proto3" json:"backends,omitempty"`
+	// +optional
+	// +nullable
+	Backends []*MeshAccessLog_Backend `protobuf:"bytes,1,rep,name=backends,proto3" json:"backends"`
 }
 
 func (x *MeshAccessLog_Conf) Reset() {
