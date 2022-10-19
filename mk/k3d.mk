@@ -56,6 +56,10 @@ ifeq ($(GOOS),linux)
 	K3D_CLUSTER_CREATE_OPTS += --volume "/sys/fs/bpf:/sys/fs/bpf:shared"
 endif
 
+ifdef CI
+	K3D_CLUSTER_CREATE_OPTS += --volume "/sys/fs/cgroup:/sys/fs/cgroup:rw"
+endif
+
 .PHONY: k3d/network/create
 k3d/network/create:
 	@touch $(BUILD_DIR)/k3d_network.lock && \
