@@ -25,14 +25,14 @@ var _ = Describe("Rewriting the metrics URL", func() {
 			address:       "1.2.3.4",
 			input:         "http://foo/bar",
 			adminPort:     99,
-			expected:      "http://1.2.3.4:99/stats?format=prometheus",
+			expected:      "http://1.2.3.4:99/stats?format=prometheus&text_readouts=",
 			queryModifier: AddPrometheusFormat,
 		}),
 		Entry("preserve query parameters", testCase{
 			address:       "1.2.3.4",
 			input:         "http://foo/bar?one=two&three=four&filter=test_.*&usedonly",
 			adminPort:     80,
-			expected:      "http://1.2.3.4:80/stats?filter=test_.%2A&format=prometheus&one=two&three=four&usedonly=",
+			expected:      "http://1.2.3.4:80/stats?filter=test_.%2A&format=prometheus&one=two&text_readouts=&three=four&usedonly=",
 			queryModifier: AddPrometheusFormat,
 		}),
 		Entry("remove query parameters", testCase{
