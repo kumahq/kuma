@@ -88,6 +88,7 @@ spec:
                               type: string
                           type: object
                       type: object
+                    nullable: true
                     type: array
                   sampling:
                     description: Sampling configuration. Sampling is the process by
@@ -157,6 +158,7 @@ spec:
                           description: Name of the tag.
                           type: string
                       type: object
+                    nullable: true
                     type: array
                 type: object
               targetRef:

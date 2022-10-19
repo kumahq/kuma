@@ -150,7 +150,7 @@ var _ = Describe("Rules", func() {
 			goldenFile string
 		}
 
-		DescribeTable("should build a rule-based view for the policy",
+		DescribeTable("should build a rule-based view for the policy with a from list",
 			func(given testCase) {
 				// given
 				policyBytes, err := os.ReadFile(path.Join("testdata", "rules", given.policyFile))
@@ -158,11 +158,12 @@ var _ = Describe("Rules", func() {
 
 				policy, err := rest.YAML.UnmarshalCore(policyBytes)
 				Expect(err).ToNot(HaveOccurred())
-				mtp, ok := policy.(*policies_api.MeshTrafficPermissionResource)
+				mtp, ok := policy.GetSpec().(xds.PolicyWithFromList)
 				Expect(ok).To(BeTrue())
 
 				// when
-				rules := xds.BuildRules(mtp.Spec.GetFromList())
+				rules, err := xds.BuildRules(mtp.GetFromList())
+				Expect(err).ToNot(HaveOccurred())
 
 				// then
 				bytes, err := yaml.Marshal(rules)
@@ -181,6 +182,14 @@ var _ = Describe("Rules", func() {
 			Entry("03. MeshTrafficPermission with MeshService targets", testCase{
 				policyFile: "03.policy.yaml",
 				goldenFile: "03.golden.yaml",
+			}),
+			Entry("04. MeshAccessLog with overriding empty backend list", testCase{
+				policyFile: "04.policy.yaml",
+				goldenFile: "04.golden.yaml",
+			}),
+			Entry("05. MeshAccessLog with overriding list of different backend type", testCase{
+				policyFile: "05.policy.yaml",
+				goldenFile: "05.golden.yaml",
 			}),
 		)
 
@@ -201,7 +210,8 @@ var _ = Describe("Rules", func() {
 				}
 
 				// when
-				rules := xds.BuildRules(policies)
+				rules, err := xds.BuildRules(policies)
+				Expect(err).ToNot(HaveOccurred())
 
 				// then
 				bytes, err := yaml.Marshal(rules)
@@ -209,13 +219,13 @@ var _ = Describe("Rules", func() {
 
 				Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "rules", given.goldenFile)))
 			},
-			Entry("04. MeshTrace", testCase{
-				policyFile: "04.policy.yaml",
-				goldenFile: "04.golden.yaml",
+			Entry("06. MeshTrace", testCase{
+				policyFile: "06.policy.yaml",
+				goldenFile: "06.golden.yaml",
 			}),
-			Entry("05. MeshTrace list", testCase{
-				policyFile: "05.policy.yaml",
-				goldenFile: "05.golden.yaml",
+			Entry("07. MeshTrace list", testCase{
+				policyFile: "07.policy.yaml",
+				goldenFile: "07.golden.yaml",
 			}),
 		)
 	})
