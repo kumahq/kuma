@@ -52,9 +52,9 @@ ifeq ($(K3D_NETWORK_CNI),calico)
 		--k3s-arg '--flannel-backend=none@server:*'
 endif
 
-ifeq ($(GOOS),linux)
-ifeq (,$(findstring e2e-legacy,$(CIRCLE_JOB)))
 ifdef CI
+ifeq ($(GOOS),linux)
+ifneq (,$(findstring e2e-legacy,$(CIRCLE_JOB)))
 	K3D_CLUSTER_CREATE_OPTS += --volume "/sys/fs/bpf:/sys/fs/bpf:shared"
 	K3D_CLUSTER_CREATE_OPTS += --volume "/sys/fs/cgroup:/sys/fs/cgroup:rw"
 endif
