@@ -3,9 +3,11 @@ package gatewayapi
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
+	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -41,8 +43,8 @@ func ValidateListeners(listeners []gatewayapi.Listener) ([]gatewayapi.Listener, 
 		listenerConditions[listener] = append(
 			listenerConditions[listener],
 			kube_meta.Condition{
-				Type:    string(gatewayapi.ListenerConditionDetached),
-				Status:  kube_meta.ConditionTrue,
+				Type:    string(gatewayapi.ListenerConditionAccepted),
+				Status:  kube_meta.ConditionFalse,
 				Reason:  string(reason),
 				Message: message,
 			},
@@ -191,19 +193,22 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 			continue
 		}
 
+		var unsupportedRouteGroupKinds []string
 		for _, gk := range l.AllowedRoutes.Kinds {
 			if gk.Kind != common.HTTPRouteKind || *gk.Group != gatewayapi.GroupName {
 				metaGK := kube_meta.GroupKind{Group: string(*gk.Group), Kind: string(gk.Kind)}
-				listenerConditions[l.Name] = append(listenerConditions[l.Name],
-					kube_meta.Condition{
-						Type:    string(gatewayapi.ListenerConditionResolvedRefs),
-						Status:  kube_meta.ConditionFalse,
-						Reason:  string(gatewayapi.ListenerReasonInvalidRouteKinds),
-						Message: fmt.Sprintf("unexpected RouteGroupKind %q", metaGK.String()),
-					},
-				)
-				continue
+				unsupportedRouteGroupKinds = append(unsupportedRouteGroupKinds, metaGK.String())
 			}
+		}
+		if len(unsupportedRouteGroupKinds) > 0 {
+			listenerConditions[l.Name] = append(listenerConditions[l.Name],
+				kube_meta.Condition{
+					Type:    string(gatewayapi.ListenerConditionResolvedRefs),
+					Status:  kube_meta.ConditionFalse,
+					Reason:  string(gatewayapi.ListenerReasonInvalidRouteKinds),
+					Message: fmt.Sprintf("unexpected RouteGroupKind %q", strings.Join(unsupportedRouteGroupKinds, ", ")),
+				},
+			)
 		}
 
 		listener.Hostname = "*"
@@ -309,9 +314,9 @@ func handleConditions(conditions []kube_meta.Condition, unresolvableCertRef *cer
 	conditions = append(
 		conditions,
 		kube_meta.Condition{
-			Type:   string(gatewayapi.ListenerConditionDetached),
-			Status: kube_meta.ConditionFalse,
-			Reason: string(gatewayapi.ListenerReasonAttached),
+			Type:   string(gatewayapi.ListenerConditionAccepted),
+			Status: kube_meta.ConditionTrue,
+			Reason: string(gatewayapi.ListenerReasonAccepted),
 		},
 		kube_meta.Condition{
 			Type:   string(gatewayapi.ListenerConditionConflicted),
@@ -322,34 +327,41 @@ func handleConditions(conditions []kube_meta.Condition, unresolvableCertRef *cer
 
 	var resolvedRefConditions []kube_meta.Condition
 
-	if unresolvableCertRef == nil {
-		resolvedRefConditions = []kube_meta.Condition{
-			{
-				Type:   string(gatewayapi.ListenerConditionResolvedRefs),
-				Status: kube_meta.ConditionTrue,
-				Reason: string(gatewayapi.ListenerReasonResolvedRefs),
-			},
-			{
-				Type:   string(gatewayapi.ListenerConditionReady),
-				Status: kube_meta.ConditionTrue,
-				Reason: string(gatewayapi.ListenerConditionReady),
-			},
-		}
-	} else {
-		resolvedRefConditions = []kube_meta.Condition{
-			{
+	if unresolvableCertRef != nil && !kube_apimeta.IsStatusConditionFalse(conditions, string(gatewayapi.ListenerConditionResolvedRefs)) {
+		kube_apimeta.SetStatusCondition(&conditions,
+			kube_meta.Condition{
 				Type:    string(gatewayapi.ListenerConditionResolvedRefs),
 				Status:  kube_meta.ConditionFalse,
 				Reason:  unresolvableCertRef.reason,
 				Message: unresolvableCertRef.message,
 			},
-			{
+		)
+	}
+
+	if !kube_apimeta.IsStatusConditionFalse(conditions, string(gatewayapi.ListenerConditionResolvedRefs)) {
+		kube_apimeta.SetStatusCondition(&conditions,
+			kube_meta.Condition{
+				Type:   string(gatewayapi.ListenerConditionResolvedRefs),
+				Status: kube_meta.ConditionTrue,
+				Reason: string(gatewayapi.ListenerReasonResolvedRefs),
+			},
+		)
+		kube_apimeta.SetStatusCondition(&conditions,
+			kube_meta.Condition{
+				Type:   string(gatewayapi.ListenerConditionReady),
+				Status: kube_meta.ConditionTrue,
+				Reason: string(gatewayapi.ListenerReasonReady),
+			},
+		)
+	} else {
+		kube_apimeta.SetStatusCondition(&conditions,
+			kube_meta.Condition{
 				Type:    string(gatewayapi.ListenerConditionReady),
 				Status:  kube_meta.ConditionFalse,
 				Reason:  string(gatewayapi.ListenerReasonInvalid),
 				Message: "unable to resolve refs",
 			},
-		}
+		)
 	}
 
 	return append(conditions, resolvedRefConditions...)

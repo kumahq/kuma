@@ -12,6 +12,7 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gatewayapi_util "sigs.k8s.io/gateway-api/apis/v1beta1/util/translator"
 
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
@@ -145,17 +146,35 @@ func mergeGatewayListenerStatuses(
 	// for each new parentstatus, either add it to the list or update the
 	// existing one
 	for name, conditions := range conditions {
+		var listener gatewayapi.Listener
+		for _, l := range gateway.Spec.Listeners {
+			if l.Name == name {
+				listener = l
+			}
+		}
+
+		supportedKinds := []gatewayapi.RouteGroupKind{}
+		if len(listener.AllowedRoutes.Kinds) == 0 {
+			supportedKinds = append(supportedKinds,
+				gatewayapi.RouteGroupKind{Group: gatewayapi_util.GroupPtr(gatewayapi.GroupVersion.Group), Kind: common.HTTPRouteKind},
+			)
+		}
+		for _, rgk := range listener.AllowedRoutes.Kinds {
+			if string(*rgk.Group) == gatewayapi.GroupVersion.Group && rgk.Kind == common.HTTPRouteKind {
+				supportedKinds = append(supportedKinds, rgk)
+			}
+		}
+
 		previousStatus := gatewayapi.ListenerStatus{
 			Name:           name,
 			AttachedRoutes: 0,
-			// TODO this should be Listener.AllowedRoutes with invalid kinds
-			// removed, i.e. it may be empty
-			SupportedKinds: []gatewayapi.RouteGroupKind{{Kind: common.HTTPRouteKind}},
 		}
 
 		if prev, ok := previousStatuses[name]; ok {
 			previousStatus = prev
 		}
+
+		previousStatus.SupportedKinds = supportedKinds
 
 		for _, condition := range conditions {
 			condition.ObservedGeneration = gateway.GetGeneration()
@@ -215,9 +234,9 @@ func mergeGatewayStatus(
 
 	conditions := []kube_meta.Condition{
 		{
-			Type:   string(gatewayapi.GatewayConditionScheduled),
+			Type:   string(gatewayapi.GatewayConditionAccepted),
 			Status: kube_meta.ConditionTrue,
-			Reason: string(gatewayapi.GatewayReasonScheduled),
+			Reason: string(gatewayapi.GatewayReasonAccepted),
 		},
 		{
 			Type:   string(gatewayapi.GatewayConditionReady),
