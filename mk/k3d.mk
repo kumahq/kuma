@@ -53,11 +53,17 @@ ifeq ($(K3D_NETWORK_CNI),calico)
 endif
 
 ifeq ($(GOOS),linux)
-ifeq ($(GOARCH), amd64)
+ifeq (,$(findstring e2e-legacy,$(CIRCLE_JOB)))
 ifdef CI
 	K3D_CLUSTER_CREATE_OPTS += --volume "/sys/fs/bpf:/sys/fs/bpf:shared"
 	K3D_CLUSTER_CREATE_OPTS += --volume "/sys/fs/cgroup:/sys/fs/cgroup:rw"
 endif
+endif
+endif
+
+ifeq ($(GOOS),linux)
+ifndef CI
+	K3D_CLUSTER_CREATE_OPTS += --volume "/sys/fs/bpf:/sys/fs/bpf:shared"
 endif
 endif
 
