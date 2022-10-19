@@ -43,8 +43,8 @@ func ValidateListeners(listeners []gatewayapi.Listener) ([]gatewayapi.Listener, 
 		listenerConditions[listener] = append(
 			listenerConditions[listener],
 			kube_meta.Condition{
-				Type:    string(gatewayapi.ListenerConditionDetached),
-				Status:  kube_meta.ConditionTrue,
+				Type:    string(gatewayapi.ListenerConditionAccepted),
+				Status:  kube_meta.ConditionFalse,
 				Reason:  string(reason),
 				Message: message,
 			},
@@ -314,9 +314,9 @@ func handleConditions(conditions []kube_meta.Condition, unresolvableCertRef *cer
 	conditions = append(
 		conditions,
 		kube_meta.Condition{
-			Type:   string(gatewayapi.ListenerConditionDetached),
-			Status: kube_meta.ConditionFalse,
-			Reason: string(gatewayapi.ListenerReasonAttached),
+			Type:   string(gatewayapi.ListenerConditionAccepted),
+			Status: kube_meta.ConditionTrue,
+			Reason: string(gatewayapi.ListenerReasonAccepted),
 		},
 		kube_meta.Condition{
 			Type:   string(gatewayapi.ListenerConditionConflicted),

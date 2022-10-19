@@ -234,9 +234,9 @@ func mergeGatewayStatus(
 
 	conditions := []kube_meta.Condition{
 		{
-			Type:   string(gatewayapi.GatewayConditionScheduled),
+			Type:   string(gatewayapi.GatewayConditionAccepted),
 			Status: kube_meta.ConditionTrue,
-			Reason: string(gatewayapi.GatewayReasonScheduled),
+			Reason: string(gatewayapi.GatewayReasonAccepted),
 		},
 		{
 			Type:   string(gatewayapi.GatewayConditionReady),
