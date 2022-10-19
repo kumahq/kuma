@@ -5,10 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/test/e2e_env/multizone/env"
 	. "github.com/kumahq/kuma/test/framework"
@@ -56,38 +54,30 @@ func ApplicationOnUniversalClientOnK8s() {
 
 		cmd := []string{"curl", "-v", "-m", "3", "--fail", "test-server.mesh"}
 
-		instances := []string{"dp-universal-1", "dp-universal-3"}
 		instanceSet := map[string]bool{}
+		Eventually(func(g Gomega) {
+			instances := []string{"dp-universal-1", "dp-universal-3"}
+			stdout, _, err := env.KubeZone1.Exec(namespace, pod, "demo-client", cmd...)
+			g.Expect(err).ToNot(HaveOccurred())
+			for _, instance := range instances {
+				if strings.Contains(stdout, instance) {
+					instanceSet[instance] = true
+				}
+			}
+			g.Expect(instanceSet).To(HaveLen(len(instances)), fmt.Sprintf("Received from set: %v with different len to %v", instanceSet, instances))
+		}).WithTimeout(30 * time.Second).WithPolling(time.Second / 2).Should(Succeed())
 
-		_, err = retry.DoWithRetryE(env.KubeZone1.GetTesting(), fmt.Sprintf("kubectl exec %s -- %s", pod, strings.Join(cmd, " ")),
-			100, 500*time.Millisecond, func() (string, error) {
-				stdout, _, err := env.KubeZone1.Exec(namespace, pod, "demo-client", cmd...)
-				if err != nil {
-					return "", err
-				}
-				for _, instance := range instances {
-					if strings.Contains(stdout, instance) {
-						instanceSet[instance] = true
-					}
-				}
-				if len(instanceSet) != len(instances) {
-					return "", errors.Errorf("checked %d/%d instances", len(instanceSet), len(instances))
-				}
-				return "", nil
-			},
-		)
-		Expect(err).ToNot(HaveOccurred())
-
-		var counter1, counter2, counter3 int
+		var counter1, counter2, counter3, numErrors int
 		const numOfRequest = 100
 
 		for i := 0; i < numOfRequest; i++ {
 			var stdout string
 
 			stdout, _, err = env.KubeZone1.Exec(namespace, pod, "demo-client", cmd...)
-			Expect(err).ToNot(HaveOccurred())
-
 			switch {
+			case err != nil:
+				numErrors++
+				Logf("Got error when executing curl '%v'", err)
 			case strings.Contains(stdout, "dp-universal-1"):
 				counter1++
 			case strings.Contains(stdout, "dp-universal-2"):
@@ -101,5 +91,6 @@ func ApplicationOnUniversalClientOnK8s() {
 		Expect(counter1 > 0).To(BeTrue())
 		Expect(counter3 > 0).To(BeTrue())
 		Expect(counter1 + counter3).To(Equal(numOfRequest))
+		Expect(numErrors).To(Equal(0))
 	})
 }
