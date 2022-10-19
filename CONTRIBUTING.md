@@ -97,7 +97,7 @@ to verify a few things:
   for your change
 - If your PR are open and some tests are failing due to outdated golden files
   or formatted and generated files are incorrect a maintainer can fix it by adding a
-  comment `@kumahq format` or `@kumahq golden files`.
+  comment `@kumahq format` and/or `@kumahq golden files`.
 - If you are introducing a change that might break on ipv6 or old k8s kubernetes (v1.19.16-k3s1)
   consider creating PR with a label `ci/run-full-matrix` that will trigger the full test matrix
 - If your PR doesn't need to run e2e tests or tests at all use: `ci/skip-test` or `ci/skip-e2e-test` labels on the PR.
