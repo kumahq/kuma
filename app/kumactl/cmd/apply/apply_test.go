@@ -508,7 +508,7 @@ spec:
       default:
         action: foo
 `,
-			err: `YAML contains invalid resource: from.0.default.action: from.0.default.action must be one of the following: "ALLOW", "DENY", "ALLOW_WITH_SHADOW_DENY", "DENY_WITH_SHADOW_ALLOW"`,
+			err: `YAML contains invalid resource: spec: from[0].default.action in body should be one of [ALLOW DENY ALLOW_WITH_SHADOW_DENY DENY_WITH_SHADOW_ALLOW]`,
 		}),
 	)
 })
