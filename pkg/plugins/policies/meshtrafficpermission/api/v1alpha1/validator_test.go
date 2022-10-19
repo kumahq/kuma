@@ -53,18 +53,15 @@ from:
     default:
       action: DENY
 `),
-			Entry("allow empty targetRefs", `
-from:
-  - default:
-      action: DENY
-`),
 			Entry("allow MeshSubset at top-level targetRef", `
 targetRef:
   kind: MeshSubset
   tags:
     env: prod
 from:
-  - default:
+  - targetRef:
+      kind: Mesh
+    default:
       action: DENY
 `),
 			Entry("allow MeshService at top-level targetRef", `
@@ -72,7 +69,9 @@ targetRef:
   kind: MeshService
   name: backend
 from:
-  - default:
+  - targetRef:
+      kind: Mesh
+    default:
       action: DENY
 `),
 			Entry("allow MeshServiceSubset at top-level targetRef", `
@@ -82,7 +81,9 @@ targetRef:
   tags:
     version: v2
 from:
-  - default:
+  - targetRef:
+      kind: Mesh
+    default:
       action: DENY
 `),
 			Entry("allow MeshGatewayRoute at top-level targetRef", `
@@ -90,15 +91,9 @@ targetRef:
   kind: MeshGatewayRoute
   name: backend-gateway-route
 from:
-  - default:
-      action: DENY
-`),
-			Entry("allow MeshHTTPRoute at top-level targetRef", `
-targetRef:
-  kind: MeshHTTPRoute
-  name: backend-http-route
-from:
-  - default:
+  - targetRef:
+      kind: Mesh
+    default:
       action: DENY
 `),
 		)
@@ -124,6 +119,22 @@ from:
 				// then
 				Expect(actual).To(MatchYAML(given.expected))
 			},
+			Entry("disallow MeshHTTPRoute at top-level targetRef", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshHTTPRoute
+  name: backend-http-route
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      action: DENY
+`,
+				expected: `
+violations:
+  - field: spec.targetRef.kind
+    message: MeshHTTPRoute is not yet supported`,
+			}),
 			Entry("empty 'from' array", testCase{
 				inputYaml: `
 targetRef:
@@ -175,6 +186,8 @@ violations:
 			}),
 			Entry("default is nil", testCase{
 				inputYaml: `
+targetRef:
+  kind: Mesh
 from:
   - targetRef:
       kind: Mesh

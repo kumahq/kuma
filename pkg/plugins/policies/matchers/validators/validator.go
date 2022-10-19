@@ -17,55 +17,39 @@ func ValidateTargetRef(
 ) validators.ValidationError {
 	verr := validators.ValidationError{}
 	if ref == nil {
-		// Implicitly treat nil targetRef as kind Mesh
+		verr.AddViolation("", "you need to set a targetRef")
+		return verr
+	}
+	if ref.Kind == "" {
+		verr.AddViolation("kind", "must be set")
 		return verr
 	}
 	if !contains(opts.SupportedKinds, ref.GetKindEnum()) {
 		verr.AddViolation("kind", "value is not supported")
 	} else {
-		switch ref.GetKindEnum() {
+		refKind := ref.GetKindEnum()
+		switch refKind {
 		case common_proto.TargetRef_Mesh:
-			if len(ref.Tags) != 0 {
-				verr.AddViolation("tags", fmt.Sprintf("could not be set with kind %v", common_proto.TargetRef_Mesh))
+			if ref.Name != "" {
+				verr.AddViolation("name", fmt.Sprintf("using name with kind %v is not yet supported", refKind))
 			}
-			if len(ref.Mesh) != 0 {
-				verr.AddViolation("mesh", fmt.Sprintf("could not be set with kind %v", common_proto.TargetRef_Mesh))
-			}
+			verr.Add(disallowedField("mesh", ref.Mesh, refKind))
+			verr.Add(disallowedField("tags", ref.Tags, refKind))
 		case common_proto.TargetRef_MeshSubset:
-			if len(ref.Mesh) != 0 {
-				verr.AddViolation("mesh", fmt.Sprintf("could not be set with kind %v", common_proto.TargetRef_MeshSubset))
-			}
-			if ref.Tags != nil && len(ref.Tags) == 0 {
-				verr.AddViolation("tags", "cannot be empty")
-			}
+			verr.Add(disallowedField("name", ref.Name, refKind))
+			verr.Add(disallowedField("mesh", ref.Mesh, refKind))
 		case common_proto.TargetRef_MeshService:
-			if len(ref.Tags) != 0 {
-				verr.AddViolation("tags", fmt.Sprintf("could not be set with kind %v", common_proto.TargetRef_MeshService))
-			}
-			if len(ref.Name) == 0 {
-				verr.AddViolation("name", "cannot be empty")
-			}
+			verr.Add(requiredField("name", ref.Name, refKind))
+			verr.Add(disallowedField("mesh", ref.Mesh, refKind))
+			verr.Add(disallowedField("tags", ref.Tags, refKind))
 		case common_proto.TargetRef_MeshServiceSubset:
-			if len(ref.Name) == 0 {
-				verr.AddViolation("name", "cannot be empty")
-			}
-			if ref.Tags != nil && len(ref.Tags) == 0 {
-				verr.AddViolation("tags", "cannot be empty")
-			}
+			verr.Add(requiredField("name", ref.Name, refKind))
+			verr.Add(disallowedField("mesh", ref.Mesh, refKind))
 		case common_proto.TargetRef_MeshGatewayRoute:
-			if len(ref.Name) == 0 {
-				verr.AddViolation("name", "cannot be empty")
-			}
-			if len(ref.Mesh) != 0 {
-				verr.AddViolation("mesh", fmt.Sprintf("could not be set with kind %v", common_proto.TargetRef_MeshGatewayRoute))
-			}
+			verr.Add(requiredField("name", ref.Name, refKind))
+			verr.Add(disallowedField("mesh", ref.Mesh, refKind))
 		case common_proto.TargetRef_MeshHTTPRoute:
-			if len(ref.Name) == 0 {
-				verr.AddViolation("name", "cannot be empty")
-			}
-			if len(ref.Mesh) != 0 {
-				verr.AddViolation("mesh", fmt.Sprintf("could not be set with kind %v", common_proto.TargetRef_MeshHTTPRoute))
-			}
+			verr.AddViolation("kind", fmt.Sprintf("%v is not yet supported", refKind))
 		}
 	}
 	return verr
@@ -76,6 +60,36 @@ func contains(array []common_proto.TargetRef_Kind, item common_proto.TargetRef_K
 		if it == item {
 			return true
 		}
+	}
+	return false
+}
+
+func disallowedField(name string, value interface{}, kind common_proto.TargetRef_Kind) validators.ValidationError {
+	res := validators.ValidationError{}
+	if isSet(value) {
+		res.Violations = append(res.Violations, validators.Violation{
+			Field: name, Message: fmt.Sprintf("cannot be set with kind %v", kind),
+		})
+	}
+	return res
+}
+
+func requiredField(name string, value interface{}, kind common_proto.TargetRef_Kind) validators.ValidationError {
+	res := validators.ValidationError{}
+	if !isSet(value) {
+		res.Violations = append(res.Violations, validators.Violation{
+			Field: name, Message: fmt.Sprintf("must be set with kind %v", kind),
+		})
+	}
+	return res
+}
+
+func isSet(value interface{}) bool {
+	if v, ok := value.(string); ok {
+		return v != ""
+	}
+	if v, ok := value.(map[string]string); ok {
+		return len(v) > 0
 	}
 	return false
 }

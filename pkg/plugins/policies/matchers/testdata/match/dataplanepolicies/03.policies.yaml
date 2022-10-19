@@ -13,6 +13,5 @@ spec:
   from:
     - targetRef:
         kind: Mesh
-        name: default
       default:
         action: ALLOW

@@ -4,7 +4,6 @@ name: mt-1
 spec:
   targetRef:
     kind: Mesh
-    name: mesh-1
   default:
     tags:
       - name: team
