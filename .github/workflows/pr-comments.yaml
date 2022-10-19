@@ -8,7 +8,7 @@ env:
 
 jobs:
   pr_comments:
-    if: github.event.issue.pull_request != '' && (contains(github.event.comment.body, '/format') || contains(github.event.comment.body, '/golden_files'))
+    if: github.event.issue.pull_request != '' && (contains(github.event.comment.body, '/format') || contains(github.event.comment.body, '/golden_files') || contains(github.event.comment.body, '@kumahq'))
     runs-on: ubuntu-latest
     steps:
       - name: Generate GitHub app token
@@ -57,11 +57,11 @@ jobs:
           make dev/tools
           git checkout go.mod go.sum # This is because of some weirdness in `make dev/tools`
       - name: format
-        if: contains(github.event.comment.body, '/format')   # check the comment if it contains the keywords
+        if: contains(github.event.comment.body, '/format') || contains(github.event.comment.body, '@kumahq format')
         run: |
           make format
       - name: run golden_files
-        if: contains(github.event.comment.body, '/golden_files')  # check the comment if it contains the keywords
+        if: contains(github.event.comment.body, '/golden_files') || contains(github.event.comment.body, '@kumahq golden files')
         run: |
           make test UPDATE_GOLDEN_FILES=true
       - name: commit and push fixes
