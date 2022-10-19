@@ -200,4 +200,4 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace sigs.k8s.io/gateway-api => github.com/kumahq/gateway-api v0.0.0-20220822185518-e8a3f0be778b
+replace sigs.k8s.io/gateway-api => github.com/kumahq/gateway-api v0.0.0-20221019125100-747a4fedfd7a
