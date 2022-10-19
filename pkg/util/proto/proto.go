@@ -130,7 +130,3 @@ func MustToStruct(message proto.Message) *structpb.Struct {
 	}
 	return str
 }
-
-func IsEmpty(message proto.Message) bool {
-	return proto.Size(message) == 0
-}

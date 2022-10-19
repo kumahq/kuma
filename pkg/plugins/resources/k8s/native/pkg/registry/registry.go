@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 )
 
@@ -37,7 +38,7 @@ type typeRegistry struct {
 }
 
 func (r *typeRegistry) RegisterObjectType(typ ResourceType, obj model.KubernetesObject) error {
-	name := string(typ.ProtoReflect().Descriptor().FullName())
+	name := core_model.FullName(typ)
 	if previous, ok := r.objectTypes[name]; ok {
 		return errors.Errorf("duplicate registration of KubernetesObject type under name %q: previous=%#v new=%#v", name, previous, obj)
 	}
@@ -46,7 +47,7 @@ func (r *typeRegistry) RegisterObjectType(typ ResourceType, obj model.Kubernetes
 }
 
 func (r *typeRegistry) RegisterObjectTypeIfAbsent(typ ResourceType, obj model.KubernetesObject) {
-	name := string(typ.ProtoReflect().Descriptor().FullName())
+	name := core_model.FullName(typ)
 	if _, exists := r.objectTypes[name]; exists {
 		return
 	}
@@ -54,7 +55,7 @@ func (r *typeRegistry) RegisterObjectTypeIfAbsent(typ ResourceType, obj model.Ku
 }
 
 func (r *typeRegistry) RegisterListType(typ ResourceType, obj model.KubernetesList) error {
-	name := string(typ.ProtoReflect().Descriptor().FullName())
+	name := core_model.FullName(typ)
 	if previous, ok := r.objectListTypes[name]; ok {
 		return errors.Errorf("duplicate registration of KubernetesList type under name %q: previous=%#v new=%#v", name, previous, obj)
 	}
@@ -63,7 +64,7 @@ func (r *typeRegistry) RegisterListType(typ ResourceType, obj model.KubernetesLi
 }
 
 func (r *typeRegistry) RegisterListTypeIfAbsent(typ ResourceType, obj model.KubernetesList) {
-	name := string(typ.ProtoReflect().Descriptor().FullName())
+	name := core_model.FullName(typ)
 	if _, exists := r.objectListTypes[name]; exists {
 		return
 	}
@@ -71,7 +72,7 @@ func (r *typeRegistry) RegisterListTypeIfAbsent(typ ResourceType, obj model.Kube
 }
 
 func (r *typeRegistry) NewObject(typ ResourceType) (model.KubernetesObject, error) {
-	name := string(typ.ProtoReflect().Descriptor().FullName())
+	name := core_model.FullName(typ)
 	if obj, ok := r.objectTypes[name]; ok {
 		return obj.DeepCopyObject().(model.KubernetesObject), nil
 	}
@@ -79,7 +80,7 @@ func (r *typeRegistry) NewObject(typ ResourceType) (model.KubernetesObject, erro
 }
 
 func (r *typeRegistry) NewList(typ ResourceType) (model.KubernetesList, error) {
-	name := string(typ.ProtoReflect().Descriptor().FullName())
+	name := core_model.FullName(typ)
 	if obj, ok := r.objectListTypes[name]; ok {
 		return obj.DeepCopyObject().(model.KubernetesList), nil
 	}

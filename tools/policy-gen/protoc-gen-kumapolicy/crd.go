@@ -24,9 +24,7 @@ package {{.PolicyVersion}}
 import (
 	"fmt"
 
-	"google.golang.org/protobuf/proto"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	policy "github.com/kumahq/kuma/pkg/plugins/policies/{{.Package}}/api/{{.PolicyVersion}}"
@@ -79,11 +77,11 @@ func (cb *{{.Name}}) SetMesh(mesh string) {
 	cb.ObjectMeta.Labels[metadata.KumaMeshLabel] = mesh
 }
 
-func (cb *{{.Name}}) GetSpec() (proto.Message, error) {
+func (cb *{{.Name}}) GetSpec() (core_model.ResourceSpec, error) {
 	return cb.Spec, nil
 }
 
-func (cb *{{.Name}}) SetSpec(spec proto.Message) {
+func (cb *{{.Name}}) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return

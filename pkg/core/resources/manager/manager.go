@@ -3,10 +3,10 @@ package manager
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/sethvargo/go-retry"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -152,7 +152,11 @@ func Upsert(ctx context.Context, manager ResourceManager, key model.ResourceKey,
 	backoff := retry.WithMaxRetries(uint64(opts.ConflictRetry.MaxTimes), retry.NewExponential(opts.ConflictRetry.BaseBackoff))
 	return retry.Do(ctx, backoff, func(ctx context.Context) error {
 		resource.SetMeta(nil)
-		proto.Reset(resource.GetSpec())
+		specType := reflect.TypeOf(resource.GetSpec()).Elem()
+		zeroSpec := reflect.New(specType).Interface().(model.ResourceSpec)
+		if err := resource.SetSpec(zeroSpec); err != nil {
+			return err
+		}
 		err := upsert(ctx)
 		if store.IsResourceConflict(err) {
 			return retry.RetryableError(err)

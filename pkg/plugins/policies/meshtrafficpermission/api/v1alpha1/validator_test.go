@@ -5,8 +5,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	meshtrafficpermissions_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("MeshTrafficPermission", func() {
@@ -17,7 +17,7 @@ var _ = Describe("MeshTrafficPermission", func() {
 				meshTrafficPermission := meshtrafficpermissions_proto.NewMeshTrafficPermissionResource()
 
 				// when
-				err := util_proto.FromYAML([]byte(mtpYAML), meshTrafficPermission.Spec)
+				err := core_model.FromYAML([]byte(mtpYAML), meshTrafficPermission.Spec)
 				Expect(err).ToNot(HaveOccurred())
 				// and
 				verr := meshTrafficPermission.Validate()
@@ -111,13 +111,13 @@ from:
 		DescribeTable("should validate all fields and return as much individual errors as possible",
 			func(given testCase) {
 				// setup
-				meshTrafficPermission := meshtrafficpermissions_proto.NewMeshTrafficPermissionResource()
+				mtp := meshtrafficpermissions_proto.NewMeshTrafficPermissionResource()
 
 				// when
-				err := util_proto.FromYAML([]byte(given.inputYaml), meshTrafficPermission.Spec)
+				err := core_model.FromYAML([]byte(given.inputYaml), mtp.Spec)
 				Expect(err).ToNot(HaveOccurred())
 				// and
-				verr := meshTrafficPermission.Validate()
+				verr := mtp.Validate()
 				actual, err := yaml.Marshal(verr)
 				Expect(err).ToNot(HaveOccurred())
 

@@ -5,10 +5,9 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/user"
@@ -24,11 +23,11 @@ type ResourceSyncer interface {
 	//
 	// Sync takes into account only 'Name' and 'Mesh' when it comes to upstream's Meta.
 	// 'Version', 'CreationTime' and 'ModificationTime' are managed by downstream store.
-	Sync(upstream model.ResourceList, fs ...SyncOptionFunc) error
+	Sync(upstream core_model.ResourceList, fs ...SyncOptionFunc) error
 }
 
 type SyncOption struct {
-	Predicate func(r model.Resource) bool
+	Predicate func(r core_model.Resource) bool
 	Zone      string
 }
 
@@ -48,7 +47,7 @@ func Zone(name string) SyncOptionFunc {
 	}
 }
 
-func PrefilterBy(predicate func(r model.Resource) bool) SyncOptionFunc {
+func PrefilterBy(predicate func(r core_model.Resource) bool) SyncOptionFunc {
 	return func(opts *SyncOption) {
 		opts.Predicate = predicate
 	}
@@ -66,7 +65,7 @@ func NewResourceSyncer(log logr.Logger, resourceStore store.ResourceStore) Resou
 	}
 }
 
-func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFunc) error {
+func (s *syncResourceStore) Sync(upstream core_model.ResourceList, fs ...SyncOptionFunc) error {
 	opts := NewSyncOptions(fs...)
 	ctx := user.Ctx(context.TODO(), user.ControlPlane)
 	log := s.log.WithValues("type", upstream.GetItemType())
@@ -97,23 +96,23 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 	indexedDownstream := newIndexed(downstream)
 
 	// 1. delete resources from store which are not represented in 'upstream'
-	onDelete := []model.Resource{}
+	onDelete := []core_model.Resource{}
 	for _, r := range downstream.GetItems() {
-		if indexedUpstream.get(model.MetaToResourceKey(r.GetMeta())) == nil {
+		if indexedUpstream.get(core_model.MetaToResourceKey(r.GetMeta())) == nil {
 			onDelete = append(onDelete, r)
 		}
 	}
 
 	// 2. create resources which are not represented in 'downstream' and update the rest of them
-	onCreate := []model.Resource{}
-	onUpdate := []model.Resource{}
+	onCreate := []core_model.Resource{}
+	onUpdate := []core_model.Resource{}
 	for _, r := range upstream.GetItems() {
-		existing := indexedDownstream.get(model.MetaToResourceKey(r.GetMeta()))
+		existing := indexedDownstream.get(core_model.MetaToResourceKey(r.GetMeta()))
 		if existing == nil {
 			onCreate = append(onCreate, r)
 			continue
 		}
-		if !proto.Equal(existing.GetSpec(), r.GetSpec()) {
+		if !core_model.Equal(existing.GetSpec(), r.GetSpec()) {
 			// we have to use meta of the current Store during update, because some Stores (Kubernetes, Memory)
 			// expect to receive ResourceMeta of own type.
 			r.SetMeta(existing.GetMeta())
@@ -122,7 +121,7 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 	}
 
 	for _, r := range onDelete {
-		rk := model.MetaToResourceKey(r.GetMeta())
+		rk := core_model.MetaToResourceKey(r.GetMeta())
 		log.Info("deleting a resource since it's no longer available in the upstream", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
 		if err := s.resourceStore.Delete(ctx, r, store.DeleteBy(rk)); err != nil {
 			return err
@@ -131,13 +130,13 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 
 	zone := system.NewZoneResource()
 	if opts.Zone != "" && len(onCreate) > 0 {
-		if err := s.resourceStore.Get(ctx, zone, store.GetByKey(opts.Zone, model.NoMesh)); err != nil {
+		if err := s.resourceStore.Get(ctx, zone, store.GetByKey(opts.Zone, core_model.NoMesh)); err != nil {
 			return err
 		}
 	}
 
 	for _, r := range onCreate {
-		rk := model.MetaToResourceKey(r.GetMeta())
+		rk := core_model.MetaToResourceKey(r.GetMeta())
 		log.Info("creating a new resource from upstream", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
 		creationTime := r.GetMeta().GetCreationTime()
 		// some Stores try to cast ResourceMeta to own Store type that's why we have to set meta to nil
@@ -169,7 +168,7 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 	return nil
 }
 
-func filter(rs model.ResourceList, predicate func(r model.Resource) bool) (model.ResourceList, error) {
+func filter(rs core_model.ResourceList, predicate func(r core_model.Resource) bool) (core_model.ResourceList, error) {
 	rv, err := registry.Global().NewList(rs.GetItemType())
 	if err != nil {
 		return nil, err
@@ -185,17 +184,17 @@ func filter(rs model.ResourceList, predicate func(r model.Resource) bool) (model
 }
 
 type indexed struct {
-	indexByResourceKey map[model.ResourceKey]model.Resource
+	indexByResourceKey map[core_model.ResourceKey]core_model.Resource
 }
 
-func (i *indexed) get(rk model.ResourceKey) model.Resource {
+func (i *indexed) get(rk core_model.ResourceKey) core_model.Resource {
 	return i.indexByResourceKey[rk]
 }
 
-func newIndexed(rs model.ResourceList) *indexed {
-	idxByRk := map[model.ResourceKey]model.Resource{}
+func newIndexed(rs core_model.ResourceList) *indexed {
+	idxByRk := map[core_model.ResourceKey]core_model.Resource{}
 	for _, r := range rs.GetItems() {
-		idxByRk[model.MetaToResourceKey(r.GetMeta())] = r
+		idxByRk[core_model.MetaToResourceKey(r.GetMeta())] = r
 	}
 	return &indexed{indexByResourceKey: idxByRk}
 }

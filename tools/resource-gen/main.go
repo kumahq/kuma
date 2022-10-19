@@ -30,11 +30,11 @@ package v1alpha1
 import (
 	"fmt"
 
-	"google.golang.org/protobuf/proto"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	{{ $pkg }} "github.com/kumahq/kuma/api/{{ .Package }}/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -104,7 +104,7 @@ func (cb *{{.ResourceType}}) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *{{.ResourceType}}) GetSpec() (proto.Message, error) {
+func (cb *{{.ResourceType}}) GetSpec() (core_model.ResourceSpec, error) {
 {{- if eq .ResourceType "DataplaneInsight" }}
 	spec := cb.Status
 {{- else}}
@@ -120,7 +120,7 @@ func (cb *{{.ResourceType}}) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *{{.ResourceType}}) SetSpec(spec proto.Message) {
+func (cb *{{.ResourceType}}) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 {{- if eq .ResourceType "DataplaneInsight" }}
 		cb.Status = nil
@@ -130,14 +130,15 @@ func (cb *{{.ResourceType}}) SetSpec(spec proto.Message) {
 		return
 	}
 
-	if _, ok := spec.(*{{$pkg}}.{{.ProtoType}}); !ok {
+	s, ok := spec.(*{{$pkg}}.{{.ProtoType}}); 
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
 {{ if eq .ResourceType "DataplaneInsight" }}
-	cb.Status = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Status = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 {{ else}}
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 {{- end}}
 }
 

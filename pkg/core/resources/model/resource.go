@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -57,6 +56,8 @@ const (
 func (kt KDSFlagType) Has(flag KDSFlagType) bool {
 	return kt&flag != 0
 }
+
+type ResourceSpec interface{}
 
 type Resource interface {
 	GetMeta() ResourceMeta
@@ -113,12 +114,16 @@ type ResourceTypeDescriptor struct {
 }
 
 func (d ResourceTypeDescriptor) NewObject() Resource {
-	newSpec := proto.Clone(d.Resource.GetSpec())
+	specType := reflect.TypeOf(d.Resource.GetSpec()).Elem()
+	newSpec := reflect.New(specType).Interface().(ResourceSpec)
+
 	resType := reflect.TypeOf(d.Resource).Elem()
 	resource := reflect.New(resType).Interface().(Resource)
+
 	if err := resource.SetSpec(newSpec); err != nil {
 		panic(errors.Wrap(err, "could not set spec on the new resource"))
 	}
+
 	return resource
 }
 
@@ -243,11 +248,6 @@ func MetaToResourceKey(meta ResourceMeta) ResourceKey {
 		Mesh: meta.GetMesh(),
 		Name: meta.GetName(),
 	}
-}
-
-type ResourceSpec interface {
-	// all resources must be defined via Protobuf
-	proto.Message
 }
 
 type ResourceList interface {

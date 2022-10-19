@@ -3,10 +3,12 @@ package unversioned
 import (
 	"encoding/json"
 
+	"google.golang.org/protobuf/proto"
+
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/pkg/util/proto"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 type Resource struct {
@@ -34,7 +36,7 @@ var _ json.Unmarshaler = &Resource{}
 func (r *Resource) MarshalJSON() ([]byte, error) {
 	var specBytes []byte
 	if r.Spec != nil {
-		bytes, err := proto.ToJSON(r.Spec)
+		bytes, err := util_proto.ToJSON(r.Spec.(proto.Message))
 		if err != nil {
 			return nil, err
 		}
@@ -65,7 +67,7 @@ func (r *Resource) UnmarshalJSON(data []byte) error {
 		}
 		r.Spec = newR.GetSpec()
 	}
-	if err := proto.FromJSON(data, r.Spec); err != nil {
+	if err := util_proto.FromJSON(data, r.Spec.(proto.Message)); err != nil {
 		return err
 	}
 	return nil

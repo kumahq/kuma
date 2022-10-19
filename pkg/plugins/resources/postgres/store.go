@@ -45,7 +45,7 @@ func NewStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig) (
 func (r *postgresResourceStore) Create(_ context.Context, resource core_model.Resource, fs ...store.CreateOptionsFunc) error {
 	opts := store.NewCreateOptions(fs...)
 
-	bytes, err := core_model.ToJSON(resource.Descriptor(), resource.GetSpec())
+	bytes, err := core_model.ToJSON(resource.GetSpec())
 	if err != nil {
 		return errors.Wrap(err, "failed to convert spec to json")
 	}
@@ -83,7 +83,7 @@ func (r *postgresResourceStore) Create(_ context.Context, resource core_model.Re
 }
 
 func (r *postgresResourceStore) Update(_ context.Context, resource core_model.Resource, fs ...store.UpdateOptionsFunc) error {
-	bytes, err := core_model.ToJSON(resource.Descriptor(), resource.GetSpec())
+	bytes, err := core_model.ToJSON(resource.GetSpec())
 	if err != nil {
 		return err
 	}
@@ -156,7 +156,7 @@ func (r *postgresResourceStore) Get(_ context.Context, resource core_model.Resou
 		return errors.Wrapf(err, "failed to execute query: %s", statement)
 	}
 
-	if err := core_model.FromJSON(resource.Descriptor(), []byte(spec), resource.GetSpec()); err != nil {
+	if err := core_model.FromJSON([]byte(spec), resource.GetSpec()); err != nil {
 		return errors.Wrap(err, "failed to convert json to spec")
 	}
 
@@ -220,7 +220,7 @@ func rowToItem(resources core_model.ResourceList, rows *sql.Rows) (core_model.Re
 	}
 
 	item := resources.NewItem()
-	if err := core_model.FromJSON(item.Descriptor(), []byte(spec), item.GetSpec()); err != nil {
+	if err := core_model.FromJSON([]byte(spec), item.GetSpec()); err != nil {
 		return nil, errors.Wrap(err, "failed to convert json to spec")
 	}
 

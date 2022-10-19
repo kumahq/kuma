@@ -13,10 +13,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_auth "github.com/kumahq/kuma/pkg/xds/auth"
 )
 
@@ -36,7 +35,7 @@ type DataplaneLifecycle struct {
 	authenticator xds_auth.Authenticator
 
 	sync.RWMutex         // protects createdDpByCallbacks
-	createdDpByCallbacks map[model.ResourceKey]mesh_proto.ProxyType
+	createdDpByCallbacks map[core_model.ResourceKey]mesh_proto.ProxyType
 	appCtx               context.Context
 	deregistrationDelay  time.Duration
 	cpInstanceID         string
@@ -54,22 +53,22 @@ func NewDataplaneLifecycle(
 	return &DataplaneLifecycle{
 		resManager:           resManager,
 		authenticator:        authenticator,
-		createdDpByCallbacks: map[model.ResourceKey]mesh_proto.ProxyType{},
+		createdDpByCallbacks: map[core_model.ResourceKey]mesh_proto.ProxyType{},
 		appCtx:               appCtx,
 		deregistrationDelay:  deregistrationDelay,
 		cpInstanceID:         cpInstanceID,
 	}
 }
 
-func (d *DataplaneLifecycle) OnProxyConnected(streamID core_xds.StreamID, dpKey model.ResourceKey, ctx context.Context, md core_xds.DataplaneMetadata) error {
+func (d *DataplaneLifecycle) OnProxyConnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, ctx context.Context, md core_xds.DataplaneMetadata) error {
 	return d.register(ctx, streamID, dpKey, md)
 }
 
-func (d *DataplaneLifecycle) OnProxyReconnected(streamID core_xds.StreamID, dpKey model.ResourceKey, ctx context.Context, md core_xds.DataplaneMetadata) error {
+func (d *DataplaneLifecycle) OnProxyReconnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, ctx context.Context, md core_xds.DataplaneMetadata) error {
 	return d.register(ctx, streamID, dpKey, md)
 }
 
-func (d *DataplaneLifecycle) register(ctx context.Context, streamID core_xds.StreamID, dpKey model.ResourceKey, md core_xds.DataplaneMetadata) error {
+func (d *DataplaneLifecycle) register(ctx context.Context, streamID core_xds.StreamID, dpKey core_model.ResourceKey, md core_xds.DataplaneMetadata) error {
 	switch {
 	case md.GetProxyType() == mesh_proto.DataplaneProxyType && md.GetDataplaneResource() != nil:
 		dp := md.GetDataplaneResource()
@@ -106,7 +105,7 @@ func (d *DataplaneLifecycle) register(ctx context.Context, streamID core_xds.Str
 	return nil
 }
 
-func (d *DataplaneLifecycle) OnProxyDisconnected(ctx context.Context, streamID core_xds.StreamID, dpKey model.ResourceKey) {
+func (d *DataplaneLifecycle) OnProxyDisconnected(ctx context.Context, streamID core_xds.StreamID, dpKey core_model.ResourceKey) {
 	// OnStreamClosed method could be called either in case data plane proxy is down or
 	// Kuma CP is gracefully shutting down. If Kuma CP is gracefully shutting down we
 	// must not delete Dataplane resource, data plane proxy will be reconnected to another
@@ -150,9 +149,9 @@ func (d *DataplaneLifecycle) OnProxyDisconnected(ctx context.Context, streamID c
 }
 
 func (d *DataplaneLifecycle) registerDataplane(ctx context.Context, dp *core_mesh.DataplaneResource) error {
-	key := model.MetaToResourceKey(dp.GetMeta())
+	key := core_model.MetaToResourceKey(dp.GetMeta())
 	existing := core_mesh.NewDataplaneResource()
-	return manager.Upsert(ctx, d.resManager, key, existing, func(resource model.Resource) error {
+	return manager.Upsert(ctx, d.resManager, key, existing, func(resource core_model.Resource) error {
 		if err := d.validateUpsert(ctx, existing); err != nil {
 			return errors.Wrap(err, "you are trying to override existing dataplane to which you don't have an access.")
 		}
@@ -169,8 +168,8 @@ func (d *DataplaneLifecycle) registerDataplane(ctx context.Context, dp *core_mes
 // What we do instead is that we use current data plane proxy credential to check if we can manage already registered Dataplane.
 // The assumption is that if you have a token that can manage the old Dataplane.
 // You can delete it and create a new one, so we can simplify this manual process by just replacing it.
-func (d *DataplaneLifecycle) validateUpsert(ctx context.Context, existing model.Resource) error {
-	if util_proto.IsEmpty(existing.GetSpec()) { // existing DP is empty, resource does not exist
+func (d *DataplaneLifecycle) validateUpsert(ctx context.Context, existing core_model.Resource) error {
+	if core_model.IsEmpty(existing.GetSpec()) { // existing DP is empty, resource does not exist
 		return nil
 	}
 	credential, err := xds_auth.ExtractCredential(ctx)
@@ -181,9 +180,9 @@ func (d *DataplaneLifecycle) validateUpsert(ctx context.Context, existing model.
 }
 
 func (d *DataplaneLifecycle) registerZoneIngress(ctx context.Context, zi *core_mesh.ZoneIngressResource) error {
-	key := model.MetaToResourceKey(zi.GetMeta())
+	key := core_model.MetaToResourceKey(zi.GetMeta())
 	existing := core_mesh.NewZoneIngressResource()
-	return manager.Upsert(ctx, d.resManager, key, existing, func(resource model.Resource) error {
+	return manager.Upsert(ctx, d.resManager, key, existing, func(resource core_model.Resource) error {
 		if err := d.validateUpsert(ctx, existing); err != nil {
 			return errors.Wrap(err, "you are trying to override existing zone ingress to which you don't have an access.")
 		}
@@ -192,9 +191,9 @@ func (d *DataplaneLifecycle) registerZoneIngress(ctx context.Context, zi *core_m
 }
 
 func (d *DataplaneLifecycle) registerZoneEgress(ctx context.Context, ze *core_mesh.ZoneEgressResource) error {
-	key := model.MetaToResourceKey(ze.GetMeta())
+	key := core_model.MetaToResourceKey(ze.GetMeta())
 	existing := core_mesh.NewZoneEgressResource()
-	return manager.Upsert(ctx, d.resManager, key, existing, func(resource model.Resource) error {
+	return manager.Upsert(ctx, d.resManager, key, existing, func(resource core_model.Resource) error {
 		if err := d.validateUpsert(ctx, existing); err != nil {
 			return errors.Wrap(err, "you are trying to override existing zone egress to which you don't have an access.")
 		}
@@ -204,9 +203,9 @@ func (d *DataplaneLifecycle) registerZoneEgress(ctx context.Context, ze *core_me
 
 func (d *DataplaneLifecycle) deregisterProxy(
 	ctx context.Context,
-	key model.ResourceKey,
-	obj model.Resource,
-	insight model.Resource,
+	key core_model.ResourceKey,
+	obj core_model.Resource,
+	insight core_model.Resource,
 	log logr.Logger,
 ) error {
 	log.Info("waiting for deregister proxy", "waitFor", d.deregistrationDelay)

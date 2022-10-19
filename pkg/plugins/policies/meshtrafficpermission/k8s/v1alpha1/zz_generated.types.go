@@ -7,7 +7,6 @@ package v1alpha1
 import (
 	"fmt"
 
-	"google.golang.org/protobuf/proto"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -59,11 +58,11 @@ func (cb *MeshTrafficPermission) SetMesh(mesh string) {
 	cb.ObjectMeta.Labels[metadata.KumaMeshLabel] = mesh
 }
 
-func (cb *MeshTrafficPermission) GetSpec() (proto.Message, error) {
+func (cb *MeshTrafficPermission) GetSpec() (core_model.ResourceSpec, error) {
 	return cb.Spec, nil
 }
 
-func (cb *MeshTrafficPermission) SetSpec(spec proto.Message) {
+func (cb *MeshTrafficPermission) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
