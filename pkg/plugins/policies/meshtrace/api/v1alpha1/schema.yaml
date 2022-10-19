@@ -49,6 +49,7 @@ properties:
                   type: string
               type: object
           type: object
+        nullable: true
         type: array
       sampling:
         description: Sampling configuration. Sampling is the process by which a decision is made on whether to process/export a span or not.
@@ -100,6 +101,7 @@ properties:
               description: Name of the tag.
               type: string
           type: object
+        nullable: true
         type: array
     type: object
   targetRef:

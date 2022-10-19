@@ -1,14 +1,17 @@
 package xds
 
 import (
+	"encoding/json"
+	"reflect"
 	"sort"
 
+	jsonpatch "github.com/evanphx/json-patch/v5"
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 // Tag is a key-value pair. If Not is true then Key != Value
@@ -101,13 +104,17 @@ func (rs Rules) Compute(sub Subset) proto.Message {
 // Filtering out of negative rules could be useful for XDS generators that don't have a way to configure negations.
 //
 // See the detailed algorithm description in docs/madr/decisions/007-mesh-traffic-permission.md
-func BuildRules(list []PolicyItem) Rules {
+func BuildRules(list []PolicyItem) (Rules, error) {
 	rules := Rules{}
 
 	// 1. Each targetRef should be represented as a list of tags
 	tagSet := map[Tag]bool{}
 	for _, item := range list {
-		for _, t := range asSubset(item.GetTargetRef()) {
+		ss, err := asSubset(item.GetTargetRef())
+		if err != nil {
+			return nil, err
+		}
+		for _, t := range ss {
 			tagSet[t] = true
 		}
 	}
@@ -131,23 +138,25 @@ func BuildRules(list []PolicyItem) Rules {
 			break
 		}
 		// 3. For each combination determine a configuration
-		var conf proto.Message
+		confs := []any{}
 		for i := 0; i < len(list); i++ {
 			item := list[i]
-			if asSubset(item.GetTargetRef()).IsSubset(ss) {
-				if conf == nil {
-					conf = proto.Clone(item.GetDefaultAsProto())
-				} else {
-					// todo(lobkovilya): util_proto.Merge appends lists,
-					// create a custom Merge func for list replacements
-					util_proto.Merge(conf, item.GetDefaultAsProto())
-				}
+			itemSubset, err := asSubset(item.GetTargetRef())
+			if err != nil {
+				return nil, err
+			}
+			if itemSubset.IsSubset(ss) {
+				confs = append(confs, item.GetDefaultAsProto())
 			}
 		}
-		if conf != nil {
+		merged, err := merge(confs)
+		if err != nil {
+			return nil, err
+		}
+		if merged != nil {
 			rules = append(rules, &Rule{
 				Subset: ss,
-				Conf:   conf,
+				Conf:   merged,
 			})
 		}
 	}
@@ -156,33 +165,73 @@ func BuildRules(list []PolicyItem) Rules {
 		return rules[i].Subset.NumPositive() > rules[j].Subset.NumPositive()
 	})
 
-	return rules
+	return rules, nil
 }
 
-func asSubset(tr *common_api.TargetRef) Subset {
+func merge(confs []any) (proto.Message, error) {
+	if len(confs) == 0 {
+		return nil, nil
+	}
+
+	resultBytes := []byte{}
+	for _, conf := range confs {
+		confBytes, err := json.Marshal(conf)
+		if err != nil {
+			return nil, err
+		}
+		if len(resultBytes) == 0 {
+			resultBytes = confBytes
+			continue
+		}
+		resultBytes, err = jsonpatch.MergePatch(resultBytes, confBytes)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	result, err := newConf(reflect.TypeOf(confs[0]))
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(resultBytes, result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func newConf(t reflect.Type) (proto.Message, error) {
+	if t.Kind() != reflect.Pointer {
+		return nil, errors.New("conf expected to have a pointer type")
+	}
+	return reflect.New(t.Elem()).Interface().(proto.Message), nil
+}
+
+func asSubset(tr *common_api.TargetRef) (Subset, error) {
 	if tr == nil {
 		// syntactic sugar, empty targetRef means targetRef{kind: Mesh}
-		return Subset{}
+		return Subset{}, nil
 	}
 	switch tr.GetKindEnum() {
 	case common_api.TargetRef_Mesh:
-		return Subset{}
+		return Subset{}, nil
 	case common_api.TargetRef_MeshSubset:
 		ss := Subset{}
 		for k, v := range tr.GetTags() {
 			ss = append(ss, Tag{Key: k, Value: v})
 		}
-		return ss
+		return ss, nil
 	case common_api.TargetRef_MeshService:
-		return Subset{{Key: mesh_proto.ServiceTag, Value: tr.GetName()}}
+		return Subset{{Key: mesh_proto.ServiceTag, Value: tr.GetName()}}, nil
 	case common_api.TargetRef_MeshServiceSubset:
 		ss := Subset{{Key: mesh_proto.ServiceTag, Value: tr.GetName()}}
 		for k, v := range tr.GetTags() {
 			ss = append(ss, Tag{Key: k, Value: v})
 		}
-		return ss
+		return ss, nil
 	default:
-		panic("unsupported type to represent as tags")
+		return nil, errors.Errorf("can't represent %s as tags", tr.GetKindEnum())
 	}
 }
 

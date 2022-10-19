@@ -84,7 +84,9 @@ type MeshTrafficPermission struct {
 	// defined inplace.
 	TargetRef *v1alpha1.TargetRef `protobuf:"bytes,1,opt,name=targetRef,proto3" json:"targetRef,omitempty"`
 	// From is a list of pairs – a group of clients and action applied for it
-	From []*MeshTrafficPermission_From `protobuf:"bytes,3,rep,name=from,proto3" json:"from,omitempty"`
+	// +optional
+	// +nullable
+	From []*MeshTrafficPermission_From `protobuf:"bytes,3,rep,name=from,proto3" json:"from"`
 }
 
 func (x *MeshTrafficPermission) Reset() {
