@@ -31,8 +31,8 @@ spec:
 }
 
 func PluginTest() {
-	mesh := "tracing"
-	obsDeployment := "obs-tracing"
+	mesh := "mesh-tracing"
+	obsDeployment := "mesh-obs-tracing"
 	var obsClient obs.Observability
 
 	BeforeAll(func() {
