@@ -2,7 +2,6 @@ package proto
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 
 	"github.com/ghodss/yaml"
@@ -65,34 +64,6 @@ func MustMarshalJSON(in proto.Message) []byte {
 func FromJSON(content []byte, out proto.Message) error {
 	unmarshaler := &jsonpb.Unmarshaler{AllowUnknownFields: true}
 	return unmarshaler.Unmarshal(bytes.NewReader(content), protov1.MessageV1(out))
-}
-
-func MustUnmarshalJSON(content []byte, out proto.Message) proto.Message {
-	if err := FromJSON(content, out); err != nil {
-		panic(fmt.Sprintf("failed to unmarshal %T: %s", out, err))
-	}
-
-	return out
-}
-
-func ToMap(pb proto.Message) (map[string]interface{}, error) {
-	content, err := ToJSON(pb)
-	if err != nil {
-		return nil, err
-	}
-	obj := make(map[string]interface{})
-	if err := json.Unmarshal(content, &obj); err != nil {
-		return nil, err
-	}
-	return obj, nil
-}
-
-func FromMap(in map[string]interface{}, out proto.Message) error {
-	content, err := json.Marshal(in)
-	if err != nil {
-		return err
-	}
-	return FromJSON(content, out)
 }
 
 // Converts loosely typed Struct to strongly typed Message
