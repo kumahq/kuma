@@ -35,6 +35,7 @@ func DefaultGlobalConfig() *GlobalConfig {
 			RefreshInterval:          1 * time.Second,
 			ZoneInsightFlushInterval: 10 * time.Second,
 			MaxMsgSize:               10 * 1024 * 1024,
+			TlsCipherSuites:          []string{},
 		},
 	}
 }

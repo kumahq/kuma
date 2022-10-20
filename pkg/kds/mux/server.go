@@ -1,6 +1,7 @@
 package mux
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 	"time"
@@ -12,6 +13,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config/multizone"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/kds/service"
@@ -85,13 +87,19 @@ func (s *server) Start(stop <-chan struct{}) error {
 		grpc.MaxSendMsgSize(int(s.config.MaxMsgSize)),
 	}
 	grpcOptions = append(grpcOptions, s.metrics.GRPCServerInterceptors()...)
-	useTLS := s.config.TlsCertFile != ""
-	if useTLS {
-		creds, err := credentials.NewServerTLSFromFile(s.config.TlsCertFile, s.config.TlsKeyFile)
+	if s.config.TlsCertFile != "" {
+		cert, err := tls.LoadX509KeyPair(s.config.TlsCertFile, s.config.TlsKeyFile)
 		if err != nil {
 			return errors.Wrap(err, "failed to load TLS certificate")
 		}
-		grpcOptions = append(grpcOptions, grpc.Creds(creds))
+		tlsCfg := &tls.Config{Certificates: []tls.Certificate{cert}}
+		if tlsCfg.MinVersion, err = config_types.TLSMinVersion(s.config.TlsMinVersion); err != nil {
+			return err
+		}
+		if tlsCfg.CipherSuites, err = config_types.TLSCiphers(s.config.TlsCipherSuites); err != nil {
+			return err
+		}
+		grpcOptions = append(grpcOptions, grpc.Creds(credentials.NewTLS(tlsCfg)))
 	}
 	grpcServer := grpc.NewServer(grpcOptions...)
 

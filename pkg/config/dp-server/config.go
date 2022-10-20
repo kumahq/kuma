@@ -4,8 +4,10 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 
 	"github.com/kumahq/kuma/pkg/config"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 )
 
 var _ config.Config = &DpServerConfig{}
@@ -18,6 +20,10 @@ type DpServerConfig struct {
 	TlsCertFile string `yaml:"tlsCertFile" envconfig:"kuma_dp_server_tls_cert_file"`
 	// TlsKeyFile defines a path to a file with PEM-encoded TLS key. If empty, autoconfigured from general.tlsKeyFile
 	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_dp_server_tls_key_file"`
+	// TlsMinVersion defines the minimum TLS version to be used
+	TlsMinVersion string `yaml:"tlsMinVersion" envconfig:"kuma_dp_server_tls_min_version"`
+	// TlsCipherSuites defines the list of ciphers to use
+	TlsCipherSuites []string `yaml:"tlsCipherSuites" envconfig:"kuma_dp_server_tls_cipher_suites"`
 	// Auth defines an authentication configuration for the DP Server
 	Auth DpServerAuthConfig `yaml:"auth"`
 	// Hds defines a Health Discovery Service configuration
@@ -51,14 +57,20 @@ func (a *DpServerAuthConfig) Validate() error {
 func (a *DpServerConfig) Sanitize() {
 }
 
-func (a *DpServerConfig) Validate() error {
+func (a *DpServerConfig) Validate() (errs error) {
 	if a.Port < 0 {
-		return errors.New("Port cannot be negative")
+		errs = multierr.Append(errs, errors.New(".Port cannot be negative"))
 	}
 	if err := a.Auth.Validate(); err != nil {
-		return errors.Wrap(err, "Auth is invalid")
+		errs = multierr.Append(errs, errors.Wrap(err, ".Auth is invalid"))
 	}
-	return nil
+	if _, err := config_types.TLSMinVersion(a.TlsMinVersion); err != nil {
+		errs = multierr.Append(errs, errors.New(".TlsMinVersion"+err.Error()))
+	}
+	if _, err := config_types.TLSCiphers(a.TlsCipherSuites); err != nil {
+		errs = multierr.Append(errs, errors.New(".TlsCipherSuites"+err.Error()))
+	}
+	return
 }
 
 func DefaultDpServerConfig() *DpServerConfig {
@@ -68,7 +80,8 @@ func DefaultDpServerConfig() *DpServerConfig {
 			Type:         "", // autoconfigured from the environment
 			UseTokenPath: false,
 		},
-		Hds: DefaultHdsConfig(),
+		Hds:             DefaultHdsConfig(),
+		TlsCipherSuites: []string{},
 	}
 }
 

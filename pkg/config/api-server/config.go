@@ -2,8 +2,10 @@ package api_server
 
 import (
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 
 	"github.com/kumahq/kuma/pkg/config"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 )
 
 var _ config.Config = &ApiServerConfig{}
@@ -56,19 +58,29 @@ type ApiServerHTTPSConfig struct {
 	TlsCertFile string `yaml:"tlsCertFile" envconfig:"kuma_api_server_https_tls_cert_file"`
 	// Path to TLS key file. Autoconfigured from KUMA_GENERAL_TLS_KEY_FILE if empty
 	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_api_server_https_tls_key_file"`
+	// TlsMinVersion defines the minimum TLS version to be used
+	TlsMinVersion string `yaml:"tlsMinVersion" envconfig:"kuma_api_server_https_tls_min_version"`
+	// TlsCipherSuites defines the list of ciphers to use
+	TlsCipherSuites []string `yaml:"tlsCipherSuites" envconfig:"kuma_api_server_https_tls_cipher_suites"`
 }
 
-func (a *ApiServerHTTPSConfig) Validate() error {
+func (a *ApiServerHTTPSConfig) Validate() (errs error) {
 	if a.Interface == "" {
-		return errors.New("Interface cannot be empty")
+		errs = multierr.Append(errs, errors.New(".Interface cannot be empty"))
 	}
 	if a.Port > 65535 {
 		return errors.New("Port must be in range [0, 65535]")
 	}
 	if (a.TlsKeyFile == "" && a.TlsCertFile != "") || (a.TlsKeyFile != "" && a.TlsCertFile == "") {
-		return errors.New("Both TlsCertFile and TlsKeyFile has to be specified")
+		errs = multierr.Append(errs, errors.New("Both TlsCertFile and TlsKeyFile has to be specified"))
 	}
-	return nil
+	if _, err := config_types.TLSMinVersion(a.TlsMinVersion); err != nil {
+		errs = multierr.Append(errs, errors.New(".TlsMinVersion"+err.Error()))
+	}
+	if _, err := config_types.TLSCiphers(a.TlsCipherSuites); err != nil {
+		errs = multierr.Append(errs, errors.New(".TlsCipherSuites"+err.Error()))
+	}
+	return
 }
 
 // API Server authentication configuration
@@ -115,11 +127,12 @@ func DefaultApiServerConfig() *ApiServerConfig {
 			Port:      5681,
 		},
 		HTTPS: ApiServerHTTPSConfig{
-			Enabled:     true,
-			Interface:   "0.0.0.0",
-			Port:        5682,
-			TlsCertFile: "", // autoconfigured
-			TlsKeyFile:  "", // autoconfigured
+			Enabled:         true,
+			Interface:       "0.0.0.0",
+			Port:            5682,
+			TlsCertFile:     "", // autoconfigured
+			TlsKeyFile:      "", // autoconfigured
+			TlsCipherSuites: []string{},
 		},
 		Auth: ApiServerAuth{
 			ClientCertsDir: "",

@@ -7,6 +7,7 @@ import (
 	"go.uber.org/multierr"
 
 	"github.com/kumahq/kuma/pkg/config"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 )
 
 type KdsServerConfig struct {
@@ -20,6 +21,10 @@ type KdsServerConfig struct {
 	TlsCertFile string `yaml:"tlsCertFile" envconfig:"kuma_multizone_global_kds_tls_cert_file"`
 	// TlsKeyFile defines a path to a file with PEM-encoded TLS key.
 	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_multizone_global_kds_tls_key_file"`
+	// TlsMinVersion defines the minimum TLS version to be used
+	TlsMinVersion string `yaml:"tlsMinVersion" envconfig:"kuma_multizone_global_kds_tls_min_version"`
+	// TlsCipherSuites defines the list of ciphers to use
+	TlsCipherSuites []string `yaml:"tlsCipherSuites" envconfig:"kuma_multizone_global_kds_tls_cipher_suites"`
 	// MaxMsgSize defines a maximum size of the message that is exchanged using KDS.
 	// In practice this means a limit on full list of one resource type.
 	MaxMsgSize uint32 `yaml:"maxMsgSize" envconfig:"kuma_multizone_global_kds_max_msg_size"`
@@ -35,16 +40,22 @@ func (c *KdsServerConfig) Validate() (errs error) {
 		errs = multierr.Append(errs, errors.Errorf(".GrpcPort must be in the range [0, 65535]"))
 	}
 	if c.RefreshInterval <= 0 {
-		return errors.New(".RefreshInterval must be positive")
+		errs = multierr.Append(errs, errors.New(".RefreshInterval must be positive"))
 	}
 	if c.ZoneInsightFlushInterval <= 0 {
-		return errors.New(".ZoneInsightFlushInterval must be positive")
+		errs = multierr.Append(errs, errors.New(".ZoneInsightFlushInterval must be positive"))
 	}
 	if c.TlsCertFile == "" && c.TlsKeyFile != "" {
-		return errors.New("TlsCertFile cannot be empty if TlsKeyFile has been set")
+		errs = multierr.Append(errs, errors.New(".TlsCertFile cannot be empty if TlsKeyFile has been set"))
 	}
 	if c.TlsKeyFile == "" && c.TlsCertFile != "" {
-		return errors.New("TlsKeyFile cannot be empty if TlsCertFile has been set")
+		errs = multierr.Append(errs, errors.New(".TlsKeyFile cannot be empty if TlsCertFile has been set"))
+	}
+	if _, err := config_types.TLSMinVersion(c.TlsMinVersion); err != nil {
+		errs = multierr.Append(errs, errors.New(".TlsMinVersion"+err.Error()))
+	}
+	if _, err := config_types.TLSCiphers(c.TlsCipherSuites); err != nil {
+		errs = multierr.Append(errs, errors.New(".TlsCipherSuites"+err.Error()))
 	}
 	return
 }
