@@ -1,0 +1,9 @@
+- Conf:
+    backends:
+    - datadog:
+        url: http://ingest.datadoghq.eu:8126
+    tags:
+    - literal: support
+      name: team
+  Origin: null
+  Subset: []

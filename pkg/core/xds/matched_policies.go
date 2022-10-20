@@ -35,6 +35,11 @@ type PolicyWithFromList interface {
 	GetFromList() []PolicyItem
 }
 
+type PolicyWithSingleItem interface {
+	Policy
+	GetPolicyItem() PolicyItem
+}
+
 type InboundListener struct {
 	Address string
 	Port    uint32
@@ -60,6 +65,10 @@ type ToRules struct {
 	Rules Rules
 }
 
+type SingleItemRules struct {
+	Rules Rules
+}
+
 // TypedMatchingPolicies all policies of this type matching
 type TypedMatchingPolicies struct {
 	Type              core_model.ResourceType
@@ -69,6 +78,7 @@ type TypedMatchingPolicies struct {
 	DataplanePolicies []core_model.Resource
 	FromRules         FromRules
 	ToRules           ToRules
+	SingleItemRules   SingleItemRules
 }
 
 type MatchedPolicies struct {

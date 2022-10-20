@@ -10,7 +10,7 @@
       "sources": [
         {
           "match": {
-            "service": "web1",
+            "kuma.io/service": "web1",
             "version": "1.0"
           }
         }
@@ -19,7 +19,7 @@
         {
           "match": {
             "env": "dev",
-            "service": "backend1"
+            "kuma.io/service": "backend1"
           }
         }
       ],
@@ -36,7 +36,7 @@
       "sources": [
         {
           "match": {
-            "service": "web2",
+            "kuma.io/service": "web2",
             "version": "1.0"
           }
         }
@@ -45,7 +45,7 @@
         {
           "match": {
             "env": "dev",
-            "service": "backend2"
+            "kuma.io/service": "backend2"
           }
         }
       ],

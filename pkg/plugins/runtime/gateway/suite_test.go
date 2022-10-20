@@ -30,7 +30,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns/vips"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/pkg/test"
 	test_runtime "github.com/kumahq/kuma/pkg/test/runtime"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -135,6 +135,7 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 		rt.Config().Multizone.Zone.Name,
 		vips.NewPersistence(rt.ReadOnlyResourceManager(), rt.ConfigManager()),
 		rt.Config().DNSServer.Domain,
+		rt.Config().DNSServer.ServiceVipPort,
 	)
 
 	meshCtx, err := meshCtxBuilder.Build(context.TODO(), key.Mesh)
@@ -221,7 +222,7 @@ func BuildRuntime() (runtime.Runtime, error) {
 
 	var plugin plugins.BootstrapPlugin
 	for _, p := range plugins.Plugins().BootstrapPlugins() {
-		if p.Name() == gateway.PluginName {
+		if p.Name() == metadata.PluginName {
 			plugin = p
 			break
 		}
@@ -342,5 +343,5 @@ var _ = BeforeSuite(func() {
 				out = append(out, p.Name())
 			}
 			return out
-		}, ContainElement(gateway.PluginName)))
+		}, ContainElement(metadata.PluginName)))
 })

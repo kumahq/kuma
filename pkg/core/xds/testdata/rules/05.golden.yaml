@@ -1,0 +1,6 @@
+- Conf:
+    backends:
+    - tcp:
+        address: logging:8080
+  Origin: null
+  Subset: []

@@ -114,21 +114,19 @@ func (v *PostgresContainer) Config(dbOpts ...DbOption) (*pg_config.PostgresStore
 	if err := config.Load("", cfg); err != nil {
 		return nil, err
 	}
+	var db *sql.DB
+	Eventually(func() error {
+		var dbErr error
+		db, dbErr = postgres.ConnectToDb(*cfg)
+		return dbErr
+	}, "10s", "100ms").Should(Succeed())
+	defer db.Close()
 	for _, o := range dbOpts {
 		switch o {
 		case WithRandomDb:
-			var db *sql.DB
-			Eventually(func() error {
-				var dbErr error
-				db, dbErr = postgres.ConnectToDb(*cfg)
-				return dbErr
-			}, "10s", "100ms").Should(Succeed())
 			dbName := fmt.Sprintf("kuma_%s", strings.ReplaceAll(core.NewUUID(), "-", ""))
 			statement := fmt.Sprintf("CREATE DATABASE %s", dbName)
 			if _, err = db.Exec(statement); err != nil {
-				return nil, err
-			}
-			if err = db.Close(); err != nil {
 				return nil, err
 			}
 			cfg.DbName = dbName

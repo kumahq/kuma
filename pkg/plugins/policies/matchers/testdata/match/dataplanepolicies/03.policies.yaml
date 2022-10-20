@@ -10,3 +10,9 @@ spec:
       version: v1
       env: dev
       team: mesh
+  from:
+    - targetRef:
+        kind: Mesh
+        name: default
+      default:
+        action: ALLOW

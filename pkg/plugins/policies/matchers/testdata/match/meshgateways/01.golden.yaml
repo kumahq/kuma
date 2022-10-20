@@ -1,0 +1,11 @@
+Rules:
+  127.0.0.1:8080:
+  - Conf:
+      action: DENY
+    Origin: null
+    Subset: []
+  127.0.0.1:8081:
+  - Conf:
+      action: ALLOW
+    Origin: null
+    Subset: []

@@ -3,6 +3,8 @@ package v1alpha1
 import (
 	"fmt"
 	"math"
+	net_url "net/url"
+	"strconv"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
@@ -66,9 +68,15 @@ func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 
 	sampling := conf.GetSampling()
 	if sampling != nil {
-		verr.AddErrorAt(validators.RootedAt("sampling").Field("client"), validateSampling(sampling.GetClient()))
-		verr.AddErrorAt(validators.RootedAt("sampling").Field("random"), validateSampling(sampling.GetRandom()))
-		verr.AddErrorAt(validators.RootedAt("sampling").Field("overall"), validateSampling(sampling.GetOverall()))
+		if sampling.GetClient() != nil {
+			verr.AddErrorAt(validators.RootedAt("sampling").Field("client"), validateSampling(sampling.GetClient().GetValue()))
+		}
+		if sampling.GetRandom() != nil {
+			verr.AddErrorAt(validators.RootedAt("sampling").Field("random"), validateSampling(sampling.GetRandom().GetValue()))
+		}
+		if sampling.GetOverall() != nil {
+			verr.AddErrorAt(validators.RootedAt("sampling").Field("overall"), validateSampling(sampling.GetOverall().GetValue()))
+		}
 	}
 
 	return verr
@@ -85,14 +93,43 @@ func validateBackend(conf *MeshTrace_Conf, backendsPath validators.PathBuilder) 
 	if backend.GetDatadog() != nil {
 		datadogBackend := backend.GetDatadog()
 		datadogPath := firstBackendPath.Field("datadog")
-		if datadogBackend.Address == "" {
-			verr.AddViolationAt(datadogPath.Field("address"), "must not be empty")
-		} else if !govalidator.IsURL(datadogBackend.Address) {
-			verr.AddViolationAt(datadogPath.Field("address"), "must be a valid address")
-		}
 
-		if datadogBackend.Port == 0 || datadogBackend.Port > math.MaxUint16 {
-			verr.AddViolationAt(datadogPath.Field("port"), fmt.Sprintf("must be a valid port (0-%d)", math.MaxUint16))
+		url, err := net_url.ParseRequestURI(datadogBackend.Url)
+		if err != nil {
+			verr.AddViolationAt(datadogPath.Field("url"), "must be a valid url")
+		} else {
+			// taken from https://github.com/DataDog/dd-trace-go/blob/acd5c8b03e186971808ddd0a42b89b4399068345/profiler/options.go#L312
+			if url.Scheme != "http" {
+				verr.AddViolationAt(datadogPath.Field("url"), "scheme must be http")
+			}
+			if url.Port() == "" {
+				verr.AddViolationAt(datadogPath.Field("url"), "port "+validators.MustBeDefined)
+			} else {
+				port, err := strconv.Atoi(url.Port())
+				if err != nil {
+					verr.AddViolationAt(datadogPath.Field("url"), "port must be a valid (1-65535)")
+				} else if port == 0 || port > math.MaxUint16 {
+					verr.AddViolationAt(datadogPath.Field("url"), "port must be a valid (1-65535)")
+				}
+			}
+
+			otherFieldsEmpty := map[string]bool{
+				"opaque":   url.Opaque == "",
+				"user":     url.User == nil,
+				"path":     url.Path == "",
+				"query":    url.RawQuery == "",
+				"fragment": url.Fragment == "",
+			}
+			var nonEmptyFields []string
+			for name, empty := range otherFieldsEmpty {
+				if !empty {
+					nonEmptyFields = append(nonEmptyFields, name)
+				}
+			}
+
+			for _, nonEmptyField := range nonEmptyFields {
+				verr.AddViolationAt(datadogPath.Field("url"), nonEmptyField+" "+validators.MustNotBeDefined)
+			}
 		}
 	}
 

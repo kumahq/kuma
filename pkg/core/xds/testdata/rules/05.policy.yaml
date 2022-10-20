@@ -1,0 +1,21 @@
+type: MeshAccessLog
+mesh: mesh-1
+name: mal-1
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        backends:
+          - file:
+              path: "/tmp/log/1"
+          - file:
+              path: "/tmp/log/2"
+    - targetRef:
+        kind: Mesh
+      default:
+        backends:
+          - tcp:
+              address: "logging:8080"

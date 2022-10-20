@@ -3,8 +3,10 @@ package samples
 import (
 	"time"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	meshtrafficpermissions_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -365,6 +367,21 @@ var (
 			Parameters: []*mesh_proto.VirtualOutbound_Conf_TemplateParameter{
 				{Name: "port"},
 				{Name: "service", TagKey: mesh_proto.ServiceTag},
+			},
+		},
+	}
+	MeshTrafficPermission = &meshtrafficpermissions_proto.MeshTrafficPermission{
+		TargetRef: &common_api.TargetRef{
+			Kind: "Mesh",
+		},
+		From: []*meshtrafficpermissions_proto.MeshTrafficPermission_From{
+			{
+				TargetRef: &common_api.TargetRef{
+					Kind: "Mesh",
+				},
+				Default: &meshtrafficpermissions_proto.MeshTrafficPermission_Conf{
+					Action: "ALLOW",
+				},
 			},
 		},
 	}

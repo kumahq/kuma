@@ -15,7 +15,6 @@ import (
 
 	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	sample_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/test/api/sample/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test"
 )
 
@@ -42,7 +41,7 @@ var _ = BeforeSuite(func() {
 
 	scheme, err = k8s.NewScheme()
 	Expect(err).ToNot(HaveOccurred())
-	Expect(sample_k8s.AddToScheme(scheme)).To(Succeed())
+	Expect(mesh_k8s.AddToScheme(scheme)).To(Succeed())
 
 	decoder, err = kube_admission.NewDecoder(scheme)
 	Expect(err).ToNot(HaveOccurred())

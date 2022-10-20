@@ -14,9 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/matchers"
-	sample_core "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -32,13 +30,21 @@ var _ = Describe("Unmarshal ResourceList", func() {
 					"type": "TrafficRoute",
 					"mesh": "default",
 					"name": "one",
-					"path": "/example"
+					"conf": {
+					  "destination": {
+						"path": "/example"
+					  }
+					}
 				 },
 				 {
 					"type": "TrafficRoute",
 					"mesh": "demo",
 					"name": "two",
-					"path": "/another"
+					"conf": {
+					  "destination": {
+						"path": "/another"
+					  }
+					}
 				 }
 				],
 				"next": "http://localhost:5681/meshes/default/traffic-routes?offset=1"
@@ -47,7 +53,7 @@ var _ = Describe("Unmarshal ResourceList", func() {
 			// when
 			rsr := &rest.ResourceListReceiver{
 				NewResource: func() core_model.Resource {
-					return sample_core.NewTrafficRouteResource()
+					return mesh.NewTrafficRouteResource()
 				},
 			}
 			err := json.Unmarshal([]byte(content), rsr)
@@ -64,16 +70,24 @@ var _ = Describe("Unmarshal ResourceList", func() {
 				Mesh: "default",
 				Name: "one",
 			}))
-			Expect(rs.Items[0].GetSpec()).To(matchers.MatchProto(&sample_proto.TrafficRoute{
-				Path: "/example",
+			Expect(rs.Items[0].GetSpec()).To(matchers.MatchProto(&mesh_proto.TrafficRoute{
+				Conf: &mesh_proto.TrafficRoute_Conf{
+					Destination: map[string]string{
+						"path": "/example",
+					},
+				},
 			}))
 			Expect(rs.Items[1].GetMeta()).To(Equal(v1alpha1.ResourceMeta{
 				Type: "TrafficRoute",
 				Mesh: "demo",
 				Name: "two",
 			}))
-			Expect(rs.Items[1].GetSpec()).To(matchers.MatchProto(&sample_proto.TrafficRoute{
-				Path: "/another",
+			Expect(rs.Items[1].GetSpec()).To(matchers.MatchProto(&mesh_proto.TrafficRoute{
+				Conf: &mesh_proto.TrafficRoute_Conf{
+					Destination: map[string]string{
+						"path": "/another",
+					},
+				},
 			}))
 			Expect(*rs.Next).To(Equal("http://localhost:5681/meshes/default/traffic-routes?offset=1"))
 		})

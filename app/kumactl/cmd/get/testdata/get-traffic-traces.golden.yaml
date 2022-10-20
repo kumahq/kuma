@@ -7,7 +7,7 @@ items:
   name: web1
   selectors:
   - match:
-      service: web1
+      kuma.io/service: web1
       version: "1.0"
   type: TrafficTrace
 - conf:
@@ -18,7 +18,7 @@ items:
   name: web2
   selectors:
   - match:
-      service: web2
+      kuma.io/service: web2
       version: "1.0"
   type: TrafficTrace
 next: null

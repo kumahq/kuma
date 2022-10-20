@@ -19,10 +19,25 @@ var ResourceTemplate = template.Must(template.New("resource").Parse(`
 package {{.PolicyVersion}}
 
 import (
+	_ "embed"
 	"fmt"
 
+	"github.com/ghodss/yaml"
+	"k8s.io/kube-openapi/pkg/validation/spec"
+
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/plugins/policies/validation"
 )
+
+//_DELETE_GO_EMBED_WORKAROUND_go:embed schema.yaml
+var rawSchema []byte
+var schema = &spec.Schema{}
+
+func init() {
+	if err := yaml.Unmarshal(rawSchema, schema); err != nil {
+		panic(err)
+	}
+}
 
 {{range .Resources}}
 const (
@@ -73,6 +88,10 @@ func (t *{{.Name}}Resource) Descriptor() model.ResourceTypeDescriptor {
 }
 
 func (t *{{.Name}}Resource) Validate() error {
+	if err := validation.ValidateSchema(t.GetSpec(), schema); err != nil {
+		return err
+	}
+
 	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
 		return nil
 	} else {

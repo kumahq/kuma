@@ -39,6 +39,7 @@ func RemoveQueryParameters(_ url.Values) string {
 
 func AddPrometheusFormat(queryParameters url.Values) string {
 	queryParameters.Add("format", "prometheus")
+	queryParameters.Add("text_readouts", "")
 	return queryParameters.Encode()
 }
 

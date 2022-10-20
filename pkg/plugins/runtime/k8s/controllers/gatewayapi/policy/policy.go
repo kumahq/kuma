@@ -14,7 +14,7 @@ import (
 
 type PolicyReference struct {
 	from        gatewayapi_alpha.ReferenceGrantFrom
-	toNamespace gatewayapi_alpha.Namespace
+	toNamespace gatewayapi.Namespace
 	// always set when created via the exported functions
 	to gatewayapi_alpha.ReferenceGrantTo
 }
@@ -29,32 +29,31 @@ func (pr *PolicyReference) GroupKindReferredTo() kube_schema.GroupKind {
 
 func FromGatewayIn(namespace string) gatewayapi_alpha.ReferenceGrantFrom {
 	return gatewayapi_alpha.ReferenceGrantFrom{
-		Kind:      gatewayapi_alpha.Kind("Gateway"),
-		Group:     gatewayapi_alpha.Group(gatewayapi.GroupName),
-		Namespace: gatewayapi_alpha.Namespace(namespace),
+		Kind:      "Gateway",
+		Group:     gatewayapi.GroupName,
+		Namespace: gatewayapi.Namespace(namespace),
 	}
 }
 
 func FromHTTPRouteIn(namespace string) gatewayapi_alpha.ReferenceGrantFrom {
 	return gatewayapi_alpha.ReferenceGrantFrom{
-		Kind:      gatewayapi_alpha.Kind("HTTPRoute"),
-		Group:     gatewayapi_alpha.Group(gatewayapi.GroupName),
-		Namespace: gatewayapi_alpha.Namespace(namespace),
+		Kind:      "HTTPRoute",
+		Group:     gatewayapi.GroupName,
+		Namespace: gatewayapi.Namespace(namespace),
 	}
 }
 
 func PolicyReferenceBackend(from gatewayapi_alpha.ReferenceGrantFrom, to gatewayapi.BackendObjectReference) PolicyReference {
 	ns := from.Namespace
 	if to.Namespace != nil {
-		ns = gatewayapi_alpha.Namespace(*to.Namespace)
+		ns = *to.Namespace
 	}
-	name := gatewayapi_alpha.ObjectName(to.Name)
 	return PolicyReference{
 		from: from,
 		to: gatewayapi_alpha.ReferenceGrantTo{
-			Kind:  gatewayapi_alpha.Kind(*to.Kind),
-			Group: gatewayapi_alpha.Group(*to.Group),
-			Name:  &name,
+			Kind:  *to.Kind,
+			Group: *to.Group,
+			Name:  &to.Name,
 		},
 		toNamespace: ns,
 	}
@@ -63,15 +62,14 @@ func PolicyReferenceBackend(from gatewayapi_alpha.ReferenceGrantFrom, to gateway
 func PolicyReferenceSecret(from gatewayapi_alpha.ReferenceGrantFrom, to gatewayapi.SecretObjectReference) PolicyReference {
 	ns := from.Namespace
 	if to.Namespace != nil {
-		ns = gatewayapi_alpha.Namespace(*to.Namespace)
+		ns = *to.Namespace
 	}
-	name := gatewayapi_alpha.ObjectName(to.Name)
 	return PolicyReference{
 		from: from,
 		to: gatewayapi_alpha.ReferenceGrantTo{
-			Kind:  gatewayapi_alpha.Kind(*to.Kind),
-			Group: gatewayapi_alpha.Group(*to.Group),
-			Name:  &name,
+			Kind:  *to.Kind,
+			Group: *to.Group,
+			Name:  &to.Name,
 		},
 		toNamespace: ns,
 	}

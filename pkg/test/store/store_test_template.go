@@ -9,11 +9,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
-	sample_model "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 )
 
 func ExecuteStoreTests(
@@ -32,7 +32,7 @@ func ExecuteStoreTests(
 	})
 
 	BeforeEach(func() {
-		list := sample_model.TrafficRouteResourceList{}
+		list := core_mesh.TrafficRouteResourceList{}
 		err := s.List(context.Background(), &list)
 		Expect(err).ToNot(HaveOccurred())
 		for _, item := range list.Items {
@@ -41,10 +41,14 @@ func ExecuteStoreTests(
 		}
 	})
 
-	createResource := func(name string) *sample_model.TrafficRouteResource {
-		res := sample_model.TrafficRouteResource{
-			Spec: &sample_proto.TrafficRoute{
-				Path: "demo",
+	createResource := func(name string) *core_mesh.TrafficRouteResource {
+		res := core_mesh.TrafficRouteResource{
+			Spec: &v1alpha1.TrafficRoute{
+				Conf: &v1alpha1.TrafficRoute_Conf{
+					Destination: map[string]string{
+						"path": "demo",
+					},
+				},
 			},
 		}
 		err := s.Create(context.Background(), &res, store.CreateByKey(name, mesh), store.CreatedAt(time.Now()))
@@ -61,7 +65,7 @@ func ExecuteStoreTests(
 			created := createResource(name)
 
 			// when retrieve created object
-			resource := sample_model.NewTrafficRouteResource()
+			resource := core_mesh.NewTrafficRouteResource()
 			err := s.Get(context.Background(), resource, store.GetByKey(name, mesh))
 
 			// then
@@ -121,7 +125,7 @@ func ExecuteStoreTests(
 			versionBeforeUpdate := resource.Meta.GetVersion()
 
 			// when
-			resource.Spec.Path = "new-path"
+			resource.Spec.Conf.Destination["path"] = "new-path"
 			err := s.Update(context.Background(), resource, store.ModifiedAt(modificationTime))
 
 			// then
@@ -134,14 +138,14 @@ func ExecuteStoreTests(
 			}
 
 			// when retrieve the resource
-			res := sample_model.NewTrafficRouteResource()
+			res := core_mesh.NewTrafficRouteResource()
 			err = s.Get(context.Background(), res, store.GetByKey(name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// and
-			Expect(res.Spec.Path).To(Equal("new-path"))
+			Expect(res.Spec.Conf.Destination["path"]).To(Equal("new-path"))
 
 			// and modification time is updated
 			// on K8S modification time is always the creation time, because there is no data for modification time
@@ -160,7 +164,7 @@ func ExecuteStoreTests(
 		It("should throw an error if resource is not found", func() {
 			// given
 			name := "non-existent-name.demo"
-			resource := sample_model.NewTrafficRouteResource()
+			resource := core_mesh.NewTrafficRouteResource()
 
 			// when
 			err := s.Delete(context.TODO(), resource, store.DeleteByKey(name, mesh))
@@ -184,7 +188,7 @@ func ExecuteStoreTests(
 			Expect(store.IsResourceNotFound(err)).To(BeTrue())
 
 			// and when getting the given resource
-			getResource := sample_model.NewTrafficRouteResource()
+			getResource := core_mesh.NewTrafficRouteResource()
 			err = s.Get(context.Background(), getResource, store.GetByKey(name, mesh))
 
 			// then resource still exists
@@ -197,14 +201,14 @@ func ExecuteStoreTests(
 			createResource(name)
 
 			// when
-			resource := sample_model.NewTrafficRouteResource()
+			resource := core_mesh.NewTrafficRouteResource()
 			err := s.Delete(context.TODO(), resource, store.DeleteByKey(name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// when query for deleted resource
-			resource = sample_model.NewTrafficRouteResource()
+			resource = core_mesh.NewTrafficRouteResource()
 			err = s.Get(context.Background(), resource, store.GetByKey(name, mesh))
 
 			// then resource cannot be found
@@ -216,7 +220,7 @@ func ExecuteStoreTests(
 		It("should return an error if resource is not found", func() {
 			// given
 			name := "non-existing-resource.demo"
-			resource := sample_model.NewTrafficRouteResource()
+			resource := core_mesh.NewTrafficRouteResource()
 
 			// when
 			err := s.Get(context.Background(), resource, store.GetByKey(name, mesh))
@@ -232,7 +236,7 @@ func ExecuteStoreTests(
 			createResource(name)
 
 			// when
-			resource := sample_model.NewTrafficRouteResource()
+			resource := core_mesh.NewTrafficRouteResource()
 			err := s.Get(context.Background(), resource, store.GetByKey(name, mesh))
 
 			// then
@@ -245,7 +249,7 @@ func ExecuteStoreTests(
 			createdResource := createResource(name)
 
 			// when
-			res := sample_model.NewTrafficRouteResource()
+			res := core_mesh.NewTrafficRouteResource()
 			err := s.Get(context.Background(), res, store.GetByKey(name, mesh))
 
 			// then
@@ -263,13 +267,13 @@ func ExecuteStoreTests(
 			res := createResource(name)
 
 			// when trying to retrieve resource with proper version
-			err := s.Get(context.Background(), sample_model.NewTrafficRouteResource(), store.GetByKey(name, mesh), store.GetByVersion(res.GetMeta().GetVersion()))
+			err := s.Get(context.Background(), core_mesh.NewTrafficRouteResource(), store.GetByKey(name, mesh), store.GetByVersion(res.GetMeta().GetVersion()))
 
 			// then resource is found
 			Expect(err).ToNot(HaveOccurred())
 
 			// when trying to retrieve resource with different version
-			err = s.Get(context.Background(), sample_model.NewTrafficRouteResource(), store.GetByKey(name, mesh), store.GetByVersion("9999999"))
+			err = s.Get(context.Background(), core_mesh.NewTrafficRouteResource(), store.GetByKey(name, mesh), store.GetByVersion("9999999"))
 
 			// then resource precondition failed error occurred
 			Expect(store.IsResourcePreconditionFailed(err)).To(BeTrue())
@@ -279,7 +283,7 @@ func ExecuteStoreTests(
 	Describe("List()", func() {
 		It("should return an empty list if there are no matching resources", func() {
 			// given
-			list := sample_model.TrafficRouteResourceList{}
+			list := core_mesh.TrafficRouteResourceList{}
 
 			// when
 			err := s.List(context.Background(), &list, store.ListByMesh(mesh))
@@ -297,7 +301,7 @@ func ExecuteStoreTests(
 			createResource("res-1.demo")
 			createResource("res-2.demo")
 
-			list := sample_model.TrafficRouteResourceList{}
+			list := core_mesh.TrafficRouteResourceList{}
 
 			// when
 			err := s.List(context.Background(), &list)
@@ -312,9 +316,9 @@ func ExecuteStoreTests(
 			names := []string{list.Items[0].Meta.GetName(), list.Items[1].Meta.GetName()}
 			Expect(names).To(ConsistOf("res-1.demo", "res-2.demo"))
 			Expect(list.Items[0].Meta.GetMesh()).To(Equal(mesh))
-			Expect(list.Items[0].Spec.Path).To(Equal("demo"))
+			Expect(list.Items[0].Spec.Conf.Destination["path"]).To(Equal("demo"))
 			Expect(list.Items[1].Meta.GetMesh()).To(Equal(mesh))
-			Expect(list.Items[1].Spec.Path).To(Equal("demo"))
+			Expect(list.Items[1].Spec.Conf.Destination["path"]).To(Equal("demo"))
 		})
 
 		It("should not return a list of resources in different mesh", func() {
@@ -322,7 +326,7 @@ func ExecuteStoreTests(
 			createResource("list-res-1.demo")
 			createResource("list-res-2.demo")
 
-			list := sample_model.TrafficRouteResourceList{}
+			list := core_mesh.TrafficRouteResourceList{}
 
 			// when
 			err := s.List(context.Background(), &list, store.ListByMesh("different-mesh"))
@@ -350,7 +354,7 @@ func ExecuteStoreTests(
 
 				// when list first two pages with 2 elements
 				for i := 1; i <= 2; i++ {
-					list := sample_model.TrafficRouteResourceList{}
+					list := core_mesh.TrafficRouteResourceList{}
 					err := s.List(context.Background(), &list, store.ListByMesh(mesh), store.ListByPage(pageSize, offset))
 
 					Expect(err).ToNot(HaveOccurred())
@@ -363,7 +367,7 @@ func ExecuteStoreTests(
 				}
 
 				// when list third page with 1 element (less than page size)
-				list := sample_model.TrafficRouteResourceList{}
+				list := core_mesh.TrafficRouteResourceList{}
 				err := s.List(context.Background(), &list, store.ListByMesh(mesh), store.ListByPage(pageSize, offset))
 
 				// then
@@ -385,7 +389,7 @@ func ExecuteStoreTests(
 				createResource("res-1.demo")
 
 				// when
-				list := sample_model.TrafficRouteResourceList{}
+				list := core_mesh.TrafficRouteResourceList{}
 				err := s.List(context.Background(), &list, store.ListByMesh(mesh), store.ListByPage(5, ""))
 
 				// then
@@ -400,7 +404,7 @@ func ExecuteStoreTests(
 				createResource("res-1.demo")
 
 				// when
-				list := sample_model.TrafficRouteResourceList{}
+				list := core_mesh.TrafficRouteResourceList{}
 				err := s.List(context.Background(), &list, store.ListByMesh(mesh), store.ListByPage(1, ""))
 
 				// then
@@ -412,7 +416,7 @@ func ExecuteStoreTests(
 
 			It("next offset should be null when queried empty collection", func() {
 				// when
-				list := sample_model.TrafficRouteResourceList{}
+				list := core_mesh.TrafficRouteResourceList{}
 				err := s.List(context.Background(), &list, store.ListByMesh("unknown-mesh"), store.ListByPage(2, ""))
 
 				// then
@@ -424,7 +428,7 @@ func ExecuteStoreTests(
 
 			It("next offset should return error when query with invalid offset", func() {
 				// when
-				list := sample_model.TrafficRouteResourceList{}
+				list := core_mesh.TrafficRouteResourceList{}
 				err := s.List(context.Background(), &list, store.ListByMesh("unknown-mesh"), store.ListByPage(2, "123invalidOffset"))
 
 				// then

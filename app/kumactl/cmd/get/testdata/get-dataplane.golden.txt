@@ -1,2 +1,2 @@
-MESH      NAME          TAGS                                ADDRESS     AGE
-default   dataplane-1   service=metrics,mobile version=v1   127.0.0.1   292y
+MESH      NAME          TAGS                                        ADDRESS     AGE
+default   dataplane-1   kuma.io/service=metrics,mobile version=v1   127.0.0.1   292y

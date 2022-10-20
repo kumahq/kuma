@@ -11,11 +11,18 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 // MatchedPolicies match policies using the standard matchers using targetRef (madr-005)
 func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneResource, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
 	policies := resources.ListOrEmpty(rType)
+
+	var gateway *core_mesh.MeshGatewayResource
+	if dpp.Spec.IsBuiltinGateway() {
+		gateways := resources.Gateways()
+		gateway = xds_topology.SelectGateway(gateways.Items, dpp.Spec.Matches)
+	}
 
 	matchedPoliciesByInbound := map[core_xds.InboundListener][]core_model.Resource{}
 	dpPolicies := []core_model.Resource{}
@@ -27,7 +34,7 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 		}
 
 		targetRef := spec.GetTargetRef()
-		selectedInbounds := inboundsSelectedByTargetRef(targetRef, dpp)
+		selectedInbounds := inboundsSelectedByTargetRef(targetRef, dpp, gateway)
 		if len(selectedInbounds) == 0 {
 			// DPP is not matched by the policy
 			continue
@@ -46,70 +53,94 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 		sort.Sort(ByTargetRef(ps))
 	}
 
+	fr, err := fromRules(matchedPoliciesByInbound)
+	if err != nil {
+		return core_xds.TypedMatchingPolicies{}, err
+	}
+
+	tr, err := toRules(dpPolicies)
+	if err != nil {
+		return core_xds.TypedMatchingPolicies{}, err
+	}
+
+	sr, err := singleItemRules(dpPolicies)
+	if err != nil {
+		return core_xds.TypedMatchingPolicies{}, err
+	}
+
 	return core_xds.TypedMatchingPolicies{
 		Type:              rType,
 		DataplanePolicies: dpPolicies,
 		FromRules: core_xds.FromRules{
-			Rules: fromRules(matchedPoliciesByInbound),
+			Rules: fr,
 		},
 		ToRules: core_xds.ToRules{
-			Rules: toRules(dpPolicies),
+			Rules: tr,
+		},
+		SingleItemRules: core_xds.SingleItemRules{
+			Rules: sr,
 		},
 	}, nil
 }
 
 func fromRules(
 	matchedPoliciesByInbound map[core_xds.InboundListener][]core_model.Resource,
-) map[core_xds.InboundListener]core_xds.Rules {
-	rules := map[core_xds.InboundListener]core_xds.Rules{}
+) (map[core_xds.InboundListener]core_xds.Rules, error) {
+	rulesByInbound := map[core_xds.InboundListener]core_xds.Rules{}
 	for inbound, policies := range matchedPoliciesByInbound {
 		fromList := []core_xds.PolicyItem{}
 		for _, p := range policies {
 			policyWithFrom, ok := p.GetSpec().(core_xds.PolicyWithFromList)
 			if !ok {
-				// policy doesn't support 'from' list
-				return nil
+				return nil, nil
 			}
 			fromList = append(fromList, policyWithFrom.GetFromList()...)
 		}
-		rules[inbound] = core_xds.BuildRules(fromList)
+		rules, err := core_xds.BuildRules(fromList)
+		if err != nil {
+			return nil, err
+		}
+		rulesByInbound[inbound] = rules
 	}
-	return rules
+	return rulesByInbound, nil
 }
 
-func toRules(matchedPolicies []core_model.Resource) core_xds.Rules {
+func toRules(matchedPolicies []core_model.Resource) (core_xds.Rules, error) {
 	toList := []core_xds.PolicyItem{}
 	for _, mp := range matchedPolicies {
 		policyWithTo, ok := mp.GetSpec().(core_xds.PolicyWithToList)
 		if !ok {
-			// policy doesn't support 'to' list
-			return nil
+			return nil, nil
 		}
 		toList = append(toList, policyWithTo.GetToList()...)
 	}
 	return core_xds.BuildRules(toList)
 }
 
+func singleItemRules(matchedPolicies []core_model.Resource) (core_xds.Rules, error) {
+	item := []core_xds.PolicyItem{}
+	for _, mp := range matchedPolicies {
+		policyWithSingleItem, ok := mp.GetSpec().(core_xds.PolicyWithSingleItem)
+		if !ok {
+			// policy doesn't support single item
+			return nil, nil
+		}
+		item = append(item, policyWithSingleItem.GetPolicyItem())
+	}
+	return core_xds.BuildRules(item)
+}
+
 // inboundsSelectedByTargetRef returns a list of inbounds of DPP that are selected by the targetRef
-func inboundsSelectedByTargetRef(tr *common_proto.TargetRef, dpp *core_mesh.DataplaneResource) []core_xds.InboundListener {
+func inboundsSelectedByTargetRef(tr *common_proto.TargetRef, dpp *core_mesh.DataplaneResource, gateway *core_mesh.MeshGatewayResource) []core_xds.InboundListener {
 	switch tr.GetKindEnum() {
 	case common_proto.TargetRef_Mesh:
-		// return all inbounds interfaces of the DPP
-		result := []core_xds.InboundListener{}
-		for _, inbound := range dpp.Spec.GetNetworking().GetInbound() {
-			intf := dpp.Spec.GetNetworking().ToInboundInterface(inbound)
-			result = append(result, core_xds.InboundListener{
-				Address: intf.DataplaneIP,
-				Port:    intf.DataplanePort,
-			})
-		}
-		return result
+		return inboundsSelectedByTags(nil, dpp, gateway)
 	case common_proto.TargetRef_MeshSubset:
-		return inboundsSelectedByTags(tr.GetTags(), dpp)
+		return inboundsSelectedByTags(tr.GetTags(), dpp, gateway)
 	case common_proto.TargetRef_MeshService:
 		return inboundsSelectedByTags(map[string]string{
 			mesh_proto.ServiceTag: tr.GetName(),
-		}, dpp)
+		}, dpp, gateway)
 	case common_proto.TargetRef_MeshServiceSubset:
 		tags := map[string]string{
 			mesh_proto.ServiceTag: tr.GetName(),
@@ -117,16 +148,16 @@ func inboundsSelectedByTargetRef(tr *common_proto.TargetRef, dpp *core_mesh.Data
 		for k, v := range tr.GetTags() {
 			tags[k] = v
 		}
-		return inboundsSelectedByTags(tags, dpp)
+		return inboundsSelectedByTags(tags, dpp, gateway)
 	default:
 		return []core_xds.InboundListener{}
 	}
 }
 
-func inboundsSelectedByTags(tags map[string]string, dpp *core_mesh.DataplaneResource) []core_xds.InboundListener {
+func inboundsSelectedByTags(tags map[string]string, dpp *core_mesh.DataplaneResource, gateway *core_mesh.MeshGatewayResource) []core_xds.InboundListener {
 	result := []core_xds.InboundListener{}
 	for _, inbound := range dpp.Spec.GetNetworking().GetInbound() {
-		if isInboundSelectedByTags(tags, inbound) {
+		if mesh_proto.TagSelector(tags).Matches(inbound.Tags) {
 			intf := dpp.Spec.GetNetworking().ToInboundInterface(inbound)
 			result = append(result, core_xds.InboundListener{
 				Address: intf.DataplaneIP,
@@ -134,16 +165,22 @@ func inboundsSelectedByTags(tags map[string]string, dpp *core_mesh.DataplaneReso
 			})
 		}
 	}
-	return result
-}
-
-func isInboundSelectedByTags(tags map[string]string, inbound *mesh_proto.Dataplane_Networking_Inbound) bool {
-	for k, v := range tags {
-		if inboundValue, ok := inbound.Tags[k]; !ok || inboundValue != v {
-			return false
+	if gateway != nil {
+		for _, listener := range gateway.Spec.GetConf().GetListeners() {
+			listenerTags := mesh_proto.Merge(
+				dpp.Spec.GetNetworking().GetGateway().GetTags(),
+				gateway.Spec.GetTags(),
+				listener.GetTags(),
+			)
+			if mesh_proto.TagSelector(tags).Matches(listenerTags) {
+				result = append(result, core_xds.InboundListener{
+					Address: dpp.Spec.GetNetworking().GetAddress(),
+					Port:    listener.Port,
+				})
+			}
 		}
 	}
-	return true
+	return result
 }
 
 type ByTargetRef []core_model.Resource

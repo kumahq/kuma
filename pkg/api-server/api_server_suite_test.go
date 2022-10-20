@@ -13,6 +13,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	config_api_server "github.com/kumahq/kuma/pkg/config/api-server"
@@ -20,6 +21,7 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
@@ -32,8 +34,6 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test"
-	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
-	sample_model "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 	test_runtime "github.com/kumahq/kuma/pkg/test/runtime"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -97,9 +97,13 @@ func (r *resourceApiClient) putJson(name string, json []byte) *http.Response {
 }
 
 func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string, mesh string) {
-	resource := sample_model.TrafficRouteResource{
-		Spec: &sample_proto.TrafficRoute{
-			Path: "/sample-path",
+	resource := core_mesh.TrafficRouteResource{
+		Spec: &mesh_proto.TrafficRoute{
+			Conf: &mesh_proto.TrafficRoute_Conf{
+				Destination: map[string]string{
+					"path": "/sample-path",
+				},
+			},
 		},
 	}
 	err := resourceStore.Create(context.Background(), &resource, store.CreateByKey(name, mesh))
@@ -223,9 +227,10 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 			cfg.Multizone.Zone.Name,
 			vips.NewPersistence(resManager, config_manager.NewConfigManager(t.store)),
 			cfg.DNSServer.Domain,
+			80,
 		),
 		customization.NewAPIList(),
-		append(registry.Global().ObjectDescriptors(model.HasWsEnabled()), sample_model.TrafficRouteResourceTypeDescriptor),
+		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,
 		t.enableGui,
 		t.metrics(),

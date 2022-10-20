@@ -60,8 +60,8 @@ var _ = Describe("kumactl install control-plane", func() {
 				"control-plane",
 				"--tls-general-secret", "general-tls-secret",
 				"--tls-general-ca-bundle", "XYZ",
-				"--values",
-				inputFile,
+				"--skip-kinds", "CustomResourceDefinition",
+				"--values", inputFile,
 			},
 		)
 		rootCmd.SetOut(stdout)
@@ -91,9 +91,10 @@ var _ = Describe("kumactl install control-plane", func() {
 	}())
 
 	type testCase struct {
-		stdin      string
-		extraArgs  []string
-		goldenFile string
+		stdin       string
+		extraArgs   []string
+		goldenFile  string
+		includeCRDs bool
 	}
 	DescribeTable("should generate Kubernetes resources",
 		func(given testCase) {
@@ -103,18 +104,21 @@ var _ = Describe("kumactl install control-plane", func() {
 			rootCtx.InstallCpContext.Args.ControlPlane_image_tag = "0.0.1"
 			rootCtx.InstallCpContext.Args.DataPlane_image_tag = "0.0.1"
 			rootCtx.InstallCpContext.Args.DataPlane_initImage_tag = "0.0.1"
+			args := []string{
+				"install",
+				"control-plane",
+				"--tls-general-secret", "general-tls-secret",
+				"--tls-general-ca-bundle", "XYZ",
+			}
+			if !given.includeCRDs {
+				args = append(args, "--skip-kinds", "CustomResourceDefinition")
+			}
+
+			args = append(args, given.extraArgs...)
 
 			// given
 			rootCmd := cmd.NewRootCmd(rootCtx)
-			rootCmd.SetArgs(append(
-				[]string{
-					"install",
-					"control-plane",
-					"--tls-general-secret", "general-tls-secret",
-					"--tls-general-ca-bundle", "XYZ",
-				},
-				given.extraArgs...,
-			))
+			rootCmd.SetArgs(args)
 			if given.stdin != "" {
 				stdin := &bytes.Buffer{}
 				stdin.WriteString(given.stdin)
@@ -138,7 +142,8 @@ var _ = Describe("kumactl install control-plane", func() {
 			extraArgs: []string{
 				"--without-kubernetes-connection",
 			},
-			goldenFile: "install-control-plane.defaults.golden.yaml",
+			includeCRDs: true,
+			goldenFile:  "install-control-plane.defaults.golden.yaml",
 		}),
 		Entry("should override default env-vars with values supplied", testCase{
 			extraArgs: []string{
@@ -247,7 +252,8 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--set",
 				"controlPlane.mode=zone,controlPlane.zone=zone-1,controlPlane.kdsGlobalAddress=grpcs://foo.com",
 			},
-			goldenFile: "install-control-plane.with-helm-set.yaml",
+			includeCRDs: true,
+			goldenFile:  "install-control-plane.with-helm-set.yaml",
 		}),
 		Entry("should work with --values", testCase{
 			extraArgs: []string{
@@ -272,14 +278,16 @@ controlPlane:
 				"--api-versions", fmt.Sprintf("%s/%s", gatewayapi.GroupVersion.String(), "GatewayClass"),
 				"--experimental-gatewayapi",
 			},
-			goldenFile: "install-control-plane.gateway-api-present.yaml",
+			includeCRDs: true,
+			goldenFile:  "install-control-plane.gateway-api-present.yaml",
 		}),
 		Entry("should not add GatewayClass if experimental not enabled", testCase{
 			extraArgs: []string{
 				"--without-kubernetes-connection",
 				"--api-versions", fmt.Sprintf("%s/%s", gatewayapi.GroupVersion.String(), "GatewayClass"),
 			},
-			goldenFile: "install-control-plane.gateway-api-present-not-enabled.yaml",
+			includeCRDs: true,
+			goldenFile:  "install-control-plane.gateway-api-present-not-enabled.yaml",
 		}),
 	)
 
