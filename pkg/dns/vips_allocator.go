@@ -3,6 +3,7 @@ package dns
 import (
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
 	"net"
 	"strings"
 
@@ -230,11 +231,16 @@ func (d *VIPsAllocator) BuildVirtualOutboundMeshView(ctx context.Context, mesh s
 		if d.serviceVipEnabled {
 			errs = multierr.Append(errs, addDefault(outboundSet, es.Spec.GetService(), es.Spec.GetPortUInt32()))
 		}
-		errs = multierr.Append(errs, outboundSet.Add(vips.NewHostEntry(es.Spec.GetHost()), vips.OutboundEntry{
-			Port:   es.Spec.GetPortUInt32(),
-			TagSet: tags,
-			Origin: vips.OriginHost,
-		}))
+		if es.Spec.Networking.SkipVIPGeneration == false {
+			addError := outboundSet.Add(vips.NewHostEntry(es.Spec.GetHost()), vips.OutboundEntry{
+				Port:   es.Spec.GetPortUInt32(),
+				TagSet: tags,
+				Origin: vips.OriginHost,
+			})
+			if addError != nil {
+				errs = multierr.Append(errs, errors.Wrapf(addError, "cannot add external service '%s'", es.GetMeta().GetName()))
+			}
+		}
 		for _, vob := range Match(virtualOutbounds.Items, tags) {
 			addFromVirtualOutbound(outboundSet, vob, tags, es.Descriptor().Name, es.Meta.GetName())
 		}

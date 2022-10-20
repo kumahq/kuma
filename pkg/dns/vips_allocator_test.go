@@ -206,6 +206,21 @@ var _ = Describe("VIP Allocator", func() {
 	})
 })
 
+func resourceManagerWithResources(ctx context.Context, resources map[model.ResourceKey]model.Resource) manager.ResourceManager {
+	rm := manager.NewResourceManager(memory.NewStore())
+	meshes := map[string]bool{}
+
+	for k, res := range resources {
+		if exists := meshes[k.Mesh]; !exists {
+			Expect(rm.Create(ctx, mesh.NewMeshResource(), store.CreateBy(model.WithoutMesh(k.Mesh)))).ToNot(HaveOccurred())
+			meshes[k.Mesh] = true
+		}
+		Expect(rm.Create(ctx, res, store.CreateBy(k))).ToNot(HaveOccurred())
+	}
+
+	return rm
+}
+
 type outboundViewTestCase struct {
 	givenResources      map[model.ResourceKey]model.Resource
 	whenZone            string
@@ -218,17 +233,8 @@ type outboundViewTestCase struct {
 var _ = DescribeTable("outboundView",
 	func(tc outboundViewTestCase) {
 		// Given
-		rm := manager.NewResourceManager(memory.NewStore())
-		meshes := map[string]bool{}
-
 		ctx := context.Background()
-		for k, res := range tc.givenResources {
-			if exists := meshes[k.Mesh]; !exists {
-				Expect(rm.Create(ctx, mesh.NewMeshResource(), store.CreateBy(model.WithoutMesh(k.Mesh)))).ToNot(HaveOccurred())
-				meshes[k.Mesh] = true
-			}
-			Expect(rm.Create(ctx, res, store.CreateBy(k))).ToNot(HaveOccurred())
-		}
+		rm := resourceManagerWithResources(ctx, tc.givenResources)
 
 		cfg := dns_server.Config{
 			Domain:            "mesh",
@@ -374,6 +380,48 @@ var _ = DescribeTable("outboundView",
 		thenOutbounds: map[vips.HostnameEntry][]vips.OutboundEntry{
 			vips.NewServiceEntry("my-external-service-1"): {
 				{TagSet: map[string]string{mesh_proto.ServiceTag: "my-external-service-1"}, Origin: "service", Port: 8080},
+			},
+			vips.NewHostEntry("external.service.com"): {
+				{TagSet: map[string]string{mesh_proto.ServiceTag: "my-external-service-1"}, Origin: "host", Port: 8080},
+			},
+		},
+	}),
+	Entry("two external services with same address and skipVIPGeneration set to true", outboundViewTestCase{
+		givenResources: map[model.ResourceKey]model.Resource{
+			model.WithMesh("mesh", "es-1"): &mesh.ExternalServiceResource{
+				Spec: &mesh_proto.ExternalService{
+					Networking: &mesh_proto.ExternalService_Networking{
+						Address: "external.service.com:8080",
+					},
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: "my-external-service-1",
+					},
+				},
+			},
+			model.WithMesh("mesh", "es-2"): &mesh.ExternalServiceResource{
+				Spec: &mesh_proto.ExternalService{
+					Networking: &mesh_proto.ExternalService_Networking{
+						Address: "external.service.com:8080",
+						SkipVIPGeneration: true,
+					},
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: "my-external-service-2",
+					},
+				},
+			},
+		},
+		whenMesh:            "mesh",
+		thenHostnameEntries: []vips.HostnameEntry{
+			vips.NewServiceEntry("my-external-service-1"),
+			vips.NewServiceEntry("my-external-service-2"),
+			vips.NewHostEntry("external.service.com"),
+		},
+		thenOutbounds: map[vips.HostnameEntry][]vips.OutboundEntry{
+			vips.NewServiceEntry("my-external-service-1"): {
+				{TagSet: map[string]string{mesh_proto.ServiceTag: "my-external-service-1"}, Origin: "service", Port: 8080},
+			},
+			vips.NewServiceEntry("my-external-service-2"): {
+				{TagSet: map[string]string{mesh_proto.ServiceTag: "my-external-service-2"}, Origin: "service", Port: 8080},
 			},
 			vips.NewHostEntry("external.service.com"): {
 				{TagSet: map[string]string{mesh_proto.ServiceTag: "my-external-service-1"}, Origin: "host", Port: 8080},
@@ -606,6 +654,53 @@ var _ = DescribeTable("outboundView",
 			},
 		},
 	}),
+)
+
+type outboundViewErrorTestCase struct {
+	givenResources map[model.ResourceKey]model.Resource
+	buildError     error
+}
+
+var _ = DescribeTable("outboundView",
+	func(tc outboundViewErrorTestCase) {
+		ctx := context.Background()
+		rm := resourceManagerWithResources(ctx, tc.givenResources)
+
+		// When
+		allocator, err := dns.NewVIPsAllocator(rm, nil, dns_server.Config{}, "zone-a")
+		Expect(err).NotTo(HaveOccurred())
+		serviceSet, err := allocator.BuildVirtualOutboundMeshView(ctx, "mesh")
+
+		Expect(serviceSet).To(BeNil())
+		Expect(err.Error()).To(Equal(tc.buildError.Error()))
+	},
+	Entry("should fail when two external services with same address are defined without skipVIPGeneration",
+		outboundViewErrorTestCase{
+			givenResources: map[model.ResourceKey]model.Resource{
+				model.WithMesh("mesh", "es-1"): &mesh.ExternalServiceResource{
+					Spec: &mesh_proto.ExternalService{
+						Networking: &mesh_proto.ExternalService_Networking{
+							Address: "external.service.com:8080",
+						},
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "my-external-service-1",
+						},
+					},
+				},
+				model.WithMesh("mesh", "es-2"): &mesh.ExternalServiceResource{
+					Spec: &mesh_proto.ExternalService{
+						Networking: &mesh_proto.ExternalService_Networking{
+							Address: "external.service.com:8080",
+						},
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "my-external-service-2",
+						},
+					},
+				},
+			},
+			buildError: errors.New("cannot add external service 'es-2': autogenerated DNS entry external.service.com:8080 conflicts with existing entry, this happens when there are two external services with the same 'networking.address', to disable automatic DNS generation in external services set 'skipVIPGeneration' to 'true' under 'networking'"),
+		},
+	),
 )
 
 var _ = Describe("AllocateVIPs", func() {

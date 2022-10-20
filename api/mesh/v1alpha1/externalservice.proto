@@ -57,6 +57,8 @@ message ExternalService {
     }
 
     TLS tls = 2;
+
+    bool skipVIPGeneration = 3 [ (doc.required) = true ];
   }
 
   Networking networking = 1 [ (doc.required) = true ];

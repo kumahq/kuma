@@ -26,7 +26,7 @@ func (t EntryType) String() string {
 }
 
 // HostnameEntry is the definition of a DNS entry. The type indicates where the entry comes from
-// (.e.g: Service is auto-generated, FullyQualifiedDomain comes from `virtual-outbound` policies...)
+// (.e.g: Service and Host are auto-generated, FullyQualifiedDomain comes from `virtual-outbound` policies...)
 type HostnameEntry struct {
 	Type EntryType `json:"type"`
 	Name string    `json:"name"`
