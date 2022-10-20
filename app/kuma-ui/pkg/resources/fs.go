@@ -5,7 +5,9 @@ import (
 	"io/fs"
 )
 
-//go:embed data
+// By default, go embed does not embed files that starts with `_` that's why we need to use *
+
+//go:embed data/* data/assets/*
 var GuiData embed.FS
 
 var GuiFS = func() fs.FS {
