@@ -64,7 +64,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to retrieve GatewayClass referenced by MeshGateway")
 	}
 
-	if class.Spec.ControllerName != common.ControllerName {
+	if class == nil || class.Spec.ControllerName != common.ControllerName {
 		return kube_ctrl.Result{}, nil
 	}
 
