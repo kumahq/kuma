@@ -45,9 +45,12 @@ default:
       header:
         name: x-version
   sampling:
-    overall: 80
-    random: 60
-    client: 40
+    overall:
+      value: 80
+    random:
+      value: 60
+    client:
+      value: 40
 `),
 			Entry("with empty backends", `
 targetRef:
@@ -66,9 +69,12 @@ default:
       header:
         name: x-version
   sampling:
-    overall: 80
-    random: 60
-    client: 40
+    overall:
+      value: 80
+    random:
+      value: 60
+    client:
+      value: 40
 `),
 			Entry("with datadog backend", `
 targetRef:
@@ -314,7 +320,8 @@ default:
     - datadog:
         url: http://intake.datadoghq.eu:443
   sampling:
-    overall: 101
+    overall:
+      value: 101
 `,
 				expected: `
 violations:

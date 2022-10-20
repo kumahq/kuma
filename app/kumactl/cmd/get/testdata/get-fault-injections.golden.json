@@ -10,7 +10,7 @@
       "sources": [
         {
           "match": {
-            "service": "frontend",
+            "kuma.io/service": "frontend",
             "version": "0.1"
           }
         }
@@ -18,7 +18,7 @@
       "destinations": [
         {
           "match": {
-            "service": "backend"
+            "kuma.io/service": "backend"
           }
         }
       ],
@@ -46,7 +46,7 @@
       "sources": [
         {
           "match": {
-            "service": "web",
+            "kuma.io/service": "web",
             "version": "0.1"
           }
         }
@@ -54,7 +54,7 @@
       "destinations": [
         {
           "match": {
-            "service": "redis"
+            "kuma.io/service": "redis"
           }
         }
       ],

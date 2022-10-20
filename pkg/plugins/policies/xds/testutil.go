@@ -1,6 +1,8 @@
 package xds
 
 import (
+	_ "embed"
+
 	. "github.com/onsi/gomega"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"

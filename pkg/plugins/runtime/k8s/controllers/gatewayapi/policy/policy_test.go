@@ -38,15 +38,15 @@ var (
 		Spec: gatewayapi_alpha.ReferenceGrantSpec{
 			From: []gatewayapi_alpha.ReferenceGrantFrom{
 				{
-					Group:     gatewayapi_alpha.Group(gatewayapi_alpha.GroupName),
-					Kind:      gatewayapi_alpha.Kind("HTTPRoute"),
-					Namespace: gatewayapi_alpha.Namespace(defaultNs),
+					Group:     gatewayapi.GroupName,
+					Kind:      "HTTPRoute",
+					Namespace: defaultNs,
 				},
 			},
 			To: []gatewayapi_alpha.ReferenceGrantTo{
 				{
-					Group: gatewayapi_alpha.Group(""),
-					Kind:  gatewayapi_alpha.Kind("Service"),
+					Group: "",
+					Kind:  "Service",
 				},
 			},
 		},
@@ -132,8 +132,8 @@ var _ = Describe("ReferenceGrant support", func() {
 			permittedToExtSvcName := gatewayapi_alpha.ObjectName("specific-permitted-ext-svc")
 			policyWithName.Spec.To = append(policyWithName.Spec.To,
 				gatewayapi_alpha.ReferenceGrantTo{
-					Group: gatewayapi_alpha.Group(kumaGroup),
-					Kind:  gatewayapi_alpha.Kind(externalSvcKind),
+					Group: kumaGroup,
+					Kind:  externalSvcKind,
 					Name:  &permittedToExtSvcName,
 				},
 			)
@@ -154,7 +154,7 @@ var _ = Describe("ReferenceGrant support", func() {
 
 			By("permitting if the name matches")
 			toOtherSpecificExternalSvc := toOtherExternalSvc.DeepCopy()
-			toOtherSpecificExternalSvc.Name = gatewayapi.ObjectName(permittedToExtSvcName)
+			toOtherSpecificExternalSvc.Name = permittedToExtSvcName
 
 			ref = policy.PolicyReferenceBackend(policy.FromHTTPRouteIn(defaultNs), *toOtherSpecificExternalSvc)
 			permitted, err = policy.IsReferencePermitted(

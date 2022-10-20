@@ -95,7 +95,7 @@ func TestConformance(t *testing.T) {
 		ValidUniqueListenerPorts: validUniqueListenerPorts,
 		SupportedFeatures: []suite.SupportedFeature{
 			suite.SupportHTTPRouteQueryParamMatching,
-			suite.SupportReferenceGrant,
+			suite.SupportHTTPRouteMethodMatching,
 		},
 	})
 

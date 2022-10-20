@@ -7,11 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/events"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 type resourceKey struct {
@@ -30,7 +29,7 @@ type memoryStoreRecord struct {
 }
 type memoryStoreRecords = []*memoryStoreRecord
 
-var _ model.ResourceMeta = &memoryMeta{}
+var _ core_model.ResourceMeta = &memoryMeta{}
 
 type memoryMeta struct {
 	Name             string
@@ -44,8 +43,8 @@ func (m memoryMeta) GetName() string {
 	return m.Name
 }
 
-func (m memoryMeta) GetNameExtensions() model.ResourceNameExtensions {
-	return model.ResourceNameExtensionsUnsupported
+func (m memoryMeta) GetNameExtensions() core_model.ResourceNameExtensions {
+	return core_model.ResourceNameExtensionsUnsupported
 }
 
 func (m memoryMeta) GetMesh() string {
@@ -96,7 +95,7 @@ func (c *memoryStore) SetEventWriter(writer events.Emitter) {
 	c.eventWriter = writer
 }
 
-func (c *memoryStore) Create(_ context.Context, r model.Resource, fs ...store.CreateOptionsFunc) error {
+func (c *memoryStore) Create(_ context.Context, r core_model.Resource, fs ...store.CreateOptionsFunc) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -141,14 +140,14 @@ func (c *memoryStore) Create(_ context.Context, r model.Resource, fs ...store.Cr
 			c.eventWriter.Send(events.ResourceChangedEvent{
 				Operation: events.Create,
 				Type:      r.Descriptor().Name,
-				Key:       model.MetaToResourceKey(r.GetMeta()),
+				Key:       core_model.MetaToResourceKey(r.GetMeta()),
 			})
 		}()
 	}
 	return nil
 }
 
-func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.UpdateOptionsFunc) error {
+func (c *memoryStore) Update(_ context.Context, r core_model.Resource, fs ...store.UpdateOptionsFunc) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -185,20 +184,20 @@ func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.Up
 			c.eventWriter.Send(events.ResourceChangedEvent{
 				Operation: events.Update,
 				Type:      r.Descriptor().Name,
-				Key:       model.MetaToResourceKey(r.GetMeta()),
+				Key:       core_model.MetaToResourceKey(r.GetMeta()),
 			})
 		}()
 	}
 	return nil
 }
 
-func (c *memoryStore) Delete(ctx context.Context, r model.Resource, fs ...store.DeleteOptionsFunc) error {
+func (c *memoryStore) Delete(ctx context.Context, r core_model.Resource, fs ...store.DeleteOptionsFunc) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.delete(r, fs...)
 }
 
-func (c *memoryStore) delete(r model.Resource, fs ...store.DeleteOptionsFunc) error {
+func (c *memoryStore) delete(r core_model.Resource, fs ...store.DeleteOptionsFunc) error {
 	opts := store.NewDeleteOptions(fs...)
 
 	_, ok := (r.GetMeta()).(memoryMeta)
@@ -216,7 +215,7 @@ func (c *memoryStore) delete(r model.Resource, fs ...store.DeleteOptionsFunc) er
 		if childRecord == nil {
 			continue // resource was already deleted
 		}
-		obj, err := registry.Global().NewObject(model.ResourceType(child.ResourceType))
+		obj, err := registry.Global().NewObject(core_model.ResourceType(child.ResourceType))
 		if err != nil {
 			return fmt.Errorf("MemoryStore.Delete() couldn't unmarshal child resource")
 		}
@@ -233,7 +232,7 @@ func (c *memoryStore) delete(r model.Resource, fs ...store.DeleteOptionsFunc) er
 			c.eventWriter.Send(events.ResourceChangedEvent{
 				Operation: events.Delete,
 				Type:      r.Descriptor().Name,
-				Key: model.ResourceKey{
+				Key: core_model.ResourceKey{
 					Mesh: opts.Mesh,
 					Name: opts.Name,
 				},
@@ -243,7 +242,7 @@ func (c *memoryStore) delete(r model.Resource, fs ...store.DeleteOptionsFunc) er
 	return nil
 }
 
-func (c *memoryStore) Get(_ context.Context, r model.Resource, fs ...store.GetOptionsFunc) error {
+func (c *memoryStore) Get(_ context.Context, r core_model.Resource, fs ...store.GetOptionsFunc) error {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -259,7 +258,7 @@ func (c *memoryStore) Get(_ context.Context, r model.Resource, fs ...store.GetOp
 	return c.unmarshalRecord(record, r)
 }
 
-func (c *memoryStore) List(_ context.Context, rs model.ResourceList, fs ...store.ListOptionsFunc) error {
+func (c *memoryStore) List(_ context.Context, rs core_model.ResourceList, fs ...store.ListOptionsFunc) error {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -304,9 +303,13 @@ func (c *memoryStore) findRecords(
 	return res
 }
 
-func (c *memoryStore) marshalRecord(resourceType string, meta memoryMeta, spec model.ResourceSpec) (*memoryStoreRecord, error) {
+func (c *memoryStore) marshalRecord(resourceType string, meta memoryMeta, spec core_model.ResourceSpec) (*memoryStoreRecord, error) {
 	// convert spec into storage representation
-	content, err := util_proto.ToJSON(spec)
+	desc, err := registry.Global().DescriptorFor(core_model.ResourceType(resourceType))
+	if err != nil {
+		return nil, err
+	}
+	content, err := core_model.ToJSON(desc, spec)
 	if err != nil {
 		return nil, err
 	}
@@ -324,7 +327,7 @@ func (c *memoryStore) marshalRecord(resourceType string, meta memoryMeta, spec m
 	}, nil
 }
 
-func (c *memoryStore) unmarshalRecord(s *memoryStoreRecord, r model.Resource) error {
+func (c *memoryStore) unmarshalRecord(s *memoryStoreRecord, r core_model.Resource) error {
 	r.SetMeta(memoryMeta{
 		Name:             s.Name,
 		Mesh:             s.Mesh,
@@ -332,5 +335,5 @@ func (c *memoryStore) unmarshalRecord(s *memoryStoreRecord, r model.Resource) er
 		CreationTime:     s.CreationTime,
 		ModificationTime: s.ModificationTime,
 	})
-	return util_proto.FromJSON([]byte(s.Spec), r.GetSpec())
+	return core_model.FromJSON(r.Descriptor(), []byte(s.Spec), r.GetSpec())
 }

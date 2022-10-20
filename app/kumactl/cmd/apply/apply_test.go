@@ -31,6 +31,13 @@ import (
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
+const defaultNetworkingSection = `networking:
+  address: 2.2.2.2
+  inbound:
+    - port: 80
+      tags:
+        "kuma.io/service": "web"`
+
 var _ = Describe("kumactl apply", func() {
 
 	var rootCtx *kumactl_cmd.RootContext
@@ -400,7 +407,7 @@ var _ = Describe("kumactl apply", func() {
 		Expect(resource.Spec.Networking.Address).To(Equal("1.1.1.1"))
 
 		// then
-		Expect(buf.String()).To(Equal(
+		Expect(buf.String()).To(MatchYAML(
 			`creationTime: "0001-01-01T00:00:00Z"
 mesh: default
 modificationTime: "0001-01-01T00:00:00Z"
@@ -408,6 +415,10 @@ name: sample
 type: Dataplane
 networking:
   address: 2.2.2.2
+  inbound:
+    - port: 80
+      tags:
+        "kuma.io/service": "web"
 `))
 	})
 
@@ -459,14 +470,14 @@ networking:
 			resource: `
 type: Dataplane
 name: dp-1
-`,
+` + defaultNetworkingSection,
 			err: "mesh: cannot be empty",
 		}),
 		Entry("no name", testCase{
 			resource: `
 type: Dataplane
 mesh: default
-`,
+` + defaultNetworkingSection,
 			err: "name: cannot be empty",
 		}),
 		Entry("invalid data", testCase{
@@ -482,6 +493,22 @@ networking:
 		Entry("no resource", testCase{
 			resource: ``,
 			err:      "no resource(s) passed to apply",
+		}),
+		Entry("data not passing schema validation", testCase{
+			resource: `
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-1
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: foo
+`,
+			err: `YAML contains invalid resource: spec: from[0].default.action in body should be one of [ALLOW DENY ALLOW_WITH_SHADOW_DENY DENY_WITH_SHADOW_ALLOW]`,
 		}),
 	)
 })

@@ -7,14 +7,14 @@
   "sources": [
     {
       "match": {
-        "service": "backend"
+        "kuma.io/service": "backend"
       }
     }
   ],
   "destinations": [
     {
       "match": {
-        "service": "redis"
+        "kuma.io/service": "redis"
       }
     }
   ],
@@ -23,7 +23,7 @@
       {
         "weight": 90,
         "destination": {
-          "service": "redis",
+          "kuma.io/service": "redis",
           "version": "1.0"
         }
       }

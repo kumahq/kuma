@@ -1,6 +1,7 @@
 package meshaccesslog
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"strconv"
@@ -34,7 +35,6 @@ func TestPlugin() {
 			Install(TestServerUniversal(
 				"test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}), WithDockerContainerName(externalServiceDockerName)),
 			).
-			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Install(GatewayProxyUniversal(meshName, "edge-gateway")).
 			Install(YamlUniversal(gateway.MkGateway("edge-gateway", meshName, false, "example.kuma.io", "test-server", 8080))).
 			Install(gateway.GatewayClientAppUniversal("gateway-client")).
@@ -48,9 +48,9 @@ func TestPlugin() {
 	// Always have new MeshAccessLog resources and log sink
 	BeforeEach(func() {
 		Expect(NewClusterSetup().
-			Install(
-				externalservice.Install(externalServiceName, externalservice.UniversalTCPSink),
-			).Setup(env.Cluster),
+			Install(externalservice.Install(externalServiceName, externalservice.UniversalTCPSink)).
+			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
+			Setup(env.Cluster),
 		).To(Succeed())
 	})
 	E2EAfterEach(func() {
@@ -62,8 +62,8 @@ func TestPlugin() {
 			Expect(err).ToNot(HaveOccurred())
 		}
 
-		sinkDeployment := env.Cluster.Deployment(externalServiceDeployment).(*externalservice.UniversalDeployment)
-		Expect(sinkDeployment.Delete(env.Cluster)).To(Succeed())
+		Expect(env.Cluster.DeleteApp(AppModeDemoClient)).To(Succeed())
+		Expect(env.Cluster.DeleteDeployment(externalServiceDeployment)).To(Succeed())
 	})
 
 	trafficLogFormat := "%START_TIME(%s)%,%KUMA_SOURCE_SERVICE%,%KUMA_DESTINATION_SERVICE%"
@@ -121,8 +121,62 @@ spec:
 		Expect(dst).To(Equal("test-server"))
 	})
 
-	// This is flaky, may have something to do with access-log-streamer
-	It("should log outgoing passthrough traffic", FlakeAttempts(3), func() {
+	It("should log outgoing traffic with JSON formatting", func() {
+		yaml := fmt.Sprintf(`
+type: MeshAccessLog
+name: client-outgoing
+mesh: meshaccesslog
+spec:
+ targetRef:
+   kind: MeshService
+   name: demo-client
+ to:
+   - targetRef:
+       kind: Mesh
+     default:
+       backends:
+       - tcp:
+           format:
+             json:
+             - key: Source
+               value: '%%KUMA_SOURCE_SERVICE%%'
+             - key: Destination
+               value: '%%KUMA_DESTINATION_SERVICE%%'
+             - key: Start
+               value: '%%START_TIME(%%s)%%'
+           address: "%s_%s:9999"
+`, env.Cluster.Name(), externalServiceDeployment)
+		Expect(YamlUniversal(yaml)(env.Cluster)).To(Succeed())
+
+		var src, dst string
+		sinkDeployment := env.Cluster.Deployment(externalServiceDeployment).(*externalservice.UniversalDeployment)
+		Eventually(func(g Gomega) {
+			_, _, err := env.Cluster.Exec("", "", AppModeDemoClient,
+				"curl", "-v", "--fail", "test-server.mesh")
+			g.Expect(err).ToNot(HaveOccurred())
+
+			stdout, _, err := sinkDeployment.Exec("", "", "head", "-1", "/nc.out")
+			g.Expect(err).ToNot(HaveOccurred())
+
+			type log struct {
+				Source      string
+				Destination string
+				Start       string
+			}
+			var line log
+			g.Expect(json.Unmarshal([]byte(stdout), &line)).To(Succeed())
+
+			src = line.Source
+			dst = line.Destination
+		}, "30s", "1s").Should(Succeed())
+
+		Expect(src).To(Equal(AppModeDemoClient))
+		Expect(dst).To(Equal("test-server"))
+	})
+
+	// This is flaky if we don't redeploy demo-client in BeforeEach/E2EAfterEach
+	// This may have something to do with access-log-streamer
+	It("should log outgoing passthrough traffic", func() {
 		yaml := fmt.Sprintf(`
 type: MeshAccessLog
 name: client-outgoing

@@ -25,6 +25,7 @@ import (
 	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/dp-server/server"
 	"github.com/kumahq/kuma/pkg/events"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
@@ -35,8 +36,11 @@ import (
 	resources_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	tokens_builtin "github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
+	mesh_cache "github.com/kumahq/kuma/pkg/xds/cache/mesh"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
+	xds_server "github.com/kumahq/kuma/pkg/xds/server"
 )
 
 var _ core_runtime.RuntimeInfo = &TestRuntimeInfo{}
@@ -115,6 +119,11 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 
 	initializeConfigManager(builder)
 
+	err = initializeMeshCache(builder)
+	if err != nil {
+		return nil, err
+	}
+
 	return builder, nil
 }
 
@@ -140,6 +149,30 @@ func newResourceManager(builder *core_runtime.Builder) core_manager.Customizable
 	secretManager := secret_manager.NewSecretManager(builder.SecretStore(), secret_cipher.None(), nil, builder.Config().Store.UnsafeDelete)
 	customManagers[system.SecretType] = secretManager
 	return customizableManager
+}
+
+func initializeMeshCache(builder *core_runtime.Builder) error {
+	meshContextBuilder := xds_context.NewMeshContextBuilder(
+		builder.ReadOnlyResourceManager(),
+		xds_server.MeshResourceTypes(xds_server.HashMeshExcludedResources),
+		builder.LookupIP(),
+		builder.Config().Multizone.Zone.Name,
+		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager()),
+		builder.Config().DNSServer.Domain,
+		builder.Config().DNSServer.ServiceVipPort,
+	)
+
+	meshSnapshotCache, err := mesh_cache.NewCache(
+		builder.Config().Store.Cache.ExpirationTime,
+		meshContextBuilder,
+		builder.Metrics(),
+	)
+	if err != nil {
+		return err
+	}
+
+	builder.WithMeshCache(meshSnapshotCache)
+	return nil
 }
 
 type DummyEnvoyAdminClient struct {

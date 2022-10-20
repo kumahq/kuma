@@ -232,7 +232,7 @@ func routesForGrant(l logr.Logger, client kube_client.Client) kube_handler.MapFu
 
 		var namespaces []gatewayapi_alpha.Namespace
 		for _, from := range grant.Spec.From {
-			if from.Group == gatewayapi_alpha.Group(gatewayapi.GroupVersion.Group) && from.Kind == gatewayapi_alpha.Kind(common.HTTPRouteKind) {
+			if from.Group == gatewayapi.Group(gatewayapi.GroupVersion.Group) && from.Kind == common.HTTPRouteKind {
 				namespaces = append(namespaces, from.Namespace)
 			}
 		}

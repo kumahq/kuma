@@ -29,16 +29,16 @@ var _ = Describe("kumactl get traffic-permissions", func() {
 				Sources: []*v1alpha1.Selector{
 					{
 						Match: map[string]string{
-							"service": "web1",
-							"version": "1.0",
+							"kuma.io/service": "web1",
+							"version":         "1.0",
 						},
 					},
 				},
 				Destinations: []*v1alpha1.Selector{
 					{
 						Match: map[string]string{
-							"service": "backend1",
-							"env":     "dev",
+							"kuma.io/service": "backend1",
+							"env":             "dev",
 						},
 					},
 				},
@@ -53,16 +53,16 @@ var _ = Describe("kumactl get traffic-permissions", func() {
 				Sources: []*v1alpha1.Selector{
 					{
 						Match: map[string]string{
-							"service": "web2",
-							"version": "1.0",
+							"kuma.io/service": "web2",
+							"version":         "1.0",
 						},
 					},
 				},
 				Destinations: []*v1alpha1.Selector{
 					{
 						Match: map[string]string{
-							"service": "backend2",
-							"env":     "dev",
+							"kuma.io/service": "backend2",
+							"env":             "dev",
 						},
 					},
 				},

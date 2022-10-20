@@ -106,7 +106,6 @@ func applyToOutbounds(
 func applyToTransparentProxyListeners(
 	policies xds.TypedMatchingPolicies, ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
 ) error {
-	// TODO inbound listener?
 	if ipv4 != nil {
 		if err := configureOutbound(
 			policies.ToRules,

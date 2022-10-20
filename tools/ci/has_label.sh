@@ -1,7 +1,8 @@
 #!/bin/bash
 
 LABEL_TO_CHECK="$1"
-CURL_OUTPUT=$(curl -s --fail -H "Accept: application/vnd.github+json" https://api.github.com/repos/kumahq/kuma/pulls/"$CIRCLE_PR_NUMBER")
+PR_NUMBER="${2:-$(basename "${CIRCLE_PULL_REQUEST}")}"
+CURL_OUTPUT=$(curl -s --fail -H "Accept: application/vnd.github+json" https://api.github.com/repos/kumahq/kuma/pulls/"$PR_NUMBER")
 
 if [[ $CURL_OUTPUT != "" ]]; then
     LABELS=$(jq '.labels[].name' <<< "$CURL_OUTPUT")

@@ -24,6 +24,8 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/ca/provided"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_resources "github.com/kumahq/kuma/pkg/test/resources"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -56,44 +58,25 @@ var _ = Describe("Mesh Manager", func() {
 		It("should also ensure that CAs are created", func() {
 			// given
 			meshName := "mesh-1"
-			resKey := model.ResourceKey{
-				Name: meshName,
-			}
 
 			// when
-			mesh := core_mesh.MeshResource{
-				Spec: &mesh_proto.Mesh{
-					Mtls: &mesh_proto.Mesh_Mtls{
-						EnabledBackend: "builtin-1",
-						Backends: []*mesh_proto.CertificateAuthorityBackend{
-							{
-								Name: "builtin-1",
-								Type: "builtin",
-							},
-						},
-					},
-				},
-			}
-			err := resManager.Create(context.Background(), &mesh, store.CreateBy(resKey))
+			mesh := samples.MeshMTLSBuilder().WithName("mesh-1")
+			err := mesh.Create(resManager)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// and enabled CA is created
-			_, err = builtinCaManager.GetRootCert(context.Background(), meshName, mesh.Spec.Mtls.Backends[0])
+			_, err = builtinCaManager.GetRootCert(context.Background(), meshName, mesh.Build().Spec.Mtls.Backends[0])
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should create default resources", func() {
 			// given
 			meshName := "mesh-1"
-			resKey := model.ResourceKey{
-				Name: meshName,
-			}
 
 			// when
-			mesh := core_mesh.NewMeshResource()
-			err := resManager.Create(context.Background(), mesh, store.CreateBy(resKey))
+			err := samples.MeshDefaultBuilder().WithName(meshName).Create(resManager)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -235,28 +218,11 @@ var _ = Describe("Mesh Manager", func() {
 
 		It("should not delete Mesh if there are Dataplanes attached", func() {
 			// given mesh and dataplane
-			err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
-			Expect(err).ToNot(HaveOccurred())
-
-			err = resStore.Create(context.Background(), &core_mesh.DataplaneResource{
-				Spec: &mesh_proto.Dataplane{
-					Networking: &mesh_proto.Dataplane_Networking{
-						Address: "127.0.0.1",
-						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
-							Port:        8080,
-							ServicePort: 80,
-							Tags: map[string]string{
-								"service": "mobile",
-								"version": "v1",
-							}},
-						},
-					},
-				},
-			}, store.CreateByKey("dp-1", "mesh-1"))
-			Expect(err).ToNot(HaveOccurred())
+			Expect(samples.MeshDefaultBuilder().WithName("mesh-1").Create(resManager)).To(Succeed())
+			Expect(samples.DataplaneBackendBuilder().WithMesh("mesh-1").Create(resStore)).To(Succeed())
 
 			// when mesh-1 is delete
-			err = resManager.Delete(context.Background(), core_mesh.NewMeshResource(), store.DeleteByKey("mesh-1", model.NoMesh))
+			err := resManager.Delete(context.Background(), core_mesh.NewMeshResource(), store.DeleteByKey("mesh-1", model.NoMesh))
 			// then
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("mesh: unable to delete mesh, there are still some dataplanes attached"))
@@ -264,28 +230,11 @@ var _ = Describe("Mesh Manager", func() {
 
 		It("should delete Mesh if there are Dataplanes attached when unsafe delete is enabled", func() {
 			// given mesh and dataplane
-			err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
-			Expect(err).ToNot(HaveOccurred())
-
-			err = resStore.Create(context.Background(), &core_mesh.DataplaneResource{
-				Spec: &mesh_proto.Dataplane{
-					Networking: &mesh_proto.Dataplane_Networking{
-						Address: "127.0.0.1",
-						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
-							Port:        8080,
-							ServicePort: 80,
-							Tags: map[string]string{
-								"service": "mobile",
-								"version": "v1",
-							}},
-						},
-					},
-				},
-			}, store.CreateByKey("dp-1", "mesh-1"))
-			Expect(err).ToNot(HaveOccurred())
+			Expect(samples.MeshDefaultBuilder().WithName("mesh-1").Create(resManager)).To(Succeed())
+			Expect(samples.DataplaneBackendBuilder().WithMesh("mesh-1").Create(resStore)).To(Succeed())
 
 			// when mesh-1 is deleted
-			err = unsafeDeleteResManager.Delete(context.Background(), core_mesh.NewMeshResource(), store.DeleteByKey("mesh-1", model.NoMesh))
+			err := unsafeDeleteResManager.Delete(context.Background(), core_mesh.NewMeshResource(), store.DeleteByKey("mesh-1", model.NoMesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -296,33 +245,19 @@ var _ = Describe("Mesh Manager", func() {
 		It("should not allow to change CA when mTLS is enabled", func() {
 			// given
 			meshName := "mesh-1"
-			resKey := model.ResourceKey{
-				Name: meshName,
-			}
 
 			// when
-			mesh := core_mesh.MeshResource{
-				Spec: &mesh_proto.Mesh{
-					Mtls: &mesh_proto.Mesh_Mtls{
-						EnabledBackend: "builtin-1",
-						Backends: []*mesh_proto.CertificateAuthorityBackend{
-							{
-								Name: "builtin-1",
-								Type: "builtin",
-							},
-						},
-					},
-				},
-			}
-			err := resManager.Create(context.Background(), &mesh, store.CreateBy(resKey))
+			mesh := samples.MeshMTLSBuilder().WithName(meshName)
+			err := mesh.Create(resManager)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// when trying to change CA
-			mesh.Spec.Mtls.Backends[0].Name = "builtin-2"
-			mesh.Spec.Mtls.EnabledBackend = "builtin-2"
-			err = resManager.Update(context.Background(), &mesh)
+			mesh.WithoutMTLSBackends().
+				WithBuiltinMTLSBackend("builtin-2").
+				WithEnabledMTLSBackend("builtin-2")
+			err = resManager.Update(context.Background(), mesh.Build())
 
 			// then
 			Expect(err).To(HaveOccurred())
@@ -339,33 +274,21 @@ var _ = Describe("Mesh Manager", func() {
 		It("should allow to change CA when mTLS is disabled", func() {
 			// given
 			meshName := "mesh-1"
-			resKey := model.ResourceKey{
-				Name: meshName,
-			}
 
 			// when
-			mesh := core_mesh.MeshResource{
-				Spec: &mesh_proto.Mesh{
-					Mtls: &mesh_proto.Mesh_Mtls{
-						EnabledBackend: "",
-						Backends: []*mesh_proto.CertificateAuthorityBackend{
-							{
-								Name: "builtin-1",
-								Type: "builtin",
-							},
-						},
-					},
-				},
-			}
-			err := resManager.Create(context.Background(), &mesh, store.CreateBy(resKey))
+			mesh := builders.Mesh().
+				WithName(meshName).
+				WithBuiltinMTLSBackend("builtin-1")
+			err := mesh.Create(resManager)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// when trying to enable mTLS change CA
-			mesh.Spec.Mtls.Backends[0].Name = "builtin-2"
-			mesh.Spec.Mtls.EnabledBackend = "builtin-2"
-			err = resManager.Update(context.Background(), &mesh)
+			mesh.WithoutMTLSBackends().
+				WithBuiltinMTLSBackend("builtin-2").
+				WithEnabledMTLSBackend("builtin-2")
+			err = resManager.Update(context.Background(), mesh.Build())
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

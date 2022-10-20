@@ -7,7 +7,11 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 )
 
-func SortResourcesByKind(files []data.File) ([]data.File, error) {
+func SortResourcesByKind(files []data.File, kindsToSkip ...string) ([]data.File, error) {
+	skippedKinds := map[string]struct{}{}
+	for _, k := range kindsToSkip {
+		skippedKinds[k] = struct{}{}
+	}
 	singleFile := data.JoinYAML(files)
 	resources := releaseutil.SplitManifests(string(singleFile.Data))
 
@@ -16,14 +20,15 @@ func SortResourcesByKind(files []data.File) ([]data.File, error) {
 		return nil, err
 	}
 
-	result := make([]data.File, len(manifests)+len(hooks))
-	for i, manifest := range manifests {
-		result[i].Data = []byte(manifest.Content)
+	result := make([]data.File, 0, len(manifests)+len(hooks))
+	for _, manifest := range manifests {
+		if _, ok := skippedKinds[manifest.Head.Kind]; !ok {
+			result = append(result, data.File{Data: []byte(manifest.Content)})
+		}
 	}
 
-	baseIdx := len(manifests) - 1
-	for i, hook := range hooks {
-		result[baseIdx+i].Data = []byte(hook.Manifest)
+	for _, hook := range hooks {
+		result = append(result, data.File{Data: []byte(hook.Manifest)})
 	}
 	return result, nil
 }
