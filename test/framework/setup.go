@@ -132,6 +132,16 @@ func YamlK8s(yaml string) InstallFunc {
 	}
 }
 
+func DeleteYamlK8s(yaml string) InstallFunc {
+	return func(cluster Cluster) error {
+		_, err := retry.DoWithRetryE(cluster.GetTesting(), "delete yaml resource", DefaultRetries, DefaultTimeout,
+			func() (s string, err error) {
+				return "", k8s.KubectlDeleteFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), yaml)
+			})
+		return err
+	}
+}
+
 func MeshUniversal(name string) InstallFunc {
 	mesh := fmt.Sprintf(`
 type: Mesh
