@@ -34,7 +34,9 @@
         - `serverName` (optional)
         
             ServerName overrides the default Server Name Indicator set by Kuma.
-            The default value is set to "address" specified in "networking".
+            The default value is set to "address" specified in "networking".    
+    
+    - `skipVIPGeneration` (required)
 
 - `tags` (required)
 

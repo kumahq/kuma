@@ -401,7 +401,7 @@ var _ = DescribeTable("outboundView",
 			model.WithMesh("mesh", "es-2"): &mesh.ExternalServiceResource{
 				Spec: &mesh_proto.ExternalService{
 					Networking: &mesh_proto.ExternalService_Networking{
-						Address: "external.service.com:8080",
+						Address:           "external.service.com:8080",
 						SkipVIPGeneration: true,
 					},
 					Tags: map[string]string{
@@ -410,7 +410,7 @@ var _ = DescribeTable("outboundView",
 				},
 			},
 		},
-		whenMesh:            "mesh",
+		whenMesh: "mesh",
 		thenHostnameEntries: []vips.HostnameEntry{
 			vips.NewServiceEntry("my-external-service-1"),
 			vips.NewServiceEntry("my-external-service-2"),

@@ -3,10 +3,10 @@ package dns
 import (
 	"context"
 	"fmt"
-	"github.com/pkg/errors"
 	"net"
 	"strings"
 
+	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -231,7 +231,7 @@ func (d *VIPsAllocator) BuildVirtualOutboundMeshView(ctx context.Context, mesh s
 		if d.serviceVipEnabled {
 			errs = multierr.Append(errs, addDefault(outboundSet, es.Spec.GetService(), es.Spec.GetPortUInt32()))
 		}
-		if es.Spec.Networking.SkipVIPGeneration == false {
+		if !es.Spec.Networking.SkipVIPGeneration {
 			addError := outboundSet.Add(vips.NewHostEntry(es.Spec.GetHost()), vips.OutboundEntry{
 				Port:   es.Spec.GetPortUInt32(),
 				TagSet: tags,
