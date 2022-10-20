@@ -114,7 +114,7 @@ func newUninstallEbpf(root *kumactl_cmd.RootContext) *cobra.Command {
 
 			defer func() {
 				if e := jobResource.Cleanup(ctx, cleanupAppSelector); e != nil {
-					_, _ = fmt.Fprintf(jobResource.stdout, "failed to cleanup jobs %s \n", err)
+					_, _ = fmt.Fprintf(jobResource.stdout, "failed to cleanup jobs %s \n", e)
 				}
 			}()
 
