@@ -238,7 +238,7 @@ func (d *VIPsAllocator) BuildVirtualOutboundMeshView(ctx context.Context, mesh s
 				Origin: vips.OriginHost,
 			})
 			if addError != nil {
-				errs = multierr.Append(errs, errors.Wrapf(addError, "cannot add external service '%s'", es.GetMeta().GetName()))
+				errs = multierr.Append(errs, errors.Wrapf(addError, "cannot add outbound for external service '%s'", es.GetMeta().GetName()))
 			}
 		}
 		for _, vob := range Match(virtualOutbounds.Items, tags) {
