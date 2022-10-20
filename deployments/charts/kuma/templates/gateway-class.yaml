@@ -3,7 +3,25 @@
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: GatewayClass
 metadata:
- name: kuma
+  name: kuma
 spec:
- controllerName: "gateways.kuma.io/controller"
+  controllerName: "gateways.kuma.io/controller"
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: GatewayClass
+metadata:
+  name: kuma-cross-mesh
+spec:
+  controllerName: "gateways.kuma.io/controller"
+  parametersRef:
+    group: kuma.io/v1alpha1
+    kind: MeshGatewayConfig
+    name: default-cross-mesh
+---
+apiVersion: kuma.io/v1alpha1
+kind: MeshGatewayConfig
+metadata:
+  name: default-cross-mesh
+spec:
+  crossMesh: true
 {{- end }}
