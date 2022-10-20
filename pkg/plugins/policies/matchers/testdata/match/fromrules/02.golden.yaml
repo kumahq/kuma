@@ -2,7 +2,17 @@ Rules:
   1.1.1.1:8080:
   - Conf:
       action: ALLOW
-    Origin: null
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-1
+      type: MeshTrafficPermission
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-2
+      type: MeshTrafficPermission
     Subset:
     - Key: kuma.io/service
       Not: false
@@ -15,7 +25,12 @@ Rules:
       Value: v2
   - Conf:
       action: DENY
-    Origin: null
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-2
+      type: MeshTrafficPermission
     Subset:
     - Key: kuma.io/service
       Not: true
@@ -28,7 +43,12 @@ Rules:
       Value: v2
   - Conf:
       action: DENY
-    Origin: null
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-2
+      type: MeshTrafficPermission
     Subset:
     - Key: kuma.io/service
       Not: false
@@ -41,7 +61,12 @@ Rules:
       Value: v2
   - Conf:
       action: DENY
-    Origin: null
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-2
+      type: MeshTrafficPermission
     Subset:
     - Key: kuma.io/service
       Not: true
@@ -55,7 +80,12 @@ Rules:
   1.1.1.1:8081:
   - Conf:
       action: DENY
-    Origin: null
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-2
+      type: MeshTrafficPermission
     Subset:
     - Key: kuma.io/zone
       Not: false

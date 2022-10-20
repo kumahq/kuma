@@ -20,6 +20,11 @@ type PolicyItem interface {
 	GetDefaultAsProto() proto.Message
 }
 
+type PolicyItemWithMeta struct {
+	PolicyItem
+	core_model.ResourceMeta
+}
+
 type Policy interface {
 	core_model.ResourceSpec
 	GetTargetRef() *common_proto.TargetRef
@@ -43,6 +48,17 @@ type PolicyWithSingleItem interface {
 type InboundListener struct {
 	Address string
 	Port    uint32
+}
+
+func BuildPolicyItemsWithMeta(items []PolicyItem, meta core_model.ResourceMeta) []PolicyItemWithMeta {
+	var result []PolicyItemWithMeta
+	for _, item := range items {
+		result = append(result, PolicyItemWithMeta{
+			PolicyItem:   item,
+			ResourceMeta: meta,
+		})
+	}
+	return result
 }
 
 // We need to implement TextMarshaler because InboundListener is used

@@ -162,7 +162,7 @@ var _ = Describe("Rules", func() {
 				Expect(ok).To(BeTrue())
 
 				// when
-				rules, err := xds.BuildRules(mtp.GetFromList())
+				rules, err := xds.BuildRules(xds.BuildPolicyItemsWithMeta(mtp.GetFromList(), policy.GetMeta()))
 				Expect(err).ToNot(HaveOccurred())
 
 				// then
@@ -200,13 +200,13 @@ var _ = Describe("Rules", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				yamls := util_yaml.SplitYAML(string(policyBytes))
-				policies := []xds.PolicyItem{}
+				policies := []xds.PolicyItemWithMeta{}
 				for _, yaml := range yamls {
 					policy, err := rest.YAML.UnmarshalCore([]byte(yaml))
 					Expect(err).ToNot(HaveOccurred())
 					mt, ok := policy.(*meshtrace_api.MeshTraceResource)
 					Expect(ok).To(BeTrue())
-					policies = append(policies, mt.Spec.GetPolicyItem())
+					policies = append(policies, xds.PolicyItemWithMeta{mt.Spec.GetPolicyItem(), policy.GetMeta()})
 				}
 
 				// when
