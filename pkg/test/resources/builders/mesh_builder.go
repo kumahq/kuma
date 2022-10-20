@@ -11,12 +11,12 @@ import (
 )
 
 type MeshBuilder struct {
-	*core_mesh.MeshResource
+	res *core_mesh.MeshResource
 }
 
 func Mesh() *MeshBuilder {
 	return &MeshBuilder{
-		MeshResource: &core_mesh.MeshResource{
+		res: &core_mesh.MeshResource{
 			Meta: &test_model.ResourceMeta{
 				Mesh: core_model.NoMesh,
 				Name: core_model.DefaultMesh,
@@ -27,10 +27,10 @@ func Mesh() *MeshBuilder {
 }
 
 func (m *MeshBuilder) Build() *core_mesh.MeshResource {
-	if err := m.MeshResource.Validate(); err != nil {
+	if err := m.res.Validate(); err != nil {
 		panic(err)
 	}
-	return m.MeshResource
+	return m.res
 }
 
 func (m *MeshBuilder) Create(s store.ResourceStore) error {
@@ -38,34 +38,44 @@ func (m *MeshBuilder) Create(s store.ResourceStore) error {
 }
 
 func (m *MeshBuilder) Key() core_model.ResourceKey {
-	return core_model.MetaToResourceKey(m.GetMeta())
+	return core_model.MetaToResourceKey(m.res.GetMeta())
 }
 
 func (m *MeshBuilder) WithName(name string) *MeshBuilder {
-	m.Meta.(*test_model.ResourceMeta).Name = name
+	m.res.Meta.(*test_model.ResourceMeta).Name = name
 	return m
 }
 
 func (m *MeshBuilder) WithEnabledMTLSBackend(name string) *MeshBuilder {
-	if m.Spec.Mtls == nil {
-		m.Spec.Mtls = &mesh_proto.Mesh_Mtls{}
+	if m.res.Spec.Mtls == nil {
+		m.res.Spec.Mtls = &mesh_proto.Mesh_Mtls{}
 	}
-	m.Spec.Mtls.EnabledBackend = name
+	m.res.Spec.Mtls.EnabledBackend = name
 	return m
 }
 
 func (m *MeshBuilder) WithBuiltinMTLSBackend(name string) *MeshBuilder {
-	m.Spec.Mtls = &mesh_proto.Mesh_Mtls{}
+	m.res.Spec.Mtls = &mesh_proto.Mesh_Mtls{}
 	return m.AddBuiltinMTLSBackend(name)
 }
 
+func (m *MeshBuilder) WithoutMTLSBackends() *MeshBuilder {
+	m.res.Spec.Mtls.Backends = nil
+	return m
+}
+
 func (m *MeshBuilder) AddBuiltinMTLSBackend(name string) *MeshBuilder {
-	if m.Spec.Mtls == nil {
-		m.Spec.Mtls = &mesh_proto.Mesh_Mtls{}
+	if m.res.Spec.Mtls == nil {
+		m.res.Spec.Mtls = &mesh_proto.Mesh_Mtls{}
 	}
-	m.Spec.Mtls.Backends = append(m.Spec.Mtls.Backends, &mesh_proto.CertificateAuthorityBackend{
+	m.res.Spec.Mtls.Backends = append(m.res.Spec.Mtls.Backends, &mesh_proto.CertificateAuthorityBackend{
 		Name: name,
 		Type: "builtin",
 	})
+	return m
+}
+
+func (m *MeshBuilder) With(fn func(resource *core_mesh.MeshResource)) *MeshBuilder {
+	fn(m.res)
 	return m
 }

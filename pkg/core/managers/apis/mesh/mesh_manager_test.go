@@ -67,7 +67,7 @@ var _ = Describe("Mesh Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and enabled CA is created
-			_, err = builtinCaManager.GetRootCert(context.Background(), meshName, mesh.Spec.Mtls.Backends[0])
+			_, err = builtinCaManager.GetRootCert(context.Background(), meshName, mesh.Build().Spec.Mtls.Backends[0])
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -254,8 +254,9 @@ var _ = Describe("Mesh Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when trying to change CA
-			mesh.Spec.Mtls.Backends[0].Name = "builtin-2"
-			mesh.Spec.Mtls.EnabledBackend = "builtin-2"
+			mesh.WithoutMTLSBackends().
+				WithBuiltinMTLSBackend("builtin-2").
+				WithEnabledMTLSBackend("builtin-2")
 			err = resManager.Update(context.Background(), mesh.Build())
 
 			// then
@@ -284,8 +285,9 @@ var _ = Describe("Mesh Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when trying to enable mTLS change CA
-			mesh.Spec.Mtls.Backends[0].Name = "builtin-2"
-			mesh.Spec.Mtls.EnabledBackend = "builtin-2"
+			mesh.WithoutMTLSBackends().
+				WithBuiltinMTLSBackend("builtin-2").
+				WithEnabledMTLSBackend("builtin-2")
 			err = resManager.Update(context.Background(), mesh.Build())
 
 			// then

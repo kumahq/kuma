@@ -16,12 +16,12 @@ var FirstInboundServicePort = uint32(8080)
 var FirstOutboundPort = uint32(10001)
 
 type DataplaneBuilder struct {
-	*core_mesh.DataplaneResource
+	res *core_mesh.DataplaneResource
 }
 
 func Dataplane() *DataplaneBuilder {
 	return &DataplaneBuilder{
-		DataplaneResource: &core_mesh.DataplaneResource{
+		res: &core_mesh.DataplaneResource{
 			Meta: &test_model.ResourceMeta{
 				Mesh: core_model.DefaultMesh,
 				Name: "dp-1",
@@ -34,10 +34,10 @@ func Dataplane() *DataplaneBuilder {
 }
 
 func (d *DataplaneBuilder) Build() *core_mesh.DataplaneResource {
-	if err := d.DataplaneResource.Validate(); err != nil {
+	if err := d.res.Validate(); err != nil {
 		panic(err)
 	}
-	return d.DataplaneResource
+	return d.res
 }
 
 func (d *DataplaneBuilder) Create(s store.ResourceStore) error {
@@ -45,31 +45,31 @@ func (d *DataplaneBuilder) Create(s store.ResourceStore) error {
 }
 
 func (d *DataplaneBuilder) Key() core_model.ResourceKey {
-	return core_model.MetaToResourceKey(d.GetMeta())
+	return core_model.MetaToResourceKey(d.res.GetMeta())
 }
 
 func (d *DataplaneBuilder) With(fn func(*core_mesh.DataplaneResource)) *DataplaneBuilder {
-	fn(d.DataplaneResource)
+	fn(d.res)
 	return d
 }
 
 func (d *DataplaneBuilder) WithName(name string) *DataplaneBuilder {
-	d.Meta.(*test_model.ResourceMeta).Name = name
+	d.res.Meta.(*test_model.ResourceMeta).Name = name
 	return d
 }
 
 func (d *DataplaneBuilder) WithMesh(mesh string) *DataplaneBuilder {
-	d.Meta.(*test_model.ResourceMeta).Mesh = mesh
+	d.res.Meta.(*test_model.ResourceMeta).Mesh = mesh
 	return d
 }
 
 func (d *DataplaneBuilder) WithVersion(version string) *DataplaneBuilder {
-	d.Meta.(*test_model.ResourceMeta).Version = version
+	d.res.Meta.(*test_model.ResourceMeta).Version = version
 	return d
 }
 
 func (d *DataplaneBuilder) WithAddress(address string) *DataplaneBuilder {
-	d.DataplaneResource.Spec.Networking.Address = address
+	d.res.Spec.Networking.Address = address
 	return d
 }
 
@@ -82,7 +82,7 @@ func (d *DataplaneBuilder) WithServices(services ...string) *DataplaneBuilder {
 }
 
 func (d *DataplaneBuilder) WithoutInbounds() *DataplaneBuilder {
-	d.Spec.Networking.Inbound = nil
+	d.res.Spec.Networking.Inbound = nil
 	return d
 }
 
@@ -103,17 +103,17 @@ func (d *DataplaneBuilder) AddInboundOfTags(tags ...string) *DataplaneBuilder {
 }
 
 func (d *DataplaneBuilder) AddInboundOfTagsMap(tags map[string]string) *DataplaneBuilder {
-	d.Spec.Networking.Inbound = append(d.Spec.Networking.Inbound, &mesh_proto.Dataplane_Networking_Inbound{
-		Port:        FirstInboundPort + uint32(len(d.Spec.Networking.Inbound)),
-		ServicePort: FirstInboundServicePort + uint32(len(d.Spec.Networking.Inbound)),
+	d.res.Spec.Networking.Inbound = append(d.res.Spec.Networking.Inbound, &mesh_proto.Dataplane_Networking_Inbound{
+		Port:        FirstInboundPort + uint32(len(d.res.Spec.Networking.Inbound)),
+		ServicePort: FirstInboundServicePort + uint32(len(d.res.Spec.Networking.Inbound)),
 		Tags:        tags,
 	})
 	return d
 }
 
 func (d *DataplaneBuilder) AddOutboundToService(service string) *DataplaneBuilder {
-	d.Spec.Networking.Outbound = append(d.Spec.Networking.Outbound, &mesh_proto.Dataplane_Networking_Outbound{
-		Port: FirstOutboundPort + uint32(len(d.Spec.Networking.Outbound)),
+	d.res.Spec.Networking.Outbound = append(d.res.Spec.Networking.Outbound, &mesh_proto.Dataplane_Networking_Outbound{
+		Port: FirstOutboundPort + uint32(len(d.res.Spec.Networking.Outbound)),
 		Tags: map[string]string{
 			mesh_proto.ServiceTag: service,
 		},
@@ -140,7 +140,7 @@ func tagsKVToMap(tagsKV []string) map[string]string {
 }
 
 func (d *DataplaneBuilder) WithPrometheusMetrics(config *mesh_proto.PrometheusMetricsBackendConfig) *DataplaneBuilder {
-	d.Spec.Metrics = &mesh_proto.MetricsBackend{
+	d.res.Spec.Metrics = &mesh_proto.MetricsBackend{
 		Name: "prometheus-1",
 		Type: mesh_proto.MetricsPrometheusType,
 		Conf: proto.MustToStruct(config),
