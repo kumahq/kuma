@@ -40,10 +40,10 @@ func TestConformance(t *testing.T) {
 
 	cluster := NewK8sCluster(t, clusterName, Silent)
 
-	defer func() {
+	t.Cleanup(func() {
 		g.Expect(cluster.DeleteKuma()).To(Succeed())
 		g.Expect(cluster.DismissCluster()).To(Succeed())
-	}()
+	})
 
 	g.Expect(cluster.Install(gateway.GatewayAPICRDs)).To(Succeed())
 	g.Eventually(func() error {
