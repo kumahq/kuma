@@ -144,8 +144,8 @@ var _ = Describe("ValidateListeners", func() {
 
 		invalid := ContainElements(
 			MatchFields(IgnoreExtras, Fields{
-				"Type":   Equal(string(gatewayapi.ListenerConditionDetached)),
-				"Status": Equal(kube_meta.ConditionTrue),
+				"Type":   Equal(string(gatewayapi.ListenerConditionAccepted)),
+				"Status": Equal(kube_meta.ConditionFalse),
 				"Reason": Equal(string(gatewayapi.ListenerReasonUnsupportedProtocol)),
 			}),
 			MatchFields(IgnoreExtras, Fields{
