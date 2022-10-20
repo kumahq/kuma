@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	builtin_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
@@ -33,35 +34,9 @@ var _ = Describe("Authentication flow", func() {
 	var resManager manager.ResourceManager
 	var ctx context.Context
 
-	dpRes := core_mesh.DataplaneResource{
-		Meta: &test_model.ResourceMeta{
-			Mesh: "dp-1",
-			Name: "default",
-		},
-		Spec: &mesh_proto.Dataplane{
-			Networking: &mesh_proto.Dataplane_Networking{
-				Address: "127.0.0.1",
-				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-					{
-						Port:        8080,
-						ServicePort: 8081,
-						Tags: map[string]string{
-							"kuma.io/service":  "web",
-							"kuma.io/protocol": "http",
-						},
-					},
-					{
-						Port:        8090,
-						ServicePort: 8091,
-						Tags: map[string]string{
-							"kuma.io/service":  "web-api",
-							"kuma.io/protocol": "http",
-						},
-					},
-				},
-			},
-		},
-	}
+	dpRes := *samples.DataplaneWebBuilder().
+		AddInboundOfService("web-api").
+		Build()
 
 	BeforeEach(func() {
 		ctx = context.Background()

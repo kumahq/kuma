@@ -17,7 +17,9 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	. "github.com/kumahq/kuma/pkg/xds/topology"
 )
@@ -48,33 +50,15 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				Spec: &mesh_proto.Mesh{},
 			}
-			backend := &core_mesh.DataplaneResource{ // dataplane that is a source of traffic
-				Meta: &test_model.ResourceMeta{
-					Mesh: "demo",
-					Name: "backend",
-				},
-				Spec: &mesh_proto.Dataplane{
-					Networking: &mesh_proto.Dataplane_Networking{
-						Address: "192.168.0.1",
-						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-							{
-								Tags:        map[string]string{"kuma.io/service": "backend", "region": "eu"},
-								Port:        8080,
-								ServicePort: 18080,
-							},
-							{
-								Tags:        map[string]string{"kuma.io/service": "frontend", "region": "eu"},
-								Port:        7070,
-								ServicePort: 17070,
-							},
-						},
-						Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-							{Service: "redis", Port: 10001},
-							{Service: "elastic", Port: 10002},
-						},
-					},
-				},
-			}
+			// dataplane that is a source of traffic
+			backend := builders.Dataplane().
+				WithName("backend").
+				WithMesh("demo").
+				WithAddress("192.168.0.1").
+				AddInboundOfTags("kuma.io/service", "backend", "region", "eu").
+				AddInboundOfTags("kuma.io/service", "frontend", "region", "eu").
+				AddOutboundsToServices("redis", "elastic").
+				Build()
 			routeRedis := &core_mesh.TrafficRouteResource{ // traffic route for `redis` service
 				Meta: &test_model.ResourceMeta{
 					Mesh: "demo",
@@ -315,21 +299,10 @@ var _ = Describe("TrafficRoute", func() {
 				},
 			}),
 			Entry("TrafficRoute with a `source` selector by 2 tags should win over a TrafficRoute with a `source` selector by 1 tag", testCase{
-				dataplane: &core_mesh.DataplaneResource{
-					Spec: &mesh_proto.Dataplane{
-						Networking: &mesh_proto.Dataplane_Networking{
-							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-								{Tags: map[string]string{"kuma.io/service": "backend", "region": "eu"}},
-							},
-							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-								{
-									Port:    1234,
-									Service: "redis",
-								},
-							},
-						},
-					},
-				},
+				dataplane: samples.DataplaneBackendBuilder().
+					WithInboundOfTags(mesh_proto.ServiceTag, "backend", "region", "eu").
+					AddOutboundToService("redis").
+					Build(),
 				routes: []*core_mesh.TrafficRouteResource{
 					{
 						Meta: &test_model.ResourceMeta{
@@ -377,7 +350,7 @@ var _ = Describe("TrafficRoute", func() {
 				expected: core_xds.RouteMap{
 					mesh_proto.OutboundInterface{
 						DataplaneIP:   "127.0.0.1",
-						DataplanePort: 1234,
+						DataplanePort: builders.FirstOutboundPort,
 					}: &core_mesh.TrafficRouteResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "more-specific",

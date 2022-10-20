@@ -24,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -61,14 +62,13 @@ var _ = Describe("MeshSnapshot Cache", func() {
 	testDataplaneResources := func(n int, mesh, version, address string) []*core_mesh.DataplaneResource {
 		resources := []*core_mesh.DataplaneResource{}
 		for i := 0; i < n; i++ {
-			resources = append(resources, &core_mesh.DataplaneResource{
-				Meta: &model.ResourceMeta{Mesh: mesh, Name: fmt.Sprintf("dp-%d", i), Version: version},
-				Spec: &mesh_proto.Dataplane{
-					Networking: &mesh_proto.Dataplane_Networking{
-						Address: address,
-					},
-				},
-			})
+			resources = append(resources, samples.DataplaneBackendBuilder().
+				WithName(fmt.Sprintf("dp-%d", i)).
+				WithMesh(mesh).
+				WithVersion(version).
+				WithAddress(address).
+				Build(),
+			)
 		}
 		return resources
 	}

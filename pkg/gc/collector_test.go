@@ -16,26 +16,17 @@ import (
 	"github.com/kumahq/kuma/pkg/gc"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Dataplane Collector", func() {
 	var rm manager.ResourceManager
 	createDpAndDpInsight := func(name, mesh string, disconnectTime time.Time) {
-		dp := &core_mesh.DataplaneResource{
-			Meta: &model.ResourceMeta{Name: name, Mesh: mesh},
-			Spec: &mesh_proto.Dataplane{
-				Networking: &mesh_proto.Dataplane_Networking{
-					Address: "192.168.0.1",
-					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
-						Port: 8080,
-						Tags: map[string]string{
-							"kuma.io/service": "db",
-						},
-					}},
-				},
-			},
-		}
+		dp := samples.DataplaneBackendBuilder().
+			WithName(name).
+			WithMesh(mesh).
+			Build()
 		dpInsight := &core_mesh.DataplaneInsightResource{
 			Meta: &model.ResourceMeta{Name: name, Mesh: mesh},
 			Spec: &mesh_proto.DataplaneInsight{
