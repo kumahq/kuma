@@ -138,7 +138,7 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 		}
 		// 3. For each combination determine a configuration
 		confs := []any{}
-		distinctOrigins := map[core_model.ResourceMeta]struct{}{}
+		distinctOrigins := map[core_model.ResourceKey]core_model.ResourceMeta{}
 		for i := 0; i < len(list); i++ {
 			item := list[i]
 			itemSubset, err := asSubset(item.GetTargetRef())
@@ -147,7 +147,7 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 			}
 			if itemSubset.IsSubset(ss) {
 				confs = append(confs, item.GetDefaultAsProto())
-				distinctOrigins[item.ResourceMeta] = struct{}{}
+				distinctOrigins[core_model.MetaToResourceKey(item.ResourceMeta)] = item.ResourceMeta
 			}
 		}
 		merged, err := merge(confs)
@@ -156,7 +156,7 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 		}
 		if merged != nil {
 			var origins []core_model.ResourceMeta
-			for origin := range distinctOrigins {
+			for _, origin := range distinctOrigins {
 				origins = append(origins, origin)
 			}
 			sort.Slice(origins, func(i, j int) bool {
