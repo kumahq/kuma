@@ -23,15 +23,6 @@ var clusterName = Kuma1
 var minNodePort = 30080
 var maxNodePort = 30089
 
-const gatewayClass = `
-apiVersion: gateway.networking.k8s.io/v1beta1
-kind: GatewayClass
-metadata:
-  name: kuma
-spec:
-  controllerName: gateways.kuma.io/controller
-`
-
 // TestConformance runs as a `testing` test and not Ginkgo so we have to use an
 // explicit `g` to use Gomega.
 func TestConformance(t *testing.T) {
@@ -59,7 +50,6 @@ func TestConformance(t *testing.T) {
 		Install(Kuma(config_core.Standalone,
 			WithCtlOpts(map[string]string{"--experimental-gatewayapi": "true"}),
 		)).
-		Install(YamlK8s(gatewayClass)).
 		Setup(cluster)
 	g.Expect(err).ToNot(HaveOccurred())
 

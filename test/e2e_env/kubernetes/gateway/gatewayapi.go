@@ -16,15 +16,6 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
-const gatewayClass = `
-apiVersion: gateway.networking.k8s.io/v1beta1
-kind: GatewayClass
-metadata:
-  name: kuma
-spec:
-  controllerName: gateways.kuma.io/controller
-`
-
 func GatewayAPI() {
 	if Config.IPV6 {
 		fmt.Println("IPv6 tests use kind which doesn't support the LoadBalancer ServiceType")
@@ -75,8 +66,7 @@ spec:
 				testserver.WithNamespace(externalServicesNamespace),
 				testserver.WithEchoArgs("echo", "--instance", "external-service"),
 			)).
-			Install(YamlK8s(externalService)).
-			Install(YamlK8s(gatewayClass))
+			Install(YamlK8s(externalService))
 		Expect(setup.Setup(env.Cluster)).To(Succeed())
 	})
 
@@ -170,14 +160,6 @@ spec:
 
 	Context("HTTP Gateway", Ordered, func() {
 		const gatewayName = "kuma-http"
-		gatewayClass := `
-apiVersion: gateway.networking.k8s.io/v1alpha2
-kind: GatewayClass
-metadata:
-  name: kuma
-spec:
-  controllerName: gateways.kuma.io/controller
-`
 
 		gateway := fmt.Sprintf(`
 apiVersion: gateway.networking.k8s.io/v1beta1
@@ -198,13 +180,11 @@ spec:
 		var address string
 
 		BeforeAll(func() {
-			Expect(YamlK8s(gatewayClass)(env.Cluster)).To(Succeed())
 			Expect(YamlK8s(gateway)(env.Cluster)).To(Succeed())
 			address = net.JoinHostPort(GatewayIP(gatewayName), "10080")
 		})
 		E2EAfterAll(func() {
 			Expect(k8s.RunKubectlE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(namespace), "delete", "gateway", gatewayName)).To(Succeed())
-			Expect(k8s.RunKubectlE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(namespace), "delete", "gatewayclass", "kuma")).To(Succeed())
 		})
 
 		It("should send default static payload for no route", func() {
@@ -377,14 +357,6 @@ data:
   tls.key: "MIIEowIBAAKCAQEAt3A6o4oOp72vLWVfMS5YaGG0tQGcAQTAoGwbceayAZ7lPlIMeQO5wMbZEPl7MC/ebqCsMZ0tLrhCKNPxvAKyXm982+iQVY9nCYziPdffdF5iY6H8P/Aq45Rl5HbjfpSHgrQbTWQFBmCl6BkWpOLF0q8NJ3WDiTs/vydIazCKNN4lNR1TAR87W/G70tqVwvGQD7V4UqEP4bkNgAUf5nbJkYM+yTNHokzdZPXrhyf2HjayszDPehD18e2CZx2aXC11QQJqGBjzAk/SaNUJrkZhsIib9HfYCpP0zkNcXZk42rO1WL9TZ46PR3MUSXkP8CYdqLkWZFsI0PVF6NYtp5pBTQIDAQABAoIBAHrDrTrNpkk0dQxYj4CGl7wjx6Br11AHMjMqpqNv1SmogZtXpelHSQVvDs6BaKQzJRW8igEaQ6bEweI5FcrRszXoPxOdbRsVwctucesZkf57PDWZrwvLW6i7JAXmWxHXrWkXyD3e9k3yWJYgVDs9WU9Kv+7sgn9RG7R+QcUa0yPVc90SuEM/zx1ToYGOP/vIR3pVY0Uoc4qV1kzgJQBoUlApfISL6MjDXNDzI5B4d5jr1eVNbY4GqnyR49N1tgF4ctQXK3oaBScPRhyv/+ErNT6b41TyK2TTXBCLt34bytDKqsy1Ur/tMe9a96uqSVHRAco57b6w0hYWJoRPV4ET9gECgYEAwMLH4xeCuB0khODE2lmOYzBCCTiwztnImVTW7HgKPvWASGZUE/uvGAfZrEHwJ44DoOjgNH27Oj/fqe3Hx6tUsANRwLqvvHBrWKufQKOtLqGO3z1IBXkVamWT2k2I15fjEUnuBpfdsTNPGE4qVyNwWk3uJM7+lBQPbDjak/hSKC0CgYEA8559v+lIutPzHRf0hg1IKsebyqdIbn5G+P9SDQuuhw7PXJBxWKblRgz11pumAR/zStgACqJgqBand3WRQYYbfpb7Ei+AhJDi1ZwddFTk2mA9aKlVUNuyyTx9r3BN9sWYqDegn+tbf/yr6pKhpQwnU0Um1nNaWalm1s0n3grUEaECgYAhqmMqwFJuQXi9VFxNHlMF88m0vpfyqIqmbPDUf+qaMFplSqnoi457DfPwZ9u/rMfpdIKj6Emo1LsFfKflsYCq9Ql0Naa3rJKy+9Zmfa+jc0f2qUdI3WrmGDOIbv41WSupO1Y9BI0Ng76Oqigu69uVigLLnvNLfW1sI0nZigcfSQKBgBBf5cnhbz8Hgf7BnnDoMaKWehU7+zVaDYEtACHaWCfByhRJrSStSxnTQy7ilVzb/elY7V/JnD+QDj+MSnAiCHUQxt1pDfVbG7QJ4zzve9Zlw5rmTtK5gaHfC/+fx82/aExeONCm7CaFIDULGAxU7cu+CSc+56LBLSVg8r4M8kYhAoGBAKLh5gnV1hHXqcYrFiZ5iYV9/pIQqLvB8UsGUIcFmUoxggBJqzQQA1h0Aq9qn+M+ARSMEI4XUfR8jBuS6MlZhzs4rytTrKtugfHZK4GFB1nc3OJTyBjSYAfdykkxQKkqgxhDCeAoxmjVDTP8KDh3ghrIAAYj3H1sKD4+WfEvrDpr"
 `, namespace)
 
-		gatewayClass := `
-apiVersion: gateway.networking.k8s.io/v1alpha2
-kind: GatewayClass
-metadata:
-  name: kuma
-spec:
-  controllerName: gateways.kuma.io/controller
-`
 		gateway := fmt.Sprintf(`
 apiVersion: gateway.networking.k8s.io/v1alpha2
 kind: Gateway
@@ -415,13 +387,11 @@ spec:
 
 		BeforeAll(func() {
 			Expect(YamlK8s(secret)(env.Cluster)).To(Succeed())
-			Expect(YamlK8s(gatewayClass)(env.Cluster)).To(Succeed())
 			Expect(YamlK8s(gateway)(env.Cluster)).To(Succeed())
 			ip = GatewayIP(gatewayName)
 		})
 		E2EAfterAll(func() {
 			Expect(k8s.RunKubectlE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(namespace), "delete", "gateway", gatewayName)).To(Succeed())
-			Expect(k8s.RunKubectlE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(namespace), "delete", "gatewayclass", "kuma")).To(Succeed())
 		})
 
 		It("should route the traffic using TLS", func() {
