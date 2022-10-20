@@ -1,4 +1,9 @@
 - Conf:
     backends: []
-  Origin: null
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: mesh-1
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: mal-1
+    type: MeshAccessLog
   Subset: []

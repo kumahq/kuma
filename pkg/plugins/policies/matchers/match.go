@@ -88,13 +88,13 @@ func fromRules(
 ) (map[core_xds.InboundListener]core_xds.Rules, error) {
 	rulesByInbound := map[core_xds.InboundListener]core_xds.Rules{}
 	for inbound, policies := range matchedPoliciesByInbound {
-		fromList := []core_xds.PolicyItem{}
+		fromList := []core_xds.PolicyItemWithMeta{}
 		for _, p := range policies {
 			policyWithFrom, ok := p.GetSpec().(core_xds.PolicyWithFromList)
 			if !ok {
 				return nil, nil
 			}
-			fromList = append(fromList, policyWithFrom.GetFromList()...)
+			fromList = append(fromList, core_xds.BuildPolicyItemsWithMeta(policyWithFrom.GetFromList(), p.GetMeta())...)
 		}
 		rules, err := core_xds.BuildRules(fromList)
 		if err != nil {
@@ -106,28 +106,33 @@ func fromRules(
 }
 
 func toRules(matchedPolicies []core_model.Resource) (core_xds.Rules, error) {
-	toList := []core_xds.PolicyItem{}
+	toList := []core_xds.PolicyItemWithMeta{}
 	for _, mp := range matchedPolicies {
 		policyWithTo, ok := mp.GetSpec().(core_xds.PolicyWithToList)
 		if !ok {
 			return nil, nil
 		}
-		toList = append(toList, policyWithTo.GetToList()...)
+		core_xds.BuildPolicyItemsWithMeta(policyWithTo.GetToList(), mp.GetMeta())
+		toList = append(toList, core_xds.BuildPolicyItemsWithMeta(policyWithTo.GetToList(), mp.GetMeta())...)
 	}
 	return core_xds.BuildRules(toList)
 }
 
 func singleItemRules(matchedPolicies []core_model.Resource) (core_xds.Rules, error) {
-	item := []core_xds.PolicyItem{}
+	items := []core_xds.PolicyItemWithMeta{}
 	for _, mp := range matchedPolicies {
 		policyWithSingleItem, ok := mp.GetSpec().(core_xds.PolicyWithSingleItem)
 		if !ok {
 			// policy doesn't support single item
 			return nil, nil
 		}
-		item = append(item, policyWithSingleItem.GetPolicyItem())
+		item := core_xds.PolicyItemWithMeta{
+			PolicyItem:   policyWithSingleItem.GetPolicyItem(),
+			ResourceMeta: mp.GetMeta(),
+		}
+		items = append(items, item)
 	}
-	return core_xds.BuildRules(item)
+	return core_xds.BuildRules(items)
 }
 
 // inboundsSelectedByTargetRef returns a list of inbounds of DPP that are selected by the targetRef
