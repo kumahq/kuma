@@ -48,6 +48,7 @@ func (cv *componentVersion) Type() string {
 }
 
 // getVersionSet retrieves a set of available k8s API versions
+// This is inlined from https://github.com/helm/helm/blob/v3.8.1/pkg/action/action.go#L309
 func getVersionSet(client discovery.ServerResourcesInterface) (chartutil.VersionSet, error) {
 	groups, resources, err := client.ServerGroupsAndResources()
 	if err != nil && !discovery.IsGroupDiscoveryFailedError(err) {
@@ -91,6 +92,7 @@ func getVersionSet(client discovery.ServerResourcesInterface) (chartutil.Version
 }
 
 // getCapabilities builds a Capabilities from discovery information.
+// This is inlined from https://github.com/helm/helm/blob/v3.8.1/pkg/action/action.go#L239
 func getCapabilities(kubeConfig *rest.Config) (*chartutil.Capabilities, error) {
 	dc, err := discovery.NewDiscoveryClientForConfig(kubeConfig)
 	if err != nil {
