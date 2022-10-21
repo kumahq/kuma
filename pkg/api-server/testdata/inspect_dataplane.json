@@ -19,6 +19,9 @@
       },
       "from": [
        {
+        "targetRef": {
+         "kind": "Mesh"
+        },
         "default": {
          "action": "ALLOW"
         }

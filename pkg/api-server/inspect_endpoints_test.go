@@ -339,6 +339,9 @@ var _ = Describe("Inspect WS", func() {
 						},
 						From: []*policies_api.MeshTrafficPermission_From{
 							{
+								TargetRef: &common_api.TargetRef{
+									Kind: "Mesh",
+								},
 								Default: &policies_api.MeshTrafficPermission_Conf{
 									Action: "ALLOW",
 								},
@@ -1105,6 +1108,9 @@ var _ = Describe("Inspect WS", func() {
 						},
 						From: []*policies_api.MeshTrafficPermission_From{
 							{
+								TargetRef: &common_api.TargetRef{
+									Kind: "Mesh",
+								},
 								Default: &policies_api.MeshTrafficPermission_Conf{
 									Action: "ALLOW",
 								},

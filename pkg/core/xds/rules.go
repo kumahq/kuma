@@ -218,10 +218,6 @@ func newConf(t reflect.Type) (proto.Message, error) {
 }
 
 func asSubset(tr *common_api.TargetRef) (Subset, error) {
-	if tr == nil {
-		// syntactic sugar, empty targetRef means targetRef{kind: Mesh}
-		return Subset{}, nil
-	}
 	switch tr.GetKindEnum() {
 	case common_api.TargetRef_Mesh:
 		return Subset{}, nil
