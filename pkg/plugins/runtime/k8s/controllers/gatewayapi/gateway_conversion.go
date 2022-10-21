@@ -15,23 +15,24 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/policy"
 )
 
 type ListenerConditions map[gatewayapi.SectionName][]kube_meta.Condition
 
-func validProtocol(protocol gatewayapi.ProtocolType) bool {
+func validProtocol(crossMesh bool, protocol gatewayapi.ProtocolType) bool {
 	switch protocol {
 	case gatewayapi.HTTPProtocolType, gatewayapi.HTTPSProtocolType:
-		return true
+		return !crossMesh || protocol == gatewayapi.HTTPProtocolType
 	default:
 	}
 
 	return false
 }
 
-func ValidateListeners(listeners []gatewayapi.Listener) ([]gatewayapi.Listener, ListenerConditions) {
+func ValidateListeners(crossMesh bool, listeners []gatewayapi.Listener) ([]gatewayapi.Listener, ListenerConditions) {
 	var validListeners []gatewayapi.Listener
 	listenerConditions := ListenerConditions{}
 
@@ -103,18 +104,22 @@ func ValidateListeners(listeners []gatewayapi.Listener) ([]gatewayapi.Listener, 
 			protocols = map[gatewayapi.ProtocolType]struct{}{}
 		}
 
-		if validProtocol(l.Protocol) {
+		if validProtocol(crossMesh, l.Protocol) {
 			protocols[l.Protocol] = struct{}{}
 		}
 		portProtocols[l.Port] = protocols
 	}
 
 	for _, l := range listeners {
-		if !validProtocol(l.Protocol) {
+		if !validProtocol(crossMesh, l.Protocol) {
+			message := fmt.Sprintf("unsupported protocol %s", l.Protocol)
+			if crossMesh {
+				message = fmt.Sprintf("%s with cross-mesh", message)
+			}
 			appendDetachedCondition(
 				l.Name,
 				gatewayapi.ListenerReasonUnsupportedProtocol,
-				fmt.Sprintf("unsupported protocol %s", l.Protocol),
+				message,
 			)
 			continue
 		}
@@ -161,10 +166,11 @@ func ValidateListeners(listeners []gatewayapi.Listener) ([]gatewayapi.Listener, 
 // conditions to set on the gatewayapi listeners
 func (r *GatewayReconciler) gapiToKumaGateway(
 	ctx context.Context,
-	gateway *gatewayapi.Gateway,
 	mesh string,
+	gateway *gatewayapi.Gateway,
+	config mesh_k8s.MeshGatewayConfigSpec,
 ) (*mesh_proto.MeshGateway, ListenerConditions, error) {
-	validListeners, listenerConditions := ValidateListeners(gateway.Spec.Listeners)
+	validListeners, listenerConditions := ValidateListeners(config.CrossMesh, gateway.Spec.Listeners)
 
 	var listeners []*mesh_proto.MeshGateway_Listener
 
@@ -176,6 +182,7 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 				// Gateways, so just create a tag specifically for this listener
 				mesh_proto.ListenerTag: string(l.Name),
 			},
+			CrossMesh: config.CrossMesh,
 		}
 
 		if protocol, ok := mesh_proto.MeshGateway_Listener_Protocol_value[string(l.Protocol)]; ok {

@@ -72,13 +72,18 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		return kube_ctrl.Result{}, nil
 	}
 
+	config, err := r.meshGatewayConfigFromClass(ctx, class)
+	if err != nil {
+		return kube_ctrl.Result{}, errors.Wrap(err, "unable to get Config from GatewayClass")
+	}
+
 	ns := kube_core.Namespace{}
 	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: gateway.Namespace}, &ns); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to get Namespace of MeshGateway")
 	}
 
 	mesh := k8s_util.MeshOf(gateway, &ns)
-	gatewaySpec, listenerConditions, err := r.gapiToKumaGateway(ctx, gateway, mesh)
+	gatewaySpec, listenerConditions, err := r.gapiToKumaGateway(ctx, mesh, gateway, config)
 	if err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "error generating MeshGateway.kuma.io")
 	}
@@ -89,7 +94,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 			return kube_ctrl.Result{}, errors.Wrap(err, "could not reconcile owned MeshGateway.kuma.io")
 		}
 
-		gatewayInstance, err = r.createOrUpdateInstance(ctx, r.Client, mesh, gateway, class)
+		gatewayInstance, err = r.createOrUpdateInstance(ctx, mesh, gateway, config)
 		if err != nil {
 			return kube_ctrl.Result{}, errors.Wrap(err, "unable to reconcile MeshGatewayInstance")
 		}
@@ -102,7 +107,29 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 	return kube_ctrl.Result{}, nil
 }
 
-func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, client kube_client.Client, mesh string, gateway *gatewayapi.Gateway, class *gatewayapi.GatewayClass) (*mesh_k8s.MeshGatewayInstance, error) {
+func (r *GatewayReconciler) meshGatewayConfigFromClass(ctx context.Context, class *gatewayapi.GatewayClass) (mesh_k8s.MeshGatewayConfigSpec, error) {
+	ref, _, err := getParametersRef(ctx, r.Client, class.Spec.ParametersRef)
+	if err != nil {
+		return mesh_k8s.MeshGatewayConfigSpec{}, errors.Wrap(err, "unable to fetch parameters for GatewayClass")
+	}
+
+	if ref != nil {
+		if ref.Spec.CrossMesh {
+			ref.Spec.MeshGatewayCommonConfig.ServiceType = kube_core.ServiceTypeClusterIP
+		}
+
+		return ref.Spec, nil
+	}
+
+	return mesh_k8s.MeshGatewayConfigSpec{
+		MeshGatewayCommonConfig: mesh_k8s.MeshGatewayCommonConfig{
+			ServiceType: kube_core.ServiceTypeLoadBalancer,
+			Replicas:    1,
+		},
+	}, nil
+}
+
+func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, mesh string, gateway *gatewayapi.Gateway, config mesh_k8s.MeshGatewayConfigSpec) (*mesh_k8s.MeshGatewayInstance, error) {
 	instance := &mesh_k8s.MeshGatewayInstance{
 		ObjectMeta: kube_meta.ObjectMeta{
 			Namespace: gateway.Namespace,
@@ -110,23 +137,10 @@ func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, client k
 		},
 	}
 
-	tags := common.ServiceTagForGateway(kube_client.ObjectKeyFromObject(gateway))
-	commonConfig := mesh_k8s.MeshGatewayCommonConfig{
-		ServiceType: kube_core.ServiceTypeLoadBalancer,
-	}
-
-	ref, _, err := getParametersRef(ctx, client, class.Spec.ParametersRef)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to fetch parameters for GatewayClass")
-	}
-
-	if ref != nil {
-		tags = mesh_proto.Merge(
-			tags,
-			ref.Spec.Tags,
-		)
-		commonConfig = ref.Spec.MeshGatewayCommonConfig
-	}
+	tags := mesh_proto.Merge(
+		common.ServiceTagForGateway(kube_client.ObjectKeyFromObject(gateway)),
+		config.Tags,
+	)
 
 	if _, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, instance, func() error {
 		if instance.Annotations == nil {
@@ -136,7 +150,7 @@ func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, client k
 
 		instance.Spec = mesh_k8s.MeshGatewayInstanceSpec{
 			Tags:                    tags,
-			MeshGatewayCommonConfig: commonConfig,
+			MeshGatewayCommonConfig: config.MeshGatewayCommonConfig,
 		}
 
 		err := kube_controllerutil.SetControllerReference(gateway, instance, r.Scheme)
