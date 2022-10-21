@@ -32,7 +32,6 @@ targetRef:
 from:
   - targetRef:
       kind: Mesh
-      name: default
     default:
       backends:
         - tcp:
@@ -59,7 +58,6 @@ targetRef:
 from:
   - targetRef:
       kind: Mesh
-      name: default
     default:
       backends:
         - file:
@@ -92,7 +90,6 @@ from:
 				inputYaml: `
 targetRef:
   kind: Mesh
-  name: default
 `,
 				expected: `
 violations:
@@ -107,7 +104,6 @@ targetRef:
 from:
   - targetRef:
       kind: Mesh
-      name: default
     default:
       backends:
         - file:
@@ -127,7 +123,6 @@ targetRef:
 from:
   - targetRef:
       kind: Mesh
-      name: default
     default:
       backends:
         - file:
@@ -148,7 +143,6 @@ targetRef:
 from:
   - targetRef:
       kind: Mesh
-      name: default
     default:
       backends:
         - file:
@@ -170,7 +164,6 @@ targetRef:
 from:
   - targetRef:
       kind: Mesh
-      name: default
     default:
       backends:
         - file:
@@ -192,7 +185,6 @@ targetRef:
 from:
   - targetRef:
       kind: Mesh
-      name: default
     default:
       backends:
         - file:
@@ -215,7 +207,6 @@ targetRef:
 from:
   - targetRef:
       kind: Mesh
-      name: default
     default:
       backends:
         - tcp:
@@ -239,7 +230,6 @@ targetRef:
 from:
   - targetRef:
       kind: Mesh
-      name: default
     default:
       backends:
         - tcp:
@@ -267,7 +257,6 @@ targetRef:
 to:
   - targetRef:
       kind: Mesh
-      name: default
     default:
       backends:
         - file:
@@ -288,7 +277,6 @@ targetRef:
 to:
   - targetRef:
       kind: Mesh
-      name: default
     default:
       backends:
         - file:
@@ -298,6 +286,8 @@ to:
 `,
 				expected: `
 violations:
+- field: spec.targetRef.kind
+  message: MeshHTTPRoute is not yet supported
 - field: spec.to
   message: 'cannot use "to" when "targetRef" is "MeshHTTPRoute" - "to" always goes to the application'`,
 			}),
@@ -305,11 +295,9 @@ violations:
 				inputYaml: `
 targetRef:
   kind: Mesh
-  name: default
 to:
   - targetRef:
       kind: Mesh
-      name: default
 `,
 				expected: `
 violations:
@@ -320,11 +308,9 @@ violations:
 				inputYaml: `
 targetRef:
   kind: Mesh
-  name: default
 from:
   - targetRef:
       kind: Mesh
-      name: default
 `,
 				expected: `
 violations:
@@ -339,7 +325,6 @@ targetRef:
 from:
   - targetRef:
       kind: Mesh
-      name: default
     default:
       backends:
         - tcp:

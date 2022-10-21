@@ -24,7 +24,6 @@ metadata:
 spec:
   targetRef:
     kind: Mesh
-    name: %s
   default:
     tags:
       - name: team
@@ -32,7 +31,7 @@ spec:
     backends:
       - zipkin:
           url: %s
-`, meshName, meshName, url)
+`, meshName, url)
 }
 
 func PluginTest() {

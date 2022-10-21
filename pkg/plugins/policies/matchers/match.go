@@ -33,8 +33,7 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 			return core_xds.TypedMatchingPolicies{}, errors.Errorf("resource type %v doesn't support TargetRef matching", rType)
 		}
 
-		targetRef := spec.GetTargetRef()
-		selectedInbounds := inboundsSelectedByTargetRef(targetRef, dpp, gateway)
+		selectedInbounds := inboundsSelectedByTargetRef(spec.GetTargetRef(), dpp, gateway)
 		if len(selectedInbounds) == 0 {
 			// DPP is not matched by the policy
 			continue
