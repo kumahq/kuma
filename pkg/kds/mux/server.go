@@ -93,7 +93,10 @@ func (s *server) Start(stop <-chan struct{}) error {
 			return errors.Wrap(err, "failed to load TLS certificate")
 		}
 		tlsCfg := &tls.Config{Certificates: []tls.Certificate{cert}}
-		if tlsCfg.MinVersion, err = config_types.TLSMinVersion(s.config.TlsMinVersion); err != nil {
+		if tlsCfg.MinVersion, err = config_types.TLSVersion(s.config.TlsMinVersion); err != nil {
+			return err
+		}
+		if tlsCfg.MaxVersion, err = config_types.TLSVersion(s.config.TlsMaxVersion); err != nil {
 			return err
 		}
 		if tlsCfg.CipherSuites, err = config_types.TLSCiphers(s.config.TlsCipherSuites); err != nil {

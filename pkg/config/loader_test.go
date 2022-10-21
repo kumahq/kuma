@@ -125,7 +125,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.ApiServer.HTTPS.Port).To(Equal(uint32(15682)))
 			Expect(cfg.ApiServer.HTTPS.TlsCertFile).To(Equal("/cert"))
 			Expect(cfg.ApiServer.HTTPS.TlsKeyFile).To(Equal("/key"))
-			Expect(cfg.ApiServer.HTTPS.TlsMinVersion).To(Equal("TLS13"))
+			Expect(cfg.ApiServer.HTTPS.TlsMinVersion).To(Equal("TLSv1_3"))
+			Expect(cfg.ApiServer.HTTPS.TlsMaxVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.ApiServer.HTTPS.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
 			Expect(cfg.ApiServer.Auth.ClientCertsDir).To(Equal("/certs"))
 			Expect(cfg.ApiServer.Authn.LocalhostIsAdmin).To(Equal(false))
@@ -198,7 +199,8 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.General.TlsCertFile).To(Equal("/tmp/cert"))
 			Expect(cfg.General.TlsKeyFile).To(Equal("/tmp/key"))
-			Expect(cfg.General.TlsMinVersion).To(Equal("TLS13"))
+			Expect(cfg.General.TlsMinVersion).To(Equal("TLSv1_3"))
+			Expect(cfg.General.TlsMaxVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.General.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
 			Expect(cfg.General.DNSCacheTTL).To(Equal(19 * time.Second))
 			Expect(cfg.General.WorkDir).To(Equal("/custom/work/dir"))
@@ -209,7 +211,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Global.KDS.GrpcPort).To(Equal(uint32(1234)))
 			Expect(cfg.Multizone.Global.KDS.RefreshInterval).To(Equal(time.Second * 2))
 			Expect(cfg.Multizone.Global.KDS.ZoneInsightFlushInterval).To(Equal(time.Second * 5))
-			Expect(cfg.Multizone.Global.KDS.TlsMinVersion).To(Equal("TLS13"))
+			Expect(cfg.Multizone.Global.KDS.TlsMinVersion).To(Equal("TLSv1_3"))
+			Expect(cfg.Multizone.Global.KDS.TlsMaxVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.Multizone.Global.KDS.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
 			Expect(cfg.Multizone.Global.KDS.TlsCertFile).To(Equal("/cert"))
 			Expect(cfg.Multizone.Global.KDS.TlsKeyFile).To(Equal("/key"))
@@ -247,7 +250,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DpServer.TlsKeyFile).To(Equal("/test/path/key"))
 			Expect(cfg.DpServer.Auth.Type).To(Equal("dpToken"))
 			Expect(cfg.DpServer.Port).To(Equal(9876))
-			Expect(cfg.DpServer.TlsMinVersion).To(Equal("TLS13"))
+			Expect(cfg.DpServer.TlsMinVersion).To(Equal("TLSv1_3"))
+			Expect(cfg.DpServer.TlsMaxVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.DpServer.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
 			Expect(cfg.DpServer.Hds.Enabled).To(BeFalse())
 			Expect(cfg.DpServer.Hds.Interval).To(Equal(11 * time.Second))
@@ -329,7 +333,8 @@ apiServer:
     port: 15682 # ENV: KUMA_API_SERVER_HTTPS_PORT
     tlsCertFile: "/cert" # ENV: KUMA_API_SERVER_HTTPS_TLS_CERT_FILE
     tlsKeyFile: "/key" # ENV: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
-    tlsMinVersion: TLS13
+    tlsMinVersion: TLSv1_3
+    tlsMaxVersion: TLSv1_3
     tlsCipherSuites: ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"]
   auth:
     clientCertsDir: "/certs" # ENV: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
@@ -427,7 +432,8 @@ reports:
 general:
   tlsKeyFile: /tmp/key
   tlsCertFile: /tmp/cert
-  tlsMinVersion: TLS13
+  tlsMinVersion: TLSv1_3
+  tlsMaxVersion: TLSv1_3
   tlsCipherSuites: ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"]
   dnsCacheTTL: 19s
   workDir: /custom/work/dir
@@ -440,7 +446,8 @@ multizone:
       zoneInsightFlushInterval: 5s
       tlsCertFile: /cert
       tlsKeyFile: /key
-      tlsMinVersion: TLS13
+      tlsMinVersion: TLSv1_3
+      tlsMaxVersion: TLSv1_3
       tlsCipherSuites: ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"]
       maxMsgSize: 1
   zone:
@@ -479,7 +486,8 @@ metrics:
 dpServer:
   tlsCertFile: /test/path
   tlsKeyFile: /test/path/key
-  tlsMinVersion: TLS13
+  tlsMinVersion: TLSv1_3
+  tlsMaxVersion: TLSv1_3
   tlsCipherSuites: ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"]
   port: 9876
   auth:
@@ -566,7 +574,8 @@ proxy:
 				"KUMA_API_SERVER_HTTPS_INTERFACE":                                                          "192.168.0.2",
 				"KUMA_API_SERVER_HTTPS_TLS_CERT_FILE":                                                      "/cert",
 				"KUMA_API_SERVER_HTTPS_TLS_KEY_FILE":                                                       "/key",
-				"KUMA_API_SERVER_HTTPS_TLS_MIN_VERSION":                                                    "TLS13",
+				"KUMA_API_SERVER_HTTPS_TLS_MIN_VERSION":                                                    "TLSv1_3",
+				"KUMA_API_SERVER_HTTPS_TLS_MAX_VERSION":                                                    "TLSv1_3",
 				"KUMA_API_SERVER_HTTPS_TLS_CIPHER_SUITES":                                                  "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384",
 				"KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR":                                                    "/certs",
 				"KUMA_API_SERVER_AUTHN_TYPE":                                                               "custom-authn",
@@ -629,7 +638,8 @@ proxy:
 				"KUMA_RUNTIME_UNIVERSAL_DATAPLANE_CLEANUP_AGE":                                             "1h",
 				"KUMA_GENERAL_TLS_CERT_FILE":                                                               "/tmp/cert",
 				"KUMA_GENERAL_TLS_KEY_FILE":                                                                "/tmp/key",
-				"KUMA_GENERAL_TLS_MIN_VERSION":                                                             "TLS13",
+				"KUMA_GENERAL_TLS_MAX_VERSION":                                                             "TLSv1_3",
+				"KUMA_GENERAL_TLS_MIN_VERSION":                                                             "TLSv1_3",
 				"KUMA_GENERAL_TLS_CIPHER_SUITES":                                                           "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384",
 				"KUMA_GENERAL_DNS_CACHE_TTL":                                                               "19s",
 				"KUMA_GENERAL_WORK_DIR":                                                                    "/custom/work/dir",
@@ -643,7 +653,8 @@ proxy:
 				"KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL":                                               "2s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_CERT_FILE":                                                  "/cert",
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE":                                                   "/key",
-				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_MIN_VERSION":                                                "TLS13",
+				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_MIN_VERSION":                                                "TLSv1_3",
+				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_MAX_VERSION":                                                "TLSv1_3",
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_CIPHER_SUITES":                                              "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384",
 				"KUMA_MULTIZONE_GLOBAL_KDS_MAX_MSG_SIZE":                                                   "1",
 				"KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS":                                                       "grpc://1.1.1.1:5685",
@@ -668,7 +679,8 @@ proxy:
 				"KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT":                                                      "1m",
 				"KUMA_DP_SERVER_TLS_CERT_FILE":                                                             "/test/path",
 				"KUMA_DP_SERVER_TLS_KEY_FILE":                                                              "/test/path/key",
-				"KUMA_DP_SERVER_TLS_MIN_VERSION":                                                           "TLS13",
+				"KUMA_DP_SERVER_TLS_MIN_VERSION":                                                           "TLSv1_3",
+				"KUMA_DP_SERVER_TLS_MAX_VERSION":                                                           "TLSv1_3",
 				"KUMA_DP_SERVER_TLS_CIPHER_SUITES":                                                         "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384",
 				"KUMA_DP_SERVER_AUTH_TYPE":                                                                 "dpToken",
 				"KUMA_DP_SERVER_AUTH_USE_TOKEN_PATH":                                                       "true",

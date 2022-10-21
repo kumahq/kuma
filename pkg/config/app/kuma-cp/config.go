@@ -293,6 +293,8 @@ type GeneralConfig struct {
 	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_general_tls_key_file"`
 	// TlsMinVersion defines the minimum TLS version to be used
 	TlsMinVersion string `yaml:"tlsMinVersion" envconfig:"kuma_general_tls_min_version"`
+	// TlsMaxVersion defines the maximum TLS version to be used
+	TlsMaxVersion string `yaml:"tlsMaxVersion" envconfig:"kuma_general_tls_max_version"`
 	// TlsCipherSuites defines the list of ciphers to use
 	TlsCipherSuites []string `yaml:"tlsCipherSuites" envconfig:"kuma_general_tls_cipher_suites"`
 	// WorkDir defines a path to the working directory
@@ -313,8 +315,11 @@ func (g *GeneralConfig) Validate() (errs error) {
 	if g.TlsKeyFile == "" && g.TlsCertFile != "" {
 		errs = multierr.Append(errs, errors.New(".TlsKeyFile cannot be empty if TlsCertFile has been set"))
 	}
-	if _, err := config_types.TLSMinVersion(g.TlsMinVersion); err != nil {
+	if _, err := config_types.TLSVersion(g.TlsMinVersion); err != nil {
 		errs = multierr.Append(errs, errors.New(".TlsMinVersion"+err.Error()))
+	}
+	if _, err := config_types.TLSVersion(g.TlsMaxVersion); err != nil {
+		errs = multierr.Append(errs, errors.New(".TlsMaxVersion"+err.Error()))
 	}
 	if _, err := config_types.TLSCiphers(g.TlsCipherSuites); err != nil {
 		errs = multierr.Append(errs, errors.New(".TlsCipherSuites"+err.Error()))
@@ -327,6 +332,7 @@ func DefaultGeneralConfig() *GeneralConfig {
 		DNSCacheTTL:     10 * time.Second,
 		WorkDir:         "",
 		TlsCipherSuites: []string{},
+		TlsMinVersion:   "TLSv1_2",
 	}
 }
 

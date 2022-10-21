@@ -60,6 +60,8 @@ type ApiServerHTTPSConfig struct {
 	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_api_server_https_tls_key_file"`
 	// TlsMinVersion defines the minimum TLS version to be used
 	TlsMinVersion string `yaml:"tlsMinVersion" envconfig:"kuma_api_server_https_tls_min_version"`
+	// TlsMaxVersion defines the maximum TLS version to be used
+	TlsMaxVersion string `yaml:"tlsMaxVersion" envconfig:"kuma_api_server_https_tls_max_version"`
 	// TlsCipherSuites defines the list of ciphers to use
 	TlsCipherSuites []string `yaml:"tlsCipherSuites" envconfig:"kuma_api_server_https_tls_cipher_suites"`
 }
@@ -74,8 +76,11 @@ func (a *ApiServerHTTPSConfig) Validate() (errs error) {
 	if (a.TlsKeyFile == "" && a.TlsCertFile != "") || (a.TlsKeyFile != "" && a.TlsCertFile == "") {
 		errs = multierr.Append(errs, errors.New("Both TlsCertFile and TlsKeyFile has to be specified"))
 	}
-	if _, err := config_types.TLSMinVersion(a.TlsMinVersion); err != nil {
+	if _, err := config_types.TLSVersion(a.TlsMinVersion); err != nil {
 		errs = multierr.Append(errs, errors.New(".TlsMinVersion"+err.Error()))
+	}
+	if _, err := config_types.TLSVersion(a.TlsMaxVersion); err != nil {
+		errs = multierr.Append(errs, errors.New(".TlsMaxVersion"+err.Error()))
 	}
 	if _, err := config_types.TLSCiphers(a.TlsCipherSuites); err != nil {
 		errs = multierr.Append(errs, errors.New(".TlsCipherSuites"+err.Error()))
@@ -132,6 +137,7 @@ func DefaultApiServerConfig() *ApiServerConfig {
 			Port:            5682,
 			TlsCertFile:     "", // autoconfigured
 			TlsKeyFile:      "", // autoconfigured
+			TlsMinVersion:   "TLSv1_2",
 			TlsCipherSuites: []string{},
 		},
 		Auth: ApiServerAuth{

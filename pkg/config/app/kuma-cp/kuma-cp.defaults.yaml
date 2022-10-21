@@ -137,7 +137,9 @@ apiServer:
     # Path to TLS key file. Autoconfigured from KUMA_GENERAL_TLS_KEY_FILE if empty
     tlsKeyFile: "" # ENV: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
     # TlsMinVersion the minimum version of TLS used across all the Kuma Servers.
-    tlsMinVersion: # ENV: KUMA_API_SERVER_HTTPS_TLS_MIN_VERSION
+    tlsMinVersion: "TLSv1_2" # ENV: KUMA_API_SERVER_HTTPS_TLS_MIN_VERSION
+    # TlsMaxVersion the maximum version of TLS used across all the Kuma Servers.
+    tlsMaxVersion: # ENV: KUMA_API_SERVER_HTTPS_TLS_MAX_VERSION
     # TlsCipherSuites the list of cipher suites to be used across all the Kuma Servers.
     tlsCipherSuites: [] # ENV: KUMA_API_SERVER_HTTPS_TLS_CIPHER_SUITES
   # Authentication configuration for administrative endpoints like Dataplane Token or managing Secrets
@@ -340,7 +342,9 @@ general:
   # TlsKeyFile defines a path to a file with PEM-encoded TLS key that will be used across all the Kuma Servers.
   tlsKeyFile: # ENV: KUMA_GENERAL_TLS_KEY_FILE
   # TlsMinVersion the minimum version of TLS used across all the Kuma Servers.
-  tlsMinVersion: # ENV: KUMA_GENERAL_TLS_MIN_VERSION
+  tlsMinVersion: "TLSv1_2" # ENV: KUMA_GENERAL_TLS_MIN_VERSION
+  # TlsMaxVersion the maximum version of TLS used across all the Kuma Servers.
+  tlsMaxVersion: # ENV: KUMA_GENERAL_TLS_MAX_VERSION
   # TlsCipherSuites the list of cipher suites to be used across all the Kuma Servers.
   tlsCipherSuites: [] # ENV: KUMA_GENERAL_TLS_CIPHER_SUITES
   # WorkDir defines a path to the working directory
@@ -374,7 +378,9 @@ multizone:
       # TlsKeyFile defines a path to a file with PEM-encoded TLS key.
       tlsKeyFile: # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE
       # TlsMinVersion the minimum version of TLS
-      tlsMinVersion: # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_MIN_VERSION
+      tlsMinVersion: "TLSv1_2" # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_MIN_VERSION
+      # TlsMaxVersion the maximum version of TLS
+      tlsMaxVersion: # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_MAX_VERSION
       # TlsCipherSuites the list of cipher suites
       tlsCipherSuites: [] # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_CIPHER_SUITES
       # MaxMsgSize defines a maximum size of the message in bytes that is exchanged using KDS.
@@ -410,7 +416,9 @@ dpServer:
   # TlsKeyFile defines a path to a file with PEM-encoded TLS key. If empty, autoconfigured from general.tlsKeyFile
   tlsKeyFile: # ENV: KUMA_DP_SERVER_TLS_KEY_FILE
   # TlsMinVersion the minimum version of TLS
-  tlsMinVersion: # ENV: KUMA_DP_SERVER_TLS_MIN_VERSION
+  tlsMinVersion: "TLSv1_2" # ENV: KUMA_DP_SERVER_TLS_MIN_VERSION
+  # TlsMaxVersion the maximum version of TLS
+  tlsMaxVersion: # ENV: KUMA_DP_SERVER_TLS_MAX_VERSION
   # TlsCipherSuites the list of cipher suites
   tlsCipherSuites: [] # ENV: KUMA_DP_SERVER_TLS_CIPHER_SUITES
   # Auth defines an authentication configuration for the DP Server

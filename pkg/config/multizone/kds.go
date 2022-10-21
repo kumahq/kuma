@@ -23,6 +23,8 @@ type KdsServerConfig struct {
 	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_multizone_global_kds_tls_key_file"`
 	// TlsMinVersion defines the minimum TLS version to be used
 	TlsMinVersion string `yaml:"tlsMinVersion" envconfig:"kuma_multizone_global_kds_tls_min_version"`
+	// TlsMaxVersion defines the maximum TLS version to be used
+	TlsMaxVersion string `yaml:"tlsMaxVersion" envconfig:"kuma_multizone_global_kds_tls_max_version"`
 	// TlsCipherSuites defines the list of ciphers to use
 	TlsCipherSuites []string `yaml:"tlsCipherSuites" envconfig:"kuma_multizone_global_kds_tls_cipher_suites"`
 	// MaxMsgSize defines a maximum size of the message that is exchanged using KDS.
@@ -51,8 +53,11 @@ func (c *KdsServerConfig) Validate() (errs error) {
 	if c.TlsKeyFile == "" && c.TlsCertFile != "" {
 		errs = multierr.Append(errs, errors.New(".TlsKeyFile cannot be empty if TlsCertFile has been set"))
 	}
-	if _, err := config_types.TLSMinVersion(c.TlsMinVersion); err != nil {
+	if _, err := config_types.TLSVersion(c.TlsMinVersion); err != nil {
 		errs = multierr.Append(errs, errors.New(".TlsMinVersion"+err.Error()))
+	}
+	if _, err := config_types.TLSVersion(c.TlsMaxVersion); err != nil {
+		errs = multierr.Append(errs, errors.New(".TlsMaxVersion"+err.Error()))
 	}
 	if _, err := config_types.TLSCiphers(c.TlsCipherSuites); err != nil {
 		errs = multierr.Append(errs, errors.New(".TlsCipherSuites"+err.Error()))

@@ -22,6 +22,8 @@ type DpServerConfig struct {
 	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_dp_server_tls_key_file"`
 	// TlsMinVersion defines the minimum TLS version to be used
 	TlsMinVersion string `yaml:"tlsMinVersion" envconfig:"kuma_dp_server_tls_min_version"`
+	// TlsMaxVersion defines the maximum TLS version to be used
+	TlsMaxVersion string `yaml:"tlsMaxVersion" envconfig:"kuma_dp_server_tls_max_version"`
 	// TlsCipherSuites defines the list of ciphers to use
 	TlsCipherSuites []string `yaml:"tlsCipherSuites" envconfig:"kuma_dp_server_tls_cipher_suites"`
 	// Auth defines an authentication configuration for the DP Server
@@ -64,8 +66,11 @@ func (a *DpServerConfig) Validate() (errs error) {
 	if err := a.Auth.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrap(err, ".Auth is invalid"))
 	}
-	if _, err := config_types.TLSMinVersion(a.TlsMinVersion); err != nil {
+	if _, err := config_types.TLSVersion(a.TlsMinVersion); err != nil {
 		errs = multierr.Append(errs, errors.New(".TlsMinVersion"+err.Error()))
+	}
+	if _, err := config_types.TLSVersion(a.TlsMaxVersion); err != nil {
+		errs = multierr.Append(errs, errors.New(".TlsMaxVersion"+err.Error()))
 	}
 	if _, err := config_types.TLSCiphers(a.TlsCipherSuites); err != nil {
 		errs = multierr.Append(errs, errors.New(".TlsCipherSuites"+err.Error()))
@@ -81,6 +86,7 @@ func DefaultDpServerConfig() *DpServerConfig {
 			UseTokenPath: false,
 		},
 		Hds:             DefaultHdsConfig(),
+		TlsMinVersion:   "TLSv1_2",
 		TlsCipherSuites: []string{},
 	}
 }

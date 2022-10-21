@@ -301,7 +301,7 @@ func (a *ApiServer) startHttpServer(errChan chan error) *http.Server {
 func (a *ApiServer) startHttpsServer(errChan chan error) (*http.Server, error) {
 	tlsConfig := &tls.Config{}
 	var err error
-	tlsConfig.MinVersion, err = config_types.TLSMinVersion(a.config.HTTPS.TlsMinVersion)
+	tlsConfig.MinVersion, err = config_types.TLSVersion(a.config.HTTPS.TlsMinVersion)
 	if err != nil {
 		return nil, err
 	}

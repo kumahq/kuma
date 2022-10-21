@@ -70,7 +70,10 @@ func NewDpServer(config dp_server.DpServerConfig, metrics metrics.Metrics) *DpSe
 func (d *DpServer) Start(stop <-chan struct{}) error {
 	var err error
 	tlsConfig := &tls.Config{}
-	if tlsConfig.MinVersion, err = config_types.TLSMinVersion(d.config.TlsMinVersion); err != nil {
+	if tlsConfig.MinVersion, err = config_types.TLSVersion(d.config.TlsMinVersion); err != nil {
+		return err
+	}
+	if tlsConfig.MaxVersion, err = config_types.TLSVersion(d.config.TlsMaxVersion); err != nil {
 		return err
 	}
 	if tlsConfig.CipherSuites, err = config_types.TLSCiphers(d.config.TlsCipherSuites); err != nil {

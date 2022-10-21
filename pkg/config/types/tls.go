@@ -6,13 +6,13 @@ import (
 	"sort"
 )
 
-func TLSMinVersion(minVersion string) (uint16, error) {
+func TLSVersion(minVersion string) (uint16, error) {
 	if minVersion == "" {
 		return 0, nil
 	}
 	v, ok := versions[minVersion]
 	if !ok {
-		return 0, fmt.Errorf("unsupported tls minimal version: %s supported versions:%v", minVersion, versionNames)
+		return 0, fmt.Errorf("unsupported tls version: %s supported versions:%v", minVersion, versionNames)
 	}
 	return v, nil
 }
@@ -36,8 +36,8 @@ func TLSCiphers(ciphers []string) ([]uint16, error) {
 }
 
 var versions = map[string]uint16{
-	"TLS12": tls.VersionTLS12,
-	"TLS13": tls.VersionTLS13,
+	"TLSv1_2": tls.VersionTLS12,
+	"TLSv1_3": tls.VersionTLS13,
 }
 var versionNames []string
 var secureCiphers map[string]uint16
