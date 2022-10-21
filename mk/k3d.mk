@@ -52,6 +52,21 @@ ifeq ($(K3D_NETWORK_CNI),calico)
 		--k3s-arg '--flannel-backend=none@server:*'
 endif
 
+ifdef CI
+ifeq ($(GOOS),linux)
+ifneq (,$(findstring e2e-legacy,$(CIRCLE_JOB)))
+	K3D_CLUSTER_CREATE_OPTS += --volume "/sys/fs/bpf:/sys/fs/bpf:shared"
+	K3D_CLUSTER_CREATE_OPTS += --volume "/sys/fs/cgroup:/sys/fs/cgroup:rw"
+endif
+endif
+endif
+
+ifeq ($(GOOS),linux)
+ifndef CI
+	K3D_CLUSTER_CREATE_OPTS += --volume "/sys/fs/bpf:/sys/fs/bpf:shared"
+endif
+endif
+
 .PHONY: k3d/network/create
 k3d/network/create:
 	@touch $(BUILD_DIR)/k3d_network.lock && \
@@ -72,6 +87,14 @@ k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create
 	@echo
 	@echo '<<< ------------------------------------------------------------- <<<'
 	@echo
+	$(MAKE) k3d/configure/ebpf
+
+.PHONY: k3d/configure/ebpf
+k3d/configure/ebpf:
+ifeq ($(GOOS),darwin)
+	docker exec -it k3d-$(KIND_CLUSTER_NAME)-server-0 mount bpffs /sys/fs/bpf -t bpf && \
+	docker exec -it k3d-$(KIND_CLUSTER_NAME)-server-0 mount --make-shared /sys/fs/bpf
+endif
 
 .PHONY: k3d/wait
 k3d/wait:

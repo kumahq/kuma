@@ -83,7 +83,6 @@ func (ss Subset) IndexOfPositive() int {
 type Rule struct {
 	Subset Subset
 	Conf   proto.Message
-	// todo(lobkovilya): add support for Origin to implement Inspect API
 	Origin []core_model.ResourceMeta
 }
 
@@ -104,7 +103,7 @@ func (rs Rules) Compute(sub Subset) proto.Message {
 // Filtering out of negative rules could be useful for XDS generators that don't have a way to configure negations.
 //
 // See the detailed algorithm description in docs/madr/decisions/007-mesh-traffic-permission.md
-func BuildRules(list []PolicyItem) (Rules, error) {
+func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 	rules := Rules{}
 
 	// 1. Each targetRef should be represented as a list of tags
@@ -139,6 +138,7 @@ func BuildRules(list []PolicyItem) (Rules, error) {
 		}
 		// 3. For each combination determine a configuration
 		confs := []any{}
+		distinctOrigins := map[core_model.ResourceKey]core_model.ResourceMeta{}
 		for i := 0; i < len(list); i++ {
 			item := list[i]
 			itemSubset, err := asSubset(item.GetTargetRef())
@@ -147,6 +147,7 @@ func BuildRules(list []PolicyItem) (Rules, error) {
 			}
 			if itemSubset.IsSubset(ss) {
 				confs = append(confs, item.GetDefaultAsProto())
+				distinctOrigins[core_model.MetaToResourceKey(item.ResourceMeta)] = item.ResourceMeta
 			}
 		}
 		merged, err := merge(confs)
@@ -154,9 +155,17 @@ func BuildRules(list []PolicyItem) (Rules, error) {
 			return nil, err
 		}
 		if merged != nil {
+			var origins []core_model.ResourceMeta
+			for _, origin := range distinctOrigins {
+				origins = append(origins, origin)
+			}
+			sort.Slice(origins, func(i, j int) bool {
+				return origins[i].GetName() < origins[j].GetName()
+			})
 			rules = append(rules, &Rule{
 				Subset: ss,
 				Conf:   merged,
+				Origin: origins,
 			})
 		}
 	}

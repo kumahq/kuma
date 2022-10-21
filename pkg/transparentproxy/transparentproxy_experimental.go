@@ -240,7 +240,15 @@ func validateUintValueOrRange(valueOrRange string) error {
 	return nil
 }
 
-func (tp *ExperimentalTransparentProxy) Cleanup(dryRun, verbose bool) (string, error) {
-	// TODO implement me
-	panic("implement me")
+func (tp *ExperimentalTransparentProxy) Cleanup(tpConfig *config.TransparentProxyConfig) (string, error) {
+	return kumanet_tproxy.Cleanup(kumanet_config.Config{
+		Ebpf: kumanet_config.Ebpf{
+			Enabled:   tpConfig.EbpfEnabled,
+			BPFFSPath: tpConfig.EbpfBPFFSPath,
+		},
+		RuntimeStdout: tpConfig.Stdout,
+		RuntimeStderr: tpConfig.Stderr,
+		Verbose:       tpConfig.Verbose,
+		DryRun:        tpConfig.DryRun,
+	})
 }

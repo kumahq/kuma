@@ -5,5 +5,15 @@
     tags:
     - literal: support
       name: team
-  Origin: null
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: mesh-1
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: mt-1
+    type: MeshTrace
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: mesh-1
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: mt-2
+    type: MeshTrace
   Subset: []

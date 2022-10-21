@@ -1,6 +1,11 @@
 - Conf:
     action: ALLOW
-  Origin: null
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: mesh-1
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: mtp-1
+    type: MeshTrafficPermission
   Subset:
   - Key: env
     Not: false
@@ -10,7 +15,12 @@
     Value: us-east
 - Conf:
     action: ALLOW
-  Origin: null
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: mesh-1
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: mtp-1
+    type: MeshTrafficPermission
   Subset:
   - Key: env
     Not: false
@@ -20,7 +30,12 @@
     Value: us-east
 - Conf:
     action: DENY
-  Origin: null
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: mesh-1
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: mtp-1
+    type: MeshTrafficPermission
   Subset:
   - Key: env
     Not: true
@@ -33,7 +48,12 @@
     Value: us-east
 - Conf:
     action: ALLOW
-  Origin: null
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: mesh-1
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: mtp-1
+    type: MeshTrafficPermission
   Subset:
   - Key: env
     Not: false
@@ -43,7 +63,12 @@
     Value: us-east
 - Conf:
     action: ALLOW
-  Origin: null
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: mesh-1
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: mtp-1
+    type: MeshTrafficPermission
   Subset:
   - Key: env
     Not: false
@@ -53,7 +78,12 @@
     Value: us-east
 - Conf:
     action: ALLOW
-  Origin: null
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: mesh-1
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: mtp-1
+    type: MeshTrafficPermission
   Subset:
   - Key: env
     Not: true

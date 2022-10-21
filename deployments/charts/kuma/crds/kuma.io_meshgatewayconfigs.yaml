@@ -39,6 +39,10 @@ spec:
             description: MeshGatewayConfigSpec specifies the options available for
               a Kuma MeshGateway.
             properties:
+              crossMesh:
+                description: CrossMesh specifies whether listeners configured by this
+                  gateway are cross mesh listeners.
+                type: boolean
               replicas:
                 default: 1
                 description: Replicas is the number of dataplane proxy replicas to
