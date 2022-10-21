@@ -14,13 +14,13 @@ var _ = Describe("MeshTrafficPermission", func() {
 		DescribeTable("should pass validation",
 			func(mtpYAML string) {
 				// setup
-				meshTrafficPermission := meshtrafficpermissions_proto.NewMeshTrafficPermissionResource()
+				mtp := meshtrafficpermissions_proto.NewMeshTrafficPermissionResource()
 
 				// when
-				err := core_model.FromYAML([]byte(mtpYAML), meshTrafficPermission.Spec)
+				err := core_model.FromYAML(mtp.Descriptor(), []byte(mtpYAML), mtp.Spec)
 				Expect(err).ToNot(HaveOccurred())
 				// and
-				verr := meshTrafficPermission.Validate()
+				verr := mtp.Validate()
 
 				// then
 				Expect(verr).To(BeNil())
@@ -114,7 +114,7 @@ from:
 				mtp := meshtrafficpermissions_proto.NewMeshTrafficPermissionResource()
 
 				// when
-				err := core_model.FromYAML([]byte(given.inputYaml), mtp.Spec)
+				err := core_model.FromYAML(mtp.Descriptor(), []byte(given.inputYaml), mtp.Spec)
 				Expect(err).ToNot(HaveOccurred())
 				// and
 				verr := mtp.Validate()

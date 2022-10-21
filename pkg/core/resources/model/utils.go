@@ -12,25 +12,25 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-func ToJSON(spec ResourceSpec) ([]byte, error) {
-	if msg, ok := spec.(proto.Message); ok {
-		return util_proto.ToJSON(msg)
+func ToJSON(desc ResourceTypeDescriptor, spec ResourceSpec) ([]byte, error) {
+	if !desc.IsPluginOriginated {
+		return util_proto.ToJSON(spec.(proto.Message))
 	} else {
 		return json.Marshal(spec)
 	}
 }
 
-func ToYAML(spec ResourceSpec) ([]byte, error) {
-	if msg, ok := spec.(proto.Message); ok {
-		return util_proto.ToYAML(msg)
+func ToYAML(desc ResourceTypeDescriptor, spec ResourceSpec) ([]byte, error) {
+	if !desc.IsPluginOriginated {
+		return util_proto.ToYAML(spec.(proto.Message))
 	} else {
 		return yaml.Marshal(spec)
 	}
 }
 
-func ToAny(spec ResourceSpec) (*anypb.Any, error) {
-	if msg, ok := spec.(proto.Message); ok {
-		return util_proto.MarshalAnyDeterministic(msg)
+func ToAny(desc ResourceTypeDescriptor, spec ResourceSpec) (*anypb.Any, error) {
+	if !desc.IsPluginOriginated {
+		return util_proto.MarshalAnyDeterministic(spec.(proto.Message))
 	} else {
 		bytes, err := json.Marshal(spec)
 		if err != nil {
@@ -42,25 +42,25 @@ func ToAny(spec ResourceSpec) (*anypb.Any, error) {
 	}
 }
 
-func FromJSON(src []byte, spec ResourceSpec) error {
-	if msg, ok := spec.(proto.Message); ok {
-		return util_proto.FromJSON(src, msg)
+func FromJSON(desc ResourceTypeDescriptor, src []byte, spec ResourceSpec) error {
+	if !desc.IsPluginOriginated {
+		return util_proto.FromJSON(src, spec.(proto.Message))
 	} else {
 		return json.Unmarshal(src, spec)
 	}
 }
 
-func FromYAML(src []byte, spec ResourceSpec) error {
-	if msg, ok := spec.(proto.Message); ok {
-		return util_proto.FromYAML(src, msg)
+func FromYAML(desc ResourceTypeDescriptor, src []byte, spec ResourceSpec) error {
+	if !desc.IsPluginOriginated {
+		return util_proto.FromYAML(src, spec.(proto.Message))
 	} else {
 		return yaml.Unmarshal(src, spec)
 	}
 }
 
-func FromAny(src *anypb.Any, spec ResourceSpec) error {
-	if msg, ok := spec.(proto.Message); ok {
-		return util_proto.UnmarshalAnyTo(src, msg)
+func FromAny(desc ResourceTypeDescriptor, src *anypb.Any, spec ResourceSpec) error {
+	if !desc.IsPluginOriginated {
+		return util_proto.UnmarshalAnyTo(src, spec.(proto.Message))
 	} else {
 		return json.Unmarshal(src.Value, spec)
 	}

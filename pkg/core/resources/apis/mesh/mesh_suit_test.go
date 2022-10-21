@@ -37,7 +37,7 @@ func DescribeValidCases(generator ResourceGenerator, cases ...TableEntry) {
 			resource := generator.New()
 
 			// when
-			err := core_model.FromYAML([]byte(given), resource.GetSpec())
+			err := core_model.FromYAML(resource.Descriptor(), []byte(given), resource.GetSpec())
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -63,7 +63,7 @@ func DescribeErrorCases(generator ResourceGenerator, cases ...TableEntry) {
 
 			// when
 			Expect(
-				core_model.FromYAML([]byte(given.Resource), resource.GetSpec()),
+				core_model.FromYAML(resource.Descriptor(), []byte(given.Resource), resource.GetSpec()),
 			).ToNot(HaveOccurred())
 
 			expected := validators.ValidationError{

@@ -29,7 +29,7 @@ func ToCoreResourceList(response *envoy_sd.DiscoveryResponse) (model.ResourceLis
 func ToEnvoyResources(rlist model.ResourceList) ([]envoy_types.Resource, error) {
 	rv := make([]envoy_types.Resource, 0, len(rlist.GetItems()))
 	for _, r := range rlist.GetItems() {
-		pbany, err := model.ToAny(r.GetSpec())
+		pbany, err := model.ToAny(r.Descriptor(), r.GetSpec())
 		if err != nil {
 			return nil, err
 		}
@@ -97,7 +97,7 @@ func toResources(resourceType model.ResourceType, krs []*mesh_proto.KumaResource
 		if err != nil {
 			return nil, err
 		}
-		if err = model.FromAny(kr.Spec, obj.GetSpec()); err != nil {
+		if err = model.FromAny(obj.Descriptor(), kr.Spec, obj.GetSpec()); err != nil {
 			return nil, err
 		}
 		obj.SetMeta(kumaResourceMetaToResourceMeta(kr.Meta))

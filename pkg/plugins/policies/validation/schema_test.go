@@ -25,7 +25,7 @@ var _ = Describe("plugins validation", func() {
 				obj, err := registry.Global().NewObject(given.resourceType)
 				Expect(err).To(Not(HaveOccurred()))
 
-				err = core_model.FromYAML([]byte(given.inputYaml), obj.GetSpec())
+				err = core_model.FromYAML(obj.Descriptor(), []byte(given.inputYaml), obj.GetSpec())
 				Expect(err).To(Not(HaveOccurred()))
 
 				verr := obj.(core_model.ResourceValidator).Validate()
