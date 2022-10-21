@@ -61,6 +61,7 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--tls-general-secret", "general-tls-secret",
 				"--tls-general-ca-bundle", "XYZ",
 				"--skip-kinds", "CustomResourceDefinition",
+				"--without-kubernetes-connection",
 				"--values", inputFile,
 			},
 		)
@@ -109,6 +110,7 @@ var _ = Describe("kumactl install control-plane", func() {
 				"control-plane",
 				"--tls-general-secret", "general-tls-secret",
 				"--tls-general-ca-bundle", "XYZ",
+				"--without-kubernetes-connection",
 			}
 			if !given.includeCRDs {
 				args = append(args, "--skip-kinds", "CustomResourceDefinition")
@@ -139,16 +141,13 @@ var _ = Describe("kumactl install control-plane", func() {
 			ExpectMatchesGoldenFiles(actual, filepath.Join("testdata", given.goldenFile))
 		},
 		Entry("should generate Kubernetes resources with default settings", testCase{
-			extraArgs: []string{
-				"--without-kubernetes-connection",
-			},
+			extraArgs:   []string{},
 			includeCRDs: true,
 			goldenFile:  "install-control-plane.defaults.golden.yaml",
 		}),
 		Entry("should override default env-vars with values supplied", testCase{
 			extraArgs: []string{
 				"--env-var", "KUMA_DEFAULTS_SKIP_MESH_CREATION=true",
-				"--without-kubernetes-connection",
 			},
 			goldenFile: "install-control-plane.override-env-vars.golden.yaml",
 		}),
@@ -173,7 +172,6 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--kds-global-address", "grpcs://192.168.0.1:5685",
 				"--zone", "zone-1",
 				"--use-node-port",
-				"--without-kubernetes-connection",
 				"--experimental-gatewayapi",
 			},
 			goldenFile: "install-control-plane.overrides.golden.yaml",
@@ -188,14 +186,12 @@ var _ = Describe("kumactl install control-plane", func() {
 		Entry("should generate Kubernetes resources with CNI plugin", testCase{
 			extraArgs: []string{
 				"--cni-enabled",
-				"--without-kubernetes-connection",
 			},
 			goldenFile: "install-control-plane.cni-enabled.golden.yaml",
 		}),
 		Entry("should generate Kubernetes resources with new CNI plugin (experimental)", testCase{
 			extraArgs: []string{
 				"--cni-enabled",
-				"--without-kubernetes-connection",
 				"--set",
 				"experimental.cni=true",
 			},
@@ -205,14 +201,12 @@ var _ = Describe("kumactl install control-plane", func() {
 			"using ebpf (experimental)", testCase{
 			extraArgs: []string{
 				"--set", "experimental.ebpf.enabled=true",
-				"--without-kubernetes-connection",
 			},
 			goldenFile: "install-control-plane.tproxy-ebpf-experimental-enabled.golden.yaml",
 		}),
 		Entry("should generate Kubernetes resources for Global", testCase{
 			extraArgs: []string{
 				"--mode", "global",
-				"--without-kubernetes-connection",
 			},
 			goldenFile: "install-control-plane.global.golden.yaml",
 		}),
@@ -221,7 +215,6 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--mode", "zone",
 				"--zone", "zone-1",
 				"--kds-global-address", "grpcs://192.168.0.1:5685",
-				"--without-kubernetes-connection",
 			},
 			goldenFile: "install-control-plane.zone.golden.yaml",
 		}),
@@ -233,7 +226,6 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--zone", "zone-1",
 				"--kds-global-address", "grpcs://192.168.0.1:5685",
 				"--ingress-use-node-port",
-				"--without-kubernetes-connection",
 			},
 			goldenFile: "install-control-plane.with-ingress.golden.yaml",
 		}),
@@ -241,7 +233,6 @@ var _ = Describe("kumactl install control-plane", func() {
 			extraArgs: []string{
 				"--egress-enabled",
 				"--egress-drain-time", "60s",
-				"--without-kubernetes-connection",
 			},
 			goldenFile: "install-control-plane.with-egress.golden.yaml",
 		}),
@@ -274,7 +265,6 @@ controlPlane:
 		}),
 		Entry("should add GatewayClass if CRDs are present and enabled", testCase{
 			extraArgs: []string{
-				"--without-kubernetes-connection",
 				"--api-versions", fmt.Sprintf("%s/%s", gatewayapi.GroupVersion.String(), "GatewayClass"),
 				"--experimental-gatewayapi",
 			},
@@ -283,7 +273,6 @@ controlPlane:
 		}),
 		Entry("should not add GatewayClass if experimental not enabled", testCase{
 			extraArgs: []string{
-				"--without-kubernetes-connection",
 				"--api-versions", fmt.Sprintf("%s/%s", gatewayapi.GroupVersion.String(), "GatewayClass"),
 			},
 			includeCRDs: true,

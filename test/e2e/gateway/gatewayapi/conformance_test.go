@@ -23,15 +23,6 @@ var clusterName = Kuma1
 var minNodePort = 30080
 var maxNodePort = 30089
 
-const gatewayClass = `
-apiVersion: gateway.networking.k8s.io/v1beta1
-kind: GatewayClass
-metadata:
-  name: kuma
-spec:
-  controllerName: gateways.kuma.io/controller
-`
-
 // TestConformance runs as a `testing` test and not Ginkgo so we have to use an
 // explicit `g` to use Gomega.
 func TestConformance(t *testing.T) {
@@ -49,19 +40,19 @@ func TestConformance(t *testing.T) {
 
 	cluster := NewK8sCluster(t, clusterName, Silent)
 
-	defer func() {
+	t.Cleanup(func() {
 		g.Expect(cluster.DeleteKuma()).To(Succeed())
 		g.Expect(cluster.DismissCluster()).To(Succeed())
-	}()
+	})
 
-	err := NewClusterSetup().
-		Install(gateway.GatewayAPICRDs).
-		Install(Kuma(config_core.Standalone,
-			WithCtlOpts(map[string]string{"--experimental-gatewayapi": "true"}),
-		)).
-		Install(YamlK8s(gatewayClass)).
-		Setup(cluster)
-	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(cluster.Install(gateway.GatewayAPICRDs)).To(Succeed())
+	g.Eventually(func() error {
+		return NewClusterSetup().
+			Install(Kuma(config_core.Standalone,
+				WithCtlOpts(map[string]string{"--experimental-gatewayapi": "true"}),
+			)).
+			Setup(cluster)
+	}, "30s", "3s").Should(Succeed())
 
 	opts := cluster.GetKubectlOptions()
 
