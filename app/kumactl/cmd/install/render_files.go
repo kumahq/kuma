@@ -5,7 +5,7 @@ import (
 	"io"
 	"text/template"
 
-	"github.com/Masterminds/sprig"
+	"github.com/Masterminds/sprig/v3"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
