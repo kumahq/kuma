@@ -90,6 +90,10 @@ type MeshGatewayServiceSpec struct {
 type MeshGatewayConfigSpec struct {
 	MeshGatewayCommonConfig `json:",inline"`
 
+	// CrossMesh specifies whether listeners configured by this gateway are
+	// cross mesh listeners.
+	CrossMesh bool `json:"crossMesh,omitempty"`
+
 	// Tags specifies a set of Kuma tags that are included in the
 	// MeshGatewayInstance and thus propagated to every Dataplane generated to
 	// serve the MeshGateway.

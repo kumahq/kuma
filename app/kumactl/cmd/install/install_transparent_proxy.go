@@ -231,17 +231,6 @@ func findUidGid(uid, user string) (string, string, error) {
 
 func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) error {
 	var tp transparentproxy.TransparentProxy
-	if !args.ExperimentalTransparentProxyEngine {
-		tp = transparentproxy.DefaultTransparentProxy()
-
-		// best effort cleanup before we apply the rules (again?)
-		_, err := tp.Cleanup(args.DryRun, args.Verbose)
-		if err != nil {
-			return errors.Wrapf(err, "unable to invoke cleanup")
-		}
-	} else {
-		tp = &transparentproxy.ExperimentalTransparentProxy{}
-	}
 
 	uid, gid, err := findUidGid(args.UID, args.User)
 	if err != nil {
@@ -274,6 +263,18 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 		EbpfProgramsSourcePath:         args.EbpfProgramsSourcePath,
 		Stdout:                         cmd.OutOrStdout(),
 		Stderr:                         cmd.OutOrStderr(),
+	}
+
+	if !args.ExperimentalTransparentProxyEngine {
+		tp = transparentproxy.DefaultTransparentProxy()
+
+		// best effort cleanup before we apply the rules (again?)
+		_, err := tp.Cleanup(cfg)
+		if err != nil {
+			return errors.Wrapf(err, "unable to invoke cleanup")
+		}
+	} else {
+		tp = &transparentproxy.ExperimentalTransparentProxy{}
 	}
 
 	output, err := tp.Setup(cfg)

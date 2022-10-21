@@ -39,16 +39,19 @@ var _ = SynchronizedBeforeSuite(
 		Expect(env.Cluster.Install(
 			gateway.GatewayAPICRDs,
 		)).To(Succeed())
-		Expect(env.Cluster.Install(
-			Kuma(core.Standalone,
-				WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
-				WithCtlOpts(map[string]string{
-					"--experimental-gatewayapi": "true",
-					"--set":                     "experimental.transparentProxy=true",
-				}),
-				WithEgress(),
-			)),
-		).To(Succeed())
+		// The Gateway API webhook needs to start before we can create
+		// GatewayClasses
+		Eventually(func() error {
+			return env.Cluster.Install(
+				Kuma(core.Standalone,
+					WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
+					WithCtlOpts(map[string]string{
+						"--experimental-gatewayapi": "true",
+						"--set":                     "experimental.transparentProxy=true",
+					}),
+					WithEgress(),
+				))
+		}, "30s", "3s").Should(Succeed())
 		portFwd := env.Cluster.GetKuma().(*K8sControlPlane).PortFwd()
 
 		bytes, err := json.Marshal(portFwd)

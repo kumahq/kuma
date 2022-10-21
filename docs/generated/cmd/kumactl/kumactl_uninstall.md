@@ -24,5 +24,6 @@ Uninstall various Kuma components.
 ### SEE ALSO
 
 * [kumactl](kumactl.md)	 - Management tool for Kuma
+* [kumactl uninstall ebpf](kumactl_uninstall_ebpf.md)	 - Uninstall BPF files from the nodes
 * [kumactl uninstall transparent-proxy](kumactl_uninstall_transparent-proxy.md)	 - Uninstall Transparent Proxy pre-requisites on the host
 

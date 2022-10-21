@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/ghodss/yaml"
@@ -11,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/strvals"
+	"k8s.io/client-go/discovery"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
 
@@ -18,7 +20,7 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
-	"github.com/kumahq/kuma/pkg/config/core"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
@@ -43,6 +45,83 @@ func (cv *componentVersion) Set(v string) error {
 
 func (cv *componentVersion) Type() string {
 	return "string"
+}
+
+// getVersionSet retrieves a set of available k8s API versions
+// This is inlined from https://github.com/helm/helm/blob/v3.8.1/pkg/action/action.go#L309
+func getVersionSet(client discovery.ServerResourcesInterface) (chartutil.VersionSet, error) {
+	groups, resources, err := client.ServerGroupsAndResources()
+	if err != nil && !discovery.IsGroupDiscoveryFailedError(err) {
+		return chartutil.DefaultVersionSet, errors.Wrap(err, "could not get apiVersions from Kubernetes")
+	}
+
+	if len(groups) == 0 && len(resources) == 0 {
+		return chartutil.DefaultVersionSet, nil
+	}
+
+	versionMap := make(map[string]interface{})
+	versions := []string{}
+
+	// Extract the groups
+	for _, g := range groups {
+		for _, gv := range g.Versions {
+			versionMap[gv.GroupVersion] = struct{}{}
+		}
+	}
+
+	// Extract the resources
+	var id string
+	var ok bool
+	for _, r := range resources {
+		for _, rl := range r.APIResources {
+			// A Kind at a GroupVersion can show up more than once. We only want
+			// it displayed once in the final output.
+			id = path.Join(r.GroupVersion, rl.Kind)
+			if _, ok = versionMap[id]; !ok {
+				versionMap[id] = struct{}{}
+			}
+		}
+	}
+
+	// Convert to a form that NewVersionSet can use
+	for k := range versionMap {
+		versions = append(versions, k)
+	}
+
+	return chartutil.VersionSet(versions), nil
+}
+
+// getCapabilities builds a Capabilities from discovery information.
+// This is inlined from https://github.com/helm/helm/blob/v3.8.1/pkg/action/action.go#L239
+func getCapabilities(kubeConfig *rest.Config) (*chartutil.Capabilities, error) {
+	dc, err := discovery.NewDiscoveryClientForConfig(kubeConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	kubeVersion, err := dc.ServerVersion()
+	if err != nil {
+		return nil, errors.Wrap(err, "could not get server version from Kubernetes")
+	}
+
+	// Issue #6361:
+	// Client-Go emits an error when an API service is registered but unimplemented.
+	// We ignore that error here. But since the discovery client continues
+	// building the API object, it is correctly populated with all valid APIs.
+	// See https://github.com/kubernetes/kubernetes/issues/72051#issuecomment-521157642
+	apiVersions, err := getVersionSet(dc)
+	if err != nil && !discovery.IsGroupDiscoveryFailedError(err) {
+		return nil, errors.Wrap(err, "could not get apiVersions from Kubernetes")
+	}
+
+	return &chartutil.Capabilities{
+		APIVersions: apiVersions,
+		KubeVersion: chartutil.KubeVersion{
+			Version: kubeVersion.GitVersion,
+			Major:   kubeVersion.Major,
+			Minor:   kubeVersion.Minor,
+		},
+	}, nil
 }
 
 func newInstallControlPlaneCmd(ctx *install_context.InstallCpContext) *cobra.Command {
@@ -108,7 +187,7 @@ This command requires that the KUBECONFIG environment is set`,
 				return errors.Wrap(err, "Failed to evaluate helm values")
 			}
 
-			if args.UseNodePort && args.ControlPlane_mode == core.Global {
+			if args.UseNodePort && args.ControlPlane_mode == config_core.Global {
 				v := "controlPlane.globalZoneSyncService.type=NodePort"
 				if ctx.HELMValuesPrefix != "" {
 					v = fmt.Sprintf("%s.%s", ctx.HELMValuesPrefix, v)
@@ -137,12 +216,18 @@ This command requires that the KUBECONFIG environment is set`,
 				}
 			}
 
-			capabilities := *chartutil.DefaultCapabilities
+			capabilities := chartutil.DefaultCapabilities
+			if !args.WithoutKubernetesConnection {
+				capabilities, err = getCapabilities(kubeClientConfig)
+				if err != nil {
+					return errors.Wrap(err, "could not get Capabilities")
+				}
+			}
 			for _, version := range args.APIVersions {
 				capabilities.APIVersions = append(capabilities.APIVersions, version)
 			}
 
-			renderedFiles, err := renderHelmFiles(templateFiles, args.Namespace, vals, kubeClientConfig, capabilities)
+			renderedFiles, err := renderHelmFiles(templateFiles, args.Namespace, vals, kubeClientConfig, *capabilities)
 			if err != nil {
 				return errors.Wrap(err, "Failed to render helm template files")
 			}
