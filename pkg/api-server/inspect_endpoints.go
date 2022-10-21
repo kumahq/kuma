@@ -576,6 +576,12 @@ func inspectRulesAttachment(cfg *kuma_cp.Config, builder xds_context.MeshContext
 			return
 		}
 		rulesAttachments := core_xds.BuildRulesAttachments(matchedPolicies.Dynamic, proxy.Dataplane.Spec.Networking)
+		sort.SliceStable(rulesAttachments, func(i, j int) bool {
+			if rulesAttachments[i].Name == rulesAttachments[j].Name {
+				return rulesAttachments[i].Type < rulesAttachments[j].Type
+			}
+			return rulesAttachments[i].Name < rulesAttachments[j].Name
+		})
 
 		resp := api_server_types.RuleInspectResponse{}
 		for _, ruleAttachment := range rulesAttachments {

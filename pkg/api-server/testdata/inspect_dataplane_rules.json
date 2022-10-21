@@ -2,6 +2,25 @@
  "total": 3,
  "items": [
   {
+   "type": "clientSubset",
+   "name": "192.168.0.1:80",
+   "service": "backend",
+   "policyType": "MeshTrafficPermission",
+   "subset": {
+    "kuma.io/service": "client",
+    "kuma.io/zone": "east"
+   },
+   "conf": {
+    "action": "DENY"
+   },
+   "origins": [
+    {
+     "mesh": "default",
+     "name": "mtp-1"
+    }
+   ]
+  },
+  {
    "type": "destinationSubset",
    "name": "192.168.0.2:8080",
    "service": "redis",
@@ -43,25 +62,6 @@
     {
      "mesh": "default",
      "name": "mal-1"
-    }
-   ]
-  },
-  {
-   "type": "clientSubset",
-   "name": "192.168.0.1:80",
-   "service": "backend",
-   "policyType": "MeshTrafficPermission",
-   "subset": {
-    "kuma.io/service": "client",
-    "kuma.io/zone": "east"
-   },
-   "conf": {
-    "action": "DENY"
-   },
-   "origins": [
-    {
-     "mesh": "default",
-     "name": "mtp-1"
     }
    ]
   }
