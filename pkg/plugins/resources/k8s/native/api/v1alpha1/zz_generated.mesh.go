@@ -7,11 +7,11 @@ package v1alpha1
 import (
 	"fmt"
 
-	"google.golang.org/protobuf/proto"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -61,7 +61,7 @@ func (cb *CircuitBreaker) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *CircuitBreaker) GetSpec() (proto.Message, error) {
+func (cb *CircuitBreaker) GetSpec() (core_model.ResourceSpec, error) {
 	spec := cb.Spec
 	m := mesh_proto.CircuitBreaker{}
 
@@ -73,17 +73,18 @@ func (cb *CircuitBreaker) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *CircuitBreaker) SetSpec(spec proto.Message) {
+func (cb *CircuitBreaker) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*mesh_proto.CircuitBreaker); !ok {
+	s, ok := spec.(*mesh_proto.CircuitBreaker)
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
 func (cb *CircuitBreaker) Scope() model.Scope {
@@ -157,7 +158,7 @@ func (cb *Dataplane) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *Dataplane) GetSpec() (proto.Message, error) {
+func (cb *Dataplane) GetSpec() (core_model.ResourceSpec, error) {
 	spec := cb.Spec
 	m := mesh_proto.Dataplane{}
 
@@ -169,17 +170,18 @@ func (cb *Dataplane) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *Dataplane) SetSpec(spec proto.Message) {
+func (cb *Dataplane) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*mesh_proto.Dataplane); !ok {
+	s, ok := spec.(*mesh_proto.Dataplane)
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
 func (cb *Dataplane) Scope() model.Scope {
@@ -253,7 +255,7 @@ func (cb *DataplaneInsight) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *DataplaneInsight) GetSpec() (proto.Message, error) {
+func (cb *DataplaneInsight) GetSpec() (core_model.ResourceSpec, error) {
 	spec := cb.Status
 	m := mesh_proto.DataplaneInsight{}
 
@@ -265,18 +267,19 @@ func (cb *DataplaneInsight) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *DataplaneInsight) SetSpec(spec proto.Message) {
+func (cb *DataplaneInsight) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Status = nil
 
 		return
 	}
 
-	if _, ok := spec.(*mesh_proto.DataplaneInsight); !ok {
+	s, ok := spec.(*mesh_proto.DataplaneInsight)
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Status = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Status = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 
 }
 
@@ -351,7 +354,7 @@ func (cb *ExternalService) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *ExternalService) GetSpec() (proto.Message, error) {
+func (cb *ExternalService) GetSpec() (core_model.ResourceSpec, error) {
 	spec := cb.Spec
 	m := mesh_proto.ExternalService{}
 
@@ -363,17 +366,18 @@ func (cb *ExternalService) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *ExternalService) SetSpec(spec proto.Message) {
+func (cb *ExternalService) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*mesh_proto.ExternalService); !ok {
+	s, ok := spec.(*mesh_proto.ExternalService)
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
 func (cb *ExternalService) Scope() model.Scope {
@@ -447,7 +451,7 @@ func (cb *FaultInjection) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *FaultInjection) GetSpec() (proto.Message, error) {
+func (cb *FaultInjection) GetSpec() (core_model.ResourceSpec, error) {
 	spec := cb.Spec
 	m := mesh_proto.FaultInjection{}
 
@@ -459,17 +463,18 @@ func (cb *FaultInjection) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *FaultInjection) SetSpec(spec proto.Message) {
+func (cb *FaultInjection) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*mesh_proto.FaultInjection); !ok {
+	s, ok := spec.(*mesh_proto.FaultInjection)
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
 func (cb *FaultInjection) Scope() model.Scope {
@@ -543,7 +548,7 @@ func (cb *HealthCheck) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *HealthCheck) GetSpec() (proto.Message, error) {
+func (cb *HealthCheck) GetSpec() (core_model.ResourceSpec, error) {
 	spec := cb.Spec
 	m := mesh_proto.HealthCheck{}
 
@@ -555,17 +560,18 @@ func (cb *HealthCheck) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *HealthCheck) SetSpec(spec proto.Message) {
+func (cb *HealthCheck) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*mesh_proto.HealthCheck); !ok {
+	s, ok := spec.(*mesh_proto.HealthCheck)
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
 func (cb *HealthCheck) Scope() model.Scope {
@@ -639,7 +645,7 @@ func (cb *Mesh) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *Mesh) GetSpec() (proto.Message, error) {
+func (cb *Mesh) GetSpec() (core_model.ResourceSpec, error) {
 	spec := cb.Spec
 	m := mesh_proto.Mesh{}
 
@@ -651,17 +657,18 @@ func (cb *Mesh) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *Mesh) SetSpec(spec proto.Message) {
+func (cb *Mesh) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*mesh_proto.Mesh); !ok {
+	s, ok := spec.(*mesh_proto.Mesh)
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
 func (cb *Mesh) Scope() model.Scope {
@@ -735,7 +742,7 @@ func (cb *MeshGateway) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *MeshGateway) GetSpec() (proto.Message, error) {
+func (cb *MeshGateway) GetSpec() (core_model.ResourceSpec, error) {
 	spec := cb.Spec
 	m := mesh_proto.MeshGateway{}
 
@@ -747,17 +754,18 @@ func (cb *MeshGateway) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *MeshGateway) SetSpec(spec proto.Message) {
+func (cb *MeshGateway) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*mesh_proto.MeshGateway); !ok {
+	s, ok := spec.(*mesh_proto.MeshGateway)
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
 func (cb *MeshGateway) Scope() model.Scope {
@@ -831,7 +839,7 @@ func (cb *MeshGatewayRoute) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *MeshGatewayRoute) GetSpec() (proto.Message, error) {
+func (cb *MeshGatewayRoute) GetSpec() (core_model.ResourceSpec, error) {
 	spec := cb.Spec
 	m := mesh_proto.MeshGatewayRoute{}
 
@@ -843,17 +851,18 @@ func (cb *MeshGatewayRoute) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *MeshGatewayRoute) SetSpec(spec proto.Message) {
+func (cb *MeshGatewayRoute) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*mesh_proto.MeshGatewayRoute); !ok {
+	s, ok := spec.(*mesh_proto.MeshGatewayRoute)
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
 func (cb *MeshGatewayRoute) Scope() model.Scope {
@@ -927,7 +936,7 @@ func (cb *MeshInsight) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *MeshInsight) GetSpec() (proto.Message, error) {
+func (cb *MeshInsight) GetSpec() (core_model.ResourceSpec, error) {
 	spec := cb.Spec
 	m := mesh_proto.MeshInsight{}
 
@@ -939,17 +948,18 @@ func (cb *MeshInsight) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *MeshInsight) SetSpec(spec proto.Message) {
+func (cb *MeshInsight) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*mesh_proto.MeshInsight); !ok {
+	s, ok := spec.(*mesh_proto.MeshInsight)
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
 func (cb *MeshInsight) Scope() model.Scope {
@@ -1023,7 +1033,7 @@ func (cb *ProxyTemplate) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *ProxyTemplate) GetSpec() (proto.Message, error) {
+func (cb *ProxyTemplate) GetSpec() (core_model.ResourceSpec, error) {
 	spec := cb.Spec
 	m := mesh_proto.ProxyTemplate{}
 
@@ -1035,17 +1045,18 @@ func (cb *ProxyTemplate) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *ProxyTemplate) SetSpec(spec proto.Message) {
+func (cb *ProxyTemplate) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*mesh_proto.ProxyTemplate); !ok {
+	s, ok := spec.(*mesh_proto.ProxyTemplate)
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
 func (cb *ProxyTemplate) Scope() model.Scope {
@@ -1119,7 +1130,7 @@ func (cb *RateLimit) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *RateLimit) GetSpec() (proto.Message, error) {
+func (cb *RateLimit) GetSpec() (core_model.ResourceSpec, error) {
 	spec := cb.Spec
 	m := mesh_proto.RateLimit{}
 
@@ -1131,17 +1142,18 @@ func (cb *RateLimit) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *RateLimit) SetSpec(spec proto.Message) {
+func (cb *RateLimit) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*mesh_proto.RateLimit); !ok {
+	s, ok := spec.(*mesh_proto.RateLimit)
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
 func (cb *RateLimit) Scope() model.Scope {
@@ -1215,7 +1227,7 @@ func (cb *Retry) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *Retry) GetSpec() (proto.Message, error) {
+func (cb *Retry) GetSpec() (core_model.ResourceSpec, error) {
 	spec := cb.Spec
 	m := mesh_proto.Retry{}
 
@@ -1227,17 +1239,18 @@ func (cb *Retry) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *Retry) SetSpec(spec proto.Message) {
+func (cb *Retry) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*mesh_proto.Retry); !ok {
+	s, ok := spec.(*mesh_proto.Retry)
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
 func (cb *Retry) Scope() model.Scope {
@@ -1311,7 +1324,7 @@ func (cb *ServiceInsight) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *ServiceInsight) GetSpec() (proto.Message, error) {
+func (cb *ServiceInsight) GetSpec() (core_model.ResourceSpec, error) {
 	spec := cb.Spec
 	m := mesh_proto.ServiceInsight{}
 
@@ -1323,17 +1336,18 @@ func (cb *ServiceInsight) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *ServiceInsight) SetSpec(spec proto.Message) {
+func (cb *ServiceInsight) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*mesh_proto.ServiceInsight); !ok {
+	s, ok := spec.(*mesh_proto.ServiceInsight)
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
 func (cb *ServiceInsight) Scope() model.Scope {
@@ -1407,7 +1421,7 @@ func (cb *Timeout) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *Timeout) GetSpec() (proto.Message, error) {
+func (cb *Timeout) GetSpec() (core_model.ResourceSpec, error) {
 	spec := cb.Spec
 	m := mesh_proto.Timeout{}
 
@@ -1419,17 +1433,18 @@ func (cb *Timeout) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *Timeout) SetSpec(spec proto.Message) {
+func (cb *Timeout) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*mesh_proto.Timeout); !ok {
+	s, ok := spec.(*mesh_proto.Timeout)
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
 func (cb *Timeout) Scope() model.Scope {
@@ -1503,7 +1518,7 @@ func (cb *TrafficLog) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *TrafficLog) GetSpec() (proto.Message, error) {
+func (cb *TrafficLog) GetSpec() (core_model.ResourceSpec, error) {
 	spec := cb.Spec
 	m := mesh_proto.TrafficLog{}
 
@@ -1515,17 +1530,18 @@ func (cb *TrafficLog) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *TrafficLog) SetSpec(spec proto.Message) {
+func (cb *TrafficLog) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*mesh_proto.TrafficLog); !ok {
+	s, ok := spec.(*mesh_proto.TrafficLog)
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
 func (cb *TrafficLog) Scope() model.Scope {
@@ -1599,7 +1615,7 @@ func (cb *TrafficPermission) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *TrafficPermission) GetSpec() (proto.Message, error) {
+func (cb *TrafficPermission) GetSpec() (core_model.ResourceSpec, error) {
 	spec := cb.Spec
 	m := mesh_proto.TrafficPermission{}
 
@@ -1611,17 +1627,18 @@ func (cb *TrafficPermission) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *TrafficPermission) SetSpec(spec proto.Message) {
+func (cb *TrafficPermission) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*mesh_proto.TrafficPermission); !ok {
+	s, ok := spec.(*mesh_proto.TrafficPermission)
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
 func (cb *TrafficPermission) Scope() model.Scope {
@@ -1695,7 +1712,7 @@ func (cb *TrafficRoute) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *TrafficRoute) GetSpec() (proto.Message, error) {
+func (cb *TrafficRoute) GetSpec() (core_model.ResourceSpec, error) {
 	spec := cb.Spec
 	m := mesh_proto.TrafficRoute{}
 
@@ -1707,17 +1724,18 @@ func (cb *TrafficRoute) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *TrafficRoute) SetSpec(spec proto.Message) {
+func (cb *TrafficRoute) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*mesh_proto.TrafficRoute); !ok {
+	s, ok := spec.(*mesh_proto.TrafficRoute)
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
 func (cb *TrafficRoute) Scope() model.Scope {
@@ -1791,7 +1809,7 @@ func (cb *TrafficTrace) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *TrafficTrace) GetSpec() (proto.Message, error) {
+func (cb *TrafficTrace) GetSpec() (core_model.ResourceSpec, error) {
 	spec := cb.Spec
 	m := mesh_proto.TrafficTrace{}
 
@@ -1803,17 +1821,18 @@ func (cb *TrafficTrace) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *TrafficTrace) SetSpec(spec proto.Message) {
+func (cb *TrafficTrace) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*mesh_proto.TrafficTrace); !ok {
+	s, ok := spec.(*mesh_proto.TrafficTrace)
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
 func (cb *TrafficTrace) Scope() model.Scope {
@@ -1887,7 +1906,7 @@ func (cb *VirtualOutbound) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *VirtualOutbound) GetSpec() (proto.Message, error) {
+func (cb *VirtualOutbound) GetSpec() (core_model.ResourceSpec, error) {
 	spec := cb.Spec
 	m := mesh_proto.VirtualOutbound{}
 
@@ -1899,17 +1918,18 @@ func (cb *VirtualOutbound) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *VirtualOutbound) SetSpec(spec proto.Message) {
+func (cb *VirtualOutbound) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*mesh_proto.VirtualOutbound); !ok {
+	s, ok := spec.(*mesh_proto.VirtualOutbound)
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
 func (cb *VirtualOutbound) Scope() model.Scope {
@@ -1983,7 +2003,7 @@ func (cb *ZoneEgress) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *ZoneEgress) GetSpec() (proto.Message, error) {
+func (cb *ZoneEgress) GetSpec() (core_model.ResourceSpec, error) {
 	spec := cb.Spec
 	m := mesh_proto.ZoneEgress{}
 
@@ -1995,17 +2015,18 @@ func (cb *ZoneEgress) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *ZoneEgress) SetSpec(spec proto.Message) {
+func (cb *ZoneEgress) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*mesh_proto.ZoneEgress); !ok {
+	s, ok := spec.(*mesh_proto.ZoneEgress)
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
 func (cb *ZoneEgress) Scope() model.Scope {
@@ -2079,7 +2100,7 @@ func (cb *ZoneEgressInsight) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *ZoneEgressInsight) GetSpec() (proto.Message, error) {
+func (cb *ZoneEgressInsight) GetSpec() (core_model.ResourceSpec, error) {
 	spec := cb.Spec
 	m := mesh_proto.ZoneEgressInsight{}
 
@@ -2091,17 +2112,18 @@ func (cb *ZoneEgressInsight) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *ZoneEgressInsight) SetSpec(spec proto.Message) {
+func (cb *ZoneEgressInsight) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*mesh_proto.ZoneEgressInsight); !ok {
+	s, ok := spec.(*mesh_proto.ZoneEgressInsight)
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
 func (cb *ZoneEgressInsight) Scope() model.Scope {
@@ -2175,7 +2197,7 @@ func (cb *ZoneIngress) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *ZoneIngress) GetSpec() (proto.Message, error) {
+func (cb *ZoneIngress) GetSpec() (core_model.ResourceSpec, error) {
 	spec := cb.Spec
 	m := mesh_proto.ZoneIngress{}
 
@@ -2187,17 +2209,18 @@ func (cb *ZoneIngress) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *ZoneIngress) SetSpec(spec proto.Message) {
+func (cb *ZoneIngress) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*mesh_proto.ZoneIngress); !ok {
+	s, ok := spec.(*mesh_proto.ZoneIngress)
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
 func (cb *ZoneIngress) Scope() model.Scope {
@@ -2271,7 +2294,7 @@ func (cb *ZoneIngressInsight) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *ZoneIngressInsight) GetSpec() (proto.Message, error) {
+func (cb *ZoneIngressInsight) GetSpec() (core_model.ResourceSpec, error) {
 	spec := cb.Spec
 	m := mesh_proto.ZoneIngressInsight{}
 
@@ -2283,17 +2306,18 @@ func (cb *ZoneIngressInsight) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *ZoneIngressInsight) SetSpec(spec proto.Message) {
+func (cb *ZoneIngressInsight) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*mesh_proto.ZoneIngressInsight); !ok {
+	s, ok := spec.(*mesh_proto.ZoneIngressInsight)
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
 func (cb *ZoneIngressInsight) Scope() model.Scope {

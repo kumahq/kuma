@@ -13,6 +13,7 @@ import (
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 )
@@ -94,7 +95,7 @@ func ReconcileLabelledObject(
 		if err != nil {
 			return err
 		}
-		if proto.Equal(existingSpec, ownedSpec) {
+		if core_model.Equal(existingSpec, ownedSpec) {
 			log.V(1).Info("object is the same. Nothing to update")
 			return nil
 		}

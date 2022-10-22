@@ -6,10 +6,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/test"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 func TestMesh(t *testing.T) {
@@ -18,7 +17,7 @@ func TestMesh(t *testing.T) {
 
 // ResourceGenerator creates a resource of a pre-defined type.
 type ResourceGenerator interface {
-	New() model.Resource
+	New() core_model.Resource
 }
 
 // ResourceValidationCase captures a resource YAML and any corresponding validation error.
@@ -38,13 +37,13 @@ func DescribeValidCases(generator ResourceGenerator, cases ...TableEntry) {
 			resource := generator.New()
 
 			// when
-			err := util_proto.FromYAML([]byte(given), resource.GetSpec())
+			err := core_model.FromYAML(resource.Descriptor(), []byte(given), resource.GetSpec())
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			verr := model.Validate(resource)
+			verr := core_model.Validate(resource)
 
 			// then
 			Expect(verr).ToNot(HaveOccurred())
@@ -64,7 +63,7 @@ func DescribeErrorCases(generator ResourceGenerator, cases ...TableEntry) {
 
 			// when
 			Expect(
-				util_proto.FromYAML([]byte(given.Resource), resource.GetSpec()),
+				core_model.FromYAML(resource.Descriptor(), []byte(given.Resource), resource.GetSpec()),
 			).ToNot(HaveOccurred())
 
 			expected := validators.ValidationError{
@@ -72,7 +71,7 @@ func DescribeErrorCases(generator ResourceGenerator, cases ...TableEntry) {
 			}
 
 			// then
-			err := model.Validate(resource).(*validators.ValidationError)
+			err := core_model.Validate(resource).(*validators.ValidationError)
 			Expect(err.Violations).To(ConsistOf(expected.Violations))
 		},
 		cases,
