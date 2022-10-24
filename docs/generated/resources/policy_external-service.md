@@ -34,7 +34,15 @@
         - `serverName` (optional)
         
             ServerName overrides the default Server Name Indicator set by Kuma.
-            The default value is set to "address" specified in "networking".
+            The default value is set to "address" specified in "networking".    
+    
+    - `disableHostDNSEntry` (optional)
+    
+        If disableHostDNSEntry is set to true then a DNS entry for the external
+        service taken from 'networking.address' won't be generated.
+        You can still reach this external service using
+        external-service-name.mesh:80 where "external-service-name" is taken from
+        "kuma.io/service" tag.
 
 - `tags` (required)
 

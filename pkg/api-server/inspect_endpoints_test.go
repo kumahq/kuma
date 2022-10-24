@@ -23,6 +23,8 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	_ "github.com/kumahq/kuma/pkg/plugins/policies"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	v1alpha12 "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
@@ -1241,6 +1243,85 @@ var _ = Describe("Inspect WS", func() {
 					build(),
 			},
 			contentType: "text/plain",
+		}),
+		Entry("inspect rules", testCase{
+			path:    "/meshes/default/dataplanes/backend-1/rules",
+			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_dataplane_rules.golden.json")),
+			resources: []core_model.Resource{
+				newMesh("default"),
+				newDataplane().
+					meta("backend-1", "default").
+					inbound80to81("backend", "192.168.0.1").
+					outbound8080("redis", "192.168.0.2").
+					build(),
+				&policies_api.MeshTrafficPermissionResource{
+					Meta: &test_model.ResourceMeta{Name: "mtp-1", Mesh: "default"},
+					Spec: &policies_api.MeshTrafficPermission{
+						TargetRef: &common_api.TargetRef{
+							Kind: "MeshService",
+							Name: "backend",
+						},
+						From: []*policies_api.MeshTrafficPermission_From{
+							{
+								TargetRef: &common_api.TargetRef{
+									Kind: "MeshServiceSubset",
+									Name: "client",
+									Tags: map[string]string{
+										"kuma.io/zone": "east",
+									},
+								},
+								Default: &policies_api.MeshTrafficPermission_Conf{
+									Action: "DENY",
+								},
+							},
+						},
+					},
+				},
+				&v1alpha1.MeshAccessLogResource{
+					Meta: &test_model.ResourceMeta{Name: "mal-1", Mesh: "default"},
+					Spec: &v1alpha1.MeshAccessLog{
+						TargetRef: &common_api.TargetRef{
+							Kind: "MeshService",
+							Name: "backend",
+						},
+						To: []*v1alpha1.MeshAccessLog_To{
+							{
+								TargetRef: &common_api.TargetRef{
+									Kind: "Mesh",
+								},
+								Default: &v1alpha1.MeshAccessLog_Conf{
+									Backends: []*v1alpha1.MeshAccessLog_Backend{
+										{
+											File: &v1alpha1.MeshAccessLog_FileBackend{
+												Path: "/tmp/access.logs",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				&v1alpha12.MeshTraceResource{
+					Meta: &test_model.ResourceMeta{Name: "mal-1", Mesh: "default"},
+					Spec: &v1alpha12.MeshTrace{
+						TargetRef: &common_api.TargetRef{
+							Kind: "MeshService",
+							Name: "backend",
+						},
+						Default: &v1alpha12.MeshTrace_Conf{
+							Backends: []*v1alpha12.MeshTrace_Backend{
+								{
+									Zipkin: &v1alpha12.MeshTrace_ZipkinBackend{
+										Url: "http://zipkin.internal/api/v2/spans",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			contentType: restful.MIME_JSON,
 		}),
 	)
 

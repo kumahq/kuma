@@ -25,6 +25,7 @@ import (
 	api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/core"
 	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -254,7 +255,11 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 		httpServer = a.startHttpServer(errChan)
 	}
 	if a.config.HTTPS.Enabled {
-		httpsServer = a.startHttpsServer(errChan)
+		var err error
+		httpsServer, err = a.startHttpsServer(errChan)
+		if err != nil {
+			return err
+		}
 	}
 	select {
 	case <-stop:
@@ -293,14 +298,23 @@ func (a *ApiServer) startHttpServer(errChan chan error) *http.Server {
 	return server
 }
 
-func (a *ApiServer) startHttpsServer(errChan chan error) *http.Server {
-	var tlsConfig *tls.Config
+func (a *ApiServer) startHttpsServer(errChan chan error) (*http.Server, error) {
+	tlsConfig := &tls.Config{}
+	var err error
+	tlsConfig.MinVersion, err = config_types.TLSVersion(a.config.HTTPS.TlsMinVersion)
+	if err != nil {
+		return nil, err
+	}
+	tlsConfig.CipherSuites, err = config_types.TLSCiphers(a.config.HTTPS.TlsCipherSuites)
+	if err != nil {
+		return nil, err
+	}
+
 	if a.config.Authn.Type == certs.PluginName {
-		tlsC, err := configureMTLS(a.config.Auth.ClientCertsDir)
+		err = configureMTLS(tlsConfig, a.config.Auth.ClientCertsDir)
 		if err != nil {
-			errChan <- err
+			return nil, err
 		}
-		tlsConfig = tlsC
 	}
 
 	server := &http.Server{
@@ -322,17 +336,16 @@ func (a *ApiServer) startHttpsServer(errChan chan error) *http.Server {
 		}
 	}()
 	log.Info("starting", "interface", a.config.HTTPS.Interface, "port", a.config.HTTPS.Port, "tls", true)
-	return server
+	return server, nil
 }
 
-func configureMTLS(certsDir string) (*tls.Config, error) {
-	tlsConfig := &tls.Config{}
+func configureMTLS(tlsConfig *tls.Config, certsDir string) error {
 	if certsDir != "" {
 		log.Info("loading client certificates")
 		clientCertPool := x509.NewCertPool()
 		files, err := os.ReadDir(certsDir)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		for _, file := range files {
 			if file.IsDir() {
@@ -346,16 +359,16 @@ func configureMTLS(certsDir string) (*tls.Config, error) {
 			path := filepath.Join(certsDir, file.Name())
 			caCert, err := os.ReadFile(path)
 			if err != nil {
-				return nil, errors.Wrapf(err, "could not read certificate %q", path)
+				return errors.Wrapf(err, "could not read certificate %q", path)
 			}
 			if !clientCertPool.AppendCertsFromPEM(caCert) {
-				return nil, errors.Errorf("failed to load PEM client certificate from %q", path)
+				return errors.Errorf("failed to load PEM client certificate from %q", path)
 			}
 		}
 		tlsConfig.ClientCAs = clientCertPool
 	}
 	tlsConfig.ClientAuth = tls.VerifyClientCertIfGiven // client certs are required only for some endpoints
-	return tlsConfig, nil
+	return nil
 }
 
 func (a *ApiServer) notAvailableHandler(writer http.ResponseWriter, request *http.Request) {
