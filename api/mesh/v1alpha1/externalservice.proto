@@ -58,7 +58,10 @@ message ExternalService {
 
     TLS tls = 2;
 
-    bool skipVIPGeneration = 3 [ (doc.required) = true ];
+    // If disableHostDNSEntry is set to true then a DNS entry for the external
+    // service (in the form of host:port, where host is taken from
+    // networking.address field) won't be generated
+    bool disableHostDNSEntry = 3;
   }
 
   Networking networking = 1 [ (doc.required) = true ];

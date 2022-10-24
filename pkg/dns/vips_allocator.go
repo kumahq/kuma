@@ -231,11 +231,11 @@ func (d *VIPsAllocator) BuildVirtualOutboundMeshView(ctx context.Context, mesh s
 		if d.serviceVipEnabled {
 			errs = multierr.Append(errs, addDefault(outboundSet, es.Spec.GetService(), es.Spec.GetPortUInt32()))
 		}
-		if !es.Spec.Networking.SkipVIPGeneration {
+		if !es.Spec.Networking.DisableHostDNSEntry {
 			addError := outboundSet.Add(vips.NewHostEntry(es.Spec.GetHost()), vips.OutboundEntry{
 				Port:   es.Spec.GetPortUInt32(),
 				TagSet: tags,
-				Origin: vips.OriginHost,
+				Origin: vips.OriginHost(es.GetMeta().GetName()),
 			})
 			if addError != nil {
 				errs = multierr.Append(errs, errors.Wrapf(addError, "cannot add outbound for external service '%s'", es.GetMeta().GetName()))

@@ -36,7 +36,11 @@
             ServerName overrides the default Server Name Indicator set by Kuma.
             The default value is set to "address" specified in "networking".    
     
-    - `skipVIPGeneration` (required)
+    - `disableHostDNSEntry` (optional)
+    
+        If disableHostDNSEntry is set to true then a DNS entry for the external
+        service (in the form of host:port, where host is taken from
+        networking.address field) won't be generated
 
 - `tags` (required)
 
