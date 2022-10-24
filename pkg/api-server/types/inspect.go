@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
@@ -210,4 +211,19 @@ func NewDataplaneInspectEntryList() *DataplaneInspectEntryList {
 }
 
 func (*DataplaneInspectEntryList) dataplaneInspectEntry() {
+}
+
+type RuleInspectResponse struct {
+	Total uint32             `json:"total"`
+	Items []RuleInspectEntry `json:"items"`
+}
+
+type RuleInspectEntry struct {
+	Type       string             `json:"type"`
+	Name       string             `json:"name"`
+	Service    string             `json:"service"`
+	PolicyType string             `json:"policyType"`
+	Subset     map[string]string  `json:"subset"`
+	Conf       proto.Message      `json:"conf"`
+	Origins    []ResourceKeyEntry `json:"origins"`
 }

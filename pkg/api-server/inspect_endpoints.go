@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/core/xds/inspect"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -63,6 +64,14 @@ func addInspectEndpoints(
 	ws.Route(
 		ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/policies").To(inspectDataplane(cfg, builder)).
 			Doc("inspect dataplane matched policies").
+			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
+			Param(ws.PathParameter("dataplane", "dataplane name").DataType("string")).
+			Returns(200, "OK", nil),
+	)
+
+	ws.Route(
+		ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/rules").To(inspectRulesAttachment(cfg, builder)).
+			Doc("inspect dataplane matched rules").
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 			Param(ws.PathParameter("dataplane", "dataplane name").DataType("string")).
 			Returns(200, "OK", nil),
@@ -546,4 +555,61 @@ func gatewayEntriesByPolicy(
 	}
 
 	return policyMap
+}
+
+func inspectRulesAttachment(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilder) restful.RouteFunction {
+	return func(request *restful.Request, response *restful.Response) {
+		ctx := request.Request.Context()
+		meshName := request.PathParameter("mesh")
+		dataplaneName := request.PathParameter("dataplane")
+
+		meshContext, err := builder.Build(ctx, meshName)
+		if err != nil {
+			rest_errors.HandleError(response, err, "Could not build MeshContext")
+			return
+		}
+
+		matchedPolicies, _, proxy, err := getMatchedPolicies(
+			ctx, cfg, meshContext, core_model.ResourceKey{Mesh: meshName, Name: dataplaneName},
+		)
+		if err != nil {
+			rest_errors.HandleError(response, err, "Could not get MatchedPolicies")
+			return
+		}
+		rulesAttachments := inspect.BuildRulesAttachments(matchedPolicies.Dynamic, proxy.Dataplane.Spec.Networking)
+		resp := api_server_types.RuleInspectResponse{}
+		for _, ruleAttachment := range rulesAttachments {
+			subset := map[string]string{}
+			for _, tag := range ruleAttachment.Rule.Subset {
+				value := tag.Value
+				if tag.Not {
+					value = "!" + value
+				}
+				subset[tag.Key] = value
+			}
+
+			var origins []api_server_types.ResourceKeyEntry
+			for _, origin := range ruleAttachment.Rule.Origin {
+				origins = append(origins, api_server_types.ResourceKeyEntry{
+					Mesh: origin.GetMesh(),
+					Name: origin.GetName(),
+				})
+			}
+
+			resp.Items = append(resp.Items, api_server_types.RuleInspectEntry{
+				Type:       ruleAttachment.Type,
+				Name:       ruleAttachment.Name,
+				Service:    ruleAttachment.Service,
+				PolicyType: string(ruleAttachment.PolicyType),
+				Subset:     subset,
+				Conf:       ruleAttachment.Rule.Conf,
+				Origins:    origins,
+			})
+		}
+		resp.Total = uint32(len(resp.Items))
+		if err := response.WriteAsJson(resp); err != nil {
+			rest_errors.HandleError(response, err, "Could not write response")
+			return
+		}
+	}
 }
