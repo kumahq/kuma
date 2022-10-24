@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net"
-	"runtime"
 	"strconv"
 	"strings"
 
@@ -192,7 +191,7 @@ func CrossMeshGatewayOnKubernetes() {
 		})
 	})
 
-	Context("with Gateway API", func() {
+	Context("with Gateway API", Label("arm-not-supported"), func() {
 		const gatewayClass = `
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: GatewayClass
@@ -250,9 +249,6 @@ spec:
         value: /
 `, crossMeshGatewayName, gatewayTestNamespace, gatewayMesh, crossMeshGatewayName, echoServerName(gatewayMesh))
 		BeforeAll(func() {
-			if runtime.GOARCH == "arm64" {
-				Skip("The Gateway API webhook doesn't provide an arm64 image")
-			}
 			setup := NewClusterSetup().
 				Install(YamlK8s(meshGatewayConfig)).
 				Install(YamlK8s(gatewayClass)).
