@@ -244,7 +244,7 @@ var _ = Describe("Rules", func() {
 				if given.confYAML == nil {
 					Expect(conf).To(BeNil())
 				} else {
-					actualYAML, err := util_proto.ToYAML(conf)
+					actualYAML, err := util_proto.ToYAML(conf.Conf)
 					Expect(err).To(Not(HaveOccurred()))
 					Expect(actualYAML).To(MatchYAML(given.confYAML))
 				}

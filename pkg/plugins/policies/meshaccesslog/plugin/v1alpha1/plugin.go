@@ -198,7 +198,7 @@ func configureInbound(
 
 	var conf *api.MeshAccessLog_Conf
 	if computed := fromRules.Compute(subset); computed != nil {
-		conf = computed.(*api.MeshAccessLog_Conf)
+		conf = computed.Conf.(*api.MeshAccessLog_Conf)
 	} else {
 		return nil
 	}
@@ -234,7 +234,7 @@ func configureOutbound(
 
 	var conf *api.MeshAccessLog_Conf
 	if computed := toRules.Rules.Compute(subset); computed != nil {
-		conf = computed.(*api.MeshAccessLog_Conf)
+		conf = computed.Conf.(*api.MeshAccessLog_Conf)
 	} else {
 		return nil
 	}
