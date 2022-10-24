@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"strings"
@@ -14,6 +15,7 @@ import (
 	"google.golang.org/grpc/keepalive"
 
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/metrics"
@@ -66,9 +68,21 @@ func NewDpServer(config dp_server.DpServerConfig, metrics metrics.Metrics) *DpSe
 }
 
 func (d *DpServer) Start(stop <-chan struct{}) error {
+	var err error
+	tlsConfig := &tls.Config{}
+	if tlsConfig.MinVersion, err = config_types.TLSVersion(d.config.TlsMinVersion); err != nil {
+		return err
+	}
+	if tlsConfig.MaxVersion, err = config_types.TLSVersion(d.config.TlsMaxVersion); err != nil {
+		return err
+	}
+	if tlsConfig.CipherSuites, err = config_types.TLSCiphers(d.config.TlsCipherSuites); err != nil {
+		return err
+	}
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":%d", d.config.Port),
-		Handler: http.HandlerFunc(d.handle),
+		Addr:      fmt.Sprintf(":%d", d.config.Port),
+		Handler:   http.HandlerFunc(d.handle),
+		TLSConfig: tlsConfig,
 	}
 
 	errChan := make(chan error)
