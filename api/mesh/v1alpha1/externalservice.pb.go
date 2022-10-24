@@ -93,8 +93,10 @@ type ExternalService_Networking struct {
 	Address string                          `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	Tls     *ExternalService_Networking_TLS `protobuf:"bytes,2,opt,name=tls,proto3" json:"tls,omitempty"`
 	// If disableHostDNSEntry is set to true then a DNS entry for the external
-	// service (in the form of host:port, where host is taken from
-	// networking.address field) won't be generated
+	// service taken from 'networking.address' won't be generated.
+	// You can still reach this external service using
+	// external-service-name.mesh:80 where "external-service-name" is taken from
+	// "kuma.io/service" tag.
 	DisableHostDNSEntry bool `protobuf:"varint,3,opt,name=disableHostDNSEntry,proto3" json:"disableHostDNSEntry,omitempty"`
 }
 
