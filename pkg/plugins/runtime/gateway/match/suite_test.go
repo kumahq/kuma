@@ -9,7 +9,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
@@ -21,7 +21,7 @@ func TestMatches(t *testing.T) {
 }
 
 var _ = Describe("Match Destination Policy", func() {
-	Named := func(name string, resource model.Resource) model.Resource {
+	Named := func(name string, resource core_model.Resource) core_model.Resource {
 		resource.SetMeta(&rest_v1alpha1.ResourceMeta{
 			Type:             string(resource.Descriptor().Name),
 			Mesh:             "default",
@@ -64,13 +64,13 @@ var _ = Describe("Match Destination Policy", func() {
 
 		d := []route.Destination{{
 			Destination: map[string]string{mesh_proto.ServiceTag: "foo-service"},
-			Policies:    map[model.ResourceType]model.Resource{core_mesh.TimeoutType: p},
+			Policies:    map[core_model.ResourceType]core_model.Resource{core_mesh.TimeoutType: p},
 		}, {
 			Destination: map[string]string{mesh_proto.ServiceTag: "bar-service"},
-			Policies:    map[model.ResourceType]model.Resource{core_mesh.TimeoutType: p},
+			Policies:    map[core_model.ResourceType]core_model.Resource{core_mesh.TimeoutType: p},
 		}, {
 			Destination: map[string]string{mesh_proto.ServiceTag: "baz-service"},
-			Policies:    map[model.ResourceType]model.Resource{core_mesh.TimeoutType: p},
+			Policies:    map[core_model.ResourceType]core_model.Resource{core_mesh.TimeoutType: p},
 		}}
 
 		// when
@@ -85,21 +85,21 @@ var _ = Describe("Match Destination Policy", func() {
 		// given
 		d := []route.Destination{{
 			Destination: map[string]string{mesh_proto.ServiceTag: "foo-service"},
-			Policies: map[model.ResourceType]model.Resource{
+			Policies: map[core_model.ResourceType]core_model.Resource{
 				core_mesh.TimeoutType: Named("foo-policy", &core_mesh.TimeoutResource{
 					Spec: SpecFor("foo-service"),
 				}),
 			},
 		}, {
 			Destination: map[string]string{mesh_proto.ServiceTag: "bar-service"},
-			Policies: map[model.ResourceType]model.Resource{
+			Policies: map[core_model.ResourceType]core_model.Resource{
 				core_mesh.TimeoutType: Named("bar-policy", &core_mesh.TimeoutResource{
 					Spec: SpecFor("bar-service"),
 				}),
 			},
 		}, {
 			Destination: map[string]string{mesh_proto.ServiceTag: "baz-service"},
-			Policies: map[model.ResourceType]model.Resource{
+			Policies: map[core_model.ResourceType]core_model.Resource{
 				core_mesh.TimeoutType: Named("wildcard-policy", &core_mesh.TimeoutResource{
 					Spec: SpecFor(mesh_proto.MatchAllTag),
 				}),
@@ -121,7 +121,7 @@ var _ = Describe("Match Destination Policy", func() {
 			return t
 		}
 
-		SetCreationTime := func(r model.Resource, t time.Time) {
+		SetCreationTime := func(r core_model.Resource, t time.Time) {
 			meta := r.GetMeta().(*rest_v1alpha1.ResourceMeta)
 			meta.CreationTime = t
 			r.SetMeta(meta)
@@ -130,21 +130,21 @@ var _ = Describe("Match Destination Policy", func() {
 		// given
 		d := []route.Destination{{
 			Destination: map[string]string{mesh_proto.ServiceTag: "foo-service"},
-			Policies: map[model.ResourceType]model.Resource{
+			Policies: map[core_model.ResourceType]core_model.Resource{
 				core_mesh.TimeoutType: Named("foo-policy", &core_mesh.TimeoutResource{
 					Spec: SpecFor("foo-service"),
 				}),
 			},
 		}, {
 			Destination: map[string]string{mesh_proto.ServiceTag: "bar-service"},
-			Policies: map[model.ResourceType]model.Resource{
+			Policies: map[core_model.ResourceType]core_model.Resource{
 				core_mesh.TimeoutType: Named("bar-policy", &core_mesh.TimeoutResource{
 					Spec: SpecFor("bar-service"),
 				}),
 			},
 		}, {
 			Destination: map[string]string{mesh_proto.ServiceTag: "baz-service"},
-			Policies: map[model.ResourceType]model.Resource{
+			Policies: map[core_model.ResourceType]core_model.Resource{
 				core_mesh.TimeoutType: Named("baz-policy", &core_mesh.TimeoutResource{
 					Spec: SpecFor("baz-service"),
 				}),

@@ -1,12 +1,11 @@
 package registry
 
 import (
-	"google.golang.org/protobuf/proto"
-
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 )
 
-type ResourceType = proto.Message
+type ResourceType = core_model.ResourceSpec
 
 type TypeRegistry interface {
 	RegisterObjectType(ResourceType, model.KubernetesObject) error

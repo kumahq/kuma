@@ -126,4 +126,23 @@ var _ = Describe("SyncResourceStore", func() {
 		Expect(resourceStore.List(context.Background(), actual)).To(Succeed())
 		Expect(actual.GetItems()).To(BeEmpty())
 	})
+
+	It("should not update resource with the equal spec", func() {
+		// given resource in the store
+		res := meshBuilder(1)
+		key := model.MetaToResourceKey(res.GetMeta())
+		Expect(resourceStore.Create(context.Background(), res, store.CreateBy(key))).To(Succeed())
+		existing := mesh.NewMeshResource()
+		Expect(resourceStore.Get(context.Background(), existing, store.GetBy(key))).To(Succeed())
+
+		// when sync the resource with equal 'spec'
+		upstream := &mesh.MeshResourceList{}
+		Expect(upstream.AddItem(meshBuilder(1))).To(Succeed())
+		Expect(syncer.Sync(upstream)).To(Succeed())
+
+		// then resource's version is the same
+		actual := mesh.NewMeshResource()
+		Expect(resourceStore.Get(context.Background(), actual, store.GetBy(key))).To(Succeed())
+		Expect(actual.GetMeta().GetVersion()).To(Equal(existing.GetMeta().GetVersion()))
+	})
 })

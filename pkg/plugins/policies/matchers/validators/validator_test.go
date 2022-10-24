@@ -13,384 +13,397 @@ import (
 
 var _ = Describe("TargetRef Validator", func() {
 
-	Context("pass validation", func() {
+	type testCase struct {
+		inputYaml string
+		opts      *matcher_validators.ValidateTargetRefOpts
+		// only used for failed testCases
+		expected string
+	}
 
-		type testCase struct {
-			inputYaml string
-			opts      *matcher_validators.ValidateTargetRefOpts
-		}
+	DescribeTable("should pass validation with",
+		func(given testCase) {
+			// given
+			Expect(given.expected).To(BeEmpty())
+			targetRef := &common_proto.TargetRef{}
+			err := util_proto.FromYAML([]byte(given.inputYaml), targetRef)
+			Expect(err).ToNot(HaveOccurred())
 
-		DescribeTable("should pass validation",
-			func(given testCase) {
-				// given
-				targetRef := &common_proto.TargetRef{}
-				err := util_proto.FromYAML([]byte(given.inputYaml), targetRef)
-				Expect(err).ToNot(HaveOccurred())
+			// when
+			validationErr := validators.ValidationError{}
+			validationErr.AddError("targetRef", matcher_validators.ValidateTargetRef(targetRef, given.opts))
 
-				// when
-				validationErr := validators.ValidationError{}
-				validationErr.AddError("targetRef", matcher_validators.ValidateTargetRef(targetRef, given.opts))
-
-				// then
-				Expect(validationErr.OrNil()).To(BeNil())
+			// then
+			Expect(validationErr.OrNil()).To(BeNil())
+		},
+		Entry("Mesh", testCase{
+			inputYaml: `
+kind: Mesh
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_proto.TargetRef_Kind{
+					common_proto.TargetRef_Mesh,
+				},
 			},
-			Entry("targetRef for Mesh", testCase{
-				inputYaml: `
-kind: Mesh
-`,
-				opts: &matcher_validators.ValidateTargetRefOpts{
-					SupportedKinds: []common_proto.TargetRef_Kind{
-						common_proto.TargetRef_Mesh,
-					},
-				},
-			}),
-			Entry("targetRef for Mesh with name", testCase{
-				inputYaml: `
-kind: Mesh
-name: mesh-1
-`,
-				opts: &matcher_validators.ValidateTargetRefOpts{
-					SupportedKinds: []common_proto.TargetRef_Kind{
-						common_proto.TargetRef_Mesh,
-					},
-				},
-			}),
-			Entry("targetRef for MeshSubset", testCase{
-				inputYaml: `
+		}),
+		Entry("MeshSubset with tags", testCase{
+			inputYaml: `
 kind: MeshSubset
 tags:
   kuma.io/zone: us-east
 `,
-				opts: &matcher_validators.ValidateTargetRefOpts{
-					SupportedKinds: []common_proto.TargetRef_Kind{
-						common_proto.TargetRef_MeshSubset,
-					},
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_proto.TargetRef_Kind{
+					common_proto.TargetRef_MeshSubset,
 				},
-			}),
-			Entry("targetRef for MeshSubset with name", testCase{
-				inputYaml: `
+			},
+		}),
+		Entry("MeshSubset without tags", testCase{
+			inputYaml: `
 kind: MeshSubset
-name: mesh-1
-tags:
-  kuma.io/zone: us-east
 `,
-				opts: &matcher_validators.ValidateTargetRefOpts{
-					SupportedKinds: []common_proto.TargetRef_Kind{
-						common_proto.TargetRef_MeshSubset,
-					},
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_proto.TargetRef_Kind{
+					common_proto.TargetRef_MeshSubset,
 				},
-			}),
-			Entry("targetRef for MeshSubset with name without tags", testCase{
-				inputYaml: `
-kind: MeshSubset
-name: mesh-1
-`,
-				opts: &matcher_validators.ValidateTargetRefOpts{
-					SupportedKinds: []common_proto.TargetRef_Kind{
-						common_proto.TargetRef_MeshSubset,
-					},
-				},
-			}),
-			Entry("targetRef for MeshService", testCase{
-				inputYaml: `
+			},
+		}),
+		Entry("MeshService", testCase{
+			inputYaml: `
 kind: MeshService
 name: backend
 `,
-				opts: &matcher_validators.ValidateTargetRefOpts{
-					SupportedKinds: []common_proto.TargetRef_Kind{
-						common_proto.TargetRef_MeshService,
-					},
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_proto.TargetRef_Kind{
+					common_proto.TargetRef_MeshService,
 				},
-			}),
-			Entry("targetRef for MeshService with mesh", testCase{
-				inputYaml: `
-kind: MeshService
-name: backend
-mesh: mesh-1
-`,
-				opts: &matcher_validators.ValidateTargetRefOpts{
-					SupportedKinds: []common_proto.TargetRef_Kind{
-						common_proto.TargetRef_MeshService,
-					},
-				},
-			}),
-			Entry("targetRef for MeshServiceSubset", testCase{
-				inputYaml: `
+			},
+		}),
+		Entry("MeshServiceSubset", testCase{
+			inputYaml: `
 kind: MeshServiceSubset
 name: backend
 tags:
   version: v1
 `,
-				opts: &matcher_validators.ValidateTargetRefOpts{
-					SupportedKinds: []common_proto.TargetRef_Kind{
-						common_proto.TargetRef_MeshServiceSubset,
-					},
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_proto.TargetRef_Kind{
+					common_proto.TargetRef_MeshServiceSubset,
 				},
-			}),
-			Entry("targetRef for MeshServiceSubset with mesh", testCase{
-				inputYaml: `
+			},
+		}),
+		Entry("MeshServiceSubset without tags", testCase{
+			inputYaml: `
 kind: MeshServiceSubset
 name: backend
-mesh: mesh-1
-tags:
-  version: v1
 `,
-				opts: &matcher_validators.ValidateTargetRefOpts{
-					SupportedKinds: []common_proto.TargetRef_Kind{
-						common_proto.TargetRef_MeshServiceSubset,
-					},
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_proto.TargetRef_Kind{
+					common_proto.TargetRef_MeshServiceSubset,
 				},
-			}),
-			Entry("targetRef for MeshGatewayRoute", testCase{
-				inputYaml: `
+			},
+		}),
+		Entry("MeshServiceSubset with empty tags", testCase{
+			inputYaml: `
+kind: MeshServiceSubset
+name: backend
+tags: {}
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_proto.TargetRef_Kind{
+					common_proto.TargetRef_MeshServiceSubset,
+				},
+			},
+		}),
+		Entry("MeshGatewayRoute", testCase{
+			inputYaml: `
 kind: MeshGatewayRoute
 name: backend-gateway-route
 `,
-				opts: &matcher_validators.ValidateTargetRefOpts{
-					SupportedKinds: []common_proto.TargetRef_Kind{
-						common_proto.TargetRef_MeshGatewayRoute,
-					},
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_proto.TargetRef_Kind{
+					common_proto.TargetRef_MeshGatewayRoute,
 				},
-			}),
-			Entry("targetRef for MeshHTTPRoute", testCase{
-				inputYaml: `
+			},
+		}),
+	)
+
+	DescribeTable("should return as much individual errors as possible with",
+		func(given testCase) {
+			// given
+			targetRef := &common_proto.TargetRef{}
+			err := util_proto.FromYAML([]byte(given.inputYaml), targetRef)
+			Expect(err).ToNot(HaveOccurred())
+
+			// when
+			validationErr := validators.ValidationError{}
+			validationErr.AddError("targetRef", matcher_validators.ValidateTargetRef(targetRef, given.opts))
+			// and
+			actual, err := yaml.Marshal(validationErr)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual).To(MatchYAML(given.expected))
+		},
+		Entry("empty", testCase{
+			inputYaml: `
+{}
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_proto.TargetRef_Kind{
+					common_proto.TargetRef_Mesh,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.kind
+    message: must be set 
+`,
+		}),
+		Entry("Mesh when it's not supported", testCase{
+			inputYaml: `
+kind: Mesh
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_proto.TargetRef_Kind{
+					common_proto.TargetRef_MeshSubset,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.kind
+    message: value is not supported
+`,
+		}),
+		Entry("Mesh with mesh and tags", testCase{
+			inputYaml: `
+kind: Mesh
+mesh: mesh-1
+tags:
+  tag1: value1
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_proto.TargetRef_Kind{
+					common_proto.TargetRef_Mesh,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.mesh
+    message: cannot be set with kind Mesh
+  - field: targetRef.tags
+    message: cannot be set with kind Mesh
+`,
+		}),
+		Entry("Mesh with name", testCase{
+			inputYaml: `
+kind: Mesh
+name: mesh-1
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_proto.TargetRef_Kind{
+					common_proto.TargetRef_Mesh,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.name
+    message: using name with kind Mesh is not yet supported 
+`,
+		}),
+		Entry("MeshSubset when it's not supported", testCase{
+			inputYaml: `
+kind: MeshSubset
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_proto.TargetRef_Kind{
+					common_proto.TargetRef_Mesh,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.kind
+    message: value is not supported`,
+		}),
+		Entry("MeshSubset with name", testCase{
+			inputYaml: `
+kind: MeshSubset
+name: mesh-1
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_proto.TargetRef_Kind{
+					common_proto.TargetRef_MeshSubset,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.name
+    message: cannot be set with kind MeshSubset`,
+		}),
+		Entry("MeshService when it's not supported", testCase{
+			inputYaml: `
+kind: MeshService
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_proto.TargetRef_Kind{
+					common_proto.TargetRef_MeshServiceSubset,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.kind
+    message: value is not supported`,
+		}),
+		Entry("MeshService with mesh", testCase{
+			inputYaml: `
+kind: MeshService
+name: backend
+mesh: mesh-1
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_proto.TargetRef_Kind{
+					common_proto.TargetRef_MeshService,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.mesh
+    message: cannot be set with kind MeshService
+`,
+		}),
+		Entry("MeshService without name with tags", testCase{
+			inputYaml: `
+kind: MeshService
+tags:
+  tag1: value1
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_proto.TargetRef_Kind{
+					common_proto.TargetRef_MeshService,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.name
+    message: must be set with kind MeshService 
+  - field: targetRef.tags
+    message: cannot be set with kind MeshService
+`,
+		}),
+		Entry("MeshServiceSubset when it's not supported", testCase{
+			inputYaml: `
+kind: MeshServiceSubset
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_proto.TargetRef_Kind{
+					common_proto.TargetRef_MeshService,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.kind
+    message: value is not supported
+`,
+		}),
+		Entry("MeshServiceSubset without name with empty tags", testCase{
+			inputYaml: `
+kind: MeshServiceSubset
+tags: {}
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_proto.TargetRef_Kind{
+					common_proto.TargetRef_MeshServiceSubset,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.name
+    message: must be set with kind MeshServiceSubset
+`,
+		}),
+		Entry("MeshServiceSubset with mesh", testCase{
+			inputYaml: `
+kind: MeshServiceSubset
+name: backend
+mesh: mesh-1
+tags:
+  version: v1
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_proto.TargetRef_Kind{
+					common_proto.TargetRef_MeshServiceSubset,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.mesh
+    message: cannot be set with kind MeshServiceSubset 
+`,
+		}),
+		Entry("MeshGatewayRoute when it's not supported", testCase{
+			inputYaml: `
+kind: MeshGatewayRoute
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_proto.TargetRef_Kind{
+					common_proto.TargetRef_MeshHTTPRoute,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.kind
+    message: value is not supported
+`,
+		}),
+		Entry("MeshGatewayRoute without name with mesh and tags", testCase{
+			inputYaml: `
+kind: MeshGatewayRoute
+mesh: mesh-1
+tags:
+  tag1: value1
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_proto.TargetRef_Kind{
+					common_proto.TargetRef_MeshGatewayRoute,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.name
+    message: must be set with kind MeshGatewayRoute
+  - field: targetRef.mesh
+    message: cannot be set with kind MeshGatewayRoute
+`,
+		}),
+		Entry("MeshHTTPRoute when it's not supported", testCase{
+			inputYaml: `
+kind: MeshHTTPRoute
+`,
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_proto.TargetRef_Kind{
+					common_proto.TargetRef_MeshGatewayRoute,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.kind
+    message: value is not supported
+`,
+		}),
+		Entry("MeshHTTPRoute as it's not currently supported", testCase{
+			inputYaml: `
 kind: MeshHTTPRoute
 name: backend-http-route
 `,
-				opts: &matcher_validators.ValidateTargetRefOpts{
-					SupportedKinds: []common_proto.TargetRef_Kind{
-						common_proto.TargetRef_MeshHTTPRoute,
-					},
+			opts: &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_proto.TargetRef_Kind{
+					common_proto.TargetRef_MeshHTTPRoute,
 				},
-			}),
-		)
-	})
-
-	Context("fail validation", func() {
-
-		type testCase struct {
-			inputYaml string
-			opts      *matcher_validators.ValidateTargetRefOpts
-			expected  string
-		}
-
-		DescribeTable("should validate all fields and return as much individual errors as possible",
-			func(given testCase) {
-				// given
-				targetRef := &common_proto.TargetRef{}
-				err := util_proto.FromYAML([]byte(given.inputYaml), targetRef)
-				Expect(err).ToNot(HaveOccurred())
-
-				// when
-				validationErr := validators.ValidationError{}
-				validationErr.AddError("targetRef", matcher_validators.ValidateTargetRef(targetRef, given.opts))
-				// and
-				actual, err := yaml.Marshal(validationErr)
-
-				// then
-				Expect(err).ToNot(HaveOccurred())
-				Expect(actual).To(MatchYAML(given.expected))
 			},
-			Entry("targetRef for Mesh when it's not supported", testCase{
-				inputYaml: `
-kind: Mesh
-`,
-				opts: &matcher_validators.ValidateTargetRefOpts{
-					SupportedKinds: []common_proto.TargetRef_Kind{
-						common_proto.TargetRef_MeshSubset,
-					},
-				},
-				expected: `
+			expected: `
 violations:
   - field: targetRef.kind
-    message: value is not supported
+    message: MeshHTTPRoute is not yet supported 
 `,
-			}),
-			Entry("targetRef for Mesh with mesh and tags", testCase{
-				inputYaml: `
-kind: Mesh
-mesh: mesh-1
-tags:
-  tag1: value1
-`,
-				opts: &matcher_validators.ValidateTargetRefOpts{
-					SupportedKinds: []common_proto.TargetRef_Kind{
-						common_proto.TargetRef_Mesh,
-					},
-				},
-				expected: `
-violations:
-  - field: targetRef.tags
-    message: could not be set with kind Mesh
-  - field: targetRef.mesh
-    message: could not be set with kind Mesh
-`,
-			}),
-			Entry("targetRef for MeshSubset when it's not supported", testCase{
-				inputYaml: `
-kind: MeshSubset
-`,
-				opts: &matcher_validators.ValidateTargetRefOpts{
-					SupportedKinds: []common_proto.TargetRef_Kind{
-						common_proto.TargetRef_Mesh,
-					},
-				},
-				expected: `
-violations:
-  - field: targetRef.kind
-    message: value is not supported`,
-			}),
-			Entry("targetRef for MeshSubset with empty tags", testCase{
-				inputYaml: `
-kind: MeshSubset
-tags: {}
-`,
-				opts: &matcher_validators.ValidateTargetRefOpts{
-					SupportedKinds: []common_proto.TargetRef_Kind{
-						common_proto.TargetRef_MeshSubset,
-					},
-				},
-				expected: `
-violations:
-  - field: targetRef.tags
-    message: cannot be empty`,
-			}),
-			Entry("targetRef for MeshService when it's not supported", testCase{
-				inputYaml: `
-kind: MeshService
-`,
-				opts: &matcher_validators.ValidateTargetRefOpts{
-					SupportedKinds: []common_proto.TargetRef_Kind{
-						common_proto.TargetRef_MeshServiceSubset,
-					},
-				},
-				expected: `
-violations:
-  - field: targetRef.kind
-    message: value is not supported`,
-			}),
-			Entry("targetRef for MeshService without name with tags", testCase{
-				inputYaml: `
-kind: MeshService
-tags:
-  tag1: value1
-`,
-				opts: &matcher_validators.ValidateTargetRefOpts{
-					SupportedKinds: []common_proto.TargetRef_Kind{
-						common_proto.TargetRef_MeshService,
-					},
-				},
-				expected: `
-violations:
-  - field: targetRef.tags
-    message: could not be set with kind MeshService
-  - field: targetRef.name
-    message: cannot be empty
-`,
-			}),
-			Entry("targetRef for MeshServiceSubset when it's not supported", testCase{
-				inputYaml: `
-kind: MeshServiceSubset
-`,
-				opts: &matcher_validators.ValidateTargetRefOpts{
-					SupportedKinds: []common_proto.TargetRef_Kind{
-						common_proto.TargetRef_MeshService,
-					},
-				},
-				expected: `
-violations:
-  - field: targetRef.kind
-    message: value is not supported
-`,
-			}),
-			Entry("targetRef for MeshServiceSubset without name with empty tags", testCase{
-				inputYaml: `
-kind: MeshServiceSubset
-tags: {}
-`,
-				opts: &matcher_validators.ValidateTargetRefOpts{
-					SupportedKinds: []common_proto.TargetRef_Kind{
-						common_proto.TargetRef_MeshServiceSubset,
-					},
-				},
-				expected: `
-violations:
-  - field: targetRef.name
-    message: cannot be empty
-  - field: targetRef.tags
-    message: cannot be empty
-`,
-			}),
-			Entry("targetRef for MeshGatewayRoute when it's not supported", testCase{
-				inputYaml: `
-kind: MeshGatewayRoute
-`,
-				opts: &matcher_validators.ValidateTargetRefOpts{
-					SupportedKinds: []common_proto.TargetRef_Kind{
-						common_proto.TargetRef_MeshHTTPRoute,
-					},
-				},
-				expected: `
-violations:
-  - field: targetRef.kind
-    message: value is not supported
-`,
-			}),
-			Entry("targetRef for MeshGatewayRoute without name with mesh and tags", testCase{
-				inputYaml: `
-kind: MeshGatewayRoute
-mesh: mesh-1
-tags:
-  tag1: value1
-`,
-				opts: &matcher_validators.ValidateTargetRefOpts{
-					SupportedKinds: []common_proto.TargetRef_Kind{
-						common_proto.TargetRef_MeshGatewayRoute,
-					},
-				},
-				expected: `
-violations:
-  - field: targetRef.name
-    message: cannot be empty
-  - field: targetRef.mesh
-    message: could not be set with kind MeshGatewayRoute
-`,
-			}),
-			Entry("targetRef for MeshHTTPRoute when it's not supported", testCase{
-				inputYaml: `
-kind: MeshHTTPRoute
-`,
-				opts: &matcher_validators.ValidateTargetRefOpts{
-					SupportedKinds: []common_proto.TargetRef_Kind{
-						common_proto.TargetRef_MeshGatewayRoute,
-					},
-				},
-				expected: `
-violations:
-  - field: targetRef.kind
-    message: value is not supported
-`,
-			}),
-			Entry("targetRef for MeshHTTPRoute without name with mesh and tags", testCase{
-				inputYaml: `
-kind: MeshHTTPRoute
-mesh: mesh-1
-tags:
-  tag1: value1
-`,
-				opts: &matcher_validators.ValidateTargetRefOpts{
-					SupportedKinds: []common_proto.TargetRef_Kind{
-						common_proto.TargetRef_MeshHTTPRoute,
-					},
-				},
-				expected: `
-violations:
-  - field: targetRef.name
-    message: cannot be empty
-  - field: targetRef.mesh
-    message: could not be set with kind MeshHTTPRoute
-`,
-			}),
-		)
-	})
+		}),
+	)
 })

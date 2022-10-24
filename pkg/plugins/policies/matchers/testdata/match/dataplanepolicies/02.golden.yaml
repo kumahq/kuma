@@ -9,7 +9,6 @@ items:
         action: ALLOW
       targetRef:
         kind: Mesh
-        name: default
     targetRef:
       kind: Mesh
   type: MeshTrafficPermission
@@ -23,7 +22,6 @@ items:
         action: ALLOW
       targetRef:
         kind: Mesh
-        name: default
     targetRef:
       kind: Mesh
   type: MeshTrafficPermission
@@ -37,7 +35,6 @@ items:
         action: ALLOW
       targetRef:
         kind: Mesh
-        name: default
     targetRef:
       kind: MeshSubset
       tags:
@@ -53,7 +50,6 @@ items:
         action: ALLOW
       targetRef:
         kind: Mesh
-        name: default
     targetRef:
       kind: MeshSubset
       tags:
@@ -69,7 +65,6 @@ items:
         action: ALLOW
       targetRef:
         kind: Mesh
-        name: default
     targetRef:
       kind: MeshService
       name: web
@@ -84,7 +79,6 @@ items:
         action: ALLOW
       targetRef:
         kind: Mesh
-        name: default
     targetRef:
       kind: MeshService
       name: web
@@ -99,7 +93,6 @@ items:
         action: ALLOW
       targetRef:
         kind: Mesh
-        name: default
     targetRef:
       kind: MeshServiceSubset
       name: web
@@ -116,7 +109,6 @@ items:
         action: ALLOW
       targetRef:
         kind: Mesh
-        name: default
     targetRef:
       kind: MeshServiceSubset
       name: web

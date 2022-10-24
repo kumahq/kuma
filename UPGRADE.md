@@ -30,6 +30,11 @@ However, Zone Ingress Token is now deprecated and will be removed in the future.
 
 `ingress.annotations` and `egress.annotations` are deprecated in favour of `ingress.podAnnotations` and `egress.podAnnotations` which is a better name and aligne with the existing `controlPlane.podAnnoations`.
 
+
+### Kuma-cp
+
+By default the minimum TLS version allowed on servers is TLSv1.2. If you require using TLS < 1.2 you can set `KUMA_GENERAL_TLS_MIN_VERSION`. 
+
 ## Upgrade to `1.8.x`
 
 ### Kumactl

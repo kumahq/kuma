@@ -7,11 +7,11 @@ package v1alpha1
 import (
 	"fmt"
 
-	"google.golang.org/protobuf/proto"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -61,7 +61,7 @@ func (cb *Zone) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *Zone) GetSpec() (proto.Message, error) {
+func (cb *Zone) GetSpec() (core_model.ResourceSpec, error) {
 	spec := cb.Spec
 	m := system_proto.Zone{}
 
@@ -73,17 +73,18 @@ func (cb *Zone) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *Zone) SetSpec(spec proto.Message) {
+func (cb *Zone) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*system_proto.Zone); !ok {
+	s, ok := spec.(*system_proto.Zone)
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
 func (cb *Zone) Scope() model.Scope {
@@ -157,7 +158,7 @@ func (cb *ZoneInsight) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *ZoneInsight) GetSpec() (proto.Message, error) {
+func (cb *ZoneInsight) GetSpec() (core_model.ResourceSpec, error) {
 	spec := cb.Spec
 	m := system_proto.ZoneInsight{}
 
@@ -169,17 +170,18 @@ func (cb *ZoneInsight) GetSpec() (proto.Message, error) {
 	return &m, err
 }
 
-func (cb *ZoneInsight) SetSpec(spec proto.Message) {
+func (cb *ZoneInsight) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 		cb.Spec = nil
 		return
 	}
 
-	if _, ok := spec.(*system_proto.ZoneInsight); !ok {
+	s, ok := spec.(*system_proto.ZoneInsight)
+	if !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
 func (cb *ZoneInsight) Scope() model.Scope {

@@ -72,6 +72,16 @@ func autoconfigureServersTLS(cfg *kuma_cp.Config) {
 		cfg.ApiServer.HTTPS.TlsCertFile = cfg.General.TlsCertFile
 		cfg.ApiServer.HTTPS.TlsKeyFile = cfg.General.TlsKeyFile
 	}
+	if cfg.General.TlsMinVersion != "" {
+		cfg.Multizone.Global.KDS.TlsMinVersion = cfg.General.TlsMinVersion
+		cfg.DpServer.TlsMinVersion = cfg.General.TlsMinVersion
+		cfg.ApiServer.HTTPS.TlsMinVersion = cfg.General.TlsMinVersion
+	}
+	if len(cfg.General.TlsCipherSuites) > 0 {
+		cfg.Multizone.Global.KDS.TlsCipherSuites = cfg.General.TlsCipherSuites
+		cfg.DpServer.TlsCipherSuites = cfg.General.TlsCipherSuites
+		cfg.ApiServer.HTTPS.TlsCipherSuites = cfg.General.TlsCipherSuites
+	}
 }
 
 func autoconfigureTLS(cfg *kuma_cp.Config) error {

@@ -6,11 +6,11 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 type Callbacks struct {
-	OnResourcesReceived func(clusterID string, rs model.ResourceList) error
+	OnResourcesReceived func(clusterID string, rs core_model.ResourceList) error
 }
 
 type KDSSink interface {
@@ -19,12 +19,12 @@ type KDSSink interface {
 
 type kdsSink struct {
 	log           logr.Logger
-	resourceTypes []model.ResourceType
+	resourceTypes []core_model.ResourceType
 	callbacks     *Callbacks
 	kdsStream     KDSStream
 }
 
-func NewKDSSink(log logr.Logger, rt []model.ResourceType, kdsStream KDSStream, cb *Callbacks) KDSSink {
+func NewKDSSink(log logr.Logger, rt []core_model.ResourceType, kdsStream KDSStream, cb *Callbacks) KDSSink {
 	return &kdsSink{
 		log:           log,
 		resourceTypes: rt,

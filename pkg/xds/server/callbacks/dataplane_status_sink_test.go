@@ -190,7 +190,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 				return true
 			}, "1s", "1ms").Should(BeTrue())
 			// and
-			Expect(util_proto.ToYAML(dataplaneInsight.GetSpec())).To(MatchYAML(`
+			Expect(util_proto.ToYAML(dataplaneInsight.GetSpec().(proto.Message))).To(MatchYAML(`
             subscriptions:
             - connectTime: "2019-07-01T00:00:00Z"
               controlPlaneInstanceId: control-plane-01
@@ -224,7 +224,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 				return true
 			}, "1s", "1ms").Should(BeTrue())
 			// and
-			Expect(util_proto.ToYAML(dataplaneInsight.GetSpec())).To(MatchYAML(`
+			Expect(util_proto.ToYAML(dataplaneInsight.GetSpec().(proto.Message))).To(MatchYAML(`
             subscriptions:
             - connectTime: "2019-07-01T00:00:00Z"
               controlPlaneInstanceId: control-plane-01

@@ -1,10 +1,11 @@
 package model
 
 import (
-	"google.golang.org/protobuf/proto"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 type Scope string
@@ -21,8 +22,8 @@ type KubernetesObject interface {
 	SetObjectMeta(*metav1.ObjectMeta)
 	GetMesh() string
 	SetMesh(string)
-	GetSpec() (proto.Message, error)
-	SetSpec(proto.Message)
+	GetSpec() (model.ResourceSpec, error)
+	SetSpec(model.ResourceSpec)
 	Scope() Scope
 }
 
