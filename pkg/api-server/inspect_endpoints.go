@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/core/xds/inspect"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -575,7 +576,7 @@ func inspectRulesAttachment(cfg *kuma_cp.Config, builder xds_context.MeshContext
 			rest_errors.HandleError(response, err, "Could not get MatchedPolicies")
 			return
 		}
-		rulesAttachments := core_xds.BuildRulesAttachments(matchedPolicies.Dynamic, proxy.Dataplane.Spec.Networking)
+		rulesAttachments := inspect.BuildRulesAttachments(matchedPolicies.Dynamic, proxy.Dataplane.Spec.Networking)
 		resp := api_server_types.RuleInspectResponse{}
 		for _, ruleAttachment := range rulesAttachments {
 			subset := map[string]string{}

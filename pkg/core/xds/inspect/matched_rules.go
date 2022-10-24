@@ -1,4 +1,4 @@
-package xds
+package inspect
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
 const ClientRuleAttachmentType = "clientSubset"
@@ -17,11 +18,11 @@ type RuleAttachment struct {
 	Name       string
 	Service    string
 	PolicyType core_model.ResourceType
-	Rule       Rule
+	Rule       core_xds.Rule
 }
 
 func BuildRulesAttachments(
-	matchedPoliciesByType map[core_model.ResourceType]TypedMatchingPolicies,
+	matchedPoliciesByType map[core_model.ResourceType]core_xds.TypedMatchingPolicies,
 	networking *mesh_proto.Dataplane_Networking,
 ) []RuleAttachment {
 	var attachments []RuleAttachment
@@ -49,14 +50,14 @@ func BuildRulesAttachments(
 }
 
 func getInboundRuleAttachments(
-	fromRules map[InboundListener]Rules,
+	fromRules map[core_xds.InboundListener]core_xds.Rules,
 	networking *mesh_proto.Dataplane_Networking,
 	typ core_model.ResourceType,
 ) []RuleAttachment {
-	inboundServices := map[InboundListener]string{}
+	inboundServices := map[core_xds.InboundListener]string{}
 	for _, inbound := range networking.GetInbound() {
 		iface := networking.ToInboundInterface(inbound)
-		inboundServices[InboundListener{
+		inboundServices[core_xds.InboundListener{
 			Address: iface.DataplaneIP,
 			Port:    iface.DataplanePort,
 		}] = inbound.GetService()
@@ -79,13 +80,13 @@ func getInboundRuleAttachments(
 }
 
 func getOutboundRuleAttachments(
-	rules Rules,
+	rules core_xds.Rules,
 	networking *mesh_proto.Dataplane_Networking,
 	typ core_model.ResourceType,
 ) []RuleAttachment {
 	var attachments []RuleAttachment
 	for _, outbound := range networking.Outbound {
-		subset := SubsetFromTags(outbound.GetTagsIncludingLegacy())
+		subset := core_xds.SubsetFromTags(outbound.GetTagsIncludingLegacy())
 		computedRule := rules.Compute(subset)
 		if computedRule == nil {
 			continue
