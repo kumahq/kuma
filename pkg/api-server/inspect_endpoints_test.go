@@ -1286,6 +1286,9 @@ var _ = Describe("Inspect WS", func() {
 						},
 						To: []*v1alpha1.MeshAccessLog_To{
 							{
+								TargetRef: &common_api.TargetRef{
+									Kind: "Mesh",
+								},
 								Default: &v1alpha1.MeshAccessLog_Conf{
 									Backends: []*v1alpha1.MeshAccessLog_Backend{
 										{
