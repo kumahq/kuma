@@ -569,20 +569,13 @@ func inspectRulesAttachment(cfg *kuma_cp.Config, builder xds_context.MeshContext
 		}
 
 		matchedPolicies, _, proxy, err := getMatchedPolicies(
-			request.Request.Context(), cfg, meshContext, core_model.ResourceKey{Mesh: meshName, Name: dataplaneName},
+			ctx, cfg, meshContext, core_model.ResourceKey{Mesh: meshName, Name: dataplaneName},
 		)
 		if err != nil {
 			rest_errors.HandleError(response, err, "Could not get MatchedPolicies")
 			return
 		}
 		rulesAttachments := core_xds.BuildRulesAttachments(matchedPolicies.Dynamic, proxy.Dataplane.Spec.Networking)
-		sort.SliceStable(rulesAttachments, func(i, j int) bool {
-			if rulesAttachments[i].Name == rulesAttachments[j].Name {
-				return rulesAttachments[i].Type < rulesAttachments[j].Type
-			}
-			return rulesAttachments[i].Name < rulesAttachments[j].Name
-		})
-
 		resp := api_server_types.RuleInspectResponse{}
 		for _, ruleAttachment := range rulesAttachments {
 			subset := map[string]string{}

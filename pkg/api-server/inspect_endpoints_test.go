@@ -1240,7 +1240,7 @@ var _ = Describe("Inspect WS", func() {
 		}),
 		Entry("inspect rules", testCase{
 			path:    "/meshes/default/dataplanes/backend-1/rules",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_dataplane_rules.json")),
+			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_dataplane_rules.golden.json")),
 			resources: []core_model.Resource{
 				newMesh("default"),
 				newDataplane().

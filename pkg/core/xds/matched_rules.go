@@ -2,6 +2,7 @@ package xds
 
 import (
 	"fmt"
+	"sort"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -38,6 +39,12 @@ func BuildRulesAttachments(
 			attachments = append(attachments, attachment)
 		}
 	}
+	sort.SliceStable(attachments, func(i, j int) bool {
+		if attachments[i].Name == attachments[j].Name {
+			return attachments[i].Type < attachments[j].Type
+		}
+		return attachments[i].Name < attachments[j].Name
+	})
 	return attachments
 }
 
