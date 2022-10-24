@@ -48,7 +48,7 @@ require (
 	github.com/spf13/cobra v1.6.0
 	github.com/spf13/viper v1.13.0
 	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc
-	github.com/testcontainers/testcontainers-go v0.14.0
+	github.com/testcontainers/testcontainers-go v0.15.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 	golang.org/x/exp v0.0.0-20220407100705-7b9b53b0aca4
@@ -191,7 +191,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	gotest.tools/v3 v3.3.0 // indirect
+	gotest.tools/v3 v3.4.0 // indirect
 	k8s.io/component-base v0.25.3 // indirect
 	k8s.io/klog/v2 v2.80.0 // indirect
 	sigs.k8s.io/json v0.0.0-20220713155537-f223a00ba0e2 // indirect
