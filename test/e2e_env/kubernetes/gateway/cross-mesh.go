@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -249,6 +250,9 @@ spec:
         value: /
 `, crossMeshGatewayName, gatewayTestNamespace, gatewayMesh, crossMeshGatewayName, echoServerName(gatewayMesh))
 		BeforeAll(func() {
+			if runtime.GOARCH == "arm64" {
+				Skip("The Gateway API webhook doesn't provide an arm64 image")
+			}
 			setup := NewClusterSetup().
 				Install(YamlK8s(meshGatewayConfig)).
 				Install(YamlK8s(gatewayClass)).
