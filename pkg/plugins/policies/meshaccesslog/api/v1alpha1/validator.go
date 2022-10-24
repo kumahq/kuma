@@ -23,14 +23,14 @@ func (r *MeshAccessLogResource) validate() error {
 	return verr.OrNil()
 }
 func validateTop(targetRef *common_proto.TargetRef) validators.ValidationError {
-	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
-		SupportedKinds: []common_proto.TargetRef_Kind{
-			common_proto.TargetRef_Mesh,
-			common_proto.TargetRef_MeshSubset,
-			common_proto.TargetRef_MeshService,
-			common_proto.TargetRef_MeshServiceSubset,
-			common_proto.TargetRef_MeshGatewayRoute,
-			common_proto.TargetRef_MeshHTTPRoute,
+	targetRefErr := matcher_validators.ValidateTargetRef(*targetRef, &matcher_validators.ValidateTargetRefOpts{
+		SupportedKinds: []common_proto.TargetRefKind{
+			common_proto.Mesh,
+			common_proto.MeshSubset,
+			common_proto.MeshService,
+			common_proto.MeshServiceSubset,
+			common_proto.MeshGatewayRoute,
+			common_proto.MeshHTTPRoute,
 		},
 	})
 	return targetRefErr
@@ -39,9 +39,9 @@ func validateFrom(from []*MeshAccessLog_From) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, fromItem := range from {
 		path := validators.RootedAt("from").Index(idx)
-		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(fromItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
-			SupportedKinds: []common_proto.TargetRef_Kind{
-				common_proto.TargetRef_Mesh,
+		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(*fromItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
+			SupportedKinds: []common_proto.TargetRefKind{
+				common_proto.Mesh,
 			},
 		}))
 
@@ -58,10 +58,10 @@ func validateTo(to []*MeshAccessLog_To) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
-		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(toItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
-			SupportedKinds: []common_proto.TargetRef_Kind{
-				common_proto.TargetRef_Mesh,
-				common_proto.TargetRef_MeshService,
+		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(*toItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
+			SupportedKinds: []common_proto.TargetRefKind{
+				common_proto.Mesh,
+				common_proto.MeshService,
 			},
 		}))
 
@@ -137,11 +137,11 @@ func validateFormat(format *MeshAccessLog_Format) validators.ValidationError {
 
 func validateIncompatibleCombinations(spec *MeshAccessLog) validators.ValidationError {
 	var verr validators.ValidationError
-	targetRef := spec.GetTargetRef().GetKindEnum()
-	if targetRef == common_proto.TargetRef_MeshGatewayRoute && len(spec.GetTo()) > 0 {
+	targetRef := spec.GetTargetRef().Kind
+	if targetRef == common_proto.MeshGatewayRoute && len(spec.GetTo()) > 0 {
 		verr.AddViolation("to", `cannot use "to" when "targetRef" is "MeshGatewayRoute" - there is no outbound`)
 	}
-	if targetRef == common_proto.TargetRef_MeshHTTPRoute && len(spec.GetTo()) > 0 {
+	if targetRef == common_proto.MeshHTTPRoute && len(spec.GetTo()) > 0 {
 		verr.AddViolation("to", `cannot use "to" when "targetRef" is "MeshHTTPRoute" - "to" always goes to the application`)
 	}
 	return verr

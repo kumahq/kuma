@@ -3,6 +3,7 @@ PROTO_DIRS := ./pkg/config ./api
 
 CONTROLLER_GEN := go run -mod=mod sigs.k8s.io/controller-tools/cmd/controller-gen
 RESOURCE_GEN := go run -mod=mod $(TOOLS_DIR)/resource-gen/main.go
+POLICY_GEN := go run -mod=mod $(TOOLS_DIR)/policy-gen/generator/main.go
 
 .PHONY: clean/proto
 clean/proto: ## Dev: Remove auto-generated Protobuf files
@@ -28,12 +29,13 @@ protoc/plugins:
 	$(PROTOC_GO) pkg/plugins/ca/builtin/config/*.proto
 
 POLICIES_DIR := pkg/plugins/policies
+COMMON_DIR := api/common
 
 policies = $(foreach dir,$(shell find pkg/plugins/policies -maxdepth 1 -mindepth 1 -type d | grep -v -e core -e matchers -e xds -e validation | sort),$(notdir $(dir)))
 generate_policy_targets = $(addprefix generate/policy/,$(policies))
 cleanup_policy_targets = $(addprefix cleanup/policy/,$(policies))
 
-generate/policies: cleanup/crds cleanup/policies $(generate_policy_targets) generate/policy-import generate/policy-helm generate/builtin-crds generate/fix-embed
+generate/policies: cleanup/crds cleanup/policies generate/deep-copy/targetref $(generate_policy_targets) generate/policy-import generate/policy-helm generate/builtin-crds generate/fix-embed
 
 cleanup/crds:
 	rm -f ./deployments/charts/kuma/crds/*
@@ -45,6 +47,11 @@ cleanup/policies: $(cleanup_policy_targets)
 cleanup/policy/%:
 	$(shell find $(POLICIES_DIR)/$* \( -name '*.pb.go' -o -name '*.yaml' -o -name 'zz_generated.*'  \) -not -path '*/testdata/*' -type f -delete)
 	@rm -fr $(POLICIES_DIR)/$*/k8s
+
+generate/deep-copy/targetref:
+	for version in $(foreach dir,$(wildcard $(COMMON_DIR)/*),$(notdir $(dir))); do \
+		$(CONTROLLER_GEN) object:headerFile=$(TOOLS_DIR)/policy-gen/boilerplate.go.txt,year=$$(date +%Y) paths=$(COMMON_DIR)/$$version/targetref.go ; \
+	done
 
 generate/policy/%: generate/schema/%
 	@echo "Policy $* successfully generated"
@@ -64,20 +71,14 @@ generate/controller-gen/%: generate/kumapolicy-gen/%
 	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \
 		$(CONTROLLER_GEN) "crd:crdVersions=v1,ignoreUnexportedFields=true" paths="./$(POLICIES_DIR)/$*/k8s/..." output:crd:artifacts:config=$(POLICIES_DIR)/$*/k8s/crd && \
 		$(CONTROLLER_GEN) object:headerFile=$(TOOLS_DIR)/policy-gen/boilerplate.go.txt,year=$$(date +%Y) paths=$(POLICIES_DIR)/$*/k8s/$$version/zz_generated.types.go ; \
+		$(CONTROLLER_GEN) object:headerFile=$(TOOLS_DIR)/policy-gen/boilerplate.go.txt,year=$$(date +%Y) paths=$(POLICIES_DIR)/$*/api/$$version/$*.go ; \
 	done
 
-.PHONY: build/protoc-gen-kumapolicy
-build/protoc-gen-kumapolicy:
-	mkdir -p $(BUILD_ARTIFACTS_DIR)/protoc
-	go build -o $(BUILD_ARTIFACTS_DIR)/protoc/protoc-gen-kumapolicy $(TOOLS_DIR)/policy-gen/protoc-gen-kumapolicy/...
-
-generate/kumapolicy-gen/%: build/protoc-gen-kumapolicy generate/dirs/%
-	$(PROTOC_GO) \
-		--kumapolicy_opt=endpoints-template=$(TOOLS_DIR)/policy-gen/templates/endpoints.yaml \
-		--kumapolicy_out=$(POLICIES_DIR)/$* \
-		--plugin=protoc-gen-kumapolicy=$(BUILD_ARTIFACTS_DIR)/protoc/protoc-gen-kumapolicy \
-		$(POLICIES_DIR)/$*/api/*/*.proto ; \
-	$(TOOLS_DIR)/policy-gen/workaround-omitempty.sh $(POLICIES_DIR)/$*/api/*/*.go
+generate/kumapolicy-gen/%: generate/dirs/%
+	$(POLICY_GEN) core-resource --plugin-dir $(POLICIES_DIR)/$* && \
+	$(POLICY_GEN) k8s-resource --plugin-dir $(POLICIES_DIR)/$* && \
+	$(POLICY_GEN) openapi --plugin-dir $(POLICIES_DIR)/$* --openapi-template-path=$(TOOLS_DIR)/policy-gen/templates/endpoints.yaml && \
+	$(POLICY_GEN) plugin-file --plugin-dir $(POLICIES_DIR)/$*
 
 generate/dirs/%:
 	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \

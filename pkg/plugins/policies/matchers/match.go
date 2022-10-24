@@ -136,20 +136,20 @@ func singleItemRules(matchedPolicies []core_model.Resource) (core_xds.Rules, err
 
 // inboundsSelectedByTargetRef returns a list of inbounds of DPP that are selected by the targetRef
 func inboundsSelectedByTargetRef(tr *common_proto.TargetRef, dpp *core_mesh.DataplaneResource, gateway *core_mesh.MeshGatewayResource) []core_xds.InboundListener {
-	switch tr.GetKindEnum() {
-	case common_proto.TargetRef_Mesh:
+	switch tr.Kind {
+	case common_proto.Mesh:
 		return inboundsSelectedByTags(nil, dpp, gateway)
-	case common_proto.TargetRef_MeshSubset:
-		return inboundsSelectedByTags(tr.GetTags(), dpp, gateway)
-	case common_proto.TargetRef_MeshService:
+	case common_proto.MeshSubset:
+		return inboundsSelectedByTags(tr.Tags, dpp, gateway)
+	case common_proto.MeshService:
 		return inboundsSelectedByTags(map[string]string{
-			mesh_proto.ServiceTag: tr.GetName(),
+			mesh_proto.ServiceTag: tr.Name,
 		}, dpp, gateway)
-	case common_proto.TargetRef_MeshServiceSubset:
+	case common_proto.MeshServiceSubset:
 		tags := map[string]string{
-			mesh_proto.ServiceTag: tr.GetName(),
+			mesh_proto.ServiceTag: tr.Name,
 		}
-		for k, v := range tr.GetTags() {
+		for k, v := range tr.Tags {
 			tags[k] = v
 		}
 		return inboundsSelectedByTags(tags, dpp, gateway)
@@ -200,9 +200,8 @@ func (b ByTargetRef) Less(i, j int) bool {
 
 	tr1, tr2 := r1.GetTargetRef(), r2.GetTargetRef()
 
-	kind1, kind2 := tr1.GetKindEnum(), tr2.GetKindEnum()
-	if kind1 != kind2 {
-		return kind1 < kind2
+	if tr1.Kind != tr2.Kind {
+		return tr1.Kind.Less(tr2.Kind)
 	}
 
 	return b[i].GetMeta().GetName() < b[j].GetMeta().GetName()

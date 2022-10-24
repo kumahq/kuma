@@ -82,14 +82,14 @@ func (ss Subset) IndexOfPositive() int {
 // represents destinations.
 type Rule struct {
 	Subset Subset
-	Conf   proto.Message
+	Conf   any
 	Origin []core_model.ResourceMeta
 }
 
 type Rules []*Rule
 
 // Compute returns configuration for the given subset.
-func (rs Rules) Compute(sub Subset) proto.Message {
+func (rs Rules) Compute(sub Subset) any {
 	for _, rule := range rs {
 		if rule.Subset.IsSubset(sub) {
 			return rule.Conf
@@ -218,25 +218,25 @@ func newConf(t reflect.Type) (proto.Message, error) {
 }
 
 func asSubset(tr *common_api.TargetRef) (Subset, error) {
-	switch tr.GetKindEnum() {
-	case common_api.TargetRef_Mesh:
+	switch tr.Kind {
+	case common_api.Mesh:
 		return Subset{}, nil
-	case common_api.TargetRef_MeshSubset:
+	case common_api.MeshSubset:
 		ss := Subset{}
-		for k, v := range tr.GetTags() {
+		for k, v := range tr.Tags {
 			ss = append(ss, Tag{Key: k, Value: v})
 		}
 		return ss, nil
-	case common_api.TargetRef_MeshService:
-		return Subset{{Key: mesh_proto.ServiceTag, Value: tr.GetName()}}, nil
-	case common_api.TargetRef_MeshServiceSubset:
-		ss := Subset{{Key: mesh_proto.ServiceTag, Value: tr.GetName()}}
-		for k, v := range tr.GetTags() {
+	case common_api.MeshService:
+		return Subset{{Key: mesh_proto.ServiceTag, Value: tr.Name}}, nil
+	case common_api.MeshServiceSubset:
+		ss := Subset{{Key: mesh_proto.ServiceTag, Value: tr.Name}}
+		for k, v := range tr.Tags {
 			ss = append(ss, Tag{Key: k, Value: v})
 		}
 		return ss, nil
 	default:
-		return nil, errors.Errorf("can't represent %s as tags", tr.GetKindEnum())
+		return nil, errors.Errorf("can't represent %s as tags", tr.Kind)
 	}
 }
 

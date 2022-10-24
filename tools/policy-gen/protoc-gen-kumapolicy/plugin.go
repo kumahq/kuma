@@ -64,7 +64,7 @@ func generatePluginFile(
 	}
 
 	if info.SkipRegistration {
-		// Don't generate the plugin file if it doesn't exists
+		// Don't generate the plugin file if it doesn't exist
 		return nil
 	}
 	outBuf := bytes.Buffer{}

@@ -23,13 +23,13 @@ func (r *MeshTraceResource) validate() error {
 	return verr.OrNil()
 }
 func validateTop(targetRef *common_proto.TargetRef) validators.ValidationError {
-	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
-		SupportedKinds: []common_proto.TargetRef_Kind{
-			common_proto.TargetRef_Mesh,
-			common_proto.TargetRef_MeshSubset,
-			common_proto.TargetRef_MeshService,
-			common_proto.TargetRef_MeshServiceSubset,
-			common_proto.TargetRef_MeshGatewayRoute,
+	targetRefErr := matcher_validators.ValidateTargetRef(*targetRef, &matcher_validators.ValidateTargetRefOpts{
+		SupportedKinds: []common_proto.TargetRefKind{
+			common_proto.Mesh,
+			common_proto.MeshSubset,
+			common_proto.MeshService,
+			common_proto.MeshServiceSubset,
+			common_proto.MeshGatewayRoute,
 		},
 	})
 	return targetRefErr

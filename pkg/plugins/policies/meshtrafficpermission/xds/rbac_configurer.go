@@ -42,12 +42,12 @@ func (c *RBACConfigurer) Configure(filterChain *envoy_listener.FilterChain) erro
 	return nil
 }
 
-type PrincipalMap map[policies_api.MeshTrafficPermission_Conf_Action][]*rbac_config.Principal
+type PrincipalMap map[policies_api.Action][]*rbac_config.Principal
 
 func (c *RBACConfigurer) principalsByAction() PrincipalMap {
 	pm := PrincipalMap{}
 	for _, rule := range c.Rules {
-		action := rule.Conf.(*policies_api.MeshTrafficPermission_Conf).GetActionEnum()
+		action := rule.Conf.(*policies_api.Conf).Action
 		pm[action] = append(pm[action], c.principalFromSubset(rule.Subset))
 	}
 	return pm
@@ -83,8 +83,8 @@ func createRules(pm PrincipalMap) *rbac_config.RBAC {
 	}
 
 	principals := []*rbac_config.Principal{}
-	principals = append(principals, pm[policies_api.MeshTrafficPermission_Conf_ALLOW]...)
-	principals = append(principals, pm[policies_api.MeshTrafficPermission_Conf_ALLOW_WITH_SHADOW_DENY]...)
+	principals = append(principals, pm[policies_api.ALLOW]...)
+	principals = append(principals, pm[policies_api.ALLOW_WITH_SHADOW_DENY]...)
 
 	if len(principals) != 0 {
 		rules.Policies["MeshTrafficPermission"] = &rbac_config.Policy{
@@ -103,7 +103,7 @@ func createRules(pm PrincipalMap) *rbac_config.RBAC {
 }
 
 func createShadowRules(pm PrincipalMap) *rbac_config.RBAC {
-	deny := pm[policies_api.MeshTrafficPermission_Conf_ALLOW_WITH_SHADOW_DENY]
+	deny := pm[policies_api.ALLOW_WITH_SHADOW_DENY]
 	if len(deny) == 0 {
 		return nil
 	}
