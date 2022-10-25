@@ -191,7 +191,7 @@ func CrossMeshGatewayOnKubernetes() {
 		})
 	})
 
-	Context("with Gateway API", func() {
+	Context("with Gateway API", Label("arm-not-supported"), func() {
 		const gatewayClass = `
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: GatewayClass
