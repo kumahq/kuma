@@ -27,7 +27,7 @@ var _ = Describe("Config", func() {
 
 		// and
 		Expect(cfg.ControlPlane.URL).To(Equal("https://kuma-control-plane.internal:5682"))
-		Expect(cfg.Dataplane.DrainTime).To(Equal(60 * time.Second))
+		Expect(cfg.Dataplane.DrainTime.Duration).To(Equal(60 * time.Second))
 	})
 
 	Context("with modified environment variables", func() {
@@ -86,11 +86,11 @@ var _ = Describe("Config", func() {
 
 			// and
 			Expect(cfg.ControlPlane.URL).To(Equal("https://kuma-control-plane.internal:5682"))
-			Expect(cfg.ControlPlane.Retry.Backoff).To(Equal(1 * time.Second))
-			Expect(cfg.ControlPlane.Retry.MaxDuration).To(Equal(10 * time.Second))
+			Expect(cfg.ControlPlane.Retry.Backoff.Duration).To(Equal(1 * time.Second))
+			Expect(cfg.ControlPlane.Retry.MaxDuration.Duration).To(Equal(10 * time.Second))
 			Expect(cfg.Dataplane.Mesh).To(Equal("demo"))
 			Expect(cfg.Dataplane.Name).To(Equal("example"))
-			Expect(cfg.Dataplane.DrainTime).To(Equal(60 * time.Second))
+			Expect(cfg.Dataplane.DrainTime.Duration).To(Equal(60 * time.Second))
 			Expect(cfg.DataplaneRuntime.BinaryPath).To(Equal("envoy.sh"))
 			Expect(cfg.DataplaneRuntime.ConfigDir).To(Equal("/var/run/envoy"))
 			Expect(cfg.DataplaneRuntime.TokenPath).To(Equal("/tmp/token"))

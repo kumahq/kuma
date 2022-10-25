@@ -1,8 +1,7 @@
 package config
 
 import (
-	ghodss_yaml "github.com/ghodss/yaml"
-	"gopkg.in/yaml.v2"
+	"sigs.k8s.io/yaml"
 )
 
 func FromYAML(content []byte, cfg Config) error {
@@ -22,5 +21,5 @@ func ToJson(cfg Config) ([]byte, error) {
 		return nil, err
 	}
 	// there is no easy way to convert yaml to json using gopkg.in/yaml.v2
-	return ghodss_yaml.YAMLToJSON(yamlBytes)
+	return yaml.YAMLToJSON(yamlBytes)
 }

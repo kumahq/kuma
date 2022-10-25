@@ -37,7 +37,7 @@ var _ = Describe("Config", func() {
 		Expect(cfg.Injector.SidecarContainer.UID).To(Equal(int64(2345)))
 		Expect(cfg.Injector.SidecarContainer.GID).To(Equal(int64(3456)))
 		Expect(cfg.Injector.SidecarContainer.AdminPort).To(Equal(uint32(45678)))
-		Expect(cfg.Injector.SidecarContainer.DrainTime).To(Equal(15 * time.Second))
+		Expect(cfg.Injector.SidecarContainer.DrainTime.Duration).To(Equal(15 * time.Second))
 		// and
 		Expect(cfg.Injector.SidecarContainer.ReadinessProbe.InitialDelaySeconds).To(Equal(int32(11)))
 		Expect(cfg.Injector.SidecarContainer.ReadinessProbe.TimeoutSeconds).To(Equal(int32(13)))
@@ -61,7 +61,7 @@ var _ = Describe("Config", func() {
 		Expect(cfg.Injector.BuiltinDNS.Enabled).To(Equal(true))
 		Expect(cfg.Injector.BuiltinDNS.Port).To(Equal(uint32(1253)))
 		// and
-		Expect(cfg.MarshalingCacheExpirationTime).To(Equal(1 * time.Second))
+		Expect(cfg.MarshalingCacheExpirationTime.Duration).To(Equal(1 * time.Second))
 	})
 
 	It("should have consistent defaults", func() {

@@ -21,7 +21,7 @@ func NewListener(cfg config.PostgresStoreConfig, log logr.Logger) (*pq.Listener,
 		}
 		log.Info("event happened", "event", ev)
 	}
-	listener := pq.NewListener(connStr, cfg.MinReconnectInterval, cfg.MaxReconnectInterval, reportProblem)
+	listener := pq.NewListener(connStr, cfg.MinReconnectInterval.Duration, cfg.MaxReconnectInterval.Duration, reportProblem)
 	if err := listener.Listen("resource_events"); err != nil {
 		return nil, err
 	}
