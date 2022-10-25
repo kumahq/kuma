@@ -7,11 +7,9 @@ import (
 	"go.uber.org/multierr"
 
 	"github.com/kumahq/kuma/pkg/config"
-	"github.com/kumahq/kuma/pkg/core"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/mads"
 )
-
-var log = core.Log.WithName("mads-config")
 
 func DefaultMonitoringAssignmentServerConfig() *MonitoringAssignmentServerConfig {
 	return &MonitoringAssignmentServerConfig{
@@ -19,15 +17,13 @@ func DefaultMonitoringAssignmentServerConfig() *MonitoringAssignmentServerConfig
 		DefaultFetchTimeout:       30 * time.Second,
 		ApiVersions:               []mads.ApiVersion{mads.API_V1},
 		AssignmentRefreshInterval: 1 * time.Second,
+		TlsMinVersion:             "TLSv1_2",
+		TlsCipherSuites:           []string{},
 	}
 }
 
 // Monitoring Assignment Discovery Service (MADS) server configuration.
 type MonitoringAssignmentServerConfig struct {
-	// GrpcPort is the port of the gRPC server that serves Monitoring Assignment Discovery Service (MADS).
-	//
-	// Deprecated: GrpcPort has been replaced with Port to multiplex both HTTP and gRPC
-	GrpcPort uint32 `yaml:"grpcPort" envconfig:"kuma_monitoring_assignment_server_grpc_port"`
 	// Port of the server that serves Monitoring Assignment Discovery Service (MADS)
 	// over both grpc and http.
 	Port uint32 `yaml:"port" envconfig:"kuma_monitoring_assignment_server_port"`
@@ -37,6 +33,18 @@ type MonitoringAssignmentServerConfig struct {
 	ApiVersions []string `yaml:"apiVersions" envconfig:"kuma_monitoring_assignment_server_api_versions"`
 	// Interval for re-generating monitoring assignments for clients connected to the Control Plane.
 	AssignmentRefreshInterval time.Duration `yaml:"assignmentRefreshInterval" envconfig:"kuma_monitoring_assignment_server_assignment_refresh_interval"`
+	// TlsEnabled whether tls is enabled or not
+	TlsEnabled bool `yaml:"tlsEnabled" envconfig:"kuma_monitoring_assignment_server_tls_enabled"`
+	// TlsCertFile defines a path to a file with PEM-encoded TLS cert. If empty, autoconfigured from general.tlsCertFile
+	TlsCertFile string `yaml:"tlsCertFile" envconfig:"kuma_monitoring_assignment_server_tls_cert_file"`
+	// TlsKeyFile defines a path to a file with PEM-encoded TLS key. If empty, autoconfigured from general.tlsKeyFile
+	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_monitoring_assignment_server_tls_key_file"`
+	// TlsMinVersion defines the minimum TLS version to be used
+	TlsMinVersion string `yaml:"tlsMinVersion" envconfig:"kuma_monitoring_assignment_server_tls_min_version"`
+	// TlsMaxVersion defines the maximum TLS version to be used
+	TlsMaxVersion string `yaml:"tlsMaxVersion" envconfig:"kuma_monitoring_assignment_server_tls_max_version"`
+	// TlsCipherSuites defines the list of ciphers to use
+	TlsCipherSuites []string `yaml:"tlsCipherSuites" envconfig:"kuma_monitoring_assignment_server_tls_cipher_suites"`
 }
 
 var _ config.Config = &MonitoringAssignmentServerConfig{}
@@ -45,13 +53,6 @@ func (c *MonitoringAssignmentServerConfig) Sanitize() {
 }
 
 func (c *MonitoringAssignmentServerConfig) Validate() (errs error) {
-	if c.GrpcPort != 0 {
-		log.Info(".GrpcPort is deprecated. Please use .Port instead")
-		if c.Port == 0 {
-			c.Port = c.GrpcPort
-		}
-	}
-
 	if 65535 < c.Port {
 		errs = multierr.Append(errs, errors.Errorf(".Port must be in the range [0, 65535]"))
 	}
@@ -68,6 +69,21 @@ func (c *MonitoringAssignmentServerConfig) Validate() (errs error) {
 
 	if c.AssignmentRefreshInterval <= 0 {
 		return errors.New(".AssignmentRefreshInterval must be positive")
+	}
+	if c.TlsCertFile == "" && c.TlsKeyFile != "" {
+		errs = multierr.Append(errs, errors.New(".TlsCertFile cannot be empty if TlsKeyFile has been set"))
+	}
+	if c.TlsKeyFile == "" && c.TlsCertFile != "" {
+		errs = multierr.Append(errs, errors.New(".TlsKeyFile cannot be empty if TlsCertFile has been set"))
+	}
+	if _, err := config_types.TLSVersion(c.TlsMinVersion); err != nil {
+		errs = multierr.Append(errs, errors.New(".TlsMinVersion"+err.Error()))
+	}
+	if _, err := config_types.TLSVersion(c.TlsMaxVersion); err != nil {
+		errs = multierr.Append(errs, errors.New(".TlsMaxVersion"+err.Error()))
+	}
+	if _, err := config_types.TLSCiphers(c.TlsCipherSuites); err != nil {
+		errs = multierr.Append(errs, errors.New(".TlsCipherSuites"+err.Error()))
 	}
 	return
 }

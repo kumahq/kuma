@@ -70,7 +70,7 @@ type ControlPlane struct {
 	Retry CpRetry `yaml:"retry,omitempty"`
 	// CaCert defines Certificate Authority that will be used to verify connection to the Control Plane. It takes precedence over CaCertFile.
 	CaCert string `yaml:"caCert" envconfig:"kuma_control_plane_ca_cert"`
-	// CaCertFile defines a file for Certificate Authority that will be used to verifiy connection to the Control Plane.
+	// CaCertFile defines a file for Certificate Authority that will be used to verify connection to the Control Plane.
 	CaCertFile string `yaml:"caCertFile" envconfig:"kuma_control_plane_ca_cert_file"`
 }
 
