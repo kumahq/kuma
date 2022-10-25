@@ -2,28 +2,9 @@
  "total": 3,
  "items": [
   {
-   "type": "clientSubset",
-   "name": "192.168.0.1:80",
-   "service": "backend",
-   "policyType": "MeshTrafficPermission",
-   "subset": {
-    "kuma.io/service": "client",
-    "kuma.io/zone": "east"
-   },
-   "conf": {
-    "action": "DENY"
-   },
-   "origins": [
-    {
-     "mesh": "default",
-     "name": "mtp-1"
-    }
-   ]
-  },
-  {
    "type": "destinationSubset",
-   "name": "192.168.0.2:8080",
-   "service": "redis",
+   "name": "127.0.0.1:10001",
+   "service": "backend",
    "policyType": "MeshAccessLog",
    "subset": {},
    "conf": {
@@ -43,6 +24,25 @@
    ]
   },
   {
+   "type": "clientSubset",
+   "name": "192.168.0.2:80",
+   "service": "web",
+   "policyType": "MeshTrafficPermission",
+   "subset": {
+    "kuma.io/service": "client",
+    "kuma.io/zone": "east"
+   },
+   "conf": {
+    "action": "DENY"
+   },
+   "origins": [
+    {
+     "mesh": "default",
+     "name": "mtp-1"
+    }
+   ]
+  },
+  {
    "type": "singleItem",
    "name": "dataplane",
    "service": "",
@@ -52,7 +52,7 @@
     "backends": [
      {
       "zipkin": {
-       "url": "http://zipkin.internal/api/v2/spans"
+       "url": "http://jaeger-collector.mesh-observability:9411/api/v2/spans"
       }
      }
     ],
@@ -61,7 +61,7 @@
    "origins": [
     {
      "mesh": "default",
-     "name": "mal-1"
+     "name": "mtp-1"
     }
    ]
   }
