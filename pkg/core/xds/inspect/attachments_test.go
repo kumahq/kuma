@@ -1,4 +1,4 @@
-package xds_test
+package inspect_test
 
 import (
 	"fmt"
@@ -10,6 +10,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/core/xds/inspect"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
@@ -44,12 +45,12 @@ var _ = Describe("GroupByAttachment", func() {
 	type testCase struct {
 		matchedPolicies *core_xds.MatchedPolicies
 		dpNetworking    *mesh_proto.Dataplane_Networking
-		expected        core_xds.AttachmentMap
+		expected        inspect.AttachmentMap
 	}
 
 	DescribeTable("should generate attachmentMap based on MatchedPolicies",
 		func(given testCase) {
-			actual := core_xds.GroupByAttachment(given.matchedPolicies, given.dpNetworking)
+			actual := inspect.GroupByAttachment(given.matchedPolicies, given.dpNetworking)
 			for k := range actual {
 				Expect(actual[k]).To(Equal(given.expected[k]), fmt.Sprintf("attachement %+v", k))
 			}
@@ -121,8 +122,8 @@ var _ = Describe("GroupByAttachment", func() {
 					},
 				},
 			},
-			expected: core_xds.AttachmentMap{
-				core_xds.Attachment{Type: core_xds.Inbound, Name: "192.168.0.1:80:81", Service: "web"}: {
+			expected: inspect.AttachmentMap{
+				inspect.Attachment{Type: inspect.Inbound, Name: "192.168.0.1:80:81", Service: "web"}: {
 					core_mesh.FaultInjectionType: []core_model.Resource{
 						&core_mesh.FaultInjectionResource{Meta: meta1},
 						&core_mesh.FaultInjectionResource{Meta: meta4},
@@ -131,7 +132,7 @@ var _ = Describe("GroupByAttachment", func() {
 						&core_mesh.TrafficPermissionResource{Meta: meta1},
 					},
 				},
-				core_xds.Attachment{Type: core_xds.Inbound, Name: "192.168.0.2:80:81", Service: "web-api"}: {
+				inspect.Attachment{Type: inspect.Inbound, Name: "192.168.0.2:80:81", Service: "web-api"}: {
 					core_mesh.FaultInjectionType: []core_model.Resource{
 						&core_mesh.FaultInjectionResource{Meta: meta2},
 					},
@@ -139,7 +140,7 @@ var _ = Describe("GroupByAttachment", func() {
 						&core_mesh.TrafficPermissionResource{Meta: meta2},
 					},
 				},
-				core_xds.Attachment{Type: core_xds.Inbound, Name: "192.168.0.2:90:91", Service: "web-admin"}: {
+				inspect.Attachment{Type: inspect.Inbound, Name: "192.168.0.2:90:91", Service: "web-admin"}: {
 					core_mesh.TrafficPermissionType: []core_model.Resource{
 						&core_mesh.TrafficPermissionResource{Meta: meta3},
 					},
@@ -228,8 +229,8 @@ var _ = Describe("GroupByAttachment", func() {
 					},
 				},
 			},
-			expected: core_xds.AttachmentMap{
-				core_xds.Attachment{Type: core_xds.Outbound, Name: "192.168.0.1:80", Service: "redis"}: {
+			expected: inspect.AttachmentMap{
+				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.1:80", Service: "redis"}: {
 					core_mesh.TimeoutType: []core_model.Resource{
 						&core_mesh.TimeoutResource{Meta: meta1},
 					},
@@ -240,7 +241,7 @@ var _ = Describe("GroupByAttachment", func() {
 						&core_mesh.TrafficRouteResource{Meta: meta1},
 					},
 				},
-				core_xds.Attachment{Type: core_xds.Outbound, Name: "192.168.0.2:80", Service: "postgres"}: {
+				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.2:80", Service: "postgres"}: {
 					core_mesh.TimeoutType: []core_model.Resource{
 						&core_mesh.TimeoutResource{Meta: meta2},
 					},
@@ -251,7 +252,7 @@ var _ = Describe("GroupByAttachment", func() {
 						&core_mesh.TrafficRouteResource{Meta: meta2},
 					},
 				},
-				core_xds.Attachment{Type: core_xds.Outbound, Name: "192.168.0.2:90", Service: "mysql"}: {
+				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.2:90", Service: "mysql"}: {
 					core_mesh.TimeoutType: []core_model.Resource{
 						&core_mesh.TimeoutResource{Meta: meta3},
 					},
@@ -262,12 +263,12 @@ var _ = Describe("GroupByAttachment", func() {
 						&core_mesh.TrafficRouteResource{Meta: meta3},
 					},
 				},
-				core_xds.Attachment{Type: core_xds.Outbound, Name: "192.168.0.3:90", Service: "elastic"}: {
+				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.3:90", Service: "elastic"}: {
 					core_mesh.TimeoutType: []core_model.Resource{
 						&core_mesh.TimeoutResource{Meta: meta4},
 					},
 				},
-				core_xds.Attachment{Type: core_xds.Outbound, Name: "192.168.0.4:90", Service: "cockroachdb"}: {
+				inspect.Attachment{Type: inspect.Outbound, Name: "192.168.0.4:90", Service: "cockroachdb"}: {
 					core_mesh.RateLimitType: []core_model.Resource{
 						&core_mesh.RateLimitResource{Meta: meta5},
 						&core_mesh.RateLimitResource{Meta: meta6},
@@ -310,8 +311,8 @@ var _ = Describe("GroupByAttachment", func() {
 					},
 				},
 			},
-			expected: core_xds.AttachmentMap{
-				core_xds.Attachment{Type: core_xds.Service, Name: "backend", Service: "backend"}: {
+			expected: inspect.AttachmentMap{
+				inspect.Attachment{Type: inspect.Service, Name: "backend", Service: "backend"}: {
 					core_mesh.TrafficLogType: []core_model.Resource{
 						&core_mesh.TrafficLogResource{Meta: meta1},
 					},
@@ -325,7 +326,7 @@ var _ = Describe("GroupByAttachment", func() {
 						&core_mesh.RetryResource{Meta: meta1},
 					},
 				},
-				core_xds.Attachment{Type: core_xds.Service, Name: "postgres", Service: "postgres"}: {
+				inspect.Attachment{Type: inspect.Service, Name: "postgres", Service: "postgres"}: {
 					core_mesh.TrafficLogType: []core_model.Resource{
 						&core_mesh.TrafficLogResource{Meta: meta2},
 					},
@@ -333,12 +334,12 @@ var _ = Describe("GroupByAttachment", func() {
 						&core_mesh.CircuitBreakerResource{Meta: meta2},
 					},
 				},
-				core_xds.Attachment{Type: core_xds.Service, Name: "web", Service: "web"}: {
+				inspect.Attachment{Type: inspect.Service, Name: "web", Service: "web"}: {
 					core_mesh.HealthCheckType: []core_model.Resource{
 						&core_mesh.HealthCheckResource{Meta: meta3},
 					},
 				},
-				core_xds.Attachment{Type: core_xds.Service, Name: "redis", Service: "redis"}: {
+				inspect.Attachment{Type: inspect.Service, Name: "redis", Service: "redis"}: {
 					core_mesh.CircuitBreakerType: []core_model.Resource{
 						&core_mesh.CircuitBreakerResource{Meta: meta4},
 					},
@@ -360,8 +361,8 @@ var _ = Describe("GroupByAttachment", func() {
 					},
 				},
 			},
-			expected: core_xds.AttachmentMap{
-				core_xds.Attachment{Type: core_xds.Dataplane, Name: ""}: {
+			expected: inspect.AttachmentMap{
+				inspect.Attachment{Type: inspect.Dataplane, Name: ""}: {
 					core_mesh.TrafficTraceType: []core_model.Resource{
 						&core_mesh.TrafficTraceResource{Meta: meta1},
 						&core_mesh.TrafficTraceResource{Meta: meta3},
@@ -380,19 +381,19 @@ var _ = Describe("GroupByPolicy", func() {
 	type testCase struct {
 		matchedPolicies *core_xds.MatchedPolicies
 		dpNetworking    *mesh_proto.Dataplane_Networking
-		expected        core_xds.AttachmentsByPolicy
+		expected        inspect.AttachmentsByPolicy
 	}
 
 	DescribeTable("should generate AttachmentsByPolicy map based on MatchedPolicies",
 		func(given testCase) {
-			actual := core_xds.GroupByPolicy(given.matchedPolicies, given.dpNetworking)
+			actual := inspect.GroupByPolicy(given.matchedPolicies, given.dpNetworking)
 			for k := range given.expected {
 				Expect(actual[k]).To(Equal(given.expected[k]), fmt.Sprintf("policy %+v", k))
 			}
 		},
 		Entry("empty MatchedPolicies", testCase{
 			matchedPolicies: &core_xds.MatchedPolicies{},
-			expected:        core_xds.AttachmentsByPolicy{},
+			expected:        inspect.AttachmentsByPolicy{},
 		}),
 		Entry("group by inbound policies", testCase{
 			dpNetworking: &mesh_proto.Dataplane_Networking{
@@ -461,44 +462,44 @@ var _ = Describe("GroupByPolicy", func() {
 					},
 				},
 			},
-			expected: core_xds.AttachmentsByPolicy{
-				core_xds.PolicyKey{
+			expected: inspect.AttachmentsByPolicy{
+				inspect.PolicyKey{
 					Type: core_mesh.TrafficPermissionType,
 					Key:  core_model.ResourceKey{Name: "tp-1", Mesh: "default"},
 				}: {
-					{Type: core_xds.Inbound, Name: "192.168.0.1:80:81", Service: "web"},
-					{Type: core_xds.Inbound, Name: "192.168.0.2:90:91", Service: "web-api"},
+					{Type: inspect.Inbound, Name: "192.168.0.1:80:81", Service: "web"},
+					{Type: inspect.Inbound, Name: "192.168.0.2:90:91", Service: "web-api"},
 				},
-				core_xds.PolicyKey{
+				inspect.PolicyKey{
 					Type: core_mesh.TrafficPermissionType,
 					Key:  core_model.ResourceKey{Name: "tp-2", Mesh: "default"},
 				}: {
-					{Type: core_xds.Inbound, Name: "192.168.0.3:80:81", Service: "web-admin"},
+					{Type: inspect.Inbound, Name: "192.168.0.3:80:81", Service: "web-admin"},
 				},
-				core_xds.PolicyKey{
+				inspect.PolicyKey{
 					Type: core_mesh.FaultInjectionType,
 					Key:  core_model.ResourceKey{Name: "fi-1", Mesh: "default"},
 				}: {
-					{Type: core_xds.Inbound, Name: "192.168.0.1:80:81", Service: "web"},
+					{Type: inspect.Inbound, Name: "192.168.0.1:80:81", Service: "web"},
 				},
-				core_xds.PolicyKey{
+				inspect.PolicyKey{
 					Type: core_mesh.FaultInjectionType,
 					Key:  core_model.ResourceKey{Name: "fi-2", Mesh: "default"},
 				}: {
-					{Type: core_xds.Inbound, Name: "192.168.0.1:80:81", Service: "web"},
-					{Type: core_xds.Inbound, Name: "192.168.0.3:80:81", Service: "web-admin"},
+					{Type: inspect.Inbound, Name: "192.168.0.1:80:81", Service: "web"},
+					{Type: inspect.Inbound, Name: "192.168.0.3:80:81", Service: "web-admin"},
 				},
-				core_xds.PolicyKey{
+				inspect.PolicyKey{
 					Type: core_mesh.FaultInjectionType,
 					Key:  core_model.ResourceKey{Name: "fi-3", Mesh: "default"},
 				}: {
-					{Type: core_xds.Inbound, Name: "192.168.0.3:80:81", Service: "web-admin"},
+					{Type: inspect.Inbound, Name: "192.168.0.3:80:81", Service: "web-admin"},
 				},
-				core_xds.PolicyKey{
+				inspect.PolicyKey{
 					Type: core_mesh.RateLimitType,
 					Key:  core_model.ResourceKey{Name: "rl-1", Mesh: "default"},
 				}: {
-					{Type: core_xds.Inbound, Name: "192.168.0.2:90:91", Service: "web-api"},
+					{Type: inspect.Inbound, Name: "192.168.0.2:90:91", Service: "web-api"},
 				},
 			},
 		}),
@@ -539,25 +540,25 @@ var _ = Describe("GroupByPolicy", func() {
 					},
 				},
 			},
-			expected: core_xds.AttachmentsByPolicy{
-				core_xds.PolicyKey{
+			expected: inspect.AttachmentsByPolicy{
+				inspect.PolicyKey{
 					Type: core_mesh.TimeoutType,
 					Key:  core_model.ResourceKey{Name: "t-1", Mesh: "mesh-1"},
 				}: {
-					{Type: core_xds.Outbound, Name: "192.168.0.1:80", Service: "redis"},
-					{Type: core_xds.Outbound, Name: "192.168.0.2:90", Service: "postgres"},
+					{Type: inspect.Outbound, Name: "192.168.0.1:80", Service: "redis"},
+					{Type: inspect.Outbound, Name: "192.168.0.2:90", Service: "postgres"},
 				},
-				core_xds.PolicyKey{
+				inspect.PolicyKey{
 					Type: core_mesh.RateLimitType,
 					Key:  core_model.ResourceKey{Name: "rl-1", Mesh: "mesh-1"},
 				}: {
-					{Type: core_xds.Outbound, Name: "192.168.0.1:80", Service: "redis"},
+					{Type: inspect.Outbound, Name: "192.168.0.1:80", Service: "redis"},
 				},
-				core_xds.PolicyKey{
+				inspect.PolicyKey{
 					Type: core_mesh.RateLimitType,
 					Key:  core_model.ResourceKey{Name: "rl-2", Mesh: "mesh-1"},
 				}: {
-					{Type: core_xds.Outbound, Name: "192.168.0.2:90", Service: "postgres"},
+					{Type: inspect.Outbound, Name: "192.168.0.2:90", Service: "postgres"},
 				},
 			},
 		}),
@@ -600,50 +601,50 @@ var _ = Describe("GroupByPolicy", func() {
 					},
 				},
 			},
-			expected: core_xds.AttachmentsByPolicy{
-				core_xds.PolicyKey{
+			expected: inspect.AttachmentsByPolicy{
+				inspect.PolicyKey{
 					Type: core_mesh.TrafficLogType,
 					Key:  core_model.ResourceKey{Name: "tl-1", Mesh: "mesh-1"},
 				}: {
-					{Type: core_xds.Service, Name: "backend", Service: "backend"},
-					{Type: core_xds.Service, Name: "postgres", Service: "postgres"},
+					{Type: inspect.Service, Name: "backend", Service: "backend"},
+					{Type: inspect.Service, Name: "postgres", Service: "postgres"},
 				},
-				core_xds.PolicyKey{
+				inspect.PolicyKey{
 					Type: core_mesh.TrafficLogType,
 					Key:  core_model.ResourceKey{Name: "tl-2", Mesh: "mesh-1"},
 				}: {
-					{Type: core_xds.Service, Name: "redis", Service: "redis"},
+					{Type: inspect.Service, Name: "redis", Service: "redis"},
 				},
-				core_xds.PolicyKey{
+				inspect.PolicyKey{
 					Type: core_mesh.HealthCheckType,
 					Key:  core_model.ResourceKey{Name: "hc-1", Mesh: "mesh-1"},
 				}: {
-					{Type: core_xds.Service, Name: "backend", Service: "backend"},
+					{Type: inspect.Service, Name: "backend", Service: "backend"},
 				},
-				core_xds.PolicyKey{
+				inspect.PolicyKey{
 					Type: core_mesh.HealthCheckType,
 					Key:  core_model.ResourceKey{Name: "hc-2", Mesh: "mesh-1"},
 				}: {
-					{Type: core_xds.Service, Name: "redis", Service: "redis"},
+					{Type: inspect.Service, Name: "redis", Service: "redis"},
 				},
-				core_xds.PolicyKey{
+				inspect.PolicyKey{
 					Type: core_mesh.CircuitBreakerType,
 					Key:  core_model.ResourceKey{Name: "cb-1", Mesh: "mesh-1"},
 				}: {
-					{Type: core_xds.Service, Name: "kafka", Service: "kafka"},
+					{Type: inspect.Service, Name: "kafka", Service: "kafka"},
 				},
-				core_xds.PolicyKey{
+				inspect.PolicyKey{
 					Type: core_mesh.RetryType,
 					Key:  core_model.ResourceKey{Name: "r-1", Mesh: "mesh-1"},
 				}: {
-					{Type: core_xds.Service, Name: "payments", Service: "payments"},
+					{Type: inspect.Service, Name: "payments", Service: "payments"},
 				},
-				core_xds.PolicyKey{
+				inspect.PolicyKey{
 					Type: core_mesh.RetryType,
 					Key:  core_model.ResourceKey{Name: "r-2", Mesh: "mesh-1"},
 				}: {
-					{Type: core_xds.Service, Name: "backend", Service: "backend"},
-					{Type: core_xds.Service, Name: "web", Service: "web"},
+					{Type: inspect.Service, Name: "backend", Service: "backend"},
+					{Type: inspect.Service, Name: "web", Service: "web"},
 				},
 			},
 		}),
@@ -724,22 +725,22 @@ var _ = Describe("GroupByPolicy", func() {
 					},
 				},
 			},
-			expected: core_xds.AttachmentsByPolicy{
-				core_xds.PolicyKey{
+			expected: inspect.AttachmentsByPolicy{
+				inspect.PolicyKey{
 					Type: core_mesh.RateLimitType,
 					Key:  core_model.ResourceKey{Name: "rl-1", Mesh: "mesh-1"},
 				}: {
-					{Type: core_xds.Inbound, Name: "192.168.0.1:80:81", Service: "web"},
-					{Type: core_xds.Inbound, Name: "192.168.0.2:80:81", Service: "web-api"},
-					{Type: core_xds.Outbound, Name: "192.168.0.3:80", Service: "redis"},
-					{Type: core_xds.Outbound, Name: "192.168.0.4:80", Service: "postgres"},
+					{Type: inspect.Inbound, Name: "192.168.0.1:80:81", Service: "web"},
+					{Type: inspect.Inbound, Name: "192.168.0.2:80:81", Service: "web-api"},
+					{Type: inspect.Outbound, Name: "192.168.0.3:80", Service: "redis"},
+					{Type: inspect.Outbound, Name: "192.168.0.4:80", Service: "postgres"},
 				},
-				core_xds.PolicyKey{
+				inspect.PolicyKey{
 					Type: core_mesh.RateLimitType,
 					Key:  core_model.ResourceKey{Name: "rl-3", Mesh: "mesh-1"},
 				}: {
-					{Type: core_xds.Inbound, Name: "192.168.0.1:80:81", Service: "web"},
-					{Type: core_xds.Outbound, Name: "192.168.0.3:80", Service: "redis"},
+					{Type: inspect.Inbound, Name: "192.168.0.1:80:81", Service: "web"},
+					{Type: inspect.Outbound, Name: "192.168.0.3:80", Service: "redis"},
 				},
 			},
 		}),

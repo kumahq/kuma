@@ -2,6 +2,7 @@ package kubernetes_test
 
 import (
 	"encoding/json"
+	"runtime"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -36,17 +37,22 @@ func TestE2E(t *testing.T) {
 var _ = SynchronizedBeforeSuite(
 	func() []byte {
 		env.Cluster = NewK8sCluster(NewTestingT(), Kuma1, Verbose)
-		Expect(env.Cluster.Install(
-			gateway.GatewayAPICRDs,
-		)).To(Succeed())
 		// The Gateway API webhook needs to start before we can create
 		// GatewayClasses
+		var gatewayAPI = "false"
+		// There's no arm64 webhook image yet
+		if runtime.GOARCH == "amd64" {
+			gatewayAPI = "true"
+			Expect(env.Cluster.Install(
+				gateway.GatewayAPICRDs,
+			)).To(Succeed())
+		}
 		Eventually(func() error {
 			return env.Cluster.Install(
 				Kuma(core.Standalone,
 					WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 					WithCtlOpts(map[string]string{
-						"--experimental-gatewayapi": "true",
+						"--experimental-gatewayapi": gatewayAPI,
 						"--set":                     "experimental.transparentProxy=true",
 					}),
 					WithEgress(),
