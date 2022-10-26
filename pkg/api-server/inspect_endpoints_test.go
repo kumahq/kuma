@@ -14,7 +14,6 @@ import (
 	"github.com/onsi/gomega/types"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"github.com/kumahq/kuma/pkg/core"
@@ -23,11 +22,12 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	_ "github.com/kumahq/kuma/pkg/plugins/policies"
-	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
 	"github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	samples2 "github.com/kumahq/kuma/pkg/test/resources/samples"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -331,24 +331,10 @@ var _ = Describe("Inspect WS", func() {
 						Conf:         samples.HealthCheck.Conf,
 					},
 				},
-				&policies_api.MeshTrafficPermissionResource{
-					Meta: &test_model.ResourceMeta{Name: "mtp-1", Mesh: "default"},
-					Spec: &policies_api.MeshTrafficPermission{
-						TargetRef: &common_api.TargetRef{
-							Kind: "Mesh",
-						},
-						From: []*policies_api.From{
-							{
-								TargetRef: &common_api.TargetRef{
-									Kind: "Mesh",
-								},
-								Default: &policies_api.Conf{
-									Action: "ALLOW",
-								},
-							},
-						},
-					},
-				},
+				builders.MeshTrafficPermission().
+					WithTargetRef(builders.TargetRefMesh()).
+					AddFrom(builders.TargetRefMesh(), "ALLOW").
+					Build(),
 			},
 			contentType: restful.MIME_JSON,
 		}),
@@ -1099,25 +1085,11 @@ var _ = Describe("Inspect WS", func() {
 					meta("backend-1", "mesh-1").
 					inbound80to81("backend", "192.168.0.1").
 					build(),
-				&policies_api.MeshTrafficPermissionResource{
-					Meta: &test_model.ResourceMeta{Name: "mtp-1", Mesh: "mesh-1"},
-					Spec: &policies_api.MeshTrafficPermission{
-						TargetRef: &common_api.TargetRef{
-							Kind: "MeshService",
-							Name: "backend",
-						},
-						From: []*policies_api.From{
-							{
-								TargetRef: &common_api.TargetRef{
-									Kind: "Mesh",
-								},
-								Default: &policies_api.Conf{
-									Action: "ALLOW",
-								},
-							},
-						},
-					},
-				},
+				builders.MeshTrafficPermission().
+					WithMesh("mesh-1").
+					WithTargetRef(builders.TargetRefService("backend")).
+					AddFrom(builders.TargetRefMesh(), "ALLOW").
+					Build(),
 			},
 			contentType: restful.MIME_JSON,
 		}),
@@ -1241,6 +1213,27 @@ var _ = Describe("Inspect WS", func() {
 					build(),
 			},
 			contentType: "text/plain",
+		}),
+		Entry("inspect rules", testCase{
+			path:    "/meshes/default/dataplanes/web-01/rules",
+			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_dataplane_rules.golden.json")),
+			resources: []core_model.Resource{
+				samples2.MeshDefault(),
+				samples2.DataplaneWeb(),
+				builders.MeshTrafficPermission().
+					WithTargetRef(builders.TargetRefService("web")).
+					AddFrom(builders.TargetRefServiceSubset("client", "kuma.io/zone", "east"), "DENY").
+					Build(),
+				builders.MeshAccessLog().
+					WithTargetRef(builders.TargetRefService("web")).
+					AddTo(builders.TargetRefMesh(), samples2.MeshAccessLogFileConf()).
+					Build(),
+				builders.MeshTrace().
+					WithTargetRef(builders.TargetRefService("web")).
+					WithZipkinBackend(samples2.ZipkinBackend()).
+					Build(),
+			},
+			contentType: restful.MIME_JSON,
 		}),
 	)
 

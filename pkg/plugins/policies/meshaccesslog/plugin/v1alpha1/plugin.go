@@ -198,7 +198,7 @@ func configureInbound(
 
 	var conf *api.Conf
 	if computed := fromRules.Compute(subset); computed != nil {
-		conf = computed.(*api.Conf)
+		conf = computed.Conf.(*api.Conf)
 	} else {
 		return nil
 	}
@@ -234,7 +234,7 @@ func configureOutbound(
 
 	var conf *api.Conf
 	if computed := toRules.Rules.Compute(subset); computed != nil {
-		conf = computed.(*api.Conf)
+		conf = computed.Conf.(*api.Conf)
 	} else {
 		return nil
 	}

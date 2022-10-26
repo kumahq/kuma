@@ -98,6 +98,16 @@ monitoringAssignmentServer:
   assignmentRefreshInterval: 1s # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL
   # The default timeout for a single fetch-based discovery request, if not specified
   defaultFetchTimeout: 30s # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_DEFAULT_FETCH_TIMEOUT
+  # Path to TLS certificate file
+  tlsCertFile: "" # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_CERT_FILE
+  # Path to TLS key file
+  tlsKeyFile: "" # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_KEY_FILE
+  # TlsMinVersion the minimum version of TLS used across all the Kuma Servers.
+  tlsMinVersion: "TLSv1_2" # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_MIN_VERSION
+  # TlsMaxVersion the maximum version of TLS used across all the Kuma Servers.
+  tlsMaxVersion: # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_MAX_VERSION
+  # TlsCipherSuites the list of cipher suites to be used across all the Kuma Servers.
+  tlsCipherSuites: [] # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_CIPHER_SUITES
 
 # Envoy XDS server configuration
 xdsServer:

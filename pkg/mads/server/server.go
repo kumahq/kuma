@@ -1,6 +1,7 @@
 package server
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/emicklei/go-restful/v3"
+	"github.com/pkg/errors"
 	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
 	"github.com/soheilhy/cmux"
@@ -17,6 +19,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	mads_config "github.com/kumahq/kuma/pkg/config/mads"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/core"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
@@ -113,13 +116,29 @@ func (s *muxServer) Start(stop <-chan struct{}) error {
 		}
 	}()
 
+	if s.config.TlsEnabled {
+		cert, err := tls.LoadX509KeyPair(s.config.TlsCertFile, s.config.TlsKeyFile)
+		if err != nil {
+			return errors.Wrap(err, "failed to load TLS certificate")
+		}
+		tlsConfig := &tls.Config{Certificates: []tls.Certificate{cert}}
+		if tlsConfig.MinVersion, err = config_types.TLSVersion(s.config.TlsMinVersion); err != nil {
+			return err
+		}
+		if tlsConfig.MaxVersion, err = config_types.TLSVersion(s.config.TlsMaxVersion); err != nil {
+			return err
+		}
+		if tlsConfig.CipherSuites, err = config_types.TLSCiphers(s.config.TlsCipherSuites); err != nil {
+			return err
+		}
+		l = tls.NewListener(l, tlsConfig)
+	}
 	m := cmux.New(l)
 
 	grpcL := m.MatchWithWriters(
 		cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"),
+		cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc+proto"),
 	)
-	httpL := m.Match(cmux.HTTP1Fast())
-
 	grpcS := s.createGRPCServer()
 	errChanGrpc := make(chan error)
 	go func() {
@@ -135,6 +154,7 @@ func (s *muxServer) Start(stop <-chan struct{}) error {
 		}
 	}()
 
+	httpL := m.Match(cmux.Any())
 	httpS := &http.Server{
 		Handler: s.createHttpServicesHandler(),
 	}

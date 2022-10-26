@@ -27,5 +27,5 @@ type policyItem struct {
 var _ core_xds.PolicyItem = &policyItem{}
 
 func (p *policyItem) GetTargetRef() *common_api.TargetRef {
-	return &common_api.TargetRef{}
+	return &common_api.TargetRef{Kind: common_api.Mesh}
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/core/xds/inspect"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -63,6 +64,14 @@ func addInspectEndpoints(
 	ws.Route(
 		ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/policies").To(inspectDataplane(cfg, builder)).
 			Doc("inspect dataplane matched policies").
+			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
+			Param(ws.PathParameter("dataplane", "dataplane name").DataType("string")).
+			Returns(200, "OK", nil),
+	)
+
+	ws.Route(
+		ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/rules").To(inspectRulesAttachment(cfg, builder)).
+			Doc("inspect dataplane matched rules").
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 			Param(ws.PathParameter("dataplane", "dataplane name").DataType("string")).
 			Returns(200, "OK", nil),
@@ -271,7 +280,7 @@ func inspectPolicies(
 				return
 			}
 			if matchedPolicies != nil {
-				for policy, attachments := range core_xds.GroupByPolicy(matchedPolicies, dp.Spec.Networking) {
+				for policy, attachments := range inspect.GroupByPolicy(matchedPolicies, dp.Spec.Networking) {
 					if policy.Type == resType && policy.Key.Name == policyName && policy.Key.Mesh == meshName {
 						attachmentList := []api_server_types.AttachmentEntry{}
 						for _, attachment := range attachments {
@@ -317,15 +326,15 @@ func routeDestinationToAPIDestination(des route.Destination) api_server_types.De
 }
 
 func newDataplaneInspectResponse(matchedPolicies *core_xds.MatchedPolicies, dp *core_mesh.DataplaneResource) []*api_server_types.DataplaneInspectEntry {
-	attachmentMap := core_xds.GroupByAttachment(matchedPolicies, dp.Spec.Networking)
+	attachmentMap := inspect.GroupByAttachment(matchedPolicies, dp.Spec.Networking)
 
 	entries := make([]*api_server_types.DataplaneInspectEntry, 0, len(attachmentMap))
-	attachments := []core_xds.Attachment{}
+	attachments := []inspect.Attachment{}
 	for attachment := range attachmentMap {
 		attachments = append(attachments, attachment)
 	}
 
-	sort.Stable(core_xds.AttachmentList(attachments))
+	sort.Stable(inspect.AttachmentList(attachments))
 
 	for _, attachment := range attachments {
 		entry := &api_server_types.DataplaneInspectEntry{
@@ -429,11 +438,11 @@ func newGatewayDataplaneInspectResponse(
 }
 
 func routeToPolicyInspect(
-	policyMap map[core_xds.PolicyKey][]envoy.Tags,
+	policyMap map[inspect.PolicyKey][]envoy.Tags,
 	des route.Destination,
-) map[core_xds.PolicyKey][]envoy.Tags {
+) map[inspect.PolicyKey][]envoy.Tags {
 	for kind, p := range des.Policies {
-		policyKey := core_xds.PolicyKey{
+		policyKey := inspect.PolicyKey{
 			Type: kind,
 			Key:  core_model.MetaToResourceKey(p.GetMeta()),
 		}
@@ -449,8 +458,8 @@ func routeToPolicyInspect(
 func gatewayEntriesByPolicy(
 	proxy core_xds.Proxy,
 	listenerInfos []gateway.GatewayListenerInfo,
-) map[core_xds.PolicyKey][]api_server_types.PolicyInspectEntry {
-	policyMap := map[core_xds.PolicyKey][]api_server_types.PolicyInspectEntry{}
+) map[inspect.PolicyKey][]api_server_types.PolicyInspectEntry {
+	policyMap := map[inspect.PolicyKey][]api_server_types.PolicyInspectEntry{}
 
 	dpKey := core_model.MetaToResourceKey(proxy.Dataplane.GetMeta())
 	resourceKey := api_server_types.ResourceKeyEntry{
@@ -458,13 +467,13 @@ func gatewayEntriesByPolicy(
 		Name: dpKey.Name,
 	}
 
-	listenersMap := map[core_xds.PolicyKey][]api_server_types.PolicyInspectGatewayListenerEntry{}
+	listenersMap := map[inspect.PolicyKey][]api_server_types.PolicyInspectGatewayListenerEntry{}
 	for _, info := range listenerInfos {
-		hostMap := map[core_xds.PolicyKey][]api_server_types.PolicyInspectGatewayHostEntry{}
+		hostMap := map[inspect.PolicyKey][]api_server_types.PolicyInspectGatewayHostEntry{}
 		for _, info := range info.HostInfos {
-			routeMap := map[core_xds.PolicyKey][]api_server_types.PolicyInspectGatewayRouteEntry{}
+			routeMap := map[inspect.PolicyKey][]api_server_types.PolicyInspectGatewayRouteEntry{}
 			for _, entry := range info.Entries {
-				entryMap := map[core_xds.PolicyKey][]envoy.Tags{}
+				entryMap := map[inspect.PolicyKey][]envoy.Tags{}
 				if entry.Mirror != nil {
 					entryMap = routeToPolicyInspect(entryMap, entry.Mirror.Forward)
 				}
@@ -524,7 +533,7 @@ func gatewayEntriesByPolicy(
 
 	if logging, ok := proxy.Policies.TrafficLogs[core_mesh.PassThroughService]; ok {
 		wholeGateway := api_server_types.NewPolicyInspectGatewayEntry(resourceKey, gatewayKey)
-		policyKey := core_xds.PolicyKey{
+		policyKey := inspect.PolicyKey{
 			Type: core_mesh.TrafficLogType,
 			Key:  core_model.MetaToResourceKey(logging.GetMeta()),
 		}
@@ -535,7 +544,7 @@ func gatewayEntriesByPolicy(
 	}
 	if trace := proxy.Policies.TrafficTrace; trace != nil {
 		wholeGateway := api_server_types.NewPolicyInspectGatewayEntry(resourceKey, gatewayKey)
-		policyKey := core_xds.PolicyKey{
+		policyKey := inspect.PolicyKey{
 			Type: core_mesh.TrafficTraceType,
 			Key:  core_model.MetaToResourceKey(trace.GetMeta()),
 		}
@@ -546,4 +555,61 @@ func gatewayEntriesByPolicy(
 	}
 
 	return policyMap
+}
+
+func inspectRulesAttachment(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilder) restful.RouteFunction {
+	return func(request *restful.Request, response *restful.Response) {
+		ctx := request.Request.Context()
+		meshName := request.PathParameter("mesh")
+		dataplaneName := request.PathParameter("dataplane")
+
+		meshContext, err := builder.Build(ctx, meshName)
+		if err != nil {
+			rest_errors.HandleError(response, err, "Could not build MeshContext")
+			return
+		}
+
+		matchedPolicies, _, proxy, err := getMatchedPolicies(
+			ctx, cfg, meshContext, core_model.ResourceKey{Mesh: meshName, Name: dataplaneName},
+		)
+		if err != nil {
+			rest_errors.HandleError(response, err, "Could not get MatchedPolicies")
+			return
+		}
+		rulesAttachments := inspect.BuildRulesAttachments(matchedPolicies.Dynamic, proxy.Dataplane.Spec.Networking)
+		resp := api_server_types.RuleInspectResponse{}
+		for _, ruleAttachment := range rulesAttachments {
+			subset := map[string]string{}
+			for _, tag := range ruleAttachment.Rule.Subset {
+				value := tag.Value
+				if tag.Not {
+					value = "!" + value
+				}
+				subset[tag.Key] = value
+			}
+
+			var origins []api_server_types.ResourceKeyEntry
+			for _, origin := range ruleAttachment.Rule.Origin {
+				origins = append(origins, api_server_types.ResourceKeyEntry{
+					Mesh: origin.GetMesh(),
+					Name: origin.GetName(),
+				})
+			}
+
+			resp.Items = append(resp.Items, api_server_types.RuleInspectEntry{
+				Type:       ruleAttachment.Type,
+				Name:       ruleAttachment.Name,
+				Service:    ruleAttachment.Service,
+				PolicyType: string(ruleAttachment.PolicyType),
+				Subset:     subset,
+				Conf:       ruleAttachment.Rule.Conf,
+				Origins:    origins,
+			})
+		}
+		resp.Total = uint32(len(resp.Items))
+		if err := response.WriteAsJson(resp); err != nil {
+			rest_errors.HandleError(response, err, "Could not write response")
+			return
+		}
+	}
 }

@@ -56,6 +56,14 @@ func MeshService(name string) Subset {
 	}}
 }
 
+func SubsetFromTags(tags map[string]string) Subset {
+	subset := Subset{}
+	for k, v := range tags {
+		subset = append(subset, Tag{Key: k, Value: v})
+	}
+	return subset
+}
+
 // NumPositive returns a number of tags without negation
 func (ss Subset) NumPositive() int {
 	pos := 0
@@ -88,10 +96,10 @@ type Rule struct {
 type Rules []*Rule
 
 // Compute returns configuration for the given subset.
-func (rs Rules) Compute(sub Subset) interface{} {
+func (rs Rules) Compute(sub Subset) *Rule {
 	for _, rule := range rs {
 		if rule.Subset.IsSubset(sub) {
-			return rule.Conf
+			return rule
 		}
 	}
 	return nil

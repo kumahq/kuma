@@ -134,13 +134,17 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.ApiServer.Authn.Tokens.BootstrapAdminToken).To(BeFalse())
 			Expect(cfg.ApiServer.CorsAllowedDomains).To(Equal([]string{"https://kuma", "https://someapi"}))
 
-			// nolint: staticcheck
-			Expect(cfg.MonitoringAssignmentServer.GrpcPort).To(Equal(uint32(3333)))
 			Expect(cfg.MonitoringAssignmentServer.Port).To(Equal(uint32(2222)))
 			Expect(cfg.MonitoringAssignmentServer.AssignmentRefreshInterval).To(Equal(12 * time.Second))
 			Expect(cfg.MonitoringAssignmentServer.DefaultFetchTimeout).To(Equal(45 * time.Second))
 			Expect(cfg.MonitoringAssignmentServer.ApiVersions).To(HaveLen(1))
 			Expect(cfg.MonitoringAssignmentServer.ApiVersions).To(ContainElements("v1"))
+			Expect(cfg.MonitoringAssignmentServer.TlsEnabled).To(Equal(true))
+			Expect(cfg.MonitoringAssignmentServer.TlsCertFile).To(Equal("/cert"))
+			Expect(cfg.MonitoringAssignmentServer.TlsKeyFile).To(Equal("/key"))
+			Expect(cfg.MonitoringAssignmentServer.TlsMinVersion).To(Equal("TLSv1_3"))
+			Expect(cfg.MonitoringAssignmentServer.TlsMaxVersion).To(Equal("TLSv1_3"))
+			Expect(cfg.MonitoringAssignmentServer.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
 
 			Expect(cfg.Runtime.Kubernetes.ControlPlaneServiceName).To(Equal("custom-control-plane"))
 			Expect(cfg.Runtime.Kubernetes.ServiceAccountName).To(Equal("custom-sa"))
@@ -348,11 +352,16 @@ apiServer:
     - https://kuma
     - https://someapi
 monitoringAssignmentServer:
-  grpcPort: 3333
   port: 2222
   defaultFetchTimeout: 45s
   apiVersions: [v1]
   assignmentRefreshInterval: 12s
+  tlsEnabled: true
+  tlsCertFile: "/cert"
+  tlsKeyFile: "/key"
+  tlsMinVersion: TLSv1_3
+  tlsMaxVersion: TLSv1_3
+  tlsCipherSuites: ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"]
 runtime:
   universal:
     dataplaneCleanupAge: 1h
@@ -581,11 +590,16 @@ proxy:
 				"KUMA_API_SERVER_AUTHN_TYPE":                                                               "custom-authn",
 				"KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN":                                                 "false",
 				"KUMA_API_SERVER_AUTHN_TOKENS_BOOTSTRAP_ADMIN_TOKEN":                                       "false",
-				"KUMA_MONITORING_ASSIGNMENT_SERVER_GRPC_PORT":                                              "3333",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_PORT":                                                   "2222",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_DEFAULT_FETCH_TIMEOUT":                                  "45s",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_API_VERSIONS":                                           "v1",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL":                            "12s",
+				"KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_ENABLED":                                            "true",
+				"KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_CERT_FILE":                                          "/cert",
+				"KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_KEY_FILE":                                           "/key",
+				"KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_MIN_VERSION":                                        "TLSv1_3",
+				"KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_MAX_VERSION":                                        "TLSv1_3",
+				"KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_CIPHER_SUITES":                                      "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384",
 				"KUMA_REPORTS_ENABLED":                                                                     "false",
 				"KUMA_RUNTIME_KUBERNETES_CONTROL_PLANE_SERVICE_NAME":                                       "custom-control-plane",
 				"KUMA_RUNTIME_KUBERNETES_SERVICE_ACCOUNT_NAME":                                             "custom-sa",

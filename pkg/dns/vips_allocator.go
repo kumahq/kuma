@@ -6,6 +6,7 @@ import (
 	"net"
 	"strings"
 
+	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -230,11 +231,16 @@ func (d *VIPsAllocator) BuildVirtualOutboundMeshView(ctx context.Context, mesh s
 		if d.serviceVipEnabled {
 			errs = multierr.Append(errs, addDefault(outboundSet, es.Spec.GetService(), es.Spec.GetPortUInt32()))
 		}
-		errs = multierr.Append(errs, outboundSet.Add(vips.NewHostEntry(es.Spec.GetHost()), vips.OutboundEntry{
-			Port:   es.Spec.GetPortUInt32(),
-			TagSet: tags,
-			Origin: vips.OriginHost,
-		}))
+		if !es.Spec.Networking.DisableHostDNSEntry {
+			addError := outboundSet.Add(vips.NewHostEntry(es.Spec.GetHost()), vips.OutboundEntry{
+				Port:   es.Spec.GetPortUInt32(),
+				TagSet: tags,
+				Origin: vips.OriginHost(es.GetMeta().GetName()),
+			})
+			if addError != nil {
+				errs = multierr.Append(errs, errors.Wrapf(addError, "cannot add outbound for external service '%s'", es.GetMeta().GetName()))
+			}
+		}
 		for _, vob := range Match(virtualOutbounds.Items, tags) {
 			addFromVirtualOutbound(outboundSet, vob, tags, es.Descriptor().Name, es.Meta.GetName())
 		}
