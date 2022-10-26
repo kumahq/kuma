@@ -8,7 +8,6 @@ import (
 	common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("TargetRef Validator", func() {
@@ -25,7 +24,7 @@ var _ = Describe("TargetRef Validator", func() {
 			// given
 			Expect(given.expected).To(BeEmpty())
 			targetRef := &common_proto.TargetRef{}
-			err := util_proto.FromYAML([]byte(given.inputYaml), targetRef)
+			err := yaml.Unmarshal([]byte(given.inputYaml), targetRef)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -40,8 +39,8 @@ var _ = Describe("TargetRef Validator", func() {
 kind: Mesh
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					common_proto.TargetRef_Mesh,
+				SupportedKinds: []common_proto.TargetRefKind{
+					common_proto.Mesh,
 				},
 			},
 		}),
@@ -52,8 +51,8 @@ tags:
   kuma.io/zone: us-east
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					common_proto.TargetRef_MeshSubset,
+				SupportedKinds: []common_proto.TargetRefKind{
+					common_proto.MeshSubset,
 				},
 			},
 		}),
@@ -62,8 +61,8 @@ tags:
 kind: MeshSubset
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					common_proto.TargetRef_MeshSubset,
+				SupportedKinds: []common_proto.TargetRefKind{
+					common_proto.MeshSubset,
 				},
 			},
 		}),
@@ -73,8 +72,8 @@ kind: MeshService
 name: backend
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					common_proto.TargetRef_MeshService,
+				SupportedKinds: []common_proto.TargetRefKind{
+					common_proto.MeshService,
 				},
 			},
 		}),
@@ -86,8 +85,8 @@ tags:
   version: v1
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					common_proto.TargetRef_MeshServiceSubset,
+				SupportedKinds: []common_proto.TargetRefKind{
+					common_proto.MeshServiceSubset,
 				},
 			},
 		}),
@@ -97,8 +96,8 @@ kind: MeshServiceSubset
 name: backend
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					common_proto.TargetRef_MeshServiceSubset,
+				SupportedKinds: []common_proto.TargetRefKind{
+					common_proto.MeshServiceSubset,
 				},
 			},
 		}),
@@ -109,8 +108,8 @@ name: backend
 tags: {}
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					common_proto.TargetRef_MeshServiceSubset,
+				SupportedKinds: []common_proto.TargetRefKind{
+					common_proto.MeshServiceSubset,
 				},
 			},
 		}),
@@ -120,8 +119,8 @@ kind: MeshGatewayRoute
 name: backend-gateway-route
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					common_proto.TargetRef_MeshGatewayRoute,
+				SupportedKinds: []common_proto.TargetRefKind{
+					common_proto.MeshGatewayRoute,
 				},
 			},
 		}),
@@ -131,7 +130,7 @@ name: backend-gateway-route
 		func(given testCase) {
 			// given
 			targetRef := &common_proto.TargetRef{}
-			err := util_proto.FromYAML([]byte(given.inputYaml), targetRef)
+			err := yaml.Unmarshal([]byte(given.inputYaml), targetRef)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -149,8 +148,8 @@ name: backend-gateway-route
 {}
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					common_proto.TargetRef_Mesh,
+				SupportedKinds: []common_proto.TargetRefKind{
+					common_proto.Mesh,
 				},
 			},
 			expected: `
@@ -164,8 +163,8 @@ violations:
 kind: Mesh
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					common_proto.TargetRef_MeshSubset,
+				SupportedKinds: []common_proto.TargetRefKind{
+					common_proto.MeshSubset,
 				},
 			},
 			expected: `
@@ -182,8 +181,8 @@ tags:
   tag1: value1
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					common_proto.TargetRef_Mesh,
+				SupportedKinds: []common_proto.TargetRefKind{
+					common_proto.Mesh,
 				},
 			},
 			expected: `
@@ -200,8 +199,8 @@ kind: Mesh
 name: mesh-1
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					common_proto.TargetRef_Mesh,
+				SupportedKinds: []common_proto.TargetRefKind{
+					common_proto.Mesh,
 				},
 			},
 			expected: `
@@ -215,8 +214,8 @@ violations:
 kind: MeshSubset
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					common_proto.TargetRef_Mesh,
+				SupportedKinds: []common_proto.TargetRefKind{
+					common_proto.Mesh,
 				},
 			},
 			expected: `
@@ -230,8 +229,8 @@ kind: MeshSubset
 name: mesh-1
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					common_proto.TargetRef_MeshSubset,
+				SupportedKinds: []common_proto.TargetRefKind{
+					common_proto.MeshSubset,
 				},
 			},
 			expected: `
@@ -244,8 +243,8 @@ violations:
 kind: MeshService
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					common_proto.TargetRef_MeshServiceSubset,
+				SupportedKinds: []common_proto.TargetRefKind{
+					common_proto.MeshServiceSubset,
 				},
 			},
 			expected: `
@@ -260,8 +259,8 @@ name: backend
 mesh: mesh-1
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					common_proto.TargetRef_MeshService,
+				SupportedKinds: []common_proto.TargetRefKind{
+					common_proto.MeshService,
 				},
 			},
 			expected: `
@@ -277,8 +276,8 @@ tags:
   tag1: value1
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					common_proto.TargetRef_MeshService,
+				SupportedKinds: []common_proto.TargetRefKind{
+					common_proto.MeshService,
 				},
 			},
 			expected: `
@@ -294,8 +293,8 @@ violations:
 kind: MeshServiceSubset
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					common_proto.TargetRef_MeshService,
+				SupportedKinds: []common_proto.TargetRefKind{
+					common_proto.MeshService,
 				},
 			},
 			expected: `
@@ -310,8 +309,8 @@ kind: MeshServiceSubset
 tags: {}
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					common_proto.TargetRef_MeshServiceSubset,
+				SupportedKinds: []common_proto.TargetRefKind{
+					common_proto.MeshServiceSubset,
 				},
 			},
 			expected: `
@@ -329,8 +328,8 @@ tags:
   version: v1
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					common_proto.TargetRef_MeshServiceSubset,
+				SupportedKinds: []common_proto.TargetRefKind{
+					common_proto.MeshServiceSubset,
 				},
 			},
 			expected: `
@@ -344,8 +343,8 @@ violations:
 kind: MeshGatewayRoute
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					common_proto.TargetRef_MeshHTTPRoute,
+				SupportedKinds: []common_proto.TargetRefKind{
+					common_proto.MeshHTTPRoute,
 				},
 			},
 			expected: `
@@ -362,8 +361,8 @@ tags:
   tag1: value1
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					common_proto.TargetRef_MeshGatewayRoute,
+				SupportedKinds: []common_proto.TargetRefKind{
+					common_proto.MeshGatewayRoute,
 				},
 			},
 			expected: `
@@ -379,8 +378,8 @@ violations:
 kind: MeshHTTPRoute
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					common_proto.TargetRef_MeshGatewayRoute,
+				SupportedKinds: []common_proto.TargetRefKind{
+					common_proto.MeshGatewayRoute,
 				},
 			},
 			expected: `
@@ -395,8 +394,8 @@ kind: MeshHTTPRoute
 name: backend-http-route
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRef_Kind{
-					common_proto.TargetRef_MeshHTTPRoute,
+				SupportedKinds: []common_proto.TargetRefKind{
+					common_proto.MeshHTTPRoute,
 				},
 			},
 			expected: `

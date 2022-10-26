@@ -18,7 +18,7 @@ properties:
           description: Default is a configuration specific to the group of clients referenced in 'targetRef'
           properties:
             action:
-              description: 'Action defines a behaviour for the specified group of clients:'
+              description: 'Action defines a behavior for the specified group of clients:'
               enum:
                 - ALLOW
                 - DENY

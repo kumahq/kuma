@@ -110,7 +110,7 @@ generate/envoy-imports:
 	echo ')' >> ${ENVOY_IMPORTS}
 
 .PHONY: generate/api
-generate/api: protoc/common/v1alpha1 protoc/mesh protoc/mesh/v1alpha1 protoc/observability/v1 protoc/system/v1alpha1 ## Process Kuma API .proto definitions
+generate/api: protoc/mesh protoc/mesh/v1alpha1 protoc/observability/v1 protoc/system/v1alpha1 ## Process Kuma API .proto definitions
 
 generate/test-server:
 	$(PROTOC_GO) test/server/grpc/api/*.proto

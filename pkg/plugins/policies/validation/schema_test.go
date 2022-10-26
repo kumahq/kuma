@@ -10,7 +10,6 @@ import (
 	_ "github.com/kumahq/kuma/pkg/plugins/policies"
 	meshtrace_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	meshtrafficpermissions_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("plugins validation", func() {
@@ -59,7 +58,7 @@ default:
 			func(given testCase) {
 				// and
 				mtp := meshtrafficpermissions_proto.NewMeshTrafficPermissionResource()
-				err := proto.FromYAML([]byte(given.inputYaml), mtp.Spec)
+				err := core_model.FromYAML(mtp.Descriptor(), []byte(given.inputYaml), mtp.Spec)
 				Expect(err).To(Not(HaveOccurred()))
 				verr := mtp.Validate()
 				actual, err := yaml.Marshal(verr)

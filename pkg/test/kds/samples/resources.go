@@ -374,12 +374,12 @@ var (
 		TargetRef: &common_api.TargetRef{
 			Kind: "Mesh",
 		},
-		From: []*meshtrafficpermissions_proto.MeshTrafficPermission_From{
+		From: []*meshtrafficpermissions_proto.From{
 			{
 				TargetRef: &common_api.TargetRef{
 					Kind: "Mesh",
 				},
-				Default: &meshtrafficpermissions_proto.MeshTrafficPermission_Conf{
+				Default: &meshtrafficpermissions_proto.Conf{
 					Action: "ALLOW",
 				},
 			},

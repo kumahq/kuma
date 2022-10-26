@@ -38,8 +38,8 @@ spec:
               resource.
             properties:
               from:
-                description: From is a list of pairs – a group of clients and action
-                  applied for it
+                description: From list makes a match between clients and corresponding
+                  configurations
                 items:
                   properties:
                     default:
@@ -47,17 +47,12 @@ spec:
                         of clients referenced in 'targetRef'
                       properties:
                         action:
-                          description: 'Action defines a behaviour for the specified
-                            group of clients: * ALLOW - lets the requests pass * DENY
-                            - blocks the requests * ALLOW_WITH_SHADOW_DENY - lets
-                            the requests pass but emits logs as if requests are denied
-                            * DENY_WITH_SHADOW_ALLOW - blocks the requests but emits
-                            logs as if requests are allowed'
+                          description: 'Action defines a behavior for the specified
+                            group of clients:'
                           enum:
                           - ALLOW
                           - DENY
                           - ALLOW_WITH_SHADOW_DENY
-                          - DENY_WITH_SHADOW_ALLOW
                           type: string
                       type: object
                     targetRef:

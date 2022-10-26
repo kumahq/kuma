@@ -199,8 +199,7 @@ func addSelectorExpr(x *ast.SelectorExpr, receiverType, fieldName string) (*Gett
 	case "common_api":
 		imprts["common_api"] = "github.com/kumahq/kuma/api/common/v1alpha1"
 		fieldType := fmt.Sprintf("%v.%v", xX, x.Sel.Name)
-		zeroValue := fmt.Sprintf("%v.%v{}", xX, x.Sel.Name)
-		zeroValue = "nil"
+		zeroValue := "nil"
 		return newGetter(receiverType, fieldName, fieldType, zeroValue, true), imprts
 	default:
 		return nil, nil

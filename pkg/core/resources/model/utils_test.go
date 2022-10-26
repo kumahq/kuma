@@ -17,9 +17,9 @@ var _ = Describe("Resource Utils", func() {
 			// given
 			var spec core_model.ResourceSpec = &meshaccesslog_proto.MeshAccessLog{
 				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
-				From: []*meshaccesslog_proto.MeshAccessLog_From{{
-					Default: &meshaccesslog_proto.MeshAccessLog_Conf{
-						Backends: make([]*meshaccesslog_proto.MeshAccessLog_Backend, 0),
+				From: []*meshaccesslog_proto.From{{
+					Default: &meshaccesslog_proto.Conf{
+						Backends: make([]*meshaccesslog_proto.Backend, 0),
 					},
 				}},
 			}
@@ -87,20 +87,20 @@ var _ = Describe("Resource Utils", func() {
 			// given
 			var spec1 core_model.ResourceSpec = &meshtrafficpermissions_proto.MeshTrafficPermission{
 				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
-				From: []*meshtrafficpermissions_proto.MeshTrafficPermission_From{
+				From: []*meshtrafficpermissions_proto.From{
 					{
 						TargetRef: &common_api.TargetRef{
 							Kind: "MeshService",
 							Name: "backend",
 						},
-						Default: &meshtrafficpermissions_proto.MeshTrafficPermission_Conf{Action: "ALLOW"},
+						Default: &meshtrafficpermissions_proto.Conf{Action: "ALLOW"},
 					},
 					{
 						TargetRef: &common_api.TargetRef{
 							Kind: "MeshService",
 							Name: "web",
 						},
-						Default: &meshtrafficpermissions_proto.MeshTrafficPermission_Conf{Action: "DENY"},
+						Default: &meshtrafficpermissions_proto.Conf{Action: "DENY"},
 					},
 					{
 						TargetRef: &common_api.TargetRef{
@@ -109,26 +109,26 @@ var _ = Describe("Resource Utils", func() {
 								"version": "v3",
 							},
 						},
-						Default: &meshtrafficpermissions_proto.MeshTrafficPermission_Conf{Action: "ALLOW"},
+						Default: &meshtrafficpermissions_proto.Conf{Action: "ALLOW"},
 					},
 				},
 			}
 			var spec2 core_model.ResourceSpec = &meshtrafficpermissions_proto.MeshTrafficPermission{
 				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
-				From: []*meshtrafficpermissions_proto.MeshTrafficPermission_From{
+				From: []*meshtrafficpermissions_proto.From{
 					{
 						TargetRef: &common_api.TargetRef{
 							Kind: "MeshService",
 							Name: "backend",
 						},
-						Default: &meshtrafficpermissions_proto.MeshTrafficPermission_Conf{Action: "ALLOW"},
+						Default: &meshtrafficpermissions_proto.Conf{Action: "ALLOW"},
 					},
 					{
 						TargetRef: &common_api.TargetRef{
 							Kind: "MeshService",
 							Name: "web",
 						},
-						Default: &meshtrafficpermissions_proto.MeshTrafficPermission_Conf{Action: "DENY"},
+						Default: &meshtrafficpermissions_proto.Conf{Action: "DENY"},
 					},
 					{
 						TargetRef: &common_api.TargetRef{
@@ -137,7 +137,7 @@ var _ = Describe("Resource Utils", func() {
 								"version": "v3",
 							},
 						},
-						Default: &meshtrafficpermissions_proto.MeshTrafficPermission_Conf{Action: "ALLOW"},
+						Default: &meshtrafficpermissions_proto.Conf{Action: "ALLOW"},
 					},
 				},
 			}
@@ -151,20 +151,20 @@ var _ = Describe("Resource Utils", func() {
 			// given
 			var spec1 core_model.ResourceSpec = &meshtrafficpermissions_proto.MeshTrafficPermission{
 				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
-				From: []*meshtrafficpermissions_proto.MeshTrafficPermission_From{
+				From: []*meshtrafficpermissions_proto.From{
 					{
 						TargetRef: &common_api.TargetRef{
 							Kind: "MeshService",
 							Name: "backend",
 						},
-						Default: &meshtrafficpermissions_proto.MeshTrafficPermission_Conf{Action: "ALLOW"},
+						Default: &meshtrafficpermissions_proto.Conf{Action: "ALLOW"},
 					},
 					{
 						TargetRef: &common_api.TargetRef{
 							Kind: "MeshService",
 							Name: "web",
 						},
-						Default: &meshtrafficpermissions_proto.MeshTrafficPermission_Conf{Action: "DENY"},
+						Default: &meshtrafficpermissions_proto.Conf{Action: "DENY"},
 					},
 					{
 						TargetRef: &common_api.TargetRef{
@@ -173,26 +173,26 @@ var _ = Describe("Resource Utils", func() {
 								"version": "v3",
 							},
 						},
-						Default: &meshtrafficpermissions_proto.MeshTrafficPermission_Conf{Action: "ALLOW"},
+						Default: &meshtrafficpermissions_proto.Conf{Action: "ALLOW"},
 					},
 				},
 			}
 			var spec2 core_model.ResourceSpec = &meshtrafficpermissions_proto.MeshTrafficPermission{
 				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
-				From: []*meshtrafficpermissions_proto.MeshTrafficPermission_From{
+				From: []*meshtrafficpermissions_proto.From{
 					{
 						TargetRef: &common_api.TargetRef{
 							Kind: "MeshService",
 							Name: "backend",
 						},
-						Default: &meshtrafficpermissions_proto.MeshTrafficPermission_Conf{Action: "ALLOW"},
+						Default: &meshtrafficpermissions_proto.Conf{Action: "ALLOW"},
 					},
 					{
 						TargetRef: &common_api.TargetRef{
 							Kind: "MeshService",
 							Name: "web",
 						},
-						Default: &meshtrafficpermissions_proto.MeshTrafficPermission_Conf{Action: "DENY"},
+						Default: &meshtrafficpermissions_proto.Conf{Action: "DENY"},
 					},
 					{
 						TargetRef: &common_api.TargetRef{
@@ -201,7 +201,7 @@ var _ = Describe("Resource Utils", func() {
 								"version": "v5", // different from 'v3'
 							},
 						},
-						Default: &meshtrafficpermissions_proto.MeshTrafficPermission_Conf{Action: "ALLOW"},
+						Default: &meshtrafficpermissions_proto.Conf{Action: "ALLOW"},
 					},
 				},
 			}

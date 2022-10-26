@@ -322,28 +322,28 @@ var _ = Describe("Unmarshal ResourceList", func() {
 			}))
 			Expect(rs.Items[0].GetSpec()).To(matchers.MatchProto(&policies_api.MeshTrafficPermission{
 				TargetRef: &common_api.TargetRef{Kind: "MeshService", Name: "backend"},
-				From: []*policies_api.MeshTrafficPermission_From{
+				From: []*policies_api.From{
 					{
 						TargetRef: &common_api.TargetRef{Kind: "Mesh"},
-						Default: &policies_api.MeshTrafficPermission_Conf{
+						Default: &policies_api.Conf{
 							Action: "ALLOW",
 						},
 					},
 					{
 						TargetRef: &common_api.TargetRef{Kind: "MeshSubset", Tags: map[string]string{"kuma.io/zone": "us-east"}},
-						Default: &policies_api.MeshTrafficPermission_Conf{
+						Default: &policies_api.Conf{
 							Action: "DENY_WITH_SHADOW_ALLOW",
 						},
 					},
 					{
 						TargetRef: &common_api.TargetRef{Kind: "MeshService", Name: "backend"},
-						Default: &policies_api.MeshTrafficPermission_Conf{
+						Default: &policies_api.Conf{
 							Action: "ALLOW_WITH_SHADOW_DENY",
 						},
 					},
 					{
 						TargetRef: &common_api.TargetRef{Kind: "MeshServiceSubset", Name: "backend", Tags: map[string]string{"version": "v1"}},
-						Default: &policies_api.MeshTrafficPermission_Conf{
+						Default: &policies_api.Conf{
 							Action: "DENY",
 						},
 					},
@@ -356,10 +356,10 @@ var _ = Describe("Unmarshal ResourceList", func() {
 			}))
 			Expect(rs.Items[1].GetSpec()).To(matchers.MatchProto(&policies_api.MeshTrafficPermission{
 				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
-				From: []*policies_api.MeshTrafficPermission_From{
+				From: []*policies_api.From{
 					{
 						TargetRef: &common_api.TargetRef{Kind: "MeshSubset", Tags: map[string]string{"kuma.io/zone": "us-east"}},
-						Default: &policies_api.MeshTrafficPermission_Conf{
+						Default: &policies_api.Conf{
 							Action: "DENY",
 						},
 					},

@@ -40,7 +40,7 @@ var DENY Action = "DENY"
 var ALLOW_WITH_SHADOW_DENY Action = "ALLOW_WITH_SHADOW_DENY"
 
 type Conf struct {
-	// Action defines a behaviour for the specified group of clients:
+	// Action defines a behavior for the specified group of clients:
 	// +kubebuilder:validation:Enum=ALLOW;DENY;ALLOW_WITH_SHADOW_DENY
 	Action Action `json:"action,omitempty"`
 }
