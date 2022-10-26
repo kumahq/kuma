@@ -246,7 +246,7 @@ var _ = Describe("Unmarshal ResourceList", func() {
                             }
                         },
                         "default": {
-                            "action": "DENY_WITH_SHADOW_ALLOW"
+                            "action": "DENY"
                         }
                     },
                     {
@@ -332,7 +332,7 @@ var _ = Describe("Unmarshal ResourceList", func() {
 					{
 						TargetRef: &common_api.TargetRef{Kind: "MeshSubset", Tags: map[string]string{"kuma.io/zone": "us-east"}},
 						Default: &policies_api.Conf{
-							Action: "DENY_WITH_SHADOW_ALLOW",
+							Action: "DENY",
 						},
 					},
 					{

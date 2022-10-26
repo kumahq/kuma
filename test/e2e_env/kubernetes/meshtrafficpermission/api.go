@@ -56,12 +56,6 @@ spec:
       default:
         action: ALLOW
     - targetRef:
-        kind: MeshSubset
-        tags:
-          kuma.io/zone: us-east
-      default:
-        action: DENY_WITH_SHADOW_ALLOW
-    - targetRef:
         kind: MeshService
         name: backend
       default:
