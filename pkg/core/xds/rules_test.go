@@ -398,7 +398,7 @@ var _ = Describe("Rules", func() {
 					{
 						Subset: xds.Subset{}, // matched but not the first
 						Conf: &policies_api.MeshTrafficPermission_Conf{
-							Action: "DENY_WITH_SHADOW_ALLOW",
+							Action: "ALLOW_WITH_SHADOW_DENY",
 						},
 					},
 				},

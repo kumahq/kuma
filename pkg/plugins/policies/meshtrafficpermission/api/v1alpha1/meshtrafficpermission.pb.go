@@ -145,9 +145,7 @@ type MeshTrafficPermission_Conf struct {
 	//  * DENY - blocks the requests
 	//  * ALLOW_WITH_SHADOW_DENY - lets the requests pass but emits logs as if
 	//  requests are denied
-	//  * DENY_WITH_SHADOW_ALLOW - blocks the requests but emits logs as if
-	//  requests are allowed
-	// +kubebuilder:validation:Enum=ALLOW;DENY;ALLOW_WITH_SHADOW_DENY;DENY_WITH_SHADOW_ALLOW
+	// +kubebuilder:validation:Enum=ALLOW;DENY;ALLOW_WITH_SHADOW_DENY
 	Action string `protobuf:"bytes,1,opt,name=action,proto3" json:"action,omitempty"`
 }
 
