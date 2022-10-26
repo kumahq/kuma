@@ -28,11 +28,12 @@ const (
 type Dataplane_Networking_Gateway_GatewayType int32
 
 const (
-	// A DELEGATED gateway is a independently deployed proxy that
+	// A `DELEGATED` gateway is an independently deployed proxy that
 	// receives inbound traffic that is not proxied by Kuma, and
-	// sends outbound traffic into the Kuma dataplane proxy.
+	// it sends outbound traffic into the data plane proxy.
 	Dataplane_Networking_Gateway_DELEGATED Dataplane_Networking_Gateway_GatewayType = 0
-	// The BUILTIN gateway type is experimental and unsupported.
+	// The `BUILTIN` gateway type configures data plane proxy itself as a
+	// gateway.
 	Dataplane_Networking_Gateway_BUILTIN Dataplane_Networking_Gateway_GatewayType = 1
 )
 
@@ -75,22 +76,29 @@ func (Dataplane_Networking_Gateway_GatewayType) EnumDescriptor() ([]byte, []int)
 	return file_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 0, 2, 0}
 }
 
-// Dataplane defines configuration of a side-car proxy.
+// Dataplane defines a configuration of a side-car proxy.
 type Dataplane struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Networking describes inbound and outbound interfaces of the dataplane.
+	// Networking describes inbound and outbound interfaces of the data plane
+	// proxy.
 	Networking *Dataplane_Networking `protobuf:"bytes,1,opt,name=networking,proto3" json:"networking,omitempty"`
 	// Configuration for metrics that should be collected and exposed by the
-	// dataplane.
+	// data plane proxy.
 	//
 	// Settings defined here will override their respective defaults
 	// defined at a Mesh level.
 	Metrics *MetricsBackend `protobuf:"bytes,2,opt,name=metrics,proto3" json:"metrics,omitempty"`
-	// Probes describes list of endpoints which will redirect traffic from
-	// insecure port to localhost path
+	// Probes describe a list of endpoints that will be exposed without mTLS.
+	// This is useful to expose the health endpoints of the application so the
+	// orchestration system (e.g. Kubernetes) can still health check the
+	// application.
+	//
+	// See
+	// https://kuma.io/docs/latest/policies/service-health-probes/#virtual-probes
+	// for more information.
 	Probes *Dataplane_Probes `protobuf:"bytes,3,opt,name=probes,proto3" json:"probes,omitempty"`
 }
 
@@ -147,29 +155,46 @@ func (x *Dataplane) GetProbes() *Dataplane_Probes {
 	return nil
 }
 
-// Networking describes inbound and outbound interfaces of a dataplane.
+// Networking describes inbound and outbound interfaces of a data plane proxy.
 type Dataplane_Networking struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Public IP on which the dataplane is accessible in the network.
+	// IP on which the data plane proxy is accessible to the control plane and
+	// other data plane proxies in the same network. This can also be a
+	// hostname, in which case the control plane will periodically resolve it.
 	Address string `protobuf:"bytes,5,opt,name=address,proto3" json:"address,omitempty"`
-	// In some situation, dataplane resides in a private network and not
-	// reachable via 'address'. advertisedAddress is configured with public
-	// routable address for such dataplane so that other dataplanes in the mesh
-	// can connect to it over advertisedAddress and not via address
-	// Note: Envoy binds to the address not advertisedAddress
+	// In some situations, a data plane proxy resides in a private network (e.g.
+	// Docker) and is not reachable via `address` to other data plane proxies.
+	// `advertisedAddress` is configured with a routable address for such data
+	// plane proxy so that other proxies in the mesh can connect to it over
+	// `advertisedAddress` and not via address.
+	//
+	// Envoy still binds to the `address`, not `advertisedAddress`.
 	AdvertisedAddress string `protobuf:"bytes,7,opt,name=advertisedAddress,proto3" json:"advertisedAddress,omitempty"`
-	// Gateway describes configuration of gateway of the dataplane.
+	// Gateway describes a configuration of the gateway of the data plane proxy.
 	Gateway *Dataplane_Networking_Gateway `protobuf:"bytes,3,opt,name=gateway,proto3" json:"gateway,omitempty"`
-	// Inbound describes a list of inbound interfaces of the dataplane.
+	// Inbound describes a list of inbound interfaces of the data plane proxy.
+	//
+	// Inbound describes a service implemented by the data plane proxy.
+	// All incoming traffic to a data plane proxy is going through inbound
+	// listeners. For every defined Inbound there is a corresponding Envoy
+	// Listener.
 	Inbound []*Dataplane_Networking_Inbound `protobuf:"bytes,1,rep,name=inbound,proto3" json:"inbound,omitempty"`
-	// Outbound describes a list of outbound interfaces of the dataplane.
+	// Outbound describes a list of services consumed by the data plane proxy.
+	// For every defined Outbound, there is a corresponding Envoy Listener.
 	Outbound []*Dataplane_Networking_Outbound `protobuf:"bytes,2,rep,name=outbound,proto3" json:"outbound,omitempty"`
-	// TransparentProxying describes configuration for transparent proxying.
+	// TransparentProxying describes the configuration for transparent proxying.
+	// It is used by default on Kubernetes.
 	TransparentProxying *Dataplane_Networking_TransparentProxying `protobuf:"bytes,4,opt,name=transparent_proxying,json=transparentProxying,proto3" json:"transparent_proxying,omitempty"`
-	// Admin contains configuration related to Envoy Admin API
+	// Admin describes configuration related to Envoy Admin API.
+	// Due to security, all the Envoy Admin endpoints are exposed only on
+	// localhost. Additionally, Envoy will expose `/ready` endpoint on
+	// `networking.address` for health checking systems to be able to check the
+	// state of Envoy. The rest of the endpoints exposed on `networking.address`
+	// are always protected by mTLS and only meant to be consumed internally by
+	// the control plane.
 	Admin *EnvoyAdmin `protobuf:"bytes,8,opt,name=admin,proto3" json:"admin,omitempty"`
 }
 
@@ -259,7 +284,10 @@ type Dataplane_Probes struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Port      uint32                       `protobuf:"varint,1,opt,name=port,proto3" json:"port,omitempty"`
+	// Port on which the probe endpoints will be exposed. This cannot overlap
+	// with any other ports.
+	Port uint32 `protobuf:"varint,1,opt,name=port,proto3" json:"port,omitempty"`
+	// List of endpoints to expose without mTLS.
 	Endpoints []*Dataplane_Probes_Endpoint `protobuf:"bytes,2,rep,name=endpoints,proto3" json:"endpoints,omitempty"`
 }
 
@@ -309,7 +337,10 @@ func (x *Dataplane_Probes) GetEndpoints() []*Dataplane_Probes_Endpoint {
 	return nil
 }
 
-// Inbound describes a service implemented by the dataplane.
+// Inbound describes a service implemented by the data plane proxy.
+// All incoming traffic to a data plane proxy are going through inbound
+// listeners. For every defined Inbound there is a corresponding Envoy
+// Listener.
 type Dataplane_Networking_Inbound struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -317,26 +348,45 @@ type Dataplane_Networking_Inbound struct {
 
 	// Port of the inbound interface that will forward requests to the
 	// service.
+	//
+	// When transparent proxying is used, it is a port on which the service is
+	// listening to. When transparent proxying is not used, Envoy will bind to
+	// this port.
 	Port uint32 `protobuf:"varint,3,opt,name=port,proto3" json:"port,omitempty"`
 	// Port of the service that requests will be forwarded to.
+	// Defaults to the same value as `port`.
 	ServicePort uint32 `protobuf:"varint,4,opt,name=servicePort,proto3" json:"servicePort,omitempty"`
 	// Address of the service that requests will be forwarded to.
-	// Empty value defaults to '127.0.0.1', since Kuma DP should be deployed
-	// next to service.
+	// Defaults to '127.0.0.1', since Kuma DP should be deployed next to the
+	// service.
 	ServiceAddress string `protobuf:"bytes,6,opt,name=serviceAddress,proto3" json:"serviceAddress,omitempty"`
-	// Address on which inbound listener will be exposed. Defaults to
-	// networking.address.
+	// Address on which inbound listener will be exposed.
+	// Defaults to `networking.address`.
 	Address string `protobuf:"bytes,5,opt,name=address,proto3" json:"address,omitempty"`
-	// Tags associated with an application this dataplane is deployed next to,
-	// e.g. kuma.io/service=web, version=1.0.
+	// Tags associated with an application this data plane proxy is deployed
+	// next to, e.g. `kuma.io/service=web`, `version=1.0`. You can then
+	// reference these tags in policies like MeshTrafficPermission.
 	// `kuma.io/service` tag is mandatory.
 	Tags map[string]string `protobuf:"bytes,2,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	// Health is an optional field filled automatically by Kuma Control Plane
-	// on Kubernetes if Pod has ReadinessProbe configured. If 'health' is
-	// equal to nil we consider dataplane as healthy. Unhealthy dataplanes
-	// will be excluded from Endpoints Discovery Service (EDS)
+	// Health describes the status of an inbound.
+	// If 'health' is nil we consider data plane proxy as healthy.
+	// Unhealthy data plane proxies are excluded from Endpoints Discovery
+	// Service (EDS). On Kubernetes, it is filled automatically by the control
+	// plane if Pod has readiness probe configured. On Universal, it can be
+	// set by the external health checking system, but the most common way is
+	// to use service probes.
+	//
+	// See https://kuma.io/docs/latest/documentation/health for more
+	// information.
 	Health *Dataplane_Networking_Inbound_Health `protobuf:"bytes,7,opt,name=health,proto3" json:"health,omitempty"`
-	// ServiceProbe defines parameters for probing service's port
+	// ServiceProbe defines parameters for probing the service next to
+	// sidecar. When service probe is defined, Envoy will periodically health
+	// check the application next to it and report the status to the control
+	// plane. On Kubernetes, Kuma deployments rely on Kubernetes probes so
+	// this is not used.
+	//
+	// See https://kuma.io/docs/latest/documentation/health for more
+	// information.
 	ServiceProbe *Dataplane_Networking_Inbound_ServiceProbe `protobuf:"bytes,8,opt,name=serviceProbe,proto3" json:"serviceProbe,omitempty"`
 }
 
@@ -421,23 +471,33 @@ func (x *Dataplane_Networking_Inbound) GetServiceProbe() *Dataplane_Networking_I
 	return nil
 }
 
-// Outbound describes a service consumed by the dataplane.
+// Outbound describes a service consumed by the data plane proxy.
+// For every defined Outbound there is a corresponding Envoy Listener.
 type Dataplane_Networking_Outbound struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Address on which the service will be available to this dataplane.
-	// Defaults to 127.0.0.1
+	// IP on which the consumed service will be available to this data plane
+	// proxy. On Kubernetes, it's usually ClusterIP of a Service or PodIP of a
+	// Headless Service. Defaults to 127.0.0.1
 	Address string `protobuf:"bytes,3,opt,name=address,proto3" json:"address,omitempty"`
-	// Port on which the service will be available to this dataplane.
+	// Port on which the consumed service will be available to this data plane
+	// proxy. When transparent proxying is not used, Envoy will bind to this
+	// port.
 	Port uint32 `protobuf:"varint,4,opt,name=port,proto3" json:"port,omitempty"`
-	// DEPRECATED: use networking.outbound[].tags
-	// Service name.
+	// DEPRECATED: use `networking.outbound[].tags['kuma.io/service']`
+	// Service name identified by the value of `kuma.io/service`.
 	//
 	// Deprecated: Do not use.
 	Service string `protobuf:"bytes,2,opt,name=service,proto3" json:"service,omitempty"`
-	// Tags
+	// Tags of consumed data plane proxies.
+	// `kuma.io/service` tag is required.
+	// These tags can then be referenced in `destinations` section of policies
+	// like TrafficRoute or in `to` section in policies like MeshAccessLog. It
+	// is recommended to only use `kuma.io/service`. If you need to consume
+	// specific data plane proxy of a service (for example: `version=v2`) the
+	// better practice is to use TrafficRoute.
 	Tags map[string]string `protobuf:"bytes,5,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
@@ -508,13 +568,22 @@ type Dataplane_Networking_Gateway struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Tags associated with a gateway (e.g., Kong, Contour, etc) this
-	// dataplane is deployed next to, e.g. service=gateway, env=prod.
-	// `service` tag is mandatory.
+	// Tags associated with a gateway of this data plane to, e.g.
+	// `kuma.io/service=gateway`, `env=prod`. `kuma.io/service` tag is
+	// mandatory.
 	Tags map[string]string `protobuf:"bytes,1,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	// Type of gateway this dataplane manages. The default is a DELEGATED
-	// gateway, which is an external proxy. The BUILTIN gateway type causes
-	// the dataplane proxy itself to be configured as a gateway.
+	// Type of gateway this data plane proxy manages.
+	// There are two types: `DELEGATED` and `BUILTIN`. Defaults to
+	// `DELEGATED`.
+	//
+	// A `DELEGATED` gateway is an independently deployed proxy (e.g., Kong,
+	// Contour, etc) that receives inbound traffic that is not proxied by
+	// Kuma, and it sends outbound traffic into the data plane proxy.
+	//
+	// The `BUILTIN` gateway type causes the data plane proxy itself to be
+	// configured as a gateway.
+	//
+	// See https://kuma.io/docs/latest/explore/gateway/ for more information.
 	Type Dataplane_Networking_Gateway_GatewayType `protobuf:"varint,2,opt,name=type,proto3,enum=kuma.mesh.v1alpha1.Dataplane_Networking_Gateway_GatewayType" json:"type,omitempty"`
 }
 
@@ -574,15 +643,18 @@ type Dataplane_Networking_TransparentProxying struct {
 	RedirectPortInbound uint32 `protobuf:"varint,1,opt,name=redirect_port_inbound,json=redirectPortInbound,proto3" json:"redirect_port_inbound,omitempty"`
 	// Port on which all outbound traffic is being transparently redirected.
 	RedirectPortOutbound uint32 `protobuf:"varint,2,opt,name=redirect_port_outbound,json=redirectPortOutbound,proto3" json:"redirect_port_outbound,omitempty"`
-	// List of services that will be access directly via IP:PORT
+	// List of services that will be accessed directly via IP:PORT
+	// Use `*` to indicate direct access to every service in the Mesh.
+	// Using `*` to directly access every service is a resource-intensive
+	// operation, use it only if needed.
 	DirectAccessServices []string `protobuf:"bytes,3,rep,name=direct_access_services,json=directAccessServices,proto3" json:"direct_access_services,omitempty"`
 	// Port on which all IPv6 inbound traffic is being transparently
 	// redirected.
 	RedirectPortInboundV6 uint32 `protobuf:"varint,4,opt,name=redirect_port_inbound_v6,json=redirectPortInboundV6,proto3" json:"redirect_port_inbound_v6,omitempty"`
 	// List of reachable services (represented by the value of
-	// kuma.io/service) via transparent proxying. Setting an explicit list can
-	// dramatically improve the performance of the mesh. If not specified, all
-	// services in the mesh are reachable.
+	// `kuma.io/service`) via transparent proxying. Setting an explicit list
+	// can dramatically improve the performance of the mesh. If not specified,
+	// all services in the mesh are reachable.
 	ReachableServices []string `protobuf:"bytes,5,rep,name=reachable_services,json=reachableServices,proto3" json:"reachable_services,omitempty"`
 }
 
@@ -659,6 +731,8 @@ type Dataplane_Networking_Inbound_Health struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Ready indicates if the data plane proxy is ready to serve the
+	// traffic.
 	Ready bool `protobuf:"varint,1,opt,name=ready,proto3" json:"ready,omitempty"`
 }
 
@@ -831,9 +905,14 @@ type Dataplane_Probes_Endpoint struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Inbound port is a port of the application from which we expose the
+	// endpoint.
 	InboundPort uint32 `protobuf:"varint,1,opt,name=inbound_port,json=inboundPort,proto3" json:"inbound_port,omitempty"`
+	// Inbound path is a path of the application from which we expose the
+	// endpoint. It is recommended to be as specific as possible.
 	InboundPath string `protobuf:"bytes,2,opt,name=inbound_path,json=inboundPath,proto3" json:"inbound_path,omitempty"`
-	Path        string `protobuf:"bytes,3,opt,name=path,proto3" json:"path,omitempty"`
+	// Path is a path on which we expose inbound path on the probes port.
+	Path string `protobuf:"bytes,3,opt,name=path,proto3" json:"path,omitempty"`
 }
 
 func (x *Dataplane_Probes_Endpoint) Reset() {
