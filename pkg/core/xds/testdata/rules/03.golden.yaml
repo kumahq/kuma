@@ -11,7 +11,7 @@
     Not: false
     Value: web
 - Conf:
-    action: DENY_WITH_SHADOW_ALLOW
+    action: DENY
   Origin:
   - creationTime: "0001-01-01T00:00:00Z"
     mesh: mesh-1
