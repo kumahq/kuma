@@ -29,7 +29,7 @@ func (m *MeshAccessLogBuilder) WithTargetRef(targetRef *common_proto.TargetRef) 
 }
 
 func (m *MeshAccessLogBuilder) AddFrom(targetRef *common_proto.TargetRef, conf *MeshAccessLogConfBuilder) *MeshAccessLogBuilder {
-	m.res.Spec.From = append(m.res.Spec.From, &meshaccesslog_proto.MeshAccessLog_From{
+	m.res.Spec.From = append(m.res.Spec.From, &meshaccesslog_proto.From{
 		TargetRef: targetRef,
 		Default:   conf.res,
 	})
@@ -37,7 +37,7 @@ func (m *MeshAccessLogBuilder) AddFrom(targetRef *common_proto.TargetRef, conf *
 }
 
 func (m *MeshAccessLogBuilder) AddTo(targetRef *common_proto.TargetRef, conf *MeshAccessLogConfBuilder) *MeshAccessLogBuilder {
-	m.res.Spec.To = append(m.res.Spec.To, &meshaccesslog_proto.MeshAccessLog_To{
+	m.res.Spec.To = append(m.res.Spec.To, &meshaccesslog_proto.To{
 		TargetRef: targetRef,
 		Default:   conf.res,
 	})
@@ -53,16 +53,16 @@ func (m *MeshAccessLogBuilder) Build() *meshaccesslog_proto.MeshAccessLogResourc
 
 func MeshAccessLogConf() *MeshAccessLogConfBuilder {
 	return &MeshAccessLogConfBuilder{
-		res: &meshaccesslog_proto.MeshAccessLog_Conf{},
+		res: &meshaccesslog_proto.Conf{},
 	}
 }
 
 type MeshAccessLogConfBuilder struct {
-	res *meshaccesslog_proto.MeshAccessLog_Conf
+	res *meshaccesslog_proto.Conf
 }
 
-func (m *MeshAccessLogConfBuilder) AddFileBackend(fileBackend *meshaccesslog_proto.MeshAccessLog_FileBackend) *MeshAccessLogConfBuilder {
-	m.res.Backends = append(m.res.Backends, &meshaccesslog_proto.MeshAccessLog_Backend{
+func (m *MeshAccessLogConfBuilder) AddFileBackend(fileBackend *meshaccesslog_proto.FileBackend) *MeshAccessLogConfBuilder {
+	m.res.Backends = append(m.res.Backends, &meshaccesslog_proto.Backend{
 		File: fileBackend,
 	})
 	return m

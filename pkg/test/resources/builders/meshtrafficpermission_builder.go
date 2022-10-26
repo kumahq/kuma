@@ -39,10 +39,10 @@ func (m *MeshTrafficPermissionBuilder) WithTargetRef(targetRef *common_proto.Tar
 }
 
 func (m *MeshTrafficPermissionBuilder) AddFrom(targetRef *common_proto.TargetRef, action string) *MeshTrafficPermissionBuilder {
-	m.res.Spec.From = append(m.res.Spec.From, &mtp_proto.MeshTrafficPermission_From{
+	m.res.Spec.From = append(m.res.Spec.From, &mtp_proto.From{
 		TargetRef: targetRef,
-		Default: &mtp_proto.MeshTrafficPermission_Conf{
-			Action: action,
+		Default: &mtp_proto.Conf{
+			Action: mtp_proto.Action(action),
 		},
 	})
 	return m
