@@ -51,6 +51,10 @@ func (ss Subset) IsSubset(other Subset) bool {
 	return true
 }
 
+func MeshSubset() Subset {
+	return Subset{}
+}
+
 func MeshService(name string) Subset {
 	return Subset{{
 		Key: mesh_proto.ServiceTag, Value: name,
