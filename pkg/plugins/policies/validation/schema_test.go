@@ -80,7 +80,7 @@ from:
 				expected: `
 violations:
   - field: spec
-    message: from[0].default.action in body should be one of [ALLOW DENY ALLOW_WITH_SHADOW_DENY DENY_WITH_SHADOW_ALLOW]`,
+    message: from[0].default.action in body should be one of [ALLOW DENY ALLOW_WITH_SHADOW_DENY]`,
 			}),
 		)
 	})

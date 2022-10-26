@@ -36,11 +36,19 @@ var _ json.Unmarshaler = &Resource{}
 func (r *Resource) MarshalJSON() ([]byte, error) {
 	var specBytes []byte
 	if r.Spec != nil {
-		bytes, err := util_proto.ToJSON(r.Spec.(proto.Message))
-		if err != nil {
-			return nil, err
+		if msg, ok := r.Spec.(proto.Message); ok {
+			bytes, err := util_proto.ToJSON(msg)
+			if err != nil {
+				return nil, err
+			}
+			specBytes = bytes
+		} else {
+			bytes, err := json.Marshal(r.Spec)
+			if err != nil {
+				return nil, err
+			}
+			specBytes = bytes
 		}
-		specBytes = bytes
 	}
 
 	metaJSON, err := json.Marshal(r.Meta)

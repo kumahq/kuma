@@ -817,8 +817,8 @@ spec:
               resource.
             properties:
               from:
-                description: From is a list of pairs – a group of clients and action
-                  applied for it
+                description: From list makes a match between clients and corresponding
+                  configurations
                 items:
                   properties:
                     default:
@@ -826,17 +826,12 @@ spec:
                         of clients referenced in 'targetRef'
                       properties:
                         action:
-                          description: 'Action defines a behaviour for the specified
-                            group of clients: * ALLOW - lets the requests pass * DENY
-                            - blocks the requests * ALLOW_WITH_SHADOW_DENY - lets
-                            the requests pass but emits logs as if requests are denied
-                            * DENY_WITH_SHADOW_ALLOW - blocks the requests but emits
-                            logs as if requests are allowed'
+                          description: 'Action defines a behavior for the specified
+                            group of clients:'
                           enum:
                           - ALLOW
                           - DENY
                           - ALLOW_WITH_SHADOW_DENY
-                          - DENY_WITH_SHADOW_ALLOW
                           type: string
                       type: object
                     targetRef:
@@ -1890,8 +1885,8 @@ spec:
             description: Spec is the specification of the Kuma MeshAccessLog resource.
             properties:
               from:
-                description: From is a list of pairs – a group of clients and action
-                  applied for it
+                description: From list makes a match between clients and corresponding
+                  configurations
                 items:
                   properties:
                     default:
@@ -1928,11 +1923,10 @@ spec:
                                     type: string
                                 type: object
                               tcp:
-                                description: Backend defines logging backend.
+                                description: TCPBackend defines a TCP logging backend.
                                 properties:
                                   address:
-                                    description: Type of the backend (Kuma ships with
-                                      'tcp' and 'file')
+                                    description: Address of the TCP logging backend
                                     type: string
                                   format:
                                     description: Format of access logs. Placeholders
@@ -2019,11 +2013,13 @@ spec:
                     type: object
                 type: object
               to:
+                description: To list makes a match between the consumed services and
+                  corresponding configurations
                 items:
                   properties:
                     default:
                       description: Default is a configuration specific to the group
-                        of clients referenced in 'targetRef'
+                        of destinations referenced in 'targetRef'
                       properties:
                         backends:
                           items:
@@ -2055,11 +2051,10 @@ spec:
                                     type: string
                                 type: object
                               tcp:
-                                description: Backend defines logging backend.
+                                description: TCPBackend defines a TCP logging backend.
                                 properties:
                                   address:
-                                    description: Type of the backend (Kuma ships with
-                                      'tcp' and 'file')
+                                    description: Address of the TCP logging backend
                                     type: string
                                   format:
                                     description: Format of access logs. Placeholders
@@ -2085,7 +2080,7 @@ spec:
                       type: object
                     targetRef:
                       description: TargetRef is a reference to the resource that represents
-                        a group of clients.
+                        a group of destinations.
                       properties:
                         kind:
                           description: Kind of the referenced resource

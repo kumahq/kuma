@@ -24,4 +24,4 @@ spec:
         kind: MeshService
         name: orders
       default:
-        action: DENY_WITH_SHADOW_ALLOW
+        action: DENY

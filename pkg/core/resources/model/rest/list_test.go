@@ -320,7 +320,7 @@ var _ = Describe("Unmarshal ResourceList", func() {
 				Mesh: "default",
 				Name: "mtp1",
 			}))
-			Expect(rs.Items[0].GetSpec()).To(matchers.MatchProto(&policies_api.MeshTrafficPermission{
+			Expect(rs.Items[0].GetSpec()).To(Equal(&policies_api.MeshTrafficPermission{
 				TargetRef: &common_api.TargetRef{Kind: "MeshService", Name: "backend"},
 				From: []*policies_api.From{
 					{
@@ -354,7 +354,7 @@ var _ = Describe("Unmarshal ResourceList", func() {
 				Mesh: "default",
 				Name: "mtp2",
 			}))
-			Expect(rs.Items[1].GetSpec()).To(matchers.MatchProto(&policies_api.MeshTrafficPermission{
+			Expect(rs.Items[1].GetSpec()).To(Equal(&policies_api.MeshTrafficPermission{
 				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
 				From: []*policies_api.From{
 					{
