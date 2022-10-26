@@ -73,9 +73,7 @@ func applyToInbounds(
 			continue
 		}
 
-		serviceName := inbound.GetTags()[mesh_proto.ServiceTag]
-
-		if err := configureInbound(rules.Rules[listenerKey], dataplane, xds.MeshService(serviceName), listener); err != nil {
+		if err := configureInbound(rules.Rules[listenerKey], dataplane, listener); err != nil {
 			return err
 		}
 	}
@@ -191,13 +189,13 @@ func applyToGateway(
 func configureInbound(
 	fromRules xds.Rules,
 	dataplane *core_mesh.DataplaneResource,
-	subset xds.Subset,
 	listener *envoy_listener.Listener,
 ) error {
 	serviceName := dataplane.Spec.GetIdentifyingService()
 
 	var conf *api.Conf
-	if computed := fromRules.Compute(subset); computed != nil {
+	// `from` section of MeshAccessLog only allows Mesh targetRef
+	if computed := fromRules.Compute(core_xds.MeshSubset()); computed != nil {
 		conf = computed.Conf.(*api.Conf)
 	} else {
 		return nil
