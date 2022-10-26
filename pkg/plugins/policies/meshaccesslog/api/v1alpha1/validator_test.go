@@ -17,7 +17,7 @@ var _ = Describe("MeshAccessLog", func() {
 				meshAccessLog := meshaccesslog_proto.NewMeshAccessLogResource()
 
 				// when
-				err := core_model.FromYAML(meshAccessLog.Descriptor(), []byte(mtpYAML), meshAccessLog.Spec)
+				err := core_model.FromYAML([]byte(mtpYAML), meshAccessLog.Spec)
 				Expect(err).ToNot(HaveOccurred())
 				// and
 				verr := meshAccessLog.Validate()
@@ -86,7 +86,7 @@ from:
 				meshAccessLog := meshaccesslog_proto.NewMeshAccessLogResource()
 
 				// when
-				err := core_model.FromYAML(meshAccessLog.Descriptor(), []byte(given.inputYaml), meshAccessLog.Spec)
+				err := core_model.FromYAML([]byte(given.inputYaml), meshAccessLog.Spec)
 				Expect(err).ToNot(HaveOccurred())
 				// and
 				verr := meshAccessLog.Validate()

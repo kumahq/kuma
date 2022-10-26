@@ -24,7 +24,7 @@ var _ = Describe("Resource Utils", func() {
 				}},
 			}
 			// when
-			bytes, err := core_model.ToJSON(meshaccesslog_proto.MeshAccessLogResourceTypeDescriptor, spec)
+			bytes, err := core_model.ToJSON(spec)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(MatchJSON(`

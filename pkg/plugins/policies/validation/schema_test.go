@@ -24,7 +24,7 @@ var _ = Describe("plugins validation", func() {
 				obj, err := registry.Global().NewObject(given.resourceType)
 				Expect(err).To(Not(HaveOccurred()))
 
-				err = core_model.FromYAML(obj.Descriptor(), []byte(given.inputYaml), obj.GetSpec())
+				err = core_model.FromYAML([]byte(given.inputYaml), obj.GetSpec())
 				Expect(err).To(Not(HaveOccurred()))
 
 				verr := obj.(core_model.ResourceValidator).Validate()
@@ -58,7 +58,7 @@ default:
 			func(given testCase) {
 				// and
 				mtp := meshtrafficpermissions_proto.NewMeshTrafficPermissionResource()
-				err := core_model.FromYAML(mtp.Descriptor(), []byte(given.inputYaml), mtp.Spec)
+				err := core_model.FromYAML([]byte(given.inputYaml), mtp.Spec)
 				Expect(err).To(Not(HaveOccurred()))
 				verr := mtp.Validate()
 				actual, err := yaml.Marshal(verr)

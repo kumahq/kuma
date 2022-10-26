@@ -17,7 +17,7 @@ var _ = Describe("MeshTrace", func() {
 				meshTrace := meshtrace_proto.NewMeshTraceResource()
 
 				// when
-				err := core_model.FromYAML(meshTrace.Descriptor(), []byte(mtpYAML), meshTrace.Spec)
+				err := core_model.FromYAML([]byte(mtpYAML), meshTrace.Spec)
 				Expect(err).ToNot(HaveOccurred())
 				// and
 				verr := meshTrace.Validate()
@@ -99,7 +99,7 @@ default:
 				meshTrace := meshtrace_proto.NewMeshTraceResource()
 
 				// when
-				err := core_model.FromYAML(meshTrace.Descriptor(), []byte(given.inputYaml), meshTrace.Spec)
+				err := core_model.FromYAML([]byte(given.inputYaml), meshTrace.Spec)
 				Expect(err).ToNot(HaveOccurred())
 				// and
 				verr := meshTrace.Validate()

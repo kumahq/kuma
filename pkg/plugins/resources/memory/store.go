@@ -305,11 +305,7 @@ func (c *memoryStore) findRecords(
 
 func (c *memoryStore) marshalRecord(resourceType string, meta memoryMeta, spec core_model.ResourceSpec) (*memoryStoreRecord, error) {
 	// convert spec into storage representation
-	desc, err := registry.Global().DescriptorFor(core_model.ResourceType(resourceType))
-	if err != nil {
-		return nil, err
-	}
-	content, err := core_model.ToJSON(desc, spec)
+	content, err := core_model.ToJSON(spec)
 	if err != nil {
 		return nil, err
 	}
@@ -335,5 +331,5 @@ func (c *memoryStore) unmarshalRecord(s *memoryStoreRecord, r core_model.Resourc
 		CreationTime:     s.CreationTime,
 		ModificationTime: s.ModificationTime,
 	})
-	return core_model.FromJSON(r.Descriptor(), []byte(s.Spec), r.GetSpec())
+	return core_model.FromJSON([]byte(s.Spec), r.GetSpec())
 }
