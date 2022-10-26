@@ -11,7 +11,7 @@ properties:
     description: 'Name of the Kuma resource'
     type: string
   from:
-    description: From is a list of pairs – a group of clients and action applied for it
+    description: From list makes a match between clients and corresponding configurations
     items:
       properties:
         default:
@@ -44,10 +44,10 @@ properties:
                         type: string
                     type: object
                   tcp:
-                    description: Backend defines logging backend.
+                    description: TCPBackend defines a TCP logging backend.
                     properties:
                       address:
-                        description: Type of the backend (Kuma ships with 'tcp' and 'file')
+                        description: Address of the TCP logging backend
                         type: string
                       format:
                         description: Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
@@ -124,10 +124,11 @@ properties:
         type: object
     type: object
   to:
+    description: To list makes a match between the consumed services and corresponding configurations
     items:
       properties:
         default:
-          description: Default is a configuration specific to the group of clients referenced in 'targetRef'
+          description: Default is a configuration specific to the group of destinations referenced in 'targetRef'
           properties:
             backends:
               items:
@@ -156,10 +157,10 @@ properties:
                         type: string
                     type: object
                   tcp:
-                    description: Backend defines logging backend.
+                    description: TCPBackend defines a TCP logging backend.
                     properties:
                       address:
-                        description: Type of the backend (Kuma ships with 'tcp' and 'file')
+                        description: Address of the TCP logging backend
                         type: string
                       format:
                         description: Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
@@ -183,7 +184,7 @@ properties:
               type: array
           type: object
         targetRef:
-          description: TargetRef is a reference to the resource that represents a group of clients.
+          description: TargetRef is a reference to the resource that represents a group of destinations.
           properties:
             kind:
               description: Kind of the referenced resource

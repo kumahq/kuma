@@ -23,7 +23,7 @@ func (r *MeshAccessLogResource) validate() error {
 	return verr.OrNil()
 }
 func validateTop(targetRef *common_proto.TargetRef) validators.ValidationError {
-	targetRefErr := matcher_validators.ValidateTargetRef(*targetRef, &matcher_validators.ValidateTargetRefOpts{
+	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
 		SupportedKinds: []common_proto.TargetRefKind{
 			common_proto.Mesh,
 			common_proto.MeshSubset,
@@ -35,11 +35,11 @@ func validateTop(targetRef *common_proto.TargetRef) validators.ValidationError {
 	})
 	return targetRefErr
 }
-func validateFrom(from []*MeshAccessLog_From) validators.ValidationError {
+func validateFrom(from []*From) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, fromItem := range from {
 		path := validators.RootedAt("from").Index(idx)
-		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(*fromItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
+		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(fromItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
 			SupportedKinds: []common_proto.TargetRefKind{
 				common_proto.Mesh,
 			},
@@ -54,11 +54,11 @@ func validateFrom(from []*MeshAccessLog_From) validators.ValidationError {
 	}
 	return verr
 }
-func validateTo(to []*MeshAccessLog_To) validators.ValidationError {
+func validateTo(to []*To) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
-		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(*toItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
+		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(toItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
 			SupportedKinds: []common_proto.TargetRefKind{
 				common_proto.Mesh,
 				common_proto.MeshService,
@@ -75,7 +75,7 @@ func validateTo(to []*MeshAccessLog_To) validators.ValidationError {
 	return verr
 }
 
-func validateDefault(conf *MeshAccessLog_Conf) validators.ValidationError {
+func validateDefault(conf *Conf) validators.ValidationError {
 	var verr validators.ValidationError
 	for backendIdx, backend := range conf.Backends {
 		verr.AddErrorAt(validators.RootedAt("backends").Index(backendIdx), validateBackend(backend))
@@ -83,7 +83,7 @@ func validateDefault(conf *MeshAccessLog_Conf) validators.ValidationError {
 	return verr
 }
 
-func validateBackend(backend *MeshAccessLog_Backend) validators.ValidationError {
+func validateBackend(backend *Backend) validators.ValidationError {
 	var verr validators.ValidationError
 
 	if (backend.GetFile() != nil) == (backend.GetTcp() != nil) {
@@ -108,7 +108,7 @@ func validateBackend(backend *MeshAccessLog_Backend) validators.ValidationError 
 	return verr
 }
 
-func validateFormat(format *MeshAccessLog_Format) validators.ValidationError {
+func validateFormat(format *Format) validators.ValidationError {
 	var verr validators.ValidationError
 	if format == nil {
 		return verr

@@ -7,7 +7,6 @@ import (
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -82,14 +81,14 @@ func (ss Subset) IndexOfPositive() int {
 // represents destinations.
 type Rule struct {
 	Subset Subset
-	Conf   any
+	Conf   interface{}
 	Origin []core_model.ResourceMeta
 }
 
 type Rules []*Rule
 
 // Compute returns configuration for the given subset.
-func (rs Rules) Compute(sub Subset) any {
+func (rs Rules) Compute(sub Subset) interface{} {
 	for _, rule := range rs {
 		if rule.Subset.IsSubset(sub) {
 			return rule.Conf
@@ -137,7 +136,7 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 			break
 		}
 		// 3. For each combination determine a configuration
-		confs := []any{}
+		confs := []interface{}{}
 		distinctOrigins := map[core_model.ResourceKey]core_model.ResourceMeta{}
 		for i := 0; i < len(list); i++ {
 			item := list[i]
@@ -146,7 +145,7 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 				return nil, err
 			}
 			if itemSubset.IsSubset(ss) {
-				confs = append(confs, item.GetDefaultAsProto())
+				confs = append(confs, item.GetDefaultAsInterface())
 				distinctOrigins[core_model.MetaToResourceKey(item.ResourceMeta)] = item.ResourceMeta
 			}
 		}
@@ -177,7 +176,7 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 	return rules, nil
 }
 
-func merge(confs []any) (proto.Message, error) {
+func merge(confs []interface{}) (interface{}, error) {
 	if len(confs) == 0 {
 		return nil, nil
 	}
@@ -210,11 +209,11 @@ func merge(confs []any) (proto.Message, error) {
 	return result, nil
 }
 
-func newConf(t reflect.Type) (proto.Message, error) {
+func newConf(t reflect.Type) (interface{}, error) {
 	if t.Kind() != reflect.Pointer {
 		return nil, errors.New("conf expected to have a pointer type")
 	}
-	return reflect.New(t.Elem()).Interface().(proto.Message), nil
+	return reflect.New(t.Elem()).Interface(), nil
 }
 
 func asSubset(tr *common_api.TargetRef) (Subset, error) {

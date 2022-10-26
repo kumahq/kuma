@@ -23,7 +23,7 @@ func (r *MeshTraceResource) validate() error {
 	return verr.OrNil()
 }
 func validateTop(targetRef *common_proto.TargetRef) validators.ValidationError {
-	targetRefErr := matcher_validators.ValidateTargetRef(*targetRef, &matcher_validators.ValidateTargetRefOpts{
+	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
 		SupportedKinds: []common_proto.TargetRefKind{
 			common_proto.Mesh,
 			common_proto.MeshSubset,
@@ -35,7 +35,7 @@ func validateTop(targetRef *common_proto.TargetRef) validators.ValidationError {
 	return targetRefErr
 }
 
-func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
+func validateDefault(conf *Conf) validators.ValidationError {
 	var verr validators.ValidationError
 
 	if conf == nil {
@@ -82,7 +82,7 @@ func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 	return verr
 }
 
-func validateBackend(conf *MeshTrace_Conf, backendsPath validators.PathBuilder) validators.ValidationError {
+func validateBackend(conf *Conf, backendsPath validators.PathBuilder) validators.ValidationError {
 	var verr validators.ValidationError
 	backend := conf.GetBackends()[0]
 	firstBackendPath := backendsPath.Index(0)

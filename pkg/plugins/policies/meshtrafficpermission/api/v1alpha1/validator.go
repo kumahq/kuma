@@ -9,14 +9,14 @@ import (
 func (r *MeshTrafficPermissionResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
-	if len(r.Spec.From) == 0 {
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.GetTargetRef()))
+	if len(r.Spec.GetFrom()) == 0 {
 		verr.AddViolationAt(path.Field("from"), "needs at least one item")
 	}
-	verr.AddErrorAt(path, validateFrom(r.Spec.From))
+	verr.AddErrorAt(path, validateFrom(r.Spec.GetFrom()))
 	return verr.OrNil()
 }
-func validateTop(targetRef common_proto.TargetRef) validators.ValidationError {
+func validateTop(targetRef *common_proto.TargetRef) validators.ValidationError {
 	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
 		SupportedKinds: []common_proto.TargetRefKind{
 			common_proto.Mesh,
@@ -33,7 +33,7 @@ func validateFrom(from []*From) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, fromItem := range from {
 		path := validators.RootedAt("from").Index(idx)
-		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(fromItem.TargetRef, &matcher_validators.ValidateTargetRefOpts{
+		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(fromItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
 			SupportedKinds: []common_proto.TargetRefKind{
 				common_proto.Mesh,
 				common_proto.MeshSubset,
@@ -41,6 +41,18 @@ func validateFrom(from []*From) validators.ValidationError {
 				common_proto.MeshServiceSubset,
 			},
 		}))
+
+		defaultField := path.Field("default")
+		if fromItem.GetDefault() == nil {
+			verr.AddViolationAt(defaultField, "must be defined")
+		} else {
+			verr.AddErrorAt(defaultField, validateDefault(fromItem.Default))
+		}
 	}
+	return verr
+}
+
+func validateDefault(conf *Conf) validators.ValidationError {
+	var verr validators.ValidationError
 	return verr
 }

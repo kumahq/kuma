@@ -11,6 +11,7 @@ import (
 	tracingv3 "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/proto"
@@ -19,7 +20,7 @@ import (
 )
 
 type Configurer struct {
-	Conf *api.MeshTrace_Conf
+	Conf *api.Conf
 
 	// Opaque string which envoy will assign to tracer collector cluster, on those
 	// which support association of named "service" tags on traces. Consumed by datadog.
@@ -118,7 +119,7 @@ func (c *Configurer) zipkinConfig(clusterName string) (*envoy_trace.Tracing_Http
 		CollectorEndpoint:        url.Path,
 		TraceId_128Bit:           zipkin.TraceId128Bit,
 		CollectorEndpointVersion: apiVersion(zipkin, url),
-		SharedSpanContext:        zipkin.SharedSpanContext,
+		SharedSpanContext:        wrapperspb.Bool(zipkin.SharedSpanContext.GetValue()),
 		CollectorHostname:        url.Host,
 	}
 	zipkinConfigAny, err := proto.MarshalAnyDeterministic(&zipkinConfig)
@@ -153,7 +154,7 @@ func (c *Configurer) createDatadogServiceName() string {
 	}
 }
 
-func apiVersion(zipkin *api.MeshTrace_ZipkinBackend, url *net_url.URL) envoy_trace.ZipkinConfig_CollectorEndpointVersion {
+func apiVersion(zipkin *api.ZipkinBackend, url *net_url.URL) envoy_trace.ZipkinConfig_CollectorEndpointVersion {
 	if zipkin.ApiVersion == "" { // try to infer it from the URL
 		if url.Path == "/api/v2/spans" {
 			return envoy_trace.ZipkinConfig_HTTP_JSON
@@ -169,7 +170,7 @@ func apiVersion(zipkin *api.MeshTrace_ZipkinBackend, url *net_url.URL) envoy_tra
 	return envoy_trace.ZipkinConfig_HTTP_JSON
 }
 
-func mapTags(tags []*api.MeshTrace_Tag) []*tracingv3.CustomTag {
+func mapTags(tags []*api.Tag) []*tracingv3.CustomTag {
 	var customTags []*tracingv3.CustomTag
 
 	for _, tag := range tags {
@@ -194,7 +195,7 @@ func mapLiteralTag(name, literal string) *tracingv3.CustomTag {
 	}
 }
 
-func mapHeaderTag(name string, header *api.MeshTrace_HeaderTag) *tracingv3.CustomTag {
+func mapHeaderTag(name string, header *api.HeaderTag) *tracingv3.CustomTag {
 	return &tracingv3.CustomTag{
 		Tag: name,
 		Type: &tracingv3.CustomTag_RequestHeader{

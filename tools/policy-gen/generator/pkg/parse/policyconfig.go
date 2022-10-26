@@ -23,6 +23,8 @@ type PolicyConfig struct {
 	PluralDisplayName   string
 	Path                string
 	AlternativeNames    []string
+	HasTo               bool
+	HasFrom             bool
 }
 
 func Policy(path string) (PolicyConfig, error) {
@@ -36,6 +38,9 @@ func Policy(path string) (PolicyConfig, error) {
 	var mainStruct *ast.TypeSpec
 	var mainComment *ast.CommentGroup
 	var packageName string
+
+	hasTo := false
+	hasFrom := false
 
 	ast.Inspect(f, func(n ast.Node) bool {
 		if file, ok := n.(*ast.File); ok {
@@ -55,12 +60,28 @@ func Policy(path string) (PolicyConfig, error) {
 		return false
 	})
 
+	st, ok := mainStruct.Type.(*ast.StructType)
+	if !ok {
+		return PolicyConfig{}, errors.Errorf("type %s is not a struct", mainStruct.Name.String())
+	}
+
+	for _, field := range st.Fields.List {
+		for _, name := range field.Names {
+			switch name.Name {
+			case "From":
+				hasFrom = true
+			case "To":
+				hasTo = true
+			}
+		}
+	}
+
 	markers, err := parseMarkers(mainComment)
 	if err != nil {
 		return PolicyConfig{}, err
 	}
 
-	return newPolicyConfig(packageName, mainStruct.Name.String(), markers)
+	return newPolicyConfig(packageName, mainStruct.Name.String(), markers, hasTo, hasFrom)
 }
 
 func parseMarkers(cg *ast.CommentGroup) (map[string]string, error) {
@@ -79,11 +100,16 @@ func parseMarkers(cg *ast.CommentGroup) (map[string]string, error) {
 	return result, nil
 }
 
-func newPolicyConfig(pkg, name string, markers map[string]string) (PolicyConfig, error) {
+func newPolicyConfig(pkg, name string, markers map[string]string, hasTo, hasFrom bool) (PolicyConfig, error) {
 	res := PolicyConfig{
-		Package:   pkg,
-		Name:      name,
-		NameLower: strings.ToLower(name),
+		Package:             pkg,
+		Name:                name,
+		NameLower:           strings.ToLower(name),
+		SingularDisplayName: core_model.DisplayName(name),
+		PluralDisplayName:   core_model.PluralDisplayName(name),
+		AlternativeNames:    []string{strings.ToLower(name)},
+		HasTo:               hasTo,
+		HasFrom:             hasFrom,
 	}
 
 	if v, ok := markers["kuma:skip_registration"]; ok {
@@ -100,10 +126,7 @@ func newPolicyConfig(pkg, name string, markers map[string]string) (PolicyConfig,
 		res.Plural = core_model.PluralType(res.Name)
 	}
 
-	res.SingularDisplayName = core_model.DisplayName(res.Name)
-	res.PluralDisplayName = core_model.PluralDisplayName(res.Name)
 	res.Path = strings.ToLower(res.Plural)
-	res.AlternativeNames = []string{strings.ToLower(res.Name)}
 
 	return res, nil
 }

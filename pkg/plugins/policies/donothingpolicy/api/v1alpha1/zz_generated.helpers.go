@@ -5,12 +5,10 @@
 package v1alpha1
 
 import (
-	"google.golang.org/protobuf/proto"
-
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
-func (x *DoNothingPolicy_From) GetDefaultAsProto() proto.Message {
+func (x *From) GetDefaultAsInterface() interface{} {
 	return x.Default
 }
 
@@ -22,7 +20,7 @@ func (x *DoNothingPolicy) GetFromList() []core_xds.PolicyItem {
 	return result
 }
 
-func (x *DoNothingPolicy_To) GetDefaultAsProto() proto.Message {
+func (x *To) GetDefaultAsInterface() interface{} {
 	return x.Default
 }
 

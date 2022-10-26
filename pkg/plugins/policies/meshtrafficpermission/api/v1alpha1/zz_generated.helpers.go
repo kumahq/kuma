@@ -12,21 +12,9 @@ func (x *From) GetDefaultAsInterface() interface{} {
 	return x.Default
 }
 
-func (x *MeshAccessLog) GetFromList() []core_xds.PolicyItem {
+func (x *MeshTrafficPermission) GetFromList() []core_xds.PolicyItem {
 	var result []core_xds.PolicyItem
 	for _, item := range x.From {
-		result = append(result, item)
-	}
-	return result
-}
-
-func (x *To) GetDefaultAsInterface() interface{} {
-	return x.Default
-}
-
-func (x *MeshAccessLog) GetToList() []core_xds.PolicyItem {
-	var result []core_xds.PolicyItem
-	for _, item := range x.To {
 		result = append(result, item)
 	}
 	return result

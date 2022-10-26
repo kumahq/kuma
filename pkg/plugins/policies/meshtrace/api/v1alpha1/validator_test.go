@@ -5,8 +5,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	meshtrace_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("MeshTrace", func() {
@@ -17,7 +17,7 @@ var _ = Describe("MeshTrace", func() {
 				meshTrace := meshtrace_proto.NewMeshTraceResource()
 
 				// when
-				err := util_proto.FromYAML([]byte(mtpYAML), meshTrace.Spec)
+				err := core_model.FromYAML(meshTrace.Descriptor(), []byte(mtpYAML), meshTrace.Spec)
 				Expect(err).ToNot(HaveOccurred())
 				// and
 				verr := meshTrace.Validate()
@@ -99,7 +99,7 @@ default:
 				meshTrace := meshtrace_proto.NewMeshTraceResource()
 
 				// when
-				err := util_proto.FromYAML([]byte(given.inputYaml), meshTrace.Spec)
+				err := core_model.FromYAML(meshTrace.Descriptor(), []byte(given.inputYaml), meshTrace.Spec)
 				Expect(err).ToNot(HaveOccurred())
 				// and
 				verr := meshTrace.Validate()

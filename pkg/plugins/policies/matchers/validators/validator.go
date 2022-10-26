@@ -12,10 +12,14 @@ type ValidateTargetRefOpts struct {
 }
 
 func ValidateTargetRef(
-	ref common_proto.TargetRef,
+	ref *common_proto.TargetRef,
 	opts *ValidateTargetRefOpts,
 ) validators.ValidationError {
 	verr := validators.ValidationError{}
+	if ref == nil {
+		verr.AddViolation("", "you need to set a targetRef")
+		return verr
+	}
 	if ref.Kind == "" {
 		verr.AddViolation("kind", "must be set")
 		return verr

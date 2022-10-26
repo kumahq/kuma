@@ -37,6 +37,8 @@ spec:
             description: Spec is the specification of the Kuma DoNothingPolicy resource.
             properties:
               from:
+                description: From list makes a match between clients and corresponding
+                  configurations
                 items:
                   properties:
                     default:
@@ -111,6 +113,8 @@ spec:
                     type: object
                 type: object
               to:
+                description: To list makes a match between the consumed services and
+                  corresponding configurations
                 items:
                   properties:
                     default:

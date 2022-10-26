@@ -11,6 +11,7 @@ properties:
     description: 'Name of the Kuma resource'
     type: string
   from:
+    description: From list makes a match between clients and corresponding configurations
     items:
       properties:
         default:
@@ -74,6 +75,7 @@ properties:
         type: object
     type: object
   to:
+    description: To list makes a match between the consumed services and corresponding configurations
     items:
       properties:
         default:

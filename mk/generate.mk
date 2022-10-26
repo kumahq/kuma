@@ -35,7 +35,7 @@ policies = $(foreach dir,$(shell find pkg/plugins/policies -maxdepth 1 -mindepth
 generate_policy_targets = $(addprefix generate/policy/,$(policies))
 cleanup_policy_targets = $(addprefix cleanup/policy/,$(policies))
 
-generate/policies: cleanup/crds cleanup/policies generate/deep-copy/targetref $(generate_policy_targets) generate/policy-import generate/policy-helm generate/builtin-crds generate/fix-embed
+generate/policies: cleanup/crds cleanup/policies generate/deep-copy/common $(generate_policy_targets) generate/policy-import generate/policy-helm generate/builtin-crds generate/fix-embed
 
 cleanup/crds:
 	rm -f ./deployments/charts/kuma/crds/*
@@ -48,7 +48,7 @@ cleanup/policy/%:
 	$(shell find $(POLICIES_DIR)/$* \( -name '*.pb.go' -o -name '*.yaml' -o -name 'zz_generated.*'  \) -not -path '*/testdata/*' -type f -delete)
 	@rm -fr $(POLICIES_DIR)/$*/k8s
 
-generate/deep-copy/targetref:
+generate/deep-copy/common:
 	for version in $(foreach dir,$(wildcard $(COMMON_DIR)/*),$(notdir $(dir))); do \
 		$(CONTROLLER_GEN) object:headerFile=$(TOOLS_DIR)/policy-gen/boilerplate.go.txt,year=$$(date +%Y) paths=$(COMMON_DIR)/$$version/targetref.go ; \
 	done
@@ -78,7 +78,9 @@ generate/kumapolicy-gen/%: generate/dirs/%
 	$(POLICY_GEN) core-resource --plugin-dir $(POLICIES_DIR)/$* && \
 	$(POLICY_GEN) k8s-resource --plugin-dir $(POLICIES_DIR)/$* && \
 	$(POLICY_GEN) openapi --plugin-dir $(POLICIES_DIR)/$* --openapi-template-path=$(TOOLS_DIR)/policy-gen/templates/endpoints.yaml && \
-	$(POLICY_GEN) plugin-file --plugin-dir $(POLICIES_DIR)/$*
+	$(POLICY_GEN) plugin-file --plugin-dir $(POLICIES_DIR)/$* && \
+	$(POLICY_GEN) helpers --plugin-dir $(POLICIES_DIR)/$* && \
+	$(POLICY_GEN) getters --plugin-dir $(POLICIES_DIR)/$*
 
 generate/dirs/%:
 	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \

@@ -103,7 +103,7 @@ var _ = Describe("Apply", func() {
 										Subset: []core_xds.Tag{
 											{Key: mesh_proto.ServiceTag, Value: "frontend"},
 										},
-										Conf: &policies_api.MeshTrafficPermission_Conf{
+										Conf: &policies_api.Conf{
 											Action: "ALLOW",
 										},
 									},

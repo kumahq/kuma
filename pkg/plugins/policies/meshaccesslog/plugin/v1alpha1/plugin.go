@@ -196,9 +196,9 @@ func configureInbound(
 ) error {
 	serviceName := dataplane.Spec.GetIdentifyingService()
 
-	var conf *api.MeshAccessLog_Conf
+	var conf *api.Conf
 	if computed := fromRules.Compute(subset); computed != nil {
-		conf = computed.(*api.MeshAccessLog_Conf)
+		conf = computed.(*api.Conf)
 	} else {
 		return nil
 	}
@@ -232,9 +232,9 @@ func configureOutbound(
 ) error {
 	sourceService := dataplane.Spec.GetIdentifyingService()
 
-	var conf *api.MeshAccessLog_Conf
+	var conf *api.Conf
 	if computed := toRules.Rules.Compute(subset); computed != nil {
-		conf = computed.(*api.MeshAccessLog_Conf)
+		conf = computed.(*api.Conf)
 	} else {
 		return nil
 	}

@@ -19,37 +19,32 @@ func (r *DoNothingPolicyResource) validate() error {
 }
 func validateTop(targetRef *common_proto.TargetRef) validators.ValidationError {
 	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
-		SupportedKinds: []common_proto.TargetRef_Kind{
+		SupportedKinds: []common_proto.TargetRefKind{
 			// TODO add supported TargetRef kinds for this policy
 		},
 	})
 	return targetRefErr
 }
-func validateFrom(from []*DoNothingPolicy_From) validators.ValidationError {
+func validateFrom(from []*From) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, fromItem := range from {
 		path := validators.RootedAt("from").Index(idx)
 		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(fromItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
-			SupportedKinds: []common_proto.TargetRef_Kind{
+			SupportedKinds: []common_proto.TargetRefKind{
 				// TODO add supported TargetRef for 'from' item
 			},
 		}))
-
-		defaultField := path.Field("default")
-		if fromItem.GetDefault() == nil {
-			verr.AddViolationAt(defaultField, "must be defined")
-		} else {
-			verr.AddErrorAt(defaultField, validateDefault(fromItem.Default))
-		}
+		verr.AddErrorAt(path.Field("default"), validateDefault(fromItem.GetDefault()))
 	}
 	return verr
 }
-func validateTo(to []*DoNothingPolicy_To) validators.ValidationError {
+
+func validateTo(to []*To) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
 		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(toItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
-			SupportedKinds: []common_proto.TargetRef_Kind{
+			SupportedKinds: []common_proto.TargetRefKind{
 				// TODO add supported TargetRef for 'to' item
 			},
 		}))
@@ -64,7 +59,7 @@ func validateTo(to []*DoNothingPolicy_To) validators.ValidationError {
 	return verr
 }
 
-func validateDefault(conf *DoNothingPolicy_Conf) validators.ValidationError {
+func validateDefault(conf *Conf) validators.ValidationError {
 	var verr validators.ValidationError
 	// TODO add default conf validation
 	return verr

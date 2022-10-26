@@ -30,7 +30,7 @@ type Configurer struct {
 	TrafficDirection   envoy.TrafficDirection
 	SourceService      string
 	DestinationService string
-	Backend            *api.MeshAccessLog_Backend
+	Backend            *api.Backend
 	Dataplane          *core_mesh.DataplaneResource
 }
 
@@ -58,7 +58,7 @@ func (c *Configurer) interpolateKumaVariables(formatString string) (*accesslog.A
 }
 
 func (c *Configurer) envoyAccessLog(defaultFormat string) (*envoy_accesslog.AccessLog, error) {
-	var format *api.MeshAccessLog_Format
+	var format *api.Format
 	var logPath string
 
 	if f := c.Backend.GetFile(); f != nil {
