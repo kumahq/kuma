@@ -30,7 +30,6 @@ func validateTop(targetRef *common_proto.TargetRef) validators.ValidationError {
 			common_proto.MeshService,
 			common_proto.MeshServiceSubset,
 			common_proto.MeshGatewayRoute,
-			common_proto.MeshHTTPRoute,
 		},
 	})
 	return targetRefErr
@@ -140,9 +139,6 @@ func validateIncompatibleCombinations(spec *MeshAccessLog) validators.Validation
 	targetRef := spec.GetTargetRef().Kind
 	if targetRef == common_proto.MeshGatewayRoute && len(spec.GetTo()) > 0 {
 		verr.AddViolation("to", `cannot use "to" when "targetRef" is "MeshGatewayRoute" - there is no outbound`)
-	}
-	if targetRef == common_proto.MeshHTTPRoute && len(spec.GetTo()) > 0 {
-		verr.AddViolation("to", `cannot use "to" when "targetRef" is "MeshHTTPRoute" - "to" always goes to the application`)
 	}
 	return verr
 }

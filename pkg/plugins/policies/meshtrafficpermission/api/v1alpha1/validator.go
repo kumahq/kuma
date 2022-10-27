@@ -24,7 +24,6 @@ func validateTop(targetRef *common_proto.TargetRef) validators.ValidationError {
 			common_proto.MeshService,
 			common_proto.MeshServiceSubset,
 			common_proto.MeshGatewayRoute,
-			common_proto.MeshHTTPRoute,
 		},
 	})
 	return targetRefErr

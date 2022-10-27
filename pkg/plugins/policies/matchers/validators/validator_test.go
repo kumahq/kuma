@@ -344,7 +344,7 @@ kind: MeshGatewayRoute
 `,
 			opts: &matcher_validators.ValidateTargetRefOpts{
 				SupportedKinds: []common_proto.TargetRefKind{
-					common_proto.MeshHTTPRoute,
+					common_proto.Mesh,
 				},
 			},
 			expected: `
@@ -386,22 +386,6 @@ kind: MeshHTTPRoute
 violations:
   - field: targetRef.kind
     message: value is not supported
-`,
-		}),
-		Entry("MeshHTTPRoute as it's not currently supported", testCase{
-			inputYaml: `
-kind: MeshHTTPRoute
-name: backend-http-route
-`,
-			opts: &matcher_validators.ValidateTargetRefOpts{
-				SupportedKinds: []common_proto.TargetRefKind{
-					common_proto.MeshHTTPRoute,
-				},
-			},
-			expected: `
-violations:
-  - field: targetRef.kind
-    message: MeshHTTPRoute is not yet supported 
 `,
 		}),
 	)

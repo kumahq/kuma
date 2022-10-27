@@ -119,22 +119,6 @@ from:
 				// then
 				Expect(actual).To(MatchYAML(given.expected))
 			},
-			Entry("disallow MeshHTTPRoute at top-level targetRef", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshHTTPRoute
-  name: backend-http-route
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      action: DENY
-`,
-				expected: `
-violations:
-  - field: spec.targetRef.kind
-    message: MeshHTTPRoute is not yet supported`,
-			}),
 			Entry("empty 'from' array", testCase{
 				inputYaml: `
 targetRef:
@@ -170,17 +154,10 @@ from:
       name: mgr-1
     default:
       action: ALLOW
-  - targetRef:
-      kind: MeshHTTPRoute
-      name: mhr-1
-    default:
-      action: ALLOW
 `,
 				expected: `
 violations:
   - field: spec.from[0].targetRef.kind
-    message: value is not supported
-  - field: spec.from[1].targetRef.kind
     message: value is not supported
 `,
 			}),

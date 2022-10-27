@@ -115,17 +115,16 @@ properties:
           - MeshService
           - MeshServiceSubset
           - MeshGatewayRoute
-          - MeshHTTPRoute
         type: string
       mesh:
-        description: Mesh is used with MeshService and MeshServiceSubset to identify the service from another mesh. Could be useful when implementing policies with cross-mesh support.
+        description: Mesh is reserved for future use to identify cross mesh resources.
         type: string
       name:
-        description: Name of the referenced resource
+        description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
         type: string
       tags:
         additionalProperties:
           type: string
-        description: Tags are used with MeshSubset and MeshServiceSubset to define a subset of proxies
+        description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
         type: object
     type: object

@@ -3,12 +3,13 @@ package v1alpha1
 
 type TargetRefKind string
 
-var Mesh TargetRefKind = "Mesh"
-var MeshSubset TargetRefKind = "MeshSubset"
-var MeshService TargetRefKind = "MeshService"
-var MeshServiceSubset TargetRefKind = "MeshServiceSubset"
-var MeshGatewayRoute TargetRefKind = "MeshGatewayRoute"
-var MeshHTTPRoute TargetRefKind = "MeshHTTPRoute"
+var (
+	Mesh              TargetRefKind = "Mesh"
+	MeshSubset        TargetRefKind = "MeshSubset"
+	MeshService       TargetRefKind = "MeshService"
+	MeshServiceSubset TargetRefKind = "MeshServiceSubset"
+	MeshGatewayRoute  TargetRefKind = "MeshGatewayRoute"
+)
 
 var order = map[TargetRefKind]int{
 	Mesh:              1,
@@ -16,7 +17,6 @@ var order = map[TargetRefKind]int{
 	MeshService:       3,
 	MeshServiceSubset: 4,
 	MeshGatewayRoute:  5,
-	MeshHTTPRoute:     6,
 }
 
 func (k TargetRefKind) Less(o TargetRefKind) bool {
@@ -26,15 +26,14 @@ func (k TargetRefKind) Less(o TargetRefKind) bool {
 // TargetRef defines structure that allows attaching policy to various objects
 type TargetRef struct {
 	// Kind of the referenced resource
-	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshService;MeshServiceSubset;MeshGatewayRoute;MeshHTTPRoute
+	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshService;MeshServiceSubset;MeshGatewayRoute
 	Kind TargetRefKind `json:"kind,omitempty"`
-	// Name of the referenced resource
+	// Name of the referenced resource. Can only be used with kinds: `MeshService`,
+	// `MeshServiceSubset` and `MeshGatewayRoute`
 	Name string `json:"name,omitempty"`
-	// Tags are used with MeshSubset and MeshServiceSubset to define a subset of
-	// proxies
+	// Tags used to select a subset of proxies by tags. Can only be used with kinds
+	// `MeshSubset` and `MeshServiceSubset`
 	Tags map[string]string `json:"tags,omitempty"`
-	// Mesh is used with MeshService and MeshServiceSubset to identify the service
-	// from another mesh. Could be useful when implementing policies with
-	// cross-mesh support.
+	// Mesh is reserved for future use to identify cross mesh resources.
 	Mesh string `json:"mesh,omitempty"`
 }

@@ -48,8 +48,6 @@ func ValidateTargetRef(
 		case common_proto.MeshGatewayRoute:
 			verr.Add(requiredField("name", ref.Name, refKind))
 			verr.Add(disallowedField("mesh", ref.Mesh, refKind))
-		case common_proto.MeshHTTPRoute:
-			verr.AddViolation("kind", fmt.Sprintf("%v is not yet supported", refKind))
 		}
 	}
 	return verr
