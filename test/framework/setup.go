@@ -557,7 +557,9 @@ func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 			serviceAddress = fmt.Sprintf(`    serviceAddress: %s`, opts.serviceAddress)
 		}
 
-		args = append(args, "--port", "8080")
+		if args[1] != "grpc" { // grpc client does not have port
+			args = append(args, "--port", "8080")
+		}
 		appYaml := fmt.Sprintf(`
 type: Dataplane
 mesh: %s
