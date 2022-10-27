@@ -30,7 +30,7 @@ func newGettersCmd(rootArgs *args) *cobra.Command {
 
 			outPath := filepath.Join(filepath.Dir(policyPath), "zz_generated.getters.go")
 			return save.GoTemplate(gettersTemplate, struct {
-				Imports map[string]string
+				Imports []string
 				Getters []*parse.Getter
 				Package string
 			}{
@@ -48,25 +48,16 @@ var gettersTemplate = template.Must(template.New("getters").Parse(
 	`package {{.Package}}
 {{with .Imports}}
 import (
-  {{- range $key, $value := . -}}
-  {{$key}} "{{$value}}"
-  {{end -}}
+  {{ range $idx, $value := . -}}
+  {{$value}}
+  {{end}}
 )
 {{end}}
 {{range .Getters}}
-{{if .PtrField}}
-func ({{.ReceiverVar}} *{{.ReceiverType}}) Get{{.FieldName}}() *{{.FieldType}} {
-  if {{.ReceiverVar}} == nil {
-    return {{.ZeroValue}}
-  }
-  return {{.ReceiverVar}}.{{.FieldName}}
-}
-{{else}}
 func ({{.ReceiverVar}} *{{.ReceiverType}}) Get{{.FieldName}}() {{.FieldType}} {
   if {{.ReceiverVar}} == nil {
     return {{.ZeroValue}}
   }
   return {{.ReceiverVar}}.{{.FieldName}}
 }
-{{end}}
 {{end}}`))
