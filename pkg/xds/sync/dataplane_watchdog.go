@@ -191,10 +191,11 @@ func (d *DataplaneWatchdog) getEnvoyAdminMTLS(ctx context.Context, address strin
 			CaPEM:      caPair.CertPEM,
 			ServerPair: serverPair,
 		}
-		// cache the Envoy Admin MTLS, so we
+		// cache the Envoy Admin MTLS and dp address, so we
 		// 1) don't have to do I/O on every sync
 		// 2) have a stable certs = stable Envoy config
 		// This means that if we want to change Envoy Admin CA, we need to restart all CP instances.
+		// Additionally, we need to trigger cert generation when DP address has changed without DP reconnection.
 		d.envoyAdminMTLS = &envoyAdminMTLS
 		d.dpAddress = address
 	}
