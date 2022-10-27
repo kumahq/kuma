@@ -95,16 +95,16 @@ func DefaultDataplaneWatchdogFactory(
 	)
 
 	deps := DataplaneWatchdogDependencies{
-		dataplaneProxyBuilder: dataplaneProxyBuilder,
-		dataplaneReconciler:   dataplaneReconciler,
-		ingressProxyBuilder:   ingressProxyBuilder,
-		ingressReconciler:     ingressReconciler,
-		egressProxyBuilder:    egressProxyBuilder,
-		egressReconciler:      egressReconciler,
-		envoyCpCtx:            envoyCpCtx,
-		meshCache:             rt.MeshCache(),
-		metadataTracker:       metadataTracker,
-		resManager:            rt.ReadOnlyResourceManager(),
+		DataplaneProxyBuilder: dataplaneProxyBuilder,
+		DataplaneReconciler:   dataplaneReconciler,
+		IngressProxyBuilder:   ingressProxyBuilder,
+		IngressReconciler:     ingressReconciler,
+		EgressProxyBuilder:    egressProxyBuilder,
+		EgressReconciler:      egressReconciler,
+		EnvoyCpCtx:            envoyCpCtx,
+		MeshCache:             rt.MeshCache(),
+		MetadataTracker:       metadataTracker,
+		ResManager:            rt.ReadOnlyResourceManager(),
 	}
 	return NewDataplaneWatchdogFactory(
 		xdsMetrics,
