@@ -105,6 +105,6 @@ spec:
 `)
 
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("policies could be created only in %s", Config.KumaNamespace)))
+		Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("policy can only be created in the system namespace:%s", Config.KumaNamespace)))
 	})
 }
