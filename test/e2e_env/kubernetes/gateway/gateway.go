@@ -222,12 +222,15 @@ spec:
 					testserver.WithEchoArgs("echo", "--instance", "es-echo-server"),
 				)).
 				Install(YamlK8s(externalService)).
-				Install(YamlK8s(route("es-echo-server", "/external-service", "external-service"))).
 				Setup(env.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should proxy to service via HTTP", func() {
+			route := route("es-echo-server", "/external-service", "external-service")
+			setup := NewClusterSetup().Install(YamlK8s(route))
+			Expect(setup.Setup(env.Cluster)).To(Succeed())
+
 			Eventually(func(g Gomega) {
 				response, err := client.CollectResponse(
 					env.Cluster, "demo-client",
@@ -239,6 +242,50 @@ spec:
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.Instance).To(Equal("es-echo-server"))
 			}, "30s", "1s").Should(Succeed())
+
+			Expect(NewClusterSetup().Install(DeleteYamlK8s(route)).Setup(env.Cluster)).To(Succeed())
+		})
+
+		It("should handle external-service excluded by tags", func() {
+			route := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshGatewayRoute
+metadata:
+  name: %s
+mesh: simple-gateway
+spec:
+  selectors:
+  - match:
+      kuma.io/service: simple-gateway
+  conf:
+    http:
+      rules:
+      - matches:
+        - path:
+            match: PREFIX
+            value: %s
+        backends:
+        - destination:
+            kuma.io/service: %s
+            nonexistent: tag
+`, "es-echo-server-broken", "/external-service", "external-service")
+
+			setup := NewClusterSetup().Install(YamlK8s(route))
+			Expect(setup.Setup(env.Cluster)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				response, err := client.CollectFailure(
+					env.Cluster, "demo-client",
+					"http://simple-gateway.simple-gateway:8080/external-service",
+					client.WithHeader("host", "example.kuma.io"),
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(503))
+			}, "30s", "1s").Should(Succeed())
+
+			Expect(NewClusterSetup().Install(DeleteYamlK8s(route)).Setup(env.Cluster)).To(Succeed())
 		})
 	})
 }
