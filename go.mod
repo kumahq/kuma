@@ -77,7 +77,7 @@ require (
 	sigs.k8s.io/testing_frameworks v0.1.2
 )
 
-require golang.org/x/tools v0.2.0
+require golang.org/x/tools v0.2.0 // indirect
 
 require (
 	cloud.google.com/go/compute v1.7.0 // indirect

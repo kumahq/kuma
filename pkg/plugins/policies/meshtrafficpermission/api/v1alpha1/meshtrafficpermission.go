@@ -13,9 +13,7 @@ type MeshTrafficPermission struct {
 	// defined inplace.
 	TargetRef common_api.TargetRef `json:"targetRef,omitempty"`
 	// From list makes a match between clients and corresponding configurations
-	// +optional
-	// +nullable
-	From []From `json:"from"`
+	From []From `json:"from,omitempty"`
 }
 
 type From struct {

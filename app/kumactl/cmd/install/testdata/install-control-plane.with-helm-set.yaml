@@ -608,7 +608,6 @@ spec:
                           type: object
                       type: object
                   type: object
-                nullable: true
                 type: array
               targetRef:
                 description: TargetRef is a reference to the resource the policy takes
@@ -1723,7 +1722,6 @@ spec:
                           type: object
                       type: object
                   type: object
-                nullable: true
                 type: array
               targetRef:
                 description: TargetRef is a reference to the resource the policy takes
@@ -1850,7 +1848,6 @@ spec:
                           type: object
                       type: object
                   type: object
-                nullable: true
                 type: array
             type: object
         type: object

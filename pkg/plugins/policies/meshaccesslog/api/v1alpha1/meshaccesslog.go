@@ -13,13 +13,9 @@ type MeshAccessLog struct {
 	// defined inplace.
 	TargetRef common_api.TargetRef `json:"targetRef,omitempty"`
 	// To list makes a match between the consumed services and corresponding configurations
-	// +optional
-	// +nullable
-	To []To `json:"to"`
+	To []To `json:"to,omitempty"`
 	// From list makes a match between clients and corresponding configurations
-	// +optional
-	// +nullable
-	From []From `json:"from"`
+	From []From `json:"from,omitempty"`
 }
 
 type To struct {

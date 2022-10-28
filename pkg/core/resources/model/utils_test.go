@@ -43,8 +43,7 @@ var _ = Describe("Resource Utils", func() {
         "backends": []
       }
     }
-  ],
-  "to": null
+  ]
 }
 `))
 		})
