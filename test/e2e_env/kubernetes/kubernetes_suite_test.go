@@ -57,7 +57,7 @@ var _ = SynchronizedBeforeSuite(
 					}),
 					WithEgress(),
 				))
-		}, "30s", "3s").Should(Succeed())
+		}, "90s", "3s").Should(Succeed())
 		portFwd := env.Cluster.GetKuma().(*K8sControlPlane).PortFwd()
 
 		bytes, err := json.Marshal(portFwd)
