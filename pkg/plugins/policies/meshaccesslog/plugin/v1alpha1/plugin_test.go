@@ -123,7 +123,7 @@ var _ = Describe("MeshAccessLog", func() {
 					{
 						Subset: core_xds.Subset{},
 						Conf: &api.Conf{
-							Backends: []*api.Backend{{
+							Backends: []api.Backend{{
 								File: &api.FileBackend{
 									Format: &api.Format{
 										Plain: "",
@@ -199,7 +199,7 @@ var _ = Describe("MeshAccessLog", func() {
 					{
 						Subset: core_xds.Subset{},
 						Conf: &api.Conf{
-							Backends: []*api.Backend{{
+							Backends: []api.Backend{{
 								File: &api.FileBackend{
 									Format: &api.Format{
 										Plain: "",
@@ -270,7 +270,7 @@ var _ = Describe("MeshAccessLog", func() {
 							Value: "other",
 						}},
 						Conf: &api.Conf{
-							Backends: []*api.Backend{{
+							Backends: []api.Backend{{
 								File: &api.FileBackend{
 									Format: &api.Format{
 										Plain: "",
@@ -344,7 +344,7 @@ var _ = Describe("MeshAccessLog", func() {
 					{Address: "127.0.0.1", Port: 17777}: {{
 						Subset: core_xds.Subset{},
 						Conf: &api.Conf{
-							Backends: []*api.Backend{{
+							Backends: []api.Backend{{
 								File: &api.FileBackend{
 									Format: &api.Format{
 										Plain: "",
@@ -507,7 +507,7 @@ var _ = Describe("MeshAccessLog", func() {
 					{
 						Subset: core_xds.Subset{},
 						Conf: &api.Conf{
-							Backends: []*api.Backend{{
+							Backends: []api.Backend{{
 								File: &api.FileBackend{
 									Format: &api.Format{
 										Plain: "",

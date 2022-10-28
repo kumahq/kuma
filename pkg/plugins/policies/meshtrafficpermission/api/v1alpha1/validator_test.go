@@ -17,7 +17,7 @@ var _ = Describe("MeshTrafficPermission", func() {
 				mtp := meshtrafficpermissions_proto.NewMeshTrafficPermissionResource()
 
 				// when
-				err := core_model.FromYAML([]byte(mtpYAML), mtp.Spec)
+				err := core_model.FromYAML([]byte(mtpYAML), &mtp.Spec)
 				Expect(err).ToNot(HaveOccurred())
 				// and
 				verr := mtp.Validate()
@@ -109,7 +109,7 @@ from:
 				mtp := meshtrafficpermissions_proto.NewMeshTrafficPermissionResource()
 
 				// when
-				err := core_model.FromYAML([]byte(given.inputYaml), mtp.Spec)
+				err := core_model.FromYAML([]byte(given.inputYaml), &mtp.Spec)
 				Expect(err).ToNot(HaveOccurred())
 				// and
 				verr := mtp.Validate()
@@ -171,7 +171,7 @@ from:
 `,
 				expected: `
 violations:
-  - field: spec.from[0].default
+  - field: spec.from[0].default.action
     message: must be defined 
 `,
 			}),

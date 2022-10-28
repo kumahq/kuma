@@ -19,19 +19,19 @@ func MeshTrace() *MeshTraceBuilder {
 				Name: "mtp-1",
 			},
 			Spec: &meshtrace_proto.MeshTrace{
-				Default: &meshtrace_proto.Conf{},
+				Default: meshtrace_proto.Conf{},
 			},
 		},
 	}
 }
 
-func (m *MeshTraceBuilder) WithTargetRef(targetRef *common_proto.TargetRef) *MeshTraceBuilder {
+func (m *MeshTraceBuilder) WithTargetRef(targetRef common_proto.TargetRef) *MeshTraceBuilder {
 	m.res.Spec.TargetRef = targetRef
 	return m
 }
 
 func (m *MeshTraceBuilder) WithZipkinBackend(zipkin *meshtrace_proto.ZipkinBackend) *MeshTraceBuilder {
-	m.res.Spec.Default.Backends = []*meshtrace_proto.Backend{
+	m.res.Spec.Default.Backends = []meshtrace_proto.Backend{
 		{
 			Zipkin: zipkin,
 		},

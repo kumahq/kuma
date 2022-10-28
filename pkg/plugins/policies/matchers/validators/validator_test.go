@@ -23,8 +23,8 @@ var _ = Describe("TargetRef Validator", func() {
 		func(given testCase) {
 			// given
 			Expect(given.expected).To(BeEmpty())
-			targetRef := &common_proto.TargetRef{}
-			err := yaml.Unmarshal([]byte(given.inputYaml), targetRef)
+			targetRef := common_proto.TargetRef{}
+			err := yaml.Unmarshal([]byte(given.inputYaml), &targetRef)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -129,8 +129,8 @@ name: backend-gateway-route
 	DescribeTable("should return as much individual errors as possible with",
 		func(given testCase) {
 			// given
-			targetRef := &common_proto.TargetRef{}
-			err := yaml.Unmarshal([]byte(given.inputYaml), targetRef)
+			targetRef := common_proto.TargetRef{}
+			err := yaml.Unmarshal([]byte(given.inputYaml), &targetRef)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when

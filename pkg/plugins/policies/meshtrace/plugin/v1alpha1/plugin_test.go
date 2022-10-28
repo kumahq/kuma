@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -109,15 +108,13 @@ var _ = Describe("MeshTrace", func() {
 					{
 						Subset: []core_xds.Tag{},
 						Conf: &api.Conf{
-							Sampling: &api.Sampling{
-								Random: &common_api.UInt32Value{
-									Value: 50,
-								},
+							Sampling: api.Sampling{
+								Random: core_model.PtrTo(uint32(50)),
 							},
-							Backends: []*api.Backend{{
+							Backends: []api.Backend{{
 								Zipkin: &api.ZipkinBackend{
 									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
-									SharedSpanContext: &common_api.BoolValue{Value: true},
+									SharedSpanContext: core_model.PtrTo(true),
 									ApiVersion:        "httpProto",
 									TraceId128Bit:     true,
 								},
@@ -210,12 +207,10 @@ var _ = Describe("MeshTrace", func() {
 					{
 						Subset: []core_xds.Tag{},
 						Conf: &api.Conf{
-							Sampling: &api.Sampling{
-								Random: &common_api.UInt32Value{
-									Value: 50,
-								},
+							Sampling: api.Sampling{
+								Random: core_model.PtrTo(uint32(50)),
 							},
-							Backends: []*api.Backend{{
+							Backends: []api.Backend{{
 								Datadog: &api.DatadogBackend{
 									Url:          "http://ingest.datadog.eu:8126",
 									SplitService: true,

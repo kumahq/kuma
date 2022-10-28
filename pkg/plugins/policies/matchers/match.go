@@ -135,7 +135,7 @@ func singleItemRules(matchedPolicies []core_model.Resource) (core_xds.Rules, err
 }
 
 // inboundsSelectedByTargetRef returns a list of inbounds of DPP that are selected by the targetRef
-func inboundsSelectedByTargetRef(tr *common_proto.TargetRef, dpp *core_mesh.DataplaneResource, gateway *core_mesh.MeshGatewayResource) []core_xds.InboundListener {
+func inboundsSelectedByTargetRef(tr common_proto.TargetRef, dpp *core_mesh.DataplaneResource, gateway *core_mesh.MeshGatewayResource) []core_xds.InboundListener {
 	switch tr.Kind {
 	case common_proto.Mesh:
 		return inboundsSelectedByTags(nil, dpp, gateway)

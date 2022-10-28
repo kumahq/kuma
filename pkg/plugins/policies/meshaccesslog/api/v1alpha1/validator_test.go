@@ -17,7 +17,7 @@ var _ = Describe("MeshAccessLog", func() {
 				meshAccessLog := meshaccesslog_proto.NewMeshAccessLogResource()
 
 				// when
-				err := core_model.FromYAML([]byte(mtpYAML), meshAccessLog.Spec)
+				err := core_model.FromYAML([]byte(mtpYAML), &meshAccessLog.Spec)
 				Expect(err).ToNot(HaveOccurred())
 				// and
 				verr := meshAccessLog.Validate()
@@ -86,7 +86,7 @@ from:
 				meshAccessLog := meshaccesslog_proto.NewMeshAccessLogResource()
 
 				// when
-				err := core_model.FromYAML([]byte(given.inputYaml), meshAccessLog.Spec)
+				err := core_model.FromYAML([]byte(given.inputYaml), &meshAccessLog.Spec)
 				Expect(err).ToNot(HaveOccurred())
 				// and
 				verr := meshAccessLog.Validate()
@@ -289,7 +289,7 @@ to:
 `,
 				expected: `
 violations:
-- field: spec.to[0].default
+- field: spec.to[0].default.backends
   message: 'must be defined'`,
 			}),
 			Entry("'default' not defined in from", testCase{
@@ -302,7 +302,7 @@ from:
 `,
 				expected: `
 violations:
-- field: spec.from[0].default
+- field: spec.from[0].default.backends
   message: 'must be defined'`,
 			}),
 			Entry("'address' not valid", testCase{

@@ -14,15 +14,15 @@ func (r *MeshAccessLogResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.GetTargetRef()))
-	if len(r.Spec.GetTo()) == 0 && len(r.Spec.GetFrom()) == 0 {
+	if len(r.Spec.To) == 0 && len(r.Spec.From) == 0 {
 		verr.AddViolationAt(path, "at least one of 'from', 'to' has to be defined")
 	}
-	verr.AddErrorAt(path, validateTo(r.Spec.GetTo()))
-	verr.AddErrorAt(path, validateFrom(r.Spec.GetFrom()))
+	verr.AddErrorAt(path, validateTo(r.Spec.To))
+	verr.AddErrorAt(path, validateFrom(r.Spec.From))
 	verr.AddErrorAt(path, validateIncompatibleCombinations(r.Spec))
 	return verr.OrNil()
 }
-func validateTop(targetRef *common_proto.TargetRef) validators.ValidationError {
+func validateTop(targetRef common_proto.TargetRef) validators.ValidationError {
 	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
 		SupportedKinds: []common_proto.TargetRefKind{
 			common_proto.Mesh,
@@ -34,7 +34,7 @@ func validateTop(targetRef *common_proto.TargetRef) validators.ValidationError {
 	})
 	return targetRefErr
 }
-func validateFrom(from []*From) validators.ValidationError {
+func validateFrom(from []From) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, fromItem := range from {
 		path := validators.RootedAt("from").Index(idx)
@@ -45,15 +45,11 @@ func validateFrom(from []*From) validators.ValidationError {
 		}))
 
 		defaultField := path.Field("default")
-		if fromItem.GetDefault() == nil {
-			verr.AddViolationAt(defaultField, validators.MustBeDefined)
-		} else {
-			verr.AddErrorAt(defaultField, validateDefault(fromItem.Default))
-		}
+		verr.AddErrorAt(defaultField, validateDefault(fromItem.Default))
 	}
 	return verr
 }
-func validateTo(to []*To) validators.ValidationError {
+func validateTo(to []To) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
@@ -65,45 +61,44 @@ func validateTo(to []*To) validators.ValidationError {
 		}))
 
 		defaultField := path.Field("default")
-		if toItem.GetDefault() == nil {
-			verr.AddViolationAt(defaultField, validators.MustBeDefined)
-		} else {
-			verr.AddErrorAt(defaultField, validateDefault(toItem.Default))
-		}
+		verr.AddErrorAt(defaultField, validateDefault(toItem.Default))
 	}
 	return verr
 }
 
-func validateDefault(conf *Conf) validators.ValidationError {
+func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
+	if conf.Backends == nil {
+		verr.AddViolation("backends", validators.MustBeDefined)
+	}
 	for backendIdx, backend := range conf.Backends {
 		verr.AddErrorAt(validators.RootedAt("backends").Index(backendIdx), validateBackend(backend))
 	}
 	return verr
 }
 
-func validateBackend(backend *Backend) validators.ValidationError {
+func validateBackend(backend Backend) validators.ValidationError {
 	var verr validators.ValidationError
 
-	if (backend.GetFile() != nil) == (backend.GetTcp() != nil) {
+	if (backend.File != nil) == (backend.Tcp != nil) {
 		verr.AddViolation("", validators.MustHaveOnlyOne("backend", "tcp", "file"))
 	}
 
-	verr.AddErrorAt(validators.RootedAt("file").Field("format"), validateFormat(backend.GetFile().GetFormat()))
-	verr.AddErrorAt(validators.RootedAt("tcp").Field("format"), validateFormat(backend.GetTcp().GetFormat()))
-
-	if backend.GetFile() != nil {
-		isFilePath, _ := govalidator.IsFilePath(backend.GetFile().GetPath())
+	if file := backend.File; file != nil {
+		verr.AddErrorAt(validators.RootedAt("file").Field("format"), validateFormat(file.Format))
+		isFilePath, _ := govalidator.IsFilePath(file.Path)
 		if !isFilePath {
 			verr.AddViolationAt(validators.RootedAt("file").Field("path"), `file backend requires a valid path`)
 		}
 	}
 
-	if backend.GetTcp() != nil {
-		if !govalidator.IsURL(backend.GetTcp().GetAddress()) {
+	if tcp := backend.Tcp; tcp != nil {
+		verr.AddErrorAt(validators.RootedAt("tcp").Field("format"), validateFormat(tcp.Format))
+		if !govalidator.IsURL(tcp.Address) {
 			verr.AddViolationAt(validators.RootedAt("tcp").Field("address"), `tcp backend requires valid address`)
 		}
 	}
+
 	return verr
 }
 
@@ -113,20 +108,20 @@ func validateFormat(format *Format) validators.ValidationError {
 		return verr
 	}
 
-	if (format.GetPlain() != "") == (format.GetJson() != nil) {
+	if (format.Plain != "") == (format.Json != nil) {
 		verr.AddViolation("", validators.MustHaveOnlyOne("format", "plain", "json"))
 	}
 
-	if format.GetJson() != nil {
-		for idx, field := range format.GetJson() {
+	if format.Json != nil {
+		for idx, field := range format.Json {
 			path := validators.RootedAt("json").Index(idx)
-			if field.GetKey() == "" {
+			if field.Key == "" {
 				verr.AddViolationAt(path.Field("key"), `key cannot be empty`)
 			}
-			if field.GetValue() == "" {
+			if field.Value == "" {
 				verr.AddViolationAt(path.Field("value"), `value cannot be empty`)
 			}
-			if !govalidator.IsJSON(fmt.Sprintf(`{"%s": "%s"}`, field.GetKey(), field.GetValue())) {
+			if !govalidator.IsJSON(fmt.Sprintf(`{"%s": "%s"}`, field.Key, field.Value)) {
 				verr.AddViolationAt(path, `is not a valid JSON object`)
 			}
 		}
@@ -137,7 +132,7 @@ func validateFormat(format *Format) validators.ValidationError {
 func validateIncompatibleCombinations(spec *MeshAccessLog) validators.ValidationError {
 	var verr validators.ValidationError
 	targetRef := spec.GetTargetRef().Kind
-	if targetRef == common_proto.MeshGatewayRoute && len(spec.GetTo()) > 0 {
+	if targetRef == common_proto.MeshGatewayRoute && len(spec.To) > 0 {
 		verr.AddViolation("to", `cannot use "to" when "targetRef" is "MeshGatewayRoute" - there is no outbound`)
 	}
 	return verr

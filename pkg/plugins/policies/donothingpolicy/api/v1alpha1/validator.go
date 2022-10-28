@@ -9,15 +9,15 @@ import (
 func (r *DoNothingPolicyResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.GetTargetRef()))
-	if len(r.Spec.GetTo()) == 0 && len(r.Spec.GetFrom()) == 0 {
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
+	if len(r.Spec.To) == 0 && len(r.Spec.From) == 0 {
 		verr.AddViolationAt(path, "at least one of 'from', 'to' has to be defined")
 	}
-	verr.AddErrorAt(path, validateTo(r.Spec.GetTo()))
-	verr.AddErrorAt(path, validateFrom(r.Spec.GetFrom()))
+	verr.AddErrorAt(path, validateTo(r.Spec.To))
+	verr.AddErrorAt(path, validateFrom(r.Spec.From))
 	return verr.OrNil()
 }
-func validateTop(targetRef *common_proto.TargetRef) validators.ValidationError {
+func validateTop(targetRef common_proto.TargetRef) validators.ValidationError {
 	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
 		SupportedKinds: []common_proto.TargetRefKind{
 			// TODO add supported TargetRef kinds for this policy
@@ -25,7 +25,7 @@ func validateTop(targetRef *common_proto.TargetRef) validators.ValidationError {
 	})
 	return targetRefErr
 }
-func validateFrom(from []*From) validators.ValidationError {
+func validateFrom(from []From) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, fromItem := range from {
 		path := validators.RootedAt("from").Index(idx)
@@ -34,12 +34,12 @@ func validateFrom(from []*From) validators.ValidationError {
 				// TODO add supported TargetRef for 'from' item
 			},
 		}))
-		verr.AddErrorAt(path.Field("default"), validateDefault(fromItem.GetDefault()))
+		verr.AddErrorAt(path.Field("default"), validateDefault(fromItem.Default))
 	}
 	return verr
 }
 
-func validateTo(to []*To) validators.ValidationError {
+func validateTo(to []To) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
@@ -50,16 +50,12 @@ func validateTo(to []*To) validators.ValidationError {
 		}))
 
 		defaultField := path.Field("default")
-		if toItem.GetDefault() == nil {
-			verr.AddViolationAt(defaultField, "must be defined")
-		} else {
-			verr.AddErrorAt(defaultField, validateDefault(toItem.Default))
-		}
+		verr.AddErrorAt(defaultField, validateDefault(toItem.Default))
 	}
 	return verr
 }
 
-func validateDefault(conf *Conf) validators.ValidationError {
+func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
 	// TODO add default conf validation
 	return verr

@@ -79,8 +79,7 @@ generate/kumapolicy-gen/%: generate/dirs/%
 	$(POLICY_GEN) k8s-resource --plugin-dir $(POLICIES_DIR)/$* && \
 	$(POLICY_GEN) openapi --plugin-dir $(POLICIES_DIR)/$* --openapi-template-path=$(TOOLS_DIR)/policy-gen/templates/endpoints.yaml && \
 	$(POLICY_GEN) plugin-file --plugin-dir $(POLICIES_DIR)/$* && \
-	$(POLICY_GEN) helpers --plugin-dir $(POLICIES_DIR)/$* && \
-	$(POLICY_GEN) getters --plugin-dir $(POLICIES_DIR)/$*
+	$(POLICY_GEN) helpers --plugin-dir $(POLICIES_DIR)/$*
 
 generate/dirs/%:
 	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \

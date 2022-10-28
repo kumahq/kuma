@@ -30,7 +30,7 @@ type Configurer struct {
 	TrafficDirection   envoy.TrafficDirection
 	SourceService      string
 	DestinationService string
-	Backend            *api.Backend
+	Backend            api.Backend
 	Dataplane          *core_mesh.DataplaneResource
 }
 
@@ -61,18 +61,18 @@ func (c *Configurer) envoyAccessLog(defaultFormat string) (*envoy_accesslog.Acce
 	var format *api.Format
 	var logPath string
 
-	if f := c.Backend.GetFile(); f != nil {
-		format = f.GetFormat()
+	if f := c.Backend.File; f != nil {
+		format = f.Format
 		logPath = f.Path
-	} else if f := c.Backend.GetTcp(); f != nil {
-		format = f.GetFormat()
+	} else if f := c.Backend.Tcp; f != nil {
+		format = f.Format
 		logPath = envoy.AccessLogSocketName(c.Dataplane.Meta.GetName(), c.Mesh)
 	}
 
 	var substitutionFormatString envoy_core.SubstitutionFormatString
 
-	if len(format.GetJson()) == 0 {
-		formatString := format.GetPlain()
+	if len(format.Json) == 0 {
+		formatString := format.Plain
 		if formatString == "" {
 			formatString = defaultFormat
 		}
@@ -83,7 +83,7 @@ func (c *Configurer) envoyAccessLog(defaultFormat string) (*envoy_accesslog.Acce
 			return nil, err
 		}
 
-		if file := c.Backend.GetFile(); file != nil {
+		if file := c.Backend.File; file != nil {
 			substitutionFormatString = envoy_core.SubstitutionFormatString{
 				Format: &envoy_core.SubstitutionFormatString_TextFormatSource{
 					TextFormatSource: &envoy_core.DataSource{
@@ -93,7 +93,7 @@ func (c *Configurer) envoyAccessLog(defaultFormat string) (*envoy_accesslog.Acce
 					},
 				},
 			}
-		} else if tcp := c.Backend.GetTcp(); tcp != nil {
+		} else if tcp := c.Backend.Tcp; tcp != nil {
 			substitutionFormatString = envoy_core.SubstitutionFormatString{
 				Format: &envoy_core.SubstitutionFormatString_JsonFormat{
 					JsonFormat: &structpb.Struct{
@@ -107,7 +107,7 @@ func (c *Configurer) envoyAccessLog(defaultFormat string) (*envoy_accesslog.Acce
 		}
 	} else {
 		fields := map[string]*structpb.Value{}
-		for _, kv := range format.GetJson() {
+		for _, kv := range format.Json {
 			interpolated, err := c.interpolateKumaVariables(kv.Value)
 			if err != nil {
 				return nil, err
@@ -117,11 +117,11 @@ func (c *Configurer) envoyAccessLog(defaultFormat string) (*envoy_accesslog.Acce
 		}
 
 		var jsonFormat structpb.Struct
-		if file := c.Backend.GetFile(); file != nil {
+		if file := c.Backend.File; file != nil {
 			jsonFormat = structpb.Struct{
 				Fields: fields,
 			}
-		} else if tcp := c.Backend.GetTcp(); tcp != nil {
+		} else if tcp := c.Backend.Tcp; tcp != nil {
 			jsonFormat = structpb.Struct{
 				Fields: map[string]*structpb.Value{
 					"address": structpb.NewStringValue(tcp.Address),

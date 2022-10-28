@@ -9,7 +9,11 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
-func (x *MeshTrace) GetDefaultAsInterface() interface{} {
+func (x *MeshTrace) GetTargetRef() common_api.TargetRef {
+	return x.TargetRef
+}
+
+func (x *MeshTrace) GetDefault() interface{} {
 	return x.Default
 }
 
@@ -26,6 +30,6 @@ type policyItem struct {
 
 var _ core_xds.PolicyItem = &policyItem{}
 
-func (p *policyItem) GetTargetRef() *common_api.TargetRef {
-	return &common_api.TargetRef{Kind: common_api.Mesh}
+func (p *policyItem) GetTargetRef() common_api.TargetRef {
+	return common_api.TargetRef{Kind: common_api.Mesh}
 }

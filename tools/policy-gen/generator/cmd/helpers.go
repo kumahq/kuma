@@ -51,36 +51,48 @@ var helpersTemplate = template.Must(template.New("missingkey=error").Parse(
 package {{.version}}
 
 import (
-{{ if .generateGetPolicyItem}}
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-{{- end}}
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
+func (x *{{.name}}) GetTargetRef() common_api.TargetRef {
+	return x.TargetRef
+}
+
 {{ if .generateFrom }}
 
-func (x *From) GetDefaultAsInterface() interface{} {
+func (x *From) GetTargetRef() common_api.TargetRef {
+	return x.TargetRef
+}
+
+func (x *From) GetDefault() interface{} {
 	return x.Default
 }
 
 func (x *{{.name}}) GetFromList() []core_xds.PolicyItem {
 	var result []core_xds.PolicyItem
-	for _, item := range x.From {
-		result = append(result, item)
+	for i := 0; i < len(x.From); i++ {
+		item := x.From[i]
+		result = append(result, &item)
 	}
 	return result
 }
 {{- end }}
 {{ if .generateTo }}
 
-func (x *To) GetDefaultAsInterface() interface{} {
+func (x *To) GetTargetRef() common_api.TargetRef {
+	return x.TargetRef
+}
+
+func (x *To) GetDefault() interface{} {
 	return x.Default
 }
 
 func (x *{{.name}}) GetToList() []core_xds.PolicyItem {
 	var result []core_xds.PolicyItem
-	for _, item := range x.To {
-		result = append(result, item)
+	for i := 0; i < len(x.To); i++ {
+		item := x.To[i]
+		result = append(result, &item)
 	}
 	return result
 }
@@ -88,7 +100,7 @@ func (x *{{.name}}) GetToList() []core_xds.PolicyItem {
 
 {{ if .generateGetPolicyItem}}
 
-func (x *{{.name}}) GetDefaultAsInterface() interface{} {
+func (x *{{.name}}) GetDefault() interface{} {
 	return x.Default
 }
 
@@ -105,8 +117,8 @@ type policyItem struct {
 
 var _ core_xds.PolicyItem = &policyItem{}
 
-func (p *policyItem) GetTargetRef() *common_api.TargetRef {
-	return &common_api.TargetRef{Kind: common_api.Mesh}
+func (p *policyItem) GetTargetRef() common_api.TargetRef {
+	return common_api.TargetRef{Kind: common_api.Mesh}
 }
 {{- end }}
 `))

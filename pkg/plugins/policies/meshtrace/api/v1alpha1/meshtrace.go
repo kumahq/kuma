@@ -11,9 +11,9 @@ type MeshTrace struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
 	// defined inplace.
-	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
+	TargetRef common_api.TargetRef `json:"targetRef,omitempty"`
 	// MeshTrace configuration.
-	Default *Conf `json:"default,omitempty"`
+	Default Conf `json:"default,omitempty"`
 }
 
 type Conf struct {
@@ -24,16 +24,16 @@ type Conf struct {
 	// array for now.
 	// +optional
 	// +nullable
-	Backends []*Backend `json:"backends"`
+	Backends []Backend `json:"backends"`
 	// Sampling configuration.
 	// Sampling is the process by which a decision is made on whether to
 	// process/export a span or not.
-	Sampling *Sampling `json:"sampling,omitempty"`
+	Sampling Sampling `json:"sampling,omitempty"`
 	// Custom tags configuration. You can add custom tags to traces based on
 	// headers or literal values.
 	// +optional
 	// +nullable
-	Tags []*Tag `json:"tags"`
+	Tags []Tag `json:"tags"`
 }
 
 // Only one of zipkin or datadog can be used.
@@ -57,7 +57,7 @@ type ZipkinBackend struct {
 	// Determines whether client and server spans will share the same span
 	// context. Default: true.
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L63
-	SharedSpanContext *common_api.BoolValue `json:"sharedSpanContext,omitempty"`
+	SharedSpanContext *bool `json:"sharedSpanContext,omitempty"`
 }
 
 // Datadog tracing backend configuration.
@@ -83,17 +83,17 @@ type Sampling struct {
 	// the appropriate headers to be force traced. Default: 100% Mirror of
 	// overall_sampling in Envoy
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L142-L150
-	Overall *common_api.UInt32Value `json:"overall,omitempty"`
+	Overall *uint32 `json:"overall,omitempty"`
 	// Target percentage of requests that will be force traced if the
 	// 'x-client-trace-id' header is set. Default: 100% Mirror of
 	// client_sampling in Envoy
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L127-L133
-	Client *common_api.UInt32Value `json:"client,omitempty"`
+	Client *uint32 `json:"client,omitempty"`
 	// Target percentage of requests that will be randomly selected for trace
 	// generation, if not requested by the client or not forced. Default: 100%
 	// Mirror of random_sampling in Envoy
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L135-L140
-	Random *common_api.UInt32Value `json:"random,omitempty"`
+	Random *uint32 `json:"random,omitempty"`
 }
 
 // Custom tags configuration.

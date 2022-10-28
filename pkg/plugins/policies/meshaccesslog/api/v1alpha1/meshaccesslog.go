@@ -11,39 +11,39 @@ type MeshAccessLog struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
 	// defined inplace.
-	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
+	TargetRef common_api.TargetRef `json:"targetRef,omitempty"`
 	// To list makes a match between the consumed services and corresponding configurations
 	// +optional
 	// +nullable
-	To []*To `json:"to"`
+	To []To `json:"to"`
 	// From list makes a match between clients and corresponding configurations
 	// +optional
 	// +nullable
-	From []*From `json:"from"`
+	From []From `json:"from"`
 }
 
 type To struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// destinations.
-	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
+	TargetRef common_api.TargetRef `json:"targetRef,omitempty"`
 	// Default is a configuration specific to the group of destinations referenced in
 	// 'targetRef'
-	Default *Conf `json:"default,omitempty"`
+	Default Conf `json:"default,omitempty"`
 }
 
 type From struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// clients.
-	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
+	TargetRef common_api.TargetRef `json:"targetRef,omitempty"`
 	// Default is a configuration specific to the group of clients referenced in
 	// 'targetRef'
-	Default *Conf `json:"default,omitempty"`
+	Default Conf `json:"default,omitempty"`
 }
 
 type Conf struct {
 	// +optional
 	// +nullable
-	Backends []*Backend `json:"backends"`
+	Backends []Backend `json:"backends"`
 }
 
 type Backend struct {
@@ -73,7 +73,7 @@ type Format struct {
 	Plain string `json:"plain,omitempty"`
 	// +optional
 	// +nullable
-	Json []*JsonValue `json:"json"`
+	Json []JsonValue `json:"json"`
 }
 
 type JsonValue struct {

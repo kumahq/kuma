@@ -111,19 +111,16 @@ func applyToClusters(rules xds.SingleItemRules, rs *xds.ResourceSet, proxy *xds.
 
 	conf := rawConf.(*api.Conf)
 
-	backend := conf.GetBackends()[0]
-	if backend == nil {
-		return nil
-	}
+	backend := conf.Backends[0]
 
 	var endpoint *xds.Endpoint
 	var provider string
 
-	if backend.GetZipkin() != nil {
-		endpoint = endpointForZipkin(backend.GetZipkin())
+	if backend.Zipkin != nil {
+		endpoint = endpointForZipkin(backend.Zipkin)
 		provider = plugin_xds.ZipkinProviderName
 	} else {
-		endpoint = endpointForDatadog(backend.GetDatadog())
+		endpoint = endpointForDatadog(backend.Datadog)
 		provider = plugin_xds.DatadogProviderName
 	}
 

@@ -33,15 +33,15 @@ func (m *MeshTrafficPermissionBuilder) WithMesh(mesh string) *MeshTrafficPermiss
 	return m
 }
 
-func (m *MeshTrafficPermissionBuilder) WithTargetRef(targetRef *common_proto.TargetRef) *MeshTrafficPermissionBuilder {
+func (m *MeshTrafficPermissionBuilder) WithTargetRef(targetRef common_proto.TargetRef) *MeshTrafficPermissionBuilder {
 	m.res.Spec.TargetRef = targetRef
 	return m
 }
 
-func (m *MeshTrafficPermissionBuilder) AddFrom(targetRef *common_proto.TargetRef, action string) *MeshTrafficPermissionBuilder {
-	m.res.Spec.From = append(m.res.Spec.From, &mtp_proto.From{
+func (m *MeshTrafficPermissionBuilder) AddFrom(targetRef common_proto.TargetRef, action string) *MeshTrafficPermissionBuilder {
+	m.res.Spec.From = append(m.res.Spec.From, mtp_proto.From{
 		TargetRef: targetRef,
-		Default: &mtp_proto.Conf{
+		Default: mtp_proto.Conf{
 			Action: mtp_proto.Action(action),
 		},
 	})

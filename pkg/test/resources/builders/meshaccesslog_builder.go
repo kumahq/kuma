@@ -23,21 +23,21 @@ func MeshAccessLog() *MeshAccessLogBuilder {
 	}
 }
 
-func (m *MeshAccessLogBuilder) WithTargetRef(targetRef *common_proto.TargetRef) *MeshAccessLogBuilder {
+func (m *MeshAccessLogBuilder) WithTargetRef(targetRef common_proto.TargetRef) *MeshAccessLogBuilder {
 	m.res.Spec.TargetRef = targetRef
 	return m
 }
 
-func (m *MeshAccessLogBuilder) AddFrom(targetRef *common_proto.TargetRef, conf *MeshAccessLogConfBuilder) *MeshAccessLogBuilder {
-	m.res.Spec.From = append(m.res.Spec.From, &meshaccesslog_proto.From{
+func (m *MeshAccessLogBuilder) AddFrom(targetRef common_proto.TargetRef, conf *MeshAccessLogConfBuilder) *MeshAccessLogBuilder {
+	m.res.Spec.From = append(m.res.Spec.From, meshaccesslog_proto.From{
 		TargetRef: targetRef,
 		Default:   conf.res,
 	})
 	return m
 }
 
-func (m *MeshAccessLogBuilder) AddTo(targetRef *common_proto.TargetRef, conf *MeshAccessLogConfBuilder) *MeshAccessLogBuilder {
-	m.res.Spec.To = append(m.res.Spec.To, &meshaccesslog_proto.To{
+func (m *MeshAccessLogBuilder) AddTo(targetRef common_proto.TargetRef, conf *MeshAccessLogConfBuilder) *MeshAccessLogBuilder {
+	m.res.Spec.To = append(m.res.Spec.To, meshaccesslog_proto.To{
 		TargetRef: targetRef,
 		Default:   conf.res,
 	})
@@ -53,17 +53,22 @@ func (m *MeshAccessLogBuilder) Build() *meshaccesslog_proto.MeshAccessLogResourc
 
 func MeshAccessLogConf() *MeshAccessLogConfBuilder {
 	return &MeshAccessLogConfBuilder{
-		res: &meshaccesslog_proto.Conf{},
+		res: meshaccesslog_proto.Conf{},
 	}
 }
 
 type MeshAccessLogConfBuilder struct {
-	res *meshaccesslog_proto.Conf
+	res meshaccesslog_proto.Conf
 }
 
 func (m *MeshAccessLogConfBuilder) AddFileBackend(fileBackend *meshaccesslog_proto.FileBackend) *MeshAccessLogConfBuilder {
-	m.res.Backends = append(m.res.Backends, &meshaccesslog_proto.Backend{
+	m.res.Backends = append(m.res.Backends, meshaccesslog_proto.Backend{
 		File: fileBackend,
 	})
+	return m
+}
+
+func (m *MeshAccessLogConfBuilder) AddBackends(bs []meshaccesslog_proto.Backend) *MeshAccessLogConfBuilder {
+	m.res.Backends = bs
 	return m
 }

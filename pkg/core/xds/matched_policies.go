@@ -12,8 +12,8 @@ import (
 )
 
 type PolicyItem interface {
-	GetTargetRef() *common_proto.TargetRef
-	GetDefaultAsInterface() interface{}
+	GetTargetRef() common_proto.TargetRef
+	GetDefault() interface{}
 }
 
 type PolicyItemWithMeta struct {
@@ -23,7 +23,7 @@ type PolicyItemWithMeta struct {
 
 type Policy interface {
 	core_model.ResourceSpec
-	GetTargetRef() *common_proto.TargetRef
+	GetTargetRef() common_proto.TargetRef
 }
 
 type PolicyWithToList interface {

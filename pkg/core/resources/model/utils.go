@@ -92,3 +92,7 @@ func IsEmpty(spec ResourceSpec) bool {
 		return reflect.ValueOf(spec).Elem().IsZero()
 	}
 }
+
+func PtrTo[T any](t T) *T {
+	return &t
+}

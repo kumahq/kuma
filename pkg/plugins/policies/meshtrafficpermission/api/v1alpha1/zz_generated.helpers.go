@@ -5,17 +5,27 @@
 package v1alpha1
 
 import (
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
-func (x *From) GetDefaultAsInterface() interface{} {
+func (x *MeshTrafficPermission) GetTargetRef() common_api.TargetRef {
+	return x.TargetRef
+}
+
+func (x *From) GetTargetRef() common_api.TargetRef {
+	return x.TargetRef
+}
+
+func (x *From) GetDefault() interface{} {
 	return x.Default
 }
 
 func (x *MeshTrafficPermission) GetFromList() []core_xds.PolicyItem {
 	var result []core_xds.PolicyItem
-	for _, item := range x.From {
-		result = append(result, item)
+	for i := 0; i < len(x.From); i++ {
+		item := x.From[i]
+		result = append(result, &item)
 	}
 	return result
 }
