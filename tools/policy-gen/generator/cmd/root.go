@@ -31,7 +31,6 @@ func newRootCmd() *cobra.Command {
 	cmd.AddCommand(newOpenAPI(rootArgs))
 	cmd.AddCommand(newPluginFile(rootArgs))
 	cmd.AddCommand(newHelpers(rootArgs))
-	cmd.AddCommand(newGettersCmd(rootArgs))
 
 	cmd.PersistentFlags().StringVar(&rootArgs.pluginDir, "plugin-dir", "", "path to the policy plugin director")
 	cmd.PersistentFlags().StringVar(&rootArgs.version, "version", "v1alpha1", "policy version")
