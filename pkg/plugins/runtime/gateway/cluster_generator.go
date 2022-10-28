@@ -37,21 +37,24 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 	// an external service. Because the dataplane endpoints happen to be
 	// generated first, the mesh service will have priority.
 	for _, dest := range routeDestinationsMutable(hostInfo.Entries) {
-		matched := match.ExternalService(info.ExternalServices.Items, mesh_proto.TagSelector(dest.Destination))
 		service := dest.Destination[mesh_proto.ServiceTag]
 
 		firstEndpointExternalService := route.HasExternalServiceEndpoint(xdsCtx.Mesh.Resource, info.OutboundEndpoints, *dest)
+
+		matched := match.ExternalService(info.ExternalServices.Items, mesh_proto.TagSelector(dest.Destination))
 
 		// If there is Mesh property ZoneEgress enabled we want always to
 		// direct the traffic through them. The condition is, the mesh must
 		// have mTLS enabled and traffic through zoneEgress is enabled.
 		isDirectExternalService := firstEndpointExternalService && !xdsCtx.Mesh.Resource.ZoneEgressEnabled()
-		isExternalServiceThroughZoneEgress := firstEndpointExternalService && !isDirectExternalService
+		isExternalCluster := isDirectExternalService && len(matched) > 0
+
+		isExternalServiceThroughZoneEgress := firstEndpointExternalService && xdsCtx.Mesh.Resource.ZoneEgressEnabled()
 
 		var r *core_xds.Resource
 		var err error
 
-		if isDirectExternalService {
+		if isExternalCluster {
 			log.V(1).Info("generating external service cluster",
 				"service", service,
 			)
@@ -80,7 +83,7 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 		// reference it.
 		dest.Name = r.Name
 
-		if isDirectExternalService {
+		if isExternalCluster {
 			// External clusters don't get a load assignment.
 			continue
 		}

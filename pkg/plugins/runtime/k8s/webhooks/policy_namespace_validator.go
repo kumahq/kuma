@@ -22,7 +22,7 @@ func (p *PolicyNamespaceValidator) InjectDecoder(decoder *admission.Decoder) err
 
 func (p *PolicyNamespaceValidator) Handle(ctx context.Context, request admission.Request) admission.Response {
 	if request.Namespace != p.SystemNamespace {
-		return admission.Denied(fmt.Sprintf("policies could be created only in %s", p.SystemNamespace))
+		return admission.Denied(fmt.Sprintf("policy can only be created in the system namespace:%s", p.SystemNamespace))
 	}
 	return admission.Allowed("")
 }

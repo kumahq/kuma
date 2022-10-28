@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	"github.com/kumahq/kuma/test/e2e_env/universal/externalservices"
 	"github.com/kumahq/kuma/test/e2e_env/universal/gateway"
+	"github.com/kumahq/kuma/test/e2e_env/universal/grpc"
 	"github.com/kumahq/kuma/test/e2e_env/universal/healthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/universal/inspect"
 	"github.com/kumahq/kuma/test/e2e_env/universal/matching"
@@ -114,3 +115,4 @@ var _ = Describe("Zone Egress", zoneegress.ExternalServices, Ordered)
 var _ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)
 var _ = Describe("Transparent Proxy", transparentproxy.TransparentProxy, Ordered)
 var _ = Describe("Mesh Traffic Permission", meshtrafficpermission.MeshTrafficPermissionUniversal, Ordered)
+var _ = Describe("GRPC", grpc.GRPC, Ordered)

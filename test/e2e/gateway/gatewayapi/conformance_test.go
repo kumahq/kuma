@@ -52,7 +52,7 @@ func TestConformance(t *testing.T) {
 				WithCtlOpts(map[string]string{"--experimental-gatewayapi": "true"}),
 			)).
 			Setup(cluster)
-	}, "30s", "3s").Should(Succeed())
+	}, "90s", "3s").Should(Succeed())
 
 	opts := cluster.GetKubectlOptions()
 
