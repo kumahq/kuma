@@ -254,7 +254,7 @@ var _ = Describe("Rules", func() {
 						Subset: []xds.Tag{
 							{Key: "key1", Value: "val1"},
 						},
-						Conf: &meshtrafficpermission_api.Conf{
+						Conf: meshtrafficpermission_api.Conf{
 							Action: "ALLOW",
 						},
 					},
@@ -271,7 +271,7 @@ var _ = Describe("Rules", func() {
 						Subset: []xds.Tag{
 							{Key: "key1", Value: "val1", Not: true},
 						},
-						Conf: &meshtrafficpermission_api.Conf{
+						Conf: meshtrafficpermission_api.Conf{
 							Action: "ALLOW",
 						},
 					},
@@ -285,7 +285,7 @@ var _ = Describe("Rules", func() {
 				rules: xds.Rules{
 					{
 						Subset: []xds.Tag{}, // empty set
-						Conf: &meshtrafficpermission_api.Conf{
+						Conf: meshtrafficpermission_api.Conf{
 							Action: "ALLOW",
 						},
 					},
@@ -302,7 +302,7 @@ var _ = Describe("Rules", func() {
 						Subset: []xds.Tag{
 							{Key: "key1", Value: "val1", Not: true},
 						},
-						Conf: &meshtrafficpermission_api.Conf{
+						Conf: meshtrafficpermission_api.Conf{
 							Action: "ALLOW",
 						},
 					},
@@ -318,7 +318,7 @@ var _ = Describe("Rules", func() {
 						Subset: []xds.Tag{
 							{Key: "key1", Value: "val1"},
 						},
-						Conf: &meshtrafficpermission_api.Conf{
+						Conf: meshtrafficpermission_api.Conf{
 							Action: "ALLOW",
 						},
 					},
@@ -334,7 +334,7 @@ var _ = Describe("Rules", func() {
 						Subset: []xds.Tag{
 							{Key: "key1", Value: "val1"},
 						},
-						Conf: &meshtrafficpermission_api.Conf{
+						Conf: meshtrafficpermission_api.Conf{
 							Action: "ALLOW",
 						},
 					},
@@ -350,7 +350,7 @@ var _ = Describe("Rules", func() {
 						Subset: []xds.Tag{
 							{Key: "key1", Value: "val1", Not: true},
 						},
-						Conf: &meshtrafficpermission_api.Conf{
+						Conf: meshtrafficpermission_api.Conf{
 							Action: "ALLOW",
 						},
 					},
@@ -366,7 +366,7 @@ var _ = Describe("Rules", func() {
 						Subset: []xds.Tag{
 							{Key: "key1", Value: "val1"},
 						},
-						Conf: &meshtrafficpermission_api.Conf{
+						Conf: meshtrafficpermission_api.Conf{
 							Action: "ALLOW",
 						},
 					},
@@ -382,7 +382,7 @@ var _ = Describe("Rules", func() {
 						Subset: xds.Subset{
 							{Key: "key1", Value: "val1"}, // not matched
 						},
-						Conf: &meshtrafficpermission_api.Conf{
+						Conf: meshtrafficpermission_api.Conf{
 							Action: "ALLOW",
 						},
 					},
@@ -390,13 +390,13 @@ var _ = Describe("Rules", func() {
 						Subset: xds.Subset{
 							{Key: "key2", Value: "val2"}, // the first matched
 						},
-						Conf: &meshtrafficpermission_api.Conf{
+						Conf: meshtrafficpermission_api.Conf{
 							Action: "DENY",
 						},
 					},
 					{
 						Subset: xds.Subset{}, // matched but not the first
-						Conf: &meshtrafficpermission_api.Conf{
+						Conf: meshtrafficpermission_api.Conf{
 							Action: "ALLOW_WITH_SHADOW_DENY",
 						},
 					},

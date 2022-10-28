@@ -88,7 +88,7 @@ func applyToOutbounds(rules xds.SingleItemRules, outboundListeners map[mesh_prot
 func configureListener(rules xds.SingleItemRules, dataplane *core_mesh.DataplaneResource, listener *envoy_listener.Listener, destination string) error {
 	serviceName := dataplane.Spec.GetIdentifyingService()
 	rawConf := rules.Rules[0].Conf
-	conf := rawConf.(*api.Conf)
+	conf := rawConf.(api.Conf)
 
 	configurer := plugin_xds.Configurer{
 		Conf:             conf,
@@ -109,7 +109,7 @@ func configureListener(rules xds.SingleItemRules, dataplane *core_mesh.Dataplane
 func applyToClusters(rules xds.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy) error {
 	rawConf := rules.Rules[0].Conf
 
-	conf := rawConf.(*api.Conf)
+	conf := rawConf.(api.Conf)
 
 	backend := conf.Backends[0]
 

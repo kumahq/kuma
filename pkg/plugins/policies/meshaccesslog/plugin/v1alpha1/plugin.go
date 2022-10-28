@@ -193,10 +193,10 @@ func configureInbound(
 ) error {
 	serviceName := dataplane.Spec.GetIdentifyingService()
 
-	var conf *api.Conf
+	var conf api.Conf
 	// `from` section of MeshAccessLog only allows Mesh targetRef
 	if computed := fromRules.Compute(core_xds.MeshSubset()); computed != nil {
-		conf = computed.Conf.(*api.Conf)
+		conf = computed.Conf.(api.Conf)
 	} else {
 		return nil
 	}
@@ -230,9 +230,9 @@ func configureOutbound(
 ) error {
 	sourceService := dataplane.Spec.GetIdentifyingService()
 
-	var conf *api.Conf
+	var conf api.Conf
 	if computed := toRules.Rules.Compute(subset); computed != nil {
-		conf = computed.Conf.(*api.Conf)
+		conf = computed.Conf.(api.Conf)
 	} else {
 		return nil
 	}

@@ -47,7 +47,7 @@ type PrincipalMap map[policies_api.Action][]*rbac_config.Principal
 func (c *RBACConfigurer) principalsByAction() PrincipalMap {
 	pm := PrincipalMap{}
 	for _, rule := range c.Rules {
-		action := rule.Conf.(*policies_api.Conf).Action
+		action := rule.Conf.(policies_api.Conf).Action
 		pm[action] = append(pm[action], c.principalFromSubset(rule.Subset))
 	}
 	return pm

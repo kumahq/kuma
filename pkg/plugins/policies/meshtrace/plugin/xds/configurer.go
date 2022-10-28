@@ -20,7 +20,7 @@ import (
 )
 
 type Configurer struct {
-	Conf *api.Conf
+	Conf api.Conf
 
 	// Opaque string which envoy will assign to tracer collector cluster, on those
 	// which support association of named "service" tags on traces. Consumed by datadog.

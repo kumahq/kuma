@@ -122,7 +122,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Rules: []*core_xds.Rule{
 					{
 						Subset: core_xds.Subset{},
-						Conf: &api.Conf{
+						Conf: api.Conf{
 							Backends: []api.Backend{{
 								File: &api.FileBackend{
 									Format: &api.Format{
@@ -198,7 +198,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Rules: []*core_xds.Rule{
 					{
 						Subset: core_xds.Subset{},
-						Conf: &api.Conf{
+						Conf: api.Conf{
 							Backends: []api.Backend{{
 								File: &api.FileBackend{
 									Format: &api.Format{
@@ -269,7 +269,7 @@ var _ = Describe("MeshAccessLog", func() {
 							Key:   mesh_proto.ServiceTag,
 							Value: "other",
 						}},
-						Conf: &api.Conf{
+						Conf: api.Conf{
 							Backends: []api.Backend{{
 								File: &api.FileBackend{
 									Format: &api.Format{
@@ -343,7 +343,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Rules: map[xds.InboundListener]xds.Rules{
 					{Address: "127.0.0.1", Port: 17777}: {{
 						Subset: core_xds.Subset{},
-						Conf: &api.Conf{
+						Conf: api.Conf{
 							Backends: []api.Backend{{
 								File: &api.FileBackend{
 									Format: &api.Format{
@@ -506,7 +506,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Rules: []*core_xds.Rule{
 					{
 						Subset: core_xds.Subset{},
-						Conf: &api.Conf{
+						Conf: api.Conf{
 							Backends: []api.Backend{{
 								File: &api.FileBackend{
 									Format: &api.Format{

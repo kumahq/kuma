@@ -107,7 +107,7 @@ var _ = Describe("MeshTrace", func() {
 				Rules: []*core_xds.Rule{
 					{
 						Subset: []core_xds.Tag{},
-						Conf: &api.Conf{
+						Conf: api.Conf{
 							Sampling: api.Sampling{
 								Random: core_model.PtrTo(uint32(50)),
 							},
@@ -206,7 +206,7 @@ var _ = Describe("MeshTrace", func() {
 				Rules: []*core_xds.Rule{
 					{
 						Subset: []core_xds.Tag{},
-						Conf: &api.Conf{
+						Conf: api.Conf{
 							Sampling: api.Sampling{
 								Random: core_model.PtrTo(uint32(50)),
 							},
