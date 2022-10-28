@@ -36,6 +36,13 @@ However, Zone Ingress Token is now deprecated and will be removed in the future.
 - By default, the minimum TLS version allowed on servers is TLSv1.2. If you require using TLS < 1.2 you can set `KUMA_GENERAL_TLS_MIN_VERSION`.
 - `KUMA_MONITORING_ASSIGNMENT_SERVER_GRPC_PORT` was removed after a long deprecation period use `KUMA_MONITORING_ASSIGNMENT_SERVER_PORT` instead.
 
+### gRPC metrics
+
+With this release, emitting separate statistics for every gRPC method is disabled.
+gRPC metrics from different methods are now aggregated under `envoy_cluster_grpc_request_message_count`.
+It will be re-enabled again in the future once Envoy with [`replace_dots_in_grpc_service_name`](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/grpc_stats/v3/config.proto#envoy-v3-api-field-extensions-filters-http-grpc-stats-v3-filterconfig-stats-for-all-methods) feature is released.
+If you need to enable this setting, you can use ProxyTemplate to patch `envoy.filters.http.grpc_stats` http filter.
+
 ## Upgrade to `1.8.x`
 
 ### Kumactl
