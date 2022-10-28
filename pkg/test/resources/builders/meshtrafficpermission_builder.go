@@ -1,8 +1,8 @@
 package builders
 
 import (
-	common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	common_api "github.com/kumahq/kuma/pkg/plugins/policies/common/api/v1alpha1"
 	mtp_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
@@ -33,12 +33,12 @@ func (m *MeshTrafficPermissionBuilder) WithMesh(mesh string) *MeshTrafficPermiss
 	return m
 }
 
-func (m *MeshTrafficPermissionBuilder) WithTargetRef(targetRef common_proto.TargetRef) *MeshTrafficPermissionBuilder {
+func (m *MeshTrafficPermissionBuilder) WithTargetRef(targetRef common_api.TargetRef) *MeshTrafficPermissionBuilder {
 	m.res.Spec.TargetRef = targetRef
 	return m
 }
 
-func (m *MeshTrafficPermissionBuilder) AddFrom(targetRef common_proto.TargetRef, action string) *MeshTrafficPermissionBuilder {
+func (m *MeshTrafficPermissionBuilder) AddFrom(targetRef common_api.TargetRef, action string) *MeshTrafficPermissionBuilder {
 	m.res.Spec.From = append(m.res.Spec.From, mtp_proto.From{
 		TargetRef: targetRef,
 		Default: mtp_proto.Conf{

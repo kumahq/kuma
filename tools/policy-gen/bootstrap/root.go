@@ -165,7 +165,7 @@ package {{ .version }}
 {{- if or .generateTargetRef (or .generateTo .generateFrom) }}
 
 import (
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/pkg/plugins/policies/common/api/v1alpha1"
 )
 {{- end}}
 
@@ -266,7 +266,7 @@ var validatorTemplate = template.Must(template.New("").Option("missingkey=error"
 
 import (
 	{{- if or .generateTargetRef (or .generateTo .generateFrom) }}
-	common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/pkg/plugins/policies/common/api/v1alpha1"
 	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
 	{{- end}}
 	"github.com/kumahq/kuma/pkg/core/validators"
@@ -301,9 +301,9 @@ func (r *{{.name}}Resource) validate() error {
 }
 {{- if .generateTargetRef }}
 
-func validateTop(targetRef *common_proto.TargetRef) validators.ValidationError {
+func validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
 	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
-		SupportedKinds: []common_proto.TargetRefKind{
+		SupportedKinds: []common_api.TargetRefKind{
 			// TODO add supported TargetRef kinds for this policy
 		},
 	})
@@ -318,7 +318,7 @@ func validateFrom(from []*From) validators.ValidationError {
 	for idx, fromItem := range from {
 		path := validators.RootedAt("from").Index(idx)
 		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(fromItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
-			SupportedKinds: []common_proto.TargetRefKind{
+			SupportedKinds: []common_api.TargetRefKind{
 				// TODO add supported TargetRef for 'from' item
 			},
 		}))
@@ -335,7 +335,7 @@ func validateTo(to []*To) validators.ValidationError {
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
 		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(toItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
-			SupportedKinds: []common_proto.TargetRefKind{
+			SupportedKinds: []common_api.TargetRefKind{
 				// TODO add supported TargetRef for 'to' item
 			},
 		}))

@@ -1,24 +1,24 @@
 package builders
 
 import (
-	common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/pkg/plugins/policies/common/api/v1alpha1"
 )
 
-func TargetRefMesh() common_proto.TargetRef {
-	return common_proto.TargetRef{
+func TargetRefMesh() common_api.TargetRef {
+	return common_api.TargetRef{
 		Kind: "Mesh",
 	}
 }
 
-func TargetRefService(name string) common_proto.TargetRef {
-	return common_proto.TargetRef{
+func TargetRefService(name string) common_api.TargetRef {
+	return common_api.TargetRef{
 		Kind: "MeshService",
 		Name: name,
 	}
 }
 
-func TargetRefServiceSubset(name string, kv ...string) common_proto.TargetRef {
-	return common_proto.TargetRef{
+func TargetRefServiceSubset(name string, kv ...string) common_api.TargetRef {
+	return common_api.TargetRef{
 		Kind: "MeshServiceSubset",
 		Name: name,
 		Tags: tagsKVToMap(kv),

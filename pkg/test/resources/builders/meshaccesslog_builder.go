@@ -1,8 +1,8 @@
 package builders
 
 import (
-	common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	common_api "github.com/kumahq/kuma/pkg/plugins/policies/common/api/v1alpha1"
 	meshaccesslog_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
@@ -23,12 +23,12 @@ func MeshAccessLog() *MeshAccessLogBuilder {
 	}
 }
 
-func (m *MeshAccessLogBuilder) WithTargetRef(targetRef common_proto.TargetRef) *MeshAccessLogBuilder {
+func (m *MeshAccessLogBuilder) WithTargetRef(targetRef common_api.TargetRef) *MeshAccessLogBuilder {
 	m.res.Spec.TargetRef = targetRef
 	return m
 }
 
-func (m *MeshAccessLogBuilder) AddFrom(targetRef common_proto.TargetRef, conf *MeshAccessLogConfBuilder) *MeshAccessLogBuilder {
+func (m *MeshAccessLogBuilder) AddFrom(targetRef common_api.TargetRef, conf *MeshAccessLogConfBuilder) *MeshAccessLogBuilder {
 	m.res.Spec.From = append(m.res.Spec.From, meshaccesslog_proto.From{
 		TargetRef: targetRef,
 		Default:   conf.res,
@@ -36,7 +36,7 @@ func (m *MeshAccessLogBuilder) AddFrom(targetRef common_proto.TargetRef, conf *M
 	return m
 }
 
-func (m *MeshAccessLogBuilder) AddTo(targetRef common_proto.TargetRef, conf *MeshAccessLogConfBuilder) *MeshAccessLogBuilder {
+func (m *MeshAccessLogBuilder) AddTo(targetRef common_api.TargetRef, conf *MeshAccessLogConfBuilder) *MeshAccessLogBuilder {
 	m.res.Spec.To = append(m.res.Spec.To, meshaccesslog_proto.To{
 		TargetRef: targetRef,
 		Default:   conf.res,

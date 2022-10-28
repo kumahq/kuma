@@ -5,11 +5,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	common_api "github.com/kumahq/kuma/pkg/plugins/policies/common/api/v1alpha1"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
@@ -135,17 +135,17 @@ func singleItemRules(matchedPolicies []core_model.Resource) (core_xds.Rules, err
 }
 
 // inboundsSelectedByTargetRef returns a list of inbounds of DPP that are selected by the targetRef
-func inboundsSelectedByTargetRef(tr common_proto.TargetRef, dpp *core_mesh.DataplaneResource, gateway *core_mesh.MeshGatewayResource) []core_xds.InboundListener {
+func inboundsSelectedByTargetRef(tr common_api.TargetRef, dpp *core_mesh.DataplaneResource, gateway *core_mesh.MeshGatewayResource) []core_xds.InboundListener {
 	switch tr.Kind {
-	case common_proto.Mesh:
+	case common_api.Mesh:
 		return inboundsSelectedByTags(nil, dpp, gateway)
-	case common_proto.MeshSubset:
+	case common_api.MeshSubset:
 		return inboundsSelectedByTags(tr.Tags, dpp, gateway)
-	case common_proto.MeshService:
+	case common_api.MeshService:
 		return inboundsSelectedByTags(map[string]string{
 			mesh_proto.ServiceTag: tr.Name,
 		}, dpp, gateway)
-	case common_proto.MeshServiceSubset:
+	case common_api.MeshServiceSubset:
 		tags := map[string]string{
 			mesh_proto.ServiceTag: tr.Name,
 		}

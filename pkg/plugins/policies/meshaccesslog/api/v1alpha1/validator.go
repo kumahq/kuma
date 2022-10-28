@@ -5,8 +5,8 @@ import (
 
 	"github.com/asaskevich/govalidator"
 
-	common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	common_api "github.com/kumahq/kuma/pkg/plugins/policies/common/api/v1alpha1"
 	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
 )
 
@@ -22,14 +22,14 @@ func (r *MeshAccessLogResource) validate() error {
 	verr.AddErrorAt(path, validateIncompatibleCombinations(r.Spec))
 	return verr.OrNil()
 }
-func validateTop(targetRef common_proto.TargetRef) validators.ValidationError {
+func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
-		SupportedKinds: []common_proto.TargetRefKind{
-			common_proto.Mesh,
-			common_proto.MeshSubset,
-			common_proto.MeshService,
-			common_proto.MeshServiceSubset,
-			common_proto.MeshGatewayRoute,
+		SupportedKinds: []common_api.TargetRefKind{
+			common_api.Mesh,
+			common_api.MeshSubset,
+			common_api.MeshService,
+			common_api.MeshServiceSubset,
+			common_api.MeshGatewayRoute,
 		},
 	})
 	return targetRefErr
@@ -39,8 +39,8 @@ func validateFrom(from []From) validators.ValidationError {
 	for idx, fromItem := range from {
 		path := validators.RootedAt("from").Index(idx)
 		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(fromItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
-			SupportedKinds: []common_proto.TargetRefKind{
-				common_proto.Mesh,
+			SupportedKinds: []common_api.TargetRefKind{
+				common_api.Mesh,
 			},
 		}))
 
@@ -54,9 +54,9 @@ func validateTo(to []To) validators.ValidationError {
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
 		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(toItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
-			SupportedKinds: []common_proto.TargetRefKind{
-				common_proto.Mesh,
-				common_proto.MeshService,
+			SupportedKinds: []common_api.TargetRefKind{
+				common_api.Mesh,
+				common_api.MeshService,
 			},
 		}))
 
@@ -132,7 +132,7 @@ func validateFormat(format *Format) validators.ValidationError {
 func validateIncompatibleCombinations(spec *MeshAccessLog) validators.ValidationError {
 	var verr validators.ValidationError
 	targetRef := spec.GetTargetRef().Kind
-	if targetRef == common_proto.MeshGatewayRoute && len(spec.To) > 0 {
+	if targetRef == common_api.MeshGatewayRoute && len(spec.To) > 0 {
 		verr.AddViolation("to", `cannot use "to" when "targetRef" is "MeshGatewayRoute" - there is no outbound`)
 	}
 	return verr

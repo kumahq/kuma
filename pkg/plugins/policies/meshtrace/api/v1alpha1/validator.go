@@ -10,8 +10,8 @@ import (
 	"github.com/asaskevich/govalidator"
 	"golang.org/x/exp/slices"
 
-	common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	common_api "github.com/kumahq/kuma/pkg/plugins/policies/common/api/v1alpha1"
 	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
 )
 
@@ -22,14 +22,14 @@ func (r *MeshTraceResource) validate() error {
 	verr.AddErrorAt(path.Field("default"), validateDefault(r.Spec.Default))
 	return verr.OrNil()
 }
-func validateTop(targetRef common_proto.TargetRef) validators.ValidationError {
+func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
-		SupportedKinds: []common_proto.TargetRefKind{
-			common_proto.Mesh,
-			common_proto.MeshSubset,
-			common_proto.MeshService,
-			common_proto.MeshServiceSubset,
-			common_proto.MeshGatewayRoute,
+		SupportedKinds: []common_api.TargetRefKind{
+			common_api.Mesh,
+			common_api.MeshSubset,
+			common_api.MeshService,
+			common_api.MeshServiceSubset,
+			common_api.MeshGatewayRoute,
 		},
 	})
 	return targetRefErr
