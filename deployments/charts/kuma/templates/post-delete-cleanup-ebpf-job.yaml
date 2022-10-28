@@ -115,4 +115,8 @@ spec:
             - 'kumactl'
             - 'uninstall'
             - 'ebpf'
+            - '--cleanup-image-registry'
+            - {{ .Values.global.image.registry }}
+            - '--"cleanup-image-repository'
+            - {{ .Values.dataPlane.initImage.registry }}
   {{- end }}
