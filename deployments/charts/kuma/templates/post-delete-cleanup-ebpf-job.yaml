@@ -118,5 +118,5 @@ spec:
             - '--cleanup-image-registry'
             - {{ .Values.global.image.registry }}
             - '--"cleanup-image-repository'
-            - {{ .Values.dataPlane.initImage.registry }}
+            - {{ .Values.dataPlane.initImage.repository }}
   {{- end }}
