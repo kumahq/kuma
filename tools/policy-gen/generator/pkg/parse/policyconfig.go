@@ -112,7 +112,7 @@ func newPolicyConfig(pkg, name string, markers map[string]string, hasTo, hasFrom
 		HasFrom:             hasFrom,
 	}
 
-	if v, ok := markers["kuma:skip_registration"]; ok {
+	if v, ok := markers["kuma:policy:skip_registration"]; ok {
 		vbool, err := strconv.ParseBool(v)
 		if err != nil {
 			return PolicyConfig{}, err
@@ -120,7 +120,7 @@ func newPolicyConfig(pkg, name string, markers map[string]string, hasTo, hasFrom
 		res.SkipRegistration = vbool
 	}
 
-	if v, ok := markers["kuma:plural"]; ok {
+	if v, ok := markers["kuma:policy:plural"]; ok {
 		res.Plural = v
 	} else {
 		res.Plural = core_model.PluralType(res.Name)

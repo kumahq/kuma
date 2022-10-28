@@ -170,25 +170,21 @@ import (
 {{- end}}
 
 // {{ .name }}
-// +kuma:skip_registration=true
+// +kuma:policy:skip_registration=true
 type {{ .name }} struct {
 	{{- if .generateTargetRef }}
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
 	// defined inplace.
-	TargetRef *common_api.TargetRef` + " `json:\"targetRef,omitempty\"`" + `
+	TargetRef common_api.TargetRef` + " `json:\"targetRef,omitempty\"`" + `
 	{{- end }}
 	{{- if .generateTo }}
 	// To list makes a match between the consumed services and corresponding configurations
-	// +optional
-	// +nullable
-	To []*To` + " `json:\"to\"`" + `
+	To []To` + " `json:\"to,omitempty\"`" + `
 	{{- end}}
 	{{- if .generateFrom }}
 	// From list makes a match between clients and corresponding configurations
-	// +optional
-	// +nullable
-	From []*From` + " `json:\"from\"`" + `
+	From []From` + " `json:\"from,omitempty\"`" + `
 	{{- end}}
 }
 {{- if .generateTo }}
@@ -196,10 +192,10 @@ type {{ .name }} struct {
 type To struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// destinations.
-	TargetRef *common_api.TargetRef` + " `json:\"targetRef,omitempty\"`" + `
+	TargetRef common_api.TargetRef` + " `json:\"targetRef,omitempty\"`" + `
 	// Default is a configuration specific to the group of destinations referenced in
 	// 'targetRef'
-	Default *Conf` + " `json:\"default,omitempty\"`" + `
+	Default Conf` + " `json:\"default,omitempty\"`" + `
 }
 
 {{- end}}
@@ -208,10 +204,10 @@ type To struct {
 type From struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// clients.
-	TargetRef *common_api.TargetRef` + " `json:\"targetRef,omitempty\"`" + `
+	TargetRef common_api.TargetRef` + " `json:\"targetRef,omitempty\"`" + `
 	// Default is a configuration specific to the group of clients referenced in
 	// 'targetRef'
-	Default *Conf` + " `json:\"default,omitempty\"`" + `
+	Default Conf` + " `json:\"default,omitempty\"`" + `
 }
 
 {{- end}}
@@ -276,32 +272,32 @@ func (r *{{.name}}Resource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	{{- if .generateTargetRef }}
-	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.GetTargetRef()))
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
 	{{- end }}
 	{{- if and .generateTo .generateFrom }}
-	if len(r.Spec.GetTo()) == 0 && len(r.Spec.GetFrom()) == 0 {
+	if len(r.Spec.To) == 0 && len(r.Spec.From) == 0 {
 		verr.AddViolationAt(path, "at least one of 'from', 'to' has to be defined")
 	}
 	{{- else if .generateTo }}
-	if len(r.Spec.GetTo()) == 0 {
+	if len(r.Spec.To) == 0 {
 		verr.AddViolationAt(path.Field("to"), "needs at least one item")
 	}
 	{{- else if .generateFrom }}
-	if len(r.Spec.GetFrom()) == 0 {
+	if len(r.Spec.From) == 0 {
 		verr.AddViolationAt(path.Field("from"), "needs at least one item")
 	}
 	{{- end }}
 	{{- if .generateTo }}
-	verr.AddErrorAt(path, validateTo(r.Spec.GetTo()))
+	verr.AddErrorAt(path, validateTo(r.Spec.To))
 	{{- end }}
 	{{- if .generateFrom }}
-	verr.AddErrorAt(path, validateFrom(r.Spec.GetFrom()))
+	verr.AddErrorAt(path, validateFrom(r.Spec.From))
 	{{- end }}
 	return verr.OrNil()
 }
 {{- if .generateTargetRef }}
 
-func validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			// TODO add supported TargetRef kinds for this policy
@@ -313,16 +309,16 @@ func validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
 {{- end }}
 {{- if .generateFrom }}
 
-func validateFrom(from []*From) validators.ValidationError {
+func validateFrom(from []From) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, fromItem := range from {
 		path := validators.RootedAt("from").Index(idx)
-		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(fromItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
+		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(fromItem.TargetRef, &matcher_validators.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				// TODO add supported TargetRef for 'from' item
 			},
 		}))
-		verr.AddErrorAt(path.Field("default"), validateDefault(fromItem.GetDefault()))
+		verr.AddErrorAt(path.Field("default"), validateDefault(fromItem.Default))
 	}
 	return verr
 }
@@ -330,22 +326,22 @@ func validateFrom(from []*From) validators.ValidationError {
 {{- end }}
 {{- if .generateTo }}
 
-func validateTo(to []*To) validators.ValidationError {
+func validateTo(to []To) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
-		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(toItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
+		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(toItem.TargetRef, &matcher_validators.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				// TODO add supported TargetRef for 'to' item
 			},
 		}))
-		verr.AddErrorAt(path.Field("default"), validateDefault(toItem.GetDefault()))
+		verr.AddErrorAt(path.Field("default"), validateDefault(toItem.Default))
 	}
 	return verr
 }
 {{- end }}
 
-func validateDefault(conf *Conf) validators.ValidationError {
+func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
 	// TODO add default conf validation
 	return verr
