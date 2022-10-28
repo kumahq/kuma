@@ -104,7 +104,7 @@ test/e2e/k8s/stop: $(K8SCLUSTERS_STOP_TARGETS)
 # GINKGO_EDITOR_INTEGRATION is required to work with focused test. Normally they exit with non 0 code which prevents clusters to be cleaned up.
 # We run ginkgo instead of "go test" to fail fast (builtin "go test" fail fast does not seem to work with individual ginkgo tests)
 .PHONY: test/e2e/debug
-test/e2e/debug: build/kumactl images test/e2e/k8s/start
+test/e2e/debug: $(E2E_DEPS_TARGETS) build/kumactl images test/e2e/k8s/start
 	$(E2E_ENV_VARS) \
 	GINKGO_EDITOR_INTEGRATION=true \
 		$(GINKGO_TEST_E2E) --keep-going=false --fail-fast $(E2E_PKG_LIST)
@@ -114,7 +114,7 @@ test/e2e/debug: build/kumactl images test/e2e/k8s/start
 # test/e2e/debug-fast is an equivalent of test/e2e/debug, but with the goal to minimize time for test to start running.
 # Run only with -j and K3D=true
 .PHONY: test/e2e/debug-fast
-test/e2e/debug-fast:
+test/e2e/debug-fast: $(E2E_DEPS_TARGETS)
 	$(MAKE) $(K8SCLUSTERS_START_TARGETS) & # start K8S clusters in the background since it takes the most time
 	$(MAKE) images
 	$(MAKE) build/kumactl
@@ -128,10 +128,10 @@ test/e2e/debug-fast:
 # test/e2e/debug-universal is the same target as 'test/e2e/debug' but builds only 'kuma-universal' image
 # and doesn't start Kind clusters
 .PHONY: test/e2e/debug-universal
-test/e2e/debug-universal: build/kumactl images/test k3d/network/create
+test/e2e/debug-universal: $(E2E_DEPS_TARGETS) build/kumactl images/test k3d/network/create
 	$(E2E_ENV_VARS) \
 	GINKGO_EDITOR_INTEGRATION=true \
-		$(GINKGO_TEST_E2E) --keep-going=false --fail-fast $(UNIVERSAL_E2E_PKG_LIST)
+		$(GINKGO_TEST_E2E) --keep-going=false --procs 1 --fail-fast $(UNIVERSAL_E2E_PKG_LIST)
 
 
 .PHONY: test/e2e
