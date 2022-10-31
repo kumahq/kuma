@@ -44,8 +44,6 @@ func ValidateTargetRef(
 		case common_api.MeshGatewayRoute:
 			verr.Add(requiredField("name", ref.Name, refKind))
 			verr.Add(disallowedField("mesh", ref.Mesh, refKind))
-		default:
-
 		}
 	}
 	return verr
