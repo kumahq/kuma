@@ -76,7 +76,7 @@
         - `serviceAddress` (optional)
         
             Address of the service that requests will be forwarded to.
-            Defaults to '127.0.0.1', since Kuma DP should be deployed next to the
+            Defaults to 'DataplaneIP', since Kuma DP should be deployed next to the
             service.    
         
         - `address` (optional)
