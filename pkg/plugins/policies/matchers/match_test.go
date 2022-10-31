@@ -98,9 +98,6 @@ var _ = Describe("Match", func() {
 			}
 
 			for num, tc := range testCaseMap {
-				if num != "01" {
-					break
-				}
 				res = append(res, Entry(num, *tc))
 			}
 			return res

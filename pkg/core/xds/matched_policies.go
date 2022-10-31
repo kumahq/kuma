@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"sort"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	common_api "github.com/kumahq/kuma/pkg/plugins/policies/common/api/v1alpha1"
 )
 
 type PolicyItem interface {

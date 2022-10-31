@@ -77,8 +77,6 @@ require (
 	sigs.k8s.io/testing_frameworks v0.1.2
 )
 
-require golang.org/x/tools v0.2.0 // indirect
-
 require (
 	cloud.google.com/go/compute v1.7.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect

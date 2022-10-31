@@ -3,8 +3,8 @@ package validators
 import (
 	"fmt"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	common_api "github.com/kumahq/kuma/pkg/plugins/policies/common/api/v1alpha1"
 )
 
 type ValidateTargetRefOpts struct {
@@ -44,6 +44,8 @@ func ValidateTargetRef(
 		case common_api.MeshGatewayRoute:
 			verr.Add(requiredField("name", ref.Name, refKind))
 			verr.Add(disallowedField("mesh", ref.Mesh, refKind))
+		default:
+
 		}
 	}
 	return verr

@@ -5,8 +5,8 @@ import (
 
 	"github.com/asaskevich/govalidator"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	common_api "github.com/kumahq/kuma/pkg/plugins/policies/common/api/v1alpha1"
 	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
 )
 

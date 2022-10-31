@@ -165,7 +165,7 @@ package {{ .version }}
 {{- if or .generateTargetRef (or .generateTo .generateFrom) }}
 
 import (
-	common_api "github.com/kumahq/kuma/pkg/plugins/policies/common/api/v1alpha1"
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 )
 {{- end}}
 
@@ -262,7 +262,7 @@ var validatorTemplate = template.Must(template.New("").Option("missingkey=error"
 
 import (
 	{{- if or .generateTargetRef (or .generateTo .generateFrom) }}
-	common_api "github.com/kumahq/kuma/pkg/plugins/policies/common/api/v1alpha1"
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
 	{{- end}}
 	"github.com/kumahq/kuma/pkg/core/validators"

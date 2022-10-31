@@ -5,8 +5,8 @@
 package v1alpha1
 
 import (
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	common_api "github.com/kumahq/kuma/pkg/plugins/policies/common/api/v1alpha1"
 )
 
 func (x *MeshTrace) GetTargetRef() common_api.TargetRef {

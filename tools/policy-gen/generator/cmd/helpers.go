@@ -51,7 +51,7 @@ var helpersTemplate = template.Must(template.New("missingkey=error").Parse(
 package {{.version}}
 
 import (
-	common_api "github.com/kumahq/kuma/pkg/plugins/policies/common/api/v1alpha1"
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
