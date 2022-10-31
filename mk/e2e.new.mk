@@ -38,15 +38,15 @@ define append_label_filter
 $(if $(GINKGO_E2E_LABEL_FILTERS),$(GINKGO_E2E_LABEL_FILTERS) && $(1),$(1))
 endef
 
-ifdef K3D
-	K8S_CLUSTER_TOOL=k3d
+K8S_CLUSTER_TOOL=k3d
+ifeq ($(K8S_CLUSTER_TOOL),k3d)
 	ifeq ($(K3D_NETWORK_CNI),calico)
 		E2E_ENV_VARS += KUMA_K8S_TYPE=k3d-calico
 	else
 		E2E_ENV_VARS += KUMA_K8S_TYPE=k3d
 	endif
-else
-	K8S_CLUSTER_TOOL=kind
+endif
+ifeq ($(K8S_CLUSTER_TOOL),kind)
 	GINKGO_E2E_LABEL_FILTERS := $(call append_label_filter,!kind-not-supported)
 endif
 
@@ -110,9 +110,9 @@ test/e2e/debug: $(E2E_DEPS_TARGETS) build/kumactl images test/e2e/k8s/start
 		$(GINKGO_TEST_E2E) --keep-going=false --fail-fast $(E2E_PKG_LIST)
 	$(MAKE) test/e2e/k8s/stop
 
-# test/e2e/debug-fast is an experimental target tested with K3D=true.
+# test/e2e/debug-fast is an experimental target tested with K8S_CLUSTER_TOOL=k3d.
 # test/e2e/debug-fast is an equivalent of test/e2e/debug, but with the goal to minimize time for test to start running.
-# Run only with -j and K3D=true
+# Run only with -j and K8S_CLUSTER_TOOL=k3d
 .PHONY: test/e2e/debug-fast
 test/e2e/debug-fast: $(E2E_DEPS_TARGETS)
 	$(MAKE) $(K8SCLUSTERS_START_TARGETS) & # start K8S clusters in the background since it takes the most time
