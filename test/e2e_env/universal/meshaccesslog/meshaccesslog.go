@@ -209,6 +209,50 @@ spec:
 		Expect(dst).To(Equal("external"))
 	})
 
+	It("supports logging traffic to an ExternalService using MeshService", func() {
+		externalService := fmt.Sprintf(`
+type: ExternalService
+name: external-service
+mesh: meshaccesslog
+tags:
+  kuma.io/service: ext-service
+  kuma.io/protocol: tcp
+networking:
+  address: "%s:80"
+`, externalServiceDockerName)
+		accesslog := fmt.Sprintf(`
+type: MeshAccessLog
+name: client-outgoing
+mesh: meshaccesslog
+spec:
+ targetRef:
+   kind: MeshService
+   name: demo-client
+ to:
+   - targetRef:
+       kind: MeshService
+       name: ext-service
+     default:
+       backends:
+       - tcp:
+           format:
+             plain: '%s'
+           address: "%s_%s:9999"
+`, trafficLogFormat, env.Cluster.Name(), externalServiceDeployment)
+		Expect(YamlUniversal(externalService)(env.Cluster)).To(Succeed())
+		Expect(YamlUniversal(accesslog)(env.Cluster)).To(Succeed())
+
+		// 52 is empty response but the TCP connection succeeded
+		makeRequest := func(g Gomega) {
+			_, _, err := env.Cluster.Exec("", "", AppModeDemoClient,
+				"curl", "-v", "--fail", "ext-service.mesh")
+			g.Expect(err).To(ContainSubstring("exit status 52"))
+		}
+		src, dst := expectTrafficLogged(makeRequest)
+
+		Expect(src).To(Equal(AppModeDemoClient))
+		Expect(dst).To(Equal("ext-service"))
+	})
 	It("should log incoming traffic", func() {
 		yaml := fmt.Sprintf(`
 type: MeshAccessLog
