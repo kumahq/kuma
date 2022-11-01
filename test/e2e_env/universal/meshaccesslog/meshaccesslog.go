@@ -209,7 +209,7 @@ spec:
 		Expect(dst).To(Equal("external"))
 	})
 
-	It("supports logging traffic to an ExternalService using MeshService", func() {
+	It("supports logging traffic to an ExternalService using MeshService (without ZoneIngress)", func() {
 		externalService := fmt.Sprintf(`
 type: ExternalService
 name: external-service
@@ -253,6 +253,7 @@ spec:
 		Expect(src).To(Equal(AppModeDemoClient))
 		Expect(dst).To(Equal("ext-service"))
 	})
+
 	It("should log incoming traffic", func() {
 		yaml := fmt.Sprintf(`
 type: MeshAccessLog
