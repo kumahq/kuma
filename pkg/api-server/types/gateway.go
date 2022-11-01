@@ -3,14 +3,14 @@ package types
 import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 type PolicyMap map[core_model.ResourceType]*unversioned.Resource
 
 type Destination struct {
-	Tags     envoy.Tags `json:"tags"`
-	Policies PolicyMap  `json:"policies"`
+	Tags     tags.Tags `json:"tags"`
+	Policies PolicyMap `json:"policies"`
 }
 
 type RouteInspectEntry struct {
@@ -45,8 +45,8 @@ func NewGatewayDataplaneInspectResult() GatewayDataplaneInspectResult {
 }
 
 type PolicyInspectGatewayRouteEntry struct {
-	Route        string       `json:"route"`
-	Destinations []envoy.Tags `json:"destinations"`
+	Route        string      `json:"route"`
+	Destinations []tags.Tags `json:"destinations"`
 }
 
 type PolicyInspectGatewayHostEntry struct {

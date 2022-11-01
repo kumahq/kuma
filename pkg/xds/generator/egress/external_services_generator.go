@@ -58,7 +58,7 @@ func (g *ExternalServicesGenerator) Generate(
 
 func (*ExternalServicesGenerator) generateCDS(
 	meshName string,
-	apiVersion envoy_common.APIVersion,
+	apiVersion core_xds.APIVersion,
 	services map[string]bool,
 	endpointMap core_xds.EndpointMap,
 	isIPV6 bool,
@@ -128,8 +128,8 @@ func (*ExternalServicesGenerator) buildServices(
 }
 
 func (g *ExternalServicesGenerator) addFilterChains(
-	apiVersion envoy_common.APIVersion,
-	destinationsPerService map[string][]envoy_common.Tags,
+	apiVersion core_xds.APIVersion,
+	destinationsPerService map[string][]tags.Tags,
 	endpointMap core_xds.EndpointMap,
 	meshResources *core_xds.MeshResources,
 	listenerBuilder *envoy_listeners.ListenerBuilder,

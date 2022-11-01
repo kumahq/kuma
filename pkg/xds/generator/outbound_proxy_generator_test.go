@@ -320,7 +320,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 					Spec: dataplane,
 				},
-				SecretsTracker: model.NewSecretsTracker(given.ctx.Mesh.Resource.Meta.GetName(), meshes),
+				SecretsTracker: envoy_common.NewSecretsTracker(given.ctx.Mesh.Resource.Meta.GetName(), meshes),
 				APIVersion:     envoy_common.APIV3,
 				Routing: model.Routing{
 					TrafficRoutes: model.RouteMap{

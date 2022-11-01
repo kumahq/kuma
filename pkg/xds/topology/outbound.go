@@ -13,7 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 const (
@@ -492,7 +492,7 @@ func NewExternalServiceEndpoint(
 	if es.TLSEnabled {
 		name := externalService.Meta.GetName()
 
-		tags = envoy.Tags(tags).
+		tags = envoy_tags.Tags(tags).
 			WithTags(mesh_proto.ExternalServiceTag, name)
 	}
 

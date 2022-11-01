@@ -8,13 +8,14 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 var _ = Describe("LbSubset", func() {
 
 	type testCase struct {
 		clusterName string
-		tags        envoy.TagKeysSlice
+		tags        tags.TagKeysSlice
 		expected    string
 	}
 
@@ -36,7 +37,7 @@ var _ = Describe("LbSubset", func() {
 		},
 		Entry("LbSubset is empty if there are no tags", testCase{
 			clusterName: "backend",
-			tags:        []envoy.TagKeys{},
+			tags:        []tags.TagKeys{},
 			expected: `
             connectTimeout: 5s
             edsClusterConfig:
@@ -48,7 +49,7 @@ var _ = Describe("LbSubset", func() {
 		}),
 		Entry("LbSubset is set when more than service tag is set", testCase{
 			clusterName: "backend",
-			tags: []envoy.TagKeys{
+			tags: []tags.TagKeys{
 				{"version"},
 				{"cluster", "version"},
 			},

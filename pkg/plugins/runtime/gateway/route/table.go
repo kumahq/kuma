@@ -3,7 +3,7 @@ package route
 import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 // Table stores a collection of routing Entries, aka. a routing table.
@@ -92,7 +92,7 @@ type Redirection struct {
 
 // Destination is a forwarding target (aka Cluster).
 type Destination struct {
-	Destination   envoy.Tags
+	Destination   tags.Tags
 	Weight        uint32
 	RouteProtocol core_mesh.Protocol
 

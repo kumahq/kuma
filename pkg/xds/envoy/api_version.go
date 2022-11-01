@@ -1,7 +1,9 @@
 package envoy
 
-type APIVersion string
+import (
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+)
 
 const (
-	APIV3 APIVersion = "v3"
+	APIV3 core_xds.APIVersion = "v3"
 )

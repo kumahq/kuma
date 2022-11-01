@@ -16,6 +16,7 @@ import (
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 var outboundLog = core.Log.WithName("outbound-proxy-generator")
@@ -177,7 +178,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 		Configure(envoy_listeners.OutboundListener(outboundListenerName, oface.DataplaneIP, oface.DataplanePort, model.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.FilterChain(filterChainBuilder)).
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
-		Configure(envoy_listeners.TagsMetadata(envoy_common.Tags(outbound.GetTagsIncludingLegacy()).WithoutTags(mesh_proto.MeshTag))).
+		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(outbound.GetTagsIncludingLegacy()).WithoutTags(mesh_proto.MeshTag))).
 		Build()
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not generate listener %s for service %s", outboundListenerName, serviceName)
@@ -203,7 +204,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 				Configure(envoy_clusters.HealthCheck(protocol, healthCheck))
 
 			clusterName := cluster.Name()
-			clusterTags := []envoy_common.Tags{cluster.Tags()}
+			clusterTags := []envoy_tags.Tags{cluster.Tags()}
 
 			if service.HasExternalService() {
 				if ctx.Mesh.Resource.ZoneEgressEnabled() {
@@ -382,7 +383,7 @@ func (OutboundProxyGenerator) determineRoutes(
 				// The mesh tag is set here if this destination is generated
 				// from a MeshGateway virtual outbound and is not part of the
 				// service tags
-				envoy_common.WithTags(envoy_common.Tags(destination.Destination).WithoutTags(mesh_proto.MeshTag)),
+				envoy_common.WithTags(envoy_tags.Tags(destination.Destination).WithoutTags(mesh_proto.MeshTag)),
 				envoy_common.WithTimeout(timeoutConf),
 				envoy_common.WithLB(route.Spec.GetConf().GetLoadBalancer()),
 				envoy_common.WithExternalService(isExternalService),
