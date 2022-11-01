@@ -16,6 +16,7 @@ import (
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
+	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 const OriginMeshTrace = "mesh-trace"
@@ -51,6 +52,48 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 	}
 	if err := applyToClusters(policies.SingleItemRules, rs, proxy); err != nil {
 		return err
+	}
+	if err := applyToGateway(policies.SingleItemRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy.Dataplane); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func applyToGateway(
+	rules xds.SingleItemRules, gatewayListeners map[xds.InboundListener]*envoy_listener.Listener, resources xds_context.ResourceMap, dataplane *core_mesh.DataplaneResource,
+) error {
+	var gateways *core_mesh.MeshGatewayResourceList
+	if rawList := resources[core_mesh.MeshGatewayType]; rawList != nil {
+		gateways = rawList.(*core_mesh.MeshGatewayResourceList)
+	} else {
+		return nil
+	}
+
+	gateway := xds_topology.SelectGateway(gateways.Items, dataplane.Spec.Matches)
+	if gateway == nil {
+		return nil
+	}
+
+	for _, listener := range gateway.Spec.GetConf().GetListeners() {
+		address := dataplane.Spec.GetNetworking().Address
+		port := listener.GetPort()
+		listener, ok := gatewayListeners[xds.InboundListener{
+			Address: address,
+			Port:    port,
+		}]
+		if !ok {
+			continue
+		}
+
+		if err := configureListener(
+			rules,
+			dataplane,
+			listener,
+			"",
+		); err != nil {
+			return err
+		}
 	}
 
 	return nil
