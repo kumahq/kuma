@@ -3,7 +3,7 @@ module github.com/kumahq/kuma
 go 1.18
 
 require (
-	cirello.io/pglock v1.9.0
+	cirello.io/pglock v1.10.0
 	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/Nordix/simple-ipam v1.0.0
