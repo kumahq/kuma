@@ -206,11 +206,11 @@ func CrossMeshGatewayOnKubernetes() {
 			Expect(setup.Setup(env.Cluster)).To(Succeed())
 
 			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
-			Eventually(FailToProxyRequestToGateway(
+			Consistently(FailToProxyRequestToGateway(
 				env.Cluster,
 				gatewayAddr,
 				gatewayClientNamespaceOtherMesh,
-			), "30s", "1s").Should(Succeed())
+			), "30s", "1s").ShouldNot(Succeed())
 
 			setup = NewClusterSetup().
 				Install(DeleteYamlK8s(crossMeshGatewayYaml2)).
