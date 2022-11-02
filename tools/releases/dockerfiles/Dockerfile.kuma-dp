@@ -10,11 +10,15 @@ RUN apt-get update && \
     apt-get install -y libcap2-bin
 RUN setcap cap_net_bind_service+ep /envoy
 
+FROM --platform=linux/$BASE_IMAGE_ARCH gcr.io/distroless/base-debian11:debug-nonroot as debian11
+
 FROM --platform=linux/$BASE_IMAGE_ARCH gcr.io/distroless/static:debug-nonroot
 ARG ARCH
 
 ADD /build/artifacts-linux-$ARCH/kuma-dp/kuma-dp /usr/bin
 COPY --from=envoy /envoy /usr/bin/envoy
+COPY --from=debian11 /lib/aarch64-linux-gnu/libc.so.6 /lib/aarch64-linux-gnu/libc.so.6
+COPY --from=debian11 /lib/aarch64-linux-gnu/libc-2.31.so /lib/aarch64-linux-gnu/libc-2.31.so
 ADD /build/artifacts-linux-$ARCH/coredns/coredns /usr/bin
 
 COPY /tools/releases/templates/LICENSE \
