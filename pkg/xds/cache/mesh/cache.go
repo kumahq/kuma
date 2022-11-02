@@ -2,6 +2,7 @@ package mesh
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -18,6 +19,7 @@ type Cache struct {
 	cache              *once.Cache
 	meshContextBuilder xds_context.MeshContextBuilder
 
+	lock              sync.RWMutex
 	latestMeshContext map[string]*xds_context.MeshContext
 }
 
@@ -39,23 +41,39 @@ func NewCache(
 
 func (c *Cache) GetMeshContext(ctx context.Context, syncLog logr.Logger, mesh string) (xds_context.MeshContext, error) {
 	elt, err := c.cache.GetOrRetrieve(ctx, mesh, once.RetrieverFunc(func(ctx context.Context, key string) (interface{}, error) {
-		if c.latestMeshContext[mesh] == nil {
+		c.lock.RLock()
+		meshContext := c.latestMeshContext[mesh]
+		c.lock.RUnlock()
+
+		if meshContext == nil {
 			meshCtx, err := c.meshContextBuilder.Build(ctx, mesh)
 			if err != nil {
 				return xds_context.MeshContext{}, err
 			}
+
+			c.lock.Lock()
 			c.latestMeshContext[mesh] = &meshCtx
-		} else {
-			meshCtx, err := c.meshContextBuilder.BuildIfChanged(ctx, mesh, c.latestMeshContext[mesh].Hash)
-			if err != nil {
-				return xds_context.MeshContext{}, err
-			}
-			if meshCtx != nil {
-				c.latestMeshContext[mesh] = meshCtx
-			}
+			c.lock.Unlock()
+
+			return meshCtx, nil
 		}
-		return *c.latestMeshContext[mesh], nil
+
+		meshCtx, err := c.meshContextBuilder.BuildIfChanged(ctx, mesh, meshContext.Hash)
+		if err != nil {
+			return xds_context.MeshContext{}, err
+		}
+
+		if meshCtx != nil {
+			c.lock.Lock()
+			c.latestMeshContext[mesh] = meshCtx
+			c.lock.Unlock()
+
+			return *meshCtx, nil
+		}
+
+		return *meshContext, nil
 	}))
+
 	if err != nil {
 		return xds_context.MeshContext{}, err
 	}
