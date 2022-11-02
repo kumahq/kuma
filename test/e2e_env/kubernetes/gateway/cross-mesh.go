@@ -123,6 +123,7 @@ func CrossMeshGatewayOnKubernetes() {
 		Expect(env.Cluster.TriggerDeleteNamespace(gatewayClientNamespaceSameMesh)).To(Succeed())
 		Expect(env.Cluster.TriggerDeleteNamespace(gatewayClientOutsideMesh)).To(Succeed())
 		Expect(env.Cluster.TriggerDeleteNamespace(gatewayTestNamespace)).To(Succeed())
+		Expect(env.Cluster.TriggerDeleteNamespace(gatewayTestNamespace2)).To(Succeed())
 		Expect(env.Cluster.DeleteMesh(gatewayMesh)).To(Succeed())
 		Expect(env.Cluster.DeleteMesh(gatewayOtherMesh)).To(Succeed())
 	})
