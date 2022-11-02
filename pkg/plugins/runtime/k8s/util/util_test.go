@@ -205,7 +205,7 @@ var _ = Describe("Util", func() {
 				}
 
 				// then
-				Expect(util.MeshOf(pod, ns)).To(Equal(given.expected))
+				Expect(util.MeshOfByAnnotation(pod, ns)).To(Equal(given.expected))
 			},
 			Entry("Pod without annotations", testCase{
 				podAnnotations: nil,

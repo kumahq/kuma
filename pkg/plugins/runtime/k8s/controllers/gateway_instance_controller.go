@@ -67,7 +67,8 @@ func (r *GatewayInstanceReconciler) Reconcile(ctx context.Context, req kube_ctrl
 	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: gatewayInstance.Namespace}, &ns); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to get Namespace of MeshGatewayInstance")
 	}
-	mesh := k8s_util.MeshOf(gatewayInstance, &ns)
+
+	mesh := k8s_util.MeshOfByLabelOrAnnotation(r.Log, gatewayInstance, &ns)
 
 	orig := gatewayInstance.DeepCopyObject().(kube_client.Object)
 	svc, err := r.createOrUpdateService(ctx, mesh, gatewayInstance)

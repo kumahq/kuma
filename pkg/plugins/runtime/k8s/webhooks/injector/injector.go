@@ -88,7 +88,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		logger.V(1).Info("skip injecting Kuma")
 		return nil
 	}
-	meshName := k8s_util.MeshOf(pod, ns)
+	meshName := k8s_util.MeshOfByAnnotation(pod, ns)
 	logger = logger.WithValues("mesh", meshName)
 	// Check mesh exists
 	if err := i.client.Get(ctx, kube_types.NamespacedName{Name: meshName}, &mesh_k8s.Mesh{}); err != nil {
