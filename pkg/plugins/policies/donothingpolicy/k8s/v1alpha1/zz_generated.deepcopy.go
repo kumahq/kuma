@@ -22,6 +22,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	apiv1alpha1 "github.com/kumahq/kuma/pkg/plugins/policies/donothingpolicy/api/v1alpha1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -32,7 +33,8 @@ func (in *DoNothingPolicy) DeepCopyInto(out *DoNothingPolicy) {
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
 	if in.Spec != nil {
 		in, out := &in.Spec, &out.Spec
-		*out = (*in).DeepCopy()
+		*out = new(apiv1alpha1.DoNothingPolicy)
+		(*in).DeepCopyInto(*out)
 	}
 }
 

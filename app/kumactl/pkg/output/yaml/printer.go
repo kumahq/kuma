@@ -9,7 +9,6 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 )
 
 func NewPrinter() output.Printer {
@@ -40,12 +39,7 @@ func (p *printer) Print(obj interface{}, out io.Writer) error {
 			return err
 		}
 
-		desc, err := registry.Global().DescriptorFor(model.ResourceType(obj.GetMeta().Type))
-		if err != nil {
-			return err
-		}
-
-		b, err := model.ToYAML(desc, obj.GetSpec())
+		b, err := model.ToYAML(obj.GetSpec())
 		if err != nil {
 			return err
 		}

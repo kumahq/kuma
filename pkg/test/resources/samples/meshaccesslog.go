@@ -9,8 +9,8 @@ func MeshAccessLogFileConf() *builders.MeshAccessLogConfBuilder {
 	return builders.MeshAccessLogConf().AddFileBackend(LogFileBackend())
 }
 
-func LogFileBackend() *meshaccesslog_proto.MeshAccessLog_FileBackend {
-	return &meshaccesslog_proto.MeshAccessLog_FileBackend{
+func LogFileBackend() *meshaccesslog_proto.FileBackend {
+	return &meshaccesslog_proto.FileBackend{
 		Path: "/tmp/access.logs",
 	}
 }

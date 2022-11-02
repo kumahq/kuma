@@ -36,7 +36,7 @@ var _ json.Unmarshaler = &Resource{}
 func (r *Resource) MarshalJSON() ([]byte, error) {
 	var specBytes []byte
 	if r.Spec != nil {
-		bytes, err := util_proto.ToJSON(r.Spec.(proto.Message))
+		bytes, err := core_model.ToJSON(r.Spec)
 		if err != nil {
 			return nil, err
 		}

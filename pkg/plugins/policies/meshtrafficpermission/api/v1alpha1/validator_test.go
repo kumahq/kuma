@@ -17,7 +17,7 @@ var _ = Describe("MeshTrafficPermission", func() {
 				mtp := meshtrafficpermissions_proto.NewMeshTrafficPermissionResource()
 
 				// when
-				err := core_model.FromYAML(mtp.Descriptor(), []byte(mtpYAML), mtp.Spec)
+				err := core_model.FromYAML([]byte(mtpYAML), &mtp.Spec)
 				Expect(err).ToNot(HaveOccurred())
 				// and
 				verr := mtp.Validate()
@@ -109,7 +109,7 @@ from:
 				mtp := meshtrafficpermissions_proto.NewMeshTrafficPermissionResource()
 
 				// when
-				err := core_model.FromYAML(mtp.Descriptor(), []byte(given.inputYaml), mtp.Spec)
+				err := core_model.FromYAML([]byte(given.inputYaml), &mtp.Spec)
 				Expect(err).ToNot(HaveOccurred())
 				// and
 				verr := mtp.Validate()
@@ -119,22 +119,6 @@ from:
 				// then
 				Expect(actual).To(MatchYAML(given.expected))
 			},
-			Entry("disallow MeshHTTPRoute at top-level targetRef", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshHTTPRoute
-  name: backend-http-route
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      action: DENY
-`,
-				expected: `
-violations:
-  - field: spec.targetRef.kind
-    message: MeshHTTPRoute is not yet supported`,
-			}),
 			Entry("empty 'from' array", testCase{
 				inputYaml: `
 targetRef:
@@ -170,17 +154,10 @@ from:
       name: mgr-1
     default:
       action: ALLOW
-  - targetRef:
-      kind: MeshHTTPRoute
-      name: mhr-1
-    default:
-      action: ALLOW
 `,
 				expected: `
 violations:
   - field: spec.from[0].targetRef.kind
-    message: value is not supported
-  - field: spec.from[1].targetRef.kind
     message: value is not supported
 `,
 			}),
@@ -194,7 +171,7 @@ from:
 `,
 				expected: `
 violations:
-  - field: spec.from[0].default
+  - field: spec.from[0].default.action
     message: must be defined 
 `,
 			}),

@@ -48,8 +48,8 @@ var _ = Describe("RBACConfigurer", func() {
 			rules: []*core_xds.Rule{
 				{
 					Subset: []core_xds.Tag{},
-					Conf: &v1alpha1.MeshTrafficPermission_Conf{
-						Action: "ALLOW",
+					Conf: v1alpha1.Conf{
+						Action: v1alpha1.ALLOW,
 					},
 				},
 			},
@@ -73,8 +73,8 @@ filters:
 			rules: []*core_xds.Rule{
 				{
 					Subset: []core_xds.Tag{},
-					Conf: &v1alpha1.MeshTrafficPermission_Conf{
-						Action: "DENY",
+					Conf: v1alpha1.Conf{
+						Action: v1alpha1.DENY,
 					},
 				},
 			},
@@ -95,8 +95,8 @@ filters:
 						{Key: "kuma.io/service", Value: "backend"},
 						{Key: "version", Value: "v1"},
 					},
-					Conf: &v1alpha1.MeshTrafficPermission_Conf{
-						Action: "ALLOW",
+					Conf: v1alpha1.Conf{
+						Action: v1alpha1.ALLOW,
 					},
 				},
 				{
@@ -104,8 +104,8 @@ filters:
 						{Key: "kuma.io/service", Value: "web"},
 						{Key: "kuma.io/zone", Value: "us-east"},
 					},
-					Conf: &v1alpha1.MeshTrafficPermission_Conf{
-						Action: "ALLOW",
+					Conf: v1alpha1.Conf{
+						Action: v1alpha1.ALLOW,
 					},
 				},
 			},
@@ -147,8 +147,8 @@ filters:
 						{Key: "kuma.io/service", Value: "backend"},
 						{Key: "version", Value: "v2", Not: true},
 					},
-					Conf: &v1alpha1.MeshTrafficPermission_Conf{
-						Action: "ALLOW",
+					Conf: v1alpha1.Conf{
+						Action: v1alpha1.ALLOW,
 					},
 				},
 			},
@@ -183,8 +183,8 @@ filters:
 						{Key: "kuma.io/service", Value: "backend", Not: true},
 						{Key: "version", Value: "v2"},
 					},
-					Conf: &v1alpha1.MeshTrafficPermission_Conf{
-						Action: "ALLOW",
+					Conf: v1alpha1.Conf{
+						Action: v1alpha1.ALLOW,
 					},
 				},
 			},
@@ -230,8 +230,8 @@ filters:
 					Subset: []core_xds.Tag{
 						{Key: "kuma.io/service", Value: "backend"},
 					},
-					Conf: &v1alpha1.MeshTrafficPermission_Conf{
-						Action: "ALLOW_WITH_SHADOW_DENY",
+					Conf: v1alpha1.Conf{
+						Action: v1alpha1.ALLOW_WITH_SHADOW_DENY,
 					},
 				},
 			},

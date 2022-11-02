@@ -22,7 +22,7 @@ import (
 )
 
 func parseResource(bytes []byte, resource core_model.Resource) {
-	Expect(core_model.FromYAML(resource.Descriptor(), bytes, resource.GetSpec())).To(Succeed())
+	Expect(core_model.FromYAML(bytes, resource.GetSpec())).To(Succeed())
 	resMeta := rest_v1alpha1.ResourceMeta{}
 	err := yaml.Unmarshal(bytes, &resMeta)
 	Expect(err).ToNot(HaveOccurred())

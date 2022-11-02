@@ -5,8 +5,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	meshaccesslog_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("MeshAccessLog", func() {
@@ -17,7 +17,7 @@ var _ = Describe("MeshAccessLog", func() {
 				meshAccessLog := meshaccesslog_proto.NewMeshAccessLogResource()
 
 				// when
-				err := util_proto.FromYAML([]byte(mtpYAML), meshAccessLog.Spec)
+				err := core_model.FromYAML([]byte(mtpYAML), &meshAccessLog.Spec)
 				Expect(err).ToNot(HaveOccurred())
 				// and
 				verr := meshAccessLog.Validate()
@@ -63,6 +63,16 @@ from:
         - file:
            path: '/tmp/logs.txt'
 `),
+			Entry("empty backend list", `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends: []
+`),
 		)
 
 		type testCase struct {
@@ -76,7 +86,7 @@ from:
 				meshAccessLog := meshaccesslog_proto.NewMeshAccessLogResource()
 
 				// when
-				err := util_proto.FromYAML([]byte(given.inputYaml), meshAccessLog.Spec)
+				err := core_model.FromYAML([]byte(given.inputYaml), &meshAccessLog.Spec)
 				Expect(err).ToNot(HaveOccurred())
 				// and
 				verr := meshAccessLog.Validate()
@@ -269,28 +279,6 @@ violations:
 - field: spec.to
   message: 'cannot use "to" when "targetRef" is "MeshGatewayRoute" - there is no outbound'`,
 			}),
-			Entry("'to' defined in MeshHTTPRoute", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshHTTPRoute
-  name: some-mesh-http-route
-to:
-  - targetRef:
-      kind: Mesh
-    default:
-      backends:
-        - file:
-           format:
-             plain: '{"start_time": "%START_TIME%"}'
-           path: '/tmp/logs.txt'
-`,
-				expected: `
-violations:
-- field: spec.targetRef.kind
-  message: MeshHTTPRoute is not yet supported
-- field: spec.to
-  message: 'cannot use "to" when "targetRef" is "MeshHTTPRoute" - "to" always goes to the application'`,
-			}),
 			Entry("'default' not defined in to", testCase{
 				inputYaml: `
 targetRef:
@@ -301,7 +289,7 @@ to:
 `,
 				expected: `
 violations:
-- field: spec.to[0].default
+- field: spec.to[0].default.backends
   message: 'must be defined'`,
 			}),
 			Entry("'default' not defined in from", testCase{
@@ -314,7 +302,7 @@ from:
 `,
 				expected: `
 violations:
-- field: spec.from[0].default
+- field: spec.from[0].default.backends
   message: 'must be defined'`,
 			}),
 			Entry("'address' not valid", testCase{

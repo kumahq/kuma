@@ -7,7 +7,6 @@ import (
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -94,7 +93,7 @@ func (ss Subset) IndexOfPositive() int {
 // represents destinations.
 type Rule struct {
 	Subset Subset
-	Conf   proto.Message
+	Conf   interface{}
 	Origin []core_model.ResourceMeta
 }
 
@@ -149,7 +148,8 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 			break
 		}
 		// 3. For each combination determine a configuration
-		confs := []any{}
+		confs := []interface{}{}
+		// confs := []PolicyConf{}
 		distinctOrigins := map[core_model.ResourceKey]core_model.ResourceMeta{}
 		for i := 0; i < len(list); i++ {
 			item := list[i]
@@ -158,7 +158,7 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 				return nil, err
 			}
 			if itemSubset.IsSubset(ss) {
-				confs = append(confs, item.GetDefaultAsProto())
+				confs = append(confs, item.GetDefault())
 				distinctOrigins[core_model.MetaToResourceKey(item.ResourceMeta)] = item.ResourceMeta
 			}
 		}
@@ -189,7 +189,7 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 	return rules, nil
 }
 
-func merge(confs []any) (proto.Message, error) {
+func merge(confs []interface{}) (interface{}, error) {
 	if len(confs) == 0 {
 		return nil, nil
 	}
@@ -219,36 +219,38 @@ func merge(confs []any) (proto.Message, error) {
 		return nil, err
 	}
 
-	return result, nil
+	v := reflect.ValueOf(result).Elem().Interface()
+
+	return v, nil
 }
 
-func newConf(t reflect.Type) (proto.Message, error) {
-	if t.Kind() != reflect.Pointer {
-		return nil, errors.New("conf expected to have a pointer type")
+func newConf(t reflect.Type) (interface{}, error) {
+	if t.Kind() == reflect.Pointer {
+		return nil, errors.New("conf is expected to have a non-pointer type")
 	}
-	return reflect.New(t.Elem()).Interface().(proto.Message), nil
+	return reflect.New(t).Interface(), nil
 }
 
-func asSubset(tr *common_api.TargetRef) (Subset, error) {
-	switch tr.GetKindEnum() {
-	case common_api.TargetRef_Mesh:
+func asSubset(tr common_api.TargetRef) (Subset, error) {
+	switch tr.Kind {
+	case common_api.Mesh:
 		return Subset{}, nil
-	case common_api.TargetRef_MeshSubset:
+	case common_api.MeshSubset:
 		ss := Subset{}
-		for k, v := range tr.GetTags() {
+		for k, v := range tr.Tags {
 			ss = append(ss, Tag{Key: k, Value: v})
 		}
 		return ss, nil
-	case common_api.TargetRef_MeshService:
-		return Subset{{Key: mesh_proto.ServiceTag, Value: tr.GetName()}}, nil
-	case common_api.TargetRef_MeshServiceSubset:
-		ss := Subset{{Key: mesh_proto.ServiceTag, Value: tr.GetName()}}
-		for k, v := range tr.GetTags() {
+	case common_api.MeshService:
+		return Subset{{Key: mesh_proto.ServiceTag, Value: tr.Name}}, nil
+	case common_api.MeshServiceSubset:
+		ss := Subset{{Key: mesh_proto.ServiceTag, Value: tr.Name}}
+		for k, v := range tr.Tags {
 			ss = append(ss, Tag{Key: k, Value: v})
 		}
 		return ss, nil
 	default:
-		return nil, errors.Errorf("can't represent %s as tags", tr.GetKindEnum())
+		return nil, errors.Errorf("can't represent %s as tags", tr.Kind)
 	}
 }
 

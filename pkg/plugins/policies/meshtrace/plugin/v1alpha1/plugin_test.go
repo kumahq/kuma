@@ -4,7 +4,6 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -108,16 +107,14 @@ var _ = Describe("MeshTrace", func() {
 				Rules: []*core_xds.Rule{
 					{
 						Subset: []core_xds.Tag{},
-						Conf: &api.MeshTrace_Conf{
-							Sampling: &api.MeshTrace_Sampling{
-								Random: &api.MeshTrace_UInt32Value{
-									Value: 50,
-								},
+						Conf: api.Conf{
+							Sampling: api.Sampling{
+								Random: core_model.PtrTo(uint32(50)),
 							},
-							Backends: []*api.MeshTrace_Backend{{
-								Zipkin: &api.MeshTrace_ZipkinBackend{
+							Backends: []api.Backend{{
+								Zipkin: &api.ZipkinBackend{
 									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
-									SharedSpanContext: wrapperspb.Bool(true),
+									SharedSpanContext: core_model.PtrTo(true),
 									ApiVersion:        "httpProto",
 									TraceId128Bit:     true,
 								},
@@ -209,14 +206,12 @@ var _ = Describe("MeshTrace", func() {
 				Rules: []*core_xds.Rule{
 					{
 						Subset: []core_xds.Tag{},
-						Conf: &api.MeshTrace_Conf{
-							Sampling: &api.MeshTrace_Sampling{
-								Random: &api.MeshTrace_UInt32Value{
-									Value: 50,
-								},
+						Conf: api.Conf{
+							Sampling: api.Sampling{
+								Random: core_model.PtrTo(uint32(50)),
 							},
-							Backends: []*api.MeshTrace_Backend{{
-								Datadog: &api.MeshTrace_DatadogBackend{
+							Backends: []api.Backend{{
+								Datadog: &api.DatadogBackend{
 									Url:          "http://ingest.datadog.eu:8126",
 									SplitService: true,
 								},

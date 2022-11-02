@@ -1,7 +1,7 @@
 package builders
 
 import (
-	common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	meshtrace_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -19,19 +19,19 @@ func MeshTrace() *MeshTraceBuilder {
 				Name: "mtp-1",
 			},
 			Spec: &meshtrace_proto.MeshTrace{
-				Default: &meshtrace_proto.MeshTrace_Conf{},
+				Default: meshtrace_proto.Conf{},
 			},
 		},
 	}
 }
 
-func (m *MeshTraceBuilder) WithTargetRef(targetRef *common_proto.TargetRef) *MeshTraceBuilder {
+func (m *MeshTraceBuilder) WithTargetRef(targetRef common_api.TargetRef) *MeshTraceBuilder {
 	m.res.Spec.TargetRef = targetRef
 	return m
 }
 
-func (m *MeshTraceBuilder) WithZipkinBackend(zipkin *meshtrace_proto.MeshTrace_ZipkinBackend) *MeshTraceBuilder {
-	m.res.Spec.Default.Backends = []*meshtrace_proto.MeshTrace_Backend{
+func (m *MeshTraceBuilder) WithZipkinBackend(zipkin *meshtrace_proto.ZipkinBackend) *MeshTraceBuilder {
+	m.res.Spec.Default.Backends = []meshtrace_proto.Backend{
 		{
 			Zipkin: zipkin,
 		},
