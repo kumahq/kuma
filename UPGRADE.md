@@ -61,10 +61,12 @@ changed to agree with the other `image` values.
 * The `/versions` endpoint was removed. This is not something that was reliable enough and version compatibility
 is checked inside the DP
 * We are deprecating `kuma.io/builtindns` and `kuma.io/builtindnsport` annotations in favour of the clearer `kuma.io/builtin-dns` and `kuma.io/builtin-dns-port`. The behavior of the new annotations is unchanged but you should migrate (a warning is present on the log if you are using the deprecated version).
-* By default, applications binding to `localhost` are not reachable anymore. We are changing the default inbound cluster from `localhost` to `inbound.address`. Before upgrade check if your applications are listening on `localhost` and should be exposed:
-  * Universal: If you don't want to expose application make sure your application binds  to `127.0.0.1` and set `dataplane.networking.inbound[].serviceAddress: "127.0.0.1"`.
-  * Kubernetes: Make sure your application binds to `0.0.0.0`.
-To ease migration you can temporarily disable this new behavior by setting `KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS=true` on `kuma-cp`, this option will be removed in a future version.
+* By default, applications binding to `localhost` are not reachable anymore. A `Dataplane` inbound's default `serviceAddress` is now the inbound's `address`. Before upgrade check if your applications are listening on `localhost` and:
+  * you run on K8s and you want it exposed - change binding of the application to `0.0.0.0`.
+  * you run on K8s and you don't want it exposed - changes are not needed.
+  * you run on Universal and you want it exposed - change it binding to `inbound.address` or set `dataplane.networking.inbound[].serviceAddress: "127.0.0.1"`.
+  * you run on Universal and you don't want it exposed - changes are not needed.
+To make migration easier you can temporarily disable this new behavior by setting `KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS=true` on `kuma-cp`, this option will be removed in a future version.
 
 ## Upgrade to `1.7.x`
 
