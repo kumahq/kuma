@@ -3,7 +3,7 @@ module github.com/kumahq/kuma
 go 1.18
 
 require (
-	cirello.io/pglock v1.9.0
+	cirello.io/pglock v1.10.0
 	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/Nordix/simple-ipam v1.0.0
@@ -28,13 +28,13 @@ require (
 	github.com/gruntwork-io/terratest v0.40.24
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/kumahq/kuma-net v0.8.2
+	github.com/kumahq/kuma-net v0.8.5
 	github.com/kumahq/protoc-gen-kumadoc v0.3.1
 	github.com/lib/pq v1.10.7
 	github.com/miekg/dns v1.1.50
 	github.com/natefinch/atomic v1.0.1
 	github.com/onsi/ginkgo/v2 v2.4.0
-	github.com/onsi/gomega v1.22.1
+	github.com/onsi/gomega v1.23.0
 	github.com/operator-framework/operator-lib v0.11.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
@@ -45,7 +45,7 @@ require (
 	github.com/sethvargo/go-retry v0.2.3
 	github.com/slok/go-http-metrics v0.10.0
 	github.com/soheilhy/cmux v0.1.5
-	github.com/spf13/cobra v1.6.0
+	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.13.0
 	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc
 	github.com/testcontainers/testcontainers-go v0.15.0

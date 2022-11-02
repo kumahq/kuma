@@ -57,7 +57,7 @@ func FailToProxyRequestToGateway(cluster Cluster, gatewayAddr string, namespace 
 	}
 }
 
-func mkGateway(name, mesh string, crossMesh bool, hostname, backendService string, port int) string {
+func mkGateway(resourceName, serviceName, mesh string, crossMesh bool, hostname, backendService string, port int) string {
 	meshGateway := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshGateway
@@ -74,7 +74,7 @@ spec:
       protocol: HTTP
       crossMesh: %t
       hostname: %s
-`, name, mesh, name, port, crossMesh, hostname)
+`, resourceName, mesh, serviceName, port, crossMesh, hostname)
 
 	route := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -96,7 +96,7 @@ spec:
         backends:
         - destination:
             kuma.io/service: %s # Matches the echo-server we deployed.
-`, name, mesh, name, backendService)
+`, resourceName, mesh, serviceName, backendService)
 	return strings.Join([]string{meshGateway, route}, "\n---\n")
 }
 

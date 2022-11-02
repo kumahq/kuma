@@ -69,7 +69,7 @@ func CleanupEbpfConfigFromNode() {
 		// then should have bpf files left on the node
 		stdout, _, err := cluster.Exec(TestNamespace, ebpfCheckerPodName, "ebpf-checker", "ls", "/sys/fs/bpf")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("netns_cleanup_link"))
+		Expect(stdout).To(ContainSubstring("cookie_orig_dst"))
 
 		// when kuma is deleted
 		Expect(cluster.DeleteKuma()).To(Succeed())
@@ -78,7 +78,7 @@ func CleanupEbpfConfigFromNode() {
 		Eventually(func(g Gomega) {
 			stdout, _, err = cluster.Exec(TestNamespace, ebpfCheckerPodName, "ebpf-checker", "ls", "/sys/fs/bpf")
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).ToNot(ContainSubstring("netns_cleanup_link"))
+			g.Expect(stdout).ToNot(ContainSubstring("cookie_orig_dst"))
 		}, "30s", "1s").Should(Succeed())
 	})
 }
