@@ -23,7 +23,7 @@ func (x *From) GetDefault() interface{} {
 
 func (x *MeshTrafficPermission) GetFromList() []core_xds.PolicyItem {
 	var result []core_xds.PolicyItem
-	for i := 0; i < len(x.From); i++ {
+	for i := range x.From {
 		item := x.From[i]
 		result = append(result, &item)
 	}
