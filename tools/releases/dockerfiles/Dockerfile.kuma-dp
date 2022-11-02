@@ -10,7 +10,7 @@ RUN apt-get update && \
     apt-get install -y libcap2-bin
 RUN setcap cap_net_bind_service+ep /envoy
 
-FROM --platform=linux/$BASE_IMAGE_ARCH gcr.io/distroless/static:nonroot
+FROM --platform=linux/$BASE_IMAGE_ARCH gcr.io/distroless/static:debug-nonroot
 ARG ARCH
 
 ADD /build/artifacts-linux-$ARCH/kuma-dp/kuma-dp /usr/bin
