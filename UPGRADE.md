@@ -61,7 +61,10 @@ changed to agree with the other `image` values.
 * The `/versions` endpoint was removed. This is not something that was reliable enough and version compatibility
 is checked inside the DP
 * We are deprecating `kuma.io/builtindns` and `kuma.io/builtindnsport` annotations in favour of the clearer `kuma.io/builtin-dns` and `kuma.io/builtin-dns-port`. The behavior of the new annotations is unchanged but you should migrate (a warning is present on the log if you are using the deprecated version).
-* Applications that are binding to `localhost` won't be reachable anymore. We are changing the default inbound cluster that was always pointing to `localhost` to `DataplaneIP`. Before upgrade check if your applications are listening on `localhost` and should be exposed. In this case change address on which application listen to `0.0.0.0`. Other option is to define `dataplane.networking.inbound[].serviceAddress` to the address which service is binding. Another way is to disable the new behavior by setting `kuma-cp` configuration `KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS` to `true` or `defaults.enableLocalhostInboundClusters` to `true`. The last option is going to be removed in further versions.
+* By default, applications binding to `localhost` are not reachable anymore. A `Dataplane` inbound's default `serviceAddress` is now the inbound's `address`. Before upgrade, if you have applications listening on `localhost` that you want to expose on:
+  * Kubernetes: listen on `0.0.0.0` instead
+  * Universal: listen on `inbound.address` instead or set `dataplane.networking.inbound[].serviceAddress: "127.0.0.1"`
+To make migration easier you can temporarily disable this new behavior by setting `KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS=true` on `kuma-cp`, this option will be removed in a future version.
 
 ## Upgrade to `1.7.x`
 
