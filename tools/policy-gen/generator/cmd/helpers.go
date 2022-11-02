@@ -71,7 +71,7 @@ func (x *From) GetDefault() interface{} {
 
 func (x *{{.name}}) GetFromList() []core_xds.PolicyItem {
 	var result []core_xds.PolicyItem
-	for i := 0; i < len(x.From); i++ {
+	for i  := range x.From {
 		item := x.From[i]
 		result = append(result, &item)
 	}
@@ -90,7 +90,7 @@ func (x *To) GetDefault() interface{} {
 
 func (x *{{.name}}) GetToList() []core_xds.PolicyItem {
 	var result []core_xds.PolicyItem
-	for i := 0; i < len(x.To); i++ {
+	for i := range(x.To) {
 		item := x.To[i]
 		result = append(result, &item)
 	}
