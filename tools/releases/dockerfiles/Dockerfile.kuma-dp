@@ -14,11 +14,12 @@ FROM --platform=linux/$BASE_IMAGE_ARCH gcr.io/distroless/base-debian11:debug-non
 
 FROM --platform=linux/$BASE_IMAGE_ARCH gcr.io/distroless/static:debug-nonroot
 ARG ARCH
+ARG OS_ARCH
 
 ADD /build/artifacts-linux-$ARCH/kuma-dp/kuma-dp /usr/bin
 COPY --from=envoy /envoy /usr/bin/envoy
-COPY --from=debian11 /lib/aarch64-linux-gnu/libc.so.6 /lib/aarch64-linux-gnu/libc.so.6
-COPY --from=debian11 /lib/aarch64-linux-gnu/libc-2.31.so /lib/aarch64-linux-gnu/libc-2.31.so
+COPY --from=debian11 /lib/${OS_ARCH}-linux-gnu/libc.so.6 /lib/${OS_ARCH}-linux-gnu/libc.so.6
+COPY --from=debian11 /lib/${OS_ARCH}-linux-gnu/libc-2.31.so /lib/${OS_ARCH}-linux-gnu/libc-2.31.so
 ADD /build/artifacts-linux-$ARCH/coredns/coredns /usr/bin
 
 COPY /tools/releases/templates/LICENSE \
