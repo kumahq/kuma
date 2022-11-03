@@ -34,7 +34,6 @@ properties:
                                 value:
                                   type: string
                               type: object
-                            nullable: true
                             type: array
                           plain:
                             type: string
@@ -60,7 +59,6 @@ properties:
                                 value:
                                   type: string
                               type: object
-                            nullable: true
                             type: array
                           plain:
                             type: string
@@ -144,7 +142,6 @@ properties:
                                 value:
                                   type: string
                               type: object
-                            nullable: true
                             type: array
                           plain:
                             type: string
@@ -170,7 +167,6 @@ properties:
                                 value:
                                   type: string
                               type: object
-                            nullable: true
                             type: array
                           plain:
                             type: string
