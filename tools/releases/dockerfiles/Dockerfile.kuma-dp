@@ -10,6 +10,8 @@ RUN apt-get update && \
     apt-get install -y libcap2-bin
 RUN setcap cap_net_bind_service+ep /envoy
 
+# need to wait for gcr.io/distroless/base-nonssl-debian11:debug-nonroot
+# https://github.com/GoogleContainerTools/distroless/issues/1098
 FROM --platform=linux/$BASE_IMAGE_ARCH gcr.io/distroless/base-debian11:debug-nonroot
 ARG ARCH
 
