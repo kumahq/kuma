@@ -8,6 +8,8 @@ does not have any particular instructions.
 
 ## Upcoming release
 
+## Upgrade to `2.0.x`
+
 ### Universal
 
 A `lib/pq` change enables SNI by default when connecting to Postgres over TLS.
