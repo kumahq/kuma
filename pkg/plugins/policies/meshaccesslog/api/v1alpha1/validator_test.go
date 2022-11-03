@@ -61,7 +61,7 @@ from:
     default:
       backends:
         - file:
-           path: '/tmp/logs.txt'
+            path: '/tmp/logs.txt'
 `),
 			Entry("empty backend list", `
 targetRef:
@@ -326,6 +326,32 @@ from:
 violations:
 - field: spec.from[0].default.backends[0].tcp.address
   message: 'tcp backend requires valid address'`,
+			}),
+			Entry("empty format json list", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends:
+        - file:
+            path: '/tmp/logs.txt'
+            format:
+              json: []
+        - tcp:
+            address: http://logs.com
+            format:
+              json: []
+`,
+				expected: `
+violations:
+- field: spec.from[0].default.backends[0].file.format.json
+  message: 'must not be empty'
+- field: spec.from[0].default.backends[1].tcp.format.json
+  message: 'must not be empty'`,
 			}),
 		)
 	})

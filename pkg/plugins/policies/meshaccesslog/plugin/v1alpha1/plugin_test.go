@@ -125,9 +125,6 @@ var _ = Describe("MeshAccessLog", func() {
 						Conf: api.Conf{
 							Backends: []api.Backend{{
 								File: &api.FileBackend{
-									Format: &api.Format{
-										Plain: "",
-									},
 									Path: "/tmp/log",
 								},
 							}},
@@ -201,9 +198,6 @@ var _ = Describe("MeshAccessLog", func() {
 						Conf: api.Conf{
 							Backends: []api.Backend{{
 								File: &api.FileBackend{
-									Format: &api.Format{
-										Plain: "",
-									},
 									Path: "/tmp/log",
 								},
 							}},
@@ -272,9 +266,6 @@ var _ = Describe("MeshAccessLog", func() {
 						Conf: api.Conf{
 							Backends: []api.Backend{{
 								File: &api.FileBackend{
-									Format: &api.Format{
-										Plain: "",
-									},
 									Path: "/tmp/log",
 								},
 							}},
@@ -346,9 +337,6 @@ var _ = Describe("MeshAccessLog", func() {
 						Conf: api.Conf{
 							Backends: []api.Backend{{
 								File: &api.FileBackend{
-									Format: &api.Format{
-										Plain: "",
-									},
 									Path: "/tmp/log",
 								},
 							}},
@@ -509,9 +497,6 @@ var _ = Describe("MeshAccessLog", func() {
 						Conf: api.Conf{
 							Backends: []api.Backend{{
 								File: &api.FileBackend{
-									Format: &api.Format{
-										Plain: "",
-									},
 									Path: "/tmp/log",
 								},
 							}},
