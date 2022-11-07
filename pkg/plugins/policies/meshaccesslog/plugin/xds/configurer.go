@@ -58,7 +58,7 @@ func (c *Configurer) interpolateKumaVariables(formatString string) (*accesslog.A
 }
 
 func (c *Configurer) envoyAccessLog(defaultFormat string) (*envoy_accesslog.AccessLog, error) {
-	var format *api.Format
+	var format api.Format
 	var logPath string
 
 	if f := c.Backend.File; f != nil {

@@ -1893,7 +1893,6 @@ spec:
                                             value:
                                               type: string
                                           type: object
-                                        nullable: true
                                         type: array
                                       plain:
                                         type: string
@@ -1921,7 +1920,6 @@ spec:
                                             value:
                                               type: string
                                           type: object
-                                        nullable: true
                                         type: array
                                       plain:
                                         type: string
@@ -2019,7 +2017,6 @@ spec:
                                             value:
                                               type: string
                                           type: object
-                                        nullable: true
                                         type: array
                                       plain:
                                         type: string
@@ -2047,7 +2044,6 @@ spec:
                                             value:
                                               type: string
                                           type: object
-                                        nullable: true
                                         type: array
                                       plain:
                                         type: string
