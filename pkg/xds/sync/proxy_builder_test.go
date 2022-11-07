@@ -100,7 +100,7 @@ var _ = Describe("Proxy Builder", func() {
 	)
 	metrics, err := core_metrics.NewMetrics("cache")
 	Expect(err).ToNot(HaveOccurred())
-	meshCache, err := mesh.NewCache(builder.Config().Store.Cache.ExpirationTime, meshCtxBuilder, metrics)
+	meshCache, err := mesh.NewCache(builder.Config().Store.Cache.ExpirationTime.Duration, meshCtxBuilder, metrics)
 	Expect(err).ToNot(HaveOccurred())
 	builder.WithMeshCache(meshCache)
 

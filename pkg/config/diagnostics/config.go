@@ -6,9 +6,9 @@ import (
 
 type DiagnosticsConfig struct {
 	// Port of Diagnostic Server for checking health and readiness of the Control Plane
-	ServerPort uint32 `yaml:"serverPort" envconfig:"kuma_diagnostics_server_port"`
+	ServerPort uint32 `json:"serverPort" envconfig:"kuma_diagnostics_server_port"`
 	// If true, enables https://golang.org/pkg/net/http/pprof/ debug endpoints
-	DebugEndpoints bool `yaml:"debugEndpoints" envconfig:"kuma_diagnostics_debug_endpoints"`
+	DebugEndpoints bool `json:"debugEndpoints" envconfig:"kuma_diagnostics_debug_endpoints"`
 }
 
 var _ config.Config = &DiagnosticsConfig{}

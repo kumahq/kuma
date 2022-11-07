@@ -26,8 +26,8 @@ var _ = Describe("XdsServerConfig", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		Expect(cfg.DataplaneConfigurationRefreshInterval).To(Equal(3 * time.Second))
-		Expect(cfg.DataplaneStatusFlushInterval).To(Equal(5 * time.Second))
+		Expect(cfg.DataplaneConfigurationRefreshInterval.Duration).To(Equal(3 * time.Second))
+		Expect(cfg.DataplaneStatusFlushInterval.Duration).To(Equal(5 * time.Second))
 	})
 
 	Context("with modified environment variables", func() {
@@ -66,8 +66,8 @@ var _ = Describe("XdsServerConfig", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and
-			Expect(cfg.DataplaneConfigurationRefreshInterval).To(Equal(3 * time.Second))
-			Expect(cfg.DataplaneStatusFlushInterval).To(Equal(5 * time.Second))
+			Expect(cfg.DataplaneConfigurationRefreshInterval.Duration).To(Equal(3 * time.Second))
+			Expect(cfg.DataplaneStatusFlushInterval.Duration).To(Equal(5 * time.Second))
 		})
 	})
 

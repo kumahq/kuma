@@ -376,6 +376,7 @@ func (OutboundProxyGenerator) determineRoutes(
 				isExternalService = true
 			}
 
+			allTags := envoy_tags.Tags(destination.Destination)
 			cluster := envoy_common.NewCluster(
 				envoy_common.WithService(service),
 				envoy_common.WithName(name),
@@ -383,7 +384,7 @@ func (OutboundProxyGenerator) determineRoutes(
 				// The mesh tag is set here if this destination is generated
 				// from a MeshGateway virtual outbound and is not part of the
 				// service tags
-				envoy_common.WithTags(envoy_tags.Tags(destination.Destination).WithoutTags(mesh_proto.MeshTag)),
+				envoy_common.WithTags(allTags.WithoutTags(mesh_proto.MeshTag)),
 				envoy_common.WithTimeout(timeoutConf),
 				envoy_common.WithLB(route.Spec.GetConf().GetLoadBalancer()),
 				envoy_common.WithExternalService(isExternalService),
@@ -393,10 +394,10 @@ func (OutboundProxyGenerator) determineRoutes(
 				cluster.SetMesh(mesh)
 			}
 
-			if name, ok := clusterCache[cluster.Tags().String()]; ok {
+			if name, ok := clusterCache[allTags.String()]; ok {
 				cluster.SetName(name)
 			} else {
-				clusterCache[cluster.Tags().String()] = cluster.Name()
+				clusterCache[allTags.String()] = cluster.Name()
 			}
 
 			if isExternalService {

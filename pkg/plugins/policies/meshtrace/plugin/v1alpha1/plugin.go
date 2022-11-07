@@ -16,6 +16,7 @@ import (
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
+	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 const OriginMeshTrace = "mesh-trace"
@@ -51,6 +52,48 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 	}
 	if err := applyToClusters(policies.SingleItemRules, rs, proxy); err != nil {
 		return err
+	}
+	if err := applyToGateway(policies.SingleItemRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy.Dataplane); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func applyToGateway(
+	rules xds.SingleItemRules, gatewayListeners map[xds.InboundListener]*envoy_listener.Listener, resources xds_context.ResourceMap, dataplane *core_mesh.DataplaneResource,
+) error {
+	var gateways *core_mesh.MeshGatewayResourceList
+	if rawList := resources[core_mesh.MeshGatewayType]; rawList != nil {
+		gateways = rawList.(*core_mesh.MeshGatewayResourceList)
+	} else {
+		return nil
+	}
+
+	gateway := xds_topology.SelectGateway(gateways.Items, dataplane.Spec.Matches)
+	if gateway == nil {
+		return nil
+	}
+
+	for _, listener := range gateway.Spec.GetConf().GetListeners() {
+		address := dataplane.Spec.GetNetworking().Address
+		port := listener.GetPort()
+		listener, ok := gatewayListeners[xds.InboundListener{
+			Address: address,
+			Port:    port,
+		}]
+		if !ok {
+			continue
+		}
+
+		if err := configureListener(
+			rules,
+			dataplane,
+			listener,
+			"",
+		); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -88,7 +131,7 @@ func applyToOutbounds(rules xds.SingleItemRules, outboundListeners map[mesh_prot
 func configureListener(rules xds.SingleItemRules, dataplane *core_mesh.DataplaneResource, listener *envoy_listener.Listener, destination string) error {
 	serviceName := dataplane.Spec.GetIdentifyingService()
 	rawConf := rules.Rules[0].Conf
-	conf := rawConf.(*api.MeshTrace_Conf)
+	conf := rawConf.(api.Conf)
 
 	configurer := plugin_xds.Configurer{
 		Conf:             conf,
@@ -109,21 +152,18 @@ func configureListener(rules xds.SingleItemRules, dataplane *core_mesh.Dataplane
 func applyToClusters(rules xds.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy) error {
 	rawConf := rules.Rules[0].Conf
 
-	conf := rawConf.(*api.MeshTrace_Conf)
+	conf := rawConf.(api.Conf)
 
-	backend := conf.GetBackends()[0]
-	if backend == nil {
-		return nil
-	}
+	backend := conf.Backends[0]
 
 	var endpoint *xds.Endpoint
 	var provider string
 
-	if backend.GetZipkin() != nil {
-		endpoint = endpointForZipkin(backend.GetZipkin())
+	if backend.Zipkin != nil {
+		endpoint = endpointForZipkin(backend.Zipkin)
 		provider = plugin_xds.ZipkinProviderName
 	} else {
-		endpoint = endpointForDatadog(backend.GetDatadog())
+		endpoint = endpointForDatadog(backend.Datadog)
 		provider = plugin_xds.DatadogProviderName
 	}
 
@@ -141,7 +181,7 @@ func applyToClusters(rules xds.SingleItemRules, rs *xds.ResourceSet, proxy *xds.
 	return nil
 }
 
-func endpointForZipkin(cfg *api.MeshTrace_ZipkinBackend) *xds.Endpoint {
+func endpointForZipkin(cfg *api.ZipkinBackend) *xds.Endpoint {
 	url, _ := net_url.ParseRequestURI(cfg.Url)
 	port, _ := strconv.Atoi(url.Port())
 	return &xds.Endpoint{
@@ -154,7 +194,7 @@ func endpointForZipkin(cfg *api.MeshTrace_ZipkinBackend) *xds.Endpoint {
 	}
 }
 
-func endpointForDatadog(cfg *api.MeshTrace_DatadogBackend) *xds.Endpoint {
+func endpointForDatadog(cfg *api.DatadogBackend) *xds.Endpoint {
 	url, _ := net_url.ParseRequestURI(cfg.Url)
 	port, _ := strconv.Atoi(url.Port())
 

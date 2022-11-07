@@ -18,9 +18,9 @@ func DefaultRuntimeConfig() *RuntimeConfig {
 // Environment-specific configuration
 type RuntimeConfig struct {
 	// Kubernetes-specific configuration
-	Kubernetes *k8s.KubernetesRuntimeConfig `yaml:"kubernetes"`
+	Kubernetes *k8s.KubernetesRuntimeConfig `json:"kubernetes"`
 	// Universal-specific configuration
-	Universal *universal.UniversalRuntimeConfig `yaml:"universal"`
+	Universal *universal.UniversalRuntimeConfig `json:"universal"`
 }
 
 func (c *RuntimeConfig) Sanitize() {

@@ -11,6 +11,7 @@
     "backends": [
      {
       "file": {
+       "format": {},
        "path": "/tmp/access.logs"
       }
      }
@@ -56,6 +57,7 @@
       }
      }
     ],
+    "sampling": {},
     "tags": null
    },
    "origins": [

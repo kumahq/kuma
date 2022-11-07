@@ -1,16 +1,15 @@
 package validation_test
 
 import (
-	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/yaml"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	_ "github.com/kumahq/kuma/pkg/plugins/policies"
 	meshtrace_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	meshtrafficpermissions_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("plugins validation", func() {
@@ -25,7 +24,7 @@ var _ = Describe("plugins validation", func() {
 				obj, err := registry.Global().NewObject(given.resourceType)
 				Expect(err).To(Not(HaveOccurred()))
 
-				err = core_model.FromYAML(obj.Descriptor(), []byte(given.inputYaml), obj.GetSpec())
+				err = core_model.FromYAML([]byte(given.inputYaml), obj.GetSpec())
 				Expect(err).To(Not(HaveOccurred()))
 
 				verr := obj.(core_model.ResourceValidator).Validate()
@@ -59,7 +58,7 @@ default:
 			func(given testCase) {
 				// and
 				mtp := meshtrafficpermissions_proto.NewMeshTrafficPermissionResource()
-				err := proto.FromYAML([]byte(given.inputYaml), mtp.Spec)
+				err := core_model.FromYAML([]byte(given.inputYaml), mtp.Spec)
 				Expect(err).To(Not(HaveOccurred()))
 				verr := mtp.Validate()
 				actual, err := yaml.Marshal(verr)

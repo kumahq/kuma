@@ -93,7 +93,7 @@ func writeBadRequestError(res *restful.Response, err rest_error_types.Error) {
 // or, if no timeout value was supplied, returns the configured default
 func (s *service) parseFetchTimeout(timeoutStr string) (time.Duration, error) {
 	if timeoutStr == "" {
-		return s.config.DefaultFetchTimeout, nil
+		return s.config.DefaultFetchTimeout.Duration, nil
 	}
 
 	return time.ParseDuration(timeoutStr)

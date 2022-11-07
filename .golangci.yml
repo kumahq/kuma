@@ -42,12 +42,23 @@ linters-settings:
       alias: config_core
     - pkg: github.com/kumahq/kuma/pkg/core/resources/model
       alias: core_model
+    - pkg: github.com/kumahq/kuma/api/common/v1alpha1
+      alias: common_api
   gomodguard:
     blocked:
       modules:
       - github.com/go-errors/errors:
           recommendations:
           - github.com/pkg/errors
+      - github.com/ghodss/yaml:
+          recommendations:
+          - sigs.k8s.io/yaml
+      - gopkg.in/yaml.v2:
+          recommendations:
+          - sigs.k8s.io/yaml
+      - gopkg.in/yaml.v3:
+          recommendations:
+          - sigs.k8s.io/yaml
   misspell:
     locale: US
     ignore-words:

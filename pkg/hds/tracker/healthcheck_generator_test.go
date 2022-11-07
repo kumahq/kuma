@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -71,12 +72,12 @@ networking:
         kuma.io/service: backend
 `,
 			hdsConfig: &dp_server.HdsConfig{
-				Interval: 8 * time.Second,
+				Interval: config_types.Duration{Duration: 8 * time.Second},
 				Enabled:  true,
 				CheckDefaults: &dp_server.HdsCheck{
-					Interval:           1 * time.Second,
-					NoTrafficInterval:  2 * time.Second,
-					Timeout:            3 * time.Second,
+					Interval:           config_types.Duration{Duration: 1 * time.Second},
+					NoTrafficInterval:  config_types.Duration{Duration: 2 * time.Second},
+					Timeout:            config_types.Duration{Duration: 3 * time.Second},
 					HealthyThreshold:   4,
 					UnhealthyThreshold: 5,
 				},

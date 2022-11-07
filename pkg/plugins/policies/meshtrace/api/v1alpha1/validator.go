@@ -10,7 +10,7 @@ import (
 	"github.com/asaskevich/govalidator"
 	"golang.org/x/exp/slices"
 
-	common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
 )
@@ -18,34 +18,32 @@ import (
 func (r *MeshTraceResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.GetTargetRef()))
-	verr.AddErrorAt(path.Field("default"), validateDefault(r.Spec.GetDefault()))
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("default"), validateDefault(r.Spec.Default))
 	return verr.OrNil()
 }
-func validateTop(targetRef *common_proto.TargetRef) validators.ValidationError {
+func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
-		SupportedKinds: []common_proto.TargetRef_Kind{
-			common_proto.TargetRef_Mesh,
-			common_proto.TargetRef_MeshSubset,
-			common_proto.TargetRef_MeshService,
-			common_proto.TargetRef_MeshServiceSubset,
-			common_proto.TargetRef_MeshGatewayRoute,
+		SupportedKinds: []common_api.TargetRefKind{
+			common_api.Mesh,
+			common_api.MeshSubset,
+			common_api.MeshService,
+			common_api.MeshServiceSubset,
+			common_api.MeshGatewayRoute,
 		},
 	})
 	return targetRefErr
 }
 
-func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
+func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
 
-	if conf == nil {
-		verr.AddViolation("", validators.MustBeDefined)
-		return verr
+	backendsPath := validators.RootedAt("backends")
+	if conf.Backends == nil {
+		verr.AddViolationAt(backendsPath, validators.MustBeDefined)
 	}
 
-	backendsPath := validators.RootedAt("backends")
-
-	switch len(conf.GetBackends()) {
+	switch len(conf.Backends) {
 	case 0:
 		break
 	case 1:
@@ -54,44 +52,40 @@ func validateDefault(conf *MeshTrace_Conf) validators.ValidationError {
 		verr.AddViolationAt(backendsPath, "must have zero or one backend defined")
 	}
 
-	tags := conf.GetTags()
-	for tagIndex, tag := range tags {
+	for tagIndex, tag := range conf.Tags {
 		path := validators.RootedAt("tags").Index(tagIndex)
-		if tag.GetName() == "" {
+		if tag.Name == "" {
 			verr.AddViolationAt(path.Field("name"), validators.MustNotBeEmpty)
 		}
 
-		if (tag.GetHeader() != nil) == (tag.GetLiteral() != "") {
+		if (tag.Header != nil) == (tag.Literal != "") {
 			verr.AddViolationAt(path, validators.MustHaveOnlyOne("tag", "header", "literal"))
 		}
 	}
 
-	sampling := conf.GetSampling()
-	if sampling != nil {
-		if sampling.GetClient() != nil {
-			verr.AddErrorAt(validators.RootedAt("sampling").Field("client"), validateSampling(sampling.GetClient().GetValue()))
-		}
-		if sampling.GetRandom() != nil {
-			verr.AddErrorAt(validators.RootedAt("sampling").Field("random"), validateSampling(sampling.GetRandom().GetValue()))
-		}
-		if sampling.GetOverall() != nil {
-			verr.AddErrorAt(validators.RootedAt("sampling").Field("overall"), validateSampling(sampling.GetOverall().GetValue()))
-		}
+	if client := conf.Sampling.Client; client != nil {
+		verr.AddErrorAt(validators.RootedAt("sampling").Field("client"), validateSampling(*client))
+	}
+	if random := conf.Sampling.Random; random != nil {
+		verr.AddErrorAt(validators.RootedAt("sampling").Field("random"), validateSampling(*random))
+	}
+	if overall := conf.Sampling.Overall; overall != nil {
+		verr.AddErrorAt(validators.RootedAt("sampling").Field("overall"), validateSampling(*overall))
 	}
 
 	return verr
 }
 
-func validateBackend(conf *MeshTrace_Conf, backendsPath validators.PathBuilder) validators.ValidationError {
+func validateBackend(conf Conf, backendsPath validators.PathBuilder) validators.ValidationError {
 	var verr validators.ValidationError
-	backend := conf.GetBackends()[0]
+	backend := conf.Backends[0]
 	firstBackendPath := backendsPath.Index(0)
-	if (backend.GetDatadog() != nil) == (backend.GetZipkin() != nil) {
+	if (backend.Datadog != nil) == (backend.Zipkin != nil) {
 		verr.AddViolationAt(firstBackendPath, validators.MustHaveOnlyOne("backend", "datadog", "zipkin"))
 	}
 
-	if backend.GetDatadog() != nil {
-		datadogBackend := backend.GetDatadog()
+	if backend.Datadog != nil {
+		datadogBackend := backend.Datadog
 		datadogPath := firstBackendPath.Field("datadog")
 
 		url, err := net_url.ParseRequestURI(datadogBackend.Url)
@@ -133,8 +127,8 @@ func validateBackend(conf *MeshTrace_Conf, backendsPath validators.PathBuilder) 
 		}
 	}
 
-	if backend.GetZipkin() != nil {
-		zipkinBackend := backend.GetZipkin()
+	if backend.Zipkin != nil {
+		zipkinBackend := backend.Zipkin
 		zipkinPath := firstBackendPath.Field("zipkin")
 
 		if zipkinBackend.Url == "" {

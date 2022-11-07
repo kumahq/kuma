@@ -57,6 +57,7 @@ func CrossMeshGatewayOnKubernetes() {
 	const gatewayClientNamespaceOtherMesh = "cross-mesh-kuma-client-other"
 	const gatewayClientNamespaceSameMesh = "cross-mesh-kuma-client"
 	const gatewayTestNamespace = "cross-mesh-kuma-test"
+	const gatewayTestNamespace2 = "cross-mesh-kuma-test2"
 	const gatewayClientOutsideMesh = "cross-mesh-kuma-client-outside"
 
 	const crossMeshHostname = "gateway.mesh"
@@ -100,6 +101,7 @@ func CrossMeshGatewayOnKubernetes() {
 			// misconfigured mesh
 			Install(misconfiguredMTLSProvidedMeshKubernetes()).
 			Install(NamespaceWithSidecarInjection(gatewayTestNamespace)).
+			Install(NamespaceWithSidecarInjection(gatewayTestNamespace2)).
 			Install(NamespaceWithSidecarInjection(gatewayClientNamespaceOtherMesh)).
 			Install(NamespaceWithSidecarInjection(gatewayClientNamespaceSameMesh)).
 			Install(Namespace(gatewayClientOutsideMesh)).
@@ -121,17 +123,18 @@ func CrossMeshGatewayOnKubernetes() {
 		Expect(env.Cluster.TriggerDeleteNamespace(gatewayClientNamespaceSameMesh)).To(Succeed())
 		Expect(env.Cluster.TriggerDeleteNamespace(gatewayClientOutsideMesh)).To(Succeed())
 		Expect(env.Cluster.TriggerDeleteNamespace(gatewayTestNamespace)).To(Succeed())
+		Expect(env.Cluster.TriggerDeleteNamespace(gatewayTestNamespace2)).To(Succeed())
 		Expect(env.Cluster.DeleteMesh(gatewayMesh)).To(Succeed())
 		Expect(env.Cluster.DeleteMesh(gatewayOtherMesh)).To(Succeed())
 	})
 
 	Context("when mTLS is enabled", func() {
 		crossMeshGatewayYaml := mkGateway(
-			crossMeshGatewayName, gatewayMesh, true, crossMeshHostname, echoServerService(gatewayMesh, gatewayTestNamespace), crossMeshGatewayPort,
+			crossMeshGatewayName, crossMeshGatewayName, gatewayMesh, true, crossMeshHostname, echoServerService(gatewayMesh, gatewayTestNamespace), crossMeshGatewayPort,
 		)
 		crossMeshGatewayInstanceYaml := MkGatewayInstance(crossMeshGatewayName, gatewayTestNamespace, gatewayMesh)
 		edgeGatewayYaml := mkGateway(
-			edgeGatewayName, gatewayOtherMesh, false, "", echoServerService(gatewayOtherMesh, gatewayTestNamespace), edgeGatewayPort,
+			edgeGatewayName, edgeGatewayName, gatewayOtherMesh, false, "", echoServerService(gatewayOtherMesh, gatewayTestNamespace), edgeGatewayPort,
 		)
 		edgeGatewayInstanceYaml := MkGatewayInstance(
 			edgeGatewayName, gatewayTestNamespace, gatewayOtherMesh,
@@ -188,6 +191,33 @@ func CrossMeshGatewayOnKubernetes() {
 				gatewayAddr,
 				gatewayClientNamespaceOtherMesh,
 			)
+		})
+
+		Specify("doesn't break when two cross-mesh gateways exist with the same service value", func() {
+			const gatewayMesh2 = "cross-mesh-gateway2"
+			crossMeshGatewayYaml2 := mkGateway(
+				crossMeshGatewayName+"2", crossMeshGatewayName, gatewayMesh2, true, "gateway2.mesh", echoServerService(gatewayMesh2, gatewayTestNamespace), crossMeshGatewayPort,
+			)
+			crossMeshGatewayInstanceYaml2 := MkGatewayInstance(crossMeshGatewayName, gatewayTestNamespace2, gatewayMesh2)
+
+			setup := NewClusterSetup().
+				Install(MTLSMeshKubernetes(gatewayMesh2)).
+				Install(YamlK8s(crossMeshGatewayYaml2)).
+				Install(YamlK8s(crossMeshGatewayInstanceYaml2))
+			Expect(setup.Setup(env.Cluster)).To(Succeed())
+
+			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
+			Consistently(FailToProxyRequestToGateway(
+				env.Cluster,
+				gatewayAddr,
+				gatewayClientNamespaceOtherMesh,
+			), "30s", "1s").ShouldNot(Succeed())
+
+			setup = NewClusterSetup().
+				Install(DeleteYamlK8s(crossMeshGatewayYaml2)).
+				Install(DeleteYamlK8s(crossMeshGatewayInstanceYaml2))
+			Expect(setup.Setup(env.Cluster)).To(Succeed())
+			Expect(env.Cluster.DeleteMesh(gatewayMesh2)).To(Succeed())
 		})
 	})
 

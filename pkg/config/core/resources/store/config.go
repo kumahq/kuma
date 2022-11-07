@@ -8,6 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config"
 	"github.com/kumahq/kuma/pkg/config/plugins/resources/k8s"
 	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 )
 
 var _ config.Config = &StoreConfig{}
@@ -23,18 +24,18 @@ const (
 // Resource Store configuration
 type StoreConfig struct {
 	// Type of Store used in the Control Plane. Can be either "kubernetes", "postgres" or "memory"
-	Type StoreType `yaml:"type" envconfig:"kuma_store_type"`
+	Type StoreType `json:"type" envconfig:"kuma_store_type"`
 	// Postgres Store configuration
-	Postgres *postgres.PostgresStoreConfig `yaml:"postgres"`
+	Postgres *postgres.PostgresStoreConfig `json:"postgres"`
 	// Kubernetes Store configuration
-	Kubernetes *k8s.KubernetesStoreConfig `yaml:"kubernetes"`
+	Kubernetes *k8s.KubernetesStoreConfig `json:"kubernetes"`
 	// Cache configuration
-	Cache CacheStoreConfig `yaml:"cache"`
+	Cache CacheStoreConfig `json:"cache"`
 	// Upsert configuration
-	Upsert UpsertConfig `yaml:"upsert"`
+	Upsert UpsertConfig `json:"upsert"`
 	// UnsafeDelete skips validation of resource delete.
 	// For example you don't have to delete all Dataplane objects before you delete a Mesh
-	UnsafeDelete bool `yaml:"unsafeDelete" envconfig:"kuma_store_unsafe_delete"`
+	UnsafeDelete bool `json:"unsafeDelete" envconfig:"kuma_store_unsafe_delete"`
 }
 
 func DefaultStoreConfig() *StoreConfig {
@@ -78,8 +79,8 @@ func (s *StoreConfig) Validate() error {
 var _ config.Config = &CacheStoreConfig{}
 
 type CacheStoreConfig struct {
-	Enabled        bool          `yaml:"enabled" envconfig:"kuma_store_cache_enabled"`
-	ExpirationTime time.Duration `yaml:"expirationTime" envconfig:"kuma_store_cache_expiration_time"`
+	Enabled        bool                  `json:"enabled" envconfig:"kuma_store_cache_enabled"`
+	ExpirationTime config_types.Duration `json:"expirationTime" envconfig:"kuma_store_cache_expiration_time"`
 }
 
 func (c CacheStoreConfig) Sanitize() {
@@ -92,29 +93,29 @@ func (c CacheStoreConfig) Validate() error {
 func DefaultCacheStoreConfig() CacheStoreConfig {
 	return CacheStoreConfig{
 		Enabled:        true,
-		ExpirationTime: time.Second,
+		ExpirationTime: config_types.Duration{Duration: time.Second},
 	}
 }
 
 func DefaultUpsertConfig() UpsertConfig {
 	return UpsertConfig{
-		ConflictRetryBaseBackoff: 100 * time.Millisecond,
+		ConflictRetryBaseBackoff: config_types.Duration{Duration: 100 * time.Millisecond},
 		ConflictRetryMaxTimes:    5,
 	}
 }
 
 type UpsertConfig struct {
 	// Base time for exponential backoff on upsert (get and update) operations when retry is enabled
-	ConflictRetryBaseBackoff time.Duration `yaml:"conflictRetryBaseBackoff" envconfig:"kuma_store_upsert_conflict_retry_base_backoff"`
+	ConflictRetryBaseBackoff config_types.Duration `json:"conflictRetryBaseBackoff" envconfig:"kuma_store_upsert_conflict_retry_base_backoff"`
 	// Max retries on upsert (get and update) operation when retry is enabled
-	ConflictRetryMaxTimes uint `yaml:"conflictRetryMaxTimes" envconfig:"kuma_store_upsert_conflict_retry_max_times"`
+	ConflictRetryMaxTimes uint `json:"conflictRetryMaxTimes" envconfig:"kuma_store_upsert_conflict_retry_max_times"`
 }
 
 func (u *UpsertConfig) Sanitize() {
 }
 
 func (u *UpsertConfig) Validate() error {
-	if u.ConflictRetryBaseBackoff < 0 {
+	if u.ConflictRetryBaseBackoff.Duration < 0 {
 		return errors.New("RetryBaseBackoff cannot be lower than 0")
 	}
 	return nil

@@ -1,12 +1,12 @@
 package v1alpha1_test
 
 import (
-	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/yaml"
 
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	meshaccesslog_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("MeshAccessLog", func() {
@@ -17,7 +17,7 @@ var _ = Describe("MeshAccessLog", func() {
 				meshAccessLog := meshaccesslog_proto.NewMeshAccessLogResource()
 
 				// when
-				err := util_proto.FromYAML([]byte(mtpYAML), meshAccessLog.Spec)
+				err := core_model.FromYAML([]byte(mtpYAML), &meshAccessLog.Spec)
 				Expect(err).ToNot(HaveOccurred())
 				// and
 				verr := meshAccessLog.Validate()
@@ -61,7 +61,17 @@ from:
     default:
       backends:
         - file:
-           path: '/tmp/logs.txt'
+            path: '/tmp/logs.txt'
+`),
+			Entry("empty backend list", `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends: []
 `),
 		)
 
@@ -76,7 +86,7 @@ from:
 				meshAccessLog := meshaccesslog_proto.NewMeshAccessLogResource()
 
 				// when
-				err := util_proto.FromYAML([]byte(given.inputYaml), meshAccessLog.Spec)
+				err := core_model.FromYAML([]byte(given.inputYaml), &meshAccessLog.Spec)
 				Expect(err).ToNot(HaveOccurred())
 				// and
 				verr := meshAccessLog.Validate()
@@ -269,28 +279,6 @@ violations:
 - field: spec.to
   message: 'cannot use "to" when "targetRef" is "MeshGatewayRoute" - there is no outbound'`,
 			}),
-			Entry("'to' defined in MeshHTTPRoute", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshHTTPRoute
-  name: some-mesh-http-route
-to:
-  - targetRef:
-      kind: Mesh
-    default:
-      backends:
-        - file:
-           format:
-             plain: '{"start_time": "%START_TIME%"}'
-           path: '/tmp/logs.txt'
-`,
-				expected: `
-violations:
-- field: spec.targetRef.kind
-  message: MeshHTTPRoute is not yet supported
-- field: spec.to
-  message: 'cannot use "to" when "targetRef" is "MeshHTTPRoute" - "to" always goes to the application'`,
-			}),
 			Entry("'default' not defined in to", testCase{
 				inputYaml: `
 targetRef:
@@ -301,7 +289,7 @@ to:
 `,
 				expected: `
 violations:
-- field: spec.to[0].default
+- field: spec.to[0].default.backends
   message: 'must be defined'`,
 			}),
 			Entry("'default' not defined in from", testCase{
@@ -314,7 +302,7 @@ from:
 `,
 				expected: `
 violations:
-- field: spec.from[0].default
+- field: spec.from[0].default.backends
   message: 'must be defined'`,
 			}),
 			Entry("'address' not valid", testCase{
@@ -338,6 +326,32 @@ from:
 violations:
 - field: spec.from[0].default.backends[0].tcp.address
   message: 'tcp backend requires valid address'`,
+			}),
+			Entry("empty format json list", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends:
+        - file:
+            path: '/tmp/logs.txt'
+            format:
+              json: []
+        - tcp:
+            address: http://logs.com
+            format:
+              json: []
+`,
+				expected: `
+violations:
+- field: spec.from[0].default.backends[0].file.format.json
+  message: 'must not be empty'
+- field: spec.from[0].default.backends[1].tcp.format.json
+  message: 'must not be empty'`,
 			}),
 		)
 	})

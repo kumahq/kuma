@@ -76,8 +76,9 @@
         - `serviceAddress` (optional)
         
             Address of the service that requests will be forwarded to.
-            Defaults to '127.0.0.1', since Kuma DP should be deployed next to the
-            service.    
+            Defaults to 'inbound.address', since Kuma DP should be deployed next
+            to the service. When `KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS`
+            is true, this defaults to `127.0.0.1`.    
         
         - `address` (optional)
         
