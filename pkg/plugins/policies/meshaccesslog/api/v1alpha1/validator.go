@@ -102,28 +102,27 @@ func validateBackend(backend Backend) validators.ValidationError {
 	return verr
 }
 
-func validateFormat(format *Format) validators.ValidationError {
+func validateFormat(format Format) validators.ValidationError {
 	var verr validators.ValidationError
-	if format == nil {
-		return verr
+
+	if format.Json != nil && len(format.Json) == 0 {
+		verr.AddViolation("json", validators.MustNotBeEmpty)
 	}
 
-	if (format.Plain != "") == (format.Json != nil) {
+	if format.Plain != "" && format.Json != nil {
 		verr.AddViolation("", validators.MustHaveOnlyOne("format", "plain", "json"))
 	}
 
-	if format.Json != nil {
-		for idx, field := range format.Json {
-			path := validators.RootedAt("json").Index(idx)
-			if field.Key == "" {
-				verr.AddViolationAt(path.Field("key"), `key cannot be empty`)
-			}
-			if field.Value == "" {
-				verr.AddViolationAt(path.Field("value"), `value cannot be empty`)
-			}
-			if !govalidator.IsJSON(fmt.Sprintf(`{"%s": "%s"}`, field.Key, field.Value)) {
-				verr.AddViolationAt(path, `is not a valid JSON object`)
-			}
+	for idx, field := range format.Json {
+		path := validators.RootedAt("json").Index(idx)
+		if field.Key == "" {
+			verr.AddViolationAt(path.Field("key"), `key cannot be empty`)
+		}
+		if field.Value == "" {
+			verr.AddViolationAt(path.Field("value"), `value cannot be empty`)
+		}
+		if !govalidator.IsJSON(fmt.Sprintf(`{"%s": "%s"}`, field.Key, field.Value)) {
+			verr.AddViolationAt(path, `is not a valid JSON object`)
 		}
 	}
 	return verr

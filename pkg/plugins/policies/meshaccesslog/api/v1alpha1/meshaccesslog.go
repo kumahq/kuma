@@ -51,7 +51,7 @@ type Backend struct {
 type TCPBackend struct {
 	// Format of access logs. Placeholders available on
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
-	Format *Format `json:"format,omitempty"`
+	Format Format `json:"format,omitempty"`
 	// Address of the TCP logging backend
 	Address string `json:"address,omitempty"`
 }
@@ -60,16 +60,14 @@ type TCPBackend struct {
 type FileBackend struct {
 	// Format of access logs. Placeholders available on
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
-	Format *Format `json:"format,omitempty"`
+	Format Format `json:"format,omitempty"`
 	// Path to a file that logs will be written to
 	Path string `json:"path,omitempty"`
 }
 
 type Format struct {
-	Plain string `json:"plain,omitempty"`
-	// +optional
-	// +nullable
-	Json []JsonValue `json:"json"`
+	Plain string      `json:"plain,omitempty"`
+	Json  []JsonValue `json:"json,omitempty"`
 }
 
 type JsonValue struct {
