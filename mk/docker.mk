@@ -28,28 +28,33 @@ DOCKER_LOAD_TARGETS ?= docker/load/release docker/load/test
 export DOCKER_BUILDKIT := 1
 
 .PHONY: image/kuma-cp
-image/kuma-cp: build/kuma-cp/linux-${GOARCH} ## Dev: Rebuild `kuma-cp` Docker image
+image/kuma-cp: build/kuma-cp/linux-${GOARCH} reset-creation-time ## Dev: Rebuild `kuma-cp` Docker image
 	docker build -t $(KUMA_CP_DOCKER_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --build-arg BASE_IMAGE_ARCH=${GOARCH} -f tools/releases/dockerfiles/Dockerfile.kuma-cp .
 
 .PHONY: image/kuma-dp
-image/kuma-dp: build/kuma-dp/linux-${GOARCH} build/coredns/linux-${GOARCH} build/artifacts-linux-${GOARCH}/envoy/envoy ## Dev: Rebuild `kuma-dp` Docker image
+image/kuma-dp: build/kuma-dp/linux-${GOARCH} build/coredns/linux-${GOARCH} build/artifacts-linux-${GOARCH}/envoy/envoy reset-creation-time ## Dev: Rebuild `kuma-dp` Docker image
 	docker build -t $(KUMA_DP_DOCKER_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --build-arg BASE_IMAGE_ARCH=${GOARCH} --build-arg ENVOY_VERSION=${ENVOY_VERSION} -f tools/releases/dockerfiles/Dockerfile.kuma-dp .
 
 .PHONY: image/kumactl
-image/kumactl: build/kumactl/linux-${GOARCH} ## Dev: Rebuild `kumactl` Docker image
+image/kumactl: build/kumactl/linux-${GOARCH} reset-creation-time ## Dev: Rebuild `kumactl` Docker image
 	docker build -t $(KUMACTL_DOCKER_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --build-arg BASE_IMAGE_ARCH=${GOARCH} -f tools/releases/dockerfiles/Dockerfile.kumactl .
 
 .PHONY: image/kuma-init
-image/kuma-init: build/kumactl/linux-${GOARCH} ## Dev: Rebuild `kuma-init` Docker image
+image/kuma-init: build/kumactl/linux-${GOARCH} reset-creation-time ## Dev: Rebuild `kuma-init` Docker image
 	docker build -t $(KUMA_INIT_DOCKER_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --build-arg BASE_IMAGE_ARCH=${GOARCH} -f tools/releases/dockerfiles/Dockerfile.kuma-init .
 
 .PHONY: image/kuma-cni
-image/kuma-cni: build/kuma-cni/linux-${GOARCH} build/install-cni/linux-${GOARCH}
+image/kuma-cni: build/kuma-cni/linux-${GOARCH} build/install-cni/linux-${GOARCH} reset-creation-time
 	docker build -t $(KUMA_CNI_DOCKER_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --build-arg BASE_IMAGE_ARCH=${GOARCH} -f tools/releases/dockerfiles/Dockerfile.kuma-cni .
 
 .PHONY: image/kuma-universal
-image/kuma-universal: build/linux-${GOARCH}
+image/kuma-universal: build/linux-${GOARCH} reset-creation-time
 	docker build -t $(KUMA_UNIVERSAL_DOCKER_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --build-arg ENVOY_VERSION=${ENVOY_VERSION} --build-arg BASE_IMAGE_ARCH=${GOARCH} -f test/dockerfiles/Dockerfile.universal .
+
+.PHONY: reset-creation-time
+reset-creation-time:
+	touch -t 201212211111 $(BUILD_DIR)/artifacts-*/**/*
+	touch -mt 201212211111 $(BUILD_DIR)/artifacts-*/**/*
 
 .PHONY: images
 images: $(IMAGES_TARGETS) ## Dev: Rebuild release and test Docker images

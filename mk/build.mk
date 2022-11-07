@@ -1,8 +1,14 @@
+BUILD_INFO_VERSION ?= $(shell $(TOOLS_DIR)/releases/version.sh)
+BUILD_INFO_ENVOY_VERSION ?= $(ENVOY_VERSION)
+ifdef CI
 BUILD_INFO_GIT_TAG ?= $(shell git describe --tags 2>/dev/null || echo unknown)
 BUILD_INFO_GIT_COMMIT ?= $(shell git rev-parse HEAD 2>/dev/null || echo unknown)
 BUILD_INFO_BUILD_DATE ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ" || echo unknown)
-BUILD_INFO_VERSION ?= $(shell $(TOOLS_DIR)/releases/version.sh)
-BUILD_INFO_ENVOY_VERSION ?= $(ENVOY_VERSION)
+else
+BUILD_INFO_GIT_TAG ?= "built-locally"
+BUILD_INFO_GIT_COMMIT ?= "built-locally"
+BUILD_INFO_BUILD_DATE ?= "built-locally"
+endif
 
 build_info_fields := \
 	version=$(BUILD_INFO_VERSION) \
