@@ -46,8 +46,12 @@ helm-lint:
 ginkgo/unfocus:
 	@$(GINKGO) unfocus
 
+.PHONY: ginkgo/lint
+ginkgo/lint:
+	go run $(TOOLS_DIR)/ci/check_test_files.go
+
 .PHONY: format
-format: fmt generate docs tidy ginkgo/unfocus
+format: fmt generate docs tidy ginkgo/unfocus ginkgo/lint
 
 .PHONY: kube-lint
 kube-lint:
