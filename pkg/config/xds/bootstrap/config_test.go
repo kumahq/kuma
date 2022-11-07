@@ -30,7 +30,7 @@ var _ = Describe("BootstrappServerConfig", func() {
 		Expect(cfg.Params.AdminAccessLogPath).To(Equal("/var/log"))
 		Expect(cfg.Params.XdsHost).To(Equal("kuma-control-plane.internal"))
 		Expect(cfg.Params.XdsPort).To(Equal(uint32(10101)))
-		Expect(cfg.Params.XdsConnectTimeout).To(Equal(2 * time.Second))
+		Expect(cfg.Params.XdsConnectTimeout.Duration).To(Equal(2 * time.Second))
 	})
 
 	Context("with modified environment variables", func() {
@@ -79,7 +79,7 @@ var _ = Describe("BootstrappServerConfig", func() {
 			Expect(cfg.Params.AdminAccessLogPath).To(Equal("/var/log"))
 			Expect(cfg.Params.XdsHost).To(Equal("kuma-control-plane.internal"))
 			Expect(cfg.Params.XdsPort).To(Equal(uint32(10101)))
-			Expect(cfg.Params.XdsConnectTimeout).To(Equal(2 * time.Second))
+			Expect(cfg.Params.XdsConnectTimeout.Duration).To(Equal(2 * time.Second))
 		})
 	})
 

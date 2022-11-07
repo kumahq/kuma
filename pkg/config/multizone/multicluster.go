@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 )
 
 var _ config.Config = &MultizoneConfig{}
@@ -17,7 +18,7 @@ var _ config.Config = &MultizoneConfig{}
 // Global configuration
 type GlobalConfig struct {
 	// KDS Configuration
-	KDS *KdsServerConfig `yaml:"kds,omitempty"`
+	KDS *KdsServerConfig `json:"kds,omitempty"`
 }
 
 func (g *GlobalConfig) Sanitize() {
@@ -32,8 +33,8 @@ func DefaultGlobalConfig() *GlobalConfig {
 	return &GlobalConfig{
 		KDS: &KdsServerConfig{
 			GrpcPort:                 5685,
-			RefreshInterval:          1 * time.Second,
-			ZoneInsightFlushInterval: 10 * time.Second,
+			RefreshInterval:          config_types.Duration{Duration: 1 * time.Second},
+			ZoneInsightFlushInterval: config_types.Duration{Duration: 10 * time.Second},
 			MaxMsgSize:               10 * 1024 * 1024,
 			TlsMinVersion:            "TLSv1_2",
 			TlsCipherSuites:          []string{},
@@ -44,11 +45,11 @@ func DefaultGlobalConfig() *GlobalConfig {
 // Zone configuration
 type ZoneConfig struct {
 	// Kuma Zone name used to mark the zone dataplane resources
-	Name string `yaml:"name,omitempty" envconfig:"kuma_multizone_zone_name"`
+	Name string `json:"name,omitempty" envconfig:"kuma_multizone_zone_name"`
 	// GlobalAddress URL of Global Kuma CP
-	GlobalAddress string `yaml:"globalAddress,omitempty" envconfig:"kuma_multizone_zone_global_address"`
+	GlobalAddress string `json:"globalAddress,omitempty" envconfig:"kuma_multizone_zone_global_address"`
 	// KDS Configuration
-	KDS *KdsClientConfig `yaml:"kds,omitempty"`
+	KDS *KdsClientConfig `json:"kds,omitempty"`
 }
 
 func (r *ZoneConfig) Sanitize() {
@@ -94,7 +95,7 @@ func DefaultZoneConfig() *ZoneConfig {
 		GlobalAddress: "",
 		Name:          "",
 		KDS: &KdsClientConfig{
-			RefreshInterval: 1 * time.Second,
+			RefreshInterval: config_types.Duration{Duration: 1 * time.Second},
 			MaxMsgSize:      10 * 1024 * 1024,
 		},
 	}
@@ -102,8 +103,8 @@ func DefaultZoneConfig() *ZoneConfig {
 
 // Multizone configuration
 type MultizoneConfig struct {
-	Global *GlobalConfig `yaml:"global,omitempty"`
-	Zone   *ZoneConfig   `yaml:"zone,omitempty"`
+	Global *GlobalConfig `json:"global,omitempty"`
+	Zone   *ZoneConfig   `json:"zone,omitempty"`
 }
 
 func (m *MultizoneConfig) Sanitize() {

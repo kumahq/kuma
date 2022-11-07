@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 )
 
 var _ = Describe("TLSPostgresStoreConfig", func() {
@@ -110,8 +111,8 @@ var _ = Describe("PostgresStoreConfig", func() {
 					KeyPath:  "/path",
 					CertPath: "/path",
 				},
-				MinReconnectInterval: 10 * time.Second,
-				MaxReconnectInterval: 10 * time.Second,
+				MinReconnectInterval: config_types.Duration{Duration: 10 * time.Second},
+				MaxReconnectInterval: config_types.Duration{Duration: 10 * time.Second},
 			},
 			expected: `host='localhost' port=0 user='postgres' password='postgres' dbname='kuma' connect_timeout=0 sslmode=verify-full sslcert='/path' sslkey='/path' sslrootcert='/path'`,
 		}),
@@ -127,8 +128,8 @@ var _ = Describe("PostgresStoreConfig", func() {
 					KeyPath:  "/path",
 					CertPath: "/path",
 				},
-				MinReconnectInterval: 10 * time.Second,
-				MaxReconnectInterval: 10 * time.Second,
+				MinReconnectInterval: config_types.Duration{Duration: 10 * time.Second},
+				MaxReconnectInterval: config_types.Duration{Duration: 10 * time.Second},
 			},
 			expected: `host='localhost' port=0 user='postgres' password='\'\\' dbname='kuma' connect_timeout=0 sslmode=verify-full sslcert='/path' sslkey='/path' sslrootcert='/path'`,
 		}),
@@ -157,8 +158,8 @@ var _ = Describe("PostgresStoreConfig", func() {
 					KeyPath:  "/path",
 					CertPath: "/path",
 				},
-				MinReconnectInterval: 10 * time.Second,
-				MaxReconnectInterval: 10 * time.Second,
+				MinReconnectInterval: config_types.Duration{Duration: 10 * time.Second},
+				MaxReconnectInterval: config_types.Duration{Duration: 10 * time.Second},
 			},
 			error: "MinReconnectInterval should be less than MaxReconnectInterval",
 		}),
@@ -174,8 +175,8 @@ var _ = Describe("PostgresStoreConfig", func() {
 					KeyPath:  "/path",
 					CertPath: "/path",
 				},
-				MinReconnectInterval: 10 * time.Second,
-				MaxReconnectInterval: 1 * time.Second,
+				MinReconnectInterval: config_types.Duration{Duration: 10 * time.Second},
+				MaxReconnectInterval: config_types.Duration{Duration: 1 * time.Second},
 			},
 			error: "MinReconnectInterval should be less than MaxReconnectInterval",
 		}),

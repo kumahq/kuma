@@ -108,7 +108,7 @@ func DefaultDataplaneWatchdogFactory(
 	}
 	return NewDataplaneWatchdogFactory(
 		xdsMetrics,
-		config.XdsServer.DataplaneConfigurationRefreshInterval,
+		config.XdsServer.DataplaneConfigurationRefreshInterval.Duration,
 		deps,
 	)
 }

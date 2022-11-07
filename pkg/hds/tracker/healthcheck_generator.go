@@ -63,14 +63,14 @@ func (g *SnapshotGenerator) GenerateSnapshot(node *envoy_core.Node) (util_xds_v3
 
 		var timeout *durationpb.Duration
 		if serviceProbe.Timeout == nil {
-			timeout = util_proto.Duration(g.config.CheckDefaults.Timeout)
+			timeout = util_proto.Duration(g.config.CheckDefaults.Timeout.Duration)
 		} else {
 			timeout = serviceProbe.Timeout
 		}
 
 		var interval *durationpb.Duration
 		if serviceProbe.Timeout == nil {
-			interval = util_proto.Duration(g.config.CheckDefaults.Interval)
+			interval = util_proto.Duration(g.config.CheckDefaults.Interval.Duration)
 		} else {
 			interval = serviceProbe.Interval
 		}
@@ -111,7 +111,7 @@ func (g *SnapshotGenerator) GenerateSnapshot(node *envoy_core.Node) (util_xds_v3
 					Interval:           interval,
 					HealthyThreshold:   healthyThreshold,
 					UnhealthyThreshold: unhealthyThreshold,
-					NoTrafficInterval:  util_proto.Duration(g.config.CheckDefaults.NoTrafficInterval),
+					NoTrafficInterval:  util_proto.Duration(g.config.CheckDefaults.NoTrafficInterval.Duration),
 					HealthChecker: &envoy_core.HealthCheck_TcpHealthCheck_{
 						TcpHealthCheck: &envoy_core.HealthCheck_TcpHealthCheck{},
 					},
@@ -122,7 +122,7 @@ func (g *SnapshotGenerator) GenerateSnapshot(node *envoy_core.Node) (util_xds_v3
 
 	hcs := &envoy_service_health.HealthCheckSpecifier{
 		ClusterHealthChecks: healthChecks,
-		Interval:            util_proto.Duration(g.config.Interval),
+		Interval:            util_proto.Duration(g.config.Interval.Duration),
 	}
 
 	return cache.NewSnapshot("", hcs), nil
@@ -148,11 +148,11 @@ func (g *SnapshotGenerator) envoyHealthCheck(port uint32) *envoy_service_health.
 		}},
 		HealthChecks: []*envoy_core.HealthCheck{
 			{
-				Timeout:            util_proto.Duration(g.config.CheckDefaults.Timeout),
-				Interval:           util_proto.Duration(g.config.CheckDefaults.Interval),
+				Timeout:            util_proto.Duration(g.config.CheckDefaults.Timeout.Duration),
+				Interval:           util_proto.Duration(g.config.CheckDefaults.Interval.Duration),
 				HealthyThreshold:   util_proto.UInt32(g.config.CheckDefaults.HealthyThreshold),
 				UnhealthyThreshold: util_proto.UInt32(g.config.CheckDefaults.UnhealthyThreshold),
-				NoTrafficInterval:  util_proto.Duration(g.config.CheckDefaults.NoTrafficInterval),
+				NoTrafficInterval:  util_proto.Duration(g.config.CheckDefaults.NoTrafficInterval.Duration),
 				HealthChecker: &envoy_core.HealthCheck_HttpHealthCheck_{
 					HttpHealthCheck: &envoy_core.HealthCheck_HttpHealthCheck{
 						Path: "/ready",

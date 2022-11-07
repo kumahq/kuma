@@ -55,7 +55,7 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 	if err != nil {
 		return err
 	}
-	claCache, err := cla.NewCache(rt.Config().Store.Cache.ExpirationTime, rt.Metrics())
+	claCache, err := cla.NewCache(rt.Config().Store.Cache.ExpirationTime.Duration, rt.Metrics())
 	if err != nil {
 		return err
 	}

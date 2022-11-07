@@ -24,7 +24,7 @@ var _ = Describe("Config", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		Expect(cfg.DataplaneCleanupAge).To(Equal(5 * time.Hour))
+		Expect(cfg.DataplaneCleanupAge.Duration).To(Equal(5 * time.Hour))
 	})
 
 	It("should have consistent defaults", func() {

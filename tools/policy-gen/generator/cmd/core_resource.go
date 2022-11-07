@@ -48,8 +48,8 @@ import (
 	_ "embed"
 	"fmt"
 
-	"github.com/ghodss/yaml"
 	"k8s.io/kube-openapi/pkg/validation/spec"
+	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/validation"

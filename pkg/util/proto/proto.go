@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/jsonpb"
 	protov1 "github.com/golang/protobuf/proto"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
+	"sigs.k8s.io/yaml"
 )
 
 // Note: we continue to use github.com/golang/protobuf/jsonpb because it

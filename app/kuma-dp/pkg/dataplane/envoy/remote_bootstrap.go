@@ -73,7 +73,7 @@ func (b *remoteBootstrap) Generate(ctx context.Context, url string, cfg kuma_dp.
 		}
 	}
 
-	backoff := retry.WithMaxDuration(cfg.ControlPlane.Retry.MaxDuration, retry.NewConstant(cfg.ControlPlane.Retry.Backoff))
+	backoff := retry.WithMaxDuration(cfg.ControlPlane.Retry.MaxDuration.Duration, retry.NewConstant(cfg.ControlPlane.Retry.Backoff.Duration))
 	var respBytes []byte
 	err = retry.Do(ctx, backoff, func(ctx context.Context) error {
 		log.Info("trying to fetch bootstrap configuration from the Control Plane")

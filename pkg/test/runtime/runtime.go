@@ -163,7 +163,7 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 	)
 
 	meshSnapshotCache, err := mesh_cache.NewCache(
-		builder.Config().Store.Cache.ExpirationTime,
+		builder.Config().Store.Cache.ExpirationTime.Duration,
 		meshContextBuilder,
 		builder.Metrics(),
 	)
