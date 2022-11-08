@@ -4,18 +4,6 @@ info:
   title: Kuma API
   description: Kuma API
 
-
-type: 
-  description: '' 
-  type: string 
-mesh: 
-  description: 'Mesh is the name of the Kuma mesh this resource belongs to. 
-       It may be omitted for cluster-scoped resources.' 
-  type: string 
-name: 
-  escription: 'Name of the Kuma resource' 
-  type: string 
-
 paths:
   /meshes/{mesh}/{{ .Path }}/{name}:
     get:
@@ -35,12 +23,23 @@ paths:
           required: true
           description: name of the {{ .Name }}
       responses:
+         type: 
+     description: '' 
+     type: string 
+   mesh: 
+     description: 'Mesh is the name of the Kuma mesh this resource belongs to. 
+       It may be omitted for cluster-scoped resources.' 
+     type: string 
+   name: 
+     description: 'Name of the Kuma resource' 
+     type: string 
         '200':
           description: Successful response
           content:
             application/json:
               schema:
                 $ref: 'schema.yaml'
+                   
 
     put:
       summary: Creates or Updates {{ .Name }} entity
@@ -66,6 +65,16 @@ paths:
             schema:
               $ref: 'schema.yaml'
       responses:
+         type: 
+     description: '' 
+     type: string 
+   mesh: 
+     description: 'Mesh is the name of the Kuma mesh this resource belongs to. 
+       It may be omitted for cluster-scoped resources.' 
+     type: string 
+   name: 
+     description: 'Name of the Kuma resource' 
+     type: string 
         '200':
           description: Updated
         '201':
@@ -88,6 +97,16 @@ paths:
           required: true
           description: name of the {{ .Name }}
       responses:
+         type: 
+     description: '' 
+     type: string 
+   mesh: 
+     description: 'Mesh is the name of the Kuma mesh this resource belongs to. 
+       It may be omitted for cluster-scoped resources.' 
+     type: string 
+   name: 
+     description: 'Name of the Kuma resource' 
+     type: string 
         '200':
           description: Successful response
 
