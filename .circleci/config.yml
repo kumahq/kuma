@@ -328,12 +328,15 @@ jobs:
           command: |
             if [[ "<< parameters.k8sVersion >>" == "kindIpv6" ]]; then
               export IPV6=true
+              export K8S_CLUSTER_TOOL=kind
               export KUMA_DEFAULT_RETRIES=60
               export KUMA_DEFAULT_TIMEOUT="6s"
             fi
+            if [[ "<< parameters.k8sVersion >>" == "kindIpv6" ]]; then
+              export K8S_CLUSTER_TOOL=kind
+            fi
             if [[ "<< parameters.k8sVersion >>" != "kind"* ]]; then
               export CI_K3S_VERSION=<< parameters.k8sVersion >>
-              export K3D=true
               export K3D_NETWORK_CNI=<< parameters.cniNetworkPlugin >>
             fi
             if [[ "<< parameters.arch >>" == "arm64" ]]; then

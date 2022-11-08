@@ -23,13 +23,13 @@ When e2e tests are executed here are the steps
 3) Start Kubernetes Cluster 2
 4) Execute tests
 
-## Use K3D instead of KIND
+## Use KIND instead of K3D
 
-K3D is faster than KIND, but it is still experimental addition to Kuma.
-To use K3D in E2E tests add `K3D=true`
+K3D is faster than KIND and it is a default tool to run E2E tests. However, not all tests runs with it.
+To use KIND in E2E tests add `K8S_CLUSTER_TOOL=kind`
 
 ```
-make test/e2e K3D=true
+make test/e2e K8S_CLUSTER_TOOL=kind
 ```
 
 ## Execute single test
