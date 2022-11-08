@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/patrickmn/go-cache"
 
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/xds/cache/once"
@@ -15,11 +16,20 @@ import (
 // reconcile Dataplane's state. Calculating hash is a heavy operation
 // that requires fetching all the resources belonging to the Mesh.
 type Cache struct {
-	cache              *once.Cache
-	meshContextBuilder xds_context.MeshContextBuilder
+	// cache is used for caching a context and ignoring mesh changes for up to a
+	// short expiration time.
+	cache *once.Cache
+	// hashCache keeps a cached context, for a much longer time, that is only reused
+	// when the mesh hasn't changed.
+	hashCache *cache.Cache
 
-	latestMeshContext map[string]*xds_context.MeshContext
+	meshContextBuilder xds_context.MeshContextBuilder
 }
+
+// recalculationTime is the time after which the mesh context is recalculated no
+// matter what.
+// It exists to ensure contexts of deleted Meshes are eventually cleaned up.
+const recalculationTime = time.Hour
 
 func NewCache(
 	expirationTime time.Duration,
@@ -33,28 +43,40 @@ func NewCache(
 	return &Cache{
 		cache:              c,
 		meshContextBuilder: meshContextBuilder,
-		latestMeshContext:  map[string]*xds_context.MeshContext{},
+		hashCache:          cache.New(recalculationTime, time.Duration(int64(float64(expirationTime)*0.9))),
 	}, nil
 }
 
 func (c *Cache) GetMeshContext(ctx context.Context, syncLog logr.Logger, mesh string) (xds_context.MeshContext, error) {
 	elt, err := c.cache.GetOrRetrieve(ctx, mesh, once.RetrieverFunc(func(ctx context.Context, key string) (interface{}, error) {
-		if c.latestMeshContext[mesh] == nil {
+		// Check hashCache first for an existing mesh context
+		var context xds_context.MeshContext
+		if cached, ok := c.hashCache.Get(mesh); ok {
+			context = *cached.(*xds_context.MeshContext)
+		} else {
+			// If we don't have any context, we build one, set it in
+			// `hashCache` and return it.
 			meshCtx, err := c.meshContextBuilder.Build(ctx, mesh)
 			if err != nil {
 				return xds_context.MeshContext{}, err
 			}
-			c.latestMeshContext[mesh] = &meshCtx
-		} else {
-			meshCtx, err := c.meshContextBuilder.BuildIfChanged(ctx, mesh, c.latestMeshContext[mesh].Hash)
-			if err != nil {
-				return xds_context.MeshContext{}, err
-			}
-			if meshCtx != nil {
-				c.latestMeshContext[mesh] = meshCtx
-			}
+			c.hashCache.Set(mesh, &meshCtx, 0)
+			return meshCtx, nil
 		}
-		return *c.latestMeshContext[mesh], nil
+
+		// If we have some context, use it only if the hash hasn't changed.
+		// Otherwise, rebuild it.
+		meshCtx, err := c.meshContextBuilder.BuildIfChanged(ctx, mesh, context.Hash)
+		if err != nil {
+			return xds_context.MeshContext{}, err
+		}
+		if meshCtx == nil {
+			// Context didn't need to be rebuilt
+			return context, nil
+		}
+
+		c.hashCache.Set(mesh, meshCtx, 0)
+		return *meshCtx, nil
 	}))
 	if err != nil {
 		return xds_context.MeshContext{}, err
