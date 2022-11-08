@@ -7,5 +7,5 @@ import (
 )
 
 func TestTLS(t *testing.T) {
-	test.RunSpecs(t, "Envoy TLS Suite")
+	test.RunSpecs(t, "Envoy TLS v3 Suite")
 }
