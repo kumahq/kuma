@@ -9,8 +9,8 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/util/proto"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 	envoy_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
 )
@@ -20,7 +20,7 @@ type ClientSideMTLSConfigurer struct {
 	UpstreamMesh     *core_mesh.MeshResource
 	UpstreamService  string
 	LocalMesh        *core_mesh.MeshResource
-	Tags             []envoy.Tags
+	Tags             []tags.Tags
 	UpstreamTLSReady bool
 }
 
@@ -37,7 +37,7 @@ func (c *ClientSideMTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) err
 
 	meshName := c.UpstreamMesh.GetMeta().GetName()
 	// there might be a situation when there are multiple sam tags passed here for example two outbound listeners with the same tags, therefore we need to distinguish between them.
-	distinctTags := envoy.DistinctTags(c.Tags)
+	distinctTags := tags.DistinctTags(c.Tags)
 	switch {
 	case len(distinctTags) == 0:
 		transportSocket, err := c.createTransportSocket("")

@@ -12,6 +12,7 @@ import (
 	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
@@ -66,8 +67,8 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Prox
 func (i IngressGenerator) generateLDS(
 	proxy *core_xds.Proxy,
 	ingress *core_mesh.ZoneIngressResource,
-	destinationsPerService map[string][]envoy_common.Tags,
-	apiVersion envoy_common.APIVersion,
+	destinationsPerService map[string][]tags.Tags,
+	apiVersion core_xds.APIVersion,
 ) (envoy_common.NamedResource, error) {
 	inboundListenerName := envoy_names.GetInboundListenerName(proxy.ZoneIngress.Spec.GetNetworking().GetAddress(), proxy.ZoneIngress.Spec.GetNetworking().GetPort())
 	inboundListenerBuilder := envoy_listeners.NewListenerBuilder(apiVersion).
@@ -113,8 +114,8 @@ func (i IngressGenerator) generateLDS(
 
 func (_ IngressGenerator) destinations(
 	ingressProxy *core_xds.ZoneIngressProxy,
-) map[string][]envoy_common.Tags {
-	destinations := map[string][]envoy_common.Tags{}
+) map[string][]tags.Tags {
+	destinations := map[string][]tags.Tags{}
 	for _, tr := range ingressProxy.TrafficRouteList.Items {
 		for _, split := range tr.Spec.Conf.GetSplitWithDestination() {
 			service := split.Destination[mesh_proto.ServiceTag]
@@ -153,7 +154,7 @@ func (_ IngressGenerator) destinations(
 				}
 				destinations[service] = append(
 					destinations[service],
-					envoy_common.Tags(mesh_proto.Merge(selector.GetMatch(), gateway.Spec.GetTags(), listener.GetTags())),
+					tags.Tags(mesh_proto.Merge(selector.GetMatch(), gateway.Spec.GetTags(), listener.GetTags())),
 				)
 			}
 		}
@@ -173,12 +174,12 @@ func (_ IngressGenerator) services(proxy *core_xds.Proxy) []string {
 
 func (i IngressGenerator) generateCDS(
 	services []string,
-	destinationsPerService map[string][]envoy_common.Tags,
-	apiVersion envoy_common.APIVersion,
+	destinationsPerService map[string][]tags.Tags,
+	apiVersion core_xds.APIVersion,
 ) (resources []*core_xds.Resource, _ error) {
 	for _, service := range services {
-		tagSlice := envoy_common.TagsSlice(append(destinationsPerService[service], destinationsPerService[mesh_proto.MatchAllTag]...))
-		tagKeySlice := tagSlice.ToTagKeysSlice().Transform(envoy_common.Without(mesh_proto.ServiceTag), envoy_common.With("mesh"))
+		tagSlice := tags.TagsSlice(append(destinationsPerService[service], destinationsPerService[mesh_proto.MatchAllTag]...))
+		tagKeySlice := tagSlice.ToTagKeysSlice().Transform(tags.Without(mesh_proto.ServiceTag), tags.With("mesh"))
 		edsCluster, err := envoy_clusters.NewClusterBuilder(apiVersion).
 			Configure(envoy_clusters.EdsCluster(service)).
 			Configure(envoy_clusters.LbSubset(tagKeySlice)).
@@ -199,7 +200,7 @@ func (i IngressGenerator) generateCDS(
 func (_ IngressGenerator) generateEDS(
 	proxy *core_xds.Proxy,
 	services []string,
-	apiVersion envoy_common.APIVersion,
+	apiVersion core_xds.APIVersion,
 ) (resources []*core_xds.Resource, err error) {
 	for _, service := range services {
 		endpoints := proxy.Routing.OutboundTargets[service]

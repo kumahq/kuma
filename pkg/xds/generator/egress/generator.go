@@ -11,6 +11,7 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	generator_secrets "github.com/kumahq/kuma/pkg/xds/generator/secrets"
 )
 
@@ -41,7 +42,7 @@ type Generator struct {
 }
 
 func makeListenerBuilder(
-	apiVersion envoy_common.APIVersion,
+	apiVersion core_xds.APIVersion,
 	zoneEgress *core_mesh.ZoneEgressResource,
 ) *envoy_listeners.ListenerBuilder {
 	networking := zoneEgress.Spec.GetNetworking()
@@ -75,7 +76,7 @@ func (g Generator) Generate(
 		meshName := meshResources.Mesh.GetMeta().GetName()
 
 		// Secrets are generated in relation to a mesh so we need to create a new tracker
-		secretsTracker := core_xds.NewSecretsTracker(meshName, []string{meshName})
+		secretsTracker := envoy_common.NewSecretsTracker(meshName, []string{meshName})
 		proxy.SecretsTracker = secretsTracker
 
 		for _, generator := range g.ZoneEgressGenerators {
@@ -129,8 +130,8 @@ func (g Generator) Generate(
 
 func buildDestinations(
 	trafficRoutes []*core_mesh.TrafficRouteResource,
-) map[string][]envoy_common.Tags {
-	destinations := map[string][]envoy_common.Tags{}
+) map[string][]envoy_tags.Tags {
+	destinations := map[string][]envoy_tags.Tags{}
 
 	for _, tr := range trafficRoutes {
 		for _, split := range tr.Spec.Conf.GetSplitWithDestination() {

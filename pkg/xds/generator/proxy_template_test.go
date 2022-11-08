@@ -81,7 +81,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 							},
 						},
 					},
-					SecretsTracker: model.NewSecretsTracker("demo", []string{"demo"}),
+					SecretsTracker: envoy_common.NewSecretsTracker("demo", []string{"demo"}),
 					APIVersion:     envoy_common.APIV3,
 				},
 				template: &mesh_proto.ProxyTemplate{
@@ -157,7 +157,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 						},
 						Spec: dataplane,
 					},
-					SecretsTracker: model.NewSecretsTracker("demo", []string{"demo"}),
+					SecretsTracker: envoy_common.NewSecretsTracker("demo", []string{"demo"}),
 					APIVersion:     envoy_common.APIV3,
 					Metadata:       &model.DataplaneMetadata{},
 				}

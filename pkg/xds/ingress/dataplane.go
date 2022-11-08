@@ -11,7 +11,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/topology"
 )
 

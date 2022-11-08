@@ -5,10 +5,10 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
-func EndpointMetadata(tags envoy_common.Tags) *envoy_core.Metadata {
+func EndpointMetadata(tags tags.Tags) *envoy_core.Metadata {
 	tags = tags.WithoutTags(mesh_proto.ServiceTag) // service name is already in cluster name, we don't need it in metadata
 	if len(tags) == 0 {
 		return nil
@@ -26,7 +26,7 @@ func EndpointMetadata(tags envoy_common.Tags) *envoy_core.Metadata {
 	}
 }
 
-func LbMetadata(tags envoy_common.Tags) *envoy_core.Metadata {
+func LbMetadata(tags tags.Tags) *envoy_core.Metadata {
 	tags = tags.WithoutTags(mesh_proto.ServiceTag) // service name is already in cluster name, we don't need it in metadata
 	if len(tags) == 0 {
 		return nil
@@ -41,7 +41,7 @@ func LbMetadata(tags envoy_common.Tags) *envoy_core.Metadata {
 	}
 }
 
-func MetadataFields(tags envoy_common.Tags) map[string]*structpb.Value {
+func MetadataFields(tags tags.Tags) map[string]*structpb.Value {
 	fields := map[string]*structpb.Value{}
 	for key, value := range tags {
 		fields[key] = &structpb.Value{
@@ -55,8 +55,8 @@ func MetadataFields(tags envoy_common.Tags) map[string]*structpb.Value {
 
 const TagsKey = "io.kuma.tags"
 
-func ExtractTags(metadata *envoy_core.Metadata) envoy_common.Tags {
-	tags := envoy_common.Tags{}
+func ExtractTags(metadata *envoy_core.Metadata) tags.Tags {
+	tags := tags.Tags{}
 	for key, value := range metadata.GetFilterMetadata()[TagsKey].GetFields() {
 		tags[key] = value.GetStringValue()
 	}
