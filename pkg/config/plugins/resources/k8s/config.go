@@ -15,7 +15,7 @@ func DefaultKubernetesStoreConfig() *KubernetesStoreConfig {
 // Kubernetes store configuration
 type KubernetesStoreConfig struct {
 	// Namespace where Control Plane is installed to.
-	SystemNamespace string `yaml:"systemNamespace" envconfig:"kuma_store_kubernetes_system_namespace"`
+	SystemNamespace string `json:"systemNamespace" envconfig:"kuma_store_kubernetes_system_namespace"`
 }
 
 var _ config.Config = &KubernetesStoreConfig{}

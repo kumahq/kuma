@@ -1,4 +1,4 @@
-package generator
+package secrets
 
 import (
 	"github.com/pkg/errors"
@@ -19,7 +19,7 @@ type Generator struct {
 
 var _ generator_core.ResourceGenerator = Generator{}
 
-func CreateCaSecretResource(name string, ca *core_xds.CaSecret) *core_xds.Resource {
+func createCaSecretResource(name string, ca *core_xds.CaSecret) *core_xds.Resource {
 	caSecret := envoy_secrets.CreateCaSecret(ca, name)
 	return &core_xds.Resource{
 		Name:     caSecret.Name,
@@ -28,7 +28,7 @@ func CreateCaSecretResource(name string, ca *core_xds.CaSecret) *core_xds.Resour
 	}
 }
 
-func CreateIdentitySecretResource(name string, identity *core_xds.IdentitySecret) *core_xds.Resource {
+func createIdentitySecretResource(name string, identity *core_xds.IdentitySecret) *core_xds.Resource {
 	identitySecret := envoy_secrets.CreateIdentitySecret(identity, name)
 	return &core_xds.Resource{
 		Name:     identitySecret.Name,
@@ -65,12 +65,12 @@ func (g Generator) GenerateForZoneEgress(
 
 	if usedIdentity {
 		log.V(1).Info("added identity", "mesh", meshName)
-		resources.Add(CreateIdentitySecretResource(secretsTracker.RequestIdentityCert().Name(), identity))
+		resources.Add(createIdentitySecretResource(secretsTracker.RequestIdentityCert().Name(), identity))
 	}
 
 	if _, ok := secretsTracker.UsedCas()[meshName]; ok {
 		log.V(1).Info("added mesh CA resources", "mesh", meshName)
-		resources.Add(CreateCaSecretResource(secretsTracker.RequestCa(meshName).Name(), ca))
+		resources.Add(createCaSecretResource(secretsTracker.RequestCa(meshName).Name(), ca))
 	}
 
 	return resources, nil
@@ -101,8 +101,8 @@ func (g Generator) Generate(
 			return nil, errors.Wrap(err, "failed to generate all in one CA")
 		}
 
-		resources.Add(CreateCaSecretResource(proxy.SecretsTracker.RequestAllInOneCa().Name(), allInOneCa))
-		resources.Add(CreateIdentitySecretResource(proxy.SecretsTracker.RequestIdentityCert().Name(), identity))
+		resources.Add(createCaSecretResource(proxy.SecretsTracker.RequestAllInOneCa().Name(), allInOneCa))
+		resources.Add(createIdentitySecretResource(proxy.SecretsTracker.RequestIdentityCert().Name(), identity))
 		log.V(1).Info("added all in one CA resources")
 	}
 
@@ -114,17 +114,17 @@ func (g Generator) Generate(
 			return nil, errors.Wrap(err, "failed to generate dataplane identity cert and CAs")
 		}
 
-		resources.Add(CreateIdentitySecretResource(proxy.SecretsTracker.RequestIdentityCert().Name(), identity))
+		resources.Add(createIdentitySecretResource(proxy.SecretsTracker.RequestIdentityCert().Name(), identity))
 
 		var addedCas []string
 		for mesh := range usedCas {
 			if ca, ok := meshCas[mesh]; ok {
-				resources.Add(CreateCaSecretResource(proxy.SecretsTracker.RequestCa(mesh).Name(), ca))
+				resources.Add(createCaSecretResource(proxy.SecretsTracker.RequestCa(mesh).Name(), ca))
 			} else {
 				// We need to add _something_ here so that Envoy syncs the
 				// config
 				emptyCa := &core_xds.CaSecret{}
-				resources.Add(CreateCaSecretResource(proxy.SecretsTracker.RequestCa(mesh).Name(), emptyCa))
+				resources.Add(createCaSecretResource(proxy.SecretsTracker.RequestCa(mesh).Name(), emptyCa))
 			}
 			addedCas = append(addedCas, mesh)
 		}

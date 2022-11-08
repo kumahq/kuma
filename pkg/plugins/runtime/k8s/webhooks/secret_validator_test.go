@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	admissionv1 "k8s.io/api/admission/v1"
@@ -12,6 +11,7 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+	"sigs.k8s.io/yaml"
 
 	secrets_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	core_validators "github.com/kumahq/kuma/pkg/core/validators"

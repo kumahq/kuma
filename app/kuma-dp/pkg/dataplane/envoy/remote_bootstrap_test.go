@@ -18,6 +18,7 @@ import (
 
 	. "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
 	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
@@ -391,7 +392,7 @@ var _ = Describe("Remote Bootstrap", func() {
 
 		// when
 		cfg := kuma_dp.DefaultConfig()
-		cfg.ControlPlane.Retry.Backoff = 10 * time.Millisecond
+		cfg.ControlPlane.Retry.Backoff = config_types.Duration{Duration: 10 * time.Millisecond}
 		params := BootstrapParams{
 			Dataplane: &unversioned.Resource{
 				Meta: rest_v1alpha1.ResourceMeta{
@@ -425,8 +426,8 @@ var _ = Describe("Remote Bootstrap", func() {
 
 		// when
 		config := kuma_dp.DefaultConfig()
-		config.ControlPlane.Retry.Backoff = 10 * time.Millisecond
-		config.ControlPlane.Retry.MaxDuration = 100 * time.Millisecond
+		config.ControlPlane.Retry.Backoff = config_types.Duration{Duration: 10 * time.Millisecond}
+		config.ControlPlane.Retry.MaxDuration = config_types.Duration{Duration: 100 * time.Millisecond}
 		params := BootstrapParams{
 			Dataplane: &unversioned.Resource{
 				Meta: rest_v1alpha1.ResourceMeta{

@@ -4,17 +4,16 @@ import (
 	"os"
 	"path"
 
-	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	_ "github.com/kumahq/kuma/pkg/plugins/policies"
 	meshtrace_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
-	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	meshtrafficpermission_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/matchers"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 )
 
@@ -244,7 +243,7 @@ var _ = Describe("Rules", func() {
 				if given.confYAML == nil {
 					Expect(conf).To(BeNil())
 				} else {
-					actualYAML, err := util_proto.ToYAML(conf.Conf)
+					actualYAML, err := yaml.Marshal(conf.Conf)
 					Expect(err).To(Not(HaveOccurred()))
 					Expect(actualYAML).To(MatchYAML(given.confYAML))
 				}
@@ -255,7 +254,7 @@ var _ = Describe("Rules", func() {
 						Subset: []xds.Tag{
 							{Key: "key1", Value: "val1"},
 						},
-						Conf: &policies_api.MeshTrafficPermission_Conf{
+						Conf: meshtrafficpermission_api.Conf{
 							Action: "ALLOW",
 						},
 					},
@@ -272,7 +271,7 @@ var _ = Describe("Rules", func() {
 						Subset: []xds.Tag{
 							{Key: "key1", Value: "val1", Not: true},
 						},
-						Conf: &policies_api.MeshTrafficPermission_Conf{
+						Conf: meshtrafficpermission_api.Conf{
 							Action: "ALLOW",
 						},
 					},
@@ -286,7 +285,7 @@ var _ = Describe("Rules", func() {
 				rules: xds.Rules{
 					{
 						Subset: []xds.Tag{}, // empty set
-						Conf: &policies_api.MeshTrafficPermission_Conf{
+						Conf: meshtrafficpermission_api.Conf{
 							Action: "ALLOW",
 						},
 					},
@@ -303,7 +302,7 @@ var _ = Describe("Rules", func() {
 						Subset: []xds.Tag{
 							{Key: "key1", Value: "val1", Not: true},
 						},
-						Conf: &policies_api.MeshTrafficPermission_Conf{
+						Conf: meshtrafficpermission_api.Conf{
 							Action: "ALLOW",
 						},
 					},
@@ -319,7 +318,7 @@ var _ = Describe("Rules", func() {
 						Subset: []xds.Tag{
 							{Key: "key1", Value: "val1"},
 						},
-						Conf: &policies_api.MeshTrafficPermission_Conf{
+						Conf: meshtrafficpermission_api.Conf{
 							Action: "ALLOW",
 						},
 					},
@@ -335,7 +334,7 @@ var _ = Describe("Rules", func() {
 						Subset: []xds.Tag{
 							{Key: "key1", Value: "val1"},
 						},
-						Conf: &policies_api.MeshTrafficPermission_Conf{
+						Conf: meshtrafficpermission_api.Conf{
 							Action: "ALLOW",
 						},
 					},
@@ -351,7 +350,7 @@ var _ = Describe("Rules", func() {
 						Subset: []xds.Tag{
 							{Key: "key1", Value: "val1", Not: true},
 						},
-						Conf: &policies_api.MeshTrafficPermission_Conf{
+						Conf: meshtrafficpermission_api.Conf{
 							Action: "ALLOW",
 						},
 					},
@@ -367,7 +366,7 @@ var _ = Describe("Rules", func() {
 						Subset: []xds.Tag{
 							{Key: "key1", Value: "val1"},
 						},
-						Conf: &policies_api.MeshTrafficPermission_Conf{
+						Conf: meshtrafficpermission_api.Conf{
 							Action: "ALLOW",
 						},
 					},
@@ -383,7 +382,7 @@ var _ = Describe("Rules", func() {
 						Subset: xds.Subset{
 							{Key: "key1", Value: "val1"}, // not matched
 						},
-						Conf: &policies_api.MeshTrafficPermission_Conf{
+						Conf: meshtrafficpermission_api.Conf{
 							Action: "ALLOW",
 						},
 					},
@@ -391,13 +390,13 @@ var _ = Describe("Rules", func() {
 						Subset: xds.Subset{
 							{Key: "key2", Value: "val2"}, // the first matched
 						},
-						Conf: &policies_api.MeshTrafficPermission_Conf{
+						Conf: meshtrafficpermission_api.Conf{
 							Action: "DENY",
 						},
 					},
 					{
 						Subset: xds.Subset{}, // matched but not the first
-						Conf: &policies_api.MeshTrafficPermission_Conf{
+						Conf: meshtrafficpermission_api.Conf{
 							Action: "ALLOW_WITH_SHADOW_DENY",
 						},
 					},

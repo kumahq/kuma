@@ -5,17 +5,15 @@ import (
 	"fmt"
 	"sort"
 
-	"google.golang.org/protobuf/proto"
-
-	common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 type PolicyItem interface {
-	GetTargetRef() *common_proto.TargetRef
-	GetDefaultAsProto() proto.Message
+	GetTargetRef() common_api.TargetRef
+	GetDefault() interface{}
 }
 
 type PolicyItemWithMeta struct {
@@ -25,7 +23,7 @@ type PolicyItemWithMeta struct {
 
 type Policy interface {
 	core_model.ResourceSpec
-	GetTargetRef() *common_proto.TargetRef
+	GetTargetRef() common_api.TargetRef
 }
 
 type PolicyWithToList interface {

@@ -3,59 +3,53 @@ package validators
 import (
 	"fmt"
 
-	common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
 type ValidateTargetRefOpts struct {
-	SupportedKinds []common_proto.TargetRef_Kind
+	SupportedKinds []common_api.TargetRefKind
 }
 
 func ValidateTargetRef(
-	ref *common_proto.TargetRef,
+	ref common_api.TargetRef,
 	opts *ValidateTargetRefOpts,
 ) validators.ValidationError {
 	verr := validators.ValidationError{}
-	if ref == nil {
-		verr.AddViolation("", "you need to set a targetRef")
-		return verr
-	}
 	if ref.Kind == "" {
 		verr.AddViolation("kind", "must be set")
 		return verr
 	}
-	if !contains(opts.SupportedKinds, ref.GetKindEnum()) {
+	if !contains(opts.SupportedKinds, ref.Kind) {
 		verr.AddViolation("kind", "value is not supported")
 	} else {
-		refKind := ref.GetKindEnum()
+		refKind := ref.Kind
 		switch refKind {
-		case common_proto.TargetRef_Mesh:
+		case common_api.Mesh:
 			if ref.Name != "" {
 				verr.AddViolation("name", fmt.Sprintf("using name with kind %v is not yet supported", refKind))
 			}
 			verr.Add(disallowedField("mesh", ref.Mesh, refKind))
 			verr.Add(disallowedField("tags", ref.Tags, refKind))
-		case common_proto.TargetRef_MeshSubset:
+		case common_api.MeshSubset:
 			verr.Add(disallowedField("name", ref.Name, refKind))
 			verr.Add(disallowedField("mesh", ref.Mesh, refKind))
-		case common_proto.TargetRef_MeshService:
+		case common_api.MeshService:
 			verr.Add(requiredField("name", ref.Name, refKind))
 			verr.Add(disallowedField("mesh", ref.Mesh, refKind))
 			verr.Add(disallowedField("tags", ref.Tags, refKind))
-		case common_proto.TargetRef_MeshServiceSubset:
+		case common_api.MeshServiceSubset:
 			verr.Add(requiredField("name", ref.Name, refKind))
 			verr.Add(disallowedField("mesh", ref.Mesh, refKind))
-		case common_proto.TargetRef_MeshGatewayRoute:
+		case common_api.MeshGatewayRoute:
 			verr.Add(requiredField("name", ref.Name, refKind))
 			verr.Add(disallowedField("mesh", ref.Mesh, refKind))
-		case common_proto.TargetRef_MeshHTTPRoute:
-			verr.AddViolation("kind", fmt.Sprintf("%v is not yet supported", refKind))
 		}
 	}
 	return verr
 }
 
-func contains(array []common_proto.TargetRef_Kind, item common_proto.TargetRef_Kind) bool {
+func contains(array []common_api.TargetRefKind, item common_api.TargetRefKind) bool {
 	for _, it := range array {
 		if it == item {
 			return true
@@ -64,7 +58,7 @@ func contains(array []common_proto.TargetRef_Kind, item common_proto.TargetRef_K
 	return false
 }
 
-func disallowedField(name string, value interface{}, kind common_proto.TargetRef_Kind) validators.ValidationError {
+func disallowedField(name string, value interface{}, kind common_api.TargetRefKind) validators.ValidationError {
 	res := validators.ValidationError{}
 	if isSet(value) {
 		res.Violations = append(res.Violations, validators.Violation{
@@ -74,7 +68,7 @@ func disallowedField(name string, value interface{}, kind common_proto.TargetRef
 	return res
 }
 
-func requiredField(name string, value interface{}, kind common_proto.TargetRef_Kind) validators.ValidationError {
+func requiredField(name string, value interface{}, kind common_api.TargetRefKind) validators.ValidationError {
 	res := validators.ValidationError{}
 	if !isSet(value) {
 		res.Violations = append(res.Violations, validators.Violation{

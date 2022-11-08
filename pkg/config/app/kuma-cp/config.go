@@ -28,12 +28,12 @@ var _ config.Config = &Defaults{}
 
 type Defaults struct {
 	// If true, it skips creating the default Mesh
-	SkipMeshCreation bool `yaml:"skipMeshCreation" envconfig:"kuma_defaults_skip_mesh_creation"`
+	SkipMeshCreation bool `json:"skipMeshCreation" envconfig:"kuma_defaults_skip_mesh_creation"`
 	// If true, instead of providing inbound clusters with address of dataplane, generates cluster with localhost.
 	// Enabled can cause security threat by exposing application listing on localhost. This configuration is going to
 	// be removed in the future.
 	// TODO: https://github.com/kumahq/kuma/issues/4772
-	EnableLocalhostInboundClusters bool `yaml:"enableLocalhostInboundClusters" envconfig:"kuma_defaults_enable_localhost_inbound_clusters"`
+	EnableLocalhostInboundClusters bool `json:"enableLocalhostInboundClusters" envconfig:"kuma_defaults_enable_localhost_inbound_clusters"`
 }
 
 func (d *Defaults) Sanitize() {
@@ -44,9 +44,9 @@ func (d *Defaults) Validate() error {
 }
 
 type Metrics struct {
-	Dataplane *DataplaneMetrics `yaml:"dataplane"`
-	Zone      *ZoneMetrics      `yaml:"zone"`
-	Mesh      *MeshMetrics      `yaml:"mesh"`
+	Dataplane *DataplaneMetrics `json:"dataplane"`
+	Zone      *ZoneMetrics      `json:"zone"`
+	Mesh      *MeshMetrics      `json:"mesh"`
 }
 
 func (m *Metrics) Sanitize() {
@@ -60,8 +60,8 @@ func (m *Metrics) Validate() error {
 }
 
 type DataplaneMetrics struct {
-	SubscriptionLimit int           `yaml:"subscriptionLimit" envconfig:"kuma_metrics_dataplane_subscription_limit"`
-	IdleTimeout       time.Duration `yaml:"idleTimeout" envconfig:"kuma_metrics_dataplane_idle_timeout"`
+	SubscriptionLimit int                   `json:"subscriptionLimit" envconfig:"kuma_metrics_dataplane_subscription_limit"`
+	IdleTimeout       config_types.Duration `json:"idleTimeout" envconfig:"kuma_metrics_dataplane_idle_timeout"`
 }
 
 func (d *DataplaneMetrics) Sanitize() {
@@ -75,8 +75,8 @@ func (d *DataplaneMetrics) Validate() error {
 }
 
 type ZoneMetrics struct {
-	SubscriptionLimit int           `yaml:"subscriptionLimit" envconfig:"kuma_metrics_zone_subscription_limit"`
-	IdleTimeout       time.Duration `yaml:"idleTimeout" envconfig:"kuma_metrics_zone_idle_timeout"`
+	SubscriptionLimit int                   `json:"subscriptionLimit" envconfig:"kuma_metrics_zone_subscription_limit"`
+	IdleTimeout       config_types.Duration `json:"idleTimeout" envconfig:"kuma_metrics_zone_idle_timeout"`
 }
 
 func (d *ZoneMetrics) Sanitize() {
@@ -91,16 +91,16 @@ func (d *ZoneMetrics) Validate() error {
 
 type MeshMetrics struct {
 	// MinResyncTimeout is a minimal time that should pass between MeshInsight resync
-	MinResyncTimeout time.Duration `yaml:"minResyncTimeout" envconfig:"kuma_metrics_mesh_min_resync_timeout"`
+	MinResyncTimeout config_types.Duration `json:"minResyncTimeout" envconfig:"kuma_metrics_mesh_min_resync_timeout"`
 	// MaxResyncTimeout is a maximum time that MeshInsight could spend without resync
-	MaxResyncTimeout time.Duration `yaml:"maxResyncTimeout" envconfig:"kuma_metrics_mesh_max_resync_timeout"`
+	MaxResyncTimeout config_types.Duration `json:"maxResyncTimeout" envconfig:"kuma_metrics_mesh_max_resync_timeout"`
 }
 
 func (d *MeshMetrics) Sanitize() {
 }
 
 func (d *MeshMetrics) Validate() error {
-	if d.MaxResyncTimeout <= d.MinResyncTimeout {
+	if d.MaxResyncTimeout.Duration <= d.MinResyncTimeout.Duration {
 		return errors.New("MaxResyncTimeout should be greater than MinResyncTimeout")
 	}
 	return nil
@@ -108,48 +108,48 @@ func (d *MeshMetrics) Validate() error {
 
 type Reports struct {
 	// If true then usage stats will be reported
-	Enabled bool `yaml:"enabled" envconfig:"kuma_reports_enabled"`
+	Enabled bool `json:"enabled" envconfig:"kuma_reports_enabled"`
 }
 
 type Config struct {
 	// General configuration
-	General *GeneralConfig `yaml:"general,omitempty"`
+	General *GeneralConfig `json:"general,omitempty"`
 	// Environment Type, can be either "kubernetes" or "universal"
-	Environment core.EnvironmentType `yaml:"environment,omitempty" envconfig:"kuma_environment"`
+	Environment core.EnvironmentType `json:"environment,omitempty" envconfig:"kuma_environment"`
 	// Mode in which Kuma CP is running. Available values are: "standalone", "global", "zone"
-	Mode core.CpMode `yaml:"mode" envconfig:"kuma_mode"`
+	Mode core.CpMode `json:"mode" envconfig:"kuma_mode"`
 	// Resource Store configuration
-	Store *store.StoreConfig `yaml:"store,omitempty"`
+	Store *store.StoreConfig `json:"store,omitempty"`
 	// Configuration of Bootstrap Server, which provides bootstrap config to Dataplanes
-	BootstrapServer *bootstrap.BootstrapServerConfig `yaml:"bootstrapServer,omitempty"`
+	BootstrapServer *bootstrap.BootstrapServerConfig `json:"bootstrapServer,omitempty"`
 	// Envoy XDS server configuration
-	XdsServer *xds.XdsServerConfig `yaml:"xdsServer,omitempty"`
+	XdsServer *xds.XdsServerConfig `json:"xdsServer,omitempty"`
 	// Monitoring Assignment Discovery Service (MADS) server configuration
-	MonitoringAssignmentServer *mads.MonitoringAssignmentServerConfig `yaml:"monitoringAssignmentServer,omitempty"`
+	MonitoringAssignmentServer *mads.MonitoringAssignmentServerConfig `json:"monitoringAssignmentServer,omitempty"`
 	// API Server configuration
-	ApiServer *api_server.ApiServerConfig `yaml:"apiServer,omitempty"`
+	ApiServer *api_server.ApiServerConfig `json:"apiServer,omitempty"`
 	// Environment-specific configuration
 	Runtime *runtime.RuntimeConfig
 	// Default Kuma entities configuration
-	Defaults *Defaults `yaml:"defaults,omitempty"`
+	Defaults *Defaults `json:"defaults,omitempty"`
 	// Metrics configuration
-	Metrics *Metrics `yaml:"metrics,omitempty"`
+	Metrics *Metrics `json:"metrics,omitempty"`
 	// Reports configuration
-	Reports *Reports `yaml:"reports,omitempty"`
+	Reports *Reports `json:"reports,omitempty"`
 	// Multizone Config
-	Multizone *multizone.MultizoneConfig `yaml:"multizone,omitempty"`
+	Multizone *multizone.MultizoneConfig `json:"multizone,omitempty"`
 	// DNS Server Config
-	DNSServer *dns_server.Config `yaml:"dnsServer,omitempty"`
+	DNSServer *dns_server.Config `json:"dnsServer,omitempty"`
 	// Diagnostics configuration
-	Diagnostics *diagnostics.DiagnosticsConfig `yaml:"diagnostics,omitempty"`
+	Diagnostics *diagnostics.DiagnosticsConfig `json:"diagnostics,omitempty"`
 	// Dataplane Server configuration
-	DpServer *dp_server.DpServerConfig `yaml:"dpServer"`
+	DpServer *dp_server.DpServerConfig `json:"dpServer"`
 	// Access Control configuration
-	Access access.AccessConfig `yaml:"access"`
+	Access access.AccessConfig `json:"access"`
 	// Configuration of experimental features
-	Experimental ExperimentalConfig `yaml:"experimental"`
+	Experimental ExperimentalConfig `json:"experimental"`
 	// Proxy holds configuration for proxies
-	Proxy xds.Proxy `yaml:"proxy"`
+	Proxy xds.Proxy `json:"proxy"`
 }
 
 func (c *Config) Sanitize() {
@@ -184,15 +184,15 @@ var DefaultConfig = func() Config {
 		Metrics: &Metrics{
 			Dataplane: &DataplaneMetrics{
 				SubscriptionLimit: 2,
-				IdleTimeout:       5 * time.Minute,
+				IdleTimeout:       config_types.Duration{Duration: 5 * time.Minute},
 			},
 			Zone: &ZoneMetrics{
 				SubscriptionLimit: 10,
-				IdleTimeout:       5 * time.Minute,
+				IdleTimeout:       config_types.Duration{Duration: 5 * time.Minute},
 			},
 			Mesh: &MeshMetrics{
-				MinResyncTimeout: 1 * time.Second,
-				MaxResyncTimeout: 20 * time.Second,
+				MinResyncTimeout: config_types.Duration{Duration: 1 * time.Second},
+				MaxResyncTimeout: config_types.Duration{Duration: 20 * time.Second},
 			},
 		},
 		Reports: &Reports{
@@ -286,21 +286,21 @@ func (c *Config) Validate() error {
 
 type GeneralConfig struct {
 	// DNSCacheTTL represents duration for how long Kuma CP will cache result of resolving dataplane's domain name
-	DNSCacheTTL time.Duration `yaml:"dnsCacheTTL" envconfig:"kuma_general_dns_cache_ttl"`
+	DNSCacheTTL config_types.Duration `json:"dnsCacheTTL" envconfig:"kuma_general_dns_cache_ttl"`
 	// TlsCertFile defines a path to a file with PEM-encoded TLS cert that will be used across all the Kuma Servers.
-	TlsCertFile string `yaml:"tlsCertFile" envconfig:"kuma_general_tls_cert_file"`
+	TlsCertFile string `json:"tlsCertFile" envconfig:"kuma_general_tls_cert_file"`
 	// TlsKeyFile defines a path to a file with PEM-encoded TLS key that will be used across all the Kuma Servers.
-	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_general_tls_key_file"`
+	TlsKeyFile string `json:"tlsKeyFile" envconfig:"kuma_general_tls_key_file"`
 	// TlsMinVersion defines the minimum TLS version to be used
-	TlsMinVersion string `yaml:"tlsMinVersion" envconfig:"kuma_general_tls_min_version"`
+	TlsMinVersion string `json:"tlsMinVersion" envconfig:"kuma_general_tls_min_version"`
 	// TlsMaxVersion defines the maximum TLS version to be used
-	TlsMaxVersion string `yaml:"tlsMaxVersion" envconfig:"kuma_general_tls_max_version"`
+	TlsMaxVersion string `json:"tlsMaxVersion" envconfig:"kuma_general_tls_max_version"`
 	// TlsCipherSuites defines the list of ciphers to use
-	TlsCipherSuites []string `yaml:"tlsCipherSuites" envconfig:"kuma_general_tls_cipher_suites"`
+	TlsCipherSuites []string `json:"tlsCipherSuites" envconfig:"kuma_general_tls_cipher_suites"`
 	// WorkDir defines a path to the working directory
 	// Kuma stores in this directory autogenerated entities like certificates.
 	// If empty then the working directory is $HOME/.kuma
-	WorkDir string `yaml:"workDir" envconfig:"kuma_general_work_dir"`
+	WorkDir string `json:"workDir" envconfig:"kuma_general_work_dir"`
 }
 
 var _ config.Config = &GeneralConfig{}
@@ -329,7 +329,7 @@ func (g *GeneralConfig) Validate() (errs error) {
 
 func DefaultGeneralConfig() *GeneralConfig {
 	return &GeneralConfig{
-		DNSCacheTTL:     10 * time.Second,
+		DNSCacheTTL:     config_types.Duration{Duration: 10 * time.Second},
 		WorkDir:         "",
 		TlsCipherSuites: []string{},
 		TlsMinVersion:   "TLSv1_2",
@@ -338,10 +338,10 @@ func DefaultGeneralConfig() *GeneralConfig {
 
 type ExperimentalConfig struct {
 	// If true, experimental Gateway API is enabled
-	GatewayAPI bool `yaml:"gatewayAPI" envconfig:"KUMA_EXPERIMENTAL_GATEWAY_API"`
+	GatewayAPI bool `json:"gatewayAPI" envconfig:"KUMA_EXPERIMENTAL_GATEWAY_API"`
 	// If true, instead of embedding kubernetes outbounds into Dataplane object, they are persisted next to VIPs in ConfigMap
 	// This can improve performance, but it should be enabled only after all instances are migrated to version that supports this config
-	KubeOutboundsAsVIPs bool `yaml:"kubeOutboundsAsVIPs" envconfig:"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS"`
+	KubeOutboundsAsVIPs bool `json:"kubeOutboundsAsVIPs" envconfig:"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS"`
 }
 
 func (e ExperimentalConfig) Validate() error {

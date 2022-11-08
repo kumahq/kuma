@@ -5,7 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -135,21 +135,21 @@ func singleItemRules(matchedPolicies []core_model.Resource) (core_xds.Rules, err
 }
 
 // inboundsSelectedByTargetRef returns a list of inbounds of DPP that are selected by the targetRef
-func inboundsSelectedByTargetRef(tr *common_proto.TargetRef, dpp *core_mesh.DataplaneResource, gateway *core_mesh.MeshGatewayResource) []core_xds.InboundListener {
-	switch tr.GetKindEnum() {
-	case common_proto.TargetRef_Mesh:
+func inboundsSelectedByTargetRef(tr common_api.TargetRef, dpp *core_mesh.DataplaneResource, gateway *core_mesh.MeshGatewayResource) []core_xds.InboundListener {
+	switch tr.Kind {
+	case common_api.Mesh:
 		return inboundsSelectedByTags(nil, dpp, gateway)
-	case common_proto.TargetRef_MeshSubset:
-		return inboundsSelectedByTags(tr.GetTags(), dpp, gateway)
-	case common_proto.TargetRef_MeshService:
+	case common_api.MeshSubset:
+		return inboundsSelectedByTags(tr.Tags, dpp, gateway)
+	case common_api.MeshService:
 		return inboundsSelectedByTags(map[string]string{
-			mesh_proto.ServiceTag: tr.GetName(),
+			mesh_proto.ServiceTag: tr.Name,
 		}, dpp, gateway)
-	case common_proto.TargetRef_MeshServiceSubset:
+	case common_api.MeshServiceSubset:
 		tags := map[string]string{
-			mesh_proto.ServiceTag: tr.GetName(),
+			mesh_proto.ServiceTag: tr.Name,
 		}
-		for k, v := range tr.GetTags() {
+		for k, v := range tr.Tags {
 			tags[k] = v
 		}
 		return inboundsSelectedByTags(tags, dpp, gateway)
@@ -200,9 +200,8 @@ func (b ByTargetRef) Less(i, j int) bool {
 
 	tr1, tr2 := r1.GetTargetRef(), r2.GetTargetRef()
 
-	kind1, kind2 := tr1.GetKindEnum(), tr2.GetKindEnum()
-	if kind1 != kind2 {
-		return kind1 < kind2
+	if tr1.Kind != tr2.Kind {
+		return tr1.Kind.Less(tr2.Kind)
 	}
 
 	return b[i].GetMeta().GetName() < b[j].GetMeta().GetName()

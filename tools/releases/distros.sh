@@ -28,6 +28,7 @@ PULP_DIST_NAME="alpine"
 ENVOY_VERSION=$("${SCRIPT_DIR}/../envoy/version.sh")
 [ -z "$KUMA_CONFIG_PATH" ] && KUMA_CONFIG_PATH=pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
 CTL_NAME="kumactl"
+[ -z "$EBPF_PROGRAMS_IMAGE" ] && EBPF_PROGRAMS_IMAGE="kumahq/kuma-net-ebpf:0.8.6"
 
 function get_envoy() {
   local distro=$1
@@ -40,6 +41,25 @@ function get_envoy() {
     "https://download.konghq.com/mesh-alpine/envoy-$ENVOY_VERSION-$envoy_distro-$arch")
 
   if [ "$status" -ne "200" ]; then msg_err "Error: failed downloading Envoy"; fi
+}
+
+function get_ebpf_programs() {
+  local arch=$1
+  local system=$2
+  local kuma_dir=$3
+  local container
+
+  if [[ "$system" != "linux" ]]; then
+    return
+  fi
+
+  if [[ "$arch" != "amd64" ]] && [[ "$arch" != "arm64" ]]; then
+    return
+  fi
+
+  container=$(DOCKER_DEFAULT_PLATFORM=$system/$arch docker create "$EBPF_PROGRAMS_IMAGE" copy)
+  docker cp "$container:/ebpf" "$kuma_dir"
+  docker rm -v "$container"
 }
 
 # create_kumactl_tarball packages only kumactl
@@ -94,6 +114,7 @@ function create_tarball() {
   mkdir "$kuma_dir/conf"
 
   get_envoy "$distro" "$envoy_distro" "$arch"
+  get_ebpf_programs "$arch" "$system" "$kuma_dir"
   chmod 755 build/envoy-"$distro"
 
   artifact_dir=$(artifact_dir "$arch" "$system")

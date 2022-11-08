@@ -38,8 +38,8 @@ spec:
               resource.
             properties:
               from:
-                description: From is a list of pairs – a group of clients and action
-                  applied for it
+                description: From list makes a match between clients and corresponding
+                  configurations
                 items:
                   properties:
                     default:
@@ -47,10 +47,8 @@ spec:
                         of clients referenced in 'targetRef'
                       properties:
                         action:
-                          description: 'Action defines a behaviour for the specified
-                            group of clients: * ALLOW - lets the requests pass * DENY
-                            - blocks the requests * ALLOW_WITH_SHADOW_DENY - lets
-                            the requests pass but emits logs as if requests are denied'
+                          description: 'Action defines a behavior for the specified
+                            group of clients:'
                           enum:
                           - ALLOW
                           - DENY
@@ -69,25 +67,24 @@ spec:
                           - MeshService
                           - MeshServiceSubset
                           - MeshGatewayRoute
-                          - MeshHTTPRoute
                           type: string
                         mesh:
-                          description: Mesh is used with MeshService and MeshServiceSubset
-                            to identify the service from another mesh. Could be useful
-                            when implementing policies with cross-mesh support.
+                          description: Mesh is reserved for future use to identify
+                            cross mesh resources.
                           type: string
                         name:
-                          description: Name of the referenced resource
+                          description: 'Name of the referenced resource. Can only
+                            be used with kinds: `MeshService`, `MeshServiceSubset`
+                            and `MeshGatewayRoute`'
                           type: string
                         tags:
                           additionalProperties:
                             type: string
-                          description: Tags are used with MeshSubset and MeshServiceSubset
-                            to define a subset of proxies
+                          description: Tags used to select a subset of proxies by
+                            tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
                   type: object
-                nullable: true
                 type: array
               targetRef:
                 description: TargetRef is a reference to the resource the policy takes
@@ -102,21 +99,20 @@ spec:
                     - MeshService
                     - MeshServiceSubset
                     - MeshGatewayRoute
-                    - MeshHTTPRoute
                     type: string
                   mesh:
-                    description: Mesh is used with MeshService and MeshServiceSubset
-                      to identify the service from another mesh. Could be useful when
-                      implementing policies with cross-mesh support.
+                    description: Mesh is reserved for future use to identify cross
+                      mesh resources.
                     type: string
                   name:
-                    description: Name of the referenced resource
+                    description: 'Name of the referenced resource. Can only be used
+                      with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
                     type: string
                   tags:
                     additionalProperties:
                       type: string
-                    description: Tags are used with MeshSubset and MeshServiceSubset
-                      to define a subset of proxies
+                    description: Tags used to select a subset of proxies by tags.
+                      Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                     type: object
                 type: object
             type: object

@@ -132,7 +132,7 @@ func (t *tracker) OnHealthCheckRequest(streamID xds.StreamID, req *envoy_service
 func (t *tracker) newWatchdog(node *envoy_core.Node) watchdog.Watchdog {
 	return &watchdog.SimpleWatchdog{
 		NewTicker: func() *time.Ticker {
-			return time.NewTicker(t.config.RefreshInterval)
+			return time.NewTicker(t.config.RefreshInterval.Duration)
 		},
 		OnTick: func() error {
 			start := core.Now()

@@ -1,12 +1,12 @@
 package v1alpha1_test
 
 import (
-	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/yaml"
 
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	meshtrace_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("MeshTrace", func() {
@@ -17,7 +17,7 @@ var _ = Describe("MeshTrace", func() {
 				meshTrace := meshtrace_proto.NewMeshTraceResource()
 
 				// when
-				err := util_proto.FromYAML([]byte(mtpYAML), meshTrace.Spec)
+				err := core_model.FromYAML([]byte(mtpYAML), &meshTrace.Spec)
 				Expect(err).ToNot(HaveOccurred())
 				// and
 				verr := meshTrace.Validate()
@@ -45,12 +45,9 @@ default:
       header:
         name: x-version
   sampling:
-    overall:
-      value: 80
-    random:
-      value: 60
-    client:
-      value: 40
+    overall: 80
+    random: 60
+    client: 40
 `),
 			Entry("with empty backends", `
 targetRef:
@@ -69,12 +66,9 @@ default:
       header:
         name: x-version
   sampling:
-    overall:
-      value: 80
-    random:
-      value: 60
-    client:
-      value: 40
+    overall: 80
+    random: 60
+    client: 40
 `),
 			Entry("with datadog backend", `
 targetRef:
@@ -99,7 +93,7 @@ default:
 				meshTrace := meshtrace_proto.NewMeshTraceResource()
 
 				// when
-				err := util_proto.FromYAML([]byte(given.inputYaml), meshTrace.Spec)
+				err := core_model.FromYAML([]byte(given.inputYaml), &meshTrace.Spec)
 				Expect(err).ToNot(HaveOccurred())
 				// and
 				verr := meshTrace.Validate()
@@ -117,7 +111,7 @@ targetRef:
 `,
 				expected: `
 violations:
-  - field: spec.default
+  - field: spec.default.backends
     message: must be defined`,
 			}),
 			Entry("no valid backends", testCase{
@@ -320,8 +314,7 @@ default:
     - datadog:
         url: http://intake.datadoghq.eu:443
   sampling:
-    overall:
-      value: 101
+    overall: 101
 `,
 				expected: `
 violations:

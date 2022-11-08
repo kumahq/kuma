@@ -8,7 +8,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"gopkg.in/yaml.v2"
+	"sigs.k8s.io/yaml"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"

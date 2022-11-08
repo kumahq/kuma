@@ -4,9 +4,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/yaml"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -22,7 +22,7 @@ import (
 )
 
 func parseResource(bytes []byte, resource core_model.Resource) {
-	Expect(core_model.FromYAML(resource.Descriptor(), bytes, resource.GetSpec())).To(Succeed())
+	Expect(core_model.FromYAML(bytes, resource.GetSpec())).To(Succeed())
 	resMeta := rest_v1alpha1.ResourceMeta{}
 	err := yaml.Unmarshal(bytes, &resMeta)
 	Expect(err).ToNot(HaveOccurred())

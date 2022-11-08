@@ -54,7 +54,7 @@ var rootCmd = &cobra.Command{
 			}
 		}
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Generating proto file\n")
-		if err := generateProto(cfg); err != nil {
+		if err := generateType(cfg); err != nil {
 			return err
 		}
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Generating plugin file\n")
@@ -82,16 +82,16 @@ Useful files:
 	},
 }
 
-func generateProto(c config) error {
+func generateType(c config) error {
 	apiPath := path.Join(c.policyPath(), "api", c.version)
 	if err := os.MkdirAll(apiPath, os.ModePerm); err != nil {
 		return err
 	}
-	f, err := os.Create(path.Join(apiPath, c.lowercase()+".proto"))
+	f, err := os.Create(path.Join(apiPath, c.lowercase()+".go"))
 	if err != nil {
 		return err
 	}
-	err = protoTemplate.Execute(f, map[string]interface{}{
+	err = typeTemplate.Execute(f, map[string]interface{}{
 		"name":              c.name,
 		"nameLower":         c.lowercase(),
 		"module":            path.Join(c.gomodule, c.basePath),
@@ -159,73 +159,61 @@ func init() {
 	rootCmd.Flags().BoolVar(&cfg.generateFrom, "generate-from", false, "Generate 'from' array for incoming traffic configuration")
 }
 
-var protoTemplate = template.Must(template.New("").Option("missingkey=error").Parse(
-	`syntax = "proto3";
+var typeTemplate = template.Must(template.New("").Option("missingkey=error").Parse(
+	`// +kubebuilder:object:generate=true
+package {{ .version }}
+{{- if or .generateTargetRef (or .generateTo .generateFrom) }}
 
-package kuma.plugins.policies.{{ .nameLower }}.{{ .version }};
-
-import "mesh/options.proto";
-option go_package = "{{ .module }}/{{.nameLower}}/api/{{ .version }}";
-{{ if or .generateTargetRef (or .generateTo .generateFrom) }}
-import "common/v1alpha1/targetref.proto";
+import (
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+)
 {{- end}}
-import "kuma-doc/config.proto";
-
-option (doc.config) = {
-  type : Policy,
-  name : "{{ .name }}",
-  file_name : "{{ .nameLower }}"
-};
 
 // {{ .name }}
-message {{ .name }} {
-  option (kuma.mesh.policy) = {
-    // Toggle this to have the policy registered or not in Kuma
-    skip_registration : false,
-  };
+// +kuma:policy:skip_registration=true
+type {{ .name }} struct {
+	{{- if .generateTargetRef }}
+	// TargetRef is a reference to the resource the policy takes an effect on.
+	// The resource could be either a real store object or virtual resource
+	// defined inplace.
+	TargetRef common_api.TargetRef` + " `json:\"targetRef,omitempty\"`" + `
+	{{- end }}
+	{{- if .generateTo }}
+	// To list makes a match between the consumed services and corresponding configurations
+	To []To` + " `json:\"to,omitempty\"`" + `
+	{{- end}}
+	{{- if .generateFrom }}
+	// From list makes a match between clients and corresponding configurations
+	From []From` + " `json:\"from,omitempty\"`" + `
+	{{- end}}
+}
+{{- if .generateTo }}
 
-  {{- if .generateTargetRef }}
+type To struct {
+	// TargetRef is a reference to the resource that represents a group of
+	// destinations.
+	TargetRef common_api.TargetRef` + " `json:\"targetRef,omitempty\"`" + `
+	// Default is a configuration specific to the group of destinations referenced in
+	// 'targetRef'
+	Default Conf` + " `json:\"default,omitempty\"`" + `
+}
 
-  // TargetRef is a reference to the resource the policy takes an effect on.
-  // The resource could be either a real store object or virtual resource
-  // defined inplace.
-  kuma.common.v1alpha1.TargetRef targetRef = 1;
-  {{- end }}
+{{- end}}
+{{- if .generateFrom }}
 
-  message Conf {
-    // TODO add configuration fields
-  }
+type From struct {
+	// TargetRef is a reference to the resource that represents a group of
+	// clients.
+	TargetRef common_api.TargetRef` + " `json:\"targetRef,omitempty\"`" + `
+	// Default is a configuration specific to the group of clients referenced in
+	// 'targetRef'
+	Default Conf` + " `json:\"default,omitempty\"`" + `
+}
 
-  {{- if .generateTo }}
+{{- end}}
 
-  message To {
-    // TargetRef is a reference to the resource that represents a group of
-    // destinations.
-    kuma.common.v1alpha1.TargetRef targetRef = 1 [ (doc.required) = true ];
-
-    // Default is a configuration specific to the group of destinations referenced in
-    // 'targetRef'
-    Conf default = 2 [ (doc.required) = true ];
-  }
-
-  repeated To to = 2;
-  {{- end}}
-
-  {{- if .generateFrom }}
-
-  message From {
-    // TargetRef is a reference to the resource that represents a group of
-    // clients.
-    kuma.common.v1alpha1.TargetRef targetRef = 1 [ (doc.required) = true ];
-
-    // Default is a configuration specific to the group of clients referenced in
-    // 'targetRef'
-    Conf default = 2 [ (doc.required) = true ];
-  }
-
-  repeated From from = 3;
-
-  {{- end}}
+type Conf struct {
+	// TODO add configuration fields
 }
 `))
 
@@ -274,7 +262,7 @@ var validatorTemplate = template.Must(template.New("").Option("missingkey=error"
 
 import (
 	{{- if or .generateTargetRef (or .generateTo .generateFrom) }}
-	common_proto "github.com/kumahq/kuma/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
 	{{- end}}
 	"github.com/kumahq/kuma/pkg/core/validators"
@@ -284,86 +272,76 @@ func (r *{{.name}}Resource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	{{- if .generateTargetRef }}
-	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.GetTargetRef()))
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
 	{{- end }}
 	{{- if and .generateTo .generateFrom }}
-	if len(r.Spec.GetTo()) == 0 && len(r.Spec.GetFrom()) == 0 {
+	if len(r.Spec.To) == 0 && len(r.Spec.From) == 0 {
 		verr.AddViolationAt(path, "at least one of 'from', 'to' has to be defined")
 	}
 	{{- else if .generateTo }}
-	if len(r.Spec.GetTo()) == 0 {
-		verr.AddErrorAt(path.Field("to"), "needs at least one item")
+	if len(r.Spec.To) == 0 {
+		verr.AddViolationAt(path.Field("to"), "needs at least one item")
 	}
 	{{- else if .generateFrom }}
-	if len(r.Spec.GetFrom()) == 0 {
-		verr.AddErrorAt(path.Field("from"), "needs at least one item")
+	if len(r.Spec.From) == 0 {
+		verr.AddViolationAt(path.Field("from"), "needs at least one item")
 	}
 	{{- end }}
 	{{- if .generateTo }}
-	verr.AddErrorAt(path, validateTo(r.Spec.GetTo()))
+	verr.AddErrorAt(path, validateTo(r.Spec.To))
 	{{- end }}
 	{{- if .generateFrom }}
-	verr.AddErrorAt(path, validateFrom(r.Spec.GetFrom()))
+	verr.AddErrorAt(path, validateFrom(r.Spec.From))
 	{{- end }}
 	return verr.OrNil()
 }
-
 {{- if .generateTargetRef }}
-func validateTop(targetRef *common_proto.TargetRef) validators.ValidationError {
+
+func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
-		SupportedKinds: []common_proto.TargetRef_Kind{
+		SupportedKinds: []common_api.TargetRefKind{
 			// TODO add supported TargetRef kinds for this policy
 		},
 	})
 	return targetRefErr
 }
-{{- end }}
 
+{{- end }}
 {{- if .generateFrom }}
-func validateFrom(from []*{{.name}}_From) validators.ValidationError {
+
+func validateFrom(from []From) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, fromItem := range from {
 		path := validators.RootedAt("from").Index(idx)
-		 verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(fromItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
-			 SupportedKinds: []common_proto.TargetRef_Kind{
-				 // TODO add supported TargetRef for 'from' item
-			 },
-		 }))
-
-		 defaultField := path.Field("default")
-		 if fromItem.GetDefault() == nil {
-			 verr.AddViolationAt(defaultField, "must be defined")
-		 } else {
-			 verr.AddErrorAt(defaultField, validateDefault(fromItem.Default))
-		 }
+		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(fromItem.TargetRef, &matcher_validators.ValidateTargetRefOpts{
+			SupportedKinds: []common_api.TargetRefKind{
+				// TODO add supported TargetRef for 'from' item
+			},
+		}))
+		verr.AddErrorAt(path.Field("default"), validateDefault(fromItem.Default))
 	}
 	return verr
 }
-{{- end }}
 
+{{- end }}
 {{- if .generateTo }}
-func validateTo(to []*{{.name}}_To) validators.ValidationError {
+
+func validateTo(to []To) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
-		 verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(toItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
-			 SupportedKinds: []common_proto.TargetRef_Kind{
-				 // TODO add supported TargetRef for 'to' item
-			 },
-		 }))
-
-		 defaultField := path.Field("default")
-		 if toItem.GetDefault() == nil {
-			 verr.AddViolationAt(defaultField, "must be defined")
-		 } else {
-			 verr.AddErrorAt(defaultField, validateDefault(toItem.Default))
-		 }
+		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(toItem.TargetRef, &matcher_validators.ValidateTargetRefOpts{
+			SupportedKinds: []common_api.TargetRefKind{
+				// TODO add supported TargetRef for 'to' item
+			},
+		}))
+		verr.AddErrorAt(path.Field("default"), validateDefault(toItem.Default))
 	}
 	return verr
 }
 {{- end }}
 
-func validateDefault(conf *{{.name}}_Conf) validators.ValidationError {
+func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
 	// TODO add default conf validation
 	return verr
