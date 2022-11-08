@@ -42,7 +42,7 @@ func (a *adminResourceAccess) ValidateDelete(_ model.ResourceKey, _ model.Resour
 	return a.validateAdminAccess(user, descriptor)
 }
 
-func (a *adminResourceAccess) ValidateList(descriptor model.ResourceTypeDescriptor, user user.User) error {
+func (a *adminResourceAccess) ValidateList(_ string, descriptor model.ResourceTypeDescriptor, user user.User) error {
 	return a.validateAdminAccess(user, descriptor)
 }
 
