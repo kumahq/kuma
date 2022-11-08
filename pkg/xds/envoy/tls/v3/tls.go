@@ -107,16 +107,24 @@ func UpstreamTlsContextOutsideMesh(ca, cert, key []byte, allowRenegotiation bool
 		if tlsContext.CommonTlsContext == nil {
 			tlsContext.CommonTlsContext = &envoy_tls.CommonTlsContext{}
 		}
-		tlsContext.CommonTlsContext.ValidationContextType = &envoy_tls.CommonTlsContext_ValidationContext{
-			ValidationContext: &envoy_tls.CertificateValidationContext{
-				TrustedCa: dataSourceFromBytes(ca),
-				MatchSubjectAltNames: []*envoy_type_matcher.StringMatcher{
-					{
-						MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
-							Exact: hostname,
-						},
+		var matchNames []*envoy_tls.SubjectAltNameMatcher
+		for _, typ := range []envoy_tls.SubjectAltNameMatcher_SanType{
+			envoy_tls.SubjectAltNameMatcher_DNS,
+			envoy_tls.SubjectAltNameMatcher_IP_ADDRESS,
+		} {
+			matchNames = append(matchNames, &envoy_tls.SubjectAltNameMatcher{
+				SanType: typ,
+				Matcher: &envoy_type_matcher.StringMatcher{
+					MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+						Exact: hostname,
 					},
 				},
+			})
+		}
+		tlsContext.CommonTlsContext.ValidationContextType = &envoy_tls.CommonTlsContext_ValidationContext{
+			ValidationContext: &envoy_tls.CertificateValidationContext{
+				TrustedCa:                 dataSourceFromBytes(ca),
+				MatchTypedSubjectAltNames: matchNames,
 			},
 		}
 	}

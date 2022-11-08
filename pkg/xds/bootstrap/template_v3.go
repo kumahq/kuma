@@ -87,6 +87,19 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, useTokenPath 
 			})
 	}
 
+	// We create matchers
+	var matchNames []*envoy_tls.SubjectAltNameMatcher
+	for _, typ := range []envoy_tls.SubjectAltNameMatcher_SanType{
+		envoy_tls.SubjectAltNameMatcher_DNS,
+		envoy_tls.SubjectAltNameMatcher_IP_ADDRESS,
+	} {
+		matchNames = append(matchNames, &envoy_tls.SubjectAltNameMatcher{
+			SanType: typ,
+			Matcher: &envoy_type_matcher_v3.StringMatcher{
+				MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{Exact: parameters.XdsHost},
+			},
+		})
+	}
 	res := &envoy_bootstrap_v3.Bootstrap{
 		Node: &envoy_core_v3.Node{
 			Id:      parameters.Id,
@@ -164,11 +177,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, useTokenPath 
 					Name: tls.CpValidationCtx,
 					Type: &envoy_tls.Secret_ValidationContext{
 						ValidationContext: &envoy_tls.CertificateValidationContext{
-							MatchSubjectAltNames: []*envoy_type_matcher_v3.StringMatcher{
-								{
-									MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{Exact: parameters.XdsHost},
-								},
-							},
+							MatchTypedSubjectAltNames: matchNames,
 							TrustedCa: &envoy_core_v3.DataSource{
 								Specifier: &envoy_core_v3.DataSource_InlineBytes{
 									InlineBytes: parameters.CertBytes,
