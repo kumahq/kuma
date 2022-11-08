@@ -60,7 +60,7 @@ func (c *Cache) GetMeshContext(ctx context.Context, syncLog logr.Logger, mesh st
 			if err != nil {
 				return xds_context.MeshContext{}, err
 			}
-			c.hashCache.Set(mesh, &meshCtx, 0)
+			c.hashCache.SetDefault(mesh, &meshCtx)
 			return meshCtx, nil
 		}
 
@@ -75,7 +75,7 @@ func (c *Cache) GetMeshContext(ctx context.Context, syncLog logr.Logger, mesh st
 			return context, nil
 		}
 
-		c.hashCache.Set(mesh, meshCtx, 0)
+		c.hashCache.SetDefault(mesh, meshCtx)
 		return *meshCtx, nil
 	}))
 	if err != nil {
