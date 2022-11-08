@@ -1,8 +1,6 @@
 package multizone
 
 import (
-	"time"
-
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
@@ -12,24 +10,24 @@ import (
 
 type KdsServerConfig struct {
 	// Port of a gRPC server that serves Kuma Discovery Service (KDS).
-	GrpcPort uint32 `yaml:"grpcPort" envconfig:"kuma_multizone_global_kds_grpc_port"`
+	GrpcPort uint32 `json:"grpcPort" envconfig:"kuma_multizone_global_kds_grpc_port"`
 	// Interval for refreshing state of the world
-	RefreshInterval time.Duration `yaml:"refreshInterval" envconfig:"kuma_multizone_global_kds_refresh_interval"`
+	RefreshInterval config_types.Duration `json:"refreshInterval" envconfig:"kuma_multizone_global_kds_refresh_interval"`
 	// Interval for flushing Zone Insights (stats of multi-zone communication)
-	ZoneInsightFlushInterval time.Duration `yaml:"zoneInsightFlushInterval" envconfig:"kuma_multizone_global_kds_zone_insight_flush_interval"`
+	ZoneInsightFlushInterval config_types.Duration `json:"zoneInsightFlushInterval" envconfig:"kuma_multizone_global_kds_zone_insight_flush_interval"`
 	// TlsCertFile defines a path to a file with PEM-encoded TLS cert.
-	TlsCertFile string `yaml:"tlsCertFile" envconfig:"kuma_multizone_global_kds_tls_cert_file"`
+	TlsCertFile string `json:"tlsCertFile" envconfig:"kuma_multizone_global_kds_tls_cert_file"`
 	// TlsKeyFile defines a path to a file with PEM-encoded TLS key.
-	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_multizone_global_kds_tls_key_file"`
+	TlsKeyFile string `json:"tlsKeyFile" envconfig:"kuma_multizone_global_kds_tls_key_file"`
 	// TlsMinVersion defines the minimum TLS version to be used
-	TlsMinVersion string `yaml:"tlsMinVersion" envconfig:"kuma_multizone_global_kds_tls_min_version"`
+	TlsMinVersion string `json:"tlsMinVersion" envconfig:"kuma_multizone_global_kds_tls_min_version"`
 	// TlsMaxVersion defines the maximum TLS version to be used
-	TlsMaxVersion string `yaml:"tlsMaxVersion" envconfig:"kuma_multizone_global_kds_tls_max_version"`
+	TlsMaxVersion string `json:"tlsMaxVersion" envconfig:"kuma_multizone_global_kds_tls_max_version"`
 	// TlsCipherSuites defines the list of ciphers to use
-	TlsCipherSuites []string `yaml:"tlsCipherSuites" envconfig:"kuma_multizone_global_kds_tls_cipher_suites"`
+	TlsCipherSuites []string `json:"tlsCipherSuites" envconfig:"kuma_multizone_global_kds_tls_cipher_suites"`
 	// MaxMsgSize defines a maximum size of the message that is exchanged using KDS.
 	// In practice this means a limit on full list of one resource type.
-	MaxMsgSize uint32 `yaml:"maxMsgSize" envconfig:"kuma_multizone_global_kds_max_msg_size"`
+	MaxMsgSize uint32 `json:"maxMsgSize" envconfig:"kuma_multizone_global_kds_max_msg_size"`
 }
 
 var _ config.Config = &KdsServerConfig{}
@@ -41,10 +39,10 @@ func (c *KdsServerConfig) Validate() (errs error) {
 	if c.GrpcPort > 65535 {
 		errs = multierr.Append(errs, errors.Errorf(".GrpcPort must be in the range [0, 65535]"))
 	}
-	if c.RefreshInterval <= 0 {
+	if c.RefreshInterval.Duration <= 0 {
 		errs = multierr.Append(errs, errors.New(".RefreshInterval must be positive"))
 	}
-	if c.ZoneInsightFlushInterval <= 0 {
+	if c.ZoneInsightFlushInterval.Duration <= 0 {
 		errs = multierr.Append(errs, errors.New(".ZoneInsightFlushInterval must be positive"))
 	}
 	if c.TlsCertFile == "" && c.TlsKeyFile != "" {
@@ -67,12 +65,12 @@ func (c *KdsServerConfig) Validate() (errs error) {
 
 type KdsClientConfig struct {
 	// Interval for refreshing state of the world
-	RefreshInterval time.Duration `yaml:"refreshInterval" envconfig:"kuma_multizone_zone_kds_refresh_interval"`
+	RefreshInterval config_types.Duration `json:"refreshInterval" envconfig:"kuma_multizone_zone_kds_refresh_interval"`
 	// RootCAFile defines a path to a file with PEM-encoded Root CA. Client will verify the server by using it.
-	RootCAFile string `yaml:"rootCaFile" envconfig:"kuma_multizone_zone_kds_root_ca_file"`
+	RootCAFile string `json:"rootCaFile" envconfig:"kuma_multizone_zone_kds_root_ca_file"`
 	// MaxMsgSize defines a maximum size of the message that is exchanged using KDS.
 	// In practice this means a limit on full list of one resource type.
-	MaxMsgSize uint32 `yaml:"maxMsgSize" envconfig:"kuma_multizone_zone_kds_max_msg_size"`
+	MaxMsgSize uint32 `json:"maxMsgSize" envconfig:"kuma_multizone_zone_kds_max_msg_size"`
 }
 
 var _ config.Config = &KdsClientConfig{}

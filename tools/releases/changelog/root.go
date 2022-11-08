@@ -128,7 +128,14 @@ It will then output a changelog with all PRs with the same changelog grouped tog
 			uniqueAuthors := map[string]interface{}{}
 			var authors []string
 			var prs []int
+			var minVersion, maxVersion string
 			for _, c := range commits {
+				if minVersion == "" || c.MinDependency > minVersion {
+					minVersion = c.MinDependency
+				}
+				if maxVersion == "" || c.MaxDependency < maxVersion {
+					maxVersion = c.MaxDependency
+				}
 				prs = append(prs, c.PrNumber)
 				if _, exists := uniqueAuthors[c.Author]; !exists {
 					authors = append(authors, fmt.Sprintf("@%s", c.Author))
@@ -137,6 +144,9 @@ It will then output a changelog with all PRs with the same changelog grouped tog
 			}
 			sort.Ints(prs)
 			sort.Strings(authors)
+			if minVersion != "" && maxVersion != "" {
+				changelog = fmt.Sprintf("%s from %s to %s", changelog, minVersion, maxVersion)
+			}
 			out = append(out, Changelog{Desc: changelog, Authors: authors, PullRequests: prs})
 		}
 		sort.Slice(out, func(i, j int) bool {
@@ -183,11 +193,13 @@ func (c Changelog) String() string {
 }
 
 type CommitInfo struct {
-	Sha       string
-	Author    string
-	PrNumber  int
-	PrTitle   string
-	Changelog string
+	Sha           string
+	Author        string
+	PrNumber      int
+	PrTitle       string
+	Changelog     string
+	MinDependency string
+	MaxDependency string
 }
 
 func NewCommitInfo(commit GQLCommit) *CommitInfo {
@@ -195,6 +207,12 @@ func NewCommitInfo(commit GQLCommit) *CommitInfo {
 		return nil
 	}
 	pr := commit.AssociatedPullRequests.Nodes[0]
+	res := &CommitInfo{
+		Author:   pr.Author.Login,
+		Sha:      commit.Oid,
+		PrNumber: pr.Number,
+		PrTitle:  pr.Title,
+	}
 	changelog := ""
 	for _, l := range strings.Split(pr.Body, "\n") {
 		if strings.HasPrefix(l, "> Changelog: ") {
@@ -211,25 +229,22 @@ func NewCommitInfo(commit GQLCommit) *CommitInfo {
 				return nil
 			}
 		}
-		// Use the pr.Title as a changelog entry
-		changelog = pr.Title
+		// Rollup dependabot issues with the same dependency into just one so we can rebuild a single line with all update PRs.
+		if res.Author == "dependabot" {
+			// titles look like: chore(deps): bump github.com/lib/pq from 1.10.6 to 1.10.7
+			split := strings.Split(pr.Title, " from ")
+			res.Changelog = split[0]
+			sp := strings.Split(split[1], " to ")
+			res.MinDependency = sp[0]
+			res.MaxDependency = sp[1]
+		} else {
+			// Use the pr.Title as a changelog entry
+			res.Changelog = pr.Title
+		}
+	default:
+		res.Changelog = changelog
 	}
-	return &CommitInfo{
-		Author:    pr.Author.Login,
-		Sha:       commit.Oid,
-		PrNumber:  pr.Number,
-		PrTitle:   pr.Title,
-		Changelog: changelog,
-	}
-}
-
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	return res
 }
 
 func init() {

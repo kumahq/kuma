@@ -41,7 +41,7 @@ func Setup(rt runtime.Runtime) (err error) {
 	}
 	reg := registry.Global()
 	kdsServer, err := kds_server.New(kdsGlobalLog, rt, reg.ObjectTypes(model.HasKDSFlag(model.ProvidedByGlobal)),
-		"global", rt.Config().Multizone.Global.KDS.RefreshInterval,
+		"global", rt.Config().Multizone.Global.KDS.RefreshInterval.Duration,
 		rt.KDSContext().GlobalProvidedFilter, rt.KDSContext().GlobalResourceMapper, true)
 	if err != nil {
 		return err

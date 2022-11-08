@@ -1,9 +1,9 @@
 package v1alpha1_test
 
 import (
-	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/yaml"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	meshtrace_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"

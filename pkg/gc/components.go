@@ -29,7 +29,7 @@ func setupCollector(rt runtime.Runtime) error {
 		return nil
 	}
 	return rt.Add(
-		NewCollector(rt.ResourceManager(), func() *time.Ticker { return time.NewTicker(1 * time.Minute) }, rt.Config().Runtime.Universal.DataplaneCleanupAge),
+		NewCollector(rt.ResourceManager(), func() *time.Ticker { return time.NewTicker(1 * time.Minute) }, rt.Config().Runtime.Universal.DataplaneCleanupAge.Duration),
 	)
 }
 
@@ -40,14 +40,14 @@ func setupFinalizer(rt runtime.Runtime) error {
 	switch rt.Config().Mode {
 	case config_core.Standalone:
 		newTicker = func() *time.Ticker {
-			return time.NewTicker(rt.Config().Metrics.Dataplane.IdleTimeout)
+			return time.NewTicker(rt.Config().Metrics.Dataplane.IdleTimeout.Duration)
 		}
 		resourceTypes = []model.ResourceType{
 			mesh.DataplaneInsightType,
 		}
 	case config_core.Zone:
 		newTicker = func() *time.Ticker {
-			return time.NewTicker(rt.Config().Metrics.Dataplane.IdleTimeout)
+			return time.NewTicker(rt.Config().Metrics.Dataplane.IdleTimeout.Duration)
 		}
 		resourceTypes = []model.ResourceType{
 			mesh.DataplaneInsightType,
@@ -56,7 +56,7 @@ func setupFinalizer(rt runtime.Runtime) error {
 		}
 	case config_core.Global:
 		newTicker = func() *time.Ticker {
-			return time.NewTicker(rt.Config().Metrics.Zone.IdleTimeout)
+			return time.NewTicker(rt.Config().Metrics.Zone.IdleTimeout.Duration)
 		}
 		resourceTypes = []model.ResourceType{
 			system.ZoneInsightType,

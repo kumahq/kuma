@@ -104,7 +104,7 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 	args := []string{
 		"--config-path", configFile,
 		"--drain-time-s",
-		fmt.Sprintf("%d", e.opts.Config.Dataplane.DrainTime/time.Second),
+		fmt.Sprintf("%d", e.opts.Config.Dataplane.DrainTime.Duration/time.Second),
 		// "hot restart" (enabled by default) requires each Envoy instance to have
 		// `--base-id <uint32_t>` argument.
 		// it is not possible to start multiple Envoy instances on the same Linux machine

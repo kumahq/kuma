@@ -13,57 +13,57 @@ import (
 )
 
 type E2eConfig struct {
-	KumaImageRegistry             string            `yaml:"imageRegistry,omitempty" envconfig:"KUMA_GLOBAL_IMAGE_REGISTRY"`
-	KumaImageTag                  string            `yaml:"imageTag,omitempty" envconfig:"KUMA_GLOBAL_IMAGE_TAG"`
-	KumaNamespace                 string            `yaml:"namespace,omitempty"`
-	KumaServiceName               string            `yaml:"serviceName,omitempty"`
-	HelmChartPath                 string            `yaml:"helmChartPath,omitempty"`
-	HelmSubChartPrefix            string            `yaml:"helmSubChartPrefix,omitempty"`
-	HelmChartName                 string            `yaml:"helmChartName,omitempty"`
-	HelmRepoUrl                   string            `yaml:"helmRepoUrl,omitempty"`
-	HelmGlobalExtraYaml           string            `yaml:"HelmGlobalExtraYaml,omitempty"`
-	CNIApp                        string            `yaml:"CNIApp,omitempty"`
-	CNINamespace                  string            `yaml:"CNINamespace,omitempty"`
-	CNIConf                       CniConf           `yaml:"CNIConf,omitempty"`
-	KumaGlobalZoneSyncServiceName string            `yaml:"globalZoneSyncServiceName,omitempty"`
-	KumaUniversalEnvVars          map[string]string `yaml:"universalEnvVars,omitempty"`
-	KumaZoneUniversalEnvVars      map[string]string `yaml:"universalZoneEnvVars,omitempty"`
-	KumaK8sCtlFlags               map[string]string `yaml:"k8sCtlFlags,omitempty"`
-	KumaZoneK8sCtlFlags           map[string]string `yaml:"k8sZoneCtlFlags,omitempty"`
-	DefaultObservabilityNamespace string            `yaml:"observabilityNamespace,omitempty"`
-	DefaultGatewayNamespace       string            `yaml:"gatewayNamespace,omitempty"`
-	KumactlImageRepo              string            `yaml:"ctlImageRepo,omitempty" envconfig:"KUMACTL_IMAGE_REPOSITORY"`
-	KumaCPImageRepo               string            `yaml:"cpImageRepo,omitempty" envconfig:"KUMA_CP_IMAGE_REPOSITORY"`
-	KumaDPImageRepo               string            `yaml:"dpImageRepo,omitempty" envconfig:"KUMA_DP_IMAGE_REPOSITORY"`
-	KumaInitImageRepo             string            `yaml:"initImageRepo,omitempty" envconfig:"KUMA_INIT_IMAGE_REPOSITORY"`
-	KumaUniversalImageRepo        string            `yaml:"universalImageRepo,omitempty"`
-	XDSApiVersion                 string            `yaml:"xdsVersion,omitempty" envconfig:"API_VERSION"`
-	K8sType                       K8sType           `yaml:"k8sType,omitempty" envconfig:"KUMA_K8S_TYPE"`
-	IPV6                          bool              `yaml:"ipv6,omitempty" envconfig:"IPV6"`
-	UseHostnameInsteadOfIP        bool              `yaml:"useHostnameInsteadOfIP,omitempty" envconfig:"KUMA_USE_HOSTNAME_INSTEAD_OF_ID"`
-	UseLoadBalancer               bool              `yaml:"useLoadBalancer,omitempty" envconfig:"KUMA_USE_LOAD_BALANCER"`
-	CIDR                          string            `yaml:"kumaCidr,omitempty"`
-	DefaultClusterStartupRetries  int               `yaml:"defaultClusterStartupRetries,omitempty" envconfig:"KUMA_DEFAULT_RETRIES"`
-	DefaultClusterStartupTimeout  time.Duration     `yaml:"defaultClusterStartupTimeout,omitempty" envconfig:"KUMA_DEFAULT_TIMEOUT"`
-	KumactlBin                    string            `yaml:"kumactlBin,omitempty" envconfig:"KUMACTLBIN"`
-	ZoneEgressApp                 string            `yaml:"zoneEgressApp,omitempty" envconfig:"KUMA_ZONE_EGRESS_APP"`
-	ZoneIngressApp                string            `yaml:"zoneIngressApp,omitempty" envconfig:"KUMA_ZONE_INGRESS_APP"`
-	Arch                          string            `yaml:"arch,omitempty" envconfig:"ARCH"`
+	KumaImageRegistry             string            `json:"imageRegistry,omitempty" envconfig:"KUMA_GLOBAL_IMAGE_REGISTRY"`
+	KumaImageTag                  string            `json:"imageTag,omitempty" envconfig:"KUMA_GLOBAL_IMAGE_TAG"`
+	KumaNamespace                 string            `json:"namespace,omitempty"`
+	KumaServiceName               string            `json:"serviceName,omitempty"`
+	HelmChartPath                 string            `json:"helmChartPath,omitempty"`
+	HelmSubChartPrefix            string            `json:"helmSubChartPrefix,omitempty"`
+	HelmChartName                 string            `json:"helmChartName,omitempty"`
+	HelmRepoUrl                   string            `json:"helmRepoUrl,omitempty"`
+	HelmGlobalExtraYaml           string            `json:"HelmGlobalExtraYaml,omitempty"`
+	CNIApp                        string            `json:"CNIApp,omitempty"`
+	CNINamespace                  string            `json:"CNINamespace,omitempty"`
+	CNIConf                       CniConf           `json:"CNIConf,omitempty"`
+	KumaGlobalZoneSyncServiceName string            `json:"globalZoneSyncServiceName,omitempty"`
+	KumaUniversalEnvVars          map[string]string `json:"universalEnvVars,omitempty"`
+	KumaZoneUniversalEnvVars      map[string]string `json:"universalZoneEnvVars,omitempty"`
+	KumaK8sCtlFlags               map[string]string `json:"k8sCtlFlags,omitempty"`
+	KumaZoneK8sCtlFlags           map[string]string `json:"k8sZoneCtlFlags,omitempty"`
+	DefaultObservabilityNamespace string            `json:"observabilityNamespace,omitempty"`
+	DefaultGatewayNamespace       string            `json:"gatewayNamespace,omitempty"`
+	KumactlImageRepo              string            `json:"ctlImageRepo,omitempty" envconfig:"KUMACTL_IMAGE_REPOSITORY"`
+	KumaCPImageRepo               string            `json:"cpImageRepo,omitempty" envconfig:"KUMA_CP_IMAGE_REPOSITORY"`
+	KumaDPImageRepo               string            `json:"dpImageRepo,omitempty" envconfig:"KUMA_DP_IMAGE_REPOSITORY"`
+	KumaInitImageRepo             string            `json:"initImageRepo,omitempty" envconfig:"KUMA_INIT_IMAGE_REPOSITORY"`
+	KumaUniversalImageRepo        string            `json:"universalImageRepo,omitempty"`
+	XDSApiVersion                 string            `json:"xdsVersion,omitempty" envconfig:"API_VERSION"`
+	K8sType                       K8sType           `json:"k8sType,omitempty" envconfig:"KUMA_K8S_TYPE"`
+	IPV6                          bool              `json:"ipv6,omitempty" envconfig:"IPV6"`
+	UseHostnameInsteadOfIP        bool              `json:"useHostnameInsteadOfIP,omitempty" envconfig:"KUMA_USE_HOSTNAME_INSTEAD_OF_ID"`
+	UseLoadBalancer               bool              `json:"useLoadBalancer,omitempty" envconfig:"KUMA_USE_LOAD_BALANCER"`
+	CIDR                          string            `json:"kumaCidr,omitempty"`
+	DefaultClusterStartupRetries  int               `json:"defaultClusterStartupRetries,omitempty" envconfig:"KUMA_DEFAULT_RETRIES"`
+	DefaultClusterStartupTimeout  time.Duration     `json:"defaultClusterStartupTimeout,omitempty" envconfig:"KUMA_DEFAULT_TIMEOUT"`
+	KumactlBin                    string            `json:"kumactlBin,omitempty" envconfig:"KUMACTLBIN"`
+	ZoneEgressApp                 string            `json:"zoneEgressApp,omitempty" envconfig:"KUMA_ZONE_EGRESS_APP"`
+	ZoneIngressApp                string            `json:"zoneIngressApp,omitempty" envconfig:"KUMA_ZONE_INGRESS_APP"`
+	Arch                          string            `json:"arch,omitempty" envconfig:"ARCH"`
 
-	SuiteConfig SuiteConfig `yaml:"suites,omitempty"`
+	SuiteConfig SuiteConfig `json:"suites,omitempty"`
 }
 
 type SuiteConfig struct {
-	Compatibility CompatibilitySuiteConfig `yaml:"compatibility,omitempty"`
-	Helm          HelmSuiteConfig          `yaml:"helm,omitempty"`
+	Compatibility CompatibilitySuiteConfig `json:"compatibility,omitempty"`
+	Helm          HelmSuiteConfig          `json:"helm,omitempty"`
 }
 
 type CompatibilitySuiteConfig struct {
-	HelmVersion string `yaml:"helmVersion,omitempty"`
+	HelmVersion string `json:"helmVersion,omitempty"`
 }
 
 type HelmSuiteConfig struct {
-	Versions []string `yaml:"versions,omitempty"`
+	Versions []string `json:"versions,omitempty"`
 }
 
 func (c E2eConfig) Sanitize() {

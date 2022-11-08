@@ -3,11 +3,11 @@ package webhooks_test
 import (
 	"context"
 
-	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	admissionv1 "k8s.io/api/admission/v1"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
 	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"

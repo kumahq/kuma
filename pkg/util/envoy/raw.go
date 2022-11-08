@@ -4,9 +4,9 @@ import (
 	"errors"
 
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
-	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/ptypes/any"
 	"google.golang.org/protobuf/proto"
+	"sigs.k8s.io/yaml"
 
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )

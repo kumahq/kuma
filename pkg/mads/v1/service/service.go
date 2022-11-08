@@ -20,7 +20,7 @@ func NewService(config *mads.MonitoringAssignmentServerConfig, rm core_manager.R
 	generator := NewSnapshotGenerator(rm)
 	versioner := NewVersioner()
 	reconciler := NewReconciler(hasher, cache, generator, versioner)
-	syncTracker := NewSyncTracker(reconciler, config.AssignmentRefreshInterval, log)
+	syncTracker := NewSyncTracker(reconciler, config.AssignmentRefreshInterval.Duration, log)
 	callbacks := util_xds_v3.CallbacksChain{
 		util_xds_v3.AdaptMultiCallbacks(util_xds.LoggingCallbacks{Log: log}),
 		// For synchronization
