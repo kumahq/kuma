@@ -204,7 +204,7 @@ func uint32Metadata(xdsMetadata *structpb.Struct, field string) uint32 {
 	if value == nil {
 		return 0
 	}
-	port, err := strconv.Atoi(value.GetStringValue())
+	port, err := strconv.ParseInt(value.GetStringValue(), 10, 32)
 	if err != nil {
 		metadataLog.Error(err, "invalid value in dataplane metadata", "field", field, "value", value)
 		return 0

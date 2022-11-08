@@ -55,7 +55,7 @@ func (es *ExternalService) GetPort() string {
 
 func (es *ExternalService) GetPortUInt32() uint32 {
 	port := es.GetPort()
-	iport, err := strconv.Atoi(port)
+	iport, err := strconv.ParseInt(port, 10, 32)
 	if err != nil {
 		return 0
 	}
