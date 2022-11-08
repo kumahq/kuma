@@ -38,7 +38,7 @@ define append_label_filter
 $(if $(GINKGO_E2E_LABEL_FILTERS),$(GINKGO_E2E_LABEL_FILTERS) && $(1),$(1))
 endef
 
-K8S_CLUSTER_TOOL=k3d
+K8S_CLUSTER_TOOL ?= k3d
 ifeq ($(K8S_CLUSTER_TOOL),k3d)
 	ifeq ($(K3D_NETWORK_CNI),calico)
 		E2E_ENV_VARS += KUMA_K8S_TYPE=k3d-calico
