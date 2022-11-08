@@ -168,6 +168,9 @@ func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyC
 				Port:               agentDNSListenerPort,
 				ConntrackZoneSplit: !tpConfig.SkipDNSConntrackZoneSplit,
 			},
+			VNet: kumanet_config.VNet{
+				Networks: tpConfig.VnetNetworks,
+			},
 		},
 		Ebpf: kumanet_config.Ebpf{
 			Enabled:            tpConfig.EbpfEnabled,
