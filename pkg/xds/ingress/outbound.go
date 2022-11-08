@@ -4,7 +4,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/topology"
 )
 
@@ -27,7 +27,7 @@ func BuildEndpointMap(
 			if !ok {
 				continue
 			}
-			withMesh := envoy.Tags(inbound.Tags).WithTags("mesh", dataplane.GetMeta().GetMesh())
+			withMesh := tags.Tags(inbound.Tags).WithTags("mesh", dataplane.GetMeta().GetMesh())
 			if !selectors.Matches(withMesh) {
 				continue
 			}
@@ -59,7 +59,7 @@ func BuildEndpointMap(
 				outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
 					Target: dpNetworking.GetAddress(),
 					Port:   listener.GetPort(),
-					Tags: envoy.Tags(mesh_proto.Merge(
+					Tags: tags.Tags(mesh_proto.Merge(
 						dpTags, gateway.Spec.GetTags(), listener.GetTags(),
 					)).WithTags("mesh", dataplane.GetMeta().GetMesh()),
 					Weight: 1,
@@ -74,7 +74,7 @@ func BuildEndpointMap(
 		if !ok {
 			continue
 		}
-		withMesh := envoy.Tags(es.Spec.GetTags()).WithTags("mesh", es.GetMeta().GetMesh())
+		withMesh := tags.Tags(es.Spec.GetTags()).WithTags("mesh", es.GetMeta().GetMesh())
 		if !selectors.Matches(withMesh) {
 			continue
 		}

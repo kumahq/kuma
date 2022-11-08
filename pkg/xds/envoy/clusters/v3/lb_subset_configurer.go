@@ -3,11 +3,11 @@ package clusters
 import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 
-	"github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 type LbSubsetConfigurer struct {
-	TagKeysSets envoy.TagKeysSlice
+	TagKeysSets tags.TagKeysSlice
 }
 
 var _ ClusterConfigurer = &LbSubsetConfigurer{}

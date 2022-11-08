@@ -13,7 +13,6 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	xds_cache "github.com/kumahq/kuma/pkg/xds/cache/mesh"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/ingress"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
@@ -25,7 +24,7 @@ type IngressProxyBuilder struct {
 	MetadataTracker    DataplaneMetadataTracker
 	meshCache          *xds_cache.Cache
 
-	apiVersion envoy.APIVersion
+	apiVersion xds.APIVersion
 	zone       string
 }
 

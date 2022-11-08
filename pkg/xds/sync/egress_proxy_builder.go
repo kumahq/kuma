@@ -14,7 +14,6 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	xds_cache "github.com/kumahq/kuma/pkg/xds/cache/mesh"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
@@ -28,7 +27,7 @@ type EgressProxyBuilder struct {
 	meshCache          *xds_cache.Cache
 
 	zone       string
-	apiVersion envoy_common.APIVersion
+	apiVersion xds.APIVersion
 }
 
 func (p *EgressProxyBuilder) Build(

@@ -93,6 +93,7 @@ func (r *dataplaneOverviewEndpoints) inspectDataplanes(request *restful.Request,
 	meshName := request.PathParameter("mesh")
 
 	if err := r.resourceAccess.ValidateList(
+		meshName,
 		mesh.NewDataplaneOverviewResource().Descriptor(),
 		user.FromCtx(request.Request.Context()),
 	); err != nil {

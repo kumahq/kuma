@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 var _ = Describe("Ingress Dataplane", func() {

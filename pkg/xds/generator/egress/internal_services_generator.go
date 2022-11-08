@@ -9,6 +9,7 @@ import (
 	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
@@ -56,7 +57,7 @@ func (g *InternalServicesGenerator) Generate(
 
 func (*InternalServicesGenerator) generateEDS(
 	meshName string,
-	apiVersion envoy_common.APIVersion,
+	apiVersion core_xds.APIVersion,
 	services map[string]bool,
 	endpointMap core_xds.EndpointMap,
 ) ([]*core_xds.Resource, error) {
@@ -86,16 +87,16 @@ func (*InternalServicesGenerator) generateEDS(
 
 func (*InternalServicesGenerator) generateCDS(
 	meshName string,
-	apiVersion envoy_common.APIVersion,
+	apiVersion core_xds.APIVersion,
 	services map[string]bool,
-	destinationsPerService map[string][]envoy_common.Tags,
+	destinationsPerService map[string][]tags.Tags,
 ) ([]*core_xds.Resource, error) {
 	var resources []*core_xds.Resource
 
 	for serviceName := range services {
-		tagSlice := envoy_common.TagsSlice(append(destinationsPerService[serviceName], destinationsPerService[mesh_proto.MatchAllTag]...))
+		tagSlice := tags.TagsSlice(append(destinationsPerService[serviceName], destinationsPerService[mesh_proto.MatchAllTag]...))
 
-		tagKeySlice := tagSlice.ToTagKeysSlice().Transform(envoy_common.Without(mesh_proto.ServiceTag), envoy_common.With("mesh"))
+		tagKeySlice := tagSlice.ToTagKeysSlice().Transform(tags.Without(mesh_proto.ServiceTag), tags.With("mesh"))
 
 		// There is a case where multiple meshes contain services with
 		// the same names, so we cannot use just "serviceName" as a cluster
@@ -144,8 +145,8 @@ func (*InternalServicesGenerator) buildServices(
 }
 
 func (*InternalServicesGenerator) addFilterChains(
-	apiVersion envoy_common.APIVersion,
-	destinationsPerService map[string][]envoy_common.Tags,
+	apiVersion core_xds.APIVersion,
+	destinationsPerService map[string][]tags.Tags,
 	proxy *core_xds.Proxy,
 	listenerBuilder *envoy_listeners.ListenerBuilder,
 	meshResources *core_xds.MeshResources,

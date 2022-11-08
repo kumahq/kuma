@@ -10,7 +10,7 @@ import (
 	endpoints_v3 "github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
 )
 
-func CreateClusterLoadAssignment(clusterName string, endpoints []core_xds.Endpoint, apiVersion envoy_common.APIVersion) (proto.Message, error) {
+func CreateClusterLoadAssignment(clusterName string, endpoints []core_xds.Endpoint, apiVersion core_xds.APIVersion) (proto.Message, error) {
 	switch apiVersion {
 	case envoy_common.APIV3:
 		return endpoints_v3.CreateClusterLoadAssignment(clusterName, endpoints), nil

@@ -83,6 +83,7 @@ func (r *resourceEndpoints) listResources(request *restful.Request, response *re
 	meshName := r.meshFromRequest(request)
 
 	if err := r.resourceAccess.ValidateList(
+		meshName,
 		r.descriptor,
 		user.FromCtx(request.Request.Context()),
 	); err != nil {

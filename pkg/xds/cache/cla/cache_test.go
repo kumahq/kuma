@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 var _ = Describe("ClusterLoadAssignment Cache", func() {
@@ -109,7 +110,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		// when
 		clusterV1 := envoy_common.NewCluster(
 			envoy_common.WithService("backend"),
-			envoy_common.WithTags(envoy_common.Tags{}.WithTags("version", "v1")),
+			envoy_common.WithTags(tags.Tags{}.WithTags("version", "v1")),
 		)
 		claV1, err := claCache.GetCLA(context.Background(), "mesh-0", "", clusterV1, envoy_common.APIV3, endpointMap)
 
@@ -121,7 +122,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		// when
 		clusterV2 := envoy_common.NewCluster(
 			envoy_common.WithService("backend"),
-			envoy_common.WithTags(envoy_common.Tags{}.WithTags("version", "v2")),
+			envoy_common.WithTags(tags.Tags{}.WithTags("version", "v2")),
 		)
 		claV2, err := claCache.GetCLA(context.Background(), "mesh-0", "", clusterV2, envoy_common.APIV3, endpointMap)
 

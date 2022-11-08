@@ -7,5 +7,5 @@ import (
 )
 
 func TestXds(t *testing.T) {
-	test.RunSpecs(t, "Xds Suite")
+	test.RunSpecs(t, "XDS Suite")
 }
