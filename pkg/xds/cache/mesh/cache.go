@@ -26,10 +26,10 @@ type Cache struct {
 	meshContextBuilder xds_context.MeshContextBuilder
 }
 
-// recalculationTime is the time after which the mesh context is recalculated no
-// matter what.
+// cleanupTime is the time after which the mesh context is removed from
+// the longer TTL cache.
 // It exists to ensure contexts of deleted Meshes are eventually cleaned up.
-const recalculationTime = time.Hour
+const cleanupTime = time.Minute
 
 func NewCache(
 	expirationTime time.Duration,
@@ -43,11 +43,13 @@ func NewCache(
 	return &Cache{
 		cache:              c,
 		meshContextBuilder: meshContextBuilder,
-		hashCache:          cache.New(recalculationTime, time.Duration(int64(float64(expirationTime)*0.9))),
+		hashCache:          cache.New(cleanupTime, time.Duration(int64(float64(expirationTime)*0.9))),
 	}, nil
 }
 
 func (c *Cache) GetMeshContext(ctx context.Context, syncLog logr.Logger, mesh string) (xds_context.MeshContext, error) {
+	// Check our short TTL cache for a context, ignoring whether there have been
+	// changes since it was generated.
 	elt, err := c.cache.GetOrRetrieve(ctx, mesh, once.RetrieverFunc(func(ctx context.Context, key string) (interface{}, error) {
 		// Check hashCache first for an existing mesh context
 		var context xds_context.MeshContext
@@ -64,17 +66,20 @@ func (c *Cache) GetMeshContext(ctx context.Context, syncLog logr.Logger, mesh st
 			return meshCtx, nil
 		}
 
-		// If we have some context, use it only if the hash hasn't changed.
-		// Otherwise, rebuild it.
+		// If we have some context, rebuild the context only if the hash has
+		// changed.
 		meshCtx, err := c.meshContextBuilder.BuildIfChanged(ctx, mesh, context.Hash)
 		if err != nil {
 			return xds_context.MeshContext{}, err
 		}
 		if meshCtx == nil {
 			// Context didn't need to be rebuilt
-			return context, nil
+			meshCtx = &context
 		}
 
+		// By always setting the mesh context, we refresh the TTL
+		// with the effect that often used contexts remain in the cache while no
+		// longer used contexts are evicted.
 		c.hashCache.SetDefault(mesh, meshCtx)
 		return *meshCtx, nil
 	}))
