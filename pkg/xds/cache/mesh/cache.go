@@ -51,37 +51,24 @@ func (c *Cache) GetMeshContext(ctx context.Context, syncLog logr.Logger, mesh st
 	// Check our short TTL cache for a context, ignoring whether there have been
 	// changes since it was generated.
 	elt, err := c.cache.GetOrRetrieve(ctx, mesh, once.RetrieverFunc(func(ctx context.Context, key string) (interface{}, error) {
-		// Check hashCache first for an existing mesh context
-		var context xds_context.MeshContext
+		// Check hashCache first for an existing mesh latestContext
+		var latestContext *xds_context.MeshContext
 		if cached, ok := c.hashCache.Get(mesh); ok {
-			context = *cached.(*xds_context.MeshContext)
-		} else {
-			// If we don't have any context, we build one, set it in
-			// `hashCache` and return it.
-			meshCtx, err := c.meshContextBuilder.Build(ctx, mesh)
-			if err != nil {
-				return xds_context.MeshContext{}, err
-			}
-			c.hashCache.SetDefault(mesh, &meshCtx)
-			return meshCtx, nil
+			latestContext = cached.(*xds_context.MeshContext)
 		}
 
-		// If we have some context, rebuild the context only if the hash has
-		// changed.
-		meshCtx, err := c.meshContextBuilder.BuildIfChanged(ctx, mesh, context.Hash)
+		// Rebuild the context only if the hash has changed
+		var err error
+		latestContext, err = c.meshContextBuilder.BuildIfChanged(ctx, mesh, latestContext)
 		if err != nil {
 			return xds_context.MeshContext{}, err
-		}
-		if meshCtx == nil {
-			// Context didn't need to be rebuilt
-			meshCtx = &context
 		}
 
 		// By always setting the mesh context, we refresh the TTL
 		// with the effect that often used contexts remain in the cache while no
 		// longer used contexts are evicted.
-		c.hashCache.SetDefault(mesh, meshCtx)
-		return *meshCtx, nil
+		c.hashCache.SetDefault(mesh, latestContext)
+		return *latestContext, nil
 	}))
 	if err != nil {
 		return xds_context.MeshContext{}, err

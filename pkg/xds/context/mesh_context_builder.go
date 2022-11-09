@@ -36,10 +36,11 @@ type meshContextBuilder struct {
 type MeshContextBuilder interface {
 	Build(ctx context.Context, meshName string) (MeshContext, error)
 
-	// BuildIfChanged builds MeshContext only if hash of MeshContext is different
-	// If hash is the same, then the function returns (nil, nil)
-	// Hash returned in MeshContext can never be empty
-	BuildIfChanged(ctx context.Context, meshName string, hash string) (*MeshContext, error)
+	// BuildIfChanged builds MeshContext only if latestMeshCtx is nil or hash of
+	// latestMeshCtx is different.
+	// If hash is the same, then the function returns the passed latestMeshCtx.
+	// Hash returned in MeshContext can never be empty.
+	BuildIfChanged(ctx context.Context, meshName string, latestMeshCtx *MeshContext) (*MeshContext, error)
 }
 
 func NewMeshContextBuilder(
@@ -68,14 +69,14 @@ func NewMeshContextBuilder(
 }
 
 func (m *meshContextBuilder) Build(ctx context.Context, meshName string) (MeshContext, error) {
-	meshCtx, err := m.BuildIfChanged(ctx, meshName, "")
+	meshCtx, err := m.BuildIfChanged(ctx, meshName, nil)
 	if err != nil {
 		return MeshContext{}, err
 	}
 	return *meshCtx, nil
 }
 
-func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string, hash string) (*MeshContext, error) {
+func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string, latestMeshCtx *MeshContext) (*MeshContext, error) {
 	mesh := core_mesh.NewMeshResource()
 	if err := m.rm.Get(ctx, mesh, core_store.GetByKey(meshName, core_model.NoMesh)); err != nil {
 		return nil, err
@@ -88,8 +89,8 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	m.resolveAddresses(resources)
 
 	newHash := m.hash(mesh, resources)
-	if newHash == hash {
-		return nil, nil
+	if latestMeshCtx != nil && newHash == latestMeshCtx.Hash {
+		return latestMeshCtx, nil
 	}
 
 	dataplanesByName := map[string]*core_mesh.DataplaneResource{}
