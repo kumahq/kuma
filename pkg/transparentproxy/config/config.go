@@ -29,6 +29,7 @@ type TransparentProxyConfig struct {
 	EbpfCgroupPath                 string
 	EbpfTCAttachIface              string
 	EbpfProgramsSourcePath         string
+	VnetNetworks                   []string
 	Stdout                         io.Writer
 	Stderr                         io.Writer
 }
