@@ -343,13 +343,13 @@ jobs:
               export MAKE_PARAMETERS="-j2"
             fi
 
-            if [[ "<< parameters.target >>" == "test/e2e" ]]; then
-              if [[ "<< parameters.arch >>" == "arm64" ]]; then
-                export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX && !arm-not-supported"
-              else
-                export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX"
-              fi
-            fi
+#            if [[ "<< parameters.target >>" == "test/e2e" ]]; then
+#              if [[ "<< parameters.arch >>" == "arm64" ]]; then
+#                export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX && !arm-not-supported"
+#              else
+#                export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX"
+#              fi
+#            fi
             env
             make ${MAKE_PARAMETERS} CI=true << parameters.target >>
       - store_test_results:
