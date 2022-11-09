@@ -69,8 +69,13 @@ resources:
           '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
           commonTlsContext:
             validationContext:
-              matchSubjectAltNames:
-              - exact: httpbin.io
+              matchTypedSubjectAltNames:
+              - matcher:
+                  exact: httpbin.io
+                sanType: DNS
+              - matcher:
+                  exact: httpbin.io
+                sanType: IP_ADDRESS
               trustedCa:
                 inlineBytes: eHl6
           sni: httpbin.io

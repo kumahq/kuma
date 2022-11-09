@@ -69,7 +69,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 					},
 					Spec: &dataplane,
 				},
-				SecretsTracker: model.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), []string{ctx.Mesh.Resource.Meta.GetName()}),
+				SecretsTracker: envoy_common.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), []string{ctx.Mesh.Resource.Meta.GetName()}),
 				APIVersion:     envoy_common.APIV3,
 				Policies: model.MatchedPolicies{
 

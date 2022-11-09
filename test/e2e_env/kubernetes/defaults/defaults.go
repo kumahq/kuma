@@ -33,18 +33,18 @@ func Defaults() {
 	}
 
 	It("should create default policies for default mesh", func() {
-		Eventually(policyCreated("trafficpermission", "allow-all-default"), "5s", "500ms").Should(BeTrue())
-		Eventually(policyCreated("trafficroute", "route-all-default"), "5s", "500ms").Should(BeTrue())
-		Eventually(policyCreated("timeout", "timeout-all-default"), "5s", "500ms").Should(BeTrue())
-		Eventually(policyCreated("circuitbreaker", "circuit-breaker-all-default"), "5s", "500ms").Should(BeTrue())
-		Eventually(policyCreated("retry", "retry-all-default"), "5s", "500ms").Should(BeTrue())
+		Eventually(policyCreated("trafficpermission", "allow-all-default"), "30s", "1s").Should(BeTrue())
+		Eventually(policyCreated("trafficroute", "route-all-default"), "30s", "1s").Should(BeTrue())
+		Eventually(policyCreated("timeout", "timeout-all-default"), "30s", "1s").Should(BeTrue())
+		Eventually(policyCreated("circuitbreaker", "circuit-breaker-all-default"), "30s", "1s").Should(BeTrue())
+		Eventually(policyCreated("retry", "retry-all-default"), "30s", "1s").Should(BeTrue())
 	})
 
 	It("should create default policies for non-default mesh", func() {
-		Eventually(policyCreated("trafficpermission", "allow-all-"+meshName), "5s", "500ms").Should(BeTrue())
-		Eventually(policyCreated("trafficroute", "route-all-"+meshName), "5s", "500ms").Should(BeTrue())
-		Eventually(policyCreated("timeout", "timeout-all-"+meshName), "5s", "500ms").Should(BeTrue())
-		Eventually(policyCreated("circuitbreaker", "circuit-breaker-all-"+meshName), "5s", "500ms").Should(BeTrue())
-		Eventually(policyCreated("retry", "retry-all-"+meshName), "5s", "500ms").Should(BeTrue())
+		Eventually(policyCreated("trafficpermission", "allow-all-"+meshName), "30s", "1s").Should(BeTrue())
+		Eventually(policyCreated("trafficroute", "route-all-"+meshName), "30s", "1s").Should(BeTrue())
+		Eventually(policyCreated("timeout", "timeout-all-"+meshName), "30s", "1s").Should(BeTrue())
+		Eventually(policyCreated("circuitbreaker", "circuit-breaker-all-"+meshName), "30s", "1s").Should(BeTrue())
+		Eventually(policyCreated("retry", "retry-all-"+meshName), "30s", "1s").Should(BeTrue())
 	})
 }

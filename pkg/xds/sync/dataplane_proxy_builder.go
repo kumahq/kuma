@@ -30,7 +30,7 @@ type DataplaneProxyBuilder struct {
 	MetadataTracker DataplaneMetadataTracker
 
 	Zone       string
-	APIVersion envoy.APIVersion
+	APIVersion core_xds.APIVersion
 }
 
 func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.ResourceKey, meshContext xds_context.MeshContext) (*core_xds.Proxy, error) {
@@ -58,7 +58,7 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 		allMeshNames = append(allMeshNames, mesh.GetMeta().GetName())
 	}
 
-	secretsTracker := core_xds.NewSecretsTracker(meshName, allMeshNames)
+	secretsTracker := envoy.NewSecretsTracker(meshName, allMeshNames)
 
 	proxy := &core_xds.Proxy{
 		Id:             core_xds.FromResourceKey(key),

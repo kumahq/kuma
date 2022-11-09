@@ -9,7 +9,7 @@ import (
 	modifications_v3 "github.com/kumahq/kuma/pkg/xds/generator/modifications/v3"
 )
 
-func Apply(resources *core_xds.ResourceSet, modifications []*mesh_proto.ProxyTemplate_Modifications, apiVersion envoy_common.APIVersion) error {
+func Apply(resources *core_xds.ResourceSet, modifications []*mesh_proto.ProxyTemplate_Modifications, apiVersion core_xds.APIVersion) error {
 	switch apiVersion {
 	case envoy_common.APIV3:
 		return modifications_v3.Apply(resources, modifications)

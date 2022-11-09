@@ -82,6 +82,7 @@ func (r *zoneOverviewEndpoints) fetchOverview(ctx context.Context, name string) 
 
 func (r *zoneOverviewEndpoints) inspectZones(request *restful.Request, response *restful.Response) {
 	if err := r.resourceAccess.ValidateList(
+		"",
 		system.NewZoneResource().Descriptor(),
 		user.FromCtx(request.Request.Context()),
 	); err != nil {

@@ -4,6 +4,7 @@ import (
 	envoy_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/pkg/errors"
 
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 )
@@ -16,7 +17,7 @@ type ListenerBuilderOpt interface {
 	ApplyTo(config *ListenerBuilderConfig)
 }
 
-func NewListenerBuilder(apiVersion envoy.APIVersion) *ListenerBuilder {
+func NewListenerBuilder(apiVersion core_xds.APIVersion) *ListenerBuilder {
 	return &ListenerBuilder{
 		apiVersion: apiVersion,
 	}
@@ -25,7 +26,7 @@ func NewListenerBuilder(apiVersion envoy.APIVersion) *ListenerBuilder {
 // ListenerBuilder is responsible for generating an Envoy listener
 // by applying a series of ListenerConfigurers.
 type ListenerBuilder struct {
-	apiVersion envoy.APIVersion
+	apiVersion core_xds.APIVersion
 	config     ListenerBuilderConfig
 }
 

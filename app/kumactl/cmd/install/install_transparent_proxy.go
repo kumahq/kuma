@@ -43,6 +43,7 @@ type transparentProxyArgs struct {
 	EbpfBPFFSPath                      string
 	EbpfCgroupPath                     string
 	EbpfTCAttachIface                  string
+	VnetNetworks                       []string
 }
 
 func newInstallTransparentProxy() *cobra.Command {
@@ -71,6 +72,7 @@ func newInstallTransparentProxy() *cobra.Command {
 		EbpfBPFFSPath:                      "/sys/fs/bpf",
 		EbpfCgroupPath:                     "/sys/fs/cgroup",
 		EbpfTCAttachIface:                  "",
+		VnetNetworks:                       []string{},
 	}
 	cmd := &cobra.Command{
 		Use:   "transparent-proxy",
@@ -205,6 +207,7 @@ runuser -u kuma-dp -- \
 
 	cmd.Flags().StringArrayVar(&args.ExcludeOutboundTCPPortsForUIDs, "exclude-outbound-tcp-ports-for-uids", []string{}, "tcp outbound ports to exclude for specific UIDs in a format of ports:uids where both ports and uids can be a single value, a list, a range or a combination of all, e.g. 3000-5000:103,104,106-108 would mean exclude ports from 3000 to 5000 for UIDs 103, 104, 106, 107, 108")
 	cmd.Flags().StringArrayVar(&args.ExcludeOutboundUDPPortsForUIDs, "exclude-outbound-udp-ports-for-uids", []string{}, "udp outbound ports to exclude for specific UIDs in a format of ports:uids where both ports and uids can be a single value, a list, a range or a combination of all, e.g. 3000-5000:103,104,106-108 would mean exclude ports from 3000 to 5000 for UIDs 103, 104, 106, 107, 108")
+	cmd.Flags().StringArrayVar(&args.VnetNetworks, "vnet", []string{}, "virtual networks in a format of interfaceNameRegex:CIDR split by ':' where interface name doesn't have to be exact name e.g. docker0:172.17.0.0/16, br+:172.18.0.0/16, iface:::1/64")
 
 	return cmd
 }
@@ -261,6 +264,7 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 		EbpfCgroupPath:                 args.EbpfCgroupPath,
 		EbpfTCAttachIface:              args.EbpfTCAttachIface,
 		EbpfProgramsSourcePath:         args.EbpfProgramsSourcePath,
+		VnetNetworks:                   args.VnetNetworks,
 		Stdout:                         cmd.OutOrStdout(),
 		Stderr:                         cmd.OutOrStderr(),
 	}

@@ -28,7 +28,7 @@ PULP_DIST_NAME="alpine"
 ENVOY_VERSION=$("${SCRIPT_DIR}/../envoy/version.sh")
 [ -z "$KUMA_CONFIG_PATH" ] && KUMA_CONFIG_PATH=pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
 CTL_NAME="kumactl"
-[ -z "$EBPF_PROGRAMS_IMAGE" ] && EBPF_PROGRAMS_IMAGE="kumahq/kuma-net-ebpf:0.8.6"
+[ -z "$EBPF_PROGRAMS_IMAGE" ] && EBPF_PROGRAMS_IMAGE="kumahq/kuma-net-ebpf:0.8.7"
 
 function get_envoy() {
   local distro=$1
