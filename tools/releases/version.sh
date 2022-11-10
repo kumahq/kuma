@@ -14,7 +14,7 @@ if [[ ${exactTag} =~ ^v?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
   exit 0
 fi
 
-shortHash=$(git rev-parse --short HEAD 2> /dev/null)
+shortHash=$(git rev-parse --short=9 HEAD 2> /dev/null)
 currentBranch=$(git rev-parse --abbrev-ref HEAD 2> /dev/null)
 if [[ ${currentBranch} == release-* ]]; then
     releasePrefix=${currentBranch//release-/}
