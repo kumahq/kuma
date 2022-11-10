@@ -8,7 +8,6 @@ import (
 )
 
 type Duration struct {
-	//+kubebuilder:validation:Schemaless
 	time.Duration `json:",inline"`
 }
 
