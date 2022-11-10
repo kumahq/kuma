@@ -33,7 +33,7 @@ func TestWs(t *testing.T) {
 	test.RunSpecs(t, "API Server Customization")
 }
 
-func createTestApiServer(store store.ResourceStore, config *config_api_server.ApiServerConfig, enableGUI bool, metrics core_metrics.Metrics, wsManager customization.APIManager) *api_server.ApiServer {
+func createTestApiServer(store store.ResourceStore, config *config_api_server.ApiServerConfig, metrics core_metrics.Metrics, wsManager customization.APIManager) *api_server.ApiServer {
 	// we have to manually search for port and put it into config. There is no way to retrieve port of running
 	// http.Server and we need it later for the client
 	port, err := test.GetFreePort()
@@ -69,7 +69,6 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 		wsManager,
 		registry.Global().ObjectDescriptors(core_model.HasWsEnabled()),
 		&cfg,
-		enableGUI,
 		metrics,
 		func() string { return "instance-id" },
 		func() string { return "cluster-id" },

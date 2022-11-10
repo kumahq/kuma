@@ -33,7 +33,7 @@ var _ = Describe("API Manager", func() {
 		}))
 		wsManager.Add(ws)
 
-		apiServer := createTestApiServer(resourceStore, cfg, true, metrics, wsManager)
+		apiServer := createTestApiServer(resourceStore, cfg, metrics, wsManager)
 
 		stop := make(chan struct{})
 		defer close(stop)
