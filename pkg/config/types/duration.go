@@ -8,7 +8,8 @@ import (
 )
 
 type Duration struct {
-	time.Duration
+	//+kubebuilder:validation:Schemaless
+	time.Duration `json:",inline"`
 }
 
 func (d Duration) MarshalJSON() ([]byte, error) {

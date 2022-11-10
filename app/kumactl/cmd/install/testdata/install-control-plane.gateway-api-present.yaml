@@ -587,6 +587,247 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
+  name: meshtimeouts.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: MeshTimeout
+    listKind: MeshTimeoutList
+    plural: meshtimeouts
+    singular: meshtimeout
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma MeshTimeout resource.
+            properties:
+              from:
+                description: From list makes a match between clients and corresponding
+                  configurations
+                items:
+                  properties:
+                    default:
+                      description: Default is a configuration specific to the group
+                        of clients referenced in 'targetRef'
+                      properties:
+                        connectionTimeout:
+                          description: ConnectionTimeout specifies the amount of time
+                            proxy will wait for an TCP connection to be established.
+                            Default value is 5 seconds. Cannot be set to 0.
+                          type: object
+                        http:
+                          description: Http provides configuration for HTTP specific
+                            timeouts
+                          properties:
+                            maxConnectionDuration:
+                              description: if not set there is no max, cannot be 0
+                                MaxConnectionDuration is the time after which a connection
+                                will be drained and/or closed, starting from when
+                                it was first established. Setting this timeout to
+                                0 will disable it. Disabled by default.
+                              type: object
+                            maxStreamDuration:
+                              description: MaxStreamDuration is the maximum time that
+                                a stream’s lifetime will span. Setting this timeout
+                                to 0 will disable it. Disabled by default.
+                              type: object
+                            requestTimeout:
+                              description: set to 0 to disable, if not specified then
+                                disabled RequestTimeout The amount of time that proxy
+                                will wait for the entire request to be received. The
+                                timer is activated when the request is initiated,
+                                and is disarmed when the last byte of the request
+                                is sent, OR when the response is initiated. Setting
+                                this timeout to 0 will disable it. Default is 15s.
+                              type: object
+                            streamIdleTimeout:
+                              description: StreamIdleTimeout is the amount of time
+                                that proxy will allow a stream to exist with no activity.
+                                Setting this timeout to 0 will disable it. Default
+                                is 30m
+                              type: object
+                          type: object
+                        idleTimeout:
+                          description: IdleTimeout is defined as the period in which
+                            there are no bytes sent or received on connection Setting
+                            this timeout to 0 will disable it. Be cautious when disabling
+                            it because it can lead to connection leaking. Default
+                            value is 1h.
+                          type: object
+                      type: object
+                    targetRef:
+                      description: TargetRef is a reference to the resource that represents
+                        a group of clients.
+                      properties:
+                        kind:
+                          description: Kind of the referenced resource
+                          enum:
+                          - Mesh
+                          - MeshSubset
+                          - MeshService
+                          - MeshServiceSubset
+                          - MeshGatewayRoute
+                          type: string
+                        mesh:
+                          description: Mesh is reserved for future use to identify
+                            cross mesh resources.
+                          type: string
+                        name:
+                          description: 'Name of the referenced resource. Can only
+                            be used with kinds: `MeshService`, `MeshServiceSubset`
+                            and `MeshGatewayRoute`'
+                          type: string
+                        tags:
+                          additionalProperties:
+                            type: string
+                          description: Tags used to select a subset of proxies by
+                            tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                          type: object
+                      type: object
+                  type: object
+                type: array
+              targetRef:
+                description: TargetRef is a reference to the resource the policy takes
+                  an effect on. The resource could be either a real store object or
+                  virtual resource defined inplace.
+                properties:
+                  kind:
+                    description: Kind of the referenced resource
+                    enum:
+                    - Mesh
+                    - MeshSubset
+                    - MeshService
+                    - MeshServiceSubset
+                    - MeshGatewayRoute
+                    type: string
+                  mesh:
+                    description: Mesh is reserved for future use to identify cross
+                      mesh resources.
+                    type: string
+                  name:
+                    description: 'Name of the referenced resource. Can only be used
+                      with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
+                    type: string
+                  tags:
+                    additionalProperties:
+                      type: string
+                    description: Tags used to select a subset of proxies by tags.
+                      Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                    type: object
+                type: object
+              to:
+                description: To list makes a match between the consumed services and
+                  corresponding configurations
+                items:
+                  properties:
+                    default:
+                      description: Default is a configuration specific to the group
+                        of destinations referenced in 'targetRef'
+                      properties:
+                        connectionTimeout:
+                          description: ConnectionTimeout specifies the amount of time
+                            proxy will wait for an TCP connection to be established.
+                            Default value is 5 seconds. Cannot be set to 0.
+                          type: object
+                        http:
+                          description: Http provides configuration for HTTP specific
+                            timeouts
+                          properties:
+                            maxConnectionDuration:
+                              description: if not set there is no max, cannot be 0
+                                MaxConnectionDuration is the time after which a connection
+                                will be drained and/or closed, starting from when
+                                it was first established. Setting this timeout to
+                                0 will disable it. Disabled by default.
+                              type: object
+                            maxStreamDuration:
+                              description: MaxStreamDuration is the maximum time that
+                                a stream’s lifetime will span. Setting this timeout
+                                to 0 will disable it. Disabled by default.
+                              type: object
+                            requestTimeout:
+                              description: set to 0 to disable, if not specified then
+                                disabled RequestTimeout The amount of time that proxy
+                                will wait for the entire request to be received. The
+                                timer is activated when the request is initiated,
+                                and is disarmed when the last byte of the request
+                                is sent, OR when the response is initiated. Setting
+                                this timeout to 0 will disable it. Default is 15s.
+                              type: object
+                            streamIdleTimeout:
+                              description: StreamIdleTimeout is the amount of time
+                                that proxy will allow a stream to exist with no activity.
+                                Setting this timeout to 0 will disable it. Default
+                                is 30m
+                              type: object
+                          type: object
+                        idleTimeout:
+                          description: IdleTimeout is defined as the period in which
+                            there are no bytes sent or received on connection Setting
+                            this timeout to 0 will disable it. Be cautious when disabling
+                            it because it can lead to connection leaking. Default
+                            value is 1h.
+                          type: object
+                      type: object
+                    targetRef:
+                      description: TargetRef is a reference to the resource that represents
+                        a group of destinations.
+                      properties:
+                        kind:
+                          description: Kind of the referenced resource
+                          enum:
+                          - Mesh
+                          - MeshSubset
+                          - MeshService
+                          - MeshServiceSubset
+                          - MeshGatewayRoute
+                          type: string
+                        mesh:
+                          description: Mesh is reserved for future use to identify
+                            cross mesh resources.
+                          type: string
+                        name:
+                          description: 'Name of the referenced resource. Can only
+                            be used with kinds: `MeshService`, `MeshServiceSubset`
+                            and `MeshGatewayRoute`'
+                          type: string
+                        tags:
+                          additionalProperties:
+                            type: string
+                          description: Tags used to select a subset of proxies by
+                            tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                          type: object
+                      type: object
+                  type: object
+                type: array
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.10.0
+  creationTimestamp: null
   name: meshtraces.kuma.io
 spec:
   group: kuma.io
@@ -1023,51 +1264,6 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
-  name: serviceinsights.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: ServiceInsight
-    listKind: ServiceInsightList
-    plural: serviceinsights
-    singular: serviceinsight
-  scope: Cluster
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-            type: string
-          kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-            type: string
-          mesh:
-            description: Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma ServiceInsight resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
-  creationTimestamp: null
   name: dataplaneinsights.kuma.io
 spec:
   group: kuma.io
@@ -1102,6 +1298,51 @@ spec:
             type: object
           status:
             description: Status is the status the Kuma resource.
+            x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.10.0
+  creationTimestamp: null
+  name: serviceinsights.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: ServiceInsight
+    listKind: ServiceInsightList
+    plural: serviceinsights
+    singular: serviceinsight
+  scope: Cluster
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          mesh:
+            description: Mesh is the name of the Kuma mesh this resource belongs to.
+              It may be omitted for cluster-scoped resources.
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma ServiceInsight resource.
             x-kubernetes-preserve-unknown-fields: true
         type: object
     served: true
@@ -1518,6 +1759,51 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
+  name: dataplanes.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: Dataplane
+    listKind: DataplaneList
+    plural: dataplanes
+    singular: dataplane
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          mesh:
+            description: Mesh is the name of the Kuma mesh this resource belongs to.
+              It may be omitted for cluster-scoped resources.
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma Dataplane resource.
+            x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.10.0
+  creationTimestamp: null
   name: zoneingressinsights.kuma.io
 spec:
   group: kuma.io
@@ -1553,51 +1839,6 @@ spec:
           spec:
             description: Spec is the specification of the Kuma ZoneIngressInsight
               resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
-  creationTimestamp: null
-  name: dataplanes.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: Dataplane
-    listKind: DataplaneList
-    plural: dataplanes
-    singular: dataplane
-  scope: Namespaced
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-            type: string
-          kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-            type: string
-          mesh:
-            description: Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma Dataplane resource.
             x-kubernetes-preserve-unknown-fields: true
         type: object
     served: true
@@ -2388,6 +2629,7 @@ rules:
       - meshgatewayinstances
       - meshgatewayconfigs
       - meshaccesslogs
+      - meshtimeouts
       - meshtraces
       - meshtrafficpermissions
     verbs:
@@ -2559,7 +2801,7 @@ spec:
     metadata:
       annotations:
         checksum/config: c52be51867deb8823a422dc1d188c7a2ab7fc5e501f620467d7fdd8fc4637d47
-        checksum/tls-secrets: 0ba784d2b167dfda86979b636ad66c25c71e8a5fc80126ac10e97e65496ed6b2
+        checksum/tls-secrets: faa99eb0cb4d10a6d1f0cfeb938194fb2f04bd41dbead69912beaede8bda99cf
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -2727,6 +2969,7 @@ webhooks:
         resources:
           - meshes
           - meshaccesslogs
+          - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
     sideEffects: None
@@ -2763,6 +3006,7 @@ webhooks:
           - traffictraces
           - virtualoutbounds
           - meshaccesslogs
+          - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
   
@@ -2881,6 +3125,7 @@ webhooks:
           - zones
           - containerpatches
           - meshaccesslogs
+          - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
     
