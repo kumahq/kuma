@@ -26,7 +26,7 @@ E2E_ENV_VARS += KUMA_UNIVERSAL_IMAGE=$(KUMA_UNIVERSAL_IMAGE)
 # not Go packages names.
 TEST_NAMES = $(shell ls -1 ./test/e2e)
 ALL_TESTS = $(addprefix ./test/e2e/, $(addsuffix /..., $(TEST_NAMES)))
-E2E_PKG_LIST = ./test/e2e/resilience/...
+E2E_PKG_LIST ?= $(ALL_TESTS)
 KUBE_E2E_PKG_LIST ?= ./test/e2e_env/kubernetes
 UNIVERSAL_E2E_PKG_LIST ?= ./test/e2e_env/universal
 MULTIZONE_E2E_PKG_LIST ?= ./test/e2e_env/multizone

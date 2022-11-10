@@ -342,6 +342,14 @@ jobs:
             else
               export MAKE_PARAMETERS="-j2"
             fi
+
+            if [[ "<< parameters.target >>" == "test/e2e" ]]; then
+              if [[ "<< parameters.arch >>" == "arm64" ]]; then
+                export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX && !arm-not-supported"
+              else
+                export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX"
+              fi
+            fi
             env
             make ${MAKE_PARAMETERS} CI=true << parameters.target >>
       - store_test_results:
@@ -449,13 +457,13 @@ workflows:
             parameters:
               arch: [ amd64, arm64 ]
           requires: [ go_cache-golang ]
-#      - test:
-#          name: test-<< matrix.arch >>
-#          matrix:
-#            alias: test
-#            parameters:
-#              arch: [ amd64, arm64 ]
-#          requires: [ check ]
+      - test:
+          name: test-<< matrix.arch >>
+          matrix:
+            alias: test
+            parameters:
+              arch: [ amd64, arm64 ]
+          requires: [ check ]
       - e2e:
           name: test/e2e-legacy-k8s:<< matrix.arch >>-<< matrix.k8sVersion >>
           matrix:
@@ -463,45 +471,45 @@ workflows:
             parameters:
               k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
               arch: [ amd64, arm64 ]
-          parallelism: 20
+          parallelism: 5
           target: test/e2e
           requires: [ build-<< matrix.arch >>, check ]
-#      - e2e:
-#          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>
-#          matrix:
-#            alias: test/e2e
-#            parameters:
-#              k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
-#              target: [ test/e2e-kubernetes, test/e2e-universal, test/e2e-multizone ]
-#              arch: [ amd64, arm64 ]
-#          parallelism: 1
-#          requires: [ build-<< matrix.arch >>, check ]
-#      - e2e:
-#          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
-#          matrix:
-#            alias: test/e2e-calico
-#            parameters:
-#              k8sVersion: [ v1.21.7-k3s1 ]
-#              target: [ test/e2e-multizone ]
-#              arch: [ amd64 ]
-#              cniNetworkPlugin: [ calico ]
-#          parallelism: 1
-#          requires: [ build-<< matrix.arch >>, check ]
-#      - release:
-#          # publish artifacts speculatively for normal commits
-#          filters: # only on master and release-* branches (never on PRs and tags)
-#            branches:
-#              only:
-#                - master
-#                - /^release-.*/
-#            tags:
-#              ignore: /.*/
-#          requires: [ build ]
-#      - release:
-#          # only publish tagged artifacts if everything passes
-#          filters: # only on tags
-#            branches:
-#              ignore: /.*/
-#            tags:
-#              only: /.*/
-#          requires: [ dev, test, test/e2e, test/e2e-legacy ]
+      - e2e:
+          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>
+          matrix:
+            alias: test/e2e
+            parameters:
+              k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
+              target: [ test/e2e-kubernetes, test/e2e-universal, test/e2e-multizone ]
+              arch: [ amd64, arm64 ]
+          parallelism: 1
+          requires: [ build-<< matrix.arch >>, check ]
+      - e2e:
+          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
+          matrix:
+            alias: test/e2e-calico
+            parameters:
+              k8sVersion: [ v1.21.7-k3s1 ]
+              target: [ test/e2e-multizone ]
+              arch: [ amd64 ]
+              cniNetworkPlugin: [ calico ]
+          parallelism: 1
+          requires: [ build-<< matrix.arch >>, check ]
+      - release:
+          # publish artifacts speculatively for normal commits
+          filters: # only on master and release-* branches (never on PRs and tags)
+            branches:
+              only:
+                - master
+                - /^release-.*/
+            tags:
+              ignore: /.*/
+          requires: [ build ]
+      - release:
+          # only publish tagged artifacts if everything passes
+          filters: # only on tags
+            branches:
+              ignore: /.*/
+            tags:
+              only: /.*/
+          requires: [ dev, test, test/e2e, test/e2e-legacy ]
