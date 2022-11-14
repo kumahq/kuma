@@ -1,6 +1,8 @@
 package gateway
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -77,6 +79,16 @@ spec:
       - matches:
         - path:
             match: PREFIX
+            value: /prefix-trailing/middle/
+        filters:
+        - rewrite:
+            replacePrefixMatch: /middle
+        backends:
+        - destination:
+            kuma.io/service: echo-server_gateway-mtls_svc_80
+      - matches:
+        - path:
+            match: PREFIX
             value: /prefix/middle
         filters:
         - rewrite:
@@ -88,6 +100,16 @@ spec:
         - path:
             match: PREFIX
             value: /drop-prefix
+        filters:
+        - rewrite:
+            replacePrefixMatch: /
+        backends:
+        - destination:
+            kuma.io/service: echo-server_gateway-mtls_svc_80
+      - matches:
+        - path:
+            match: PREFIX
+            value: /drop-prefix-trailing/
         filters:
         - rewrite:
             replacePrefixMatch: /
@@ -142,87 +164,97 @@ spec:
 			}, "30s", "1s").Should(Succeed())
 		})
 
-		Describe("replacing a path prefix", func() {
-			Specify("when the prefix is the entire path", func() {
-				Eventually(func(g Gomega) {
-					response, err := client.CollectResponse(
-						env.Cluster, "demo-client", "http://mtls-edge-gateway.gateway-mtls:8080/prefix/middle",
-						client.WithHeader("host", "example.kuma.io"),
-						client.FromKubernetesPod(clientNamespace, "demo-client"),
-					)
+		replacePrefix := func(prefix string) func() {
+			return func() {
+				Specify("when the prefix is the entire path", func() {
+					Eventually(func(g Gomega) {
+						response, err := client.CollectResponse(
+							env.Cluster, "demo-client", fmt.Sprintf("http://mtls-edge-gateway.gateway-mtls:8080/%s/middle", prefix),
+							client.WithHeader("host", "example.kuma.io"),
+							client.FromKubernetesPod(clientNamespace, "demo-client"),
+						)
 
-					g.Expect(err).ToNot(HaveOccurred())
-					g.Expect(response.Received.Path).To(Equal("/middle"))
-				}, "30s", "1s").Should(Succeed())
-			})
+						g.Expect(err).ToNot(HaveOccurred())
+						g.Expect(response.Received.Path).To(Equal("/middle"))
+					}, "30s", "1s").Should(Succeed())
+				})
 
-			Specify("when it's a non-trivial prefix", func() {
-				Eventually(func(g Gomega) {
-					response, err := client.CollectResponse(
-						env.Cluster, "demo-client", "http://mtls-edge-gateway.gateway-mtls:8080/prefix/middle/tail",
-						client.WithHeader("host", "example.kuma.io"),
-						client.FromKubernetesPod(clientNamespace, "demo-client"),
-					)
+				Specify("when it's a non-trivial prefix", func() {
+					Eventually(func(g Gomega) {
+						response, err := client.CollectResponse(
+							env.Cluster, "demo-client", fmt.Sprintf("http://mtls-edge-gateway.gateway-mtls:8080/%s/middle/tail", prefix),
+							client.WithHeader("host", "example.kuma.io"),
+							client.FromKubernetesPod(clientNamespace, "demo-client"),
+						)
 
-					g.Expect(err).ToNot(HaveOccurred())
-					g.Expect(response.Received.Path).To(Equal("/middle/tail"))
-				}, "30s", "1s").Should(Succeed())
-			})
+						g.Expect(err).ToNot(HaveOccurred())
+						g.Expect(response.Received.Path).To(Equal("/middle/tail"))
+					}, "30s", "1s").Should(Succeed())
+				})
 
-			Specify("ignoring non-path-separated prefixes", func() {
-				Eventually(func(g Gomega) {
-					response, err := client.CollectResponse(
-						env.Cluster, "demo-client", "http://mtls-edge-gateway.gateway-mtls:8080/prefix/middle_andmore",
-						client.WithHeader("host", "example.kuma.io"),
-						client.FromKubernetesPod(clientNamespace, "demo-client"),
-					)
+				Specify("ignoring non-path-separated prefixes", func() {
+					Eventually(func(g Gomega) {
+						response, err := client.CollectResponse(
+							env.Cluster, "demo-client", fmt.Sprintf("http://mtls-edge-gateway.gateway-mtls:8080/%s/middle_andmore", prefix),
+							client.WithHeader("host", "example.kuma.io"),
+							client.FromKubernetesPod(clientNamespace, "demo-client"),
+						)
 
-					g.Expect(err).ToNot(HaveOccurred())
-					g.Expect(response.Received.Path).To(Equal("/prefix/middle_andmore"))
-				}, "30s", "1s").Should(Succeed())
-			})
-		})
+						g.Expect(err).ToNot(HaveOccurred())
+						g.Expect(response.Received.Path).To(Equal(fmt.Sprintf("/%s/middle_andmore", prefix)))
+					}, "30s", "1s").Should(Succeed())
+				})
+			}
+		}
 
-		Describe("replacing a path prefix with /", func() {
-			Specify("when the prefix is the entire path", func() {
-				Eventually(func(g Gomega) {
-					response, err := client.CollectResponse(
-						env.Cluster, "demo-client", "http://mtls-edge-gateway.gateway-mtls:8080/drop-prefix",
-						client.WithHeader("host", "example.kuma.io"),
-						client.FromKubernetesPod(clientNamespace, "demo-client"),
-					)
+		replacePrefixWithRoot := func(prefix string) func() {
+			return func() {
+				Specify("when the prefix is the entire path", func() {
+					Eventually(func(g Gomega) {
+						response, err := client.CollectResponse(
+							env.Cluster, "demo-client", fmt.Sprintf("http://mtls-edge-gateway.gateway-mtls:8080/%s", prefix),
+							client.WithHeader("host", "example.kuma.io"),
+							client.FromKubernetesPod(clientNamespace, "demo-client"),
+						)
 
-					g.Expect(err).ToNot(HaveOccurred())
-					g.Expect(response.Received.Path).To(Equal("/"))
-				}, "30s", "1s").Should(Succeed())
-			})
+						g.Expect(err).ToNot(HaveOccurred())
+						g.Expect(response.Received.Path).To(Equal("/"))
+					}, "30s", "1s").Should(Succeed())
+				})
 
-			Specify("when it's a non-trivial prefix", func() {
-				Eventually(func(g Gomega) {
-					response, err := client.CollectResponse(
-						env.Cluster, "demo-client", "http://mtls-edge-gateway.gateway-mtls:8080/drop-prefix/tail",
-						client.WithHeader("host", "example.kuma.io"),
-						client.FromKubernetesPod(clientNamespace, "demo-client"),
-					)
+				Specify("when it's a non-trivial prefix", func() {
+					Eventually(func(g Gomega) {
+						response, err := client.CollectResponse(
+							env.Cluster, "demo-client", fmt.Sprintf("http://mtls-edge-gateway.gateway-mtls:8080/%s/tail", prefix),
+							client.WithHeader("host", "example.kuma.io"),
+							client.FromKubernetesPod(clientNamespace, "demo-client"),
+						)
 
-					g.Expect(err).ToNot(HaveOccurred())
-					g.Expect(response.Received.Path).To(Equal("/tail"))
-				}, "30s", "1s").Should(Succeed())
-			})
+						g.Expect(err).ToNot(HaveOccurred())
+						g.Expect(response.Received.Path).To(Equal("/tail"))
+					}, "30s", "1s").Should(Succeed())
+				})
 
-			Specify("ignoring non-path-separated prefixes", func() {
-				Eventually(func(g Gomega) {
-					response, err := client.CollectResponse(
-						env.Cluster, "demo-client", "http://mtls-edge-gateway.gateway-mtls:8080/drop-prefix_andmore",
-						client.WithHeader("host", "example.kuma.io"),
-						client.FromKubernetesPod(clientNamespace, "demo-client"),
-					)
+				Specify("ignoring non-path-separated prefixes", func() {
+					Eventually(func(g Gomega) {
+						response, err := client.CollectResponse(
+							env.Cluster, "demo-client", fmt.Sprintf("http://mtls-edge-gateway.gateway-mtls:8080/%s_andmore", prefix),
+							client.WithHeader("host", "example.kuma.io"),
+							client.FromKubernetesPod(clientNamespace, "demo-client"),
+						)
 
-					g.Expect(err).ToNot(HaveOccurred())
-					g.Expect(response.Received.Path).To(Equal("/drop-prefix_andmore"))
-				}, "30s", "1s").Should(Succeed())
-			})
-		})
+						g.Expect(err).ToNot(HaveOccurred())
+						g.Expect(response.Received.Path).To(Equal(fmt.Sprintf("/%s_andmore", prefix)))
+					}, "30s", "1s").Should(Succeed())
+				})
+			}
+		}
+
+		Describe("replacing a path prefix", replacePrefix("prefix"))
+		Describe("replacing a path prefix with trailing prefix", replacePrefix("prefix-trailing"))
+
+		Describe("replacing a path prefix with /", replacePrefixWithRoot("drop-prefix"))
+		Describe("replacing a path prefix with /", replacePrefixWithRoot("drop-prefix-trailing"))
 
 		It("should not access a service for which we don't have traffic permission", func() {
 			tp := `
