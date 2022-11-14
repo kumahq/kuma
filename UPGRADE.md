@@ -10,6 +10,19 @@ does not have any particular instructions.
 
 ## Upgrade to `2.0.x`
 
+### Built-in gateway
+
+If you're using the `PREFIX` path match for `MeshGatewayRoute`,
+note that validation is now stricter.
+If you try to update an existing `MeshGatewayRoute` or create a new one,
+make sure your `PREFIX` matching `value` does not include a trailing slash.
+All prefix matches are checked path-separated,
+meaning that `/prefix` only matches
+if the request's path is `/prefix` or begins with `/prefix/`.
+This has always been the case,
+so no behavior has been changed
+and existing resources with a trailing slash are not affected.
+
 ### Universal
 
 A `lib/pq` change enables SNI by default when connecting to Postgres over TLS.
