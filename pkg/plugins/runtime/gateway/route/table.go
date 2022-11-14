@@ -37,6 +37,10 @@ type Entry struct {
 	// request headers.
 	RequestHeaders *Headers
 
+	// ResponseHeaders specifies transformations on the HTTP
+	// response headers.
+	ResponseHeaders *Headers
+
 	Rewrite *Rewrite
 }
 
