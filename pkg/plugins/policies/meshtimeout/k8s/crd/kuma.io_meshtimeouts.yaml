@@ -55,11 +55,10 @@ spec:
                             timeouts
                           properties:
                             maxConnectionDuration:
-                              description: if not set there is no max, cannot be 0
-                                MaxConnectionDuration is the time after which a connection
-                                will be drained and/or closed, starting from when
-                                it was first established. Setting this timeout to
-                                0 will disable it. Disabled by default.
+                              description: MaxConnectionDuration is the time after
+                                which a connection will be drained and/or closed,
+                                starting from when it was first established. Setting
+                                this timeout to 0 will disable it. Disabled by default.
                               type: string
                             maxStreamDuration:
                               description: MaxStreamDuration is the maximum time that
@@ -67,10 +66,9 @@ spec:
                                 to 0 will disable it. Disabled by default.
                               type: string
                             requestTimeout:
-                              description: set to 0 to disable, if not specified then
-                                disabled RequestTimeout The amount of time that proxy
-                                will wait for the entire request to be received. The
-                                timer is activated when the request is initiated,
+                              description: RequestTimeout The amount of time that
+                                proxy will wait for the entire request to be received.
+                                The timer is activated when the request is initiated,
                                 and is disarmed when the last byte of the request
                                 is sent, OR when the response is initiated. Setting
                                 this timeout to 0 will disable it. Default is 15s.
@@ -169,11 +167,10 @@ spec:
                             timeouts
                           properties:
                             maxConnectionDuration:
-                              description: if not set there is no max, cannot be 0
-                                MaxConnectionDuration is the time after which a connection
-                                will be drained and/or closed, starting from when
-                                it was first established. Setting this timeout to
-                                0 will disable it. Disabled by default.
+                              description: MaxConnectionDuration is the time after
+                                which a connection will be drained and/or closed,
+                                starting from when it was first established. Setting
+                                this timeout to 0 will disable it. Disabled by default.
                               type: string
                             maxStreamDuration:
                               description: MaxStreamDuration is the maximum time that
@@ -181,10 +178,9 @@ spec:
                                 to 0 will disable it. Disabled by default.
                               type: string
                             requestTimeout:
-                              description: set to 0 to disable, if not specified then
-                                disabled RequestTimeout The amount of time that proxy
-                                will wait for the entire request to be received. The
-                                timer is activated when the request is initiated,
+                              description: RequestTimeout The amount of time that
+                                proxy will wait for the entire request to be received.
+                                The timer is activated when the request is initiated,
                                 and is disarmed when the last byte of the request
                                 is sent, OR when the response is initiated. Setting
                                 this timeout to 0 will disable it. Default is 15s.
