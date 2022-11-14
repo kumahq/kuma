@@ -3,6 +3,7 @@ package gatewayapi
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
@@ -245,20 +246,23 @@ func gapiToKumaMatch(match gatewayapi.HTTPRouteMatch) (*mesh_proto.MeshGatewayRo
 	}
 
 	if p := match.Path; p != nil {
-		path := &mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path{
-			Value: *p.Value,
-		}
+		value := *p.Value
 
+		var match mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_MatchType
 		switch *p.Type {
 		case gatewayapi.PathMatchExact:
-			path.Match = mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_EXACT
+			match = mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_EXACT
 		case gatewayapi.PathMatchPathPrefix:
-			path.Match = mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_PREFIX
+			value = strings.TrimRight(value, "/")
+			match = mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_PREFIX
 		case gatewayapi.PathMatchRegularExpression:
-			path.Match = mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_REGEX
+			match = mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_REGEX
 		}
 
-		kumaMatch.Path = path
+		kumaMatch.Path = &mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path{
+			Match: match,
+			Value: value,
+		}
 	}
 
 	for _, header := range match.Headers {
