@@ -650,13 +650,10 @@ conf:
           destination:
             kuma.io/service: target-2
 `),
-		ErrorCases("prefix without leading slash and with trailing slash", []validators.Violation{{
-			Field:   "conf.http.rules[0].matches[0].value",
-			Message: "does not need a trailing slash because only a `/`-separated prefix or an entire path is matched",
-		}, {
+		ErrorCase("prefix without leading slash and with trailing slash", validators.Violation{
 			Field:   "conf.http.rules[0].matches[0].value",
 			Message: "must be an absolute path",
-		}}, `
+		}, `
 type: MeshGatewayRoute
 name: route
 mesh: default
