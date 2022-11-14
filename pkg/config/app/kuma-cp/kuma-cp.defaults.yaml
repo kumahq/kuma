@@ -180,7 +180,7 @@ apiServer:
     # Whether to serve the gui (if mode=zone this has no effect)
     enabled: true # ENV: KUMA_API_SERVER_GUI_ENABLED
     # Can be used if you use a reverse proxy or want to serve the gui from a different path
-    rootUrl: "/gui" # ENV: KUMA_API_SERVER_GUI_ROOT_URL
+    rootUrl: "" # ENV: KUMA_API_SERVER_GUI_ROOT_URL
     # The path to serve the GUI from
     basePath: "/gui" # ENV: KUMA_API_SERVER_GUI_BASE_PATH
 
