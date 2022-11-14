@@ -70,7 +70,7 @@ func (i *DataplaneProxyFactory) envoyAdminPort(annotations map[string]string) (u
 }
 
 func (i *DataplaneProxyFactory) drainTime(annotations map[string]string) (time.Duration, error) {
-	r, _, err := metadata.Annotations(annotations).GetDurationWithDefault(i.ContainerConfig.DrainTime, metadata.KumaSidecarDrainTime)
+	r, _, err := metadata.Annotations(annotations).GetDurationWithDefault(i.ContainerConfig.DrainTime.Duration, metadata.KumaSidecarDrainTime)
 	return r, err
 }
 

@@ -1,21 +1,18 @@
 package xds
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	util_tls "github.com/kumahq/kuma/pkg/tls"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	"github.com/kumahq/kuma/pkg/xds/envoy/names"
-	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
+
+type APIVersion string
 
 // StreamID represents a stream opened by XDS
 type StreamID = int64
@@ -121,10 +118,6 @@ type ExternalServiceFaultInjectionMap map[ServiceName][]*core_mesh.FaultInjectio
 
 type ExternalServiceRateLimitMap map[ServiceName][]*core_mesh.RateLimitResource
 
-type CLACache interface {
-	GetCLA(ctx context.Context, meshName, meshHash string, cluster envoy_common.Cluster, apiVersion envoy_common.APIVersion, endpointMap EndpointMap) (proto.Message, error)
-}
-
 // SocketAddressProtocol is the L4 protocol the listener should bind to
 type SocketAddressProtocol int32
 
@@ -137,7 +130,7 @@ const (
 // The data that is specific for the whole mesh should go into MeshContext.
 type Proxy struct {
 	Id                  ProxyId
-	APIVersion          envoy_common.APIVersion // todo(jakubdyszkiewicz) consider moving APIVersion here. pkg/core should not depend on pkg/xds. It should be other way around.
+	APIVersion          APIVersion
 	Dataplane           *core_mesh.DataplaneResource
 	ZoneIngress         *core_mesh.ZoneIngressResource
 	Metadata            *DataplaneMetadata
@@ -160,14 +153,6 @@ type ServerSideMTLSCerts struct {
 	ServerPair util_tls.KeyPair
 }
 
-type identityCertRequest struct {
-	meshName string
-}
-
-func (r identityCertRequest) Name() string {
-	return names.GetSecretName(xds_tls.IdentityCertResource, "secret", r.meshName)
-}
-
 type IdentityCertRequest interface {
 	Name() string
 }
@@ -175,30 +160,6 @@ type IdentityCertRequest interface {
 type CaRequest interface {
 	MeshName() []string
 	Name() string
-}
-
-type caRequest struct {
-	meshName string
-}
-
-type allInOneCaRequest struct {
-	meshNames []string
-}
-
-func (r caRequest) Name() string {
-	return names.GetSecretName(xds_tls.MeshCaResource, "secret", r.meshName)
-}
-
-func (r caRequest) MeshName() []string {
-	return []string{r.meshName}
-}
-
-func (r allInOneCaRequest) Name() string {
-	return names.GetSecretName(xds_tls.MeshCaResource, "secret", "all")
-}
-
-func (r allInOneCaRequest) MeshName() []string {
-	return r.meshNames
 }
 
 // SecretsTracker provides a way to ask for a secret and keeps track of which are
@@ -211,54 +172,6 @@ type SecretsTracker interface {
 	UsedIdentity() bool
 	UsedCas() map[string]struct{}
 	UsedAllInOne() bool
-}
-
-type secretsTracker struct {
-	ownMesh   string
-	allMeshes []string
-
-	identity bool
-	meshes   map[string]struct{}
-	allInOne bool
-}
-
-func NewSecretsTracker(ownMesh string, allMeshes []string) SecretsTracker {
-	return &secretsTracker{
-		ownMesh:   ownMesh,
-		allMeshes: allMeshes,
-
-		meshes: map[string]struct{}{},
-	}
-}
-
-func (st *secretsTracker) RequestIdentityCert() IdentityCertRequest {
-	st.identity = true
-	return &identityCertRequest{
-		meshName: st.ownMesh,
-	}
-}
-
-func (st *secretsTracker) RequestCa(mesh string) CaRequest {
-	st.meshes[mesh] = struct{}{}
-	return &caRequest{
-		meshName: mesh,
-	}
-}
-
-func (st *secretsTracker) RequestAllInOneCa() CaRequest {
-	st.allInOne = true
-	return &allInOneCaRequest{
-		meshNames: st.allMeshes,
-	}
-}
-func (st *secretsTracker) UsedIdentity() bool {
-	return st.identity
-}
-func (st *secretsTracker) UsedCas() map[string]struct{} {
-	return st.meshes
-}
-func (st *secretsTracker) UsedAllInOne() bool {
-	return st.allInOne
 }
 
 type MeshResources struct {

@@ -88,7 +88,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		AdminAccessLogPath:    b.adminAccessLogPath(request.OperatingSystem),
 		XdsHost:               b.xdsHost(request),
 		XdsPort:               b.config.Params.XdsPort,
-		XdsConnectTimeout:     b.config.Params.XdsConnectTimeout,
+		XdsConnectTimeout:     b.config.Params.XdsConnectTimeout.Duration,
 		AccessLogPipe:         envoy_common.AccessLogSocketName(request.Name, request.Mesh),
 		DataplaneToken:        request.DataplaneToken,
 		DataplaneTokenPath:    request.DataplaneTokenPath,

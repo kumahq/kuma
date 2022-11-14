@@ -33,7 +33,7 @@ func GetPublishedDockerPorts(
 		if err != nil {
 			return nil, err
 		}
-		pubPort, _ := strconv.Atoi(pubPortStr)
+		pubPort, _ := strconv.ParseInt(pubPortStr, 10, 32)
 		result[port] = uint32(pubPort)
 	}
 	return result, nil

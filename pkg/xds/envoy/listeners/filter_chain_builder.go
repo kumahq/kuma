@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/anypb"
 
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 )
@@ -19,7 +20,7 @@ type FilterChainBuilderOpt interface {
 	ApplyTo(config *FilterChainBuilderConfig)
 }
 
-func NewFilterChainBuilder(apiVersion envoy.APIVersion) *FilterChainBuilder {
+func NewFilterChainBuilder(apiVersion core_xds.APIVersion) *FilterChainBuilder {
 	return &FilterChainBuilder{
 		apiVersion: apiVersion,
 	}
@@ -28,7 +29,7 @@ func NewFilterChainBuilder(apiVersion envoy.APIVersion) *FilterChainBuilder {
 // FilterChainBuilder is responsible for generating an Envoy filter chain
 // by applying a series of FilterChainConfigurers.
 type FilterChainBuilder struct {
-	apiVersion envoy.APIVersion
+	apiVersion core_xds.APIVersion
 	config     FilterChainBuilderConfig
 }
 

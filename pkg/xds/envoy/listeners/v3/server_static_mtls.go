@@ -21,6 +21,7 @@ var _ FilterChainConfigurer = &ServerSideStaticMTLSConfigurer{}
 func (c *ServerSideStaticMTLSConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	tlsContext := tls.StaticDownstreamTlsContext(&c.MTLSCerts.ServerPair)
 	tlsContext.RequireClientCertificate = util_proto.Bool(true)
+
 	tlsContext.CommonTlsContext.ValidationContextType = &envoy_tls.CommonTlsContext_ValidationContext{
 		ValidationContext: &envoy_tls.CertificateValidationContext{
 			TrustedCa: &envoy_core.DataSource{
@@ -28,14 +29,15 @@ func (c *ServerSideStaticMTLSConfigurer) Configure(filterChain *envoy_listener.F
 					InlineBytes: c.MTLSCerts.CaPEM,
 				},
 			},
-			MatchSubjectAltNames: []*envoy_type_matcher.StringMatcher{
-				{
+			MatchTypedSubjectAltNames: []*envoy_tls.SubjectAltNameMatcher{{
+				SanType: envoy_tls.SubjectAltNameMatcher_DNS,
+				Matcher: &envoy_type_matcher.StringMatcher{
 					MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
 						Exact: envoy_admin_tls.ClientCertSAN,
 					},
 					IgnoreCase: false,
 				},
-			},
+			}},
 		},
 	}
 

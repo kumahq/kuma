@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 	xds_config "github.com/kumahq/kuma/pkg/config/xds"
 	bootstrap_config "github.com/kumahq/kuma/pkg/config/xds/bootstrap"
 	"github.com/kumahq/kuma/pkg/core"
@@ -178,7 +179,7 @@ var _ = Describe("bootstrapGenerator", func() {
 						AdminAccessLogPath: "/var/log",
 						XdsHost:            "localhost",
 						XdsPort:            15678,
-						XdsConnectTimeout:  2 * time.Second,
+						XdsConnectTimeout:  config_types.Duration{Duration: 2 * time.Second},
 					},
 				}
 			}(),
@@ -205,7 +206,7 @@ var _ = Describe("bootstrapGenerator", func() {
 						AdminAccessLogPath: os.DevNull,
 						XdsHost:            "localhost",
 						XdsPort:            15678,
-						XdsConnectTimeout:  2 * time.Second,
+						XdsConnectTimeout:  config_types.Duration{Duration: 2 * time.Second},
 					},
 				}
 			}(),

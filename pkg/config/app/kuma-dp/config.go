@@ -9,6 +9,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 )
 
 var DefaultConfig = func() Config {
@@ -16,14 +17,14 @@ var DefaultConfig = func() Config {
 		ControlPlane: ControlPlane{
 			URL: "https://localhost:5678",
 			Retry: CpRetry{
-				Backoff:     3 * time.Second,
-				MaxDuration: 5 * time.Minute, // this value can be fairy long since what will happen when there there is a connection error is that the Dataplane will be restarted (by process manager like systemd/K8S etc.) and will try to connect again.
+				Backoff:     config_types.Duration{Duration: 3 * time.Second},
+				MaxDuration: config_types.Duration{Duration: 5 * time.Minute}, // this value can be fairy long since what will happen when there there is a connection error is that the Dataplane will be restarted (by process manager like systemd/K8S etc.) and will try to connect again.
 			},
 		},
 		Dataplane: Dataplane{
 			Mesh:      "",
 			Name:      "", // Dataplane name must be set explicitly
-			DrainTime: 30 * time.Second,
+			DrainTime: config_types.Duration{Duration: 30 * time.Second},
 			ProxyType: "dataplane",
 		},
 		DataplaneRuntime: DataplaneRuntime{
@@ -46,13 +47,13 @@ var DefaultConfig = func() Config {
 // Config defines configuration of the Kuma Dataplane Manager.
 type Config struct {
 	// ControlPlane defines coordinates of the Kuma Control Plane.
-	ControlPlane ControlPlane `yaml:"controlPlane,omitempty"`
+	ControlPlane ControlPlane `json:"controlPlane,omitempty"`
 	// Dataplane defines bootstrap configuration of the dataplane (Envoy).
-	Dataplane Dataplane `yaml:"dataplane,omitempty"`
+	Dataplane Dataplane `json:"dataplane,omitempty"`
 	// DataplaneRuntime defines the context in which dataplane (Envoy) runs.
-	DataplaneRuntime DataplaneRuntime `yaml:"dataplaneRuntime,omitempty"`
+	DataplaneRuntime DataplaneRuntime `json:"dataplaneRuntime,omitempty"`
 	// DNS defines a configuration for builtin DNS in Kuma DP
-	DNS DNS `yaml:"dns,omitempty"`
+	DNS DNS `json:"dns,omitempty"`
 }
 
 func (c *Config) Sanitize() {
@@ -65,37 +66,37 @@ func (c *Config) Sanitize() {
 // ControlPlane defines coordinates of the Control Plane.
 type ControlPlane struct {
 	// URL defines the address of Control Plane DP server.
-	URL string `yaml:"url,omitempty" envconfig:"kuma_control_plane_url"`
+	URL string `json:"url,omitempty" envconfig:"kuma_control_plane_url"`
 	// Retry settings for Control Plane communication
-	Retry CpRetry `yaml:"retry,omitempty"`
+	Retry CpRetry `json:"retry,omitempty"`
 	// CaCert defines Certificate Authority that will be used to verify connection to the Control Plane. It takes precedence over CaCertFile.
-	CaCert string `yaml:"caCert" envconfig:"kuma_control_plane_ca_cert"`
+	CaCert string `json:"caCert" envconfig:"kuma_control_plane_ca_cert"`
 	// CaCertFile defines a file for Certificate Authority that will be used to verify connection to the Control Plane.
-	CaCertFile string `yaml:"caCertFile" envconfig:"kuma_control_plane_ca_cert_file"`
+	CaCertFile string `json:"caCertFile" envconfig:"kuma_control_plane_ca_cert_file"`
 }
 
 type ApiServer struct {
 	// Address defines the address of Control Plane API server.
-	URL string `yaml:"url,omitempty" envconfig:"kuma_control_plane_api_server_url"`
+	URL string `json:"url,omitempty" envconfig:"kuma_control_plane_api_server_url"`
 	// Retry settings for API Server
-	Retry CpRetry `yaml:"retry,omitempty"`
+	Retry CpRetry `json:"retry,omitempty"`
 }
 
 type CpRetry struct {
 	// Duration to wait between retries
-	Backoff time.Duration `yaml:"backoff,omitempty" envconfig:"kuma_control_plane_retry_backoff"`
+	Backoff config_types.Duration `json:"backoff,omitempty" envconfig:"kuma_control_plane_retry_backoff"`
 	// Max duration for retries (this is not exact time for execution, the check is done between retries)
-	MaxDuration time.Duration `yaml:"maxDuration,omitempty" envconfig:"kuma_control_plane_retry_max_duration"`
+	MaxDuration config_types.Duration `json:"maxDuration,omitempty" envconfig:"kuma_control_plane_retry_max_duration"`
 }
 
 func (a *CpRetry) Sanitize() {
 }
 
 func (a *CpRetry) Validate() error {
-	if a.Backoff <= 0 {
+	if a.Backoff.Duration <= 0 {
 		return errors.New(".Backoff must be a positive duration")
 	}
-	if a.MaxDuration <= 0 {
+	if a.MaxDuration.Duration <= 0 {
 		return errors.New(".MaxDuration must be a positive duration")
 	}
 	return nil
@@ -106,44 +107,44 @@ var _ config.Config = &CpRetry{}
 // Dataplane defines bootstrap configuration of the dataplane (Envoy).
 type Dataplane struct {
 	// Mesh name.
-	Mesh string `yaml:"mesh,omitempty" envconfig:"kuma_dataplane_mesh"`
+	Mesh string `json:"mesh,omitempty" envconfig:"kuma_dataplane_mesh"`
 	// Dataplane name.
-	Name string `yaml:"name,omitempty" envconfig:"kuma_dataplane_name"`
+	Name string `json:"name,omitempty" envconfig:"kuma_dataplane_name"`
 	// ProxyType defines mode which should be used, supported values: 'dataplane', 'ingress'
-	ProxyType string `yaml:"proxyType,omitempty" envconfig:"kuma_dataplane_proxy_type"`
+	ProxyType string `json:"proxyType,omitempty" envconfig:"kuma_dataplane_proxy_type"`
 	// Drain time for listeners.
-	DrainTime time.Duration `yaml:"drainTime,omitempty" envconfig:"kuma_dataplane_drain_time"`
+	DrainTime config_types.Duration `json:"drainTime,omitempty" envconfig:"kuma_dataplane_drain_time"`
 }
 
 // DataplaneRuntime defines the context in which dataplane (Envoy) runs.
 type DataplaneRuntime struct {
 	// Path to Envoy binary.
-	BinaryPath string `yaml:"binaryPath,omitempty" envconfig:"kuma_dataplane_runtime_binary_path"`
+	BinaryPath string `json:"binaryPath,omitempty" envconfig:"kuma_dataplane_runtime_binary_path"`
 	// Dir to store auto-generated Envoy bootstrap config in.
-	ConfigDir string `yaml:"configDir,omitempty" envconfig:"kuma_dataplane_runtime_config_dir"`
+	ConfigDir string `json:"configDir,omitempty" envconfig:"kuma_dataplane_runtime_config_dir"`
 	// Concurrency specifies how to generate the Envoy concurrency flag.
-	Concurrency uint32 `yaml:"concurrency,omitempty" envconfig:"kuma_dataplane_runtime_concurrency"`
+	Concurrency uint32 `json:"concurrency,omitempty" envconfig:"kuma_dataplane_runtime_concurrency"`
 	// Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)
-	TokenPath string `yaml:"dataplaneTokenPath,omitempty" envconfig:"kuma_dataplane_runtime_token_path"`
+	TokenPath string `json:"dataplaneTokenPath,omitempty" envconfig:"kuma_dataplane_runtime_token_path"`
 	// Token is dataplane token's value provided directly, will be stored to a temporary file before applying
-	Token string `yaml:"dataplaneToken,omitempty" envconfig:"kuma_dataplane_runtime_token"`
+	Token string `json:"dataplaneToken,omitempty" envconfig:"kuma_dataplane_runtime_token"`
 	// Resource is a Dataplane resource that will be applied on Kuma CP
-	Resource string `yaml:"resource,omitempty" envconfig:"kuma_dataplane_runtime_resource"`
+	Resource string `json:"resource,omitempty" envconfig:"kuma_dataplane_runtime_resource"`
 	// ResourcePath is a path to Dataplane resource that will be applied on Kuma CP
-	ResourcePath string `yaml:"resourcePath,omitempty" envconfig:"kuma_dataplane_runtime_resource_path"`
+	ResourcePath string `json:"resourcePath,omitempty" envconfig:"kuma_dataplane_runtime_resource_path"`
 	// ResourceVars are the StringToString values that can fill the Resource template
-	ResourceVars map[string]string `yaml:"resourceVars,omitempty"`
+	ResourceVars map[string]string `json:"resourceVars,omitempty"`
 	// EnvoyLogLevel is a level on which Envoy will log.
 	// Available values are: [trace][debug][info][warning|warn][error][critical][off]
 	// By default it inherits Kuma DP logging level.
-	EnvoyLogLevel string `yaml:"envoyLogLevel,omitempty" envconfig:"kuma_dataplane_runtime_envoy_log_level"`
+	EnvoyLogLevel string `json:"envoyLogLevel,omitempty" envconfig:"kuma_dataplane_runtime_envoy_log_level"`
 	// Resources defines the resources for this proxy.
-	Resources DataplaneResources `yaml:"resources,omitempty"`
+	Resources DataplaneResources `json:"resources,omitempty"`
 }
 
 // DataplaneResources defines the resources available to a dataplane proxy.
 type DataplaneResources struct {
-	MaxMemoryBytes uint64 `yaml:"maxMemoryBytes,omitempty" envconfig:"kuma_dataplane_resources_max_memory_bytes"`
+	MaxMemoryBytes uint64 `json:"maxMemoryBytes,omitempty" envconfig:"kuma_dataplane_resources_max_memory_bytes"`
 }
 
 var _ config.Config = &Config{}
@@ -214,7 +215,7 @@ func (d *Dataplane) Validate() (errs error) {
 	}
 
 	// Notice that d.AdminPort is always valid by design of PortRange
-	if d.DrainTime <= 0 {
+	if d.DrainTime.Duration <= 0 {
 		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))
 	}
 
@@ -223,7 +224,7 @@ func (d *Dataplane) Validate() (errs error) {
 
 func (d *Dataplane) ValidateForTemplate() (errs error) {
 	// Notice that d.AdminPort is always valid by design of PortRange
-	if d.DrainTime <= 0 {
+	if d.DrainTime.Duration <= 0 {
 		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))
 	}
 	return
@@ -263,21 +264,21 @@ func (d *ApiServer) Validate() (errs error) {
 
 type DNS struct {
 	// If true then builtin DNS functionality is enabled and CoreDNS server is started
-	Enabled bool `yaml:"enabled,omitempty" envconfig:"kuma_dns_enabled"`
+	Enabled bool `json:"enabled,omitempty" envconfig:"kuma_dns_enabled"`
 	// CoreDNSPort defines a port that handles DNS requests. When transparent proxy is enabled then iptables will redirect DNS traffic to this port.
-	CoreDNSPort uint32 `yaml:"coreDnsPort,omitempty" envconfig:"kuma_dns_core_dns_port"`
+	CoreDNSPort uint32 `json:"coreDnsPort,omitempty" envconfig:"kuma_dns_core_dns_port"`
 	// CoreDNSEmptyPort defines a port that always responds with empty NXDOMAIN respond. It is required to implement a fallback to a real DNS
-	CoreDNSEmptyPort uint32 `yaml:"coreDnsEmptyPort,omitempty" envconfig:"kuma_dns_core_dns_empty_port"`
+	CoreDNSEmptyPort uint32 `json:"coreDnsEmptyPort,omitempty" envconfig:"kuma_dns_core_dns_empty_port"`
 	// EnvoyDNSPort defines a port that handles Virtual IP resolving by Envoy. CoreDNS should be configured that it first tries to use this DNS resolver and then the real one.
-	EnvoyDNSPort uint32 `yaml:"envoyDnsPort,omitempty" envconfig:"kuma_dns_envoy_dns_port"`
+	EnvoyDNSPort uint32 `json:"envoyDnsPort,omitempty" envconfig:"kuma_dns_envoy_dns_port"`
 	// CoreDNSBinaryPath defines a path to CoreDNS binary.
-	CoreDNSBinaryPath string `yaml:"coreDnsBinaryPath,omitempty" envconfig:"kuma_dns_core_dns_binary_path"`
+	CoreDNSBinaryPath string `json:"coreDnsBinaryPath,omitempty" envconfig:"kuma_dns_core_dns_binary_path"`
 	// CoreDNSConfigTemplatePath defines a path to a CoreDNS config template.
-	CoreDNSConfigTemplatePath string `yaml:"coreDnsConfigTemplatePath,omitempty" envconfig:"kuma_dns_core_dns_config_template_path"`
+	CoreDNSConfigTemplatePath string `json:"coreDnsConfigTemplatePath,omitempty" envconfig:"kuma_dns_core_dns_config_template_path"`
 	// Dir to store auto-generated DNS Server config in.
-	ConfigDir string `yaml:"configDir,omitempty" envconfig:"kuma_dns_config_dir"`
+	ConfigDir string `json:"configDir,omitempty" envconfig:"kuma_dns_config_dir"`
 	// Port where Prometheus stats will be exposed for the DNS Server
-	PrometheusPort uint32 `yaml:"prometheusPort,omitempty" envconfig:"kuma_dns_prometheus_port"`
+	PrometheusPort uint32 `json:"prometheusPort,omitempty" envconfig:"kuma_dns_prometheus_port"`
 }
 
 func (d *DNS) Sanitize() {

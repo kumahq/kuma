@@ -86,6 +86,7 @@ kumactl install transparent-proxy [flags]
       --skip-dns-conntrack-zone-split                                                   skip applying conntrack zone splitting iptables rules
       --store-firewalld                                                                 store the iptables changes with firewalld
       --verbose                                                                         verbose
+      --vnet stringArray                                                                virtual networks in a format of interfaceNameRegex:CIDR split by ':' where interface name doesn't have to be exact name e.g. docker0:172.17.0.0/16, br+:172.18.0.0/16, iface:::1/64
 ```
 
 ### Options inherited from parent commands

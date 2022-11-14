@@ -54,10 +54,10 @@ func RegisterXDS(
 		util_xds_v3.AdaptCallbacks(xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(watchdogFactory.New))),
 		util_xds_v3.AdaptCallbacks(xds_callbacks.DataplaneCallbacksToXdsCallbacks(metadataTracker)),
 		util_xds_v3.AdaptCallbacks(xds_callbacks.DataplaneCallbacksToXdsCallbacks(
-			xds_callbacks.NewDataplaneLifecycle(rt.AppContext(), rt.ResourceManager(), authenticator, rt.Config().XdsServer.DataplaneDeregistrationDelay, rt.GetInstanceId())),
+			xds_callbacks.NewDataplaneLifecycle(rt.AppContext(), rt.ResourceManager(), authenticator, rt.Config().XdsServer.DataplaneDeregistrationDelay.Duration, rt.GetInstanceId())),
 		),
 		util_xds_v3.AdaptCallbacks(DefaultDataplaneStatusTracker(rt, envoyCpCtx.Secrets)),
-		util_xds_v3.AdaptCallbacks(xds_callbacks.NewNackBackoff(rt.Config().XdsServer.NACKBackoff)),
+		util_xds_v3.AdaptCallbacks(xds_callbacks.NewNackBackoff(rt.Config().XdsServer.NACKBackoff.Duration)),
 		newResourceWarmingForcer(xdsContext.Cache(), xdsContext.Hasher()),
 	}
 
@@ -152,12 +152,12 @@ func DefaultDataplaneStatusTracker(rt core_runtime.Runtime, secrets secrets.Secr
 				accessor,
 				secrets,
 				func() *time.Ticker {
-					return time.NewTicker(rt.Config().XdsServer.DataplaneStatusFlushInterval)
+					return time.NewTicker(rt.Config().XdsServer.DataplaneStatusFlushInterval.Duration)
 				},
 				func() *time.Ticker {
-					return time.NewTicker(rt.Config().Metrics.Dataplane.IdleTimeout / 2)
+					return time.NewTicker(rt.Config().Metrics.Dataplane.IdleTimeout.Duration / 2)
 				},
-				rt.Config().XdsServer.DataplaneStatusFlushInterval/10,
+				rt.Config().XdsServer.DataplaneStatusFlushInterval.Duration/10,
 				xds_callbacks.NewDataplaneInsightStore(rt.ResourceManager()),
 			)
 		})

@@ -84,7 +84,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.BootstrapServer.Params.AdminPort).To(Equal(uint32(1234)))
 			Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma-control-plane"))
 			Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(4321)))
-			Expect(cfg.BootstrapServer.Params.XdsConnectTimeout).To(Equal(13 * time.Second))
+			Expect(cfg.BootstrapServer.Params.XdsConnectTimeout.Duration).To(Equal(13 * time.Second))
 			Expect(cfg.BootstrapServer.Params.AdminAccessLogPath).To(Equal("/access/log/test"))
 			Expect(cfg.BootstrapServer.Params.AdminAddress).To(Equal("1.1.1.1"))
 
@@ -100,15 +100,15 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.ConnectionTimeout).To(Equal(10))
 			Expect(cfg.Store.Postgres.MaxOpenConnections).To(Equal(300))
 			Expect(cfg.Store.Postgres.MaxIdleConnections).To(Equal(300))
-			Expect(cfg.Store.Postgres.MinReconnectInterval).To(Equal(44 * time.Second))
-			Expect(cfg.Store.Postgres.MaxReconnectInterval).To(Equal(55 * time.Second))
+			Expect(cfg.Store.Postgres.MinReconnectInterval.Duration).To(Equal(44 * time.Second))
+			Expect(cfg.Store.Postgres.MaxReconnectInterval.Duration).To(Equal(55 * time.Second))
 
 			Expect(cfg.Store.Kubernetes.SystemNamespace).To(Equal("test-namespace"))
 
 			Expect(cfg.Store.Cache.Enabled).To(BeFalse())
-			Expect(cfg.Store.Cache.ExpirationTime).To(Equal(3 * time.Second))
+			Expect(cfg.Store.Cache.ExpirationTime.Duration).To(Equal(3 * time.Second))
 
-			Expect(cfg.Store.Upsert.ConflictRetryBaseBackoff).To(Equal(4 * time.Second))
+			Expect(cfg.Store.Upsert.ConflictRetryBaseBackoff.Duration).To(Equal(4 * time.Second))
 			Expect(cfg.Store.Upsert.ConflictRetryMaxTimes).To(Equal(uint(10)))
 
 			Expect(cfg.Store.Postgres.TLS.Mode).To(Equal(postgres.VerifyFull))
@@ -135,8 +135,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.ApiServer.CorsAllowedDomains).To(Equal([]string{"https://kuma", "https://someapi"}))
 
 			Expect(cfg.MonitoringAssignmentServer.Port).To(Equal(uint32(2222)))
-			Expect(cfg.MonitoringAssignmentServer.AssignmentRefreshInterval).To(Equal(12 * time.Second))
-			Expect(cfg.MonitoringAssignmentServer.DefaultFetchTimeout).To(Equal(45 * time.Second))
+			Expect(cfg.MonitoringAssignmentServer.AssignmentRefreshInterval.Duration).To(Equal(12 * time.Second))
+			Expect(cfg.MonitoringAssignmentServer.DefaultFetchTimeout.Duration).To(Equal(45 * time.Second))
 			Expect(cfg.MonitoringAssignmentServer.ApiVersions).To(HaveLen(1))
 			Expect(cfg.MonitoringAssignmentServer.ApiVersions).To(ContainElements("v1"))
 			Expect(cfg.MonitoringAssignmentServer.TlsEnabled).To(Equal(true))
@@ -154,7 +154,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.AdmissionServer.Address).To(Equal("127.0.0.2"))
 			Expect(cfg.Runtime.Kubernetes.AdmissionServer.Port).To(Equal(uint32(9443)))
 			Expect(cfg.Runtime.Kubernetes.AdmissionServer.CertDir).To(Equal("/var/run/secrets/kuma.io/kuma-admission-server/tls-cert"))
-			Expect(cfg.Runtime.Kubernetes.MarshalingCacheExpirationTime).To(Equal(28 * time.Second))
+			Expect(cfg.Runtime.Kubernetes.MarshalingCacheExpirationTime.Duration).To(Equal(28 * time.Second))
 
 			Expect(cfg.Runtime.Kubernetes.Injector.Exceptions.Labels).To(Equal(map[string]string{"openshift.io/build.name": "value1", "openshift.io/deployer-pod-for.name": "value2"}))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarTraffic.ExcludeInboundPorts).To(Equal([]uint32{1234, 5678}))
@@ -173,7 +173,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.GID).To(Equal(int64(1212)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.Image).To(Equal("image:test"))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort).To(Equal(uint32(1099)))
-			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.DrainTime).To(Equal(33 * time.Second))
+			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.DrainTime.Duration).To(Equal(33 * time.Second))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.Resources.Requests.Memory).To(Equal("4Gi"))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.Resources.Requests.CPU).To(Equal("123m"))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.Resources.Limits.Memory).To(Equal("8Gi"))
@@ -197,7 +197,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.TCAttachIface).To(Equal("veth1"))
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.ProgramsSourcePath).To(Equal("/kuma/baz"))
 
-			Expect(cfg.Runtime.Universal.DataplaneCleanupAge).To(Equal(1 * time.Hour))
+			Expect(cfg.Runtime.Universal.DataplaneCleanupAge.Duration).To(Equal(1 * time.Hour))
 
 			Expect(cfg.Reports.Enabled).To(BeFalse())
 
@@ -206,15 +206,15 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.General.TlsMinVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.General.TlsMaxVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.General.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
-			Expect(cfg.General.DNSCacheTTL).To(Equal(19 * time.Second))
+			Expect(cfg.General.DNSCacheTTL.Duration).To(Equal(19 * time.Second))
 			Expect(cfg.General.WorkDir).To(Equal("/custom/work/dir"))
 
 			Expect(cfg.Mode).To(Equal(config_core.Zone))
 			Expect(cfg.Multizone.Zone.Name).To(Equal("zone-1"))
 
 			Expect(cfg.Multizone.Global.KDS.GrpcPort).To(Equal(uint32(1234)))
-			Expect(cfg.Multizone.Global.KDS.RefreshInterval).To(Equal(time.Second * 2))
-			Expect(cfg.Multizone.Global.KDS.ZoneInsightFlushInterval).To(Equal(time.Second * 5))
+			Expect(cfg.Multizone.Global.KDS.RefreshInterval.Duration).To(Equal(time.Second * 2))
+			Expect(cfg.Multizone.Global.KDS.ZoneInsightFlushInterval.Duration).To(Equal(time.Second * 5))
 			Expect(cfg.Multizone.Global.KDS.TlsMinVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.Multizone.Global.KDS.TlsMaxVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.Multizone.Global.KDS.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
@@ -224,7 +224,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Zone.GlobalAddress).To(Equal("grpc://1.1.1.1:5685"))
 			Expect(cfg.Multizone.Zone.Name).To(Equal("zone-1"))
 			Expect(cfg.Multizone.Zone.KDS.RootCAFile).To(Equal("/rootCa"))
-			Expect(cfg.Multizone.Zone.KDS.RefreshInterval).To(Equal(9 * time.Second))
+			Expect(cfg.Multizone.Zone.KDS.RefreshInterval.Duration).To(Equal(9 * time.Second))
 			Expect(cfg.Multizone.Zone.KDS.MaxMsgSize).To(Equal(uint32(2)))
 
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
@@ -238,17 +238,17 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DNSServer.ServiceVipEnabled).To(BeFalse())
 			Expect(cfg.DNSServer.ServiceVipPort).To(Equal(uint32(9090)))
 
-			Expect(cfg.XdsServer.DataplaneStatusFlushInterval).To(Equal(7 * time.Second))
-			Expect(cfg.XdsServer.DataplaneConfigurationRefreshInterval).To(Equal(21 * time.Second))
-			Expect(cfg.XdsServer.DataplaneDeregistrationDelay).To(Equal(11 * time.Second))
-			Expect(cfg.XdsServer.NACKBackoff).To(Equal(10 * time.Second))
+			Expect(cfg.XdsServer.DataplaneStatusFlushInterval.Duration).To(Equal(7 * time.Second))
+			Expect(cfg.XdsServer.DataplaneConfigurationRefreshInterval.Duration).To(Equal(21 * time.Second))
+			Expect(cfg.XdsServer.DataplaneDeregistrationDelay.Duration).To(Equal(11 * time.Second))
+			Expect(cfg.XdsServer.NACKBackoff.Duration).To(Equal(10 * time.Second))
 
 			Expect(cfg.Metrics.Zone.SubscriptionLimit).To(Equal(23))
-			Expect(cfg.Metrics.Zone.IdleTimeout).To(Equal(2 * time.Minute))
-			Expect(cfg.Metrics.Mesh.MinResyncTimeout).To(Equal(35 * time.Second))
-			Expect(cfg.Metrics.Mesh.MaxResyncTimeout).To(Equal(27 * time.Second))
+			Expect(cfg.Metrics.Zone.IdleTimeout.Duration).To(Equal(2 * time.Minute))
+			Expect(cfg.Metrics.Mesh.MinResyncTimeout.Duration).To(Equal(35 * time.Second))
+			Expect(cfg.Metrics.Mesh.MaxResyncTimeout.Duration).To(Equal(27 * time.Second))
 			Expect(cfg.Metrics.Dataplane.SubscriptionLimit).To(Equal(47))
-			Expect(cfg.Metrics.Dataplane.IdleTimeout).To(Equal(1 * time.Minute))
+			Expect(cfg.Metrics.Dataplane.IdleTimeout.Duration).To(Equal(1 * time.Minute))
 
 			Expect(cfg.DpServer.TlsCertFile).To(Equal("/test/path"))
 			Expect(cfg.DpServer.TlsKeyFile).To(Equal("/test/path/key"))
@@ -258,11 +258,11 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DpServer.TlsMaxVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.DpServer.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
 			Expect(cfg.DpServer.Hds.Enabled).To(BeFalse())
-			Expect(cfg.DpServer.Hds.Interval).To(Equal(11 * time.Second))
-			Expect(cfg.DpServer.Hds.RefreshInterval).To(Equal(12 * time.Second))
-			Expect(cfg.DpServer.Hds.CheckDefaults.Timeout).To(Equal(5 * time.Second))
-			Expect(cfg.DpServer.Hds.CheckDefaults.Interval).To(Equal(6 * time.Second))
-			Expect(cfg.DpServer.Hds.CheckDefaults.NoTrafficInterval).To(Equal(7 * time.Second))
+			Expect(cfg.DpServer.Hds.Interval.Duration).To(Equal(11 * time.Second))
+			Expect(cfg.DpServer.Hds.RefreshInterval.Duration).To(Equal(12 * time.Second))
+			Expect(cfg.DpServer.Hds.CheckDefaults.Timeout.Duration).To(Equal(5 * time.Second))
+			Expect(cfg.DpServer.Hds.CheckDefaults.Interval.Duration).To(Equal(6 * time.Second))
+			Expect(cfg.DpServer.Hds.CheckDefaults.NoTrafficInterval.Duration).To(Equal(7 * time.Second))
 			Expect(cfg.DpServer.Hds.CheckDefaults.HealthyThreshold).To(Equal(uint32(8)))
 			Expect(cfg.DpServer.Hds.CheckDefaults.UnhealthyThreshold).To(Equal(uint32(9)))
 

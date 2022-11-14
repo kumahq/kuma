@@ -7,7 +7,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 func PopulatePolicies(host GatewayHost, routes []route.Entry) []route.Entry {
@@ -27,7 +27,7 @@ func PopulatePolicies(host GatewayHost, routes []route.Entry) []route.Entry {
 	return routesWithPolicies
 }
 
-func mapPoliciesForDestination(destination envoy.Tags, host GatewayHost) map[model.ResourceType]model.Resource {
+func mapPoliciesForDestination(destination tags.Tags, host GatewayHost) map[model.ResourceType]model.Resource {
 	policies := map[model.ResourceType]model.Resource{}
 
 	for _, policyType := range ConnectionPolicyTypes {
@@ -39,7 +39,7 @@ func mapPoliciesForDestination(destination envoy.Tags, host GatewayHost) map[mod
 	return policies
 }
 
-func matchConnectionPolicy(candidates []match.RankedPolicy, destination envoy.Tags) model.Resource {
+func matchConnectionPolicy(candidates []match.RankedPolicy, destination tags.Tags) model.Resource {
 	var matches []match.RankedPolicy
 
 	for _, c := range candidates {

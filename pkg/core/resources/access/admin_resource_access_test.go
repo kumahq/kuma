@@ -125,6 +125,7 @@ var _ = Describe("Admin Resource Access", func() {
 	It("should allow admin to access List", func() {
 		// when
 		err := resourceAccess.ValidateList(
+			"",
 			system.NewSecretResource().Descriptor(),
 			user.Admin,
 		)
@@ -136,6 +137,7 @@ var _ = Describe("Admin Resource Access", func() {
 	It("should deny user to access List", func() {
 		// when
 		err := resourceAccess.ValidateList(
+			"",
 			system.NewSecretResource().Descriptor(),
 			user.User{Name: "john doe", Groups: []string{"users"}},
 		)

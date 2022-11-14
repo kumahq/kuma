@@ -1,4 +1,4 @@
-package generator_test
+package secrets_test
 
 import (
 	"path/filepath"
@@ -16,7 +16,7 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	generator_secrets "github.com/kumahq/kuma/pkg/xds/generator/secrets"
+	"github.com/kumahq/kuma/pkg/xds/generator/secrets"
 )
 
 var _ = Describe("SecretsGenerator", func() {
@@ -33,7 +33,7 @@ var _ = Describe("SecretsGenerator", func() {
 	DescribeTable("should not generate Envoy xDS resources unless mTLS is present",
 		func(given testCase) {
 			// when
-			rs, err := (&generator_secrets.Generator{}).Generate(given.ctx, given.proxy)
+			rs, err := (&secrets.Generator{}).Generate(given.ctx, given.proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -42,7 +42,11 @@ var _ = Describe("SecretsGenerator", func() {
 		Entry("data plane proxy, Mesh has no mTLS configuration", testCase{
 			ctx: xds_context.Context{
 				Mesh: xds_context.MeshContext{
-					Resource: &core_mesh.MeshResource{},
+					Resource: &core_mesh.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "default",
+						},
+					},
 				},
 				ControlPlane: &xds_context.ControlPlaneContext{
 					Secrets: &xds.TestSecrets{},
@@ -56,7 +60,7 @@ var _ = Describe("SecretsGenerator", func() {
 						Mesh: "demo",
 					},
 				},
-				SecretsTracker: core_xds.NewSecretsTracker("", nil),
+				SecretsTracker: envoy_common.NewSecretsTracker("", nil),
 				APIVersion:     envoy_common.APIV3,
 			},
 		}),
@@ -87,7 +91,7 @@ var _ = Describe("SecretsGenerator", func() {
 						},
 					},
 				},
-				SecretsTracker: core_xds.NewSecretsTracker("", nil),
+				SecretsTracker: envoy_common.NewSecretsTracker("", nil),
 				APIVersion:     envoy_common.APIV3,
 			},
 		}),
@@ -105,7 +109,7 @@ var _ = Describe("SecretsGenerator", func() {
 			if given.allInOneCa {
 				given.proxy.SecretsTracker.RequestAllInOneCa()
 			}
-			rs, err := (&generator_secrets.Generator{}).Generate(given.ctx, given.proxy)
+			rs, err := (&secrets.Generator{}).Generate(given.ctx, given.proxy)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -155,7 +159,7 @@ var _ = Describe("SecretsGenerator", func() {
 						},
 					},
 				},
-				SecretsTracker: core_xds.NewSecretsTracker("default", []string{"default"}),
+				SecretsTracker: envoy_common.NewSecretsTracker("default", []string{"default"}),
 				APIVersion:     envoy_common.APIV3,
 			},
 			identity: true,
@@ -252,7 +256,7 @@ var _ = Describe("SecretsGenerator", func() {
 			},
 			proxy: &core_xds.Proxy{
 				Id:             *core_xds.BuildProxyId("", mesh_proto.ZoneEgressServiceName),
-				SecretsTracker: core_xds.NewSecretsTracker("mesh-1", []string{"mesh-1", "mesh-2"}),
+				SecretsTracker: envoy_common.NewSecretsTracker("mesh-1", []string{"mesh-1", "mesh-2"}),
 				APIVersion:     envoy_common.APIV3,
 			},
 			expected: "envoy-config-dataplane.golden.yaml",
@@ -261,6 +265,13 @@ var _ = Describe("SecretsGenerator", func() {
 			ctx: xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{
 					Secrets: &xds.TestSecrets{},
+				},
+				Mesh: xds_context.MeshContext{
+					Resource: &core_mesh.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "mesh-2",
+						},
+					},
 				},
 			},
 			proxy: &core_xds.Proxy{
@@ -328,7 +339,7 @@ var _ = Describe("SecretsGenerator", func() {
 						},
 					},
 				},
-				SecretsTracker: core_xds.NewSecretsTracker("mesh-2", []string{"mesh-1", "mesh-2"}),
+				SecretsTracker: envoy_common.NewSecretsTracker("mesh-2", []string{"mesh-1", "mesh-2"}),
 			},
 			identity: true,
 			usedCas: map[string]struct{}{

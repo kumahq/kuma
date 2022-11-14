@@ -27,11 +27,11 @@ type dummyCLACache struct {
 	outboundTargets core_xds.EndpointMap
 }
 
-func (d *dummyCLACache) GetCLA(ctx context.Context, meshName, meshHash string, cluster envoy_common.Cluster, apiVersion envoy_common.APIVersion, endpointMap core_xds.EndpointMap) (proto.Message, error) {
+func (d *dummyCLACache) GetCLA(ctx context.Context, meshName, meshHash string, cluster envoy_common.Cluster, apiVersion core_xds.APIVersion, endpointMap core_xds.EndpointMap) (proto.Message, error) {
 	return endpoints.CreateClusterLoadAssignment(cluster.Service(), d.outboundTargets[cluster.Service()]), nil
 }
 
-var _ core_xds.CLACache = &dummyCLACache{}
+var _ envoy_common.CLACache = &dummyCLACache{}
 
 var _ = Describe("ProxyTemplateProfileSource", func() {
 
@@ -102,7 +102,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 					},
 					Spec: dataplane,
 				},
-				SecretsTracker: core_xds.NewSecretsTracker("demo", []string{"demo"}),
+				SecretsTracker: envoy_common.NewSecretsTracker("demo", []string{"demo"}),
 				APIVersion:     envoy_common.APIV3,
 				Routing: core_xds.Routing{
 					TrafficRoutes: core_xds.RouteMap{
