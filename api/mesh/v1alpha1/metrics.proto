@@ -73,6 +73,9 @@ message PrometheusAggregateMetricsConfig {
   // If false then the application won't be scrapped. If nil, then it is treated
   // as true and kuma-dp scrapes metrics from the service.
   google.protobuf.BoolValue enabled = 4;
+
+  // Address on which a service expose HTTP endpoint with Prometheus metrics.
+  string address = 5;
 }
 
 // PrometheusEnvoyConfig defines filters that should be passed to Envoy
