@@ -39,9 +39,9 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 	rootTime, _ := time.Parse(time.RFC3339, "2008-04-01T16:05:36.995Z")
 	var _ resources.ApiServerClient = &testApiServerClient{}
 	BeforeEach(func() {
+		store = core_store.NewPaginationStore(memory_resources.NewStore())
 		rootCtx, _ := test_kumactl.MakeRootContext(rootTime, store)
 		rootCtx.Runtime.Registry = registry.Global()
-		store = core_store.NewPaginationStore(memory_resources.NewStore())
 		rootCmd = cmd.NewRootCmd(rootCtx)
 
 		// Different versions of cobra might emit errors to stdout

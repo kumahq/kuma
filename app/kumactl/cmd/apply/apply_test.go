@@ -26,6 +26,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
 	test_store "github.com/kumahq/kuma/pkg/test/store"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
@@ -443,6 +444,24 @@ networking:
 		Expect(resource.Meta.GetName()).To(Equal("sample"))
 		Expect(resource.Meta.GetMesh()).To(Equal("default"))
 		Expect(resource.Spec.Networking.Address).To(Equal("2.2.2.2"))
+	})
+
+	It("dry-run outputs templated resources", func() {
+		// given
+		rootCmd.SetArgs([]string{
+			"apply", "-f", filepath.Join("testdata", "apply-many-dataplane-template.yaml"),
+			"-v", "address=2.2.2.2", "--dry-run",
+		})
+
+		// when
+		buf := &bytes.Buffer{}
+		rootCmd.SetOut(buf)
+		rootCmd.SetErr(buf)
+		err := rootCmd.Execute()
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buf.String()).To(matchers.MatchGoldenEqual(filepath.Join("testdata", "apply-many-dataplane-template.golden.yaml")))
 	})
 
 	type testCase struct {
