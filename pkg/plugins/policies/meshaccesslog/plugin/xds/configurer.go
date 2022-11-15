@@ -92,6 +92,7 @@ func (c *Configurer) envoyAccessLog(defaultFormat string) (*envoy_accesslog.Acce
 						},
 					},
 				},
+				OmitEmptyValues: format.OmitEmptyValues,
 			}
 		} else if tcp := c.Backend.Tcp; tcp != nil {
 			substitutionFormatString = envoy_core.SubstitutionFormatString{
@@ -103,6 +104,7 @@ func (c *Configurer) envoyAccessLog(defaultFormat string) (*envoy_accesslog.Acce
 						},
 					},
 				},
+				OmitEmptyValues: format.OmitEmptyValues,
 			}
 		}
 	} else {
@@ -135,6 +137,7 @@ func (c *Configurer) envoyAccessLog(defaultFormat string) (*envoy_accesslog.Acce
 			Format: &envoy_core.SubstitutionFormatString_JsonFormat{
 				JsonFormat: &jsonFormat,
 			},
+			OmitEmptyValues: format.OmitEmptyValues,
 		}
 	}
 
