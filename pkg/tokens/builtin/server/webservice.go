@@ -55,7 +55,6 @@ func (d *tokenWebService) createWs() *restful.WebService {
 		Produces(restful.MIME_JSON).
 		Path(d.basePath)
 	ws.
-		Route(ws.POST("").To(d.handleIdentityRequest)). // backwards compatibility
 		Route(ws.POST("/dataplane").To(d.handleIdentityRequest)).
 		Route(ws.POST("/zone-ingress").To(d.handleZoneIngressIdentityRequest)).
 		Route(ws.POST("/zone").To(d.handleZoneIdentityRequest))
