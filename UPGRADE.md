@@ -11,7 +11,11 @@ does not have any particular instructions.
 ### Universal
 
 A `lib/pq` change enables SNI by default when connecting to Postgres over TLS.
-Make sure your certificates contain a valid CN or SANs.
+Either make sure your certificates contain a valid CN or SANs for the hostname
+you're using
+or update to `2.0.1` and disable `sslsni` by setting the
+`KUMA_STORE_POSTGRES_TLS_DISABLE_SSLSNI` environment variable or
+`store.postgres.tls.disableSSLSNI` in the config to `true`.
 
 ### `kuma-prometheus-sd`
 

@@ -51,9 +51,16 @@ func (cfg PostgresStoreConfig) ConnectionString() (string, error) {
 		return "", err
 	}
 	escape := func(value string) string { return strings.ReplaceAll(strings.ReplaceAll(value, `\`, `\\`), `'`, `\'`) }
+	boolOption := func(value bool) string {
+		if value {
+			return "1"
+		} else {
+			return "0"
+		}
+	}
 	return fmt.Sprintf(
-		`host='%s' port=%d user='%s' password='%s' dbname='%s' connect_timeout=%d sslmode=%s sslcert='%s' sslkey='%s' sslrootcert='%s'`,
-		escape(cfg.Host), cfg.Port, escape(cfg.User), escape(cfg.Password), escape(cfg.DbName), cfg.ConnectionTimeout, mode, escape(cfg.TLS.CertPath), escape(cfg.TLS.KeyPath), escape(cfg.TLS.CAPath),
+		`host='%s' port=%d user='%s' password='%s' dbname='%s' connect_timeout=%d sslmode=%s sslcert='%s' sslkey='%s' sslrootcert='%s' sslsni=%s`,
+		escape(cfg.Host), cfg.Port, escape(cfg.User), escape(cfg.Password), escape(cfg.DbName), cfg.ConnectionTimeout, mode, escape(cfg.TLS.CertPath), escape(cfg.TLS.KeyPath), escape(cfg.TLS.CAPath), boolOption(!cfg.TLS.DisableSSLSNI),
 	), nil
 }
 
@@ -94,6 +101,8 @@ type TLSPostgresStoreConfig struct {
 	KeyPath string `yaml:"keyPath" envconfig:"kuma_store_postgres_tls_key_path"`
 	// Path to the root certificate. Used in verifyCa and verifyFull modes.
 	CAPath string `yaml:"caPath" envconfig:"kuma_store_postgres_tls_ca_path"`
+	// Whether to disable SNI the postgres `sslsni` option.
+	DisableSSLSNI bool `yaml:"disableSSLSNI" envconfig:"kuma_store_postgres_tls_disable_sslsni"`
 }
 
 func (s TLSPostgresStoreConfig) Sanitize() {
