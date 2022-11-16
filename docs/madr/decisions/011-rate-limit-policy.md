@@ -1,152 +1,221 @@
 # Rate limit policy
-
+ 
 - Status: accepted
-
+ 
 Technical Story: https://github.com/kumahq/kuma/issues/4740
-
+ 
 ## Context and Problem Statement
-
+ 
 We want to create a [new policy matching compliant](https://github.com/kumahq/kuma/blob/22c157d4adac7f518b1b49939c7e9ea4d2a1876c/docs/madr/decisions/005-policy-matching.md)
 resource for managing rate limiting.
-
+ 
 Rate Limiting in Kuma is implemented with Envoy's [rate limiting
 support](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/local_rate_limit_filter).
-There is an issue with configuration of TCP rate limiting, because [current filter](https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/network_filters/local_rate_limit_filter#config-network-filters-local-rate-limit) works on listener level which can only 
-allows to limit connection on specific listener but without checking the origin of the request.
-
-## Decision Drivers
-
-- Replace existing policies with new policy matching compliant resources
-- Add support for TCP connection limiting
-- Should we add support for global rate limiting?
-
+There is an issue with the configuration of TCP rate limiting because [current filter](https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/network_filters/local_rate_limit_filter#config-network-filters-local-rate-limit) works on listener level which can only
+allows limiting connections on the specific listener but without checking the origin of the request.
+ 
 ## Considered Options
+ 
+* Create a MeshRateLimit with basic TCP rate limit support
+* Create a MeshHTTPRateLimit and MeshTCPRateLimit with basic TCP rate limit support
+* Create advanced TCP rate limiting per requested service
 
+## Decision Outcome
+ 
+Chosen option: create a MeshRateLimit with basic TCP rate limit support
+ 
+## Decision Drivers
+ 
+- Replace existing policies with new policy-matching compliant resources
+- Add support for TCP connection limiting at the basic level
+ 
+## Considered Options
+ 
 ### Naming
-
+ 
 - MeshRateLimit
-
+- MeshHTTPRateLimit and MeshTCPRateLimit
+ 
 ## Solution
-
+ 
 ### Current configuration
-Below is sample rate limiting configuration.
-
+Below is a sample rate-limiting configuration.
+ 
 ```yaml
 spec:
-  sources:
-    - match:
-        kuma.io/service: "redis_kuma-demo_svc_6379"    
-  destinations:
-    - match:
-        kuma.io/service: "demo-app_kuma-demo_svc_5000"
-  conf:
-    http:
-      requests: 5
-      interval: 10s
-      onRateLimit:
-        status: 423
-        headers:
-          - key: "x-kuma-rate-limited"
-            value: "true"
-            append: true
+ sources:
+   - match:
+       kuma.io/service: "redis_kuma-demo_svc_6379"   
+ destinations:
+   - match:
+       kuma.io/service: "demo-app_kuma-demo_svc_5000"
+ conf:
+   http:
+     requests: 5
+     interval: 10s
+     onRateLimit:
+       status: 423
+       headers:
+         - key: "x-Kuma-rate-limited"
+           value: "true"
+           append: true
 ```
-We are using [Envoy's local rate limit](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/local_rate_limit_filter) which support only HTTP configuration.
-
-The configuration translate to the Envoy configuration on route:
-
+We are using [Envoy's local rate limit](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/local_rate_limit_filter) which supports only HTTP configuration.
+ 
+The configuration translates to the Envoy configuration on the route and the listener filter:
+ 
 ```yaml
 {
-  "match": {
-    "prefix": "/",
-    "headers": [
-    {
-      "name": "x-kuma-tags",
-      "safe_regex_match": {
-      "google_re2": {},
-      "regex": ".*&kuma.io/service=[^&]*redis_kuma-demo_svc_6379[,&].*"
-      }
-    }
-    ]
-  },
-  "route": {
-    "cluster": "localhost:5000",
-    "timeout": "0s"
-  },
-  "typed_per_filter_config": {
-    "envoy.filters.http.local_ratelimit": {
-    "@type": "type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit",
-    "stat_prefix": "rate_limit",
-    "status": {
-      "code": "Locked"
-    },
-    "token_bucket": {
-      "max_tokens": 5,
-      "tokens_per_fill": 5,
-      "fill_interval": "10s"
-    },
-    "filter_enabled": {
-      "default_value": {
-      "numerator": 100
-      },
-      "runtime_key": "local_rate_limit_enabled"
-    },
-    "filter_enforced": {
-      "default_value": {
-      "numerator": 100
-      },
-      "runtime_key": "local_rate_limit_enforced"
-    },
-    "response_headers_to_add": [
-      {
-      "header": {
-        "key": "x-kuma-rate-limited",
-        "value": "true"
-      },
-      "append": true
-      }
-    ]
-    }
-  }
+ "match": {
+   "prefix": "/",
+   "headers": [
+   {
+     "name": "x-kuma-tags",
+     "safe_regex_match": {
+     "google_re2": {},
+     "regex": ".*&kuma.io/service=[^&]*redis_kuma-demo_svc_6379[,&].*"
+     }
+   }
+   ]
+ },
+ "route": {
+   "cluster": "localhost:5000",
+   "timeout": "0s"
+ },
+ "typed_per_filter_config": {
+   "envoy.filters.http.local_ratelimit": {
+   "@type": "type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit",
+   ...
+   }
+ }
 }
-
+ 
 ```
-
+ 
 ### Specification
-
-Rate limiting can be configured on both HTTP connection managers and routes but we can simplify it and configure it just on the route. Thanks to header `kuma.io/service` which is propagated and set by Envoy we are able to recognize origin of the request.
-
-#### Top level
-
+ 
+The differences between TCP and HTTP rate limiting in `targetRef` and `from` requires different validation of objects.
+Idea is to create one policy but with `oneof` and use different validation methods for them.
+ 
+#### HTTP Rate Limit
+ 
+Rate limiting can be configured on both HTTP connection managers and routes. Thanks to the header `x-kuma-tags`, which is propagated and set by Envoy, we can recognize the origin of the HTTP request.
+ 
+##### Top level
+ 
 Top-level targetRef can have all available kinds:
 ```yaml
 targetRef:
-  kind: Mesh|MeshSubset|MeshService|MeshServiceSubset|MeshGatewayRoute|MeshHTTPRoute
-  name: ...
+ kind: Mesh|MeshSubset|MeshService|MeshServiceSubset|MeshGatewayRoute|MeshHTTPRoute
+ name: ...
 ```
 Rate limiting is an inbound policy so only `from` should be configured.
-
-#### From level
-
+ 
+##### From level
+ 
 ```yaml
 from:
-  - targetRef:
-      kind: Mesh|MeshSubset|MeshService|MeshServiceSubset
-      name: ...
+ - targetRef:
+     kind: Mesh|MeshSubset|MeshService|MeshServiceSubset
+     name: ...
 ```
-
-Matching on MeshGatewayRoute and MeshHTTPRoute does not make sense (there is no route that a request originates from).
-
-#### Configuration
-
+ 
+Matching on MeshGatewayRoute and MeshHTTPRoute does not make sense (there is any route that a request originates from).
+ 
+##### Configuration
+ 
 ```yaml
-  conf:
-    http:
-      requests: 5
-      interval: 10s
-      onRateLimit:
-        status: 423
-        headers:
-          - key: "x-kuma-rate-limited"
-            value: "true"
-            append: true
+ default:
+   http:
+     requests: 5
+     interval: 10s
+     onRateLimit:
+       status: 423
+       headers:
+         - key: "x-kuma-rate-limited"
+           value: "true"
+           append: true
 ```
+ 
+#### TCP Connection Rate Limit
+ 
+Rate limiting on TCP connection is more complicated because there is no easy way to match only for specific clients.
+Based on alternatives we decided to make it only available for all the clients.
+ 
+##### Top level
+ 
+```yaml
+targetRef:
+ kind: Mesh|MeshSubset|MeshService|MeshServiceSubset
+ name: ...
+```
+Matching on MeshGatewayRoute and MeshHTTPRoute does not make sense because we are configuring TCP listeners.
+Rate limiting is an inbound policy so only `from` should be configured.
+ 
+##### From level
+ 
+```yaml
+from:
+ - targetRef:
+     kind: Mesh
+     name: ...
+```
+ 
+There is no easy way to match requesting services with the specific filter chain that's why we decided to support only configuring TCP rate limiting from all services.
+ 
+##### Configuration
+ 
+```yaml
+ default:
+   tcp:
+     connections: 100
+     interval: 10s
+```
+ 
+#### Result
+ 
+```yaml
+type: MeshRateLimit 
+mesh: example 
+name: example-rate-limit
+spec:
+ targetRef:
+   kind: Mesh|MeshSubset|MeshService|MeshServiceSubset|MeshGatewayRoute|MeshHTTPRoute # or Mesh|MeshSubset|MeshService|MeshServiceSubset for TCP configuration
+   name: example-rate-limit
+ from:
+   - targetRef:
+       kind: Mesh|MeshSubset|MeshService|MeshServiceSubset # or Mesh for TCP configuration
+       name: backend
+       mesh: example
+     default: # you can only define one: http or tcp
+       http:
+         requests: 5
+         interval: 10s
+         onRateLimit:
+           status: 423
+           headers:
+             - key: "x-kuma-rate-limited"
+               value: "true"
+               append: true
+       tcp:
+         connections: 100
+         interval: 10s
+```
+ 
+### Considered Options
+ 
+#### TCP rate limit for a specific origin
+ 
+Configuration of connection limits is done on listeners. In case of matching from which service a request arrived, we
+need to get some information about the request. There are two options:
+ 
+* use SourceIP filter matching
+* use SNI filter matching
+ 
+##### Use SourceIP matching
+ 
+In this case, we need to configure a listener filter matcher with a list of all possible IPs from which requests can arrive. In the case of one service, it can be many IPs. Matching on many ips might not be the most efficient way and each change of IP requires listener reload.
+ 
+##### Use SNI filter matching
+ 
+It requires a change of SNI that is set on cluster `service_name{mesh=name}` to something different `service_name{mesh=name}{origin=requesting_service}` to later match it in the filter chain. That is not the best idea and can cause issues in multi-zone setups. Apart from that, it requires mTLS to be enabled.
