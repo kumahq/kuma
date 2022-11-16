@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"golang.org/x/exp/slices"
 	k8s_exec "k8s.io/client-go/util/exec"
 
 	"github.com/kumahq/kuma/test/framework"
@@ -208,9 +209,13 @@ func CollectResponse(
 	cluster framework.Cluster,
 	container string,
 	destination string,
-	fn ...CollectResponsesOptsFn,
+	fns ...CollectResponsesOptsFn,
 ) (string, string, error) {
-	opts := CollectOptions(destination, append(fn, OutputFormat(`%{stderr}%{header_json}`))...)
+	opts := CollectOptions(destination, fns...)
+	// Don't override this if the user's set it
+	if !slices.Contains(opts.Flags, "--write-out") {
+		OutputFormat(`%{stderr}%{header_json}`)(&opts)
+	}
 	cmd := collectCommand(opts, "curl",
 		"--request", opts.Method,
 		"--max-time", "3",
