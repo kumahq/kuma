@@ -30,7 +30,11 @@ ENVOY_VERSION=$(echo "$BUILD_INFO" | cut -d " " -f 5)
 KUMA_VERSION=$(echo "$BUILD_INFO" | cut -d " " -f 1)
 [ -z "$KUMA_CONFIG_PATH" ] && KUMA_CONFIG_PATH=pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
 CTL_NAME="kumactl"
+<<<<<<< HEAD
 [ -z "$EBPF_PROGRAMS_IMAGE" ] && EBPF_PROGRAMS_IMAGE="kumahq/kuma-net-ebpf:0.8.6"
+=======
+[ -z "$EBPF_PROGRAMS_IMAGE" ] && EBPF_PROGRAMS_IMAGE="kumahq/kuma-net-ebpf:0.8.8"
+>>>>>>> 8198e762f (chore: fetch Envoy from Github artifacts (#5329))
 
 function get_ebpf_programs() {
   local arch=$1
