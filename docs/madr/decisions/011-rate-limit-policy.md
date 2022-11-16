@@ -33,7 +33,7 @@ Chosen option: create a MeshRateLimit with basic TCP rate limit support
  
 ### Naming
  
-- MeshRateLimit
+- **MeshRateLimit**
 - MeshHTTPRateLimit and MeshTCPRateLimit
  
 ## Solution
@@ -97,11 +97,11 @@ The configuration translates to the Envoy configuration on the route and the lis
 The differences between TCP and HTTP rate limiting in `targetRef` and `from` requires different validation of objects.
 Idea is to create one policy but with `oneof` and use different validation methods for them.
  
-#### HTTP Rate Limit
+#### **HTTP Rate Limit**
  
 Rate limiting can be configured on both HTTP connection managers and routes. Thanks to the header `x-kuma-tags`, which is propagated and set by Envoy, we can recognize the origin of the HTTP request.
  
-##### Top level
+#### Top level
  
 Top-level targetRef can have all available kinds:
 ```yaml
@@ -111,7 +111,7 @@ targetRef:
 ```
 Rate limiting is an inbound policy so only `from` should be configured.
  
-##### From level
+#### From level
  
 ```yaml
 from:
@@ -122,7 +122,7 @@ from:
  
 Matching on MeshGatewayRoute and MeshHTTPRoute does not make sense (there is any route that a request originates from).
  
-##### Configuration
+#### Configuration
  
 ```yaml
  default:
@@ -137,12 +137,12 @@ Matching on MeshGatewayRoute and MeshHTTPRoute does not make sense (there is any
            append: true
 ```
  
-#### TCP Connection Rate Limit
+#### **TCP Connection Rate Limit**
  
 Rate limiting on TCP connection is more complicated because there is no easy way to match only for specific clients.
 Based on alternatives we decided to make it only available for all the clients.
  
-##### Top level
+#### Top level
  
 ```yaml
 targetRef:
@@ -152,7 +152,7 @@ targetRef:
 Matching on MeshGatewayRoute and MeshHTTPRoute does not make sense because we are configuring TCP listeners.
 Rate limiting is an inbound policy so only `from` should be configured.
  
-##### From level
+#### From level
  
 ```yaml
 from:
@@ -163,7 +163,7 @@ from:
  
 There is no easy way to match requesting services with the specific filter chain that's why we decided to support only configuring TCP rate limiting from all services.
  
-##### Configuration
+#### Configuration
  
 ```yaml
  default:
@@ -172,7 +172,7 @@ There is no easy way to match requesting services with the specific filter chain
      interval: 10s
 ```
  
-#### Result
+#### **Result**
  
 ```yaml
 type: MeshRateLimit 
@@ -219,3 +219,76 @@ In this case, we need to configure a listener filter matcher with a list of all 
 ##### Use SNI filter matching
  
 It requires a change of SNI that is set on cluster `service_name{mesh=name}` to something different `service_name{mesh=name}{origin=requesting_service}` to later match it in the filter chain. That is not the best idea and can cause issues in multi-zone setups. Apart from that, it requires mTLS to be enabled.
+
+### Examples
+#### Service to service http rate limit
+
+```yaml
+type: MeshRateLimit  
+mesh: default  
+name: default-rate-limit  
+spec:  
+  targetRef:  
+    kind: MeshService  
+    name: backend
+  from:
+    - targetRef:
+        kind: MeshService
+        name: frontend
+      default:
+        http:
+         requests: 5
+         interval: 10s
+         onRateLimit:
+           status: 423
+           headers:
+             - key: "x-kuma-rate-limited"
+               value: "true"
+               append: true
+```
+
+#### All services to one service http rate limit
+
+```yaml
+type: MeshRateLimit  
+mesh: default  
+name: default-rate-limit  
+spec:  
+  targetRef:  
+    kind: MeshService  
+    name: backend
+  from:
+    - targetRef:
+        kind: Mesh
+        name: default
+      default:
+        http:
+         requests: 5
+         interval: 10s
+         onRateLimit:
+           status: 423
+           headers:
+             - key: "x-kuma-rate-limited"
+               value: "true"
+               append: true
+```
+
+#### All services to specific service TCP rate limit
+
+```yaml
+type: MeshRateLimit  
+mesh: default  
+name: default-rate-limit  
+spec:  
+  targetRef:  
+    kind: MeshService  
+    name: backend
+  from:
+    - targetRef:
+        kind: Mesh
+        name: default
+      default:
+        tcp:
+         connections: 5
+         interval: 10s
+```
