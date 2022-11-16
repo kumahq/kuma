@@ -100,7 +100,7 @@ func InboundPassthrough() {
 	Describe("k8s to k8s communication", func() {
 		It("should succeed when application binds to wildcard", func() {
 			// when
-			response, err := client.CollectResponse(
+			response, err := client.CollectEchoResponse(
 				env.KubeZone1, "demo-client", "k8s-test-server-wildcard.inbound-passthrough.svc.80.mesh",
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
@@ -111,7 +111,7 @@ func InboundPassthrough() {
 		})
 		It("should succeed when application binds to pod", func() {
 			// when
-			response, err := client.CollectResponse(
+			response, err := client.CollectEchoResponse(
 				env.KubeZone1, "demo-client", "k8s-test-server-pod.inbound-passthrough.svc.80.mesh",
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
@@ -137,7 +137,7 @@ func InboundPassthrough() {
 	Describe("universal to universal communication", func() {
 		It("should succeed when application binds to wildcard", func() {
 			// when
-			response, err := client.CollectResponse(
+			response, err := client.CollectEchoResponse(
 				env.UniZone1, "uni-demo-client", "uni-test-server-wildcard.mesh",
 			)
 
@@ -147,7 +147,7 @@ func InboundPassthrough() {
 		})
 		It("should succeed when application binds to container ip", func() {
 			// when
-			response, err := client.CollectResponse(
+			response, err := client.CollectEchoResponse(
 				env.UniZone1, "uni-demo-client", "uni-test-server-containerip.mesh",
 			)
 
@@ -176,7 +176,7 @@ func InboundPassthrough() {
 	Describe("universal to k8s communication", func() {
 		It("should succeed when application binds to wildcard", func() {
 			// when
-			response, err := client.CollectResponse(
+			response, err := client.CollectEchoResponse(
 				env.UniZone1, "uni-demo-client", "k8s-test-server-wildcard.inbound-passthrough.svc.80.mesh",
 			)
 
@@ -186,7 +186,7 @@ func InboundPassthrough() {
 		})
 		It("should succeed when application binds to pod", func() {
 			// when
-			response, err := client.CollectResponse(
+			response, err := client.CollectEchoResponse(
 				env.UniZone1, "uni-demo-client", "k8s-test-server-pod.inbound-passthrough.svc.80.mesh",
 			)
 
@@ -207,7 +207,7 @@ func InboundPassthrough() {
 	Describe("k8s to universal communication", func() {
 		It("should succeed when application binds to wildcard", func() {
 			// when
-			response, err := client.CollectResponse(
+			response, err := client.CollectEchoResponse(
 				env.KubeZone1, "demo-client", "uni-test-server-wildcard.mesh",
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
@@ -218,7 +218,7 @@ func InboundPassthrough() {
 		})
 		It("should succeed when application binds to container ip", func() {
 			// when
-			response, err := client.CollectResponse(
+			response, err := client.CollectEchoResponse(
 				env.UniZone1, "uni-demo-client", "uni-test-server-containerip.mesh",
 			)
 
@@ -228,7 +228,7 @@ func InboundPassthrough() {
 		})
 		It("should succeed when container is not using transparent proxy", func() {
 			// when
-			response, err := client.CollectResponse(
+			response, err := client.CollectEchoResponse(
 				env.KubeZone1, "demo-client", "uni-test-server-wildcard-no-tp.mesh",
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
@@ -239,7 +239,7 @@ func InboundPassthrough() {
 		})
 		It("should succeed when user expose localhost outside", func() {
 			// when
-			response, err := client.CollectResponse(
+			response, err := client.CollectEchoResponse(
 				env.UniZone1, "uni-demo-client", "uni-test-server-localhost-exposed.mesh",
 			)
 

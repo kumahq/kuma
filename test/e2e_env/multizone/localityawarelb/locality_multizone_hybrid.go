@@ -146,7 +146,7 @@ func ExternalServicesWithLocalityAwareLb() {
 		Eventually(EgressStats(env.KubeZone1, filterEgress), "30s", "1s").Should(stats.BeEqualZero())
 
 		// when
-		response, err := client.CollectResponse(env.UniZone1, "uni-zone4-demo-client", "external-service-in-kube-zone1.mesh")
+		response, err := client.CollectEchoResponse(env.UniZone1, "uni-zone4-demo-client", "external-service-in-kube-zone1.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(response.Instance).Should(Equal("external-service-in-kube-zone1"))
 
@@ -171,7 +171,7 @@ func ExternalServicesWithLocalityAwareLb() {
 		Eventually(EgressStats(env.UniZone1, filterEgress), "30s", "1s").Should(stats.BeEqualZero())
 
 		// when request to external service in zone 1
-		response, err := client.CollectResponse(
+		response, err := client.CollectEchoResponse(
 			env.KubeZone1, "demo-client", "external-service-in-uni-zone4.mesh",
 			client.FromKubernetesPod(namespace, "demo-client"),
 		)
@@ -201,7 +201,7 @@ func ExternalServicesWithLocalityAwareLb() {
 		}, "30s", "1s").Should(Succeed())
 
 		// when doing requests to external service with tag zone1
-		response, err := client.CollectResponse(env.UniZone1, "uni-zone4-demo-client-no-egress", "demo-es-in-uni-zone4.mesh")
+		response, err := client.CollectEchoResponse(env.UniZone1, "uni-zone4-demo-client-no-egress", "demo-es-in-uni-zone4.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(response.Instance).Should(Equal("external-service-in-uni-zone4"))
 

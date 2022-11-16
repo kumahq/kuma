@@ -210,7 +210,7 @@ func CollectResponse(
 	container string,
 	destination string,
 	fn ...CollectResponsesOptsFn,
-) (types.EchoResponse, error) {
+) (string, error) {
 	opts := CollectOptions(destination, fn...)
 	cmd := collectCommand(opts, "curl",
 		"--request", opts.Method,
@@ -223,11 +223,25 @@ func CollectResponse(
 		var err error
 		appPodName, err = framework.PodNameOfApp(cluster, opts.application, opts.namespace)
 		if err != nil {
-			return types.EchoResponse{}, err
+			return "", err
 		}
 	}
 
 	stdout, _, err := cluster.ExecWithRetries(opts.namespace, appPodName, container, cmd...)
+	if err != nil {
+		return "", err
+	}
+
+	return stdout, nil
+}
+
+func CollectEchoResponse(
+	cluster framework.Cluster,
+	container string,
+	destination string,
+	fn ...CollectResponsesOptsFn,
+) (types.EchoResponse, error) {
+	stdout, err := CollectResponse(cluster, container, destination, fn...)
 	if err != nil {
 		return types.EchoResponse{}, err
 	}
@@ -401,7 +415,7 @@ func CollectResponses(cluster framework.Cluster, source, destination string, fn 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			response, localErr := CollectResponse(cluster, source, destination, fn...)
+			response, localErr := CollectEchoResponse(cluster, source, destination, fn...)
 			if localErr != nil {
 				err = localErr
 			}

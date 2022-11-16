@@ -3,6 +3,7 @@ package gateway
 import (
 	"encoding/base64"
 	"fmt"
+	"strconv"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -124,7 +125,7 @@ spec:
 
 		It("should proxy to service via HTTP", func() {
 			Eventually(func(g Gomega) {
-				response, err := client.CollectResponse(
+				response, err := client.CollectEchoResponse(
 					env.Cluster, "demo-client",
 					"http://simple-gateway.simple-gateway:8080/",
 					client.WithHeader("host", "example.kuma.io"),
@@ -138,7 +139,7 @@ spec:
 
 		It("should proxy to service via HTTPS", func() {
 			Eventually(func(g Gomega) {
-				response, err := client.CollectResponse(
+				response, err := client.CollectEchoResponse(
 					env.Cluster, "demo-client",
 					"https://simple-gateway.simple-gateway:8081/",
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
@@ -191,11 +192,11 @@ spec:
 					client.WithHeader("host", "example.kuma.io"),
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 					client.NoFail(),
-					client.OutputFormat(`{ "received": { "status": %{response_code} } }`),
+					client.OutputFormat(`%{response_code}`),
 				)
 
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(response.Received.StatusCode).To(Equal(429))
+				g.Expect(strconv.Atoi(response)).To(Equal(429))
 			}, "30s", "1s").Should(Succeed())
 		})
 	})
@@ -232,7 +233,7 @@ spec:
 			Expect(setup.Setup(env.Cluster)).To(Succeed())
 
 			Eventually(func(g Gomega) {
-				response, err := client.CollectResponse(
+				response, err := client.CollectEchoResponse(
 					env.Cluster, "demo-client",
 					"http://simple-gateway.simple-gateway:8080/external-service",
 					client.WithHeader("host", "example.kuma.io"),

@@ -31,7 +31,7 @@ func SuccessfullyProxyRequestToGateway(cluster Cluster, instance string, gateway
 		gatewayAddr, path.Join("test", url.PathEscape(GinkgoT().Name())),
 	)
 
-	response, err := client.CollectResponse(
+	response, err := client.CollectEchoResponse(
 		cluster, "demo-client", target,
 		client.FromKubernetesPod(namespace, "demo-client"),
 	)

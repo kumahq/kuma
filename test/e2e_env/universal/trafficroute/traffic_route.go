@@ -451,7 +451,7 @@ conf:
 			Expect(env.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
 			Eventually(func() error {
-				resp, err := CollectResponse(env.Cluster, "demo-client", "test-server.mesh/test-rewrite-prefix")
+				resp, err := CollectEchoResponse(env.Cluster, "demo-client", "test-server.mesh/test-rewrite-prefix")
 				if err != nil {
 					return err
 				}
@@ -462,7 +462,7 @@ conf:
 			}, "30s", "500ms").Should(Succeed())
 
 			Eventually(func() error {
-				resp, err := CollectResponse(env.Cluster, "demo-client", "test-server.mesh/test-regex")
+				resp, err := CollectEchoResponse(env.Cluster, "demo-client", "test-server.mesh/test-regex")
 				if err != nil {
 					return err
 				}
@@ -514,7 +514,7 @@ conf:
 			Expect(env.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
 			Eventually(func() error {
-				resp, err := CollectResponse(env.Cluster, "demo-client", "test-server.mesh/modified-host")
+				resp, err := CollectEchoResponse(env.Cluster, "demo-client", "test-server.mesh/modified-host")
 				if err != nil {
 					return err
 				}
@@ -526,7 +526,7 @@ conf:
 			}, "30s", "500ms").Should(Succeed())
 
 			Eventually(func() error {
-				resp, err := CollectResponse(env.Cluster, "demo-client", "test-server.mesh/from-path")
+				resp, err := CollectEchoResponse(env.Cluster, "demo-client", "test-server.mesh/from-path")
 				if err != nil {
 					return err
 				}
@@ -574,7 +574,7 @@ conf:
 			Expect(env.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
 			Eventually(func() error {
-				resp, err := CollectResponse(env.Cluster, "demo-client", "test-server.mesh/modified-headers",
+				resp, err := CollectEchoResponse(env.Cluster, "demo-client", "test-server.mesh/modified-headers",
 					WithHeader("header-to-remove", "abc"),
 					WithHeader("x-multiple-values", "abc"),
 				)
@@ -597,7 +597,7 @@ conf:
 
 			// "add" should replace existing headers
 			Eventually(func() error {
-				resp, err := CollectResponse(env.Cluster, "demo-client", "test-server.mesh/modified-headers", WithHeader("x-custom-header", "abc"))
+				resp, err := CollectEchoResponse(env.Cluster, "demo-client", "test-server.mesh/modified-headers", WithHeader("x-custom-header", "abc"))
 				if err != nil {
 					return err
 				}

@@ -61,7 +61,7 @@ func Connectivity() {
 	DescribeTable("client from Kubernetes",
 		func(given testCase) {
 			Eventually(func(g Gomega) {
-				response, err := client.CollectResponse(env.KubeZone1, "demo-client", given.address,
+				response, err := client.CollectEchoResponse(env.KubeZone1, "demo-client", given.address,
 					client.FromKubernetesPod(meshName, "demo-client"),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
@@ -81,7 +81,7 @@ func Connectivity() {
 	DescribeTable("client from Universal",
 		func(given testCase) {
 			Eventually(func(g Gomega) {
-				response, err := client.CollectResponse(env.UniZone1, "uni-demo-client", given.address)
+				response, err := client.CollectEchoResponse(env.UniZone1, "uni-demo-client", given.address)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.Instance).To(Equal(given.expectedInstance))
 			}, "30s", "1s").Should(Succeed())

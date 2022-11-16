@@ -136,7 +136,7 @@ spec:
 		By("allowing connections without a limit")
 
 		Eventually(func(g Gomega) {
-			response, err := client.CollectResponse(
+			response, err := client.CollectEchoResponse(
 				env.Cluster, "demo-client", target,
 				client.FromKubernetesPod(curlingClientNamespace, "demo-client"),
 			)
@@ -150,7 +150,7 @@ spec:
 		go keepConnectionOpen()
 
 		Consistently(func(g Gomega) {
-			response, err := client.CollectResponse(
+			response, err := client.CollectEchoResponse(
 				env.Cluster, "demo-client", target,
 				client.FromKubernetesPod(curlingClientNamespace, "demo-client"),
 			)

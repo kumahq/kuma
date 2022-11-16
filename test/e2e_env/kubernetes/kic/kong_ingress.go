@@ -97,7 +97,7 @@ spec:
 		Expect(env.Cluster.Install(YamlK8s(ingress))).To(Succeed())
 
 		Eventually(func(g Gomega) {
-			_, err := client.CollectResponse(
+			_, err := client.CollectEchoResponse(
 				env.Cluster, "demo-client", fmt.Sprintf("http://%s/test-server", kicIP),
 				client.FromKubernetesPod(namespaceOutsideMesh, "demo-client"),
 			)
@@ -137,7 +137,7 @@ spec:
 		Expect(env.Cluster.Install(YamlK8s(ingressMeshDNS))).To(Succeed())
 
 		Eventually(func(g Gomega) {
-			_, err := client.CollectResponse(
+			_, err := client.CollectEchoResponse(
 				env.Cluster, "demo-client", fmt.Sprintf("http://%s/dot-mesh", kicIP),
 				client.FromKubernetesPod(namespaceOutsideMesh, "demo-client"),
 			)
