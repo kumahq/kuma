@@ -17,7 +17,10 @@ func NewPrinter() output.Printer {
 
 var _ output.Printer = &printer{}
 
-type printer struct{}
+type printer struct {
+	// hasPrinted is used to add yaml separators `---` when printing multiple objects with the same printer
+	hasPrinted bool
+}
 
 func print(obj interface{}, out io.Writer) error {
 	b, err := yaml.Marshal(obj)
@@ -33,6 +36,12 @@ func (p *printer) Print(obj interface{}, out io.Writer) error {
 	// case showing the meta and then the spec is more readable than
 	// showing fields in an arbitrary order. This partially addresses
 	// https://github.com/kumahq/kuma/issues/679.
+	if p.hasPrinted {
+		if _, err := out.Write([]byte("---\n")); err != nil {
+			return err
+		}
+	}
+	p.hasPrinted = true
 	switch obj := obj.(type) {
 	case rest.Resource:
 		if err := print(obj.GetMeta(), out); err != nil {
