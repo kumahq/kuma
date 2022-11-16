@@ -126,7 +126,7 @@ func OutputFormat(format string) CollectResponsesOptsFn {
 		// parse the format they specified.
 		opts.Flags = append(opts.Flags,
 			"--silent",
-			"--write-out", format,
+			"--write-out", opts.ShellEscaped(format),
 		)
 	}
 }
@@ -210,7 +210,7 @@ func CollectResponse(
 	destination string,
 	fn ...CollectResponsesOptsFn,
 ) (string, string, error) {
-	opts := CollectOptions(destination, append([]CollectResponsesOptsFn{OutputFormat(`%{stderr}%{header_json}`)}, fn...)...)
+	opts := CollectOptions(destination, append(fn, OutputFormat(`%{stderr}%{header_json}`))...)
 	cmd := collectCommand(opts, "curl",
 		"--request", opts.Method,
 		"--max-time", "3",
