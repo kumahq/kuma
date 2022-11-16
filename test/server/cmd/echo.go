@@ -33,7 +33,7 @@ func newEchoHTTPCmd() *cobra.Command {
 				headers.Add("host", request.Host)
 				resp := &types.EchoResponse{
 					Instance: args.instance,
-					Received: types.EchoResponseReceived{
+					Received: types.EchoReceivedRequest{
 						Method:  request.Method,
 						Path:    request.URL.Path,
 						Headers: headers,
