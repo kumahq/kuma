@@ -223,6 +223,7 @@ message MeshGatewayRoute {
         Mirror mirror = 2;
         Redirect redirect = 3;
         Rewrite rewrite = 4;
+        HeaderFilter response_header = 5;
       }
     };
 
