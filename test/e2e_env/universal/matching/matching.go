@@ -67,19 +67,19 @@ conf:
      percentage: 100`, mesh))(env.Cluster)).To(Succeed())
 
 		Eventually(func() bool {
-			stdout, _, err := env.Cluster.Exec("", "", "demo-client-1", "curl", "-v", "test-server.mesh")
+			_, stderr, err := env.Cluster.Exec("", "", "demo-client-1", "curl", "-v", "test-server.mesh")
 			if err != nil {
 				return false
 			}
-			return strings.Contains(stdout, "HTTP/1.1 401 Unauthorized")
+			return strings.Contains(stderr, "HTTP/1.1 401 Unauthorized")
 		}, "60s", "1s").Should(BeTrue())
 
 		Eventually(func() bool {
-			stdout, _, err := env.Cluster.Exec("", "", "demo-client-2", "curl", "-v", "test-server.mesh")
+			_, stderr, err := env.Cluster.Exec("", "", "demo-client-2", "curl", "-v", "test-server.mesh")
 			if err != nil {
 				return false
 			}
-			return strings.Contains(stdout, "HTTP/1.1 402 Payment Required")
+			return strings.Contains(stderr, "HTTP/1.1 402 Payment Required")
 		}, "60s", "1s").Should(BeTrue())
 	})
 }

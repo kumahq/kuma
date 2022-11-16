@@ -39,10 +39,10 @@ func MeshTrafficPermissionUniversal() {
 	})
 
 	trafficAllowed := func() {
-		stdout, _, err := env.Cluster.ExecWithRetries("", "", "demo-client",
+		_, stderr, err := env.Cluster.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "--fail", "test-server.mesh")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 	}
 
 	trafficBlocked := func() {

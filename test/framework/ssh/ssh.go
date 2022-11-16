@@ -38,7 +38,7 @@ func NewApp(appName string, verbose bool, port string, envMap map[string]string,
 	}
 	sshArgs := append(
 		[]string{
-			"-q", "-tt",
+			"-q",
 			"-o", "StrictHostKeyChecking=no",
 			"-o", "UserKnownHostsFile=/dev/null",
 			"root@localhost", "-p", port,

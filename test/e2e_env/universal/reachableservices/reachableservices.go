@@ -28,12 +28,12 @@ func ReachableServices() {
 
 	It("should be able to connect to reachable services", func() {
 		// when
-		stdout, _, err := env.Cluster.ExecWithRetries("", "", "demo-client",
+		_, stderr, err := env.Cluster.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "--fail", "first-test-server.mesh")
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 	})
 
 	It("should not be able to non reachable services", func() {

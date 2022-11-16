@@ -63,17 +63,16 @@ conf:
 
 		By("Checking requests succeed")
 		Eventually(func(g Gomega) {
-			stdout, _, err := env.Cluster.Exec("", "", "demo-client",
+			_, stderr, err := env.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		}).Should(Succeed())
 		Consistently(func(g Gomega) {
 			// -m 8 to wait for 8 seconds to beat the default 5s connect timeout
-			stdout, stderr, err := env.Cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "test-server.mesh")
+			_, stderr, err := env.Cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stderr).To(BeEmpty())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		})
 
 		By("Adding a faulty dataplane")
@@ -96,17 +95,16 @@ conf:
 
 		By("Eventually all requests succeed consistently")
 		Eventually(func(g Gomega) {
-			stdout, _, err := env.Cluster.Exec("", "", "demo-client",
+			_, stderr, err := env.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "-m", "8", "--fail", "test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		}).Should(Succeed())
 		Consistently(func(g Gomega) {
 			// -m 8 to wait for 8 seconds to beat the default 5s connect timeout
-			stdout, stderr, err := env.Cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "test-server.mesh")
+			_, stderr, err := env.Cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stderr).To(BeEmpty())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		})
 	})
 }

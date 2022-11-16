@@ -91,10 +91,10 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then should reach external service
-		stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
+		_, stderr, err := cluster.ExecWithRetries("", "", "demo-client",
 			"curl", "--verbose", "--max-time", "3", "--fail", "external-service-1.mesh")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 
 		// and increase stats at egress
 		Eventually(func(g Gomega) {

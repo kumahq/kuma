@@ -112,10 +112,10 @@ func ExternalServices() {
 				g.Expect(stat).To(stats.BeEqualZero())
 			}, "30s", "1s").Should(Succeed())
 
-			stdout, _, err := env.Cluster.ExecWithRetries("", "", "demo-client",
+			_, stderr, err := env.Cluster.ExecWithRetries("", "", "demo-client",
 				"curl", "--verbose", "--max-time", "3", "--fail", "external-service.mesh")
 			Expect(err).ToNot(HaveOccurred())
-			Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 
 			Eventually(func(g Gomega) {
 				stat, err := env.Cluster.GetZoneEgressEnvoyTunnel().GetStats(filter)
@@ -150,12 +150,12 @@ conf:
      percentage: 100`)(env.Cluster)).To(Succeed())
 
 			Eventually(func() bool {
-				stdout, _, err := env.Cluster.Exec("", "", "demo-client",
+				_, stderr, err := env.Cluster.Exec("", "", "demo-client",
 					"curl", "-v", "-m", "8", "external-service.mesh")
 				if err != nil {
 					return false
 				}
-				return strings.Contains(stdout, "401 Unauthorized")
+				return strings.Contains(stderr, "401 Unauthorized")
 			}, "30s", "1s").Should(BeTrue())
 		})
 	})
@@ -187,8 +187,8 @@ conf:
 			Expect(env.Cluster.Install(YamlUniversal(specificRateLimitPolicy))).To(Succeed())
 
 			Eventually(func() bool {
-				stdout, _, err := env.Cluster.Exec("", "", "demo-client", "curl", "-v", "external-service.mesh")
-				return err == nil && strings.Contains(stdout, "429")
+				_, stderr, err := env.Cluster.Exec("", "", "demo-client", "curl", "-v", "external-service.mesh")
+				return err == nil && strings.Contains(stderr, "429")
 			}, "30s", "100ms").Should(BeTrue())
 		})
 	})

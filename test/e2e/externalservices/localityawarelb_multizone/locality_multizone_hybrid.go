@@ -136,12 +136,12 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 	It("should fail request when ingress is down", func() {
 		// when
 		Eventually(func() string {
-			stdout, _, err := zone4.Exec("", "", "zone4-demo-client",
+			_, stderr, err := zone4.Exec("", "", "zone4-demo-client",
 				"curl", "--verbose", "--max-time", "3", "--fail", "external-service-in-zone1.mesh")
 			if err != nil {
 				return ""
 			}
-			return stdout
+			return stderr
 		}, "30s").Should(ContainSubstring("HTTP/1.1 200 OK"))
 
 		// when ingress is down
@@ -157,12 +157,12 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 
 	It("should fail request when egress is down", func() {
 		Eventually(func() string {
-			stdout, _, err := zone4.Exec("", "", "zone4-demo-client",
+			_, stderr, err := zone4.Exec("", "", "zone4-demo-client",
 				"curl", "--verbose", "--max-time", "3", "--fail", "external-service-in-zone1.mesh")
 			if err != nil {
 				return ""
 			}
-			return stdout
+			return stderr
 		}, "30s").Should(ContainSubstring("HTTP/1.1 200 OK"))
 
 		// when egress is down

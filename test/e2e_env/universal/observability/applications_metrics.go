@@ -173,13 +173,13 @@ metrics:
 		ip := env.Cluster.GetApp("test-server-dp-metrics").GetIP()
 
 		// when
-		stdout, _, err := env.Cluster.ExecWithRetries("", "", "test-server-dp-metrics",
+		stdout, stderr, err := env.Cluster.ExecWithRetries("", "", "test-server-dp-metrics",
 			"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(ip, "5555")+"/stats?filter=concurrency")
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).ToNot(BeNil())
-		Expect(stdout).To(ContainSubstring(string(expfmt.FmtText)))
+		Expect(stderr).To(ContainSubstring(string(expfmt.FmtText)))
 
 		// response doesn't exist because was disabled
 		Expect(stdout).ToNot(ContainSubstring("path-stats"))

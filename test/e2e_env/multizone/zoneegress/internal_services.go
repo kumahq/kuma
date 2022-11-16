@@ -122,10 +122,10 @@ routing:
 					To(stats.BeEqualZero())
 			}, "30s", "1s").Should(Succeed())
 
-			stdout, _, err := env.UniZone1.ExecWithRetries("", "", "zone3-demo-client",
+			_, stderr, err := env.UniZone1.ExecWithRetries("", "", "zone3-demo-client",
 				"curl", "--verbose", "--max-time", "3", "--fail", "zone4-test-server.mesh")
 			Expect(err).ToNot(HaveOccurred())
-			Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 
 			Eventually(func(g Gomega) {
 				g.Expect(env.UniZone1.GetZoneEgressEnvoyTunnel().GetStats(filter)).

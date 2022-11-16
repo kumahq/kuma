@@ -47,9 +47,9 @@ conf:
 	})
 	requestRateLimited := func(client string, svc string, status string) func(g Gomega) {
 		return func(g Gomega) {
-			stdout, _, err := env.Cluster.Exec("", "", client, "curl", "-v", fmt.Sprintf("%s.mesh", svc))
+			_, stderr, err := env.Cluster.Exec("", "", client, "curl", "-v", fmt.Sprintf("%s.mesh", svc))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).Should(ContainSubstring(status))
+			g.Expect(stderr).Should(ContainSubstring(status))
 		}
 	}
 

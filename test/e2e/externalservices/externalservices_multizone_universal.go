@@ -139,28 +139,28 @@ routing:
 		err := ResourceUniversal(externalServiceRes(es1, "kuma-3_externalservice-http-server:80", false, nil))(global)
 		Expect(err).ToNot(HaveOccurred())
 
-		stdout, _, err := zone1.ExecWithRetries("", "", "demo-client",
+		stdout, stderr, err := zone1.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "external-service-1.mesh")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
 
-		stdout, _, err = zone1.ExecWithRetries("", "", "demo-client",
+		stdout, stderr, err = zone1.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "kuma-3_externalservice-http-server:80")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
 
-		stdout, _, err = zone2.ExecWithRetries("", "", "demo-client",
+		stdout, stderr, err = zone2.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "external-service-1.mesh")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
 
-		stdout, _, err = zone2.ExecWithRetries("", "", "demo-client",
+		stdout, stderr, err = zone2.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "kuma-3_externalservice-http-server:80")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
 	})
 
@@ -184,16 +184,16 @@ routing:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then accessing the secured external service succeeds
-		stdout, _, err := zone1.ExecWithRetries("", "", "demo-client",
+		stdout, stderr, err := zone1.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "http://kuma-3_externalservice-https-server:443")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).To(ContainSubstring("HTTPS"))
 
-		stdout, _, err = zone2.ExecWithRetries("", "", "demo-client",
+		stdout, stderr, err = zone2.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "http://kuma-3_externalservice-https-server:443")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).To(ContainSubstring("HTTPS"))
 	})
 

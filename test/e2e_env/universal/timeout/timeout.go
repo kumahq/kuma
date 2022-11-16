@@ -67,10 +67,10 @@ conf:
 	It("should reset the connection by timeout", func() {
 		By("Checking requests succeed")
 		Eventually(func(g Gomega) {
-			stdout, _, err := env.Cluster.Exec("", "", "demo-client",
+			_, stderr, err := env.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "--fail", "test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		}).Should(Succeed())
 
 		By("check requests take over 5s")

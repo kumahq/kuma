@@ -89,10 +89,10 @@ networking:
 
 	checkSuccessfulRequest := func(url string, matcher types.GomegaMatcher) {
 		Eventually(func(g Gomega) {
-			stdout, _, err := env.Cluster.Exec("", "", "demo-client",
+			stdout, stderr, err := env.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "-m", "3", "--fail", url)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 			g.Expect(stdout).To(matcher)
 		}).WithOffset(1).Should(Succeed())
 	}
@@ -185,12 +185,12 @@ networking:
 
 		// then
 		Eventually(func(g Gomega) {
-			stdout, _, err := env.Cluster.Exec("", "", "demo-client",
+			_, stderr, err := env.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "--fail", "-m", "3", "testmtls.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-			g.Expect(stdout).To(ContainSubstring("TLSv1.2 Authentication OK!"))
-			g.Expect(stdout).To(ContainSubstring("CN=kuma"))
+			g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(stderr).To(ContainSubstring("TLSv1.2 Authentication OK!"))
+			g.Expect(stderr).To(ContainSubstring("CN=kuma"))
 		}).Should(Succeed())
 	})
 }

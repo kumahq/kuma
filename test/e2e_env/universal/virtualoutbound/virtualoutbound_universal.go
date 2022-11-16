@@ -71,23 +71,20 @@ conf:
 		stdout, stderr, err := env.Cluster.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "test-server.1:8080")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(BeEmpty())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).To(ContainSubstring(`"instance":"srv-1"`))
 
 		// Check we can reach the second instance
 		stdout, stderr, err = env.Cluster.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "test-server.2:8080")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(BeEmpty())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).To(ContainSubstring(`"instance":"srv-2"`))
 
 		stdout, stderr, err = env.Cluster.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "test-server:8080")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(BeEmpty())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).To(Or(ContainSubstring(`"instance":"srv-2"`), ContainSubstring(`"instance":"srv-1"`)))
 	})
 }
