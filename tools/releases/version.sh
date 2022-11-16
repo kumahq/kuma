@@ -14,7 +14,6 @@
 # build-date - local date if built on CI
 
 # Note: this format must be changed carefully, other scripts depend on it
-indexStatus=$(git diff --quiet && echo "clean-index" || echo "dirty-index")
 shortHash=$(git rev-parse --short HEAD 2> /dev/null || echo "no-commit")
 currentBranch=$(git rev-parse --abbrev-ref HEAD 2> /dev/null || echo "no-branch")
 envoyVersion=$("${BASH_SOURCE%/*}"/../envoy/version.sh)

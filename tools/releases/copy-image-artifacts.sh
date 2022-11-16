@@ -33,4 +33,4 @@ do
   safe_cp "$file" "$DESTINATION_DIR"
 done
 
-find build | xargs -I {} touch -mt 201212211111 {}
+find build -print0 | xargs -I {} touch -mt 201212211111 {}
