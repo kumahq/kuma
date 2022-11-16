@@ -1,5 +1,5 @@
 ARG BASE_IMAGE_ARCH=amd64
-FROM --platform=linux/$BASE_IMAGE_ARCH alpine:3.16.2
+FROM --platform=linux/$BASE_IMAGE_ARCH alpine:3.16.3
 ARG ARCH
 
 ADD /build/artifacts-linux-$ARCH/kuma-cp/kuma-cp /usr/bin

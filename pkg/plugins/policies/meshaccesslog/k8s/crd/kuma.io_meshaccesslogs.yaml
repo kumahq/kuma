@@ -65,6 +65,8 @@ spec:
                                               type: string
                                           type: object
                                         type: array
+                                      omitEmptyValues:
+                                        type: boolean
                                       plain:
                                         type: string
                                     type: object
@@ -92,6 +94,8 @@ spec:
                                               type: string
                                           type: object
                                         type: array
+                                      omitEmptyValues:
+                                        type: boolean
                                       plain:
                                         type: string
                                     type: object
@@ -189,6 +193,8 @@ spec:
                                               type: string
                                           type: object
                                         type: array
+                                      omitEmptyValues:
+                                        type: boolean
                                       plain:
                                         type: string
                                     type: object
@@ -216,6 +222,8 @@ spec:
                                               type: string
                                           type: object
                                         type: array
+                                      omitEmptyValues:
+                                        type: boolean
                                       plain:
                                         type: string
                                     type: object

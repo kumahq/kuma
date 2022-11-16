@@ -10,10 +10,27 @@ does not have any particular instructions.
 
 ## Upgrade to `2.0.x`
 
+### Built-in gateway
+
+If you're using the `PREFIX` path match for `MeshGatewayRoute`,
+note that validation is now stricter.
+If you try to update an existing `MeshGatewayRoute` or create a new one,
+make sure your `PREFIX` matching `value` does not include a trailing slash.
+All prefix matches are checked path-separated,
+meaning that `/prefix` only matches
+if the request's path is `/prefix` or begins with `/prefix/`.
+This has always been the case,
+so no behavior has been changed
+and existing resources with a trailing slash are not affected.
+
 ### Universal
 
 A `lib/pq` change enables SNI by default when connecting to Postgres over TLS.
-Make sure your certificates contain a valid CN or SANs.
+Either make sure your certificates contain a valid CN or SANs for the hostname
+you're using
+or update to `2.0.1` and disable `sslsni` by setting the
+`KUMA_STORE_POSTGRES_TLS_DISABLE_SSLSNI` environment variable or
+`store.postgres.tls.disableSSLSNI` in the config to `true`.
 
 ### `kuma-prometheus-sd`
 

@@ -53,19 +53,12 @@ spec:
 		// when faulty pod is applied
 		Expect(env.Cluster.Install(YamlK8s(evictionPod))).To(Succeed())
 
-		// then Dataplane should be created
-		Eventually(func(g Gomega) {
-			dataplanes, err := env.Cluster.GetKumactlOptions().KumactlList("dataplanes", meshName)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(dataplanes).Should(ContainElement(ContainSubstring("to-be-evicted")))
-		}, "30s", "1s").Should(Succeed())
-
 		// when it's evicted
 		Eventually(func(g Gomega) {
 			out, err := k8s.RunKubectlAndGetOutputE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(nsName), "get", "pods")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(out).To(ContainSubstring("Evicted"))
-		}, "30s", "1s").Should(Succeed())
+		}, "60s", "1s").Should(Succeed())
 
 		// then Dataplane is removed
 		Eventually(func(g Gomega) {
