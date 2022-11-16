@@ -16,7 +16,8 @@ source "$(dirname -- "${BASH_SOURCE[0]}")/../common.sh"
 
 function download_envoy() {
     local binary_name=$1
-    local bin_dir=$(dirname ${BINARY_PATH})
+    local bin_dir
+    bin_dir=$(dirname "${BINARY_PATH}")
     echo "Downloading ${binary_name}"
 
     if [ ! -d "$(dirname "${BINARY_PATH}")" ]; then
@@ -35,8 +36,8 @@ function download_envoy() {
     fi
 
     tar -C "$bin_dir" -xzvf "${tar_path}"
-    rm $tar_path
-    mv "${bin_dir}/envoy-${ENVOY_DISTRO}" ${BINARY_PATH}
+    rm "$tar_path"
+    mv "${bin_dir}/envoy-${ENVOY_DISTRO}" "${BINARY_PATH}"
 
     [ -f "${BINARY_PATH}" ] && chmod +x "${BINARY_PATH}"
 }
