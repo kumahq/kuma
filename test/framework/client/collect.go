@@ -126,8 +126,7 @@ func OutputFormat(format string) CollectResponsesOptsFn {
 		// parse the format they specified.
 		opts.Flags = append(opts.Flags,
 			"--silent",
-			"--output", os.DevNull,
-			"--write-out", opts.ShellEscaped(format),
+			"--write-out", format,
 		)
 	}
 }
@@ -210,8 +209,8 @@ func CollectResponse(
 	container string,
 	destination string,
 	fn ...CollectResponsesOptsFn,
-) (string, error) {
-	opts := CollectOptions(destination, fn...)
+) (string, string, error) {
+	opts := CollectOptions(destination, append([]CollectResponsesOptsFn{OutputFormat(`%{stderr}%{header_json}`)}, fn...)...)
 	cmd := collectCommand(opts, "curl",
 		"--request", opts.Method,
 		"--max-time", "3",
@@ -223,16 +222,16 @@ func CollectResponse(
 		var err error
 		appPodName, err = framework.PodNameOfApp(cluster, opts.application, opts.namespace)
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 	}
 
-	stdout, _, err := cluster.ExecWithRetries(opts.namespace, appPodName, container, cmd...)
+	stdout, stderr, err := cluster.ExecWithRetries(opts.namespace, appPodName, container, cmd...)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	return stdout, nil
+	return stdout, stderr, nil
 }
 
 func CollectEchoResponse(
@@ -241,15 +240,21 @@ func CollectEchoResponse(
 	destination string,
 	fn ...CollectResponsesOptsFn,
 ) (types.EchoResponse, error) {
-	stdout, err := CollectResponse(cluster, container, destination, fn...)
+	stdout, stderr, err := CollectResponse(cluster, container, destination, fn...)
 	if err != nil {
 		return types.EchoResponse{}, err
 	}
 
 	response := &types.EchoResponse{}
 	if err := json.Unmarshal([]byte(stdout), response); err != nil {
-		return types.EchoResponse{}, errors.Wrapf(err, "failed to unmarshal response: %q", stdout)
+		return types.EchoResponse{}, errors.Wrapf(err, "failed to unmarshal echo response: %q", stdout)
 	}
+
+	var headers map[string][]string
+	if err := json.Unmarshal([]byte(stderr), &headers); err != nil {
+		return types.EchoResponse{}, errors.Wrapf(err, "failed to unmarshal curl response: %q", stderr)
+	}
+	response.Headers = headers
 
 	return *response, nil
 }
@@ -321,6 +326,9 @@ func CollectResponseDirectly(
 	if err := json.Unmarshal(body, &response); err != nil {
 		return types.EchoResponse{}, errors.Wrapf(err, "failed to unmarshal response: %q", string(body))
 	}
+
+	response.Headers = resp.Header
+
 	return response, nil
 }
 

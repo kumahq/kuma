@@ -1,5 +1,5 @@
 ARG BASE_IMAGE_ARCH
-FROM --platform=linux/${BASE_IMAGE_ARCH} ubuntu:22.04
+FROM --platform=linux/${BASE_IMAGE_ARCH} ubuntu:22.10
 
 RUN mkdir /kuma
 RUN echo "# use this file to override default configuration of \`kuma-cp\`" > /kuma/kuma-cp.conf \
@@ -27,7 +27,7 @@ RUN apt update \
 RUN ssh-keygen -A \
   && sed -i s/#PermitRootLogin.*/PermitRootLogin\ yes/ /etc/ssh/sshd_config \
   && sed -i s/#PermitEmptyPasswords.*/PermitEmptyPasswords\ yes/ /etc/ssh/sshd_config \
-  && mkdir /var/run/sshd \
+  && mkdir -p /var/run/sshd \
   && passwd -d root \
   && chmod a+rwx /root \
   && useradd -U kuma-dp

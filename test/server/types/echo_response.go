@@ -1,6 +1,7 @@
 package types
 
 type EchoResponse struct {
+	Headers  map[string][]string `json:"headers"`
 	Instance string              `json:"instance"`
 	Received EchoReceivedRequest `json:"received"`
 }
