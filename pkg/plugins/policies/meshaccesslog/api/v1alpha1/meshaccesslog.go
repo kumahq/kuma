@@ -66,8 +66,9 @@ type FileBackend struct {
 }
 
 type Format struct {
-	Plain string      `json:"plain,omitempty"`
-	Json  []JsonValue `json:"json,omitempty"`
+	Plain           string      `json:"plain,omitempty"`
+	Json            []JsonValue `json:"json,omitempty"`
+	OmitEmptyValues bool        `json:"omitEmptyValues,omitempty"`
 }
 
 type JsonValue struct {

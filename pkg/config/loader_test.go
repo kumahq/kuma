@@ -115,6 +115,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.TLS.CertPath).To(Equal("/path/to/cert"))
 			Expect(cfg.Store.Postgres.TLS.KeyPath).To(Equal("/path/to/key"))
 			Expect(cfg.Store.Postgres.TLS.CAPath).To(Equal("/path/to/rootCert"))
+			Expect(cfg.Store.Postgres.TLS.DisableSSLSNI).To(BeTrue())
 
 			Expect(cfg.ApiServer.ReadOnly).To(Equal(true))
 			Expect(cfg.ApiServer.HTTP.Enabled).To(Equal(false))
@@ -310,6 +311,7 @@ store:
       certPath: /path/to/cert
       keyPath: /path/to/key
       caPath: /path/to/rootCert
+      disableSSLSNI: true
   kubernetes:
     systemNamespace: test-namespace
   cache:
@@ -567,6 +569,7 @@ proxy:
 				"KUMA_STORE_POSTGRES_TLS_CERT_PATH":                                                        "/path/to/cert",
 				"KUMA_STORE_POSTGRES_TLS_KEY_PATH":                                                         "/path/to/key",
 				"KUMA_STORE_POSTGRES_TLS_CA_PATH":                                                          "/path/to/rootCert",
+				"KUMA_STORE_POSTGRES_TLS_DISABLE_SSLSNI":                                                   "true",
 				"KUMA_STORE_POSTGRES_MIN_RECONNECT_INTERVAL":                                               "44s",
 				"KUMA_STORE_POSTGRES_MAX_RECONNECT_INTERVAL":                                               "55s",
 				"KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE":                                                   "test-namespace",
