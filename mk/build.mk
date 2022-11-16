@@ -1,22 +1,7 @@
-BUILD_INFO_VERSION ?= $(shell $(TOOLS_DIR)/releases/version.sh)
-BUILD_INFO_ENVOY_VERSION ?= $(ENVOY_VERSION)
-ifdef CI
-BUILD_INFO_GIT_TAG ?= $(shell git describe --tags 2>/dev/null || echo unknown)
-BUILD_INFO_GIT_COMMIT ?= $(shell git rev-parse HEAD 2>/dev/null || echo unknown)
-BUILD_INFO_BUILD_DATE ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ" || echo unknown)
-else
-BUILD_INFO_GIT_TAG ?= "built-locally"
-BUILD_INFO_GIT_COMMIT ?= "built-locally"
-BUILD_INFO_BUILD_DATE ?= "built-locally"
-endif
-
-build_info_fields := \
-	version=$(BUILD_INFO_VERSION) \
-	gitTag=$(BUILD_INFO_GIT_TAG) \
-	gitCommit=$(BUILD_INFO_GIT_COMMIT) \
-	buildDate=$(BUILD_INFO_BUILD_DATE) \
-	Envoy=$(BUILD_INFO_ENVOY_VERSION)
-build_info_ld_flags := $(foreach entry,$(build_info_fields), -X github.com/kumahq/kuma/pkg/version.$(entry))
+build_info := $(shell $(TOOLS_DIR)/releases/version.sh)
+BUILD_INFO_VERSION ?= $(firstword $(build_info))
+BUILD_INFO_GIT_TAG ?= $(word 2, $(build_info))
+build_info_ld_flags := $(shell $(TOOLS_DIR)/releases/build-info-flags.sh)
 
 LD_FLAGS := -ldflags="-s -w $(build_info_ld_flags) $(EXTRA_LD_FLAGS)"
 CGO_ENABLED := 0

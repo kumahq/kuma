@@ -351,6 +351,7 @@ jobs:
               fi
             fi
             env
+            export CI=true
             make ${MAKE_PARAMETERS} CI=true << parameters.target >>
       - store_test_results:
           path: build/reports
