@@ -18,6 +18,7 @@ In HA deployment, when you execute the Admin Operation request you don't know wh
 * Communication
   * API Server
   * Inter-CP Server
+  * KDS
 
 ## Pros and Cons of the Options
 
@@ -36,15 +37,24 @@ config: |
     "instances": [
       {
         "address": "192.168.1.100",
-        "apiServerHttpsPort": 5682,
-        "id": "<instance_id>"  
-      }
+        "interCpPort": 5682,
+        "id": "<instance_id>",
+        "leader": true
+      },
+      {
+        "address": "192.168.1.101",
+        "interCpPort": 5682,
+        "id": "<instance_id>",
+        "leader": false
+      },
     ]
   }
 ```
 
-Every CP instance would start a component that updates itself in the instances list if they are not on the list.
-Additionally, a leader would check the connection to all instances and remove them from the list. This way we can clear dead instances without using heartbeat, avoiding time based events, clock skews etc.
+Every CP instance connects to a leader to inform they are alive.
+A leader is the only writer of this config and periodically flushes info of all instances they received the ping from.
+Every follower sends the ping message every 10s. If after 30s the leader did not receive the ping, it can remove the instance from the list. 
+
 On Kubernetes, we could have an alternative implementation. Leader can start a component that fetches Pods in system namespace and dumps this to a Config.
 However, I'd like to avoid separate implementations for Kubernetes and Universal.
 
@@ -55,9 +65,6 @@ This comes with a cost that we can pick incorrect interface, therefore we also n
 #### Advantages
 * We have a catalog of instances. This is quite useful information that we use later as a building block.
   For example, there was a feature request to see all Zone CP instances in Global CP GUI. We could compute this also on Zone CP and sync to Global CP.
-
-#### Disadvantages
-* In large deployment, instances can step on each other when updating `cp-instances`. However, updates should only happen on any change, so they should not be that frequent.
 
 ## Communication
 
@@ -98,6 +105,25 @@ We can follow the same pattern as we did for CP <-> Envoy Admin.
 Generate internal CA, store it as a secret and generate server and client certs from it.
 We can verify SANs of certs because separate instance will have separate cert.
 
+#### Schema
+
+```grpc
+service InterCpService {
+  rpc Ping(PingRequest) returns (google.protobuf.Empty);
+
+  // ideally reuse message types from kds.proto
+  rpc EnvoyXDSConfig(XDSConfigRequest) returns (XDSConfigResponse);
+  rpc EnvoyStats(StatsRequest) returns (StatsResponse);
+  rpc EnvoyClusters(ClustersRequest) returns (ClustersResponse);
+}
+
+message PingRequest {
+  string instance_id = 1;
+  string address = 2;
+  uint32 inter_cp_port = 3;
+}
+```
+
 #### Advantages
 * Secure configuration is simpler.
 * We can pick gRPC as a protocol which is more efficient and have streaming (might be useful in a future)
@@ -107,6 +133,17 @@ We can verify SANs of certs because separate instance will have separate cert.
 #### Disadvantages
 * An extra port
 * More to explain to users? But can be hidden as "advanced topic".
+
+### KDS
+
+Reuse KDS server for inter cp communications
+
+#### Advantages
+* Less new ports
+
+#### Disadvantages
+* Same problems as API server with TLS & Authentication
+* Might a bit awkward to explain that this is sometimes use to Global CP <-> Zone CP, and sometimes it's used for inter cp communciations.
 
 ## Decision Outcome
 
