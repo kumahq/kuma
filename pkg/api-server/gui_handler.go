@@ -7,6 +7,28 @@ import (
 	"github.com/kumahq/kuma/app/kuma-ui/pkg/resources"
 )
 
+var disabledPage = `
+<!DOCTYPE html><html lang=en>
+	<head>
+		<style>
+			.center {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				height: 200px;
+				border: 3px solid green;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="center"><strong>
+		GUI is disabled. If this is a Zone CP, please check the GUI on the Global CP.
+		If this isn't a Zone CP the GUI can be enabled by setting the configuration KUMA_API_SERVER_GUI_ENABLED=true.
+		</strong></div>
+	</body>
+</html>
+`
+
 func guiHandler(path string, enabledGui bool, apiUrl string, basePath string) http.Handler {
 	if enabledGui {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -27,13 +49,7 @@ func guiHandler(path string, enabledGui bool, apiUrl string, basePath string) ht
 	}
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(http.StatusOK)
-		_, err := writer.Write([]byte("" +
-			"<!DOCTYPE html><html lang=en>" +
-			"<head>\n<style>\n.center {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  height: 200px;\n  border: 3px solid green; \n}\n</style>\n</head>" +
-			"<body><div class=\"center\"><strong>" +
-			"GUI is disabled. If this is a Zone CP, please check the GUI on the Global CP." +
-			"</strong></div></body>" +
-			"</html>"))
+		_, err := writer.Write([]byte(disabledPage))
 		if err != nil {
 			log.Error(err, "could not write the response")
 		}
