@@ -134,6 +134,11 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.ApiServer.Authn.Type).To(Equal("custom-authn"))
 			Expect(cfg.ApiServer.Authn.Tokens.BootstrapAdminToken).To(BeFalse())
 			Expect(cfg.ApiServer.CorsAllowedDomains).To(Equal([]string{"https://kuma", "https://someapi"}))
+			Expect(cfg.ApiServer.BasePath).To(Equal("/api"))
+			Expect(cfg.ApiServer.RootUrl).To(Equal("https://foo.com"))
+			Expect(cfg.ApiServer.GUI.RootUrl).To(Equal("https://bar.com"))
+			Expect(cfg.ApiServer.GUI.Enabled).To(Equal(false))
+			Expect(cfg.ApiServer.GUI.BasePath).To(Equal("/ui"))
 
 			Expect(cfg.MonitoringAssignmentServer.Port).To(Equal(uint32(2222)))
 			Expect(cfg.MonitoringAssignmentServer.AssignmentRefreshInterval.Duration).To(Equal(12 * time.Second))
@@ -353,6 +358,12 @@ apiServer:
   corsAllowedDomains:
     - https://kuma
     - https://someapi
+  rootUrl: https://foo.com
+  basePath: /api
+  gui:
+    enabled: false
+    rootUrl: https://bar.com
+    basePath: /ui
 monitoringAssignmentServer:
   port: 2222
   defaultFetchTimeout: 45s
@@ -593,6 +604,11 @@ proxy:
 				"KUMA_API_SERVER_AUTHN_TYPE":                                                               "custom-authn",
 				"KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN":                                                 "false",
 				"KUMA_API_SERVER_AUTHN_TOKENS_BOOTSTRAP_ADMIN_TOKEN":                                       "false",
+				"KUMA_API_SERVER_ROOT_URL":                                                                 "https://foo.com",
+				"KUMA_API_SERVER_BASE_PATH":                                                                "/api",
+				"KUMA_API_SERVER_GUI_ENABLED":                                                              "false",
+				"KUMA_API_SERVER_GUI_ROOT_URL":                                                             "https://bar.com",
+				"KUMA_API_SERVER_GUI_BASE_PATH":                                                            "/ui",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_PORT":                                                   "2222",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_DEFAULT_FETCH_TIMEOUT":                                  "45s",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_API_VERSIONS":                                           "v1",

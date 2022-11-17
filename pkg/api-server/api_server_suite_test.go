@@ -111,17 +111,15 @@ func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string, 
 }
 
 type testApiServerConfigurer struct {
-	store     store.ResourceStore
-	enableGui bool
-	config    *config_api_server.ApiServerConfig
-	metrics   func() core_metrics.Metrics
-	zone      string
-	global    bool
+	store   store.ResourceStore
+	config  *config_api_server.ApiServerConfig
+	metrics func() core_metrics.Metrics
+	zone    string
+	global  bool
 }
 
 func NewTestApiServerConfigurer() *testApiServerConfigurer {
-	return &testApiServerConfigurer{
-		enableGui: false,
+	t := &testApiServerConfigurer{
 		metrics: func() core_metrics.Metrics {
 			m, _ := core_metrics.NewMetrics("Standalone")
 			return m
@@ -129,10 +127,7 @@ func NewTestApiServerConfigurer() *testApiServerConfigurer {
 		config: config_api_server.DefaultApiServerConfig(),
 		store:  memory.NewStore(),
 	}
-}
-
-func (t *testApiServerConfigurer) WithGui() *testApiServerConfigurer {
-	t.enableGui = true
+	t.config.GUI.Enabled = false
 	return t
 }
 
@@ -232,7 +227,6 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 		customization.NewAPIList(),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,
-		t.enableGui,
 		t.metrics(),
 		func() string { return "instance-id" },
 		func() string { return "cluster-id" },
