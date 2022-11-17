@@ -33,4 +33,5 @@ do
   safe_cp "$file" "$DESTINATION_DIR"
 done
 
-find build -print0 | xargs -I {} touch -mt 201212211111 {}
+# shellcheck disable=SC2038
+find build | xargs -I {} touch -mt 201212211111 {}

@@ -24,7 +24,7 @@ describedTag="local-build"
 longHash="local-build"
 else
 versionDate=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-describedTag=$(shell git describe --tags 2>/dev/null || echo "unknown")
+describedTag=$(git describe --tags 2>/dev/null || echo "unknown")
 longHash=$(git rev-parse HEAD 2>/dev/null || echo "no-commit")
 fi
 

@@ -126,6 +126,7 @@ jobs:
     - run:
         name: "Run unit tests"
         command: |
+          export CI=true
           make test
 
   go_cache:
