@@ -2,8 +2,6 @@ package api_server
 
 import (
 	"context"
-	"reflect"
-	"strings"
 
 	"github.com/emicklei/go-restful/v3"
 
@@ -16,7 +14,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/pkg/core/user"
-	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
 type dataplaneOverviewEndpoints struct {
@@ -112,8 +109,9 @@ func (r *dataplaneOverviewEndpoints) inspectDataplanes(request *restful.Request,
 		rest_errors.HandleError(response, err, "Could not retrieve dataplane overviews")
 		return
 	}
+	namePrefix := request.QueryParameter("name")
 
-	overviews, err := r.fetchOverviews(request.Request.Context(), page, meshName, filter)
+	overviews, err := r.fetchOverviews(request.Request.Context(), page, meshName, namePrefix, filter)
 	if err != nil {
 		rest_errors.HandleError(response, err, "Could not retrieve dataplane overviews")
 		return
@@ -128,9 +126,9 @@ func (r *dataplaneOverviewEndpoints) inspectDataplanes(request *restful.Request,
 	}
 }
 
-func (r *dataplaneOverviewEndpoints) fetchOverviews(ctx context.Context, p page, meshName string, filter store.ListFilterFunc) (mesh.DataplaneOverviewResourceList, error) {
+func (r *dataplaneOverviewEndpoints) fetchOverviews(ctx context.Context, p page, meshName string, namePrefix string, filter store.ListFilterFunc) (mesh.DataplaneOverviewResourceList, error) {
 	dataplanes := mesh.DataplaneResourceList{}
-	if err := r.resManager.List(ctx, &dataplanes, store.ListByMesh(meshName), store.ListByPage(p.size, p.offset), store.ListByFilterFunc(filter)); err != nil {
+	if err := r.resManager.List(ctx, &dataplanes, store.ListByMesh(meshName), store.ListByPage(p.size, p.offset), store.ListByFilterFunc(filter), store.ListByNamePrefix(namePrefix)); err != nil {
 		return mesh.DataplaneOverviewResourceList{}, err
 	}
 
@@ -141,78 +139,4 @@ func (r *dataplaneOverviewEndpoints) fetchOverviews(ctx context.Context, p page,
 	}
 
 	return mesh.NewDataplaneOverviews(dataplanes, insights), nil
-}
-
-// Tags should be passed in form of ?tag=service:mobile&tag=version:v1
-func parseTags(queryParamValues []string) map[string]string {
-	tags := make(map[string]string)
-	for _, value := range queryParamValues {
-		// ":" are valid in tag value so only stop at the first separator
-		tagKv := strings.SplitN(value, ":", 2)
-		if len(tagKv) != 2 {
-			// ignore invalid formatted tags
-			continue
-		}
-		tags[tagKv[0]] = tagKv[1]
-	}
-	return tags
-}
-
-func modeFromParameter(request *restful.Request, param string) (string, error) {
-	mode := strings.ToLower(request.QueryParameter(param))
-	if mode == "" || mode == "true" || mode == "false" {
-		return mode, nil
-	}
-
-	verr := validators.ValidationError{}
-	verr.AddViolationAt(
-		validators.RootedAt(request.SelectedRoutePath()).Field(param),
-		"shoud use `true` or `false` instead of "+mode)
-
-	return "", &verr
-}
-
-type DpFilter func(a interface{}) bool
-
-func modeToFilter(mode string) DpFilter {
-	isnil := func(a interface{}) bool {
-		return a == nil || reflect.ValueOf(a).IsNil()
-	}
-	switch mode {
-	case "true":
-		return func(a interface{}) bool {
-			return !isnil(a)
-		}
-	case "false":
-		return func(a interface{}) bool {
-			return isnil(a)
-		}
-	default:
-		return func(a interface{}) bool {
-			return true
-		}
-	}
-}
-
-func genFilter(request *restful.Request) (store.ListFilterFunc, error) {
-	gatewayMode, err := modeFromParameter(request, "gateway")
-	if err != nil {
-		return nil, err
-	}
-
-	tags := parseTags(request.QueryParameters("tag"))
-
-	return func(rs core_model.Resource) bool {
-		gatewayFilter := modeToFilter(gatewayMode)
-		dataplane := rs.(*mesh.DataplaneResource)
-		if !gatewayFilter(dataplane.Spec.GetNetworking().GetGateway()) {
-			return false
-		}
-
-		if !dataplane.Spec.MatchTags(tags) {
-			return false
-		}
-
-		return true
-	}, nil
 }
