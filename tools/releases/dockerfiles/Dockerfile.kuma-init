@@ -3,27 +3,20 @@ ARG BASE_IMAGE_ARCH=amd64
 ARG EBPF_IMAGE=kumahq/kuma-net-ebpf:0.8.8
 
 FROM --platform=linux/$BASE_IMAGE_ARCH $EBPF_IMAGE as ebpf
-FROM --platform=linux/$BASE_IMAGE_ARCH ubuntu:jammy
-
-ARG ARCH
+FROM --platform=linux/$BASE_IMAGE_ARCH ubuntu:jammy as ubuntu
 
 RUN apt-get update && \
     apt-get -y install iptables iproute2 && \
     rm -rf /var/lib/apt/lists/*
 
-ADD /build/artifacts-linux-$ARCH/kumactl/kumactl /usr/bin
+FROM --platform=linux/$BASE_IMAGE_ARCH kumahq/base-debian11
+ARG ARCH
 
-COPY /tools/releases/templates/LICENSE \
-    /tools/releases/templates/README \
-    /kuma/
-
-COPY /tools/releases/templates/NOTICE-kumactl /kuma/NOTICE
+COPY /build/artifacts-linux-$ARCH/kumactl/kumactl /usr/bin
+COPY --from=ubuntu /usr/sbin/iptables-legacy /usr/sbin/iptables
 
 # ebpf
 COPY --from=ebpf /ebpf /kuma/ebpf
 
-RUN update-alternatives --set iptables /usr/sbin/iptables-legacy
-
-RUN adduser --system --disabled-password --group kumactl --uid 5678
-
-ENTRYPOINT ["/usr/bin/kumactl", "install", "transparent-proxy"]
+ENTRYPOINT ["/usr/bin/kumactl"]
+CMD ["install", "transparent-proxy", "--kuma-dp-user", "nonroot"]

@@ -11,13 +11,15 @@ define build_image
 $(DOCKER_REGISTRY)/$(1):$(BUILD_INFO_VERSION)$(if $(IMAGE_ARCH_TAG_ENABLED),-${GOARCH},)
 endef
 
+export KUMA_BASE_IMAGE ?= kumahq/base
+export KUMA_STATIC_IMAGE ?= kumahq/static
 export KUMA_CP_DOCKER_IMAGE ?= $(call build_image,kuma-cp)
 export KUMA_DP_DOCKER_IMAGE ?= $(call build_image,kuma-dp)
 export KUMACTL_DOCKER_IMAGE ?= $(call build_image,kumactl)
 export KUMA_INIT_DOCKER_IMAGE ?= $(call build_image,kuma-init)
 export KUMA_CNI_DOCKER_IMAGE ?= $(call build_image,kuma-cni)
 export KUMA_UNIVERSAL_DOCKER_IMAGE ?= $(call build_image,kuma-universal)
-KUMA_IMAGES ?= $(KUMA_CP_DOCKER_IMAGE) $(KUMA_DP_DOCKER_IMAGE) $(KUMACTL_DOCKER_IMAGE) $(KUMA_INIT_DOCKER_IMAGE) $(KUMA_UNIVERSAL_DOCKER_IMAGE) $(KUMA_CNI_DOCKER_IMAGE)
+KUMA_IMAGES ?= $(KUMA_BASE_IMAGE) $(KUMA_STATIC_IMAGE) $(KUMA_CP_DOCKER_IMAGE) $(KUMA_DP_DOCKER_IMAGE) $(KUMACTL_DOCKER_IMAGE) $(KUMA_INIT_DOCKER_IMAGE) $(KUMA_UNIVERSAL_DOCKER_IMAGE) $(KUMA_CNI_DOCKER_IMAGE)
 
 IMAGES_TARGETS ?= images/release images/test
 DOCKER_SAVE_TARGETS ?= docker/save/release docker/save/test
@@ -26,6 +28,14 @@ DOCKER_LOAD_TARGETS ?= docker/load/release docker/load/test
 # Always use Docker BuildKit, see
 # https://docs.docker.com/develop/develop-images/build_enhancements/
 export DOCKER_BUILDKIT := 1
+
+.PHONY: image/static
+image/static: build/static-${GOARCH} ## Dev: Rebuild `kuma-static` Docker image
+	docker build -t $(KUMA_STATIC_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --build-arg BASE_IMAGE_ARCH=${GOARCH} -f tools/releases/dockerfiles/Dockerfile.static .
+
+.PHONY: image/base
+image/base: build/base-${GOARCH} ## Dev: Rebuild `kuma-base` Docker image
+	docker build -t $(KUMA_BASE_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --build-arg BASE_IMAGE_ARCH=${GOARCH} -f tools/releases/dockerfiles/Dockerfile.base .
 
 .PHONY: image/kuma-cp
 image/kuma-cp: build/kuma-cp/linux-${GOARCH} ## Dev: Rebuild `kuma-cp` Docker image
