@@ -55,6 +55,7 @@ func DefaultDiagnosticsConfig() *DiagnosticsConfig {
 	return &DiagnosticsConfig{
 		ServerPort:      5680,
 		DebugEndpoints:  false,
+		TlsEnabled:      false,
 		TlsMinVersion:   "TLSv1_2",
 		TlsCipherSuites: []string{},
 	}
