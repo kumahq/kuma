@@ -2,12 +2,16 @@ package diagnostics
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	pprof "net/http/pprof"
 
+	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
+	diagnostics_config "github.com/kumahq/kuma/pkg/config/diagnostics"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/metrics"
@@ -18,9 +22,8 @@ var (
 )
 
 type diagnosticsServer struct {
-	port           uint32
-	metrics        metrics.Metrics
-	debugEndpoints bool
+	config  *diagnostics_config.DiagnosticsConfig
+	metrics metrics.Metrics
 }
 
 func (s *diagnosticsServer) NeedLeaderElection() bool {
@@ -41,7 +44,7 @@ func (s *diagnosticsServer) Start(stop <-chan struct{}) error {
 		resp.WriteHeader(http.StatusOK)
 	})
 	mux.Handle("/metrics", promhttp.InstrumentMetricHandler(s.metrics, promhttp.HandlerFor(s.metrics, promhttp.HandlerOpts{})))
-	if s.debugEndpoints {
+	if s.config.DebugEndpoints {
 		mux.HandleFunc("/debug/pprof/", pprof.Index)
 		mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
 		mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
@@ -49,17 +52,45 @@ func (s *diagnosticsServer) Start(stop <-chan struct{}) error {
 		mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 	}
 
-	httpServer := &http.Server{Addr: fmt.Sprintf(":%d", s.port), Handler: mux}
+	httpServer := &http.Server{Addr: fmt.Sprintf(":%d", s.config.ServerPort), Handler: mux}
 
-	diagnosticsServerLog.Info("starting diagnostic server", "interface", "0.0.0.0", "port", s.port)
+	if s.config.TlsEnabled {
+		cert, err := tls.LoadX509KeyPair(s.config.TlsCertFile, s.config.TlsKeyFile)
+		if err != nil {
+			return errors.Wrap(err, "failed to load TLS certificate")
+		}
+		tlsConfig := &tls.Config{Certificates: []tls.Certificate{cert}}
+		if tlsConfig.MinVersion, err = config_types.TLSVersion(s.config.TlsMinVersion); err != nil {
+			return err
+		}
+		if tlsConfig.MaxVersion, err = config_types.TLSVersion(s.config.TlsMaxVersion); err != nil {
+			return err
+		}
+		if tlsConfig.CipherSuites, err = config_types.TLSCiphers(s.config.TlsCipherSuites); err != nil {
+			return err
+		}
+		httpServer.TLSConfig = tlsConfig
+	}
+
+	diagnosticsServerLog.Info("starting diagnostic server", "interface", "0.0.0.0", "port", s.config.ServerPort, "tls", s.config.TlsEnabled)
 	errChan := make(chan error)
 	go func() {
 		defer close(errChan)
-		if err := httpServer.ListenAndServe(); err != nil {
-			if err.Error() != "http: Server closed" {
-				diagnosticsServerLog.Error(err, "terminated with an error")
-				errChan <- err
-				return
+		if s.config.TlsEnabled {
+			if err := httpServer.ListenAndServeTLS(s.config.TlsCertFile, s.config.TlsKeyFile); err != nil {
+				if err.Error() != "https: Server closed" {
+					diagnosticsServerLog.Error(err, "terminated with an error")
+					errChan <- err
+					return
+				}
+			}
+		} else {
+			if err := httpServer.ListenAndServe(); err != nil {
+				if err.Error() != "http: Server closed" {
+					diagnosticsServerLog.Error(err, "terminated with an error")
+					errChan <- err
+					return
+				}
 			}
 		}
 		diagnosticsServerLog.Info("terminated normally")
