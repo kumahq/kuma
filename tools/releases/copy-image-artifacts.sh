@@ -14,24 +14,25 @@ function usage() {
 DOCKERIGNORE_FILE="tools/releases/dockerfiles/Dockerfile.$1.dockerignore"
 GOOS="$2"
 GOARCH="$3"
-ARTIFACTS_DIR="build/artifacts-$GOOS-$GOARCH"
-DESTINATION_DIR="$ARTIFACTS_DIR/$1"
+ARTIFACTS_DIR="build/artifacts-${GOOS}-${GOARCH}"
+DESTINATION_DIR="${ARTIFACTS_DIR}/$1"
 
 function safe_cp() {
-  FILE="$1"
-  DIR_1=$(dirname "$FILE")
-  DEST="$2"
-  FINAL_DEST="$DEST/$DIR_1/"
-  # shellcheck disable=SC2086
-  mkdir -p "$FINAL_DEST" && cp -R $FILE "$FINAL_DEST"
+  local files dest dir_1 final_dest
+
+  files="$1"
+	dest="$2"
+	dir_1="$(dirname "${file}")"
+	final_dest="${dest}/${dir_1}/"
+
+	mkdir -p "${final_dest}" && for file in $files ; do cp -fR "${file}" "${final_dest}" ; done
 }
 
 export -f safe_cp
 
-tail -n +2 "$DOCKERIGNORE_FILE" | cut -d '!' -f 2 | while read -r file
+tail -n +2 "${DOCKERIGNORE_FILE}" | cut -d '!' -f 2 | while read -r file
 do
-  safe_cp "$file" "$DESTINATION_DIR"
+	safe_cp "${file}" "${DESTINATION_DIR}"
 done
 
-# shellcheck disable=SC2038
-find build | xargs -I {} touch -mt 201212211111 {}
+find build -exec touch -mt 201212211111 {} \;

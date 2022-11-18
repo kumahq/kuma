@@ -126,7 +126,6 @@ jobs:
     - run:
         name: "Run unit tests"
         command: |
-          export CI=true
           make test
 
   go_cache:
@@ -352,7 +351,6 @@ jobs:
               fi
             fi
             env
-            export CI=true
             make ${MAKE_PARAMETERS} CI=true << parameters.target >>
       - store_test_results:
           path: build/reports

@@ -97,7 +97,7 @@ kind/deploy/helm: kind/load
 	KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) create namespace $(KUMA_NAMESPACE)
 	KUBECONFIG=$(KIND_KUBECONFIG) helm install --namespace $(KUMA_NAMESPACE) \
                 --set global.image.registry="$(DOCKER_REGISTRY)" \
-                --set global.image.tag="$(BUILD_INFO_GIT_TAG)" \
+                --set global.image.tag="$(BUILD_INFO_VERSION)-${GOARCH}" \
                 --set cni.enabled=true \
                 --set cni.chained=true \
                 --set cni.netDir=/etc/cni/net.d \
