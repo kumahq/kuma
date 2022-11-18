@@ -38,7 +38,6 @@ import (
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
-	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
 	util_prometheus "github.com/kumahq/kuma/pkg/util/prometheus"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/server"
@@ -241,16 +240,6 @@ func ShouldBeReadOnly(kdsFlag model.KDSFlagType, cfg *kuma_cp.Config) bool {
 	return cfg.ApiServer.ReadOnly ||
 		(cfg.Mode == config_core.Global && kdsFlag.Has(model.FromZoneToGlobal) && !kdsFlag.Has(model.FromGlobalToZone)) ||
 		(cfg.Mode == config_core.Zone && kdsFlag.Has(model.FromGlobalToZone) && !kdsFlag.Has(model.FromZoneToGlobal))
-}
-
-func tokenWs(tokenIssuers builtin.TokenIssuers, access runtime.Access) *restful.WebService {
-	return tokens_server.NewWebservice(
-		tokenIssuers.DataplaneToken,
-		tokenIssuers.ZoneIngressToken,
-		tokenIssuers.ZoneToken,
-		access.DataplaneTokenAccess,
-		access.ZoneTokenAccess,
-	)
 }
 
 func (a *ApiServer) Start(stop <-chan struct{}) error {
