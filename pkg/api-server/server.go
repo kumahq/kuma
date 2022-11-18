@@ -201,7 +201,7 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 
 	for _, definition := range defs {
 		defType := definition.Name
-		if cfg.ApiServer.ReadOnly || (defType == mesh.DataplaneType && cfg.Mode == config_core.Global) || (defType != mesh.DataplaneType && cfg.Mode == config_core.Zone) {
+		if ShouldBeReadOnly(definition.KDSFlags, cfg) {
 			definition.ReadOnly = true
 		}
 		endpoints := resourceEndpoints{
@@ -235,6 +235,12 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 			}
 		}
 	}
+}
+
+func ShouldBeReadOnly(kdsFlag model.KDSFlagType, cfg *kuma_cp.Config) bool {
+	return cfg.ApiServer.ReadOnly ||
+		(cfg.Mode == config_core.Global && kdsFlag.Has(model.FromZoneToGlobal) && !kdsFlag.Has(model.FromGlobalToZone)) ||
+		(cfg.Mode == config_core.Zone && kdsFlag.Has(model.FromGlobalToZone) && !kdsFlag.Has(model.FromZoneToGlobal))
 }
 
 func tokenWs(tokenIssuers builtin.TokenIssuers, access runtime.Access) *restful.WebService {
