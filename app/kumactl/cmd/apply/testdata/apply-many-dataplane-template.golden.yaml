@@ -1,0 +1,35 @@
+creationTime: "0001-01-01T00:00:00Z"
+mesh: default
+modificationTime: "0001-01-01T00:00:00Z"
+name: sample
+type: Dataplane
+networking:
+  address: 2.2.2.2
+  inbound:
+  - port: 80
+    tags:
+      kuma.io/service: web
+---
+creationTime: "0001-01-01T00:00:00Z"
+mesh: default
+modificationTime: "0001-01-01T00:00:00Z"
+name: sample-2
+type: Dataplane
+networking:
+  address: 2.2.2.2
+  inbound:
+  - port: 80
+    tags:
+      kuma.io/service: web
+---
+creationTime: "0001-01-01T00:00:00Z"
+mesh: default
+modificationTime: "0001-01-01T00:00:00Z"
+name: sample-3
+type: Dataplane
+networking:
+  address: 2.2.2.2
+  inbound:
+  - port: 80
+    tags:
+      kuma.io/service: web

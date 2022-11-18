@@ -171,6 +171,18 @@ apiServer:
   # Allowed domains for Cross-Origin Resource Sharing. The value can be either domain or regexp
   corsAllowedDomains:
     - ".*" # ENV: KUMA_API_SERVER_CORS_ALLOWED_DOMAINS
+  # Can be used if you use a reverse proxy
+  rootUrl: "" # ENV: KUMA_API_SERVER_ROOT_URL
+  # The path to serve the API from
+  basePath: "/" # ENV: KUMA_API_SERVER_BASE_PATH
+  # configuration specific to the GUI
+  gui:
+    # Whether to serve the gui (if mode=zone this has no effect)
+    enabled: true # ENV: KUMA_API_SERVER_GUI_ENABLED
+    # Can be used if you use a reverse proxy or want to serve the gui from a different path
+    rootUrl: "" # ENV: KUMA_API_SERVER_GUI_ROOT_URL
+    # The path to serve the GUI from
+    basePath: "/gui" # ENV: KUMA_API_SERVER_GUI_BASE_PATH
 
 # Environment-specific configuration
 runtime:

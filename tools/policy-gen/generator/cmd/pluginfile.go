@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -35,7 +34,7 @@ func newPluginFile(rootArgs *args) *cobra.Command {
 				return nil
 			}
 
-			files, err := ioutil.ReadDir(apiDir)
+			files, err := os.ReadDir(apiDir)
 			if err != nil {
 				return err
 			}

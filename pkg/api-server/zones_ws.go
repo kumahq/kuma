@@ -17,9 +17,8 @@ type Zone struct {
 
 type Zones []Zone
 
-func zonesWs(resManager manager.ResourceManager) *restful.WebService {
-	ws := new(restful.WebService).Path("/status/zones")
-	return ws.Route(ws.GET("").To(func(request *restful.Request, response *restful.Response) {
+func addZoneEndpoints(ws *restful.WebService, resManager manager.ResourceManager) {
+	ws.Route(ws.GET("/status/zones").To(func(request *restful.Request, response *restful.Response) {
 		zoneOverviews, err := fetchOverviews(resManager, request.Request.Context())
 		if err != nil {
 			rest_errors.HandleError(response, err, "Could not retrieve a zone overview")

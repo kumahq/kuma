@@ -206,14 +206,6 @@ func (b *bootstrapGenerator) getMetricsConfig(
 	if err != nil {
 		return err
 	}
-
-	var address string
-	if b.enableLocalhostInboundCluster {
-		address = core_mesh.IPv4Loopback.String()
-	} else {
-		address = dataplane.Spec.GetNetworking().GetAddress()
-	}
-
 	if config != nil {
 		aggregateConfig := []AggregateMetricsConfig{}
 		for _, config := range config.GetAggregate() {
@@ -221,7 +213,7 @@ func (b *bootstrapGenerator) getMetricsConfig(
 				continue
 			}
 			aggregateConfig = append(aggregateConfig, AggregateMetricsConfig{
-				Address: address,
+				Address: b.getMetricsAddress(config, dataplane),
 				Name:    config.Name,
 				Port:    config.Port,
 				Path:    config.Path,
@@ -230,6 +222,23 @@ func (b *bootstrapGenerator) getMetricsConfig(
 		kumaDpBootstrap.AggregateMetricsConfig = aggregateConfig
 	}
 	return nil
+}
+
+func (b *bootstrapGenerator) getMetricsAddress(
+	metricsConfig *mesh_proto.PrometheusAggregateMetricsConfig,
+	dataplane *core_mesh.DataplaneResource,
+) string {
+	if metricsConfig.Address != "" {
+		return metricsConfig.Address
+	} else {
+		var address string
+		if b.enableLocalhostInboundCluster {
+			address = core_mesh.IPv4Loopback.String()
+		} else {
+			address = dataplane.Spec.GetNetworking().GetAddress()
+		}
+		return address
+	}
 }
 
 func (b *bootstrapGenerator) validateRequest(request types.BootstrapRequest) error {
