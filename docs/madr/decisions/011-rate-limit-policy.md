@@ -12,7 +12,7 @@ resource for managing rate limiting.
 Rate Limiting in Kuma is implemented with Envoy's [rate limiting
 support](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/local_rate_limit_filter).
 There is an issue with the configuration of TCP rate limiting because [current filter](https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/network_filters/local_rate_limit_filter#config-network-filters-local-rate-limit) works on listener level which can only
-allows limiting connections on the specific listener but without checking the origin of the request.
+allow limiting connections on the specific listener but without checking the origin of the request.
  
 ## Considered Options
  
@@ -28,6 +28,7 @@ Chosen option: create a MeshRateLimit with basic TCP rate limit support
  
 - Replace existing policies with new policy-matching compliant resources
 - Add support for TCP connection limiting at the basic level
+- Possibility to add global rate limiting in the future
  
 ## Considered Options
  
@@ -95,7 +96,7 @@ The configuration translates to the Envoy configuration on the route and the lis
 ### Specification
  
 The differences between TCP and HTTP rate limiting in `targetRef` and `from` requires different validation of objects.
-Idea is to create one policy but with `oneof` and use different validation methods for them.
+Idea is to create one policy but and allow configuring TCP and HTTP rate limiting at once. The only limitation is that TCP rate limit can be configured only when `from` section has `Mesh` and `targetRef` can have following values `Mesh|MeshSubset|MeshService|MeshServiceSubset`.
  
 #### **HTTP Rate Limit**
  
@@ -125,16 +126,17 @@ Matching on MeshGatewayRoute and MeshHTTPRoute does not make sense (there is any
 #### Configuration
  
 ```yaml
- default:
-   http:
-     requests: 5
-     interval: 10s
-     onRateLimit:
-       status: 423
-       headers:
-         - key: "x-kuma-rate-limited"
-           value: "true"
-           append: true
+default:
+  local:
+    http:
+      requests: 5
+      interval: 10s
+      onRateLimit:
+        status: 423
+        headers:
+          - key: "x-kuma-rate-limited"
+            value: "true"
+            append: true
 ```
  
 #### **TCP Connection Rate Limit**
@@ -166,10 +168,11 @@ There is no easy way to match requesting services with the specific filter chain
 #### Configuration
  
 ```yaml
- default:
-   tcp:
-     connections: 100
-     interval: 10s
+default:
+  local:
+    tcp:
+      connections: 100
+      interval: 10s
 ```
  
 #### **Result**
@@ -187,19 +190,22 @@ spec:
        kind: Mesh|MeshSubset|MeshService|MeshServiceSubset # or Mesh for TCP configuration
        name: backend
        mesh: example
-     default: # you can only define one: http or tcp
-       http:
-         requests: 5
-         interval: 10s
-         onRateLimit:
-           status: 423
-           headers:
-             - key: "x-kuma-rate-limited"
-               value: "true"
-               append: true
-       tcp:
-         connections: 100
-         interval: 10s
+     default: 
+       local:
+         http:
+           enabled: true
+           requests: 5
+           interval: 10s
+           onRateLimit:
+             status: 423
+             headers:
+               - key: "x-kuma-rate-limited"
+                 value: "true"
+                 append: true
+         tcp:
+           enabled: true
+           connections: 100
+           interval: 10s
 ```
  
 ### Considered Options
@@ -236,15 +242,17 @@ spec:
         kind: MeshService
         name: frontend
       default:
-        http:
-         requests: 5
-         interval: 10s
-         onRateLimit:
-           status: 423
-           headers:
-             - key: "x-kuma-rate-limited"
-               value: "true"
-               append: true
+        local:
+          http:
+            enabled: true
+            requests: 5
+            interval: 10s
+            onRateLimit:
+              status: 423
+              headers:
+                - key: "x-kuma-rate-limited"
+                  value: "true"
+                  append: true
 ```
 
 #### All services to one service http rate limit
@@ -262,15 +270,17 @@ spec:
         kind: Mesh
         name: default
       default:
-        http:
-         requests: 5
-         interval: 10s
-         onRateLimit:
-           status: 423
-           headers:
-             - key: "x-kuma-rate-limited"
-               value: "true"
-               append: true
+        local:
+          http:
+            enabled: true
+            requests: 5
+            interval: 10s
+            onRateLimit:
+              status: 423
+              headers:
+                - key: "x-kuma-rate-limited"
+                  value: "true"
+                  append: true
 ```
 
 #### All services to specific service TCP rate limit
@@ -288,7 +298,61 @@ spec:
         kind: Mesh
         name: default
       default:
-        tcp:
-         connections: 5
-         interval: 10s
+        local:
+          tcp:
+            enabled: true
+            connections: 5
+            interval: 10s
+```
+
+#### All services to specific service TCP rate limit and HTTP rate limit
+
+```yaml
+type: MeshRateLimit  
+mesh: default  
+name: default-rate-limit  
+spec:  
+  targetRef:  
+    kind: MeshService  
+    name: backend
+  from:
+    - targetRef:
+        kind: Mesh
+        name: default
+      default:
+        local:
+          tcp:
+            enabled: true
+            connections: 5
+            interval: 10s
+          http:
+            enabled: true
+            requests: 5
+            interval: 10s
+            onRateLimit:
+              status: 423
+              headers:
+                - key: "x-kuma-rate-limited"
+                  value: "true"
+                  append: true
+```
+
+#### Disable parent HTTP rate limit in backend service from frontend service
+
+```yaml
+type: MeshRateLimit  
+mesh: default  
+name: default-rate-limit  
+spec:  
+  targetRef:  
+    kind: MeshService  
+    name: backend
+  from:
+    - targetRef:
+        kind: MeshService
+        name: frontend
+      default:
+        local:
+          http:
+            enabled: false
 ```
