@@ -1,5 +1,4 @@
-ARG BASE_IMAGE_ARCH=amd64
-FROM --platform=linux/$BASE_IMAGE_ARCH kumahq/base-debian11
+FROM kumahq/base-debian11:1.0.0
 ARG ARCH
 
 COPY /tools/releases/templates/NOTICE-kumactl /kuma/NOTICE

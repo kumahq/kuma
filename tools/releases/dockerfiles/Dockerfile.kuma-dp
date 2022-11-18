@@ -1,16 +1,14 @@
-ARG BASE_IMAGE_ARCH=amd64
-
 FROM debian:11 as envoy
 ARG ENVOY_VERSION
 ARG ARCH
 
-ADD /build/artifacts-linux-$ARCH/envoy/envoy-$ENVOY_VERSION-alpine /envoy
+COPY /build/artifacts-linux-$ARCH/envoy/envoy-$ENVOY_VERSION-alpine /envoy
 
 RUN apt-get update && \
-    apt-get install -y libcap2-bin && \
+    apt-get install --no-install-recommends -y libcap2-bin=1:2.44-1 && \
     setcap cap_net_bind_service+ep /envoy
 
-FROM --platform=linux/$BASE_IMAGE_ARCH kumahq/base-debian11
+FROM kumahq/base-debian11:1.0.0
 ARG ARCH
 
 COPY /build/artifacts-linux-$ARCH/kuma-dp/kuma-dp \

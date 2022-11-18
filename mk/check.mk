@@ -57,6 +57,10 @@ format: fmt generate docs tidy ginkgo/unfocus ginkgo/lint
 kube-lint:
 	$(KUBE_LINTER) lint .
 
+.PHONY: hadolint
+hadolint:
+	find $(TOOLS_DIR)/releases/dockerfiles/ -type f -iname "Dockerfile*" | grep -v dockerignore | xargs -I {} $(HADOLINT) {}
+
 .PHONY: check
-check: format helm-lint golangci-lint shellcheck kube-lint ## Dev: Run code checks (go fmt, go vet, ...)
+check: format helm-lint golangci-lint shellcheck kube-lint hadolint ## Dev: Run code checks (go fmt, go vet, ...)
 	git diff --quiet || test $$(git diff --name-only | wc -l) -eq 0 || ( echo "The following changes (result of code generators and code checks) have been detected:" && git --no-pager diff && false ) # fail if Git working tree is dirty
