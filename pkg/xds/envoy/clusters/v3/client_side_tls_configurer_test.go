@@ -139,10 +139,10 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
                     validationContext:
                       matchTypedSubjectAltNames:
                       - matcher:
-                          exact: httpbin.org
+                          exact: custom
                         sanType: DNS
                       - matcher:
-                          exact: httpbin.org
+                          exact: custom
                         sanType: IP_ADDRESS
                       trustedCa:
                         inlineBytes: Y2FjZXJ0
