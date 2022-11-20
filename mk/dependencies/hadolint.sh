@@ -21,10 +21,7 @@ if [ -e "${hadolint}" ] && [ "v$(${hadolint} --version | cut -d' ' -f4)" == v${V
 fi
 echo "Installing hadolint ${hadolint}"
 set -x
-mkdir /tmp/hadolint
-curl --output /tmp/hadolint/hadolint --fail --location -s https://github.com/hadolint/hadolint/releases/download/v${VERSION}/"${VERSION_NAME}"
-chmod +x /tmp/hadolint/hadolint
-mv /tmp/hadolint/hadolint "$hadolint"
-rm -rf /tmp/hadolint
+curl --output "$hadolint" --fail --location -s https://github.com/hadolint/hadolint/releases/download/v${VERSION}/"${VERSION_NAME}"
+chmod +x "$hadolint"
 set +x
 echo "hadolint $hadolint has been installed at $OUTPUT_DIR"
