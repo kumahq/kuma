@@ -36,4 +36,4 @@ do
 done
 
 TODAY=$(date -u +"%Y%m%d0000")
-find build -exec touch -mt $TODAY {} \;
+find build -exec touch -mt "$TODAY" {} \;
