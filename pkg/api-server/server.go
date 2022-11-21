@@ -237,7 +237,6 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 	}
 }
 
-<<<<<<< HEAD
 func tokenWs(tokenIssuers builtin.TokenIssuers, access runtime.Access) *restful.WebService {
 	return tokens_server.NewWebservice(
 		tokenIssuers.DataplaneToken,
@@ -246,7 +245,7 @@ func tokenWs(tokenIssuers builtin.TokenIssuers, access runtime.Access) *restful.
 		access.DataplaneTokenAccess,
 		access.ZoneTokenAccess,
 	)
-=======
+
 func ShouldBeReadOnly(kdsFlag model.KDSFlagType, cfg *kuma_cp.Config) bool {
 	if cfg.ApiServer.ReadOnly {
 		return true
@@ -261,7 +260,6 @@ func ShouldBeReadOnly(kdsFlag model.KDSFlagType, cfg *kuma_cp.Config) bool {
 		return true
 	}
 	return false
->>>>>>> dd2a67dfd (fix(kuma-cp): change way of setting if resource is read only (#5345))
 }
 
 func (a *ApiServer) Start(stop <-chan struct{}) error {
