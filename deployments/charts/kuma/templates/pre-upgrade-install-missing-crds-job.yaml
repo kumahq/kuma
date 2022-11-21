@@ -79,7 +79,7 @@ data:
       echo "/kuma/missing/crds.yaml not found or empty, it looks like there is no missing crds"
     fi
   save_missing_crds.sh: |
-    #!/usr/bin/env sh
+    #!/busybox/env sh
 
     missing_crds="$(kumactl install crds --only-missing {{ if .Values.experimental.gatewayAPI }}--experimental-gatewayapi{{end}})"
 
