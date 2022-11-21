@@ -11,11 +11,14 @@ import (
 
 var APIIndexResponseFn = kumaAPIIndexResponse
 
-func addIndexWsEndpoints(ws *restful.WebService, getInstanceId func() string, getClusterId func() string, enableGUI bool) error {
+func addIndexWsEndpoints(ws *restful.WebService, getInstanceId func() string, getClusterId func() string, enableGUI bool, guiURL string) error {
 	hostname, err := os.Hostname()
+	if err != nil {
+		return err
+	}
+
 	var instanceId string
 	var clusterId string
-	var guiURL string
 	if err != nil {
 		return err
 	}
@@ -28,8 +31,8 @@ func addIndexWsEndpoints(ws *restful.WebService, getInstanceId func() string, ge
 			clusterId = getClusterId()
 		}
 
-		if enableGUI {
-			guiURL = "The gui is available at /gui"
+		if !enableGUI {
+			guiURL = ""
 		}
 
 		response := APIIndexResponseFn(hostname, instanceId, clusterId, guiURL)

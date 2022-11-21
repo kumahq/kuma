@@ -4,15 +4,17 @@ import (
 	"encoding/json"
 	"net/url"
 
-	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
+	"sigs.k8s.io/yaml"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 )
 
-var YAML = &unmarshaler{unmarshalFn: yaml.Unmarshal}
+var YAML = &unmarshaler{unmarshalFn: func(bytes []byte, i interface{}) error {
+	return yaml.Unmarshal(bytes, i)
+}}
 var JSON = &unmarshaler{unmarshalFn: json.Unmarshal}
 
 type unmarshaler struct {

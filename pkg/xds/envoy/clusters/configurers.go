@@ -7,8 +7,8 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
+	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 func OutlierDetection(circuitBreaker *core_mesh.CircuitBreakerResource) ClusterBuilderOpt {
@@ -23,7 +23,7 @@ func CircuitBreaker(circuitBreaker *core_mesh.CircuitBreakerResource) ClusterBui
 	})
 }
 
-func ClientSideMTLS(tracker core_xds.SecretsTracker, mesh *core_mesh.MeshResource, upstreamService string, upstreamTLSReady bool, tags []envoy.Tags) ClusterBuilderOpt {
+func ClientSideMTLS(tracker core_xds.SecretsTracker, mesh *core_mesh.MeshResource, upstreamService string, upstreamTLSReady bool, tags []envoy_tags.Tags) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.ClientSideMTLSConfigurer{
 			SecretsTracker:   tracker,
@@ -36,7 +36,7 @@ func ClientSideMTLS(tracker core_xds.SecretsTracker, mesh *core_mesh.MeshResourc
 	})
 }
 
-func CrossMeshClientSideMTLS(tracker core_xds.SecretsTracker, localMesh *core_mesh.MeshResource, upstreamMesh *core_mesh.MeshResource, upstreamService string, upstreamTLSReady bool, tags []envoy.Tags) ClusterBuilderOpt {
+func CrossMeshClientSideMTLS(tracker core_xds.SecretsTracker, localMesh *core_mesh.MeshResource, upstreamMesh *core_mesh.MeshResource, upstreamService string, upstreamTLSReady bool, tags []envoy_tags.Tags) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.ClientSideMTLSConfigurer{
 			SecretsTracker:   tracker,
@@ -117,7 +117,7 @@ func HealthCheck(protocol core_mesh.Protocol, healthCheck *core_mesh.HealthCheck
 //     kuma.io/service: backend
 //     version: v1
 //     Only one cluster "backend" is generated for such dataplane, but with lb subset by version.
-func LbSubset(tagSets envoy.TagKeysSlice) ClusterBuilderOptFunc {
+func LbSubset(tagSets envoy_tags.TagKeysSlice) ClusterBuilderOptFunc {
 	return func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.LbSubsetConfigurer{
 			TagKeysSets: tagSets,

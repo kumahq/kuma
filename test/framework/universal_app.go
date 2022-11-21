@@ -263,7 +263,7 @@ func NewUniversalApp(t testing.TestingT, clusterName, dpName, mesh string, mode 
 func (s *UniversalApp) updatePublishedPorts() error {
 	var ports []uint32
 	for portStr := range s.ports {
-		port, err := strconv.Atoi(portStr)
+		port, err := strconv.ParseInt(portStr, 10, 32)
 		if err != nil {
 			return err
 		}

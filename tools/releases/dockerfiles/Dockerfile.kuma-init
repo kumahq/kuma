@@ -1,5 +1,6 @@
 ARG BASE_IMAGE_ARCH=amd64
-ARG EBPF_IMAGE=kumahq/kuma-net-ebpf:0.8.5
+# When updatinng image version, remember to update it in tools/releases/distros.sh as well
+ARG EBPF_IMAGE=kumahq/kuma-net-ebpf:0.8.8
 
 FROM --platform=linux/$BASE_IMAGE_ARCH $EBPF_IMAGE as ebpf
 FROM --platform=linux/$BASE_IMAGE_ARCH ubuntu:jammy
@@ -17,9 +18,9 @@ COPY /tools/releases/templates/LICENSE \
     /kuma/
 
 COPY /tools/releases/templates/NOTICE-kumactl /kuma/NOTICE
-# ebpf
 
-COPY --from=ebpf /mb_* /kuma/ebpf/
+# ebpf
+COPY --from=ebpf /ebpf /kuma/ebpf
 
 RUN update-alternatives --set iptables /usr/sbin/iptables-legacy
 

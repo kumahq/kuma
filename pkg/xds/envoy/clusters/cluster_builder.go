@@ -5,6 +5,7 @@ import (
 
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
 )
@@ -17,7 +18,7 @@ type ClusterBuilderOpt interface {
 	ApplyTo(config *ClusterBuilderConfig)
 }
 
-func NewClusterBuilder(apiVersion envoy.APIVersion) *ClusterBuilder {
+func NewClusterBuilder(apiVersion core_xds.APIVersion) *ClusterBuilder {
 	return &ClusterBuilder{
 		apiVersion: apiVersion,
 	}
@@ -26,7 +27,7 @@ func NewClusterBuilder(apiVersion envoy.APIVersion) *ClusterBuilder {
 // ClusterBuilder is responsible for generating an Envoy cluster
 // by applying a series of ClusterConfigurers.
 type ClusterBuilder struct {
-	apiVersion envoy.APIVersion
+	apiVersion core_xds.APIVersion
 	config     ClusterBuilderConfig
 }
 

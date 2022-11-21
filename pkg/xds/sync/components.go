@@ -7,8 +7,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/user"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
 	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
 )
 
@@ -19,7 +19,7 @@ var (
 func DefaultDataplaneProxyBuilder(
 	config kuma_cp.Config,
 	metadataTracker DataplaneMetadataTracker,
-	apiVersion envoy.APIVersion,
+	apiVersion core_xds.APIVersion,
 ) *DataplaneProxyBuilder {
 	return &DataplaneProxyBuilder{
 		MetadataTracker: metadataTracker,
@@ -31,7 +31,7 @@ func DefaultDataplaneProxyBuilder(
 func DefaultIngressProxyBuilder(
 	rt core_runtime.Runtime,
 	metadataTracker DataplaneMetadataTracker,
-	apiVersion envoy.APIVersion,
+	apiVersion core_xds.APIVersion,
 ) *IngressProxyBuilder {
 	return &IngressProxyBuilder{
 		ResManager:         rt.ResourceManager(),
@@ -48,7 +48,7 @@ func DefaultEgressProxyBuilder(
 	ctx context.Context,
 	rt core_runtime.Runtime,
 	metadataTracker DataplaneMetadataTracker,
-	apiVersion envoy.APIVersion,
+	apiVersion core_xds.APIVersion,
 ) *EgressProxyBuilder {
 	return &EgressProxyBuilder{
 		ctx:                ctx,
@@ -70,7 +70,7 @@ func DefaultDataplaneWatchdogFactory(
 	egressReconciler SnapshotReconciler,
 	xdsMetrics *xds_metrics.Metrics,
 	envoyCpCtx *xds_context.ControlPlaneContext,
-	apiVersion envoy.APIVersion,
+	apiVersion core_xds.APIVersion,
 ) (DataplaneWatchdogFactory, error) {
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
 	config := rt.Config()
@@ -108,7 +108,7 @@ func DefaultDataplaneWatchdogFactory(
 	}
 	return NewDataplaneWatchdogFactory(
 		xdsMetrics,
-		config.XdsServer.DataplaneConfigurationRefreshInterval,
+		config.XdsServer.DataplaneConfigurationRefreshInterval.Duration,
 		deps,
 	)
 }

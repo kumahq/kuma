@@ -82,6 +82,7 @@ func (r *zoneIngressOverviewEndpoints) fetchOverview(ctx context.Context, name s
 
 func (r *zoneIngressOverviewEndpoints) inspectZoneIngresses(request *restful.Request, response *restful.Response) {
 	if err := r.resourceAccess.ValidateList(
+		"",
 		mesh.NewZoneIngressOverviewResource().Descriptor(),
 		user.FromCtx(request.Request.Context()),
 	); err != nil {

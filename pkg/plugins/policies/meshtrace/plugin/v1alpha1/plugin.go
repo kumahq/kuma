@@ -183,7 +183,7 @@ func applyToClusters(rules xds.SingleItemRules, rs *xds.ResourceSet, proxy *xds.
 
 func endpointForZipkin(cfg *api.ZipkinBackend) *xds.Endpoint {
 	url, _ := net_url.ParseRequestURI(cfg.Url)
-	port, _ := strconv.Atoi(url.Port())
+	port, _ := strconv.ParseInt(url.Port(), 10, 32)
 	return &xds.Endpoint{
 		Target: url.Hostname(),
 		Port:   uint32(port),
@@ -196,7 +196,7 @@ func endpointForZipkin(cfg *api.ZipkinBackend) *xds.Endpoint {
 
 func endpointForDatadog(cfg *api.DatadogBackend) *xds.Endpoint {
 	url, _ := net_url.ParseRequestURI(cfg.Url)
-	port, _ := strconv.Atoi(url.Port())
+	port, _ := strconv.ParseInt(url.Port(), 10, 32)
 
 	return &xds.Endpoint{
 		Target: url.Hostname(),

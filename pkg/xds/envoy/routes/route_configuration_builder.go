@@ -4,6 +4,7 @@ import (
 	envoy_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/pkg/errors"
 
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 )
@@ -16,7 +17,7 @@ type RouteConfigurationBuilderOpt interface {
 	ApplyTo(config *RouteConfigurationBuilderConfig)
 }
 
-func NewRouteConfigurationBuilder(apiVersion envoy.APIVersion) *RouteConfigurationBuilder {
+func NewRouteConfigurationBuilder(apiVersion core_xds.APIVersion) *RouteConfigurationBuilder {
 	return &RouteConfigurationBuilder{
 		apiVersion: apiVersion,
 	}
@@ -25,7 +26,7 @@ func NewRouteConfigurationBuilder(apiVersion envoy.APIVersion) *RouteConfigurati
 // RouteConfigurationBuilder is responsible for generating an Envoy RouteConfiguration
 // by applying a series of RouteConfigurationConfigurers.
 type RouteConfigurationBuilder struct {
-	apiVersion envoy.APIVersion
+	apiVersion core_xds.APIVersion
 	config     RouteConfigurationBuilderConfig
 }
 

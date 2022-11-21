@@ -47,9 +47,9 @@ func DefaultAccessConfig() AccessConfig {
 // AccessConfig defines a configuration for acccess control
 type AccessConfig struct {
 	// Type of the access strategy (available values: "static")
-	Type string `yaml:"type" envconfig:"KUMA_ACCESS_TYPE"`
+	Type string `json:"type" envconfig:"KUMA_ACCESS_TYPE"`
 	// Configuration of static access strategy
-	Static StaticAccessConfig `yaml:"static"`
+	Static StaticAccessConfig `json:"static"`
 }
 
 func (r AccessConfig) Sanitize() {
@@ -67,66 +67,66 @@ var _ config.Config = &AccessConfig{}
 // StaticAccessConfig a static access strategy configuration
 type StaticAccessConfig struct {
 	// AdminResources defines an access to admin resources (Secret/GlobalSecret)
-	AdminResources AdminResourcesStaticAccessConfig `yaml:"adminResources"`
+	AdminResources AdminResourcesStaticAccessConfig `json:"adminResources"`
 	// GenerateDPToken defines an access to generating dataplane token
-	GenerateDPToken GenerateDPTokenStaticAccessConfig `yaml:"generateDpToken"`
+	GenerateDPToken GenerateDPTokenStaticAccessConfig `json:"generateDpToken"`
 	// GenerateUserToken defines an access to generating user token
-	GenerateUserToken GenerateUserTokenStaticAccessConfig `yaml:"generateUserToken"`
+	GenerateUserToken GenerateUserTokenStaticAccessConfig `json:"generateUserToken"`
 	// GenerateZoneToken defines an access to generating zone token
-	GenerateZoneToken GenerateZoneTokenStaticAccessConfig `yaml:"generateZoneToken"`
+	GenerateZoneToken GenerateZoneTokenStaticAccessConfig `json:"generateZoneToken"`
 	// ViewConfigDump defines an access to getting envoy config dump
-	ViewConfigDump ViewConfigDumpStaticAccessConfig `yaml:"viewConfigDump"`
+	ViewConfigDump ViewConfigDumpStaticAccessConfig `json:"viewConfigDump"`
 	// ViewStats defines an access to getting envoy stats
-	ViewStats ViewStatsStaticAccessConfig `yaml:"viewStats"`
+	ViewStats ViewStatsStaticAccessConfig `json:"viewStats"`
 	// ViewClusters defines an access to getting envoy clusters
-	ViewClusters ViewClustersStaticAccessConfig `yaml:"viewClusters"`
+	ViewClusters ViewClustersStaticAccessConfig `json:"viewClusters"`
 }
 
 type AdminResourcesStaticAccessConfig struct {
 	// List of users that are allowed to access admin resources
-	Users []string `yaml:"users" envconfig:"KUMA_ACCESS_STATIC_ADMIN_RESOURCES_USERS"`
+	Users []string `json:"users" envconfig:"KUMA_ACCESS_STATIC_ADMIN_RESOURCES_USERS"`
 	// List of groups that are allowed to access admin resources
-	Groups []string `yaml:"groups" envconfig:"KUMA_ACCESS_STATIC_ADMIN_RESOURCES_GROUPS"`
+	Groups []string `json:"groups" envconfig:"KUMA_ACCESS_STATIC_ADMIN_RESOURCES_GROUPS"`
 }
 
 type GenerateDPTokenStaticAccessConfig struct {
 	// List of users that are allowed to generate dataplane token
-	Users []string `yaml:"users" envconfig:"KUMA_ACCESS_STATIC_GENERATE_DP_TOKEN_USERS"`
+	Users []string `json:"users" envconfig:"KUMA_ACCESS_STATIC_GENERATE_DP_TOKEN_USERS"`
 	// List of groups that are allowed to generate dataplane token
-	Groups []string `yaml:"groups" envconfig:"KUMA_ACCESS_STATIC_GENERATE_DP_TOKEN_GROUPS"`
+	Groups []string `json:"groups" envconfig:"KUMA_ACCESS_STATIC_GENERATE_DP_TOKEN_GROUPS"`
 }
 
 type GenerateUserTokenStaticAccessConfig struct {
 	// List of users that are allowed to generate user token
-	Users []string `yaml:"users" envconfig:"KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_USERS"`
+	Users []string `json:"users" envconfig:"KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_USERS"`
 	// List of groups that are allowed to generate user token
-	Groups []string `yaml:"groups" envconfig:"KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_GROUPS"`
+	Groups []string `json:"groups" envconfig:"KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_GROUPS"`
 }
 
 type GenerateZoneTokenStaticAccessConfig struct {
 	// List of users that are allowed to generate zone token
-	Users []string `yaml:"users" envconfig:"KUMA_ACCESS_STATIC_GENERATE_ZONE_TOKEN_USERS"`
+	Users []string `json:"users" envconfig:"KUMA_ACCESS_STATIC_GENERATE_ZONE_TOKEN_USERS"`
 	// List of groups that are allowed to generate zone token
-	Groups []string `yaml:"groups" envconfig:"KUMA_ACCESS_STATIC_GENERATE_ZONE_TOKEN_GROUPS"`
+	Groups []string `json:"groups" envconfig:"KUMA_ACCESS_STATIC_GENERATE_ZONE_TOKEN_GROUPS"`
 }
 
 type ViewConfigDumpStaticAccessConfig struct {
 	// List of users that are allowed to get envoy config dump
-	Users []string `yaml:"users" envconfig:"KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_USERS"`
+	Users []string `json:"users" envconfig:"KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_USERS"`
 	// List of groups that are allowed to get envoy config dump
-	Groups []string `yaml:"groups" envconfig:"KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_GROUPS"`
+	Groups []string `json:"groups" envconfig:"KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_GROUPS"`
 }
 
 type ViewStatsStaticAccessConfig struct {
 	// List of users that are allowed to get envoy config stats
-	Users []string `yaml:"users" envconfig:"KUMA_ACCESS_STATIC_VIEW_STATS_USERS"`
+	Users []string `json:"users" envconfig:"KUMA_ACCESS_STATIC_VIEW_STATS_USERS"`
 	// List of groups that are allowed to get envoy config stats
-	Groups []string `yaml:"groups" envconfig:"KUMA_ACCESS_STATIC_VIEW_STATS_GROUPS"`
+	Groups []string `json:"groups" envconfig:"KUMA_ACCESS_STATIC_VIEW_STATS_GROUPS"`
 }
 
 type ViewClustersStaticAccessConfig struct {
 	// List of users that are allowed to get envoy config clusters
-	Users []string `yaml:"users" envconfig:"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_USERS"`
+	Users []string `json:"users" envconfig:"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_USERS"`
 	// List of groups that are allowed to get envoy config clusters
-	Groups []string `yaml:"groups" envconfig:"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_GROUPS"`
+	Groups []string `json:"groups" envconfig:"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_GROUPS"`
 }

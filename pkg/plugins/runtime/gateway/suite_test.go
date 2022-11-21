@@ -109,7 +109,7 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 		APIVersion:      envoy.APIV3,
 	}
 
-	cache, err := cla.NewCache(rt.Config().Store.Cache.ExpirationTime, rt.Metrics())
+	cache, err := cla.NewCache(rt.Config().Store.Cache.ExpirationTime.Duration, rt.Metrics())
 	Expect(err).To(Succeed())
 
 	idProvider, err := secrets.NewIdentityProvider(rt.CaManagers(), rt.Metrics())

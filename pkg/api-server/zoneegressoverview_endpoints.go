@@ -91,6 +91,7 @@ func (r *zoneEgressOverviewEndpoints) inspectZoneEgresses(
 	response *restful.Response,
 ) {
 	if err := r.resourceAccess.ValidateList(
+		"",
 		mesh.NewZoneEgressOverviewResource().Descriptor(),
 		user.FromCtx(request.Request.Context()),
 	); err != nil {

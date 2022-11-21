@@ -30,18 +30,25 @@ ENVOY_VERSION=$(echo "$BUILD_INFO" | cut -d " " -f 5)
 KUMA_VERSION=$(echo "$BUILD_INFO" | cut -d " " -f 1)
 [ -z "$KUMA_CONFIG_PATH" ] && KUMA_CONFIG_PATH=pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
 CTL_NAME="kumactl"
+[ -z "$EBPF_PROGRAMS_IMAGE" ] && EBPF_PROGRAMS_IMAGE="kumahq/kuma-net-ebpf:0.8.8"
 
-function get_envoy() {
-  local distro=$1
-  local envoy_distro=$2
-  local arch=$3
+function get_ebpf_programs() {
+  local arch=$1
+  local system=$2
+  local kuma_dir=$3
+  local container
 
-  local status
-  status=$(curl -L -o build/envoy-"$distro" \
-    --write-out '%{http_code}' --silent --output /dev/null \
-    "https://download.konghq.com/mesh-alpine/envoy-$ENVOY_VERSION-$envoy_distro-$arch")
+  if [[ "$system" != "linux" ]]; then
+    return
+  fi
 
-  if [ "$status" -ne "200" ]; then msg_err "Error: failed downloading Envoy"; fi
+  if [[ "$arch" != "amd64" ]] && [[ "$arch" != "arm64" ]]; then
+    return
+  fi
+
+  container=$(DOCKER_DEFAULT_PLATFORM=$system/$arch docker create "$EBPF_PROGRAMS_IMAGE" copy)
+  docker cp "$container:/ebpf" "$kuma_dir"
+  docker rm -v "$container"
 }
 
 # create_kumactl_tarball packages only kumactl
@@ -83,7 +90,7 @@ function create_tarball() {
   msg ">>> Packaging ${RELEASE_NAME} for $distro ($system-$arch)..."
   msg
 
-  make GOOS="$system" GOARCH="$arch" build
+  make GOOS="$system" GOARCH="$arch" ENVOY_DISTRO="$envoy_distro" build
 
   local dest_dir=build/$RELEASE_NAME-$distro-$arch
   local kuma_subdir="$RELEASE_NAME-$KUMA_VERSION"
@@ -95,11 +102,10 @@ function create_tarball() {
   mkdir "$kuma_dir/bin"
   mkdir "$kuma_dir/conf"
 
-  get_envoy "$distro" "$envoy_distro" "$arch"
-  chmod 755 build/envoy-"$distro"
+  get_ebpf_programs "$arch" "$system" "$kuma_dir"
 
   artifact_dir=$(artifact_dir "$arch" "$system")
-  cp -p "build/envoy-$distro" "$kuma_dir"/bin/envoy
+  cp -p "$artifact_dir/envoy/envoy-$ENVOY_VERSION-$envoy_distro" "$kuma_dir/bin"
   cp -p "$artifact_dir/kuma-cp/kuma-cp" "$kuma_dir/bin"
   cp -p "$artifact_dir/kuma-dp/kuma-dp" "$kuma_dir/bin"
   cp -p "$artifact_dir/kumactl/kumactl" "$kuma_dir/bin"

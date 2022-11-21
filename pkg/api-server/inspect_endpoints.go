@@ -23,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/server/callbacks"
 	"github.com/kumahq/kuma/pkg/xds/sync"
 )
@@ -438,9 +439,9 @@ func newGatewayDataplaneInspectResponse(
 }
 
 func routeToPolicyInspect(
-	policyMap map[inspect.PolicyKey][]envoy.Tags,
+	policyMap map[inspect.PolicyKey][]tags.Tags,
 	des route.Destination,
-) map[inspect.PolicyKey][]envoy.Tags {
+) map[inspect.PolicyKey][]tags.Tags {
 	for kind, p := range des.Policies {
 		policyKey := inspect.PolicyKey{
 			Type: kind,
@@ -473,7 +474,7 @@ func gatewayEntriesByPolicy(
 		for _, info := range info.HostInfos {
 			routeMap := map[inspect.PolicyKey][]api_server_types.PolicyInspectGatewayRouteEntry{}
 			for _, entry := range info.Entries {
-				entryMap := map[inspect.PolicyKey][]envoy.Tags{}
+				entryMap := map[inspect.PolicyKey][]tags.Tags{}
 				if entry.Mirror != nil {
 					entryMap = routeToPolicyInspect(entryMap, entry.Mirror.Forward)
 				}

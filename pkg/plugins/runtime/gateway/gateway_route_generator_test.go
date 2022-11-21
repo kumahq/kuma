@@ -5,9 +5,9 @@ import (
 	"path"
 
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/yaml"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -360,6 +360,30 @@ conf:
       - path:
           match: PREFIX
           value: /prefix/a
+      filters:
+        - rewrite:
+            replacePrefixMatch: "/a"
+      backends:
+      - destination:
+          kuma.io/service: echo-service
+`,
+		),
+
+		Entry("should be able to rewrite a prefix that has a trailing slash",
+			"rewrite-prefix-trailing-gateway-route.yaml", `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: /prefix/a/
       filters:
         - rewrite:
             replacePrefixMatch: "/a"

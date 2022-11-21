@@ -112,7 +112,7 @@ func parseService(host string) (name string, namespace string, port uint32, err 
 	segments := strings.Split(host, "_")
 	switch len(segments) {
 	case 4:
-		p, err := strconv.Atoi(segments[3])
+		p, err := strconv.ParseInt(segments[3], 10, 32)
 		if err != nil {
 			return "", "", 0, err
 		}

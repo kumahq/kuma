@@ -110,7 +110,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	leaderInfoComponent := &component.LeaderInfoComponent{}
 	builder.WithLeaderInfo(leaderInfoComponent)
 
-	builder.WithLookupIP(lookup.CachedLookupIP(net.LookupIP, cfg.General.DNSCacheTTL))
+	builder.WithLookupIP(lookup.CachedLookupIP(net.LookupIP, cfg.General.DNSCacheTTL.Duration))
 	builder.WithAPIManager(customization.NewAPIList())
 	builder.WithXDSHooks(&xds_hooks.Hooks{})
 	caProvider, err := secrets.NewCaProvider(builder.CaManagers(), builder.Metrics())
@@ -446,7 +446,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	builder.WithResourceManager(customizableManager)
 
 	if builder.Config().Store.Cache.Enabled {
-		cachedManager, err := core_manager.NewCachedManager(customizableManager, builder.Config().Store.Cache.ExpirationTime, builder.Metrics())
+		cachedManager, err := core_manager.NewCachedManager(customizableManager, builder.Config().Store.Cache.ExpirationTime.Duration, builder.Metrics())
 		if err != nil {
 			return err
 		}
@@ -473,7 +473,7 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 	)
 
 	meshSnapshotCache, err := mesh_cache.NewCache(
-		builder.Config().Store.Cache.ExpirationTime,
+		builder.Config().Store.Cache.ExpirationTime.Duration,
 		meshContextBuilder,
 		builder.Metrics(),
 	)

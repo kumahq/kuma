@@ -8,13 +8,14 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 )
 
 var _ config.Config = &BootstrapServerConfig{}
 
 type BootstrapServerConfig struct {
 	// Parameters of bootstrap configuration
-	Params *BootstrapParamsConfig `yaml:"params"`
+	Params *BootstrapParamsConfig `json:"params"`
 }
 
 func (b *BootstrapServerConfig) Sanitize() {
@@ -38,17 +39,17 @@ var _ config.Config = &BootstrapParamsConfig{}
 
 type BootstrapParamsConfig struct {
 	// Address of Envoy Admin
-	AdminAddress string `yaml:"adminAddress" envconfig:"kuma_bootstrap_server_params_admin_address"`
+	AdminAddress string `json:"adminAddress" envconfig:"kuma_bootstrap_server_params_admin_address"`
 	// Port of Envoy Admin
-	AdminPort uint32 `yaml:"adminPort" envconfig:"kuma_bootstrap_server_params_admin_port"`
+	AdminPort uint32 `json:"adminPort" envconfig:"kuma_bootstrap_server_params_admin_port"`
 	// Path to access log file of Envoy Admin
-	AdminAccessLogPath string `yaml:"adminAccessLogPath" envconfig:"kuma_bootstrap_server_params_admin_access_log_path"`
+	AdminAccessLogPath string `json:"adminAccessLogPath" envconfig:"kuma_bootstrap_server_params_admin_access_log_path"`
 	// Host of XDS Server. By default it is the same host as the one used by kuma-dp to connect to the control plane
-	XdsHost string `yaml:"xdsHost" envconfig:"kuma_bootstrap_server_params_xds_host"`
+	XdsHost string `json:"xdsHost" envconfig:"kuma_bootstrap_server_params_xds_host"`
 	// Port of XDS Server. By default it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT
-	XdsPort uint32 `yaml:"xdsPort" envconfig:"kuma_bootstrap_server_params_xds_port"`
+	XdsPort uint32 `json:"xdsPort" envconfig:"kuma_bootstrap_server_params_xds_port"`
 	// Connection timeout to the XDS Server
-	XdsConnectTimeout time.Duration `yaml:"xdsConnectTimeout" envconfig:"kuma_bootstrap_server_params_xds_connect_timeout"`
+	XdsConnectTimeout config_types.Duration `json:"xdsConnectTimeout" envconfig:"kuma_bootstrap_server_params_xds_connect_timeout"`
 }
 
 func (b *BootstrapParamsConfig) Sanitize() {
@@ -70,7 +71,7 @@ func (b *BootstrapParamsConfig) Validate() error {
 	if b.XdsPort > 65535 {
 		return errors.New("AdminPort must be in the range [0, 65535]")
 	}
-	if b.XdsConnectTimeout < 0 {
+	if b.XdsConnectTimeout.Duration < 0 {
 		return errors.New("XdsConnectTimeout cannot be negative")
 	}
 	return nil
@@ -83,6 +84,6 @@ func DefaultBootstrapParamsConfig() *BootstrapParamsConfig {
 		AdminAccessLogPath: os.DevNull,
 		XdsHost:            "", // by default, it is the same host as the one used by kuma-dp to connect to the control plane
 		XdsPort:            0,  // by default, it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT
-		XdsConnectTimeout:  1 * time.Second,
+		XdsConnectTimeout:  config_types.Duration{Duration: 1 * time.Second},
 	}
 }

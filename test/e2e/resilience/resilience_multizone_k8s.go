@@ -36,6 +36,7 @@ func ResilienceMultizoneK8s() {
 	})
 
 	E2EAfterEach(func() {
+		Expect(zone1.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(zone1.DeleteKuma()).To(Succeed())
 		Expect(zone1.DismissCluster()).To(Succeed())
 

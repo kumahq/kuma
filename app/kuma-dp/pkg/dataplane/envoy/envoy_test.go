@@ -18,6 +18,7 @@ import (
 
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/test"
 )
 
@@ -83,7 +84,7 @@ var _ = Describe("Envoy", func() {
 			// given
 			cfg := kuma_dp.Config{
 				Dataplane: kuma_dp.Dataplane{
-					DrainTime: 15 * time.Second,
+					DrainTime: config_types.Duration{Duration: 15 * time.Second},
 				},
 				DataplaneRuntime: kuma_dp.DataplaneRuntime{
 					BinaryPath:    filepath.Join("testdata", "envoy-mock.exit-0.sh"),
@@ -143,7 +144,7 @@ var _ = Describe("Envoy", func() {
 			// given
 			cfg := kuma_dp.Config{
 				Dataplane: kuma_dp.Dataplane{
-					DrainTime: 15 * time.Second,
+					DrainTime: config_types.Duration{Duration: 15 * time.Second},
 				},
 				DataplaneRuntime: kuma_dp.DataplaneRuntime{
 					BinaryPath:    filepath.Join("testdata", "envoy-mock.exit-0.sh"),

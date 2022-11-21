@@ -19,10 +19,10 @@ func Setup(rt runtime.Runtime) error {
 	resyncer := NewResyncer(&Config{
 		ResourceManager:    rt.ResourceManager(),
 		EventReaderFactory: rt.EventReaderFactory(),
-		MinResyncTimeout:   rt.Config().Metrics.Mesh.MinResyncTimeout,
-		MaxResyncTimeout:   rt.Config().Metrics.Mesh.MaxResyncTimeout,
+		MinResyncTimeout:   rt.Config().Metrics.Mesh.MinResyncTimeout.Duration,
+		MaxResyncTimeout:   rt.Config().Metrics.Mesh.MaxResyncTimeout.Duration,
 		RateLimiterFactory: func() *rate.Limiter {
-			return rate.NewLimiter(rate.Every(rt.Config().Metrics.Mesh.MinResyncTimeout), 0)
+			return rate.NewLimiter(rate.Every(rt.Config().Metrics.Mesh.MinResyncTimeout.Duration), 0)
 		},
 		Registry: registry.Global(),
 		AddressPortGenerator: func(svc string) string {

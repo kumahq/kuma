@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
+	server "github.com/kumahq/kuma/pkg/config/api-server"
 	"github.com/kumahq/kuma/pkg/test"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
@@ -22,7 +23,10 @@ var _ = Describe("Index Endpoints", func() {
 	var apiServer *api_server.ApiServer
 	BeforeEach(func() {
 		backupBuildInfo = kuma_version.Build
-		apiServer, _, stop = StartApiServer(NewTestApiServerConfigurer().WithGui())
+		apiServer, _, stop = StartApiServer(NewTestApiServerConfigurer().WithConfigMutator(func(config *server.ApiServerConfig) {
+			config.GUI.Enabled = true
+			config.GUI.RootUrl = "https://foo.bar.com:5000/from"
+		}))
 	})
 	AfterEach(func() {
 		stop()
@@ -55,7 +59,7 @@ var _ = Describe("Index Endpoints", func() {
 			"version": "1.2.3",
 			"instanceId": "instance-id",
 			"clusterId": "cluster-id",
-			"gui": "The gui is available at /gui"
+			"gui": "https://foo.bar.com:5000/from"
 		}`, hostname)
 
 		Expect(body).To(MatchJSON(expected))

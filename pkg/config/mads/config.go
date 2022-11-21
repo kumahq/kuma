@@ -14,9 +14,9 @@ import (
 func DefaultMonitoringAssignmentServerConfig() *MonitoringAssignmentServerConfig {
 	return &MonitoringAssignmentServerConfig{
 		Port:                      5676,
-		DefaultFetchTimeout:       30 * time.Second,
+		DefaultFetchTimeout:       config_types.Duration{Duration: 30 * time.Second},
 		ApiVersions:               []mads.ApiVersion{mads.API_V1},
-		AssignmentRefreshInterval: 1 * time.Second,
+		AssignmentRefreshInterval: config_types.Duration{Duration: 1 * time.Second},
 		TlsMinVersion:             "TLSv1_2",
 		TlsCipherSuites:           []string{},
 	}
@@ -26,25 +26,25 @@ func DefaultMonitoringAssignmentServerConfig() *MonitoringAssignmentServerConfig
 type MonitoringAssignmentServerConfig struct {
 	// Port of the server that serves Monitoring Assignment Discovery Service (MADS)
 	// over both grpc and http.
-	Port uint32 `yaml:"port" envconfig:"kuma_monitoring_assignment_server_port"`
+	Port uint32 `json:"port" envconfig:"kuma_monitoring_assignment_server_port"`
 	// The default timeout for a single fetch-based discovery request, if not specified.
-	DefaultFetchTimeout time.Duration `yaml:"defaultFetchTimeout" envconfig:"kuma_monitoring_assignment_server_default_fetch_timeout"`
+	DefaultFetchTimeout config_types.Duration `json:"defaultFetchTimeout" envconfig:"kuma_monitoring_assignment_server_default_fetch_timeout"`
 	// Which observability apiVersions to serve
-	ApiVersions []string `yaml:"apiVersions" envconfig:"kuma_monitoring_assignment_server_api_versions"`
+	ApiVersions []string `json:"apiVersions" envconfig:"kuma_monitoring_assignment_server_api_versions"`
 	// Interval for re-generating monitoring assignments for clients connected to the Control Plane.
-	AssignmentRefreshInterval time.Duration `yaml:"assignmentRefreshInterval" envconfig:"kuma_monitoring_assignment_server_assignment_refresh_interval"`
+	AssignmentRefreshInterval config_types.Duration `json:"assignmentRefreshInterval" envconfig:"kuma_monitoring_assignment_server_assignment_refresh_interval"`
 	// TlsEnabled whether tls is enabled or not
-	TlsEnabled bool `yaml:"tlsEnabled" envconfig:"kuma_monitoring_assignment_server_tls_enabled"`
+	TlsEnabled bool `json:"tlsEnabled" envconfig:"kuma_monitoring_assignment_server_tls_enabled"`
 	// TlsCertFile defines a path to a file with PEM-encoded TLS cert. If empty, autoconfigured from general.tlsCertFile
-	TlsCertFile string `yaml:"tlsCertFile" envconfig:"kuma_monitoring_assignment_server_tls_cert_file"`
+	TlsCertFile string `json:"tlsCertFile" envconfig:"kuma_monitoring_assignment_server_tls_cert_file"`
 	// TlsKeyFile defines a path to a file with PEM-encoded TLS key. If empty, autoconfigured from general.tlsKeyFile
-	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_monitoring_assignment_server_tls_key_file"`
+	TlsKeyFile string `json:"tlsKeyFile" envconfig:"kuma_monitoring_assignment_server_tls_key_file"`
 	// TlsMinVersion defines the minimum TLS version to be used
-	TlsMinVersion string `yaml:"tlsMinVersion" envconfig:"kuma_monitoring_assignment_server_tls_min_version"`
+	TlsMinVersion string `json:"tlsMinVersion" envconfig:"kuma_monitoring_assignment_server_tls_min_version"`
 	// TlsMaxVersion defines the maximum TLS version to be used
-	TlsMaxVersion string `yaml:"tlsMaxVersion" envconfig:"kuma_monitoring_assignment_server_tls_max_version"`
+	TlsMaxVersion string `json:"tlsMaxVersion" envconfig:"kuma_monitoring_assignment_server_tls_max_version"`
 	// TlsCipherSuites defines the list of ciphers to use
-	TlsCipherSuites []string `yaml:"tlsCipherSuites" envconfig:"kuma_monitoring_assignment_server_tls_cipher_suites"`
+	TlsCipherSuites []string `json:"tlsCipherSuites" envconfig:"kuma_monitoring_assignment_server_tls_cipher_suites"`
 }
 
 var _ config.Config = &MonitoringAssignmentServerConfig{}
@@ -67,7 +67,7 @@ func (c *MonitoringAssignmentServerConfig) Validate() (errs error) {
 		}
 	}
 
-	if c.AssignmentRefreshInterval <= 0 {
+	if c.AssignmentRefreshInterval.Duration <= 0 {
 		return errors.New(".AssignmentRefreshInterval must be positive")
 	}
 	if c.TlsCertFile == "" && c.TlsKeyFile != "" {

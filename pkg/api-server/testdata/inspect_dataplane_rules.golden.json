@@ -11,6 +11,7 @@
     "backends": [
      {
       "file": {
+       "format": {},
        "path": "/tmp/access.logs"
       }
      }

@@ -5,9 +5,9 @@ import (
 	"path"
 	"reflect"
 
-	"github.com/ghodss/yaml"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+	"sigs.k8s.io/yaml"
 
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )

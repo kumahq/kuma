@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 )
 
 var _ config.Config = &PostgresStoreConfig{}
@@ -15,34 +16,34 @@ var _ config.Config = &PostgresStoreConfig{}
 // Postgres store configuration
 type PostgresStoreConfig struct {
 	// Host of the Postgres DB
-	Host string `yaml:"host" envconfig:"kuma_store_postgres_host"`
+	Host string `json:"host" envconfig:"kuma_store_postgres_host"`
 	// Port of the Postgres DB
-	Port int `yaml:"port" envconfig:"kuma_store_postgres_port"`
+	Port int `json:"port" envconfig:"kuma_store_postgres_port"`
 	// User of the Postgres DB
-	User string `yaml:"user" envconfig:"kuma_store_postgres_user"`
+	User string `json:"user" envconfig:"kuma_store_postgres_user"`
 	// Password of the Postgres DB
-	Password string `yaml:"password" envconfig:"kuma_store_postgres_password"`
+	Password string `json:"password" envconfig:"kuma_store_postgres_password"`
 	// Database name of the Postgres DB
-	DbName string `yaml:"dbName" envconfig:"kuma_store_postgres_db_name"`
+	DbName string `json:"dbName" envconfig:"kuma_store_postgres_db_name"`
 	// Connection Timeout to the DB in seconds
-	ConnectionTimeout int `yaml:"connectionTimeout" envconfig:"kuma_store_postgres_connection_timeout"`
+	ConnectionTimeout int `json:"connectionTimeout" envconfig:"kuma_store_postgres_connection_timeout"`
 	// Maximum number of open connections to the database
 	// `0` value means number of open connections is unlimited
-	MaxOpenConnections int `yaml:"maxOpenConnections" envconfig:"kuma_store_postgres_max_open_connections"`
+	MaxOpenConnections int `json:"maxOpenConnections" envconfig:"kuma_store_postgres_max_open_connections"`
 	// Maximum number of connections in the idle connection pool
 	// <0 value means no idle connections and 0 means default max idle connections
-	MaxIdleConnections int `yaml:"maxIdleConnections" envconfig:"kuma_store_postgres_max_idle_connections"`
+	MaxIdleConnections int `json:"maxIdleConnections" envconfig:"kuma_store_postgres_max_idle_connections"`
 	// TLS settings
-	TLS TLSPostgresStoreConfig `yaml:"tls"`
+	TLS TLSPostgresStoreConfig `json:"tls"`
 	// MinReconnectInterval controls the duration to wait before trying to
 	// re-establish the database connection after connection loss. After each
 	// consecutive failure this interval is doubled, until MaxReconnectInterval
 	// is reached. Successfully completing the connection establishment procedure
 	// resets the interval back to MinReconnectInterval.
-	MinReconnectInterval time.Duration `yaml:"minReconnectInterval" envconfig:"kuma_store_postgres_min_reconnect_interval"`
+	MinReconnectInterval config_types.Duration `json:"minReconnectInterval" envconfig:"kuma_store_postgres_min_reconnect_interval"`
 	// MaxReconnectInterval controls the maximum possible duration to wait before trying
 	// to re-establish the database connection after connection loss.
-	MaxReconnectInterval time.Duration `yaml:"maxReconnectInterval" envconfig:"kuma_store_postgres_max_reconnect_interval"`
+	MaxReconnectInterval config_types.Duration `json:"maxReconnectInterval" envconfig:"kuma_store_postgres_max_reconnect_interval"`
 }
 
 func (cfg PostgresStoreConfig) ConnectionString() (string, error) {
@@ -51,9 +52,16 @@ func (cfg PostgresStoreConfig) ConnectionString() (string, error) {
 		return "", err
 	}
 	escape := func(value string) string { return strings.ReplaceAll(strings.ReplaceAll(value, `\`, `\\`), `'`, `\'`) }
+	boolOption := func(value bool) string {
+		if value {
+			return "1"
+		} else {
+			return "0"
+		}
+	}
 	return fmt.Sprintf(
-		`host='%s' port=%d user='%s' password='%s' dbname='%s' connect_timeout=%d sslmode=%s sslcert='%s' sslkey='%s' sslrootcert='%s'`,
-		escape(cfg.Host), cfg.Port, escape(cfg.User), escape(cfg.Password), escape(cfg.DbName), cfg.ConnectionTimeout, mode, escape(cfg.TLS.CertPath), escape(cfg.TLS.KeyPath), escape(cfg.TLS.CAPath),
+		`host='%s' port=%d user='%s' password='%s' dbname='%s' connect_timeout=%d sslmode=%s sslcert='%s' sslkey='%s' sslrootcert='%s' sslsni=%s`,
+		escape(cfg.Host), cfg.Port, escape(cfg.User), escape(cfg.Password), escape(cfg.DbName), cfg.ConnectionTimeout, mode, escape(cfg.TLS.CertPath), escape(cfg.TLS.KeyPath), escape(cfg.TLS.CAPath), boolOption(!cfg.TLS.DisableSSLSNI),
 	), nil
 }
 
@@ -87,13 +95,15 @@ func (mode TLSMode) postgresMode() (string, error) {
 
 type TLSPostgresStoreConfig struct {
 	// Mode of TLS connection. Available values (disable, verifyNone, verifyCa, verifyFull)
-	Mode TLSMode `yaml:"mode" envconfig:"kuma_store_postgres_tls_mode"`
+	Mode TLSMode `json:"mode" envconfig:"kuma_store_postgres_tls_mode"`
 	// Path to TLS Certificate of the client. Used in require, verifyCa and verifyFull modes
-	CertPath string `yaml:"certPath" envconfig:"kuma_store_postgres_tls_cert_path"`
+	CertPath string `json:"certPath" envconfig:"kuma_store_postgres_tls_cert_path"`
 	// Path to TLS Key of the client. Used in verifyNone, verifyCa and verifyFull modes
-	KeyPath string `yaml:"keyPath" envconfig:"kuma_store_postgres_tls_key_path"`
+	KeyPath string `json:"keyPath" envconfig:"kuma_store_postgres_tls_key_path"`
 	// Path to the root certificate. Used in verifyCa and verifyFull modes.
-	CAPath string `yaml:"caPath" envconfig:"kuma_store_postgres_tls_ca_path"`
+	CAPath string `json:"caPath" envconfig:"kuma_store_postgres_tls_ca_path"`
+	// Whether to disable SNI the postgres `sslsni` option.
+	DisableSSLSNI bool `json:"disableSSLSNI" envconfig:"kuma_store_postgres_tls_disable_sslsni"`
 }
 
 func (s TLSPostgresStoreConfig) Sanitize() {
@@ -144,7 +154,7 @@ func (p *PostgresStoreConfig) Validate() error {
 	if err := p.TLS.Validate(); err != nil {
 		return errors.Wrap(err, "TLS validation failed")
 	}
-	if p.MinReconnectInterval >= p.MaxReconnectInterval {
+	if p.MinReconnectInterval.Duration >= p.MaxReconnectInterval.Duration {
 		return errors.New("MinReconnectInterval should be less than MaxReconnectInterval")
 	}
 	return nil
@@ -161,8 +171,8 @@ func DefaultPostgresStoreConfig() *PostgresStoreConfig {
 		MaxOpenConnections:   50, // 0 for unlimited
 		MaxIdleConnections:   50, // 0 for unlimited
 		TLS:                  DefaultTLSPostgresStoreConfig(),
-		MinReconnectInterval: 10 * time.Second,
-		MaxReconnectInterval: 60 * time.Second,
+		MinReconnectInterval: config_types.Duration{Duration: 10 * time.Second},
+		MaxReconnectInterval: config_types.Duration{Duration: 60 * time.Second},
 	}
 }
 

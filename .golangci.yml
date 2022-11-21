@@ -50,6 +50,15 @@ linters-settings:
       - github.com/go-errors/errors:
           recommendations:
           - github.com/pkg/errors
+      - github.com/ghodss/yaml:
+          recommendations:
+          - sigs.k8s.io/yaml
+      - gopkg.in/yaml.v2:
+          recommendations:
+          - sigs.k8s.io/yaml
+      - gopkg.in/yaml.v3:
+          recommendations:
+          - sigs.k8s.io/yaml
   misspell:
     locale: US
     ignore-words:

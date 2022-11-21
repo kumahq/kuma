@@ -21,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	observability_v1 "github.com/kumahq/kuma/api/observability/v1"
 	mads_config "github.com/kumahq/kuma/pkg/config/mads"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -54,8 +55,8 @@ var _ = Describe("MADS http service", func() {
 		resManager = core_manager.NewResourceManager(memory.NewStore())
 
 		cfg := mads_config.DefaultMonitoringAssignmentServerConfig()
-		cfg.AssignmentRefreshInterval = refreshInterval
-		cfg.DefaultFetchTimeout = defaultFetchTimeout
+		cfg.AssignmentRefreshInterval = config_types.Duration{Duration: refreshInterval}
+		cfg.DefaultFetchTimeout = config_types.Duration{Duration: defaultFetchTimeout}
 
 		svc := service.NewService(cfg, resManager, logr.Discard())
 

@@ -69,7 +69,7 @@ func (t TracingProxyGenerator) endpointForZipkin(cfg *mesh_proto.ZipkinTracingBa
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid URL of Zipkin")
 	}
-	port, err := strconv.Atoi(url.Port())
+	port, err := strconv.ParseInt(url.Port(), 10, 32)
 	if err != nil {
 		return nil, err
 	}

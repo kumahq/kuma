@@ -4,6 +4,7 @@ import (
 	envoy_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/pkg/errors"
 
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 )
@@ -16,7 +17,7 @@ type VirtualHostBuilderOpt interface {
 	ApplyTo(config *VirtualHostBuilderConfig)
 }
 
-func NewVirtualHostBuilder(apiVersion envoy.APIVersion) *VirtualHostBuilder {
+func NewVirtualHostBuilder(apiVersion core_xds.APIVersion) *VirtualHostBuilder {
 	return &VirtualHostBuilder{
 		apiVersion: apiVersion,
 	}
@@ -25,7 +26,7 @@ func NewVirtualHostBuilder(apiVersion envoy.APIVersion) *VirtualHostBuilder {
 // VirtualHostBuilder is responsible for generating an Envoy VirtualHost
 // by applying a series of VirtualHostConfigurers.
 type VirtualHostBuilder struct {
-	apiVersion envoy.APIVersion
+	apiVersion core_xds.APIVersion
 	config     VirtualHostBuilderConfig
 }
 

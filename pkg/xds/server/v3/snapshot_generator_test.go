@@ -124,7 +124,7 @@ var _ = Describe("Reconcile", func() {
 
 			proxy := &model.Proxy{
 				Id:             *model.BuildProxyId("", "demo.web1"),
-				SecretsTracker: model.NewSecretsTracker("demo", []string{"demo"}),
+				SecretsTracker: envoy_common.NewSecretsTracker("demo", []string{"demo"}),
 				APIVersion:     envoy_common.APIV3,
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{

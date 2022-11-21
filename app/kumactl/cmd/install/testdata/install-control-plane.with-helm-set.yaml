@@ -1654,8 +1654,9 @@ spec:
                                             value:
                                               type: string
                                           type: object
-                                        nullable: true
                                         type: array
+                                      omitEmptyValues:
+                                        type: boolean
                                       plain:
                                         type: string
                                     type: object
@@ -1682,8 +1683,9 @@ spec:
                                             value:
                                               type: string
                                           type: object
-                                        nullable: true
                                         type: array
+                                      omitEmptyValues:
+                                        type: boolean
                                       plain:
                                         type: string
                                     type: object
@@ -1780,8 +1782,9 @@ spec:
                                             value:
                                               type: string
                                           type: object
-                                        nullable: true
                                         type: array
+                                      omitEmptyValues:
+                                        type: boolean
                                       plain:
                                         type: string
                                     type: object
@@ -1808,8 +1811,9 @@ spec:
                                             value:
                                               type: string
                                           type: object
-                                        nullable: true
                                         type: array
+                                      omitEmptyValues:
+                                        type: boolean
                                       plain:
                                         type: string
                                     type: object

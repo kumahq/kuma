@@ -8,6 +8,7 @@ import (
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/kumahq/kuma/pkg/config"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 )
 
 func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
@@ -29,7 +30,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 					Image:     "kuma/kuma-dp:latest",
 					UID:       5678,
 					GID:       5678,
-					DrainTime: 30 * time.Second,
+					DrainTime: config_types.Duration{Duration: 30 * time.Second},
 					EnvVars:   map[string]string{},
 
 					ReadinessProbe: SidecarReadinessProbe{
@@ -85,7 +86,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 				ProgramsSourcePath:   "/kuma/ebpf",
 			},
 		},
-		MarshalingCacheExpirationTime: 5 * time.Minute,
+		MarshalingCacheExpirationTime: config_types.Duration{Duration: 5 * time.Minute},
 		NodeTaintController: NodeTaintController{
 			Enabled: false,
 			CniApp:  "",
@@ -96,198 +97,198 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 // Kubernetes-specific configuration
 type KubernetesRuntimeConfig struct {
 	// Admission WebHook Server implemented by the Control Plane.
-	AdmissionServer AdmissionServerConfig `yaml:"admissionServer"`
+	AdmissionServer AdmissionServerConfig `json:"admissionServer"`
 	// Injector-specific configuration
-	Injector Injector `yaml:"injector,omitempty"`
+	Injector Injector `json:"injector,omitempty"`
 	// MarshalingCacheExpirationTime defines a duration for how long
 	// marshaled objects will be stored in the cache. If equal to 0s then
 	// cache is turned off
-	MarshalingCacheExpirationTime time.Duration `yaml:"marshalingCacheExpirationTime" envconfig:"kuma_runtime_kubernetes_marshaling_cache_expiration_time"`
+	MarshalingCacheExpirationTime config_types.Duration `json:"marshalingCacheExpirationTime" envconfig:"kuma_runtime_kubernetes_marshaling_cache_expiration_time"`
 	// Name of Service Account that is used to run the Control Plane
-	ServiceAccountName string `yaml:"serviceAccountName,omitempty" envconfig:"kuma_runtime_kubernetes_service_account_name"`
+	ServiceAccountName string `json:"serviceAccountName,omitempty" envconfig:"kuma_runtime_kubernetes_service_account_name"`
 	// ControlPlaneServiceName defines service name of the Kuma control plane. It is used to point Kuma DP to proper URL.
-	ControlPlaneServiceName string `yaml:"controlPlaneServiceName,omitempty" envconfig:"kuma_runtime_kubernetes_control_plane_service_name"`
+	ControlPlaneServiceName string `json:"controlPlaneServiceName,omitempty" envconfig:"kuma_runtime_kubernetes_control_plane_service_name"`
 	// NodeTaintController that prevents applications from scheduling until CNI is ready.
-	NodeTaintController NodeTaintController `yaml:"nodeTaintController"`
+	NodeTaintController NodeTaintController `json:"nodeTaintController"`
 }
 
 // Configuration of the Admission WebHook Server implemented by the Control Plane.
 type AdmissionServerConfig struct {
 	// Address the Admission WebHook Server should be listening on.
-	Address string `yaml:"address" envconfig:"kuma_runtime_kubernetes_admission_server_address"`
+	Address string `json:"address" envconfig:"kuma_runtime_kubernetes_admission_server_address"`
 	// Port the Admission WebHook Server should be listening on.
-	Port uint32 `yaml:"port" envconfig:"kuma_runtime_kubernetes_admission_server_port"`
+	Port uint32 `json:"port" envconfig:"kuma_runtime_kubernetes_admission_server_port"`
 	// Directory with a TLS cert and private key for the Admission WebHook Server.
 	// TLS certificate file must be named `tls.crt`.
 	// TLS key file must be named `tls.key`.
-	CertDir string `yaml:"certDir" envconfig:"kuma_runtime_kubernetes_admission_server_cert_dir"`
+	CertDir string `json:"certDir" envconfig:"kuma_runtime_kubernetes_admission_server_cert_dir"`
 }
 
 // Injector defines configuration of a Kuma Sidecar Injector.
 type Injector struct {
 	// SidecarContainer defines configuration of the Kuma sidecar container.
-	SidecarContainer SidecarContainer `yaml:"sidecarContainer,omitempty"`
+	SidecarContainer SidecarContainer `json:"sidecarContainer,omitempty"`
 	// InitContainer defines configuration of the Kuma init container.
-	InitContainer InitContainer `yaml:"initContainer,omitempty"`
+	InitContainer InitContainer `json:"initContainer,omitempty"`
 	// ContainerPatches is an optional list of ContainerPatch names which will be applied
 	// to init and sidecar containers if workload is not annotated with a patch list.
-	ContainerPatches []string `yaml:"containerPatches" envconfig:"kuma_runtime_kubernetes_injector_container_patches"`
+	ContainerPatches []string `json:"containerPatches" envconfig:"kuma_runtime_kubernetes_injector_container_patches"`
 	// CNIEnabled if true runs kuma-cp in CNI compatible mode
-	CNIEnabled bool `yaml:"cniEnabled" envconfig:"kuma_runtime_kubernetes_injector_cni_enabled"`
+	CNIEnabled bool `json:"cniEnabled" envconfig:"kuma_runtime_kubernetes_injector_cni_enabled"`
 	// VirtualProbesEnabled enables automatic converting HttpGet probes to virtual. Virtual probe
 	// serves on sub-path of insecure port 'virtualProbesPort',
 	// i.e :8080/health/readiness -> :9000/8080/health/readiness where 9000 is virtualProbesPort
-	VirtualProbesEnabled bool `yaml:"virtualProbesEnabled" envconfig:"kuma_runtime_kubernetes_virtual_probes_enabled"`
+	VirtualProbesEnabled bool `json:"virtualProbesEnabled" envconfig:"kuma_runtime_kubernetes_virtual_probes_enabled"`
 	// VirtualProbesPort is a port for exposing virtual probes which are not secured by mTLS
-	VirtualProbesPort uint32 `yaml:"virtualProbesPort" envconfig:"kuma_runtime_kubernetes_virtual_probes_port"`
+	VirtualProbesPort uint32 `json:"virtualProbesPort" envconfig:"kuma_runtime_kubernetes_virtual_probes_port"`
 	// SidecarTraffic is a configuration for a traffic that is intercepted by sidecar
-	SidecarTraffic SidecarTraffic `yaml:"sidecarTraffic"`
+	SidecarTraffic SidecarTraffic `json:"sidecarTraffic"`
 	// Exceptions defines list of exceptions for Kuma injection
-	Exceptions Exceptions `yaml:"exceptions"`
+	Exceptions Exceptions `json:"exceptions"`
 	// CaCertFile is CA certificate which will be used to verify a connection to the control plane
-	CaCertFile string     `yaml:"caCertFile" envconfig:"kuma_runtime_kubernetes_injector_ca_cert_file"`
-	BuiltinDNS BuiltinDNS `yaml:"builtinDNS"`
+	CaCertFile string     `json:"caCertFile" envconfig:"kuma_runtime_kubernetes_injector_ca_cert_file"`
+	BuiltinDNS BuiltinDNS `json:"builtinDNS"`
 	// TransparentProxyV2 enables the new transparent proxy engine for all workloads
-	TransparentProxyV2 bool `yaml:"transparentProxyV2" envconfig:"kuma_runtime_kubernetes_injector_transparent_proxy_v2"`
+	TransparentProxyV2 bool `json:"transparentProxyV2" envconfig:"kuma_runtime_kubernetes_injector_transparent_proxy_v2"`
 	// EBPF is a configuration for ebpf if transparent proxy should be installed
 	// using ebpf instead of iptables
-	EBPF EBPF `yaml:"ebpf"`
+	EBPF EBPF `json:"ebpf"`
 }
 
 // Exceptions defines list of exceptions for Kuma injection
 type Exceptions struct {
 	// Labels is a map of labels for exception. If pod matches label with given value Kuma won't be injected. Specify '*' to match any value.
-	Labels map[string]string `yaml:"labels" envconfig:"kuma_runtime_kubernetes_exceptions_labels"`
+	Labels map[string]string `json:"labels" envconfig:"kuma_runtime_kubernetes_exceptions_labels"`
 }
 
 type SidecarTraffic struct {
 	// List of inbound ports that will be excluded from interception.
 	// This setting is applied on every pod unless traffic.kuma.io/exclude-inbound-ports annotation is specified on Pod.
-	ExcludeInboundPorts []uint32 `yaml:"excludeInboundPorts" envconfig:"kuma_runtime_kubernetes_sidecar_traffic_exclude_inbound_ports"`
+	ExcludeInboundPorts []uint32 `json:"excludeInboundPorts" envconfig:"kuma_runtime_kubernetes_sidecar_traffic_exclude_inbound_ports"`
 	// List of outbound ports that will be excluded from interception.
 	// This setting is applied on every pod unless traffic.kuma.io/exclude-oubound-ports annotation is specified on Pod.
-	ExcludeOutboundPorts []uint32 `yaml:"excludeOutboundPorts" envconfig:"kuma_runtime_kubernetes_sidecar_traffic_exclude_outbound_ports"`
+	ExcludeOutboundPorts []uint32 `json:"excludeOutboundPorts" envconfig:"kuma_runtime_kubernetes_sidecar_traffic_exclude_outbound_ports"`
 }
 
 // DataplaneContainer defines the configuration of a Kuma dataplane proxy container.
 type DataplaneContainer struct {
 	// Image name.
-	Image string `yaml:"image,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_image"`
+	Image string `json:"image,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_image"`
 	// User ID.
-	UID int64 `yaml:"uid,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_uid"`
+	UID int64 `json:"uid,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_uid"`
 	// Group ID.
-	GID int64 `yaml:"gid,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_gui"`
+	GID int64 `json:"gid,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_gui"`
 	// Deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead.
-	AdminPort uint32 `yaml:"adminPort,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_admin_port"`
+	AdminPort uint32 `json:"adminPort,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_admin_port"`
 	// Drain time for listeners.
-	DrainTime time.Duration `yaml:"drainTime,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_drain_time"`
+	DrainTime config_types.Duration `json:"drainTime,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_drain_time"`
 	// Readiness probe.
-	ReadinessProbe SidecarReadinessProbe `yaml:"readinessProbe,omitempty"`
+	ReadinessProbe SidecarReadinessProbe `json:"readinessProbe,omitempty"`
 	// Liveness probe.
-	LivenessProbe SidecarLivenessProbe `yaml:"livenessProbe,omitempty"`
+	LivenessProbe SidecarLivenessProbe `json:"livenessProbe,omitempty"`
 	// Compute resource requirements.
-	Resources SidecarResources `yaml:"resources,omitempty"`
+	Resources SidecarResources `json:"resources,omitempty"`
 	// EnvVars are additional environment variables that can be placed on Kuma DP sidecar
-	EnvVars map[string]string `yaml:"envVars" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_env_vars"`
+	EnvVars map[string]string `json:"envVars" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_env_vars"`
 }
 
 // SidecarContainer defines configuration of the Kuma sidecar container.
 type SidecarContainer struct {
-	DataplaneContainer `yaml:",inline"`
+	DataplaneContainer `json:",inline"`
 	// Redirect port for inbound traffic.
-	RedirectPortInbound uint32 `yaml:"redirectPortInbound,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_inbound"`
+	RedirectPortInbound uint32 `json:"redirectPortInbound,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_inbound"`
 	// Redirect port for inbound IPv6 traffic.
-	RedirectPortInboundV6 uint32 `yaml:"redirectPortInboundV6,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_inbound_v6"`
+	RedirectPortInboundV6 uint32 `json:"redirectPortInboundV6,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_inbound_v6"`
 	// Redirect port for outbound traffic.
-	RedirectPortOutbound uint32 `yaml:"redirectPortOutbound,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_outbound"`
+	RedirectPortOutbound uint32 `json:"redirectPortOutbound,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_outbound"`
 }
 
 // SidecarReadinessProbe defines periodic probe of container service readiness.
 type SidecarReadinessProbe struct {
 	// Number of seconds after the container has started before readiness probes are initiated.
-	InitialDelaySeconds int32 `yaml:"initialDelaySeconds,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_readiness_probe_initial_delay_seconds"`
+	InitialDelaySeconds int32 `json:"initialDelaySeconds,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_readiness_probe_initial_delay_seconds"`
 	// Number of seconds after which the probe times out.
-	TimeoutSeconds int32 `yaml:"timeoutSeconds,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_readiness_probe_timeout_seconds"`
+	TimeoutSeconds int32 `json:"timeoutSeconds,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_readiness_probe_timeout_seconds"`
 	// Number of seconds after which the probe times out.
-	PeriodSeconds int32 `yaml:"periodSeconds,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_readiness_probe_period_seconds"`
+	PeriodSeconds int32 `json:"periodSeconds,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_readiness_probe_period_seconds"`
 	// Minimum consecutive successes for the probe to be considered successful after having failed.
-	SuccessThreshold int32 `yaml:"successThreshold,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_readiness_probe_success_threshold"`
+	SuccessThreshold int32 `json:"successThreshold,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_readiness_probe_success_threshold"`
 	// Minimum consecutive failures for the probe to be considered failed after having succeeded.
-	FailureThreshold int32 `yaml:"failureThreshold,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_readiness_probe_failure_threshold"`
+	FailureThreshold int32 `json:"failureThreshold,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_readiness_probe_failure_threshold"`
 }
 
 // SidecarLivenessProbe defines periodic probe of container service liveness.
 type SidecarLivenessProbe struct {
 	// Number of seconds after the container has started before liveness probes are initiated.
-	InitialDelaySeconds int32 `yaml:"initialDelaySeconds,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_liveness_probe_initial_delay_seconds"`
+	InitialDelaySeconds int32 `json:"initialDelaySeconds,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_liveness_probe_initial_delay_seconds"`
 	// Number of seconds after which the probe times out.
-	TimeoutSeconds int32 `yaml:"timeoutSeconds,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_liveness_probe_timeout_seconds"`
+	TimeoutSeconds int32 `json:"timeoutSeconds,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_liveness_probe_timeout_seconds"`
 	// How often (in seconds) to perform the probe.
-	PeriodSeconds int32 `yaml:"periodSeconds,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_liveness_probe_period_seconds"`
+	PeriodSeconds int32 `json:"periodSeconds,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_liveness_probe_period_seconds"`
 	// Minimum consecutive failures for the probe to be considered failed after having succeeded.
-	FailureThreshold int32 `yaml:"failureThreshold,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_liveness_probe_failure_threshold"`
+	FailureThreshold int32 `json:"failureThreshold,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_liveness_probe_failure_threshold"`
 }
 
 // SidecarResources defines compute resource requirements.
 type SidecarResources struct {
 	// Minimum amount of compute resources required.
-	Requests SidecarResourceRequests `yaml:"requests,omitempty"`
+	Requests SidecarResourceRequests `json:"requests,omitempty"`
 	// Maximum amount of compute resources allowed.
-	Limits SidecarResourceLimits `yaml:"limits,omitempty"`
+	Limits SidecarResourceLimits `json:"limits,omitempty"`
 }
 
 // SidecarResourceRequests defines the minimum amount of compute resources required.
 type SidecarResourceRequests struct {
 	// CPU, in cores. (500m = .5 cores)
-	CPU string `yaml:"cpu,omitempty" envconfig:"kuma_injector_sidecar_container_resources_requests_cpu"`
+	CPU string `json:"cpu,omitempty" envconfig:"kuma_injector_sidecar_container_resources_requests_cpu"`
 	// Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
-	Memory string `yaml:"memory,omitempty" envconfig:"kuma_injector_sidecar_container_resources_requests_memory"`
+	Memory string `json:"memory,omitempty" envconfig:"kuma_injector_sidecar_container_resources_requests_memory"`
 }
 
 // SidecarResourceLimits defines the maximum amount of compute resources allowed.
 type SidecarResourceLimits struct {
 	// CPU, in cores. (500m = .5 cores)
-	CPU string `yaml:"cpu,omitempty" envconfig:"kuma_injector_sidecar_container_resources_limits_cpu"`
+	CPU string `json:"cpu,omitempty" envconfig:"kuma_injector_sidecar_container_resources_limits_cpu"`
 	// Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
-	Memory string `yaml:"memory,omitempty" envconfig:"kuma_injector_sidecar_container_resources_limits_memory"`
+	Memory string `json:"memory,omitempty" envconfig:"kuma_injector_sidecar_container_resources_limits_memory"`
 }
 
 // InitContainer defines configuration of the Kuma init container.
 type InitContainer struct {
 	// Image name.
-	Image string `yaml:"image,omitempty" envconfig:"kuma_injector_init_container_image"`
+	Image string `json:"image,omitempty" envconfig:"kuma_injector_init_container_image"`
 }
 
 type BuiltinDNS struct {
 	// Use the built-in DNS
-	Enabled bool `yaml:"enabled,omitempty" envconfig:"kuma_runtime_kubernetes_injector_builtin_dns_enabled"`
+	Enabled bool `json:"enabled,omitempty" envconfig:"kuma_runtime_kubernetes_injector_builtin_dns_enabled"`
 	// Redirect port for DNS
-	Port uint32 `yaml:"port,omitempty" envconfig:"kuma_runtime_kubernetes_injector_builtin_dns_port"`
+	Port uint32 `json:"port,omitempty" envconfig:"kuma_runtime_kubernetes_injector_builtin_dns_port"`
 }
 
 // EBPF defines configuration for the ebpf, when transparent proxy is marked to be
 // installed using ebpf instead of iptables
 type EBPF struct {
 	// Install transparent proxy using ebpf
-	Enabled bool `yaml:"enabled" envconfig:"kuma_runtime_kubernetes_injector_ebpf_enabled"`
+	Enabled bool `json:"enabled" envconfig:"kuma_runtime_kubernetes_injector_ebpf_enabled"`
 	// Name of the environmental variable which will include IP address of the pod
-	InstanceIPEnvVarName string `yaml:"instanceIPEnvVarName,omitempty" envconfig:"kuma_runtime_kubernetes_injector_ebpf_instance_ip_env_var_name"`
+	InstanceIPEnvVarName string `json:"instanceIPEnvVarName,omitempty" envconfig:"kuma_runtime_kubernetes_injector_ebpf_instance_ip_env_var_name"`
 	// Path where BPF file system will be mounted for pinning ebpf programs and maps
-	BPFFSPath string `yaml:"bpffsPath,omitempty" envconfig:"kuma_runtime_kubernetes_injector_ebpf_bpffs_path"`
+	BPFFSPath string `json:"bpffsPath,omitempty" envconfig:"kuma_runtime_kubernetes_injector_ebpf_bpffs_path"`
 	// Path of mounted cgroup2
-	CgroupPath string `yaml:"cgroupPath,omitempty" envconfig:"kuma_runtime_kubernetes_injector_ebpf_cgroup_path"`
+	CgroupPath string `json:"cgroupPath,omitempty" envconfig:"kuma_runtime_kubernetes_injector_ebpf_cgroup_path"`
 	// Name of the network interface which should be used to attach to it TC programs
 	// when not specified, we will try to automatically determine it
-	TCAttachIface string `yaml:"tcAttachIface,omitempty" envconfig:"kuma_runtime_kubernetes_injector_ebpf_tc_attach_iface"`
+	TCAttachIface string `json:"tcAttachIface,omitempty" envconfig:"kuma_runtime_kubernetes_injector_ebpf_tc_attach_iface"`
 	// Path where compiled eBPF programs are placed
-	ProgramsSourcePath string `yaml:"programsSourcePath,omitempty" envconfig:"kuma_runtime_kubernetes_injector_ebpf_programs_source_path"`
+	ProgramsSourcePath string `json:"programsSourcePath,omitempty" envconfig:"kuma_runtime_kubernetes_injector_ebpf_programs_source_path"`
 }
 
 type NodeTaintController struct {
 	// If true enables the taint controller.
-	Enabled bool `yaml:"enabled" envconfig:"kuma_runtime_kubernetes_node_taint_controller_enabled"`
+	Enabled bool `json:"enabled" envconfig:"kuma_runtime_kubernetes_node_taint_controller_enabled"`
 	// Value of app label on CNI pod that indicates if node can be ready.
-	CniApp string `yaml:"cniApp" envconfig:"kuma_runtime_kubernetes_node_taint_controller_cni_app"`
+	CniApp string `json:"cniApp" envconfig:"kuma_runtime_kubernetes_node_taint_controller_cni_app"`
 }
 
 func (n *NodeTaintController) Validate() error {
@@ -309,7 +310,7 @@ func (c *KubernetesRuntimeConfig) Validate() (errs error) {
 	if err := c.Injector.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".Injector is not valid"))
 	}
-	if c.MarshalingCacheExpirationTime < 0 {
+	if c.MarshalingCacheExpirationTime.Duration < 0 {
 		errs = multierr.Append(errs, errors.Errorf(".MarshalingCacheExpirationTime must be positive or equal to 0"))
 	}
 	return
@@ -371,7 +372,7 @@ func (c *SidecarContainer) Validate() (errs error) {
 	if 65535 < c.AdminPort {
 		errs = multierr.Append(errs, errors.Errorf(".AdminPort must be in the range [0, 65535]"))
 	}
-	if c.DrainTime <= 0 {
+	if c.DrainTime.Duration <= 0 {
 		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))
 	}
 	if err := c.ReadinessProbe.Validate(); err != nil {
