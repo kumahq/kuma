@@ -63,7 +63,6 @@ function version_info() {
       describedTag="local-build"
     fi
 
-    shortHash=$(git rev-parse --short=9 HEAD 2> /dev/null || echo "no-commit")
     currentBranch=$(git rev-parse --abbrev-ref HEAD 2> /dev/null || echo "no-branch")
     exactTag=$(git describe --exact-match --tags 2> /dev/null || echo "not-tagged")
     # We only support tags of the format: "v?X.Y.Z(-<alphaNumericName>)?" all other tags will just be ignored and use the regular versioning scheme
