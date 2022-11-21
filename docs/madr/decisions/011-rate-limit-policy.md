@@ -121,7 +121,7 @@ from:
      name: ...
 ```
  
-Matching on MeshGatewayRoute and MeshHTTPRoute does not make sense (there is any route that a request originates from).
+Matching on MeshGatewayRoute and MeshHTTPRoute does not make sense (there isn't a route that a request originates from).
  
 #### Configuration
  
