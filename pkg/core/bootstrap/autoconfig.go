@@ -64,6 +64,10 @@ func autoconfigureServersTLS(cfg *kuma_cp.Config) {
 		cfg.Multizone.Global.KDS.TlsCertFile = cfg.General.TlsCertFile
 		cfg.Multizone.Global.KDS.TlsKeyFile = cfg.General.TlsKeyFile
 	}
+	if cfg.Diagnostics.TlsCertFile == "" {
+		cfg.Diagnostics.TlsCertFile = cfg.General.TlsCertFile
+		cfg.Diagnostics.TlsKeyFile = cfg.General.TlsKeyFile
+	}
 	if cfg.DpServer.TlsCertFile == "" {
 		cfg.DpServer.TlsCertFile = cfg.General.TlsCertFile
 		cfg.DpServer.TlsKeyFile = cfg.General.TlsKeyFile
@@ -77,18 +81,21 @@ func autoconfigureServersTLS(cfg *kuma_cp.Config) {
 		cfg.MonitoringAssignmentServer.TlsKeyFile = cfg.General.TlsKeyFile
 	}
 	if cfg.General.TlsMinVersion != "" {
+		cfg.Diagnostics.TlsMinVersion = cfg.General.TlsMinVersion
 		cfg.Multizone.Global.KDS.TlsMinVersion = cfg.General.TlsMinVersion
 		cfg.DpServer.TlsMinVersion = cfg.General.TlsMinVersion
 		cfg.ApiServer.HTTPS.TlsMinVersion = cfg.General.TlsMinVersion
 		cfg.MonitoringAssignmentServer.TlsMinVersion = cfg.General.TlsMinVersion
 	}
 	if cfg.General.TlsMaxVersion != "" {
+		cfg.Diagnostics.TlsMaxVersion = cfg.General.TlsMaxVersion
 		cfg.Multizone.Global.KDS.TlsMaxVersion = cfg.General.TlsMaxVersion
 		cfg.DpServer.TlsMaxVersion = cfg.General.TlsMaxVersion
 		cfg.ApiServer.HTTPS.TlsMaxVersion = cfg.General.TlsMaxVersion
 		cfg.MonitoringAssignmentServer.TlsMaxVersion = cfg.General.TlsMaxVersion
 	}
 	if len(cfg.General.TlsCipherSuites) > 0 {
+		cfg.Diagnostics.TlsCipherSuites = cfg.General.TlsCipherSuites
 		cfg.Multizone.Global.KDS.TlsCipherSuites = cfg.General.TlsCipherSuites
 		cfg.DpServer.TlsCipherSuites = cfg.General.TlsCipherSuites
 		cfg.ApiServer.HTTPS.TlsCipherSuites = cfg.General.TlsCipherSuites

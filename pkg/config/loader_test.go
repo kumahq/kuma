@@ -238,6 +238,12 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Diagnostics.ServerPort).To(Equal(uint32(5003)))
 			Expect(cfg.Diagnostics.DebugEndpoints).To(BeTrue())
+			Expect(cfg.Diagnostics.TlsEnabled).To(Equal(true))
+			Expect(cfg.Diagnostics.TlsCertFile).To(Equal("/cert"))
+			Expect(cfg.Diagnostics.TlsKeyFile).To(Equal("/key"))
+			Expect(cfg.Diagnostics.TlsMinVersion).To(Equal("TLSv1_3"))
+			Expect(cfg.Diagnostics.TlsMaxVersion).To(Equal("TLSv1_3"))
+			Expect(cfg.Diagnostics.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
 
 			Expect(cfg.DNSServer.Domain).To(Equal("test-domain"))
 			Expect(cfg.DNSServer.CIDR).To(Equal("127.1.0.0/16"))
@@ -490,6 +496,12 @@ defaults:
 diagnostics:
   serverPort: 5003
   debugEndpoints: true
+  tlsEnabled: true
+  tlsCertFile: "/cert"
+  tlsKeyFile: "/key"
+  tlsMinVersion: TLSv1_3
+  tlsMaxVersion: TLSv1_3
+  tlsCipherSuites: ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"]
 xdsServer:
   dataplaneConfigurationRefreshInterval: 21s
   dataplaneStatusFlushInterval: 7s
@@ -700,6 +712,12 @@ proxy:
 				"KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS":                                          "true",
 				"KUMA_DIAGNOSTICS_SERVER_PORT":                                                             "5003",
 				"KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS":                                                         "true",
+				"KUMA_DIAGNOSTICS_TLS_ENABLED":                                                             "true",
+				"KUMA_DIAGNOSTICS_TLS_CERT_FILE":                                                           "/cert",
+				"KUMA_DIAGNOSTICS_TLS_KEY_FILE":                                                            "/key",
+				"KUMA_DIAGNOSTICS_TLS_MIN_VERSION":                                                         "TLSv1_3",
+				"KUMA_DIAGNOSTICS_TLS_MAX_VERSION":                                                         "TLSv1_3",
+				"KUMA_DIAGNOSTICS_TLS_CIPHER_SUITES":                                                       "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384",
 				"KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL":                                          "7s",
 				"KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL":                                 "21s",
 				"KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY":                                                  "11s",
