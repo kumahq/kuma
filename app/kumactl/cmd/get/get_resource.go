@@ -1,7 +1,6 @@
 package get
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -31,7 +30,7 @@ func NewGetResourceCmd(pctx *kumactl_cmd.RootContext, desc core_model.ResourceTy
 			resource := desc.NewObject()
 			switch desc.Scope {
 			case core_model.ScopeGlobal:
-				if err := rs.Get(context.Background(), resource, store.GetByKey(name, "")); err != nil {
+				if err := rs.Get(cmd.Context(), resource, store.GetByKey(name, "")); err != nil {
 					if store.IsResourceNotFound(err) {
 						return errors.New("No resources found")
 					}
@@ -39,7 +38,7 @@ func NewGetResourceCmd(pctx *kumactl_cmd.RootContext, desc core_model.ResourceTy
 				}
 			case core_model.ScopeMesh:
 				currentMesh := pctx.CurrentMesh()
-				if err := rs.Get(context.Background(), resource, store.GetByKey(name, currentMesh)); err != nil {
+				if err := rs.Get(cmd.Context(), resource, store.GetByKey(name, currentMesh)); err != nil {
 					if store.IsResourceNotFound(err) {
 						return errors.Errorf("No resources found in %s mesh", currentMesh)
 					}

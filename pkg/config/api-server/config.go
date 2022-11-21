@@ -1,6 +1,8 @@
 package api_server
 
 import (
+	"net/url"
+
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
@@ -24,6 +26,37 @@ type ApiServerConfig struct {
 	Auth ApiServerAuth `json:"auth"`
 	// Authentication configuration for API Server
 	Authn ApiServerAuthn `json:"authn"`
+	// BasePath the path to serve the API from
+	BasePath string `json:"basePath" envconfig:"kuma_api_server_base_path"`
+	// RootUrl can be used if you use a reverse proxy
+	RootUrl string `json:"rootUrl" envconfig:"kuma_api_server_root_url"`
+	// GUI configuration specific to the GUI
+	GUI ApiServerGUI `json:"gui,omitempty"`
+}
+
+type ApiServerGUI struct {
+	// Enabled whether to serve to gui (if mode=zone this has no effect)
+	Enabled bool `json:"enabled" envconfig:"kuma_api_server_gui_enabled"`
+	// RootUrl can be used if you set a reverse proxy or want to serve the gui from a different path
+	RootUrl string `json:"rootUrl" envconfig:"kuma_api_server_gui_root_url"`
+	// BasePath the path to serve the GUI from
+	BasePath string `json:"basePath" envconfig:"kuma_api_server_gui_base_path"`
+}
+
+func (a *ApiServerGUI) Validate() (errs error) {
+	if a.RootUrl != "" {
+		_, err := url.Parse(a.RootUrl)
+		if err != nil {
+			errs = multierr.Append(errs, errors.New("RootUrl is not a valid url"))
+		}
+	}
+	if a.BasePath != "" {
+		_, err := url.Parse(a.BasePath)
+		if err != nil {
+			errs = multierr.Append(errs, errors.New("BaseGuiPath is not a valid url"))
+		}
+	}
+	return
 }
 
 // API Server HTTP configuration
@@ -36,14 +69,14 @@ type ApiServerHTTPConfig struct {
 	Port uint32 `json:"port" envconfig:"kuma_api_server_http_port"`
 }
 
-func (a *ApiServerHTTPConfig) Validate() error {
+func (a *ApiServerHTTPConfig) Validate() (errs error) {
 	if a.Interface == "" {
-		return errors.New("Interface cannot be empty")
+		errs = multierr.Append(errs, errors.New("Interface cannot be empty"))
 	}
 	if a.Port > 65535 {
-		return errors.New("Port must be in range [0, 65535]")
+		errs = multierr.Append(errs, errors.New("Port must be in range [0, 65535]"))
 	}
-	return nil
+	return
 }
 
 // API Server HTTPS configuration
@@ -90,7 +123,7 @@ func (a *ApiServerHTTPSConfig) Validate() (errs error) {
 
 // API Server authentication configuration
 type ApiServerAuth struct {
-	// Directory of authorized client certificates (only validate in HTTPS)
+	// Directory of authorized client certificates (only valid in HTTPS)
 	ClientCertsDir string `json:"clientCertsDir" envconfig:"kuma_api_server_auth_client_certs_dir"`
 }
 
@@ -112,20 +145,35 @@ type ApiServerAuthnTokens struct {
 func (a *ApiServerConfig) Sanitize() {
 }
 
-func (a *ApiServerConfig) Validate() error {
+func (a *ApiServerConfig) Validate() (errs error) {
 	if err := a.HTTP.Validate(); err != nil {
-		return errors.Wrap(err, ".HTTP not valid")
+		errs = multierr.Append(err, errors.Wrap(err, ".HTTP not valid"))
 	}
 	if err := a.HTTPS.Validate(); err != nil {
-		return errors.Wrap(err, ".HTTP not valid")
+		errs = multierr.Append(err, errors.Wrap(err, ".HTTPS not valid"))
 	}
-	return nil
+	if err := a.GUI.Validate(); err != nil {
+		errs = multierr.Append(err, errors.Wrap(err, ".GUI not valid"))
+	}
+	if a.RootUrl != "" {
+		if _, err := url.Parse(a.RootUrl); err != nil {
+			errs = multierr.Append(err, errors.New("RootUrl is not a valid URL"))
+		}
+	}
+	if a.BasePath != "" {
+		_, err := url.Parse(a.BasePath)
+		if err != nil {
+			errs = multierr.Append(errs, errors.New("BaseGuiPath is not a valid url"))
+		}
+	}
+	return
 }
 
 func DefaultApiServerConfig() *ApiServerConfig {
 	return &ApiServerConfig{
 		ReadOnly:           false,
 		CorsAllowedDomains: []string{".*"},
+		BasePath:           "/",
 		HTTP: ApiServerHTTPConfig{
 			Enabled:   true,
 			Interface: "0.0.0.0",
@@ -149,6 +197,10 @@ func DefaultApiServerConfig() *ApiServerConfig {
 			Tokens: ApiServerAuthnTokens{
 				BootstrapAdminToken: true,
 			},
+		},
+		GUI: ApiServerGUI{
+			Enabled:  true,
+			BasePath: "/gui",
 		},
 	}
 }

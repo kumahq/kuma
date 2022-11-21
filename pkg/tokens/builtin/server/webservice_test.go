@@ -57,6 +57,7 @@ var _ = Describe("Dataplane Token Webservice", func() {
 
 	BeforeEach(func() {
 		ws := server.NewWebservice(
+			"/tokens",
 			&staticTokenIssuer{credentials},
 			&zoneIngressStaticTokenIssuer{},
 			&zoneStaticTokenIssuer{},

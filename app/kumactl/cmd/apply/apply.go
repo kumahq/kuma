@@ -123,22 +123,24 @@ $ kumactl apply -f https://example.com/resource.yaml
 				}
 				resources = append(resources, res)
 			}
+			var rs store.ResourceStore
+			if !ctx.args.dryRun {
+				rs, err = pctx.CurrentResourceStore()
+				if err != nil {
+					return err
+				}
+			}
+			p, err := printers.NewGenericPrinter(output.YAMLFormat)
+			if err != nil {
+				return err
+			}
 			for _, resource := range resources {
-				if ctx.args.dryRun {
-					p, err := printers.NewGenericPrinter(output.YAMLFormat)
-					if err != nil {
-						return err
-					}
+				if rs == nil {
 					if err := p.Print(rest_types.From.Resource(resource), cmd.OutOrStdout()); err != nil {
 						return err
 					}
 				} else {
-					rs, err := pctx.CurrentResourceStore()
-					if err != nil {
-						return err
-					}
-
-					if err := upsert(pctx.Runtime.Registry, rs, resource); err != nil {
+					if err := upsert(cmd.Context(), pctx.Runtime.Registry, rs, resource); err != nil {
 						return err
 					}
 				}
@@ -153,15 +155,15 @@ $ kumactl apply -f https://example.com/resource.yaml
 	return cmd
 }
 
-func upsert(typeRegistry registry.TypeRegistry, rs store.ResourceStore, res model.Resource) error {
+func upsert(ctx context.Context, typeRegistry registry.TypeRegistry, rs store.ResourceStore, res model.Resource) error {
 	newRes, err := typeRegistry.NewObject(res.Descriptor().Name)
 	if err != nil {
 		return err
 	}
 	meta := res.GetMeta()
-	if err := rs.Get(context.Background(), newRes, store.GetByKey(meta.GetName(), meta.GetMesh())); err != nil {
+	if err := rs.Get(ctx, newRes, store.GetByKey(meta.GetName(), meta.GetMesh())); err != nil {
 		if store.IsResourceNotFound(err) {
-			return rs.Create(context.Background(), res, store.CreateByKey(meta.GetName(), meta.GetMesh()))
+			return rs.Create(ctx, res, store.CreateByKey(meta.GetName(), meta.GetMesh()))
 		} else {
 			return err
 		}
@@ -169,5 +171,5 @@ func upsert(typeRegistry registry.TypeRegistry, rs store.ResourceStore, res mode
 	if err := newRes.SetSpec(res.GetSpec()); err != nil {
 		return err
 	}
-	return rs.Update(context.Background(), newRes)
+	return rs.Update(ctx, newRes)
 }
