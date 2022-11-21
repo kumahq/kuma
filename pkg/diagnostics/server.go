@@ -78,28 +78,28 @@ func (s *diagnosticsServer) Start(stop <-chan struct{}) error {
 		defer close(errChan)
 		if s.config.TlsEnabled {
 			if err := httpServer.ListenAndServeTLS(s.config.TlsCertFile, s.config.TlsKeyFile); err != nil {
-				if err != nil { 
-					switch err { 
-					case http.ErrServerClosed: 
-						diagnosticsServerLog.Info("shutting down server") 
-					default: 
-						diagnosticsServerLog.Error(err, "could not start an HTTPS Server") 
-						errChan <- err 
+				if err != nil {
+					switch err {
+					case http.ErrServerClosed:
+						diagnosticsServerLog.Info("shutting down server")
+					default:
+						diagnosticsServerLog.Error(err, "could not start an HTTPS Server")
+						errChan <- err
 					}
-					return 
+					return
 				}
 			}
 		} else {
 			if err := httpServer.ListenAndServe(); err != nil {
-				if err != nil { 
-					switch err { 
-					case http.ErrServerClosed: 
-						diagnosticsServerLog.Info("shutting down server") 
-					default: 
-						diagnosticsServerLog.Error(err, "could not start an HTTP Server") 
-						errChan <- err 
+				if err != nil {
+					switch err {
+					case http.ErrServerClosed:
+						diagnosticsServerLog.Info("shutting down server")
+					default:
+						diagnosticsServerLog.Error(err, "could not start an HTTP Server")
+						errChan <- err
 					}
-					return 
+					return
 				}
 			}
 		}
