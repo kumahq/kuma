@@ -2,8 +2,9 @@
 package v1alpha1
 
 import (
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 )
 
 // MeshTimeout allows users to configure timeouts for communication between services in mesh
