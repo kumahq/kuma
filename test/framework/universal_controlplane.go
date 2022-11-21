@@ -152,19 +152,13 @@ func (c *UniversalControlPlane) retrieveAdminToken() (string, error) {
 }
 
 func (c *UniversalControlPlane) GenerateDpToken(mesh, service string) (string, error) {
-	dpType := ""
-	if service == "ingress" {
-		dpType = "ingress"
-	}
-
 	data := fmt.Sprintf(
-		`'{"mesh": "%s", "type": "%s", "tags": {"kuma.io/service":["%s"]}}'`,
+		`'{"mesh": "%s", "tags": {"kuma.io/service":["%s"]}}'`,
 		mesh,
-		dpType,
 		service,
 	)
 
-	return c.generateToken("", data)
+	return c.generateToken("/dataplane", data)
 }
 
 func (c *UniversalControlPlane) GenerateZoneIngressToken(zone string) (string, error) {
