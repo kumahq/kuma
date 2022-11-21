@@ -245,6 +245,7 @@ func tokenWs(tokenIssuers builtin.TokenIssuers, access runtime.Access) *restful.
 		access.DataplaneTokenAccess,
 		access.ZoneTokenAccess,
 	)
+}
 
 func ShouldBeReadOnly(kdsFlag model.KDSFlagType, cfg *kuma_cp.Config) bool {
 	if cfg.ApiServer.ReadOnly {
