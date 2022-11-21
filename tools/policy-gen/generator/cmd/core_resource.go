@@ -57,12 +57,13 @@ import (
 
 //_DELETE_GO_EMBED_WORKAROUND_go:embed schema.yaml
 var rawSchema []byte
-var schema = &spec.Schema{}
+var schema = spec.Schema{}
 
 func init() {
-	if err := yaml.Unmarshal(rawSchema, schema); err != nil {
+	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
 		panic(err)
 	}
+	schema = schema.Properties["spec"]
 }
 
 const (
@@ -113,7 +114,7 @@ func (t *{{.Name}}Resource) Descriptor() model.ResourceTypeDescriptor {
 }
 
 func (t *{{.Name}}Resource) Validate() error {
-	if err := validation.ValidateSchema(t.GetSpec(), schema); err != nil {
+	if err := validation.ValidateSchema(t.GetSpec(), &schema); err != nil {
 		return err
 	}
 
