@@ -1,27 +1,27 @@
 package validators
 
 import (
-	"github.com/kumahq/kuma/pkg/config/types"
+	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func ValidateDurationNotNegativeOrNil(path PathBuilder, duration *types.Duration) (err ValidationError) {
+func ValidateDurationNotNegativeOrNil(path PathBuilder, duration *k8s.Duration) (err ValidationError) {
 	if duration == nil {
 		return
 	}
 
-	if duration.Seconds() < 0 || duration.Nanoseconds() < 0 {
+	if duration.Duration < 0 {
 		err.AddViolationAt(path, WhenDefinedHasToBeNonNegative)
 	}
 
 	return
 }
 
-func ValidateDurationGreaterThanZeroOrNil(path PathBuilder, duration *types.Duration) (err ValidationError) {
+func ValidateDurationGreaterThanZeroOrNil(path PathBuilder, duration *k8s.Duration) (err ValidationError) {
 	if duration == nil {
 		return
 	}
 
-	if duration.Seconds() <= 0 && duration.Nanoseconds() <= 0 {
+	if duration.Duration <= 0 {
 		err.AddViolationAt(path, WhenDefinedHasToBeGreaterThanZero)
 	}
 

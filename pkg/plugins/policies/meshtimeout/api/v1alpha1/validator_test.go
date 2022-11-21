@@ -163,10 +163,10 @@ to:
       kind: MeshService
       name: web-backend
     default:
-      connectionTimeout: -1s`,
+      idleTimeout: -1s`,
 				expected: `
 violations:
-  - field: spec.to[0].default.connectionTimeout
+  - field: spec.to[0].default.idleTimeout
     message: must not be negative when defined`}),
 			Entry("multiple timeout cannot be negative", testCase{
 				inputYaml: `
@@ -184,9 +184,24 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].default.connectionTimeout
-    message: must not be negative when defined
+    message: must be greater than zero when defined
   - field: spec.to[0].default.http.requestTimeout
     message: must not be negative when defined`}),
+			Entry("multiple timeout cannot be negative", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+to:
+  - targetRef:
+      kind: MeshService
+      name: web-backend
+    default:
+      http: {}`,
+				expected: `
+violations:
+  - field: spec.to[0].default.http
+    message: at least one timeout in this section should be configured`}),
 		)
 	})
 })

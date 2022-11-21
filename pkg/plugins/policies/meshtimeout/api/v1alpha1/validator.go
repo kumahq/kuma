@@ -87,6 +87,10 @@ func validateHttp(path validators.PathBuilder, http *Http) validators.Validation
 		return verr
 	}
 
+	if http.RequestTimeout == nil && http.StreamIdleTimeout == nil && http.MaxStreamDuration == nil && http.MaxConnectionDuration == nil {
+		verr.AddViolationAt(path, "at least one timeout in this section should be configured")
+	}
+
 	verr.Add(validators.ValidateDurationNotNegativeOrNil(path.Field("requestTimeout"), http.RequestTimeout))
 	verr.Add(validators.ValidateDurationNotNegativeOrNil(path.Field("streamIdleTimeout"), http.StreamIdleTimeout))
 	verr.Add(validators.ValidateDurationNotNegativeOrNil(path.Field("maxStreamDuration"), http.MaxStreamDuration))

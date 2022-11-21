@@ -8,7 +8,7 @@ import (
 )
 
 type Duration struct {
-	time.Duration `json:",inline"`
+	time.Duration
 }
 
 func (d Duration) MarshalJSON() ([]byte, error) {
