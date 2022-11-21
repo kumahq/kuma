@@ -432,8 +432,6 @@ diagnostics:
   tlsEnabled: false # ENV: KUMA_DIAGNOSTICS_TLS_ENABLED
   # TlsCertFile defines a path to a file with PEM-encoded TLS cert. If empty, autoconfigured from general.tlsCertFile
   tlsCertFile: # ENV: KUMA_DIAGNOSTICS_TLS_CERT_FILE
-  # TlsCertFile defines a path to a file with PEM-encoded TLS cert. If empty, autoconfigured from general.tlsCertFile
-  tlsCertFile: # ENV: KUMA_DIAGNOSTICS_TLS_CERT_FILE
   # TlsKeyFile defines a path to a file with PEM-encoded TLS key. If empty, autoconfigured from general.tlsKeyFile
   tlsKeyFile: # ENV: KUMA_DIAGNOSTICS_TLS_KEY_FILE
   # TlsMinVersion the minimum version of TLS
