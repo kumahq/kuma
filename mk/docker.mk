@@ -12,6 +12,7 @@ $(DOCKER_REGISTRY)/$(1):$(BUILD_INFO_VERSION)$(if $(IMAGE_ARCH_TAG_ENABLED),-${G
 endef
 
 export KUMA_BASE_IMAGE ?= kumahq/base-debian11:1.0.0
+export KUMA_BASE_ROOT_IMAGE ?= kumahq/base-debian11:1.0.0-root
 export KUMA_STATIC_IMAGE ?= kumahq/static-debian11:1.0.0
 export KUMA_CP_DOCKER_IMAGE ?= $(call build_image,kuma-cp)
 export KUMA_DP_DOCKER_IMAGE ?= $(call build_image,kuma-dp)
@@ -19,7 +20,7 @@ export KUMACTL_DOCKER_IMAGE ?= $(call build_image,kumactl)
 export KUMA_INIT_DOCKER_IMAGE ?= $(call build_image,kuma-init)
 export KUMA_CNI_DOCKER_IMAGE ?= $(call build_image,kuma-cni)
 export KUMA_UNIVERSAL_DOCKER_IMAGE ?= $(call build_image,kuma-universal)
-KUMA_IMAGES ?= $(KUMA_BASE_IMAGE) $(KUMA_STATIC_IMAGE) $(KUMA_CP_DOCKER_IMAGE) $(KUMA_DP_DOCKER_IMAGE) $(KUMACTL_DOCKER_IMAGE) $(KUMA_INIT_DOCKER_IMAGE) $(KUMA_UNIVERSAL_DOCKER_IMAGE) $(KUMA_CNI_DOCKER_IMAGE)
+KUMA_IMAGES ?= $(KUMA_BASE_ROOT_IMAGE) $(KUMA_BASE_IMAGE) $(KUMA_STATIC_IMAGE) $(KUMA_CP_DOCKER_IMAGE) $(KUMA_DP_DOCKER_IMAGE) $(KUMACTL_DOCKER_IMAGE) $(KUMA_INIT_DOCKER_IMAGE) $(KUMA_UNIVERSAL_DOCKER_IMAGE) $(KUMA_CNI_DOCKER_IMAGE)
 
 IMAGES_TARGETS ?= images/release images/test
 DOCKER_SAVE_TARGETS ?= docker/save/release docker/save/test
@@ -36,6 +37,10 @@ image/static: ## Dev: Rebuild `kuma-static` Docker image
 .PHONY: image/base
 image/base: ## Dev: Rebuild `kuma-base` Docker image
 	docker build -t $(KUMA_BASE_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --platform=linux/${GOARCH} -f tools/releases/dockerfiles/Dockerfile.base .
+
+.PHONY: image/base-root
+image/base-root: ## Dev: Rebuild `kuma-base` Docker image
+	docker build -t $(KUMA_BASE_ROOT_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --platform=linux/${GOARCH} -f tools/releases/dockerfiles/Dockerfile.base-root .
 
 .PHONY: image/kuma-cp
 image/kuma-cp: image/static build/kuma-cp/linux-${GOARCH} ## Dev: Rebuild `kuma-cp` Docker image
@@ -54,7 +59,7 @@ image/kuma-init: image/base build/kumactl/linux-${GOARCH} ## Dev: Rebuild `kuma-
 	docker build -t $(KUMA_INIT_DOCKER_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --platform=linux/${GOARCH} -f tools/releases/dockerfiles/Dockerfile.kuma-init .
 
 .PHONY: image/kuma-cni
-image/kuma-cni: image/static build/kuma-cni/linux-${GOARCH} build/install-cni/linux-${GOARCH}
+image/kuma-cni: image/base-root build/kuma-cni/linux-${GOARCH} build/install-cni/linux-${GOARCH}
 	docker build -t $(KUMA_CNI_DOCKER_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --platform=linux/${GOARCH} -f tools/releases/dockerfiles/Dockerfile.kuma-cni .
 
 .PHONY: image/kuma-universal
