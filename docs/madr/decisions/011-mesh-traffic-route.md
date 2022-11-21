@@ -187,45 +187,43 @@ This also allows us to later support `HTTPBackendRef.filters` with Gateway API.
 #### Load balancing
 
 At the moment `TrafficRoute` can be used to configure load balancing behavior at
-the top, rule-independent level. This MADR keeps the top-level option and proposes load balancing as a _filter_.
+the top, rule-independent level. This MADR proposes load balancing as a _filter_.
 This way it can be applied on a _per-route_ basis as well as a _per-backend_ basis.
 
 ```yaml
 spec:
   default:
-    loadBalancing:
-      localityAware: true
-      type: RoundRobin|LeastRequest|RingHash|Random|Maglev
-      leastRequest:
-        choiceCount: 8
-      ringHash:
-        hashFunction: "MURMUR_HASH_2"
-        minRingSize: 64
-        maxRingSize: 1024
-        hashPolicies:
-          - # oneof
-            header:
-              name:
-              regexRewrite:
-            cookie:
-              name:
-              ttl:
-              path:
-            connectionProperties:
-              sourceIP: <bool>
-            queryParameter:
-              name:
-            filterState:
-              key:
-            terminal: <bool>
-      maglev:
-        tableSize: 65537
-        hashPolicies: ... # above
     rules:
     - filters:
       - type: LoadBalancing
         loadBalancing: 
-          # above
+          localityAware: true
+          type: RoundRobin|LeastRequest|RingHash|Random|Maglev
+          leastRequest:
+            choiceCount: 8
+          ringHash:
+            hashFunction: "MURMUR_HASH_2"
+            minRingSize: 64
+            maxRingSize: 1024
+            hashPolicies:
+              - # oneof
+                header:
+                  name:
+                  regexRewrite:
+                cookie:
+                  name:
+                  ttl:
+                  path:
+                connectionProperties:
+                  sourceIP: <bool>
+                queryParameter:
+                  name:
+                filterState:
+                  key:
+                terminal: <bool>
+          maglev:
+            tableSize: 65537
+            hashPolicies: ... # same schema as above
 ```
 
 ##### Gateway API
@@ -237,7 +235,7 @@ With [`ExtensionRef`](https://gateway-api.sigs.k8s.io/references/spec/#gateway.n
 a filter is powerful, flexible and extensible enough to support any arbitrary routing configuration.
 It doesn't really assume anything about the referenced resource.
 
-For example, to use round robin for all requests.
+For example, to use round robin for all requests:
 
 ```yaml
 spec:
@@ -290,27 +288,27 @@ spec:
   - targetRef:
       kind: MeshService
       name: svc_a
- default:
-   rules:
-   - matches:
-       path:
-         prefix: /
-     filters:
-     - responseHeader:
-         add:
-         - name: X-Some-Header
-           value: something
-     backendRefs:
-     - weight: 90
-       kind: MeshServiceSubset
-       name: svc_a
-       tags:
-         version: v1
-     - weight: 10
-       kind: MeshServiceSubset
-       name: svc_a
-       tags:
-         version: v2
+    default:
+      rules:
+      - matches:
+          path:
+            prefix: /
+        filters:
+        - responseHeader:
+            add:
+            - name: X-Some-Header
+              value: something
+        backendRefs:
+        - weight: 90
+          kind: MeshServiceSubset
+          name: svc_a
+          tags:
+            version: v1
+        - weight: 10
+          kind: MeshServiceSubset
+          name: svc_a
+          tags:
+            version: v2
 ```
 
 The route that applies to requests from a specific service:
@@ -326,35 +324,26 @@ spec:
   - targetRef:
       kind: MeshService
       name: svc_a
- default:
-   rules:
-   - matches:
-       path:
-         prefix: /
-     filters:
-     - requestHeader:
-         add:
-         - name: X-Client
-           value:
-     backendRefs:
-     - weight: 100
-       kind: MeshServiceSubset
-       name: svc_a
-       tags:
-         version: v1
+    default:
+      rules:
+      - matches:
+          path:
+            prefix: /
+        filters:
+        - requestHeader:
+            add:
+            - name: X-Client
+              value:
+        backendRefs:
+        - weight: 100
+          kind: MeshServiceSubset
+          name: svc_a
+          tags:
+            version: v1
 ```
 
 when these resources are merged the latter will have higher priority and
-override the less specific resource. But the service owner probably expects to
-be able to "enforce" routes on consumers that can't be overriden.
-
-Perhaps we finally need [`override`](https://gateway-api.sigs.k8s.io/v1alpha2/references/policy-attachment/#hierarchy)?
-
-##### Merging
-
-Is there a use case for being able to write a policy that combines with the above `owner` policy such that the final resource would have both `filters`?
-
-Perhaps given the above `owner`:
+override the less specific resource:
 
 ```yaml
 metadata:
@@ -367,16 +356,57 @@ spec:
   - targetRef:
       kind: MeshService
       name: svc_a
- default:
-   rules:
-   - matches:
-       path:
-         prefix: /
-     filters:
-     - requestHeader:
-         add:
-         - name: X-Client
-           value:
+    default:
+      rules:
+      - matches:
+          path:
+            prefix: /
+        filters:
+        - requestHeader:
+            add:
+            - name: X-Client
+              value:
+        backendRefs:
+        - weight: 100
+          kind: MeshServiceSubset
+          name: svc_a
+          tags:
+            version: v1
+```
+
+But the service owner probably expects to somehow
+be able to "enforce" routes on consumers that can't be overriden.
+
+Perhaps we finally need [`override`](https://gateway-api.sigs.k8s.io/v1alpha2/references/policy-attachment/#hierarchy)?
+
+##### Merging
+
+Is there a use case for being able to write a policy that combines with the above `owner` policy such that the final resource would have both `filters`?
+
+Perhaps given the above `owner` policy along with a different `svc_a` specific
+policy:
+
+```yaml
+metadata:
+  name: consumer
+spec:
+ targetRef:
+   kind: MeshService
+   name: svc_b
+ to:
+  - targetRef:
+      kind: MeshService
+      name: svc_a
+    default:
+      rules:
+      - matches:
+          path:
+            prefix: /
+        filters:
+        - requestHeader:
+            add:
+            - name: X-Client
+              value:
 ```
 
 a user might expect:
@@ -390,40 +420,136 @@ spec:
   - targetRef:
       kind: MeshService
       name: svc_a
- default:
-   rules:
-   - matches:
-       path:
-         prefix: /
-     filters:
-     - requestHeader:
-         add:
-         - name: X-Client
-           value:
-     - responseHeader:
-         add:
-         - name: X-Some-Header
-           value: something
-     backendRefs:
-     - weight: 100
-       kind: MeshServiceSubset
-       name: svc_a
-       tags:
-         version: v1
+    default:
+      rules:
+      - matches:
+          path:
+            prefix: /
+        filters:
+        - requestHeader:
+            add:
+            - name: X-Client
+              value:
+        - responseHeader:
+            add:
+            - name: X-Some-Header
+              value: something
+        backendRefs:
+        - weight: 100
+          kind: MeshServiceSubset
+          name: svc_a
+          tags:
+            version: v1
 ```
 
-#### Final spec
+Could we achieve this by always combining `filters` using `matches` as a merge key
+with structural equality and
+specifying `default`/`override` and maybe even `merge` for `filters` _next to_
+`matches`?
+It probably doesn't make sense to merge `backendRefs` so they should be
+limited to `default`/`override`.
 
-TODO
+Given:
+
+```yaml
+metadata:
+  name: owner
+spec:
+ targetRef:
+   kind: Mesh
+ to:
+  - targetRef:
+      kind: MeshService
+      name: svc_a
+    rules:
+    - matches:
+        path:
+          prefix: /
+      merge:
+        filters:
+        - responseHeader:
+            add:
+            - name: X-Some-Header
+              value: something
+      override:
+        backendRefs:
+        - weight: 90
+          kind: MeshServiceSubset
+          name: svc_a
+          tags:
+            version: v1
+        - weight: 10
+          kind: MeshServiceSubset
+          name: svc_a
+          tags:
+            version: v2
+```
+
+along with:
+
+```yaml
+metadata:
+  name: owner
+spec:
+ targetRef:
+   kind: MeshService
+   name: svc_b
+ to:
+  - targetRef:
+      kind: MeshService
+      name: svc_a
+    rules:
+    - matches:
+        path:
+          prefix: /
+      merge:
+        filters:
+        - requestHeader:
+            add:
+            - name: X-Client
+              value:
+```
+
+would give us the rules:
 
 ```yaml
 spec:
  targetRef:
+   kind: MeshService
+   name: svc_b
  to:
   - targetRef:
- default:
-   rules:
-   - matches:
-     filters:
-     backendRefs:
+      kind: MeshService
+      name: svc_a
+    rules:
+    - matches:
+        path:
+          prefix: /
+      filters:
+      - responseHeader:
+          add:
+          - name: X-Some-Header
+            value: something
+      - requestHeader:
+          add:
+          - name: X-Client
+            value:
+      backendRefs:
+      - weight: 90
+        kind: MeshServiceSubset
+        name: svc_a
+        tags:
+          version: v1
+      - weight: 10
+        kind: MeshServiceSubset
+        name: svc_a
+        tags:
+          version: v2
 ```
+
+Both `filters` are applied and the `backendRefs` are taken from the
+less-specific route.
+
+#### Final spec
+
+TODO
