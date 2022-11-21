@@ -3,9 +3,10 @@ BUILD_INFO_VERSION ?= $(word 1, $(build_info))
 
 build_info_fields := \
 	version=$(BUILD_INFO_VERSION) \
-	gitCommit=$(word 2, $(build_info)) \
-	buildDate=$(word 3, $(build_info)) \
-	Envoy=$(word 4, $(build_info))
+	gitTag=$(word 2, $(build_info)) \
+	gitCommit=$(word 3, $(build_info)) \
+	buildDate=$(word 4, $(build_info)) \
+	Envoy=$(word 5, $(build_info))
 
 build_info_ld_flags := $(foreach entry,$(build_info_fields), -X github.com/kumahq/kuma/pkg/version.$(entry))
 

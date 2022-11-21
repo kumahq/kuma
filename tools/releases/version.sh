@@ -51,13 +51,16 @@ function version_info() {
     shortHash="no-git"
     currentBranch="no-git"
     exactTag="no-git"
+    describedTag="no-git"
   else
     if git diff --quiet && git diff --cached --quiet; then
       longHash=$(git rev-parse HEAD 2>/dev/null || echo "no-commit")
       shortHash=$(git rev-parse --short=9 HEAD 2> /dev/null || echo "no-commit")
+      describedTag=$(git describe --tags 2>/dev/null || echo "none")
     else
       longHash="local-build"
       shortHash="local-build"
+      describedTag="local-build"
     fi
 
     shortHash=$(git rev-parse --short=9 HEAD 2> /dev/null || echo "no-commit")
@@ -65,7 +68,7 @@ function version_info() {
     exactTag=$(git describe --exact-match --tags 2> /dev/null || echo "not-tagged")
     # We only support tags of the format: "v?X.Y.Z(-<alphaNumericName>)?" all other tags will just be ignored and use the regular versioning scheme
     if [[ ${exactTag} =~ ^v?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
-      echo "${exactTag/^v//} $longHash $versionDate $envoyVersion"
+      echo "${exactTag/^v//} $describedTag $longHash $versionDate $envoyVersion"
       exit 0
     fi
 
@@ -83,7 +86,7 @@ function version_info() {
     fi
   fi
 
-  echo "$version $longHash $versionDate $envoyVersion"
+  echo "$version $describedTag $longHash $versionDate $envoyVersion"
 }
 
 version_info
