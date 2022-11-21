@@ -278,7 +278,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, gatewayDelegatedJson),
 			}),
 			Entry("should list only dataplanes that starts with gateway", testCase{
-				url:          "/meshes/mesh1/dataplanes+insights?name=gateway",
+				url:          "/meshes/mesh1/dataplanes+insights?namePrefix=gateway",
 				expectedJson: fmt.Sprintf(`{"total": 2, "items": [%s, %s], "next": null}`, gatewayBuiltinJson, gatewayDelegatedJson),
 			}),
 		)

@@ -109,7 +109,7 @@ func (r *dataplaneOverviewEndpoints) inspectDataplanes(request *restful.Request,
 		rest_errors.HandleError(response, err, "Could not retrieve dataplane overviews")
 		return
 	}
-	namePrefix := request.QueryParameter("name")
+	namePrefix := request.QueryParameter("namePrefix")
 
 	overviews, err := r.fetchOverviews(request.Request.Context(), page, meshName, namePrefix, filter)
 	if err != nil {
