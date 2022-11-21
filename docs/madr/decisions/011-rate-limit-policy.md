@@ -96,7 +96,7 @@ The configuration translates to the Envoy configuration on the route and the lis
 ### Specification
  
 The differences between TCP and HTTP rate limiting in `targetRef` and `from` requires different validation of objects.
-Idea is to create one policy but and allow configuring TCP and HTTP rate limiting at once. The only limitation is that TCP rate limit can be configured only when `from` section has `Mesh` and `targetRef` can have following values `Mesh|MeshSubset|MeshService|MeshServiceSubset`.
+We create one policy which can configure both TCP and HTTP rate limiting. Because, we can't identify incoming traffic when using TCP users can only set the TCP section when using the `Mesh` type of targetRef in the `from` section. For http these types of targetRef can be used: `Mesh|MeshSubset|MeshService|MeshServiceSubset`.
  
 #### **HTTP Rate Limit**
  
