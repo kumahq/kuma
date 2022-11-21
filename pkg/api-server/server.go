@@ -228,7 +228,7 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 
 	for _, definition := range defs {
 		defType := definition.Name
-		if cfg.ApiServer.ReadOnly || (defType == mesh.DataplaneType && cfg.Mode == config_core.Global) || (defType != mesh.DataplaneType && cfg.Mode == config_core.Zone) {
+		if ShouldBeReadOnly(definition.KDSFlags, cfg) {
 			definition.ReadOnly = true
 		}
 		endpoints := resourceEndpoints{
@@ -262,6 +262,22 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 			}
 		}
 	}
+}
+
+func ShouldBeReadOnly(kdsFlag model.KDSFlagType, cfg *kuma_cp.Config) bool {
+	if cfg.ApiServer.ReadOnly {
+		return true
+	}
+	if kdsFlag == model.KDSDisabled {
+		return false
+	}
+	if cfg.Mode == config_core.Global && !kdsFlag.Has(model.ProvidedByGlobal) {
+		return true
+	}
+	if cfg.Mode == config_core.Zone && !kdsFlag.Has(model.ProvidedByZone) {
+		return true
+	}
+	return false
 }
 
 func (a *ApiServer) Start(stop <-chan struct{}) error {
