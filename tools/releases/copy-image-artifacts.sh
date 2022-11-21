@@ -35,4 +35,5 @@ do
 	safe_cp "${file}" "${DESTINATION_DIR}"
 done
 
-find build -exec touch -mt 201212211111 {} \;
+TODAY=$(date -u +"%Y%m%d0000")
+find build -exec touch -mt $TODAY {} \;
