@@ -462,7 +462,7 @@ spec:
               command:
                 - cat
                 - /tmp/ready
-          command: [ "/bin/sh", "-c", "--" ]
+          command: [ "/busybox/sh", "-c", "--" ]
           args: [ "sleep 0 && exec /install-cni" ]
           env:
             # Name of the CNI config file to create.
