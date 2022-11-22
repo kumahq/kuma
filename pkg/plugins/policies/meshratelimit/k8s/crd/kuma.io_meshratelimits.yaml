@@ -61,8 +61,7 @@ spec:
                                 interval:
                                   description: The the interval for which `requests`
                                     will be accounted.
-                                  format: int64
-                                  type: integer
+                                  type: string
                                 onRateLimit:
                                   description: Describes the actions to take on a
                                     rate limit event
@@ -116,8 +115,7 @@ spec:
                                 interval:
                                   description: The interval of adding tokens into
                                     bucket. Must be >= 50ms
-                                  format: int64
-                                  type: integer
+                                  type: string
                               type: object
                           type: object
                       type: object

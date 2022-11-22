@@ -2,7 +2,7 @@
 package v1alpha1
 
 import (
-	"time"
+	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 )
@@ -51,7 +51,7 @@ type LocalHTTP struct {
 
 	// The the interval for which `requests` will be accounted.
 	// +required
-	Interval time.Duration `json:"interval,omitempty"`
+	Interval k8s.Duration `json:"interval,omitempty"`
 
 	// Describes the actions to take on a rate limit event
 	// +optional
@@ -101,5 +101,5 @@ type LocalTCP struct {
 
 	// The interval of adding tokens into bucket. Must be >= 50ms
 	// +required
-	Interval time.Duration `json:"interval,omitempty"`
+	Interval k8s.Duration `json:"interval,omitempty"`
 }
