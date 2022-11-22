@@ -80,7 +80,7 @@ func validateLocalHttp(path validators.PathBuilder, localHttp *LocalHTTP) valida
 	var verr validators.ValidationError
 	if localHttp.Enabled == nil || *localHttp.Enabled {
 		verr.Add(validators.ValidateIntegerGreaterThan(path.Field("requests"), localHttp.Requests, 0))
-		verr.Add(validators.ValidateDurationGreaterThan(path.Field("interval"), &localHttp.Interval, time.Duration(50*time.Millisecond)))
+		verr.Add(validators.ValidateDurationGreaterThan(path.Field("interval"), &localHttp.Interval, 50*time.Millisecond))
 	}
 	if localHttp.OnRateLimit != nil {
 		path = path.Field("onRateLimit")
@@ -93,7 +93,7 @@ func validateLocalTcp(path validators.PathBuilder, localTcp *LocalTCP) validator
 	var verr validators.ValidationError
 	if localTcp.Enabled == nil || *localTcp.Enabled {
 		verr.Add(validators.ValidateIntegerGreaterThan(path.Field("connections"), localTcp.Connections, 0))
-		verr.Add(validators.ValidateDurationGreaterThan(path.Field("interval"), &localTcp.Interval, time.Duration(50*time.Millisecond)))
+		verr.Add(validators.ValidateDurationGreaterThan(path.Field("interval"), &localTcp.Interval, 50*time.Millisecond))
 	}
 	return verr
 }
