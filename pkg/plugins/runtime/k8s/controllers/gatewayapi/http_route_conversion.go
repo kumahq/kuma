@@ -151,8 +151,8 @@ func (r *HTTPRouteReconciler) gapiToKumaRouteConf(
 	return routeConf, conditions, nil
 }
 
-func k8sToKumaHeader(header gatewayapi.HTTPHeader) *mesh_proto.MeshGatewayRoute_HttpRoute_Filter_RequestHeader_Header {
-	return &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_RequestHeader_Header{
+func k8sToKumaHeader(header gatewayapi.HTTPHeader) *mesh_proto.MeshGatewayRoute_HttpRoute_Filter_HeaderFilter_Header {
+	return &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_HeaderFilter_Header{
 		Name:  string(header.Name),
 		Value: header.Value,
 	}
@@ -327,21 +327,21 @@ func (r *HTTPRouteReconciler) gapiToKumaFilters(
 	case gatewayapi.HTTPRouteFilterRequestHeaderModifier:
 		filter := filter.RequestHeaderModifier
 
-		var requestHeader mesh_proto.MeshGatewayRoute_HttpRoute_Filter_RequestHeader
+		var headerFilter mesh_proto.MeshGatewayRoute_HttpRoute_Filter_HeaderFilter
 
 		for _, set := range filter.Set {
-			requestHeader.Set = append(requestHeader.Set, k8sToKumaHeader(set))
+			headerFilter.Set = append(headerFilter.Set, k8sToKumaHeader(set))
 		}
 
 		for _, add := range filter.Add {
-			requestHeader.Add = append(requestHeader.Add, k8sToKumaHeader(add))
+			headerFilter.Add = append(headerFilter.Add, k8sToKumaHeader(add))
 		}
 
-		requestHeader.Remove = filter.Remove
+		headerFilter.Remove = filter.Remove
 
 		kumaFilters = append(kumaFilters, &mesh_proto.MeshGatewayRoute_HttpRoute_Filter{
-			Filter: &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_RequestHeader_{
-				RequestHeader: &requestHeader,
+			Filter: &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_RequestHeader{
+				RequestHeader: &headerFilter,
 			},
 		})
 	case gatewayapi.HTTPRouteFilterRequestMirror:
@@ -402,13 +402,13 @@ func (r *HTTPRouteReconciler) gapiToKumaFilters(
 		filter := filter.URLRewrite
 
 		if filter.Hostname != nil {
-			var requestHeader mesh_proto.MeshGatewayRoute_HttpRoute_Filter_RequestHeader
-			requestHeader.Set = append(requestHeader.Set, &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_RequestHeader_Header{
+			var requestHeader mesh_proto.MeshGatewayRoute_HttpRoute_Filter_HeaderFilter
+			requestHeader.Set = append(requestHeader.Set, &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_HeaderFilter_Header{
 				Name:  "Host",
 				Value: string(*filter.Hostname),
 			})
 			kumaFilters = append(kumaFilters, &mesh_proto.MeshGatewayRoute_HttpRoute_Filter{
-				Filter: &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_RequestHeader_{
+				Filter: &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_RequestHeader{
 					RequestHeader: &requestHeader,
 				},
 			})

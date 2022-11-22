@@ -1442,6 +1442,32 @@ conf:
 `,
 		),
 
+		Entry("can rewrite response headers",
+			"response-header-set-gateway-route.yaml", `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: /
+      filters:
+      - responseHeader:
+          set:
+          - name: X-Kuma-Test
+            value: "value"
+      backends:
+      - destination:
+          kuma.io/service: echo-service
+`,
+		),
+
 		Entry("works with no Timeout policy",
 			"no-timeout.yaml", `
 type: MeshGatewayRoute

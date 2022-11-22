@@ -163,41 +163,45 @@ func RouteMatchRegexQuery(name string, regex string) RouteConfigurer {
 	})
 }
 
-// RouteAppendRequestHeader appends the given value to the existing values of the given header.
-func RouteAppendRequestHeader(name string, value string) RouteConfigurer {
-	if name == "" || value == "" {
+func RouteAppendHeader(name string, value string) *envoy_config_core.HeaderValueOption {
+	return &envoy_config_core.HeaderValueOption{
+		Append: util_proto.Bool(true),
+		Header: &envoy_config_core.HeaderValue{
+			Key:   http.CanonicalHeaderKey(name),
+			Value: value,
+		},
+	}
+}
+
+func RouteReplaceHeader(name string, value string) *envoy_config_core.HeaderValueOption {
+	return &envoy_config_core.HeaderValueOption{
+		Append: util_proto.Bool(false),
+		Header: &envoy_config_core.HeaderValue{
+			Key:   http.CanonicalHeaderKey(name),
+			Value: value,
+		},
+	}
+}
+
+// RouteAddRequestHeader alters the given request header value.
+func RouteAddRequestHeader(option *envoy_config_core.HeaderValueOption) RouteConfigurer {
+	if option == nil {
 		return RouteConfigureFunc(nil)
 	}
 
 	return RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
-		r.RequestHeadersToAdd = append(r.RequestHeadersToAdd,
-			&envoy_config_core.HeaderValueOption{
-				Append: util_proto.Bool(true),
-				Header: &envoy_config_core.HeaderValue{
-					Key:   http.CanonicalHeaderKey(name),
-					Value: value,
-				},
-			},
-		)
+		r.RequestHeadersToAdd = append(r.RequestHeadersToAdd, option)
 	})
 }
 
-// RouteReplaceRequestHeader replaces all values of the given header with the given value.
-func RouteReplaceRequestHeader(name string, value string) RouteConfigurer {
-	if name == "" || value == "" {
+// RouteAddResponseHeader alters the given response header value.
+func RouteAddResponseHeader(option *envoy_config_core.HeaderValueOption) RouteConfigurer {
+	if option == nil {
 		return RouteConfigureFunc(nil)
 	}
 
 	return RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
-		r.RequestHeadersToAdd = append(r.RequestHeadersToAdd,
-			&envoy_config_core.HeaderValueOption{
-				Append: util_proto.Bool(false),
-				Header: &envoy_config_core.HeaderValue{
-					Key:   http.CanonicalHeaderKey(name),
-					Value: value,
-				},
-			},
-		)
+		r.ResponseHeadersToAdd = append(r.ResponseHeadersToAdd, option)
 	})
 }
 
@@ -232,6 +236,17 @@ func RouteDeleteRequestHeader(name string) RouteConfigurer {
 
 	return RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
 		r.RequestHeadersToRemove = append(r.RequestHeadersToRemove, name)
+	})
+}
+
+// RouteDeleteRequestHeader deletes the given header from the HTTP response.
+func RouteDeleteResponseHeader(name string) RouteConfigurer {
+	if name == "" {
+		return RouteConfigureFunc(nil)
+	}
+
+	return RouteMustConfigureFunc(func(r *envoy_config_route.Route) {
+		r.ResponseHeadersToRemove = append(r.ResponseHeadersToRemove, name)
 	})
 }
 
