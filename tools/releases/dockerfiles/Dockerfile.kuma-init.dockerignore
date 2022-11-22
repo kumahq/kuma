@@ -1,3 +1,4 @@
+# we use this file to copy only relevant artifcats to the context, see tools/releases/copy-image-artifacts.sh:33
 *
 !build/artifacts-linux-amd64/kumactl/kumactl
 !build/artifacts-linux-arm64/kumactl/kumactl

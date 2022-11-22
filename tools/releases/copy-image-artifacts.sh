@@ -30,10 +30,15 @@ function safe_cp() {
 
 export -f safe_cp
 
-tail -n +2 "${DOCKERIGNORE_FILE}" | cut -d '!' -f 2 | while read -r file
+# docker ignore files need to be in the following format to take advantage of caching and for the build to work:
+# - first line - format comment (reference to this file)
+# - second line - exclude all "*" files
+# - next lines - artifacts to copy starting with "!"
+tail -n +3 "${DOCKERIGNORE_FILE}" | cut -d '!' -f 2 | while read -r file
 do
 	safe_cp "${file}" "${DESTINATION_DIR}"
 done
 
+# this will make caching valid for one day
 TODAY=$(date -u +"%Y%m%d0000")
 find build -exec touch -mt "$TODAY" {} \;
