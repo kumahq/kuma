@@ -134,6 +134,11 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.ApiServer.Authn.Type).To(Equal("custom-authn"))
 			Expect(cfg.ApiServer.Authn.Tokens.BootstrapAdminToken).To(BeFalse())
 			Expect(cfg.ApiServer.CorsAllowedDomains).To(Equal([]string{"https://kuma", "https://someapi"}))
+			Expect(cfg.ApiServer.BasePath).To(Equal("/api"))
+			Expect(cfg.ApiServer.RootUrl).To(Equal("https://foo.com"))
+			Expect(cfg.ApiServer.GUI.RootUrl).To(Equal("https://bar.com"))
+			Expect(cfg.ApiServer.GUI.Enabled).To(Equal(false))
+			Expect(cfg.ApiServer.GUI.BasePath).To(Equal("/ui"))
 
 			Expect(cfg.MonitoringAssignmentServer.Port).To(Equal(uint32(2222)))
 			Expect(cfg.MonitoringAssignmentServer.AssignmentRefreshInterval.Duration).To(Equal(12 * time.Second))
@@ -233,6 +238,12 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Diagnostics.ServerPort).To(Equal(uint32(5003)))
 			Expect(cfg.Diagnostics.DebugEndpoints).To(BeTrue())
+			Expect(cfg.Diagnostics.TlsEnabled).To(Equal(true))
+			Expect(cfg.Diagnostics.TlsCertFile).To(Equal("/cert"))
+			Expect(cfg.Diagnostics.TlsKeyFile).To(Equal("/key"))
+			Expect(cfg.Diagnostics.TlsMinVersion).To(Equal("TLSv1_3"))
+			Expect(cfg.Diagnostics.TlsMaxVersion).To(Equal("TLSv1_3"))
+			Expect(cfg.Diagnostics.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
 
 			Expect(cfg.DNSServer.Domain).To(Equal("test-domain"))
 			Expect(cfg.DNSServer.CIDR).To(Equal("127.1.0.0/16"))
@@ -353,6 +364,12 @@ apiServer:
   corsAllowedDomains:
     - https://kuma
     - https://someapi
+  rootUrl: https://foo.com
+  basePath: /api
+  gui:
+    enabled: false
+    rootUrl: https://bar.com
+    basePath: /ui
 monitoringAssignmentServer:
   port: 2222
   defaultFetchTimeout: 45s
@@ -479,6 +496,12 @@ defaults:
 diagnostics:
   serverPort: 5003
   debugEndpoints: true
+  tlsEnabled: true
+  tlsCertFile: "/cert"
+  tlsKeyFile: "/key"
+  tlsMinVersion: TLSv1_3
+  tlsMaxVersion: TLSv1_3
+  tlsCipherSuites: ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"]
 xdsServer:
   dataplaneConfigurationRefreshInterval: 21s
   dataplaneStatusFlushInterval: 7s
@@ -593,6 +616,11 @@ proxy:
 				"KUMA_API_SERVER_AUTHN_TYPE":                                                               "custom-authn",
 				"KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN":                                                 "false",
 				"KUMA_API_SERVER_AUTHN_TOKENS_BOOTSTRAP_ADMIN_TOKEN":                                       "false",
+				"KUMA_API_SERVER_ROOT_URL":                                                                 "https://foo.com",
+				"KUMA_API_SERVER_BASE_PATH":                                                                "/api",
+				"KUMA_API_SERVER_GUI_ENABLED":                                                              "false",
+				"KUMA_API_SERVER_GUI_ROOT_URL":                                                             "https://bar.com",
+				"KUMA_API_SERVER_GUI_BASE_PATH":                                                            "/ui",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_PORT":                                                   "2222",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_DEFAULT_FETCH_TIMEOUT":                                  "45s",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_API_VERSIONS":                                           "v1",
@@ -684,6 +712,12 @@ proxy:
 				"KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS":                                          "true",
 				"KUMA_DIAGNOSTICS_SERVER_PORT":                                                             "5003",
 				"KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS":                                                         "true",
+				"KUMA_DIAGNOSTICS_TLS_ENABLED":                                                             "true",
+				"KUMA_DIAGNOSTICS_TLS_CERT_FILE":                                                           "/cert",
+				"KUMA_DIAGNOSTICS_TLS_KEY_FILE":                                                            "/key",
+				"KUMA_DIAGNOSTICS_TLS_MIN_VERSION":                                                         "TLSv1_3",
+				"KUMA_DIAGNOSTICS_TLS_MAX_VERSION":                                                         "TLSv1_3",
+				"KUMA_DIAGNOSTICS_TLS_CIPHER_SUITES":                                                       "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384",
 				"KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL":                                          "7s",
 				"KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL":                                 "21s",
 				"KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY":                                                  "11s",

@@ -49,6 +49,14 @@
    "isExperimental": true
   },
   {
+   "name": "MeshTimeout",
+   "readOnly": false,
+   "path": "meshtimeouts",
+   "singularDisplayName": "Mesh Timeout",
+   "pluralDisplayName": "Mesh Timeouts",
+   "isExperimental": false
+  },
+  {
    "name": "MeshTrace",
    "readOnly": false,
    "path": "meshtraces",

@@ -147,7 +147,8 @@ func (r *dataplaneOverviewEndpoints) fetchOverviews(ctx context.Context, p page,
 func parseTags(queryParamValues []string) map[string]string {
 	tags := make(map[string]string)
 	for _, value := range queryParamValues {
-		tagKv := strings.Split(value, ":")
+		// ":" are valid in tag value so only stop at the first separator
+		tagKv := strings.SplitN(value, ":", 2)
 		if len(tagKv) != 2 {
 			// ignore invalid formatted tags
 			continue

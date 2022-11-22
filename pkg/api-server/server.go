@@ -9,6 +9,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -19,7 +20,6 @@ import (
 	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
 
-	"github.com/kumahq/kuma/app/kuma-ui/pkg/resources"
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	api_server "github.com/kumahq/kuma/pkg/config/api-server"
@@ -89,7 +89,6 @@ func NewApiServer(
 	wsManager customization.APIInstaller,
 	defs []model.ResourceTypeDescriptor,
 	cfg *kuma_cp.Config,
-	enableGUI bool,
 	metrics metrics.Metrics,
 	getInstanceId func() string, getClusterId func() string,
 	authenticator authn.Authenticator,
@@ -117,13 +116,14 @@ func NewApiServer(
 		AllowedDomains: serverConfig.CorsAllowedDomains,
 		Container:      container,
 	}
+	container.Filter(cors.Filter)
 
 	// We create a WebService and set up resources endpoints and index endpoint instead of creating WebService
 	// for every resource like /meshes/{mesh}/traffic-permissions, /meshes/{mesh}/traffic-log etc.
 	// because go-restful detects it as a clash (you cannot register 2 WebServices with path /meshes/)
 	ws := new(restful.WebService)
 	ws.
-		Path("/").
+		Path(cfg.ApiServer.BasePath).
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 
@@ -131,31 +131,58 @@ func NewApiServer(
 	addPoliciesWsEndpoints(ws, cfg.Mode, cfg.ApiServer.ReadOnly, defs)
 	addInspectEndpoints(ws, cfg, meshContextBuilder, resManager)
 	addInspectEnvoyAdminEndpoints(ws, cfg, resManager, access.EnvoyAdminAccess, envoyAdminClient)
-	container.Add(ws)
-
-	if err := addIndexWsEndpoints(ws, getInstanceId, getClusterId, enableGUI); err != nil {
-		return nil, errors.Wrap(err, "could not create index webservice")
+	addZoneEndpoints(ws, resManager)
+	guiUrl := cfg.ApiServer.GUI.BasePath
+	if cfg.ApiServer.GUI.RootUrl != "" {
+		guiUrl = cfg.ApiServer.GUI.RootUrl
 	}
-	configWs, err := configWs(cfg)
+	apiUrl := cfg.ApiServer.BasePath
+	if cfg.ApiServer.RootUrl != "" {
+		apiUrl = cfg.ApiServer.RootUrl
+	}
+
+	err := addConfigEndpoints(ws, cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create configuration webservice")
 	}
-	container.Add(configWs)
-	container.Add(zonesWs(resManager))
-	container.Add(tokenWs(tokenIssuers, access))
+	enableGUI := cfg.ApiServer.GUI.Enabled && cfg.Mode != config_core.Zone
+	if err := addIndexWsEndpoints(ws, getInstanceId, getClusterId, enableGUI, guiUrl); err != nil {
+		return nil, errors.Wrap(err, "could not create index webservice")
+	}
+	container.Add(ws)
 
-	container.Filter(cors.Filter)
+	path := cfg.ApiServer.BasePath
+	if !strings.HasSuffix(path, "/") {
+		path += "/"
+	}
+	container.Add(tokens_server.NewWebservice(
+		path+"tokens",
+		tokenIssuers.DataplaneToken,
+		tokenIssuers.ZoneIngressToken,
+		tokenIssuers.ZoneToken,
+		access.DataplaneTokenAccess,
+		access.ZoneTokenAccess,
+	))
+	guiPath := cfg.ApiServer.GUI.BasePath
+	if !strings.HasSuffix(guiPath, "/") {
+		guiPath += "/"
+	}
+	basePath := guiPath
+	if cfg.ApiServer.GUI.RootUrl != "" {
+		u, err := url.Parse(cfg.ApiServer.GUI.RootUrl)
+		if err != nil {
+			return nil, errors.New("Gui.RootUrl is not a valid url")
+		}
+		basePath = u.Path
+	}
+	if !strings.HasSuffix(basePath, "/") {
+		basePath += "/"
+	}
+	container.Handle(guiPath, guiHandler(guiPath, enableGUI, apiUrl, basePath))
 
 	newApiServer := &ApiServer{
 		mux:    container.ServeMux,
 		config: *serverConfig,
-	}
-
-	// Handle the GUI
-	if enableGUI {
-		container.Handle("/gui/", http.StripPrefix("/gui/", http.FileServer(http.FS(resources.GuiFS()))))
-	} else {
-		container.ServeMux.HandleFunc("/gui/", newApiServer.notAvailableHandler)
 	}
 
 	wsManager.Install(container)
@@ -201,7 +228,7 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 
 	for _, definition := range defs {
 		defType := definition.Name
-		if cfg.ApiServer.ReadOnly || (defType == mesh.DataplaneType && cfg.Mode == config_core.Global) || (defType != mesh.DataplaneType && cfg.Mode == config_core.Zone) {
+		if ShouldBeReadOnly(definition.KDSFlags, cfg) {
 			definition.ReadOnly = true
 		}
 		endpoints := resourceEndpoints{
@@ -237,14 +264,20 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 	}
 }
 
-func tokenWs(tokenIssuers builtin.TokenIssuers, access runtime.Access) *restful.WebService {
-	return tokens_server.NewWebservice(
-		tokenIssuers.DataplaneToken,
-		tokenIssuers.ZoneIngressToken,
-		tokenIssuers.ZoneToken,
-		access.DataplaneTokenAccess,
-		access.ZoneTokenAccess,
-	)
+func ShouldBeReadOnly(kdsFlag model.KDSFlagType, cfg *kuma_cp.Config) bool {
+	if cfg.ApiServer.ReadOnly {
+		return true
+	}
+	if kdsFlag == model.KDSDisabled {
+		return false
+	}
+	if cfg.Mode == config_core.Global && !kdsFlag.Has(model.ProvidedByGlobal) {
+		return true
+	}
+	if cfg.Mode == config_core.Zone && !kdsFlag.Has(model.ProvidedByZone) {
+		return true
+	}
+	return false
 }
 
 func (a *ApiServer) Start(stop <-chan struct{}) error {
@@ -371,20 +404,6 @@ func configureMTLS(tlsConfig *tls.Config, certsDir string) error {
 	return nil
 }
 
-func (a *ApiServer) notAvailableHandler(writer http.ResponseWriter, request *http.Request) {
-	writer.WriteHeader(http.StatusOK)
-	_, err := writer.Write([]byte("" +
-		"<!DOCTYPE html><html lang=en>" +
-		"<head>\n<style>\n.center {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  height: 200px;\n  border: 3px solid green; \n}\n</style>\n</head>" +
-		"<body><div class=\"center\"><strong>" +
-		"GUI is disabled. If this is a Zone CP, please check the GUI on the Global CP." +
-		"</strong></div></body>" +
-		"</html>"))
-	if err != nil {
-		log.Error(err, "could not write the response")
-	}
-}
-
 func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
 	apiServer, err := NewApiServer(
@@ -401,7 +420,6 @@ func SetupServer(rt runtime.Runtime) error {
 		rt.APIInstaller(),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,
-		cfg.Mode != config_core.Zone,
 		rt.Metrics(),
 		rt.GetInstanceId,
 		rt.GetClusterId,

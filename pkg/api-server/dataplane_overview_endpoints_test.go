@@ -82,8 +82,9 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 					{
 						Port: 1234,
 						Tags: map[string]string{
-							"service": "backend",
-							"version": "v1",
+							"service":   "backend",
+							"version":   "v1",
+							"tagcolumn": "tag:v",
 						},
 					},
 				},
@@ -141,7 +142,8 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 					"port": 1234,
 					"tags": {
 						"service": "backend",
-						"version": "v1"
+						"version": "v1",
+						"tagcolumn": "tag:v"
 					}
 				}
 			]
@@ -206,6 +208,10 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 			}),
 			Entry("should list all with all matching tags", testCase{
 				url:          "/meshes/mesh1/dataplanes+insights?tag=service:backend&tag=version:v1",
+				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, dp2Json),
+			}),
+			Entry("should list all with all matching tags with value with a column", testCase{
+				url:          "/meshes/mesh1/dataplanes+insights?tag=tagcolumn:tag:v",
 				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, dp2Json),
 			}),
 			Entry("should not list when any tag is not matching", testCase{

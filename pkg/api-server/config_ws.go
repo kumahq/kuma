@@ -6,21 +6,20 @@ import (
 	"github.com/kumahq/kuma/pkg/config"
 )
 
-func configWs(cfg config.Config) (*restful.WebService, error) {
+func addConfigEndpoints(ws *restful.WebService, cfg config.Config) error {
 	cfgForDisplay, err := config.ConfigForDisplay(cfg)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	json, err := config.ToJson(cfgForDisplay)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	ws := new(restful.WebService).Path("/config")
-	ws.Route(ws.GET("").To(func(req *restful.Request, resp *restful.Response) {
+	ws.Route(ws.GET("/config").To(func(req *restful.Request, resp *restful.Response) {
 		resp.AddHeader("content-type", "application/json")
 		if _, err := resp.Write(json); err != nil {
 			log.Error(err, "Could not write the index response")
 		}
 	}))
-	return ws, nil
+	return nil
 }

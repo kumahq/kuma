@@ -37,6 +37,7 @@ var _ = Describe("Tokens Client", func() {
 	BeforeEach(func() {
 		container := restful.NewContainer()
 		container.Add(tokens_server.NewWebservice(
+			"/tokens",
 			&staticTokenIssuer{},
 			&zoneIngressStaticTokenIssuer{},
 			&zoneStaticTokenIssuer{},

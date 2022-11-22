@@ -22,6 +22,7 @@ import (
 var log = core.Log.WithName("token-ws")
 
 type tokenWebService struct {
+	basePath          string
 	issuer            issuer.DataplaneTokenIssuer
 	zoneIngressIssuer zoneingress.TokenIssuer
 	zoneIssuer        zone.TokenIssuer
@@ -30,6 +31,7 @@ type tokenWebService struct {
 }
 
 func NewWebservice(
+	basePath string,
 	issuer issuer.DataplaneTokenIssuer,
 	zoneIngressIssuer zoneingress.TokenIssuer,
 	zoneIssuer zone.TokenIssuer,
@@ -37,6 +39,7 @@ func NewWebservice(
 	zoneAccess zone_access.ZoneTokenAccess,
 ) *restful.WebService {
 	ws := tokenWebService{
+		basePath:          basePath,
 		issuer:            issuer,
 		zoneIngressIssuer: zoneIngressIssuer,
 		zoneIssuer:        zoneIssuer,
@@ -49,9 +52,9 @@ func NewWebservice(
 func (d *tokenWebService) createWs() *restful.WebService {
 	ws := new(restful.WebService).
 		Consumes(restful.MIME_JSON).
-		Produces(restful.MIME_JSON)
-	ws.Path("/tokens").
-		Route(ws.POST("").To(d.handleIdentityRequest)). // backwards compatibility
+		Produces(restful.MIME_JSON).
+		Path(d.basePath)
+	ws.
 		Route(ws.POST("/dataplane").To(d.handleIdentityRequest)).
 		Route(ws.POST("/zone-ingress").To(d.handleZoneIngressIdentityRequest)).
 		Route(ws.POST("/zone").To(d.handleZoneIdentityRequest))
