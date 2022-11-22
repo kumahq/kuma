@@ -15,7 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/validation"
 )
 
-// go:embed schema.yaml
+//go:embed schema.yaml
 var rawSchema []byte
 var schema = spec.Schema{}
 
