@@ -7,12 +7,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
 
-    <link rel="icon" href="/{{.BaseGuiPath}}/favicon.png" />
+    <link rel="icon" href="/{{ .BaseGuiPath | trimPrefix "/" }}/favicon.png" />
     <title>Manager</title>
 
     
-    <script type="module" crossorigin src="/{{.BaseGuiPath}}/assets/index.c8163df9.js"></script>
-    <link rel="stylesheet" href="/{{.BaseGuiPath}}/assets/index.a46d24ef.css">
+    <script type="module" crossorigin src="/{{.BaseGuiPath | trimPrefix "/" }}/assets/index.c8163df9.js"></script>
+    <link rel="stylesheet" href="/{{.BaseGuiPath | trimPrefix "/" }}/assets/index.a46d24ef.css">
   </head>
   <body>
     <noscript>

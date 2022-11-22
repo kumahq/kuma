@@ -15,11 +15,11 @@ import (
 	"github.com/kumahq/kuma/pkg/test/matchers"
 )
 
-var _ = Describe("GUI Server", func() {
+var _ = FDescribe("GUI Server", func() {
 
 	var baseUrl string
 
-	Describe("enabled", func() {
+	FDescribe("enabled", func() {
 
 		type testCase struct {
 			urlPath      string
@@ -66,6 +66,10 @@ var _ = Describe("GUI Server", func() {
 			Entry("should serve index.html without path", testCase{
 				urlPath:      "/gui",
 				expectedFile: filepath.Join("testdata", "index.html"),
+			}),
+			Entry("should serve robots.txt correctly", testCase{
+				urlPath:      "/gui/robots.txt",
+				expectedFile: filepath.Join("testdata", "robots.txt"),
 			}),
 			Entry("should serve on different path", testCase{
 				urlPath:      "/gui/meshes",

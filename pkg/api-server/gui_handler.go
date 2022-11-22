@@ -4,7 +4,8 @@ import (
 	"bytes"
 	"html/template"
 	"net/http"
-	"path"
+
+	"github.com/Masterminds/sprig/v3"
 
 	"github.com/kumahq/kuma/app/kuma-ui/pkg/resources"
 )
@@ -40,24 +41,24 @@ type GuiConfig struct {
 func NewGuiHandler(guiPath string, enabledGui bool, guiConfig GuiConfig) (http.Handler, error) {
 	if enabledGui {
 		guiFs := resources.GuiFS()
-		tmpl := template.Must(template.ParseFS(guiFs, "index.html"))
+		tmpl := template.Must(template.New("index.html").Funcs(sprig.HtmlFuncMap()).ParseFS(guiFs, "index.html"))
 		buf := bytes.Buffer{}
 		err := tmpl.Execute(&buf, guiConfig)
 		if err != nil {
 			return nil, err
 		}
-		childHandler := http.FileServer(http.FS(guiFs))
 		return http.StripPrefix(guiPath, http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			if request.URL.Path != "/" && path.Ext(request.URL.Path) == "" {
-				request.URL.Path = "/"
-			}
-			if request.URL.Path == "/" {
-				writer.WriteHeader(http.StatusOK)
-				writer.Header().Set("Content-Type", "text/html")
-				_, _ = writer.Write(buf.Bytes())
+			_, err := guiFs.Open(request.URL.Path)
+			if err == nil {
+				log.Info("server", "path", request.URL.Path)
+				http.FileServer(http.FS(guiFs)).ServeHTTP(writer, request)
 				return
 			}
-			childHandler.ServeHTTP(writer, request)
+			log.Info("server", "path", request.URL.Path)
+			writer.WriteHeader(http.StatusOK)
+			writer.Header().Set("Content-Type", "text/html")
+			_, _ = writer.Write(buf.Bytes())
+			return
 		})), nil
 	}
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
