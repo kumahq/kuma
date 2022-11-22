@@ -176,13 +176,11 @@ have been routed to, `backendRefs` can be omitted.
     name: svc_name_other
     tags:
       version: v2
-    filters:
-      - ...
   ...
 ```
 
-Note in the above that a subset of filters (TODO which) are also available _per-backend_ basis.
-This also allows us to later support `HTTPBackendRef.filters` with Gateway API.
+Note that in Gateway API, filters are also available on a _per-backend_ basis (`HTTPBackendRef.filters`).
+We leave this option open for our policy in the future.
 
 #### Load balancing
 
