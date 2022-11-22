@@ -138,6 +138,9 @@ default:
             value: "true"
             append: true
 ```
+
+#### Rate limiting of External Services
+`ExternalServices` are services running outside of the mesh, hence we are not able to configure their inbounds. We are going to support rate limiting of `ExternalServices` only when `ZoneEgress` is enabled.
  
 #### **TCP Connection Rate Limit**
  
