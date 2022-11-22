@@ -2,17 +2,17 @@
 <html lang="en">
   <head>
     <script id="kuma-config" type="application/json">
-      {{.}}
+      {"apiUrl":"https://foo.bar.com:8080/foo","baseGuiPath":"ui","version":"0.0.0"}
     </script>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
 
-    <link rel="icon" href="/{{.BaseGuiPath}}/favicon.png" />
+    <link rel="icon" href="/ui/favicon.png" />
     <title>Manager</title>
 
     
-    <script type="module" crossorigin src="/{{.BaseGuiPath}}/assets/index.c8163df9.js"></script>
-    <link rel="stylesheet" href="/{{.BaseGuiPath}}/assets/index.a46d24ef.css">
+    <script type="module" crossorigin src="/ui/assets/index.js"></script>
+    <link rel="stylesheet" href="/ui/assets/index.css">
   </head>
   <body>
     <noscript>

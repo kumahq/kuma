@@ -40,6 +40,7 @@ import (
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
 	util_prometheus "github.com/kumahq/kuma/pkg/util/prometheus"
+	"github.com/kumahq/kuma/pkg/version"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/server"
 )
@@ -178,7 +179,11 @@ func NewApiServer(
 	if !strings.HasSuffix(basePath, "/") {
 		basePath += "/"
 	}
-	container.Handle(guiPath, guiHandler(guiPath, enableGUI, apiUrl, basePath))
+	guiHandler, err := NewGuiHandler(guiPath, enableGUI, GuiConfig{BaseGuiPath: strings.Trim(basePath, "/"), ApiUrl: apiUrl, Version: version.Build.Version})
+	if err != nil {
+		return nil, err
+	}
+	container.Handle(guiPath, guiHandler)
 
 	newApiServer := &ApiServer{
 		mux:    container.ServeMux,

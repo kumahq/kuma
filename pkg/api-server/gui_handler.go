@@ -1,8 +1,10 @@
 package api_server
 
 import (
-	"encoding/json"
+	"bytes"
+	"html/template"
 	"net/http"
+	"path"
 
 	"github.com/kumahq/kuma/app/kuma-ui/pkg/resources"
 )
@@ -29,23 +31,34 @@ var disabledPage = `
 </html>
 `
 
-func guiHandler(path string, enabledGui bool, apiUrl string, basePath string) http.Handler {
+type GuiConfig struct {
+	ApiUrl      string `json:"apiUrl"`
+	BaseGuiPath string `json:"baseGuiPath"`
+	Version     string `json:"version"`
+}
+
+func NewGuiHandler(guiPath string, enabledGui bool, guiConfig GuiConfig) (http.Handler, error) {
 	if enabledGui {
-		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			if request.URL.Path == path+"config.json" {
+		guiFs := resources.GuiFS()
+		tmpl := template.Must(template.ParseFS(guiFs, "index.html"))
+		buf := bytes.Buffer{}
+		err := tmpl.Execute(&buf, guiConfig)
+		if err != nil {
+			return nil, err
+		}
+		childHandler := http.FileServer(http.FS(guiFs))
+		return http.StripPrefix(guiPath, http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			if request.URL.Path != "/" && path.Ext(request.URL.Path) == "" {
+				request.URL.Path = "/"
+			}
+			if request.URL.Path == "/" {
 				writer.WriteHeader(http.StatusOK)
-				writer.Header().Add("Content-Type", "application/json")
-				_ = json.NewEncoder(writer).Encode(struct {
-					ApiUrl      string `json:"apiUrl"`
-					BaseGuiPath string `json:"baseGuiPath"`
-				}{
-					ApiUrl:      apiUrl,
-					BaseGuiPath: basePath,
-				})
+				writer.Header().Set("Content-Type", "text/html")
+				_, _ = writer.Write(buf.Bytes())
 				return
 			}
-			http.StripPrefix(path, http.FileServer(http.FS(resources.GuiFS()))).ServeHTTP(writer, request)
-		})
+			childHandler.ServeHTTP(writer, request)
+		})), nil
 	}
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(http.StatusOK)
@@ -53,5 +66,5 @@ func guiHandler(path string, enabledGui bool, apiUrl string, basePath string) ht
 		if err != nil {
 			log.Error(err, "could not write the response")
 		}
-	})
+	}), nil
 }
