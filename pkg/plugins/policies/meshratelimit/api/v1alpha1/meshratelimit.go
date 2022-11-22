@@ -8,7 +8,6 @@ import (
 )
 
 // MeshRateLimit
-// +kuma:policy:skip_registration=true
 type MeshRateLimit struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
@@ -31,13 +30,13 @@ type Conf struct {
 	Local *Local `json:"local,omitempty"`
 }
 
-// LocalConf defines local http or/and tcp rate limit configuration 
+// LocalConf defines local http or/and tcp rate limit configuration
 type Local struct {
-	HTTP *LocalHTTP`json:"http,omitempty"`
-	TCP *LocalTCP `json:"tcp,omitempty"`
+	HTTP *LocalHTTP `json:"http,omitempty"`
+	TCP  *LocalTCP  `json:"tcp,omitempty"`
 }
 
-// LocalHTTP defines confguration of local HTTP rate limiting 
+// LocalHTTP defines confguration of local HTTP rate limiting
 // https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/local_rate_limit_filter
 type LocalHTTP struct {
 	// Define if rate limiting should be enabled.
@@ -51,8 +50,8 @@ type LocalHTTP struct {
 	Requests uint32 `json:"requests,omitempty"`
 
 	// The the interval for which `requests` will be accounted.
- 	// +required
- 	Interval time.Duration `json:"interval,omitempty"`
+	// +required
+	Interval time.Duration `json:"interval,omitempty"`
 
 	// Describes the actions to take on a rate limit event
 	// +optional
@@ -60,11 +59,11 @@ type LocalHTTP struct {
 	OnRateLimit *OnRateLimit `json:"onRateLimit,omitempty"`
 }
 
-type OnRateLimit struct{
+type OnRateLimit struct {
 	// The HTTP status code to be set on a rate limit event
 	// +optional
 	// +nullable
-	Status *uint32  `json:"status,omitempty"`
+	Status *uint32 `json:"status,omitempty"`
 
 	// The Headers to be added to the HTTP response on a rate limit event
 	// +optional
@@ -79,7 +78,7 @@ type HeaderValue struct {
 
 	// Header value
 	// +optional
-	Value string`json:"value,omitempty"`
+	Value string `json:"value,omitempty"`
 
 	// Should the header be appended
 	// +optional
@@ -87,7 +86,7 @@ type HeaderValue struct {
 	Append *bool `json:"append,omitempty"`
 }
 
-// LocalTCP defines confguration of local TCP rate limiting 
+// LocalTCP defines confguration of local TCP rate limiting
 // https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/network_filters/local_rate_limit_filter
 type LocalTCP struct {
 	// Define if rate limiting should be enabled.
@@ -101,6 +100,6 @@ type LocalTCP struct {
 	Connections uint32 `json:"connections,omitempty"`
 
 	// The interval of adding tokens into bucket. Must be >= 50ms
- 	// +required
- 	Interval time.Duration `json:"interval,omitempty"`
+	// +required
+	Interval time.Duration `json:"interval,omitempty"`
 }

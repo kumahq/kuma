@@ -12,6 +12,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	policy "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )
 
@@ -84,4 +85,20 @@ func (l *MeshRateLimitList) GetItems() []model.KubernetesObject {
 		result[i] = &l.Items[i]
 	}
 	return result
+}
+
+func init() {
+	SchemeBuilder.Register(&MeshRateLimit{}, &MeshRateLimitList{})
+	registry.RegisterObjectType(&policy.MeshRateLimit{}, &MeshRateLimit{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "MeshRateLimit",
+		},
+	})
+	registry.RegisterListType(&policy.MeshRateLimit{}, &MeshRateLimitList{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "MeshRateLimitList",
+		},
+	})
 }

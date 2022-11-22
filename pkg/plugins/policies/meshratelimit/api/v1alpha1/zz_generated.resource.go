@@ -15,14 +15,15 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/validation"
 )
 
-// _DELETE_GO_EMBED_WORKAROUND_go:embed schema.yaml
+// go:embed schema.yaml
 var rawSchema []byte
-var schema = &spec.Schema{}
+var schema = spec.Schema{}
 
 func init() {
-	if err := yaml.Unmarshal(rawSchema, schema); err != nil {
+	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
 		panic(err)
 	}
+	schema = schema.Properties["spec"]
 }
 
 const (
@@ -73,7 +74,7 @@ func (t *MeshRateLimitResource) Descriptor() model.ResourceTypeDescriptor {
 }
 
 func (t *MeshRateLimitResource) Validate() error {
-	if err := validation.ValidateSchema(t.GetSpec(), schema); err != nil {
+	if err := validation.ValidateSchema(t.GetSpec(), &schema); err != nil {
 		return err
 	}
 
