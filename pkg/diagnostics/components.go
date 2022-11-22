@@ -7,9 +7,8 @@ import (
 func SetupServer(rt core_runtime.Runtime) error {
 	return rt.Add(
 		&diagnosticsServer{
-			metrics:        rt.Metrics(),
-			port:           rt.Config().Diagnostics.ServerPort,
-			debugEndpoints: rt.Config().Diagnostics.DebugEndpoints,
+			config:  rt.Config().Diagnostics,
+			metrics: rt.Metrics(),
 		},
 	)
 }

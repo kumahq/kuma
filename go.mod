@@ -12,7 +12,7 @@ require (
 	github.com/containerd/cgroups v1.0.4
 	github.com/containernetworking/cni v1.1.2
 	github.com/containernetworking/plugins v1.1.1
-	github.com/emicklei/go-restful/v3 v3.9.0
+	github.com/emicklei/go-restful/v3 v3.10.1
 	github.com/envoyproxy/go-control-plane v0.10.3
 	github.com/envoyproxy/protoc-gen-validate v0.9.0
 	github.com/evanphx/json-patch/v5 v5.6.0
@@ -24,7 +24,7 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/gruntwork-io/terratest v0.41.0
+	github.com/gruntwork-io/terratest v0.41.3
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kumahq/kuma-net v0.8.8
@@ -32,7 +32,7 @@ require (
 	github.com/lib/pq v1.10.7
 	github.com/miekg/dns v1.1.50
 	github.com/natefinch/atomic v1.0.1
-	github.com/onsi/ginkgo/v2 v2.5.0
+	github.com/onsi/ginkgo/v2 v2.5.1
 	github.com/onsi/gomega v1.24.1
 	github.com/operator-framework/operator-lib v0.11.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -40,7 +40,7 @@ require (
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/client_model v0.3.0
 	github.com/prometheus/common v0.37.0
-	github.com/prometheus/prometheus v0.40.1
+	github.com/prometheus/prometheus v0.40.2
 	github.com/sethvargo/go-retry v0.2.3
 	github.com/slok/go-http-metrics v0.10.0
 	github.com/soheilhy/cmux v0.1.5
@@ -57,7 +57,7 @@ require (
 	golang.org/x/text v0.4.0
 	golang.org/x/time v0.2.0
 	google.golang.org/genproto v0.0.0-20221027153422-115e99e71e1c
-	google.golang.org/grpc v1.50.1
+	google.golang.org/grpc v1.51.0
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	helm.sh/helm/v3 v3.8.1

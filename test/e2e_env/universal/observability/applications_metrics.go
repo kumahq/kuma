@@ -58,6 +58,20 @@ metrics:
 func ApplicationsMetrics() {
 	const mesh = "applications-metrics"
 	const meshNoAggregate = "applications-metrics-no-aggregate"
+	const meshWithLocalhostBound = "applications-metrics-localhost-bound"
+
+	dpLocalhostBoundAggregateConfig := `
+metrics:
+  type: prometheus
+  conf:
+    aggregate:
+    - name: localhost-bound-not-exposed
+      port: 8080
+      path: "/localhost-bound-not-exposed"
+    - name: localhost-bound
+      port: 8080
+      address: "127.0.0.1"
+      path: "/localhost-bound"`
 
 	dpAggregateConfig := `
 metrics:
@@ -92,6 +106,7 @@ metrics:
 		err := NewClusterSetup().
 			Install(MeshWithMetricsEnabeld(meshNoAggregate)).
 			Install(MeshKubernetesAndMetricsAggregate(mesh)).
+			Install(MeshWithMetricsEnabeld(meshWithLocalhostBound)).
 			Install(TestServerUniversal("test-server", mesh,
 				WithTransparentProxy(true),
 				WithArgs([]string{"echo", "--instance", "test-server"}),
@@ -110,6 +125,12 @@ metrics:
 				WithServiceName("test-server-dp-metrics"),
 				WithAppendDataplaneYaml(dpAggregateConfig),
 			)).
+			Install(TestServerUniversal("test-server-dp-metrics-localhost", meshWithLocalhostBound,
+				WithTransparentProxy(true),
+				WithArgs([]string{"echo", "--instance", "test-server-dp-metrics-localhost", "--ip", "127.0.0.1"}),
+				WithServiceName("test-server-dp-metrics-localhost"),
+				WithAppendDataplaneYaml(dpLocalhostBoundAggregateConfig),
+			)).
 			Setup(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -118,6 +139,8 @@ metrics:
 		Expect(env.Cluster.DeleteMesh(mesh)).To(Succeed())
 		Expect(env.Cluster.DeleteMeshApps(meshNoAggregate)).To(Succeed())
 		Expect(env.Cluster.DeleteMesh(meshNoAggregate)).To(Succeed())
+		Expect(env.Cluster.DeleteMeshApps(meshWithLocalhostBound)).To(Succeed())
+		Expect(env.Cluster.DeleteMesh(meshWithLocalhostBound)).To(Succeed())
 	})
 
 	It("should scrape metrics defined in mesh and not fail when defined service doesn't exist", func() {
@@ -190,6 +213,28 @@ metrics:
 		Expect(stdout).To(ContainSubstring("my-app"))
 		// overridden by pod
 		Expect(stdout).To(ContainSubstring("other-app"))
+		// metric from envoy
+		Expect(stdout).To(ContainSubstring("envoy_server_concurrency"))
+	})
+
+	It("should allow to define and expose localhost bound server", func() {
+		// given
+		ip := env.Cluster.GetApp("test-server-dp-metrics-localhost").GetIP()
+
+		// when
+		stdout, _, err := env.Cluster.ExecWithRetries("", "", "test-server-dp-metrics-localhost",
+			"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(ip, "1234")+"/metrics?filter=concurrency")
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(stdout).ToNot(BeNil())
+		Expect(stdout).To(ContainSubstring(string(expfmt.FmtText)))
+
+		// path doesn't have defined address
+		Expect(stdout).ToNot(ContainSubstring("localhost-bound-not-exposed"))
+
+		// exposed localhost bound service
+		Expect(stdout).To(ContainSubstring("localhost-bound"))
 		// metric from envoy
 		Expect(stdout).To(ContainSubstring("envoy_server_concurrency"))
 	})
