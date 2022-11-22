@@ -42,8 +42,10 @@ function version_info() {
   envoyVersion=$(envoy_version)
 
   if [[ -z "${CI}" ]]; then
+    ciDeclared="false"
     versionDate="local-build"
   else
+    ciDeclared="true"
     versionDate=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
   fi
 
@@ -54,7 +56,7 @@ function version_info() {
     describedTag="no-git"
     longHash="no-git"
   else
-    if git diff --quiet && git diff --cached --quiet; then
+    if [[ "$ciDeclared" == "true" ]] || git diff --quiet && git diff --cached --quiet; then
       longHash=$(git rev-parse HEAD 2>/dev/null || echo "no-commit")
       shortHash=$(git rev-parse --short=9 HEAD 2> /dev/null || echo "no-commit")
       describedTag=$(git describe --tags 2>/dev/null || echo "none")
