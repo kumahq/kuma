@@ -67,11 +67,8 @@ function version_info() {
     exactTag=$(git describe --exact-match --tags 2> /dev/null || echo "not-tagged")
     # We only support tags of the format: "v?X.Y.Z(-<alphaNumericName>)?" all other tags will just be ignored and use the regular versioning scheme
     if [[ ${exactTag} =~ ^v?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
-      echo "${exactTag/^v//} ${describedTag} ${longHash} ${versionDate} ${envoyVersion}"
-      exit 0
-    fi
-
-    if [[ ${currentBranch} == release-* ]]; then
+      version="${exactTag/^v//} ${describedTag} ${longHash} ${versionDate} ${envoyVersion}"
+    elif [[ ${currentBranch} == release-* ]]; then
         releasePrefix=${currentBranch//release-/}
         lastGitTag=$(git tag -l | grep -E "^v?${releasePrefix}\.[0-9]+$" | sed 's/^v//'| sort -V | tail -1)
         if [[ ${lastGitTag} ]]; then
