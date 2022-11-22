@@ -21,11 +21,11 @@ function safe_cp() {
   local files dest dir_1 final_dest
 
   files="$1"
-	dest="$2"
-	dir_1="$(dirname "${file}")"
-	final_dest="${dest}/${dir_1}/"
+  dest="$2"
+  dir_1="$(dirname "${file}")"
+  final_dest="${dest}/${dir_1}/"
 
-	mkdir -p "${final_dest}" && for file in $files ; do cp -fR "${file}" "${final_dest}" ; done
+  mkdir -p "${final_dest}" && for file in $files ; do cp -fR "${file}" "${final_dest}" ; done
 }
 
 export -f safe_cp
@@ -36,7 +36,7 @@ export -f safe_cp
 # - next lines - artifacts to copy starting with "!"
 tail -n +3 "${DOCKERIGNORE_FILE}" | cut -d '!' -f 2 | while read -r file
 do
-	safe_cp "${file}" "${DESTINATION_DIR}"
+  safe_cp "${file}" "${DESTINATION_DIR}"
 done
 
 # this will make caching valid for one day
