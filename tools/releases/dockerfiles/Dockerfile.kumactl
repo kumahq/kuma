@@ -1,4 +1,4 @@
-FROM kumahq/base-debian11:1.0.0
+FROM kumahq/base-debian11:no-push
 ARG ARCH
 
 COPY /tools/releases/templates/NOTICE-kumactl /kuma/NOTICE

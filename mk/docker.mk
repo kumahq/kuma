@@ -11,9 +11,9 @@ define build_image
 $(DOCKER_REGISTRY)/$(1):$(BUILD_INFO_VERSION)$(if $(IMAGE_ARCH_TAG_ENABLED),-${GOARCH},)
 endef
 
-export KUMA_BASE_IMAGE ?= kumahq/base-debian11:1.0.0
-export KUMA_BASE_ROOT_IMAGE ?= kumahq/base-debian11:1.0.0-root
-export KUMA_STATIC_IMAGE ?= kumahq/static-debian11:1.0.0
+export KUMA_BASE_IMAGE ?= kumahq/base-debian11:no-push
+export KUMA_BASE_ROOT_IMAGE ?= kumahq/base-debian11:no-push-root
+export KUMA_STATIC_IMAGE ?= kumahq/static-debian11:no-push
 export KUMA_CP_DOCKER_IMAGE ?= $(call build_image,kuma-cp)
 export KUMA_DP_DOCKER_IMAGE ?= $(call build_image,kuma-dp)
 export KUMACTL_DOCKER_IMAGE ?= $(call build_image,kumactl)
