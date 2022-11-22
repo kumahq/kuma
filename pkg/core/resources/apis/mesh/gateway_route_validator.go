@@ -194,7 +194,7 @@ func validateMeshGatewayRouteHTTPFilter(
 	if r := conf.GetRequestHeader(); r != nil {
 		header := func(
 			path validators.PathBuilder,
-			headers []*mesh_proto.MeshGatewayRoute_HttpRoute_Filter_RequestHeader_Header,
+			headers []*mesh_proto.MeshGatewayRoute_HttpRoute_Filter_HeaderFilter_Header,
 		) validators.ValidationError {
 			var err validators.ValidationError
 			for i, h := range headers {
