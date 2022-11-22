@@ -195,7 +195,7 @@ spec:
     - filters:
       - type: LoadBalancing
         loadBalancing: 
-          localityAware: true
+          prioritizeLocalZone: true
           type: RoundRobin|LeastRequest|RingHash|Random|Maglev
           leastRequest:
             choiceCount: 8
