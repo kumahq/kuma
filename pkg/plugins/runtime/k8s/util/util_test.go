@@ -3,6 +3,7 @@ package util_test
 import (
 	"time"
 
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
@@ -216,6 +217,66 @@ var _ = Describe("Util", func() {
 					"kuma.io/mesh": "",
 				},
 				expected: "default",
+			}),
+			Entry("Pod with non-empty `kuma.io/mesh` annotation", testCase{
+				podAnnotations: map[string]string{
+					"kuma.io/mesh": "demo",
+				},
+				expected: "demo",
+			}),
+			Entry("Pod with empty `kuma.io/mesh` annotation, Namespace with annotation", testCase{
+				podAnnotations: map[string]string{
+					"kuma.io/mesh": "",
+				},
+				nsAnnotations: map[string]string{
+					"kuma.io/mesh": "demo",
+				},
+				expected: "demo",
+			}),
+		)
+	})
+	Describe("MeshOfByLabelOrAnnotation(..)", func() {
+
+		type testCase struct {
+			podLabels      map[string]string
+			podAnnotations map[string]string
+			nsAnnotations  map[string]string
+			expected       string
+		}
+
+		DescribeTable("should use value of `kuma.io/mesh` annotation on a Pod or fallback to the `default` Mesh",
+			func(given testCase) {
+				// given
+				pod := &kube_core.Pod{
+					ObjectMeta: kube_meta.ObjectMeta{
+						Annotations: given.podAnnotations,
+						Labels:      given.podLabels,
+					},
+				}
+				ns := &kube_core.Namespace{
+					ObjectMeta: kube_meta.ObjectMeta{
+						Annotations: given.nsAnnotations,
+					},
+				}
+
+				// then
+				Expect(util.MeshOfByLabelOrAnnotation(logr.Discard(), pod, ns)).To(Equal(given.expected))
+			},
+			Entry("Pod without annotations", testCase{
+				podAnnotations: nil,
+				expected:       "default",
+			}),
+			Entry("Pod with empty `kuma.io/mesh` annotation", testCase{
+				podAnnotations: map[string]string{
+					"kuma.io/mesh": "",
+				},
+				expected: "default",
+			}),
+			Entry("Pod with non-empty `kuma.io/mesh` label", testCase{
+				podLabels: map[string]string{
+					"kuma.io/mesh": "demo",
+				},
+				expected: "demo",
 			}),
 			Entry("Pod with non-empty `kuma.io/mesh` annotation", testCase{
 				podAnnotations: map[string]string{
