@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -181,6 +182,9 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 	predicate := func(r core_model.Resource) bool {
 		if opts.Mesh != "" {
 			return r.GetMeta().GetMesh() == opts.Mesh
+		}
+		if opts.NamePrefix != "" {
+			return strings.HasPrefix(r.GetMeta().GetName(), opts.NamePrefix)
 		}
 		return true
 	}

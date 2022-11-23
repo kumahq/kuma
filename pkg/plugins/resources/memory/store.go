@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -264,7 +265,7 @@ func (c *memoryStore) List(_ context.Context, rs core_model.ResourceList, fs ...
 
 	opts := store.NewListOptions(fs...)
 
-	records := c.findRecords(string(rs.GetItemType()), opts.Mesh)
+	records := c.findRecords(string(rs.GetItemType()), opts.Mesh, opts.NamePrefix)
 
 	for i := 0; i < len(records); i++ {
 		r := rs.NewItem()
@@ -291,14 +292,19 @@ func (c *memoryStore) findRecord(
 	return -1, nil
 }
 
-func (c *memoryStore) findRecords(
-	resourceType string, mesh string) []*memoryStoreRecord {
+func (c *memoryStore) findRecords(resourceType string, mesh string, prefix string) []*memoryStoreRecord {
 	res := make([]*memoryStoreRecord, 0)
 	for _, rec := range c.records {
-		if rec.ResourceType == resourceType &&
-			(mesh == "" || rec.Mesh == mesh) {
-			res = append(res, rec)
+		if rec.ResourceType != resourceType {
+			continue
 		}
+		if mesh != "" && rec.Mesh != mesh {
+			continue
+		}
+		if prefix != "" && !strings.HasPrefix(rec.Name, prefix) {
+			continue
+		}
+		res = append(res, rec)
 	}
 	return res
 }
