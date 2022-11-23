@@ -34,8 +34,7 @@ var ALLOW Action = "ALLOW"
 var DENY Action = "DENY"
 
 // ALLOW_WITH_SHADOW_DENY action lets the requests pass but emits logs as if
-//
-//	requests are denied
+//  requests are denied
 var ALLOW_WITH_SHADOW_DENY Action = "ALLOW_WITH_SHADOW_DENY"
 
 type Conf struct {
