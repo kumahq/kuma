@@ -15,11 +15,11 @@ import (
 	"github.com/kumahq/kuma/pkg/test/matchers"
 )
 
-var _ = FDescribe("GUI Server", func() {
+var _ = Describe("GUI Server", func() {
 
 	var baseUrl string
 
-	FDescribe("enabled", func() {
+	Describe("enabled", func() {
 
 		type testCase struct {
 			urlPath      string

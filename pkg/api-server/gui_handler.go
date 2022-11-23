@@ -58,7 +58,6 @@ func NewGuiHandler(guiPath string, enabledGui bool, guiConfig GuiConfig) (http.H
 			writer.WriteHeader(http.StatusOK)
 			writer.Header().Set("Content-Type", "text/html")
 			_, _ = writer.Write(buf.Bytes())
-			return
 		})), nil
 	}
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
