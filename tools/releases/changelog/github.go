@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -130,10 +131,10 @@ It will then output a changelog with all PRs with the same changelog grouped tog
 			var prs []int
 			var minVersion, maxVersion string
 			for _, c := range commits {
-				if minVersion == "" || c.MinDependency > minVersion {
+				if minVersion == "" || c.MinDependency < minVersion {
 					minVersion = c.MinDependency
 				}
-				if maxVersion == "" || c.MaxDependency < maxVersion {
+				if maxVersion == "" || c.MaxDependency > maxVersion {
 					maxVersion = c.MaxDependency
 				}
 				prs = append(prs, c.PrNumber)
@@ -202,6 +203,9 @@ type CommitInfo struct {
 	MaxDependency string
 }
 
+// titles look like: chore(deps): bump github.com/lib/pq from 1.10.6 to 1.10.7
+var dependabotPRTitleRegExp = regexp.MustCompile(`(chore\(deps\): bump [^ ]+) from ([^ ]+) to ([^ ]+)`)
+
 func NewCommitInfo(commit GQLCommit) *CommitInfo {
 	if len(commit.AssociatedPullRequests.Nodes) == 0 {
 		return nil
@@ -229,14 +233,12 @@ func NewCommitInfo(commit GQLCommit) *CommitInfo {
 				return nil
 			}
 		}
+		matches := dependabotPRTitleRegExp.FindStringSubmatch(pr.Title)
 		// Rollup dependabot issues with the same dependency into just one so we can rebuild a single line with all update PRs.
-		if res.Author == "dependabot" {
-			// titles look like: chore(deps): bump github.com/lib/pq from 1.10.6 to 1.10.7
-			split := strings.Split(pr.Title, " from ")
-			res.Changelog = split[0]
-			sp := strings.Split(split[1], " to ")
-			res.MinDependency = sp[0]
-			res.MaxDependency = sp[1]
+		if matches != nil {
+			res.Changelog = matches[1]
+			res.MinDependency = matches[2]
+			res.MaxDependency = matches[3]
 		} else {
 			// Use the pr.Title as a changelog entry
 			res.Changelog = pr.Title
