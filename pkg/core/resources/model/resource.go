@@ -44,6 +44,7 @@ const (
 type KDSFlagType uint32
 
 const (
+	KDSDisabled      = KDSFlagType(0)
 	ConsumedByZone   = KDSFlagType(1)
 	ConsumedByGlobal = KDSFlagType(1 << 2)
 	ProvidedByZone   = KDSFlagType(1 << 3)

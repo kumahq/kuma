@@ -117,16 +117,29 @@ func GenerateVirtualHost(
 				case ":authority", "Host", "host":
 					routeBuilder.Configure(route.RouteReplaceHostHeader(h.Value))
 				default:
-					routeBuilder.Configure(route.RouteReplaceRequestHeader(h.Key, h.Value))
+					routeBuilder.Configure(route.RouteAddRequestHeader(route.RouteReplaceHeader(h.Key, h.Value)))
 				}
 			}
 
 			for _, h := range e.RequestHeaders.Append {
-				routeBuilder.Configure(route.RouteAppendRequestHeader(h.Key, h.Value))
+				routeBuilder.Configure(route.RouteAddRequestHeader(route.RouteAppendHeader(h.Key, h.Value)))
 			}
 
 			for _, name := range e.RequestHeaders.Delete {
 				routeBuilder.Configure(route.RouteDeleteRequestHeader(name))
+			}
+		}
+		if rq := e.ResponseHeaders; rq != nil {
+			for _, h := range e.ResponseHeaders.Replace {
+				routeBuilder.Configure(route.RouteAddResponseHeader(route.RouteReplaceHeader(h.Key, h.Value)))
+			}
+
+			for _, h := range e.ResponseHeaders.Append {
+				routeBuilder.Configure(route.RouteAddResponseHeader(route.RouteAppendHeader(h.Key, h.Value)))
+			}
+
+			for _, name := range e.ResponseHeaders.Delete {
+				routeBuilder.Configure(route.RouteDeleteResponseHeader(name))
 			}
 		}
 

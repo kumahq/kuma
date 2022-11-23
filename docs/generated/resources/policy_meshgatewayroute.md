@@ -198,6 +198,22 @@
                         Note that rewriting "/prefix" to "/" will do the right thing:
                         - the path "/prefix" is rewritten to "/"
                         - the path "/prefix/rest" is rewritten to "/rest"    
+                
+                - `responseHeader` (optional)    
+                    
+                    - `set` (optional, repeated)    
+                        
+                        - `name` (required)    
+                        
+                        - `value` (required)    
+                    
+                    - `add` (optional, repeated)    
+                        
+                        - `name` (required)    
+                        
+                        - `value` (required)    
+                    
+                    - `remove` (optional, repeated)    
             
             - `backends` (optional, repeated)
             

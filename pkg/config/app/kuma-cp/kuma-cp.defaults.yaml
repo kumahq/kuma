@@ -428,6 +428,18 @@ diagnostics:
   serverPort: 5680 # ENV: KUMA_DIAGNOSTICS_SERVER_PORT
   # If true, enables https://golang.org/pkg/net/http/pprof/ debug endpoints
   debugEndpoints: false # ENV: KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS
+  # Whether tls is enabled or not
+  tlsEnabled: false # ENV: KUMA_DIAGNOSTICS_TLS_ENABLED
+  # TlsCertFile defines a path to a file with PEM-encoded TLS cert. If empty, autoconfigured from general.tlsCertFile
+  tlsCertFile: # ENV: KUMA_DIAGNOSTICS_TLS_CERT_FILE
+  # TlsKeyFile defines a path to a file with PEM-encoded TLS key. If empty, autoconfigured from general.tlsKeyFile
+  tlsKeyFile: # ENV: KUMA_DIAGNOSTICS_TLS_KEY_FILE
+  # TlsMinVersion the minimum version of TLS
+  tlsMinVersion: "TLSv1_2" # ENV: KUMA_DIAGNOSTICS_TLS_MIN_VERSION
+  # TlsMaxVersion the maximum version of TLS
+  tlsMaxVersion: # ENV: KUMA_DIAGNOSTICS_TLS_MAX_VERSION
+  # TlsCipherSuites the list of cipher suites
+  tlsCipherSuites: [] # ENV: KUMA_DIAGNOSTICS_TLS_CIPHER_SUITES
 
 # Dataplane Server configuration that servers API like Bootstrap/XDS for the Dataplane.
 dpServer:

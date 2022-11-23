@@ -1,212 +1,217 @@
 properties:
   type:
-    description: ''
+    description: 'the type of the resource'
     type: string
     enum:
       - MeshAccessLog
   mesh:
     description: 'Mesh is the name of the Kuma mesh this resource belongs to. It may be omitted for cluster-scoped resources.'
     type: string
+    default: default
   name:
     description: 'Name of the Kuma resource'
     type: string
-  from:
-    description: From list makes a match between clients and corresponding configurations
-    items:
-      properties:
-        default:
-          description: Default is a configuration specific to the group of clients referenced in 'targetRef'
-          properties:
-            backends:
-              items:
-                properties:
-                  file:
-                    description: FileBackend defines configuration for file based access logs
-                    properties:
-                      format:
-                        description: Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
-                        properties:
-                          json:
-                            items:
-                              properties:
-                                key:
-                                  type: string
-                                value:
-                                  type: string
-                              type: object
-                            type: array
-                          omitEmptyValues:
-                            type: boolean
-                          plain:
-                            type: string
-                        type: object
-                      path:
-                        description: Path to a file that logs will be written to
-                        type: string
-                    type: object
-                  tcp:
-                    description: TCPBackend defines a TCP logging backend.
-                    properties:
-                      address:
-                        description: Address of the TCP logging backend
-                        type: string
-                      format:
-                        description: Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
-                        properties:
-                          json:
-                            items:
-                              properties:
-                                key:
-                                  type: string
-                                value:
-                                  type: string
-                              type: object
-                            type: array
-                          omitEmptyValues:
-                            type: boolean
-                          plain:
-                            type: string
-                        type: object
-                    type: object
-                type: object
-              nullable: true
-              type: array
-          type: object
-        targetRef:
-          description: TargetRef is a reference to the resource that represents a group of clients.
-          properties:
-            kind:
-              description: Kind of the referenced resource
-              enum:
-                - Mesh
-                - MeshSubset
-                - MeshService
-                - MeshServiceSubset
-                - MeshGatewayRoute
-              type: string
-            mesh:
-              description: Mesh is reserved for future use to identify cross mesh resources.
-              type: string
-            name:
-              description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
-              type: string
-            tags:
-              additionalProperties:
-                type: string
-              description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
-              type: object
-          type: object
-      type: object
-    type: array
-  targetRef:
-    description: TargetRef is a reference to the resource the policy takes an effect on. The resource could be either a real store object or virtual resource defined inplace.
+  spec:
+    description: Spec is the specification of the Kuma MeshAccessLog resource.
     properties:
-      kind:
-        description: Kind of the referenced resource
-        enum:
-          - Mesh
-          - MeshSubset
-          - MeshService
-          - MeshServiceSubset
-          - MeshGatewayRoute
-        type: string
-      mesh:
-        description: Mesh is reserved for future use to identify cross mesh resources.
-        type: string
-      name:
-        description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
-        type: string
-      tags:
-        additionalProperties:
-          type: string
-        description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
-        type: object
-    type: object
-  to:
-    description: To list makes a match between the consumed services and corresponding configurations
-    items:
-      properties:
-        default:
-          description: Default is a configuration specific to the group of destinations referenced in 'targetRef'
+      from:
+        description: From list makes a match between clients and corresponding configurations
+        items:
           properties:
-            backends:
-              items:
-                properties:
-                  file:
-                    description: FileBackend defines configuration for file based access logs
+            default:
+              description: Default is a configuration specific to the group of clients referenced in 'targetRef'
+              properties:
+                backends:
+                  items:
                     properties:
-                      format:
-                        description: Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                      file:
+                        description: FileBackend defines configuration for file based access logs
                         properties:
-                          json:
-                            items:
-                              properties:
-                                key:
-                                  type: string
-                                value:
-                                  type: string
-                              type: object
-                            type: array
-                          omitEmptyValues:
-                            type: boolean
-                          plain:
+                          format:
+                            description: Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                            properties:
+                              json:
+                                items:
+                                  properties:
+                                    key:
+                                      type: string
+                                    value:
+                                      type: string
+                                  type: object
+                                type: array
+                              omitEmptyValues:
+                                type: boolean
+                              plain:
+                                type: string
+                            type: object
+                          path:
+                            description: Path to a file that logs will be written to
                             type: string
                         type: object
-                      path:
-                        description: Path to a file that logs will be written to
-                        type: string
-                    type: object
-                  tcp:
-                    description: TCPBackend defines a TCP logging backend.
-                    properties:
-                      address:
-                        description: Address of the TCP logging backend
-                        type: string
-                      format:
-                        description: Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                      tcp:
+                        description: TCPBackend defines a TCP logging backend.
                         properties:
-                          json:
-                            items:
-                              properties:
-                                key:
-                                  type: string
-                                value:
-                                  type: string
-                              type: object
-                            type: array
-                          omitEmptyValues:
-                            type: boolean
-                          plain:
+                          address:
+                            description: Address of the TCP logging backend
                             type: string
+                          format:
+                            description: Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                            properties:
+                              json:
+                                items:
+                                  properties:
+                                    key:
+                                      type: string
+                                    value:
+                                      type: string
+                                  type: object
+                                type: array
+                              omitEmptyValues:
+                                type: boolean
+                              plain:
+                                type: string
+                            type: object
                         type: object
                     type: object
-                type: object
-              nullable: true
-              type: array
-          type: object
-        targetRef:
-          description: TargetRef is a reference to the resource that represents a group of destinations.
-          properties:
-            kind:
-              description: Kind of the referenced resource
-              enum:
-                - Mesh
-                - MeshSubset
-                - MeshService
-                - MeshServiceSubset
-                - MeshGatewayRoute
-              type: string
-            mesh:
-              description: Mesh is reserved for future use to identify cross mesh resources.
-              type: string
-            name:
-              description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
-              type: string
-            tags:
-              additionalProperties:
-                type: string
-              description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                  nullable: true
+                  type: array
+              type: object
+            targetRef:
+              description: TargetRef is a reference to the resource that represents a group of clients.
+              properties:
+                kind:
+                  description: Kind of the referenced resource
+                  enum:
+                    - Mesh
+                    - MeshSubset
+                    - MeshService
+                    - MeshServiceSubset
+                    - MeshGatewayRoute
+                  type: string
+                mesh:
+                  description: Mesh is reserved for future use to identify cross mesh resources.
+                  type: string
+                name:
+                  description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
+                  type: string
+                tags:
+                  additionalProperties:
+                    type: string
+                  description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                  type: object
               type: object
           type: object
-      type: object
-    type: array
+        type: array
+      targetRef:
+        description: TargetRef is a reference to the resource the policy takes an effect on. The resource could be either a real store object or virtual resource defined inplace.
+        properties:
+          kind:
+            description: Kind of the referenced resource
+            enum:
+              - Mesh
+              - MeshSubset
+              - MeshService
+              - MeshServiceSubset
+              - MeshGatewayRoute
+            type: string
+          mesh:
+            description: Mesh is reserved for future use to identify cross mesh resources.
+            type: string
+          name:
+            description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
+            type: string
+          tags:
+            additionalProperties:
+              type: string
+            description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+            type: object
+        type: object
+      to:
+        description: To list makes a match between the consumed services and corresponding configurations
+        items:
+          properties:
+            default:
+              description: Default is a configuration specific to the group of destinations referenced in 'targetRef'
+              properties:
+                backends:
+                  items:
+                    properties:
+                      file:
+                        description: FileBackend defines configuration for file based access logs
+                        properties:
+                          format:
+                            description: Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                            properties:
+                              json:
+                                items:
+                                  properties:
+                                    key:
+                                      type: string
+                                    value:
+                                      type: string
+                                  type: object
+                                type: array
+                              omitEmptyValues:
+                                type: boolean
+                              plain:
+                                type: string
+                            type: object
+                          path:
+                            description: Path to a file that logs will be written to
+                            type: string
+                        type: object
+                      tcp:
+                        description: TCPBackend defines a TCP logging backend.
+                        properties:
+                          address:
+                            description: Address of the TCP logging backend
+                            type: string
+                          format:
+                            description: Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                            properties:
+                              json:
+                                items:
+                                  properties:
+                                    key:
+                                      type: string
+                                    value:
+                                      type: string
+                                  type: object
+                                type: array
+                              omitEmptyValues:
+                                type: boolean
+                              plain:
+                                type: string
+                            type: object
+                        type: object
+                    type: object
+                  nullable: true
+                  type: array
+              type: object
+            targetRef:
+              description: TargetRef is a reference to the resource that represents a group of destinations.
+              properties:
+                kind:
+                  description: Kind of the referenced resource
+                  enum:
+                    - Mesh
+                    - MeshSubset
+                    - MeshService
+                    - MeshServiceSubset
+                    - MeshGatewayRoute
+                  type: string
+                mesh:
+                  description: Mesh is reserved for future use to identify cross mesh resources.
+                  type: string
+                name:
+                  description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
+                  type: string
+                tags:
+                  additionalProperties:
+                    type: string
+                  description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                  type: object
+              type: object
+          type: object
+        type: array
+    type: object

@@ -63,7 +63,7 @@ image/kuma-cni: image/base-root build/kuma-cni/linux-${GOARCH} build/install-cni
 	docker build -t $(KUMA_CNI_DOCKER_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --platform=linux/${GOARCH} -f tools/releases/dockerfiles/Dockerfile.kuma-cni .
 
 .PHONY: image/kuma-universal
-image/kuma-universal: build/linux-${GOARCH}
+image/kuma-universal: build/kuma-cp/linux-${GOARCH} build/kuma-dp/linux-${GOARCH} build/artifacts-linux-${GOARCH}/envoy/envoy build/coredns/linux-${GOARCH} build/kumactl/linux-${GOARCH} build/test-server/linux-${GOARCH}
 	docker build -t $(KUMA_UNIVERSAL_DOCKER_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --build-arg ENVOY_VERSION=${ENVOY_VERSION} --build-arg BASE_IMAGE_ARCH=${GOARCH} -f test/dockerfiles/Dockerfile.universal .
 
 .PHONY: images

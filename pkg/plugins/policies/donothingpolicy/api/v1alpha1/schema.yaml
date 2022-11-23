@@ -1,110 +1,115 @@
 properties:
   type:
-    description: ''
+    description: 'the type of the resource'
     type: string
     enum:
       - DoNothingPolicy
   mesh:
     description: 'Mesh is the name of the Kuma mesh this resource belongs to. It may be omitted for cluster-scoped resources.'
     type: string
+    default: default
   name:
     description: 'Name of the Kuma resource'
     type: string
-  from:
-    description: From list makes a match between clients and corresponding configurations
-    items:
-      properties:
-        default:
-          description: Default is a configuration specific to the group of clients referenced in 'targetRef'
-          properties:
-            enableDoNothing:
-              description: User defined fields Set true in case of doing nothing
-              type: boolean
-          type: object
-        targetRef:
-          description: TargetRef is a reference to the resource that represents a group of clients.
-          properties:
-            kind:
-              description: Kind of the referenced resource
-              enum:
-                - Mesh
-                - MeshSubset
-                - MeshService
-                - MeshServiceSubset
-                - MeshGatewayRoute
-              type: string
-            mesh:
-              description: Mesh is reserved for future use to identify cross mesh resources.
-              type: string
-            name:
-              description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
-              type: string
-            tags:
-              additionalProperties:
-                type: string
-              description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
-              type: object
-          type: object
-      type: object
-    type: array
-  targetRef:
-    description: TargetRef is a reference to the resource the policy takes an effect on. The resource could be either a real store object or virtual resource defined inplace.
+  spec:
+    description: Spec is the specification of the Kuma DoNothingPolicy resource.
     properties:
-      kind:
-        description: Kind of the referenced resource
-        enum:
-          - Mesh
-          - MeshSubset
-          - MeshService
-          - MeshServiceSubset
-          - MeshGatewayRoute
-        type: string
-      mesh:
-        description: Mesh is reserved for future use to identify cross mesh resources.
-        type: string
-      name:
-        description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
-        type: string
-      tags:
-        additionalProperties:
-          type: string
-        description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
-        type: object
-    type: object
-  to:
-    description: To list makes a match between the consumed services and corresponding configurations
-    items:
-      properties:
-        default:
-          description: Default is a configuration specific to the group of destinations referenced in 'targetRef'
+      from:
+        description: From list makes a match between clients and corresponding configurations
+        items:
           properties:
-            enableDoNothing:
-              description: User defined fields Set true in case of doing nothing
-              type: boolean
-          type: object
-        targetRef:
-          description: TargetRef is a reference to the resource that represents a group of destinations.
-          properties:
-            kind:
-              description: Kind of the referenced resource
-              enum:
-                - Mesh
-                - MeshSubset
-                - MeshService
-                - MeshServiceSubset
-                - MeshGatewayRoute
-              type: string
-            mesh:
-              description: Mesh is reserved for future use to identify cross mesh resources.
-              type: string
-            name:
-              description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
-              type: string
-            tags:
-              additionalProperties:
-                type: string
-              description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+            default:
+              description: Default is a configuration specific to the group of clients referenced in 'targetRef'
+              properties:
+                enableDoNothing:
+                  description: User defined fields Set true in case of doing nothing
+                  type: boolean
+              type: object
+            targetRef:
+              description: TargetRef is a reference to the resource that represents a group of clients.
+              properties:
+                kind:
+                  description: Kind of the referenced resource
+                  enum:
+                    - Mesh
+                    - MeshSubset
+                    - MeshService
+                    - MeshServiceSubset
+                    - MeshGatewayRoute
+                  type: string
+                mesh:
+                  description: Mesh is reserved for future use to identify cross mesh resources.
+                  type: string
+                name:
+                  description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
+                  type: string
+                tags:
+                  additionalProperties:
+                    type: string
+                  description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                  type: object
               type: object
           type: object
-      type: object
-    type: array
+        type: array
+      targetRef:
+        description: TargetRef is a reference to the resource the policy takes an effect on. The resource could be either a real store object or virtual resource defined inplace.
+        properties:
+          kind:
+            description: Kind of the referenced resource
+            enum:
+              - Mesh
+              - MeshSubset
+              - MeshService
+              - MeshServiceSubset
+              - MeshGatewayRoute
+            type: string
+          mesh:
+            description: Mesh is reserved for future use to identify cross mesh resources.
+            type: string
+          name:
+            description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
+            type: string
+          tags:
+            additionalProperties:
+              type: string
+            description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+            type: object
+        type: object
+      to:
+        description: To list makes a match between the consumed services and corresponding configurations
+        items:
+          properties:
+            default:
+              description: Default is a configuration specific to the group of destinations referenced in 'targetRef'
+              properties:
+                enableDoNothing:
+                  description: User defined fields Set true in case of doing nothing
+                  type: boolean
+              type: object
+            targetRef:
+              description: TargetRef is a reference to the resource that represents a group of destinations.
+              properties:
+                kind:
+                  description: Kind of the referenced resource
+                  enum:
+                    - Mesh
+                    - MeshSubset
+                    - MeshService
+                    - MeshServiceSubset
+                    - MeshGatewayRoute
+                  type: string
+                mesh:
+                  description: Mesh is reserved for future use to identify cross mesh resources.
+                  type: string
+                name:
+                  description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
+                  type: string
+                tags:
+                  additionalProperties:
+                    type: string
+                  description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                  type: object
+              type: object
+          type: object
+        type: array
+    type: object

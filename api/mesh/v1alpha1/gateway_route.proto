@@ -147,7 +147,7 @@ message MeshGatewayRoute {
     };
 
     message Filter {
-      message RequestHeader {
+      message HeaderFilter {
         message Header {
           string name = 1 [
             (doc.required) = true,
@@ -219,10 +219,11 @@ message MeshGatewayRoute {
       }
 
       oneof filter {
-        RequestHeader request_header = 1;
+        HeaderFilter request_header = 1;
         Mirror mirror = 2;
         Redirect redirect = 3;
         Rewrite rewrite = 4;
+        HeaderFilter response_header = 5;
       }
     };
 

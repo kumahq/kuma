@@ -214,6 +214,23 @@ func makeHttpRouteEntry(name string, rule *mesh_proto.MeshGatewayRoute_HttpRoute
 
 			entry.RequestHeaders.Delete = append(
 				entry.RequestHeaders.Delete, h.GetRemove()...)
+		} else if h := f.GetResponseHeader(); h != nil {
+			if entry.ResponseHeaders == nil {
+				entry.ResponseHeaders = &route.Headers{}
+			}
+
+			for _, s := range h.GetSet() {
+				entry.ResponseHeaders.Replace = append(
+					entry.ResponseHeaders.Replace, route.Pair(s.GetName(), s.GetValue()))
+			}
+
+			for _, s := range h.GetAdd() {
+				entry.ResponseHeaders.Append = append(
+					entry.ResponseHeaders.Append, route.Pair(s.GetName(), s.GetValue()))
+			}
+
+			entry.ResponseHeaders.Delete = append(
+				entry.ResponseHeaders.Delete, h.GetRemove()...)
 		} else if r := f.GetRewrite(); r != nil {
 			rewrite := route.Rewrite{}
 

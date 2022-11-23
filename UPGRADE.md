@@ -8,6 +8,11 @@ does not have any particular instructions.
 
 ## Upcoming release
 
+### http api
+
+We've removed the endpoint `POST /tokens` which has been moved by `POST /tokens/dataplane` (same request and response) some time ago.
+Make sure you are using a recent `kumactl` or that you use the right path if using the api directly to upgrade with no issues.
+
 ## Upgrade to `2.0.x`
 
 ### Built-in gateway

@@ -32,7 +32,7 @@ function update_version {
     # Fail if there are uncommitted changes
     git diff --exit-code HEAD -- "${dir}"
 
-    kuma_version=$("${SCRIPT_DIR}/version.sh")
+    kuma_version=$("${SCRIPT_DIR}/version.sh" | cut -d " " -f 1)
     yq -i ".appVersion = \"${kuma_version}\"" "${dir}/Chart.yaml"
     yq -i ".version = \"${kuma_version}\"" "${dir}/Chart.yaml"
 
