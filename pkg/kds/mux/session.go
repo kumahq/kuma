@@ -142,8 +142,8 @@ type bufferStream struct {
 
 func newBufferStream() *bufferStream {
 	return &bufferStream{
-		sendBuffer: make(chan sendItem, 1),
-		recvBuffer: make(chan *mesh_proto.Message, 1),
+		sendBuffer: make(chan sendItem, 1000),
+		recvBuffer: make(chan *mesh_proto.Message, 1000),
 	}
 }
 

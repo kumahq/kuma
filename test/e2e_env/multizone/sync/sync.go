@@ -131,7 +131,7 @@ spec:
 			policySyncedToZones(name)
 		})
 
-		PIt("should sync policy update", func() {
+		It("should sync policy update", func() {
 			// given
 			name := "tr-update"
 			Expect(env.Global.Install(YamlUniversal(universalPolicyNamed(name, 100)))).To(Succeed())
