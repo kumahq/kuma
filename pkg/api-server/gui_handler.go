@@ -50,11 +50,9 @@ func NewGuiHandler(guiPath string, enabledGui bool, guiConfig GuiConfig) (http.H
 		return http.StripPrefix(guiPath, http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 			_, err := guiFs.Open(request.URL.Path)
 			if err == nil {
-				log.Info("server", "path", request.URL.Path)
 				http.FileServer(http.FS(guiFs)).ServeHTTP(writer, request)
 				return
 			}
-			log.Info("server", "path", request.URL.Path)
 			writer.WriteHeader(http.StatusOK)
 			writer.Header().Set("Content-Type", "text/html")
 			_, _ = writer.Write(buf.Bytes())
