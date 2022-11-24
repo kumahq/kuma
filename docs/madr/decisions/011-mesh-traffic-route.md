@@ -10,10 +10,10 @@ Other issues covered:
 
 ## Context and Problem Statement
 
-Now that we have the [new policy matching resources](https://github.com/kumahq/kuma/blob/master/docs/madr/decisions/005-policy-matching.md), it's time to create one for traffic routung.
+Now that we have the [new policy matching resources](https://github.com/kumahq/kuma/blob/master/docs/madr/decisions/005-policy-matching.md), it's time to create one for traffic routing.
 We currently have both `TrafficRoute` and `MeshGatewayRoute`.
 
-This MADR does not address Gateway API integration per sebut does consider Gateway
+This MADR does not address Gateway API integration per se but does consider Gateway
 API's `HTTPRoute`, both as inspiration as well as to make sure we don't block
 integration.
 
@@ -54,7 +54,7 @@ apply given the `kuma.io/protocol` tag.
 ### Positive Consequences
 
 - Route configuration can be very precisely targeted
-- Users need know only one set of resources for routing
+- Users need to know only one set of resources for routing
 - A final spec that has the best of `MeshGatewayRoute` and `TrafficRoute`
 
 ### New `MeshHTTPRoute` spec
@@ -104,7 +104,7 @@ matches:
       value: ...
 ```
 
-A given entry in `match` succeeds if _all_ of the conditions are satisfied and the rule matches when _any one_ of the entries under `match` suceeds. In other words, `match` is an OR'd list of AND'd conditions.
+A given entry in `match` succeeds if _all_ of the conditions are satisfied and the rule matches when _any one_ of the entries under `match` succeeds. In other words, `match` is an OR'd list of AND'd conditions.
 
 #### Request modification
 
