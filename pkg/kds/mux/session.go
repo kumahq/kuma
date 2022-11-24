@@ -94,8 +94,11 @@ func (s *session) handleSend(stream MultiplexStream) {
 			if kdsVersion == KDSVersionV2 {
 				r = &mesh_proto.Message{Value: &mesh_proto.Message_LegacyResponse{LegacyResponse: DiscoveryResponseV2(r.GetResponse())}}
 			}
-			err := stream.Send(r)
-			item.errChan <- err
+			if err := stream.Send(r); err != nil {
+				s.err <- err
+				return
+			}
+			//item.errChan <- err
 		case item, more := <-s.clientStream.bufferStream.sendBuffer:
 			if !more {
 				return
@@ -104,8 +107,11 @@ func (s *session) handleSend(stream MultiplexStream) {
 			if kdsVersion == KDSVersionV2 {
 				r = &mesh_proto.Message{Value: &mesh_proto.Message_LegacyRequest{LegacyRequest: DiscoveryRequestV2(r.GetRequest())}}
 			}
-			err := stream.Send(r)
-			item.errChan <- err
+			if err := stream.Send(r); err != nil {
+				s.err <- err
+				return
+			}
+			//item.errChan <- err
 		}
 	}
 }
@@ -153,12 +159,12 @@ func (k *bufferStream) Send(message *mesh_proto.Message) error {
 		k.lock.Unlock()
 		return io.EOF
 	}
+	k.lock.Unlock()
 	errChan := make(chan error)
 	k.sendBuffer <- sendItem{msg: message, errChan: errChan}
 
-	k.lock.Unlock()
-	r := <-errChan
-	return r
+	//r := <-errChan
+	return nil
 }
 
 func (k *bufferStream) Recv() (*mesh_proto.Message, error) {
