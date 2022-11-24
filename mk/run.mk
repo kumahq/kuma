@@ -79,6 +79,7 @@ config_dump/example/envoy: ## Dev: Dump effective configuration of example Envoy
 run/universal/memory: ## Dev: Run Control Plane locally in universal mode with in-memory store
 	KUMA_ENVIRONMENT=universal \
 	KUMA_STORE_TYPE=memory \
+	KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS=true \
 	$(GO_RUN) ./app/kuma-cp/main.go run --log-level=debug
 
 .PHONY: start/postgres
