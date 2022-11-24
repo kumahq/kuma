@@ -3,5 +3,6 @@ ARG ARCH
 
 COPY /tools/releases/templates/NOTICE-kumactl /kuma/NOTICE
 COPY /build/artifacts-linux-$ARCH/kumactl/kumactl /usr/bin/
-# copy static curl
-COPY --from=tarampampam/curl:7.78.0 /bin/curl /usr/bin/curl
+
+# override NOTICE
+COPY /tools/releases/templates/NOTICE-kumactl /kuma/NOTICE

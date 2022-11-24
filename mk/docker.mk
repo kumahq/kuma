@@ -55,7 +55,7 @@ image/kumactl: image/base build/kumactl/linux-${GOARCH} ## Dev: Rebuild `kumactl
 	docker build -t $(KUMACTL_DOCKER_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --platform=linux/${GOARCH} -f tools/releases/dockerfiles/Dockerfile.kumactl .
 
 .PHONY: image/kuma-init
-image/kuma-init: image/base build/kumactl/linux-${GOARCH} ## Dev: Rebuild `kuma-init` Docker image
+image/kuma-init: build/kumactl/linux-${GOARCH} ## Dev: Rebuild `kuma-init` Docker image
 	docker build -t $(KUMA_INIT_DOCKER_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --platform=linux/${GOARCH} -f tools/releases/dockerfiles/Dockerfile.kuma-init .
 
 .PHONY: image/kuma-cni

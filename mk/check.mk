@@ -59,7 +59,7 @@ kube-lint:
 
 .PHONY: hadolint
 hadolint:
-	find $(TOOLS_DIR)/releases/dockerfiles/ -type f -iname "Dockerfile*" | grep -v dockerignore | xargs -I {} $(HADOLINT) {}
+	find ./tools/releases/dockerfiles/ -type f -iname "Dockerfile*" | grep -v dockerignore | xargs -I {} $(HADOLINT) {}
 
 .PHONY: check
 check: format helm-lint golangci-lint shellcheck kube-lint hadolint ## Dev: Run code checks (go fmt, go vet, ...)
