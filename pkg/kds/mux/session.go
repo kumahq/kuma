@@ -148,8 +148,8 @@ type bufferStream struct {
 
 func newBufferStream() *bufferStream {
 	return &bufferStream{
-		sendBuffer: make(chan sendItem, 1000),
-		recvBuffer: make(chan *mesh_proto.Message, 1000),
+		sendBuffer: make(chan sendItem),
+		recvBuffer: make(chan *mesh_proto.Message),
 	}
 }
 
@@ -159,9 +159,9 @@ func (k *bufferStream) Send(message *mesh_proto.Message) error {
 		k.lock.Unlock()
 		return io.EOF
 	}
-	k.lock.Unlock()
 	errChan := make(chan error)
 	k.sendBuffer <- sendItem{msg: message, errChan: errChan}
+	k.lock.Unlock()
 
 	// r := <-errChan
 	return nil
