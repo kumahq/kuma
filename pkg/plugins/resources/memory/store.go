@@ -161,25 +161,22 @@ func (c *memoryStore) Update(_ context.Context, r core_model.Resource, fs ...sto
 
 	// Name must be provided via r.GetMeta()
 	mesh := r.GetMeta().GetMesh()
-	idx, record := c.findRecord(string(r.Descriptor().Name), r.GetMeta().GetName(), mesh)
+	_, record := c.findRecord(string(r.Descriptor().Name), r.GetMeta().GetName(), mesh)
 	if record == nil || meta.Version != record.Version {
 		return store.ErrorResourceConflict(r.Descriptor().Name, r.GetMeta().GetName(), r.GetMeta().GetMesh())
 	}
 	meta.Version = meta.Version.Next()
 	meta.ModificationTime = opts.ModificationTime
+	r.SetMeta(meta)
 
-	record, err := c.marshalRecord(
-		string(r.Descriptor().Name),
-		meta,
-		r.GetSpec())
+	record.Version = meta.Version
+	record.ModificationTime = meta.ModificationTime
+	content, err := core_model.ToJSON(r.GetSpec())
 	if err != nil {
 		return err
 	}
+	record.Spec = string(content)
 
-	// persist
-	c.records[idx] = record
-
-	r.SetMeta(meta)
 	if c.eventWriter != nil {
 		go func() {
 			c.eventWriter.Send(events.ResourceChangedEvent{
