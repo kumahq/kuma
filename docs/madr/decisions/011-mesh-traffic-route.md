@@ -185,44 +185,14 @@ We leave this option open for our policy in the future.
 #### Load balancing
 
 At the moment `TrafficRoute` can be used to configure load balancing behavior at
-the top, rule-independent level. This MADR proposes load balancing as a _filter_.
-This way it can be applied on a _per-route_ basis as well as a _per-backend_ basis.
+the top, rule-independent level. This MADR proposes **removing** load balancing from
+the route policies and instead later creating a separate policy to handle load
+balancing configuration.
 
-```yaml
-spec:
-  default:
-    rules:
-    - filters:
-      - type: LoadBalancing
-        loadBalancing: 
-          prioritizeLocalZone: true
-          type: RoundRobin|LeastRequest|RingHash|Random|Maglev
-          leastRequest:
-            choiceCount: 8
-          ringHash:
-            hashFunction: "MURMUR_HASH_2"
-            minRingSize: 64
-            maxRingSize: 1024
-            hashPolicies:
-              - # oneof
-                header:
-                  name:
-                  regexRewrite:
-                cookie:
-                  name:
-                  ttl:
-                  path:
-                connectionProperties:
-                  sourceIP: <bool>
-                queryParameter:
-                  name:
-                filterState:
-                  key:
-                terminal: <bool>
-          maglev:
-            tableSize: 65537
-            hashPolicies: ... # same schema as above
-```
+The main motivator for this is that load balancing is done on an Envoy cluster.
+Including load balancing options on a match would force creation of a new cluster for that
+set of `backendRefs` which has negative consequences including but not limited to
+metrics handling and a potentially large number of clusters.
 
 ##### Gateway API
 
