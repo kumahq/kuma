@@ -178,6 +178,9 @@ have been routed to, `backendRefs` can be omitted.
   ...
 ```
 
+Note that it's not a valid configuration to have a `requestRedirect` and
+`backendRefs` specified or both `requestRedirect` and `urlRewrite`.
+
 Note that in Gateway API, filters are also available on a _per-backend_ basis (`HTTPBackendRef.filters`).
 We leave this option open for our policy in the future.
 
