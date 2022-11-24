@@ -4,10 +4,9 @@
 
 Technical Story: https://github.com/kumahq/kuma/issues/4743
 Other issues covered:
+
 - https://github.com/kumahq/kuma/issues/4691
 - https://github.com/kumahq/kuma/issues/4690
-- https://github.com/kumahq/kuma/issues/3456
-- https://github.com/kumahq/kuma/issues/5309
 
 ## Context and Problem Statement
 
@@ -88,21 +87,21 @@ A rule contains a list of match objects, each of which specifies a match for one
 or more of the above types:
 
 ```yaml
-  matches:
-  - methods:
+matches:
+ - methods:
     - GET
     - POST
-    path:
-      type: RegularExpression|Exact|Prefix
+   path:
+    type: RegularExpression|Exact|Prefix
+    value: ...
+   headers:
+    - type: RegularExpression|Exact|Prefix|Absent
+      name: "..."
       value: ...
-    headers:
-      - type: RegularExpression|Exact|Prefix|Absent
-        name: "..."
-        value: ...
-    queryParams:
-      - type: RegularExpression|Exact
-        name: "..."
-        value: ...
+   queryParams:
+    - type: RegularExpression|Exact
+      name: "..."
+      value: ...
 ```
 
 A given entry in `match` succeeds if _all_ of the conditions are satisfied and the rule matches when _any one_ of the entries under `match` suceeds. In other words, `match` is an OR'd list of AND'd conditions.
@@ -119,41 +118,41 @@ With `filters` we can change:
 - request path
 
 ```yaml
-  filters:
-  - type: RequestHeaderModifier|ResponseHeaderModifier|RequestMirror|RequestRedirect|URLRewrite
-    requestHeaderModifier:
-      set:
-      - name:
-        value:
-      add:
-      - name:
-        value:
-      remove:
-      - "name"
-    responseHeaderModifier:
-      set:
-      - name:
-        value:
-      add:
-      - name:
-        value:
-      remove:
-      - name
-    requestMirror:
-      backendRef:
-        kind: MeshService
-        name: svc_name
-    requestRedirect:
-      scheme:
-      hostname:
-      path:
-      port:
-      statusCode:
-    urlRewrite:
-      hostname:
-      path:
-        replaceFullPath:
-        replacePrefixMatch:
+filters:
+ - type: RequestHeaderModifier|ResponseHeaderModifier|RequestMirror|RequestRedirect|URLRewrite
+   requestHeaderModifier:
+    set:
+     - name:
+       value:
+    add:
+     - name:
+       value:
+    remove:
+     - "name"
+   responseHeaderModifier:
+    set:
+     - name:
+       value:
+    add:
+     - name:
+       value:
+    remove:
+     - name
+   requestMirror:
+    backendRef:
+     kind: MeshService
+     name: svc_name
+   requestRedirect:
+    scheme:
+    hostname:
+    path:
+    port:
+    statusCode:
+   urlRewrite:
+    hostname:
+    path:
+     replaceFullPath:
+     replacePrefixMatch:
 ```
 
 #### Routing
@@ -194,7 +193,344 @@ Including load balancing options on a match would force creation of a new cluste
 set of `backendRefs` which has negative consequences including but not limited to
 metrics handling and a potentially large number of clusters.
 
-##### Gateway API
+#### Merging behavior
+
+With `targetRef` resources, the ultimate configuration of a data plane proxy
+is always a result of all policies targeting that proxy depending on their
+specificity.
+
+> :question: Is the current merge behavior what we need for routing policy? What surprises are there? See the next sections
+
+This proposal addresses one issue with a "naive" application of `targetRef`
+structure to a routing policy.
+
+##### Surprising behavior of top level `default`
+
+Let's look at two basic theoretical route policies where we include `default` at
+the top level of a `to` rule:
+
+```yaml
+metadata:
+ name: owner
+spec:
+ targetRef:
+  kind: Mesh
+ to:
+  - targetRef:
+     kind: MeshService
+     name: backend
+    default:
+     rules:
+      - matches:
+         path:
+          prefix: /v1
+        backendRefs:
+         - weight: 100
+           kind: MeshServiceSubset
+           name: backend
+           tags:
+            version: v1
+      - matches:
+         path:
+          prefix: /v2
+        backendRefs:
+         - weight: 100
+           kind: MeshServiceSubset
+           name: backend
+           tags:
+            version: v2
+---
+metadata:
+ name: consumer
+spec:
+ targetRef:
+  kind: MeshService
+  name: frontend
+ to:
+  - targetRef:
+     kind: MeshService
+     name: backend
+    default:
+     rules:
+      - matches:
+         path:
+          prefix: /v2
+        filters:
+         - requestHeaderModifier:
+            add:
+             - name: env
+               value: dev
+        backendRefs:
+         - weight: 100
+           kind: MeshServiceSubset
+           name: backend
+           tags:
+            version: v2
+```
+
+The rules for merging a field in a `targetRef` policy is that more specific
+routes replace the value from less specific routes. So the final value of `rules`
+is the value from the `consumer` route:
+
+```yaml
+spec:
+ targetRef:
+  kind: MeshService
+  name: frontend
+ to:
+  - targetRef:
+     kind: MeshService
+     name: backend
+    rules:
+     - matches:
+        path:
+         prefix: /v2
+       filters:
+        - requestHeaderModifier:
+           add:
+            - name: env
+              value: dev
+       backendRefs:
+        - weight: 100
+          kind: MeshServiceSubset
+          name: backend
+          tags:
+           version: v2
+```
+
+This is likely surprising, especially because `consumer` didn't specify anything
+at all for `/v1`.
+
+This MADR proposes to distribute `default` down into individual `rules` and merge
+`rules` based on _structural equality_ of the `matches` value.
+So we would instead have:
+
+```yaml
+metadata:
+ name: owner
+spec:
+ targetRef:
+  kind: Mesh
+ to:
+  - targetRef:
+     kind: MeshService
+     name: backend
+    default:
+     rules:
+      - matches:
+         path:
+          prefix: /v1
+        backendRefs:
+         - weight: 100
+           kind: MeshServiceSubset
+           name: backend
+           tags:
+            version: v1
+      - matches:
+         path:
+          prefix: /v2
+        backendRefs:
+         - weight: 100
+           kind: MeshServiceSubset
+           name: backend
+           tags:
+            version: v2
+---
+metadata:
+ name: consumer
+spec:
+ targetRef:
+  kind: MeshService
+  name: frontend
+ to:
+  - targetRef:
+     kind: MeshService
+     name: backend
+    default:
+     rules:
+      - matches:
+         path:
+          prefix: /v2
+        filters:
+         - requestHeaderModifier:
+            add:
+             - name: env
+               value: dev
+        backendRefs:
+         - weight: 100
+           kind: MeshService
+           name: backend
+           tags:
+            version: v2
+```
+
+which gives us the rules:
+
+```yaml
+spec:
+ targetRef:
+  kind: MeshService
+  name: frontend
+ to:
+  - targetRef:
+     kind: MeshService
+     name: backend
+    rules:
+      - matches:
+         path:
+          prefix: /v1
+        backendRefs:
+         - weight: 100
+           kind: MeshServiceSubset
+           name: backend
+           tags:
+            version: v1
+     - matches:
+        path:
+         prefix: /v2
+       filters:
+        - requestHeaderModifier:
+           add:
+            - name: env
+              value: dev
+       backendRefs:
+        - weight: 100
+          kind: MeshService
+          name: backend
+          tags:
+           version: v2
+```
+
+Here, the `/v1` rule from `owner` is unchanged and the `/v2` rule from
+`consumer` overrides that of `owner`.
+
+##### Additional use cases
+
+The following uses cases and examples are kept for the record.
+They discuss potential issues of the policies in this proposal.
+
+Consider:
+
+- the owner of a service `backend`
+  may want to configure a routing policy
+  for their service that applies to requests from all services.
+- another service owner may want
+  to apply routing to requests from their service `frontend` to `backend`.
+
+How should these routes be merged? One invariant might be that the consumer of a
+service shouldn't be able to override the entire route of the service owner.
+
+Given a policy from the owner that configures canarying and a filter:
+
+```yaml
+metadata:
+ name: owner
+spec:
+ targetRef:
+  kind: Mesh
+ to:
+  - targetRef:
+     kind: MeshService
+     name: backend
+    default:
+     rules:
+      - matches:
+         path:
+          prefix: /
+        filters:
+         - responseHeader:
+            add:
+             - name: X-Some-Header
+               value: something
+        backendRefs:
+         - weight: 90
+           kind: MeshServiceSubset
+           name: backend
+           tags:
+            version: v1
+         - weight: 10
+           kind: MeshServiceSubset
+           name: backend
+           tags:
+            version: v2
+```
+
+and a route by the `frontend` owner that configures an additional filter:
+
+```yaml
+metadata:
+ name: consumer
+spec:
+ targetRef:
+  kind: MeshService
+  name: frontend
+ to:
+  - targetRef:
+     kind: MeshService
+     name: backend
+    default:
+     rules:
+      - matches:
+         path:
+          prefix: /
+        filters:
+         - requestHeader:
+            add:
+             - name: X-Client
+               value:
+        backendRefs:
+         - weight: 100
+           kind: MeshServiceSubset
+           name: backend
+           tags:
+            version: v1
+```
+
+when these resources are merged the latter will have higher priority and
+override the less specific resource:
+
+```yaml
+metadata:
+ name: consumer
+spec:
+ targetRef:
+  kind: MeshService
+  name: svc_b
+ to:
+  - targetRef:
+     kind: MeshService
+     name: svc_a
+    default:
+     rules:
+      - matches:
+         path:
+          prefix: /
+        filters:
+         - requestHeader:
+            add:
+             - name: X-Client
+               value:
+        backendRefs:
+         - weight: 100
+           kind: MeshServiceSubset
+           name: svc_a
+           tags:
+            version: v1
+```
+
+Two issues:
+
+1. the `backendRefs` of `owner` are gone. But maybe the owner wants final say
+   over `backendRefs`.
+1. the `filters` of `owner` are gone. But maybe the owner of `backend` can tolerate additional filters?
+
+For 1., we need a way for the `owner` policy to set the final value.
+This is a good use case for [`override`](https://gateway-api.sigs.k8s.io/v1alpha2/references/policy-attachment/#hierarchy)?
+
+For 2., we would need a way for the `owner` policy to say it's OK to add to this
+list of filters. Could we add a `merge` next to `default`?
+
+#### Gateway API
 
 There is no other extension point for `HTTPRoute` than `filters` so any additional configuration
 must appear under `filters`.
@@ -224,299 +560,6 @@ spec:
 
 The Gateway API controller would handle converting these resources to
 `MeshHTTPRoute`.
-
-#### Merging behavior
-
-With `targetRef` resources, the ultimate configuration is a result of overriden/merged policies depending on their specificity.
-
-> :question: Is the current merge behavior what we need for routing policy? What surprises are there? See the next sections
-
-##### Service owner routes
-
-There's a discussion in the Gateway API repository about what different types of
-routes exist and how they should interact. Consider:
-
-- the owner of a service `svc_a`
-may want to configure a routing policy for their service that applies to requests from all services.
-- another service owner may want to apply routing to requests from their service
-to `svc_a`.
-
-How should these routes be merged? One invariant might be that the consumer of a
-service shouldn't be able to override the routes from the service owner.
-
-The route that applies to all requests:
-
-```yaml
-metadata:
-  name: owner
-spec:
- targetRef:
-   kind: Mesh
- to:
-  - targetRef:
-      kind: MeshService
-      name: svc_a
-    default:
-      rules:
-      - matches:
-          path:
-            prefix: /
-        filters:
-        - responseHeader:
-            add:
-            - name: X-Some-Header
-              value: something
-        backendRefs:
-        - weight: 90
-          kind: MeshServiceSubset
-          name: svc_a
-          tags:
-            version: v1
-        - weight: 10
-          kind: MeshServiceSubset
-          name: svc_a
-          tags:
-            version: v2
-```
-
-The route that applies to requests from a specific service:
-
-```yaml
-metadata:
-  name: consumer
-spec:
- targetRef:
-   kind: MeshService
-   name: svc_b
- to:
-  - targetRef:
-      kind: MeshService
-      name: svc_a
-    default:
-      rules:
-      - matches:
-          path:
-            prefix: /
-        filters:
-        - requestHeader:
-            add:
-            - name: X-Client
-              value:
-        backendRefs:
-        - weight: 100
-          kind: MeshServiceSubset
-          name: svc_a
-          tags:
-            version: v1
-```
-
-when these resources are merged the latter will have higher priority and
-override the less specific resource:
-
-```yaml
-metadata:
-  name: consumer
-spec:
- targetRef:
-   kind: MeshService
-   name: svc_b
- to:
-  - targetRef:
-      kind: MeshService
-      name: svc_a
-    default:
-      rules:
-      - matches:
-          path:
-            prefix: /
-        filters:
-        - requestHeader:
-            add:
-            - name: X-Client
-              value:
-        backendRefs:
-        - weight: 100
-          kind: MeshServiceSubset
-          name: svc_a
-          tags:
-            version: v1
-```
-
-But the service owner probably expects to somehow
-be able to "enforce" routes on consumers that can't be overriden.
-
-Perhaps we finally need [`override`](https://gateway-api.sigs.k8s.io/v1alpha2/references/policy-attachment/#hierarchy)?
-
-##### Merging
-
-Is there a use case for being able to write a policy that combines with the above `owner` policy such that the final resource would have both `filters`?
-
-Perhaps given the above `owner` policy along with a different `svc_a` specific
-policy:
-
-```yaml
-metadata:
-  name: consumer
-spec:
- targetRef:
-   kind: MeshService
-   name: svc_b
- to:
-  - targetRef:
-      kind: MeshService
-      name: svc_a
-    default:
-      rules:
-      - matches:
-          path:
-            prefix: /
-        filters:
-        - requestHeader:
-            add:
-            - name: X-Client
-              value:
-```
-
-a user might expect:
-
-```yaml
-spec:
- targetRef:
-   kind: MeshService
-   name: svc_b
- to:
-  - targetRef:
-      kind: MeshService
-      name: svc_a
-    default:
-      rules:
-      - matches:
-          path:
-            prefix: /
-        filters:
-        - requestHeader:
-            add:
-            - name: X-Client
-              value:
-        - responseHeader:
-            add:
-            - name: X-Some-Header
-              value: something
-        backendRefs:
-        - weight: 100
-          kind: MeshServiceSubset
-          name: svc_a
-          tags:
-            version: v1
-```
-
-Could we achieve this by always combining `filters` using `matches` as a merge key
-with structural equality and
-specifying `default`/`override` and maybe even `merge` for `filters` _next to_
-`matches`?
-It probably doesn't make sense to merge `backendRefs` so they should be
-limited to `default`/`override`.
-
-Given:
-
-```yaml
-metadata:
-  name: owner
-spec:
- targetRef:
-   kind: Mesh
- to:
-  - targetRef:
-      kind: MeshService
-      name: svc_a
-    rules:
-    - matches:
-        path:
-          prefix: /
-      merge:
-        filters:
-        - responseHeader:
-            add:
-            - name: X-Some-Header
-              value: something
-      override:
-        backendRefs:
-        - weight: 90
-          kind: MeshServiceSubset
-          name: svc_a
-          tags:
-            version: v1
-        - weight: 10
-          kind: MeshServiceSubset
-          name: svc_a
-          tags:
-            version: v2
-```
-
-along with:
-
-```yaml
-metadata:
-  name: owner
-spec:
- targetRef:
-   kind: MeshService
-   name: svc_b
- to:
-  - targetRef:
-      kind: MeshService
-      name: svc_a
-    rules:
-    - matches:
-        path:
-          prefix: /
-      merge:
-        filters:
-        - requestHeader:
-            add:
-            - name: X-Client
-              value:
-```
-
-would give us the rules:
-
-```yaml
-spec:
- targetRef:
-   kind: MeshService
-   name: svc_b
- to:
-  - targetRef:
-      kind: MeshService
-      name: svc_a
-    rules:
-    - matches:
-        path:
-          prefix: /
-      filters:
-      - responseHeader:
-          add:
-          - name: X-Some-Header
-            value: something
-      - requestHeader:
-          add:
-          - name: X-Client
-            value:
-      backendRefs:
-      - weight: 90
-        kind: MeshServiceSubset
-        name: svc_a
-        tags:
-          version: v1
-      - weight: 10
-        kind: MeshServiceSubset
-        name: svc_a
-        tags:
-          version: v2
-```
-
-Both `filters` are applied and the `backendRefs` are taken from the
-less-specific route.
 
 #### Final spec
 
