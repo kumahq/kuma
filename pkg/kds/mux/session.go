@@ -98,7 +98,7 @@ func (s *session) handleSend(stream MultiplexStream) {
 				s.err <- err
 				return
 			}
-			//item.errChan <- err
+			// item.errChan <- err
 		case item, more := <-s.clientStream.bufferStream.sendBuffer:
 			if !more {
 				return
@@ -111,7 +111,7 @@ func (s *session) handleSend(stream MultiplexStream) {
 				s.err <- err
 				return
 			}
-			//item.errChan <- err
+			// item.errChan <- err
 		}
 	}
 }
@@ -163,7 +163,7 @@ func (k *bufferStream) Send(message *mesh_proto.Message) error {
 	errChan := make(chan error)
 	k.sendBuffer <- sendItem{msg: message, errChan: errChan}
 
-	//r := <-errChan
+	// r := <-errChan
 	return nil
 }
 
