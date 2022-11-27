@@ -55,6 +55,34 @@ message PrometheusMetricsBackendConfig {
 
   // Configuration of Envoy's metrics.
   PrometheusEnvoyConfig envoy = 6;
+
+  // Configuration of TLS for Prometheus endpoint
+  TlsConfig tls = 7;
+}
+
+// TlsConfig defines configuration of TLS
+message TlsConfig {
+
+  // Whether tls is enabled or not
+  google.protobuf.BoolValue enabled = 1;
+
+  // Defines a path to a file with PEM-encoded Root CA. Client will verify server by using it.
+  string rootCaFile = 2;
+
+  // Defines a path to a file with PEM-encoded TLS cert
+  string certFile = 3;
+
+  // Defines a path to a file with PEM-encoded TLS key
+  string keyFile = 4;
+
+  // The minimum version of TLS
+  string minVersion = 5;
+
+  // The maximum version of TLS
+  string maxVersion = 6;
+
+  // The list of cipher suites
+  repeated string cipherSuites = 7;
 }
 
 // PrometheusAggregateMetricsConfig defines endpoints that should be scrapped
