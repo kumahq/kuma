@@ -40,6 +40,7 @@ func (c *ServerTLSConfigurer) Configure(filterChain *envoy_listener.FilterChain)
 	}
 
 	if len(c.CaPEM) > 0 {
+		tlsContext.RequireClientCertificate = util_proto.Bool(true)
 		tlsContext.CommonTlsContext.ValidationContextType = &envoy_tls.CommonTlsContext_ValidationContext{
 			ValidationContext: &envoy_tls.CertificateValidationContext{
 				TrustedCa: &envoy_core.DataSource{
