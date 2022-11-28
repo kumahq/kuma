@@ -131,9 +131,9 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 			Configure(envoy_listeners.InboundListener(prometheusListenerName, prometheusEndpointAddress, prometheusEndpoint.Port, core_xds.SocketAddressProtocolTCP)).
 			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
 				Configure(
-					envoy_listeners.ServerTLS([]byte(rootCAContent), util_tls.KeyPair{
-						CertPEM: []byte(certFileContent),
-						KeyPEM:  []byte(keyFileContent),
+					envoy_listeners.ServerTLS(rootCAContent, util_tls.KeyPair{
+						CertPEM: certFileContent,
+						KeyPEM:  keyFileContent,
 					}, prometheusEndpoint.Tls.GetMinVersion(), prometheusEndpoint.Tls.GetMaxVersion(), prometheusEndpoint.Tls.GetCipherSuites()),
 					envoy_listeners.StaticEndpoints(prometheusListenerName, []*envoy_common.StaticEndpointPath{
 						{
