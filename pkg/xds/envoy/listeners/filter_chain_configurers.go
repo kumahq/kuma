@@ -46,13 +46,13 @@ func ServerTLS(caPEM        []byte,
 	serverPair   util_tls.KeyPair,
 	minVersion   string,
 	maxVersion   string,
-	CipherSuites []string) FilterChainBuilderOpt {
+	cipherSuites []string) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.ServerTLSConfigurer{
 		CaPEM:           caPEM,
 		ServerPair: serverPair,
 		MinVersion: minVersion,
 		MaxVersion:   maxVersion,
-		CipherSuites:CipherSuites,
+		CipherSuites: cipherSuites,
 	})
 }
 
