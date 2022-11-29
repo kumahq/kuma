@@ -88,10 +88,7 @@ or more of the above types:
 
 ```yaml
 matches:
- - methods:
-    - GET
-    - POST
-    - ...
+ - method: POST
    path:
     type: RegularExpression|Exact|Prefix
     value: ...
