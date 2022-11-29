@@ -215,3 +215,11 @@ func MatchSourceRegex(policy core_policy.ConnectionPolicy) string {
 	}
 	return RegexOR(selectorRegexs...)
 }
+
+// func MatchRulesRegex(rules core_xds.Rule) string {
+// 	var selectorRegexs []string
+// 	for _, rule := range rules.Subset {
+// 		selectorRegexs = append(selectorRegexs, MatchingRegex(selector.Match))
+// 	}
+// 	return RegexOR(selectorRegexs...)
+// }

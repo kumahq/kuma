@@ -206,7 +206,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                   statPrefix: localhost_8080
 `,
 		}),
-		Entry("basic http_connection_manager with a single destination cluster and rate limiter with sources", testCase{
+		FEntry("basic http_connection_manager with a single destination cluster and rate limiter with sources", testCase{
 			listenerName:    "inbound:192.168.0.1:8080",
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
