@@ -127,27 +127,33 @@ It will then output a changelog with all PRs with the same changelog grouped tog
 		var out []Changelog
 		for changelog, commits := range byChangelog {
 			uniqueAuthors := map[string]interface{}{}
+			uniquePrs := map[int]interface{}{}
 			var authors []string
 			var prs []int
+			sort.Slice(commits, func(i, j int) bool {
+				return commits[i].PrNumber < commits[j].PrNumber
+			})
 			var minVersion, maxVersion string
 			for _, c := range commits {
-				if minVersion == "" || c.MinDependency < minVersion {
+				// Required because in the past we weren't squashing commits
+				if _, exists := uniquePrs[c.PrNumber]; exists {
+					continue
+				}
+				uniquePrs[c.PrNumber] = nil
+				prs = append(prs, c.PrNumber)
+				if minVersion == "" {
 					minVersion = c.MinDependency
 				}
-				if maxVersion == "" || c.MaxDependency > maxVersion {
-					maxVersion = c.MaxDependency
-				}
-				prs = append(prs, c.PrNumber)
+				maxVersion = c.MaxDependency
 				if _, exists := uniqueAuthors[c.Author]; !exists {
 					authors = append(authors, fmt.Sprintf("@%s", c.Author))
 					uniqueAuthors[c.Author] = nil
 				}
 			}
-			sort.Ints(prs)
-			sort.Strings(authors)
 			if minVersion != "" && maxVersion != "" {
 				changelog = fmt.Sprintf("%s from %s to %s", changelog, minVersion, maxVersion)
 			}
+			sort.Strings(authors)
 			out = append(out, Changelog{Desc: changelog, Authors: authors, PullRequests: prs})
 		}
 		sort.Slice(out, func(i, j int) bool {
@@ -204,7 +210,7 @@ type CommitInfo struct {
 }
 
 // titles look like: chore(deps): bump github.com/lib/pq from 1.10.6 to 1.10.7
-var dependabotPRTitleRegExp = regexp.MustCompile(`(chore\(deps\): bump [^ ]+) from ([^ ]+) to ([^ ]+)`)
+var dependabotPRTitleRegExp = regexp.MustCompile(`(chore\(deps\): bump [^ ]+) from ([^ ]+) to ([^ ]+).*`)
 
 func NewCommitInfo(commit GQLCommit) *CommitInfo {
 	if len(commit.AssociatedPullRequests.Nodes) == 0 {
@@ -233,18 +239,16 @@ func NewCommitInfo(commit GQLCommit) *CommitInfo {
 				return nil
 			}
 		}
-		matches := dependabotPRTitleRegExp.FindStringSubmatch(pr.Title)
-		// Rollup dependabot issues with the same dependency into just one so we can rebuild a single line with all update PRs.
-		if matches != nil {
-			res.Changelog = matches[1]
-			res.MinDependency = matches[2]
-			res.MaxDependency = matches[3]
-		} else {
-			// Use the pr.Title as a changelog entry
-			res.Changelog = pr.Title
-		}
+		// Use the pr.Title as a changelog entry
+		res.Changelog = pr.Title
 	default:
 		res.Changelog = changelog
+	}
+	if matches := dependabotPRTitleRegExp.FindStringSubmatch(res.Changelog); matches != nil {
+		// Rollup dependabot issues with the same dependency into just one so we can rebuild a single line with all update PRs.
+		res.Changelog = matches[1]
+		res.MinDependency = matches[2]
+		res.MaxDependency = matches[3]
 	}
 	return res
 }
