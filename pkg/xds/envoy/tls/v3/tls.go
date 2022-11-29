@@ -107,20 +107,24 @@ func UpstreamTlsContextOutsideMesh(ca, cert, key []byte, allowRenegotiation bool
 		if tlsContext.CommonTlsContext == nil {
 			tlsContext.CommonTlsContext = &envoy_tls.CommonTlsContext{}
 		}
-		var subjectAltNameMatch = hostname
+		matchers := []*envoy_type_matcher.StringMatcher{
+			{
+				MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+					Exact: hostname,
+				},
+			},
+		}
 		if len(sni) > 0 {
-			subjectAltNameMatch = sni
+			matchers = append(matchers, &envoy_type_matcher.StringMatcher{
+				MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+					Exact: sni,
+				},
+			})
 		}
 		tlsContext.CommonTlsContext.ValidationContextType = &envoy_tls.CommonTlsContext_ValidationContext{
 			ValidationContext: &envoy_tls.CertificateValidationContext{
-				TrustedCa: dataSourceFromBytes(ca),
-				MatchSubjectAltNames: []*envoy_type_matcher.StringMatcher{
-					{
-						MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
-							Exact: subjectAltNameMatch,
-						},
-					},
-				},
+				TrustedCa:            dataSourceFromBytes(ca),
+				MatchSubjectAltNames: matchers,
 			},
 		}
 	}
