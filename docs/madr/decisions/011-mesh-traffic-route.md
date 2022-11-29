@@ -413,7 +413,85 @@ spec:
 Here, the `/v1` rule from `owner` is unchanged and the `/v2` rule from
 `consumer` overrides that of `owner`.
 
-##### Additional use cases
+#### `MeshGateway`
+
+This new resource is intended to replace the `MeshGatewayRoute` resource for
+configuring routes for a `MeshGateway`.
+
+##### Edge gateway
+
+In order to configure a non-cross-mesh `MeshGateway` resource,
+a user would have to configure `targetRef` as follows:
+
+```yaml
+targetRef:
+ kind: Mesh
+to:
+ - targetRef:
+    kind: MeshGateway
+    name: edge-gateway
+```
+
+the `spec.targetRef` of `kind: Mesh` can be read as simply meaning "any
+connections made to the `MeshGateway`". Only `kind: Mesh` is permitted with a
+`to.targetRef` of `kind: MeshGateway`.
+
+##### Cross-mesh gateway
+
+For cross-mesh `MeshGateways`:
+
+```yaml
+targetRef:
+ kind: Mesh
+to:
+ - targetRef:
+    kind: MeshGateway
+    name: mesh-gateway
+```
+
+would target _any requests_ from _any `Mesh`_ made to this `MeshGateway` whereas
+`name` must be used to target a specific `Mesh` as source:
+
+```yaml
+targetRef:
+ kind: Mesh
+ name: other-mesh
+to:
+ - targetRef:
+    kind: MeshGateway
+    name: edge-gateway
+```
+
+#### Gateway API
+
+A note about Gateway API and our routes. The only extension point for `HTTPRoute` is `filters`, so any additional configuration
+must appear there.
+
+With [`ExtensionRef`](https://gateway-api.sigs.k8s.io/references/spec/#gateway.networking.k8s.io/v1beta1.HTTPRouteFilterType)
+a filter is powerful, flexible and extensible enough to support any arbitrary routing configuration.
+It doesn't really assume anything about the referenced resource.
+
+The Gateway API controller would handle converting an `HTTPRoute` with an `ExtensionRef` filter to `MeshHTTPRoute`.
+
+#### Final top level spec
+
+```yaml
+spec:
+ targetRef:
+  kind: MeshService
+  name: frontend
+ to:
+  - targetRef:
+     kind: MeshService
+     name: backend
+    default:
+     rules:
+      - matches: [..]
+        filters: [..]
+        backendRefs: [..]
+```
+
+### Additional use cases
 
 The following uses cases and examples are kept for the record.
 They discuss potential issues of the policies in this proposal.
@@ -539,31 +617,13 @@ This is a good use case for [`override`](https://gateway-api.sigs.k8s.io/v1alpha
 For 2., we would need a way for the `owner` policy to say it's OK to add to this
 list of filters. Could we add a `merge` next to `default`?
 
-#### Gateway API
+## Implementation
 
-A note about Gateway API and our routes. The only extension point for `HTTPRoute` is `filters`, so any additional configuration
-must appear there.
-
-With [`ExtensionRef`](https://gateway-api.sigs.k8s.io/references/spec/#gateway.networking.k8s.io/v1beta1.HTTPRouteFilterType)
-a filter is powerful, flexible and extensible enough to support any arbitrary routing configuration.
-It doesn't really assume anything about the referenced resource.
-
-The Gateway API controller would handle converting an `HTTPRoute` with an `ExtensionRef` filter to `MeshHTTPRoute`.
-
-### Final top level spec
-
-```yaml
-spec:
- targetRef:
-  kind: MeshService
-  name: frontend
- to:
-  - targetRef:
-     kind: MeshService
-     name: backend
-    default:
-     rules:
-      - matches: [..]
-        filters: [..]
-        backendRefs: [..]
-```
+Almost all other plugins will depend on the route configuration generated
+by `MeshHTTPRoute` resources.
+Though this policy is a new, `targetRef`-based policy, this means it will not be a
+`PolicyPlugin` because the current plugin interface of modifying existing Envoy
+resources is insufficient for writing such a fundamental piece of config
+generation.
+Instead it will likely have to be integrated directly in generation similar to
+the current `TrafficRoute` resources.
