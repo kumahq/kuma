@@ -91,6 +91,7 @@ matches:
  - methods:
     - GET
     - POST
+    - ...
    path:
     type: RegularExpression|Exact|Prefix
     value: ...
@@ -141,7 +142,7 @@ filters:
    requestMirror:
     backendRef:
      kind: MeshService
-     name: svc_name
+     name: backend-mirror
    requestRedirect:
     scheme:
     hostname:
@@ -167,12 +168,12 @@ have been routed to, `backendRefs` can be omitted.
 - backendRefs:
   - weight: 90
     kind: MeshServiceSubset
-    name: svc_name
+    name: backend
     tags:
       version: v2
   - weight: 10
     kind: MeshServiceSubset
-    name: svc_name_other
+    name: backend
     tags:
       version: v2
   ...
@@ -498,11 +499,11 @@ metadata:
 spec:
  targetRef:
   kind: MeshService
-  name: svc_b
+  name: frontend
  to:
   - targetRef:
      kind: MeshService
-     name: svc_a
+     name: backend
     default:
      rules:
       - matches:
@@ -516,7 +517,7 @@ spec:
         backendRefs:
          - weight: 100
            kind: MeshServiceSubset
-           name: svc_a
+           name: backend
            tags:
             version: v1
 ```
@@ -535,35 +536,29 @@ list of filters. Could we add a `merge` next to `default`?
 
 #### Gateway API
 
-There is no other extension point for `HTTPRoute` than `filters` so any additional configuration
-must appear under `filters`.
+A note about Gateway API and our routes. The only extension point for `HTTPRoute` is `filters`, so any additional configuration
+must appear there.
 
 With [`ExtensionRef`](https://gateway-api.sigs.k8s.io/references/spec/#gateway.networking.k8s.io/v1beta1.HTTPRouteFilterType)
 a filter is powerful, flexible and extensible enough to support any arbitrary routing configuration.
 It doesn't really assume anything about the referenced resource.
 
-For example, to use round robin for all requests:
+The Gateway API controller would handle converting an `HTTPRoute` with an `ExtensionRef` filter to `MeshHTTPRoute`.
+
+### Final top level spec
 
 ```yaml
 spec:
-  ...
-  rules:
-    - matches: []
-      filters:
-        - type: ExtensionRef
-          extensionRef:
-            group: kuma.io/v1alpha1
-            kind: RouteConfig
-            name: load-balancer-common
-            # potential inlined load-balancer-common:
-            # spec:
-            #   loadBalancer: RoundRobin
-      backendRefs: []
+ targetRef:
+  kind: MeshService
+  name: frontend
+ to:
+  - targetRef:
+     kind: MeshService
+     name: backend
+    default:
+     rules:
+      - matches: [..]
+        filters: [..]
+        backendRefs: [..]
 ```
-
-The Gateway API controller would handle converting these resources to
-`MeshHTTPRoute`.
-
-#### Final spec
-
-TODO
