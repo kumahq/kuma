@@ -114,7 +114,7 @@ func UpstreamTlsContextOutsideMesh(ca, cert, key []byte, allowRenegotiation bool
 				},
 			},
 		}
-		if len(sni) > 0 {
+		if len(sni) > 0 && sni != hostname {
 			matchers = append(matchers, &envoy_type_matcher.StringMatcher{
 				MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
 					Exact: sni,
