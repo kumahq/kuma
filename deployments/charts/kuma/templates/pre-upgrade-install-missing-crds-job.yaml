@@ -156,7 +156,7 @@ spec:
           - mountPath: /kuma/scripts
             name: scripts
             readOnly: true
-          command:
+          args:
           - '/kuma/scripts/save_missing_crds.sh'
       volumes:
         - name: scripts
