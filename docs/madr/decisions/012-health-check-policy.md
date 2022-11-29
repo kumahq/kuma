@@ -82,44 +82,43 @@ let us know in the PR.
 The question is - do we need `service_name`, `authority` and `initial_metadata` gRPC options in the first iteration?
 
 ```yaml
-spec:
-  default:
-    interval: 10s
-    timeout: 2s
-    unhealthyThreshold: 3
-    healthyThreshold: 1
-    initialJitter: 5s # optional
-    intervalJitter: 6s # optional
-    intervalJitterPercent: 10 # optional
-    healthyPanicThreshold: 60 # optional, by default 50
-    failTrafficOnPanic: true # optional, by default false
-    noTrafficInterval: 10s # optional, by default 60s
-    eventLogPath: "/tmp/health-check.log" # optional
-    alwaysLogHealthCheckFailures: true # optional, by default false
-    reuseConnection: false # optional, by default true
-    tcp: # only one of tcp http or grpc can be enabled
-      enabled: true # new, default false, can be disabled for override
-      send: Zm9v # optional, empty payloads imply a connect-only health check
-      receive: # required if send specified
-      - YmFy
-      - YmF6
-    http:
-      enabled: true # new, default false, can be disabled for override
-      path: /health
-      requestHeadersToAdd: # optional, empty by default
-      - append: false
-        header:
-          key: Content-Type
-          value: application/json
-      - header:
-          key: Accept
-          value: application/json
-      expectedStatuses: [200, 201] # optional, by default [200]
-    grpc: # new
-      enabled: true # new, default false, can be disabled for override
-      service_name: "" # optional, service name parameter which will be sent to gRPC service
-      authority: "" # optional, the value of the :authority header in the gRPC health check request, by default name of the cluster this health check is associated with
-      initial_metadata: [] # optional, specifies a list of key-value pairs that should be added to the metadata of each GRPC
+default:
+  interval: 10s
+  timeout: 2s
+  unhealthyThreshold: 3
+  healthyThreshold: 1
+  initialJitter: 5s # optional
+  intervalJitter: 6s # optional
+  intervalJitterPercent: 10 # optional
+  healthyPanicThreshold: 60 # optional, by default 50
+  failTrafficOnPanic: true # optional, by default false
+  noTrafficInterval: 10s # optional, by default 60s
+  eventLogPath: "/tmp/health-check.log" # optional
+  alwaysLogHealthCheckFailures: true # optional, by default false
+  reuseConnection: false # optional, by default true
+  tcp: # only one of tcp http or grpc can be enabled
+    enabled: true # new, default false, can be disabled for override
+    send: Zm9v # optional, empty payloads imply a connect-only health check
+    receive: # required if send specified
+    - YmFy
+    - YmF6
+  http:
+    enabled: true # new, default false, can be disabled for override
+    path: /health
+    requestHeadersToAdd: # optional, empty by default
+    - append: false
+      header:
+        key: Content-Type
+        value: application/json
+    - header:
+        key: Accept
+        value: application/json
+    expectedStatuses: [200, 201] # optional, by default [200]
+  grpc: # new
+    enabled: true # new, default false, can be disabled for override
+    service_name: "" # optional, service name parameter which will be sent to gRPC service
+    authority: "" # optional, the value of the :authority header in the gRPC health check request, by default name of the cluster this health check is associated with
+    initial_metadata: [] # optional, specifies a list of key-value pairs that should be added to the metadata of each GRPC
 ```
 
 ## Examples
