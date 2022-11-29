@@ -13,37 +13,43 @@ policies that satisfy a new policy matching. Current MADR aims to define a timeo
 
 Current `CircuitBreaker` policy combines
 envoy's [circuit breaking](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/circuit_breaking)
-and [outlier detection](https://gstwww.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/outlier) capabilities behind the scene.
-Consequences of this approach may introduce the situation when during reading envoy's stats for debugging purposes,
-you may look for stats prefixed with `cluster.<name>.circuit_breakers.` with occurred fault in mind, and according
-to the behaviour of our policy, if the data plane was ejected because of fault it's taking into account, stats which
-contain interesting us data will be prefixed with `cluster.<name>.outlier_detection.` prefix.
+and [outlier detection](https://gstwww.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/outlier)
+capabilities behind the scene. Consequences of this approach may introduce the situation when during reading envoy's
+stats for debugging purposes, you may look for stats prefixed with `cluster.<name>.circuit_breakers.` with occurred
+fault in mind, and according to the behaviour of our policy, if the data plane was ejected because of fault it's taking
+into account, stats which contain interesting us data will be prefixed with `cluster.<name>.outlier_detection.` prefix.
 
 ## Considered Options
 
-* Create two separate policies: `CircuitBreaker` and `OutlierDetector`
-* Create single `CircuitBreaker` policy which would map 1:1 current policy
-* Create single `FaultDetector` policy which would also map 1:1 to the current `CircuitBreaker`, but with non misleading name
+* Create two separate policies: `MeshCircuitBreaker` and `MeshOutlierDetector`
+* Create single `MeshCircuitBreaker` policy which would map 1:1 current policy
+* Create single `MeshFaultDetector` policy which would also map 1:1 to the current `CircuitBreaker`, but with non
+  misleading name
 
 ## Decision Outcome
 
-Chosen option: create two separate -`CircuitBreaker` and `OutlierDetector` policies.
+Chosen option: create two separate -`MeshCircuitBreaker` and `MeshOutlierDetector` policies.
 
 ## Positive Consequences
 
-* Having two separate policies, each with explicit configurations makes it easier to look for appropriate Envoy stats and XDP configuration values.
-* By combining two abstractions, which exist in Envoy, and calling them both combined with a name of one of these is confusing, especially when you are trying to debug some issue without deep understanding of internals of our service mesh.
-* Default `CircuitBreaker` policy is sufficient to replicate behaviour of current version of this policy - there won't be a need to include a default `OutlierDetector` policy
+* Having two separate policies, each with explicit configurations makes it easier to look for appropriate Envoy stats
+  and XDP configuration values.
+* By combining two abstractions, which exist in Envoy, and calling them both combined with a name of one of these is
+  confusing, especially when you are trying to debug some issue without deep understanding of internals of our service
+  mesh.
+* Default `MeshCircuitBreaker` policy is sufficient to replicate behaviour of current version of this policy - there
+  won't be a need to include a default `MeshOutlierDetector` policy
 
 ## Negative Consequences
 
-* `CircuitBreaker` will be a policy with very small amount of configuration available, which may introduce some clutter (at some point there may be so many policies, that it will be much more difficult to understand all of them)
+* `MeshCircuitBreaker` will be a policy with very small amount of configuration available, which may introduce some
+  clutter (at some point there may be so many policies, that it will be much more difficult to understand all of them)
 
 ## Solution
 
 ### Current configuration
 
-Below is the sample `CircuitBreaker` configuration
+Below is the sample `MeshCircuitBreaker` configuration
 
 ```yaml
 conf:
@@ -89,7 +95,7 @@ targetRef:
 
 #### From level
 
-`CircuitBreaker` and `OutlierDetector` are outbound only policies, so only `to` should be configured.
+`MeshCircuitBreaker` and `MeshOutlierDetector` are outbound only policies, so only `to` should be configured.
 
 #### To level
 
@@ -102,16 +108,16 @@ to:
 
 #### Minimal configuration
 
-##### `CircuitBreaker`
+##### `MeshCircuitBreaker`
 
 As all the circuit breaking related properties have default values, there is no need to specify any of these to apply
 the policy
 
 ```yaml
-default: {}
+default: { }
 ```
 
-##### `OutlierDetector`
+##### `MeshOutlierDetector`
 
 ```yaml
 default:
@@ -124,10 +130,10 @@ default:
 
 #### Default configuration
 
-##### `CircuitBreaker`
+##### `MeshCircuitBreaker`
 
 ```yaml
-type: CircuitBreaker
+type: MeshCircuitBreaker
 mesh: default
 name: default-circuit-breaker
 spec:
@@ -145,20 +151,20 @@ spec:
       maxRequests: 1024
 ```
 
-##### `OutlierDetector`
+##### `MeshOutlierDetector`
 
-There won't be a default `OutlierDetestor`  (following the example of our existing `CircuitBreaker` policy)
+There won't be a default `MeshOutlierDetestor`  (following the example of our existing `CircuitBreaker` policy)
 
 #### Extensive configuration
 
-##### `CircuitBreaker`
+##### `MeshCircuitBreaker`
 
 As the default policy is extensive enough, there is no need to duplicate the examples.
 
-##### `OutlierDetector`
+##### `MeshOutlierDetector`
 
 ```yaml
-type: OutlierDetector
+type: MeshOutlierDetector
 mesh: default
 name: extensive-outlier-detector
 spec:
