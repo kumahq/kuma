@@ -79,7 +79,23 @@ There are some features that we currently do not expose (like pass through mode 
 but currently this MADR does not aim to change that, if you think something critical is missing from this functionality,
 let us know in the PR.
 
-The question is - do we need `service_name`, `authority` and `initial_metadata` gRPC options in the first iteration?
+#### GRPC options
+For the first iteration we will add `service_name`, `authority` and leave out `initial_metadata` (can be added later).
+
+#### Protocol selection
+
+Pick the most specific protocol depending on the service annotation (`kuma.io/protocol` or `appProtocol`),
+fallback to more general protocol when specific protocol has `disabled=true`.
+
+Example algorithm flow:
+
+1. service annotation = http
+2. http.disabled == true
+3. try tcp (more general proto)
+4. tcp.disabled == false
+5. use tcp
+
+### All configuration options
 
 ```yaml
 default:
@@ -96,7 +112,7 @@ default:
   eventLogPath: "/tmp/health-check.log" # optional
   alwaysLogHealthCheckFailures: true # optional, by default false
   reuseConnection: false # optional, by default true
-  tcp: # only one of tcp http or grpc can be enabled
+  tcp: # it will pick the protocol as described in 'protocol selection' section
     disabled: true # new, default false, can be disabled for override
     send: Zm9v # optional, empty payloads imply a connect-only health check
     receive: # required if send specified
@@ -118,7 +134,6 @@ default:
     disabled: false # new, default false, can be disabled for override
     service_name: "" # optional, service name parameter which will be sent to gRPC service
     authority: "" # optional, the value of the :authority header in the gRPC health check request, by default name of the cluster this health check is associated with
-    initial_metadata: [] # optional, specifies a list of key-value pairs that should be added to the metadata of each GRPC
 ```
 
 ## Examples
