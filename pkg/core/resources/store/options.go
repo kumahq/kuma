@@ -157,6 +157,7 @@ type ListOptions struct {
 	PageSize   int
 	PageOffset string
 	FilterFunc ListFilterFunc
+	NamePrefix string
 }
 
 type ListOptionsFunc func(*ListOptions)
@@ -176,6 +177,12 @@ func (l *ListOptions) Filter(rs core_model.Resource) bool {
 	}
 
 	return l.FilterFunc(rs)
+}
+
+func ListByNamePrefix(name string) ListOptionsFunc {
+	return func(opts *ListOptions) {
+		opts.NamePrefix = name
+	}
 }
 
 func ListByMesh(mesh string) ListOptionsFunc {

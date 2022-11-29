@@ -1,8 +1,11 @@
 package api_server
 
 import (
-	"encoding/json"
+	"bytes"
+	"html/template"
 	"net/http"
+
+	"github.com/Masterminds/sprig/v3"
 
 	"github.com/kumahq/kuma/app/kuma-ui/pkg/resources"
 )
@@ -29,23 +32,31 @@ var disabledPage = `
 </html>
 `
 
-func guiHandler(path string, enabledGui bool, apiUrl string, basePath string) http.Handler {
+type GuiConfig struct {
+	ApiUrl      string `json:"apiUrl"`
+	BaseGuiPath string `json:"baseGuiPath"`
+	Version     string `json:"version"`
+}
+
+func NewGuiHandler(guiPath string, enabledGui bool, guiConfig GuiConfig) (http.Handler, error) {
 	if enabledGui {
-		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			if request.URL.Path == path+"config.json" {
-				writer.WriteHeader(http.StatusOK)
-				writer.Header().Add("Content-Type", "application/json")
-				_ = json.NewEncoder(writer).Encode(struct {
-					ApiUrl      string `json:"apiUrl"`
-					BaseGuiPath string `json:"baseGuiPath"`
-				}{
-					ApiUrl:      apiUrl,
-					BaseGuiPath: basePath,
-				})
+		guiFs := resources.GuiFS()
+		tmpl := template.Must(template.New("index.html").Funcs(sprig.HtmlFuncMap()).ParseFS(guiFs, "index.html"))
+		buf := bytes.Buffer{}
+		err := tmpl.Execute(&buf, guiConfig)
+		if err != nil {
+			return nil, err
+		}
+		return http.StripPrefix(guiPath, http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			_, err := guiFs.Open(request.URL.Path)
+			if err == nil {
+				http.FileServer(http.FS(guiFs)).ServeHTTP(writer, request)
 				return
 			}
-			http.StripPrefix(path, http.FileServer(http.FS(resources.GuiFS()))).ServeHTTP(writer, request)
-		})
+			writer.WriteHeader(http.StatusOK)
+			writer.Header().Set("Content-Type", "text/html")
+			_, _ = writer.Write(buf.Bytes())
+		})), nil
 	}
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(http.StatusOK)
@@ -53,5 +64,5 @@ func guiHandler(path string, enabledGui bool, apiUrl string, basePath string) ht
 		if err != nil {
 			log.Error(err, "could not write the response")
 		}
-	})
+	}), nil
 }

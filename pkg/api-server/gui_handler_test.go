@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
+	"regexp"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -55,40 +56,54 @@ var _ = Describe("GUI Server", func() {
 			Expect(resp.Body.Close()).To(Succeed())
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(received).To(matchers.MatchGoldenEqual(given.expectedFile))
+			Expect(received).To(WithTransform(func(in []byte) []byte {
+				// Remove the part of the file name that changes always
+				r := regexp.MustCompile(`index\.[a-z0-9]+\.`).ReplaceAll(in, []byte("index."))
+				r = regexp.MustCompile(`"[0-9]+\.[0-9]+\.[0-9]+[^"]*"`).ReplaceAll(r, []byte(`"0.0.0"`))
+				return r
+			}, matchers.MatchGoldenEqual(given.expectedFile)))
 		},
 			Entry("should serve index.html without path", testCase{
 				urlPath:      "/gui",
-				expectedFile: filepath.Join("..", "..", "app", "kuma-ui", "pkg", "resources", "data", "index.html"),
+				expectedFile: filepath.Join("testdata", "index.html"),
+			}),
+			Entry("should serve robots.txt correctly", testCase{
+				urlPath:      "/gui/robots.txt",
+				expectedFile: filepath.Join("testdata", "robots.txt"),
+			}),
+			Entry("should serve on different path", testCase{
+				urlPath:      "/gui/meshes",
+				expectedFile: filepath.Join("testdata", "gui_other_files.html"),
 			}),
 			Entry("should serve index.html with / path", testCase{
 				urlPath:      "/gui/",
-				expectedFile: filepath.Join("..", "..", "app", "kuma-ui", "pkg", "resources", "data", "index.html"),
+				expectedFile: filepath.Join("testdata", "index.html"),
 			}),
-			Entry("should serve config.json", testCase{
-				urlPath:      "/gui/config.json",
-				expectedFile: filepath.Join("testdata", "gui_config.json"),
-			}),
-			Entry("should serve config.json on alternative path", testCase{
-				urlPath:      "/ui/config.json",
-				expectedFile: filepath.Join("testdata", "gui_config_with_base_path.json"),
+			Entry("should serve index.html on alternative path", testCase{
+				urlPath:      "/ui/foo",
+				expectedFile: filepath.Join("testdata", "gui_with_base_path.html"),
 				basePath:     "/ui",
 			}),
-			Entry("should serve config.json on alternative path with end /", testCase{
-				urlPath:      "/ui/config.json",
-				expectedFile: filepath.Join("testdata", "gui_config_with_base_path_with_slash.json"),
+			Entry("should serve index.html on alternative path with end /", testCase{
+				urlPath:      "/ui/",
+				expectedFile: filepath.Join("testdata", "gui_with_base_path_with_slash.html"),
 				basePath:     "/ui/",
 			}),
-			Entry("should serve config.json with path from rootUrl", testCase{
-				urlPath:      "/gui/config.json",
-				expectedFile: filepath.Join("testdata", "gui_config_with_root_url.json"),
+			Entry("should serve index.html with path from rootUrl", testCase{
+				urlPath:      "/gui/",
+				expectedFile: filepath.Join("testdata", "gui_with_root_url.html"),
 				guiRootUrl:   "https://foo.com/gui/foo",
 			}),
-			Entry("should serve config.json with path from rootUrl even with basePath set", testCase{
-				urlPath:      "/foo/config.json",
-				expectedFile: filepath.Join("testdata", "gui_config_with_root_url_and_base_path.json"),
+			Entry("should serve index.html with path from rootUrl even with basePath set", testCase{
+				urlPath:      "/foo/",
+				expectedFile: filepath.Join("testdata", "gui_with_root_url_and_base_path.html"),
 				basePath:     "/foo",
 				guiRootUrl:   "https://foo.com/gui/foo",
+			}),
+			Entry("should serve index.html on alternative path", testCase{
+				urlPath:      "/ui/foo",
+				expectedFile: filepath.Join("testdata", "gui_with_base_path.html"),
+				basePath:     "/ui",
 			}),
 		)
 	})

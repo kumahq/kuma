@@ -339,6 +339,31 @@ func ExecuteStoreTests(
 			Expect(list.Items).To(HaveLen(0))
 		})
 
+		It("should return a list of resources with prefix", func() {
+			// given two resources
+			createResource("list-res-1.demo")
+			createResource("list-res-2.demo")
+			createResource("list-mes-1.demo")
+
+			list := core_mesh.TrafficRouteResourceList{}
+
+			// when
+			err := s.List(context.Background(), &list, store.ListByNamePrefix("list-res"))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			// and
+			Expect(list.Pagination.Total).To(Equal(uint32(2)))
+			// and
+			Expect(list.Items).To(WithTransform(func(itms []*core_mesh.TrafficRouteResource) []string {
+				var res []string
+				for _, v := range itms {
+					res = append(res, v.GetMeta().GetName())
+				}
+				return res
+			}, Equal([]string{"list-res-1.demo", "list-res-2.demo"})))
+		})
+
 		Describe("Pagination", func() {
 			It("should list all resources using pagination", func() {
 				// given

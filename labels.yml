@@ -1,9 +1,5 @@
 default:
   labels:
-    - color: 5319e7
-      name: "backport-to-stable"
-      description: "Automatically backport this PR to the latest stable branch"
-      delete: true
     - color: 0052cc
       name: "area/kuma-cp"
     - color: 0052cc
