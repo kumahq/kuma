@@ -418,10 +418,28 @@ Here, the `/v1` rule from `owner` is unchanged and the `/v2` rule from
 This new resource is intended to replace the `MeshGatewayRoute` resource for
 configuring routes for a `MeshGateway`.
 
-##### Edge gateway
+There are two different ways we can express a `MeshGateway` attachment either as
+`spec.targetRef` & `to.targetRef` and `from.targetRef` & `spec.targetRef`.
+
+The core difference is that routes for a `MeshGateway` are fundamentally different from in-mesh
+routes because there's a proxy "in between" requests. That is, when I send a
+request from service to service, the Envoy configuration and routing happens on the source
+proxy side. When I send a request to a `MeshGateway`, the request reaches the
+`MeshGateway` proxy and _then_ gets routed, i.e. they're on the destination
+side.
+
+##### `MeshGateway` as `to.targetRef`
+
+This is a somewhat different way of thinking about `targetRef` because here the
+`to.targetRef` points to the Envoy whose configuration is changing, as opposed
+to `spec.targetRef`. However, a `MeshGateway` proxy is fundamentally different from a
+sidecar proxy because it does not attach to a service, so perhaps this is
+justified?
+
+###### Edge gateway
 
 In order to configure a non-cross-mesh `MeshGateway` resource,
-a user would have to configure `targetRef` as follows:
+one option is that the user points `to.targetRef` to a `MeshGateway`.
 
 ```yaml
 targetRef:
@@ -436,7 +454,7 @@ the `spec.targetRef` of `kind: Mesh` can be read as simply meaning "any
 connections made to the `MeshGateway`". Only `kind: Mesh` is permitted with a
 `to.targetRef` of `kind: MeshGateway`.
 
-##### Cross-mesh gateway
+###### Cross-mesh gateway
 
 For cross-mesh `MeshGateways`:
 
@@ -459,7 +477,54 @@ targetRef:
 to:
  - targetRef:
     kind: MeshGateway
-    name: edge-gateway
+    name: mesh-gateway
+```
+
+##### `MeshGateway` in `spec.targetRef`
+
+If we put `MeshGateway` in `spec.targetRef`, we could instead use `from`.
+
+###### Edge gateway
+
+In order to configure a non-cross-mesh `MeshGateway` resource:
+
+```yaml
+targetRef:
+ kind: MeshGateway
+ name: edge-gateway
+from:
+ - targetRef:
+    kind: Mesh
+```
+
+the `from.targetRef` of `kind: Mesh` can be read as simply meaning "any
+connections made to the `MeshGateway`". Only `kind: Mesh` is permitted as a
+`from.targetRef` with `targetRef` of `MeshGateway`.
+
+###### Cross-mesh gateway
+
+For cross-mesh `MeshGateways`:
+
+```yaml
+targetRef:
+ kind: MeshGateway
+ name: mesh-gateway
+from:
+ - targetRef:
+    kind: Mesh
+```
+
+would target _any requests_ from _any `Mesh`_ made to this `MeshGateway` whereas
+`name` must be used to target a specific `Mesh` as source:
+
+```yaml
+targetRef:
+ kind: MeshGateway
+ name: mesh-gateway
+from:
+ - targetRef:
+    kind: Mesh
+    name: other-mesh
 ```
 
 #### Gateway API
