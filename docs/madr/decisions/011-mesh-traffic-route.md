@@ -114,10 +114,11 @@ With `filters` we can change:
 - HTTP redirect
 - host
 - request path
+- the response by directly returning one
 
 ```yaml
 filters:
- - type: RequestHeaderModifier|ResponseHeaderModifier|RequestMirror|RequestRedirect|URLRewrite
+ - type: RequestHeaderModifier|ResponseHeaderModifier|RequestMirror|RequestRedirect|URLRewrite|DirectResponse
    requestHeaderModifier:
     set:
      - name:
@@ -151,6 +152,13 @@ filters:
     path:
      replaceFullPath:
      replacePrefixMatch:
+   directResponse:
+    status:
+    body:
+     inlineBytes: <base64>
+     inlineString:
+     filename:
+     environmentVariable:
 ```
 
 #### Routing
