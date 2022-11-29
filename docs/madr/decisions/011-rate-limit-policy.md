@@ -196,7 +196,7 @@ spec:
      default: 
        local:
          http:
-           enabled: true
+           disabled: false
            requests: 5
            interval: 10s
            onRateLimit:
@@ -206,7 +206,7 @@ spec:
                  value: "true"
                  append: true
          tcp:
-           enabled: true
+           disabled: false
            connections: 100
            interval: 10s
 ```
@@ -247,7 +247,6 @@ spec:
       default:
         local:
           http:
-            enabled: true
             requests: 5
             interval: 10s
             onRateLimit:
@@ -275,7 +274,7 @@ spec:
       default:
         local:
           http:
-            enabled: true
+            disabled: false
             requests: 5
             interval: 10s
             onRateLimit:
@@ -303,7 +302,7 @@ spec:
       default:
         local:
           tcp:
-            enabled: true
+            disabled: false
             connections: 5
             interval: 10s
 ```
@@ -325,11 +324,11 @@ spec:
       default:
         local:
           tcp:
-            enabled: true
+            disabled: false
             connections: 5
             interval: 10s
           http:
-            enabled: true
+            false: true
             requests: 5
             interval: 10s
             onRateLimit:
@@ -357,5 +356,5 @@ spec:
       default:
         local:
           http:
-            enabled: false
+            disabled: true
 ```

@@ -78,7 +78,7 @@ func validateDefault(path validators.PathBuilder, conf Conf) validators.Validati
 
 func validateLocalHttp(path validators.PathBuilder, localHttp *LocalHTTP) validators.ValidationError {
 	var verr validators.ValidationError
-	if localHttp.Enabled == nil || *localHttp.Enabled {
+	if !localHttp.Disabled {
 		verr.Add(validators.ValidateIntegerGreaterThan(path.Field("requests"), localHttp.Requests, 0))
 		verr.Add(validators.ValidateDurationGreaterThan(path.Field("interval"), &localHttp.Interval, 50*time.Millisecond))
 	}
@@ -91,7 +91,7 @@ func validateLocalHttp(path validators.PathBuilder, localHttp *LocalHTTP) valida
 
 func validateLocalTcp(path validators.PathBuilder, localTcp *LocalTCP) validators.ValidationError {
 	var verr validators.ValidationError
-	if localTcp.Enabled == nil || *localTcp.Enabled {
+	if !localTcp.Disabled {
 		verr.Add(validators.ValidateIntegerGreaterThan(path.Field("connections"), localTcp.Connections, 0))
 		verr.Add(validators.ValidateDurationGreaterThan(path.Field("interval"), &localTcp.Interval, 50*time.Millisecond))
 	}
