@@ -138,7 +138,7 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
                         inlineBytes: Y2xpZW50a2V5
                     validationContext:
                       matchSubjectAltNames:
-                      - exact: httpbin.org
+                      - exact: custom
                       trustedCa:
                         inlineBytes: Y2FjZXJ0
                   sni: custom
