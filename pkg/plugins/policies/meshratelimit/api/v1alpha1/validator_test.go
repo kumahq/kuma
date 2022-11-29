@@ -34,7 +34,7 @@ from:
     default:
       local:
         http:
-          enabled: true
+          disabled: false
           requests: 100
           interval: 10s
           onRateLimit:
@@ -44,7 +44,7 @@ from:
               value: "123"
               append: true
         tcp:
-          enabled: true
+          disabled: false
           connections: 100
           interval: 100ms`),
 			Entry("full example, only http", `
@@ -75,7 +75,7 @@ from:
     default:
       local:
         tcp:
-          enabled: true
+          disabled: false
           connections: 100
           interval: 100ms`),
 			Entry("minimal example", `
@@ -103,9 +103,9 @@ from:
     default:
       local:
         http:
-          enabled: false
+          disabled: true
         tcp:
-          enabled: false`),
+          disabled: true`),
 		)
 		type testCase struct {
 			inputYaml string
@@ -163,7 +163,7 @@ from:
   default:
     local:
       http:
-        enabled: true`,
+        disabled: false`,
 				expected: `
 violations:
   - field: spec.from[0].default.local.http.requests
@@ -181,7 +181,7 @@ from:
   default:
     local:
       tcp:
-        enabled: true`,
+        disabled: false`,
 				expected: `
 violations:
   - field: spec.from[0].default.local.tcp.connections

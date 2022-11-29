@@ -39,11 +39,10 @@ type Local struct {
 // LocalHTTP defines confguration of local HTTP rate limiting
 // https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/local_rate_limit_filter
 type LocalHTTP struct {
-	// Define if rate limiting should be enabled.
-	// Default: true
+	// Define if rate limiting should be disabled.
+	// Default: false
 	// +optional
-	// +nullable
-	Enabled *bool `json:"enabled,omitempty"`
+	Disabled bool `json:"disabled,omitempty"`
 
 	// The number of HTTP requests this RateLimiter allows
 	// +required
@@ -89,11 +88,10 @@ type HeaderValue struct {
 // LocalTCP defines confguration of local TCP rate limiting
 // https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/network_filters/local_rate_limit_filter
 type LocalTCP struct {
-	// Define if rate limiting should be enabled.
-	// Default: true
+	// Define if rate limiting should be disabled.
+	// Default: false
 	// +optional
-	// +nullable
-	Enabled *bool `json:"enabled,omitempty"`
+	Disabled bool `json:"disabled,omitempty"`
 
 	// The number of connections that RateLimiter allows
 	// +required

@@ -27,9 +27,8 @@ properties:
                     http:
                       description: LocalHTTP defines confguration of local HTTP rate limiting https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/local_rate_limit_filter
                       properties:
-                        enabled:
-                          description: 'Define if rate limiting should be enabled. Default: true'
-                          nullable: true
+                        disabled:
+                          description: 'Define if rate limiting should be disabled. Default: false'
                           type: boolean
                         interval:
                           description: The the interval for which `requests` will be accounted.
@@ -73,9 +72,8 @@ properties:
                           description: The number of connections that RateLimiter allows
                           format: int32
                           type: integer
-                        enabled:
-                          description: 'Define if rate limiting should be enabled. Default: true'
-                          nullable: true
+                        disabled:
+                          description: 'Define if rate limiting should be disabled. Default: false'
                           type: boolean
                         interval:
                           description: The interval of adding tokens into bucket. Must be >= 50ms

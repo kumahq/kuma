@@ -53,10 +53,9 @@ spec:
                               description: LocalHTTP defines confguration of local
                                 HTTP rate limiting https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/local_rate_limit_filter
                               properties:
-                                enabled:
+                                disabled:
                                   description: 'Define if rate limiting should be
-                                    enabled. Default: true'
-                                  nullable: true
+                                    disabled. Default: false'
                                   type: boolean
                                 interval:
                                   description: The the interval for which `requests`
@@ -107,10 +106,9 @@ spec:
                                     allows
                                   format: int32
                                   type: integer
-                                enabled:
+                                disabled:
                                   description: 'Define if rate limiting should be
-                                    enabled. Default: true'
-                                  nullable: true
+                                    disabled. Default: false'
                                   type: boolean
                                 interval:
                                   description: The interval of adding tokens into
