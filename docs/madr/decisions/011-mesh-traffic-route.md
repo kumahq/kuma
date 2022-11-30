@@ -443,15 +443,15 @@ one option is that the user points `to.targetRef` to a `MeshGateway`.
 
 ```yaml
 targetRef:
- kind: Mesh
+ kind: Any
 to:
  - targetRef:
     kind: MeshGateway
     name: edge-gateway
 ```
 
-the `spec.targetRef` of `kind: Mesh` can be read as simply meaning "any
-connections made to the `MeshGateway`". Only `kind: Mesh` is permitted with a
+the `spec.targetRef` of `kind: Any` can be read as meaning "any
+connections made to the `MeshGateway`". Only `kind: Any` is permitted with a
 `to.targetRef` of `kind: MeshGateway`.
 
 ###### Cross-mesh gateway
@@ -460,7 +460,7 @@ For cross-mesh `MeshGateways`:
 
 ```yaml
 targetRef:
- kind: Mesh
+ kind: Any
 to:
  - targetRef:
     kind: MeshGateway
@@ -468,7 +468,7 @@ to:
 ```
 
 would target _any requests_ from _any `Mesh`_ made to this `MeshGateway` whereas
-`name` must be used to target a specific `Mesh` as source:
+`kind: Mesh` must be used to target a specific `Mesh` as source:
 
 ```yaml
 targetRef:
@@ -494,12 +494,12 @@ targetRef:
  name: edge-gateway
 from:
  - targetRef:
-    kind: Mesh
+    kind: Any
 ```
 
-the `from.targetRef` of `kind: Mesh` can be read as simply meaning "any
-connections made to the `MeshGateway`". Only `kind: Mesh` is permitted as a
-`from.targetRef` with `targetRef` of `MeshGateway`.
+the `from.targetRef` of `kind: Any` can be read as "any
+connections made to the `MeshGateway`". Only `kind: Any` is permitted as a
+`from.targetRef` with `spec.targetRef` of `MeshGateway`.
 
 ###### Cross-mesh gateway
 
@@ -511,11 +511,11 @@ targetRef:
  name: mesh-gateway
 from:
  - targetRef:
-    kind: Mesh
+    kind: Any
 ```
 
 would target _any requests_ from _any `Mesh`_ made to this `MeshGateway` whereas
-`name` must be used to target a specific `Mesh` as source:
+`kind: Mesh` must be used to target a specific `Mesh` as source:
 
 ```yaml
 targetRef:
