@@ -12,7 +12,7 @@ $(DOCKER_REGISTRY)/$(1):$(BUILD_INFO_VERSION)$(if $(IMAGE_ARCH_TAG_ENABLED),-${G
 endef
 
 export KUMA_BASE_IMAGE ?= kumahq/base-debian11:no-push
-export KUMA_BASE_ROOT_IMAGE ?= kumahq/base-debian11:no-push-root
+export KUMA_BASE_ROOT_IMAGE ?= kumahq/base-root-debian11:no-push
 export KUMA_STATIC_IMAGE ?= kumahq/static-debian11:no-push
 export KUMA_ENVOY_IMAGE ?= kumahq/envoy:no-push
 export KUMA_CP_DOCKER_IMAGE ?= $(call build_image,kuma-cp)
@@ -40,11 +40,11 @@ image/base: ## Dev: Rebuild `kuma-base` Docker image
 	docker build -t $(KUMA_BASE_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --platform=linux/${GOARCH} -f $(TOOLS_DIR)/releases/dockerfiles/Dockerfile.base .
 
 .PHONY: image/base-root
-image/base-root: ## Dev: Rebuild `kuma-base` Docker image
+image/base-root: ## Dev: Rebuild `kuma-base-root` Docker image
 	docker build -t $(KUMA_BASE_ROOT_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --platform=linux/${GOARCH} -f $(TOOLS_DIR)/releases/dockerfiles/Dockerfile.base-root .
 
 .PHONY: image/envoy
-image/envoy: ## Dev: Rebuild `kuma-base` Docker image
+image/envoy: ## Dev: Rebuild `envoy` Docker image
 	docker build -t $(KUMA_ENVOY_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --platform=linux/${GOARCH} --build-arg ENVOY_VERSION=${ENVOY_VERSION} -f $(TOOLS_DIR)/releases/dockerfiles/Dockerfile.envoy .
 
 .PHONY: image/kuma-cp
