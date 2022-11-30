@@ -20,7 +20,7 @@ function build() {
       build_args=(
         --build-arg ARCH="${arch}"
         --build-arg ENVOY_VERSION="${ENVOY_VERSION}"
-        --build-arg BASE_IMAGE_ARCH="${arch}"
+        --platform="linux/${arch}"
       )
       additional_args=()
       if [ "$arch" == "arm64" ]; then

@@ -1,15 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <script id="kuma-config" type="application/json">
+      {{.}}
+    </script>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
 
-    <link rel="icon" href="./favicon.png" />
+    <link rel="icon" href="/{{ .BaseGuiPath | trimPrefix "/" }}/favicon.png" />
     <title>Manager</title>
 
     
-    <script type="module" crossorigin src="./assets/index.b0409b43.js"></script>
-    <link rel="stylesheet" href="./assets/index.dc35afea.css">
+    <script type="module" crossorigin src="/{{.BaseGuiPath | trimPrefix "/" }}/assets/index.b0409b43.js"></script>
+    <link rel="stylesheet" href="/{{.BaseGuiPath | trimPrefix "/" }}/assets/index.dc35afea.css">
   </head>
   <body>
     <noscript>

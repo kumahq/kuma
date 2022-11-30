@@ -19,7 +19,9 @@ var _ = Describe("Verify build flags are set", func() {
 
 	It("Should have a valid builddate", func() {
 		_, err := time.Parse(time.RFC3339, version.Build.BuildDate)
-		Expect(err).ToNot(HaveOccurred())
+		if err != nil {
+			Expect(version.Build.BuildDate).To(Equal("local-build"))
+		}
 	})
 	It("Should have a valid gittag", func() {
 		Expect(version.Build.GitTag).To(MatchRegexp("[a-f0-9]+"))
