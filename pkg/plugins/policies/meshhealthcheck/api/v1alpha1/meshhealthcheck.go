@@ -3,8 +3,7 @@ package v1alpha1
 
 import (
     common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-    "google.golang.org/protobuf/types/known/durationpb"
-    "google.golang.org/protobuf/types/known/wrapperspb"
+    k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // MeshHealthCheck
@@ -30,21 +29,21 @@ type To struct {
 
 type Conf struct {
     // Interval between consecutive health checks.
-    Interval *durationpb.Duration `json:"interval,omitempty"`
+    Interval *k8s.Duration `json:"interval,omitempty"`
     // Maximum time to wait for a health check response.
-    Timeout *durationpb.Duration `json:"timeout,omitempty"`
+    Timeout *k8s.Duration `json:"timeout,omitempty"`
     // Number of consecutive unhealthy checks before considering a host
     // unhealthy.
-    UnhealthyThreshold uint32 `json:"unhealthyThreshold,omitempty"`
+    UnhealthyThreshold *uint32 `json:"unhealthyThreshold,omitempty"`
     // Number of consecutive healthy checks before considering a host healthy.
-    HealthyThreshold uint32 `json:"healthyThreshold,omitempty"`
+    HealthyThreshold *uint32 `json:"healthyThreshold,omitempty"`
     // If specified, Envoy will start health checking after for a random time in
     // ms between 0 and initialJitter. This only applies to the first health
     // check.
-    InitialJitter *durationpb.Duration `json:"initialJitter,omitempty"`
+    InitialJitter *k8s.Duration `json:"initialJitter,omitempty"`
     // If specified, during every interval Envoy will add IntervalJitter to the
     // wait time.
-    IntervalJitter *durationpb.Duration `json:"intervalJitter,omitempty"`
+    IntervalJitter *k8s.Duration `json:"intervalJitter,omitempty"`
     // If specified, during every interval Envoy will add IntervalJitter *
     // IntervalJitterPercent / 100 to the wait time. If IntervalJitter and
     // IntervalJitterPercent are both set, both of them will be used to
@@ -52,19 +51,19 @@ type Conf struct {
     IntervalJitterPercent uint32 `json:"intervalJitterPercent,omitempty"`
     // Allows to configure panic threshold for Envoy cluster. If not specified,
     // the default is 50%. To disable panic mode, set to 0%.
-    HealthyPanicThreshold *wrapperspb.FloatValue `json:"healthyPanicThreshold,omitempty"`
+    HealthyPanicThreshold *float32 `json:"healthyPanicThreshold,omitempty"`
     // If set to true, Envoy will not consider any hosts when the cluster is in
     // 'panic mode'. Instead, the cluster will fail all requests as if all hosts
     // are unhealthy. This can help avoid potentially overwhelming a failing
     // service.
-    FailTrafficOnPanic *wrapperspb.BoolValue `json:"failTrafficOnPanic,omitempty"`
+    FailTrafficOnPanic *bool `json:"failTrafficOnPanic,omitempty"`
     // Specifies the path to the file where Envoy can log health check events.
     // If empty, no event log will be written.
     EventLogPath string `json:"eventLogPath,omitempty"`
     // If set to true, health check failure events will always be logged. If set
     // to false, only the initial health check failure event will be logged. The
     // default value is false.
-    AlwaysLogHealthCheckFailures *wrapperspb.BoolValue `json:"alwaysLogHealthCheckFailures,omitempty"`
+    AlwaysLogHealthCheckFailures *bool `json:"alwaysLogHealthCheckFailures,omitempty"`
     // The "no traffic interval" is a special health check interval that is used
     // when a cluster has never had traffic routed to it. This lower interval
     // allows cluster information to be kept up to date, without sending a
@@ -73,12 +72,12 @@ type Conf struct {
     // to using the standard health check interval that is defined. Note that
     // this interval takes precedence over any other. The default value for "no
     // traffic interval" is 60 seconds.
-    NoTrafficInterval *durationpb.Duration `json:"noTrafficInterval,omitempty"`
+    NoTrafficInterval *k8s.Duration `json:"noTrafficInterval,omitempty"`
     Tcp               *TcpHealthCheck      `json:"tcp,omitempty"`
     Http              *HttpHealthCheck     `json:"http,omitempty"`
     Grpc              *GrpcHealthCheck     `json:"grpc,omitempty"`
     // Reuse health check connection between health checks. Default is true.
-    ReuseConnection *wrapperspb.BoolValue `json:"reuseConnection,omitempty"`
+    ReuseConnection *bool `json:"reuseConnection,omitempty"`
 }
 
 // TcpHealthCheck defines configuration for specifying bytes to send and
@@ -88,11 +87,11 @@ type TcpHealthCheck struct {
     //  +optional
     Disabled bool `json:"disabled,omitempty"`
     // Bytes which will be sent during the health check to the target
-    Send *wrapperspb.BytesValue `json:"send,omitempty"`
+    Send *string `json:"send,omitempty"`
     // Bytes blocks expected as a response. When checking the response,
     // “fuzzy” matching is performed such that each block must be found, and
     // in the order specified, but not necessarily contiguous.
-    Receive []*wrapperspb.BytesValue `json:"receive,omitempty"`
+    Receive *[]string `json:"receive,omitempty"`
 }
 
 // HttpHealthCheck defines HTTP configuration which will instruct the service
@@ -108,10 +107,10 @@ type HttpHealthCheck struct {
     // The list of HTTP headers which should be added to each health check
     // request
     //  +optional
-    RequestHeadersToAdd []*HeaderValueOption `json:"requestHeadersToAdd,omitempty"`
+    RequestHeadersToAdd *[]HeaderValueOption `json:"requestHeadersToAdd,omitempty"`
     // List of HTTP response statuses which are considered healthy
     //  +optional
-    ExpectedStatuses []*wrapperspb.UInt32Value `json:"expectedStatuses,omitempty"`
+    ExpectedStatuses *[]uint32 `json:"expectedStatuses,omitempty"`
 }
 
 // GrpcHealthCheck defines gRPC configuration which will instruct the service
@@ -135,7 +134,7 @@ type HeaderValueOption struct {
     Header *HeaderValue `json:"header,omitempty"`
     // If true (default) the header values should be appended to already present ones
     //  +optional
-    Append *wrapperspb.BoolValue `json:"append,omitempty"`
+    Append *bool `json:"append,omitempty"`
 }
 
 type HeaderValue struct {

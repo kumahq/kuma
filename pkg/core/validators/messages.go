@@ -11,6 +11,7 @@ const (
 	MustNotBeDefined                  = "must not be defined"
 	WhenDefinedHasToBeNonNegative     = "must not be negative when defined"
 	WhenDefinedHasToBeGreaterThanZero = "must be greater than zero when defined"
+    HasToBeInPercentageRange          = "has to be in [0.0 - 100.0] range"
 )
 
 func MustHaveOnlyOne(entity string, allowedValues ...string) string {

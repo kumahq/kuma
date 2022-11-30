@@ -79,11 +79,7 @@ spec:
                             will always be logged. If set to false, only the initial
                             health check failure event will be logged. The default
                             value is false.
-                          properties:
-                            value:
-                              description: The bool value.
-                              type: boolean
-                          type: object
+                          type: boolean
                         eventLogPath:
                           description: Specifies the path to the file where Envoy
                             can log health check events. If empty, no event log will
@@ -95,11 +91,7 @@ spec:
                             cluster will fail all requests as if all hosts are unhealthy.
                             This can help avoid potentially overwhelming a failing
                             service.
-                          properties:
-                            value:
-                              description: The bool value.
-                              type: boolean
-                          type: object
+                          type: boolean
                         grpc:
                           description: GrpcHealthCheck defines gRPC configuration
                             which will instruct the service the health check will
@@ -122,10 +114,6 @@ spec:
                           description: Allows to configure panic threshold for Envoy
                             cluster. If not specified, the default is 50%. To disable
                             panic mode, set to 0%.
-                          properties:
-                            value:
-                              description: The float value.
-                          type: object
                         healthyThreshold:
                           description: Number of consecutive healthy checks before
                             considering a host healthy.
@@ -143,14 +131,8 @@ spec:
                               description: List of HTTP response statuses which are
                                 considered healthy
                               items:
-                                description: "Wrapper message for `uint32`. \n The
-                                  JSON representation for `UInt32Value` is JSON number."
-                                properties:
-                                  value:
-                                    description: The uint32 value.
-                                    format: int32
-                                    type: integer
-                                type: object
+                                format: int32
+                                type: integer
                               type: array
                             path:
                               description: The HTTP path which will be requested during
@@ -164,11 +146,7 @@ spec:
                                   append:
                                     description: If true (default) the header values
                                       should be appended to already present ones
-                                    properties:
-                                      value:
-                                        description: The bool value.
-                                        type: boolean
-                                    type: object
+                                    type: boolean
                                   header:
                                     description: Key/Value representation of the HTTP
                                       header
@@ -187,68 +165,14 @@ spec:
                           description: If specified, Envoy will start health checking
                             after for a random time in ms between 0 and initialJitter.
                             This only applies to the first health check.
-                          properties:
-                            nanos:
-                              description: Signed fractions of a second at nanosecond
-                                resolution of the span of time. Durations less than
-                                one second are represented with a 0 `seconds` field
-                                and a positive or negative `nanos` field. For durations
-                                of one second or more, a non-zero value for the `nanos`
-                                field must be of the same sign as the `seconds` field.
-                                Must be from -999,999,999 to +999,999,999 inclusive.
-                              format: int32
-                              type: integer
-                            seconds:
-                              description: 'Signed seconds of the span of time. Must
-                                be from -315,576,000,000 to +315,576,000,000 inclusive.
-                                Note: these bounds are computed from: 60 sec/min *
-                                60 min/hr * 24 hr/day * 365.25 days/year * 10000 years'
-                              format: int64
-                              type: integer
-                          type: object
+                          type: string
                         interval:
                           description: Interval between consecutive health checks.
-                          properties:
-                            nanos:
-                              description: Signed fractions of a second at nanosecond
-                                resolution of the span of time. Durations less than
-                                one second are represented with a 0 `seconds` field
-                                and a positive or negative `nanos` field. For durations
-                                of one second or more, a non-zero value for the `nanos`
-                                field must be of the same sign as the `seconds` field.
-                                Must be from -999,999,999 to +999,999,999 inclusive.
-                              format: int32
-                              type: integer
-                            seconds:
-                              description: 'Signed seconds of the span of time. Must
-                                be from -315,576,000,000 to +315,576,000,000 inclusive.
-                                Note: these bounds are computed from: 60 sec/min *
-                                60 min/hr * 24 hr/day * 365.25 days/year * 10000 years'
-                              format: int64
-                              type: integer
-                          type: object
+                          type: string
                         intervalJitter:
                           description: If specified, during every interval Envoy will
                             add IntervalJitter to the wait time.
-                          properties:
-                            nanos:
-                              description: Signed fractions of a second at nanosecond
-                                resolution of the span of time. Durations less than
-                                one second are represented with a 0 `seconds` field
-                                and a positive or negative `nanos` field. For durations
-                                of one second or more, a non-zero value for the `nanos`
-                                field must be of the same sign as the `seconds` field.
-                                Must be from -999,999,999 to +999,999,999 inclusive.
-                              format: int32
-                              type: integer
-                            seconds:
-                              description: 'Signed seconds of the span of time. Must
-                                be from -315,576,000,000 to +315,576,000,000 inclusive.
-                                Note: these bounds are computed from: 60 sec/min *
-                                60 min/hr * 24 hr/day * 365.25 days/year * 10000 years'
-                              format: int64
-                              type: integer
-                          type: object
+                          type: string
                         intervalJitterPercent:
                           description: If specified, during every interval Envoy will
                             add IntervalJitter * IntervalJitterPercent / 100 to the
@@ -268,33 +192,11 @@ spec:
                             interval that is defined. Note that this interval takes
                             precedence over any other. The default value for "no traffic
                             interval" is 60 seconds.
-                          properties:
-                            nanos:
-                              description: Signed fractions of a second at nanosecond
-                                resolution of the span of time. Durations less than
-                                one second are represented with a 0 `seconds` field
-                                and a positive or negative `nanos` field. For durations
-                                of one second or more, a non-zero value for the `nanos`
-                                field must be of the same sign as the `seconds` field.
-                                Must be from -999,999,999 to +999,999,999 inclusive.
-                              format: int32
-                              type: integer
-                            seconds:
-                              description: 'Signed seconds of the span of time. Must
-                                be from -315,576,000,000 to +315,576,000,000 inclusive.
-                                Note: these bounds are computed from: 60 sec/min *
-                                60 min/hr * 24 hr/day * 365.25 days/year * 10000 years'
-                              format: int64
-                              type: integer
-                          type: object
+                          type: string
                         reuseConnection:
                           description: Reuse health check connection between health
                             checks. Default is true.
-                          properties:
-                            value:
-                              description: The bool value.
-                              type: boolean
-                          type: object
+                          type: boolean
                         tcp:
                           description: TcpHealthCheck defines configuration for specifying
                             bytes to send and expected response during the health
@@ -309,46 +211,16 @@ spec:
                                 such that each block must be found, and in the order
                                 specified, but not necessarily contiguous.
                               items:
-                                description: "Wrapper message for `bytes`. \n The
-                                  JSON representation for `BytesValue` is JSON string."
-                                properties:
-                                  value:
-                                    description: The bytes value.
-                                    format: byte
-                                    type: string
-                                type: object
+                                type: string
                               type: array
                             send:
                               description: Bytes which will be sent during the health
                                 check to the target
-                              properties:
-                                value:
-                                  description: The bytes value.
-                                  format: byte
-                                  type: string
-                              type: object
+                              type: string
                           type: object
                         timeout:
                           description: Maximum time to wait for a health check response.
-                          properties:
-                            nanos:
-                              description: Signed fractions of a second at nanosecond
-                                resolution of the span of time. Durations less than
-                                one second are represented with a 0 `seconds` field
-                                and a positive or negative `nanos` field. For durations
-                                of one second or more, a non-zero value for the `nanos`
-                                field must be of the same sign as the `seconds` field.
-                                Must be from -999,999,999 to +999,999,999 inclusive.
-                              format: int32
-                              type: integer
-                            seconds:
-                              description: 'Signed seconds of the span of time. Must
-                                be from -315,576,000,000 to +315,576,000,000 inclusive.
-                                Note: these bounds are computed from: 60 sec/min *
-                                60 min/hr * 24 hr/day * 365.25 days/year * 10000 years'
-                              format: int64
-                              type: integer
-                          type: object
+                          type: string
                         unhealthyThreshold:
                           description: Number of consecutive unhealthy checks before
                             considering a host unhealthy.

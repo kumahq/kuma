@@ -115,7 +115,7 @@ default:
   tcp: # it will pick the protocol as described in 'protocol selection' section
     disabled: true # new, default false, can be disabled for override
     send: Zm9v # optional, empty payloads imply a connect-only health check
-    receive: # required if send specified
+    receive: # optional
     - YmFy
     - YmF6
   http:
