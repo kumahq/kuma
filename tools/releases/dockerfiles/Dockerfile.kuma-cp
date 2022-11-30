@@ -3,6 +3,4 @@ FROM kumahq/static-debian11:no-push
 ARG ARCH
 COPY /build/artifacts-linux-$ARCH/kuma-cp/kuma-cp /usr/bin
 
-WORKDIR /home/kuma-cp
-
 ENTRYPOINT ["kuma-cp"]
