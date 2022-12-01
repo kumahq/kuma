@@ -353,6 +353,9 @@ multizone:
       # MaxMsgSize defines a maximum size of the message in bytes that is exchanged using KDS.
       # In practice this means a limit on full list of one resource type.
       maxMsgSize: 10485760 # ENV: KUMA_MULTIZONE_GLOBAL_KDS_MAX_MSG_SIZE
+      # MsgSendTimeout defines a timeout on sending a single KDS message.
+      # KDS stream between control planes is terminated if the control plane hits this timeout.
+      msgSendTimeout: 60s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_MSG_SEND_TIMEOUT
   zone:
     # Kuma Zone name used to mark the zone dataplane resources
     name: "" # ENV: KUMA_MULTIZONE_ZONE_NAME
@@ -366,6 +369,9 @@ multizone:
       # MaxMsgSize defines a maximum size of the message in bytes that is exchanged using KDS.
       # In practice this means a limit on full list of one resource type.
       maxMsgSize: 10485760 # ENV: KUMA_MULTIZONE_ZONE_KDS_MAX_MSG_SIZE
+      # MsgSendTimeout defines a timeout on sending a single KDS message.
+      # KDS stream between control planes is terminated if the control plane hits this timeout.
+      msgSendTimeout: 60s # ENV: KUMA_MULTIZONE_ZONE_KDS_MSG_SEND_TIMEOUT
 
 # Diagnostics configuration
 diagnostics:

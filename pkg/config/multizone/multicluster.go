@@ -35,6 +35,7 @@ func DefaultGlobalConfig() *GlobalConfig {
 			RefreshInterval:          1 * time.Second,
 			ZoneInsightFlushInterval: 10 * time.Second,
 			MaxMsgSize:               10 * 1024 * 1024,
+			MsgSendTimeout:           60 * time.Second,
 		},
 	}
 }
@@ -94,6 +95,7 @@ func DefaultZoneConfig() *ZoneConfig {
 		KDS: &KdsClientConfig{
 			RefreshInterval: 1 * time.Second,
 			MaxMsgSize:      10 * 1024 * 1024,
+			MsgSendTimeout:  60 * time.Second,
 		},
 	}
 }

@@ -13,6 +13,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config/multizone"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/kds/service"
 	"github.com/kumahq/kuma/pkg/kds/util"
@@ -133,7 +134,14 @@ func (s *server) StreamMessage(stream mesh_proto.MultiplexService_StreamMessageS
 	}
 	log := muxServerLog.WithValues("client-id", clientID)
 	log.Info("initializing Kuma Discovery Service (KDS) stream for global-zone sync of resources")
-	session := NewSession(clientID, stream)
+	// The buffer size should be of a size of all inflight request, so we never write to a blocked buffer.
+	// The buffer is separate for each direction (send/receive) on each multiplexed stream (global acting as server/global acting as client)
+	// A CP never sends multiple DiscoveryRequests for one resource type.
+	// A CP never sends multiple DiscoveryResponses for one resource type (it waits until peer answers with ACK/NACK)
+	// Therefore the maximum number of inflight requests are number of synced resources.
+	// For the simplicity we just take all resources available in Kuma (.
+	bufferSize := len(registry.Global().ObjectTypes())
+	session := NewSession(clientID, stream, uint32(bufferSize), s.config.MsgSendTimeout)
 	for _, filter := range s.filters {
 		if err := filter.InterceptSession(session); err != nil {
 			log.Error(err, "closing KDS stream following a callback error")
