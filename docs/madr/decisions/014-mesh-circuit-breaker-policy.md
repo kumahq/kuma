@@ -1,4 +1,4 @@
-# Circuit Breaker and Outlier Detector policies compliant with 2.0 model
+# Circuit Breaker policy compliant with 2.0 model
 
 * Status: accepted
 
