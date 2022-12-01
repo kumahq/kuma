@@ -516,4 +516,4 @@ workflows:
               ignore: /.*/
             tags:
               only: /.*/
-          requires: [ dev, test, test/e2e, test/e2e-legacy ]
+          requires: [ dev ]
