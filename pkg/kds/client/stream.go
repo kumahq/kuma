@@ -17,6 +17,7 @@ import (
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
+// All methods other than Receive() are non-blocking. It does not wait until the peer CP receives the message.
 type KDSStream interface {
 	DiscoveryRequest(resourceType model.ResourceType) error
 	Receive() (string, model.ResourceList, error)
