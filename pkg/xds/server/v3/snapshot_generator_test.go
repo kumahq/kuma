@@ -170,10 +170,32 @@ var _ = Describe("GenerateSnapshot", func() {
 				WithMesh("demo").
 				WithVersion("1").
 				WithAddress("192.168.0.1").
-				AddInbound("", 80, 8080, map[string]string{mesh_proto.ServiceTag: "backend-1"}).
-				AddInbound("", 443, 8443, map[string]string{mesh_proto.ServiceTag: "backend-2"}).
-				AddInbound("192.168.0.2", 80, 8080, map[string]string{mesh_proto.ServiceTag: "backend-3"}).
-				AddInbound("192.168.0.2", 443, 8443, map[string]string{mesh_proto.ServiceTag: "backend-4"}).
+				AddInbound(
+					builders.Inbound().
+						WithPort(80).
+						WithServicePort(8080).
+						WithService("backend-1"),
+				).
+				AddInbound(
+					builders.Inbound().
+						WithPort(443).
+						WithServicePort(8443).
+						WithService("backend-2"),
+				).
+				AddInbound(
+					builders.Inbound().
+						WithAddress("192.168.0.2").
+						WithPort(80).
+						WithServicePort(8080).
+						WithService("backend-3"),
+				).
+				AddInbound(
+					builders.Inbound().
+						WithAddress("192.168.0.2").
+						WithPort(443).
+						WithServicePort(8443).
+						WithService("backend-4"),
+				).
 				WithTransparentProxying(15001, 15006).
 				Build(),
 		)
@@ -240,10 +262,32 @@ var _ = Describe("GenerateSnapshot", func() {
 				WithMesh("demo").
 				WithVersion("1").
 				WithAddress("192.168.0.1").
-				AddInbound("", 80, 8080, map[string]string{mesh_proto.ServiceTag: "backend-1"}).
-				AddInbound("", 443, 8443, map[string]string{mesh_proto.ServiceTag: "backend-2"}).
-				AddInbound("192.168.0.2", 80, 8080, map[string]string{mesh_proto.ServiceTag: "backend-3"}).
-				AddInbound("192.168.0.2", 443, 8443, map[string]string{mesh_proto.ServiceTag: "backend-4"}).
+				AddInbound(
+					builders.Inbound().
+						WithPort(80).
+						WithServicePort(8080).
+						WithService("backend-1"),
+				).
+				AddInbound(
+					builders.Inbound().
+						WithPort(443).
+						WithServicePort(8443).
+						WithService("backend-2"),
+				).
+				AddInbound(
+					builders.Inbound().
+						WithAddress("192.168.0.2").
+						WithPort(80).
+						WithServicePort(8080).
+						WithService("backend-3"),
+				).
+				AddInbound(
+					builders.Inbound().
+						WithAddress("192.168.0.2").
+						WithPort(443).
+						WithServicePort(8443).
+						WithService("backend-4"),
+				).
 				AddOutboundToService("es-with-tls").
 				WithTransparentProxying(15001, 15006).
 				Build(),
