@@ -58,8 +58,8 @@ var _ = Describe("Metadata()", func() {
                 region: eu
                 version: v1
               envoy.transport_socket_match:
-                version: v1
-                region: eu`,
+                region: eu
+                version: v1`,
 		}),
 	)
 })
