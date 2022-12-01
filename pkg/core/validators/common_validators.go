@@ -55,7 +55,7 @@ func ValidateIntegerGreaterThanZeroOrNil(path PathBuilder, value *uint32) (err V
 
 func ValidateIntegerGreaterThan(path PathBuilder, value uint32, minValue uint32) (err ValidationError) {
 	if value <= minValue {
-		err.AddViolationAt(path, HasToBeGreaterThan)
+		err.AddViolationAt(path, fmt.Sprintf("%s %d", HasToBeGreaterThan, minValue))
 	}
 
 	return

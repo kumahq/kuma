@@ -167,7 +167,7 @@ from:
 				expected: `
 violations:
   - field: spec.from[0].default.local.http.requests
-    message: must be greater than
+    message: must be greater than 0
   - field: spec.from[0].default.local.http.interval
     message: 'must be greater than: 50ms'`}),
 			Entry("connections and interval needs to be defined", testCase{
@@ -185,7 +185,7 @@ from:
 				expected: `
 violations:
   - field: spec.from[0].default.local.tcp.connections
-    message: must be greater than
+    message: must be greater than 0
   - field: spec.from[0].default.local.tcp.interval
     message: 'must be greater than: 50ms'`}),
 			Entry("not allow invalid values", testCase{
@@ -205,11 +205,11 @@ from:
 				expected: `
 violations:
   - field: spec.from[0].default.local.http.requests
-    message: must be greater than
+    message: must be greater than 0
   - field: spec.from[0].default.local.http.interval
     message: 'must be greater than: 50ms'
   - field: spec.from[0].default.local.tcp.connections
-    message: must be greater than
+    message: must be greater than 0
   - field: spec.from[0].default.local.tcp.interval
     message: 'must be greater than: 50ms'`}),
 			Entry("not allow from to be MeshService for tcp", testCase{

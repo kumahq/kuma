@@ -63,9 +63,6 @@ func validateFrom(from []From) validators.ValidationError {
 func validateDefault(path validators.PathBuilder, conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
 	local := conf.Local
-	if local == nil {
-		return verr
-	}
 	path = path.Field("local")
 	if local.HTTP != nil {
 		verr.Add(validateLocalHttp(path.Field("http"), local.HTTP))
@@ -108,8 +105,5 @@ func hasTcpConfiguration(from []From) bool {
 }
 
 func isTcp(conf Conf) bool {
-	if conf.Local != nil && conf.Local.TCP != nil {
-		return true
-	}
-	return false
+	return conf.Local.TCP != nil
 }

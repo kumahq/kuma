@@ -27,7 +27,7 @@ type From struct {
 }
 
 type Conf struct {
-	Local *Local `json:"local,omitempty"`
+	Local Local `json:"local,omitempty"`
 }
 
 // LocalConf defines local http or/and tcp rate limit configuration
@@ -48,7 +48,7 @@ type LocalHTTP struct {
 	// +required
 	Requests uint32 `json:"requests,omitempty"`
 
-	// The the interval for which `requests` will be accounted.
+	// The interval for which `requests` will be accounted.
 	// +required
 	Interval k8s.Duration `json:"interval,omitempty"`
 
