@@ -10,7 +10,7 @@ type secretResource struct {
 }
 
 func (l *SecretResourceList) MarshalLog() interface{} {
-	list := make([]interface{}, len(l.Items))
+	list := make([]interface{}, 0, len(l.Items))
 	for _, res := range l.Items {
 		list = append(list, res.MarshalLog())
 	}
@@ -25,7 +25,7 @@ func (sr *SecretResource) MarshalLog() interface{} {
 }
 
 func (l *GlobalSecretResourceList) MarshalLog() interface{} {
-	list := make([]interface{}, len(l.Items))
+	list := make([]interface{}, 0, len(l.Items))
 	for _, res := range l.Items {
 		list = append(list, res.MarshalLog())
 	}

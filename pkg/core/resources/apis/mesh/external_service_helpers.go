@@ -1,7 +1,7 @@
 package mesh
 
 import (
-	"github.com/mitchellh/copystructure"
+	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 )
@@ -11,7 +11,7 @@ func (es *ExternalServiceResource) IsReachableFromZone(zone string) bool {
 }
 
 func (esl *ExternalServiceResourceList) MarshalLog() interface{} {
-	maskedList := make([]*ExternalServiceResource, len(esl.Items))
+	maskedList := make([]*ExternalServiceResource, 0, len(esl.Items))
 	for _, es := range esl.Items {
 		maskedList = append(maskedList, es.MarshalLog().(*ExternalServiceResource))
 	}
@@ -22,12 +22,7 @@ func (esl *ExternalServiceResourceList) MarshalLog() interface{} {
 }
 
 func (es *ExternalServiceResource) MarshalLog() interface{} {
-	c, err := copystructure.Copy(es)
-	if err != nil {
-		return nil
-	}
-	esCopy := c.(*ExternalServiceResource)
-	spec := esCopy.Spec
+	spec := proto.Clone(es.Spec).(*mesh_proto.ExternalService)
 	if spec == nil {
 		return es
 	}
@@ -42,5 +37,8 @@ func (es *ExternalServiceResource) MarshalLog() interface{} {
 	tls.CaCert = tls.CaCert.MaskInlineDatasource()
 	tls.ClientCert = tls.ClientCert.MaskInlineDatasource()
 	tls.ClientKey = tls.ClientKey.MaskInlineDatasource()
-	return esCopy
+	return ExternalServiceResource{
+		Meta: es.Meta,
+		Spec: spec,
+	}
 }

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mitchellh/copystructure"
+	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/ca/provided/config"
@@ -141,7 +141,7 @@ func ParseDuration(durationStr string) (time.Duration, error) {
 }
 
 func (ml *MeshResourceList) MarshalLog() interface{} {
-	maskedList := make([]*MeshResource, len(ml.Items))
+	maskedList := make([]*MeshResource, 0, len(ml.Items))
 	for _, mesh := range ml.Items {
 		maskedList = append(maskedList, mesh.MarshalLog().(*MeshResource))
 	}
@@ -152,12 +152,7 @@ func (ml *MeshResourceList) MarshalLog() interface{} {
 }
 
 func (m *MeshResource) MarshalLog() interface{} {
-	c, err := copystructure.Copy(m)
-	if err != nil {
-		return nil
-	}
-	meshCopy := c.(*MeshResource)
-	spec := meshCopy.Spec
+	spec := proto.Clone(m.Spec).(*mesh_proto.Mesh)
 	if spec == nil {
 		return m
 	}
@@ -182,5 +177,8 @@ func (m *MeshResource) MarshalLog() interface{} {
 			continue
 		}
 	}
-	return meshCopy
+	return MeshResource{
+		Meta: m.Meta,
+		Spec: spec,
+	}
 }
