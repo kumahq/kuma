@@ -60,6 +60,9 @@ var _ = Describe("GUI Server", func() {
 				// Remove the part of the file name that changes always
 				r := regexp.MustCompile(`index\.[a-z0-9]+\.`).ReplaceAll(in, []byte("index."))
 				r = regexp.MustCompile(`"[0-9]+\.[0-9]+\.[0-9]+[^"]*"`).ReplaceAll(r, []byte(`"0.0.0"`))
+				if r[len(r)-1] != '\n' {
+					r = append(r, '\n')
+				}
 				return r
 			}, matchers.MatchGoldenEqual(given.expectedFile)))
 		},
