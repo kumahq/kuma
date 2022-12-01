@@ -95,7 +95,7 @@ func (l LocalityLbEndpointsMap) asSlice() []*envoy_endpoint.LocalityLbEndpoints 
 	}
 
 	// sort the slice to ensure stable Envoy configuration
-	sort.SliceStable(slice, func(i, j int) bool {
+	sort.Slice(slice, func(i, j int) bool {
 		left, right := slice[i], slice[j]
 		leftLocality := left.GetLocality().GetRegion() + left.GetLocality().GetZone() + left.GetLocality().GetSubZone()
 		rightLocality := right.GetLocality().GetRegion() + right.GetLocality().GetZone() + right.GetLocality().GetSubZone()

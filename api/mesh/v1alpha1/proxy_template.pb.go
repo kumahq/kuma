@@ -89,7 +89,6 @@ type ProxyTemplateSource struct {
 	// +optional
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Types that are assignable to Type:
-	//
 	//	*ProxyTemplateSource_Profile
 	//	*ProxyTemplateSource_Raw
 	Type isProxyTemplateSource_Type `protobuf_oneof:"type"`
@@ -425,7 +424,6 @@ type ProxyTemplate_Modifications struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Type:
-	//
 	//	*ProxyTemplate_Modifications_Cluster_
 	//	*ProxyTemplate_Modifications_Listener_
 	//	*ProxyTemplate_Modifications_NetworkFilter_

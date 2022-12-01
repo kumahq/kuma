@@ -11,7 +11,6 @@ import (
 	"github.com/kumahq/kuma/pkg/cmd/version"
 	"github.com/kumahq/kuma/pkg/core"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
-
 	// import Envoy protobuf definitions so (un)marshaling Envoy protobuf works
 	_ "github.com/kumahq/kuma/pkg/xds/envoy"
 )
@@ -34,10 +33,10 @@ func newRootCmd() *cobra.Command {
 		Short: "Universal Control Plane for Envoy-based Service Mesh",
 		Long:  `Universal Control Plane for Envoy-based Service Mesh.`,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
-			// level, err := kuma_log.ParseLogLevel(args.logLevel)
-			// if err != nil {
-			// 	return err
-			// }
+			level, err := kuma_log.ParseLogLevel(args.logLevel)
+			if err != nil {
+				return err
+			}
 
 			if args.outputPath != "" {
 				output, err := filepath.Abs(args.outputPath)
@@ -46,9 +45,9 @@ func newRootCmd() *cobra.Command {
 				}
 
 				fmt.Printf("%s: logs will be stored in %q\n", "kuma-cp", output)
-				core.SetLogger(core.NewLoggerWithRotation(kuma_log.DebugLevel, output, args.maxSize, args.maxBackups, args.maxAge))
+				core.SetLogger(core.NewLoggerWithRotation(level, output, args.maxSize, args.maxBackups, args.maxAge))
 			} else {
-				core.SetLogger(core.NewLogger(kuma_log.DebugLevel))
+				core.SetLogger(core.NewLogger(level))
 			}
 
 			// once command line flags have been parsed,
@@ -62,7 +61,7 @@ func newRootCmd() *cobra.Command {
 	cmd.SetOut(os.Stdout)
 
 	// root flags
-	cmd.PersistentFlags().StringVar(&args.logLevel, "log-level", kuma_log.DebugLevel.String(), kuma_cmd.UsageOptions("log level", kuma_log.OffLevel, kuma_log.InfoLevel, kuma_log.DebugLevel))
+	cmd.PersistentFlags().StringVar(&args.logLevel, "log-level", kuma_log.InfoLevel.String(), kuma_cmd.UsageOptions("log level", kuma_log.OffLevel, kuma_log.InfoLevel, kuma_log.DebugLevel))
 	cmd.PersistentFlags().StringVar(&args.outputPath, "log-output-path", args.outputPath, "path to the file that will be filled with logs. Example: if we set it to /tmp/kuma.log then after the file is rotated we will have /tmp/kuma-2021-06-07T09-15-18.265.log")
 	cmd.PersistentFlags().IntVar(&args.maxBackups, "log-max-retained-files", 1000, "maximum number of the old log files to retain")
 	cmd.PersistentFlags().IntVar(&args.maxSize, "log-max-size", 100, "maximum size in megabytes of a log file before it gets rotated")

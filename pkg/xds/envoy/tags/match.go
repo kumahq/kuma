@@ -226,11 +226,3 @@ func MatchRuleRegex(subset core_xds.Subset) string {
 	}
 	return MatchingRegex(match)
 }
-
-// func MatchRulesRegex(rules core_xds.Rule) string {
-// 	var selectorRegexs []string
-// 	for _, rule := range rules.Subset {
-// 		selectorRegexs = append(selectorRegexs, MatchingRegex(selector.Match))
-// 	}
-// 	return RegexOR(selectorRegexs...)
-// }

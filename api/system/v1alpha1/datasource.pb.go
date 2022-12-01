@@ -28,7 +28,6 @@ type DataSource struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Type:
-	//
 	//	*DataSource_Secret
 	//	*DataSource_File
 	//	*DataSource_Inline

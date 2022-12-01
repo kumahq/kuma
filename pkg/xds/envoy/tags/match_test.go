@@ -142,32 +142,6 @@ var _ = Describe("MatchingRegex", func() {
 	)
 })
 
-
-var _ = Describe("RegexToMap", func() {
-
-	type testCase struct {
-		regex string 
-		expected    map[string]string
-	}
-
-	DescribeTable("should generate regex for matching service's tags",
-		func(given testCase) {
-			// when
-			regexStr := tags.RegexToMap(given.regex)
-
-			// then
-			Expect(regexStr).To(Equal(given.expected))
-		},
-		Entry("match 2 one value tags", testCase{
-			regex: ".*&kuma.io/service=[^&]*redis_in2[,&].*&test=[^&]*123[,&].*",
-			expected: map[string]string{
-				"kuma.io/service" : "redis_in2",
-				"test": "123",
-			},
-		}),
-	)
-})
-
 var _ = Describe("RegexOR", func() {
 
 	type testCase struct {

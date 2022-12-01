@@ -101,5 +101,3 @@ func MustToStruct(message proto.Message) *structpb.Struct {
 	}
 	return str
 }
-
-

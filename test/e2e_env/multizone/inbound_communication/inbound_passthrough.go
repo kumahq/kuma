@@ -1,8 +1,6 @@
 package inbound_communication
 
 import (
-	"time"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -102,7 +100,6 @@ func InboundPassthrough() {
 	Describe("k8s to k8s communication", func() {
 		It("should succeed when application binds to wildcard", func() {
 			// when
-			time.Sleep(3500*time.Hour)
 			response, err := client.CollectResponse(
 				env.KubeZone1, "demo-client", "k8s-test-server-wildcard.inbound-passthrough.svc.80.mesh",
 				client.FromKubernetesPod(namespace, "demo-client"),

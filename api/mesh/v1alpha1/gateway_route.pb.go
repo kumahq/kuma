@@ -404,7 +404,6 @@ type MeshGatewayRoute_Conf struct {
 	// protocol type.
 	//
 	// Types that are assignable to Route:
-	//
 	//	*MeshGatewayRoute_Conf_Tcp
 	//	*MeshGatewayRoute_Conf_Http
 	Route isMeshGatewayRoute_Conf_Route `protobuf_oneof:"route"`
@@ -607,7 +606,6 @@ type MeshGatewayRoute_HttpRoute_Filter struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Filter:
-	//
 	//	*MeshGatewayRoute_HttpRoute_Filter_RequestHeader
 	//	*MeshGatewayRoute_HttpRoute_Filter_Mirror_
 	//	*MeshGatewayRoute_HttpRoute_Filter_Redirect_
@@ -1205,7 +1203,6 @@ type MeshGatewayRoute_HttpRoute_Filter_Rewrite struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Path:
-	//
 	//	*MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplaceFull
 	//	*MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplacePrefixMatch
 	Path isMeshGatewayRoute_HttpRoute_Filter_Rewrite_Path `protobuf_oneof:"path"`

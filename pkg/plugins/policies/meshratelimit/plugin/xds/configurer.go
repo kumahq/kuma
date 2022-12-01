@@ -47,9 +47,9 @@ func (c *Configurer) configureRoutes(filterChain *envoy_listener.FilterChain) er
 		cluster := envoy_common.NewCluster(envoy_common.WithService(c.ClusterName))
 		for _, vh := range hcm.GetRouteConfig().GetVirtualHosts(){
 			existingRoutes := policies_xds.GatherRoutes(vh, true)
+			routes := envoy_common.Routes{}
 			// that means we have only one default route
 			if len(existingRoutes) == 1 {
-				routes := envoy_common.Routes{}
 				for _, rule := range c.From{
 					routes = append(routes, envoy_common.NewRoute(
 						envoy_common.WithCluster(cluster),
@@ -58,41 +58,39 @@ func (c *Configurer) configureRoutes(filterChain *envoy_listener.FilterChain) er
 					))
 				}
 
-				configurer := envoy_routes.RoutesConfigurer{
-					Routes: routes,
-				}
-				testVH := &envoy_route.VirtualHost{}
-				configurer.Configure(testVH)
-				testRoutes := testVH.Routes
-				testRoutes = append(testRoutes, vh.Routes...)
-				vh.Routes = testRoutes
+
 			}
 			if len(existingRoutes) > 1 {
-				routes := envoy_common.Routes{}
 				for _, rule := range c.From{
 					for _, route := range existingRoutes{
 						allTags := envoy_metadata.ExtractListOfTags(route.Metadata)
 						for _, tagz := range allTags{
-							cfg := rule.Subset.IsSubset(core_xds.SubsetFromTags(tagz))
-							if !cfg{
+							isSubset := rule.Subset.IsSubset(core_xds.SubsetFromTags(tagz))
+							if !isSubset && !rule.Conf.(policies_api.Conf).Local.HTTP.Disabled{
 								routes = append(routes, envoy_common.NewRoute(
 									envoy_common.WithCluster(cluster),
 									envoy_common.WithMatchHeaderRegex(envoy_routes.TagsHeaderName, tags.MatchRuleRegex(rule.Subset)),
 									envoy_common.WithMeshRateLimit(rule.Conf.(policies_api.Conf).Local.HTTP),
 								))
+							} else {
+								if rule.Conf.(policies_api.Conf).Local.HTTP.Disabled{
+									delete(route.TypedPerFilterConfig, "envoy.filters.http.local_ratelimit")
+								}
 							}
 						}
 					}
 				}
-				configurer := envoy_routes.RoutesConfigurer{
-					Routes: routes,
-				}
-				testVH := &envoy_route.VirtualHost{}
-				configurer.Configure(testVH)
-				testRoutes := testVH.Routes
-				testRoutes = append(testRoutes, vh.Routes...)
-				vh.Routes = testRoutes
 			}
+			configurer := envoy_routes.RoutesConfigurer{
+				Routes: routes,
+			}
+			newVh := &envoy_route.VirtualHost{}
+			// generate new routes with our defaults
+			configurer.Configure(newVh)
+			newRoutes := newVh.Routes
+			newRoutes = append(newRoutes, vh.Routes...)
+			// apply new routes to old object
+			vh.Routes = newRoutes
 		}
 		return nil
 	}
