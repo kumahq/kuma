@@ -30,6 +30,9 @@ type KdsServerConfig struct {
 	// MaxMsgSize defines a maximum size of the message that is exchanged using KDS.
 	// In practice this means a limit on full list of one resource type.
 	MaxMsgSize uint32 `yaml:"maxMsgSize" envconfig:"kuma_multizone_global_kds_max_msg_size"`
+	// MsgSendTimeout defines a timeout on sending a single KDS message.
+	// KDS stream between control planes is terminated if the control plane hits this timeout.
+	MsgSendTimeout time.Duration `yaml:"msgSendTimeout" envconfig:"kuma_multizone_global_kds_msg_send_timeout"`
 }
 
 var _ config.Config = &KdsServerConfig{}
@@ -73,6 +76,9 @@ type KdsClientConfig struct {
 	// MaxMsgSize defines a maximum size of the message that is exchanged using KDS.
 	// In practice this means a limit on full list of one resource type.
 	MaxMsgSize uint32 `yaml:"maxMsgSize" envconfig:"kuma_multizone_zone_kds_max_msg_size"`
+	// MsgSendTimeout defines a timeout on sending a single KDS message.
+	// KDS stream between control planes is terminated if the control plane hits this timeout.
+	MsgSendTimeout time.Duration `yaml:"msgSendTimeout" envconfig:"kuma_multizone_zone_kds_msg_send_timeout"`
 }
 
 var _ config.Config = &KdsClientConfig{}
