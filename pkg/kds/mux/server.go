@@ -146,7 +146,7 @@ func (s *server) StreamMessage(stream mesh_proto.MultiplexService_StreamMessageS
 	}
 	log := muxServerLog.WithValues("client-id", clientID)
 	log.Info("initializing Kuma Discovery Service (KDS) stream for global-zone sync of resources")
-	// The buffer size should be of a size of all inflight request, so we never writing to a buffer block.
+	// The buffer size should be of a size of all inflight request, so we never write to a blocked buffer.
 	// The buffer is separate for each direction (send/receive) on each multiplexed stream (global acting as server/global acting as client)
 	// A CP never sends multiple DiscoveryRequests for one resource type.
 	// A CP never sends multiple DiscoveryResponses for one resource type (it waits until peer answers with ACK/NACK)
