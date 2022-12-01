@@ -430,6 +430,62 @@ An additional option is to instead have two differnet "top-level" policies that
 both point to a new resource `HTTPRouteRules`, which holds the routes as
 previously described.
 
+##### No more `spec.targetRef`
+
+We don't need to have a strict `spec.targetRef` policy. Routes are fundamentally
+different from other policies. We can use only `from.targetRef` and `to.targetRef`.
+Both, one or none of these could be lists as well.
+
+###### In-mesh
+
+```yaml
+from:
+ targetRef:
+  kind: MeshService
+  name: frontend
+to:
+ targetRef:
+  kind: MeshService
+  name: backend
+```
+
+###### Edge gateway
+
+In order to configure a non-cross-mesh `MeshGateway` resource,
+the user points `to.targetRef` to a `MeshGateway`.
+
+```yaml
+to:
+ targetRef:
+  kind: MeshGateway
+  name: edge-gateway
+```
+
+###### Cross-mesh gateway
+
+For cross-mesh `MeshGateways`:
+
+```yaml
+to:
+ targetRef:
+  kind: MeshGateway
+  name: cross-mesh-gateway
+```
+
+would target _any requests_ from _any `Mesh`_ made to this `MeshGateway` whereas
+`kind: Mesh` must be used to target a specific `Mesh` as source:
+
+```yaml
+from:
+ targetRef:
+  kind: Mesh
+  name: other-mesh
+to:
+ targetRef:
+  kind: MeshGateway
+  name: cross-mesh-gateway
+```
+
 ##### `MeshGateway` as `to.targetRef`
 
 This is a somewhat different way of thinking about `targetRef` because here the
