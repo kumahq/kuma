@@ -28,6 +28,8 @@ integration.
 - Two resources: `MeshGatewayRoute` and `MeshTrafficRoute`
 - Unified resource for services and gateway: `MeshTrafficRoute`
 - Unified resources but one per protocol, e.g. `MeshHTTPRoute`, `MeshTCPRoute`
+- Two resources: `MeshGatewayRoute` and `MeshTrafficRoute`, which both point to
+  a `HTTPRouteRules` resource
 
 ## Decision Outcome
 
@@ -324,20 +326,21 @@ spec:
   - targetRef:
      kind: MeshService
      name: backend
-    default:
-     rules:
-      - matches:
-         path:
-          prefix: /v1
+    rules:
+     - matches:
+        path:
+         prefix: /v1
+       default:
         backendRefs:
          - weight: 100
            kind: MeshServiceSubset
            name: backend
            tags:
             version: v1
-      - matches:
-         path:
-          prefix: /v2
+     - matches:
+        path:
+         prefix: /v2
+       default:
         backendRefs:
          - weight: 100
            kind: MeshServiceSubset
@@ -355,22 +358,16 @@ spec:
   - targetRef:
      kind: MeshService
      name: backend
-    default:
-     rules:
-      - matches:
-         path:
-          prefix: /v2
+    rules:
+     - matches:
+        path:
+         prefix: /v2
+       default:
         filters:
-         - requestHeaderModifier:
+         - responseHeaderModifier:
             add:
              - name: env
                value: dev
-        backendRefs:
-         - weight: 100
-           kind: MeshService
-           name: backend
-           tags:
-            version: v2
 ```
 
 which gives us the rules:
@@ -404,22 +401,19 @@ spec:
               value: dev
        backendRefs:
         - weight: 100
-          kind: MeshService
+          kind: MeshServiceSubset
           name: backend
           tags:
            version: v2
 ```
 
 Here, the `/v1` rule from `owner` is unchanged and the `/v2` rule from
-`consumer` overrides that of `owner`.
+`consumer` merges with that of `owner`.
 
 #### `MeshGateway`
 
 This new resource is intended to replace the `MeshGatewayRoute` resource for
 configuring routes for a `MeshGateway`.
-
-There are two different ways we can express a `MeshGateway` attachment either as
-`spec.targetRef` & `to.targetRef` and `from.targetRef` & `spec.targetRef`.
 
 The core difference is that routes for a `MeshGateway` are fundamentally different from in-mesh
 routes because there's a proxy "in between" requests. That is, when I send a
@@ -427,6 +421,14 @@ request from service to service, the Envoy configuration and routing happens on 
 proxy side. When I send a request to a `MeshGateway`, the request reaches the
 `MeshGateway` proxy and _then_ gets routed, i.e. they're on the destination
 side.
+
+There are two different ways we can express a `MeshGateway` attachment given a
+unified `MeshHTTPRoute` resource. Either as
+`spec.targetRef` & `to.targetRef` and `from.targetRef` & `spec.targetRef`.
+
+An additional option is to instead have two differnet "top-level" policies that
+both point to a new resource `HTTPRouteRules`, which holds the routes as
+previously described.
 
 ##### `MeshGateway` as `to.targetRef`
 
@@ -525,6 +527,80 @@ from:
  - targetRef:
     kind: Mesh
     name: other-mesh
+```
+
+##### Different top-level policies
+
+A different option would be to have two top-level policies that both point to a
+new `HTTPRouteRules` resource. This resource would hold the rules themselves, whose schema
+is described already.
+
+One advantage of this is that it becomes possible to combine rules without
+relying on the behavior of `targetRef` specificity:
+
+```yaml
+---
+kind: HTTPRouteRules
+metadata:
+  name: owner-rules
+spec:
+  rules:
+  - matches:
+    ...
+  - matches:
+    ...
+---
+kind: MeshTrafficRoute
+spec:
+ targetRef:
+  kind: Mesh
+ to:
+  - targetRef:
+     kind: MeshService
+     name: backend
+    default:
+      rulesRefs:
+      - owner-rules
+---
+kind: MeshGatewayRoute
+spec:
+ targetRef:
+  kind: MeshGateway
+  name: cross-mesh
+ from:
+  - targetRef:
+     kind: Mesh
+     name: other-mesh
+    default:
+     rulesRefs:
+     - owner-rules
+```
+
+```yaml
+---
+kind: HTTPRouteRules
+metadata:
+  name: consumer-rules
+spec:
+  rules:
+  - matches:
+    ...
+  - matches:
+    ...
+---
+kind: MeshTrafficRoute
+spec:
+ targetRef:
+  kind: MeshService
+  name: frontend
+ to:
+  - targetRef:
+     kind: MeshService
+     name: backend
+    default:
+     rulesRefs:
+     - owner-rules
+     - consumer-rules
 ```
 
 #### Gateway API
