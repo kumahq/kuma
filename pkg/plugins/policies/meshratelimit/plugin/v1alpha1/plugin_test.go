@@ -95,7 +95,7 @@ var _ = Describe("MeshRateLimit", func() {
 			policies_xds.ResourceArrayShouldEqual(resourceSet.ListOf(envoy_resource.ListenerType), given.expectedListeners)
 		},
 
-		FEntry("basic inbound route", sidecarTestCase{
+		Entry("basic inbound route", sidecarTestCase{
 			resources: []core_xds.Resource{{
 				Name:   "inbound",
 				Origin: generator.OriginInbound,
@@ -110,10 +110,10 @@ var _ = Describe("MeshRateLimit", func() {
 									{
 										Match: &envoy_common.HttpMatch{
 											Headers: map[string]*envoy_common.StringMatcher{
-												v3.TagsHeaderName: &envoy_common.StringMatcher{
+												v3.TagsHeaderName: {
 													MatchType: envoy_common.Regex,
 													Value: tags.MatchingRegex(map[string]string{
-														"kuma.io/service": "web",
+														"kuma.io/service":  "web",
 														"kuma.io/protocol": "http",
 													}),
 												},
@@ -124,8 +124,8 @@ var _ = Describe("MeshRateLimit", func() {
 											envoy_common.WithWeight(100),
 										)},
 										Tags: []tags.Tags{
-											tags.Tags{
-												"kuma.io/service":"web",
+											{
+												"kuma.io/service":  "web",
 												"kuma.io/protocol": "http",
 											},
 										},
@@ -137,9 +137,9 @@ var _ = Describe("MeshRateLimit", func() {
 									{
 										Match: &envoy_common.HttpMatch{
 											Headers: map[string]*envoy_common.StringMatcher{
-												v3.TagsHeaderName: &envoy_common.StringMatcher{
+												v3.TagsHeaderName: {
 													MatchType: envoy_common.Regex,
-													Value: "web",
+													Value:     "web",
 												},
 											},
 										},
@@ -148,8 +148,8 @@ var _ = Describe("MeshRateLimit", func() {
 											envoy_common.WithWeight(100),
 										)},
 										Tags: []tags.Tags{
-											tags.Tags{
-												"kuma.io/service":"web",
+											{
+												"kuma.io/service":  "web",
 												"kuma.io/protocol": "http",
 											},
 										},
@@ -166,26 +166,26 @@ var _ = Describe("MeshRateLimit", func() {
 			fromRules: core_xds.FromRules{
 				Rules: map[xds.InboundListener]xds.Rules{
 					{Address: "127.0.0.1", Port: 17777}: {
-					{
-						Subset: core_xds.Subset{
-							{
-								Key: "kuma.io/service",
-								Value: "web",
-							},
-							{
-								Key: "kuma.io/protocol",
-								Value: "http",
-							},
-						},
-						Conf: api.Conf{
-							Local: &api.Local{
-								HTTP: &api.LocalHTTP{
-									Requests: 100,
-									Interval: v1.Duration{Duration: time.Hour*1},
+						{
+							Subset: core_xds.Subset{
+								{
+									Key:   "kuma.io/service",
+									Value: "web",
+								},
+								{
+									Key:   "kuma.io/protocol",
+									Value: "http",
 								},
 							},
-						},
-					}},
+							Conf: api.Conf{
+								Local: &api.Local{
+									HTTP: &api.LocalHTTP{
+										Requests: 100,
+										Interval: v1.Duration{Duration: time.Hour * 1},
+									},
+								},
+							},
+						}},
 				}},
 			expectedListeners: []string{`
             address:

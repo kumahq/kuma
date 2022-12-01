@@ -38,7 +38,7 @@ var _ = Describe("MatchingRegex", func() {
 			// then
 			Expect(matched).To(Equal(given.expected))
 		},
-		FEntry("match 2 one value tags", testCase{
+		Entry("match 2 one value tags", testCase{
 			serviceTags: mesh_proto.MultiValueTagSet{
 				"tag1": {"value1": true},
 				"tag2": {"value2": true},

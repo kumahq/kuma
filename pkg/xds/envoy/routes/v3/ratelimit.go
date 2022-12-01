@@ -4,26 +4,27 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_extensions_filters_http_local_ratelimit_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	"google.golang.org/protobuf/types/known/anypb"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
-func ToRateLimitConfiguraiton(rl *mesh_proto.RateLimit) *envoy_common.RateLimitConfiguration{
+func ToRateLimitConfiguraiton(rl *mesh_proto.RateLimit) *envoy_common.RateLimitConfiguration {
 	headers := []*envoy_common.Headers{}
-	for _, header := range rl.GetConf().GetHttp().GetOnRateLimit().GetHeaders(){
+	for _, header := range rl.GetConf().GetHttp().GetOnRateLimit().GetHeaders() {
 		headers = append(headers, &envoy_common.Headers{
-			Key: header.GetKey(),
-			Value: header.GetValue(),
+			Key:    header.GetKey(),
+			Value:  header.GetValue(),
 			Append: header.GetAppend().Value,
 		})
 	}
 	return &envoy_common.RateLimitConfiguration{
-		Interval:  rl.GetConf().GetHttp().GetInterval().AsDuration(), 
+		Interval: rl.GetConf().GetHttp().GetInterval().AsDuration(),
 		Requests: rl.GetConf().GetHttp().GetRequests(),
 		OnRateLimit: &envoy_common.OnRateLimit{
-			Status: rl.GetConf().GetHttp().GetOnRateLimit().GetStatus().GetValue(),
+			Status:  rl.GetConf().GetHttp().GetOnRateLimit().GetStatus().GetValue(),
 			Headers: headers,
 		},
 	}

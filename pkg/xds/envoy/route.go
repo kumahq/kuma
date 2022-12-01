@@ -141,12 +141,12 @@ func WithMetadataTags(selectors []*mesh_proto.Selector) NewRouteOpt {
 	})
 }
 
-func tagsFromProto(selectors []*mesh_proto.Selector) []tags.Tags{
-		tags := make([]tags.Tags, len(selectors))
-		for _, selector := range selectors {
-			tags = append(tags, selector.Match)
-		}
-		return tags
+func tagsFromProto(selectors []*mesh_proto.Selector) []tags.Tags {
+	tags := make([]tags.Tags, len(selectors))
+	for _, selector := range selectors {
+		tags = append(tags, selector.Match)
+	}
+	return tags
 }
 
 func rateLimitFromPolicy(rl *policies_api.LocalHTTP) *RateLimitConfiguration {
@@ -156,7 +156,7 @@ func rateLimitFromPolicy(rl *policies_api.LocalHTTP) *RateLimitConfiguration {
 	}
 	headers := []*Headers{}
 	if rl.OnRateLimit != nil {
-		for _, header := range rl.OnRateLimit.Headers{
+		for _, header := range rl.OnRateLimit.Headers {
 			headers = append(headers, &Headers{
 				Key:    header.Key,
 				Value:  header.Value,

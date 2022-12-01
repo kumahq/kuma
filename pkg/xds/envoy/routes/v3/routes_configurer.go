@@ -7,12 +7,12 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
 )
 
@@ -91,7 +91,7 @@ func (c RoutesConfigurer) routeMatch(match *envoy_common.HttpMatch) *envoy_route
 	for _, headerName := range headers {
 		envoyMatch.Headers = append(envoyMatch.Headers, c.headerMatcher(headerName, match.Headers[headerName]))
 	}
-	if match.Method != nil{
+	if match.Method != nil {
 		envoyMatch.Headers = append(envoyMatch.Headers, c.headerMatcher(":method", match.Method))
 	}
 
@@ -102,7 +102,7 @@ func (c RoutesConfigurer) headerMatcher(name string, matcher *envoy_common.Strin
 	headerMatcher := &envoy_route.HeaderMatcher{
 		Name: name,
 	}
-	switch matcher.MatchType{
+	switch matcher.MatchType {
 	case envoy_common.Prefix:
 		headerMatcher.HeaderMatchSpecifier = &envoy_route.HeaderMatcher_PrefixMatch{
 			PrefixMatch: matcher.Value,
@@ -133,7 +133,7 @@ func (c RoutesConfigurer) setPathMatcher(
 	matcher *envoy_common.StringMatcher,
 	routeMatch *envoy_route.RouteMatch,
 ) {
-	switch matcher.MatchType{
+	switch matcher.MatchType {
 	case envoy_common.Prefix:
 		routeMatch.PathSpecifier = &envoy_route.RouteMatch_Prefix{
 			Prefix: matcher.Value,
@@ -252,18 +252,18 @@ func (c *RoutesConfigurer) typedPerFilterConfig(route *envoy_common.Route) (map[
 	return typedPerFilterConfig, nil
 }
 
-func (c *RoutesConfigurer) getMetadata(route *envoy_common.Route) *envoy_core.Metadata{
+func (c *RoutesConfigurer) getMetadata(route *envoy_common.Route) *envoy_core.Metadata {
 	return &envoy_core.Metadata{
 		FilterMetadata: map[string]*structpb.Struct{
 			envoy_metadata.RouteTagsKey: {
 				Fields: map[string]*structpb.Value{
-					"selectors" : {
+					"selectors": {
 						Kind: &structpb.Value_ListValue{
 							ListValue: envoy_metadata.MetadataListValues(route.Tags),
 						},
 					},
 				},
-			},	
+			},
 		},
 	}
 }

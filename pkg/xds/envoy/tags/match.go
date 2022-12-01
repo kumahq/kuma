@@ -220,7 +220,7 @@ func MatchSourceRegex(policy core_policy.ConnectionPolicy) string {
 func MatchRuleRegex(subset core_xds.Subset) string {
 	match := map[string]string{}
 	for _, selector := range subset {
-		if !selector.Not{
+		if !selector.Not {
 			match[selector.Key] = selector.Value
 		}
 	}

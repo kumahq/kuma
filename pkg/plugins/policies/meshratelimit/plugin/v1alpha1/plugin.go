@@ -71,15 +71,14 @@ func applyToInbounds(fromRules core_xds.FromRules, inboundListeners map[core_xds
 }
 
 func configure(rules core_xds.Rules,
-	 subset core_xds.Subset,
-	  dataplanePort uint32,
-	   listener *envoy_listener.Listener,
-	   dataplane *core_mesh.DataplaneResource) error {
-
+	subset core_xds.Subset,
+	dataplanePort uint32,
+	listener *envoy_listener.Listener,
+	dataplane *core_mesh.DataplaneResource) error {
 	configurer := plugin_xds.Configurer{
-		From: rules,
+		From:        rules,
 		ClusterName: envoy_names.GetLocalClusterName(dataplanePort),
-		Dataplane: dataplane,
+		Dataplane:   dataplane,
 	}
 
 	for _, chain := range listener.FilterChains {
