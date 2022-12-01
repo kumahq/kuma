@@ -8,6 +8,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_policy "github.com/kumahq/kuma/pkg/core/policy"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
 type Tags map[string]string
@@ -214,6 +215,16 @@ func MatchSourceRegex(policy core_policy.ConnectionPolicy) string {
 		selectorRegexs = append(selectorRegexs, MatchingRegex(selector.Match))
 	}
 	return RegexOR(selectorRegexs...)
+}
+
+func MatchRuleRegex(subset core_xds.Subset) string {
+	match := map[string]string{}
+	for _, selector := range subset {
+		if !selector.Not{
+			match[selector.Key] = selector.Value
+		}
+	}
+	return MatchingRegex(match)
 }
 
 // func MatchRulesRegex(rules core_xds.Rule) string {

@@ -41,6 +41,20 @@ func LbMetadata(tags tags.Tags) *envoy_core.Metadata {
 	}
 }
 
+func MetadataListValues(tags []tags.Tags) *structpb.ListValue {
+	list := &structpb.ListValue{}
+	for _, tag := range tags {
+		list.Values = append(list.Values, &structpb.Value{
+			Kind: &structpb.Value_StructValue{
+				StructValue: &structpb.Struct{
+					Fields: MetadataFields(tag),
+				},
+			},
+		})
+	}
+	return list
+}
+
 func MetadataFields(tags tags.Tags) map[string]*structpb.Value {
 	fields := map[string]*structpb.Value{}
 	for key, value := range tags {
@@ -54,6 +68,7 @@ func MetadataFields(tags tags.Tags) map[string]*structpb.Value {
 }
 
 const TagsKey = "io.kuma.tags"
+const RouteTagsKey = "io.kuma.route.tags"
 
 func ExtractTags(metadata *envoy_core.Metadata) tags.Tags {
 	tags := tags.Tags{}
@@ -61,4 +76,20 @@ func ExtractTags(metadata *envoy_core.Metadata) tags.Tags {
 		tags[key] = value.GetStringValue()
 	}
 	return tags
+}
+
+func ExtractListOfTags(metadata *envoy_core.Metadata) []tags.Tags {
+	allTags := []tags.Tags{}
+	for _, value := range metadata.GetFilterMetadata()[RouteTagsKey].GetFields() {
+		val := value.GetListValue()
+		for _, entry := range val.GetValues() {
+			metadataTags := entry.GetStructValue()
+			selectorTags := tags.Tags{}
+			for header, headerValue := range metadataTags.GetFields() {
+				selectorTags[header] = headerValue.GetStringValue()
+			}
+			allTags = append(allTags, selectorTags)
+		}
+	}
+	return allTags
 }

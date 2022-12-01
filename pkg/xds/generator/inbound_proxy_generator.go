@@ -81,6 +81,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 			routes = append(routes, envoy_common.NewRoute(
 				envoy_common.WithCluster(cluster),
 				envoy_common.WithMatchHeaderRegex(envoy_routes.TagsHeaderName, tags.MatchSourceRegex(rl)),
+				envoy_common.WithMetadataTags(rl.Sources()),
 				envoy_common.WithRateLimit(rl.Spec),
 			))
 		}

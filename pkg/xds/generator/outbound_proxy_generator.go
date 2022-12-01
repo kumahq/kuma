@@ -417,22 +417,16 @@ func (OutboundProxyGenerator) determineRoutes(
 
 		// backwards compatibility to support RateLimit for ExternalServices without ZoneEgress
 		if hasEgress {
-			return append(routes, envoy_common.Route{
-				Match:    match,
-				Modify:   modify,
-				Clusters: clusters,
-			})
+			return append(routes, envoy_common.NewRouteFromProto(
+				match,modify,nil, nil, clusters))
 		} else {
 			var rlSpec *mesh_proto.RateLimit
 			if rateLimit != nil {
 				rlSpec = rateLimit.Spec
 			}
-			return append(routes, envoy_common.Route{
-				Match:     match,
-				Modify:    modify,
-				RateLimit: rlSpec,
-				Clusters:  clusters,
-			})
+			return append(routes, envoy_common.NewRouteFromProto(
+				match,modify,rlSpec, rlSpec.GetDestinations() ,clusters,
+			))
 		}
 	}
 

@@ -13,6 +13,7 @@ import (
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/plugin/xds"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -61,8 +62,7 @@ func applyToInbounds(fromRules core_xds.FromRules, inboundListeners map[core_xds
 			continue
 		}
 
-		protocol := core_mesh.ParseProtocol(inbound.GetProtocol())
-		if err := configure(rules, xds.MeshSubset(), protocol, listener, dataplane); err != nil {
+		if err := configure(rules, xds.MeshSubset(), iface.DataplanePort, listener, dataplane); err != nil {
 			return err
 		}
 	}
@@ -72,22 +72,14 @@ func applyToInbounds(fromRules core_xds.FromRules, inboundListeners map[core_xds
 
 func configure(rules core_xds.Rules,
 	 subset core_xds.Subset,
-	  protocol core_mesh.Protocol,
+	  dataplanePort uint32,
 	   listener *envoy_listener.Listener,
 	   dataplane *core_mesh.DataplaneResource) error {
-	var conf api.Conf
-	if computed := rules.Compute(subset); computed != nil {
-		conf = computed.Conf.(api.Conf)
-	} else {
-		return nil
-	}
 
 	configurer := plugin_xds.Configurer{
 		From: rules,
-		Http: conf.Local.HTTP,
-		Tcp:  conf.Local.TCP,
+		ClusterName: envoy_names.GetLocalClusterName(dataplanePort),
 		Dataplane: dataplane,
-		Protocol: protocol,
 	}
 
 	for _, chain := range listener.FilterChains {

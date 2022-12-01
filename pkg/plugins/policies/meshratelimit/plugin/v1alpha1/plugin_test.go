@@ -6,10 +6,8 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/durationpb"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -110,12 +108,14 @@ var _ = Describe("MeshRateLimit", func() {
 								"backend",
 								envoy_common.Routes{
 									{
-										Match: &mesh_proto.TrafficRoute_Http_Match{
-											Headers: map[string]*mesh_proto.TrafficRoute_Http_Match_StringMatcher{
-												v3.TagsHeaderName: &v1alpha1.TrafficRoute_Http_Match_StringMatcher{
-													MatcherType: &v1alpha1.TrafficRoute_Http_Match_StringMatcher_Regex{
-														Regex: tags.RegexOR("web"),
-													},
+										Match: &envoy_common.HttpMatch{
+											Headers: map[string]*envoy_common.StringMatcher{
+												v3.TagsHeaderName: &envoy_common.StringMatcher{
+													MatchType: envoy_common.Regex,
+													Value: tags.MatchingRegex(map[string]string{
+														"kuma.io/service": "web",
+														"kuma.io/protocol": "http",
+													}),
 												},
 											},
 										},
@@ -123,18 +123,39 @@ var _ = Describe("MeshRateLimit", func() {
 											envoy_common.WithService("backend"),
 											envoy_common.WithWeight(100),
 										)},
-										RateLimit: &mesh_proto.RateLimit{
-											Sources: []*mesh_proto.Selector{
-												&mesh_proto.Selector{Match: map[string]string{
-													"service":"web",
-												}},
+										Tags: []tags.Tags{
+											tags.Tags{
+												"kuma.io/service":"web",
+												"kuma.io/protocol": "http",
 											},
-											Destinations: []*mesh_proto.Selector{
-												&mesh_proto.Selector{Match: map[string]string{"service": "test"}},
+										},
+										RateLimit: &envoy_common.RateLimitConfiguration{
+											Interval: time.Duration(1 * time.Second),
+											Requests: 1222,
+										},
+									},
+									{
+										Match: &envoy_common.HttpMatch{
+											Headers: map[string]*envoy_common.StringMatcher{
+												v3.TagsHeaderName: &envoy_common.StringMatcher{
+													MatchType: envoy_common.Regex,
+													Value: "web",
+												},
 											},
-											Conf: &mesh_proto.RateLimit_Conf{
-												Http: &mesh_proto.RateLimit_Conf_Http{Requests: 100, Interval: durationpb.New(time.Hour*100)},
+										},
+										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+											envoy_common.WithService("backend"),
+											envoy_common.WithWeight(100),
+										)},
+										Tags: []tags.Tags{
+											tags.Tags{
+												"kuma.io/service":"web",
+												"kuma.io/protocol": "http",
 											},
+										},
+										RateLimit: &envoy_common.RateLimitConfiguration{
+											Interval: time.Duration(1 * time.Second),
+											Requests: 1222,
 										},
 									},
 								},
@@ -144,7 +165,18 @@ var _ = Describe("MeshRateLimit", func() {
 			}},
 			fromRules: core_xds.FromRules{
 				Rules: map[xds.InboundListener]xds.Rules{
-					{Address: "127.0.0.1", Port: 17777}: {{
+					{Address: "127.0.0.1", Port: 17777}: {
+					{
+						Subset: core_xds.Subset{
+							{
+								Key: "kuma.io/service",
+								Value: "web",
+							},
+							{
+								Key: "kuma.io/protocol",
+								Value: "http",
+							},
+						},
 						Conf: api.Conf{
 							Local: &api.Local{
 								HTTP: &api.LocalHTTP{
