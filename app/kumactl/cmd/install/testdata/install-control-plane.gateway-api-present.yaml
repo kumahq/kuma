@@ -640,8 +640,8 @@ spec:
                                     disabled. Default: false'
                                   type: boolean
                                 interval:
-                                  description: The the interval for which `requests`
-                                    will be accounted.
+                                  description: The interval for which `requests` will
+                                    be accounted.
                                   type: string
                                 onRateLimit:
                                   description: Describes the actions to take on a
