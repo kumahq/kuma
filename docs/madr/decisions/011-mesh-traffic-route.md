@@ -424,7 +424,7 @@ side.
 
 There are two different ways we can express a `MeshGateway` attachment given a
 unified `MeshHTTPRoute` resource. Either as
-`spec.targetRef` & `to.targetRef` and `from.targetRef` & `spec.targetRef`.
+`spec.targetRef` & `to.targetRef` or `from.targetRef` & `spec.targetRef`.
 
 An additional option is to instead have two differnet "top-level" policies that
 both point to a new resource `HTTPRouteRules`, which holds the routes as
