@@ -79,8 +79,6 @@ data:
       echo "/kuma/missing/crds.yaml not found or empty, it looks like there is no missing crds"
     fi
   save_missing_crds.sh: |
-    #!/usr/bin/env sh
-
     missing_crds="$(kumactl install crds --only-missing {{ if .Values.experimental.gatewayAPI }}--experimental-gatewayapi{{end}})"
 
     if [ -n "${missing_crds}" ]; then
@@ -158,7 +156,7 @@ spec:
           - mountPath: /kuma/scripts
             name: scripts
             readOnly: true
-          command:
+          args:
           - '/kuma/scripts/save_missing_crds.sh'
       volumes:
         - name: scripts

@@ -108,6 +108,10 @@ func UpstreamTlsContextOutsideMesh(ca, cert, key []byte, allowRenegotiation bool
 			tlsContext.CommonTlsContext = &envoy_tls.CommonTlsContext{}
 		}
 		var matchNames []*envoy_tls.SubjectAltNameMatcher
+		var subjectAltNameMatch = hostname
+		if len(sni) > 0 {
+			subjectAltNameMatch = sni
+		}
 		for _, typ := range []envoy_tls.SubjectAltNameMatcher_SanType{
 			envoy_tls.SubjectAltNameMatcher_DNS,
 			envoy_tls.SubjectAltNameMatcher_IP_ADDRESS,
@@ -116,7 +120,7 @@ func UpstreamTlsContextOutsideMesh(ca, cert, key []byte, allowRenegotiation bool
 				SanType: typ,
 				Matcher: &envoy_type_matcher.StringMatcher{
 					MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
-						Exact: hostname,
+						Exact: subjectAltNameMatch,
 					},
 				},
 			})
