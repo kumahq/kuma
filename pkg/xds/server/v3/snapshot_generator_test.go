@@ -144,6 +144,7 @@ var _ = Describe("GenerateSnapshot", func() {
 			},
 			Mesh: mCtx,
 		}, proxy)
+		Expect(err).ToNot(HaveOccurred())
 
 		resp, err := util_cache_v3.ToDeltaDiscoveryResponse(*s)
 		Expect(err).ToNot(HaveOccurred())
