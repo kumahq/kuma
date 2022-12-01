@@ -88,11 +88,13 @@ var _ = Describe("GenerateSnapshot", func() {
 	var proxyBuilder *sync.DataplaneProxyBuilder
 	var mCtxBuilder xds_context.MeshContextBuilder
 
-	rand.Seed(time.Now().UnixNano())
+	rand.Seed(GinkgoRandomSeed())
 
 	BeforeEach(func() {
 
 		store = &shuffleStore{memory.NewStore()}
+		store = core_store.NewPaginationStore(store)
+
 		rm := manager.NewResourceManager(store)
 
 		gen = &v3.TemplateSnapshotGenerator{

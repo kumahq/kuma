@@ -1,8 +1,6 @@
 package context
 
 import (
-	"sort"
-
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -42,14 +40,6 @@ func (r Resources) ListOrEmpty(resourceType core_model.ResourceType) core_model.
 
 func (r Resources) ExternalServices() *core_mesh.ExternalServiceResourceList {
 	return r.ListOrEmpty(core_mesh.ExternalServiceType).(*core_mesh.ExternalServiceResourceList)
-}
-
-func (r Resources) ExternalServicesSorted() *core_mesh.ExternalServiceResourceList {
-	ess := r.ExternalServices()
-	sort.Slice(ess.Items, func(a, b int) bool {
-		return ess.Items[a].GetMeta().GetName() < ess.Items[b].GetMeta().GetName()
-	})
-	return ess
 }
 
 func (r Resources) HealthChecks() *core_mesh.HealthCheckResourceList {

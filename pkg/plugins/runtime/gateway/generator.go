@@ -143,7 +143,7 @@ func GatewayListenerInfoFromProxy(
 		collapsed[ep.GetPort()] = append(collapsed[ep.GetPort()], ep)
 	}
 
-	externalServices := meshCtx.Resources.ExternalServicesSorted()
+	externalServices := meshCtx.Resources.ExternalServices()
 
 	var listenerInfos []GatewayListenerInfo
 

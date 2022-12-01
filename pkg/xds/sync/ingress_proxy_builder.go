@@ -2,7 +2,6 @@ package sync
 
 import (
 	"context"
-	"sort"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
@@ -153,26 +152,17 @@ func (p *IngressProxyBuilder) updateIngress(ctx context.Context, zoneIngress *co
 }
 
 func (p *IngressProxyBuilder) getIngressExternalServices(ctx context.Context) (*core_mesh.ExternalServiceResourceList, error) {
-	var meshList core_mesh.MeshResourceList
-	if err := p.ReadOnlyResManager.List(ctx, &meshList); err != nil {
+	meshList := &core_mesh.MeshResourceList{}
+	if err := p.ReadOnlyResManager.List(ctx, meshList, core_store.ListByFilterFunc(func(rs core_model.Resource) bool {
+		// using FilterFunc will trigger sorting by the 'paginationStore'
+		return rs.(*core_mesh.MeshResource).ZoneEgressEnabled()
+	})); err != nil {
 		return nil, err
 	}
 
-	var meshes []*core_mesh.MeshResource
-
-	for _, mesh := range meshList.Items {
-		if mesh.ZoneEgressEnabled() {
-			meshes = append(meshes, mesh)
-		}
-	}
-
-	sort.Slice(meshes, func(a, b int) bool {
-		return meshes[a].GetMeta().GetName() < meshes[b].GetMeta().GetName()
-	})
-
 	allMeshExternalServices := &core_mesh.ExternalServiceResourceList{}
 	var externalServices []*core_mesh.ExternalServiceResource
-	for _, mesh := range meshes {
+	for _, mesh := range meshList.GetItems() {
 		meshName := mesh.GetMeta().GetName()
 
 		meshCtx, err := p.meshCache.GetMeshContext(ctx, syncLog, meshName)
@@ -180,7 +170,7 @@ func (p *IngressProxyBuilder) getIngressExternalServices(ctx context.Context) (*
 			return nil, err
 		}
 
-		meshExternalServices := meshCtx.Resources.ExternalServicesSorted().Items
+		meshExternalServices := meshCtx.Resources.ExternalServices().Items
 
 		// look for external services that are only available in my zone and expose them
 		for _, es := range meshExternalServices {

@@ -77,7 +77,7 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 	meshContext xds_context.MeshContext,
 	dataplane *core_mesh.DataplaneResource,
 ) (*core_xds.Routing, core_xds.DestinationMap, error) {
-	matchedExternalServices, err := permissions.MatchExternalServicesTrafficPermissions(dataplane, meshContext.Resources.ExternalServicesSorted(), meshContext.Resources.TrafficPermissions())
+	matchedExternalServices, err := permissions.MatchExternalServicesTrafficPermissions(dataplane, meshContext.Resources.ExternalServices(), meshContext.Resources.TrafficPermissions())
 	if err != nil {
 		return nil, nil, err
 	}

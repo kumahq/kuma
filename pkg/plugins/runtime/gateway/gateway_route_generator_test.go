@@ -4,7 +4,6 @@ import (
 	"context"
 	"math/rand"
 	"path"
-	"time"
 
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -1876,7 +1875,7 @@ conf:
 		DescribeTable("generating xDS resources",
 			func(goldenFileName string, fixtureResources ...string) {
 				// given
-				rand.Seed(time.Now().UnixNano())
+				rand.Seed(GinkgoRandomSeed())
 				rand.Shuffle(len(fixtureResources), func(i, j int) {
 					fixtureResources[i], fixtureResources[j] = fixtureResources[j], fixtureResources[i]
 				})

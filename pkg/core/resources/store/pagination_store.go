@@ -46,7 +46,7 @@ func (p *paginationStore) List(ctx context.Context, list model.ResourceList, opt
 	opts := NewListOptions(optionsFunc...)
 
 	// Performance optimization
-	if opts.FilterFunc == nil && opts.PageSize == 0 && opts.PageOffset == "" {
+	if opts.FilterFunc == nil && opts.PageSize == 0 && opts.PageOffset == "" && !opts.Ordered {
 		return p.delegate.List(ctx, list, optionsFunc...)
 	}
 
