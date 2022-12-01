@@ -44,7 +44,7 @@ image/base-root: ## Dev: Rebuild `kuma-base-root` Docker image
 	docker build -t $(KUMA_BASE_ROOT_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --platform=linux/${GOARCH} -f $(TOOLS_DIR)/releases/dockerfiles/Dockerfile.base-root .
 
 .PHONY: image/envoy
-image/envoy: ## Dev: Rebuild `envoy` Docker image
+image/envoy: build/artifacts-linux-${GOARCH}/envoy/envoy ## Dev: Rebuild `envoy` Docker image
 	docker build -t $(KUMA_ENVOY_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --platform=linux/${GOARCH} --build-arg ENVOY_VERSION=${ENVOY_VERSION} -f $(TOOLS_DIR)/releases/dockerfiles/Dockerfile.envoy .
 
 .PHONY: images/supporting
