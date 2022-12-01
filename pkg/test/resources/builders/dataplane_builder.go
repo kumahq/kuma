@@ -103,9 +103,19 @@ func (d *DataplaneBuilder) AddInboundOfTags(tags ...string) *DataplaneBuilder {
 }
 
 func (d *DataplaneBuilder) AddInboundOfTagsMap(tags map[string]string) *DataplaneBuilder {
+	return d.AddInbound(
+		"",
+		FirstInboundPort+uint32(len(d.res.Spec.Networking.Inbound)),
+		FirstInboundServicePort+uint32(len(d.res.Spec.Networking.Inbound)),
+		tags,
+	)
+}
+
+func (d *DataplaneBuilder) AddInbound(addr string, port, servicePort uint32, tags map[string]string) *DataplaneBuilder {
 	d.res.Spec.Networking.Inbound = append(d.res.Spec.Networking.Inbound, &mesh_proto.Dataplane_Networking_Inbound{
-		Port:        FirstInboundPort + uint32(len(d.res.Spec.Networking.Inbound)),
-		ServicePort: FirstInboundServicePort + uint32(len(d.res.Spec.Networking.Inbound)),
+		Address:     addr,
+		Port:        port,
+		ServicePort: servicePort,
 		Tags:        tags,
 	})
 	return d
@@ -124,6 +134,14 @@ func (d *DataplaneBuilder) AddOutboundToService(service string) *DataplaneBuilde
 func (d *DataplaneBuilder) AddOutboundsToServices(services ...string) *DataplaneBuilder {
 	for _, service := range services {
 		d.AddOutboundToService(service)
+	}
+	return d
+}
+
+func (d *DataplaneBuilder) WithTransparentProxying(redirectPortOutbound, redirectPortInbound uint32) *DataplaneBuilder {
+	d.res.Spec.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{
+		RedirectPortInbound:  redirectPortInbound,
+		RedirectPortOutbound: redirectPortOutbound,
 	}
 	return d
 }

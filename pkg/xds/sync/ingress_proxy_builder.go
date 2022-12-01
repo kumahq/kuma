@@ -166,6 +166,10 @@ func (p *IngressProxyBuilder) getIngressExternalServices(ctx context.Context) (*
 		}
 	}
 
+	sort.Slice(meshes, func(a, b int) bool {
+		return meshes[a].GetMeta().GetName() < meshes[b].GetMeta().GetName()
+	})
+
 	allMeshExternalServices := &core_mesh.ExternalServiceResourceList{}
 	var externalServices []*core_mesh.ExternalServiceResource
 	for _, mesh := range meshes {
@@ -176,7 +180,7 @@ func (p *IngressProxyBuilder) getIngressExternalServices(ctx context.Context) (*
 			return nil, err
 		}
 
-		meshExternalServices := meshCtx.Resources.ExternalServices().Items
+		meshExternalServices := meshCtx.Resources.ExternalServicesSorted().Items
 
 		// look for external services that are only available in my zone and expose them
 		for _, es := range meshExternalServices {
@@ -185,11 +189,6 @@ func (p *IngressProxyBuilder) getIngressExternalServices(ctx context.Context) (*
 			}
 		}
 	}
-
-	// It's done for achieving stable xds config
-	sort.Slice(externalServices, func(a, b int) bool {
-		return externalServices[a].GetMeta().GetName() < externalServices[b].GetMeta().GetName()
-	})
 
 	allMeshExternalServices.Items = externalServices
 	return allMeshExternalServices, nil

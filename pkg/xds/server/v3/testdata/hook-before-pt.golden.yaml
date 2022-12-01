@@ -123,20 +123,7 @@ resources:
       - name: envoy.filters.network.rbac
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules:
-            policies:
-              tp-1:
-                permissions:
-                - any: true
-                principals:
-                - andIds:
-                    ids:
-                    - authenticated:
-                        principalName:
-                          exact: kuma://version/1.0
-                    - authenticated:
-                        principalName:
-                          exact: spiffe://default/web1
+          rules: {}
           statPrefix: inbound_192_168_0_1_80.
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
