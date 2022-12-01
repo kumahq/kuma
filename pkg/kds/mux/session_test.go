@@ -90,6 +90,8 @@ func (t *testMultiplexStream) CheckInvariants() error {
 
 var _ = Describe("Multiplex Session", func() {
 
+	const msgBufferSize = uint32(50)
+
 	Context("basic Send/Recv operations", func() {
 		var clientSession mux.Session
 		var serverSession mux.Session
@@ -97,8 +99,8 @@ var _ = Describe("Multiplex Session", func() {
 		BeforeEach(func() {
 			input := make(chan *mesh_proto.Message, 1)
 			output := make(chan *mesh_proto.Message, 1)
-			clientSession = mux.NewSession("global", NewTestMultiplexStream(context.Background(), input, output))
-			serverSession = mux.NewSession("zone-1", NewTestMultiplexStream(context.Background(), output, input))
+			clientSession = mux.NewSession("global", NewTestMultiplexStream(context.Background(), input, output), msgBufferSize, 10*time.Second)
+			serverSession = mux.NewSession("zone-1", NewTestMultiplexStream(context.Background(), output, input), msgBufferSize, 10*time.Second)
 		})
 
 		It("should Send to clientSession's ClientStream and Recv from serverSession's ServerStream", func() {
@@ -108,6 +110,7 @@ var _ = Describe("Multiplex Session", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(msg.VersionInfo).To(Equal("1"))
 		})
+
 		It("should Send to serverSession's ServerStream and Recv from clientSession's ClientStream", func() {
 			err := serverSession.ServerStream().Send(&envoy_sd.DiscoveryResponse{VersionInfo: "2"})
 			Expect(err).ToNot(HaveOccurred())
@@ -115,6 +118,7 @@ var _ = Describe("Multiplex Session", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(msg.VersionInfo).To(Equal("2"))
 		})
+
 		It("should Send to clientSession's ServerStream and Recv from serverSession's ClientStream", func() {
 			err := clientSession.ServerStream().Send(&envoy_sd.DiscoveryResponse{VersionInfo: "3"})
 			Expect(err).ToNot(HaveOccurred())
@@ -122,6 +126,7 @@ var _ = Describe("Multiplex Session", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(msg.VersionInfo).To(Equal("3"))
 		})
+
 		It("should Send to serverSession's ClientStream and Recv from clientSession's ServerStream", func() {
 			err := serverSession.ClientStream().Send(&envoy_sd.DiscoveryRequest{VersionInfo: "4"})
 			Expect(err).ToNot(HaveOccurred())
@@ -138,7 +143,7 @@ var _ = Describe("Multiplex Session", func() {
 		output := make(chan *mesh_proto.Message, 1)
 		ctx, cancelCtx := context.WithCancel(context.Background())
 		muxStream := NewTestMultiplexStream(ctx, input, output)
-		session := mux.NewSession("dummy", muxStream)
+		session := mux.NewSession("dummy", muxStream, msgBufferSize, 10*time.Second)
 
 		Expect(session.ServerStream().Send(dummyResponse)).To(Succeed())
 		<-output
@@ -180,8 +185,8 @@ var _ = Describe("Multiplex Session", func() {
 			BeforeEach(func() {
 				input := make(chan *mesh_proto.Message, 1)
 				output := make(chan *mesh_proto.Message, 1)
-				clientSession = mux.NewSession("global", NewTestMultiplexStream(context.Background(), input, output))
-				serverSession = mux.NewSession("zone-1", NewTestMultiplexStream(context.Background(), output, input))
+				clientSession = mux.NewSession("global", NewTestMultiplexStream(context.Background(), input, output), msgBufferSize, 10*time.Second)
+				serverSession = mux.NewSession("zone-1", NewTestMultiplexStream(context.Background(), output, input), msgBufferSize, 10*time.Second)
 			})
 			It("should block while proper Send called", test.Within(time.Second, func() {
 				wg := sync.WaitGroup{}
@@ -222,7 +227,7 @@ var _ = Describe("Multiplex Session", func() {
 				var ctx context.Context
 				ctx, cancelCtx = context.WithCancel(context.Background())
 				muxStream = NewTestMultiplexStream(ctx, input, output)
-				session = mux.NewSession("dummy", muxStream)
+				session = mux.NewSession("dummy", muxStream, msgBufferSize, 10*time.Second)
 			})
 
 			It("calls clientStream and serverStream Send() in parallel", test.Within(time.Second*5, func() {
@@ -301,5 +306,21 @@ var _ = Describe("Multiplex Session", func() {
 				Expect(muxStream.CheckInvariants()).ToNot(HaveOccurred())
 			}))
 		})
+	})
+
+	It("should timeout on Send if the client is not receiving the msg", func() {
+		// given
+		timeout := 10 * time.Millisecond
+		input := make(chan *mesh_proto.Message)
+		output := make(chan *mesh_proto.Message)
+		clientSession := mux.NewSession("global", NewTestMultiplexStream(context.Background(), input, output), 1, timeout)
+
+		// when send a msg without receiving it on the other end
+		err := clientSession.ClientStream().Send(&envoy_sd.DiscoveryRequest{VersionInfo: "1"})
+		Expect(err).ToNot(HaveOccurred())
+		time.Sleep(timeout)
+
+		// then
+		Expect(<-clientSession.Error()).To(HaveOccurred())
 	})
 })
