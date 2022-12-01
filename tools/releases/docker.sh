@@ -14,9 +14,9 @@ KUMA_VERSION=$(echo "$BUILD_INFO" | cut -d " " -f 1)
 BUILD_ARCH="${BUILD_ARCH:-amd64 arm64}"
 
 function build() {
-  make images/supporting
-  for component in ${KUMA_COMPONENTS}; do
-    for arch in ${BUILD_ARCH}; do
+  for arch in ${BUILD_ARCH}; do
+    make GOARCH="${arch}" images/supporting
+    for component in ${KUMA_COMPONENTS}; do
       msg "Building $component..."
       build_args=(
         --build-arg ARCH="${arch}"
@@ -27,11 +27,12 @@ function build() {
       if [ "$arch" == "arm64" ]; then
         read -ra additional_args <<< "${ARM64_BUILD_ARGS[@]}"
       fi
-      docker build "${build_args[@]}" "${additional_args[@]}" -t "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}-${arch}" \
+      docker build --label="do-not-remove=true" "${build_args[@]}" "${additional_args[@]}" -t "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}-${arch}" \
         -f tools/releases/dockerfiles/Dockerfile."${component}" .
       docker tag "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}-${arch}" "${KUMA_DOCKER_REPO_ORG}/${component}:latest-${arch}"
       msg_green "... done!"
     done
+    docker images prune --force --filter "label!=do-not-remove=true"
   done
 }
 
@@ -42,7 +43,6 @@ function docker_login() {
 }
 
 function docker_logout() {
-  [ -z "$DOCKER_USERNAME" ] && msg_err "\$DOCKER_USERNAME required"
   docker logout "$KUMA_DOCKER_REPO"
 }
 

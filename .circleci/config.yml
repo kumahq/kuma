@@ -409,22 +409,22 @@ jobs:
         name: Build Packages
         command: |
           ./tools/releases/distros.sh --package
-#    - run:
-#        name: Push Packages
-#        command: |
-#          ./tools/releases/distros.sh --release
+    - run:
+        name: Push Packages
+        command: |
+          ./tools/releases/distros.sh --release
     - run:
         name: Build Docker
         command: |
           ./tools/releases/docker.sh --build
-#    - run:
-#        name: Push Docker
-#        command: |
-#          ./tools/releases/docker.sh --push
-#    - run:
-#        name: Create and Push multiarch manifest for Docker images
-#        command: |
-#          ./tools/releases/docker.sh --manifest
+    - run:
+        name: Push Docker
+        command: |
+          ./tools/releases/docker.sh --push
+    - run:
+        name: Create and Push multiarch manifest for Docker images
+        command: |
+          ./tools/releases/docker.sh --manifest
 
 workflows:
   version: 2
@@ -460,50 +460,49 @@ workflows:
             parameters:
               arch: [ amd64, arm64 ]
           requires: [ go_cache-golang ]
-#      - test:
-#          name: test-<< matrix.arch >>
-#          matrix:
-#            alias: test
-#            parameters:
-#              arch: [ amd64, arm64 ]
-#          requires: [ check ]
-#      - e2e:
-#          name: test/e2e-legacy-k8s:<< matrix.arch >>-<< matrix.k8sVersion >>
-#          matrix:
-#            alias: test/e2e-legacy
-#            parameters:
-#              k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
-#              arch: [ amd64, arm64 ]
-#          parallelism: 5
-#          target: test/e2e
-#          requires: [ build-<< matrix.arch >>, check ]
-#      - e2e:
-#          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>
-#          matrix:
-#            alias: test/e2e
-#            parameters:
-#              k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
-#              target: [ test/e2e-kubernetes, test/e2e-universal, test/e2e-multizone ]
-#              arch: [ amd64, arm64 ]
-#          parallelism: 1
-#          requires: [ build-<< matrix.arch >>, check ]
-#      - e2e:
-#          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
-#          matrix:
-#            alias: test/e2e-calico
-#            parameters:
-#              k8sVersion: [ v1.21.7-k3s1 ]
-#              target: [ test/e2e-multizone ]
-#              arch: [ amd64 ]
-#              cniNetworkPlugin: [ calico ]
-#          parallelism: 1
-#          requires: [ build-<< matrix.arch >>, check ]
+      - test:
+          name: test-<< matrix.arch >>
+          matrix:
+            alias: test
+            parameters:
+              arch: [ amd64, arm64 ]
+          requires: [ check ]
+      - e2e:
+          name: test/e2e-legacy-k8s:<< matrix.arch >>-<< matrix.k8sVersion >>
+          matrix:
+            alias: test/e2e-legacy
+            parameters:
+              k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
+              arch: [ amd64, arm64 ]
+          parallelism: 5
+          target: test/e2e
+          requires: [ build-<< matrix.arch >>, check ]
+      - e2e:
+          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>
+          matrix:
+            alias: test/e2e
+            parameters:
+              k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
+              target: [ test/e2e-kubernetes, test/e2e-universal, test/e2e-multizone ]
+              arch: [ amd64, arm64 ]
+          parallelism: 1
+          requires: [ build-<< matrix.arch >>, check ]
+      - e2e:
+          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
+          matrix:
+            alias: test/e2e-calico
+            parameters:
+              k8sVersion: [ v1.21.7-k3s1 ]
+              target: [ test/e2e-multizone ]
+              arch: [ amd64 ]
+              cniNetworkPlugin: [ calico ]
+          parallelism: 1
+          requires: [ build-<< matrix.arch >>, check ]
       - release:
           # publish artifacts speculatively for normal commits
           filters: # only on master and release-* branches (never on PRs and tags)
             branches:
               only:
-                - fix-publish-consistent-docker-images # TODO: remove
                 - master
                 - /^release-.*/
             tags:
@@ -516,4 +515,4 @@ workflows:
               ignore: /.*/
             tags:
               only: /.*/
-          requires: [ dev ]
+          requires: [ dev, test, test/e2e, test/e2e-legacy ]
