@@ -53,6 +53,9 @@ Chosen option: Create single `MeshCircuitBreaker` with configuration divided int
 By dividing the configuration section into two separate, logical sections: `connectionPool` and `outlierDetection` it's
 easier to differentiate underlying envoy features without the need to split policy into two separate ones.
 
+Introducing new - 2.0 policy is a great opportunity to introduce missing so far functionality of circuit breakers for
+inbound clusters, and with new policy matching it may be so simple to just allow to specify`from.targetRef` section
+
 Additional changes to the original `CircuitBreaker` policy consists of:
 
 - changing word `Errors` to `Failures` in detectors
@@ -110,7 +113,12 @@ targetRef:
 
 #### From level
 
-`MeshCircuitBreaker` is outbound only policy, so only `to` should be configured.
+```yaml
+to:
+- targetRef:
+    kind: Mesh
+    name: ...
+```
 
 #### To level
 
@@ -145,11 +153,23 @@ spec:
   targetRef:
     kind: Mesh
     name: default
+  from:
+  - targetRef:
+      kind: Mesh
+      name: default
+    default:
+      disabled: false
+      connectionPool:
+        maxConnections: 1024
+        maxPendingRequests: 1024
+        maxRetries: 3
+        maxRequests: 1024
   to:
   - targetRef:
       kind: Mesh
       name: default
     default:
+      disabled: false
       connectionPool:
         maxConnections: 1024
         maxPendingRequests: 1024
@@ -167,11 +187,43 @@ spec:
   targetRef:
     kind: Mesh
     name: default
+  from:
+  - targetRef:
+      kind: Mesh
+      name: default
+    default:
+      disabled: true
+      connectionPool:
+        maxConnections: 1024
+        maxPendingRequests: 1024
+        maxRetries: 3
+        maxRequests: 1024
+      outlierDetection:
+        interval: 5s
+        baseEjectionTime: 30s
+        maxEjectionPercent: 20
+        splitExternalAndLocalErrors: true
+        detectors:
+          totalFailures:
+            consecutive: 10
+          gatewayFailures:
+            consecutive: 10
+          localOriginFailures:
+            consecutive: 10
+          successRate:
+            minimumHosts: 5
+            requestVolume: 10
+            standardDeviationFactor: 1.9
+          failurePercentage:
+            requestVolume: 10
+            minimumHosts: 5
+            threshold: 85
   to:
   - targetRef:
       kind: Mesh
       name: default
     default:
+      disabled: true
       connectionPool:
         maxConnections: 1024
         maxPendingRequests: 1024
