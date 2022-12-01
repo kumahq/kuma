@@ -7,7 +7,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mitchellh/copystructure"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/ca/provided/config"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 func (m *MeshResource) HasPrometheusMetricsEnabled() bool {
@@ -134,4 +138,47 @@ func ParseDuration(durationStr string) (time.Duration, error) {
 		return 0, fmt.Errorf("invalid time unit in duration string: %q", unit)
 	}
 	return dur, nil
+}
+
+func (ml *MeshResourceList) MarshalLog() interface{} {
+	maskedList := make([]*MeshResource, len(ml.Items))
+	for _, mesh := range ml.Items {
+		c, err := copystructure.Copy(mesh)
+		if err != nil {
+			continue
+		}
+		meshCopy := c.(*MeshResource)
+		spec := meshCopy.Spec
+		if spec == nil {
+			maskedList = append(maskedList, mesh)
+			continue
+		}
+		mtls := spec.Mtls
+		if mtls == nil {
+			maskedList = append(maskedList, mesh)
+			continue
+		}
+		for _, backend := range mtls.Backends {
+			conf := backend.Conf
+			if conf == nil {
+				continue
+			}
+			cfg := &config.ProvidedCertificateAuthorityConfig{}
+			err := util_proto.ToTyped(conf, cfg)
+			if err != nil {
+				continue
+			}
+			cfg.Key = cfg.Key.MaskInlineDatasource()
+			cfg.Cert = cfg.Cert.MaskInlineDatasource()
+			backend.Conf, err = util_proto.ToStruct(cfg)
+			if err != nil {
+				continue
+			}
+		}
+		maskedList = append(maskedList, meshCopy)
+	}
+	return MeshResourceList{
+		Items:      maskedList,
+		Pagination: ml.Pagination,
+	}
 }
