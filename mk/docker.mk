@@ -47,6 +47,9 @@ image/base-root: ## Dev: Rebuild `kuma-base-root` Docker image
 image/envoy: ## Dev: Rebuild `envoy` Docker image
 	docker build -t $(KUMA_ENVOY_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --platform=linux/${GOARCH} --build-arg ENVOY_VERSION=${ENVOY_VERSION} -f $(TOOLS_DIR)/releases/dockerfiles/Dockerfile.envoy .
 
+.PHONY: images/supporting
+images/supporting: image/static image/base image/base-root image/envoy
+
 .PHONY: image/kuma-cp
 image/kuma-cp: image/static build/kuma-cp/linux-${GOARCH} ## Dev: Rebuild `kuma-cp` Docker image
 	docker build -t $(KUMA_CP_DOCKER_IMAGE) ${DOCKER_BUILD_ARGS} --build-arg ARCH=${GOARCH} --platform=linux/${GOARCH} -f $(TOOLS_DIR)/releases/dockerfiles/Dockerfile.kuma-cp .
