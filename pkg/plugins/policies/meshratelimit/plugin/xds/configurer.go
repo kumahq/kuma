@@ -29,7 +29,6 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	if err := c.configureRoutes(filterChain); err != nil {
 		return err
 	}
-	// route
 	if err := c.configureHttpListener(filterChain); err != nil {
 		return err
 	}
