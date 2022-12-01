@@ -55,12 +55,11 @@ easier to differentiate underlying envoy features without the need to split poli
 
 Additional changes to the original `CircuitBreaker` policy consists of:
 
-- flattening `detectors.*` options with only single (`.consecutive`) property
-- changing word `Errors` to `Failures`
+- changing word `Errors` to `Failures` in detectors
 - adding `origin` suffix to the local failures detector
 
-It means `totalErrors.consecutive`, `gatewayErrors.consecutive` and `localErrors.consecutive`
-becomes: `consecutiveTotalFailures`, `consecutiveGatewayFailures` and `consecutiveLocalOriginFailures` respectively.
+It means `totalErrors`, `gatewayErrors` and `localErrors`becomes: `totalFailures`, `gatewayFailures`
+and `localOriginFailures` respectively.
 
 ### Current configuration
 
@@ -118,7 +117,7 @@ targetRef:
 ```yaml
 to:
 - targetRef:
-    kind: Mesh|MeshSubset|MeshService|MeshServiceSubset
+    kind: Mesh|MeshService
     name: ...
 ```
 
@@ -184,9 +183,12 @@ spec:
         maxEjectionPercent: 20
         splitExternalAndLocalErrors: true
         detectors:
-          consecutiveTotalFailures: 10
-          consecutiveGatewayFailures: 10
-          consecutiveLocalOriginFailures: 10
+          totalFailures:
+            consecutive: 10
+          gatewayFailures:
+            consecutive: 10
+          localOriginFailures:
+            consecutive: 10
           successRate:
             minimumHosts: 5
             requestVolume: 10
