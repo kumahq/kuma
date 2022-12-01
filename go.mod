@@ -77,7 +77,6 @@ require (
 	sigs.k8s.io/yaml v1.3.0
 )
 
-
 require (
 	cloud.google.com/go v0.105.0 // indirect
 	cloud.google.com/go/compute v1.12.1 // indirect
