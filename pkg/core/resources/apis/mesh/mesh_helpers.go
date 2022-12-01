@@ -143,42 +143,44 @@ func ParseDuration(durationStr string) (time.Duration, error) {
 func (ml *MeshResourceList) MarshalLog() interface{} {
 	maskedList := make([]*MeshResource, len(ml.Items))
 	for _, mesh := range ml.Items {
-		c, err := copystructure.Copy(mesh)
-		if err != nil {
-			continue
-		}
-		meshCopy := c.(*MeshResource)
-		spec := meshCopy.Spec
-		if spec == nil {
-			maskedList = append(maskedList, mesh)
-			continue
-		}
-		mtls := spec.Mtls
-		if mtls == nil {
-			maskedList = append(maskedList, mesh)
-			continue
-		}
-		for _, backend := range mtls.Backends {
-			conf := backend.Conf
-			if conf == nil {
-				continue
-			}
-			cfg := &config.ProvidedCertificateAuthorityConfig{}
-			err := util_proto.ToTyped(conf, cfg)
-			if err != nil {
-				continue
-			}
-			cfg.Key = cfg.Key.MaskInlineDatasource()
-			cfg.Cert = cfg.Cert.MaskInlineDatasource()
-			backend.Conf, err = util_proto.ToStruct(cfg)
-			if err != nil {
-				continue
-			}
-		}
-		maskedList = append(maskedList, meshCopy)
+		maskedList = append(maskedList, mesh.MarshalLog().(*MeshResource))
 	}
 	return MeshResourceList{
 		Items:      maskedList,
 		Pagination: ml.Pagination,
 	}
+}
+
+func (m *MeshResource) MarshalLog() interface{} {
+	c, err := copystructure.Copy(m)
+	if err != nil {
+		return nil
+	}
+	meshCopy := c.(*MeshResource)
+	spec := meshCopy.Spec
+	if spec == nil {
+		return m
+	}
+	mtls := spec.Mtls
+	if mtls == nil {
+		return m
+	}
+	for _, backend := range mtls.Backends {
+		conf := backend.Conf
+		if conf == nil {
+			continue
+		}
+		cfg := &config.ProvidedCertificateAuthorityConfig{}
+		err := util_proto.ToTyped(conf, cfg)
+		if err != nil {
+			continue
+		}
+		cfg.Key = cfg.Key.MaskInlineDatasource()
+		cfg.Cert = cfg.Cert.MaskInlineDatasource()
+		backend.Conf, err = util_proto.ToStruct(cfg)
+		if err != nil {
+			continue
+		}
+	}
+	return meshCopy
 }
