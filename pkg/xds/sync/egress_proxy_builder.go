@@ -27,11 +27,7 @@ type EgressProxyBuilder struct {
 	meshCache          *xds_cache.Cache
 
 	zone       string
-<<<<<<< HEAD
 	apiVersion envoy_common.APIVersion
-=======
-	apiVersion core_xds.APIVersion
->>>>>>> 39ba902fa (fix(xds): don't read metadata in ProxyBuilders (#5414))
 }
 
 func (p *EgressProxyBuilder) Build(

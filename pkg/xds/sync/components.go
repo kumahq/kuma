@@ -18,12 +18,7 @@ var (
 
 func DefaultDataplaneProxyBuilder(
 	config kuma_cp.Config,
-<<<<<<< HEAD
-	metadataTracker DataplaneMetadataTracker,
 	apiVersion envoy.APIVersion,
-=======
-	apiVersion core_xds.APIVersion,
->>>>>>> 39ba902fa (fix(xds): don't read metadata in ProxyBuilders (#5414))
 ) *DataplaneProxyBuilder {
 	return &DataplaneProxyBuilder{
 		Zone:       config.Multizone.Zone.Name,
@@ -33,12 +28,7 @@ func DefaultDataplaneProxyBuilder(
 
 func DefaultIngressProxyBuilder(
 	rt core_runtime.Runtime,
-<<<<<<< HEAD
-	metadataTracker DataplaneMetadataTracker,
 	apiVersion envoy.APIVersion,
-=======
-	apiVersion core_xds.APIVersion,
->>>>>>> 39ba902fa (fix(xds): don't read metadata in ProxyBuilders (#5414))
 ) *IngressProxyBuilder {
 	return &IngressProxyBuilder{
 		ResManager:         rt.ResourceManager(),
@@ -53,12 +43,7 @@ func DefaultIngressProxyBuilder(
 func DefaultEgressProxyBuilder(
 	ctx context.Context,
 	rt core_runtime.Runtime,
-<<<<<<< HEAD
-	metadataTracker DataplaneMetadataTracker,
 	apiVersion envoy.APIVersion,
-=======
-	apiVersion core_xds.APIVersion,
->>>>>>> 39ba902fa (fix(xds): don't read metadata in ProxyBuilders (#5414))
 ) *EgressProxyBuilder {
 	return &EgressProxyBuilder{
 		ctx:                ctx,

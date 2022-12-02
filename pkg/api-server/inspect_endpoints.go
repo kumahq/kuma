@@ -23,11 +23,6 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
-<<<<<<< HEAD
-	"github.com/kumahq/kuma/pkg/xds/server/callbacks"
-=======
-	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
->>>>>>> 39ba902fa (fix(xds): don't read metadata in ProxyBuilders (#5414))
 	"github.com/kumahq/kuma/pkg/xds/sync"
 )
 

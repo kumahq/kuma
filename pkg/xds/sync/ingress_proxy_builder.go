@@ -23,11 +23,7 @@ type IngressProxyBuilder struct {
 	LookupIP           lookup.LookupIPFunc
 	meshCache          *xds_cache.Cache
 
-<<<<<<< HEAD
 	apiVersion envoy.APIVersion
-=======
-	apiVersion core_xds.APIVersion
->>>>>>> 39ba902fa (fix(xds): don't read metadata in ProxyBuilders (#5414))
 	zone       string
 }
 
