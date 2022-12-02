@@ -39,23 +39,23 @@ func validateTo(to []To) validators.ValidationError {
 			},
 		}))
 
-		defaultField := path.Field("default")
-		verr.AddErrorAt(defaultField, validateDefault(toItem.Default))
+		verr.AddErrorAt(path, validateDefault(toItem.Default))
 	}
 	return verr
 }
 
 func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
-	path := validators.RootedAt("conf")
-	verr.Add(validators.ValidateDurationGreaterThanZeroOrNil(path.Field("interval"), conf.Interval))
-	verr.Add(validators.ValidateDurationGreaterThanZeroOrNil(path.Field("timeout"), conf.Timeout))
-	verr.Add(validators.ValidateValueGreaterThanZeroOrNil(path.Field("unhealthyThreshold"), conf.UnhealthyThreshold))
-	verr.Add(validators.ValidateValueGreaterThanZeroOrNil(path.Field("healthyThreshold"), conf.HealthyThreshold))
+	path := validators.RootedAt("default")
+	verr.Add(validators.ValidateDurationGreaterThanZero(path.Field("interval"), conf.Interval))
+	verr.Add(validators.ValidateDurationGreaterThanZero(path.Field("timeout"), conf.Timeout))
+	verr.Add(validators.ValidateValueGreaterThanZero(path.Field("unhealthyThreshold"), conf.UnhealthyThreshold))
+	verr.Add(validators.ValidateValueGreaterThanZero(path.Field("healthyThreshold"), conf.HealthyThreshold))
 	verr.Add(validators.ValidateDurationGreaterThanZeroOrNil(path.Field("initialJitter"), conf.InitialJitter))
 	verr.Add(validators.ValidateDurationGreaterThanZeroOrNil(path.Field("intervalJitter"), conf.IntervalJitter))
 	verr.Add(validators.ValidateDurationGreaterThanZeroOrNil(path.Field("noTrafficInterval"), conf.NoTrafficInterval))
 	verr.Add(validators.ValidatePercentageOrNil(path.Field("healthyPanicThreshold"), conf.HealthyPanicThreshold))
+	verr.Add(validators.ValidateUintPercentageOrNil(path.Field("intervalJitterPercent"), conf.IntervalJitterPercent))
 	if conf.Http != nil {
 		verr.Add(validateConfHttp(path.Field("http"), conf.Http))
 	}
@@ -70,7 +70,7 @@ func validateConfHttp(path validators.PathBuilder, http *HttpHealthCheck) (err v
 	return
 }
 
-func validateConfHttpExpectedStatuses(path validators.PathBuilder, expectedStatuses *[]uint32) (err validators.ValidationError) {
+func validateConfHttpExpectedStatuses(path validators.PathBuilder, expectedStatuses *[]int32) (err validators.ValidationError) {
 	if expectedStatuses != nil {
 		for i, status := range *expectedStatuses {
 			if status < 100 || status >= 600 {

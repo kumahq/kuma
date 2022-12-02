@@ -102,9 +102,9 @@ targetRef:
 				expected: `
 violations:
   - field: spec.targetRef.kind
-    message: value is not supported`,
+    message: value is not supported`, // this could be more specific
 			}),
-			Entry("to empty", testCase{
+			PEntry("to field is an empty array", testCase{ // this does not work, needs
 				inputYaml: `
 targetRef:
   kind: MeshService
@@ -113,10 +113,10 @@ to: []
 `,
 				expected: `
 violations:
-  - field: spec.default
-    message: must be defined`,
+  - field: spec.to
+    message: must not be empty`,
 			}),
-			Entry("interval, timeout, unhealthyThreshold and healthyThreshold are missing", testCase{
+			Entry("required fields are missing", testCase{
 				inputYaml: `
 targetRef:
   kind: MeshService
@@ -129,8 +129,58 @@ to:
 `,
 				expected: `
 violations:
-  - field: spec.default
-    message: must be defined`,
+  - field: spec.to[0].default.interval
+    message: must be defined and greater than zero
+  - field: spec.to[0].default.timeout
+    message: must be defined and greater than zero
+  - field: spec.to[0].default.unhealthyThreshold
+    message: must be defined and greater than zero
+  - field: spec.to[0].default.healthyThreshold
+    message: must be defined and greater than zero`,
+			}),
+			Entry("positive values are out of range", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+to:
+  - targetRef:
+      kind: MeshService
+      name: web-backend
+    default:
+      interval: 10s
+      timeout: 2s
+      unhealthyThreshold: -3
+      healthyThreshold: 0
+`,
+				expected: `
+violations:
+  - field: spec.to[0].default.healthyThreshold
+    message: must be defined and greater than zero`,
+			}),
+			Entry("all percentages are out of percentage range", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+to:
+  - targetRef:
+      kind: MeshService
+      name: web-backend
+    default:
+      interval: 10s
+      timeout: 2s
+      unhealthyThreshold: 3
+      healthyThreshold: 1
+      intervalJitterPercent: 110
+      healthyPanicThreshold: -10
+`,
+				expected: `
+violations:
+  - field: spec.to[0].default.healthyPanicThreshold
+    message: has to be in [0.0 - 100.0] range
+  - field: spec.to[0].default.intervalJitterPercent
+    message: has to be in [0 - 100] range`,
 			}),
 		)
 	})

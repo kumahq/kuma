@@ -34,9 +34,9 @@ type Conf struct {
     Timeout *k8s.Duration `json:"timeout,omitempty"`
     // Number of consecutive unhealthy checks before considering a host
     // unhealthy.
-    UnhealthyThreshold *uint32 `json:"unhealthyThreshold,omitempty"`
+    UnhealthyThreshold *int32 `json:"unhealthyThreshold,omitempty"`
     // Number of consecutive healthy checks before considering a host healthy.
-    HealthyThreshold *uint32 `json:"healthyThreshold,omitempty"`
+    HealthyThreshold *int32 `json:"healthyThreshold,omitempty"`
     // If specified, Envoy will start health checking after for a random time in
     // ms between 0 and initialJitter. This only applies to the first health
     // check.
@@ -48,7 +48,7 @@ type Conf struct {
     // IntervalJitterPercent / 100 to the wait time. If IntervalJitter and
     // IntervalJitterPercent are both set, both of them will be used to
     // increase the wait time.
-    IntervalJitterPercent uint32 `json:"intervalJitterPercent,omitempty"`
+    IntervalJitterPercent *int32 `json:"intervalJitterPercent,omitempty"`
     // Allows to configure panic threshold for Envoy cluster. If not specified,
     // the default is 50%. To disable panic mode, set to 0%.
     HealthyPanicThreshold *float32 `json:"healthyPanicThreshold,omitempty"`
@@ -59,7 +59,7 @@ type Conf struct {
     FailTrafficOnPanic *bool `json:"failTrafficOnPanic,omitempty"`
     // Specifies the path to the file where Envoy can log health check events.
     // If empty, no event log will be written.
-    EventLogPath string `json:"eventLogPath,omitempty"`
+    EventLogPath *string `json:"eventLogPath,omitempty"`
     // If set to true, health check failure events will always be logged. If set
     // to false, only the initial health check failure event will be logged. The
     // default value is false.
@@ -110,7 +110,7 @@ type HttpHealthCheck struct {
     RequestHeadersToAdd *[]HeaderValueOption `json:"requestHeadersToAdd,omitempty"`
     // List of HTTP response statuses which are considered healthy
     //  +optional
-    ExpectedStatuses *[]uint32 `json:"expectedStatuses,omitempty"`
+    ExpectedStatuses *[]int32 `json:"expectedStatuses,omitempty"`
 }
 
 // GrpcHealthCheck defines gRPC configuration which will instruct the service

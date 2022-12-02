@@ -16,6 +16,13 @@ func ValidateDurationNotNegativeOrNil(path PathBuilder, duration *k8s.Duration) 
 	return
 }
 
+func ValidateDurationGreaterThanZero(path PathBuilder, duration *k8s.Duration) (err ValidationError) {
+	if duration == nil || duration.Duration <= 0 {
+		err.AddViolationAt(path, MustBeDefinedAndGreaterThanZero)
+	}
+	return
+}
+
 func ValidateDurationGreaterThanZeroOrNil(path PathBuilder, duration *k8s.Duration) (err ValidationError) {
 	if duration == nil {
 		return
@@ -28,13 +35,9 @@ func ValidateDurationGreaterThanZeroOrNil(path PathBuilder, duration *k8s.Durati
 	return
 }
 
-func ValidateValueGreaterThanZeroOrNil(path PathBuilder, value *uint32) (err ValidationError) {
-	if value == nil {
-		return
-	}
-
-	if *value == 0 {
-		err.AddViolationAt(path, WhenDefinedHasToBeGreaterThanZero)
+func ValidateValueGreaterThanZero(path PathBuilder, value *int32) (err ValidationError) {
+	if value == nil || *value == 0 {
+		err.AddViolationAt(path, MustBeDefinedAndGreaterThanZero)
 	}
 	return
 }
@@ -49,6 +52,18 @@ func ValidatePercentageOrNil(path PathBuilder, percentage *float32) (err Validat
     }
 
     return
+}
+
+func ValidateUintPercentageOrNil(path PathBuilder, percentage *int32) (err ValidationError) {
+	if percentage == nil {
+		return
+	}
+
+	if *percentage < 0 || *percentage > 100 {
+		err.AddViolationAt(path, HasToBeInUintPercentageRange)
+	}
+
+	return
 }
 
 func ValidateStringDefined(path PathBuilder, value string) (err ValidationError) {

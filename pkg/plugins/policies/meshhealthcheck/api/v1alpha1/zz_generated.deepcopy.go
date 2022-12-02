@@ -40,12 +40,12 @@ func (in *Conf) DeepCopyInto(out *Conf) {
 	}
 	if in.UnhealthyThreshold != nil {
 		in, out := &in.UnhealthyThreshold, &out.UnhealthyThreshold
-		*out = new(uint32)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.HealthyThreshold != nil {
 		in, out := &in.HealthyThreshold, &out.HealthyThreshold
-		*out = new(uint32)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.InitialJitter != nil {
@@ -58,6 +58,11 @@ func (in *Conf) DeepCopyInto(out *Conf) {
 		*out = new(v1.Duration)
 		**out = **in
 	}
+	if in.IntervalJitterPercent != nil {
+		in, out := &in.IntervalJitterPercent, &out.IntervalJitterPercent
+		*out = new(int32)
+		**out = **in
+	}
 	if in.HealthyPanicThreshold != nil {
 		in, out := &in.HealthyPanicThreshold, &out.HealthyPanicThreshold
 		*out = new(float32)
@@ -66,6 +71,11 @@ func (in *Conf) DeepCopyInto(out *Conf) {
 	if in.FailTrafficOnPanic != nil {
 		in, out := &in.FailTrafficOnPanic, &out.FailTrafficOnPanic
 		*out = new(bool)
+		**out = **in
+	}
+	if in.EventLogPath != nil {
+		in, out := &in.EventLogPath, &out.EventLogPath
+		*out = new(string)
 		**out = **in
 	}
 	if in.AlwaysLogHealthCheckFailures != nil {
@@ -181,10 +191,10 @@ func (in *HttpHealthCheck) DeepCopyInto(out *HttpHealthCheck) {
 	}
 	if in.ExpectedStatuses != nil {
 		in, out := &in.ExpectedStatuses, &out.ExpectedStatuses
-		*out = new([]uint32)
+		*out = new([]int32)
 		if **in != nil {
 			in, out := *in, *out
-			*out = make([]uint32, len(*in))
+			*out = make([]int32, len(*in))
 			copy(*out, *in)
 		}
 	}
