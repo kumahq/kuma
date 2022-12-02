@@ -114,7 +114,7 @@ targetRef:
 #### From level
 
 ```yaml
-to:
+from:
 - targetRef:
     kind: Mesh
     name: ...
