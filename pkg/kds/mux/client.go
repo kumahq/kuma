@@ -17,6 +17,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config/multizone"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/metrics"
 )
@@ -95,7 +96,8 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	if err != nil {
 		return err
 	}
-	session := NewSession("global", stream)
+	bufferSize := len(registry.Global().ObjectTypes())
+	session := NewSession("global", stream, uint32(bufferSize), c.config.MsgSendTimeout)
 	if err := c.callbacks.OnSessionStarted(session); err != nil {
 		log.Error(err, "closing KDS stream after callback error")
 		return err
