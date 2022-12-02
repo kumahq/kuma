@@ -157,6 +157,7 @@ type ListOptions struct {
 	PageSize   int
 	PageOffset string
 	FilterFunc ListFilterFunc
+	Ordered    bool
 }
 
 type ListOptionsFunc func(*ListOptions)
@@ -194,6 +195,12 @@ func ListByPage(size int, offset string) ListOptionsFunc {
 func ListByFilterFunc(filterFunc ListFilterFunc) ListOptionsFunc {
 	return func(opts *ListOptions) {
 		opts.FilterFunc = filterFunc
+	}
+}
+
+func ListOrdered() ListOptionsFunc {
+	return func(opts *ListOptions) {
+		opts.Ordered = true
 	}
 }
 

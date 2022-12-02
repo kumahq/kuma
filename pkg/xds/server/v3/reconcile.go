@@ -151,12 +151,12 @@ type snapshotGenerator interface {
 	GenerateSnapshot(ctx xds_context.Context, proxy *model.Proxy) (envoy_cache.Snapshot, error)
 }
 
-type templateSnapshotGenerator struct {
+type TemplateSnapshotGenerator struct {
 	ProxyTemplateResolver xds_template.ProxyTemplateResolver
 	ResourceSetHooks      []xds_hooks.ResourceSetHook
 }
 
-func (s *templateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, proxy *model.Proxy) (envoy_cache.Snapshot, error) {
+func (s *TemplateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, proxy *model.Proxy) (envoy_cache.Snapshot, error) {
 	template := s.ProxyTemplateResolver.GetTemplate(proxy)
 
 	gen := generator.ProxyTemplateGenerator{ProxyTemplate: template}

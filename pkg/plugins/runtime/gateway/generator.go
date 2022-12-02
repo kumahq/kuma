@@ -140,7 +140,7 @@ func GatewayListenerInfoFromProxy(
 	var listenerInfos []GatewayListenerInfo
 
 	matchedExternalServices, err := permissions.MatchExternalServicesTrafficPermissions(
-		proxy.Dataplane, ctx.Resources.ExternalServices(), ctx.Resources.TrafficPermissions(),
+		proxy.Dataplane, externalServices, ctx.Resources.TrafficPermissions(),
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to find external services matched by traffic permissions")
