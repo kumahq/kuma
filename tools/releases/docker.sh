@@ -34,7 +34,7 @@ function build() {
       docker tag "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}-${arch}" "${KUMA_DOCKER_REPO_ORG}/${component}:latest-${arch}"
       msg_green "... done!"
     done
-    docker image prune --force --filter "label!=do-not-remove=true"
+    docker image prune --all --force --filter "label!=do-not-remove=true"
   done
 }
 
