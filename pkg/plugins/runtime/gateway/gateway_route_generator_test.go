@@ -2,6 +2,7 @@ package gateway_test
 
 import (
 	"context"
+	"math/rand"
 	"path"
 
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -1638,11 +1639,41 @@ conf:
 `, `
 type: ExternalService
 mesh: default
-name: external-httpbin
+name: external-httpbin-1
 tags:
   kuma.io/service: external-httpbin
 networking:
-  address: httpbin.com:443
+  address: httpbin-1.com:443
+  tls:
+    enabled: true
+`, `
+type: ExternalService
+mesh: default
+name: external-httpbin-2
+tags:
+  kuma.io/service: external-httpbin
+networking:
+  address: httpbin-2.com:443
+  tls:
+    enabled: true
+`, `
+type: ExternalService
+mesh: default
+name: external-httpbin-3
+tags:
+  kuma.io/service: external-httpbin
+networking:
+  address: httpbin-3.com:443
+  tls:
+    enabled: true
+`, `
+type: ExternalService
+mesh: default
+name: external-httpbin-4
+tags:
+  kuma.io/service: external-httpbin
+networking:
+  address: httpbin-4.com:443
   tls:
     enabled: true
 `, `
@@ -1746,6 +1777,10 @@ conf:
 		DescribeTable("generating xDS resources",
 			func(goldenFileName string, fixtureResources ...string) {
 				// given
+				rand.Seed(GinkgoRandomSeed())
+				rand.Shuffle(len(fixtureResources), func(i, j int) {
+					fixtureResources[i], fixtureResources[j] = fixtureResources[j], fixtureResources[i]
+				})
 				for _, resource := range fixtureResources {
 					Expect(StoreInlineFixture(rt, []byte(resource))).To(Succeed())
 				}
