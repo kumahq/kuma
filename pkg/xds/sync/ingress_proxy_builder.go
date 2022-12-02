@@ -153,8 +153,7 @@ func (p *IngressProxyBuilder) updateIngress(ctx context.Context, zoneIngress *co
 
 func (p *IngressProxyBuilder) getIngressExternalServices(ctx context.Context) (*core_mesh.ExternalServiceResourceList, error) {
 	meshList := &core_mesh.MeshResourceList{}
-	if err := p.ReadOnlyResManager.List(ctx, meshList, core_store.ListByFilterFunc(func(rs core_model.Resource) bool {
-		// using FilterFunc will trigger sorting by the 'paginationStore'
+	if err := p.ReadOnlyResManager.List(ctx, meshList, core_store.ListOrdered(), core_store.ListByFilterFunc(func(rs core_model.Resource) bool {
 		return rs.(*core_mesh.MeshResource).ZoneEgressEnabled()
 	})); err != nil {
 		return nil, err
