@@ -65,7 +65,7 @@ func (in *Conf) DeepCopyInto(out *Conf) {
 	}
 	if in.HealthyPanicThreshold != nil {
 		in, out := &in.HealthyPanicThreshold, &out.HealthyPanicThreshold
-		*out = new(float32)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.FailTrafficOnPanic != nil {

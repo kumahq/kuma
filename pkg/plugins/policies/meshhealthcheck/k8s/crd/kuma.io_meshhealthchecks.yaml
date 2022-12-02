@@ -114,6 +114,8 @@ spec:
                           description: Allows to configure panic threshold for Envoy
                             cluster. If not specified, the default is 50%. To disable
                             panic mode, set to 0%.
+                          format: int32
+                          type: integer
                         healthyThreshold:
                           description: Number of consecutive healthy checks before
                             considering a host healthy.
