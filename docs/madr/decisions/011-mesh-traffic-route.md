@@ -33,33 +33,65 @@ integration.
 
 ## Decision Outcome
 
-The new resource routes and alters requests depending on where it's coming from and where it's going to. Routes end up in the client-side Envoy config so we choose a `spec.to` resource.
+We decided to create two resources `MeshGatewayHTTPRoute` and `MeshHTTPRoute`.
+They have the exact same structure for routing rules but the way they refer to
+targets is different.
 
-```yaml
-spec:
- targetRef: ... # from where requests are coming
- to:
-  - targetRef: ... # to where requests are going
- default: ...
-```
-
-Each protocol gets its own resource:
+Each future protocol will get its own resource:
 
 - `MeshHTTPRoute`
 - `MeshTCPRoute`
 
 which can be extended with others like GRPC.
 
+### `MeshHTTPRoute`
+
+The new resource routes and alters requests from one service to another
+depending on where the request coming from and where it's going to.
+Routes end up in the client-side Envoy config so the source of the affected requests will
+be under `spec.targetRef`. The destination we can select in `spec.to`.
+
+```yaml
+spec:
+ targetRef: ... # from where requests are coming
+ to:
+  - targetRef: ... # to where requests are going
+    rules: ...
+```
+
 The route that's used for a given request is the most specific one that Kuma can
 apply given the `kuma.io/protocol` tag.
+
+### `MeshGatewayHTTPRoute`
+
+This new resource attaches directly to a `MeshGateway` via `spec.targetRef`:
+
+```yaml
+spec:
+ targetRef:
+  kind: MeshGateway # leave open potential other selector kinds
+  name: edge-gateway
+ rules: ...
+```
+
+Here as well the `spec.targetRef` tells us which proxy is being affected by
+this configuration.
+
+If we imagine using the `spec.targetRef`/`to` structure for `MeshGateway`, we
+have to explain to users that `to` is nonsensical in the gateway case.
+
+In order to prevent confusion around how to target routing
+policies, we create a separate policy with a different targeting structure, as
+opposed to finding a more expressive, potentially confusing structure that can
+be used for both gateways and services.
 
 ### Positive Consequences
 
 - Route configuration can be very precisely targeted
-- Users need to know only one set of resources for routing
+- Users need to know only one schema for specifying rules
 - A final spec that has the best of `MeshGatewayRoute` and `TrafficRoute`
 
-### New `MeshHTTPRoute` spec
+### New rule spec
 
 Routing configuration consists of a list of rules where each rule _matches_ some
 requests or traffic, modifies it in some way with _filters_ and then sends it to a _backend_.
@@ -312,6 +344,8 @@ spec:
 This is likely surprising, especially because `consumer` didn't specify anything
 at all for `/v1`.
 
+##### Solution
+
 This MADR proposes to distribute `default` down into individual `rules` and merge
 `rules` based on _structural equality_ of the `matches` value.
 So we would instead have:
@@ -370,7 +404,7 @@ spec:
                value: dev
 ```
 
-which gives us the rules:
+which gives us the final list of rules:
 
 ```yaml
 spec:
@@ -410,6 +444,181 @@ spec:
 Here, the `/v1` rule from `owner` is unchanged and the `/v2` rule from
 `consumer` merges with that of `owner`.
 
+#### Gateway API
+
+A note about Gateway API and our routes. The only extension point for `HTTPRoute` is `filters`, so any additional configuration
+must appear there.
+
+With [`ExtensionRef`](https://gateway-api.sigs.k8s.io/references/spec/#gateway.networking.k8s.io/v1beta1.HTTPRouteFilterType)
+a filter is powerful, flexible and extensible enough to support any arbitrary routing configuration.
+It doesn't really assume anything about the referenced resource.
+
+The Gateway API controller would handle converting an `HTTPRoute` with an `ExtensionRef` filter to `MeshHTTPRoute`.
+
+#### Final top level spec
+
+```yaml
+spec:
+ targetRef:
+  kind: MeshService
+  name: frontend
+ to:
+  - targetRef:
+     kind: MeshService
+     name: backend
+    rules:
+     - matches: [..]
+       default:
+        filters: [..]
+        backendRefs: [..]
+```
+
+### Additional use cases
+
+The following uses cases and examples are kept for the record.
+They discuss potential issues of the policies in this proposal.
+
+Consider:
+
+- the owner of a service `backend`
+  may want to configure a routing policy
+  for their service that applies to requests from all services.
+- another service owner may want
+  to apply routing to requests from their service `frontend` to `backend`.
+
+How should these routes be merged? One invariant might be that the consumer of a
+service shouldn't be able to override the entire route of the service owner.
+
+Given a policy from the owner that configures canarying and a filter:
+
+```yaml
+metadata:
+ name: owner
+spec:
+ targetRef:
+  kind: Mesh
+ to:
+  - targetRef:
+     kind: MeshService
+     name: backend
+    default:
+     rules:
+      - matches:
+         path:
+          prefix: /
+        filters:
+         - responseHeader:
+            add:
+             - name: X-Some-Header
+               value: something
+        backendRefs:
+         - weight: 90
+           kind: MeshServiceSubset
+           name: backend
+           tags:
+            version: v1
+         - weight: 10
+           kind: MeshServiceSubset
+           name: backend
+           tags:
+            version: v2
+```
+
+and a route by the `frontend` owner that configures an additional filter:
+
+```yaml
+metadata:
+ name: consumer
+spec:
+ targetRef:
+  kind: MeshService
+  name: frontend
+ to:
+  - targetRef:
+     kind: MeshService
+     name: backend
+    default:
+     rules:
+      - matches:
+         path:
+          prefix: /
+        filters:
+         - requestHeader:
+            add:
+             - name: X-Client
+               value:
+        backendRefs:
+         - weight: 100
+           kind: MeshServiceSubset
+           name: backend
+           tags:
+            version: v1
+```
+
+when these resources are merged the latter will have higher priority and
+override the less specific resource:
+
+```yaml
+metadata:
+ name: consumer
+spec:
+ targetRef:
+  kind: MeshService
+  name: frontend
+ to:
+  - targetRef:
+     kind: MeshService
+     name: backend
+    default:
+     rules:
+      - matches:
+         path:
+          prefix: /
+        filters:
+         - requestHeader:
+            add:
+             - name: X-Client
+               value:
+        backendRefs:
+         - weight: 100
+           kind: MeshServiceSubset
+           name: backend
+           tags:
+            version: v1
+```
+
+Two issues:
+
+1. the `backendRefs` of `owner` are gone. But maybe the owner wants final say
+   over `backendRefs`.
+1. the `filters` of `owner` are gone. But maybe the owner of `backend` can tolerate additional filters?
+
+For 1., we need a way for the `owner` policy to set the final value.
+This is a good use case for [`override`](https://gateway-api.sigs.k8s.io/v1alpha2/references/policy-attachment/#hierarchy)?
+
+For 2., we would need a way for the `owner` policy to say it's OK to add to this
+list of filters. Could we add a `merge` next to `default`?
+
+## Implementation
+
+Almost all other plugins will depend on the route configuration generated
+by `MeshHTTPRoute` resources.
+Though this policy is a new, `targetRef`-based policy, this means it will not be a
+`PolicyPlugin` because the current plugin interface of modifying existing Envoy
+resources is insufficient for writing such a fundamental piece of config
+generation.
+Instead it will likely have to be integrated directly in generation similar to
+the current `TrafficRoute` resources.
+
+## Considered options
+
+This section goes over alternatives we considered for this MADR.
+
+### Two routing policies or one routing policies
+
+This section considers different ways of handling the overlap between
+`MeshGateway` routing and service to service routing.
+
 #### `MeshGateway`
 
 This new resource is intended to replace the `MeshGatewayRoute` resource for
@@ -447,8 +656,7 @@ spec:
   rules: ...
 ```
 
-where top level `default` is allowed only for `spec.targetRef.kind:
-MeshGateway`.
+where top level `default` is allowed only for `spec.targetRef.kind: MeshGateway`.
 
 ##### No more `spec.targetRef`
 
@@ -678,169 +886,3 @@ spec:
      - owner-rules
      - consumer-rules
 ```
-
-#### Gateway API
-
-A note about Gateway API and our routes. The only extension point for `HTTPRoute` is `filters`, so any additional configuration
-must appear there.
-
-With [`ExtensionRef`](https://gateway-api.sigs.k8s.io/references/spec/#gateway.networking.k8s.io/v1beta1.HTTPRouteFilterType)
-a filter is powerful, flexible and extensible enough to support any arbitrary routing configuration.
-It doesn't really assume anything about the referenced resource.
-
-The Gateway API controller would handle converting an `HTTPRoute` with an `ExtensionRef` filter to `MeshHTTPRoute`.
-
-#### Final top level spec
-
-```yaml
-spec:
- targetRef:
-  kind: MeshService
-  name: frontend
- to:
-  - targetRef:
-     kind: MeshService
-     name: backend
-    default:
-     rules:
-      - matches: [..]
-        filters: [..]
-        backendRefs: [..]
-```
-
-### Additional use cases
-
-The following uses cases and examples are kept for the record.
-They discuss potential issues of the policies in this proposal.
-
-Consider:
-
-- the owner of a service `backend`
-  may want to configure a routing policy
-  for their service that applies to requests from all services.
-- another service owner may want
-  to apply routing to requests from their service `frontend` to `backend`.
-
-How should these routes be merged? One invariant might be that the consumer of a
-service shouldn't be able to override the entire route of the service owner.
-
-Given a policy from the owner that configures canarying and a filter:
-
-```yaml
-metadata:
- name: owner
-spec:
- targetRef:
-  kind: Mesh
- to:
-  - targetRef:
-     kind: MeshService
-     name: backend
-    default:
-     rules:
-      - matches:
-         path:
-          prefix: /
-        filters:
-         - responseHeader:
-            add:
-             - name: X-Some-Header
-               value: something
-        backendRefs:
-         - weight: 90
-           kind: MeshServiceSubset
-           name: backend
-           tags:
-            version: v1
-         - weight: 10
-           kind: MeshServiceSubset
-           name: backend
-           tags:
-            version: v2
-```
-
-and a route by the `frontend` owner that configures an additional filter:
-
-```yaml
-metadata:
- name: consumer
-spec:
- targetRef:
-  kind: MeshService
-  name: frontend
- to:
-  - targetRef:
-     kind: MeshService
-     name: backend
-    default:
-     rules:
-      - matches:
-         path:
-          prefix: /
-        filters:
-         - requestHeader:
-            add:
-             - name: X-Client
-               value:
-        backendRefs:
-         - weight: 100
-           kind: MeshServiceSubset
-           name: backend
-           tags:
-            version: v1
-```
-
-when these resources are merged the latter will have higher priority and
-override the less specific resource:
-
-```yaml
-metadata:
- name: consumer
-spec:
- targetRef:
-  kind: MeshService
-  name: frontend
- to:
-  - targetRef:
-     kind: MeshService
-     name: backend
-    default:
-     rules:
-      - matches:
-         path:
-          prefix: /
-        filters:
-         - requestHeader:
-            add:
-             - name: X-Client
-               value:
-        backendRefs:
-         - weight: 100
-           kind: MeshServiceSubset
-           name: backend
-           tags:
-            version: v1
-```
-
-Two issues:
-
-1. the `backendRefs` of `owner` are gone. But maybe the owner wants final say
-   over `backendRefs`.
-1. the `filters` of `owner` are gone. But maybe the owner of `backend` can tolerate additional filters?
-
-For 1., we need a way for the `owner` policy to set the final value.
-This is a good use case for [`override`](https://gateway-api.sigs.k8s.io/v1alpha2/references/policy-attachment/#hierarchy)?
-
-For 2., we would need a way for the `owner` policy to say it's OK to add to this
-list of filters. Could we add a `merge` next to `default`?
-
-## Implementation
-
-Almost all other plugins will depend on the route configuration generated
-by `MeshHTTPRoute` resources.
-Though this policy is a new, `targetRef`-based policy, this means it will not be a
-`PolicyPlugin` because the current plugin interface of modifying existing Envoy
-resources is insufficient for writing such a fundamental piece of config
-generation.
-Instead it will likely have to be integrated directly in generation similar to
-the current `TrafficRoute` resources.
