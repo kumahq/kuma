@@ -4,13 +4,10 @@ import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
-
-var log = core.Log.WithName("MeshTimeout")
 
 type Clusters struct {
 	Inbound  map[string]*envoy_cluster.Cluster
@@ -38,7 +35,5 @@ func GatherClusters(rs *xds.ResourceSet) Clusters {
 			continue
 		}
 	}
-	// TODO remove log
-	log.Info("cluster gathered", "cluster", clusters)
 	return clusters
 }

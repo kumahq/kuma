@@ -39,10 +39,10 @@ func (c *Configurer) ConfigureListener(filterChain *envoy_listener.FilterChain) 
 	httpTimeouts := func(hcm *envoy_hcm.HttpConnectionManager) error {
 		if c.Conf.Http != nil {
 			hcm.StreamIdleTimeout = toProtoDurationOrDefault(c.Conf.Http.StreamIdleTimeout, defaultStreamIdleTimeout)
-			configureRequestTimeout(hcm.GetRouteConfig(), toProtoDurationOrDefault(c.Conf.Http.RequestTimeout, defaultRequestTimeout))
+			c.configureRequestTimeout(hcm.GetRouteConfig())
 		} else {
 			hcm.StreamIdleTimeout = defaultToProtoDuration(defaultStreamIdleTimeout)
-			configureRequestTimeout(hcm.GetRouteConfig(), defaultToProtoDuration(defaultRequestTimeout))
+			c.configureRequestTimeout(hcm.GetRouteConfig())
 		}
 		return nil
 	}
@@ -89,12 +89,22 @@ func (c *Configurer) ConfigureCluster(cluster *envoy_cluster.Cluster) error {
 	return nil
 }
 
-func configureRequestTimeout(routeConfiguration *envoy_route.RouteConfiguration, timeout *durationpb.Duration) {
-	for _, vh := range routeConfiguration.VirtualHosts {
-		for _, route := range vh.Routes {
-			routeAction := route.GetRoute()
-			if routeAction != nil {
-				routeAction.Timeout = timeout
+func (c *Configurer) ConfigureRouteAction(routeAction *envoy_route.RouteAction) {
+	if routeAction == nil {
+		return
+	}
+	if c.Conf.Http != nil {
+		routeAction.Timeout = toProtoDurationOrDefault(c.Conf.Http.RequestTimeout, defaultRequestTimeout)
+	} else {
+		routeAction.Timeout = defaultToProtoDuration(defaultRequestTimeout)
+	}
+}
+
+func (c *Configurer) configureRequestTimeout(routeConfiguration *envoy_route.RouteConfiguration) {
+	if routeConfiguration != nil {
+		for _, vh := range routeConfiguration.VirtualHosts {
+			for _, route := range vh.Routes {
+				c.ConfigureRouteAction(route.GetRoute())
 			}
 		}
 	}

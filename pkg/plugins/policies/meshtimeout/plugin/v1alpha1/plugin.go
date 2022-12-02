@@ -1,8 +1,11 @@
 package v1alpha1
 
 import (
+	"context"
+
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -14,10 +17,11 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/plugin/xds"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
+	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
+	gateway_route "github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/generator"
-	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -42,6 +46,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	listeners := policies_xds.GatherListeners(rs)
 	clusters := policies_xds.GatherClusters(rs)
+	routes := policies_xds.GatherRoutes(rs)
 
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, clusters.Inbound, proxy.Dataplane); err != nil {
 		return err
@@ -49,7 +54,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, clusters.Outbound, proxy.Dataplane, proxy.Routing); err != nil {
 		return err
 	}
-	if err := applyToGateway(policies.FromRules, listeners.Gateway, clusters.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy.Dataplane); err != nil {
+	if err := applyToGateway(policies.ToRules, listeners.Gateway, clusters.Gateway, routes.Gateway, proxy.Dataplane, ctx, proxy); err != nil {
 		return err
 	}
 	return nil
@@ -80,7 +85,7 @@ func applyToInbounds(fromRules core_xds.FromRules, inboundListeners map[core_xds
 		}
 
 		protocol := core_mesh.ParseProtocol(inbound.GetProtocol())
-		if err := configure(rules, xds.MeshSubset(), protocol, listener, cluster); err != nil {
+		if err := configure(rules, xds.MeshSubset(), protocol, listener, cluster, nil); err != nil {
 			return err
 		}
 	}
@@ -104,11 +109,8 @@ func applyToOutbounds(rules core_xds.ToRules, outboundListeners map[mesh_proto.O
 		}
 
 		protocol := inferProtocol(routing, serviceName)
-		if err := configure(rules.Rules, xds.MeshService(serviceName), protocol, listener, cluster); err != nil {
+		if err := configure(rules.Rules, xds.MeshService(serviceName), protocol, listener, cluster, nil); err != nil {
 			return err
-		}
-		if serviceName == "test-server" {
-			log.Info("e2e test", "rules", rules.Rules, "protocol", protocol, "listener", listener, "cluster", cluster)
 		}
 	}
 
@@ -116,25 +118,22 @@ func applyToOutbounds(rules core_xds.ToRules, outboundListeners map[mesh_proto.O
 }
 
 func applyToGateway(
-	fromRules xds.FromRules, gatewayListeners map[xds.InboundListener]*envoy_listener.Listener, gatewayClusters map[string]*envoy_cluster.Cluster, resources xds_context.ResourceMap, dataplane *core_mesh.DataplaneResource,
+	toRules core_xds.ToRules,
+	gatewayListeners map[core_xds.InboundListener]*envoy_listener.Listener,
+	gatewayClusters map[string]*envoy_cluster.Cluster,
+	routes map[string]*envoy_route.RouteConfiguration,
+	dataplane *core_mesh.DataplaneResource,
+	ctx xds_context.Context,
+	proxy *core_xds.Proxy,
 ) error {
-	var gateways *core_mesh.MeshGatewayResourceList
-	if rawList := resources[core_mesh.MeshGatewayType]; rawList != nil {
-		gateways = rawList.(*core_mesh.MeshGatewayResourceList)
-	} else {
-		return nil
+	gatewayListerInfos, err := gateway_plugin.GatewayListenerInfoFromProxy(context.TODO(), ctx.Mesh, proxy, "test")
+	if err != nil {
+		return err
 	}
-	log.Info("gateways configured")
-	gateway := xds_topology.SelectGateway(gateways.Items, dataplane.Spec.Matches)
-	if gateway == nil {
-		return nil
-	}
-	// TODO remove log
-	log.Info("gateway selected", "gateway", gateway)
 
-	for _, listener := range gateway.Spec.GetConf().GetListeners() {
+	for _, listenerInfo := range gatewayListerInfos {
 		address := dataplane.Spec.GetNetworking().Address
-		port := listener.GetPort()
+		port := listenerInfo.Listener.Port
 		listenerKey := xds.InboundListener{
 			Address: address,
 			Port:    port,
@@ -144,35 +143,48 @@ func applyToGateway(
 			continue
 		}
 
-		rules, ok := fromRules.Rules[listenerKey]
+		route, ok := routes[listenerInfo.Listener.ResourceName]
 		if !ok {
 			continue
 		}
+		routeActionsPerCluster := routeActionPerCluster(route)
 
-		// TODO find a way to extract clusters for gateway route
-		cluster, ok := gatewayClusters[""]
-		if !ok {
-			continue
-		}
+		for _, hostInfo := range listenerInfo.HostInfos {
+			destinations := gateway_plugin.RouteDestinationsMutable(hostInfo.Entries)
+			for _, dest := range destinations {
+				clusterName, err := gateway_route.DestinationClusterName(dest, hostInfo.Host.Tags)
+				if err != nil {
+					continue
+				}
+				cluster, ok := gatewayClusters[clusterName]
+				if !ok {
+					continue
+				}
 
-		// TODO remove log
-		log.Info("gateway listener", "gatewayListener", gatewayListener)
-		// TODO fix method invocation
-		if err := configure(
-			rules,
-			xds.MeshSubset(),
-			toProtocol(listener.GetProtocol()),
-			gatewayListener,
-			cluster,
-		); err != nil {
-			return err
+				routeActions, ok := routeActionsPerCluster[clusterName]
+				if !ok {
+					continue
+				}
+
+				serviceName := getServiceNameFromListenerInfo(listenerInfo, dest)
+				if err := configure(
+					toRules.Rules,
+					xds.MeshService(serviceName),
+					toProtocol(listenerInfo.Listener.Protocol),
+					gatewayListener,
+					cluster,
+					routeActions,
+				); err != nil {
+					return err
+				}
+			}
 		}
 	}
 
 	return nil
 }
 
-func configure(rules core_xds.Rules, subset core_xds.Subset, protocol core_mesh.Protocol, listener *envoy_listener.Listener, cluster *envoy_cluster.Cluster) error {
+func configure(rules core_xds.Rules, subset core_xds.Subset, protocol core_mesh.Protocol, listener *envoy_listener.Listener, cluster *envoy_cluster.Cluster, routeActions []*envoy_route.RouteAction) error {
 	var conf api.Conf
 	if computed := rules.Compute(subset); computed != nil {
 		conf = computed.Conf.(api.Conf)
@@ -189,6 +201,10 @@ func configure(rules core_xds.Rules, subset core_xds.Subset, protocol core_mesh.
 		if err := configurer.ConfigureListener(chain); err != nil {
 			return err
 		}
+	}
+
+	for _, routeAction := range routeActions {
+		configurer.ConfigureRouteAction(routeAction)
 	}
 
 	if err := configurer.ConfigureCluster(cluster); err != nil {
@@ -209,4 +225,28 @@ func inferProtocol(routing core_xds.Routing, serviceName string) core_mesh.Proto
 
 func toProtocol(p mesh_proto.MeshGateway_Listener_Protocol) core_mesh.Protocol {
 	return core_mesh.ParseProtocol(mesh_proto.MeshGateway_Listener_Protocol_name[int32(p.Number())])
+}
+
+func routeActionPerCluster(route *envoy_route.RouteConfiguration) map[string][]*envoy_route.RouteAction {
+	actions := map[string][]*envoy_route.RouteAction{}
+	for _, vh := range route.VirtualHosts {
+		for _, r := range vh.Routes {
+			routeAction := r.GetRoute()
+			cluster := routeAction.GetWeightedClusters().GetClusters()[0].Name
+			if actions[cluster] == nil {
+				actions[cluster] = []*envoy_route.RouteAction{routeAction}
+			} else {
+				actions[cluster] = append(actions[cluster], routeAction)
+			}
+		}
+	}
+	return actions
+}
+
+func getServiceNameFromListenerInfo(listenerInfo gateway_plugin.GatewayListenerInfo, dest *gateway_route.Destination) string {
+	endpoints := listenerInfo.OutboundEndpoints[dest.Destination[mesh_proto.ServiceTag]]
+	if len(endpoints) >= 1 {
+		return endpoints[0].Tags["app"]
+	}
+	return ""
 }
