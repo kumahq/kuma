@@ -23,7 +23,11 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
+<<<<<<< HEAD
 	"github.com/kumahq/kuma/pkg/xds/server/callbacks"
+=======
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
+>>>>>>> 39ba902fa (fix(xds): don't read metadata in ProxyBuilders (#5414))
 	"github.com/kumahq/kuma/pkg/xds/sync"
 )
 
@@ -34,10 +38,7 @@ func getMatchedPolicies(
 ) (
 	*core_xds.MatchedPolicies, []gateway.GatewayListenerInfo, core_xds.Proxy, error,
 ) {
-	proxyBuilder := sync.DefaultDataplaneProxyBuilder(
-		*cfg,
-		callbacks.NewDataplaneMetadataTracker(),
-		envoy.APIV3)
+	proxyBuilder := sync.DefaultDataplaneProxyBuilder(*cfg, envoy.APIV3)
 	if proxy, err := proxyBuilder.Build(ctx, dataplaneKey, meshContext); err != nil {
 		return nil, nil, core_xds.Proxy{}, err
 	} else {

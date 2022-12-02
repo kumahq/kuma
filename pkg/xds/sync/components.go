@@ -18,26 +18,32 @@ var (
 
 func DefaultDataplaneProxyBuilder(
 	config kuma_cp.Config,
+<<<<<<< HEAD
 	metadataTracker DataplaneMetadataTracker,
 	apiVersion envoy.APIVersion,
+=======
+	apiVersion core_xds.APIVersion,
+>>>>>>> 39ba902fa (fix(xds): don't read metadata in ProxyBuilders (#5414))
 ) *DataplaneProxyBuilder {
 	return &DataplaneProxyBuilder{
-		MetadataTracker: metadataTracker,
-		Zone:            config.Multizone.Zone.Name,
-		APIVersion:      apiVersion,
+		Zone:       config.Multizone.Zone.Name,
+		APIVersion: apiVersion,
 	}
 }
 
 func DefaultIngressProxyBuilder(
 	rt core_runtime.Runtime,
+<<<<<<< HEAD
 	metadataTracker DataplaneMetadataTracker,
 	apiVersion envoy.APIVersion,
+=======
+	apiVersion core_xds.APIVersion,
+>>>>>>> 39ba902fa (fix(xds): don't read metadata in ProxyBuilders (#5414))
 ) *IngressProxyBuilder {
 	return &IngressProxyBuilder{
 		ResManager:         rt.ResourceManager(),
 		ReadOnlyResManager: rt.ReadOnlyResourceManager(),
 		LookupIP:           rt.LookupIP(),
-		MetadataTracker:    metadataTracker,
 		apiVersion:         apiVersion,
 		meshCache:          rt.MeshCache(),
 		zone:               rt.Config().Multizone.Zone.Name,
@@ -47,15 +53,18 @@ func DefaultIngressProxyBuilder(
 func DefaultEgressProxyBuilder(
 	ctx context.Context,
 	rt core_runtime.Runtime,
+<<<<<<< HEAD
 	metadataTracker DataplaneMetadataTracker,
 	apiVersion envoy.APIVersion,
+=======
+	apiVersion core_xds.APIVersion,
+>>>>>>> 39ba902fa (fix(xds): don't read metadata in ProxyBuilders (#5414))
 ) *EgressProxyBuilder {
 	return &EgressProxyBuilder{
 		ctx:                ctx,
 		ResManager:         rt.ResourceManager(),
 		ReadOnlyResManager: rt.ReadOnlyResourceManager(),
 		LookupIP:           rt.LookupIP(),
-		MetadataTracker:    metadataTracker,
 		meshCache:          rt.MeshCache(),
 		apiVersion:         apiVersion,
 		zone:               rt.Config().Multizone.Zone.Name,
@@ -77,20 +86,17 @@ func DefaultDataplaneWatchdogFactory(
 
 	dataplaneProxyBuilder := DefaultDataplaneProxyBuilder(
 		config,
-		metadataTracker,
 		apiVersion,
 	)
 
 	ingressProxyBuilder := DefaultIngressProxyBuilder(
 		rt,
-		metadataTracker,
 		apiVersion,
 	)
 
 	egressProxyBuilder := DefaultEgressProxyBuilder(
 		ctx,
 		rt,
-		metadataTracker,
 		apiVersion,
 	)
 

@@ -30,12 +30,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/sync"
 )
 
-type mockMetadataTracker struct{}
-
-func (m mockMetadataTracker) Metadata(dpKey core_model.ResourceKey) *core_xds.DataplaneMetadata {
-	return nil
-}
-
 func initializeStore(ctx context.Context, resourceManager core_manager.ResourceManager, fileWithResourcesName string) {
 	resourcePath := filepath.Join(
 		"testdata", "input", fileWithResourcesName,
@@ -75,7 +69,6 @@ func initializeStore(ctx context.Context, resourceManager core_manager.ResourceM
 }
 
 var _ = Describe("Proxy Builder", func() {
-	tracker := mockMetadataTracker{}
 	localZone := "zone-1"
 
 	ctx := context.Background()
@@ -112,7 +105,6 @@ var _ = Describe("Proxy Builder", func() {
 		egressProxyBuilder := sync.DefaultEgressProxyBuilder(
 			ctx,
 			rt,
-			tracker,
 			envoy_common.APIV3,
 		)
 
@@ -195,7 +187,6 @@ var _ = Describe("Proxy Builder", func() {
 	Describe("Build() zone ingress", func() {
 		ingressProxyBuilder := sync.DefaultIngressProxyBuilder(
 			rt,
-			tracker,
 			envoy_common.APIV3,
 		)
 
