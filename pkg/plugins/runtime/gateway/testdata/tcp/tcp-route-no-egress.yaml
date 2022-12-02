@@ -16,15 +16,51 @@ Clusters:
           - endpoint:
               address:
                 socketAddress:
-                  address: httpbin.com
+                  address: httpbin-1.com
                   portValue: 443
             loadBalancingWeight: 1
             metadata:
               filterMetadata:
                 envoy.lb:
-                  kuma.io/external-service-name: external-httpbin
+                  kuma.io/external-service-name: external-httpbin-1
                 envoy.transport_socket_match:
-                  kuma.io/external-service-name: external-httpbin
+                  kuma.io/external-service-name: external-httpbin-1
+          - endpoint:
+              address:
+                socketAddress:
+                  address: httpbin-2.com
+                  portValue: 443
+            loadBalancingWeight: 1
+            metadata:
+              filterMetadata:
+                envoy.lb:
+                  kuma.io/external-service-name: external-httpbin-2
+                envoy.transport_socket_match:
+                  kuma.io/external-service-name: external-httpbin-2
+          - endpoint:
+              address:
+                socketAddress:
+                  address: httpbin-3.com
+                  portValue: 443
+            loadBalancingWeight: 1
+            metadata:
+              filterMetadata:
+                envoy.lb:
+                  kuma.io/external-service-name: external-httpbin-3
+                envoy.transport_socket_match:
+                  kuma.io/external-service-name: external-httpbin-3
+          - endpoint:
+              address:
+                socketAddress:
+                  address: httpbin-4.com
+                  portValue: 443
+            loadBalancingWeight: 1
+            metadata:
+              filterMetadata:
+                envoy.lb:
+                  kuma.io/external-service-name: external-httpbin-4
+                envoy.transport_socket_match:
+                  kuma.io/external-service-name: external-httpbin-4
       name: external-httpbin-8490df2e58a77ae0
       outlierDetection:
         enforcingConsecutive5xx: 0
@@ -35,13 +71,37 @@ Clusters:
       perConnectionBufferLimitBytes: 32768
       transportSocketMatches:
       - match:
-          kuma.io/external-service-name: external-httpbin
-        name: httpbin.com
+          kuma.io/external-service-name: external-httpbin-1
+        name: httpbin-1.com
         transportSocket:
           name: envoy.transport_sockets.tls
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-            sni: httpbin.com
+            sni: httpbin-1.com
+      - match:
+          kuma.io/external-service-name: external-httpbin-2
+        name: httpbin-2.com
+        transportSocket:
+          name: envoy.transport_sockets.tls
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+            sni: httpbin-2.com
+      - match:
+          kuma.io/external-service-name: external-httpbin-3
+        name: httpbin-3.com
+        transportSocket:
+          name: envoy.transport_sockets.tls
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+            sni: httpbin-3.com
+      - match:
+          kuma.io/external-service-name: external-httpbin-4
+        name: httpbin-4.com
+        transportSocket:
+          name: envoy.transport_sockets.tls
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+            sni: httpbin-4.com
       type: STRICT_DNS
 Endpoints:
   Resources: {}
