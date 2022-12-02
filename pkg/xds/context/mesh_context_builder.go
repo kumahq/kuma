@@ -146,7 +146,7 @@ func (m *meshContextBuilder) fetchCrossMesh(
 		return err
 	}
 
-	if err := m.rm.List(ctx, local, core_store.ListByMesh(localMesh)); err != nil {
+	if err := m.rm.List(ctx, local, core_store.ListByMesh(localMesh), core_store.ListOrdered()); err != nil {
 		return err
 	}
 
@@ -161,7 +161,7 @@ func (m *meshContextBuilder) fetchCrossMesh(
 		if err != nil {
 			return err
 		}
-		if err := m.rm.List(ctx, allOtherMeshItems, core_store.ListByMesh(otherMesh)); err != nil {
+		if err := m.rm.List(ctx, allOtherMeshItems, core_store.ListByMesh(otherMesh), core_store.ListOrdered()); err != nil {
 			return err
 		}
 
@@ -201,7 +201,7 @@ func (m *meshContextBuilder) fetchResources(ctx context.Context, mesh *core_mesh
 		switch typ {
 		case core_mesh.MeshType:
 			meshes := &core_mesh.MeshResourceList{}
-			if err := m.rm.List(ctx, meshes); err != nil {
+			if err := m.rm.List(ctx, meshes, core_store.ListOrdered()); err != nil {
 				return Resources{}, err
 			}
 			otherMeshes := &core_mesh.MeshResourceList{}
@@ -215,20 +215,20 @@ func (m *meshContextBuilder) fetchResources(ctx context.Context, mesh *core_mesh
 			resources.MeshLocalResources[typ] = otherMeshes
 		case core_mesh.ZoneIngressType:
 			zoneIngresses := &core_mesh.ZoneIngressResourceList{}
-			if err := m.rm.List(ctx, zoneIngresses); err != nil {
+			if err := m.rm.List(ctx, zoneIngresses, core_store.ListOrdered()); err != nil {
 				return Resources{}, err
 			}
 			resources.MeshLocalResources[typ] = zoneIngresses
 		case core_mesh.ZoneEgressType:
 			zoneEgresses := &core_mesh.ZoneEgressResourceList{}
-			if err := m.rm.List(ctx, zoneEgresses); err != nil {
+			if err := m.rm.List(ctx, zoneEgresses, core_store.ListOrdered()); err != nil {
 				return Resources{}, err
 			}
 			resources.MeshLocalResources[typ] = zoneEgresses
 		case system.ConfigType:
 			configs := &system.ConfigResourceList{}
 			var items []*system.ConfigResource
-			if err := m.rm.List(ctx, configs); err != nil {
+			if err := m.rm.List(ctx, configs, core_store.ListOrdered()); err != nil {
 				return Resources{}, err
 			}
 			for _, config := range configs.Items {
@@ -247,7 +247,7 @@ func (m *meshContextBuilder) fetchResources(ctx context.Context, mesh *core_mesh
 			}
 
 			insights := &core_mesh.ServiceInsightResourceList{}
-			if err := m.rm.List(ctx, insights, core_store.ListByMesh(mesh.Meta.GetName())); err != nil {
+			if err := m.rm.List(ctx, insights, core_store.ListByMesh(mesh.Meta.GetName()), core_store.ListOrdered()); err != nil {
 				return Resources{}, err
 			}
 
@@ -257,7 +257,7 @@ func (m *meshContextBuilder) fetchResources(ctx context.Context, mesh *core_mesh
 			if err != nil {
 				return Resources{}, err
 			}
-			if err := m.rm.List(ctx, rlist, core_store.ListByMesh(mesh.Meta.GetName())); err != nil {
+			if err := m.rm.List(ctx, rlist, core_store.ListByMesh(mesh.Meta.GetName()), core_store.ListOrdered()); err != nil {
 				return Resources{}, err
 			}
 			resources.MeshLocalResources[typ] = rlist
