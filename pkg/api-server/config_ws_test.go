@@ -163,14 +163,16 @@ var _ = Describe("Config WS", func() {
 				"tlsCertFile": "",
 				"tlsKeyFile": "",
 				"zoneInsightFlushInterval": "10s",
-				"maxMsgSize": 10485760
+				"maxMsgSize": 10485760,
+				"msgSendTimeout": "1m0s"
 			  }
 			},
 			"zone": {
 			  "kds": {
 				"refreshInterval": "1s",
 				"rootCaFile": "",
-				"maxMsgSize": 10485760
+				"maxMsgSize": 10485760,
+				"msgSendTimeout": "1m0s"
 			  }
 			}
 		  },
