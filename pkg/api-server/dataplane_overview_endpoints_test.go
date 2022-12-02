@@ -64,7 +64,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 
 	BeforeEach(func() {
 		// given
-		createDpWithInsights("dp-1", &v1alpha1.Dataplane{
+		createDpWithInsights("gateway-delegated", &v1alpha1.Dataplane{
 			Networking: &v1alpha1.Dataplane_Networking{
 				Address: "127.0.0.1",
 				Gateway: &v1alpha1.Dataplane_Networking_Gateway{
@@ -74,8 +74,19 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 				},
 			},
 		})
+		createDpWithInsights("gateway-builtin", &v1alpha1.Dataplane{
+			Networking: &v1alpha1.Dataplane_Networking{
+				Address: "127.0.0.1",
+				Gateway: &v1alpha1.Dataplane_Networking_Gateway{
+					Type: v1alpha1.Dataplane_Networking_Gateway_BUILTIN,
+					Tags: map[string]string{
+						"service": "gateway",
+					},
+				},
+			},
+		})
 
-		createDpWithInsights("dp-2", &v1alpha1.Dataplane{
+		createDpWithInsights("dp-1", &v1alpha1.Dataplane{
 			Networking: &v1alpha1.Dataplane_Networking{
 				Address: "127.0.0.1",
 				Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
@@ -92,10 +103,10 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 		})
 	})
 
-	dp1Json := `
+	gatewayDelegatedJson := `
 {
 	"type": "DataplaneOverview",
-	"name": "dp-1",
+	"name": "gateway-delegated",
 	"mesh": "mesh1",
 	"creationTime": "2018-07-17T16:05:36.995Z",
 	"modificationTime": "2018-07-17T16:05:36.995Z",
@@ -127,10 +138,46 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 	}
 }`
 
-	dp2Json := `
+	gatewayBuiltinJson := `
 {
 	"type": "DataplaneOverview",
-	"name": "dp-2",
+	"name": "gateway-builtin",
+	"mesh": "mesh1",
+	"creationTime": "2018-07-17T16:05:36.995Z",
+	"modificationTime": "2018-07-17T16:05:36.995Z",
+	"dataplane": {
+		"networking": {
+			"address": "127.0.0.1",
+			"gateway": {
+				"type": "BUILTIN",
+				"tags": {
+					"service": "gateway"
+				}
+            }
+		}
+	},
+	"dataplaneInsight": {
+		"subscriptions": [
+			{
+				"id": "stream-id-1",
+				"controlPlaneInstanceId": "cp-1",
+				"connectTime": "2019-07-01T00:00:00Z",
+				"status": {
+					"total": {},
+					"cds": {},
+					"eds": {},
+					"lds": {},
+					"rds": {}
+				}
+			}
+		]
+	}
+}`
+
+	dp1Json := `
+{
+	"type": "DataplaneOverview",
+	"name": "dp-1",
 	"mesh": "mesh1",
 	"creationTime": "2018-07-17T16:05:36.995Z",
 	"modificationTime": "2018-07-17T16:05:36.995Z",
@@ -200,19 +247,19 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 			},
 			Entry("should list all when no tag is provided", testCase{
 				url:          "/meshes/mesh1/dataplanes+insights",
-				expectedJson: fmt.Sprintf(`{"total": 2, "items": [%s,%s], "next": null}`, dp1Json, dp2Json),
+				expectedJson: fmt.Sprintf(`{"total": 3, "items": [%s, %s, %s], "next": null}`, dp1Json, gatewayBuiltinJson, gatewayDelegatedJson),
 			}),
 			Entry("should list with only one matching tag", testCase{
 				url:          "/meshes/mesh1/dataplanes+insights?tag=service:backend",
-				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, dp2Json),
+				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, dp1Json),
 			}),
 			Entry("should list all with all matching tags", testCase{
 				url:          "/meshes/mesh1/dataplanes+insights?tag=service:backend&tag=version:v1",
-				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, dp2Json),
+				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, dp1Json),
 			}),
 			Entry("should list all with all matching tags with value with a column", testCase{
 				url:          "/meshes/mesh1/dataplanes+insights?tag=tagcolumn:tag:v",
-				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, dp2Json),
+				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, dp1Json),
 			}),
 			Entry("should not list when any tag is not matching", testCase{
 				url:          "/meshes/mesh1/dataplanes+insights?tag=service:backend&tag=version:v2",
@@ -220,7 +267,19 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 			}),
 			Entry("should list only gateway dataplanes", testCase{
 				url:          "/meshes/mesh1/dataplanes+insights?gateway=true",
-				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, dp1Json),
+				expectedJson: fmt.Sprintf(`{"total": 2, "items": [%s, %s], "next": null}`, gatewayBuiltinJson, gatewayDelegatedJson),
+			}),
+			Entry("should list only gateway builtin", testCase{
+				url:          "/meshes/mesh1/dataplanes+insights?gateway=builtin",
+				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, gatewayBuiltinJson),
+			}),
+			Entry("should list only gateway delegated", testCase{
+				url:          "/meshes/mesh1/dataplanes+insights?gateway=delegated",
+				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, gatewayDelegatedJson),
+			}),
+			Entry("should list only dataplanes that starts with gateway", testCase{
+				url:          "/meshes/mesh1/dataplanes+insights?namePrefix=gateway",
+				expectedJson: fmt.Sprintf(`{"total": 2, "items": [%s, %s], "next": null}`, gatewayBuiltinJson, gatewayDelegatedJson),
 			}),
 		)
 	})

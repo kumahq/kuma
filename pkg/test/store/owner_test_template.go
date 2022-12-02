@@ -61,6 +61,41 @@ func ExecuteOwnerTests(
 		Expect(store.IsResourceNotFound(err)).To(BeTrue())
 	})
 
+	It("should delete resource when its owner is deleted after owner update", func() {
+		// setup
+		meshRes := core_mesh.NewMeshResource()
+		err := s.Create(context.Background(), meshRes, store.CreateByKey(mesh, model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		name := "resource-1"
+		trRes := core_mesh.TrafficRouteResource{
+			Spec: &v1alpha1.TrafficRoute{
+				Conf: &v1alpha1.TrafficRoute_Conf{
+					Destination: map[string]string{
+						"path": "demo",
+					},
+				},
+			},
+		}
+		err = s.Create(context.Background(), &trRes,
+			store.CreateByKey(name, mesh),
+			store.CreatedAt(time.Now()),
+			store.CreateWithOwner(meshRes))
+		Expect(err).ToNot(HaveOccurred())
+
+		// when owner is updated
+		Expect(s.Update(context.Background(), meshRes)).To(Succeed())
+
+		// and only then deleted
+		err = s.Delete(context.Background(), meshRes, store.DeleteByKey(mesh, model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		actual := core_mesh.NewTrafficRouteResource()
+		err = s.Get(context.Background(), actual, store.GetByKey(name, mesh))
+		Expect(store.IsResourceNotFound(err)).To(BeTrue())
+	})
+
 	It("should delete several resources when their owner is deleted", func() {
 		// setup
 		meshRes := core_mesh.NewMeshResource()

@@ -1,0 +1,4 @@
+# Only used for Netlify deployment previews.
+# Redirects all requests back to index.html to make vue router’s history mode work in Netlify environments (see https://router.vuejs.org/guide/essentials/history-mode.html#html5-mode).
+
+/*   /index.html   200

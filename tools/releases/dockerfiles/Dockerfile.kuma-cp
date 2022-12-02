@@ -1,22 +1,6 @@
-ARG BASE_IMAGE_ARCH=amd64
-FROM --platform=linux/$BASE_IMAGE_ARCH alpine:3.16.3
+FROM kumahq/static-debian11:no-push
+
 ARG ARCH
-
-ADD /build/artifacts-linux-$ARCH/kuma-cp/kuma-cp /usr/bin
-
-RUN mkdir -p /etc/kuma
-ADD /pkg/config/app/kuma-cp/kuma-cp.defaults.yaml /etc/kuma
-
-COPY /tools/releases/templates/LICENSE \
-    /tools/releases/templates/README \
-    /kuma/
-
-COPY /tools/releases/templates/NOTICE /kuma/
-
-RUN addgroup -S -g 6789 kuma-cp \
- && adduser -S -D -G kuma-cp -u 6789 kuma-cp
-
-USER kuma-cp
-WORKDIR /home/kuma-cp
+COPY /build/artifacts-linux-$ARCH/kuma-cp/kuma-cp /usr/bin
 
 ENTRYPOINT ["kuma-cp"]
