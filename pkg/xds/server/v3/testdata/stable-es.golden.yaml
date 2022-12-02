@@ -1,0 +1,503 @@
+resources:
+- name: es-with-tls
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 10s
+    dnsLookupFamily: V4_ONLY
+    loadAssignment:
+      clusterName: es-with-tls
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: hostname-0.com
+                portValue: 443
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/external-service-name: es-0
+                kuma.io/protocol: http
+                kuma.io/zone: zone-4
+              envoy.transport_socket_match:
+                kuma.io/external-service-name: es-0
+                kuma.io/protocol: http
+                kuma.io/zone: zone-4
+        locality:
+          zone: zone-4
+        priority: 1
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: hostname-1.com
+                portValue: 443
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/external-service-name: es-1
+                kuma.io/protocol: http
+                kuma.io/zone: zone-3
+              envoy.transport_socket_match:
+                kuma.io/external-service-name: es-1
+                kuma.io/protocol: http
+                kuma.io/zone: zone-3
+        locality:
+          zone: zone-3
+        priority: 1
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: hostname-2.com
+                portValue: 443
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/external-service-name: es-2
+                kuma.io/protocol: http
+                kuma.io/zone: zone-2
+              envoy.transport_socket_match:
+                kuma.io/external-service-name: es-2
+                kuma.io/protocol: http
+                kuma.io/zone: zone-2
+        locality:
+          zone: zone-2
+        priority: 1
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: hostname-3.com
+                portValue: 443
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/external-service-name: es-3
+                kuma.io/protocol: http
+                kuma.io/zone: zone-1
+              envoy.transport_socket_match:
+                kuma.io/external-service-name: es-3
+                kuma.io/protocol: http
+                kuma.io/zone: zone-1
+        locality:
+          zone: zone-1
+        priority: 1
+    name: es-with-tls
+    transportSocketMatches:
+    - match:
+        kuma.io/external-service-name: es-0
+        kuma.io/protocol: http
+        kuma.io/zone: zone-4
+      name: hostname-0.com
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          sni: hostname-0.com
+    - match:
+        kuma.io/external-service-name: es-1
+        kuma.io/protocol: http
+        kuma.io/zone: zone-3
+      name: hostname-1.com
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          sni: hostname-1.com
+    - match:
+        kuma.io/external-service-name: es-2
+        kuma.io/protocol: http
+        kuma.io/zone: zone-2
+      name: hostname-2.com
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          sni: hostname-2.com
+    - match:
+        kuma.io/external-service-name: es-3
+        kuma.io/protocol: http
+        kuma.io/zone: zone-1
+      name: hostname-3.com
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          sni: hostname-3.com
+    type: STRICT_DNS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        commonHttpProtocolOptions:
+          idleTimeout: 0s
+        explicitHttpConfig:
+          httpProtocolOptions: {}
+- name: inbound:passthrough:ipv4
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: inbound_passthrough_ipv4
+    connectTimeout: 10s
+    lbPolicy: CLUSTER_PROVIDED
+    name: inbound:passthrough:ipv4
+    type: ORIGINAL_DST
+    upstreamBindConfig:
+      sourceAddress:
+        address: 127.0.0.6
+        portValue: 0
+- name: localhost:8080
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: localhost_8080
+    connectTimeout: 10s
+    loadAssignment:
+      clusterName: localhost:8080
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 127.0.0.1
+                portValue: 8080
+    name: localhost:8080
+    type: STATIC
+- name: localhost:8443
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: localhost_8443
+    connectTimeout: 10s
+    loadAssignment:
+      clusterName: localhost:8443
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 127.0.0.1
+                portValue: 8443
+    name: localhost:8443
+    type: STATIC
+- name: outbound:passthrough:ipv4
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: outbound_passthrough_ipv4
+    connectTimeout: 10s
+    lbPolicy: CLUSTER_PROVIDED
+    name: outbound:passthrough:ipv4
+    type: ORIGINAL_DST
+- name: inbound:192.168.0.1:443
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.1
+        portValue: 443
+    bindToPort: false
+    enableReusePort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.rbac
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+          rules:
+            policies:
+              tp:
+                permissions:
+                - any: true
+                principals:
+                - any: true
+          statPrefix: inbound_192_168_0_1_443.
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: localhost:8443
+          idleTimeout: 7200s
+          statPrefix: localhost_8443
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          commonTlsContext:
+            combinedValidationContext:
+              defaultValidationContext:
+                matchSubjectAltNames:
+                - prefix: spiffe://demo/
+              validationContextSdsSecretConfig:
+                name: mesh_ca:secret:demo
+                sdsConfig:
+                  ads: {}
+                  resourceApiVersion: V3
+            tlsCertificateSdsSecretConfigs:
+            - name: identity_cert:secret:demo
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          requireClientCertificate: true
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: backend-2
+    name: inbound:192.168.0.1:443
+    trafficDirection: INBOUND
+- name: inbound:192.168.0.1:80
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.1
+        portValue: 80
+    bindToPort: false
+    enableReusePort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.rbac
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+          rules:
+            policies:
+              tp:
+                permissions:
+                - any: true
+                principals:
+                - any: true
+          statPrefix: inbound_192_168_0_1_80.
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: localhost:8080
+          idleTimeout: 7200s
+          statPrefix: localhost_8080
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          commonTlsContext:
+            combinedValidationContext:
+              defaultValidationContext:
+                matchSubjectAltNames:
+                - prefix: spiffe://demo/
+              validationContextSdsSecretConfig:
+                name: mesh_ca:secret:demo
+                sdsConfig:
+                  ads: {}
+                  resourceApiVersion: V3
+            tlsCertificateSdsSecretConfigs:
+            - name: identity_cert:secret:demo
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          requireClientCertificate: true
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: backend-1
+    name: inbound:192.168.0.1:80
+    trafficDirection: INBOUND
+- name: inbound:192.168.0.2:443
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.2
+        portValue: 443
+    bindToPort: false
+    enableReusePort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.rbac
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+          rules:
+            policies:
+              tp:
+                permissions:
+                - any: true
+                principals:
+                - any: true
+          statPrefix: inbound_192_168_0_2_443.
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: localhost:8443
+          idleTimeout: 7200s
+          statPrefix: localhost_8443
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          commonTlsContext:
+            combinedValidationContext:
+              defaultValidationContext:
+                matchSubjectAltNames:
+                - prefix: spiffe://demo/
+              validationContextSdsSecretConfig:
+                name: mesh_ca:secret:demo
+                sdsConfig:
+                  ads: {}
+                  resourceApiVersion: V3
+            tlsCertificateSdsSecretConfigs:
+            - name: identity_cert:secret:demo
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          requireClientCertificate: true
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: backend-4
+    name: inbound:192.168.0.2:443
+    trafficDirection: INBOUND
+- name: inbound:192.168.0.2:80
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.2
+        portValue: 80
+    bindToPort: false
+    enableReusePort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.rbac
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+          rules:
+            policies:
+              tp:
+                permissions:
+                - any: true
+                principals:
+                - any: true
+          statPrefix: inbound_192_168_0_2_80.
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: localhost:8080
+          idleTimeout: 7200s
+          statPrefix: localhost_8080
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          commonTlsContext:
+            combinedValidationContext:
+              defaultValidationContext:
+                matchSubjectAltNames:
+                - prefix: spiffe://demo/
+              validationContextSdsSecretConfig:
+                name: mesh_ca:secret:demo
+                sdsConfig:
+                  ads: {}
+                  resourceApiVersion: V3
+            tlsCertificateSdsSecretConfigs:
+            - name: identity_cert:secret:demo
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          requireClientCertificate: true
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: backend-3
+    name: inbound:192.168.0.2:80
+    trafficDirection: INBOUND
+- name: inbound:passthrough:ipv4
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 0.0.0.0
+        portValue: 15006
+    enableReusePort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: inbound:passthrough:ipv4
+          statPrefix: inbound_passthrough_ipv4
+    name: inbound:passthrough:ipv4
+    trafficDirection: INBOUND
+    useOriginalDst: true
+- name: outbound:127.0.0.1:10001
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 10001
+    bindToPort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          commonHttpProtocolOptions:
+            idleTimeout: 0s
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            name: outbound:es-with-tls
+            requestHeadersToAdd:
+            - header:
+                key: x-kuma-tags
+                value: '&kuma.io/service=backend-1,backend-2,backend-3,backend-4&'
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: es-with-tls
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  autoHostRewrite: true
+                  cluster: es-with-tls
+                  timeout: 0s
+          statPrefix: es-with-tls
+          streamIdleTimeout: 0s
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: es-with-tls
+    name: outbound:127.0.0.1:10001
+    trafficDirection: OUTBOUND
+- name: outbound:passthrough:ipv4
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 0.0.0.0
+        portValue: 15001
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: outbound:passthrough:ipv4
+          statPrefix: outbound_passthrough_ipv4
+    name: outbound:passthrough:ipv4
+    trafficDirection: OUTBOUND
+    useOriginalDst: true
+- name: identity_cert:secret:demo
+  resource:
+    '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret
+    name: identity_cert:secret:demo
+    tlsCertificate:
+      certificateChain:
+        inlineBytes: Q0VSVA==
+      privateKey:
+        inlineBytes: S0VZ
+- name: mesh_ca:secret:demo
+  resource:
+    '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret
+    name: mesh_ca:secret:demo
+    validationContext:
+      trustedCa:
+        inlineBytes: Q0E=
