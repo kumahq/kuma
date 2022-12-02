@@ -20,6 +20,7 @@ import (
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
@@ -75,7 +76,7 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 
 	builder.
 		WithComponentManager(component.NewManager(leader_memory.NewAlwaysLeaderElector())).
-		WithResourceStore(resources_memory.NewStore()).
+		WithResourceStore(store.NewPaginationStore(resources_memory.NewStore())).
 		WithSecretStore(secret_store.NewSecretStore(builder.ResourceStore())).
 		WithResourceValidators(core_runtime.ResourceValidators{
 			Dataplane: dataplane.NewMembershipValidator(),

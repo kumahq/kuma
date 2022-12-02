@@ -61,7 +61,7 @@ spec:
               command:
                 - cat
                 - /tmp/ready
-          command: [ "/bin/sh", "-c", "--" ]
+          command: [ "sh", "-c", "--" ]
           args: [ "sleep {{.Values.cni.delayStartupSeconds}} && exec /install-cni" ]
           {{- else if .Values.experimental.ebpf.enabled }}
           {{- with .Values.cni.experimental.imageEbpf }}

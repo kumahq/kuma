@@ -27,8 +27,6 @@ import (
 var syncLog = core.Log.WithName("sync")
 
 type DataplaneProxyBuilder struct {
-	MetadataTracker DataplaneMetadataTracker
-
 	Zone       string
 	APIVersion core_xds.APIVersion
 }
@@ -64,7 +62,6 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 		Id:             core_xds.FromResourceKey(key),
 		APIVersion:     p.APIVersion,
 		Dataplane:      dp,
-		Metadata:       p.MetadataTracker.Metadata(key),
 		Routing:        *routing,
 		Policies:       *matchedPolicies,
 		SecretsTracker: secretsTracker,

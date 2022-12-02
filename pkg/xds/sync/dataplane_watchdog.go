@@ -63,11 +63,11 @@ func (d *DataplaneWatchdog) Sync(ctx context.Context) error {
 	}
 	switch d.dpType {
 	case mesh_proto.DataplaneProxyType:
-		return d.syncDataplane(ctx)
+		return d.syncDataplane(ctx, metadata)
 	case mesh_proto.IngressProxyType:
-		return d.syncIngress(ctx)
+		return d.syncIngress(ctx, metadata)
 	case mesh_proto.EgressProxyType:
-		return d.syncEgress(ctx)
+		return d.syncEgress(ctx, metadata)
 	default:
 		// It might be a case that dp type is not yet inferred because there is no Dataplane definition yet.
 		return nil
@@ -91,7 +91,7 @@ func (d *DataplaneWatchdog) Cleanup() error {
 
 // syncDataplane syncs state of the Dataplane.
 // It uses Mesh Hash to decide if we need to regenerate configuration or not.
-func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) error {
+func (d *DataplaneWatchdog) syncDataplane(ctx context.Context, metadata *core_xds.DataplaneMetadata) error {
 	meshCtx, err := d.MeshCache.GetMeshContext(ctx, syncLog, d.key.Mesh)
 	if err != nil {
 		return err
@@ -126,6 +126,7 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) error {
 	if !envoyCtx.Mesh.Resource.MTLSEnabled() {
 		d.EnvoyCpCtx.Secrets.Cleanup(d.key) // we need to cleanup secrets if mtls is disabled
 	}
+	proxy.Metadata = metadata
 	if err := d.DataplaneReconciler.Reconcile(*envoyCtx, proxy); err != nil {
 		return err
 	}
@@ -134,7 +135,7 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) error {
 }
 
 // syncIngress synces state of Ingress Dataplane. Notice that it does not use Mesh Hash yet because Ingress supports many Meshes.
-func (d *DataplaneWatchdog) syncIngress(ctx context.Context) error {
+func (d *DataplaneWatchdog) syncIngress(ctx context.Context, metadata *core_xds.DataplaneMetadata) error {
 	envoyCtx := &xds_context.Context{
 		ControlPlane: d.EnvoyCpCtx,
 		Mesh:         xds_context.MeshContext{}, // ZoneIngress does not have a mesh!
@@ -148,12 +149,13 @@ func (d *DataplaneWatchdog) syncIngress(ctx context.Context) error {
 		return errors.Wrap(err, "could not get Envoy Admin mTLS certs")
 	}
 	proxy.EnvoyAdminMTLSCerts = envoyAdminMTLS
+	proxy.Metadata = metadata
 	return d.IngressReconciler.Reconcile(*envoyCtx, proxy)
 }
 
 // syncEgress syncs state of Egress Dataplane. Notice that it does not use
 // Mesh Hash yet because Egress supports many Meshes.
-func (d *DataplaneWatchdog) syncEgress(ctx context.Context) error {
+func (d *DataplaneWatchdog) syncEgress(ctx context.Context, metadata *core_xds.DataplaneMetadata) error {
 	envoyCtx := &xds_context.Context{
 		ControlPlane: d.EnvoyCpCtx,
 		Mesh:         xds_context.MeshContext{}, // ZoneEgress does not have a mesh!
@@ -168,7 +170,7 @@ func (d *DataplaneWatchdog) syncEgress(ctx context.Context) error {
 		return errors.Wrap(err, "could not get Envoy Admin mTLS certs")
 	}
 	proxy.EnvoyAdminMTLSCerts = envoyAdminMTLS
-
+	proxy.Metadata = metadata
 	return d.EgressReconciler.Reconcile(*envoyCtx, proxy)
 }
 

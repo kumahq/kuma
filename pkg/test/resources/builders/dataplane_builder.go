@@ -103,11 +103,16 @@ func (d *DataplaneBuilder) AddInboundOfTags(tags ...string) *DataplaneBuilder {
 }
 
 func (d *DataplaneBuilder) AddInboundOfTagsMap(tags map[string]string) *DataplaneBuilder {
-	d.res.Spec.Networking.Inbound = append(d.res.Spec.Networking.Inbound, &mesh_proto.Dataplane_Networking_Inbound{
-		Port:        FirstInboundPort + uint32(len(d.res.Spec.Networking.Inbound)),
-		ServicePort: FirstInboundServicePort + uint32(len(d.res.Spec.Networking.Inbound)),
-		Tags:        tags,
-	})
+	return d.AddInbound(
+		Inbound().
+			WithPort(FirstInboundPort + uint32(len(d.res.Spec.Networking.Inbound))).
+			WithServicePort(FirstInboundServicePort + uint32(len(d.res.Spec.Networking.Inbound))).
+			WithTags(tags),
+	)
+}
+
+func (d *DataplaneBuilder) AddInbound(inbound *InboundBuilder) *DataplaneBuilder {
+	d.res.Spec.Networking.Inbound = append(d.res.Spec.Networking.Inbound, inbound.Build())
 	return d
 }
 
@@ -124,6 +129,14 @@ func (d *DataplaneBuilder) AddOutboundToService(service string) *DataplaneBuilde
 func (d *DataplaneBuilder) AddOutboundsToServices(services ...string) *DataplaneBuilder {
 	for _, service := range services {
 		d.AddOutboundToService(service)
+	}
+	return d
+}
+
+func (d *DataplaneBuilder) WithTransparentProxying(redirectPortOutbound, redirectPortInbound uint32) *DataplaneBuilder {
+	d.res.Spec.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{
+		RedirectPortInbound:  redirectPortInbound,
+		RedirectPortOutbound: redirectPortOutbound,
 	}
 	return d
 }
@@ -146,4 +159,47 @@ func (d *DataplaneBuilder) WithPrometheusMetrics(config *mesh_proto.PrometheusMe
 		Conf: proto.MustToStruct(config),
 	}
 	return d
+}
+
+type InboundBuilder struct {
+	res *mesh_proto.Dataplane_Networking_Inbound
+}
+
+func Inbound() *InboundBuilder {
+	return &InboundBuilder{
+		res: &mesh_proto.Dataplane_Networking_Inbound{
+			Tags: map[string]string{},
+		},
+	}
+}
+
+func (b *InboundBuilder) WithAddress(addr string) *InboundBuilder {
+	b.res.Address = addr
+	return b
+}
+
+func (b *InboundBuilder) WithPort(port uint32) *InboundBuilder {
+	b.res.Port = port
+	return b
+}
+
+func (b *InboundBuilder) WithServicePort(port uint32) *InboundBuilder {
+	b.res.ServicePort = port
+	return b
+}
+
+func (b *InboundBuilder) WithTags(tags map[string]string) *InboundBuilder {
+	for k, v := range tags {
+		b.res.Tags[k] = v
+	}
+	return b
+}
+
+func (b *InboundBuilder) WithService(name string) *InboundBuilder {
+	b.WithTags(map[string]string{mesh_proto.ServiceTag: name})
+	return b
+}
+
+func (b *InboundBuilder) Build() *mesh_proto.Dataplane_Networking_Inbound {
+	return b.res
 }

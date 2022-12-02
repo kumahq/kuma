@@ -87,9 +87,8 @@ var _ = Describe("Dataplane Watchdog", func() {
 
 		deps = sync.DataplaneWatchdogDependencies{
 			DataplaneProxyBuilder: &sync.DataplaneProxyBuilder{
-				MetadataTracker: metadataTracker,
-				APIVersion:      envoy.APIV3,
-				Zone:            zone,
+				APIVersion: envoy.APIV3,
+				Zone:       zone,
 			},
 			DataplaneReconciler: snapshotReconciler,
 			EnvoyCpCtx: &xds_context.ControlPlaneContext{
