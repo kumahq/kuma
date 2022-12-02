@@ -10,7 +10,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core/xds"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_cache "github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/ingress"
@@ -21,14 +21,13 @@ type IngressProxyBuilder struct {
 	ResManager         manager.ResourceManager
 	ReadOnlyResManager manager.ReadOnlyResourceManager
 	LookupIP           lookup.LookupIPFunc
-	MetadataTracker    DataplaneMetadataTracker
 	meshCache          *xds_cache.Cache
 
 	apiVersion envoy.APIVersion
 	zone       string
 }
 
-func (p *IngressProxyBuilder) Build(ctx context.Context, key core_model.ResourceKey) (*xds.Proxy, error) {
+func (p *IngressProxyBuilder) Build(ctx context.Context, key core_model.ResourceKey) (*core_xds.Proxy, error) {
 	zoneIngress, err := p.getZoneIngress(ctx, key)
 	if err != nil {
 		return nil, err
@@ -62,18 +61,17 @@ func (p *IngressProxyBuilder) Build(ctx context.Context, key core_model.Resource
 
 	routing := p.resolveRouting(zoneIngress, zoneEgressesList, allMeshDataplanes, availableExternalServices, zoneIngressProxy.MeshGateways)
 
-	proxy := &xds.Proxy{
-		Id:               xds.FromResourceKey(key),
+	proxy := &core_xds.Proxy{
+		Id:               core_xds.FromResourceKey(key),
 		APIVersion:       p.apiVersion,
 		ZoneIngress:      zoneIngress,
-		Metadata:         p.MetadataTracker.Metadata(key),
 		Routing:          *routing,
 		ZoneIngressProxy: zoneIngressProxy,
 	}
 	return proxy, nil
 }
 
-func (p *IngressProxyBuilder) buildZoneIngressProxy(ctx context.Context) (*xds.ZoneIngressProxy, error) {
+func (p *IngressProxyBuilder) buildZoneIngressProxy(ctx context.Context) (*core_xds.ZoneIngressProxy, error) {
 	routes := &core_mesh.TrafficRouteResourceList{}
 	if err := p.ReadOnlyResManager.List(ctx, routes); err != nil {
 		return nil, err
@@ -91,7 +89,7 @@ func (p *IngressProxyBuilder) buildZoneIngressProxy(ctx context.Context) (*xds.Z
 		return nil, err
 	}
 
-	return &xds.ZoneIngressProxy{
+	return &core_xds.ZoneIngressProxy{
 		TrafficRouteList: routes,
 		GatewayRoutes:    gatewayRoutes,
 		MeshGateways:     gateways,
@@ -118,13 +116,13 @@ func (p *IngressProxyBuilder) resolveRouting(
 	dataplanes *core_mesh.DataplaneResourceList,
 	externalServices *core_mesh.ExternalServiceResourceList,
 	meshGateways *core_mesh.MeshGatewayResourceList,
-) *xds.Routing {
+) *core_xds.Routing {
 	destinations := ingress.BuildDestinationMap(zoneIngress)
 	endpoints := ingress.BuildEndpointMap(
 		destinations, dataplanes.Items, externalServices.Items, zoneEgresses.Items, meshGateways.Items,
 	)
 
-	routing := &xds.Routing{
+	routing := &core_xds.Routing{
 		OutboundTargets: endpoints,
 	}
 	return routing

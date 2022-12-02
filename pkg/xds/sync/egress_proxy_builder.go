@@ -12,7 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core/xds"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_cache "github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
@@ -24,7 +24,6 @@ type EgressProxyBuilder struct {
 	ResManager         manager.ResourceManager
 	ReadOnlyResManager manager.ReadOnlyResourceManager
 	LookupIP           lookup.LookupIPFunc
-	MetadataTracker    DataplaneMetadataTracker
 	meshCache          *xds_cache.Cache
 
 	zone       string
@@ -34,7 +33,7 @@ type EgressProxyBuilder struct {
 func (p *EgressProxyBuilder) Build(
 	ctx context.Context,
 	key core_model.ResourceKey,
-) (*xds.Proxy, error) {
+) (*core_xds.Proxy, error) {
 	zoneEgress := core_mesh.NewZoneEgressResource()
 
 	if err := p.ReadOnlyResManager.Get(
@@ -80,7 +79,7 @@ func (p *EgressProxyBuilder) Build(
 		return zoneIngresses[a].GetMeta().GetName() < zoneIngresses[b].GetMeta().GetName()
 	})
 
-	var meshResourcesList []*xds.MeshResources
+	var meshResourcesList []*core_xds.MeshResources
 
 	for _, mesh := range meshes {
 		meshName := mesh.GetMeta().GetName()
@@ -96,7 +95,7 @@ func (p *EgressProxyBuilder) Build(
 		faultInjections := meshCtx.Resources.FaultInjections().Items
 		rateLimits := meshCtx.Resources.RateLimits().Items
 
-		meshResources := &xds.MeshResources{
+		meshResources := &core_xds.MeshResources{
 			Mesh:             mesh,
 			TrafficRoutes:    trafficRoutes,
 			ExternalServices: externalServices,
@@ -125,15 +124,14 @@ func (p *EgressProxyBuilder) Build(
 		meshResourcesList = append(meshResourcesList, meshResources)
 	}
 
-	proxy := &xds.Proxy{
-		Id:         xds.FromResourceKey(key),
+	proxy := &core_xds.Proxy{
+		Id:         core_xds.FromResourceKey(key),
 		APIVersion: p.apiVersion,
-		ZoneEgressProxy: &xds.ZoneEgressProxy{
+		ZoneEgressProxy: &core_xds.ZoneEgressProxy{
 			ZoneEgressResource: zoneEgress,
 			ZoneIngresses:      zoneIngresses,
 			MeshResourcesList:  meshResourcesList,
 		},
-		Metadata: p.MetadataTracker.Metadata(key),
 	}
 
 	return proxy, nil
