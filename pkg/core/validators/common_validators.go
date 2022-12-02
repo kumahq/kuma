@@ -1,6 +1,7 @@
 package validators
 
 import (
+	"github.com/asaskevich/govalidator"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -36,7 +37,7 @@ func ValidateDurationGreaterThanZeroOrNil(path PathBuilder, duration *k8s.Durati
 }
 
 func ValidateValueGreaterThanZero(path PathBuilder, value *int32) (err ValidationError) {
-	if value == nil || *value == 0 {
+	if value == nil || *value <= 0 {
 		err.AddViolationAt(path, MustBeDefinedAndGreaterThanZero)
 	}
 	return
@@ -69,6 +70,19 @@ func ValidateUintPercentageOrNil(path PathBuilder, percentage *int32) (err Valid
 func ValidateStringDefined(path PathBuilder, value string) (err ValidationError) {
 	if value == "" {
 		err.AddViolationAt(path, MustBeDefined)
+	}
+
+	return
+}
+
+func ValidatePathOrNil(path PathBuilder, filePath *string) (err ValidationError) {
+	if filePath == nil {
+		return
+	}
+
+	isFilePath, _ := govalidator.IsFilePath(*filePath)
+	if !isFilePath {
+		err.AddViolationAt(path, WhenDefinedHasToBeValidPath)
 	}
 
 	return

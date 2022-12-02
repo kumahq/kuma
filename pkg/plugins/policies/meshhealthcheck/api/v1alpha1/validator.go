@@ -53,13 +53,17 @@ func validateDefault(conf Conf) validators.ValidationError {
 	verr.Add(validators.ValidateValueGreaterThanZero(path.Field("healthyThreshold"), conf.HealthyThreshold))
 	verr.Add(validators.ValidateDurationGreaterThanZeroOrNil(path.Field("initialJitter"), conf.InitialJitter))
 	verr.Add(validators.ValidateDurationGreaterThanZeroOrNil(path.Field("intervalJitter"), conf.IntervalJitter))
-	verr.Add(validators.ValidateDurationGreaterThanZeroOrNil(path.Field("noTrafficInterval"), conf.NoTrafficInterval))
-	verr.Add(validators.ValidatePercentageOrNil(path.Field("healthyPanicThreshold"), conf.HealthyPanicThreshold))
 	verr.Add(validators.ValidateUintPercentageOrNil(path.Field("intervalJitterPercent"), conf.IntervalJitterPercent))
+	verr.Add(validators.ValidatePercentageOrNil(path.Field("healthyPanicThreshold"), conf.HealthyPanicThreshold))
+	verr.Add(validators.ValidateDurationGreaterThanZeroOrNil(path.Field("noTrafficInterval"), conf.NoTrafficInterval))
+	verr.Add(validators.ValidatePathOrNil(path.Field("eventLogPath"), conf.EventLogPath))
 	if conf.Http != nil {
 		verr.Add(validateConfHttp(path.Field("http"), conf.Http))
 	}
 	// there is nothing to check in tcp & gRPC because all fields are optional
+	if conf.Http == nil && conf.Tcp == nil && conf.Grpc == nil {
+		verr.AddViolationAt(path, validators.MustHaveAtLeastOne("http", "tcp", "grpc"))
+	}
 	return verr
 }
 
@@ -97,6 +101,9 @@ func validateConfHttpRequestHeadersToAdd(path validators.PathBuilder, requestHea
 
 			if header.Header.Key == "" {
 				err.AddViolationAt(path.Field("key"), validators.MustNotBeEmpty)
+			}
+			if header.Header.Value == "" {
+				err.AddViolationAt(path.Field("value"), validators.MustNotBeEmpty)
 			}
 		}
 	}

@@ -142,6 +142,6 @@ type HeaderValue struct {
     //  +required
     Key string `json:"key,omitempty"`
     // Header value
-    //  +optional
+    //  +required
     Value string `json:"value,omitempty"`
 }

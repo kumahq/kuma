@@ -136,7 +136,9 @@ violations:
   - field: spec.to[0].default.unhealthyThreshold
     message: must be defined and greater than zero
   - field: spec.to[0].default.healthyThreshold
-    message: must be defined and greater than zero`,
+    message: must be defined and greater than zero
+  - field: spec.to[0].default
+    message: 'must have at least one defined: http, tcp, grpc'`,
 			}),
 			Entry("positive values are out of range", testCase{
 				inputYaml: `
@@ -152,11 +154,46 @@ to:
       timeout: 2s
       unhealthyThreshold: -3
       healthyThreshold: 0
+      grpc: {}
 `,
 				expected: `
 violations:
+  - field: spec.to[0].default.unhealthyThreshold
+    message: must be defined and greater than zero
   - field: spec.to[0].default.healthyThreshold
     message: must be defined and greater than zero`,
+			}),
+			Entry("positive durations are out of range", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+to:
+  - targetRef:
+      kind: MeshService
+      name: web-backend
+    default:
+      interval: -10s
+      timeout: -2s
+      initialJitter: -5s
+      intervalJitter: -6s
+      noTrafficInterval: -10s
+      unhealthyThreshold: 3
+      healthyThreshold: 1
+      grpc: {}
+`,
+				expected: `
+violations:
+  - field: spec.to[0].default.interval
+    message: must be defined and greater than zero
+  - field: spec.to[0].default.timeout
+    message: must be defined and greater than zero
+  - field: spec.to[0].default.initialJitter
+    message: must be greater than zero when defined
+  - field: spec.to[0].default.intervalJitter
+    message: must be greater than zero when defined
+  - field: spec.to[0].default.noTrafficInterval
+    message: must be greater than zero when defined`,
 			}),
 			Entry("all percentages are out of percentage range", testCase{
 				inputYaml: `
@@ -174,13 +211,153 @@ to:
       healthyThreshold: 1
       intervalJitterPercent: 110
       healthyPanicThreshold: -10
+      grpc: {}
 `,
 				expected: `
 violations:
-  - field: spec.to[0].default.healthyPanicThreshold
-    message: has to be in [0.0 - 100.0] range
   - field: spec.to[0].default.intervalJitterPercent
-    message: has to be in [0 - 100] range`,
+    message: has to be in [0 - 100] range
+  - field: spec.to[0].default.healthyPanicThreshold
+    message: has to be in [0.0 - 100.0] range`,
+			}),
+			Entry("path is invalid", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+to:
+  - targetRef:
+      kind: MeshService
+      name: web-backend
+    default:
+      interval: 10s
+      timeout: 2s
+      unhealthyThreshold: 3
+      healthyThreshold: 1
+      eventLogPath: "#not_valid_path"
+      grpc: {}
+`,
+				expected: `
+violations:
+  - field: spec.to[0].default.eventLogPath
+    message: has to be a valid path when defined`,
+			}),
+			Entry("http path is missing", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+to:
+  - targetRef:
+      kind: MeshService
+      name: web-backend
+    default:
+      interval: 10s
+      timeout: 2s
+      unhealthyThreshold: 3
+      healthyThreshold: 1
+      http: {}
+`,
+				expected: `
+violations:
+  - field: spec.to[0].default.http.path
+    message: must be defined`,
+			}),
+			Entry("http path is missing", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+to:
+  - targetRef:
+      kind: MeshService
+      name: web-backend
+    default:
+      interval: 10s
+      timeout: 2s
+      unhealthyThreshold: 3
+      healthyThreshold: 1
+      http: {}
+`,
+				expected: `
+violations:
+  - field: spec.to[0].default.http.path
+    message: must be defined`,
+			}),
+			Entry("header missing in requestHeadersToAdd", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+to:
+  - targetRef:
+      kind: MeshService
+      name: web-backend
+    default:
+      interval: 10s
+      timeout: 2s
+      unhealthyThreshold: 3
+      healthyThreshold: 1
+      http:
+        path: /health
+        requestHeadersToAdd:
+        - {}
+`,
+				expected: `
+violations:
+  - field: spec.to[0].default.http.requestHeadersToAdd[0].header
+    message: must be defined`,
+			}),
+			Entry("key or value missing in requestHeadersToAdd", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+to:
+  - targetRef:
+      kind: MeshService
+      name: web-backend
+    default:
+      interval: 10s
+      timeout: 2s
+      unhealthyThreshold: 3
+      healthyThreshold: 1
+      http:
+        path: /health
+        requestHeadersToAdd:
+        - header: {}
+`,
+				expected: `
+violations:
+  - field: spec.to[0].default.http.requestHeadersToAdd[0].header.key
+    message: must not be empty
+  - field: spec.to[0].default.http.requestHeadersToAdd[0].header.value
+    message: must not be empty`,
+			}),
+			Entry("status codes out of range in expectedStatuses", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+to:
+  - targetRef:
+      kind: MeshService
+      name: web-backend
+    default:
+      interval: 10s
+      timeout: 2s
+      unhealthyThreshold: 3
+      healthyThreshold: 1
+      http:
+        path: /health
+        expectedStatuses: [99, 600]
+`,
+				expected: `
+violations:
+  - field: spec.to[0].default.http.expectedStatuses[0]
+    message: must be in range [100, 600)
+  - field: spec.to[0].default.http.expectedStatuses[1]
+    message: must be in range [100, 600)`,
 			}),
 		)
 	})
