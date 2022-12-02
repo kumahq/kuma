@@ -430,6 +430,26 @@ An additional option is to instead have two differnet "top-level" policies that
 both point to a new resource `HTTPRouteRules`, which holds the routes as
 previously described.
 
+##### Only `spec.targetRef`
+
+We support attaching routes to `MeshGateway` with `spec.targetRef` and simply
+not support any targeting via `from` or `to` in this case. This would only prevent
+targeting routes for cross-mesh gateways based on the source mesh.
+
+###### Edge and cross-mesh gateways
+
+```yaml
+spec:
+ targetRef:
+  kind: MeshGateway
+  name: edge-or-cross-mesh-gateway
+ default:
+  rules: ...
+```
+
+where top level `default` is allowed only for `spec.targetRef.kind:
+MeshGateway`.
+
 ##### No more `spec.targetRef`
 
 We don't need to have a strict `spec.targetRef` policy. Routes are fundamentally
