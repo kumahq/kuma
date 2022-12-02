@@ -37,7 +37,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	"github.com/kumahq/kuma/pkg/xds/server"
-	"github.com/kumahq/kuma/pkg/xds/server/callbacks"
 	v3 "github.com/kumahq/kuma/pkg/xds/server/v3"
 	"github.com/kumahq/kuma/pkg/xds/sync"
 	"github.com/kumahq/kuma/pkg/xds/template"
@@ -118,7 +117,7 @@ var _ = Describe("GenerateSnapshot", func() {
 			cfg.DNSServer.ServiceVipPort,
 		)
 
-		proxyBuilder = sync.DefaultDataplaneProxyBuilder(cfg, callbacks.NewDataplaneMetadataTracker(), envoy_common.APIV3)
+		proxyBuilder = sync.DefaultDataplaneProxyBuilder(cfg, envoy_common.APIV3)
 	})
 
 	create := func(r core_model.Resource) {
