@@ -81,7 +81,7 @@ func DefaultReconciler(rt core_runtime.Runtime, xdsContext XdsContext) xds_sync.
 	)
 
 	return &reconciler{
-		&templateSnapshotGenerator{
+		&TemplateSnapshotGenerator{
 			ResourceSetHooks:      rt.XDSHooks().ResourceSetHooks(),
 			ProxyTemplateResolver: resolver,
 		},
@@ -101,7 +101,7 @@ func DefaultIngressReconciler(rt core_runtime.Runtime, xdsContext XdsContext) xd
 	}
 
 	return &reconciler{
-		generator: &templateSnapshotGenerator{
+		generator: &TemplateSnapshotGenerator{
 			ResourceSetHooks:      rt.XDSHooks().ResourceSetHooks(),
 			ProxyTemplateResolver: resolver,
 		},
@@ -121,7 +121,7 @@ func DefaultEgressReconciler(rt core_runtime.Runtime, xdsContext XdsContext) xds
 	}
 
 	return &reconciler{
-		generator: &templateSnapshotGenerator{
+		generator: &TemplateSnapshotGenerator{
 			ResourceSetHooks:      rt.XDSHooks().ResourceSetHooks(),
 			ProxyTemplateResolver: resolver,
 		},
