@@ -2,7 +2,6 @@ package sync
 
 import (
 	"context"
-	"sort"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
@@ -154,22 +153,16 @@ func (p *IngressProxyBuilder) updateIngress(ctx context.Context, zoneIngress *co
 }
 
 func (p *IngressProxyBuilder) getIngressExternalServices(ctx context.Context) (*core_mesh.ExternalServiceResourceList, error) {
-	var meshList core_mesh.MeshResourceList
-	if err := p.ReadOnlyResManager.List(ctx, &meshList); err != nil {
+	meshList := &core_mesh.MeshResourceList{}
+	if err := p.ReadOnlyResManager.List(ctx, meshList, core_store.ListOrdered(), core_store.ListByFilterFunc(func(rs core_model.Resource) bool {
+		return rs.(*core_mesh.MeshResource).ZoneEgressEnabled()
+	})); err != nil {
 		return nil, err
-	}
-
-	var meshes []*core_mesh.MeshResource
-
-	for _, mesh := range meshList.Items {
-		if mesh.ZoneEgressEnabled() {
-			meshes = append(meshes, mesh)
-		}
 	}
 
 	allMeshExternalServices := &core_mesh.ExternalServiceResourceList{}
 	var externalServices []*core_mesh.ExternalServiceResource
-	for _, mesh := range meshes {
+	for _, mesh := range meshList.GetItems() {
 		meshName := mesh.GetMeta().GetName()
 
 		meshCtx, err := p.meshCache.GetMeshContext(ctx, syncLog, meshName)
@@ -186,11 +179,6 @@ func (p *IngressProxyBuilder) getIngressExternalServices(ctx context.Context) (*
 			}
 		}
 	}
-
-	// It's done for achieving stable xds config
-	sort.Slice(externalServices, func(a, b int) bool {
-		return externalServices[a].GetMeta().GetName() < externalServices[b].GetMeta().GetName()
-	})
 
 	allMeshExternalServices.Items = externalServices
 	return allMeshExternalServices, nil

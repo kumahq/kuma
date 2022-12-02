@@ -85,7 +85,7 @@ func DefaultReconciler(
 	)
 
 	return &reconciler{
-		generator: &templateSnapshotGenerator{
+		generator: &TemplateSnapshotGenerator{
 			ResourceSetHooks:      rt.XDSHooks().ResourceSetHooks(),
 			ProxyTemplateResolver: resolver,
 		},
@@ -110,7 +110,7 @@ func DefaultIngressReconciler(
 	}
 
 	return &reconciler{
-		generator: &templateSnapshotGenerator{
+		generator: &TemplateSnapshotGenerator{
 			ResourceSetHooks:      rt.XDSHooks().ResourceSetHooks(),
 			ProxyTemplateResolver: resolver,
 		},
@@ -135,7 +135,7 @@ func DefaultEgressReconciler(
 	}
 
 	return &reconciler{
-		generator: &templateSnapshotGenerator{
+		generator: &TemplateSnapshotGenerator{
 			ResourceSetHooks:      rt.XDSHooks().ResourceSetHooks(),
 			ProxyTemplateResolver: resolver,
 		},

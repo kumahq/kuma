@@ -96,11 +96,6 @@ func (p *EgressProxyBuilder) Build(
 		faultInjections := meshCtx.Resources.FaultInjections().Items
 		rateLimits := meshCtx.Resources.RateLimits().Items
 
-		// It's done for achieving stable xds config
-		sort.Slice(externalServices, func(a, b int) bool {
-			return externalServices[a].GetMeta().GetName() < externalServices[b].GetMeta().GetName()
-		})
-
 		meshResources := &xds.MeshResources{
 			Mesh:             mesh,
 			TrafficRoutes:    trafficRoutes,
