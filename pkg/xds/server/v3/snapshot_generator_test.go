@@ -1,135 +1,282 @@
-package v3
+package v3_test
 
 import (
-	"os"
+	"context"
+	"fmt"
+	"math/rand"
+	"net"
 	"path/filepath"
+	"time"
 
+	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	model "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/dns/vips"
+	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/pkg/test/xds"
 	util_cache_v3 "github.com/kumahq/kuma/pkg/util/cache/v3"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
+	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
+	"github.com/kumahq/kuma/pkg/xds/server"
+	"github.com/kumahq/kuma/pkg/xds/server/callbacks"
+	v3 "github.com/kumahq/kuma/pkg/xds/server/v3"
+	"github.com/kumahq/kuma/pkg/xds/sync"
 	"github.com/kumahq/kuma/pkg/xds/template"
 )
 
-var _ = Describe("Reconcile", func() {
-	Describe("templateSnapshotGenerator", func() {
+type staticClusterAddHook struct {
+	name string
+}
 
-		gen := templateSnapshotGenerator{
+func (s *staticClusterAddHook) Modify(resourceSet *model.ResourceSet, ctx xds_context.Context, proxy *model.Proxy) error {
+	resourceSet.Add(&model.Resource{
+		Name: s.name,
+		Resource: &envoy_cluster.Cluster{
+			Name: s.name,
+		},
+	})
+	return nil
+}
+
+type fakeDataSourceLoader struct {
+}
+
+func (f fakeDataSourceLoader) Load(ctx context.Context, mesh string, source *system_proto.DataSource) ([]byte, error) {
+	return []byte("secret"), nil
+}
+
+type shuffleStore struct {
+	core_store.ResourceStore
+}
+
+func (s *shuffleStore) List(ctx context.Context, rl core_model.ResourceList, opts ...core_store.ListOptionsFunc) error {
+	newList, err := registry.Global().NewList(rl.GetItemType())
+	if err != nil {
+		return err
+	}
+	if err := s.ResourceStore.List(ctx, newList, opts...); err != nil {
+		return err
+	}
+	resources := newList.GetItems()
+	rand.Shuffle(len(resources), func(i, j int) {
+		resources[i], resources[j] = resources[j], resources[i]
+	})
+	for i := range resources {
+		_ = rl.AddItem(resources[i])
+	}
+	return nil
+}
+
+var _ xds_hooks.ResourceSetHook = &staticClusterAddHook{}
+
+var _ = Describe("GenerateSnapshot", func() {
+
+	var store core_store.ResourceStore
+	var gen *v3.TemplateSnapshotGenerator
+	var proxyBuilder *sync.DataplaneProxyBuilder
+	var mCtxBuilder xds_context.MeshContextBuilder
+
+	rand.Seed(GinkgoRandomSeed())
+
+	BeforeEach(func() {
+
+		store = &shuffleStore{memory.NewStore()}
+		store = core_store.NewPaginationStore(store)
+
+		rm := manager.NewResourceManager(store)
+
+		gen = &v3.TemplateSnapshotGenerator{
 			ProxyTemplateResolver: template.SequentialResolver(
 				&template.SimpleProxyTemplateResolver{
-					ReadOnlyResourceManager: manager.NewResourceManager(memory.NewStore()),
+					ReadOnlyResourceManager: rm,
 				},
 				generator.DefaultTemplateResolver,
 			),
 		}
 
-		It("Generate Snapshot per Envoy Node", func() {
-			// given
-			ctx := xds_context.Context{
-				ControlPlane: &xds_context.ControlPlaneContext{
-					Secrets: &xds.TestSecrets{},
-				},
-				Mesh: xds_context.MeshContext{
-					Resource: &core_mesh.MeshResource{
-						Meta: &test_model.ResourceMeta{
-							Name: "demo",
-						},
-						Spec: &mesh_proto.Mesh{
-							Mtls: &mesh_proto.Mesh_Mtls{
-								EnabledBackend: "builtin",
-								Backends: []*mesh_proto.CertificateAuthorityBackend{
-									{
-										Name: "builtin",
-										Type: "builtin",
-									},
-								},
-							},
+		cfg := kuma_cp.DefaultConfig()
+		cfg.Multizone.Zone.Name = "eun-blue"
+		mCtxBuilder = xds_context.NewMeshContextBuilder(
+			manager.NewResourceManager(store),
+			server.MeshResourceTypes(server.HashMeshExcludedResources),
+			net.LookupIP,
+			cfg.Multizone.Zone.Name,
+			vips.NewPersistence(rm, config_manager.NewConfigManager(store)),
+			cfg.DNSServer.Domain,
+		)
+
+		proxyBuilder = sync.DefaultDataplaneProxyBuilder(
+			&fakeDataSourceLoader{},
+			cfg,
+			callbacks.NewDataplaneMetadataTracker(),
+			envoy_common.APIV3,
+		)
+	})
+
+	create := func(r core_model.Resource) {
+		err := store.Create(context.Background(), r, core_store.CreateBy(core_model.MetaToResourceKey(r.GetMeta())))
+		Expect(err).ToNot(HaveOccurred())
+	}
+
+	generateSnapshot := func(name, mesh string) []byte {
+		mCtx, err := mCtxBuilder.Build(context.Background(), mesh)
+		Expect(err).ToNot(HaveOccurred())
+
+		proxy, err := proxyBuilder.Build(core_model.ResourceKey{Name: name, Mesh: mesh}, mCtx)
+		Expect(err).ToNot(HaveOccurred())
+
+		metrics, err := metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
+
+		claCache, err := cla.NewCache(1*time.Second, metrics)
+		Expect(err).ToNot(HaveOccurred())
+
+		s, err := gen.GenerateSnapshot(xds_context.Context{
+			ControlPlane: &xds_context.ControlPlaneContext{
+				Secrets:  &xds.TestSecrets{},
+				CLACache: claCache,
+			},
+			Mesh: mCtx,
+		}, proxy)
+		Expect(err).ToNot(HaveOccurred())
+
+		resp, err := util_cache_v3.ToDeltaDiscoveryResponse(s)
+		Expect(err).ToNot(HaveOccurred())
+		actual, err := util_proto.ToYAML(resp)
+		Expect(err).ToNot(HaveOccurred())
+
+		return actual
+	}
+
+	It("should generate stable envoy config for external services", func() {
+		// given
+		create(
+			samples.MeshMTLSBuilder().
+				WithName("demo").
+				With(func(resource *core_mesh.MeshResource) {
+					resource.Spec.Routing = &mesh_proto.Routing{
+						LocalityAwareLoadBalancing: true,
+					}
+				}).
+				Build(),
+		)
+
+		create(
+			builders.Dataplane().
+				WithName("web1").
+				WithMesh("demo").
+				WithVersion("1").
+				WithAddress("192.168.0.1").
+				AddInbound(
+					builders.Inbound().
+						WithPort(80).
+						WithServicePort(8080).
+						WithService("backend-1"),
+				).
+				AddInbound(
+					builders.Inbound().
+						WithPort(443).
+						WithServicePort(8443).
+						WithService("backend-2"),
+				).
+				AddInbound(
+					builders.Inbound().
+						WithAddress("192.168.0.2").
+						WithPort(80).
+						WithServicePort(8080).
+						WithService("backend-3"),
+				).
+				AddInbound(
+					builders.Inbound().
+						WithAddress("192.168.0.2").
+						WithPort(443).
+						WithServicePort(8443).
+						WithService("backend-4"),
+				).
+				AddOutboundToService("es-with-tls").
+				WithTransparentProxying(15001, 15006).
+				Build(),
+		)
+
+		create(
+			&core_mesh.TrafficRouteResource{
+				Meta: &test_model.ResourceMeta{Name: "tr", Mesh: "demo"},
+				Spec: &mesh_proto.TrafficRoute{
+					Sources: []*mesh_proto.Selector{{
+						Match: mesh_proto.MatchAnyService(),
+					}},
+					Destinations: []*mesh_proto.Selector{{
+						Match: mesh_proto.MatchAnyService(),
+					}},
+					Conf: &mesh_proto.TrafficRoute_Conf{
+						Destination: mesh_proto.MatchAnyService(),
+						LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+							LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{},
 						},
 					},
 				},
-			}
+			},
+		)
 
-			dataplane := mesh_proto.Dataplane{}
-			dpBytes, err := os.ReadFile(filepath.Join("testdata", "dataplane.input.yaml"))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(util_proto.FromYAML(dpBytes, &dataplane)).To(Succeed())
-
-			proxy := &model.Proxy{
-				Id:         *model.BuildProxyId("", "demo.web1"),
-				APIVersion: envoy_common.APIV3,
-				Dataplane: &core_mesh.DataplaneResource{
-					Meta: &test_model.ResourceMeta{
-						Name:    "web1",
-						Mesh:    "demo",
-						Version: "1",
-					},
-					Spec: &dataplane,
+		create(
+			&core_mesh.TrafficPermissionResource{
+				Meta: &test_model.ResourceMeta{Name: "tp", Mesh: "demo"},
+				Spec: &mesh_proto.TrafficPermission{
+					Sources: []*mesh_proto.Selector{{
+						Match: mesh_proto.MatchAnyService(),
+					}},
+					Destinations: []*mesh_proto.Selector{{
+						Match: mesh_proto.MatchAnyService(),
+					}},
 				},
-				Policies: model.MatchedPolicies{
-					TrafficPermissions: model.TrafficPermissionMap{
-						mesh_proto.InboundInterface{
-							DataplaneAdvertisedIP: "192.168.0.1",
-							DataplaneIP:           "192.168.0.1",
-							DataplanePort:         80,
-							WorkloadIP:            "127.0.0.1",
-							WorkloadPort:          8080,
-						}: &core_mesh.TrafficPermissionResource{
-							Meta: &test_model.ResourceMeta{
-								Name: "tp-1",
-								Mesh: "default",
-							},
-							Spec: &mesh_proto.TrafficPermission{
-								Sources: []*mesh_proto.Selector{
-									{
-										Match: map[string]string{
-											"kuma.io/service": "web1",
-											"version":         "1.0",
-										},
-									},
-								},
-								Destinations: []*mesh_proto.Selector{
-									{
-										Match: map[string]string{
-											"kuma.io/service": "backend1",
-											"env":             "dev",
-										},
-									},
-								},
-							},
+			},
+		)
+
+		const numOfExtSrvs = 4
+
+		for i := 0; i < numOfExtSrvs; i++ {
+			create(
+				&core_mesh.ExternalServiceResource{
+					Meta: &test_model.ResourceMeta{Name: fmt.Sprintf("es-%d", i), Mesh: "demo"},
+					Spec: &mesh_proto.ExternalService{
+						Networking: &mesh_proto.ExternalService_Networking{
+							Address: fmt.Sprintf("hostname-%d.com:443", i),
+							Tls:     &mesh_proto.ExternalService_Networking_TLS{Enabled: true},
+						},
+						Tags: map[string]string{
+							mesh_proto.ServiceTag:  "es-with-tls",
+							mesh_proto.ZoneTag:     fmt.Sprintf("zone-%d", numOfExtSrvs-i),
+							mesh_proto.ProtocolTag: "http",
 						},
 					},
 				},
-				Metadata: &model.DataplaneMetadata{},
-			}
+			)
+		}
 
-			// when
-			s, err := gen.GenerateSnapshot(ctx, proxy)
+		// when
+		snapshot := generateSnapshot("web1", "demo")
 
-			// then
-			Expect(err).ToNot(HaveOccurred())
-
-			// when
-			resp, err := util_cache_v3.ToDeltaDiscoveryResponse(s)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// when
-			actual, err := util_proto.ToYAML(resp)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-
-			Expect(actual).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "envoy-config.golden.yaml")))
-		})
+		// then
+		Expect(snapshot).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "stable-es.golden.yaml")))
 	})
 })
