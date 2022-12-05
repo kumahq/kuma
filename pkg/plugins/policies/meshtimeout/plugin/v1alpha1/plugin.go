@@ -8,7 +8,6 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
@@ -25,7 +24,6 @@ import (
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
-var log = core.Log.WithName("MeshTimeout")
 
 type plugin struct {
 }
