@@ -49,6 +49,14 @@
    "isExperimental": true
   },
   {
+   "name": "MeshRateLimit",
+   "readOnly": false,
+   "path": "meshratelimits",
+   "singularDisplayName": "Mesh Rate Limit",
+   "pluralDisplayName": "Mesh Rate Limits",
+   "isExperimental": false
+  },
+  {
    "name": "MeshTimeout",
    "readOnly": false,
    "path": "meshtimeouts",
