@@ -1,0 +1,22 @@
+name: gateway:HTTP:8080
+requestHeadersToRemove:
+  - x-kuma-tags
+validateClusters: false
+virtualHosts:
+  - domains:
+      - '*'
+    name: '*'
+    routes:
+      - match:
+          path: /
+        route:
+          timeout: 5s
+          weightedClusters:
+            clusters:
+              - name: some-service-21868a8801354f8d
+                requestHeadersToAdd:
+                  - header:
+                      key: x-kuma-tags
+                      value: '&kuma.io/service=gateway&'
+                weight: 1
+            totalWeight: 1

@@ -88,16 +88,16 @@ type FilterChainGenerator interface {
 
 // Generator generates xDS resources for an entire Gateway.
 type Generator struct {
-	FilterChainGenerators filterChainGenerators
+	FilterChainGenerators FilterChainGenerators
 	ClusterGenerator      ClusterGenerator
 	Zone                  string
 }
 
-type filterChainGenerators struct {
+type FilterChainGenerators struct {
 	FilterChainGenerators map[mesh_proto.MeshGateway_Listener_Protocol]FilterChainGenerator
 }
 
-func (g *filterChainGenerators) For(ctx xds_context.Context, info GatewayListenerInfo) FilterChainGenerator {
+func (g *FilterChainGenerators) For(ctx xds_context.Context, info GatewayListenerInfo) FilterChainGenerator {
 	gen := g.FilterChainGenerators[info.Listener.Protocol]
 	return gen
 }

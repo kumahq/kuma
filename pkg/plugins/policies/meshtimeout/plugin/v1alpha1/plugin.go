@@ -124,7 +124,7 @@ func applyToGateway(
 	ctx xds_context.Context,
 	proxy *core_xds.Proxy,
 ) error {
-	gatewayListerInfos, err := gateway_plugin.GatewayListenerInfoFromProxy(context.TODO(), ctx.Mesh, proxy, "test")
+	gatewayListerInfos, err := gateway_plugin.GatewayListenerInfoFromProxy(context.TODO(), ctx.Mesh, proxy, ctx.ControlPlane.Zone)
 	if err != nil {
 		return err
 	}
@@ -140,7 +140,6 @@ func applyToGateway(
 		if !ok {
 			continue
 		}
-
 		route, ok := routes[listenerInfo.Listener.ResourceName]
 		if !ok {
 			continue

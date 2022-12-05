@@ -54,6 +54,15 @@ func (b *RouteConfigurationBuilder) Build() (envoy.NamedResource, error) {
 	}
 }
 
+func (b *RouteConfigurationBuilder) MustBuild() envoy.NamedResource {
+	listener, err := b.Build()
+	if err != nil {
+		panic(errors.Wrap(err, "failed to build Envoy Listener").Error())
+	}
+
+	return listener
+}
+
 // RouteConfigurationBuilderConfig holds configuration of a RouteConfigurationBuilder.
 type RouteConfigurationBuilderConfig struct {
 	// A series of RouteConfigurationConfigurers to apply to Envoy RouteConfiguration.
