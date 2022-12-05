@@ -41,7 +41,7 @@ func (p *PodConverter) PodToDataplane(
 	services []*kube_core.Service,
 	others []*mesh_k8s.Dataplane,
 ) error {
-	dataplane.Mesh = util_k8s.MeshOf(pod, ns)
+	dataplane.Mesh = util_k8s.MeshOfByAnnotation(pod, ns)
 	dataplaneProto, err := p.dataplaneFor(ctx, pod, services, others)
 	if err != nil {
 		return err

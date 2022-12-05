@@ -238,7 +238,7 @@ func (r *PodReconciler) findOtherDataplanes(ctx context.Context, pod *kube_core.
 	}
 
 	// only consider Dataplanes in the same Mesh as Pod
-	mesh := util_k8s.MeshOf(pod, ns)
+	mesh := util_k8s.MeshOfByAnnotation(pod, ns)
 	otherDataplanes := make([]*mesh_k8s.Dataplane, 0)
 	for i := range allDataplanes.Items {
 		dataplane := allDataplanes.Items[i]
