@@ -458,6 +458,68 @@ spec:
 Here, the `/v1` rule from `owner` is unchanged and the `/v2` rule from
 `consumer` merges with that of `owner`.
 
+What this structure doesn't allow is blanket overwriting of all less-specific rules
+by a more specifically targeted resource. Instead, each rule needs to be
+explicitly overriden:
+
+```yaml
+metadata:
+ name: owner
+spec:
+ targetRef:
+  kind: Mesh
+ to:
+  - targetRef:
+     kind: MeshService
+     name: backend
+    rules:
+     - matches:
+        path:
+         prefix: /v1
+       default:
+        backendRefs:
+         - weight: 100
+           kind: MeshServiceSubset
+           name: backend
+           tags:
+            version: v1
+     - matches:
+        path:
+         prefix: /v2
+       default:
+        backendRefs:
+         - weight: 100
+           kind: MeshServiceSubset
+           name: backend
+           tags:
+            version: v2
+---
+metadata:
+ name: consumer
+spec:
+ targetRef:
+  kind: MeshService
+  name: frontend
+ to:
+  - targetRef:
+     kind: MeshService
+     name: backend
+    rules:
+     - matches:
+        path:
+         prefix: /v1
+       default:
+        filters: []
+        backendRefs: []
+     - matches:
+        path:
+         prefix: /v2
+       default:
+        filters: []
+        backendRefs: []
+```
+
+
 #### Gateway API
 
 A note about Gateway API and our routes. The only extension point for `HTTPRoute` is `filters`, so any additional configuration
