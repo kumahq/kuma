@@ -44,8 +44,6 @@ function update_version {
           yq -i e "del(.dependencies[] | select(.name == \"${chart}\"))" "${dir}/Chart.yaml"
       done
     fi
-
-    make helm-docs
   done
 }
 
