@@ -33,20 +33,29 @@ stats which contain interesting us data will be prefixed with `cluster.<name>.ou
 
 Chosen option: Create single `MeshCircuitBreaker` with configuration divided into two sections.
 
-## Positive Consequences
+## Pros and Cons of the Options
 
-* Having two separate policies, each with explicit configurations makes it easier to look for appropriate Envoy stats
-  and XDP configuration values.
-* By combining two abstractions, which exist in Envoy, and calling them both combined with a name of one of these is
-  confusing, especially when you are trying to debug some issue without deep understanding of internals of our service
-  mesh.
-* Default `MeshCircuitBreaker` policy is sufficient to replicate behaviour of current version of this policy - there
-  won't be a need to include a default `MeshOutlierDetector` policy
+### Option 1: Create two separate policies: `MeshCircuitBreaker` and `MeshOutlierDetector`
 
-## Negative Consequences
-
-* `MeshCircuitBreaker` will be a policy with very small amount of configuration available, which may introduce some
+* Good: Having two separate policies, each with explicit configurations makes it easier to look for appropriate Envoy
+  stats and XDS configuration values.
+* Good: By combining two abstractions, which exist in Envoy, and calling them both combined with a name of one of these
+  is confusing, especially when you are trying to debug some issue without deep understanding of internals of our
+  service mesh.
+* Good: Default `MeshCircuitBreaker` policy is sufficient to replicate behaviour of current version of this policy -
+  there won't be a need to include a default `MeshOutlierDetector` policy
+* Bad: `MeshCircuitBreaker` will be a policy with very small amount of configuration available, which may introduce some
   clutter (at some point there may be so many policies, that it will be much more difficult to understand all of them)
+
+### Option 2: Create single `MeshCircuitBreaker` policy which would map 1:1 current policy
+
+* Good: Implementation would be the easiest, at it would involve almost no changes in the Envoy configuration itself
+* Bad: All the problems related to confusion described in the **Context and Problem Statement** section
+
+### Option 3: Create single `MeshCircuitBreaker` with configuration divided to `connectionThresholds` ([envoy's circuit breaker](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/circuit_breaking)) and `outlierDetection` ([envoy's outlier detection](https://gstwww.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/outlier))
+
+* Good: Clearer separation of concerns between Envoy's circuit breaking and outlier detections functionalities than in
+  Option 2
 
 ## Solution
 
