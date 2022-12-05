@@ -12,22 +12,22 @@ import (
 	envoy_upstream_http "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
-	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
+	clusters_v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
 	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 )
 
 const (
-	defaultConnectionTimeout     = "5s"
-	defaultIdleTimeout           = "1h"
-	defaultRequestTimeout        = "15s"
-	defaultStreamIdleTimeout     = "30m"
-	defaultMaxStreamDuration     = "0s"
-	defaultMaxConnectionDuration = "0s"
+	defaultConnectionTimeout     = time.Second * 5
+	defaultIdleTimeout           = time.Hour
+	defaultRequestTimeout        = time.Second * 15
+	defaultStreamIdleTimeout     = time.Minute * 30
+	defaultMaxStreamDuration     = 0
+	defaultMaxConnectionDuration = 0
 )
 
 type Configurer struct {
@@ -41,7 +41,7 @@ func (c *Configurer) ConfigureListener(filterChain *envoy_listener.FilterChain) 
 			hcm.StreamIdleTimeout = toProtoDurationOrDefault(c.Conf.Http.StreamIdleTimeout, defaultStreamIdleTimeout)
 			c.configureRequestTimeout(hcm.GetRouteConfig())
 		} else {
-			hcm.StreamIdleTimeout = defaultToProtoDuration(defaultStreamIdleTimeout)
+			hcm.StreamIdleTimeout = util_proto.Duration(defaultStreamIdleTimeout)
 			c.configureRequestTimeout(hcm.GetRouteConfig())
 		}
 		return nil
@@ -68,7 +68,7 @@ func (c *Configurer) ConfigureCluster(cluster *envoy_cluster.Cluster) error {
 	cluster.ConnectTimeout = toProtoDurationOrDefault(c.Conf.ConnectionTimeout, defaultConnectionTimeout)
 	switch c.Protocol {
 	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
-		err := clusters.UpdateCommonHttpProtocolOptions(cluster, func(options *envoy_upstream_http.HttpProtocolOptions) {
+		err := clusters_v3.UpdateCommonHttpProtocolOptions(cluster, func(options *envoy_upstream_http.HttpProtocolOptions) {
 			if options.CommonHttpProtocolOptions == nil {
 				options.CommonHttpProtocolOptions = &envoy_core.HttpProtocolOptions{}
 			}
@@ -78,8 +78,8 @@ func (c *Configurer) ConfigureCluster(cluster *envoy_cluster.Cluster) error {
 				commonHttp.MaxStreamDuration = toProtoDurationOrDefault(c.Conf.Http.MaxStreamDuration, defaultMaxStreamDuration)
 				commonHttp.MaxConnectionDuration = toProtoDurationOrDefault(c.Conf.Http.MaxConnectionDuration, defaultMaxConnectionDuration)
 			} else {
-				commonHttp.MaxStreamDuration = defaultToProtoDuration(defaultMaxStreamDuration)
-				commonHttp.MaxConnectionDuration = defaultToProtoDuration(defaultMaxConnectionDuration)
+				commonHttp.MaxStreamDuration = util_proto.Duration(defaultMaxStreamDuration)
+				commonHttp.MaxConnectionDuration = util_proto.Duration(defaultMaxConnectionDuration)
 			}
 		})
 		if err != nil {
@@ -96,7 +96,7 @@ func (c *Configurer) ConfigureRouteAction(routeAction *envoy_route.RouteAction) 
 	if c.Conf.Http != nil {
 		routeAction.Timeout = toProtoDurationOrDefault(c.Conf.Http.RequestTimeout, defaultRequestTimeout)
 	} else {
-		routeAction.Timeout = defaultToProtoDuration(defaultRequestTimeout)
+		routeAction.Timeout = util_proto.Duration(defaultRequestTimeout)
 	}
 }
 
@@ -110,14 +110,9 @@ func (c *Configurer) configureRequestTimeout(routeConfiguration *envoy_route.Rou
 	}
 }
 
-func toProtoDurationOrDefault(d *k8s.Duration, defaultDuration string) *durationpb.Duration {
+func toProtoDurationOrDefault(d *kube_meta.Duration, defaultDuration time.Duration) *durationpb.Duration {
 	if d == nil {
-		return defaultToProtoDuration(defaultDuration)
+		return util_proto.Duration(defaultDuration)
 	}
 	return util_proto.Duration(d.Duration)
-}
-
-func defaultToProtoDuration(d string) *durationpb.Duration {
-	duration, _ := time.ParseDuration(d)
-	return util_proto.Duration(duration)
 }

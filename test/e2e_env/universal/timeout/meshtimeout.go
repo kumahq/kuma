@@ -75,25 +75,24 @@ spec:
 		}).Should(Succeed())
 
 		By("check requests take over 5s")
-		start := time.Now()
-		_, _, err := env.Cluster.Exec("", "", "demo-client",
-			"curl", "-v", "--fail", "test-server.mesh")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(time.Since(start)).To(BeNumerically(">", time.Second*5))
+		Eventually(func(g Gomega) {
+			start := time.Now()
+			stdout, _, err := env.Cluster.Exec("", "", "demo-client",
+				"curl", "-v", "--fail", "test-server.mesh")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(time.Since(start)).To(BeNumerically(">", time.Second*5))
+		}).Should(Succeed())
 
 		By("apply a new policy")
 		Expect(env.Cluster.Install(YamlUniversal(timeout))).To(Succeed())
 
 		By("eventually requests timeout consistently")
-		Eventually(func() string {
-			stdout, _, _ := env.Cluster.Exec("", "", "demo-client",
+		Eventually(func(g Gomega) {
+			stdout, _, err := env.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "test-server.mesh")
-			return stdout
-		}).Should(ContainSubstring("upstream request timeout"))
-		Consistently(func() string {
-			stdout, _, _ := env.Cluster.Exec("", "", "demo-client",
-				"curl", "-v", "test-server.mesh")
-			return stdout
-		}).Should(ContainSubstring("upstream request timeout"))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).To(ContainSubstring("upstream request timeout"))
+		}).Should(Succeed())
 	})
 }
