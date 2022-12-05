@@ -5,17 +5,10 @@ metadata:
   labels:
     run: busybox
   annotations:
-    kuma.io/service-account-token-volume: token
+    kuma.io/sidecar-drain-time: "10s"
+    kuma.io/envoy-log-level: "trace"
+    kuma.io/container-patches: container-patch-1
 spec:
-  automountServiceAccountToken: false
-  volumes:
-    - name: token
-      projected:
-        sources:
-          - serviceAccountToken:
-              path: token
-              expirationSeconds: 7200
-              audience: "https://kubernetes.default.svc.cluster.local"
   containers:
   - name: busybox
     image: busybox

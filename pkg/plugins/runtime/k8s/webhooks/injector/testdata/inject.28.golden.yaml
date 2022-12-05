@@ -2,9 +2,11 @@ apiVersion: v1
 kind: Pod
 metadata:
   annotations:
+    kuma.io/container-patches: container-patch-1
     kuma.io/envoy-admin-port: "9901"
+    kuma.io/envoy-log-level: trace
     kuma.io/mesh: default
-    kuma.io/service-account-token-volume: token
+    kuma.io/sidecar-drain-time: 10s
     kuma.io/sidecar-injected: "true"
     kuma.io/sidecar-uid: "5678"
     kuma.io/transparent-proxying: enabled
@@ -19,11 +21,7 @@ metadata:
     run: busybox
   name: busybox
 spec:
-  automountServiceAccountToken: false
   containers:
-  - image: busybox
-    name: busybox
-    resources: {}
   - args:
     - run
     - --log-level=info
@@ -69,11 +67,13 @@ spec:
     - name: KUMA_CONTROL_PLANE_URL
       value: http://kuma-control-plane.kuma-system:5681
     - name: KUMA_DATAPLANE_DRAIN_TIME
-      value: 31s
+      value: 10s
     - name: KUMA_DATAPLANE_MESH
       value: default
     - name: KUMA_DATAPLANE_NAME
       value: $(POD_NAME).$(POD_NAMESPACE)
+    - name: KUMA_DATAPLANE_RUNTIME_ENVOY_LOG_LEVEL
+      value: trace
     - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
       value: /var/run/secrets/kubernetes.io/serviceaccount/token
     - name: KUMA_DNS_ENABLED
@@ -107,12 +107,16 @@ spec:
         cpu: 150m
         memory: 164Mi
     securityContext:
+      privileged: false
       runAsGroup: 5678
       runAsUser: 5678
     volumeMounts:
-    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-      name: token
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount/
+      name: '{{ template "kong.serviceAccountTokenName" . }}'
       readOnly: true
+  - image: busybox
+    name: busybox
+    resources: {}
   initContainers:
   - args:
     - --redirect-outbound-port
@@ -150,13 +154,4 @@ spec:
         - NET_ADMIN
         - NET_RAW
       runAsGroup: 0
-      runAsUser: 0
-  volumes:
-  - name: token
-    projected:
-      sources:
-      - serviceAccountToken:
-          audience: https://kubernetes.default.svc.cluster.local
-          expirationSeconds: 7200
-          path: token
 status: {}

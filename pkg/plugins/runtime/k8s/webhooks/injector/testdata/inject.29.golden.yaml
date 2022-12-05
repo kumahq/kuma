@@ -2,9 +2,12 @@ apiVersion: v1
 kind: Pod
 metadata:
   annotations:
+    kuma.io/builtin-dns: enabled
+    kuma.io/builtin-dns-port: "25053"
+    kuma.io/builtindns: enabled
+    kuma.io/builtindnsport: "25053"
     kuma.io/envoy-admin-port: "9901"
     kuma.io/mesh: default
-    kuma.io/sidecar-drain-time: 10s
     kuma.io/sidecar-injected: "true"
     kuma.io/sidecar-uid: "5678"
     kuma.io/transparent-proxying: enabled
@@ -20,9 +23,6 @@ metadata:
   name: busybox
 spec:
   containers:
-  - image: busybox
-    name: busybox
-    resources: {}
   - args:
     - run
     - --log-level=info
@@ -68,15 +68,23 @@ spec:
     - name: KUMA_CONTROL_PLANE_URL
       value: http://kuma-control-plane.kuma-system:5681
     - name: KUMA_DATAPLANE_DRAIN_TIME
-      value: 10s
+      value: 31s
     - name: KUMA_DATAPLANE_MESH
       value: default
     - name: KUMA_DATAPLANE_NAME
       value: $(POD_NAME).$(POD_NAMESPACE)
     - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
       value: /var/run/secrets/kubernetes.io/serviceaccount/token
+    - name: KUMA_DNS_CORE_DNS_BINARY_PATH
+      value: coredns
+    - name: KUMA_DNS_CORE_DNS_EMPTY_PORT
+      value: "25054"
+    - name: KUMA_DNS_CORE_DNS_PORT
+      value: "25053"
     - name: KUMA_DNS_ENABLED
-      value: "false"
+      value: "true"
+    - name: KUMA_DNS_ENVOY_DNS_PORT
+      value: "25055"
     image: kuma/kuma-sidecar:latest
     imagePullPolicy: IfNotPresent
     livenessProbe:
@@ -108,6 +116,9 @@ spec:
     securityContext:
       runAsGroup: 5678
       runAsUser: 5678
+  - image: busybox
+    name: busybox
+    resources: {}
   initContainers:
   - args:
     - --redirect-outbound-port
@@ -125,6 +136,9 @@ spec:
     - ""
     - --verbose
     - --skip-resolv-conf
+    - --redirect-all-dns-traffic
+    - --redirect-dns-port
+    - "25053"
     command:
     - /usr/bin/kumactl
     - install
