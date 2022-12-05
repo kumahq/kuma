@@ -71,11 +71,16 @@ spec:
  targetRef:
   kind: MeshGateway # leave open potential other selector kinds
   name: edge-gateway
+ hostnames:
+  - example.com
+  - *.example.net
  rules: ...
 ```
 
 Here as well the `spec.targetRef` tells us which proxy is being affected by
 this configuration.
+
+#### Motivation
 
 If we imagine using the `spec.targetRef`/`to` structure for `MeshGateway`, we
 have to explain to users that `to` is nonsensical in the gateway case.
@@ -84,6 +89,15 @@ In order to prevent confusion around how to target routing
 policies, we create a separate policy with a different targeting structure, as
 opposed to finding a more expressive, potentially confusing structure that can
 be used for both gateways and services.
+
+#### Hostnames
+
+`MeshGatewayHTTPRoute` also includes a `hostnames` field for further targeting of specific hostnames
+that the referenced `MeshGateway` serves.
+
+Matching of hostnames follows the rules outlined in the gateway API
+[`HTTPRoute.spec.hostnames`](https://gateway-api.sigs.k8s.io/references/spec/#gateway.networking.k8s.io%2fv1beta1.HTTPRoute)
+field.
 
 ### Positive Consequences
 
