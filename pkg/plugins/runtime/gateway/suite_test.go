@@ -96,17 +96,10 @@ func MakeProtoSnapshot(snap cache_v3.ResourceSnapshot) ProtoSnapshot {
 	}
 }
 
-type mockMetadataTracker struct{}
-
-func (m mockMetadataTracker) Metadata(dpKey core_model.ResourceKey) *core_xds.DataplaneMetadata {
-	return nil
-}
-
 func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_context.Context, *core_xds.Proxy) {
 	b := sync.DataplaneProxyBuilder{
-		MetadataTracker: mockMetadataTracker{},
-		Zone:            rt.Config().Multizone.Zone.Name,
-		APIVersion:      envoy.APIV3,
+		Zone:       rt.Config().Multizone.Zone.Name,
+		APIVersion: envoy.APIV3,
 	}
 
 	cache, err := cla.NewCache(rt.Config().Store.Cache.ExpirationTime.Duration, rt.Metrics())
