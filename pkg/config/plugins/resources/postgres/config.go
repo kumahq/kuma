@@ -51,16 +51,13 @@ func (cfg PostgresStoreConfig) ConnectionString() (string, error) {
 		return "", err
 	}
 	escape := func(value string) string { return strings.ReplaceAll(strings.ReplaceAll(value, `\`, `\\`), `'`, `\'`) }
-	boolOption := func(value bool) string {
-		if value {
-			return "1"
-		} else {
-			return "0"
-		}
+	sslsniOpt := ""
+	if cfg.TLS.DisableSSLSNI {
+		sslsniOpt = "sslsni=0"
 	}
 	return fmt.Sprintf(
-		`host='%s' port=%d user='%s' password='%s' dbname='%s' connect_timeout=%d sslmode=%s sslcert='%s' sslkey='%s' sslrootcert='%s' sslsni=%s`,
-		escape(cfg.Host), cfg.Port, escape(cfg.User), escape(cfg.Password), escape(cfg.DbName), cfg.ConnectionTimeout, mode, escape(cfg.TLS.CertPath), escape(cfg.TLS.KeyPath), escape(cfg.TLS.CAPath), boolOption(!cfg.TLS.DisableSSLSNI),
+		`host='%s' port=%d user='%s' password='%s' dbname='%s' connect_timeout=%d sslmode=%s sslcert='%s' sslkey='%s' sslrootcert='%s' %s`,
+		escape(cfg.Host), cfg.Port, escape(cfg.User), escape(cfg.Password), escape(cfg.DbName), cfg.ConnectionTimeout, mode, escape(cfg.TLS.CertPath), escape(cfg.TLS.KeyPath), escape(cfg.TLS.CAPath), sslsniOpt,
 	), nil
 }
 
