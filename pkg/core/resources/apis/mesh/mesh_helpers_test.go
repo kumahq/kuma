@@ -280,4 +280,24 @@ var _ = Describe("MeshResource", func() {
 			}),
 		)
 	})
+	Describe("MarshalLog", func() {
+		It("should marshal log without panicking", func() {
+			// given
+			meshResourceList := MeshResourceList{
+				Items: []*MeshResource{
+					{
+						Spec: &mesh_proto.Mesh{
+							Mtls: &mesh_proto.Mesh_Mtls{},
+						},
+					},
+				},
+			}
+
+			// when
+			meshResourceList.MarshalLog()
+
+			// then
+			// expect no panic
+		})
+	})
 })
