@@ -26,7 +26,7 @@ stats which contain interesting us data will be prefixed with `cluster.<name>.ou
 * Create two separate policies: `MeshCircuitBreaker` and `MeshOutlierDetector`
 * Create single `MeshCircuitBreaker` policy which would map 1:1 current policy
 * Create single `MeshCircuitBreaker` with configuration divided
-  to `connectionPool` ([envoy's circuit breaker](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/circuit_breaking))
+  to `connectionThresholds` ([envoy's circuit breaker](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/circuit_breaking))
   and `outlierDetection` ([envoy's outlier detection](https://gstwww.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/outlier))
 
 ## Decision Outcome
@@ -50,19 +50,63 @@ Chosen option: Create single `MeshCircuitBreaker` with configuration divided int
 
 ## Solution
 
-By dividing the configuration section into two separate, logical sections: `connectionPool` and `outlierDetection` it's
-easier to differentiate underlying envoy features without the need to split policy into two separate ones.
+By dividing the configuration section into two separate, logical sections: `connectionThresholds` and `outlierDetection`
+it's easier to differentiate underlying envoy features without the need to split policy into two separate ones.
 
 Introducing new - 2.0 policy is a great opportunity to introduce missing so far functionality of circuit breakers for
 inbound clusters, and with new policy matching it may be so simple to just allow to specify`from.targetRef` section
 
 Additional changes to the original `CircuitBreaker` policy consists of:
 
-- changing word `Errors` to `Failures` in detectors
-- adding `origin` suffix to the local failures detector
+- changing word `Errors` to `Failures` in detectors and adding `origin` suffix to the local failures
+  detector (`totalErrors`, `gatewayErrors` and `localErrors`becomes: `totalFailures`, `gatewayFailures`
+  and `localOriginFailures` respectively)
+- adding additional threshold-related property - `maxConnectionPools` for specifying the maximum number of connection
+  pools per cluster that Envoy will concurrently support at once
 
-It means `totalErrors`, `gatewayErrors` and `localErrors`becomes: `totalFailures`, `gatewayFailures`
-and `localOriginFailures` respectively.
+### `connectionThresholds`
+
+Initially the plan was to call this part of the configuration `connectionPool`, but an Envoy allows to specify
+the `max_connection_pools` property for circuit breaking, I believe it wasn't the best choice.
+
+Kuma is currently not
+applying [priorities for routes](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-v3-api-enum-config-core-v3-routingpriority),
+but to make it more future-proof `connectionThresholds` will be a collection with optional `priority` property
+defaulting to the `DEFAULT` value instead of a map.
+
+Instead of:
+
+```yaml
+connectionThresholds:
+  maxConnections: 1024
+  maxPendingRequests: 1024
+  maxRetries: 3
+  maxRequests: 1024
+```
+
+correct configuration will be:
+
+```yaml
+connectionThresholds:
+- maxConnections: 1024
+  maxPendingRequests: 1024
+  maxRetries: 3
+  maxRequests: 1024
+```
+
+which will be equivalent to:
+
+```yaml
+connectionThresholds:
+- priority: DEFAULT
+  maxConnections: 1024
+  maxPendingRequests: 1024
+  maxRetries: 3
+  maxRequests: 1024
+```
+
+It will require introducing more complex validators, but should be a good compromise between user experience and
+future-proofing the functionality.
 
 ### Current configuration
 
@@ -131,12 +175,12 @@ to:
 
 #### Minimal configuration
 
-As all the connection pool related properties have default values, there is no need to specify any of these to apply the
-policy
+As all the connectionThresholds related properties have default values, there is no need to specify any of these to
+apply the policy
 
 ```yaml
 default:
-  connectionPool: { }
+  connectionThresholds: { }
 ```
 
 ### Examples
@@ -153,25 +197,14 @@ spec:
   targetRef:
     kind: Mesh
     name: default
-  from:
-  - targetRef:
-      kind: Mesh
-      name: default
-    default:
-      disabled: false
-      connectionPool:
-        maxConnections: 1024
-        maxPendingRequests: 1024
-        maxRetries: 3
-        maxRequests: 1024
   to:
   - targetRef:
       kind: Mesh
       name: default
     default:
       disabled: false
-      connectionPool:
-        maxConnections: 1024
+      connectionThresholds:
+      - maxConnections: 1024
         maxPendingRequests: 1024
         maxRetries: 3
         maxRequests: 1024
@@ -193,11 +226,13 @@ spec:
       name: default
     default:
       disabled: true
-      connectionPool:
-        maxConnections: 1024
-        maxPendingRequests: 1024
-        maxRetries: 3
-        maxRequests: 1024
+      connectionThresholds:
+      - priority: DEFAULT
+        maxConnections: 2
+        maxConnectionPools: 2
+        maxPendingRequests: 2
+        maxRetries: 1
+        maxRequests: 32
       outlierDetection:
         interval: 5s
         baseEjectionTime: 30s
@@ -224,11 +259,13 @@ spec:
       name: default
     default:
       disabled: true
-      connectionPool:
-        maxConnections: 1024
-        maxPendingRequests: 1024
-        maxRetries: 3
-        maxRequests: 1024
+      connectionThresholds:
+      - priority: DEFAULT
+        maxConnections: 2
+        maxConnectionPools: 2
+        maxPendingRequests: 2
+        maxRetries: 1
+        maxRequests: 32
       outlierDetection:
         interval: 5s
         baseEjectionTime: 30s
