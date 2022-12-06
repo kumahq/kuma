@@ -263,27 +263,6 @@ violations:
   - field: spec.to[0].default.http.path
     message: must be defined`,
 			}),
-			Entry("http path is missing", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: backend
-to:
-  - targetRef:
-      kind: MeshService
-      name: web-backend
-    default:
-      interval: 10s
-      timeout: 2s
-      unhealthyThreshold: 3
-      healthyThreshold: 1
-      http: {}
-`,
-				expected: `
-violations:
-  - field: spec.to[0].default.http.path
-    message: must be defined`,
-			}),
 			Entry("header missing in requestHeadersToAdd", testCase{
 				inputYaml: `
 targetRef:

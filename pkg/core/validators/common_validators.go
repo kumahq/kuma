@@ -75,3 +75,11 @@ func ValidatePathOrNil(path PathBuilder, filePath *string) (err ValidationError)
 
 	return
 }
+
+func ValidateStatusCode(path PathBuilder, status int32) (err ValidationError) {
+	if status < 100 || status >= 600 {
+		err.AddViolationAt(path, "must be in range [100, 600)")
+	}
+
+	return
+}
