@@ -73,50 +73,6 @@ Additional changes to the original `CircuitBreaker` policy consists of:
 - adding additional threshold-related property - `maxConnectionPools` for specifying the maximum number of connection
   pools per cluster that Envoy will concurrently support at once
 
-### `connectionThresholds`
-
-Initially the plan was to call this part of the configuration `connectionPool`, but an Envoy allows to specify
-the `max_connection_pools` property for circuit breaking, I believe it wasn't the best choice.
-
-Kuma is currently not
-applying [priorities for routes](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-v3-api-enum-config-core-v3-routingpriority),
-but to make it more future-proof `connectionThresholds` will be a collection with optional `priority` property
-defaulting to the `DEFAULT` value instead of a map.
-
-Instead of:
-
-```yaml
-connectionThresholds:
-  maxConnections: 1024
-  maxPendingRequests: 1024
-  maxRetries: 3
-  maxRequests: 1024
-```
-
-correct configuration will be:
-
-```yaml
-connectionThresholds:
-- maxConnections: 1024
-  maxPendingRequests: 1024
-  maxRetries: 3
-  maxRequests: 1024
-```
-
-which will be equivalent to:
-
-```yaml
-connectionThresholds:
-- priority: DEFAULT
-  maxConnections: 1024
-  maxPendingRequests: 1024
-  maxRetries: 3
-  maxRequests: 1024
-```
-
-It will require introducing more complex validators, but should be a good compromise between user experience and
-future-proofing the functionality.
-
 ### Current configuration
 
 Below is the sample `MeshCircuitBreaker` configuration
@@ -184,8 +140,8 @@ to:
 
 #### Minimal configuration
 
-As all the connectionThresholds related properties have default values, there is no need to specify any of these to
-apply the policy
+As all the connectionThresholds related properties have default values, there is no need to specify any of these to apply
+the policy
 
 ```yaml
 default:
@@ -213,7 +169,7 @@ spec:
     default:
       disabled: false
       connectionThresholds:
-      - maxConnections: 1024
+        maxConnections: 1024
         maxPendingRequests: 1024
         maxRetries: 3
         maxRequests: 1024
@@ -236,7 +192,6 @@ spec:
     default:
       disabled: true
       connectionThresholds:
-      - priority: DEFAULT
         maxConnections: 2
         maxConnectionPools: 2
         maxPendingRequests: 2
@@ -269,7 +224,6 @@ spec:
     default:
       disabled: true
       connectionThresholds:
-      - priority: DEFAULT
         maxConnections: 2
         maxConnectionPools: 2
         maxPendingRequests: 2
