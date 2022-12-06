@@ -37,9 +37,6 @@ func validateFrom(from []From) validators.ValidationError {
 		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(fromItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
-				common_api.MeshSubset,
-				common_api.MeshService,
-				common_api.MeshServiceSubset,
 			},
 		}))
 
@@ -57,6 +54,7 @@ func validateTo(to []To) validators.ValidationError {
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshService,
+				common_api.MeshGatewayRoute,
 			},
 		}))
 

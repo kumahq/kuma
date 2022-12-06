@@ -119,7 +119,7 @@ func applyToGateway(
 	toRules core_xds.ToRules,
 	gatewayListeners map[core_xds.InboundListener]*envoy_listener.Listener,
 	gatewayClusters map[string]*envoy_cluster.Cluster,
-	routes map[string]*envoy_route.RouteConfiguration,
+	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
 	dataplane *core_mesh.DataplaneResource,
 	ctx xds_context.Context,
 	proxy *core_xds.Proxy,
@@ -140,7 +140,7 @@ func applyToGateway(
 		if !ok {
 			continue
 		}
-		route, ok := routes[listenerInfo.Listener.ResourceName]
+		route, ok := gatewayRoutes[listenerInfo.Listener.ResourceName]
 		if !ok {
 			continue
 		}
