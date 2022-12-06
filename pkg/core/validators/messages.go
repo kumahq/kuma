@@ -6,6 +6,7 @@ import (
 )
 
 const (
+	HasToBeGreaterThan                = "must be greater than"
 	MustNotBeEmpty                    = "must not be empty"
 	MustBeDefined                     = "must be defined"
 	MustNotBeDefined                  = "must not be defined"
