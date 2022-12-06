@@ -1,17 +1,17 @@
 package mesh_test
 
 import (
-	"github.com/kumahq/kuma/api/system/v1alpha1"
 	"time"
 
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/api/system/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/plugins/ca/provided/config"
 	"github.com/kumahq/kuma/pkg/util/proto"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("MeshResource", func() {
@@ -311,7 +311,8 @@ var _ = Describe("MeshResource", func() {
 
 			// then
 			cfg := &config.ProvidedCertificateAuthorityConfig{}
-			util_proto.ToTyped(masked.Items[0].Spec.Mtls.Backends[0].Conf, cfg)
+			err := util_proto.ToTyped(masked.Items[0].Spec.Mtls.Backends[0].Conf, cfg)
+			Expect(err).ToNot(HaveOccurred())
 			Expect(cfg.Key.String()).To(Equal(`inline:{value:"***"}`))
 			Expect(cfg.Cert.String()).To(Equal(`inline:{value:"***"}`))
 		})

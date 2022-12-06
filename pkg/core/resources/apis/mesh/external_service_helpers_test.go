@@ -1,12 +1,12 @@
 package mesh
 
 import (
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	v1alpha1 "github.com/kumahq/kuma/api/system/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("ExternalServiceResource", func() {
@@ -19,9 +19,9 @@ var _ = Describe("ExternalServiceResource", func() {
 						Spec: &mesh_proto.ExternalService{
 							Networking: &mesh_proto.ExternalService_Networking{
 								Tls: &mesh_proto.ExternalService_Networking_TLS{
-									CaCert:     &v1alpha1.DataSource{Type: &v1alpha1.DataSource_Inline{Inline: util_proto.Bytes([]byte("secret1"))}},
-									ClientCert: &v1alpha1.DataSource{Type: &v1alpha1.DataSource_Inline{Inline: util_proto.Bytes([]byte("secret2"))}},
-									ClientKey:  &v1alpha1.DataSource{Type: &v1alpha1.DataSource_Inline{Inline: util_proto.Bytes([]byte("secret3"))}},
+									CaCert:     &system_proto.DataSource{Type: &system_proto.DataSource_Inline{Inline: util_proto.Bytes([]byte("secret1"))}},
+									ClientCert: &system_proto.DataSource{Type: &system_proto.DataSource_Inline{Inline: util_proto.Bytes([]byte("secret2"))}},
+									ClientKey:  &system_proto.DataSource{Type: &system_proto.DataSource_Inline{Inline: util_proto.Bytes([]byte("secret3"))}},
 								},
 							},
 						},
