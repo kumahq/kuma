@@ -1,13 +1,16 @@
 package mesh_test
 
 import (
+	"github.com/kumahq/kuma/api/system/v1alpha1"
 	"time"
 
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/plugins/ca/provided/config"
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -283,21 +286,34 @@ var _ = Describe("MeshResource", func() {
 	Describe("MarshalLog", func() {
 		It("should marshal log without panicking", func() {
 			// given
+			conf, _ := util_proto.ToStruct(&config.ProvidedCertificateAuthorityConfig{
+				Cert: &v1alpha1.DataSource{Type: &v1alpha1.DataSource_Inline{Inline: util_proto.Bytes([]byte("secret1"))}},
+				Key:  &v1alpha1.DataSource{Type: &v1alpha1.DataSource_Inline{Inline: util_proto.Bytes([]byte("secret2"))}},
+			})
 			meshResourceList := MeshResourceList{
 				Items: []*MeshResource{
 					{
 						Spec: &mesh_proto.Mesh{
-							Mtls: &mesh_proto.Mesh_Mtls{},
+							Mtls: &mesh_proto.Mesh_Mtls{
+								Backends: []*mesh_proto.CertificateAuthorityBackend{
+									{
+										Conf: conf,
+									},
+								},
+							},
 						},
 					},
 				},
 			}
 
 			// when
-			meshResourceList.MarshalLog()
+			masked := meshResourceList.MarshalLog().(MeshResourceList)
 
 			// then
-			// expect no panic
+			cfg := &config.ProvidedCertificateAuthorityConfig{}
+			util_proto.ToTyped(masked.Items[0].Spec.Mtls.Backends[0].Conf, cfg)
+			Expect(cfg.Key.String()).To(Equal(`inline:{value:"***"}`))
+			Expect(cfg.Cert.String()).To(Equal(`inline:{value:"***"}`))
 		})
 	})
 })
