@@ -12,7 +12,7 @@ maintainers:
     email: jakub.dyszkiewicz@konghq.com
   - name: nickolaev
     email: nikolay.nikolaev@konghq.com
-icon: https://kuma.io/images/brand/kuma-logo-new.svg
+icon: https://kuma.io/assets/images/brand/kuma-logo-new.svg
 keywords:
   - service mesh
   - control plane
