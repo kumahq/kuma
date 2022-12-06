@@ -109,7 +109,7 @@ We can verify SANs of certs because separate instance will have separate cert.
 
 ```grpc
 service InterCpService {
-  rpc Ping(PingRequest) returns (google.protobuf.Empty);
+  rpc Ping(PingRequest) returns (PingResponse);
 
   // ideally reuse message types from kds.proto
   rpc EnvoyXDSConfig(XDSConfigRequest) returns (XDSConfigResponse);
@@ -121,6 +121,10 @@ message PingRequest {
   string instance_id = 1;
   string address = 2;
   uint32 inter_cp_port = 3;
+}
+
+message PingResponse {
+  bool is_leader = 1;
 }
 ```
 
