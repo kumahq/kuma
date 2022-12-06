@@ -77,7 +77,7 @@ func validateConfHttp(path validators.PathBuilder, http *HttpHealthCheck) (err v
 func validateConfHttpExpectedStatuses(path validators.PathBuilder, expectedStatuses *[]int32) (err validators.ValidationError) {
 	if expectedStatuses != nil {
 		for i, status := range *expectedStatuses {
-			validators.ValidateStatusCode(path.Index(i), status)
+			err.Add(validators.ValidateStatusCode(path.Index(i), status))
 		}
 	}
 

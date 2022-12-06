@@ -165,7 +165,7 @@ spec:
                           type: object
                         initialJitter:
                           description: If specified, Envoy will start health checking
-                            after for a random time in ms between 0 and initialJitter.
+                            after a random time in ms between 0 and initialJitter.
                             This only applies to the first health check.
                           type: string
                         interval:
