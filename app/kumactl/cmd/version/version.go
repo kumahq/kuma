@@ -2,6 +2,7 @@ package version
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/spf13/cobra"
 
@@ -21,7 +22,7 @@ func NewCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Long:  `Print version.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if args.detailed {
-				cmd.Println(kuma_version.FormatDetailedProductInfo())
+				cmd.Println(kuma_version.Build.FormatDetailedProductInfo())
 			} else {
 				cmd.Printf("Client: %s %s\n", kuma_version.Product, kuma_version.Build.Version)
 			}
@@ -34,7 +35,15 @@ func NewCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			}
 
 			if kumaCPInfo != nil {
-				cmd.Printf("Server: %s %s\n", kumaCPInfo.Tagline, kumaCPInfo.Version)
+				if args.detailed {
+					s, err := json.MarshalIndent(kumaCPInfo, "", "   ")
+					if err != nil {
+						return err
+					}
+					cmd.Printf("Server: %s\n", string(s))
+				} else {
+					cmd.Printf("Server: %s %s\n", kumaCPInfo.Tagline, kumaCPInfo.Version)
+				}
 			} else {
 				cmd.PrintErrf("Unable to connect to control plane: %v\n", err)
 			}
