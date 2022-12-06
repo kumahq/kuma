@@ -38,7 +38,7 @@ type Conf struct {
 	UnhealthyThreshold *int32 `json:"unhealthyThreshold,omitempty"`
 	// Number of consecutive healthy checks before considering a host healthy.
 	HealthyThreshold *int32 `json:"healthyThreshold,omitempty"`
-	// If specified, Envoy will start health checking after for a random time in
+	// If specified, Envoy will start health checking after a random time in
 	// ms between 0 and initialJitter. This only applies to the first health
 	// check.
 	InitialJitter *k8s.Duration `json:"initialJitter,omitempty"`
