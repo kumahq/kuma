@@ -167,7 +167,6 @@ spec:
       kind: Mesh
       name: default
     default:
-      disabled: false
       connectionLimits:
         maxConnections: 1024
         maxPendingRequests: 1024
@@ -190,7 +189,6 @@ spec:
       kind: Mesh
       name: default
     default:
-      disabled: true
       connectionLimits:
         maxConnections: 2
         maxConnectionPools: 2
@@ -198,6 +196,7 @@ spec:
         maxRetries: 1
         maxRequests: 32
       outlierDetection:
+        disabled: false
         interval: 5s
         baseEjectionTime: 30s
         maxEjectionPercent: 20
@@ -222,7 +221,6 @@ spec:
       kind: Mesh
       name: default
     default:
-      disabled: true
       connectionLimits:
         maxConnections: 2
         maxConnectionPools: 2
@@ -230,6 +228,7 @@ spec:
         maxRetries: 1
         maxRequests: 32
       outlierDetection:
+        disabled: false
         interval: 5s
         baseEjectionTime: 30s
         maxEjectionPercent: 20
