@@ -16,6 +16,7 @@ import (
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/intercp/catalog"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
@@ -49,6 +50,13 @@ func ZoneAndGlobalWithHelmChart() {
 			Install(Kuma(core.Global,
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
+				WithCPReplicas(2),
+				WithHelmOpt("controlPlane.config", `
+interCp:
+  catalog:
+    heartbeatInterval: 1s
+    writerInterval: 3s
+`),
 			)).
 			Setup(c1)
 		Expect(err).ToNot(HaveOccurred())
@@ -80,7 +88,7 @@ func ZoneAndGlobalWithHelmChart() {
 		Expect(clusters.DismissCluster()).To(Succeed())
 	})
 
-	It("Should deploy Zone and Global on 2 clusters", func() {
+	It("should deploy Zone and Global on 2 clusters", func() {
 		clustersStatus := api_server.Zones{}
 		Eventually(func() (bool, error) {
 			status, response := http_helper.HttpGet(c1.GetTesting(), global.GetGlobalStatusAPI(), nil)
@@ -121,5 +129,28 @@ func ZoneAndGlobalWithHelmChart() {
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "30s", "1s").Should(Succeed())
+	})
+
+	Context("Intercommunication CP server catalog on Global CP", func() {
+		countInstancesInCatalog := func(g Gomega) int {
+			out, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions(Config.KumaNamespace), "get", "configmap", "cp-catalog", "-o", "jsonpath={.data.config}")
+			g.Expect(err).ToNot(HaveOccurred())
+
+			instances := catalog.Instances{}
+			g.Expect(json.Unmarshal([]byte(out), &instances)).To(Succeed())
+			return len(instances.Instances)
+		}
+
+		It("should update instances in catalog when we scale CP", func() {
+			// given
+			Eventually(countInstancesInCatalog, "30s", "1s").Should(Equal(2))
+
+			// when
+			_, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions(Config.KumaNamespace), "scale", "deployment", Config.KumaServiceName, "--replicas", "1")
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Eventually(countInstancesInCatalog, "30s", "1s").Should(Equal(1))
+		})
 	})
 }
