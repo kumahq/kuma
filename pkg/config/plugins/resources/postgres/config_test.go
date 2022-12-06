@@ -121,7 +121,7 @@ var _ = Describe("PostgresStoreConfig", func() {
 				MinReconnectInterval: config_types.Duration{Duration: 10 * time.Second},
 				MaxReconnectInterval: config_types.Duration{Duration: 10 * time.Second},
 			},
-			expected: `host='localhost' port=0 user='postgres' password='postgres' dbname='kuma' connect_timeout=0 sslmode=verify-full sslcert='/path' sslkey='/path' sslrootcert='/path' sslsni=1`,
+			expected: `host='localhost' port=0 user='postgres' password='postgres' dbname='kuma' connect_timeout=0 sslmode=verify-full sslcert='/path' sslkey='/path' sslrootcert='/path'`,
 		}),
 		Entry("password needing escape without sslsni", stringTestCase{
 			given: postgres.PostgresStoreConfig{

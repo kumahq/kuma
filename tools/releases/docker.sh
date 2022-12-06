@@ -29,8 +29,15 @@ function build() {
       if [ "$arch" == "arm64" ]; then
         read -ra additional_args <<< "${ARM64_BUILD_ARGS[@]}"
       fi
+
+      if [[ -f "$SCRIPT_DIR"/dockerfiles/Dockerfile."${component}" ]]; then
+          dockerfile_path="$SCRIPT_DIR/dockerfiles/Dockerfile.${component}"
+      else
+          dockerfile_path="tools/releases/dockerfiles/Dockerfile.${component}"
+      fi
+
       docker build --label="do-not-remove=true" "${build_args[@]}" "${additional_args[@]}" -t "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}-${arch}" \
-        -f "$SCRIPT_DIR"/dockerfiles/Dockerfile."${component}" .
+        -f "${dockerfile_path}" .
       docker tag "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}-${arch}" "${KUMA_DOCKER_REPO_ORG}/${component}:latest-${arch}"
       msg_green "... done!"
     done

@@ -52,17 +52,31 @@ func (cfg PostgresStoreConfig) ConnectionString() (string, error) {
 		return "", err
 	}
 	escape := func(value string) string { return strings.ReplaceAll(strings.ReplaceAll(value, `\`, `\\`), `'`, `\'`) }
-	boolOption := func(value bool) string {
-		if value {
-			return "1"
-		} else {
-			return "0"
-		}
+	intVariable := func(name string, value int) string {
+		return fmt.Sprintf("%s=%d", name, value)
 	}
-	return fmt.Sprintf(
-		`host='%s' port=%d user='%s' password='%s' dbname='%s' connect_timeout=%d sslmode=%s sslcert='%s' sslkey='%s' sslrootcert='%s' sslsni=%s`,
-		escape(cfg.Host), cfg.Port, escape(cfg.User), escape(cfg.Password), escape(cfg.DbName), cfg.ConnectionTimeout, mode, escape(cfg.TLS.CertPath), escape(cfg.TLS.KeyPath), escape(cfg.TLS.CAPath), boolOption(!cfg.TLS.DisableSSLSNI),
-	), nil
+	variable := func(name, value string) string {
+		return fmt.Sprintf("%s=%s", name, value)
+	}
+	quotedVariable := func(name, value string) string {
+		return fmt.Sprintf("%s='%s'", name, escape(value))
+	}
+	variables := []string{
+		quotedVariable("host", cfg.Host),
+		intVariable("port", cfg.Port),
+		quotedVariable("user", cfg.User),
+		quotedVariable("password", cfg.Password),
+		quotedVariable("dbname", cfg.DbName),
+		intVariable("connect_timeout", cfg.ConnectionTimeout),
+		variable("sslmode", mode),
+		quotedVariable("sslcert", cfg.TLS.CertPath),
+		quotedVariable("sslkey", cfg.TLS.KeyPath),
+		quotedVariable("sslrootcert", cfg.TLS.CAPath),
+	}
+	if cfg.TLS.DisableSSLSNI {
+		variables = append(variables, "sslsni=0")
+	}
+	return strings.Join(variables, " "), nil
 }
 
 // Modes available here https://godoc.org/github.com/lib/pq
