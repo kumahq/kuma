@@ -26,7 +26,7 @@ stats which contain interesting us data will be prefixed with `cluster.<name>.ou
 * Create two separate policies: `MeshCircuitBreaker` and `MeshOutlierDetector`
 * Create single `MeshCircuitBreaker` policy which would map 1:1 current policy
 * Create single `MeshCircuitBreaker` with configuration divided
-  to `connectionThresholds` ([envoy's circuit breaker](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/circuit_breaking))
+  to `connectionLimits` ([envoy's circuit breaker](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/circuit_breaking))
   and `outlierDetection` ([envoy's outlier detection](https://gstwww.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/outlier))
 
 ## Decision Outcome
@@ -52,14 +52,14 @@ Chosen option: Create single `MeshCircuitBreaker` with configuration divided int
 * Good: Implementation would be the easiest, at it would involve almost no changes in the Envoy configuration itself
 * Bad: All the problems related to confusion described in the **Context and Problem Statement** section
 
-### Option 3: Create single `MeshCircuitBreaker` with configuration divided to `connectionThresholds` ([envoy's circuit breaker](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/circuit_breaking)) and `outlierDetection` ([envoy's outlier detection](https://gstwww.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/outlier))
+### Option 3: Create single `MeshCircuitBreaker` with configuration divided to `connectionLimits` ([envoy's circuit breaker](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/circuit_breaking)) and `outlierDetection` ([envoy's outlier detection](https://gstwww.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/outlier))
 
 * Good: Clearer separation of concerns between Envoy's circuit breaking and outlier detections functionalities than in
   Option 2
 
 ## Solution
 
-By dividing the configuration section into two separate, logical sections: `connectionThresholds` and `outlierDetection`
+By dividing the configuration section into two separate, logical sections: `connectionLimits` and `outlierDetection`
 it's easier to differentiate underlying envoy features without the need to split policy into two separate ones.
 
 Introducing new - 2.0 policy is a great opportunity to introduce missing so far functionality of circuit breakers for
@@ -140,12 +140,12 @@ to:
 
 #### Minimal configuration
 
-As all the connectionThresholds related properties have default values, there is no need to specify any of these to apply
+As all the connectionLimits related properties have default values, there is no need to specify any of these to apply
 the policy
 
 ```yaml
 default:
-  connectionThresholds: { }
+  connectionLimits: { }
 ```
 
 ### Examples
@@ -168,7 +168,7 @@ spec:
       name: default
     default:
       disabled: false
-      connectionThresholds:
+      connectionLimits:
         maxConnections: 1024
         maxPendingRequests: 1024
         maxRetries: 3
@@ -191,7 +191,7 @@ spec:
       name: default
     default:
       disabled: true
-      connectionThresholds:
+      connectionLimits:
         maxConnections: 2
         maxConnectionPools: 2
         maxPendingRequests: 2
@@ -223,7 +223,7 @@ spec:
       name: default
     default:
       disabled: true
-      connectionThresholds:
+      connectionLimits:
         maxConnections: 2
         maxConnectionPools: 2
         maxPendingRequests: 2
