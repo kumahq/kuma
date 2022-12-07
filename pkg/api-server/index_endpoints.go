@@ -9,8 +9,6 @@ import (
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
-var APIIndexResponseFn = kumaAPIIndexResponse
-
 func addIndexWsEndpoints(ws *restful.WebService, getInstanceId func() string, getClusterId func() string, enableGUI bool, guiURL string) error {
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -35,22 +33,20 @@ func addIndexWsEndpoints(ws *restful.WebService, getInstanceId func() string, ge
 			guiURL = ""
 		}
 
-		response := APIIndexResponseFn(hostname, instanceId, clusterId, guiURL)
+		response := types.IndexResponse{
+			Hostname:    hostname,
+			Tagline:     kuma_version.Product,
+			Product:     kuma_version.Product,
+			Version:     kuma_version.Build.Version,
+			BasedOnKuma: kuma_version.Build.BasedOnKuma,
+			InstanceId:  instanceId,
+			ClusterId:   clusterId,
+			GuiURL:      guiURL,
+		}
 
 		if err := resp.WriteAsJson(response); err != nil {
 			log.Error(err, "Could not write the index response")
 		}
 	}))
 	return nil
-}
-
-func kumaAPIIndexResponse(hostname string, instanceId string, clusterId string, guiURL string) interface{} {
-	return types.IndexResponse{
-		Hostname:   hostname,
-		Tagline:    kuma_version.Product,
-		Version:    kuma_version.Build.Version,
-		InstanceId: instanceId,
-		ClusterId:  clusterId,
-		GuiURL:     guiURL,
-	}
 }
