@@ -379,8 +379,6 @@ violations:
   - field: spec.to[0].default.outlierDetection.detectors.failurePercentage.minimumHosts
     message: must be greater than 0
   - field: spec.to[0].default.outlierDetection.detectors.failurePercentage.requestVolume
-    message: must be greater than 0
-  - field: spec.to[0].default.outlierDetection.detectors.failurePercentage.threshold
     message: must be greater than 0`}),
 			Entry("any outlierDetection's percentage property cannot be be greater than 100 when specified", testCase{
 				inputYaml: `
