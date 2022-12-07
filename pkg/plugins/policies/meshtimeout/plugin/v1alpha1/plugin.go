@@ -229,6 +229,9 @@ func routeActionPerCluster(route *envoy_route.RouteConfiguration) map[string][]*
 	for _, vh := range route.VirtualHosts {
 		for _, r := range vh.Routes {
 			routeAction := r.GetRoute()
+			if routeAction == nil {
+				continue
+			}
 			cluster := routeAction.GetWeightedClusters().GetClusters()[0].Name
 			if actions[cluster] == nil {
 				actions[cluster] = []*envoy_route.RouteAction{routeAction}

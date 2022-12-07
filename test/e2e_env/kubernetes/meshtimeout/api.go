@@ -31,7 +31,7 @@ func API() {
 		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	It("should create MeshTrafficPermission policy", func() {
+	It("should create MeshTimeout policy", func() {
 		// given no MeshTimeout
 		mts, err := env.Cluster.GetKumactlOptions().KumactlList("meshtimeouts", meshName)
 		Expect(err).ToNot(HaveOccurred())
@@ -45,7 +45,7 @@ metadata:
   name: mt1
   namespace: %s
   labels:
-    kuma.io/mesh: default
+    kuma.io/mesh: meshtimeout-api
 spec:
   targetRef:
     kind: Mesh
