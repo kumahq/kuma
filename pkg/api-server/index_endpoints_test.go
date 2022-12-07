@@ -56,6 +56,7 @@ var _ = Describe("Index Endpoints", func() {
 		{
 			"hostname": "%s",
 			"tagline": "Kuma",
+			"product": "Kuma",
 			"version": "1.2.3",
 			"instanceId": "instance-id",
 			"clusterId": "cluster-id",

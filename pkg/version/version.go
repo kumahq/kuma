@@ -6,30 +6,37 @@ import (
 )
 
 var (
-	Product   = "Kuma"
-	version   = "unknown"
-	gitTag    = "unknown"
-	gitCommit = "unknown"
-	buildDate = "unknown"
-	Envoy     = "unknown"
+	Product     = "Kuma"
+	basedOnKuma = ""
+	version     = "unknown"
+	gitTag      = "unknown"
+	gitCommit   = "unknown"
+	buildDate   = "unknown"
+	Envoy       = "unknown"
 )
 
 type BuildInfo struct {
-	Version   string
-	GitTag    string
-	GitCommit string
-	BuildDate string
+	Product     string
+	Version     string
+	GitTag      string
+	GitCommit   string
+	BuildDate   string
+	BasedOnKuma string
 }
 
-func FormatDetailedProductInfo() string {
+func (b BuildInfo) FormatDetailedProductInfo() string {
+	base := []string{
+		fmt.Sprintf("Product:       %s", b.Product),
+		fmt.Sprintf("Version:       %s", b.Version),
+		fmt.Sprintf("Git Tag:       %s", b.GitTag),
+		fmt.Sprintf("Git Commit:    %s", b.GitCommit),
+		fmt.Sprintf("Build Date:    %s", b.BuildDate),
+	}
+	if b.BasedOnKuma != "" {
+		base = append(base, fmt.Sprintf("Based on Kuma: %s", b.BasedOnKuma))
+	}
 	return strings.Join(
-		[]string{
-			fmt.Sprintf("Product:    %s", Product),
-			fmt.Sprintf("Version:    %s", Build.Version),
-			fmt.Sprintf("Git Tag:    %s", Build.GitTag),
-			fmt.Sprintf("Git Commit: %s", Build.GitCommit),
-			fmt.Sprintf("Build Date: %s", Build.BuildDate),
-		},
+		base,
 		"\n",
 	)
 }
@@ -40,9 +47,11 @@ var (
 
 func init() {
 	Build = BuildInfo{
-		Version:   version,
-		GitTag:    gitTag,
-		GitCommit: gitCommit,
-		BuildDate: buildDate,
+		Product:     Product,
+		Version:     version,
+		GitTag:      gitTag,
+		GitCommit:   gitCommit,
+		BuildDate:   buildDate,
+		BasedOnKuma: basedOnKuma,
 	}
 }
