@@ -115,7 +115,7 @@ default:
   tcp: # it will pick the protocol as described in 'protocol selection' section
     disabled: true # new, default false, can be disabled for override
     send: Zm9v # optional, empty payloads imply a connect-only health check
-    receive: # required if send specified
+    receive: # optional
     - YmFy
     - YmF6
   http:
@@ -132,7 +132,7 @@ default:
     expectedStatuses: [200, 201] # optional, by default [200]
   grpc: # new
     disabled: false # new, default false, can be disabled for override
-    service_name: "" # optional, service name parameter which will be sent to gRPC service
+    serviceName: "" # optional, service name parameter which will be sent to gRPC service
     authority: "" # optional, the value of the :authority header in the gRPC health check request, by default name of the cluster this health check is associated with
 ```
 
