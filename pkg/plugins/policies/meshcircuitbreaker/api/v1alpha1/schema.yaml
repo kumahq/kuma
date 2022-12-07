@@ -1,0 +1,301 @@
+properties:
+  type:
+    description: 'the type of the resource'
+    type: string
+    enum:
+      - MeshCircuitBreaker
+  mesh:
+    description: 'Mesh is the name of the Kuma mesh this resource belongs to. It may be omitted for cluster-scoped resources.'
+    type: string
+    default: default
+  name:
+    description: 'Name of the Kuma resource'
+    type: string
+  spec:
+    description: Spec is the specification of the Kuma MeshCircuitBreaker resource.
+    properties:
+      from:
+        description: From list makes a match between clients and corresponding configurations
+        items:
+          properties:
+            default:
+              description: Default is a configuration specific to the group of destinations referenced in 'targetRef'
+              properties:
+                connectionLimits:
+                  properties:
+                    maxConnectionPools:
+                      description: The maximum number of connection pools per cluster that are concurrently supported at once. Set this for clusters which create a large number of connection pools.
+                      format: int32
+                      type: integer
+                    maxConnections:
+                      description: The maximum number of connections allowed to be made to the upstream cluster.
+                      format: int32
+                      type: integer
+                    maxPendingRequests:
+                      description: The maximum number of pending requests that are allowed to the upstream cluster. This limit is applied as a connection limit for non-HTTP traffic.
+                      format: int32
+                      type: integer
+                    maxRequests:
+                      description: The maximum number of parallel requests that are allowed to be made to the upstream cluster. This limit does not apply to non-HTTP traffic.
+                      format: int32
+                      type: integer
+                    maxRetries:
+                      description: The maximum number of parallel retries that will be allowed to the upstream cluster.
+                      format: int32
+                      type: integer
+                  type: object
+                outlierDetection:
+                  properties:
+                    baseEjectionTime:
+                      description: The base time that a host is ejected for. The real time is equal to the base time multiplied by the number of times the host has been ejected.
+                      type: string
+                    detectors:
+                      properties:
+                        failurePercentage:
+                          properties:
+                            minimumHosts:
+                              description: The minimum number of hosts in a cluster in order to perform failure percentage-based ejection. If the total number of hosts in the cluster is less than this value, failure percentage-based ejection will not be performed.
+                              format: int32
+                              type: integer
+                            requestVolume:
+                              description: The minimum number of total requests that must be collected in one interval (as defined by the interval duration above) to perform failure percentage-based ejection for this host. If the volume is lower than this setting, failure percentage-based ejection will not be performed for this host.
+                              format: int32
+                              type: integer
+                            threshold:
+                              description: The failure percentage to use when determining failure percentage-based outlier detection. If the failure percentage of a given host is greater than or equal to this value, it will be ejected.
+                              format: int32
+                              type: integer
+                          type: object
+                        gatewayFailures:
+                          properties:
+                            consecutive:
+                              description: The number of consecutive gateway failures (502, 503, 504 status codes) before a consecutive gateway failure ejection occurs.
+                              format: int32
+                              type: integer
+                          type: object
+                        localOriginFailures:
+                          properties:
+                            consecutive:
+                              description: The number of consecutive locally originated failures before ejection occurs. Parameter takes effect only when splitExternalAndLocalErrors is set to true.
+                              format: int32
+                              type: integer
+                          type: object
+                        successRate:
+                          properties:
+                            minimumHosts:
+                              description: The number of hosts in a cluster that must have enough request volume to detect success rate outliers. If the number of hosts is less than this setting, outlier detection via success rate statistics is not performed for any host in the cluster.
+                              format: int32
+                              type: integer
+                            requestVolume:
+                              description: The minimum number of total requests that must be collected in one interval (as defined by the interval duration configured in outlierDetection section) to include this host in success rate based outlier detection. If the volume is lower than this setting, outlier detection via success rate statistics is not performed for that host.
+                              format: int32
+                              type: integer
+                            standardDeviationFactor:
+                              description: 'This factor is used to determine the ejection threshold for success rate outlier ejection. The ejection threshold is the difference between the mean success rate, and the product of this factor and the standard deviation of the mean success rate: mean - (standard_deviation * success_rate_standard_deviation_factor). This factor is divided by a thousand to get a double. That is, if the desired factor is 1.9, the runtime value should be 1900.'
+                              format: int32
+                              type: integer
+                          type: object
+                        totalFailures:
+                          properties:
+                            consecutive:
+                              description: The number of consecutive server-side error responses (for HTTP traffic, 5xx responses; for TCP traffic, connection failures; for Redis, failure to respond PONG; etc.) before a consecutive total failure ejection occurs.
+                              format: int32
+                              type: integer
+                          type: object
+                      type: object
+                    disabled:
+                      description: When set to true, outlierDetection configuration won't take any effect
+                      type: boolean
+                    interval:
+                      description: The time interval between ejection analysis sweeps. This can result in both new ejections and hosts being returned to service.
+                      type: string
+                    maxEjectionPercent:
+                      description: The maximum % of an upstream cluster that can be ejected due to outlier detection. Defaults to 10% but will eject at least one host regardless of the value.
+                      format: int32
+                      type: integer
+                    splitExternalAndLocalErrors:
+                      description: 'Determines whether to distinguish local origin failures from external errors. If set to true the following configuration parameters are taken into account: detectors.localOriginFailures.consecutive'
+                      type: boolean
+                  type: object
+              type: object
+            targetRef:
+              description: TargetRef is a reference to the resource that represents a group of destinations.
+              properties:
+                kind:
+                  description: Kind of the referenced resource
+                  enum:
+                    - Mesh
+                    - MeshSubset
+                    - MeshService
+                    - MeshServiceSubset
+                    - MeshGatewayRoute
+                  type: string
+                mesh:
+                  description: Mesh is reserved for future use to identify cross mesh resources.
+                  type: string
+                name:
+                  description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
+                  type: string
+                tags:
+                  additionalProperties:
+                    type: string
+                  description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                  type: object
+              type: object
+          type: object
+        type: array
+      targetRef:
+        description: TargetRef is a reference to the resource the policy takes an effect on. The resource could be either a real store object or virtual resource defined in place.
+        properties:
+          kind:
+            description: Kind of the referenced resource
+            enum:
+              - Mesh
+              - MeshSubset
+              - MeshService
+              - MeshServiceSubset
+              - MeshGatewayRoute
+            type: string
+          mesh:
+            description: Mesh is reserved for future use to identify cross mesh resources.
+            type: string
+          name:
+            description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
+            type: string
+          tags:
+            additionalProperties:
+              type: string
+            description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+            type: object
+        type: object
+      to:
+        description: To list makes a match between the consumed services and corresponding configurations
+        items:
+          properties:
+            default:
+              description: Default is a configuration specific to the group of destinations referenced in 'targetRef'
+              properties:
+                connectionLimits:
+                  properties:
+                    maxConnectionPools:
+                      description: The maximum number of connection pools per cluster that are concurrently supported at once. Set this for clusters which create a large number of connection pools.
+                      format: int32
+                      type: integer
+                    maxConnections:
+                      description: The maximum number of connections allowed to be made to the upstream cluster.
+                      format: int32
+                      type: integer
+                    maxPendingRequests:
+                      description: The maximum number of pending requests that are allowed to the upstream cluster. This limit is applied as a connection limit for non-HTTP traffic.
+                      format: int32
+                      type: integer
+                    maxRequests:
+                      description: The maximum number of parallel requests that are allowed to be made to the upstream cluster. This limit does not apply to non-HTTP traffic.
+                      format: int32
+                      type: integer
+                    maxRetries:
+                      description: The maximum number of parallel retries that will be allowed to the upstream cluster.
+                      format: int32
+                      type: integer
+                  type: object
+                outlierDetection:
+                  properties:
+                    baseEjectionTime:
+                      description: The base time that a host is ejected for. The real time is equal to the base time multiplied by the number of times the host has been ejected.
+                      type: string
+                    detectors:
+                      properties:
+                        failurePercentage:
+                          properties:
+                            minimumHosts:
+                              description: The minimum number of hosts in a cluster in order to perform failure percentage-based ejection. If the total number of hosts in the cluster is less than this value, failure percentage-based ejection will not be performed.
+                              format: int32
+                              type: integer
+                            requestVolume:
+                              description: The minimum number of total requests that must be collected in one interval (as defined by the interval duration above) to perform failure percentage-based ejection for this host. If the volume is lower than this setting, failure percentage-based ejection will not be performed for this host.
+                              format: int32
+                              type: integer
+                            threshold:
+                              description: The failure percentage to use when determining failure percentage-based outlier detection. If the failure percentage of a given host is greater than or equal to this value, it will be ejected.
+                              format: int32
+                              type: integer
+                          type: object
+                        gatewayFailures:
+                          properties:
+                            consecutive:
+                              description: The number of consecutive gateway failures (502, 503, 504 status codes) before a consecutive gateway failure ejection occurs.
+                              format: int32
+                              type: integer
+                          type: object
+                        localOriginFailures:
+                          properties:
+                            consecutive:
+                              description: The number of consecutive locally originated failures before ejection occurs. Parameter takes effect only when splitExternalAndLocalErrors is set to true.
+                              format: int32
+                              type: integer
+                          type: object
+                        successRate:
+                          properties:
+                            minimumHosts:
+                              description: The number of hosts in a cluster that must have enough request volume to detect success rate outliers. If the number of hosts is less than this setting, outlier detection via success rate statistics is not performed for any host in the cluster.
+                              format: int32
+                              type: integer
+                            requestVolume:
+                              description: The minimum number of total requests that must be collected in one interval (as defined by the interval duration configured in outlierDetection section) to include this host in success rate based outlier detection. If the volume is lower than this setting, outlier detection via success rate statistics is not performed for that host.
+                              format: int32
+                              type: integer
+                            standardDeviationFactor:
+                              description: 'This factor is used to determine the ejection threshold for success rate outlier ejection. The ejection threshold is the difference between the mean success rate, and the product of this factor and the standard deviation of the mean success rate: mean - (standard_deviation * success_rate_standard_deviation_factor). This factor is divided by a thousand to get a double. That is, if the desired factor is 1.9, the runtime value should be 1900.'
+                              format: int32
+                              type: integer
+                          type: object
+                        totalFailures:
+                          properties:
+                            consecutive:
+                              description: The number of consecutive server-side error responses (for HTTP traffic, 5xx responses; for TCP traffic, connection failures; for Redis, failure to respond PONG; etc.) before a consecutive total failure ejection occurs.
+                              format: int32
+                              type: integer
+                          type: object
+                      type: object
+                    disabled:
+                      description: When set to true, outlierDetection configuration won't take any effect
+                      type: boolean
+                    interval:
+                      description: The time interval between ejection analysis sweeps. This can result in both new ejections and hosts being returned to service.
+                      type: string
+                    maxEjectionPercent:
+                      description: The maximum % of an upstream cluster that can be ejected due to outlier detection. Defaults to 10% but will eject at least one host regardless of the value.
+                      format: int32
+                      type: integer
+                    splitExternalAndLocalErrors:
+                      description: 'Determines whether to distinguish local origin failures from external errors. If set to true the following configuration parameters are taken into account: detectors.localOriginFailures.consecutive'
+                      type: boolean
+                  type: object
+              type: object
+            targetRef:
+              description: TargetRef is a reference to the resource that represents a group of destinations.
+              properties:
+                kind:
+                  description: Kind of the referenced resource
+                  enum:
+                    - Mesh
+                    - MeshSubset
+                    - MeshService
+                    - MeshServiceSubset
+                    - MeshGatewayRoute
+                  type: string
+                mesh:
+                  description: Mesh is reserved for future use to identify cross mesh resources.
+                  type: string
+                name:
+                  description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
+                  type: string
+                tags:
+                  additionalProperties:
+                    type: string
+                  description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                  type: object
+              type: object
+          type: object
+        type: array
+    type: object
