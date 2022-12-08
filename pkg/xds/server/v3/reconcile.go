@@ -178,6 +178,7 @@ func (s *TemplateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, pr
 		policy, exists := policies[plugins.PluginName(policyName)]
 		if !exists {
 			reconcileLog.Info("there is no pluggable policy, skip", "policyName", policyName)
+			continue
 		}
 		if err := policy.Apply(rs, ctx, proxy); err != nil {
 			return nil, errors.Wrapf(err, "could not apply policy plugin %s", policyName)
