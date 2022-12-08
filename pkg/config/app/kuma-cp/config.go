@@ -16,6 +16,7 @@ import (
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	"github.com/kumahq/kuma/pkg/config/mads"
 	"github.com/kumahq/kuma/pkg/config/multizone"
+	"github.com/kumahq/kuma/pkg/config/plugins/policies"
 	"github.com/kumahq/kuma/pkg/config/plugins/runtime"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/config/xds"
@@ -150,6 +151,8 @@ type Config struct {
 	Experimental ExperimentalConfig `json:"experimental"`
 	// Proxy holds configuration for proxies
 	Proxy xds.Proxy `json:"proxy"`
+	// Policies holds configuration of pluggable policies in kuma-cp
+	Policies policies.PoliciesConfig `json:"policies"`
 }
 
 func (c *Config) Sanitize() {
@@ -165,6 +168,7 @@ func (c *Config) Sanitize() {
 	c.DNSServer.Sanitize()
 	c.Multizone.Sanitize()
 	c.Diagnostics.Sanitize()
+	c.Policies.Sanitize()
 }
 
 var DefaultConfig = func() Config {
@@ -208,7 +212,8 @@ var DefaultConfig = func() Config {
 			GatewayAPI:          false,
 			KubeOutboundsAsVIPs: false,
 		},
-		Proxy: xds.DefaultProxyConfig(),
+		Proxy:    xds.DefaultProxyConfig(),
+		Policies: *policies.DefaultPoliciesConfig(),
 	}
 }
 
@@ -280,6 +285,9 @@ func (c *Config) Validate() error {
 	}
 	if err := c.Experimental.Validate(); err != nil {
 		return errors.Wrap(err, "Experimental validation failed")
+	}
+	if err := c.Policies.Validate(); err != nil {
+		return errors.Wrap(err, "Policies validation failed")
 	}
 	return nil
 }

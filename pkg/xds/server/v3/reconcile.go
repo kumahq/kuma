@@ -173,9 +173,14 @@ func (s *TemplateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, pr
 		reconcileLog.Error(err, "failed to generate a snapshot", "proxy", proxy, "template", template)
 		return nil, err
 	}
-	for name, p := range plugins.Plugins().PolicyPlugins() {
-		if err := p.Apply(rs, ctx, proxy); err != nil {
-			return nil, errors.Wrapf(err, "could not apply policy plugin %s", name)
+	policies := plugins.Plugins().PolicyPlugins()
+	for _, policyName := range ctx.ControlPlane.EnabledPolicies {
+		policy, exists := policies[plugins.PluginName(policyName)]
+		if !exists {
+			reconcileLog.Info("there is no pluggable policy, skip", "policyName", policyName)
+		}
+		if err := policy.Apply(rs, ctx, proxy); err != nil {
+			return nil, errors.Wrapf(err, "could not apply policy plugin %s", policyName)
 		}
 	}
 	for _, hook := range s.ResourceSetHooks {
