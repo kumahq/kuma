@@ -16,7 +16,7 @@ func NewVersionCmd() *cobra.Command {
 		Long:  `Print version.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if args.detailed {
-				cmd.Println(kuma_version.FormatDetailedProductInfo())
+				cmd.Println(kuma_version.Build.FormatDetailedProductInfo())
 			} else {
 				cmd.Printf("%s: %s\n", kuma_version.Product, kuma_version.Build.Version)
 			}
