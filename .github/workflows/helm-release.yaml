@@ -41,9 +41,8 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install dependencies
-        run:
-          curl -L "https://github.com/helm/chart-releaser/releases/download/v${CR_VERSION}/chart-releaser_${CR_VERSION}_linux_amd64.tar.gz"
-          | sudo tar xvz --directory /usr/bin cr
+        run: |
+          curl -L "https://github.com/helm/chart-releaser/releases/download/v${CR_VERSION}/chart-releaser_${CR_VERSION}_linux_amd64.tar.gz" | sudo tar xvz --directory /usr/bin cr
 
           make dev/tools
           git checkout go.*
