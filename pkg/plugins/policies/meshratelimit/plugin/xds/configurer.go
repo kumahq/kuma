@@ -110,7 +110,7 @@ func (c *Configurer) configureHttpListener(filterChain *envoy_listener.FilterCha
 
 func (c *Configurer) configureTcpListener(filterChain *envoy_listener.FilterChain) error {
 	config := &envoy_extensions_filters_network_local_ratelimit_v3.LocalRateLimit{
-		StatPrefix: "rate_limit",
+		StatPrefix: "tcp_rate_limit",
 		TokenBucket: &envoy_type_v3.TokenBucket{
 			MaxTokens:     c.Tcp.Connections,
 			TokensPerFill: proto.UInt32(c.Tcp.Connections),
