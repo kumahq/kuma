@@ -14,7 +14,7 @@ require (
 	github.com/containernetworking/plugins v1.1.1
 	github.com/emicklei/go-restful/v3 v3.10.1
 	github.com/envoyproxy/go-control-plane v0.10.3
-	github.com/envoyproxy/protoc-gen-validate v0.9.0
+	github.com/envoyproxy/protoc-gen-validate v0.9.1
 	github.com/evanphx/json-patch/v5 v5.6.0
 	github.com/go-logr/logr v1.2.3
 	github.com/go-logr/zapr v1.2.3
@@ -187,10 +187,10 @@ require (
 	go.opencensus.io v0.23.1-0.20220331163232-052120675fac // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/crypto v0.1.0 // indirect
-	golang.org/x/mod v0.6.0 // indirect
+	golang.org/x/mod v0.7.0 // indirect
 	golang.org/x/oauth2 v0.1.0 // indirect
 	golang.org/x/term v0.3.0 // indirect
-	golang.org/x/tools v0.2.0 // indirect
+	golang.org/x/tools v0.3.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/api v0.102.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
