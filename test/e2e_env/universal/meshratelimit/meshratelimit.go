@@ -79,5 +79,4 @@ spec:
 		// should return 503 when number of connections is exceeded
 		Eventually(requestRateLimited("web", "test-server", "503"), "10s", "100ms").Should(Succeed())
 	})
-
 }
