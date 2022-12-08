@@ -9,14 +9,18 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 
-	"github.com/kumahq/kuma/api/system/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/intercp/catalog"
 	"github.com/kumahq/kuma/pkg/intercp/client"
+	"github.com/kumahq/kuma/pkg/intercp/envoyadmin"
 	"github.com/kumahq/kuma/pkg/intercp/server"
 	intercp_tls "github.com/kumahq/kuma/pkg/intercp/tls"
 )
@@ -39,31 +43,43 @@ func Setup(rt runtime.Runtime) error {
 		InterCpPort: cfg.Server.Port,
 	}
 
+	pool := rt.InterCPClientPool()
+	go pool.StartCleanup(rt.AppContext(), 10*time.Second)
+
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
 	registerComponent := component.ComponentFunc(func(stop <-chan struct{}) error {
 		certs, err := generateCerts(ctx, rt.ReadOnlyResourceManager(), cfg.Catalog.InstanceAddress)
 		if err != nil {
 			return errors.Wrap(err, "could not generate certificates to start inter-cp server")
 		}
+		pool.SetTLSConfig(&client.TLSConfig{
+			CaCert:     certs.ca,
+			ClientCert: certs.client,
+		})
 
 		interCpServer, err := server.New(cfg.Server, rt.Metrics(), certs.server, certs.ca)
 		if err != nil {
 			return errors.Wrap(err, "could not start inter-cp server")
 		}
-		v1alpha1.RegisterInterCpPingServiceServer(interCpServer.GrpcServer(), catalog.NewServer(heartbeats, rt.LeaderInfo()))
+		system_proto.RegisterInterCpPingServiceServer(interCpServer.GrpcServer(), catalog.NewServer(heartbeats, rt.LeaderInfo()))
 
-		clientTLSConfig := client.TLSConfig{
-			CaCert:     certs.ca,
-			ClientCert: certs.client,
-		}
+		envoyAdminServer := envoyadmin.NewServer(
+			admin.NewKDSEnvoyAdminClient(
+				rt.KDSContext().EnvoyAdminRPCs,
+				rt.Config().Store.Type == store.KubernetesStore,
+			),
+			rt.ResourceManager(),
+		)
+		mesh_proto.RegisterInterCPEnvoyAdminForwardServiceServer(interCpServer.GrpcServer(), envoyAdminServer)
+
 		return rt.Add(
 			interCpServer,
-			catalog.NewHeartbeatComponent(c, instance, cfg.Catalog.HeartbeatInterval.Duration, func(serverURL string) (catalog.Client, error) {
-				conn, err := client.New(serverURL, &clientTLSConfig)
+			catalog.NewHeartbeatComponent(c, instance, cfg.Catalog.HeartbeatInterval.Duration, func(serverURL string) (system_proto.InterCpPingServiceClient, error) {
+				conn, err := pool.Client(serverURL)
 				if err != nil {
 					return nil, errors.Wrap(err, "could not create inter-cp client")
 				}
-				return catalog.NewGRPCClient(conn), nil
+				return system_proto.NewInterCpPingServiceClient(conn), nil
 			}),
 		)
 	})
@@ -75,13 +91,27 @@ func Setup(rt runtime.Runtime) error {
 	)
 }
 
+func DefaultClientPool() *client.Pool {
+	return client.NewPool(client.New, 5*time.Minute)
+}
+
+func PooledEnvoyAdminClientFn(pool *client.Pool) envoyadmin.NewClientFn {
+	return func(url string) (mesh_proto.InterCPEnvoyAdminForwardServiceClient, error) {
+		conn, err := pool.Client(url)
+		if err != nil {
+			return nil, err
+		}
+		return mesh_proto.NewInterCPEnvoyAdminForwardServiceClient(conn), nil
+	}
+}
+
 type interCpCerts struct {
 	ca     x509.Certificate
 	server tls.Certificate
 	client tls.Certificate
 }
 
-func generateCerts(ctx context.Context, resManager manager.ReadOnlyResourceManager, instanceId string) (interCpCerts, error) {
+func generateCerts(ctx context.Context, resManager manager.ReadOnlyResourceManager, instanceAddress string) (interCpCerts, error) {
 	backoff := retry.WithMaxRetries(300, retry.NewConstant(1*time.Second))
 	var ca tls.Certificate
 	// we need to retry because the CA may not be created yet
@@ -103,11 +133,11 @@ func generateCerts(ctx context.Context, resManager manager.ReadOnlyResourceManag
 	if err != nil {
 		return interCpCerts{}, err
 	}
-	serverCert, err := intercp_tls.GenerateServerCert(ca, instanceId)
+	serverCert, err := intercp_tls.GenerateServerCert(ca, instanceAddress)
 	if err != nil {
 		return interCpCerts{}, err
 	}
-	clientCert, err := intercp_tls.GenerateClientCert(ca, instanceId)
+	clientCert, err := intercp_tls.GenerateClientCert(ca, instanceAddress)
 	if err != nil {
 		return interCpCerts{}, err
 	}
