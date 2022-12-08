@@ -73,22 +73,26 @@ type Setter interface {
 	Set(value string) error
 }
 
-func decoderFrom(field reflect.Value) (d Decoder) {
+func decoderFrom(field reflect.Value) Decoder {
+	var d Decoder
 	interfaceFrom(field, func(v interface{}, ok *bool) { d, *ok = v.(Decoder) })
 	return d
 }
 
-func setterFrom(field reflect.Value) (s Setter) {
+func setterFrom(field reflect.Value) Setter {
+	var s Setter
 	interfaceFrom(field, func(v interface{}, ok *bool) { s, *ok = v.(Setter) })
 	return s
 }
 
-func textUnmarshaler(field reflect.Value) (t encoding.TextUnmarshaler) {
+func textUnmarshaler(field reflect.Value) encoding.TextUnmarshaler {
+	var t encoding.TextUnmarshaler
 	interfaceFrom(field, func(v interface{}, ok *bool) { t, *ok = v.(encoding.TextUnmarshaler) })
 	return t
 }
 
-func binaryUnmarshaler(field reflect.Value) (b encoding.BinaryUnmarshaler) {
+func binaryUnmarshaler(field reflect.Value) encoding.BinaryUnmarshaler {
+	var b encoding.BinaryUnmarshaler
 	interfaceFrom(field, func(v interface{}, ok *bool) { b, *ok = v.(encoding.BinaryUnmarshaler) })
 	return b
 }

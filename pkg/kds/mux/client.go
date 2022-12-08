@@ -60,7 +60,8 @@ func NewClient(
 	}
 }
 
-func (c *client) Start(stop <-chan struct{}) (errs error) {
+func (c *client) Start(stop <-chan struct{}) error {
+	var errs error
 	u, err := url.Parse(c.globalURL)
 	if err != nil {
 		return err
@@ -113,7 +114,7 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	select {
 	case <-stop:
 		cancel()
-		return
+		return errs
 	case err = <-errorCh:
 		return err
 	}

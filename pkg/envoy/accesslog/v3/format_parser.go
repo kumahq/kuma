@@ -40,13 +40,7 @@ func ParseFormat(format string) (*AccessLogFormat, error) {
 
 type formatParser struct{}
 
-func (p formatParser) Parse(format string) (_ *AccessLogFormat, err error) {
-	defer func() {
-		if err != nil {
-			err = errors.Wrap(err, "format string is not valid")
-		}
-	}()
-
+func (p formatParser) Parse(format string) (*AccessLogFormat, error) {
 	var textLiteralStart = -1
 	var fragments []AccessLogFragment
 
@@ -60,15 +54,15 @@ func (p formatParser) Parse(format string) (_ *AccessLogFormat, err error) {
 			tail := format[pos:]
 			match := commandWithArgsRE.FindStringSubmatch(tail)
 			if match == nil {
-				return nil, errors.Errorf("expected a command operator to start at position %d, instead got: %q", pos+1, tail)
+				return nil, errors.Errorf("format string is not valid: expected a command operator to start at position %d, instead got: %q", pos+1, tail)
 			}
 			token, command, args, limit, err := p.splitMatch(match)
 			if err != nil {
-				return nil, err
+				return nil, errors.Wrap(err, "format string is not valid")
 			}
 			operator, err := p.parseCommandOperator(token, command, args, limit)
 			if err != nil {
-				return nil, err
+				return nil, errors.Wrap(err, "format string is not valid")
 			}
 			fragments = append(fragments, operator)
 			pos += len(token) - 1
@@ -84,7 +78,7 @@ func (p formatParser) Parse(format string) (_ *AccessLogFormat, err error) {
 	return &AccessLogFormat{Fragments: fragments}, nil
 }
 
-func (p formatParser) splitMatch(match []string) (token string, command string, args string, limit string, err error) {
+func (p formatParser) splitMatch(match []string) (string, string, string, string, error) {
 	if len(match) != 4 {
 		return "", "", "", "", errors.Errorf("expected a command operator that consists of a command, args and limit, got %q", match)
 	}
@@ -141,7 +135,8 @@ func (p formatParser) parseCommandOperator(token, command, args, limit string) (
 	}
 }
 
-func (p formatParser) parseHeaderOperator(token, command, args, limit string) (header string, altHeader string, maxLen int, err error) {
+func (p formatParser) parseHeaderOperator(token, command, args, limit string) (string, string, int, error) {
+	var altHeader string
 	if p.hasNoArguments(token, command, args, limit) {
 		return "", "", 0, errors.Errorf(`command %q requires a header and optional alternative header names as its arguments, instead got %q`, CommandOperatorDescriptor(command), token)
 	}
@@ -163,8 +158,8 @@ func (p formatParser) parseHeaderOperator(token, command, args, limit string) (h
 	return strings.ToLower(header), strings.ToLower(altHeader), maxLen, nil // Envoy emits log entries with all headers in lower case
 }
 
-func (p formatParser) parseDynamicMetadataOperator(token, command, args, limit string) (namespace string, path []string, maxLen int, err error) {
-	namespace, path, maxLen, err = p.parseOperator(token, args, limit, ":")
+func (p formatParser) parseDynamicMetadataOperator(token, command, args, limit string) (string, []string, int, error) {
+	namespace, path, maxLen, err := p.parseOperator(token, args, limit, ":")
 	if err != nil {
 		return "", nil, 0, err
 	}
@@ -174,8 +169,8 @@ func (p formatParser) parseDynamicMetadataOperator(token, command, args, limit s
 	return namespace, path, maxLen, err
 }
 
-func (p formatParser) parseFilterStateOperator(token, command, args, limit string) (key string, maxLen int, err error) {
-	key, _, maxLen, err = p.parseOperator(token, args, limit, "")
+func (p formatParser) parseFilterStateOperator(token, command, args, limit string) (string, int, error) {
+	key, _, maxLen, err := p.parseOperator(token, args, limit, "")
 	if err != nil {
 		return "", 0, err
 	}
@@ -185,7 +180,7 @@ func (p formatParser) parseFilterStateOperator(token, command, args, limit strin
 	return key, maxLen, nil
 }
 
-func (p formatParser) parseStartTimeOperator(token, args string) (format string, err error) {
+func (p formatParser) parseStartTimeOperator(token, args string) (string, error) {
 	// Validate the input specifier here. The formatted string may be destined for a header, and
 	// should not contain invalid characters {NUL, LR, CF}.
 	if startTimeNewlineRE.MatchString(args) {
@@ -194,14 +189,18 @@ func (p formatParser) parseStartTimeOperator(token, args string) (format string,
 	return args, nil
 }
 
-func (p formatParser) parseFieldOperator(token, command string) (field string, err error) {
+func (p formatParser) parseFieldOperator(token, command string) (string, error) {
 	if token[1:len(token)-1] != command {
 		return "", errors.Errorf(`command %q doesn't support arguments or max length constraint, instead got %q`, CommandOperatorDescriptor(command), token)
 	}
 	return command, nil
 }
 
-func (p formatParser) parseOperator(token, args, limit string, separator string) (firstArg string, otherArgs []string, maxLen int, err error) {
+func (p formatParser) parseOperator(token, args, limit string, separator string) (string, []string, int, error) {
+	var firstArg string
+	var otherArgs []string
+	var maxLen int
+	var err error
 	if limit != "" {
 		maxLen, err = strconv.Atoi(limit)
 		if err != nil {

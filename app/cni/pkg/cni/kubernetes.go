@@ -26,7 +26,9 @@ func newKubeClient(conf PluginConf) (*kubernetes.Clientset, error) {
 }
 
 // getK8sPodInfo returns information of a POD
-func getKubePodInfo(ctx context.Context, client *kubernetes.Clientset, podName, podNamespace string) (containers int, initContainers map[string]struct{}, annotations map[string]string, err error) {
+func getKubePodInfo(ctx context.Context, client *kubernetes.Clientset, podName, podNamespace string) (int, map[string]struct{}, map[string]string, error) {
+	var initContainers map[string]struct{}
+	var err error
 	pod, err := client.CoreV1().Pods(podNamespace).Get(ctx, podName, metav1.GetOptions{})
 	log.V(1).Info("pod info", "pod", pod)
 	if err != nil {

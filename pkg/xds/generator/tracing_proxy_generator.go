@@ -23,12 +23,13 @@ type TracingProxyGenerator struct {
 
 var _ core.ResourceGenerator = TracingProxyGenerator{}
 
-func (t TracingProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (resources *core_xds.ResourceSet, err error) {
+func (t TracingProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+	var err error
 	tracingBackend := ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace)
 	if tracingBackend == nil {
 		return nil, nil
 	}
-	resources = core_xds.NewResourceSet()
+	resources := core_xds.NewResourceSet()
 	var endpoint *core_xds.Endpoint
 	switch tracingBackend.Type {
 	case mesh_proto.TracingZipkinType:

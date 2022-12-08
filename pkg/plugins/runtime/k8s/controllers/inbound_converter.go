@@ -20,7 +20,8 @@ const (
 	KubePortTag      = "k8s.kuma.io/service-port"
 )
 
-func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Service) (ifaces []*mesh_proto.Dataplane_Networking_Inbound) {
+func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Service) []*mesh_proto.Dataplane_Networking_Inbound {
+	var ifaces []*mesh_proto.Dataplane_Networking_Inbound
 	for _, svcPort := range service.Spec.Ports {
 		if svcPort.Protocol != "" && svcPort.Protocol != kube_core.ProtocolTCP {
 			// ignore non-TCP ports
@@ -71,10 +72,10 @@ func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Servi
 		})
 	}
 
-	return
+	return ifaces
 }
 
-func inboundForServiceless(zone string, pod *kube_core.Pod) (ifaces []*mesh_proto.Dataplane_Networking_Inbound) {
+func inboundForServiceless(zone string, pod *kube_core.Pod) []*mesh_proto.Dataplane_Networking_Inbound {
 	// The Pod does not have any services associated with it, just get the data from the Pod itself
 
 	// We still need that extra listener with a service because it is required in many places of the code (e.g. mTLS)
@@ -84,7 +85,7 @@ func inboundForServiceless(zone string, pod *kube_core.Pod) (ifaces []*mesh_prot
 	// NOTE: It is cleaner to implement an equivalent of Gateway which is inbound-less dataplane. However such approch
 	// will create lots of code changes to account for this other type of dataplne (we already have GW and Ingress),
 	// including GUI and CLI changes
-
+	var ifaces []*mesh_proto.Dataplane_Networking_Inbound
 	tags := InboundTagsForPod(zone, pod)
 	var health *mesh_proto.Dataplane_Networking_Inbound_Health
 
@@ -115,7 +116,7 @@ func inboundForServiceless(zone string, pod *kube_core.Pod) (ifaces []*mesh_prot
 		Health: health,
 	})
 
-	return
+	return ifaces
 }
 
 func InboundInterfacesFor(zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {

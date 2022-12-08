@@ -5,7 +5,9 @@ import (
 	"net"
 )
 
-func PickTCPPort(ip string, leftPort, rightPort uint32) (actualPort uint32, err error) {
+func PickTCPPort(ip string, leftPort, rightPort uint32) (uint32, error) {
+	var actualPort uint32
+	var err error
 	lowestPort, highestPort := leftPort, rightPort
 	if highestPort < lowestPort {
 		lowestPort, highestPort = highestPort, lowestPort

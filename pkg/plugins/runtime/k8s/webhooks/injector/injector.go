@@ -249,7 +249,9 @@ func (i *KumaInjector) loadContainerPatches(
 	ctx context.Context,
 	logger logr.Logger,
 	pod *kube_core.Pod,
-) (sidecarPatches namedContainerPatches, initPatches namedContainerPatches, err error) {
+) (namedContainerPatches, namedContainerPatches, error) {
+	var sidecarPatches namedContainerPatches
+	var initPatches namedContainerPatches
 	patchNames := i.cfg.ContainerPatches
 	otherPatches, _ := metadata.Annotations(pod.Annotations).GetList(metadata.KumaContainerPatches)
 	patchNames = append(patchNames, otherPatches...)

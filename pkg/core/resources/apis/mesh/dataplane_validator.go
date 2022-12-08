@@ -188,9 +188,10 @@ func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound, dpAddress
 	return result
 }
 
-func validateServiceProbe(serviceProbe *mesh_proto.Dataplane_Networking_Inbound_ServiceProbe) (err validators.ValidationError) {
+func validateServiceProbe(serviceProbe *mesh_proto.Dataplane_Networking_Inbound_ServiceProbe) validators.ValidationError {
+	var err validators.ValidationError
 	if serviceProbe == nil {
-		return
+		return err
 	}
 	path := validators.RootedAt("serviceProbe")
 	if serviceProbe.Interval != nil {
@@ -205,7 +206,7 @@ func validateServiceProbe(serviceProbe *mesh_proto.Dataplane_Networking_Inbound_
 	if serviceProbe.HealthyThreshold != nil {
 		err.Add(ValidateThreshold(path.Field("healthyThreshold"), serviceProbe.HealthyThreshold.GetValue()))
 	}
-	return
+	return err
 }
 
 func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) validators.ValidationError {

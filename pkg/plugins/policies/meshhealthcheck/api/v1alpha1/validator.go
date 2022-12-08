@@ -67,24 +67,27 @@ func validateDefault(conf Conf) validators.ValidationError {
 	return verr
 }
 
-func validateConfHttp(path validators.PathBuilder, http *HttpHealthCheck) (err validators.ValidationError) {
+func validateConfHttp(path validators.PathBuilder, http *HttpHealthCheck) validators.ValidationError {
+	var err validators.ValidationError
 	err.Add(validators.ValidateStringDefined(path.Field("path"), http.Path))
 	err.Add(validateConfHttpExpectedStatuses(path.Field("expectedStatuses"), http.ExpectedStatuses))
 	err.Add(validateConfHttpRequestHeadersToAdd(path.Field("requestHeadersToAdd"), http.RequestHeadersToAdd))
-	return
+	return err
 }
 
-func validateConfHttpExpectedStatuses(path validators.PathBuilder, expectedStatuses *[]int32) (err validators.ValidationError) {
+func validateConfHttpExpectedStatuses(path validators.PathBuilder, expectedStatuses *[]int32) validators.ValidationError {
+	var err validators.ValidationError
 	if expectedStatuses != nil {
 		for i, status := range *expectedStatuses {
 			err.Add(validators.ValidateStatusCode(path.Index(i), status))
 		}
 	}
 
-	return
+	return err
 }
 
-func validateConfHttpRequestHeadersToAdd(path validators.PathBuilder, requestHeadersToAdd *[]HeaderValueOption) (err validators.ValidationError) {
+func validateConfHttpRequestHeadersToAdd(path validators.PathBuilder, requestHeadersToAdd *[]HeaderValueOption) validators.ValidationError {
+	var err validators.ValidationError
 	if requestHeadersToAdd != nil {
 		for i, header := range *requestHeadersToAdd {
 			path := path.Index(i).Field("header")
@@ -103,5 +106,5 @@ func validateConfHttpRequestHeadersToAdd(path validators.PathBuilder, requestHea
 		}
 	}
 
-	return
+	return err
 }

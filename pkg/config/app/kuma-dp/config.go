@@ -149,7 +149,8 @@ type DataplaneResources struct {
 
 var _ config.Config = &Config{}
 
-func (c *Config) Validate() (errs error) {
+func (c *Config) Validate() error {
+	var errs error
 	if err := c.ControlPlane.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".ControlPlane is not valid"))
 	}
@@ -169,7 +170,7 @@ func (c *Config) Validate() (errs error) {
 	if err := c.DNS.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".DNS is not valid"))
 	}
-	return
+	return errs
 }
 
 var _ config.Config = &ControlPlane{}
@@ -178,14 +179,15 @@ func (c *ControlPlane) Sanitize() {
 	c.Retry.Sanitize()
 }
 
-func (c *ControlPlane) Validate() (errs error) {
+func (c *ControlPlane) Validate() error {
+	var errs error
 	if _, err := url.Parse(c.URL); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".Url is not valid"))
 	}
 	if err := c.Retry.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".Retry is not valid"))
 	}
-	return
+	return errs
 }
 
 var _ config.Config = &Dataplane{}
@@ -193,7 +195,8 @@ var _ config.Config = &Dataplane{}
 func (d *Dataplane) Sanitize() {
 }
 
-func (d *Dataplane) Validate() (errs error) {
+func (d *Dataplane) Validate() error {
+	var errs error
 	proxyType := mesh_proto.ProxyType(d.ProxyType)
 	switch proxyType {
 	case mesh_proto.DataplaneProxyType, mesh_proto.IngressProxyType, mesh_proto.EgressProxyType:
@@ -219,15 +222,16 @@ func (d *Dataplane) Validate() (errs error) {
 		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))
 	}
 
-	return
+	return errs
 }
 
-func (d *Dataplane) ValidateForTemplate() (errs error) {
+func (d *Dataplane) ValidateForTemplate() error {
+	var errs error
 	// Notice that d.AdminPort is always valid by design of PortRange
 	if d.DrainTime.Duration <= 0 {
 		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))
 	}
-	return
+	return errs
 }
 
 var _ config.Config = &DataplaneRuntime{}
@@ -235,11 +239,12 @@ var _ config.Config = &DataplaneRuntime{}
 func (d *DataplaneRuntime) Sanitize() {
 }
 
-func (d *DataplaneRuntime) Validate() (errs error) {
+func (d *DataplaneRuntime) Validate() error {
+	var errs error
 	if d.BinaryPath == "" {
 		errs = multierr.Append(errs, errors.Errorf(".BinaryPath must be non-empty"))
 	}
-	return
+	return errs
 }
 
 var _ config.Config = &ApiServer{}
@@ -247,7 +252,8 @@ var _ config.Config = &ApiServer{}
 func (d *ApiServer) Sanitize() {
 }
 
-func (d *ApiServer) Validate() (errs error) {
+func (d *ApiServer) Validate() error {
+	var errs error
 	if d.URL == "" {
 		errs = multierr.Append(errs, errors.Errorf(".URL must be non-empty"))
 	}
@@ -259,7 +265,7 @@ func (d *ApiServer) Validate() (errs error) {
 	if err := d.Retry.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrap(err, ".Retry is not valid"))
 	}
-	return
+	return errs
 }
 
 type DNS struct {

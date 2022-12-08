@@ -315,7 +315,8 @@ var _ config.Config = &GeneralConfig{}
 func (g *GeneralConfig) Sanitize() {
 }
 
-func (g *GeneralConfig) Validate() (errs error) {
+func (g *GeneralConfig) Validate() error {
+	var errs error
 	if g.TlsCertFile == "" && g.TlsKeyFile != "" {
 		errs = multierr.Append(errs, errors.New(".TlsCertFile cannot be empty if TlsKeyFile has been set"))
 	}
@@ -331,7 +332,7 @@ func (g *GeneralConfig) Validate() (errs error) {
 	if _, err := config_types.TLSCiphers(g.TlsCipherSuites); err != nil {
 		errs = multierr.Append(errs, errors.New(".TlsCipherSuites"+err.Error()))
 	}
-	return
+	return errs
 }
 
 func DefaultGeneralConfig() *GeneralConfig {

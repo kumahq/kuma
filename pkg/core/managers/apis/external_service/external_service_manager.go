@@ -43,7 +43,7 @@ func (m *externalServiceManager) List(ctx context.Context, list core_model.Resou
 	return m.store.List(ctx, externalServices, fs...)
 }
 
-func (m *externalServiceManager) Create(ctx context.Context, resource core_model.Resource, fs ...core_store.CreateOptionsFunc) (errs error) {
+func (m *externalServiceManager) Create(ctx context.Context, resource core_model.Resource, fs ...core_store.CreateOptionsFunc) error {
 	opts := core_store.NewCreateOptions(fs...)
 	externalService, err := m.externalService(resource)
 	if err != nil {

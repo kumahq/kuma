@@ -33,18 +33,18 @@ COMMON_DIR := api/common
 
 policies = $(foreach dir,$(shell find pkg/plugins/policies -maxdepth 1 -mindepth 1 -type d | grep -v -e core -e matchers -e xds -e validation -e common | sort),$(notdir $(dir)))
 generate_policy_targets = $(addprefix generate/policy/,$(policies))
-cleanup_policy_targets = $(addprefix cleanup/policy/,$(policies))
+clean_policy_targets = $(addprefix clean/policy/,$(policies))
 
-generate/policies: cleanup/crds cleanup/policies generate/deep-copy/common $(generate_policy_targets) generate/policy-import generate/policy-helm generate/builtin-crds generate/fix-embed
+generate/policies: clean/crds clean/policies generate/deep-copy/common $(generate_policy_targets) generate/policy-import generate/policy-helm generate/builtin-crds generate/fix-embed
 
-cleanup/crds:
+clean/crds:
 	rm -f ./deployments/charts/kuma/crds/*
 	rm -f ./pkg/plugins/resources/k8s/native/test/config/crd/bases/*
 
-cleanup/policies: $(cleanup_policy_targets)
+clean/policies: $(clean_policy_targets)
 
 # deletes all files in policy directory except *.proto, validator.go and schema.yaml
-cleanup/policy/%:
+clean/policy/%:
 	$(shell find $(POLICIES_DIR)/$* \( -name '*.pb.go' -o -name '*.yaml' -o -name 'zz_generated.*'  \) -not -path '*/testdata/*' -type f -delete)
 	@rm -fr $(POLICIES_DIR)/$*/k8s
 

@@ -43,11 +43,12 @@ func (c *CircuitBreakerResource) validateDestinations() validators.ValidationErr
 	return ValidateSelectors(validators.RootedAt("destinations"), c.Spec.Destinations, OnlyServiceTagAllowed)
 }
 
-func (c *CircuitBreakerResource) validateConf() (err validators.ValidationError) {
+func (c *CircuitBreakerResource) validateConf() validators.ValidationError {
+	var err validators.ValidationError
 	root := validators.RootedAt("conf")
 	if !c.HasDetectors() && !c.HasThresholds() {
 		err.AddViolationAt(root, "must have at least one of the detector or threshold configured")
-		return
+		return err
 	}
 
 	if c.Spec.Conf.GetDetectors() != nil && !c.HasDetectors() {
@@ -62,12 +63,13 @@ func (c *CircuitBreakerResource) validateConf() (err validators.ValidationError)
 	if c.Spec.Conf.GetThresholds() != nil && !c.HasThresholds() {
 		err.AddViolationAt(root.Field("thresholds"), "can't be empty")
 	}
-	return
+	return err
 }
 
-func (c *CircuitBreakerResource) validatePercentage(path validators.PathBuilder, value *wrapperspb.UInt32Value) (err validators.ValidationError) {
+func (c *CircuitBreakerResource) validatePercentage(path validators.PathBuilder, value *wrapperspb.UInt32Value) validators.ValidationError {
+	var err validators.ValidationError
 	if value.GetValue() < 0.0 || value.GetValue() > 100.0 {
 		err.AddViolationAt(path, "has to be in [0.0 - 100.0] range")
 	}
-	return
+	return err
 }

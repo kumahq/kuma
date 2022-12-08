@@ -103,7 +103,8 @@ func newRunCmd() *cobra.Command {
 					<-time.After(delay)
 					// proceed
 
-					errCh <- func() (errs error) {
+					errCh <- func() error {
+						var errs error
 						client, err := stream.New(args.xdsServerAddress)
 						if err != nil {
 							return errors.Wrap(err, "failed to connect to xDS server")

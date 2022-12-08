@@ -119,7 +119,9 @@ var _ = Describe("Auth test", func() {
 })
 
 // we need to autogenerate cert dynamically for the external IP so the HTTPS client can validate san
-func createCertsForIP(ip string) (certPath string, keyPath string) {
+func createCertsForIP(ip string) (string, string) {
+	var certPath string
+	var keyPath string
 	keyPair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType, tls.DefaultKeyType, "localhost", ip)
 	Expect(err).ToNot(HaveOccurred())
 	dir, err := os.MkdirTemp("", "temp-certs")
@@ -130,7 +132,7 @@ func createCertsForIP(ip string) (certPath string, keyPath string) {
 	Expect(err).ToNot(HaveOccurred())
 	err = os.WriteFile(keyPath, keyPair.KeyPEM, 0600)
 	Expect(err).ToNot(HaveOccurred())
-	return
+	return certPath, keyPath
 }
 
 // GetLocalIP returns the non loopback local IP of the host. It assumes there is another network interface on the machine aside of loopback

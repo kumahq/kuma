@@ -107,7 +107,11 @@ func k8sService(ctx context.Context, serviceTag string, client kube_client.Reade
 	return svc, port, nil
 }
 
-func parseService(host string) (name string, namespace string, port uint32, err error) {
+func parseService(host string) (string, string, uint32, error) {
+	var name string
+	var namespace string
+	var port uint32
+	var err error
 	// split host into <name>_<namespace>_svc_<port>
 	segments := strings.Split(host, "_")
 	switch len(segments) {
@@ -126,5 +130,5 @@ func parseService(host string) (name string, namespace string, port uint32, err 
 	}
 
 	name, namespace = segments[0], segments[1]
-	return
+	return name, namespace, port, err
 }

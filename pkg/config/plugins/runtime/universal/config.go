@@ -24,9 +24,10 @@ type UniversalRuntimeConfig struct {
 func (u *UniversalRuntimeConfig) Sanitize() {
 }
 
-func (u *UniversalRuntimeConfig) Validate() (errs error) {
+func (u *UniversalRuntimeConfig) Validate() error {
+	var errs error
 	if u.DataplaneCleanupAge.Duration <= 0 {
 		errs = multierr.Append(errs, errors.Errorf(".DataplaneCleanupAge must be positive"))
 	}
-	return
+	return errs
 }
