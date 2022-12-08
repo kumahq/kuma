@@ -8,7 +8,7 @@ filterChains:
   - name: envoy.extensions.filters.network.local_ratelimit.v3.LocalRateLimit
     typedConfig:
       '@type': type.googleapis.com/envoy.extensions.filters.network.local_ratelimit.v3.LocalRateLimit
-      statPrefix: rate_limit
+      statPrefix: tcp_rate_limit
       tokenBucket:
         fillInterval: 0.100s
         maxTokens: 100

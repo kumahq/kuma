@@ -33,9 +33,9 @@ func API() {
 
 	It("should create MeshRateLimit policy", func() {
 		// given no MeshRateLimit
-		mtps, err := env.Cluster.GetKumactlOptions().KumactlList("meshratelimit", meshName)
+		mrls, err := env.Cluster.GetKumactlOptions().KumactlList("meshratelimits", meshName)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(mtps).To(HaveLen(0))
+		Expect(mrls).To(HaveLen(0))
 
 		// when
 		Expect(YamlK8s(fmt.Sprintf(`
@@ -81,27 +81,27 @@ spec:
 `, Config.KumaNamespace, meshName))(env.Cluster)).To(Succeed())
 
 		// then
-		mtps, err = env.Cluster.GetKumactlOptions().KumactlList("meshratelimit", meshName)
+		mrls, err = env.Cluster.GetKumactlOptions().KumactlList("meshratelimits", meshName)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(mtps).To(HaveLen(1))
-		Expect(mtps[0]).To(Equal(fmt.Sprintf("mesh-rate-limit.%s", Config.KumaNamespace)))
+		Expect(mrls).To(HaveLen(1))
+		Expect(mrls[0]).To(Equal(fmt.Sprintf("mesh-rate-limit.%s", Config.KumaNamespace)))
 	})
 
 	It("should deny creating policy in the non-system namespace", func() {
 		// given no MeshRateLimit
-		mtps, err := env.Cluster.GetKumactlOptions().KumactlList("meshratelimit", meshName)
+		mrls, err := env.Cluster.GetKumactlOptions().KumactlList("meshratelimits", meshName)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(mtps).To(HaveLen(0))
+		Expect(mrls).To(HaveLen(0))
 
 		// when
 		err = k8s.KubectlApplyFromStringE(
 			env.Cluster.GetTesting(),
-			env.Cluster.GetKubectlOptions(), `
+			env.Cluster.GetKubectlOptions(), fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshRateLimit
 metadata:
   name: mesh-rate-limit
-  namespace: %s
+  namespace: default
   labels:
     kuma.io/mesh: %s
 spec:
@@ -136,7 +136,7 @@ spec:
           tcp:
             connections: 100
             interval: 10s
-`)
+`, meshName))
 
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("policy can only be created in the system namespace:%s", Config.KumaNamespace)))
