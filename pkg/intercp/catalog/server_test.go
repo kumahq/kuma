@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/proto"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/intercp/catalog"
@@ -26,6 +27,7 @@ var _ = Describe("Server", func() {
 		InstanceId:  "instance-1",
 		Address:     "192.168.0.1",
 		InterCpPort: 1234,
+		Ready:       true,
 	}
 
 	It("should add instance to heartbeats", func() {
@@ -40,6 +42,22 @@ var _ = Describe("Server", func() {
 		Expect(instances[0].Address).To(Equal(request.Address))
 		Expect(instances[0].InterCpPort).To(Equal(request.InterCpPort))
 		Expect(instances[0].Leader).To(BeFalse())
+	})
+
+	It("should remove instance when it's not ready", func() {
+		// given
+		_, err := server.Ping(context.Background(), request)
+		Expect(err).ToNot(HaveOccurred())
+		unhealthyReq := proto.Clone(request).(*system_proto.PingRequest)
+		unhealthyReq.Ready = false
+
+		// when
+		_, err = server.Ping(context.Background(), unhealthyReq)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		instances := heartbeats.Collect()
+		Expect(instances).To(BeEmpty())
 	})
 
 	It("should respond with leader when instance is a leader", func() {

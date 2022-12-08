@@ -54,17 +54,22 @@ func (h *heartbeatComponent) Start(stop <-chan struct{}) error {
 	for {
 		select {
 		case <-ticker.C:
-			if err := h.heartbeat(ctx); err != nil {
+			if err := h.heartbeat(ctx, true); err != nil {
 				h.leader = nil
 				heartbeatLog.Error(err, "could not heartbeat the leader")
 			}
 		case <-stop:
+			// send final heartbeat to gracefully signal that the instance is going down
+			if err := h.heartbeat(ctx, false); err != nil {
+				h.leader = nil
+				heartbeatLog.Error(err, "could not heartbeat the leader")
+			}
 			return nil
 		}
 	}
 }
 
-func (h *heartbeatComponent) heartbeat(ctx context.Context) error {
+func (h *heartbeatComponent) heartbeat(ctx context.Context, ready bool) error {
 	if h.leader == nil {
 		if err := h.connectToLeader(ctx); err != nil {
 			return err
@@ -77,7 +82,9 @@ func (h *heartbeatComponent) heartbeat(ctx context.Context) error {
 	heartbeatLog.Info("sending a heartbeat to a leader",
 		"instanceId", h.request.InstanceId,
 		"leaderAddress", h.leader.Address,
+		"ready", ready,
 	)
+	h.request.Ready = ready
 	resp, err := h.client.Ping(ctx, h.request)
 	if err != nil {
 		return errors.Wrap(err, "could not send a heartbeat to a leader")

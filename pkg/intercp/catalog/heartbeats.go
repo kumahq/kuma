@@ -31,3 +31,9 @@ func (h *Heartbeats) Add(instance Instance) {
 	h.instances[instance] = struct{}{}
 	h.Unlock()
 }
+
+func (h *Heartbeats) Remove(instance Instance) {
+	h.Lock()
+	delete(h.instances, instance)
+	h.Unlock()
+}

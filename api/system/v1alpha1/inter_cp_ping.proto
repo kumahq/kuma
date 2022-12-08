@@ -8,6 +8,7 @@ message PingRequest {
   string instance_id = 1;
   string address = 2;
   uint32 inter_cp_port = 3;
+  bool ready = 4;
 }
 
 message PingResponse { bool leader = 1; }

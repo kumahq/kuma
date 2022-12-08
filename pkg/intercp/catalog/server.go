@@ -27,13 +27,18 @@ func NewServer(heartbeats *Heartbeats, leaderInfo component.LeaderInfo) system_p
 }
 
 func (s *server) Ping(_ context.Context, request *system_proto.PingRequest) (*system_proto.PingResponse, error) {
-	serverLog.Info("received ping", "instanceID", request.InstanceId, "address", request.Address)
-	s.heartbeats.Add(Instance{
+	serverLog.Info("received ping", "instanceID", request.InstanceId, "address", request.Address, "ready", request.Ready)
+	instance := Instance{
 		Id:          request.InstanceId,
 		Address:     request.Address,
 		InterCpPort: request.InterCpPort,
 		Leader:      false,
-	})
+	}
+	if request.Ready {
+		s.heartbeats.Add(instance)
+	} else {
+		s.heartbeats.Remove(instance)
+	}
 	return &system_proto.PingResponse{
 		Leader: s.leaderInfo.IsLeader(),
 	}, nil
