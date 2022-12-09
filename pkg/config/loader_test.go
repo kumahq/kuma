@@ -283,7 +283,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.InterCp.Catalog.InstanceAddress).To(Equal("192.168.0.1"))
 			Expect(cfg.InterCp.Catalog.HeartbeatInterval.Duration).To(Equal(time.Second))
 			Expect(cfg.InterCp.Catalog.WriterInterval.Duration).To(Equal(2 * time.Second))
-			Expect(cfg.InterCp.Server.Port).To(Equal(uint32(15683)))
+			Expect(cfg.InterCp.Server.Port).To(Equal(uint16(15683)))
 			Expect(cfg.InterCp.Server.TlsMinVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.InterCp.Server.TlsMaxVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.InterCp.Server.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))

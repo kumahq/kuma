@@ -39,7 +39,7 @@ func NewHeartbeatComponent(
 		request: &v1alpha1.PingRequest{
 			InstanceId:  instance.Id,
 			Address:     instance.Address,
-			InterCpPort: instance.InterCpPort,
+			InterCpPort: uint32(instance.InterCpPort),
 		},
 		newClientFn: newClientFn,
 		interval:    interval,

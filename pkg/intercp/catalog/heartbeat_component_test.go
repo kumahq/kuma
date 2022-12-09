@@ -82,7 +82,7 @@ var _ = Describe("Heartbeats", func() {
 			g.Expect(received).ToNot(BeNil())
 			g.Expect(received.InstanceId).To(Equal(currentInstance.Id))
 			g.Expect(received.Address).To(Equal(currentInstance.Address))
-			g.Expect(received.InterCpPort).To(Equal(currentInstance.InterCpPort))
+			g.Expect(received.InterCpPort).To(Equal(uint32(currentInstance.InterCpPort)))
 		}, "10s", "100ms").Should(Succeed())
 	})
 

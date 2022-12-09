@@ -10,7 +10,7 @@ import (
 type Instance struct {
 	Id          string `json:"id"`
 	Address     string `json:"address"`
-	InterCpPort uint32 `json:"interCpPort"`
+	InterCpPort uint16 `json:"interCpPort"`
 	Leader      bool   `json:"leader"`
 }
 

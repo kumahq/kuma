@@ -40,7 +40,7 @@ var _ = Describe("Server", func() {
 		Expect(instances).To(HaveLen(1))
 		Expect(instances[0].Id).To(Equal(request.InstanceId))
 		Expect(instances[0].Address).To(Equal(request.Address))
-		Expect(instances[0].InterCpPort).To(Equal(request.InterCpPort))
+		Expect(instances[0].InterCpPort).To(Equal(uint16(request.InterCpPort)))
 		Expect(instances[0].Leader).To(BeFalse())
 	})
 

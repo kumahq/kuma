@@ -31,7 +31,7 @@ func (s *server) Ping(_ context.Context, request *system_proto.PingRequest) (*sy
 	instance := Instance{
 		Id:          request.InstanceId,
 		Address:     request.Address,
-		InterCpPort: request.InterCpPort,
+		InterCpPort: uint16(request.InterCpPort),
 		Leader:      false,
 	}
 	if request.Ready {

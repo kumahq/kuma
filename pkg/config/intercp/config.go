@@ -43,7 +43,7 @@ type CatalogConfig struct {
 
 type InterCpServerConfig struct {
 	// Port on which Intercommunication CP server will listen
-	Port uint32 `json:"port" envconfig:"kuma_inter_cp_server_port"`
+	Port uint16 `json:"port" envconfig:"kuma_inter_cp_server_port"`
 	// TlsMinVersion defines the minimum TLS version to be used
 	TlsMinVersion string `json:"tlsMinVersion" envconfig:"kuma_inter_cp_server_tls_min_version"`
 	// TlsMaxVersion defines the maximum TLS version to be used
@@ -53,9 +53,6 @@ type InterCpServerConfig struct {
 }
 
 func (i *InterCpServerConfig) Validate() (errs error) {
-	if i.Port > 65535 {
-		errs = multierr.Append(errs, errors.New(".Port must be in the range [0, 65535]"))
-	}
 	if _, err := config_types.TLSVersion(i.TlsMinVersion); err != nil {
 		errs = multierr.Append(errs, errors.New(".TlsMinVersion"+err.Error()))
 	}
