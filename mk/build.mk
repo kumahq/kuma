@@ -98,7 +98,7 @@ ifeq (,$(wildcard $(BUILD_ARTIFACTS_DIR)/coredns/coredns))
 	cp $(COREDNS_PLUGIN_CFG_PATH) $(COREDNS_TMP_DIRECTORY)
 	cd $(COREDNS_TMP_DIRECTORY) && \
 		GOOS= GOARCH= go generate coredns.go && \
-		go get github.com/coredns/alternate && \
+		go get github.com/coredns/alternate@f0d10f2aa3aaf31ba841a3f2e7a69fa664d8fccc && \
 		$(GO_BUILD_COREDNS) -ldflags="-s -w -X github.com/coredns/coredns/coremain.GitCommit=$(shell git describe --dirty --always)" -o $(BUILD_ARTIFACTS_DIR)/coredns/coredns
 	rm -rf "$(COREDNS_TMP_DIRECTORY)"
 else
