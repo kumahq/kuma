@@ -13,12 +13,12 @@ type PoliciesConfig struct {
 	// that create resources should be at the beginning so
 	// the policies applying configuration will edit all the
 	// resources.
-	EnabledPolicies []string `json:"enabledPolicies" envconfig:"kuma_policies_enabled_policies"`
+	Enabled []string `json:"enabled" envconfig:"kuma_policies_enabled"`
 }
 
-func DefaultPoliciesConfig() *PoliciesConfig {
-	return &PoliciesConfig{
-		EnabledPolicies: []string{
+func DefaultPoliciesConfig() PoliciesConfig {
+	return PoliciesConfig{
+		Enabled: []string{
 			"meshaccesslog",
 			"meshtrace",
 			"meshratelimit",

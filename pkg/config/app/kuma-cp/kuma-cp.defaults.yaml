@@ -551,4 +551,4 @@ proxy:
     globalDownstreamMaxConnections: 50000 # ENV: KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS
 
 policies:
-  enabledPolicies: ["meshaccesslog","meshtrace","meshratelimit","meshtimeout","meshtrafficpermission"]
+  enabled: ["meshaccesslog","meshtrace","meshratelimit","meshtimeout","meshtrafficpermission"]

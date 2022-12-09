@@ -213,7 +213,7 @@ var DefaultConfig = func() Config {
 			KubeOutboundsAsVIPs: false,
 		},
 		Proxy:    xds.DefaultProxyConfig(),
-		Policies: *policies.DefaultPoliciesConfig(),
+		Policies: policies.DefaultPoliciesConfig(),
 	}
 }
 

@@ -78,7 +78,7 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 		CLACache:        claCache,
 		Secrets:         secrets,
 		Zone:            rt.Config().Multizone.Zone.Name,
-		EnabledPolicies: rt.Config().Policies.EnabledPolicies,
+		EnabledPolicies: rt.Config().Policies.Enabled,
 	}
 
 	if err := v3.RegisterXDS(statsCallbacks, xdsMetrics, envoyCpCtx, rt); err != nil {
