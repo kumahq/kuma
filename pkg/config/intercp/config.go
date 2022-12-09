@@ -13,8 +13,8 @@ func DefaultInterCpConfig() InterCpConfig {
 	return InterCpConfig{
 		Catalog: CatalogConfig{
 			InstanceAddress:   "", // autoconfigured
-			HeartbeatInterval: config_types.Duration{Duration: 10 * time.Second},
-			WriterInterval:    config_types.Duration{Duration: 30 * time.Second},
+			HeartbeatInterval: config_types.Duration{Duration: 5 * time.Second},
+			WriterInterval:    config_types.Duration{Duration: 15 * time.Second},
 		},
 		Server: InterCpServerConfig{
 			Port:            5683,

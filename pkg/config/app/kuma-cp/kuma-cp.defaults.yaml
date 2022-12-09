@@ -498,9 +498,9 @@ interCp:
     # If empty then it's autoconfigured by taking the first IP of the nonloopback network interface.
     instanceAddress: "" # ENV: KUMA_INTER_CP_CATALOG_INSTANCE_ADDRESS
     # Interval on which CP will send heartbeat to a leader.
-    heartbeatInterval: 10s # ENV: KUMA_INTER_CP_CATALOG_HEARTBEAT_INTERVAL
+    heartbeatInterval: 5s # ENV: KUMA_INTER_CP_CATALOG_HEARTBEAT_INTERVAL
     # Interval on which CP will write all instances to a catalog.
-    writerInterval: 30s # ENV: KUMA_INTER_CP_CATALOG_WRITER_INTERVAL
+    writerInterval: 15s # ENV: KUMA_INTER_CP_CATALOG_WRITER_INTERVAL
   # Intercommunication CP server configuration
   server:
     # Port of the DP Server
