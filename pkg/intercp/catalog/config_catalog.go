@@ -11,7 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-type Instances struct {
+type ConfigInstances struct {
 	Instances []Instance `json:"instances"`
 }
 
@@ -39,7 +39,7 @@ func (c *ConfigCatalog) Instances(ctx context.Context) ([]Instance, error) {
 		}
 		return nil, err
 	}
-	var instances Instances
+	var instances ConfigInstances
 	if err := json.Unmarshal([]byte(cfg.Spec.Config), &instances); err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func (c *ConfigCatalog) Instances(ctx context.Context) ([]Instance, error) {
 }
 
 func (c *ConfigCatalog) Replace(ctx context.Context, instances []Instance) (bool, error) {
-	bytes, err := json.Marshal(Instances{
+	bytes, err := json.Marshal(ConfigInstances{
 		Instances: instances,
 	})
 	if err != nil {

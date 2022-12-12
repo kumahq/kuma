@@ -137,7 +137,7 @@ interCp:
 			if err != nil {
 				return nil, err
 			}
-			instances := catalog.Instances{}
+			instances := catalog.ConfigInstances{}
 			if err := json.Unmarshal([]byte(out), &instances); err != nil {
 				return nil, err
 			}
