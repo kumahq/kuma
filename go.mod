@@ -64,10 +64,10 @@ require (
 	istio.io/pkg v0.0.0-20221115183735-2aabb09bf0bb
 	k8s.io/api v0.25.4
 	k8s.io/apiextensions-apiserver v0.25.4
-	k8s.io/apimachinery v0.25.4
+	k8s.io/apimachinery v0.26.0
 	k8s.io/client-go v0.25.4
-	k8s.io/kube-openapi v0.0.0-20220803162953-67bda5d908f1
-	k8s.io/utils v0.0.0-20220728103510-ee6ede2d64ed
+	k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280
+	k8s.io/utils v0.0.0-20221107191617-1a15be271d1d
 	sigs.k8s.io/controller-runtime v0.13.1
 	sigs.k8s.io/controller-tools v0.10.0
 	// When updating this also update version in: `test/e2e_env/kubernetes/gateway/utils.go`
