@@ -17,7 +17,6 @@ func PluginTest() {
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MeshUniversal(meshName)).
-			// Install(YamlUniversal(faultInjection)).
 			Install(DemoClientUniversal("demo-client", meshName,
 				WithTransparentProxy(true)),
 			).
@@ -32,7 +31,7 @@ func PluginTest() {
 		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 	E2EAfterEach(func() {
-		Expect(env.Cluster.DeletePolicy("meshtimeout", "default", meshName)).To(Succeed())
+		Expect(env.Cluster.GetKumactlOptions().KumactlDelete("meshtimeout", "default", meshName)).To(Succeed())
 	})
 
 	DescribeTable("should reset the connection by timeout", func(timeoutConfig string) {

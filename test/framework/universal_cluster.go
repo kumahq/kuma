@@ -395,10 +395,6 @@ func (c *UniversalCluster) DeleteMesh(mesh string) error {
 	return c.GetKumactlOptions().KumactlDelete("mesh", mesh, "")
 }
 
-func (c *UniversalCluster) DeletePolicy(kumaType string, name string, meshName string) error {
-	return c.GetKumactlOptions().KumactlDelete(kumaType, name, meshName)
-}
-
 func (c *UniversalCluster) DeleteMeshApps(mesh string) error {
 	for name := range c.apps {
 		if c.GetApp(name).mesh == mesh {
