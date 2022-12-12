@@ -279,8 +279,8 @@ spec:
     default:
      rules:
       - matches:
-         path:
-          prefix: /v1
+         - path:
+            prefix: /v1
         backendRefs:
          - weight: 100
            kind: MeshServiceSubset
@@ -288,8 +288,8 @@ spec:
            tags:
             version: v1
       - matches:
-         path:
-          prefix: /v2
+         - path:
+            prefix: /v2
         backendRefs:
          - weight: 100
            kind: MeshServiceSubset
@@ -310,8 +310,8 @@ spec:
     default:
      rules:
       - matches:
-         path:
-          prefix: /v2
+         - path:
+            prefix: /v2
         filters:
          - requestHeaderModifier:
             add:
@@ -340,8 +340,8 @@ spec:
      name: backend
     rules:
      - matches:
-        path:
-         prefix: /v2
+        - path:
+           prefix: /v2
        filters:
         - requestHeaderModifier:
            add:
@@ -376,8 +376,8 @@ spec:
      name: backend
     rules:
      - matches:
-        path:
-         prefix: /v1
+        - path:
+           prefix: /v1
        default:
         backendRefs:
          - weight: 100
@@ -408,8 +408,8 @@ spec:
      name: backend
     rules:
      - matches:
-        path:
-         prefix: /v2
+        - path:
+           prefix: /v2
        default:
         filters:
          - responseHeaderModifier:
@@ -431,8 +431,8 @@ spec:
      name: backend
     rules:
       - matches:
-         path:
-          prefix: /v1
+         - path:
+            prefix: /v1
         backendRefs:
          - weight: 100
            kind: MeshServiceSubset
@@ -440,8 +440,8 @@ spec:
            tags:
             version: v1
      - matches:
-        path:
-         prefix: /v2
+        - path:
+           prefix: /v2
        filters:
         - requestHeaderModifier:
            add:
@@ -474,8 +474,8 @@ spec:
      name: backend
     rules:
      - matches:
-        path:
-         prefix: /v1
+        - path:
+           prefix: /v1
        default:
         backendRefs:
          - weight: 100
@@ -484,8 +484,8 @@ spec:
            tags:
             version: v1
      - matches:
-        path:
-         prefix: /v2
+        - path:
+           prefix: /v2
        default:
         backendRefs:
          - weight: 100
@@ -506,19 +506,18 @@ spec:
      name: backend
     rules:
      - matches:
-        path:
-         prefix: /v1
+        - path:
+           prefix: /v1
        default:
         filters: []
         backendRefs: []
      - matches:
-        path:
-         prefix: /v2
+        - path:
+           prefix: /v2
        default:
         filters: []
         backendRefs: []
 ```
-
 
 #### Gateway API
 
@@ -543,9 +542,11 @@ spec:
      kind: MeshService
      name: backend
     rules:
-     - matches: [..]
+     - matches:
+        - ...
+        - ...
        default:
-        filters: [..]
+        filters: [...]
         backendRefs: [..]
 ```
 
@@ -580,8 +581,8 @@ spec:
     default:
      rules:
       - matches:
-         path:
-          prefix: /
+         - path:
+            prefix: /
         filters:
          - responseHeader:
             add:
@@ -616,8 +617,8 @@ spec:
     default:
      rules:
       - matches:
-         path:
-          prefix: /
+         - path:
+            prefix: /
         filters:
          - requestHeader:
             add:
@@ -648,8 +649,8 @@ spec:
     default:
      rules:
       - matches:
-         path:
-          prefix: /
+         - path:
+            prefix: /
         filters:
          - requestHeader:
             add:
