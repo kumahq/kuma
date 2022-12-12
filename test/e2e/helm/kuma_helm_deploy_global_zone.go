@@ -131,26 +131,46 @@ interCp:
 		}, "30s", "1s").Should(Succeed())
 	})
 
-	Context("Intercommunication CP server catalog on Global CP", func() {
-		countInstancesInCatalog := func(g Gomega) int {
+	FContext("Intercommunication CP server catalog on Global CP", func() {
+		fetchInstances := func() (map[string]struct{}, error) {
 			out, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions(Config.KumaNamespace), "get", "configmap", "cp-catalog", "-o", "jsonpath={.data.config}")
-			g.Expect(err).ToNot(HaveOccurred())
-
+			if err != nil {
+				return nil, err
+			}
 			instances := catalog.Instances{}
-			g.Expect(json.Unmarshal([]byte(out), &instances)).To(Succeed())
-			return len(instances.Instances)
+			if err := json.Unmarshal([]byte(out), &instances); err != nil {
+				return nil, err
+			}
+			m := map[string]struct{}{}
+			for _, instance := range instances.Instances {
+				m[instance.Id] = struct{}{}
+			}
+			return m, nil
 		}
 
 		It("should update instances in catalog when we scale CP", func() {
 			// given
-			Eventually(countInstancesInCatalog, "30s", "1s").Should(Equal(2))
+			var instances map[string]struct{}
+			Eventually(func(g Gomega) {
+				ins, err := fetchInstances()
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(ins).To(HaveLen(2))
+				instances = ins
+			}, "30s", "1s").Should(Succeed())
 
 			// when
-			_, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions(Config.KumaNamespace), "scale", "deployment", Config.KumaServiceName, "--replicas", "1")
+			_, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions(Config.KumaNamespace), "rollout", "restart", "deployment", Config.KumaServiceName)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Eventually(countInstancesInCatalog, "30s", "1s").Should(Equal(1))
+			Eventually(func(g Gomega) {
+				ins, err := fetchInstances()
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(ins).To(HaveLen(2))
+				for instanceID := range instances { // there are no old instances
+					g.Expect(ins).ToNot(ContainElement(instanceID))
+				}
+			}, "30s", "1s").Should(Succeed())
 		})
 	})
 }
