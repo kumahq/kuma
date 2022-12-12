@@ -36,7 +36,7 @@ var _ = Describe("Server", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		instances := heartbeats.Collect()
+		instances := heartbeats.ResetAndCollect()
 		Expect(instances).To(HaveLen(1))
 		Expect(instances[0].Id).To(Equal(request.InstanceId))
 		Expect(instances[0].Address).To(Equal(request.Address))
@@ -56,7 +56,7 @@ var _ = Describe("Server", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		instances := heartbeats.Collect()
+		instances := heartbeats.ResetAndCollect()
 		Expect(instances).To(BeEmpty())
 	})
 

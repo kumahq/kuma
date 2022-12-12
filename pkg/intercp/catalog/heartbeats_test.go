@@ -23,14 +23,14 @@ var _ = Describe("Heartbeats", func() {
 		heartbeats.Add(instance)
 
 		// when
-		instances := heartbeats.Collect()
+		instances := heartbeats.ResetAndCollect()
 
 		// then
 		Expect(instances).To(HaveLen(1))
 		Expect(instances[0]).To(Equal(instance))
 
 		// when
-		instances = heartbeats.Collect()
+		instances = heartbeats.ResetAndCollect()
 
 		// then
 		Expect(instances).To(BeEmpty())

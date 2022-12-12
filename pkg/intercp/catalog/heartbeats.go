@@ -15,11 +15,13 @@ func NewHeartbeats() *Heartbeats {
 	}
 }
 
-func (h *Heartbeats) Collect() []Instance {
+func (h *Heartbeats) ResetAndCollect() []Instance {
 	h.Lock()
-	defer h.Unlock()
+	currentInstances := h.instances
+	h.instances = map[Instance]struct{}{}
+	h.Unlock()
 	var instances []Instance
-	for k := range h.instances {
+	for k := range currentInstances {
 		instances = append(instances, k)
 	}
 	h.instances = map[Instance]struct{}{}

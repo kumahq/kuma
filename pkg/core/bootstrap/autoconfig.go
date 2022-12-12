@@ -241,6 +241,9 @@ func autoconfigureInterCp(cfg *kuma_cp.Config) error {
 	if len(ips) == 0 {
 		return errors.New("there is 0 non-loopback interfaces on the machine. Set KUMA_INTER_CP_CATALOG_INSTANCE_ADDRESS explicitly.")
 	}
+	if len(ips) > 1 {
+		log.Info("there are multiple non-loopback interfaces on the machine. It is recommended to set KUMA_INTER_CP_CATALOG_INSTANCE_ADDRESS explicitly to set IP on which other control plane instances in the cluster can communicate with this instance.")
+	}
 	cfg.InterCp.Catalog.InstanceAddress = ips[0]
 	return nil
 }

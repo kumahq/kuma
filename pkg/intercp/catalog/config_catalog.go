@@ -39,7 +39,7 @@ func (c *ConfigCatalog) Instances(ctx context.Context) ([]Instance, error) {
 		}
 		return nil, err
 	}
-	instances := Instances{}
+	var instances Instances
 	if err := json.Unmarshal([]byte(cfg.Spec.Config), &instances); err != nil {
 		return nil, err
 	}

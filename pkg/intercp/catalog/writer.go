@@ -37,7 +37,7 @@ func (r *catalogWriter) Start(stop <-chan struct{}) error {
 	for {
 		select {
 		case <-ticker.C:
-			instances := r.heartbeats.Collect()
+			instances := r.heartbeats.ResetAndCollect()
 			r.instance.Leader = true
 			instances = append(instances, r.instance)
 			sort.Slice(instances, func(i, j int) bool {

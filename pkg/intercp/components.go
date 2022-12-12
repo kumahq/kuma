@@ -41,20 +41,20 @@ func Setup(rt runtime.Runtime) error {
 
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
 	registerComponent := component.ComponentFunc(func(stop <-chan struct{}) error {
-		ca, serverCert, clientCert, err := generateCerts(ctx, rt.ReadOnlyResourceManager(), cfg.Catalog.InstanceAddress)
+		certs, err := generateCerts(ctx, rt.ReadOnlyResourceManager(), cfg.Catalog.InstanceAddress)
 		if err != nil {
 			return errors.Wrap(err, "could not generate certificates to start inter-cp server")
 		}
 
-		interCpServer, err := server.New(cfg.Server, rt.Metrics(), serverCert, *ca)
+		interCpServer, err := server.New(cfg.Server, rt.Metrics(), certs.server, certs.ca)
 		if err != nil {
 			return errors.Wrap(err, "could not start inter-cp server")
 		}
 		v1alpha1.RegisterInterCpPingServiceServer(interCpServer.GrpcServer(), catalog.NewServer(heartbeats, rt.LeaderInfo()))
 
 		clientTLSConfig := client.TLSConfig{
-			CaCert:     *ca,
-			ClientCert: clientCert,
+			CaCert:     certs.ca,
+			ClientCert: certs.client,
 		}
 		return rt.Add(
 			interCpServer,
@@ -75,13 +75,17 @@ func Setup(rt runtime.Runtime) error {
 	)
 }
 
-func generateCerts(ctx context.Context, resManager manager.ReadOnlyResourceManager, instanceId string) (
-	caCert *x509.Certificate, serverCert tls.Certificate, clientCert tls.Certificate, err error,
-) {
+type interCpCerts struct {
+	ca     x509.Certificate
+	server tls.Certificate
+	client tls.Certificate
+}
+
+func generateCerts(ctx context.Context, resManager manager.ReadOnlyResourceManager, instanceId string) (interCpCerts, error) {
 	backoff := retry.WithMaxRetries(300, retry.NewConstant(1*time.Second))
 	var ca tls.Certificate
 	// we need to retry because the CA may not be created yet
-	err = retry.Do(ctx, backoff, func(ctx context.Context) error {
+	err := retry.Do(ctx, backoff, func(ctx context.Context) error {
 		loadedCa, err := intercp_tls.LoadCA(ctx, resManager)
 		if err != nil {
 			return retry.RetryableError(err)
@@ -90,23 +94,26 @@ func generateCerts(ctx context.Context, resManager manager.ReadOnlyResourceManag
 		return nil
 	})
 	if err != nil {
-		return
+		return interCpCerts{}, err
 	}
 	if len(ca.Certificate) != 1 {
-		err = errors.New("there should be exactly one certificate")
-		return
+		return interCpCerts{}, errors.New("there should be exactly one certificate")
 	}
-	caCert, err = x509.ParseCertificate(ca.Certificate[0])
+	caCert, err := x509.ParseCertificate(ca.Certificate[0])
 	if err != nil {
-		return
+		return interCpCerts{}, err
 	}
-	serverCert, err = intercp_tls.GenerateServerCert(ca, instanceId)
+	serverCert, err := intercp_tls.GenerateServerCert(ca, instanceId)
 	if err != nil {
-		return
+		return interCpCerts{}, err
 	}
-	clientCert, err = intercp_tls.GenerateClientCert(ca, instanceId)
+	clientCert, err := intercp_tls.GenerateClientCert(ca, instanceId)
 	if err != nil {
-		return
+		return interCpCerts{}, err
 	}
-	return
+	return interCpCerts{
+		ca:     *caCert,
+		server: serverCert,
+		client: clientCert,
+	}, nil
 }
