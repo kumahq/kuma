@@ -86,7 +86,7 @@ var _ = Describe("Heartbeats", func() {
 		}, "10s", "100ms").Should(Succeed())
 	})
 
-	It("should connect reconnect to a leader when there is a leader change", func() {
+	It("should reconnect to a leader when there is a leader change", func() {
 		// given
 		instances := []catalog.Instance{
 			{

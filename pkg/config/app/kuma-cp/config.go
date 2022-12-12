@@ -285,6 +285,9 @@ func (c *Config) Validate() error {
 	if err := c.Experimental.Validate(); err != nil {
 		return errors.Wrap(err, "Experimental validation failed")
 	}
+	if err := c.InterCp.Validate(); err != nil {
+		return errors.Wrap(err, "InterCp validation failed")
+	}
 	return nil
 }
 

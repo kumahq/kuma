@@ -503,7 +503,7 @@ interCp:
     writerInterval: 15s # ENV: KUMA_INTER_CP_CATALOG_WRITER_INTERVAL
   # Intercommunication CP server configuration
   server:
-    # Port of the DP Server
+    # Port of the inter-cp server
     port: 5683 # ENV: KUMA_INTER_CP_SERVER_PORT
     # TlsMinVersion the minimum version of TLS
     tlsMinVersion: "TLSv1_2" # ENV: KUMA_INTER_CP_SERVER_TLS_MIN_VERSION

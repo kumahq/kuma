@@ -1,9 +1,10 @@
 package intercp
 
 import (
-	"errors"
 	"time"
 
+	"github.com/asaskevich/govalidator"
+	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
 	config_types "github.com/kumahq/kuma/pkg/config/types"
@@ -31,6 +32,16 @@ type InterCpConfig struct {
 	Server InterCpServerConfig `json:"server"`
 }
 
+func (i *InterCpConfig) Validate() error {
+	if err := i.Server.Validate(); err != nil {
+		return errors.Wrap(err, ".Server validation failed")
+	}
+	if err := i.Catalog.Validate(); err != nil {
+		return errors.Wrap(err, ".Catalog validation failed")
+	}
+	return nil
+}
+
 type CatalogConfig struct {
 	// InstanceAddress indicates an address on which other control planes can communicate with this CP
 	// If empty then it's autoconfigured by taking the first IP of the nonloopback network interface.
@@ -39,6 +50,13 @@ type CatalogConfig struct {
 	HeartbeatInterval config_types.Duration `json:"heartbeatInterval" envconfig:"kuma_inter_cp_catalog_heartbeat_interval"`
 	// Interval on which CP will write all instances to a catalog.
 	WriterInterval config_types.Duration `json:"writerInterval" envconfig:"kuma_inter_cp_catalog_writer_interval"`
+}
+
+func (i *CatalogConfig) Validate() error {
+	if i.InstanceAddress != "" && !govalidator.IsDNSName(i.InstanceAddress) && govalidator.IsIP(i.InstanceAddress) {
+		return errors.New(".InstanceAddress has to be valid IP or DNS address")
+	}
+	return nil
 }
 
 type InterCpServerConfig struct {
@@ -53,14 +71,17 @@ type InterCpServerConfig struct {
 }
 
 func (i *InterCpServerConfig) Validate() (errs error) {
+	if i.Port == 0 {
+		errs = multierr.Append(errs, errors.New(".Port cannot be zero"))
+	}
 	if _, err := config_types.TLSVersion(i.TlsMinVersion); err != nil {
-		errs = multierr.Append(errs, errors.New(".TlsMinVersion"+err.Error()))
+		errs = multierr.Append(errs, errors.New(".TlsMinVersion "+err.Error()))
 	}
 	if _, err := config_types.TLSVersion(i.TlsMaxVersion); err != nil {
-		errs = multierr.Append(errs, errors.New(".TlsMaxVersion"+err.Error()))
+		errs = multierr.Append(errs, errors.New(".TlsMaxVersion "+err.Error()))
 	}
 	if _, err := config_types.TLSCiphers(i.TlsCipherSuites); err != nil {
-		errs = multierr.Append(errs, errors.New(".TlsCipherSuites"+err.Error()))
+		errs = multierr.Append(errs, errors.New(".TlsCipherSuites "+err.Error()))
 	}
 	return
 }
