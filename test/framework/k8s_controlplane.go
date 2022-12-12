@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
@@ -256,17 +257,22 @@ func (c *K8sControlPlane) generateToken(
 	)
 }
 
-func (c *K8sControlPlane) GenerateDpToken(mesh, service string) (string, error) {
+func (c *K8sControlPlane) GenerateDpToken(mesh string, services []string) (string, error) {
 	var dpType string
-	if service == "ingress" {
+	if services[0] == "ingress" {
 		dpType = "ingress"
 	}
 
+	var quoted []string
+	for _, service := range services {
+		quoted = append(quoted, `"` + service + `"`)
+	}
+
 	data := fmt.Sprintf(
-		`{"mesh": "%s", "type": "%s", "tags": {"kuma.io/service": ["%s"]}}`,
+		`{"mesh": "%s", "type": "%s", "tags": {"kuma.io/service": [%s]}}`,
 		mesh,
 		dpType,
-		service,
+		strings.Join(quoted, ", "),
 	)
 
 	return c.generateToken("", data)

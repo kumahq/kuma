@@ -4,7 +4,7 @@ import "fmt"
 
 func GatewayProxyUniversal(mesh, name string) InstallFunc {
 	return func(cluster Cluster) error {
-		token, err := cluster.GetKuma().GenerateDpToken(mesh, "edge-gateway")
+		token, err := cluster.GetKuma().GenerateDpToken(mesh, []string{"edge-gateway"})
 		if err != nil {
 			return err
 		}

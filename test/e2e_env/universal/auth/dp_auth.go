@@ -69,7 +69,7 @@ func DpAuth() {
 	It("should revoke token and kick out dataplane proxy out of the mesh", func() {
 		// given
 		serviceName := "test-server-to-be-revoked"
-		token, err := env.Cluster.GetKuma().GenerateDpToken(meshName, serviceName)
+		token, err := env.Cluster.GetKuma().GenerateDpToken(meshName, []string{serviceName})
 		Expect(err).ToNot(HaveOccurred())
 
 		err = env.Cluster.Install(TestServerUniversal(serviceName, meshName, WithServiceName(serviceName), WithToken(token)))

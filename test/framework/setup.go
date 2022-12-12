@@ -460,7 +460,7 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 			token := opts.token
 			var err error
 			if token == "" {
-				token, err = cluster.GetKuma().GenerateDpToken(mesh, name)
+				token, err = cluster.GetKuma().GenerateDpToken(mesh, []string{name})
 				if err != nil {
 					return err
 				}
@@ -539,7 +539,11 @@ func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 		token := opts.token
 		var err error
 		if token == "" {
-			token, err = cluster.GetKuma().GenerateDpToken(mesh, opts.serviceName)
+			services := []string{opts.serviceName}
+			if opts.secondaryProcess != nil {
+				services = append(services, opts.secondaryProcess.serviceName)
+			}
+			token, err = cluster.GetKuma().GenerateDpToken(mesh, services)
 			if err != nil {
 				return err
 			}

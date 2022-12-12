@@ -25,7 +25,7 @@ func Test() {
 					"v1",
 					"test-server-grpc",
 					"grpc",
-					[]string{"grpc", "server", "--port", grpcPort},
+					[]string{"test-server", "grpc", "server", "--port", grpcPort},
 				),
 			)).
 			Setup(env.Cluster)
@@ -53,7 +53,7 @@ func Test() {
 
 		Eventually(func(g Gomega) {
 			stdout, _, err := env.Cluster.Exec("", "", "http-client",
-				"grpcurl", "-plaintext", "test-server.mesh:8889", "test.server.grpc.apo.Greeter/SayHello")
+				"grpcurl", "-plaintext", "test-server-grpc.mesh:80", "test.server.grpc.apo.Greeter/SayHello")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("Hello  from"))
 		}).Should(Succeed())

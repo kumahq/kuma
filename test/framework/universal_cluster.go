@@ -354,6 +354,7 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 		}
 
 		if opts.secondaryProcess != nil {
+			Logf("Started secondary app (args: %q) in container %q", opts.secondaryProcess.args, app.container)
 			app.CreateSecondaryApp(nil, opts.secondaryProcess.args)
 			err = app.secondaryApp.Start()
 			if err != nil {

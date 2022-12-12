@@ -57,7 +57,7 @@ func ProjectedServiceAccountToken() {
 		}, "60s", "1s").Should(BeFalse())
 
 		// when new token generated
-		token, err := universal.GetKuma().GenerateDpToken("default", "demo-client")
+		token, err := universal.GetKuma().GenerateDpToken("default", []string{"demo-client"})
 		Expect(err).ToNot(HaveOccurred())
 
 		// and set token

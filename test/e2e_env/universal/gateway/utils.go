@@ -122,7 +122,7 @@ conf:
 
 func mkGatewayDataplane(name, mesh string) InstallFunc {
 	return func(cluster Cluster) error {
-		token, err := env.Cluster.GetKuma().GenerateDpToken(mesh, name)
+		token, err := env.Cluster.GetKuma().GenerateDpToken(mesh, []string{name})
 		if err != nil {
 			return err
 		}

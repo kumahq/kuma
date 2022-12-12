@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
@@ -151,11 +152,16 @@ func (c *UniversalControlPlane) retrieveAdminToken() (string, error) {
 	)
 }
 
-func (c *UniversalControlPlane) GenerateDpToken(mesh, service string) (string, error) {
+func (c *UniversalControlPlane) GenerateDpToken(mesh string, services []string) (string, error) {
+	var quoted []string
+	for _, service := range services {
+		quoted = append(quoted, `"` + service + `"`)
+	}
+
 	data := fmt.Sprintf(
-		`'{"mesh": "%s", "tags": {"kuma.io/service":["%s"]}}'`,
+		`'{"mesh": "%s", "tags": {"kuma.io/service":[%s]}}'`,
 		mesh,
-		service,
+		strings.Join(quoted, ", "),
 	)
 
 	return c.generateToken("/dataplane", data)
