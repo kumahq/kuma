@@ -13,21 +13,23 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
+var timeoutNamespace = "mesh-timeout-namespace"
+var meshName = "meshtimeout"
+
 func MeshTimeout() {
-	meshName := "meshtimeout"
 
 	var clientPodName string
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MeshKubernetes(meshName)).
-			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(DemoClientK8s(meshName, TestNamespace)).
-			Install(testserver.Install(testserver.WithMesh(meshName))).
+			Install(NamespaceWithSidecarInjection(timeoutNamespace)).
+			Install(DemoClientK8s(meshName, timeoutNamespace)).
+			Install(testserver.Install(testserver.WithMesh(meshName), testserver.WithNamespace(timeoutNamespace))).
 			Setup(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		clientPodName, err = PodNameOfApp(env.Cluster, "demo-client", TestNamespace)
+		clientPodName, err = PodNameOfApp(env.Cluster, "demo-client", timeoutNamespace)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -68,14 +70,13 @@ spec:
     kind: Mesh
   to:
     - targetRef:
-        kind: MeshService
-        name: kuma-demo
+        kind: Mesh
       default:
         idleTimeout: 20s
         http:
           requestTimeout: 2s
           maxStreamDuration: 20s
-`, Config.KumaNamespace))(env.Cluster)).To(Succeed())
+`, timeoutNamespace))(env.Cluster)).To(Succeed())
 
 		// then
 		Eventually(func(g Gomega) {
@@ -88,14 +89,14 @@ spec:
 
 func execOptions(clientPodName string) ExecOptions {
 	return ExecOptions{
-		Command:            []string{"curl", "-v", "-H", "\"x-set-response-delay-ms: 5000\"", "--fail", fmt.Sprintf("test-server_%s_svc_80.mesh", TestNamespace)},
-		Namespace:          TestNamespace,
+		Command:            []string{"curl", "-v", "-H", "\"x-set-response-delay-ms: 5000\"", fmt.Sprintf("test-server_%s_svc_80.mesh", timeoutNamespace)},
+		Namespace:          timeoutNamespace,
 		PodName:            clientPodName,
 		ContainerName:      "demo-client",
 		CaptureStdout:      true,
 		CaptureStderr:      true,
 		PreserveWhitespace: false,
-		Retries:            2,
-		Timeout:            10 * time.Second,
+		Retries:            4,
+		Timeout:            8 * time.Second,
 	}
 }

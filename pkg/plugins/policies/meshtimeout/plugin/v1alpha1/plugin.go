@@ -6,8 +6,6 @@ import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"github.com/pkg/errors"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -18,7 +16,6 @@ import (
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	gateway_route "github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/generator"
@@ -162,10 +159,7 @@ func applyToGateway(
 					continue
 				}
 
-				serviceName, err := getServiceNameFromListenerInfo(listenerInfo, dest)
-				if err != nil {
-					return err
-				}
+				serviceName := dest.Destination[mesh_proto.ServiceTag]
 
 				if err := configure(
 					toRules.Rules,
@@ -244,18 +238,6 @@ func routeActionPerCluster(route *envoy_route.RouteConfiguration) map[string][]*
 		}
 	}
 	return actions
-}
-
-func getServiceNameFromListenerInfo(listenerInfo gateway_plugin.GatewayListenerInfo, dest *gateway_route.Destination) (string, error) {
-	endpoints := listenerInfo.OutboundEndpoints[dest.Destination[mesh_proto.ServiceTag]]
-	if len(endpoints) >= 1 {
-		serviceName, ok := endpoints[0].Tags[controllers.KubeServiceTag]
-		if !ok {
-			serviceName = endpoints[0].Tags[mesh_proto.ServiceTag]
-		}
-		return serviceName, nil
-	}
-	return "", errors.Errorf("Could not match destination with service name")
 }
 
 func createInboundClusterName(servicePort uint32, listenerPort uint32) string {
