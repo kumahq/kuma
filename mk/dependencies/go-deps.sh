@@ -1,4 +1,7 @@
 #!/bin/bash
+
+set -e
+
 OUTPUT_BIN_DIR=$1/bin
 OUTPUT_PROTO_DIR=$1/protos
 

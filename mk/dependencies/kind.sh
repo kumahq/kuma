@@ -1,4 +1,7 @@
 #!/bin/bash
+
+set -e
+
 OUTPUT_DIR=$1/bin
 VERSION="0.11.1"
 KIND=${OUTPUT_DIR}/kind

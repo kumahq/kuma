@@ -1,4 +1,7 @@
 #!/bin/bash
+
+set -e
+
 OUTPUT_DIR=$1/bin
 VERSION="0.8.0"
 if [ "$ARCH" == "amd64" ]; then
