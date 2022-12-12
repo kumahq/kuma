@@ -3,6 +3,7 @@ package catalog
 import (
 	"context"
 	"encoding/json"
+	"sort"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -65,4 +66,36 @@ func (c *ConfigCatalog) Replace(ctx context.Context, instances []Instance) (bool
 		return nil
 	})
 	return updated, err
+}
+
+func (c *ConfigCatalog) ReplaceLeader(ctx context.Context, leader Instance) error {
+	return manager.Upsert(ctx, c.resManager, CatalogKey, system.NewConfigResource(), func(resource model.Resource) error {
+		instances := &ConfigInstances{}
+		if cfg := resource.(*system.ConfigResource).Spec.GetConfig(); cfg != "" {
+			if err := json.Unmarshal([]byte(cfg), instances); err != nil {
+				return err
+			}
+		}
+		leaderFound := false
+		for i, instance := range instances.Instances {
+			instance.Leader = false
+			if instance.Id == leader.Id {
+				instance.Leader = true
+				leaderFound = true
+			}
+			instances.Instances[i] = instance
+		}
+		if !leaderFound {
+			instances.Instances = append(instances.Instances, leader)
+			sort.Stable(InstancesByID(instances.Instances))
+		}
+		bytes, err := json.Marshal(instances)
+		if err != nil {
+			return err
+		}
+		resource.(*system.ConfigResource).Spec = &system_proto.Config{
+			Config: string(bytes),
+		}
+		return nil
+	})
 }

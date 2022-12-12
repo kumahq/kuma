@@ -67,6 +67,82 @@ var _ = Describe("Catalog", func() {
 		})
 	})
 
+	Context("ReplaceLeader", func() {
+		leader := catalog.Instance{
+			Id:     "leader-1",
+			Leader: true,
+		}
+
+		It("should replace leader when catalog is empty", func() {
+			// when
+			err := c.ReplaceLeader(context.Background(), leader)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			readInstances, err := c.Instances(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+			Expect(readInstances).To(HaveLen(1))
+			Expect(readInstances[0]).To(Equal(leader))
+		})
+
+		It("should replace leader when there is another leader", func() {
+			// given
+			instances := []catalog.Instance{
+				{
+					Id:     "instance-1",
+					Leader: true,
+				},
+				{
+					Id:     "leader-1",
+					Leader: false,
+				},
+			}
+			_, err := c.Replace(context.Background(), instances)
+			Expect(err).ToNot(HaveOccurred())
+
+			// when
+			err = c.ReplaceLeader(context.Background(), leader)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			readInstances, err := c.Instances(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+			Expect(readInstances).To(HaveLen(2))
+			Expect(readInstances[0].Id).To(Equal("instance-1"))
+			Expect(readInstances[0].Leader).To(BeFalse())
+			Expect(readInstances[1].Id).To(Equal("leader-1"))
+			Expect(readInstances[1].Leader).To(BeTrue())
+		})
+
+		It("should replace leader when the new leader is not on the list", func() {
+			// given
+			instances := []catalog.Instance{
+				{
+					Id:     "instance-1",
+					Leader: true,
+				},
+			}
+			_, err := c.Replace(context.Background(), instances)
+			Expect(err).ToNot(HaveOccurred())
+
+			// when
+			err = c.ReplaceLeader(context.Background(), leader)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			readInstances, err := c.Instances(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+			Expect(readInstances).To(HaveLen(2))
+			Expect(readInstances[0].Id).To(Equal("instance-1"))
+			Expect(readInstances[0].Leader).To(BeFalse())
+			Expect(readInstances[1].Id).To(Equal("leader-1"))
+			Expect(readInstances[1].Leader).To(BeTrue())
+		})
+	})
+
 	Context("Leader", func() {
 		It("should return a leader if there is a leader in the list", func() {
 			// given

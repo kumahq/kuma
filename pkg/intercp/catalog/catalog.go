@@ -21,6 +21,7 @@ func (i Instance) InterCpURL() string {
 type Catalog interface {
 	Instances(context.Context) ([]Instance, error)
 	Replace(context.Context, []Instance) (bool, error)
+	ReplaceLeader(context.Context, Instance) error
 }
 
 var ErrNoLeader = errors.New("leader not found")
@@ -36,4 +37,12 @@ func Leader(ctx context.Context, catalog Catalog) (Instance, error) {
 		}
 	}
 	return Instance{}, ErrNoLeader
+}
+
+type InstancesByID []Instance
+
+func (a InstancesByID) Len() int      { return len(a) }
+func (a InstancesByID) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a InstancesByID) Less(i, j int) bool {
+	return a[i].Id < a[j].Id
 }

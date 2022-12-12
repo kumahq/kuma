@@ -22,10 +22,12 @@ type catalogWriter struct {
 var _ component.Component = &catalogWriter{}
 
 func NewWriter(catalog Catalog, heartbeats *Heartbeats, instance Instance, interval time.Duration) component.Component {
+	leaderInstance := instance
+	leaderInstance.Leader = true
 	return &catalogWriter{
 		catalog:    catalog,
 		heartbeats: heartbeats,
-		instance:   instance,
+		instance:   leaderInstance,
 		interval:   interval,
 	}
 }
@@ -33,16 +35,17 @@ func NewWriter(catalog Catalog, heartbeats *Heartbeats, instance Instance, inter
 func (r *catalogWriter) Start(stop <-chan struct{}) error {
 	heartbeatLog.Info("starting catalog writer")
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
+	writerLog.Info("replacing a leader in the catalog")
+	if err := r.catalog.ReplaceLeader(ctx, r.instance); err != nil {
+		writerLog.Error(err, "could not replace leader") // continue, it will be replaced in ticker anyways
+	}
 	ticker := time.NewTicker(r.interval)
 	for {
 		select {
 		case <-ticker.C:
 			instances := r.heartbeats.ResetAndCollect()
-			r.instance.Leader = true
 			instances = append(instances, r.instance)
-			sort.Slice(instances, func(i, j int) bool {
-				return instances[i].Id < instances[j].Id
-			})
+			sort.Stable(InstancesByID(instances))
 			updated, err := r.catalog.Replace(ctx, instances)
 			if err != nil {
 				writerLog.Error(err, "could not update catalog")
