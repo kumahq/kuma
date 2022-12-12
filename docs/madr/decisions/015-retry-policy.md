@@ -160,7 +160,7 @@ Envoy has "host predicates" and "priority predicates" to enforce an additional l
 when selecting a host for the attempt:
 
 * don't retry on previously retried hosts
-* don't retry on canary hosts
+* don't retry on canary hosts (the host should be preliminarily marked with `canary: true`)
 * don't retry on hosts with specified metadata key/value
 * don't retry on previous priorities
 
