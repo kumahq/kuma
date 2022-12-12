@@ -18,9 +18,8 @@ MeshRetry
 
 Even though it's possible to place a retry policy on the inbound routes, 
 it doesn't seem like there is a value in it.
-Retries create an additional load on the service,
-that's why it's not in the interest of service owners to place retries on the inbounds.
-Most of the time retrying of the request is a client's concern.
+We won't add inbound retries mostly because retries create additional load on the service.
+Most of the time retrying requests is a client's concern.
 
 #### Top level
 
@@ -28,7 +27,7 @@ Top-level targetRef can have the following kinds:
 
 ```yaml
 targetRef:
-  kind: Mesh|MeshSubset|MeshService|MeshServiceSubset|MeshGatewayRoute
+  kind: Mesh|MeshSubset|MeshService|MeshServiceSubset
   name: ...
 ```
 
@@ -38,7 +37,7 @@ To-level targetRef can have the following kinds:
 
 ```yaml
 targetRef:
-  kind: Mesh|MeshService|MeshHTTPRoute
+  kind: Mesh|MeshService
   name: ...
 ```
 
@@ -134,16 +133,16 @@ default:
 
 Changes:
 
-1. Rename "http.retryOn.all_5xx" to "http.retryOn.5xx". Apparently it was a limitation of proto enums.
-2. Rename "retriableStatusCodes" to "additionalRetriableStatusCodes" 
-because this field provides additional status codes to whatever already specified in "retryOn".
-Today there is a validation if you set "retriableStatusCodes" you must provide "retriable_status_codes" to the "retryOn" list. 
+1. Rename `http.retryOn.all_5xx` to `http.retryOn.5xx`. Apparently it was a limitation of proto enums.
+2. Rename `retriableStatusCodes` to `additionalRetriableStatusCodes` 
+because this field provides additional status codes to whatever already specified in `retryOn`.
+Today there is a validation if you set `retriableStatusCodes` you must provide `retriable_status_codes` to the `retryOn` list. 
 Due to a multi-level organisation of policies now it's impossible to validate.
-I think the best option is to add "retriable_status_codes" to "retryOn" automatically if "additionalRetriableStatusCodes" is specified. 
-3. New field "retriableHeaders" (or "retriableResponseHeaders"). Even though we have already had "retryOn.retriable_headers" 
+I think the best option is to add `retriable_status_codes` to `retryOn` automatically if `additionalRetriableStatusCodes` is specified. 
+3. New field `retriableHeaders` (or `retriableResponseHeaders`). Even though we have already had `retryOn.retriable_headers` 
 there was no way to provide a list of headers. 
-If this field is set we automatically add "retriable_headers" to "retryOn".
-4. New field "retriableRequestHeaders". Purely for the sake of symmetry, 
+If this field is set we automatically add `retriable_headers` to `retryOn`.
+4. New field `retriableRequestHeaders`. Purely for the sake of symmetry, 
 if we allow retrying on response headers why not allow that on request headers. 
 
 #### Other retry-related Envoy parameters
@@ -153,7 +152,7 @@ But there are few additional things we can potentially support.
 
 ##### per_try_idle_timeout
 
-Same as "idle_timeout" but enforced on each individual attempt.
+Same as `idle_timeout` but enforced on each individual attempt.
 
 ##### Host selection
 
@@ -178,21 +177,21 @@ hostSelection:
     updateFrequency: 2 # how often the priority load should be updated based on previously attempted priorities                                                                                             
 ```
 
-Having configurable "hostSelection" implies exposing the "host_selection_retry_max_attempts" parameter as well.
+Having configurable `hostSelection` implies exposing the `host_selection_retry_max_attempts` parameter as well.
 It allows configuring the maximum number of times host selection will be reattempted before giving up.
 
-##### Retry budged
+##### Retry budget
 
 This parameter allows specifying a limit on concurrent retries in relation to the number of active requests.
-The problem is that "retry budged" is set on Envoy cluster 
+The problem is that `retry budget` is set on Envoy cluster 
 while other parameters are set on a "per route" or "per virtual host" basis.
 Even though today Kuma generates an Envoy cluster "per route" it might not be the case in the future.
-So I don't think having "retry budged" in MeshRetry policy is a good idea.
+So I don't think having `retry budget` in MeshRetry policy is a good idea.
 
 ## Considered Options
 
 * Implement MeshRetry without additional parameters
-* Implement MeshRetry with "per_try_idle_timeout" and "host selection"
+* Implement MeshRetry with `per_try_idle_timeout` and `hostSelection`
 
 ### Implement MeshRetry without additional parameters
 
@@ -205,7 +204,7 @@ So I don't think having "retry budged" in MeshRetry policy is a good idea.
 
 * MeshRetry could be considered by some users as not flexible enough 
 
-### Implement MeshRetry with "per_try_idle_timeout" and "host selection"
+### Implement MeshRetry with `per_try_idle_timeout` and `hostSelection`
 
 #### Pros
 
