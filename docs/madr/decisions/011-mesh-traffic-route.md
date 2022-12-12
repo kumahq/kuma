@@ -261,108 +261,11 @@ specificity.
 This proposal addresses one issue with a "naive" application of `targetRef`
 structure to a routing policy.
 
-##### Surprising behavior of top level `default`
-
-Let's look at two basic theoretical route policies where we include `default` at
-the top level of a `to` rule:
-
-```yaml
-metadata:
- name: owner
-spec:
- targetRef:
-  kind: Mesh
- to:
-  - targetRef:
-     kind: MeshService
-     name: backend
-    default:
-     rules:
-      - matches:
-         - path:
-            prefix: /v1
-        backendRefs:
-         - weight: 100
-           kind: MeshServiceSubset
-           name: backend
-           tags:
-            version: v1
-      - matches:
-         - path:
-            prefix: /v2
-        backendRefs:
-         - weight: 100
-           kind: MeshServiceSubset
-           name: backend
-           tags:
-            version: v2
----
-metadata:
- name: consumer
-spec:
- targetRef:
-  kind: MeshService
-  name: frontend
- to:
-  - targetRef:
-     kind: MeshService
-     name: backend
-    default:
-     rules:
-      - matches:
-         - path:
-            prefix: /v2
-        filters:
-         - requestHeaderModifier:
-            add:
-             - name: env
-               value: dev
-        backendRefs:
-         - weight: 100
-           kind: MeshServiceSubset
-           name: backend
-           tags:
-            version: v2
-```
-
-The rules for merging a field in a `targetRef` policy is that more specific
-routes replace the value from less specific routes. So the final value of `rules`
-is the value from the `consumer` route:
-
-```yaml
-spec:
- targetRef:
-  kind: MeshService
-  name: frontend
- to:
-  - targetRef:
-     kind: MeshService
-     name: backend
-    rules:
-     - matches:
-        - path:
-           prefix: /v2
-       filters:
-        - requestHeaderModifier:
-           add:
-            - name: env
-              value: dev
-       backendRefs:
-        - weight: 100
-          kind: MeshServiceSubset
-          name: backend
-          tags:
-           version: v2
-```
-
-This is likely surprising, especially because `consumer` didn't specify anything
-at all for `/v1`.
-
-##### Solution
+##### Proposal
 
 This MADR proposes to distribute `default` down into individual `rules` and merge
 `rules` based on _structural equality_ of the `matches` value.
-So we would instead have:
+So we would have:
 
 ```yaml
 metadata:
@@ -518,6 +421,105 @@ spec:
         filters: []
         backendRefs: []
 ```
+
+The next section shows the motivation for this schema.
+
+##### Surprising behavior of top level `default`
+
+Let's look at two basic theoretical route policies where we include `default` at
+the top level of a `to` rule, i.e. like a "regular" `targetRef` policy:
+
+```yaml
+metadata:
+ name: owner
+spec:
+ targetRef:
+  kind: Mesh
+ to:
+  - targetRef:
+     kind: MeshService
+     name: backend
+    default:
+     rules:
+      - matches:
+         - path:
+            prefix: /v1
+        backendRefs:
+         - weight: 100
+           kind: MeshServiceSubset
+           name: backend
+           tags:
+            version: v1
+      - matches:
+         - path:
+            prefix: /v2
+        backendRefs:
+         - weight: 100
+           kind: MeshServiceSubset
+           name: backend
+           tags:
+            version: v2
+---
+metadata:
+ name: consumer
+spec:
+ targetRef:
+  kind: MeshService
+  name: frontend
+ to:
+  - targetRef:
+     kind: MeshService
+     name: backend
+    default:
+     rules:
+      - matches:
+         - path:
+            prefix: /v2
+        filters:
+         - requestHeaderModifier:
+            add:
+             - name: env
+               value: dev
+        backendRefs:
+         - weight: 100
+           kind: MeshServiceSubset
+           name: backend
+           tags:
+            version: v2
+```
+
+The rules for merging a field in a `targetRef` policy is that more specific
+routes replace the value from less specific routes. So the final value of `rules`
+is the value from the `consumer` route:
+
+```yaml
+spec:
+ targetRef:
+  kind: MeshService
+  name: frontend
+ to:
+  - targetRef:
+     kind: MeshService
+     name: backend
+    rules:
+     - matches:
+        - path:
+           prefix: /v2
+       filters:
+        - requestHeaderModifier:
+           add:
+            - name: env
+              value: dev
+       backendRefs:
+        - weight: 100
+          kind: MeshServiceSubset
+          name: backend
+          tags:
+           version: v2
+```
+
+This is likely surprising, especially because `consumer` didn't specify anything
+at all for `/v1`.
 
 #### Gateway API
 
