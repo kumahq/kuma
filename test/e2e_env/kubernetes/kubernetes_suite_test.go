@@ -119,4 +119,4 @@ var _ = Describe("External Services", externalservices.ExternalServices, Ordered
 var _ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)
 var _ = Describe("Kong Ingress Controller", Label("arm-not-supported"), kic.KICKubernetes, Ordered)
 var _ = Describe("MeshTrafficPermission API", meshtrafficpermission.API, Ordered)
-var _ = Describe("MeshTimeout API", meshtimeout.API, Ordered)
+var _ = Describe("MeshTimeout API", meshtimeout.MeshTimeout, Ordered)

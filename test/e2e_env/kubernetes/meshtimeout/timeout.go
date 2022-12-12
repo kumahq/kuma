@@ -13,7 +13,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
-func API() {
+func MeshTimeout() {
 	meshName := "meshtimeout"
 
 	var clientPodName string
@@ -41,7 +41,7 @@ func API() {
 		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	It("should create MeshTimeout policy", func() {
+	It("should add timeouts for outbound connections", func() {
 		// given no MeshTimeout
 		mts, err := env.Cluster.GetKumactlOptions().KumactlList("meshtimeouts", meshName)
 		Expect(err).ToNot(HaveOccurred())
