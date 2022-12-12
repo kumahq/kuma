@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
 	"time"
@@ -10,7 +9,6 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/proto"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -21,28 +19,20 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
+	test_xds "github.com/kumahq/kuma/pkg/test/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	clusters_builder "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
-
-type dummyCLACache struct {
-	outboundTargets core_xds.EndpointMap
-}
-
-func (d *dummyCLACache) GetCLA(ctx context.Context, meshName, meshHash string, cluster envoy_common.Cluster, apiVersion core_xds.APIVersion, endpointMap core_xds.EndpointMap) (proto.Message, error) {
-	return endpoints.CreateClusterLoadAssignment(cluster.Service(), d.outboundTargets[cluster.Service()]), nil
-}
-
-var _ envoy_common.CLACache = &dummyCLACache{}
 
 var _ = Describe("MeshTimeout", func() {
 	type sidecarTestCase struct {
@@ -52,55 +42,58 @@ var _ = Describe("MeshTimeout", func() {
 		expectedListener string
 		expectedCluster  string
 	}
-	DescribeTable("should generate proper Envoy config",
-		func(given sidecarTestCase) {
-			resourceSet := core_xds.NewResourceSet()
-			for _, res := range given.resources {
-				r := res
-				resourceSet.Add(&r)
-			}
+	DescribeTable("should generate proper Envoy config", func(given sidecarTestCase) {
+		// given
+		resourceSet := core_xds.NewResourceSet()
+		for _, res := range given.resources {
+			r := res
+			resourceSet.Add(&r)
+		}
 
-			context := createSimpleMeshContextWith(xds_context.NewResources())
+		context := createSimpleMeshContextWith(xds_context.NewResources())
 
-			proxy := xds.Proxy{
-				Dataplane: builders.Dataplane().
-					WithName("backend").
-					WithMesh("default").
-					WithAddress("127.0.0.1").
-					AddOutboundsToServices("other-service", "second-service").
-					WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http").
-					Build(),
-				Policies: xds.MatchedPolicies{
-					Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
-						api.MeshTimeoutType: {
-							Type:      api.MeshTimeoutType,
-							ToRules:   given.toRules,
-							FromRules: given.fromRules,
+		proxy := xds.Proxy{
+			Dataplane: builders.Dataplane().
+				WithName("backend").
+				WithMesh("default").
+				WithAddress("127.0.0.1").
+				AddOutboundsToServices("other-service", "second-service").
+				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http").
+				Build(),
+			Policies: xds.MatchedPolicies{
+				Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
+					api.MeshTimeoutType: {
+						Type:      api.MeshTimeoutType,
+						ToRules:   given.toRules,
+						FromRules: given.fromRules,
+					},
+				},
+			},
+			Routing: core_xds.Routing{
+				OutboundTargets: core_xds.EndpointMap{
+					"other-service": []core_xds.Endpoint{{
+						Tags: map[string]string{
+							"kuma.io/protocol": "http",
 						},
-					},
+					}},
+					"second-service": []core_xds.Endpoint{{
+						Tags: map[string]string{
+							"kuma.io/protocol": "tcp",
+						},
+					}},
 				},
-				Routing: core_xds.Routing{
-					OutboundTargets: core_xds.EndpointMap{
-						"other-service": []core_xds.Endpoint{{
-							Tags: map[string]string{
-								"kuma.io/protocol": "http",
-							},
-						}},
-						"second-service": []core_xds.Endpoint{{
-							Tags: map[string]string{
-								"kuma.io/protocol": "tcp",
-							},
-						}},
-					},
-				},
-			}
-			plugin := NewPlugin().(core_plugins.PolicyPlugin)
+			},
+		}
 
-			Expect(plugin.Apply(resourceSet, context, &proxy)).To(Succeed())
-			Expect(getResourceYaml(resourceSet.ListOf(envoy_resource.ListenerType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", given.expectedListener)))
-			Expect(getResourceYaml(resourceSet.ListOf(envoy_resource.ClusterType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", given.expectedCluster)))
-		},
-		Entry("basic outbound route", sidecarTestCase{
+		// when
+		plugin := NewPlugin().(core_plugins.PolicyPlugin)
+
+		// then
+		Expect(plugin.Apply(resourceSet, context, &proxy)).To(Succeed())
+		Expect(getResourceYaml(resourceSet.ListOf(envoy_resource.ListenerType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", given.expectedListener)))
+		Expect(getResourceYaml(resourceSet.ListOf(envoy_resource.ClusterType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", given.expectedCluster)))
+	},
+		Entry("http outbound route", sidecarTestCase{
 			resources: []core_xds.Resource{{
 				Name:     "outbound",
 				Origin:   generator.OriginOutbound,
@@ -128,8 +121,8 @@ var _ = Describe("MeshTimeout", func() {
 					},
 				},
 			},
-			expectedListener: "basic_outbound_listener.golden.yaml",
-			expectedCluster:  "basic_outbound_cluster.golden.yaml",
+			expectedListener: "http_outbound_listener.golden.yaml",
+			expectedCluster:  "http_outbound_cluster.golden.yaml",
 		}),
 		Entry("tcp outbound route", sidecarTestCase{
 			resources: []core_xds.Resource{{
@@ -179,7 +172,7 @@ var _ = Describe("MeshTimeout", func() {
 				{
 					Name:     "inbound",
 					Origin:   generator.OriginInbound,
-					Resource: clusterWithName("localhost:80"),
+					Resource: clusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundServicePort)),
 				}},
 			fromRules: core_xds.FromRules{
 				Rules: map[core_xds.InboundListener]core_xds.Rules{
@@ -215,7 +208,8 @@ var _ = Describe("MeshTimeout", func() {
 					Name:     "outbound",
 					Origin:   generator.OriginOutbound,
 					Resource: clusterWithName("other-service"),
-				}},
+				},
+			},
 			toRules: core_xds.ToRules{
 				Rules: []*core_xds.Rule{
 					{
@@ -237,70 +231,60 @@ var _ = Describe("MeshTimeout", func() {
 		}),
 	)
 
-	It("should generate proper Envoy config for MeshGateway Dataplanes",
-		func() {
-			toRules := core_xds.ToRules{
-				Rules: []*core_xds.Rule{
-					{
-						Subset: core_xds.Subset{},
-						Conf: api.Conf{
-							ConnectionTimeout: parseDuration("10s"),
-							IdleTimeout:       parseDuration("1h"),
-							Http: &api.Http{
-								RequestTimeout:        parseDuration("5s"),
-								StreamIdleTimeout:     parseDuration("1s"),
-								MaxStreamDuration:     parseDuration("10m"),
-								MaxConnectionDuration: parseDuration("10m"),
-							},
-						},
-					},
-				}}
-
-			resources := xds_context.NewResources()
-			resources.MeshLocalResources[core_mesh.MeshGatewayType] = GatewayResources()
-			resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = GatewayRoutes()
-
-			context := createSimpleMeshContextWith(resources)
-			proxy := xds.Proxy{
-				APIVersion: "v3",
-				Dataplane: &core_mesh.DataplaneResource{
-					Meta: &test_model.ResourceMeta{
-						Mesh: "default",
-						Name: "gateway",
-					},
-					Spec: &mesh_proto.Dataplane{
-						Networking: &mesh_proto.Dataplane_Networking{
-							Address: "127.0.0.1",
-							Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-								Tags: map[string]string{
-									mesh_proto.ServiceTag: "gateway",
-								},
-								Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
-							},
+	It("should generate proper Envoy config for MeshGateway Dataplanes", func() {
+		// given
+		toRules := core_xds.ToRules{
+			Rules: []*core_xds.Rule{
+				{
+					Subset: core_xds.Subset{},
+					Conf: api.Conf{
+						ConnectionTimeout: parseDuration("10s"),
+						IdleTimeout:       parseDuration("1h"),
+						Http: &api.Http{
+							RequestTimeout:        parseDuration("5s"),
+							StreamIdleTimeout:     parseDuration("1s"),
+							MaxStreamDuration:     parseDuration("10m"),
+							MaxConnectionDuration: parseDuration("10m"),
 						},
 					},
 				},
-				Policies: xds.MatchedPolicies{
-					Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
-						api.MeshTimeoutType: {
-							Type:    api.MeshTimeoutType,
-							ToRules: toRules,
-						},
+			},
+		}
+
+		resources := xds_context.NewResources()
+		resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
+			Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
+		}
+		resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
+			Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
+		}
+
+		context := createSimpleMeshContextWith(resources)
+		proxy := xds.Proxy{
+			APIVersion: "v3",
+			Dataplane:  samples.GatewayDataplane(),
+			Policies: xds.MatchedPolicies{
+				Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
+					api.MeshTimeoutType: {
+						Type:    api.MeshTimeoutType,
+						ToRules: toRules,
 					},
 				},
-			}
-			gatewayGenerator := gatewayGenerator()
-			generatedResources, err := gatewayGenerator.Generate(context, &proxy)
-			if err != nil {
-				return
-			}
-			plugin := NewPlugin().(core_plugins.PolicyPlugin)
+			},
+		}
+		gatewayGenerator := gatewayGenerator()
+		generatedResources, err := gatewayGenerator.Generate(context, &proxy)
+		Expect(err).NotTo(HaveOccurred())
 
-			Expect(plugin.Apply(generatedResources, context, &proxy)).To(Succeed())
-			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ListenerType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "gateway_listener.golden.yaml")))
-			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ClusterType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "gateway_cluster.golden.yaml")))
-			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.RouteType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "gateway_route.golden.yaml")))
-		})
+		// when
+		plugin := NewPlugin().(core_plugins.PolicyPlugin)
+
+		// then
+		Expect(plugin.Apply(generatedResources, context, &proxy)).To(Succeed())
+		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ListenerType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "gateway_listener.golden.yaml")))
+		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ClusterType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "gateway_cluster.golden.yaml")))
+		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.RouteType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "gateway_route.golden.yaml")))
+	})
 })
 
 func parseDuration(duration string) *k8s.Duration {
@@ -335,70 +319,6 @@ func getResourceYaml(list core_xds.ResourceList) []byte {
 	return actualListener
 }
 
-func GatewayResources() *core_mesh.MeshGatewayResourceList {
-	return &core_mesh.MeshGatewayResourceList{
-		Items: []*core_mesh.MeshGatewayResource{{
-			Meta: &test_model.ResourceMeta{Name: "gateway", Mesh: "default"},
-			Spec: &mesh_proto.MeshGateway{
-				Selectors: []*mesh_proto.Selector{{
-					Match: map[string]string{
-						mesh_proto.ServiceTag: "gateway",
-					}},
-				},
-				Conf: &mesh_proto.MeshGateway_Conf{
-					Listeners: []*mesh_proto.MeshGateway_Listener{
-						{
-							Protocol: mesh_proto.MeshGateway_Listener_HTTP,
-							Port:     8080,
-						},
-					},
-				},
-			},
-		}},
-	}
-}
-
-func GatewayRoutes() *core_mesh.MeshGatewayRouteResourceList {
-	return &core_mesh.MeshGatewayRouteResourceList{
-		Items: []*core_mesh.MeshGatewayRouteResource{
-			{
-				Meta: &test_model.ResourceMeta{Name: "gateway", Mesh: "default"},
-				Spec: &mesh_proto.MeshGatewayRoute{
-					Selectors: []*mesh_proto.Selector{{
-						Match: map[string]string{
-							mesh_proto.ServiceTag: "gateway",
-						}},
-					},
-					Conf: &mesh_proto.MeshGatewayRoute_Conf{
-						Route: &mesh_proto.MeshGatewayRoute_Conf_Http{
-							Http: &mesh_proto.MeshGatewayRoute_HttpRoute{
-								Rules: []*mesh_proto.MeshGatewayRoute_HttpRoute_Rule{
-									{
-										Matches: []*mesh_proto.MeshGatewayRoute_HttpRoute_Match{
-											{Path: &mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path{
-												Match: 0,
-												Value: "/",
-											}},
-										},
-										Backends: []*mesh_proto.MeshGatewayRoute_Backend{
-											{
-												Weight: 1,
-												Destination: map[string]string{
-													"kuma.io/service": "some-service",
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
 func createSimpleMeshContextWith(resources xds_context.Resources) xds_context.Context {
 	return xds_context.Context{
 		Mesh: xds_context.MeshContext{
@@ -409,16 +329,16 @@ func createSimpleMeshContextWith(resources xds_context.Resources) xds_context.Co
 			},
 			Resources: resources,
 			EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
-				"some-service": {
+				"backend": {
 					{
 						Tags: map[string]string{
-							"app": "some-service",
+							controllers.KubeServiceTag: "some-service",
 						},
 					},
 				},
 			},
 		},
-		ControlPlane: &xds_context.ControlPlaneContext{CLACache: &dummyCLACache{}, Zone: "test-zone"},
+		ControlPlane: &xds_context.ControlPlaneContext{CLACache: &test_xds.DummyCLACache{}, Zone: "test-zone"},
 	}
 }
 

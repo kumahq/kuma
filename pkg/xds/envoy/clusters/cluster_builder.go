@@ -55,12 +55,12 @@ func (b *ClusterBuilder) Build() (envoy.NamedResource, error) {
 }
 
 func (b *ClusterBuilder) MustBuild() envoy.NamedResource {
-	listener, err := b.Build()
+	cluster, err := b.Build()
 	if err != nil {
-		panic(errors.Wrap(err, "failed to build Envoy Listener").Error())
+		panic(errors.Wrap(err, "failed to build Envoy Cluster").Error())
 	}
 
-	return listener
+	return cluster
 }
 
 // ClusterBuilderConfig holds configuration of a ClusterBuilder.

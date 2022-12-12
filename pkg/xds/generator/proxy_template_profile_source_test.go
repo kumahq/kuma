@@ -1,13 +1,11 @@
 package generator_test
 
 import (
-	"context"
 	"path/filepath"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -15,23 +13,13 @@ import (
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/xds"
+	test_xds "github.com/kumahq/kuma/pkg/test/xds"
 	"github.com/kumahq/kuma/pkg/tls"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
-
-type dummyCLACache struct {
-	outboundTargets core_xds.EndpointMap
-}
-
-func (d *dummyCLACache) GetCLA(ctx context.Context, meshName, meshHash string, cluster envoy_common.Cluster, apiVersion core_xds.APIVersion, endpointMap core_xds.EndpointMap) (proto.Message, error) {
-	return endpoints.CreateClusterLoadAssignment(cluster.Service(), d.outboundTargets[cluster.Service()]), nil
-}
-
-var _ envoy_common.CLACache = &dummyCLACache{}
 
 var _ = Describe("ProxyTemplateProfileSource", func() {
 
@@ -70,7 +58,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			}
 			ctx := xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{
-					CLACache: &dummyCLACache{outboundTargets: outboundTargets},
+					CLACache: &test_xds.DummyCLACache{OutboundTargets: outboundTargets},
 					Secrets:  &xds.TestSecrets{},
 				},
 				Mesh: xds_context.MeshContext{

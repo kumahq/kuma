@@ -15,6 +15,7 @@ import (
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/xds"
+	test_xds "github.com/kumahq/kuma/pkg/test/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -815,7 +816,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 		}
 
 		// when
-		plainCtx.ControlPlane.CLACache = &dummyCLACache{outboundTargets: outboundTargets}
+		plainCtx.ControlPlane.CLACache = &test_xds.DummyCLACache{OutboundTargets: outboundTargets}
 		rs, err := gen.Generate(plainCtx, proxy)
 
 		// then

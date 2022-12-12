@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -30,6 +31,7 @@ func newEchoHTTPCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
 				headers := request.Header
+				handleDelay(headers)
 				headers.Add("host", request.Host)
 				resp := &types.EchoResponse{
 					Instance: args.instance,
@@ -98,4 +100,13 @@ func newEchoHTTPCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&args.keyFile, "key", "./test/server/certs/server.key", "path to the server's TLS key")
 	cmd.PersistentFlags().BoolVar(&args.probes, "probes", false, "generate readiness and liveness endpoints")
 	return cmd
+}
+
+func handleDelay(headers http.Header) {
+	delayHeader := headers.Get("x-set-response-delay-ms")
+	delay, err := strconv.Atoi(delayHeader)
+	if err != nil {
+		return
+	}
+	time.Sleep(time.Duration(delay) * time.Millisecond)
 }

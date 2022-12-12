@@ -3,7 +3,7 @@ edsClusterConfig:
   edsConfig:
     ads: {}
     resourceApiVersion: V3
-name: some-service-21868a8801354f8d
+name: backend-26cb64fa4e85e7b7
 perConnectionBufferLimitBytes: 32768
 type: EDS
 typedExtensionProtocolOptions:
