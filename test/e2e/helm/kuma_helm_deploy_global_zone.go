@@ -131,7 +131,7 @@ interCp:
 		}, "30s", "1s").Should(Succeed())
 	})
 
-	FContext("Intercommunication CP server catalog on Global CP", func() {
+	Context("Intercommunication CP server catalog on Global CP", func() {
 		fetchInstances := func() (map[string]struct{}, error) {
 			out, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions(Config.KumaNamespace), "get", "configmap", "cp-catalog", "-o", "jsonpath={.data.config}")
 			if err != nil {
