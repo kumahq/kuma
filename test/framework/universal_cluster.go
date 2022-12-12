@@ -352,6 +352,14 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 		if err != nil {
 			return err
 		}
+
+		if opts.secondaryProcess != nil {
+			app.CreateSecondaryApp(nil, opts.secondaryProcess.args)
+			err = app.secondaryApp.Start()
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil

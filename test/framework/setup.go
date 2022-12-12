@@ -552,14 +552,17 @@ func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) I
       tcp: {}`
 		}
 
-		serviceAddress := ""
-		if opts.serviceAddress != "" {
-			serviceAddress = fmt.Sprintf(`    serviceAddress: %s`, opts.serviceAddress)
-		}
-
 		if len(args) < 2 || args[1] != "grpc" { // grpc client does not have port
 			args = append(args, "--port", "8080")
 		}
+
+		firstInbound := formatInbound("80", "8080", opts.serviceAddress, opts.serviceName, opts.protocol, opts.serviceVersion, opts.serviceInstance)
+
+		secondInbound := ""
+		if opts.secondaryProcess != nil {
+			secondInbound = formatInbound(opts.secondaryProcess.port, opts.secondaryProcess.servicePort, opts.secondaryProcess.serviceAddress, opts.secondaryProcess.serviceName, opts.secondaryProcess.protocol, opts.secondaryProcess.serviceVersion, opts.secondaryProcess.serviceInstance)
+		}
+
 		appYaml := fmt.Sprintf(`
 type: Dataplane
 mesh: %s
@@ -567,19 +570,12 @@ name: {{ name }}
 networking:
   address:  {{ address }}
   inbound:
-  - port: %s
-    servicePort: %s
-%s
-    tags:
-      kuma.io/service: %s
-      kuma.io/protocol: %s
-      version: %s
-      instance: '%s'
-      team: server-owners
 %s
 %s
 %s
-`, mesh, "80", "8080", serviceAddress, opts.serviceName, opts.protocol, opts.serviceVersion, opts.serviceInstance, serviceProbe, transparentProxy, opts.appendDataplaneConfig)
+%s
+%s
+`, mesh, firstInbound, secondInbound, serviceProbe, transparentProxy, opts.appendDataplaneConfig)
 
 		opt = append(opt,
 			WithName(name),
@@ -653,4 +649,22 @@ func DumpTempCerts(names ...string) (string, error) {
 		return "", err
 	}
 	return path, nil
+}
+
+func formatInbound(port, servicePort, serviceAddress, serviceName, protocol, version, instance string) string {
+	if serviceAddress != "" {
+		serviceAddress = fmt.Sprintf(`    serviceAddress: %s`, serviceAddress)
+	}
+
+	return fmt.Sprintf(`
+  - port: %s
+    servicePort: %s
+%s
+    tags:
+      kuma.io/service: %s
+      kuma.io/protocol: %s
+      version: %s
+      instance: '%s'
+      team: server-owners
+`, port, servicePort, serviceAddress, serviceName, protocol, version, instance)
 }

@@ -2,6 +2,7 @@ package auth_test
 
 import (
 	"encoding/json"
+	multiple_inbounds "github.com/kumahq/kuma/test/e2e_env/universal/multiple-inbounds"
 	"testing"
 	"time"
 
@@ -116,3 +117,4 @@ var _ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)
 var _ = Describe("Transparent Proxy", transparentproxy.TransparentProxy, Ordered)
 var _ = Describe("Mesh Traffic Permission", meshtrafficpermission.MeshTrafficPermissionUniversal, Ordered)
 var _ = Describe("GRPC", grpc.GRPC, Ordered)
+var _ = FDescribe("Multiple inbounds mixup", multiple_inbounds.Test, Ordered)

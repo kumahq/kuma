@@ -114,6 +114,19 @@ type appDeploymentOptions struct {
 
 	dockerVolumes       []string
 	dockerContainerName string
+
+	secondaryProcess *secondaryProcess
+}
+
+type secondaryProcess struct {
+	port            string
+	servicePort     string
+	args            []string
+	protocol        string
+	serviceAddress  string
+	serviceName     string
+	serviceVersion  string
+	serviceInstance string
 }
 
 func (d *appDeploymentOptions) apply(opts ...AppDeploymentOption) {
@@ -495,6 +508,21 @@ func WithDockerVolumes(volumes ...string) AppDeploymentOption {
 func WithDockerContainerName(name string) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.dockerContainerName = name
+	})
+}
+
+func WithSecondaryApp(port, servicePort, serviceInstance, serviceAddress, serviceVersion, serviceName, protocol string, args []string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.secondaryProcess = &secondaryProcess{
+			port: port,
+			servicePort: servicePort,
+			serviceInstance: serviceInstance,
+			serviceAddress: serviceAddress,
+			serviceName: serviceName,
+			serviceVersion: serviceVersion,
+			protocol: protocol,
+			args: args,
+		}
 	})
 }
 

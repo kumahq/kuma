@@ -181,17 +181,20 @@ networking:
 )
 
 type UniversalApp struct {
-	t             testing.TestingT
-	mainApp       *ssh.App
-	mainAppEnv    map[string]string
-	mainAppArgs   []string
-	dpApp         *ssh.App
-	ports         map[string]string
-	container     string
-	containerName string
-	ip            string
-	verbose       bool
-	mesh          string
+	t                testing.TestingT
+	mainApp          *ssh.App
+	mainAppEnv       map[string]string
+	mainAppArgs      []string
+	secondaryApp     *ssh.App
+	secondaryAppEnv  map[string]string
+	secondaryAppArgs []string
+	dpApp            *ssh.App
+	ports            map[string]string
+	container        string
+	containerName    string
+	ip               string
+	verbose          bool
+	mesh             string
 }
 
 func NewUniversalApp(t testing.TestingT, clusterName, dpName, mesh string, mode AppMode, isipv6, verbose bool, caps []string, volumes []string, containerName string) (*UniversalApp, error) {
@@ -348,10 +351,32 @@ func (s *UniversalApp) ReStart() error {
 	return nil
 }
 
+func (s *UniversalApp) ReStartSecondaryApp() error {
+	if err := s.secondaryApp.Kill(); err != nil {
+		return err
+	}
+	if err := s.secondaryApp.ProcessWait(); err != nil {
+		return err
+	}
+
+	s.CreateSecondaryApp(s.secondaryAppEnv, s.secondaryAppArgs)
+
+	if err := s.secondaryApp.Start(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *UniversalApp) CreateMainApp(env map[string]string, args []string) {
 	s.mainAppEnv = env
 	s.mainAppArgs = args
 	s.mainApp = ssh.NewApp(s.containerName, s.verbose, s.ports[sshPort], env, args)
+}
+
+func (s *UniversalApp) CreateSecondaryApp(env map[string]string, args []string) {
+	s.secondaryAppEnv = env
+	s.secondaryAppArgs = args
+	s.secondaryApp = ssh.NewApp(s.containerName, s.verbose, s.ports[sshPort], env, args)
 }
 
 func (s *UniversalApp) OverrideDpVersion(version string) error {

@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"google.golang.org/grpc/reflection"
 	"net"
 
 	"github.com/spf13/cobra"
@@ -62,6 +63,7 @@ test-server grpc server --port 8080
 			}
 
 			s := grpc.NewServer()
+			reflection.Register(s)
 			api.RegisterGreeterServer(s, &grpcServer{
 				id: core.NewUUID(),
 			})
