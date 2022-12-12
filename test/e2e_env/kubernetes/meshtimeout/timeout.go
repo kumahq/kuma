@@ -17,7 +17,6 @@ var timeoutNamespace = "mesh-timeout-namespace"
 var meshName = "meshtimeout"
 
 func MeshTimeout() {
-
 	var clientPodName string
 
 	BeforeAll(func() {
@@ -40,6 +39,7 @@ func MeshTimeout() {
 	})
 
 	E2EAfterAll(func() {
+		Expect(env.Cluster.TriggerDeleteNamespace(timeoutNamespace)).To(Succeed())
 		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
@@ -50,11 +50,11 @@ func MeshTimeout() {
 		Expect(mts).To(HaveLen(0))
 		Eventually(func(g Gomega) {
 			start := time.Now()
-			stdout, _, err := env.Cluster.ExecWithOptions(execOptions(clientPodName))
+			stdout, _, err := env.Cluster.Exec(timeoutNamespace, clientPodName, "demo-client", "curl", "-v", "-H", "\"x-set-response-delay-ms: 5000\"", fmt.Sprintf("test-server_%s_svc_80.mesh", timeoutNamespace))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 			g.Expect(time.Since(start)).To(BeNumerically(">", time.Second*5))
-		}).Should(Succeed())
+		}).WithTimeout(30 * time.Second).Should(Succeed())
 
 		// when
 		Expect(YamlK8s(fmt.Sprintf(`
@@ -76,14 +76,14 @@ spec:
         http:
           requestTimeout: 2s
           maxStreamDuration: 20s
-`, timeoutNamespace))(env.Cluster)).To(Succeed())
+`, Config.KumaNamespace))(env.Cluster)).To(Succeed())
 
 		// then
 		Eventually(func(g Gomega) {
 			stdout, _, err := env.Cluster.ExecWithOptions(execOptions(clientPodName))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("upstream request timeout"))
-		}).Should(Succeed())
+		}).WithTimeout(30 * time.Second).Should(Succeed())
 	})
 }
 
