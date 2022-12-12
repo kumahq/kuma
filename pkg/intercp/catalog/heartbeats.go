@@ -24,7 +24,6 @@ func (h *Heartbeats) ResetAndCollect() []Instance {
 	for k := range currentInstances {
 		instances = append(instances, k)
 	}
-	h.instances = map[Instance]struct{}{}
 	return instances
 }
 

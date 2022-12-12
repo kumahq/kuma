@@ -2,7 +2,6 @@ package catalog
 
 import (
 	"context"
-	"sort"
 	"time"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -45,7 +44,6 @@ func (r *catalogWriter) Start(stop <-chan struct{}) error {
 		case <-ticker.C:
 			instances := r.heartbeats.ResetAndCollect()
 			instances = append(instances, r.instance)
-			sort.Stable(InstancesByID(instances))
 			updated, err := r.catalog.Replace(ctx, instances)
 			if err != nil {
 				writerLog.Error(err, "could not update catalog")

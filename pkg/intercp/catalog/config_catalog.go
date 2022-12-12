@@ -48,6 +48,7 @@ func (c *ConfigCatalog) Instances(ctx context.Context) ([]Instance, error) {
 }
 
 func (c *ConfigCatalog) Replace(ctx context.Context, instances []Instance) (bool, error) {
+	sort.Stable(InstancesByID(instances))
 	bytes, err := json.Marshal(ConfigInstances{
 		Instances: instances,
 	})

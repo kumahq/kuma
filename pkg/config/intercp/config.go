@@ -53,7 +53,7 @@ type CatalogConfig struct {
 }
 
 func (i *CatalogConfig) Validate() error {
-	if i.InstanceAddress != "" && !govalidator.IsDNSName(i.InstanceAddress) && govalidator.IsIP(i.InstanceAddress) {
+	if i.InstanceAddress != "" && !govalidator.IsDNSName(i.InstanceAddress) && !govalidator.IsIP(i.InstanceAddress) {
 		return errors.New(".InstanceAddress has to be valid IP or DNS address")
 	}
 	return nil
