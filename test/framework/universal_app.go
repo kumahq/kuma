@@ -458,7 +458,7 @@ func (s *UniversalApp) CreateDP(
 	s.dpApp = ssh.NewApp(s.containerName, s.verbose, s.ports[sshPort], nil, args)
 }
 
-func (s *UniversalApp) setupTransparent(cpIp string, builtindns bool) {
+func (s *UniversalApp) setupTransparent(cpIp string, builtindns bool, experimantalTransparentProxy bool) {
 	args := []string{
 		"/usr/bin/kumactl", "install", "transparent-proxy",
 		"--kuma-dp-user", "kuma-dp",
@@ -469,6 +469,12 @@ func (s *UniversalApp) setupTransparent(cpIp string, builtindns bool) {
 	if builtindns {
 		args = append(args,
 			"--redirect-dns",
+		)
+	}
+
+	if experimantalTransparentProxy {
+		args = append(args,
+			"--experimental-transparent-proxy-engine",
 		)
 	}
 
