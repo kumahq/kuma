@@ -2,6 +2,8 @@ package xds
 
 import (
 	_ "embed"
+	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"time"
 
 	. "github.com/onsi/gomega"
 
@@ -18,3 +20,9 @@ func ResourceArrayShouldEqual(resources core_xds.ResourceList, expected []string
 	}
 	Expect(len(resources)).To(Equal(len(expected)))
 }
+
+func ParseDuration(duration string) *k8s.Duration {
+	d, _ := time.ParseDuration(duration)
+	return &k8s.Duration{Duration: d}
+}
+

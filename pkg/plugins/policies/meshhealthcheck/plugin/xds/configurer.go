@@ -140,7 +140,7 @@ func httpHealthCheck(
         for _, status := range *httpConf.ExpectedStatuses {
             expectedStatuses = append(
                 expectedStatuses,
-                mapUInt32ToInt64Range(status),
+                mapUInt32ToInt64Range(uint32(status)),
             )
         }
 
@@ -219,8 +219,8 @@ func buildHealthCheck(conf api.Conf) *envoy_core.HealthCheck {
         },
         Interval:           util_proto.Duration(conf.Interval.Duration),
         Timeout:            util_proto.Duration(conf.Timeout.Duration),
-        UnhealthyThreshold: util_proto.UInt32(conf.UnhealthyThreshold),
-        HealthyThreshold:   util_proto.UInt32(conf.HealthyThreshold),
+        UnhealthyThreshold: util_proto.UInt32(uint32(conf.UnhealthyThreshold)),
+        HealthyThreshold:   util_proto.UInt32(uint32(conf.HealthyThreshold)),
     }
 
     if conf.InitialJitter != nil {
@@ -230,7 +230,7 @@ func buildHealthCheck(conf api.Conf) *envoy_core.HealthCheck {
         hc.IntervalJitter = util_proto.Duration(conf.IntervalJitter.Duration)
     }
     if conf.IntervalJitterPercent != nil {
-        hc.IntervalJitterPercent = *conf.IntervalJitterPercent
+        hc.IntervalJitterPercent = uint32(*conf.IntervalJitterPercent)
     }
     if conf.EventLogPath != nil {
         hc.EventLogPath = *conf.EventLogPath

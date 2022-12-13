@@ -42,7 +42,7 @@ func (in *Conf) DeepCopyInto(out *Conf) {
 	}
 	if in.IntervalJitterPercent != nil {
 		in, out := &in.IntervalJitterPercent, &out.IntervalJitterPercent
-		*out = new(uint32)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.HealthyPanicThreshold != nil {
