@@ -33,6 +33,9 @@ func autoconfigure(cfg *kuma_cp.Config) error {
 	}
 	autoconfigureServersTLS(cfg)
 	autoconfigBootstrapXdsParams(cfg)
+	if err := autoconfigureInterCp(cfg); err != nil {
+		return errors.Wrap(err, "could not autoconfigure Inter CP config")
+	}
 	return nil
 }
 
@@ -86,6 +89,7 @@ func autoconfigureServersTLS(cfg *kuma_cp.Config) {
 		cfg.DpServer.TlsMinVersion = cfg.General.TlsMinVersion
 		cfg.ApiServer.HTTPS.TlsMinVersion = cfg.General.TlsMinVersion
 		cfg.MonitoringAssignmentServer.TlsMinVersion = cfg.General.TlsMinVersion
+		cfg.InterCp.Server.TlsMinVersion = cfg.General.TlsMinVersion
 	}
 	if cfg.General.TlsMaxVersion != "" {
 		cfg.Diagnostics.TlsMaxVersion = cfg.General.TlsMaxVersion
@@ -93,6 +97,7 @@ func autoconfigureServersTLS(cfg *kuma_cp.Config) {
 		cfg.DpServer.TlsMaxVersion = cfg.General.TlsMaxVersion
 		cfg.ApiServer.HTTPS.TlsMaxVersion = cfg.General.TlsMaxVersion
 		cfg.MonitoringAssignmentServer.TlsMaxVersion = cfg.General.TlsMaxVersion
+		cfg.InterCp.Server.TlsMaxVersion = cfg.General.TlsMaxVersion
 	}
 	if len(cfg.General.TlsCipherSuites) > 0 {
 		cfg.Diagnostics.TlsCipherSuites = cfg.General.TlsCipherSuites
@@ -100,6 +105,7 @@ func autoconfigureServersTLS(cfg *kuma_cp.Config) {
 		cfg.DpServer.TlsCipherSuites = cfg.General.TlsCipherSuites
 		cfg.ApiServer.HTTPS.TlsCipherSuites = cfg.General.TlsCipherSuites
 		cfg.MonitoringAssignmentServer.TlsCipherSuites = cfg.General.TlsCipherSuites
+		cfg.InterCp.Server.TlsCipherSuites = cfg.General.TlsCipherSuites
 	}
 }
 
@@ -222,4 +228,22 @@ func saveKeyPair(pair tls.KeyPair, dir workDir) (string, string, error) {
 	}
 
 	return crtFile.Name(), keyFile.Name(), nil
+}
+
+func autoconfigureInterCp(cfg *kuma_cp.Config) error {
+	if cfg.InterCp.Catalog.InstanceAddress != "" {
+		return nil
+	}
+	ips, err := util_net.GetAllIPs(util_net.NonLoopback)
+	if err != nil {
+		return errors.Wrap(err, "could not list all IPs of the machine")
+	}
+	if len(ips) == 0 {
+		return errors.New("there is 0 non-loopback interfaces on the machine. Set KUMA_INTER_CP_CATALOG_INSTANCE_ADDRESS explicitly.")
+	}
+	if len(ips) > 1 {
+		log.Info("there are multiple non-loopback interfaces on the machine. It is recommended to set KUMA_INTER_CP_CATALOG_INSTANCE_ADDRESS explicitly to set IP on which other control plane instances in the cluster can communicate with this instance.")
+	}
+	cfg.InterCp.Catalog.InstanceAddress = ips[0]
+	return nil
 }

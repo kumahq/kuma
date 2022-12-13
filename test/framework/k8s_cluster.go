@@ -224,7 +224,7 @@ func (c *K8sCluster) WaitNamespaceDelete(namespace string) {
 	retry.DoWithRetry(c.t,
 		fmt.Sprintf("Wait for %s Namespace to terminate.", namespace),
 		c.defaultRetries,
-		5*c.defaultTimeout,
+		c.defaultTimeout,
 		func() (string, error) {
 			_, err := k8s.GetNamespaceE(c.t,
 				c.GetKubectlOptions(),
@@ -240,7 +240,7 @@ func (c *K8sCluster) WaitNodeDelete(node string) (string, error) {
 	return retry.DoWithRetryE(c.t,
 		fmt.Sprintf("Wait for %s node to terminate.", node),
 		c.defaultRetries,
-		5*c.defaultTimeout,
+		c.defaultTimeout,
 		func() (string, error) {
 			nodes, err := k8s.GetNodesE(c.t, c.GetKubectlOptions())
 			if err != nil {

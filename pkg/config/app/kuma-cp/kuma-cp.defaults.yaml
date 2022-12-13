@@ -490,6 +490,28 @@ dpServer:
       # UnhealthyThreshold is a number of unhealthy health checks required before a host is marked unhealthy
       unhealthyThreshold: 1 # ENV: KUMA_DP_SERVER_HDS_CHECK_UNHEALTHY_THRESHOLD
 
+# Intercommunication CP configuration
+interCp:
+  # Catalog configuration. Catalog keeps a record of all live CP instances in the zone.
+  catalog:
+    # Indicates an address on which other control planes can communicate with this CP.
+    # If empty then it's autoconfigured by taking the first IP of the nonloopback network interface.
+    instanceAddress: "" # ENV: KUMA_INTER_CP_CATALOG_INSTANCE_ADDRESS
+    # Interval on which CP will send heartbeat to a leader.
+    heartbeatInterval: 5s # ENV: KUMA_INTER_CP_CATALOG_HEARTBEAT_INTERVAL
+    # Interval on which CP will write all instances to a catalog.
+    writerInterval: 15s # ENV: KUMA_INTER_CP_CATALOG_WRITER_INTERVAL
+  # Intercommunication CP server configuration
+  server:
+    # Port of the inter-cp server
+    port: 5683 # ENV: KUMA_INTER_CP_SERVER_PORT
+    # TlsMinVersion the minimum version of TLS
+    tlsMinVersion: "TLSv1_2" # ENV: KUMA_INTER_CP_SERVER_TLS_MIN_VERSION
+    # TlsMaxVersion the maximum version of TLS
+    tlsMaxVersion: # ENV: KUMA_INTER_CP_SERVER_TLS_MAX_VERSION
+    # TlsCipherSuites the list of cipher suites
+    tlsCipherSuites: [ ] # ENV: KUMA_INTER_CP_SERVER_TLS_CIPHER_SUITES
+
 # Access Control configuration
 access:
   # Type of access strategy (available values: "static")
