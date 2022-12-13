@@ -61,7 +61,7 @@ properties:
                       description: The value of the :authority header in the gRPC health check request, by default name of the cluster this health check is associated with
                       type: string
                     disabled:
-                      description: If true the HealthCheck is disabled
+                      description: If true the GrpcHealthCheck is disabled
                       type: boolean
                     serviceName:
                       description: Service name parameter which will be sent to gRPC service
@@ -79,7 +79,7 @@ properties:
                   description: HttpHealthCheck defines HTTP configuration which will instruct the service the health check will be made for is an HTTP service.
                   properties:
                     disabled:
-                      description: If true the HealthCheck is disabled
+                      description: If true the HttpHealthCheck is disabled
                       type: boolean
                     expectedStatuses:
                       description: List of HTTP response statuses which are considered healthy
@@ -133,7 +133,7 @@ properties:
                   description: TcpHealthCheck defines configuration for specifying bytes to send and expected response during the health check
                   properties:
                     disabled:
-                      description: If true the HealthCheck is disabled
+                      description: If true the TcpHealthCheck is disabled
                       type: boolean
                     receive:
                       description: Bytes blocks expected as a response. When checking the response, “fuzzy” matching is performed such that each block must be found, and in the order specified, but not necessarily contiguous.

@@ -30,14 +30,14 @@ type To struct {
 
 type Conf struct {
 	// Interval between consecutive health checks.
-	Interval *k8s.Duration `json:"interval,omitempty"`
+	Interval k8s.Duration `json:"interval,omitempty"`
 	// Maximum time to wait for a health check response.
-	Timeout *k8s.Duration `json:"timeout,omitempty"`
+	Timeout k8s.Duration `json:"timeout,omitempty"`
 	// Number of consecutive unhealthy checks before considering a host
 	// unhealthy.
-	UnhealthyThreshold *int32 `json:"unhealthyThreshold,omitempty"`
+	UnhealthyThreshold uint32 `json:"unhealthyThreshold,omitempty"`
 	// Number of consecutive healthy checks before considering a host healthy.
-	HealthyThreshold *int32 `json:"healthyThreshold,omitempty"`
+	HealthyThreshold uint32 `json:"healthyThreshold,omitempty"`
 	// If specified, Envoy will start health checking after a random time in
 	// ms between 0 and initialJitter. This only applies to the first health
 	// check.
@@ -49,7 +49,7 @@ type Conf struct {
 	// IntervalJitterPercent / 100 to the wait time. If IntervalJitter and
 	// IntervalJitterPercent are both set, both of them will be used to
 	// increase the wait time.
-	IntervalJitterPercent *int32 `json:"intervalJitterPercent,omitempty"`
+	IntervalJitterPercent *uint32 `json:"intervalJitterPercent,omitempty"`
 	// Allows to configure panic threshold for Envoy cluster. If not specified,
 	// the default is 50%. To disable panic mode, set to 0%.
 	HealthyPanicThreshold *int32 `json:"healthyPanicThreshold,omitempty"`
@@ -84,7 +84,7 @@ type Conf struct {
 // TcpHealthCheck defines configuration for specifying bytes to send and
 // expected response during the health check
 type TcpHealthCheck struct {
-	// If true the HealthCheck is disabled
+	// If true the TcpHealthCheck is disabled
 	//  +optional
 	Disabled bool `json:"disabled,omitempty"`
 	// Bytes which will be sent during the health check to the target
@@ -98,7 +98,7 @@ type TcpHealthCheck struct {
 // HttpHealthCheck defines HTTP configuration which will instruct the service
 // the health check will be made for is an HTTP service.
 type HttpHealthCheck struct {
-	// If true the HealthCheck is disabled
+	// If true the HttpHealthCheck is disabled
 	//  +optional
 	Disabled bool `json:"disabled,omitempty"`
 	// The HTTP path which will be requested during the health check
@@ -111,13 +111,13 @@ type HttpHealthCheck struct {
 	RequestHeadersToAdd *[]HeaderValueOption `json:"requestHeadersToAdd,omitempty"`
 	// List of HTTP response statuses which are considered healthy
 	//  +optional
-	ExpectedStatuses *[]int32 `json:"expectedStatuses,omitempty"`
+	ExpectedStatuses *[]uint32 `json:"expectedStatuses,omitempty"`
 }
 
 // GrpcHealthCheck defines gRPC configuration which will instruct the service
 // the health check will be made for is a gRPC service.
 type GrpcHealthCheck struct {
-	// If true the HealthCheck is disabled
+	// If true the GrpcHealthCheck is disabled
 	//  +optional
 	Disabled bool `json:"disabled,omitempty"`
 	// Service name parameter which will be sent to gRPC service

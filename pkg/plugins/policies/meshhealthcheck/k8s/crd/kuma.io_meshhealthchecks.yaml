@@ -103,7 +103,7 @@ spec:
                                 cluster this health check is associated with
                               type: string
                             disabled:
-                              description: If true the HealthCheck is disabled
+                              description: If true the GrpcHealthCheck is disabled
                               type: boolean
                             serviceName:
                               description: Service name parameter which will be sent
@@ -127,7 +127,7 @@ spec:
                             be made for is an HTTP service.
                           properties:
                             disabled:
-                              description: If true the HealthCheck is disabled
+                              description: If true the HttpHealthCheck is disabled
                               type: boolean
                             expectedStatuses:
                               description: List of HTTP response statuses which are
@@ -205,7 +205,7 @@ spec:
                             check
                           properties:
                             disabled:
-                              description: If true the HealthCheck is disabled
+                              description: If true the TcpHealthCheck is disabled
                               type: boolean
                             receive:
                               description: Bytes blocks expected as a response. When
