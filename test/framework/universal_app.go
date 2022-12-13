@@ -469,6 +469,7 @@ func (s *UniversalApp) setupTransparent(cpIp string, builtindns bool, experimant
 
 	if experimantalTransparentProxy {
 		args = append(args,
+			"--exclude-inbound-port", "22",
 			"--experimental-transparent-proxy-engine",
 		)
 	}
