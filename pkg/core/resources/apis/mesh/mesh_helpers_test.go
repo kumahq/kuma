@@ -284,7 +284,7 @@ var _ = Describe("MeshResource", func() {
 		)
 	})
 	Describe("MarshalLog", func() {
-		It("should marshal log without panicking", func() {
+		It("should mask the sensitive information when marshaling", func() {
 			// given
 			conf, _ := util_proto.ToStruct(&config.ProvidedCertificateAuthorityConfig{
 				Cert: &v1alpha1.DataSource{Type: &v1alpha1.DataSource_Inline{Inline: util_proto.Bytes([]byte("secret1"))}},

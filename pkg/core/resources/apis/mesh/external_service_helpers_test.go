@@ -11,7 +11,7 @@ import (
 
 var _ = Describe("ExternalServiceResource", func() {
 	Describe("MarshalLog", func() {
-		It("should marshal log without panicking", func() {
+		It("should mask the sensitive information when marshaling", func() {
 			// given
 			meshResourceList := ExternalServiceResourceList{
 				Items: []*ExternalServiceResource{
