@@ -17,6 +17,15 @@ type Configurer struct {
     Protocol core_mesh.Protocol
 }
 
+type HCProtocol string
+
+const (
+    HCProtocolTCP     = "tcp"
+    HCProtocolHTTP    = "http"
+    HCProtocolGRPC    = "grpc"
+    None              = "none"
+)
+
 func (e *Configurer) Configure(cluster *envoy_cluster.Cluster) error {
     activeChecks := e.Conf
 
@@ -25,30 +34,42 @@ func (e *Configurer) Configure(cluster *envoy_cluster.Cluster) error {
 
     tcp := activeChecks.Tcp
     http := activeChecks.Http
+    grpc := activeChecks.Grpc
 
-    if tcp == nil && http == nil {
-        cluster.HealthChecks = append(cluster.HealthChecks, buildHealthCheck(activeChecks))
+    hcType := selectHealthCheckType(e.Protocol, tcp, http, grpc)
 
-        return nil
-    }
-
-    if tcp != nil {
+    if hcType != None {
         defaultHealthCheck := buildHealthCheck(activeChecks)
-        healthChecker := tcpHealthCheck(tcp)
+        var healthChecker interface{}
+        if hcType == HCProtocolTCP {
+            healthChecker = tcpHealthCheck(tcp)
+        } else if hcType == HCProtocolHTTP {
+            healthChecker = httpHealthCheck(e.Protocol, http)
+        } else if hcType == HCProtocolGRPC {
+            healthChecker = grpcHealthCheck(grpc)
+        }
+
         healthCheck := addHealthChecker(defaultHealthCheck, healthChecker)
-
-        cluster.HealthChecks = append(cluster.HealthChecks, healthCheck)
-    }
-
-    if http != nil {
-        defaultHealthCheck := buildHealthCheck(activeChecks)
-        healthChecker := httpHealthCheck(e.Protocol, http)
-        healthCheck := addHealthChecker(defaultHealthCheck, healthChecker)
-
         cluster.HealthChecks = append(cluster.HealthChecks, healthCheck)
     }
 
     return nil
+}
+
+func selectHealthCheckType(protocol core_mesh.Protocol, tcp *api.TcpHealthCheck, http *api.HttpHealthCheck, grpc *api.GrpcHealthCheck) HCProtocol {
+    if (protocol == core_mesh.ProtocolHTTP || protocol == core_mesh.ProtocolHTTP2) && http != nil && http.Disabled == false {
+        return HCProtocolHTTP
+    }
+
+    if protocol == core_mesh.ProtocolGRPC && grpc != nil && grpc.Disabled == false {
+        return HCProtocolGRPC
+    }
+
+    if protocol == core_mesh.ProtocolTCP && tcp != nil && tcp.Disabled == false {
+        return HCProtocolTCP
+    }
+
+    return None
 }
 
 func mapUInt32ToInt64Range(value uint32) *envoy_type.Int64Range {
@@ -142,6 +163,20 @@ func httpHealthCheck(
     }
 }
 
+func grpcHealthCheck(
+    grpcConf *api.GrpcHealthCheck,
+) *envoy_core.HealthCheck_GrpcHealthCheck_ {
+
+    grpcHealthCheck := envoy_core.HealthCheck_GrpcHealthCheck{
+        ServiceName: grpcConf.ServiceName,
+        Authority: grpcConf.Authority,
+    }
+
+    return &envoy_core.HealthCheck_GrpcHealthCheck_{
+        GrpcHealthCheck: &grpcHealthCheck,
+    }
+}
+
 func healthPanicThreshold(cluster *envoy_cluster.Cluster, value *int32) {
     if value == nil {
         return
@@ -218,6 +253,8 @@ func addHealthChecker(healthCheck *envoy_core.HealthCheck, healthChecker interfa
         healthCheck.HealthChecker = httpHc
     } else if tcpHc, ok := healthChecker.(*envoy_core.HealthCheck_TcpHealthCheck_); ok {
         healthCheck.HealthChecker = tcpHc
+    } else if grpcHc, ok := healthChecker.(*envoy_core.HealthCheck_GrpcHealthCheck_); ok {
+        healthCheck.HealthChecker = grpcHc
     }
 
     return healthCheck
