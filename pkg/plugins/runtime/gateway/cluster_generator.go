@@ -37,7 +37,7 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 	// an array of endpoint and checks whether the first entry is from
 	// an external service. Because the dataplane endpoints happen to be
 	// generated first, the mesh service will have priority.
-	for _, dest := range routeDestinationsMutable(hostInfo.Entries) {
+	for _, dest := range RouteDestinationsMutable(hostInfo.Entries) {
 		service := dest.Destination[mesh_proto.ServiceTag]
 
 		firstEndpointExternalService := route.HasExternalServiceEndpoint(xdsCtx.Mesh.Resource, info.OutboundEndpoints, *dest)
@@ -242,14 +242,14 @@ func buildClusterResource(
 func routeDestinations(entries []route.Entry) []route.Destination {
 	var destinations []route.Destination
 
-	for _, dest := range routeDestinationsMutable(entries) {
+	for _, dest := range RouteDestinationsMutable(entries) {
 		destinations = append(destinations, *dest)
 	}
 
 	return destinations
 }
 
-func routeDestinationsMutable(entries []route.Entry) []*route.Destination {
+func RouteDestinationsMutable(entries []route.Entry) []*route.Destination {
 	var destinations []*route.Destination
 
 	for _, e := range entries {
