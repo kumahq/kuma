@@ -2,8 +2,8 @@ apiVersion: v2
 name: kuma
 description: A Helm chart for the Kuma Control Plane
 type: application
-version: 1.8.0
-appVersion: 1.8.0
+version: 0.0.0-preview.vlocal-build # this is updated by release pipeline
+appVersion: 0.0.0-preview.vlocal-build # this is updated by release pipeline
 home: https://github.com/kumahq/kuma
 maintainers:
   - name: austince
@@ -12,7 +12,7 @@ maintainers:
     email: jakub.dyszkiewicz@konghq.com
   - name: nickolaev
     email: nikolay.nikolaev@konghq.com
-icon: https://kuma.io/images/brand/kuma-logo-new.svg
+icon: https://kuma.io/assets/images/brand/kuma-logo-new.svg
 keywords:
   - service mesh
   - control plane

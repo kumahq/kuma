@@ -68,7 +68,7 @@ func CreateCA(ctx context.Context, keyPair util_tls.KeyPair, resManager manager.
 func GenerateClientCert(ca tls.Certificate) (util_tls.KeyPair, error) {
 	rootCert, err := x509.ParseCertificate(ca.Certificate[0])
 	if err != nil {
-		return util_tls.KeyPair{}, nil
+		return util_tls.KeyPair{}, err
 	}
 	return util_tls.NewCert(*rootCert, ca.PrivateKey.(*rsa.PrivateKey), ClientCertSAN, util_tls.ClientCertType, util_tls.DefaultKeyType, ClientCertSAN)
 }
@@ -76,7 +76,7 @@ func GenerateClientCert(ca tls.Certificate) (util_tls.KeyPair, error) {
 func GenerateServerCert(ca tls.Certificate, ip string) (util_tls.KeyPair, error) {
 	rootCert, err := x509.ParseCertificate(ca.Certificate[0])
 	if err != nil {
-		return util_tls.KeyPair{}, nil
+		return util_tls.KeyPair{}, err
 	}
 	return util_tls.NewCert(*rootCert, ca.PrivateKey.(*rsa.PrivateKey), ip, util_tls.ServerCertType, util_tls.DefaultKeyType, ip)
 }

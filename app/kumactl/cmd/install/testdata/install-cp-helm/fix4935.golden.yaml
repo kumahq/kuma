@@ -486,7 +486,7 @@ spec:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
       annotations:
-        checksum/config: 850246b56a69bba30d67145d2efc88941f6c91badd116beca4123d75c70a39ec
+        checksum/config: 44d3893921ccaa4dd818a16ee3e2de3ddea9331c8f2857dd83bca030a5d2c5be
         foo: "{\"bar\": \"baz\"}"
         pod: "cni"
     spec:
@@ -572,8 +572,8 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: c52be51867deb8823a422dc1d188c7a2ab7fc5e501f620467d7fdd8fc4637d47
-        checksum/tls-secrets: f2b839fba4528789a57555bf86c5f72895c01f10ed54c41dfa6db89516c2656a
+        checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
+        checksum/tls-secrets: dc0b7b56b099dd8de36ea187e11bf18eeed173fb3e0a9fc200e46fd074c0b7c9
         bim: "bam"
         foo: "{\"bar\": \"baz\"}"
       labels: 
@@ -657,6 +657,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            - name: KUMA_INTER_CP_CATALOG_INSTANCE_ADDRESS
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
           args:
             - run
             - --log-level=info

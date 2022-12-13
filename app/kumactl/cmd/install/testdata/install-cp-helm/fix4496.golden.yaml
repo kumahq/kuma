@@ -365,8 +365,8 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 8e3d9b7078c00005eae94f443d41866ae6d12b93b99888c865c01e843e16dd38
-        checksum/tls-secrets: 054700a6417da21882f65a6642d22eafeb3e190d2734f4d9f45e36fe29420b64
+        checksum/config: 2f553eadd8f68661f4b1fd0b3ccbbc562943d89fa76f2f2ba2975541290fda71
+        checksum/tls-secrets: 1f039c439cf6ef735ce4689ac658b9d2cb022c3884459bdf1c626a51eeb98f95
       labels: 
         app: kuma-control-plane
         "foo": "bar"
@@ -449,6 +449,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            - name: KUMA_INTER_CP_CATALOG_INSTANCE_ADDRESS
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
           args:
             - run
             - --log-level=info
