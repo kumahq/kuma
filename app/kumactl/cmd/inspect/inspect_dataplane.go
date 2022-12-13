@@ -24,18 +24,18 @@ const (
 
 var dataplaneInspectTemplate = `{{ with IsSidecar . }}{{ range $num, $item := .Items }}{{ .AttachmentEntry | FormatAttachment }}:
 {{ range $typ, $policies := .MatchedPolicies }}  {{ $typ }}
-    {{ range $policies }}{{ .Meta.Name }}
+    {{ range $policies }}{{ .Name }}
 {{ end }}{{ end }}
 {{ end }}{{ end }}{{ with IsGateway . }}MESHGATEWAY:
 {{ range $typ, $policy := .Policies }}  {{ $typ }}
-    {{ .Meta.Name }}
+    {{ .Name }}
 {{ end }}
 {{ range .Listeners }}LISTENER ({{ .Protocol }}:{{ .Port }}):
 {{ range .Hosts }}  {{ .HostName }}:
 {{ range .Routes }}    ROUTE {{ .Route }}:
 {{ range .Destinations }}      {{ FormatTags .Tags }}:
 {{ range $typ, $policy := .Policies }}        {{ $typ }}
-          {{ .Meta.Name }}
+          {{ .Name }}
 {{ end }}
 {{ end }}{{ end }}{{ end }}{{ end }}{{ end }}`
 

@@ -6,13 +6,13 @@ import (
 	"github.com/pkg/errors"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 )
 
 type AttachmentEntry struct {
 	Type    string `json:"type"`
-	Name    string `json:"name"`
-	Service string `json:"service"`
+	Name    string `json:"name,omitempty"`
+	Service string `json:"service,omitempty"`
 }
 
 type ResourceKeyEntry struct {
@@ -133,7 +133,9 @@ func NewPolicyInspectEntryList() *PolicyInspectEntryList {
 	}
 }
 
-type MatchedPolicies map[core_model.ResourceType][]*unversioned.Resource
+type MatchedPolicies map[core_model.ResourceType][]v1alpha1.ResourceMeta
+
+type PolicyMap map[core_model.ResourceType]v1alpha1.ResourceMeta
 
 type DataplaneInspectResponseKind interface {
 	dataplaneInspectEntry()
