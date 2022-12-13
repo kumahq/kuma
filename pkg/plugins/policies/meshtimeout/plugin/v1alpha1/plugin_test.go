@@ -87,9 +87,9 @@ var _ = Describe("MeshTimeout", func() {
 
 		// when
 		plugin := NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(plugin.Apply(resourceSet, context, &proxy)).To(Succeed())
 
 		// then
-		Expect(plugin.Apply(resourceSet, context, &proxy)).To(Succeed())
 		Expect(getResourceYaml(resourceSet.ListOf(envoy_resource.ListenerType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", given.expectedListener)))
 		Expect(getResourceYaml(resourceSet.ListOf(envoy_resource.ClusterType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", given.expectedCluster)))
 	},
@@ -278,9 +278,9 @@ var _ = Describe("MeshTimeout", func() {
 
 		// when
 		plugin := NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(plugin.Apply(generatedResources, context, &proxy)).To(Succeed())
 
 		// then
-		Expect(plugin.Apply(generatedResources, context, &proxy)).To(Succeed())
 		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ListenerType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "gateway_listener.golden.yaml")))
 		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ClusterType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "gateway_cluster.golden.yaml")))
 		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.RouteType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "gateway_route.golden.yaml")))
