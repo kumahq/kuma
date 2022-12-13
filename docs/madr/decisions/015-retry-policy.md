@@ -109,7 +109,7 @@ default:
     additionalRetriableStatusCodes:
       - 500
       - 504 
-    retriableHeaders:
+    retriableResponseHeaders:
       - name: header-name
         exact: value
     retriableRequestHeaders:
@@ -139,7 +139,7 @@ because this field provides additional status codes to whatever already specifie
 Today there is a validation if you set `retriableStatusCodes` you must provide `retriable_status_codes` to the `retryOn` list. 
 Due to a multi-level organisation of policies now it's impossible to validate.
 I think the best option is to add `retriable_status_codes` to `retryOn` automatically if `additionalRetriableStatusCodes` is specified. 
-3. New field `retriableHeaders` (or `retriableResponseHeaders`). Even though we have already had `retryOn.retriable_headers` 
+3. New field `retriableResponseHeaders`. Even though we have already had `retryOn.retriable_headers` 
 there was no way to provide a list of headers. 
 If this field is set we automatically add `retriable_headers` to `retryOn`.
 4. New field `retriableRequestHeaders`. Purely for the sake of symmetry, 
