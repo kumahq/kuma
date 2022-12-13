@@ -33,6 +33,14 @@
    "isExperimental": false
   },
   {
+   "name": "MeshCircuitBreaker",
+   "readOnly": false,
+   "path": "meshcircuitbreakers",
+   "singularDisplayName": "Mesh Circuit Breaker",
+   "pluralDisplayName": "Mesh Circuit Breakers",
+   "isExperimental": false
+  },
+  {
    "name": "MeshGateway",
    "readOnly": false,
    "path": "meshgateways",

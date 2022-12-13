@@ -154,6 +154,7 @@ rules:
       - meshgatewayinstances
       - meshgatewayconfigs
       - meshaccesslogs
+      - meshcircuitbreakers
       - meshratelimits
       - meshtimeouts
       - meshtraces
@@ -327,7 +328,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 154c47a95fc93687dd1e825cea7f843d0fe8c450f82014d27cd7eb1a49f3bd35
-        checksum/tls-secrets: ebc956ec31130f277253f5bcc2c74f76931528008c27559c6f23fa83e2b74126
+        checksum/tls-secrets: 5cd97a0f2e4b5f203002667c5d45fad513e5e7fcae5c9f6ff228714027e4f0d3
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -525,6 +526,7 @@ webhooks:
         resources:
           - meshes
           - meshaccesslogs
+          - meshcircuitbreakers
           - meshratelimits
           - meshtimeouts
           - meshtraces
@@ -563,6 +565,7 @@ webhooks:
           - traffictraces
           - virtualoutbounds
           - meshaccesslogs
+          - meshcircuitbreakers
           - meshratelimits
           - meshtimeouts
           - meshtraces
@@ -683,6 +686,7 @@ webhooks:
           - zones
           - containerpatches
           - meshaccesslogs
+          - meshcircuitbreakers
           - meshratelimits
           - meshtimeouts
           - meshtraces

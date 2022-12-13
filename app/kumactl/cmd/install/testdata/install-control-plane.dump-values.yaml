@@ -695,6 +695,7 @@ experimental:
 plugins:
   policies:
     - meshaccesslogs
+    - meshcircuitbreakers
     - meshratelimits
     - meshtimeouts
     - meshtraces

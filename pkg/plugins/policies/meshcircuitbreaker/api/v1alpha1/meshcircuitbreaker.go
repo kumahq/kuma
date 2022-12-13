@@ -8,7 +8,6 @@ import (
 )
 
 // MeshCircuitBreaker
-// +kuma:policy:skip_registration=true
 type MeshCircuitBreaker struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
