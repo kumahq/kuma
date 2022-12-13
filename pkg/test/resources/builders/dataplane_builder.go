@@ -161,6 +161,16 @@ func (d *DataplaneBuilder) WithPrometheusMetrics(config *mesh_proto.PrometheusMe
 	return d
 }
 
+func (d *DataplaneBuilder) WithBuiltInGateway(name string) *DataplaneBuilder {
+	d.res.Spec.Networking.Gateway = &mesh_proto.Dataplane_Networking_Gateway{
+		Tags: map[string]string{
+			mesh_proto.ServiceTag: name,
+		},
+		Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
+	}
+	return d
+}
+
 type InboundBuilder struct {
 	res *mesh_proto.Dataplane_Networking_Inbound
 }

@@ -38,14 +38,15 @@ var _ = Describe("Heartbeats", func() {
 		pingClient = &staticPingClient{
 			leader: true,
 		}
+		pc := pingClient // copy pointer to get rid of data race
 
 		heartbeatComponent = catalog.NewHeartbeatComponent(
 			c,
 			currentInstance,
 			10*time.Millisecond,
 			func(serverURL string) (catalog.Client, error) {
-				pingClient.SetServerURL(serverURL)
-				return pingClient, nil
+				pc.SetServerURL(serverURL)
+				return pc, nil
 			},
 		)
 

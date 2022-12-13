@@ -100,11 +100,12 @@ In this policy same limitations applies as in `MeshAccessLog` [policy](https://g
 ```yaml
 from:
   - targetRef:
-      kind: Mesh|MeshSubset|MeshService|MeshServiceSubset
+      kind: Mesh
       name: ...
 ```
 
-Matching on MeshGatewayRoute and MeshHTTPRoute does not make sense (there is no route that a request originates from).
+Since timeouts are mostly configured on clusters and listeners there and we have single inbound in most cases we can only
+configure `Mesh` kind in from section.
 
 #### To level
 
@@ -239,11 +240,10 @@ spec:
   targetRef:
     kind: MeshGatewayRoute
     name: default-gateway-route
-  from:
+  to:
     - targetRef:
         kind: MeshService
         name: backend
-        mesh: consume
       default:
         idleTimeout: 30m
         http:
