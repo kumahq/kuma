@@ -20,9 +20,7 @@
    },
    "attachments": [
     {
-     "type": "dataplane",
-     "name": "",
-     "service": ""
+     "type": "dataplane"
     }
    ]
   },
@@ -34,9 +32,7 @@
    },
    "attachments": [
     {
-     "type": "dataplane",
-     "name": "",
-     "service": ""
+     "type": "dataplane"
     }
    ]
   },
@@ -48,9 +44,7 @@
    },
    "attachments": [
     {
-     "type": "dataplane",
-     "name": "",
-     "service": ""
+     "type": "dataplane"
     }
    ]
   }

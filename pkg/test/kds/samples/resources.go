@@ -6,7 +6,8 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	meshtrafficpermissions_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	meshaccesslog "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	meshtrafficpermissions "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -370,17 +371,38 @@ var (
 			},
 		},
 	}
-	MeshTrafficPermission = &meshtrafficpermissions_proto.MeshTrafficPermission{
+	MeshTrafficPermission = &meshtrafficpermissions.MeshTrafficPermission{
 		TargetRef: common_api.TargetRef{
 			Kind: "Mesh",
 		},
-		From: []meshtrafficpermissions_proto.From{
+		From: []meshtrafficpermissions.From{
 			{
 				TargetRef: common_api.TargetRef{
 					Kind: "Mesh",
 				},
-				Default: meshtrafficpermissions_proto.Conf{
+				Default: meshtrafficpermissions.Conf{
 					Action: "ALLOW",
+				},
+			},
+		},
+	}
+	MeshAccessLog = &meshaccesslog.MeshAccessLog{
+		TargetRef: common_api.TargetRef{
+			Kind: "Mesh",
+		},
+		From: []meshaccesslog.From{
+			{
+				TargetRef: common_api.TargetRef{
+					Kind: "Mesh",
+				},
+				Default: meshaccesslog.Conf{
+					Backends: []meshaccesslog.Backend{
+						{
+							File: &meshaccesslog.FileBackend{
+								Path: "/dev/null",
+							},
+						},
+					},
 				},
 			},
 		},
