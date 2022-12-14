@@ -9,9 +9,7 @@
    },
    "attachments": [
     {
-     "type": "dataplane",
-     "name": "",
-     "service": ""
+     "type": "dataplane"
     }
    ]
   }

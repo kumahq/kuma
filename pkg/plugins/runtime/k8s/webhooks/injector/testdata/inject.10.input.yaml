@@ -5,7 +5,7 @@ metadata:
   labels:
     run: busybox
   annotations:
-    kuma.io/sidecar-injection: disabled
+    kuma.io/sidecar-injection: enabled
 spec:
   volumes:
   - name: default-token-w7dxf

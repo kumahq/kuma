@@ -4,41 +4,23 @@ metadata:
   name: busybox
   labels:
     run: busybox
+  annotations:
+    docs: "Documentation"
+    kuma.io/sidecar-env-vars: "KUMA_DATAPLANE_DRAIN_TIME=5s;NEW_ENV_VAR=123" # drain time overrides the file, NEW_ENV_VAR is completely new var
 spec:
   volumes:
-    - name: default-token-w7dxf
-      secret:
-        secretName: default-token-w7dxf
+  - name: default-token-w7dxf
+    secret:
+      secretName: default-token-w7dxf
   containers:
-    - name: busybox
+  - name: busybox
+    image: busybox
+    resources: {}
+    volumeMounts:
+    - name: default-token-w7dxf
+      readOnly: true
+      mountPath: "/var/run/secrets/kubernetes.io/serviceaccount"
+  initContainers:
+    - name: init
       image: busybox
-      resources: {}
-      ports:
-        - name: readiness-port
-          containerPort: 3001
-        - name: liveness-port
-          containerPort: 8080
-        - name: startup-port
-          containerPort: 8081
-      readinessProbe:
-        httpGet:
-          path: /metrics
-          port: readiness-port
-        initialDelaySeconds: 3
-        periodSeconds: 3
-      livenessProbe:
-        httpGet:
-          path: /metrics
-          port: liveness-port
-        initialDelaySeconds: 3
-        periodSeconds: 3
-      startupProbe:
-        httpGet:
-          path: /startup
-          port: startup-port
-        initialDelaySeconds: 3
-        periodSeconds: 3
-      volumeMounts:
-        - name: default-token-w7dxf
-          readOnly: true
-          mountPath: "/var/run/secrets/kubernetes.io/serviceaccount"
+      command: ['sh', '-c', 'sleep 5']

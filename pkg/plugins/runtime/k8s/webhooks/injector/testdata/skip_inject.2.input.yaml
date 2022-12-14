@@ -4,9 +4,7 @@ metadata:
   name: busybox
   labels:
     run: busybox
-  annotations:
-    traffic.kuma.io/exclude-inbound-ports: ""
-    traffic.kuma.io/exclude-outbound-ports: ""
+    openshift.io/deployer-pod-for.name: "1234"
 spec:
   volumes:
   - name: default-token-w7dxf
@@ -20,7 +18,3 @@ spec:
     - name: default-token-w7dxf
       readOnly: true
       mountPath: "/var/run/secrets/kubernetes.io/serviceaccount"
-  initContainers:
-    - name: init
-      image: busybox
-      command: ['sh', '-c', 'sleep 5']

@@ -5,8 +5,7 @@ metadata:
   labels:
     run: busybox
   annotations:
-    traffic.kuma.io/exclude-inbound-ports: ""
-    traffic.kuma.io/exclude-outbound-ports: ""
+    kuma.io/sidecar-injection: disabled
 spec:
   volumes:
   - name: default-token-w7dxf
@@ -20,7 +19,3 @@ spec:
     - name: default-token-w7dxf
       readOnly: true
       mountPath: "/var/run/secrets/kubernetes.io/serviceaccount"
-  initContainers:
-    - name: init
-      image: busybox
-      command: ['sh', '-c', 'sleep 5']

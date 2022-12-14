@@ -13,21 +13,14 @@ metadata:
     kuma.io/transparent-proxying-outbound-port: "15001"
     kuma.io/virtual-probes: enabled
     kuma.io/virtual-probes-port: "9000"
-    traffic.kuma.io/exclude-inbound-ports: 1234,1235
-    traffic.kuma.io/exclude-outbound-ports: "1236"
+    traffic.kuma.io/exclude-inbound-ports: 1234,5678
+    traffic.kuma.io/exclude-outbound-ports: 4321,7654
   creationTimestamp: null
   labels:
     run: busybox
   name: busybox
 spec:
   containers:
-  - image: busybox
-    name: busybox
-    resources: {}
-    volumeMounts:
-    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-      name: default-token-w7dxf
-      readOnly: true
   - args:
     - run
     - --log-level=info
@@ -117,6 +110,13 @@ spec:
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: default-token-w7dxf
       readOnly: true
+  - image: busybox
+    name: busybox
+    resources: {}
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-w7dxf
+      readOnly: true
   initContainers:
   - command:
     - sh
@@ -136,9 +136,9 @@ spec:
     - --kuma-dp-uid
     - "5678"
     - --exclude-inbound-ports
-    - 1234,1235
+    - 1234,5678
     - --exclude-outbound-ports
-    - "1236"
+    - 4321,7654
     - --verbose
     - --skip-resolv-conf
     command:
