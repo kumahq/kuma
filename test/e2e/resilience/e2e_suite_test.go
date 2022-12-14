@@ -17,4 +17,4 @@ var _ = Describe("Test Leader Election with Postgres", Label("job-1"), resilienc
 var _ = Describe("Test Multizone Resilience for Universal", Label("job-0"), resilience.ResilienceMultizoneUniversal)
 var _ = Describe("Test Multizone Resilience for K8s", Label("job-2"), resilience.ResilienceMultizoneK8s, Ordered)
 var _ = Describe("Test Multizone Resilience for Universal with Postgres", Label("job-3"), resilience.ResilienceMultizoneUniversalPostgres)
-var _ = Describe("Test Standalone Resilience for Universal with Postgres", Label("job-4"), resilience.ResilienceStandaloneUniversal)
+var _ = Describe("Test Standalone Resilience for Universal with Postgres", Label("job-2"), resilience.ResilienceStandaloneUniversal)
