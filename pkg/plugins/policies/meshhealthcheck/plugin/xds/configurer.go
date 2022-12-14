@@ -1,6 +1,7 @@
 package xds
 
 import (
+    "encoding/hex"
     envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
     envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
     envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
@@ -118,7 +119,7 @@ func tcpHealthCheck(
     if tcpConf.Send != nil {
         tcpHealthCheck.Send = &envoy_core.HealthCheck_Payload{
             Payload: &envoy_core.HealthCheck_Payload_Text{
-                Text: *tcpConf.Send,
+                Text: hex.EncodeToString([]byte(*tcpConf.Send)),
             },
         }
     }
@@ -128,7 +129,7 @@ func tcpHealthCheck(
         for _, r := range *tcpConf.Receive {
             receive = append(receive, &envoy_core.HealthCheck_Payload{
                 Payload: &envoy_core.HealthCheck_Payload_Text{
-                    Text: r,
+                    Text: hex.EncodeToString([]byte(r)),
                 },
             })
         }

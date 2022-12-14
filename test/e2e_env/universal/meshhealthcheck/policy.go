@@ -1,7 +1,9 @@
 package meshhealthcheck
 
 import (
+	"encoding/base64"
 	"fmt"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -47,7 +49,7 @@ spec:
 				Install(DemoClientUniversal("dp-demo-client", meshName,
 					WithTransparentProxy(true)),
 				).
-				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"health-check", "http"}))).
+				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(mesh.ProtocolHTTP))).
 				Setup(env.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -87,10 +89,13 @@ spec:
 
 	Describe("TCP", func() {
 		healthCheck := func(mesh, serviceName, send, recv string) string {
+			sendBase64 := base64.StdEncoding.EncodeToString([]byte(send))
+			recvBase64 := base64.StdEncoding.EncodeToString([]byte(recv))
+
 			return fmt.Sprintf(`
 type: MeshHealthCheck
 mesh: %s
-name: gateway-to-backend
+name: everything-to-backend
 spec:
   targetRef:
     kind: Mesh
@@ -110,7 +115,7 @@ spec:
         tcp: 
           send: %s
           receive:
-          - %s`, mesh, serviceName, send, recv)
+          - %s`, mesh, serviceName, sendBase64, recvBase64)
 		}
 		meshName := "meshhealthcheck-tcp"
 		BeforeAll(func() {
@@ -121,7 +126,7 @@ spec:
 				).
 				Install(TestServerUniversal("test-server", meshName,
 					WithArgs([]string{"health-check", "tcp"}),
-					WithProtocol("tcp")),
+					WithProtocol(mesh.ProtocolTCP)),
 				).
 				Setup(env.Cluster)
 			Expect(err).ToNot(HaveOccurred())
@@ -174,6 +179,9 @@ mtls:
 `, mesh))
 		}
 		healthCheck := func(mesh, serviceName, send, recv string) string {
+			sendBase64 := base64.StdEncoding.EncodeToString([]byte(send))
+			recvBase64 := base64.StdEncoding.EncodeToString([]byte(recv))
+
 			return fmt.Sprintf(`
 type: MeshHealthCheck
 mesh: %s
@@ -197,7 +205,7 @@ spec:
         tcp: 
           send: %s
           receive:
-            - %s`, mesh, serviceName, send, recv)
+            - %s`, mesh, serviceName, sendBase64, recvBase64)
 		}
 		meshName := "meshhealthcheck-mtls-permissive-tcp"
 		BeforeAll(func() {
@@ -208,7 +216,7 @@ spec:
 				).
 				Install(TestServerUniversal("test-server-mtls", meshName,
 					WithArgs([]string{"health-check", "tcp"}),
-					WithProtocol("tcp"),
+					WithProtocol(mesh.ProtocolTCP),
 					WithServiceName("test-server-mtls")),
 				).
 				Setup(env.Cluster)
