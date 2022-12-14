@@ -463,14 +463,17 @@ func (s *UniversalApp) setupTransparent(cpIp string, builtindns bool, experimant
 		"/usr/bin/kumactl", "install", "transparent-proxy",
 		"--kuma-dp-user", "kuma-dp",
 		"--kuma-dp-uid", "5678",
-		"--kuma-cp-ip", cpIp,
 		"--skip-dns-conntrack-zone-split",
 	}
 
 	if experimantalTransparentProxy {
 		args = append(args,
-			"--exclude-inbound-port", "22",
+			"--exclude-inbound-ports", "22",
 			"--experimental-transparent-proxy-engine",
+		)
+	} else {
+		args = append(args,
+			"--kuma-cp-ip", cpIp,
 		)
 	}
 

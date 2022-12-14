@@ -165,7 +165,7 @@ func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyC
 			},
 			DNS: kumanet_config.DNS{
 				Enabled:            tpConfig.RedirectDNS,
-				CaptureAll: tpConfig.RedirectAllDNSTraffic,
+				CaptureAll:         tpConfig.RedirectAllDNSTraffic,
 				Port:               agentDNSListenerPort,
 				ConntrackZoneSplit: !tpConfig.SkipDNSConntrackZoneSplit,
 			},

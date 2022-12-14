@@ -7,12 +7,13 @@ RUN echo "# use this file to override default configuration of \`kuma-cp\`" > /k
 
 RUN apt update \
   && apt dist-upgrade -y \
-  && apt-get install --no-install-recommends -y iptables=1.8.7-1ubuntu5 iproute2=5.15.0-1ubuntu2 \
   && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     curl \
     dnsutils \
     ncat \
     net-tools \
+    iptables \
+    iproute2 \
     openssh-server \
     rsync \
     strace \
@@ -28,10 +29,8 @@ RUN ssh-keygen -A \
   && sed -i s/#PermitEmptyPasswords.*/PermitEmptyPasswords\ yes/ /etc/ssh/sshd_config \
   && mkdir /var/run/sshd \
   && passwd -d root \
-  && chmod a+rwx /root
-
-RUN update-alternatives --set iptables /usr/sbin/iptables-legacy && \
-    adduser --system --disabled-password --group kumactl --uid 5678
+  && chmod a+rwx /root \
+  && useradd -u 5678 -U kuma-dp
 
 ARG ARCH
 ARG ENVOY_VERSION
