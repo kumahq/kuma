@@ -1384,16 +1384,20 @@ spec:
                               description: If true the TcpHealthCheck is disabled
                               type: boolean
                             receive:
-                              description: Bytes blocks expected as a response. When
-                                checking the response, “fuzzy” matching is performed
-                                such that each block must be found, and in the order
-                                specified, but not necessarily contiguous.
+                              description: List of Base64 encoded blocks of strings
+                                expected as a response. When checking the response,
+                                "fuzzy" matching is performed such that each block
+                                must be found, and in the order specified, but not
+                                necessarily contiguous. If not provided or empty,
+                                checks will be performed as "connect only" and be
+                                marked as successful when TCP connection is successfully
+                                established.
                               items:
                                 type: string
                               type: array
                             send:
-                              description: Bytes which will be sent during the health
-                                check to the target
+                              description: Base64 encoded content of the message which
+                                will be sent during the health check to the target
                               type: string
                           type: object
                         timeout:
