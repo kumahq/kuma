@@ -61,28 +61,36 @@ We could have a name convention that indicates that given array is appendable no
 
 ```
 defaults:
-  composableElements:
+  appendElements:
   - a
 ```
 
-So every time there is the field with value array that starts with `composable` we append.
+So every time there is the field with value array that starts with `append` we append.
 
 Other potential prefixes:
-* appendable
-* mergeable
+* composed
+* merged
 * combined
 * joined
 
 To implement this, we would need to replace [jsonpatch](https://github.com/kumahq/kuma/blob/master/pkg/core/xds/rules.go#L207) with our reflection-based solution.
 
+We could also express both strategies
+```yaml
+default:
+  elements: []
+  appendElements: []
+```
+
 #### Advantages
 * Explicit for users
 * Replacing jsonpatch will be more efficient, because we don't need to marshal to json just for the sake of merging
+* Expressing both strategies
 
 #### Disadvantages
 * Longer field names
 * Reserving the prefix as a field name (although it's very unlikely to see this as a prefix of any field)
-* We need to roll out custom implementation of merging.
+* We need to roll out custom implementation of merging and maintain it.
 
 ### Field annotation
 
@@ -121,10 +129,10 @@ merge:
 ```
 
 #### Advantages
-* ?
+* Explicit and easy to understand
 
 #### Disadvantages
-* We cannot control merging on a single list. It's all append or all replace.
+* We cannot control merging on a single list. It's all append or all replace for the whole policy.
 * Additional keyword, which may confuse service owners. Which one they should use by default? `defaults` or `merge`?
 
 ## Decision Outcome
