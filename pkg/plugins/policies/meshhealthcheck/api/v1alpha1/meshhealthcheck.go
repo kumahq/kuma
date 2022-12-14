@@ -7,8 +7,8 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 )
 
-// MeshHealthCheck
-// +kuma:policy:skip_registration=true
+// MeshHealthCheck defines health checking policies between different data plane
+// proxies.
 type MeshHealthCheck struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource

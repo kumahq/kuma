@@ -12,6 +12,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	policy "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )
 
@@ -84,4 +85,20 @@ func (l *MeshHealthCheckList) GetItems() []model.KubernetesObject {
 		result[i] = &l.Items[i]
 	}
 	return result
+}
+
+func init() {
+	SchemeBuilder.Register(&MeshHealthCheck{}, &MeshHealthCheckList{})
+	registry.RegisterObjectType(&policy.MeshHealthCheck{}, &MeshHealthCheck{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "MeshHealthCheck",
+		},
+	})
+	registry.RegisterListType(&policy.MeshHealthCheck{}, &MeshHealthCheckList{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "MeshHealthCheckList",
+		},
+	})
 }
