@@ -353,7 +353,7 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		}
 	}
 
-	if c.opts.experimentalTransparentProxy {
+	if !c.opts.cni && c.opts.experimentalTransparentProxy {
 		argsMap["--set"] = "experimental.transparentProxy=true"
 	}
 
