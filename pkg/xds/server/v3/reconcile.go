@@ -177,7 +177,7 @@ func (s *TemplateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, pr
 	for _, policyName := range ctx.ControlPlane.EnabledPolicies {
 		policy, exists := policies[plugins.PluginName(policyName)]
 		if !exists {
-			reconcileLog.Info("there is no pluggable policy, skip", "policyName", policyName)
+			reconcileLog.Error(errors.Errorf("policy doesn't exist"), "failed to apply policy's changes", "policyName", policyName)
 			continue
 		}
 		if err := policy.Apply(rs, ctx, proxy); err != nil {
