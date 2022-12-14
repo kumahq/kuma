@@ -17,7 +17,6 @@ import (
 	"github.com/kumahq/kuma/pkg/config/intercp"
 	"github.com/kumahq/kuma/pkg/config/mads"
 	"github.com/kumahq/kuma/pkg/config/multizone"
-	"github.com/kumahq/kuma/pkg/config/plugins/policies"
 	"github.com/kumahq/kuma/pkg/config/plugins/runtime"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/config/xds"
@@ -152,8 +151,6 @@ type Config struct {
 	Experimental ExperimentalConfig `json:"experimental"`
 	// Proxy holds configuration for proxies
 	Proxy xds.Proxy `json:"proxy"`
-	// Policies holds configuration of pluggable policies in kuma-cp
-	Policies policies.PoliciesConfig `json:"policies"`
 	// Intercommunication CP configuration
 	InterCp intercp.InterCpConfig `json:"interCp"`
 }
@@ -171,7 +168,6 @@ func (c *Config) Sanitize() {
 	c.DNSServer.Sanitize()
 	c.Multizone.Sanitize()
 	c.Diagnostics.Sanitize()
-	c.Policies.Sanitize()
 }
 
 var DefaultConfig = func() Config {
@@ -215,9 +211,8 @@ var DefaultConfig = func() Config {
 			GatewayAPI:          false,
 			KubeOutboundsAsVIPs: false,
 		},
-		Proxy:    xds.DefaultProxyConfig(),
-		InterCp:  intercp.DefaultInterCpConfig(),
-		Policies: policies.DefaultPoliciesConfig(),
+		Proxy:   xds.DefaultProxyConfig(),
+		InterCp: intercp.DefaultInterCpConfig(),
 	}
 }
 
@@ -292,9 +287,6 @@ func (c *Config) Validate() error {
 	}
 	if err := c.InterCp.Validate(); err != nil {
 		return errors.Wrap(err, "InterCp validation failed")
-	}
-	if err := c.Policies.Validate(); err != nil {
-		return errors.Wrap(err, "Policies validation failed")
 	}
 	return nil
 }

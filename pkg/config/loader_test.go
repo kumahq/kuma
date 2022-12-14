@@ -308,11 +308,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Experimental.KubeOutboundsAsVIPs).To(BeTrue())
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
-
-			Expect(len(cfg.Policies.Enabled)).To(Equal(5))
-			Expect(cfg.Policies.Enabled).To(Equal([]string{
-				"meshaccesslog", "meshtrace", "meshratelimit", "meshtimeout", "meshtrafficpermission",
-			}))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -594,8 +589,6 @@ experimental:
 proxy:
   gateway:
     globalDownstreamMaxConnections: 1
-policies:
-  enabled: ["meshaccesslog","meshtrace","meshratelimit","meshtimeout","meshtrafficpermission"]
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -800,7 +793,6 @@ policies:
 				"KUMA_EXPERIMENTAL_GATEWAY_API":                                                            "true",
 				"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS":                                                 "true",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
-				"KUMA_POLICIES_ENABLED":                                                                    "meshaccesslog,meshtrace,meshratelimit,meshtimeout,meshtrafficpermission",
 			},
 			yamlFileConfig: "",
 		}),

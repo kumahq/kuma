@@ -75,10 +75,9 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 	}
 
 	envoyCpCtx := &xds_context.ControlPlaneContext{
-		CLACache:        claCache,
-		Secrets:         secrets,
-		Zone:            rt.Config().Multizone.Zone.Name,
-		EnabledPolicies: rt.Config().Policies.Enabled,
+		CLACache: claCache,
+		Secrets:  secrets,
+		Zone:     rt.Config().Multizone.Zone.Name,
 	}
 
 	if err := v3.RegisterXDS(statsCallbacks, xdsMetrics, envoyCpCtx, rt); err != nil {

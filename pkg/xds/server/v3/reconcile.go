@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/plugins"
 	model "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/generator"
@@ -173,9 +174,9 @@ func (s *TemplateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, pr
 		reconcileLog.Error(err, "failed to generate a snapshot", "proxy", proxy, "template", template)
 		return nil, err
 	}
-	policies := plugins.Plugins().PolicyPlugins()
-	for _, policyName := range ctx.ControlPlane.EnabledPolicies {
-		policy, exists := policies[plugins.PluginName(policyName)]
+	allPolicies := plugins.Plugins().PolicyPlugins()
+	for _, policyName := range policies.Enabled() {
+		policy, exists := allPolicies[policyName]
 		if !exists {
 			reconcileLog.Error(errors.Errorf("policy doesn't exist"), "failed to apply policy's changes", "policyName", policyName)
 			continue
