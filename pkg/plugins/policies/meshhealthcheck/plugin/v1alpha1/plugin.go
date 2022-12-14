@@ -49,7 +49,7 @@ func applyToOutbounds(rules core_xds.ToRules, outboundClusters map[string]*envoy
 			continue
 		}
 
-		protocol := core_mesh.ParseProtocol(outbound.GetTagsIncludingLegacy()[mesh_proto.ProtocolTag])
+		protocol := policies_xds.InferProtocol(routing, serviceName)
 
 		if err := configure(rules.Rules, core_xds.MeshService(serviceName), protocol, cluster); err != nil {
 			return err

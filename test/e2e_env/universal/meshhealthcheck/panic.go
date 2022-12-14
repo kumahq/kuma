@@ -32,7 +32,8 @@ spec:
         healthyThreshold: 1
         healthyPanicThreshold: 61
         failTrafficOnPanic: true
-        tcp: {}`, meshName)
+        http:
+          path: "/"`, meshName)
 
 	dp := func(idx int) string {
 		return fmt.Sprintf(`
@@ -81,6 +82,6 @@ networking:
 			stdout, _, _ := env.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "test-server.mesh")
 			return strings.Contains(stdout, "no healthy upstream")
-		}, "30s", "500ms").Should(BeTrue())
+		}, "120m", "1m").Should(BeTrue())
 	})
 }

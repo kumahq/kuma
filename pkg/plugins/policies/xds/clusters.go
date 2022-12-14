@@ -3,7 +3,10 @@ package xds
 import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	clusters_builder "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/generator"
 
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
@@ -52,4 +55,14 @@ func WithName(name string) clusters_builder.ClusterBuilderOpt {
 	return clusters_builder.ClusterBuilderOptFunc(func(config *clusters_builder.ClusterBuilderConfig) {
 		config.AddV3(&NameConfigurer{Name: name})
 	})
+}
+
+func InferProtocol(routing core_xds.Routing, serviceName string) core_mesh.Protocol {
+	var allEndpoints []core_xds.Endpoint
+	outboundEndpoints := core_xds.EndpointList(routing.OutboundTargets[serviceName])
+	allEndpoints = append(allEndpoints, outboundEndpoints...)
+	externalEndpoints := routing.ExternalServiceOutboundTargets[serviceName]
+	allEndpoints = append(allEndpoints, externalEndpoints...)
+
+	return envoy_common.InferServiceProtocol(allEndpoints)
 }
