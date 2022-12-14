@@ -106,9 +106,8 @@ default:
       - retriable_4xx
       - refused_stream
       - http3_post_connect_failure
-    additionalRetriableStatusCodes:
-      - 500
-      - 504 
+      - 400
+      - 504
     retriableResponseHeaders:
       - name: header-name
         exact: value
@@ -134,11 +133,8 @@ default:
 Changes:
 
 1. Rename `http.retryOn.all_5xx` to `http.retryOn.5xx`. Apparently it was a limitation of proto enums.
-2. Rename `retriableStatusCodes` to `additionalRetriableStatusCodes` 
-because this field provides additional status codes to whatever already specified in `retryOn`.
-Today there is a validation if you set `retriableStatusCodes` you must provide `retriable_status_codes` to the `retryOn` list. 
-Due to a multi-level organisation of policies now it's impossible to validate.
-I think the best option is to add `retriable_status_codes` to `retryOn` automatically if `additionalRetriableStatusCodes` is specified. 
+2. Merge `retriableStatusCodes` into `retryOn` list. 
+Kuma can automatically generate `retriable_status_codes` list for Envoy based on `retryOn`.
 3. New field `retriableResponseHeaders`. Even though we have already had `retryOn.retriable_headers` 
 there was no way to provide a list of headers. 
 If this field is set we automatically add `retriable_headers` to `retryOn`.
