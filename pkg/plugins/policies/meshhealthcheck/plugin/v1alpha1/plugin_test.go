@@ -23,6 +23,7 @@ import (
 var _ = Describe("MeshHealthCheck", func() {
 	echoServiceTag := "echo-http"
 	tcpServiceTag := "echo-tcp"
+	grpcServiceTag := "echo-grpc"
 	type testCase struct {
 		resources         []core_xds.Resource
 		toRules           core_xds.ToRules
@@ -43,6 +44,15 @@ var _ = Describe("MeshHealthCheck", func() {
 			Origin: generator.OriginOutbound,
 			Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
 				Configure(policies_xds.WithName(tcpServiceTag)).
+				MustBuild(),
+		},
+	}
+	grpcCluster := []core_xds.Resource{
+		{
+			Name: "cluster-echo-grpc",
+			Origin: generator.OriginOutbound,
+			Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
+				Configure(policies_xds.WithName(grpcServiceTag)).
 				MustBuild(),
 		},
 	}
@@ -78,6 +88,13 @@ var _ = Describe("MeshHealthCheck", func() {
 									Tags: map[string]string{
 										mesh_proto.ServiceTag: tcpServiceTag,
 										mesh_proto.ProtocolTag: "tcp",
+									},
+								}, {
+									Address: "127.0.0.1",
+									Port:    27779,
+									Tags: map[string]string{
+										mesh_proto.ServiceTag: grpcServiceTag,
+										mesh_proto.ProtocolTag: "grpc",
 									},
 								},
 							},
@@ -198,6 +215,37 @@ healthChecks:
         - text: pong
     send:
         text: ping
+`},
+		}),
+
+		Entry("gRPC HealthCheck", testCase{
+			resources: grpcCluster,
+			toRules: core_xds.ToRules{
+				Rules: []*core_xds.Rule{
+					{
+						Subset: core_xds.Subset{},
+						Conf: api.Conf{
+							Interval: *policies_xds.ParseDuration("10s"),
+							Timeout: *policies_xds.ParseDuration("2s"),
+							UnhealthyThreshold: 3,
+							HealthyThreshold: 1,
+							Grpc: &api.GrpcHealthCheck{
+								ServiceName: "grpc-client",
+								Authority:   "grpc-client.default.svc.cluster.local",
+							},
+						},
+					},
+				}},
+			expectedClusters: []string{`
+name: echo-grpc
+healthChecks:
+- healthyThreshold: 1
+  interval: 10s
+  timeout: 2s
+  unhealthyThreshold: 3
+  grpcHealthCheck:
+    authority: grpc-client.default.svc.cluster.local
+    serviceName: grpc-client
 `},
 		}),
 	)

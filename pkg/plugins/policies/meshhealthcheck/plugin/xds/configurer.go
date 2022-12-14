@@ -20,10 +20,10 @@ type Configurer struct {
 type HCProtocol string
 
 const (
-    HCProtocolTCP     = "tcp"
-    HCProtocolHTTP    = "http"
-    HCProtocolGRPC    = "grpc"
-    None              = "none"
+    HCProtocolTCP  = "tcp"
+    HCProtocolHTTP = "http"
+    HCProtocolGRPC = "grpc"
+    HCNone         = "none"
 )
 
 func (e *Configurer) Configure(cluster *envoy_cluster.Cluster) error {
@@ -38,7 +38,7 @@ func (e *Configurer) Configure(cluster *envoy_cluster.Cluster) error {
 
     hcType := selectHealthCheckType(e.Protocol, tcp, http, grpc)
 
-    if hcType != None {
+    if hcType != HCNone {
         defaultHealthCheck := buildHealthCheck(activeChecks)
         var healthChecker interface{}
         if hcType == HCProtocolTCP {
@@ -57,19 +57,28 @@ func (e *Configurer) Configure(cluster *envoy_cluster.Cluster) error {
 }
 
 func selectHealthCheckType(protocol core_mesh.Protocol, tcp *api.TcpHealthCheck, http *api.HttpHealthCheck, grpc *api.GrpcHealthCheck) HCProtocol {
+    // match exact
     if (protocol == core_mesh.ProtocolHTTP || protocol == core_mesh.ProtocolHTTP2) && http != nil && http.Disabled == false {
         return HCProtocolHTTP
     }
-
     if protocol == core_mesh.ProtocolGRPC && grpc != nil && grpc.Disabled == false {
         return HCProtocolGRPC
     }
-
     if protocol == core_mesh.ProtocolTCP && tcp != nil && tcp.Disabled == false {
         return HCProtocolTCP
     }
 
-    return None
+    // match fallback HTTP
+    if (protocol == core_mesh.ProtocolHTTP || protocol == core_mesh.ProtocolHTTP2) && http != nil && http.Disabled == true && tcp != nil && tcp.Disabled == false {
+        return HCProtocolTCP
+    }
+
+    // match fallback GRPC
+    if protocol == core_mesh.ProtocolGRPC && grpc != nil && grpc.Disabled == true && tcp != nil && tcp.Disabled == false {
+        return HCProtocolTCP
+    }
+
+    return HCNone
 }
 
 func mapUInt32ToInt64Range(value uint32) *envoy_type.Int64Range {
