@@ -15,34 +15,34 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("MeshHealthCheck", func() {
-	echoServiceTag := "echo"
+	echoServiceTag := "echo-http"
+	tcpServiceTag := "echo-tcp"
 	type testCase struct {
 		resources         []core_xds.Resource
 		toRules           core_xds.ToRules
 		expectedClusters  []string
 	}
-	outbounds := []core_xds.Resource{
+	httpCluster := []core_xds.Resource{
 		{
-			Name:   "outbound",
-			Origin: generator.OriginOutbound,
-			Resource: NewListenerBuilder(envoy_common.APIV3).
-				Configure(OutboundListener("outbound:127.0.0.1:27777", "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP)).
-				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-					Configure(HttpConnectionManager("127.0.0.1:27777", false)),
-				)).MustBuild(),
-		},
-		{
-			Name: "cluster",
+			Name:   "cluster-echo-http",
 			Origin: generator.OriginOutbound,
 			Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
 				Configure(policies_xds.WithName(echoServiceTag)).
+				MustBuild(),
+		},
+	}
+	tcpCluster := []core_xds.Resource{
+		{
+			Name: "cluster-echo-tcp",
+			Origin: generator.OriginOutbound,
+			Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
+				Configure(policies_xds.WithName(tcpServiceTag)).
 				MustBuild(),
 		},
 	}
@@ -72,6 +72,13 @@ var _ = Describe("MeshHealthCheck", func() {
 										mesh_proto.ServiceTag: echoServiceTag,
 										mesh_proto.ProtocolTag: "http",
 									},
+								}, {
+									Address: "127.0.0.1",
+									Port:    27778,
+									Tags: map[string]string{
+										mesh_proto.ServiceTag: tcpServiceTag,
+										mesh_proto.ProtocolTag: "tcp",
+									},
 								},
 							},
 						},
@@ -91,8 +98,8 @@ var _ = Describe("MeshHealthCheck", func() {
 			Expect(plugin.Apply(resources, context, &proxy)).To(Succeed())
 			policies_xds.ResourceArrayShouldEqual(resources.ListOf(envoy_resource.ClusterType), given.expectedClusters)
 		},
-		Entry("http hc", testCase{
-			resources: outbounds,
+		Entry("HTTP HealthCheck", testCase{
+			resources: httpCluster,
 			toRules: core_xds.ToRules{
 				Rules: []*core_xds.Rule{
 					{
@@ -129,7 +136,7 @@ var _ = Describe("MeshHealthCheck", func() {
 					},
 				}},
 			expectedClusters: []string{`
-name: echo
+name: echo-http
 commonLbConfig:
   healthyPanicThreshold:
     value: 11
@@ -158,6 +165,39 @@ healthChecks:
   reuseConnection: true
   timeout: 2s
   unhealthyThreshold: 3
+`},
+		}),
+		Entry("TCP HealthCheck", testCase{
+			resources: tcpCluster,
+			toRules: core_xds.ToRules{
+				Rules: []*core_xds.Rule{
+					{
+						Subset: core_xds.Subset{},
+						Conf: api.Conf{
+							Interval: *policies_xds.ParseDuration("10s"),
+							Timeout: *policies_xds.ParseDuration("2s"),
+							UnhealthyThreshold: 3,
+							HealthyThreshold: 1,
+							Tcp: &api.TcpHealthCheck{
+								Disabled: false,
+								Send:     policies_xds.PointerOf[string]("ping"),
+								Receive:  &[]string{"pong"},
+							},
+						},
+					},
+				}},
+			expectedClusters: []string{`
+name: echo-tcp
+healthChecks:
+- healthyThreshold: 1
+  interval: 10s
+  timeout: 2s
+  unhealthyThreshold: 3
+  tcpHealthCheck:
+    receive:
+        - text: pong
+    send:
+        text: ping
 `},
 		}),
 	)
