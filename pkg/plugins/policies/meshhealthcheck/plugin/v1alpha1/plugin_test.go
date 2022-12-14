@@ -22,7 +22,7 @@ import (
 )
 
 var _ = Describe("MeshHealthCheck", func() {
-	echoServiceTag := "echo-http"
+	httpServiceTag := "echo-http"
 	tcpServiceTag := "echo-tcp"
 	grpcServiceTag := "echo-grpc"
 	type testCase struct {
@@ -35,7 +35,7 @@ var _ = Describe("MeshHealthCheck", func() {
 			Name:   "cluster-echo-http",
 			Origin: generator.OriginOutbound,
 			Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
-				Configure(policies_xds.WithName(echoServiceTag)).
+				Configure(policies_xds.WithName(httpServiceTag)).
 				MustBuild(),
 		},
 	}
@@ -80,7 +80,7 @@ var _ = Describe("MeshHealthCheck", func() {
 									Address: "127.0.0.1",
 									Port:    27777,
 									Tags: map[string]string{
-										mesh_proto.ServiceTag:  echoServiceTag,
+										mesh_proto.ServiceTag:  httpServiceTag,
 										mesh_proto.ProtocolTag: "http",
 									},
 								}, {
@@ -107,6 +107,25 @@ var _ = Describe("MeshHealthCheck", func() {
 						api.MeshHealthCheckType: {
 							Type:    api.MeshHealthCheckType,
 							ToRules: given.toRules,
+						},
+					},
+				},
+				Routing: xds.Routing{
+					OutboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
+						httpServiceTag: {
+							{
+								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
+							},
+						},
+						grpcServiceTag: {
+							{
+								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolGRPC},
+							},
+						},
+						tcpServiceTag: {
+							{
+								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolTCP},
+							},
 						},
 					},
 				},
@@ -198,8 +217,8 @@ healthChecks:
 							HealthyThreshold:   1,
 							Tcp: &api.TcpHealthCheck{
 								Disabled: false,
-								Send:     policies_xds.PointerOf[string]("ping"),
-								Receive:  &[]string{"pong"},
+								Send:     policies_xds.PointerOf[string]("cGluZwo="),
+								Receive:  &[]string{"cG9uZwo="},
 							},
 						},
 					},
@@ -212,10 +231,10 @@ healthChecks:
   timeout: 2s
   unhealthyThreshold: 3
   tcpHealthCheck:
-    receive:
-        - text: pong
     send:
-        text: ping
+        text: "63476c755a776f3d"
+    receive:
+        - text: "634739755a776f3d"
 `},
 		}),
 

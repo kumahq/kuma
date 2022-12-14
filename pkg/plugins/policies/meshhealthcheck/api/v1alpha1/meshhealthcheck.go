@@ -87,11 +87,12 @@ type TcpHealthCheck struct {
 	// If true the TcpHealthCheck is disabled
 	//  +optional
 	Disabled bool `json:"disabled,omitempty"`
-	// Bytes which will be sent during the health check to the target
+	// Base64 encoded content of the message which will be sent during the health check to the target
 	Send *string `json:"send,omitempty"`
-	// Bytes blocks expected as a response. When checking the response,
+	// List of Base64 encoded blocks of strings expected as a response. When checking the response,
 	// “fuzzy” matching is performed such that each block must be found, and
 	// in the order specified, but not necessarily contiguous.
+	// If not provided or empty, checks will be performed as "connect only" and be marked as successful when TCP connection is successfully established.
 	Receive *[]string `json:"receive,omitempty"`
 }
 
