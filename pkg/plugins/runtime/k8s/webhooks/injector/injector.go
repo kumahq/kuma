@@ -109,7 +109,9 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 	if err != nil {
 		return err
 	}
-	pod.Spec.Containers = append(pod.Spec.Containers, patchedContainer)
+
+	// inject sidecar as first container
+	pod.Spec.Containers = append([]kube_core.Container{patchedContainer}, pod.Spec.Containers...)
 
 	// annotations
 	if pod.Annotations == nil {
