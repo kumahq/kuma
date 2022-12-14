@@ -3,6 +3,8 @@ package catalog
 import (
 	"context"
 	"fmt"
+	"net"
+	"strconv"
 
 	"github.com/pkg/errors"
 )
@@ -15,7 +17,7 @@ type Instance struct {
 }
 
 func (i Instance) InterCpURL() string {
-	return fmt.Sprintf("grpcs://%s:%d", i.Address, i.InterCpPort)
+	return fmt.Sprintf("grpcs://%s", net.JoinHostPort(i.Address, strconv.Itoa(int(i.InterCpPort))))
 }
 
 type Catalog interface {

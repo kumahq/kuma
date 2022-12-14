@@ -25,27 +25,7 @@
            "mesh": "default",
            "name": "hc-1",
            "creationTime": "0001-01-01T00:00:00Z",
-           "modificationTime": "0001-01-01T00:00:00Z",
-           "sources": [
-            {
-             "match": {
-              "kuma.io/service": "gateway"
-             }
-            }
-           ],
-           "destinations": [
-            {
-             "match": {
-              "kuma.io/service": "backend"
-             }
-            }
-           ],
-           "conf": {
-            "interval": "5s",
-            "timeout": "7s",
-            "unhealthyThreshold": 11,
-            "healthyThreshold": 9
-           }
+           "modificationTime": "0001-01-01T00:00:00Z"
           }
          }
         },
@@ -59,35 +39,7 @@
            "mesh": "default",
            "name": "t-1",
            "creationTime": "0001-01-01T00:00:00Z",
-           "modificationTime": "0001-01-01T00:00:00Z",
-           "sources": [
-            {
-             "match": {
-              "kuma.io/service": "*"
-             }
-            }
-           ],
-           "destinations": [
-            {
-             "match": {
-              "kuma.io/service": "redis"
-             }
-            }
-           ],
-           "conf": {
-            "connectTimeout": "5s",
-            "tcp": {
-             "idleTimeout": "5s"
-            },
-            "http": {
-             "requestTimeout": "5s",
-             "idleTimeout": "5s"
-            },
-            "grpc": {
-             "streamIdleTimeout": "5s",
-             "maxStreamDuration": "5s"
-            }
-           }
+           "modificationTime": "0001-01-01T00:00:00Z"
           }
          }
         }
@@ -104,21 +56,7 @@
    "mesh": "default",
    "name": "tl-1",
    "creationTime": "0001-01-01T00:00:00Z",
-   "modificationTime": "0001-01-01T00:00:00Z",
-   "sources": [
-    {
-     "match": {
-      "kuma.io/service": "*"
-     }
-    }
-   ],
-   "destinations": [
-    {
-     "match": {
-      "kuma.io/service": "*"
-     }
-    }
-   ]
+   "modificationTime": "0001-01-01T00:00:00Z"
   }
  }
 }

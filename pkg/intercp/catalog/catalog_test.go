@@ -194,4 +194,12 @@ var _ = Describe("Catalog", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(instances).To(HaveLen(0))
 	})
+
+	It("should handle IPV6 addresses when building inter cp URL", func() {
+		instance := catalog.Instance{
+			Address:     "2001:0db8:85a3:0000",
+			InterCpPort: 5683,
+		}
+		Expect(instance.InterCpURL()).To(Equal("grpcs://[2001:0db8:85a3:0000]:5683"))
+	})
 })

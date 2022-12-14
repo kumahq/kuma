@@ -1,12 +1,8 @@
 package types
 
 import (
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
-
-type PolicyMap map[core_model.ResourceType]*unversioned.Resource
 
 type Destination struct {
 	Tags     tags.Tags `json:"tags"`
