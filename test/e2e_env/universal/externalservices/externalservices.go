@@ -101,6 +101,7 @@ networking:
 		ResourceUniversal(externalService("ext-srv-1", esHttpHostPort, false, nil))
 		err := env.Cluster.Install(ResourceUniversal(externalService("ext-srv-1", esHttpHostPort, false, nil)))
 		Expect(err).ToNot(HaveOccurred())
+
 		checkSuccessfulRequest("ext-srv-1.mesh", And(
 			Not(ContainSubstring("HTTPS")),
 			// Should rewrite host header

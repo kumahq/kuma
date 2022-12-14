@@ -10,10 +10,10 @@ RUN apt update \
   && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     curl \
     dnsutils \
+    iproute2 \
+    iptables \
     ncat \
     net-tools \
-    iptables \
-    iproute2 \
     openssh-server \
     rsync \
     strace \
