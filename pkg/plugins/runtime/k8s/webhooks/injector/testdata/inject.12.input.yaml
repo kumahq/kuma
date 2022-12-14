@@ -4,6 +4,8 @@ metadata:
   name: busybox
   labels:
     run: busybox
+  annotations:
+    kuma.io/mesh: mesh-name-from-pod
 spec:
   volumes:
     - name: default-token-w7dxf

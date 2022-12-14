@@ -3,10 +3,15 @@ kind: Pod
 metadata:
   annotations:
     docs: Documentation
+    kuma.io/builtin-dns: enabled
+    kuma.io/builtin-dns-port: "25053"
+    kuma.io/builtindns: enabled
+    kuma.io/builtindnsport: "25053"
     kuma.io/envoy-admin-port: "9901"
     kuma.io/mesh: default
     kuma.io/sidecar-env-vars: KUMA_DATAPLANE_DRAIN_TIME=5s;NEW_ENV_VAR=123
     kuma.io/sidecar-injected: "true"
+    kuma.io/sidecar-proxy-concurrency: "99"
     kuma.io/sidecar-uid: "5678"
     kuma.io/transparent-proxying: enabled
     kuma.io/transparent-proxying-ebpf: disabled
@@ -21,17 +26,10 @@ metadata:
   name: busybox
 spec:
   containers:
-  - image: busybox
-    name: busybox
-    resources: {}
-    volumeMounts:
-    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-      name: default-token-w7dxf
-      readOnly: true
   - args:
     - run
     - --log-level=info
-    - --concurrency=2
+    - --concurrency=99
     env:
     - name: POD_NAME
       valueFrom:
@@ -79,13 +77,19 @@ spec:
     - name: KUMA_DATAPLANE_NAME
       value: $(POD_NAME).$(POD_NAMESPACE)
     - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
-      value: /some/other/path
+      value: /var/run/secrets/kubernetes.io/serviceaccount/token
+    - name: KUMA_DNS_CORE_DNS_BINARY_PATH
+      value: coredns
+    - name: KUMA_DNS_CORE_DNS_EMPTY_PORT
+      value: "25054"
+    - name: KUMA_DNS_CORE_DNS_PORT
+      value: "25053"
     - name: KUMA_DNS_ENABLED
-      value: "false"
+      value: "true"
+    - name: KUMA_DNS_ENVOY_DNS_PORT
+      value: "25055"
     - name: NEW_ENV_VAR
       value: "123"
-    - name: TEST_ENV_VAR
-      value: test123
     image: kuma/kuma-sidecar:latest
     imagePullPolicy: IfNotPresent
     livenessProbe:
@@ -121,6 +125,13 @@ spec:
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: default-token-w7dxf
       readOnly: true
+  - image: busybox
+    name: busybox
+    resources: {}
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-w7dxf
+      readOnly: true
   initContainers:
   - command:
     - sh
@@ -145,6 +156,9 @@ spec:
     - ""
     - --verbose
     - --skip-resolv-conf
+    - --redirect-all-dns-traffic
+    - --redirect-dns-port
+    - "25053"
     command:
     - /usr/bin/kumactl
     - install

@@ -2,8 +2,10 @@ apiVersion: v1
 kind: Pod
 metadata:
   annotations:
+    docs: Documentation
     kuma.io/envoy-admin-port: "9901"
     kuma.io/mesh: default
+    kuma.io/sidecar-env-vars: KUMA_DATAPLANE_DRAIN_TIME=5s;NEW_ENV_VAR=123
     kuma.io/sidecar-injected: "true"
     kuma.io/sidecar-uid: "5678"
     kuma.io/transparent-proxying: enabled
@@ -19,31 +21,6 @@ metadata:
   name: busybox
 spec:
   containers:
-  - image: busybox
-    livenessProbe:
-      httpGet:
-        path: /8080/metrics
-        port: 9000
-      initialDelaySeconds: 3
-      periodSeconds: 3
-    name: busybox
-    readinessProbe:
-      httpGet:
-        path: /3001/metrics
-        port: 9000
-      initialDelaySeconds: 3
-      periodSeconds: 3
-    resources: {}
-    startupProbe:
-      httpGet:
-        path: /8081/metrics
-        port: 9000
-      initialDelaySeconds: 3
-      periodSeconds: 3
-    volumeMounts:
-    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-      name: default-token-w7dxf
-      readOnly: true
   - args:
     - run
     - --log-level=info
@@ -89,15 +66,19 @@ spec:
     - name: KUMA_CONTROL_PLANE_URL
       value: http://kuma-control-plane.kuma-system:5681
     - name: KUMA_DATAPLANE_DRAIN_TIME
-      value: 31s
+      value: 5s
     - name: KUMA_DATAPLANE_MESH
       value: default
     - name: KUMA_DATAPLANE_NAME
       value: $(POD_NAME).$(POD_NAMESPACE)
     - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
-      value: /var/run/secrets/kubernetes.io/serviceaccount/token
+      value: /some/other/path
     - name: KUMA_DNS_ENABLED
       value: "false"
+    - name: NEW_ENV_VAR
+      value: "123"
+    - name: TEST_ENV_VAR
+      value: test123
     image: kuma/kuma-sidecar:latest
     imagePullPolicy: IfNotPresent
     livenessProbe:
@@ -133,7 +114,21 @@ spec:
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: default-token-w7dxf
       readOnly: true
+  - image: busybox
+    name: busybox
+    resources: {}
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-w7dxf
+      readOnly: true
   initContainers:
+  - command:
+    - sh
+    - -c
+    - sleep 5
+    image: busybox
+    name: init
+    resources: {}
   - args:
     - --redirect-outbound-port
     - "15001"
