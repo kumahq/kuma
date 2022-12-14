@@ -27,7 +27,7 @@ filterChains:
             route:
               cluster: backend
               timeout: 5s
-      statPrefix: "inbound_127_0_0_1_80"
+      statPrefix: inbound_127_0_0_1_80
       streamIdleTimeout: 1s
 name: inbound:127.0.0.1:80
 trafficDirection: INBOUND
