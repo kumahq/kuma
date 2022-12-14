@@ -3,14 +3,14 @@ package xds
 import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	clusters_builder "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/generator"
 
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
+	clusters_builder "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	"github.com/kumahq/kuma/pkg/xds/generator"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/generator"
 )
 
 type Clusters struct {

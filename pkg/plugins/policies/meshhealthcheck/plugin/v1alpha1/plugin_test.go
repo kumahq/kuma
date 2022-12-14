@@ -2,6 +2,9 @@ package v1alpha1_test
 
 import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -16,8 +19,6 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	"github.com/kumahq/kuma/pkg/xds/generator"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("MeshHealthCheck", func() {
@@ -25,9 +26,9 @@ var _ = Describe("MeshHealthCheck", func() {
 	tcpServiceTag := "echo-tcp"
 	grpcServiceTag := "echo-grpc"
 	type testCase struct {
-		resources         []core_xds.Resource
-		toRules           core_xds.ToRules
-		expectedClusters  []string
+		resources        []core_xds.Resource
+		toRules          core_xds.ToRules
+		expectedClusters []string
 	}
 	httpCluster := []core_xds.Resource{
 		{
@@ -40,7 +41,7 @@ var _ = Describe("MeshHealthCheck", func() {
 	}
 	tcpCluster := []core_xds.Resource{
 		{
-			Name: "cluster-echo-tcp",
+			Name:   "cluster-echo-tcp",
 			Origin: generator.OriginOutbound,
 			Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
 				Configure(policies_xds.WithName(tcpServiceTag)).
@@ -49,7 +50,7 @@ var _ = Describe("MeshHealthCheck", func() {
 	}
 	grpcCluster := []core_xds.Resource{
 		{
-			Name: "cluster-echo-grpc",
+			Name:   "cluster-echo-grpc",
 			Origin: generator.OriginOutbound,
 			Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
 				Configure(policies_xds.WithName(grpcServiceTag)).
@@ -79,21 +80,21 @@ var _ = Describe("MeshHealthCheck", func() {
 									Address: "127.0.0.1",
 									Port:    27777,
 									Tags: map[string]string{
-										mesh_proto.ServiceTag: echoServiceTag,
+										mesh_proto.ServiceTag:  echoServiceTag,
 										mesh_proto.ProtocolTag: "http",
 									},
 								}, {
 									Address: "127.0.0.1",
 									Port:    27778,
 									Tags: map[string]string{
-										mesh_proto.ServiceTag: tcpServiceTag,
+										mesh_proto.ServiceTag:  tcpServiceTag,
 										mesh_proto.ProtocolTag: "tcp",
 									},
 								}, {
 									Address: "127.0.0.1",
 									Port:    27779,
 									Tags: map[string]string{
-										mesh_proto.ServiceTag: grpcServiceTag,
+										mesh_proto.ServiceTag:  grpcServiceTag,
 										mesh_proto.ProtocolTag: "grpc",
 									},
 								},
@@ -135,8 +136,8 @@ var _ = Describe("MeshHealthCheck", func() {
 							AlwaysLogHealthCheckFailures: policies_xds.PointerOf[bool](false),
 							NoTrafficInterval:            policies_xds.ParseDuration("16s"),
 							Http: &api.HttpHealthCheck{
-								Disabled:            false,
-								Path:                "/health",
+								Disabled: false,
+								Path:     "/health",
 								RequestHeadersToAdd: &[]api.HeaderValueOption{
 									{
 										Header: &api.HeaderValue{
@@ -191,10 +192,10 @@ healthChecks:
 					{
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
-							Interval: *policies_xds.ParseDuration("10s"),
-							Timeout: *policies_xds.ParseDuration("2s"),
+							Interval:           *policies_xds.ParseDuration("10s"),
+							Timeout:            *policies_xds.ParseDuration("2s"),
 							UnhealthyThreshold: 3,
-							HealthyThreshold: 1,
+							HealthyThreshold:   1,
 							Tcp: &api.TcpHealthCheck{
 								Disabled: false,
 								Send:     policies_xds.PointerOf[string]("ping"),
@@ -225,10 +226,10 @@ healthChecks:
 					{
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
-							Interval: *policies_xds.ParseDuration("10s"),
-							Timeout: *policies_xds.ParseDuration("2s"),
+							Interval:           *policies_xds.ParseDuration("10s"),
+							Timeout:            *policies_xds.ParseDuration("2s"),
 							UnhealthyThreshold: 3,
-							HealthyThreshold: 1,
+							HealthyThreshold:   1,
 							Grpc: &api.GrpcHealthCheck{
 								ServiceName: "grpc-client",
 								Authority:   "grpc-client.default.svc.cluster.local",

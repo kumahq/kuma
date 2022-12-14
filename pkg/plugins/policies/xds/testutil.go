@@ -2,10 +2,10 @@ package xds
 
 import (
 	_ "embed"
-	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"time"
 
 	. "github.com/onsi/gomega"
+	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -29,4 +29,3 @@ func ParseDuration(duration string) *k8s.Duration {
 func PointerOf[T any](value T) *T {
 	return &value
 }
-

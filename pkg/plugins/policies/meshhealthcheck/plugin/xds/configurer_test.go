@@ -1,171 +1,172 @@
 package xds
 
 import (
-    core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-    "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
-    . "github.com/onsi/ginkgo/v2"
-    . "github.com/onsi/gomega"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 )
 
 var _ = Describe("MeshHealthCheck configurer", func() {
-    type testCase struct {
-        protocol       core_mesh.Protocol
-        grpc           *v1alpha1.GrpcHealthCheck
-        http           *v1alpha1.HttpHealthCheck
-        tcp            *v1alpha1.TcpHealthCheck
-        expectedHcType HCProtocol
-    }
+	type testCase struct {
+		protocol       core_mesh.Protocol
+		grpc           *v1alpha1.GrpcHealthCheck
+		http           *v1alpha1.HttpHealthCheck
+		tcp            *v1alpha1.TcpHealthCheck
+		expectedHcType HCProtocol
+	}
 
-    DescribeTable("should select the correct protocol",
-        func(given testCase) {
-            hcType := selectHealthCheckType(given.protocol, given.tcp, given.http, given.grpc)
-            Expect(hcType).To(Equal(given.expectedHcType))
-        },
-        // no health check
-        Entry("no HC defined", testCase{
-            protocol:       core_mesh.ProtocolTCP,
-            grpc:           nil,
-            http:           nil,
-            tcp:            nil,
-            expectedHcType: HCNone,
-        }),
-        Entry("HC defined for grpc when service protocol is tcp", testCase{
-            protocol:       core_mesh.ProtocolTCP,
-            grpc:           &v1alpha1.GrpcHealthCheck{},
-            http:           nil,
-            tcp:            nil,
-            expectedHcType: HCNone,
-        }),
-        Entry("HC defined for http when service protocol is tcp", testCase{
-            protocol:       core_mesh.ProtocolTCP,
-            grpc:           nil,
-            http:           &v1alpha1.HttpHealthCheck{},
-            tcp:            nil,
-            expectedHcType: HCNone,
-        }),
-        Entry("HC defined for grpc when service protocol is http", testCase{
-            protocol:       core_mesh.ProtocolTCP,
-            grpc:           &v1alpha1.GrpcHealthCheck{},
-            http:           nil,
-            tcp:            nil,
-            expectedHcType: HCNone,
-        }),
-        Entry("HC defined for tcp when service protocol is http", testCase{
-            protocol:       core_mesh.ProtocolHTTP,
-            grpc:           nil,
-            http:           nil,
-            tcp:            &v1alpha1.TcpHealthCheck{},
-            expectedHcType: HCNone,
-        }),
-        Entry("HC defined for tcp when service protocol is grpc", testCase{
-            protocol:       core_mesh.ProtocolGRPC,
-            grpc:           nil,
-            http:           nil,
-            tcp:            &v1alpha1.TcpHealthCheck{},
-            expectedHcType: HCNone,
-        }),
-        Entry("HC defined for http when service protocol is grpc", testCase{
-            protocol:       core_mesh.ProtocolGRPC,
-            grpc:           nil,
-            http:           &v1alpha1.HttpHealthCheck{},
-            tcp:            nil,
-            expectedHcType: HCNone,
-        }),
+	DescribeTable("should select the correct protocol",
+		func(given testCase) {
+			hcType := selectHealthCheckType(given.protocol, given.tcp, given.http, given.grpc)
+			Expect(hcType).To(Equal(given.expectedHcType))
+		},
+		// no health check
+		Entry("no HC defined", testCase{
+			protocol:       core_mesh.ProtocolTCP,
+			grpc:           nil,
+			http:           nil,
+			tcp:            nil,
+			expectedHcType: HCNone,
+		}),
+		Entry("HC defined for grpc when service protocol is tcp", testCase{
+			protocol:       core_mesh.ProtocolTCP,
+			grpc:           &v1alpha1.GrpcHealthCheck{},
+			http:           nil,
+			tcp:            nil,
+			expectedHcType: HCNone,
+		}),
+		Entry("HC defined for http when service protocol is tcp", testCase{
+			protocol:       core_mesh.ProtocolTCP,
+			grpc:           nil,
+			http:           &v1alpha1.HttpHealthCheck{},
+			tcp:            nil,
+			expectedHcType: HCNone,
+		}),
+		Entry("HC defined for grpc when service protocol is http", testCase{
+			protocol:       core_mesh.ProtocolTCP,
+			grpc:           &v1alpha1.GrpcHealthCheck{},
+			http:           nil,
+			tcp:            nil,
+			expectedHcType: HCNone,
+		}),
+		Entry("HC defined for tcp when service protocol is http", testCase{
+			protocol:       core_mesh.ProtocolHTTP,
+			grpc:           nil,
+			http:           nil,
+			tcp:            &v1alpha1.TcpHealthCheck{},
+			expectedHcType: HCNone,
+		}),
+		Entry("HC defined for tcp when service protocol is grpc", testCase{
+			protocol:       core_mesh.ProtocolGRPC,
+			grpc:           nil,
+			http:           nil,
+			tcp:            &v1alpha1.TcpHealthCheck{},
+			expectedHcType: HCNone,
+		}),
+		Entry("HC defined for http when service protocol is grpc", testCase{
+			protocol:       core_mesh.ProtocolGRPC,
+			grpc:           nil,
+			http:           &v1alpha1.HttpHealthCheck{},
+			tcp:            nil,
+			expectedHcType: HCNone,
+		}),
 
-        // matching health check
-        Entry("HC defined for grpc when service protocol is grpc", testCase{
-            protocol:       core_mesh.ProtocolGRPC,
-            grpc:           &v1alpha1.GrpcHealthCheck{},
-            http:           nil,
-            tcp:            nil,
-            expectedHcType: HCProtocolGRPC,
-        }),
-        Entry("HC defined for http when service protocol is http", testCase{
-            protocol:       core_mesh.ProtocolHTTP,
-            grpc:           nil,
-            http:           &v1alpha1.HttpHealthCheck{},
-            tcp:            nil,
-            expectedHcType: HCProtocolHTTP,
-        }),
-        Entry("HC defined for http when service protocol is http2", testCase{
-            protocol:       core_mesh.ProtocolHTTP2,
-            grpc:           nil,
-            http:           &v1alpha1.HttpHealthCheck{},
-            tcp:            nil,
-            expectedHcType: HCProtocolHTTP,
-        }),
-        Entry("HC defined for tcp when service protocol is tcp", testCase{
-            protocol:       core_mesh.ProtocolTCP,
-            grpc:           nil,
-            http:           nil,
-            tcp:            &v1alpha1.TcpHealthCheck{},
-            expectedHcType: HCProtocolTCP,
-        }),
+		// matching health check
+		Entry("HC defined for grpc when service protocol is grpc", testCase{
+			protocol:       core_mesh.ProtocolGRPC,
+			grpc:           &v1alpha1.GrpcHealthCheck{},
+			http:           nil,
+			tcp:            nil,
+			expectedHcType: HCProtocolGRPC,
+		}),
+		Entry("HC defined for http when service protocol is http", testCase{
+			protocol:       core_mesh.ProtocolHTTP,
+			grpc:           nil,
+			http:           &v1alpha1.HttpHealthCheck{},
+			tcp:            nil,
+			expectedHcType: HCProtocolHTTP,
+		}),
+		Entry("HC defined for http when service protocol is http2", testCase{
+			protocol:       core_mesh.ProtocolHTTP2,
+			grpc:           nil,
+			http:           &v1alpha1.HttpHealthCheck{},
+			tcp:            nil,
+			expectedHcType: HCProtocolHTTP,
+		}),
+		Entry("HC defined for tcp when service protocol is tcp", testCase{
+			protocol:       core_mesh.ProtocolTCP,
+			grpc:           nil,
+			http:           nil,
+			tcp:            &v1alpha1.TcpHealthCheck{},
+			expectedHcType: HCProtocolTCP,
+		}),
 
-        // disabling matching health check
-        Entry("HC defined for grpc when service protocol is grpc", testCase{
-            protocol:       core_mesh.ProtocolGRPC,
-            grpc:           &v1alpha1.GrpcHealthCheck{Disabled: true},
-            http:           nil,
-            tcp:            nil,
-            expectedHcType: HCNone,
-        }),
-        Entry("HC defined for http when service protocol is http", testCase{
-            protocol:       core_mesh.ProtocolHTTP,
-            grpc:           nil,
-            http:           &v1alpha1.HttpHealthCheck{Disabled: true},
-            tcp:            nil,
-            expectedHcType: HCNone,
-        }),
-        Entry("HC defined for http when service protocol is http2", testCase{
-            protocol:       core_mesh.ProtocolHTTP2,
-            grpc:           nil,
-            http:           &v1alpha1.HttpHealthCheck{Disabled: true},
-            tcp:            nil,
-            expectedHcType: HCNone,
-        }),
-        Entry("HC defined for tcp when service protocol is tcp", testCase{
-            protocol:       core_mesh.ProtocolTCP,
-            grpc:           nil,
-            http:           nil,
-            tcp:            &v1alpha1.TcpHealthCheck{Disabled: true},
-            expectedHcType: HCNone,
-        }),
+		// disabling matching health check
+		Entry("HC defined for grpc when service protocol is grpc", testCase{
+			protocol:       core_mesh.ProtocolGRPC,
+			grpc:           &v1alpha1.GrpcHealthCheck{Disabled: true},
+			http:           nil,
+			tcp:            nil,
+			expectedHcType: HCNone,
+		}),
+		Entry("HC defined for http when service protocol is http", testCase{
+			protocol:       core_mesh.ProtocolHTTP,
+			grpc:           nil,
+			http:           &v1alpha1.HttpHealthCheck{Disabled: true},
+			tcp:            nil,
+			expectedHcType: HCNone,
+		}),
+		Entry("HC defined for http when service protocol is http2", testCase{
+			protocol:       core_mesh.ProtocolHTTP2,
+			grpc:           nil,
+			http:           &v1alpha1.HttpHealthCheck{Disabled: true},
+			tcp:            nil,
+			expectedHcType: HCNone,
+		}),
+		Entry("HC defined for tcp when service protocol is tcp", testCase{
+			protocol:       core_mesh.ProtocolTCP,
+			grpc:           nil,
+			http:           nil,
+			tcp:            &v1alpha1.TcpHealthCheck{Disabled: true},
+			expectedHcType: HCNone,
+		}),
 
-        // fallback HTTP to TCP
-        Entry("HC defined for tcp and disabled for http when service protocol is http", testCase{
-            protocol:       core_mesh.ProtocolHTTP,
-            grpc:           nil,
-            http:           &v1alpha1.HttpHealthCheck{Disabled: true},
-            tcp:            &v1alpha1.TcpHealthCheck{},
-            expectedHcType: HCProtocolTCP,
-        }),
+		// fallback HTTP to TCP
+		Entry("HC defined for tcp and disabled for http when service protocol is http", testCase{
+			protocol:       core_mesh.ProtocolHTTP,
+			grpc:           nil,
+			http:           &v1alpha1.HttpHealthCheck{Disabled: true},
+			tcp:            &v1alpha1.TcpHealthCheck{},
+			expectedHcType: HCProtocolTCP,
+		}),
 
-        // fallback GRPC to TCP
-        Entry("HC defined for tcp and disabled for grpc when service protocol is grpc", testCase{
-            protocol:       core_mesh.ProtocolGRPC,
-            grpc:           &v1alpha1.GrpcHealthCheck{Disabled: true},
-            http:           nil,
-            tcp:            &v1alpha1.TcpHealthCheck{},
-            expectedHcType: HCProtocolTCP,
-        }),
+		// fallback GRPC to TCP
+		Entry("HC defined for tcp and disabled for grpc when service protocol is grpc", testCase{
+			protocol:       core_mesh.ProtocolGRPC,
+			grpc:           &v1alpha1.GrpcHealthCheck{Disabled: true},
+			http:           nil,
+			tcp:            &v1alpha1.TcpHealthCheck{},
+			expectedHcType: HCProtocolTCP,
+		}),
 
-        // all protocols defined
-        Entry("HC defined for all protocols when service protocol is grpc", testCase{
-            protocol:       core_mesh.ProtocolGRPC,
-            grpc:           &v1alpha1.GrpcHealthCheck{},
-            http:           &v1alpha1.HttpHealthCheck{},
-            tcp:            &v1alpha1.TcpHealthCheck{},
-            expectedHcType: HCProtocolGRPC,
-        }),
+		// all protocols defined
+		Entry("HC defined for all protocols when service protocol is grpc", testCase{
+			protocol:       core_mesh.ProtocolGRPC,
+			grpc:           &v1alpha1.GrpcHealthCheck{},
+			http:           &v1alpha1.HttpHealthCheck{},
+			tcp:            &v1alpha1.TcpHealthCheck{},
+			expectedHcType: HCProtocolGRPC,
+		}),
 
-        // all protocols disabled
-        Entry("HC disabled for all protocols when service protocol is http", testCase{
-            protocol:       core_mesh.ProtocolHTTP,
-            grpc:           &v1alpha1.GrpcHealthCheck{Disabled: true},
-            http:           &v1alpha1.HttpHealthCheck{Disabled: true},
-            tcp:            &v1alpha1.TcpHealthCheck{Disabled: true},
-            expectedHcType: HCNone,
-        }),
-    )
+		// all protocols disabled
+		Entry("HC disabled for all protocols when service protocol is http", testCase{
+			protocol:       core_mesh.ProtocolHTTP,
+			grpc:           &v1alpha1.GrpcHealthCheck{Disabled: true},
+			http:           &v1alpha1.HttpHealthCheck{Disabled: true},
+			tcp:            &v1alpha1.TcpHealthCheck{Disabled: true},
+			expectedHcType: HCNone,
+		}),
+	)
 })

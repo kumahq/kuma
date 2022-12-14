@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	"fmt"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	"path/filepath"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -16,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	"github.com/kumahq/kuma/pkg/test/matchers"

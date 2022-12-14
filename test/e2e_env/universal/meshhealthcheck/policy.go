@@ -3,12 +3,12 @@ package meshhealthcheck
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
 )
