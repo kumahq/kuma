@@ -12,14 +12,14 @@ import (
 func ResilienceMultizoneK8s() {
 	var global, zone1 *K8sCluster
 
-	BeforeEach(func() {
+	BeforeAll(func() {
 		clusters, err := NewK8sClusters([]string{Kuma1, Kuma2}, Silent)
 		Expect(err).ToNot(HaveOccurred())
 
 		// Global
 		global = clusters.GetCluster(Kuma1).(*K8sCluster)
 		Expect(NewClusterSetup().
-			Install(Kuma(core.Global)).
+			Install(Kuma(core.Global, WithCtlOpts(map[string]string{"--set": "controlPlane.terminationGracePeriodSeconds=5"}))).
 			Setup(global)).To(Succeed())
 		Expect(global.VerifyKuma()).To(Succeed())
 
@@ -29,13 +29,13 @@ func ResilienceMultizoneK8s() {
 		zone1 = clusters.GetCluster(Kuma2).(*K8sCluster)
 
 		Expect(NewClusterSetup().
-			Install(Kuma(core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(Kuma(core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()), WithCtlOpts(map[string]string{"--set": "controlPlane.terminationGracePeriodSeconds=5"}))).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Setup(zone1)).To(Succeed())
 		Expect(zone1.VerifyKuma()).To(Succeed())
 	})
 
-	E2EAfterEach(func() {
+	E2EAfterAll(func() {
 		Expect(zone1.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(zone1.DeleteKuma()).To(Succeed())
 		Expect(zone1.DismissCluster()).To(Succeed())
@@ -50,12 +50,12 @@ func ResilienceMultizoneK8s() {
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
 metadata:
-  name: my-resilience-mesh-before
+  name: before-zone-restart
 `)(global)).To(Succeed())
 
 		// The mesh should make it to zone
 		Eventually(func() error {
-			return zone1.GetKumactlOptions().RunKumactl("get", "mesh", "my-resilience-mesh-before")
+			return zone1.GetKumactlOptions().RunKumactl("get", "mesh", "before-zone-restart")
 		}, "30s", "1s").Should(Succeed())
 
 		// Stop the zone
@@ -66,7 +66,7 @@ metadata:
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
 metadata:
-  name: my-resilience-mesh-when-down
+  name: when-zone-is-down
 `)(global)).To(Succeed())
 
 		// Start the zone back
@@ -75,21 +75,21 @@ metadata:
 			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
 		}, "30s", "1s").Should(ContainSubstring("Online"))
 
-		// Create a mesh now that the remote zone is backup
+		// Create a mesh now that the remote zone is back up
 		Expect(YamlK8s(`
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
 metadata:
-  name: my-resilience-mesh-after-restart
+  name: after-zone-restart
 `)(global)).To(Succeed())
 
 		// All 3 meshes should be in the zone cp
 		Eventually(func() (string, error) {
 			return zone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshes")
 		}, "30s", "1s").Should(And(
-			ContainSubstring("my-resilience-mesh-before"),
-			ContainSubstring("my-resilience-mesh-when-down"),
-			ContainSubstring("my-resilience-mesh-after-restart"),
+			ContainSubstring("before-zone-restart"),
+			ContainSubstring("when-zone-is-down"),
+			ContainSubstring("after-zone-restart"),
 		))
 	})
 
@@ -99,19 +99,19 @@ metadata:
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
 metadata:
-  name: my-resilience-mesh-before
+  name: before-global-restart
 `)(global)).To(Succeed())
 
 		// Check the mesh makes it to the zone cp
 		Eventually(func() error {
-			return zone1.GetKumactlOptions().RunKumactl("get", "mesh", "my-resilience-mesh-before")
+			return zone1.GetKumactlOptions().RunKumactl("get", "mesh", "before-global-restart")
 		}, "30s", "1s").Should(Succeed())
 
 		// Stop global
 		Expect(global.StopControlPlane()).To(Succeed())
 
 		// The mesh is still present in zone1
-		Expect(zone1.GetKumactlOptions().RunKumactl("get", "mesh", "my-resilience-mesh-before")).To(Succeed())
+		Expect(zone1.GetKumactlOptions().RunKumactl("get", "mesh", "before-global-restart")).To(Succeed())
 
 		// Start back global
 		Expect(global.RestartControlPlane()).To(Succeed())
@@ -124,26 +124,26 @@ metadata:
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
 metadata:
-  name: my-resilience-mesh-after-restart
+  name: after-global-restart
 `)(global)).To(Succeed())
 
 		// Check the zone has both Meshes
 		Eventually(func() (string, error) {
 			return zone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshes")
 		}, "30s", "1s").Should(And(
-			ContainSubstring("my-resilience-mesh-before"),
-			ContainSubstring("my-resilience-mesh-after-restart"),
+			ContainSubstring("before-global-restart"),
+			ContainSubstring("after-global-restart"),
 		))
 	})
 
 	It("should see zone entities in global after a zone restart", func() {
 		// Run an app
-		Expect(testserver.Install(testserver.WithName("kds-before-restart"))(zone1)).To(Succeed())
+		Expect(testserver.Install(testserver.WithName("kds-before-zone-restart"))(zone1)).To(Succeed())
 
 		// Check the dp goes to global
 		Eventually(func() (string, error) {
 			return global.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes")
-		}, "30s", "1s").Should(ContainSubstring("kds-before-restart"))
+		}, "30s", "1s").Should(ContainSubstring("kds-before-zone-restart"))
 
 		// Stop the zone CP
 		Expect(zone1.StopControlPlane()).To(Succeed())
@@ -151,7 +151,7 @@ metadata:
 		// The global should still has the dp
 		out, err := global.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(out).To(ContainSubstring("kds-before-restart"))
+		Expect(out).To(ContainSubstring("kds-before-zone-restart"))
 
 		// Start again the zone CP
 		Expect(zone1.RestartControlPlane()).To(Succeed())
@@ -160,44 +160,44 @@ metadata:
 		}, "30s", "1s").Should(ContainSubstring("Online"))
 
 		// Start a new app
-		Expect(testserver.Install(testserver.WithName("kds-after-restart"))(zone1)).To(Succeed())
+		Expect(testserver.Install(testserver.WithName("kds-after-zone-restart"))(zone1)).To(Succeed())
 
 		// Check all 2 dps are in the local zone
 		Eventually(func() (string, error) {
 			return zone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes")
 		}, "30s", "1s").Should(And(
-			ContainSubstring("kds-before-restart"),
-			ContainSubstring("kds-after-restart"),
+			ContainSubstring("kds-before-zone-restart"),
+			ContainSubstring("kds-after-zone-restart"),
 		))
 
 		// Check all 2 dps are in the global zone
 		Eventually(func() (string, error) {
 			return global.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes")
 		}, "30s", "1s").Should(And(
-			ContainSubstring("kds-before-restart"),
-			ContainSubstring("kds-after-restart"),
+			ContainSubstring("kds-before-zone-restart"),
+			ContainSubstring("kds-after-zone-restart"),
 		))
 	})
 
 	It("should see zone entities in global after a global restart", func() {
 		// Start an app
-		Expect(testserver.Install(testserver.WithName("kds-before-restart"))(zone1)).To(Succeed())
+		Expect(testserver.Install(testserver.WithName("kds-before-global-restart"))(zone1)).To(Succeed())
 
 		// Check the dp gets to global
 		Eventually(func() (string, error) {
 			return global.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes")
-		}, "30s", "1s").Should(ContainSubstring("kds-before-restart"))
+		}, "30s", "1s").Should(ContainSubstring("kds-before-global-restart"))
 
 		// Stop the global CP
 		Expect(global.StopControlPlane()).To(Succeed())
 
 		// Start an app while the global CP is down
-		Expect(testserver.Install(testserver.WithName("kds-during-restart"))(zone1)).To(Succeed())
+		Expect(testserver.Install(testserver.WithName("kds-during-global-restart"))(zone1)).To(Succeed())
 
 		// Check the dp is in the zone
 		Eventually(func() (string, error) {
 			return zone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes")
-		}, "30s", "1s").Should(ContainSubstring("kds-during-restart"))
+		}, "30s", "1s").Should(ContainSubstring("kds-during-global-restart"))
 
 		// Start back the global CP
 		Expect(global.RestartControlPlane()).To(Succeed())
@@ -206,23 +206,23 @@ metadata:
 		}, "30s", "1s").Should(ContainSubstring("Online"))
 
 		// Start a new app
-		Expect(testserver.Install(testserver.WithName("kds-after-restart"))(zone1)).To(Succeed())
+		Expect(testserver.Install(testserver.WithName("kds-after-global-restart"))(zone1)).To(Succeed())
 
 		// Check all 3 dps are in the local zone
 		Eventually(func() (string, error) {
 			return zone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes")
 		}, "30s", "1s").Should(And(
-			ContainSubstring("kds-before-restart"),
-			ContainSubstring("kds-during-restart"),
-			ContainSubstring("kds-after-restart"),
+			ContainSubstring("kds-before-global-restart"),
+			ContainSubstring("kds-during-global-restart"),
+			ContainSubstring("kds-after-global-restart"),
 		))
 		// Check all 3 dps are in the global zone
 		Eventually(func() (string, error) {
 			return global.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes")
 		}, "30s", "1s").Should(And(
-			ContainSubstring("kds-before-restart"),
-			ContainSubstring("kds-during-restart"),
-			ContainSubstring("kds-after-restart"),
+			ContainSubstring("kds-before-global-restart"),
+			ContainSubstring("kds-during-global-restart"),
+			ContainSubstring("kds-after-global-restart"),
 		))
 	})
 }
