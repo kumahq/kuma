@@ -5,29 +5,22 @@ metadata:
   labels:
     run: busybox
   annotations:
-    kuma.io/virtual-probes: "disabled"
+    traffic.kuma.io/exclude-inbound-ports: "1234,1235"
+    traffic.kuma.io/exclude-outbound-ports: "1236"
 spec:
   volumes:
-    - name: default-token-w7dxf
-      secret:
-        secretName: default-token-w7dxf
+  - name: default-token-w7dxf
+    secret:
+      secretName: default-token-w7dxf
   containers:
-    - name: busybox
+  - name: busybox
+    image: busybox
+    resources: {}
+    volumeMounts:
+    - name: default-token-w7dxf
+      readOnly: true
+      mountPath: "/var/run/secrets/kubernetes.io/serviceaccount"
+  initContainers:
+    - name: init
       image: busybox
-      resources: {}
-      readinessProbe:
-        httpGet:
-          path: /metrics
-          port: 3001
-        initialDelaySeconds: 3
-        periodSeconds: 3
-      livenessProbe:
-        httpGet:
-          path: /metrics
-          port: 8080
-        initialDelaySeconds: 3
-        periodSeconds: 3
-      volumeMounts:
-        - name: default-token-w7dxf
-          readOnly: true
-          mountPath: "/var/run/secrets/kubernetes.io/serviceaccount"
+      command: ['sh', '-c', 'sleep 5']

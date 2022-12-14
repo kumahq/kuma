@@ -1,0 +1,25 @@
+{
+  "type": "inbound",
+  "name": "192.168.0.1:80",
+  "service": "web",
+  "matchedPolicies": {
+    "MeshAccessLog": [
+      {
+        "type": "MeshAccessLog",
+        "mesh": "mesh-1",
+        "name": "mal-1",
+        "creationTime": "0001-01-01T00:00:00Z",
+        "modificationTime": "0001-01-01T00:00:00Z"
+      }
+    ],
+    "Timeout": [
+      {
+        "type": "Timeout",
+        "mesh": "mesh-1",
+        "name": "t-1",
+        "creationTime": "0001-01-01T00:00:00Z",
+        "modificationTime": "0001-01-01T00:00:00Z"
+      }
+    ]
+  }
+}

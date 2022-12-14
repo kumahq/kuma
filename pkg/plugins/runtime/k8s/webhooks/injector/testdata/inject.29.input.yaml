@@ -5,7 +5,7 @@ metadata:
   labels:
     run: busybox
   annotations:
-    kuma.io/sidecar-drain-time: "10s"
+    kuma.io/builtin-dns-port: "25053"
 spec:
   containers:
   - name: busybox

@@ -23,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/kic"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/membership"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshratelimit"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshtimeout"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/observability"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/reachableservices"
@@ -120,3 +121,4 @@ var _ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)
 var _ = Describe("Kong Ingress Controller", Label("arm-not-supported"), kic.KICKubernetes, Ordered)
 var _ = Describe("MeshTrafficPermission API", meshtrafficpermission.API, Ordered)
 var _ = Describe("MeshRateLimit API", meshratelimit.API, Ordered)
+var _ = Describe("MeshTimeout API", meshtimeout.MeshTimeout, Ordered)

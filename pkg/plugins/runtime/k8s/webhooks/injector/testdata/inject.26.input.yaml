@@ -5,23 +5,18 @@ metadata:
   labels:
     run: busybox
   annotations:
-    docs: "Documentation"
-    kuma.io/sidecar-env-vars: "KUMA_DATAPLANE_DRAIN_TIME=5s;NEW_ENV_VAR=123" # drain time overrides the file, NEW_ENV_VAR is completely new var
-    kuma.io/sidecar-proxy-concurrency: "99"
+    kuma.io/service-account-token-volume: token
 spec:
+  automountServiceAccountToken: false
   volumes:
-  - name: default-token-w7dxf
-    secret:
-      secretName: default-token-w7dxf
+    - name: token
+      projected:
+        sources:
+          - serviceAccountToken:
+              path: token
+              expirationSeconds: 7200
+              audience: "https://kubernetes.default.svc.cluster.local"
   containers:
   - name: busybox
     image: busybox
     resources: {}
-    volumeMounts:
-    - name: default-token-w7dxf
-      readOnly: true
-      mountPath: "/var/run/secrets/kubernetes.io/serviceaccount"
-  initContainers:
-    - name: init
-      image: busybox
-      command: ['sh', '-c', 'sleep 5']

@@ -118,3 +118,4 @@ var _ = Describe("Transparent Proxy", transparentproxy.TransparentProxy, Ordered
 var _ = Describe("Mesh Traffic Permission", meshtrafficpermission.MeshTrafficPermissionUniversal, Ordered)
 var _ = Describe("GRPC", grpc.GRPC, Ordered)
 var _ = Describe("MeshRateLimit", meshratelimit.Policy, Ordered)
+var _ = Describe("MeshTimeout", timeout.PluginTest, Ordered)

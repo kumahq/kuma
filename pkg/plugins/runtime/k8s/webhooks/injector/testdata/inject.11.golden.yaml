@@ -3,9 +3,8 @@ kind: Pod
 metadata:
   annotations:
     kuma.io/envoy-admin-port: "9901"
-    kuma.io/mesh: default
+    kuma.io/mesh: mesh-name-from-ns
     kuma.io/sidecar-injected: "true"
-    kuma.io/sidecar-injection: enabled
     kuma.io/sidecar-uid: "5678"
     kuma.io/transparent-proxying: enabled
     kuma.io/transparent-proxying-ebpf: disabled
@@ -20,13 +19,6 @@ metadata:
   name: busybox
 spec:
   containers:
-  - image: busybox
-    name: busybox
-    resources: {}
-    volumeMounts:
-    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-      name: default-token-w7dxf
-      readOnly: true
   - args:
     - run
     - --log-level=info
@@ -74,7 +66,7 @@ spec:
     - name: KUMA_DATAPLANE_DRAIN_TIME
       value: 31s
     - name: KUMA_DATAPLANE_MESH
-      value: default
+      value: mesh-name-from-ns
     - name: KUMA_DATAPLANE_NAME
       value: $(POD_NAME).$(POD_NAMESPACE)
     - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
@@ -112,6 +104,13 @@ spec:
     securityContext:
       runAsGroup: 5678
       runAsUser: 5678
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-w7dxf
+      readOnly: true
+  - image: busybox
+    name: busybox
+    resources: {}
     volumeMounts:
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: default-token-w7dxf

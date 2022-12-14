@@ -58,6 +58,18 @@ func ValidateIntPercentageOrNil(path PathBuilder, percentage *int32) (err Valida
 	return
 }
 
+func ValidateUInt32PercentageOrNil(path PathBuilder, percentage *uint32) (err ValidationError) {
+	if percentage == nil {
+		return
+	}
+
+	if *percentage > 100 {
+		err.AddViolationAt(path, HasToBeInUintPercentageRange)
+	}
+
+	return
+}
+
 func ValidateStringDefined(path PathBuilder, value string) (err ValidationError) {
 	if value == "" {
 		err.AddViolationAt(path, MustBeDefined)
@@ -105,8 +117,7 @@ func ValidateIntegerGreaterThanZeroOrNil(path PathBuilder, value *uint32) (err V
 		return
 	}
 
-	ValidateIntegerGreaterThan(path, *value, 0)
-	return
+	return ValidateIntegerGreaterThan(path, *value, 0)
 }
 
 func ValidateIntegerGreaterThan(path PathBuilder, value uint32, minValue uint32) (err ValidationError) {
