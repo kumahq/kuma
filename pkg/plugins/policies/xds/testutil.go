@@ -26,3 +26,7 @@ func ParseDuration(duration string) *k8s.Duration {
 	return &k8s.Duration{Duration: d}
 }
 
+func PointerOf[T any](value T) *T {
+	return &value
+}
+

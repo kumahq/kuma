@@ -98,23 +98,64 @@ var _ = Describe("MeshHealthCheck", func() {
 					{
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
-							Interval: *policies_xds.ParseDuration("10s"),
-							Timeout: *policies_xds.ParseDuration("2s"),
-							UnhealthyThreshold: 3,
-							HealthyThreshold: 1,
+							Interval:                     *policies_xds.ParseDuration("10s"),
+							Timeout:                      *policies_xds.ParseDuration("2s"),
+							UnhealthyThreshold:           3,
+							HealthyThreshold:             1,
+							InitialJitter:                policies_xds.ParseDuration("13s"),
+							IntervalJitter:               policies_xds.ParseDuration("15s"),
+							IntervalJitterPercent:        policies_xds.PointerOf[int32](10),
+							HealthyPanicThreshold:        policies_xds.PointerOf[int32](11),
+							FailTrafficOnPanic:           policies_xds.PointerOf[bool](true),
+							EventLogPath:                 policies_xds.PointerOf[string]("/tmp/log.txt"),
+							AlwaysLogHealthCheckFailures: policies_xds.PointerOf[bool](false),
+							NoTrafficInterval:            policies_xds.ParseDuration("16s"),
 							Http: &api.HttpHealthCheck{
-								Path: "/health",
+								Disabled:            false,
+								Path:                "/health",
+								RequestHeadersToAdd: &[]api.HeaderValueOption{
+									{
+										Header: &api.HeaderValue{
+											Key:   "x-some-header",
+											Value: "value",
+										},
+										Append: policies_xds.PointerOf[bool](true),
+									},
+								},
+								ExpectedStatuses: &[]int32{200, 201},
 							},
+							ReuseConnection: policies_xds.PointerOf[bool](true),
 						},
 					},
 				}},
 			expectedClusters: []string{`
 name: echo
+commonLbConfig:
+  healthyPanicThreshold:
+    value: 11
+  zoneAwareLbConfig:
+    failTrafficOnPanic: true
 healthChecks:
-- healthyThreshold: 1
+- eventLogPath: /tmp/log.txt
+  healthyThreshold: 1
   httpHealthCheck:
+    expectedStatuses:
+      - end: "201"
+        start: "200"
+      - end: "202"
+        start: "201"
     path: /health
+    requestHeadersToAdd:
+      - append: true
+        header:
+          key: x-some-header
+          value: value
+  initialJitter: 13s
   interval: 10s
+  intervalJitter: 15s
+  intervalJitterPercent: 10
+  noTrafficInterval: 16s
+  reuseConnection: true
   timeout: 2s
   unhealthyThreshold: 3
 `},
