@@ -23,9 +23,10 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			VirtualProbesEnabled: true,
 			VirtualProbesPort:    9000,
 			SidecarContainer: SidecarContainer{
-				RedirectPortInbound:   15006,
-				RedirectPortInboundV6: 15010,
-				RedirectPortOutbound:  15001,
+				RedirectPortInbound:             15006,
+				RedirectPortInboundV6:           15010,
+				RedirectPortOutbound:            15001,
+				HoldApplicationUntilProxyStarts: false,
 				DataplaneContainer: DataplaneContainer{
 					Image:     "kuma/kuma-dp:latest",
 					UID:       5678,
@@ -201,6 +202,8 @@ type SidecarContainer struct {
 	RedirectPortInboundV6 uint32 `json:"redirectPortInboundV6,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_inbound_v6"`
 	// Redirect port for outbound traffic.
 	RedirectPortOutbound uint32 `json:"redirectPortOutbound,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_outbound"`
+	// HoldApplicationUntilProxyStarts
+	HoldApplicationUntilProxyStarts bool `json:"holdApplicationUntilProxyStarts" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_hold_application_start"`
 }
 
 // SidecarReadinessProbe defines periodic probe of container service readiness.

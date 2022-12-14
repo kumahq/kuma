@@ -20,6 +20,11 @@ const (
 	// gives users an ability to enable or disable sidecar-injection
 	KumaSidecarInjectionAnnotation = "kuma.io/sidecar-injection"
 
+	// KumaSidecarHoldApplicationAnnotation defines a Pod annotation that
+	// gives uers an ability to enable or disable waiting for the sidecar to finish loading
+	// before starting your application *experimental*
+	KumaSidecarHoldApplicationAnnotation = "kuma.io/sidecar-hold-application"
+
 	// KumaGatewayAnnotation allows to mark Gateway pod,
 	// inbound listeners won't be generated in that case.
 	// It can be used to mark a pod as providing a builtin gateway.
