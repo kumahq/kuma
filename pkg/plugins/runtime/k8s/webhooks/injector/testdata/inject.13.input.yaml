@@ -4,8 +4,6 @@ metadata:
   name: busybox
   labels:
     run: busybox
-  annotations:
-    kuma.io/mesh: mesh-name-from-pod
 spec:
   volumes:
     - name: default-token-w7dxf
@@ -15,6 +13,18 @@ spec:
     - name: busybox
       image: busybox
       resources: {}
+      readinessProbe:
+        httpGet:
+          path: /metrics
+          port: 3001
+        initialDelaySeconds: 3
+        periodSeconds: 3
+      livenessProbe:
+        httpGet:
+          path: /metrics
+          port: 8080
+        initialDelaySeconds: 3
+        periodSeconds: 3
       volumeMounts:
         - name: default-token-w7dxf
           readOnly: true

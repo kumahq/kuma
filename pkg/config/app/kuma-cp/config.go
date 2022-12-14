@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/diagnostics"
 	dns_server "github.com/kumahq/kuma/pkg/config/dns-server"
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
+	"github.com/kumahq/kuma/pkg/config/intercp"
 	"github.com/kumahq/kuma/pkg/config/mads"
 	"github.com/kumahq/kuma/pkg/config/multizone"
 	"github.com/kumahq/kuma/pkg/config/plugins/runtime"
@@ -150,6 +151,8 @@ type Config struct {
 	Experimental ExperimentalConfig `json:"experimental"`
 	// Proxy holds configuration for proxies
 	Proxy xds.Proxy `json:"proxy"`
+	// Intercommunication CP configuration
+	InterCp intercp.InterCpConfig `json:"interCp"`
 }
 
 func (c *Config) Sanitize() {
@@ -208,7 +211,8 @@ var DefaultConfig = func() Config {
 			GatewayAPI:          false,
 			KubeOutboundsAsVIPs: false,
 		},
-		Proxy: xds.DefaultProxyConfig(),
+		Proxy:   xds.DefaultProxyConfig(),
+		InterCp: intercp.DefaultInterCpConfig(),
 	}
 }
 
@@ -280,6 +284,9 @@ func (c *Config) Validate() error {
 	}
 	if err := c.Experimental.Validate(); err != nil {
 		return errors.Wrap(err, "Experimental validation failed")
+	}
+	if err := c.InterCp.Validate(); err != nil {
+		return errors.Wrap(err, "InterCp validation failed")
 	}
 	return nil
 }

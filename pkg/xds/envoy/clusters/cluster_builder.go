@@ -1,9 +1,8 @@
 package clusters
 
 import (
-	"errors"
-
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	"github.com/pkg/errors"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
@@ -53,6 +52,15 @@ func (b *ClusterBuilder) Build() (envoy.NamedResource, error) {
 	default:
 		return nil, errors.New("unknown API")
 	}
+}
+
+func (b *ClusterBuilder) MustBuild() envoy.NamedResource {
+	cluster, err := b.Build()
+	if err != nil {
+		panic(errors.Wrap(err, "failed to build Envoy Cluster").Error())
+	}
+
+	return cluster
 }
 
 // ClusterBuilderConfig holds configuration of a ClusterBuilder.

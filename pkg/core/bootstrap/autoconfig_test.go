@@ -23,4 +23,16 @@ var _ = Describe("Auto configuration", func() {
 		// and
 		Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(1234)))
 	})
+
+	It("should fill intercp instance address", func() {
+		// given
+		cfg := kuma_cp.DefaultConfig()
+
+		// when
+		err := autoconfigure(&cfg)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(cfg.InterCp.Catalog.InstanceAddress).ToNot(BeEmpty())
+	})
 })

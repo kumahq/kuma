@@ -11,6 +11,9 @@ import (
 
 // ToConnectionPolicies casts a ResourceList to a slice of ConnectionPolicy.
 func ToConnectionPolicies(policies model.ResourceList) []policy.ConnectionPolicy {
+	if policies == nil {
+		return []policy.ConnectionPolicy{}
+	}
 	items := policies.GetItems()
 	c := make([]policy.ConnectionPolicy, 0, len(items))
 

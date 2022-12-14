@@ -20,9 +20,6 @@ metadata:
 spec:
   automountServiceAccountToken: false
   containers:
-  - image: busybox
-    name: busybox
-    resources: {}
   - args:
     - run
     - --log-level=info
@@ -108,6 +105,9 @@ spec:
     securityContext:
       runAsGroup: 5678
       runAsUser: 5678
+  - image: busybox
+    name: busybox
+    resources: {}
   initContainers:
   - args:
     - --redirect-outbound-port

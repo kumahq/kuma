@@ -97,6 +97,20 @@ Running `make test/e2e/debug` can intentionally leave resources if test fails. C
 make k3d/stop/all && docker stop $(docker ps -aq) # omit $ for fish
 ```
 
+### Tests failing because of disk pressure
+
+From time to time when running tests your docker environment can run out of space. You will see k8s events like this:
+```
+Warning  FailedScheduling  63s (x1 over 2m15s)  default-scheduler  0/1 nodes are available: 
+1 node(s) had taint {node.kubernetes.io/disk-pressure:}, that the pod didn't tolerate.
+```
+
+To fix this issue you need to clean up your docker environment:
+
+```bash
+docker system prune --volumes --all
+```
+
 ### Integration with direnv
 
 [direnv](https://direnv.net/) is a useful tool that can populate environment variables in your shell as you change directories.

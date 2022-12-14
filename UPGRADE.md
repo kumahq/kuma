@@ -13,6 +13,11 @@ does not have any particular instructions.
 We've removed the endpoint `POST /tokens` which has been moved by `POST /tokens/dataplane` (same request and response) some time ago.
 Make sure you are using a recent `kumactl` or that you use the right path if using the api directly to upgrade with no issues.
 
+### Kubernetes
+
+The sidecar container is always injected first (since [#5436](https://github.com/kumahq/kuma/pull/5436)). This should only impact you when modifying the sidecar container with a container-patch. If you do so, upgrade Kuma and then change your container patch to modify the right container.
+
+
 ## Upgrade to `2.0.x`
 
 ### Built-in gateway

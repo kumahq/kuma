@@ -11,23 +11,14 @@ metadata:
     kuma.io/transparent-proxying-inbound-port: "15006"
     kuma.io/transparent-proxying-inbound-v6-port: "15010"
     kuma.io/transparent-proxying-outbound-port: "15001"
-    kuma.io/virtual-probes: enabled
+    kuma.io/virtual-probes: disabled
     kuma.io/virtual-probes-port: "9000"
-    traffic.kuma.io/exclude-inbound-ports: ""
-    traffic.kuma.io/exclude-outbound-ports: ""
   creationTimestamp: null
   labels:
     run: busybox
   name: busybox
 spec:
   containers:
-  - image: busybox
-    name: busybox
-    resources: {}
-    volumeMounts:
-    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-      name: default-token-w7dxf
-      readOnly: true
   - args:
     - run
     - --log-level=info
@@ -117,14 +108,32 @@ spec:
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: default-token-w7dxf
       readOnly: true
-  initContainers:
-  - command:
-    - sh
-    - -c
-    - sleep 5
-    image: busybox
-    name: init
+  - image: busybox
+    livenessProbe:
+      httpGet:
+        path: /metrics
+        port: 8080
+      initialDelaySeconds: 3
+      periodSeconds: 3
+    name: busybox
+    readinessProbe:
+      httpGet:
+        path: /metrics
+        port: 3001
+      initialDelaySeconds: 3
+      periodSeconds: 3
     resources: {}
+    startupProbe:
+      httpGet:
+        path: /ready
+        port: 8080
+      initialDelaySeconds: 3
+      periodSeconds: 3
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-w7dxf
+      readOnly: true
+  initContainers:
   - args:
     - --redirect-outbound-port
     - "15001"

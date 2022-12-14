@@ -4,6 +4,9 @@ metadata:
   name: busybox
   labels:
     run: busybox
+  annotations:
+    traffic.kuma.io/exclude-inbound-ports: ""
+    traffic.kuma.io/exclude-outbound-ports: ""
 spec:
   volumes:
   - name: default-token-w7dxf
