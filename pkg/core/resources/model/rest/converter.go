@@ -39,7 +39,25 @@ func (f *from) Resource(r core_model.Resource) Resource {
 		return nil
 	}
 
+	meta := f.Meta(r)
+	if r.Descriptor().IsPluginOriginated {
+		return &v1alpha1.Resource{
+			ResourceMeta: meta,
+			Spec:         r.GetSpec(),
+		}
+	} else {
+		return &unversioned.Resource{
+			Meta: meta,
+			Spec: r.GetSpec(),
+		}
+	}
+}
+
+func (f *from) Meta(r core_model.Resource) v1alpha1.ResourceMeta {
 	meta := v1alpha1.ResourceMeta{}
+	if r == nil {
+		return meta
+	}
 	if r.GetMeta() != nil {
 		var meshName string
 		if r.Descriptor().Scope == core_model.ScopeMesh {
@@ -53,18 +71,7 @@ func (f *from) Resource(r core_model.Resource) Resource {
 			ModificationTime: r.GetMeta().GetModificationTime(),
 		}
 	}
-
-	if r.Descriptor().IsPluginOriginated {
-		return &v1alpha1.Resource{
-			ResourceMeta: meta,
-			Spec:         r.GetSpec(),
-		}
-	} else {
-		return &unversioned.Resource{
-			Meta: meta,
-			Spec: r.GetSpec(),
-		}
-	}
+	return meta
 }
 
 func (f *from) ResourceList(rs core_model.ResourceList) *ResourceList {

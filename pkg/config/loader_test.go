@@ -280,6 +280,14 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DpServer.Hds.CheckDefaults.HealthyThreshold).To(Equal(uint32(8)))
 			Expect(cfg.DpServer.Hds.CheckDefaults.UnhealthyThreshold).To(Equal(uint32(9)))
 
+			Expect(cfg.InterCp.Catalog.InstanceAddress).To(Equal("192.168.0.1"))
+			Expect(cfg.InterCp.Catalog.HeartbeatInterval.Duration).To(Equal(time.Second))
+			Expect(cfg.InterCp.Catalog.WriterInterval.Duration).To(Equal(2 * time.Second))
+			Expect(cfg.InterCp.Server.Port).To(Equal(uint16(15683)))
+			Expect(cfg.InterCp.Server.TlsMinVersion).To(Equal("TLSv1_3"))
+			Expect(cfg.InterCp.Server.TlsMaxVersion).To(Equal("TLSv1_3"))
+			Expect(cfg.InterCp.Server.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
+
 			Expect(cfg.Access.Type).To(Equal("custom-rbac"))
 			Expect(cfg.Access.Static.AdminResources.Users).To(Equal([]string{"ar-admin1", "ar-admin2"}))
 			Expect(cfg.Access.Static.AdminResources.Groups).To(Equal([]string{"ar-group1", "ar-group2"}))
@@ -540,6 +548,16 @@ dpServer:
       noTrafficInterval: 7s
       healthyThreshold: 8
       unhealthyThreshold: 9
+interCp:
+  catalog:
+    instanceAddress: "192.168.0.1"
+    heartbeatInterval: 1s
+    writerInterval: 2s
+  server:
+    port: 15683
+    tlsMinVersion: "TLSv1_3"
+    tlsMaxVersion: "TLSv1_3"
+    tlsCipherSuites: ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"]
 access:
   type: custom-rbac
   static:
@@ -750,6 +768,13 @@ proxy:
 				"KUMA_DP_SERVER_HDS_CHECK_NO_TRAFFIC_INTERVAL":                                             "7s",
 				"KUMA_DP_SERVER_HDS_CHECK_HEALTHY_THRESHOLD":                                               "8",
 				"KUMA_DP_SERVER_HDS_CHECK_UNHEALTHY_THRESHOLD":                                             "9",
+				"KUMA_INTER_CP_CATALOG_INSTANCE_ADDRESS":                                                   "192.168.0.1",
+				"KUMA_INTER_CP_CATALOG_HEARTBEAT_INTERVAL":                                                 "1s",
+				"KUMA_INTER_CP_CATALOG_WRITER_INTERVAL":                                                    "2s",
+				"KUMA_INTER_CP_SERVER_PORT":                                                                "15683",
+				"KUMA_INTER_CP_SERVER_TLS_MIN_VERSION":                                                     "TLSv1_3",
+				"KUMA_INTER_CP_SERVER_TLS_MAX_VERSION":                                                     "TLSv1_3",
+				"KUMA_INTER_CP_SERVER_TLS_CIPHER_SUITES":                                                   "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384",
 				"KUMA_ACCESS_TYPE":                                                                         "custom-rbac",
 				"KUMA_ACCESS_STATIC_ADMIN_RESOURCES_USERS":                                                 "ar-admin1,ar-admin2",
 				"KUMA_ACCESS_STATIC_ADMIN_RESOURCES_GROUPS":                                                "ar-group1,ar-group2",

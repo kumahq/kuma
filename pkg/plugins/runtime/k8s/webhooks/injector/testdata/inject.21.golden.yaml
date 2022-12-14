@@ -11,7 +11,7 @@ metadata:
     kuma.io/transparent-proxying-inbound-port: "15006"
     kuma.io/transparent-proxying-inbound-v6-port: "15010"
     kuma.io/transparent-proxying-outbound-port: "15001"
-    kuma.io/virtual-probes: disabled
+    kuma.io/virtual-probes: enabled
     kuma.io/virtual-probes-port: "9000"
   creationTimestamp: null
   labels:
@@ -19,31 +19,6 @@ metadata:
   name: busybox
 spec:
   containers:
-  - image: busybox
-    livenessProbe:
-      httpGet:
-        path: /metrics
-        port: 8080
-      initialDelaySeconds: 3
-      periodSeconds: 3
-    name: busybox
-    readinessProbe:
-      httpGet:
-        path: /metrics
-        port: 3001
-      initialDelaySeconds: 3
-      periodSeconds: 3
-    resources: {}
-    startupProbe:
-      httpGet:
-        path: /ready
-        port: 8080
-      initialDelaySeconds: 3
-      periodSeconds: 3
-    volumeMounts:
-    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-      name: default-token-w7dxf
-      readOnly: true
   - args:
     - run
     - --log-level=info
@@ -129,6 +104,38 @@ spec:
     securityContext:
       runAsGroup: 5678
       runAsUser: 5678
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-w7dxf
+      readOnly: true
+  - image: busybox
+    livenessProbe:
+      httpGet:
+        path: /8080/metrics
+        port: 9000
+      initialDelaySeconds: 3
+      periodSeconds: 3
+    name: busybox
+    ports:
+    - containerPort: 3001
+      name: readiness-port
+    - containerPort: 8080
+      name: liveness-port
+    - containerPort: 8081
+      name: startup-port
+    readinessProbe:
+      httpGet:
+        path: /3001/metrics
+        port: 9000
+      initialDelaySeconds: 3
+      periodSeconds: 3
+    resources: {}
+    startupProbe:
+      httpGet:
+        path: /8081/startup
+        port: 9000
+      initialDelaySeconds: 3
+      periodSeconds: 3
     volumeMounts:
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: default-token-w7dxf

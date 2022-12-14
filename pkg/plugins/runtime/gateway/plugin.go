@@ -69,7 +69,7 @@ func NewProxyProfile(zone string) generator_core.ResourceGenerator {
 		generator.TransparentProxyGenerator{},
 		generator.DNSGenerator{},
 		Generator{
-			FilterChainGenerators: filterChainGenerators{
+			FilterChainGenerators: FilterChainGenerators{
 				FilterChainGenerators: map[mesh_proto.MeshGateway_Listener_Protocol]FilterChainGenerator{
 					mesh_proto.MeshGateway_Listener_HTTP:  &HTTPFilterChainGenerator{},
 					mesh_proto.MeshGateway_Listener_HTTPS: &HTTPSFilterChainGenerator{},

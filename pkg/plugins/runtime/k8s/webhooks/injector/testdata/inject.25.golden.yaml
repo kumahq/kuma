@@ -25,17 +25,10 @@ metadata:
   name: busybox
 spec:
   containers:
-  - image: busybox
-    name: busybox
-    resources: {}
-    volumeMounts:
-    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-      name: default-token-w7dxf
-      readOnly: true
   - args:
     - run
     - --log-level=info
-    - --concurrency=2
+    - --concurrency=8
     env:
     - name: POD_NAME
       valueFrom:
@@ -119,7 +112,7 @@ spec:
       timeoutSeconds: 13
     resources:
       limits:
-        cpu: 1100m
+        cpu: 8500m
         memory: 1512Mi
       requests:
         cpu: 150m
@@ -127,6 +120,13 @@ spec:
     securityContext:
       runAsGroup: 5678
       runAsUser: 5678
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-w7dxf
+      readOnly: true
+  - image: busybox
+    name: busybox
+    resources: {}
     volumeMounts:
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: default-token-w7dxf

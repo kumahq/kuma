@@ -26,3 +26,11 @@ func DataplaneWebBuilder() *builders.DataplaneBuilder {
 func DataplaneWeb() *mesh.DataplaneResource {
 	return DataplaneWebBuilder().Build()
 }
+
+func GatewayDataplane() *mesh.DataplaneResource {
+	return builders.Dataplane().
+		WithName("sample-gateway").
+		WithAddress("192.168.0.1").
+		WithBuiltInGateway("sample-gateway").
+		Build()
+}
