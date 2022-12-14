@@ -1,7 +1,6 @@
 package meshhealthcheck
 
 import (
-	"encoding/base64"
 	"fmt"
 	"strings"
 
@@ -17,28 +16,29 @@ func MeshHealthCheck() {
 		meshName := "meshhealthcheck-http"
 		healthCheck := func(mesh, method, status string) string {
 			return fmt.Sprintf(`
-type: HealthCheck
-name: everything-to-backend
+type: MeshHealthCheck
 mesh: %s
-sources:
-- match:
-    kuma.io/service: '*'
-destinations:
-- match:
-    kuma.io/service: test-server
-conf:
-  interval: 10s
-  timeout: 2s
-  unhealthyThreshold: 3
-  healthyThreshold: 1
-  failTrafficOnPanic: true
-  noTrafficInterval: 1s
-  healthyPanicThreshold: 0
-  reuse_connection: true
-  http: 
-    path: /%s
-    expectedStatuses: 
-    - %s`, mesh, method, status)
+name: everything-to-backend
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        interval: 10s
+        timeout: 2s
+        unhealthyThreshold: 3
+        healthyThreshold: 1
+        failTrafficOnPanic: true
+        noTrafficInterval: 1s
+        healthyPanicThreshold: 0
+        reuse_connection: true
+        http: 
+          path: /%s
+          expectedStatuses: 
+          - %s`, mesh, method, status)
 		}
 		BeforeAll(func() {
 			err := NewClusterSetup().
@@ -87,34 +87,32 @@ conf:
 
 	Describe("TCP", func() {
 		healthCheck := func(mesh, serviceName, send, recv string) string {
-			sendBase64 := base64.StdEncoding.EncodeToString([]byte(send))
-			recvBase64 := base64.StdEncoding.EncodeToString([]byte(recv))
-
 			return fmt.Sprintf(`
-type: HealthCheck
-name: gateway-to-backend
+type: MeshHealthCheck
 mesh: %s
-sources:
-- match:
-    kuma.io/service: '*'
-destinations:
-- match:
-    kuma.io/service: %s
-conf:
-  interval: 10s
-  timeout: 2s
-  unhealthyThreshold: 3
-  healthyThreshold: 1
-  failTrafficOnPanic: true
-  noTrafficInterval: 1s
-  healthyPanicThreshold: 0
-  reuse_connection: true
-  tcp: 
-    send: %s
-    receive:
-    - %s`, mesh, serviceName, sendBase64, recvBase64)
+name: gateway-to-backend
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        name: %s
+      default:
+        interval: 10s
+        timeout: 2s
+        unhealthyThreshold: 3
+        healthyThreshold: 1
+        failTrafficOnPanic: true
+        noTrafficInterval: 1s
+        healthyPanicThreshold: 0
+        reuse_connection: true
+        tcp: 
+          send: %s
+          receive:
+          - %s`, mesh, serviceName, send, recv)
 		}
-		meshName := "healthcheck-tcp"
+		meshName := "meshhealthcheck-tcp"
 		BeforeAll(func() {
 			err := NewClusterSetup().
 				Install(MeshUniversal(meshName)).
@@ -176,34 +174,32 @@ mtls:
 `, mesh))
 		}
 		healthCheck := func(mesh, serviceName, send, recv string) string {
-			sendBase64 := base64.StdEncoding.EncodeToString([]byte(send))
-			recvBase64 := base64.StdEncoding.EncodeToString([]byte(recv))
-
 			return fmt.Sprintf(`
-type: HealthCheck
-name: gateway-to-backend
+type: MeshHealthCheck
 mesh: %s
-sources:
-- match:
-    kuma.io/service: '*'
-destinations:
-- match:
-    kuma.io/service: %s
-conf:
-  interval: 10s
-  timeout: 2s
-  unhealthyThreshold: 3
-  healthyThreshold: 1
-  failTrafficOnPanic: true
-  noTrafficInterval: 1s
-  healthyPanicThreshold: 0
-  reuse_connection: true
-  tcp: 
-    send: %s
-    receive:
-    - %s`, mesh, serviceName, sendBase64, recvBase64)
+name: gateway-to-backend
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        name: %s
+      default:
+        interval: 10s
+        timeout: 2s
+        unhealthyThreshold: 3
+        healthyThreshold: 1
+        failTrafficOnPanic: true
+        noTrafficInterval: 1s
+        healthyPanicThreshold: 0
+        reuse_connection: true
+        tcp: 
+          send: %s
+          receive:
+            - %s`, mesh, serviceName, send, recv)
 		}
-		meshName := "healthcheck-mtls-permissive-tcp"
+		meshName := "meshhealthcheck-mtls-permissive-tcp"
 		BeforeAll(func() {
 			err := NewClusterSetup().
 				Install(mtlsPermissiveMesh(meshName)).

@@ -2,6 +2,7 @@ package auth_test
 
 import (
 	"encoding/json"
+	"github.com/kumahq/kuma/test/e2e_env/universal/meshhealthcheck"
 	"testing"
 	"time"
 
@@ -92,6 +93,7 @@ var _ = Describe("Gateway", gateway.Gateway, Ordered)
 var _ = Describe("Gateway - Cross-mesh", gateway.CrossMeshGatewayOnUniversal, Ordered)
 var _ = Describe("HealthCheck panic threshold", healthcheck.HealthCheckPanicThreshold, Ordered)
 var _ = Describe("HealthCheck", healthcheck.Policy)
+var _ = FDescribe("MeshHealthCheck panic threshold", meshhealthcheck.MeshHealthCheckPanicThreshold, Ordered)
 var _ = Describe("Service Probes", healthcheck.ServiceProbes, Ordered)
 var _ = Describe("External Services", externalservices.Policy, Ordered)
 var _ = Describe("Inspect", inspect.Inspect, Ordered)

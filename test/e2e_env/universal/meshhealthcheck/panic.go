@@ -12,26 +12,27 @@ import (
 )
 
 func MeshHealthCheckPanicThreshold() {
-	const meshName = "hc-panic"
+	const meshName = "mhc-panic"
 
 	healthCheck := fmt.Sprintf(`
-type: HealthCheck
-name: hc-1
+type: MeshHealthCheck
 mesh: %s
-sources:
-- match:
-    kuma.io/service: '*'
-destinations:
-- match:
-    kuma.io/service: test-server
-conf:
-  interval: 10s
-  timeout: 2s
-  unhealthyThreshold: 3
-  healthyThreshold: 1
-  healthyPanicThreshold: 61
-  failTrafficOnPanic: true
-  tcp: {}`, meshName)
+name: hc-1
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        interval: 10s
+        timeout: 2s
+        unhealthyThreshold: 3
+        healthyThreshold: 1
+        healthyPanicThreshold: 61
+        failTrafficOnPanic: true
+        tcp: {}`, meshName)
 
 	dp := func(idx int) string {
 		return fmt.Sprintf(`
