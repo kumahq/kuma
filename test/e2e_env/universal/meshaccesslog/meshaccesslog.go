@@ -41,6 +41,7 @@ func TestPlugin() {
 			Setup(env.Cluster)).To(Succeed())
 	})
 	E2EAfterAll(func() {
+		Expect(env.Cluster.DeleteApp("gateway-client")).To(Succeed())
 		Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
