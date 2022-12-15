@@ -1,22 +1,22 @@
 name: sample-gateway:HTTP:8080
 requestHeadersToRemove:
-- x-kuma-tags
+  - x-kuma-tags
 validateClusters: false
 virtualHosts:
-- domains:
-  - '*'
-  name: '*'
-  routes:
-  - match:
-      path: /
-    route:
-      timeout: 5s
-      weightedClusters:
-        clusters:
-        - name: backend-26cb64fa4e85e7b7
-          requestHeadersToAdd:
-          - header:
-              key: x-kuma-tags
-              value: '&kuma.io/service=sample-gateway&'
-          weight: 1
-        totalWeight: 1
+  - domains:
+      - '*'
+    name: '*'
+    routes:
+      - match:
+          path: /
+        route:
+          timeout: 5s
+          weightedClusters:
+            clusters:
+              - name: backend-26cb64fa4e85e7b7
+                requestHeadersToAdd:
+                  - header:
+                      key: x-kuma-tags
+                      value: '&kuma.io/service=sample-gateway&'
+                weight: 1
+            totalWeight: 1

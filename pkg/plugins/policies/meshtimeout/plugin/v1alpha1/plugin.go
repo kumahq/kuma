@@ -19,6 +19,7 @@ import (
 	gateway_route "github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/generator"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -103,7 +104,7 @@ func applyToOutbounds(rules core_xds.ToRules, outboundListeners map[mesh_proto.O
 			continue
 		}
 
-		protocol := policies_xds.InferProtocol(routing, serviceName)
+		protocol := inferProtocol(routing, serviceName)
 		if err := configure(rules.Rules, core_xds.MeshService(serviceName), protocol, listener, cluster, nil); err != nil {
 			return err
 		}
@@ -205,6 +206,16 @@ func configure(rules core_xds.Rules, subset core_xds.Subset, protocol core_mesh.
 		return err
 	}
 	return nil
+}
+
+func inferProtocol(routing core_xds.Routing, serviceName string) core_mesh.Protocol {
+	var allEndpoints []core_xds.Endpoint
+	outboundEndpoints := core_xds.EndpointList(routing.OutboundTargets[serviceName])
+	allEndpoints = append(allEndpoints, outboundEndpoints...)
+	externalEndpoints := routing.ExternalServiceOutboundTargets[serviceName]
+	allEndpoints = append(allEndpoints, externalEndpoints...)
+
+	return envoy_common.InferServiceProtocol(allEndpoints)
 }
 
 func toProtocol(p mesh_proto.MeshGateway_Listener_Protocol) core_mesh.Protocol {
