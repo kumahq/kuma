@@ -312,12 +312,6 @@ func WithExperimentalCNI() KumaDeploymentOption {
 	})
 }
 
-func WithoutExperimentalTransparentProxy() KumaDeploymentOption {
-	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
-		o.experimentalTransparentProxy = false
-	})
-}
-
 func WithGlobalAddress(address string) KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.globalAddress = address
