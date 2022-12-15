@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 OUTPUT_DIR=$1/bin
 VERSION="5.3.0"
 # see https://raw.githubusercontent.com/rancher/k3d/main/install.sh

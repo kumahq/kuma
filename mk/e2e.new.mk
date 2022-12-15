@@ -103,18 +103,9 @@ test/e2e/k8s/stop: $(K8SCLUSTERS_STOP_TARGETS)
 # Clusters are deleted only if all tests passes, otherwise clusters are live and running current test deployment
 # GINKGO_EDITOR_INTEGRATION is required to work with focused test. Normally they exit with non 0 code which prevents clusters to be cleaned up.
 # We run ginkgo instead of "go test" to fail fast (builtin "go test" fail fast does not seem to work with individual ginkgo tests)
+# Run only with -j and K8S_CLUSTER_TOOL=k3d (which is the default value)
 .PHONY: test/e2e/debug
-test/e2e/debug: $(E2E_DEPS_TARGETS) build/kumactl images test/e2e/k8s/start
-	$(E2E_ENV_VARS) \
-	GINKGO_EDITOR_INTEGRATION=true \
-		$(GINKGO_TEST_E2E) --keep-going=false --fail-fast $(E2E_PKG_LIST)
-	$(MAKE) test/e2e/k8s/stop
-
-# test/e2e/debug-fast is an experimental target tested with K8S_CLUSTER_TOOL=k3d.
-# test/e2e/debug-fast is an equivalent of test/e2e/debug, but with the goal to minimize time for test to start running.
-# Run only with -j and K8S_CLUSTER_TOOL=k3d
-.PHONY: test/e2e/debug-fast
-test/e2e/debug-fast: $(E2E_DEPS_TARGETS)
+test/e2e/debug: $(E2E_DEPS_TARGETS)
 	$(MAKE) $(K8SCLUSTERS_START_TARGETS) & # start K8S clusters in the background since it takes the most time
 	$(MAKE) images
 	$(MAKE) build/kumactl
