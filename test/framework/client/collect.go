@@ -433,7 +433,6 @@ func CollectResponsesAndFailures(
 		go func() {
 			defer wg.Done()
 
-
 			stdout, _, localErr := cluster.Exec(opts.namespace, appPodName, container, cmd...)
 
 			// 1. If we fail to decode the JSON status, return the JSON error,
@@ -470,7 +469,6 @@ func CollectResponsesAndFailures(
 			if errors.As(err, &exitErr) {
 				response.Exitcode = exitErr.ExitCode()
 			}
-
 
 			mut.Lock()
 			responses = append(responses, response)

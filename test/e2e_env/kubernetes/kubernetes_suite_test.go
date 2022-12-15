@@ -122,4 +122,4 @@ var _ = Describe("Kong Ingress Controller", Label("arm-not-supported"), kic.KICK
 var _ = Describe("MeshTrafficPermission API", meshtrafficpermission.API, Ordered)
 var _ = Describe("MeshTimeout API", meshtimeout.MeshTimeout, Ordered)
 var _ = Describe("MeshCircuitBreaker API", meshcircuitbreaker.API, Ordered)
-var _ = FDescribe("MeshCircuitBreaker", meshcircuitbreaker.MeshCircuitBreaker, Ordered)
+var _ = Describe("MeshCircuitBreaker", meshcircuitbreaker.MeshCircuitBreaker, Ordered)

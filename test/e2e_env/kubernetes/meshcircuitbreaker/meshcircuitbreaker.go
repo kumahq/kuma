@@ -109,9 +109,6 @@ func MeshCircuitBreaker() {
 			HaveLen(15),
 			ContainElement(HaveField("ResponseCode", 503)),
 		))
-
-
-		time.Sleep(10000 * time.Minute)
 	},
 		Entry("outbound circuit breaker", fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
