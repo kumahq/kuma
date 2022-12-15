@@ -34,6 +34,7 @@ func Gateway() {
 	})
 
 	E2EAfterAll(func() {
+		Expect(env.Cluster.DeleteApp("gateway-client")).To(Succeed())
 		Expect(env.Cluster.DeleteMeshApps(mesh)).To(Succeed())
 		Expect(env.Cluster.DeleteMesh(mesh)).To(Succeed())
 	})
