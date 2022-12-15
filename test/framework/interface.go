@@ -113,7 +113,7 @@ type appDeploymentOptions struct {
 	appendDataplaneConfig        string
 	boundToContainerIp           bool
 	serviceAddress               string
-	experimantalTransparentProxy bool
+	experimentalTransparentProxy bool
 
 	dockerVolumes       []string
 	dockerContainerName string
@@ -474,13 +474,13 @@ func WithToken(token string) AppDeploymentOption {
 func WithTransparentProxy(transparent bool) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.transparent = &transparent
-		o.experimantalTransparentProxy = true
+		o.experimentalTransparentProxy = true
 	})
 }
 
-func WithoutExperimantalTransparentProxy() AppDeploymentOption {
+func WithoutExperimentalTransparentProxy() AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
-		o.experimantalTransparentProxy = false
+		o.experimentalTransparentProxy = false
 	})
 }
 
