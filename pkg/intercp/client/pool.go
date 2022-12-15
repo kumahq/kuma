@@ -84,11 +84,10 @@ func (c *Pool) SetTLSConfig(tlsCfg *TLSConfig) {
 	c.mut.Unlock()
 }
 
-func (c *Pool) StartCleanup(ctx context.Context, interval time.Duration) {
-	t := time.NewTicker(interval)
+func (c *Pool) StartCleanup(ctx context.Context, ticker *time.Ticker) {
 	for {
 		select {
-		case <-t.C:
+		case <-ticker.C:
 			c.cleanup()
 		case <-ctx.Done():
 			return

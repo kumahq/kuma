@@ -2,7 +2,6 @@ package envoyadmin
 
 import (
 	"context"
-	"strings"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -59,7 +58,7 @@ func (f *forwardingKdsEnvoyAdminClient) PostQuit(context.Context, *core_mesh.Dat
 }
 
 func (f *forwardingKdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
-	instanceID, err := f.globalInstanceID(ctx, zoneOfResource(proxy))
+	instanceID, err := f.globalInstanceID(ctx, core_model.ZoneOfResource(proxy))
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +83,7 @@ func (f *forwardingKdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy co
 }
 
 func (f *forwardingKdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
-	instanceID, err := f.globalInstanceID(ctx, zoneOfResource(proxy))
+	instanceID, err := f.globalInstanceID(ctx, core_model.ZoneOfResource(proxy))
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +108,7 @@ func (f *forwardingKdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_mo
 }
 
 func (f *forwardingKdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
-	instanceID, err := f.globalInstanceID(ctx, zoneOfResource(proxy))
+	instanceID, err := f.globalInstanceID(ctx, core_model.ZoneOfResource(proxy))
 	if err != nil {
 		return nil, err
 	}
@@ -145,11 +144,6 @@ func (f *forwardingKdsEnvoyAdminClient) logIntendedAction(proxy core_model.Resou
 	} else {
 		log.V(1).Info("zone CP of the resource is connected to other Global CP instance. Forwarding the request")
 	}
-}
-
-func zoneOfResource(res core_model.Resource) string {
-	parts := strings.Split(res.GetMeta().GetName(), ".")
-	return parts[0]
 }
 
 func (f *forwardingKdsEnvoyAdminClient) globalInstanceID(ctx context.Context, zone string) (string, error) {

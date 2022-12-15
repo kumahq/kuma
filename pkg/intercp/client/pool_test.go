@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/intercp/client"
 )
 
@@ -27,15 +28,25 @@ var _ = Describe("Pool", func() {
 	Context("configured with TLS", func() {
 		var pool *client.Pool
 		const idleDeadline = 100 * time.Millisecond
+		var ticks chan time.Time
+		var now time.Time
 
 		BeforeEach(func() {
+			core.Now = func() time.Time {
+				return now
+			}
+			ticks = make(chan time.Time)
 			pool = client.NewPool(func(s string, config *client.TLSConfig) (client.Conn, error) {
 				return &testConn{
 					state: connectivity.Ready,
 				}, nil
 			}, idleDeadline)
 			pool.SetTLSConfig(&client.TLSConfig{})
-			go pool.StartCleanup(context.Background(), 10*time.Millisecond)
+			go pool.StartCleanup(context.Background(), &time.Ticker{C: ticks})
+		})
+
+		AfterEach(func() {
+			core.Now = time.Now
 		})
 
 		It("should keep the connection open", func() {
@@ -55,7 +66,9 @@ var _ = Describe("Pool", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			time.Sleep(idleDeadline * 2)
+			now = now.Add(idleDeadline + 1)
+			ticks <- time.Now()
+			ticks <- time.Now() // send a second tick to make sure that the cleanup triggered by the first one is done
 			c2, err := pool.Client("http://192.168.0.1")
 			Expect(err).ToNot(HaveOccurred())
 
@@ -71,6 +84,8 @@ var _ = Describe("Pool", func() {
 			c.(*testConn).state = connectivity.TransientFailure
 
 			// when
+			ticks <- time.Now()
+			ticks <- time.Now() // send a second tick to make sure that the cleanup triggered by the first one is done
 			c2, err := pool.Client("http://192.168.0.1")
 			Expect(err).ToNot(HaveOccurred())
 

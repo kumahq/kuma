@@ -44,7 +44,7 @@ func Setup(rt runtime.Runtime) error {
 	}
 
 	pool := rt.InterCPClientPool()
-	go pool.StartCleanup(rt.AppContext(), 10*time.Second)
+	go pool.StartCleanup(rt.AppContext(), time.NewTicker(10*time.Second))
 
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
 	registerComponent := component.ComponentFunc(func(stop <-chan struct{}) error {
