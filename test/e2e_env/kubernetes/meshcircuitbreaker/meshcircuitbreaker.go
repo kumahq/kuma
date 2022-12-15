@@ -2,7 +2,6 @@ package meshcircuitbreaker
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
