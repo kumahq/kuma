@@ -227,7 +227,7 @@ spec:
 			Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 		})
 
-		It("should mark host as unhealthy if it doesn't reply on health checks when Permissive mTLS enabled", func() {
+		It("should mark host as unhealthy if it doesn't reply to health checks when Permissive mTLS enabled", func() {
 			// check that test-server-mtls is healthy
 			cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server-mtls.mesh 80\""}
 			stdout, _, err := env.Cluster.ExecWithRetries("", "", "dp-demo-client-mtls", cmd...)
@@ -253,6 +253,102 @@ spec:
 			// there is no real attempt to setup a connection with test-server, but Envoy may return either
 			// empty response with EXIT_CODE = 0, or  'Ncat: Connection reset by peer.' with EXIT_CODE = 1
 			Expect(stdout).To(Or(BeEmpty(), ContainSubstring("Ncat: Connection reset by peer.")))
+		})
+	}, Ordered)
+
+	Describe("gRPC", func() {
+		meshName := "meshhealthcheck-grpc"
+		healthCheck := func(mesh string) string {
+			return fmt.Sprintf(`
+type: MeshHealthCheck
+mesh: %s
+name: everything-to-backend
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        interval: 5s
+        timeout: 1s
+        unhealthyThreshold: 2
+        healthyThreshold: 1
+        failTrafficOnPanic: true
+        noTrafficInterval: 1s
+        healthyPanicThreshold: 0
+        reuse_connection: true
+        grpc: {}`, mesh)
+		}
+		BeforeAll(func() {
+			err := NewClusterSetup().
+				Install(MeshUniversal(meshName)).
+				Install(YamlUniversal(healthCheck(meshName))).
+				Install(TestServerUniversal("test-client", meshName,
+					WithServiceName("test-client"),
+					WithArgs([]string{"grpc", "client", "--address", "test-server.mesh:80"}),
+					WithTransparentProxy(true),
+				)).
+				Install(TestServerUniversal(
+					"test-server",
+					meshName,
+					WithArgs([]string{"grpc", "server", "--port", "8080"}),
+					WithProtocol(mesh.ProtocolGRPC),
+					WithTransparentProxy(true),
+				)).
+				Setup(env.Cluster)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		E2EAfterAll(func() {
+			Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+			Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		})
+
+		It("should mark host as unhealthy if it doesn't reply to health checks", func() {
+			// apply HealthCheck policy
+			Expect(YamlUniversal(healthCheck(meshName))(env.Cluster)).To(Succeed())
+
+			// check that test-server is healthy
+			Eventually(func() bool {
+				cmd := []string{"/bin/bash", "-c", "\"curl localhost:9901/clusters | grep test-server\""}
+				stdout, _, err := env.Cluster.ExecWithRetries("", "", "test-client", cmd...)
+				if err != nil {
+					return false
+				}
+				return strings.Contains(stdout, "health_flags::healthy")
+			}, "30s", "500ms").Should(BeTrue())
+
+			// stop grpc server
+			cmd := []string{"/bin/bash", "-c", "\"kill -SIGSTOP $(pidof test-server)\""}
+			_, _, err := env.Cluster.ExecWithRetries("", "", "test-server", cmd...)
+			Expect(err).ToNot(HaveOccurred())
+
+			// wait cluster 'test-server' to be marked as unhealthy
+			Eventually(func() bool {
+				cmd := []string{"/bin/bash", "-c", "\"curl localhost:9901/clusters | grep test-server\""}
+				stdout, _, err := env.Cluster.ExecWithRetries("", "", "test-client", cmd...)
+				if err != nil {
+					return false
+				}
+				return strings.Contains(stdout, "health_flags::/failed_active_hc")
+			}, "30s", "500ms").Should(BeTrue())
+
+			// resume grpc server
+			cmd = []string{"/bin/bash", "-c", "\"kill -SIGCONT $(pidof test-server)\""}
+			_, _, err = env.Cluster.ExecWithRetries("", "", "test-server", cmd...)
+			Expect(err).ToNot(HaveOccurred())
+
+			// wait cluster 'test-server' to be marked as healthy
+			Eventually(func() bool {
+				cmd := []string{"/bin/bash", "-c", "\"curl localhost:9901/clusters | grep test-server\""}
+				stdout, _, err := env.Cluster.ExecWithRetries("", "", "test-client", cmd...)
+				if err != nil {
+					return false
+				}
+				return strings.Contains(stdout, "health_flags::healthy")
+			}, "30s", "500ms").Should(BeTrue())
 		})
 	}, Ordered)
 }

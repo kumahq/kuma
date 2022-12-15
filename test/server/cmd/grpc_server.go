@@ -16,7 +16,16 @@ var grpcServerLog = grpcLog.WithName("server")
 
 type grpcServer struct {
 	api.UnimplementedGreeterServer
+	api.UnimplementedHealthServer
 	id string
+}
+
+func (g *grpcServer) Check(ctx context.Context, request *api.HealthCheckRequest) (*api.HealthCheckResponse, error) {
+	return &api.HealthCheckResponse{Status: api.HealthCheckResponse_SERVING}, nil
+}
+
+func (g *grpcServer) Watch(request *api.HealthCheckRequest, server api.Health_WatchServer) error {
+	return server.Send(&api.HealthCheckResponse{Status: api.HealthCheckResponse_SERVING})
 }
 
 func (g *grpcServer) SayHello(ctx context.Context, request *api.HelloRequest) (*api.HelloReply, error) {
@@ -63,6 +72,9 @@ test-server grpc server --port 8080
 
 			s := grpc.NewServer()
 			api.RegisterGreeterServer(s, &grpcServer{
+				id: core.NewUUID(),
+			})
+			api.RegisterHealthServer(s, &grpcServer{
 				id: core.NewUUID(),
 			})
 
