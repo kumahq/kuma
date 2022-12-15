@@ -31,6 +31,7 @@ var _ = Describe("Pool", func() {
 		const idleDeadline = 100 * time.Millisecond
 		var ticks chan time.Time
 		var clock *test.Clock
+		var cancelFn func()
 
 		BeforeEach(func() {
 			clock = test.NewClock(time.Now())
@@ -42,10 +43,13 @@ var _ = Describe("Pool", func() {
 				}, nil
 			}, idleDeadline)
 			pool.SetTLSConfig(&client.TLSConfig{})
-			go pool.StartCleanup(context.Background(), &time.Ticker{C: ticks})
+			ctx, c := context.WithCancel(context.Background())
+			cancelFn = c
+			go pool.StartCleanup(ctx, &time.Ticker{C: ticks})
 		})
 
 		AfterEach(func() {
+			cancelFn()
 			core.Now = time.Now
 		})
 
