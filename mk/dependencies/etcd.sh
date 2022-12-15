@@ -1,4 +1,7 @@
 #!/bin/bash
+
+set -e
+
 OUTPUT_DIR=$1/bin
 VERSION="3.5.3"
 ETCD=${OUTPUT_DIR}/etcd
