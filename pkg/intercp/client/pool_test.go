@@ -11,6 +11,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/intercp/client"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 var _ = Describe("Pool", func() {
@@ -29,12 +30,11 @@ var _ = Describe("Pool", func() {
 		var pool *client.Pool
 		const idleDeadline = 100 * time.Millisecond
 		var ticks chan time.Time
-		var now time.Time
+		var clock *test.Clock
 
 		BeforeEach(func() {
-			core.Now = func() time.Time {
-				return now
-			}
+			clock = test.NewClock(time.Now())
+			core.Now = clock.Now
 			ticks = make(chan time.Time)
 			pool = client.NewPool(func(s string, config *client.TLSConfig) (client.Conn, error) {
 				return &testConn{
@@ -66,7 +66,7 @@ var _ = Describe("Pool", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			now = now.Add(idleDeadline + 1)
+			clock.Add(idleDeadline + 1)
 			ticks <- time.Now()
 			ticks <- time.Now() // send a second tick to make sure that the cleanup triggered by the first one is done
 			c2, err := pool.Client("http://192.168.0.1")
