@@ -33,11 +33,11 @@ virtualHosts:
         responseHeadersToAdd:
         - append: true
           header:
-            key: header
+            key: x-kuma-rate-limit-header
             value: test-value
         - append: false
           header:
-            key: other-header
+            key: x-kuma-rate-limit
             value: other-value
         statPrefix: rate_limit
         status:

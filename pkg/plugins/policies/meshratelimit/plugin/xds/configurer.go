@@ -78,8 +78,8 @@ func (c *Configurer) configureHttpListener(filterChain *envoy_listener.FilterCha
 				c.addRateLimitToRoute(route, rateLimit)
 			}
 		}
-		// we don't configure global rate limiting, just enabling it. Problem with enabling
-		// global rate limiting is a filter order.
+		// we don't configure rate limiting on listeners, just enabling it. Problem with enabling
+		// rate limiting on listeners is filter ordering.
 		for _, filter := range hcm.HttpFilters {
 			if filter.Name == "envoy.filters.http.local_ratelimit" {
 				return nil
@@ -139,6 +139,7 @@ func (c *Configurer) addRateLimitToRoute(route *envoy_route.Route, rateLimit *an
 	if route.TypedPerFilterConfig == nil {
 		route.TypedPerFilterConfig = map[string]*anypb.Any{}
 	}
+	// if there is an old RateLimit policy
 	if route.TypedPerFilterConfig["envoy.filters.http.local_ratelimit"] != nil {
 		return
 	}

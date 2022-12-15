@@ -1,14 +1,12 @@
 package v1alpha1_test
 
 import (
-	"context"
 	"path/filepath"
 	"time"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -19,24 +17,17 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/plugin/v1alpha1"
+	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	test_matchers "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	test_xds "github.com/kumahq/kuma/pkg/test/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
-
-func pointerUint32(val uint32) *uint32 {
-	return &val
-}
-
-func pointerBool(val bool) *bool {
-	return &val
-}
 
 var _ = Describe("MeshRateLimit", func() {
 	type sidecarTestCase struct {
@@ -146,16 +137,16 @@ var _ = Describe("MeshRateLimit", func() {
 									Requests: 100,
 									Interval: v1.Duration{Duration: 10 * time.Second},
 									OnRateLimit: &api.OnRateLimit{
-										Status: pointerUint32(444),
+										Status: policies_xds.PointerOf(uint32(444)),
 										Headers: []api.HeaderValue{
 											{
-												Key:    "header",
+												Key:    "x-kuma-rate-limit-header",
 												Value:  "test-value",
-												Append: pointerBool(true),
+												Append: policies_xds.PointerOf(true),
 											},
 											{
-												Key:   "other-header",
-												Value: "other-value",
+												Key:   "x-kuma-rate-limit",
+												Value: "-value",
 											},
 										},
 									},
@@ -172,7 +163,7 @@ var _ = Describe("MeshRateLimit", func() {
 									Interval: v1.Duration{Duration: 10 * time.Second},
 								},
 								TCP: &api.LocalTCP{
-									Connections: *pointerUint32(100),
+									Connections: 100,
 									Interval:    v1.Duration{Duration: 100 * time.Millisecond},
 								},
 							},
@@ -232,22 +223,22 @@ var _ = Describe("MeshRateLimit", func() {
 									Requests: 100,
 									Interval: v1.Duration{Duration: 10 * time.Second},
 									OnRateLimit: &api.OnRateLimit{
-										Status: pointerUint32(444),
+										Status: policies_xds.PointerOf(uint32(444)),
 										Headers: []api.HeaderValue{
 											{
-												Key:    "header",
+												Key:    "x-kuma-rate-limit-header",
 												Value:  "test-value",
-												Append: pointerBool(true),
+												Append: policies_xds.PointerOf(true),
 											},
 											{
-												Key:   "other-header",
+												Key:   "x-kuma-rate-limit",
 												Value: "other-value",
 											},
 										},
 									},
 								},
 								TCP: &api.LocalTCP{
-									Connections: *pointerUint32(100),
+									Connections: 100,
 									Interval:    v1.Duration{Duration: 99 * time.Second},
 								},
 							},
@@ -298,15 +289,15 @@ var _ = Describe("MeshRateLimit", func() {
 									Requests: 100,
 									Interval: v1.Duration{Duration: 10 * time.Second},
 									OnRateLimit: &api.OnRateLimit{
-										Status: pointerUint32(444),
+										Status: policies_xds.PointerOf(uint32(444)),
 										Headers: []api.HeaderValue{
 											{
-												Key:    "header",
+												Key:    "x-kuma-rate-limit-header",
 												Value:  "test-value",
-												Append: pointerBool(true),
+												Append: policies_xds.PointerOf(true),
 											},
 											{
-												Key:   "other-header",
+												Key:   "x-kuma-rate-limit",
 												Value: "other-value",
 											},
 										},
@@ -462,16 +453,6 @@ func createSimpleMeshContextWith(resources xds_context.Resources) xds_context.Co
 				},
 			},
 		},
-		ControlPlane: &xds_context.ControlPlaneContext{CLACache: &dummyCLACache{}, Zone: "test-zone"},
+		ControlPlane: &xds_context.ControlPlaneContext{CLACache: &test_xds.DummyCLACache{}, Zone: "test-zone"},
 	}
 }
-
-type dummyCLACache struct {
-	outboundTargets core_xds.EndpointMap
-}
-
-func (d *dummyCLACache) GetCLA(ctx context.Context, meshName, meshHash string, cluster envoy_common.Cluster, apiVersion core_xds.APIVersion, endpointMap core_xds.EndpointMap) (proto.Message, error) {
-	return endpoints.CreateClusterLoadAssignment(cluster.Service(), d.outboundTargets[cluster.Service()]), nil
-}
-
-var _ envoy_common.CLACache = &dummyCLACache{}

@@ -8,6 +8,8 @@ import (
 
 	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
 )
 
 func Policy() {
@@ -32,7 +34,20 @@ spec:
               status: 429
               headers:
                 - key: "x-kuma-rate-limited"
-                  value: "true"
+                  value: "true"`, meshName)
+	var rateLimitPolicyTcp = fmt.Sprintf(`
+type: MeshRateLimit
+mesh: "%s"
+name: mesh-rate-limit-tcp
+spec:
+  targetRef:
+    kind: MeshService
+    name: test-server-tcp
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        local:
           tcp:
             connections: 1
             interval: 10s`, meshName)
@@ -40,7 +55,11 @@ spec:
 		Expect(NewClusterSetup().
 			Install(MeshUniversal(meshName)).
 			Install(YamlUniversal(rateLimitPolicy)).
+			Install(YamlUniversal(rateLimitPolicyTcp)).
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "universal-1"}))).
+			Install(TestServerUniversal("test-server-tcp", meshName,
+				WithArgs([]string{"echo", "--instance", "universal-2"}),
+				WithServiceName("test-server-tcp"))).
 			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
 			Install(DemoClientUniversal("tcp-client", meshName, WithTransparentProxy(false))).
 			Install(DemoClientUniversal("web", meshName, WithTransparentProxy(true))).
@@ -60,23 +79,36 @@ spec:
 	keepConnectionOpen := func() {
 		// Open TCP connections to the test-server
 		defer GinkgoRecover()
-		ip := env.Cluster.GetApp("test-server").GetIP()
+		ip := env.Cluster.GetApp("test-server-tcp").GetIP()
 		_, _, _ = env.Cluster.Exec("", "", "tcp-client", "telnet", ip, "80")
 	}
 
+	tcpRateLimitStats := func(admin envoy_admin.Tunnel) *stats.Stats {
+		s, err := admin.GetStats("local_rate_limit.tcp_rate_limit.rate_limited")
+		Expect(err).ToNot(HaveOccurred())
+		return s
+	}
+
 	It("should limit all sources", func() {
-		By("demo-client to test-server should be ratelimited by catch-all")
+		By("demo-client to test-server should be rate limited by mesh-rate-limit-all-sources")
 		Eventually(requestRateLimited("demo-client", "test-server", "429"), "10s", "100ms").Should(Succeed())
 
-		By("web to test-server should be ratelimited by catch-all")
+		By("web to test-server should be rate limited by mesh-rate-limit-all-sources")
 		Eventually(requestRateLimited("web", "test-server", "429"), "10s", "100ms").Should(Succeed())
 	})
 
 	It("should limit tcp connections", func() {
+		admin, err := env.Cluster.GetApp("test-server-tcp").GetEnvoyAdminTunnel()
+		Expect(err).ToNot(HaveOccurred())
+		// should have no ratelimited connections
+		Expect(tcpRateLimitStats(admin)).To(stats.BeEqualZero())
+
 		// open connection
 		go keepConnectionOpen()
 
 		// should return 503 when number of connections is exceeded
-		Eventually(requestRateLimited("web", "test-server", "503"), "10s", "100ms").Should(Succeed())
+		Eventually(requestRateLimited("web", "test-server-tcp", "503"), "10s", "100ms").Should(Succeed())
+		// and stats should increase
+		Expect(tcpRateLimitStats(admin)).To(stats.BeGreaterThanZero())
 	})
 }

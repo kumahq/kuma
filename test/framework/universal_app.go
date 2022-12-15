@@ -12,6 +12,8 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
 	"github.com/kumahq/kuma/test/framework/ssh"
 )
 
@@ -308,6 +310,16 @@ func (s *UniversalApp) GetPublicPort(port string) string {
 
 func (s *UniversalApp) GetContainerName() string {
 	return s.containerName
+}
+
+func (s *UniversalApp) GetEnvoyAdminTunnel() (envoy_admin.Tunnel, error) {
+	t, err := tunnel.NewUniversalEnvoyAdminTunnel(
+		s.t, s.ports["22"], s.verbose,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return t, nil
 }
 
 func (s *UniversalApp) GetIP() string {

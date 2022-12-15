@@ -146,7 +146,7 @@ func configure(
 		Tcp:  conf.Local.TCP,
 	}
 	log.V(1).Info(
-		"appling MeshRateLimit policies",
+		"applying MeshRateLimit policies",
 		"dataplane", dataplane.Meta.GetName(),
 		"rules", conf,
 		"listener", listener,
