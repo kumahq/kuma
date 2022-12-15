@@ -1,11 +1,9 @@
 package xds
 
 import (
-	"encoding/json"
 	"reflect"
 	"sort"
 
-	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/pkg/errors"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -162,7 +160,7 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 				distinctOrigins[core_model.MetaToResourceKey(item.ResourceMeta)] = item.ResourceMeta
 			}
 		}
-		merged, err := merge(confs)
+		merged, err := MergeConfs(confs)
 		if err != nil {
 			return nil, err
 		}
@@ -187,41 +185,6 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 	})
 
 	return rules, nil
-}
-
-func merge(confs []interface{}) (interface{}, error) {
-	if len(confs) == 0 {
-		return nil, nil
-	}
-
-	resultBytes := []byte{}
-	for _, conf := range confs {
-		confBytes, err := json.Marshal(conf)
-		if err != nil {
-			return nil, err
-		}
-		if len(resultBytes) == 0 {
-			resultBytes = confBytes
-			continue
-		}
-		resultBytes, err = jsonpatch.MergePatch(resultBytes, confBytes)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	result, err := newConf(reflect.TypeOf(confs[0]))
-	if err != nil {
-		return nil, err
-	}
-
-	if err := json.Unmarshal(resultBytes, result); err != nil {
-		return nil, err
-	}
-
-	v := reflect.ValueOf(result).Elem().Interface()
-
-	return v, nil
 }
 
 func newConf(t reflect.Type) (interface{}, error) {
