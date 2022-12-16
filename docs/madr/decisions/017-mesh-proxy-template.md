@@ -52,9 +52,6 @@ This is not required to deliver a new policy, but it would improve the UX. We ca
 ### Other resources
 
 We could support TransportSocketMatch https://github.com/kumahq/kuma/issues/4948
-We also do not support any endpoint manipulation, but there was no demand for this so far.
-
-Out of scope for the initial implementation.
 
 ## Considered Options
 
@@ -118,3 +115,58 @@ A couple of name alternatives:
 * MeshProxyConfig (too generic? sounds like configuration of Kuma DP)
 
 While `MeshEnvoyConfig` seems to be the most accurate name, I'm hesitant to make this change. I think that changing the name may confuse existing users. 
+
+#### Transport Socket modifications
+
+```yaml
+appendModifications:
+  - transport_socket:
+      operation: add # (or patch or remove)
+      match:
+        name: "envoy.transport_sockets.tls" # optional: name of the transport socket match on which to apply modification (can be used only with patch and remove) 
+        origin: outbound # optional: origin of the resource on which to apply the modification (ex. inbound, outbound)
+        resource: cluster # optional: resource type on which to apply the modification (available values: listener, cluster)
+        resourceName: "xyz" # optional: exact name of the resource on which to apply the modification
+      value: |
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': 'type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext'
+          commonTlsContext:
+            tlsParams:
+              tlsMinimumProtocolVersion: TLSv1_2
+            validationContextSdsSecretConfig:
+              name: cp_validation_ctx
+          sni: kuma-control-plane.kuma-system
+```
+
+Example of overriding TLS version for mesh mTLS
+
+```yaml
+appendModifications:
+  - transport_socket:
+      operation: patch
+      match:
+        name: "envoy.transport_sockets.tls" 
+        origin: outbound
+        resource: cluster
+      value: |
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': 'type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext'
+          commonTlsContext:
+            tlsParams:
+              tlsMinimumProtocolVersion: TLSv1_3
+  - transport_socket:
+      operation: patch
+      match:
+        name: "envoy.transport_sockets.tls"
+        origin: inbound
+        resource: listener
+      value: |
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': 'type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext'
+          commonTlsContext:
+            tlsParams:
+              tlsMinimumProtocolVersion: TLSv1_3
+```
