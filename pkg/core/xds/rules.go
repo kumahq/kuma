@@ -1,7 +1,6 @@
 package xds
 
 import (
-	"reflect"
 	"sort"
 
 	"github.com/pkg/errors"
@@ -185,13 +184,6 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 	})
 
 	return rules, nil
-}
-
-func newConf(t reflect.Type) (interface{}, error) {
-	if t.Kind() == reflect.Pointer {
-		return nil, errors.New("conf is expected to have a non-pointer type")
-	}
-	return reflect.New(t).Interface(), nil
 }
 
 func asSubset(tr common_api.TargetRef) (Subset, error) {

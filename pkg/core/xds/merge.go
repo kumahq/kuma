@@ -2,6 +2,7 @@ package xds
 
 import (
 	"encoding/json"
+	"errors"
 	"reflect"
 	"strings"
 
@@ -41,9 +42,11 @@ func MergeConfs(confs []interface{}) (interface{}, error) {
 		return nil, err
 	}
 
-	clearAppendSlices(reflect.ValueOf(result)) // clear appendable slices, so we won't duplicate values of the last conf
+	// clear appendable slices, so we won't duplicate values of the last conf
+	clearAppendSlices(reflect.ValueOf(result))
 	for _, conf := range confs {
-		appendSlices(reflect.ValueOf(result), reflect.ValueOf(&conf).Elem()) // call .Elem() to unwrap interface{}
+		// call .Elem() to unwrap interface{}
+		appendSlices(reflect.ValueOf(result), reflect.ValueOf(&conf).Elem())
 	}
 
 	v := reflect.ValueOf(result).Elem().Interface()
@@ -51,17 +54,15 @@ func MergeConfs(confs []interface{}) (interface{}, error) {
 	return v, nil
 }
 
+func newConf(t reflect.Type) (interface{}, error) {
+	if t.Kind() == reflect.Pointer {
+		return nil, errors.New("conf is expected to have a non-pointer type")
+	}
+	return reflect.New(t).Interface(), nil
+}
+
 func clearAppendSlices(val reflect.Value) {
-	if val.Kind() != reflect.Struct && val.Kind() != reflect.Pointer {
-		panic("expected struct or pointer to a struct")
-	}
-	strVal := val
-	if val.Kind() == reflect.Pointer {
-		strVal = val.Elem()
-	}
-	if strVal.Kind() != reflect.Struct {
-		panic("expected struct or pointer to a struct")
-	}
+	strVal := mustUnwrapStruct(val)
 	for i := 0; i < strVal.NumField(); i++ {
 		valField := strVal.Field(i)
 		fieldName := strVal.Type().Field(i).Name
@@ -80,16 +81,10 @@ func clearAppendSlices(val reflect.Value) {
 	}
 }
 
-func appendSlices(dst reflect.Value, src reflect.Value) { // dst and src has to be of a same type
-	strDst := dst
-	strSrc := src
-	if dst.Kind() == reflect.Pointer {
-		strDst = dst.Elem()
-		strSrc = src.Elem()
-	}
-	if strDst.Kind() != reflect.Struct {
-		panic("expected struct or pointer to a struct")
-	}
+// dst and src has to be of a same type
+func appendSlices(dst reflect.Value, src reflect.Value) {
+	strDst := mustUnwrapStruct(dst)
+	strSrc := mustUnwrapStruct(src)
 	for i := 0; i < strDst.NumField(); i++ {
 		dstField := strDst.Field(i)
 		srcField := strSrc.Field(i)
@@ -109,4 +104,15 @@ func appendSlices(dst reflect.Value, src reflect.Value) { // dst and src has to 
 			}
 		}
 	}
+}
+
+func mustUnwrapStruct(val reflect.Value) reflect.Value {
+	resVal := val
+	if val.Kind() == reflect.Interface || val.Kind() == reflect.Pointer {
+		resVal = val.Elem()
+	}
+	if resVal.Kind() != reflect.Struct {
+		panic("expected struct or pointer to a struct got " + val.Kind().String())
+	}
+	return resVal
 }
