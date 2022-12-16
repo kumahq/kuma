@@ -28,7 +28,7 @@ However, we haven't seen this in the wild. You can always apply modifications th
 
 Additionally, the requirement of profile for a default config is a blocker when you want to apply mesh wide proxy template (`kuma.io/service: '*'`), but you have both sidecar and gateway proxies.
 
-One of the idea when we created this is we were predicting that we may have multiple profiles that users could choose.
+When we created we were predicting that we may have user-created profiles.
 This never happened in the end. We only used profiles internally.
 If someone would like to build their own config I presume they would rather implement this as a plugin. Maintaing whole Envoy config in ProxyTemplate is not really maintainable solution.
 If we ever see a need to skip the default config, we can do this by introducing a new flag like `skipDefaultConfigGeneration` in `defaults` section.
