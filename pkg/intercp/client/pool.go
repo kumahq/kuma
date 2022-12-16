@@ -25,6 +25,7 @@ type accessedConn struct {
 type Pool struct {
 	newConn      func(string, *TLSConfig) (Conn, error)
 	idleDeadline time.Duration // the time after which we close the connection if it was not fetched from the pool
+	now          func() time.Time
 	connections  map[string]*accessedConn
 	mut          sync.Mutex
 
@@ -36,10 +37,12 @@ var TLSNotConfigured = errors.New("tls config is not yet set")
 func NewPool(
 	newConn func(string, *TLSConfig) (Conn, error),
 	idleDeadline time.Duration,
+	now func() time.Time,
 ) *Pool {
 	return &Pool{
 		newConn:      newConn,
 		idleDeadline: idleDeadline,
+		now:          now,
 		connections:  map[string]*accessedConn{},
 		mut:          sync.Mutex{},
 	}
@@ -99,7 +102,7 @@ func (c *Pool) cleanup() {
 	c.mut.Lock()
 	defer c.mut.Unlock()
 	for url, accessedConn := range c.connections {
-		if core.Now().Sub(accessedConn.lastAccessTime) > c.idleDeadline {
+		if c.now().Sub(accessedConn.lastAccessTime) > c.idleDeadline {
 			poolLog.Info("closing connection due to lack of activity", "url", accessedConn.url)
 			if err := accessedConn.conn.Close(); err != nil {
 				poolLog.Error(err, "cannot close the connection", "url", accessedConn.url)

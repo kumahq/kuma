@@ -17,7 +17,7 @@ import (
 var _ = Describe("Pool", func() {
 	It("should not create a client when TLS is not configured", func() {
 		// given
-		pool := client.NewPool(nil, 1*time.Second)
+		pool := client.NewPool(nil, 1*time.Second, core.Now)
 
 		// when
 		_, err := pool.Client("http://192.168.0.1")
@@ -35,13 +35,12 @@ var _ = Describe("Pool", func() {
 
 		BeforeEach(func() {
 			clock = test.NewClock(time.Now())
-			core.Now = clock.Now
 			ticks = make(chan time.Time)
 			pool = client.NewPool(func(s string, config *client.TLSConfig) (client.Conn, error) {
 				return &testConn{
 					state: connectivity.Ready,
 				}, nil
-			}, idleDeadline)
+			}, idleDeadline, clock.Now)
 			pool.SetTLSConfig(&client.TLSConfig{})
 			ctx, c := context.WithCancel(context.Background())
 			cancelFn = c
@@ -50,7 +49,6 @@ var _ = Describe("Pool", func() {
 
 		AfterEach(func() {
 			cancelFn()
-			core.Now = time.Now
 		})
 
 		It("should keep the connection open", func() {
@@ -70,7 +68,7 @@ var _ = Describe("Pool", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			clock.Add(idleDeadline + 1)
+			clock.Add(idleDeadline + 1*time.Millisecond)
 			ticks <- time.Now()
 			ticks <- time.Now() // send a second tick to make sure that the cleanup triggered by the first one is done
 			c2, err := pool.Client("http://192.168.0.1")
