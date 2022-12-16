@@ -3,13 +3,10 @@ package v1alpha1
 import (
 	"fmt"
 	"path/filepath"
-	"time"
 
-	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -18,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	"github.com/kumahq/kuma/pkg/test/matchers"
@@ -29,7 +27,6 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-	clusters_builder "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
@@ -109,13 +106,13 @@ var _ = Describe("MeshTimeout", func() {
 					{
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
-							ConnectionTimeout: parseDuration("10s"),
-							IdleTimeout:       parseDuration("1h"),
+							ConnectionTimeout: policies_xds.ParseDuration("10s"),
+							IdleTimeout:       policies_xds.ParseDuration("1h"),
 							Http: &api.Http{
-								RequestTimeout:        parseDuration("5s"),
-								StreamIdleTimeout:     parseDuration("1s"),
-								MaxStreamDuration:     parseDuration("10m"),
-								MaxConnectionDuration: parseDuration("10m"),
+								RequestTimeout:        policies_xds.ParseDuration("5s"),
+								StreamIdleTimeout:     policies_xds.ParseDuration("1s"),
+								MaxStreamDuration:     policies_xds.ParseDuration("10m"),
+								MaxConnectionDuration: policies_xds.ParseDuration("10m"),
 							},
 						},
 					},
@@ -154,8 +151,8 @@ var _ = Describe("MeshTimeout", func() {
 							Value: "second-service",
 						}},
 						Conf: api.Conf{
-							ConnectionTimeout: parseDuration("10s"),
-							IdleTimeout:       parseDuration("30s"),
+							ConnectionTimeout: policies_xds.ParseDuration("10s"),
+							IdleTimeout:       policies_xds.ParseDuration("30s"),
 						},
 					},
 				},
@@ -183,13 +180,13 @@ var _ = Describe("MeshTimeout", func() {
 						{
 							Subset: core_xds.Subset{},
 							Conf: api.Conf{
-								ConnectionTimeout: parseDuration("10s"),
-								IdleTimeout:       parseDuration("1h"),
+								ConnectionTimeout: policies_xds.ParseDuration("10s"),
+								IdleTimeout:       policies_xds.ParseDuration("1h"),
 								Http: &api.Http{
-									RequestTimeout:        parseDuration("5s"),
-									StreamIdleTimeout:     parseDuration("1s"),
-									MaxStreamDuration:     parseDuration("10m"),
-									MaxConnectionDuration: parseDuration("10m"),
+									RequestTimeout:        policies_xds.ParseDuration("5s"),
+									StreamIdleTimeout:     policies_xds.ParseDuration("1s"),
+									MaxStreamDuration:     policies_xds.ParseDuration("10m"),
+									MaxConnectionDuration: policies_xds.ParseDuration("10m"),
 								},
 							},
 						},
@@ -220,8 +217,8 @@ var _ = Describe("MeshTimeout", func() {
 							},
 						},
 						Conf: api.Conf{
-							ConnectionTimeout: parseDuration("10s"),
-							IdleTimeout:       parseDuration("1h"),
+							ConnectionTimeout: policies_xds.ParseDuration("10s"),
+							IdleTimeout:       policies_xds.ParseDuration("1h"),
 						},
 					},
 				},
@@ -238,13 +235,13 @@ var _ = Describe("MeshTimeout", func() {
 				{
 					Subset: core_xds.Subset{},
 					Conf: api.Conf{
-						ConnectionTimeout: parseDuration("10s"),
-						IdleTimeout:       parseDuration("1h"),
+						ConnectionTimeout: policies_xds.ParseDuration("10s"),
+						IdleTimeout:       policies_xds.ParseDuration("1h"),
 						Http: &api.Http{
-							RequestTimeout:        parseDuration("5s"),
-							StreamIdleTimeout:     parseDuration("1s"),
-							MaxStreamDuration:     parseDuration("10m"),
-							MaxConnectionDuration: parseDuration("10m"),
+							RequestTimeout:        policies_xds.ParseDuration("5s"),
+							StreamIdleTimeout:     policies_xds.ParseDuration("1s"),
+							MaxStreamDuration:     policies_xds.ParseDuration("10m"),
+							MaxConnectionDuration: policies_xds.ParseDuration("10m"),
 						},
 					},
 				},
@@ -287,30 +284,10 @@ var _ = Describe("MeshTimeout", func() {
 	})
 })
 
-func parseDuration(duration string) *k8s.Duration {
-	d, _ := time.ParseDuration(duration)
-	return &k8s.Duration{Duration: d}
-}
-
 func clusterWithName(name string) envoy_common.NamedResource {
 	return clusters.NewClusterBuilder(envoy_common.APIV3).
-		Configure(WithName(name)).
+		Configure(policies_xds.WithName(name)).
 		MustBuild()
-}
-
-type NameConfigurer struct {
-	Name string
-}
-
-func (n *NameConfigurer) Configure(c *envoy_cluster.Cluster) error {
-	c.Name = n.Name
-	return nil
-}
-
-func WithName(name string) clusters_builder.ClusterBuilderOpt {
-	return clusters_builder.ClusterBuilderOptFunc(func(config *clusters_builder.ClusterBuilderConfig) {
-		config.AddV3(&NameConfigurer{Name: name})
-	})
 }
 
 func getResourceYaml(list core_xds.ResourceList) []byte {

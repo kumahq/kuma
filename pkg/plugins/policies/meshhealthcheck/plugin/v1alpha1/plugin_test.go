@@ -14,7 +14,8 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/plugin/v1alpha1"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -68,40 +69,26 @@ var _ = Describe("MeshHealthCheck", func() {
 			context := xds_context.Context{}
 			proxy := xds.Proxy{
 				APIVersion: envoy_common.APIV3,
-				Dataplane: &core_mesh.DataplaneResource{
-					Meta: &test_model.ResourceMeta{
-						Mesh: "default",
-						Name: "backend",
-					},
-					Spec: &mesh_proto.Dataplane{
-						Networking: &mesh_proto.Dataplane_Networking{
-							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-								{
-									Address: "127.0.0.1",
-									Port:    27777,
-									Tags: map[string]string{
-										mesh_proto.ServiceTag:  httpServiceTag,
-										mesh_proto.ProtocolTag: "http",
-									},
-								}, {
-									Address: "127.0.0.1",
-									Port:    27778,
-									Tags: map[string]string{
-										mesh_proto.ServiceTag:  tcpServiceTag,
-										mesh_proto.ProtocolTag: "tcp",
-									},
-								}, {
-									Address: "127.0.0.1",
-									Port:    27779,
-									Tags: map[string]string{
-										mesh_proto.ServiceTag:  grpcServiceTag,
-										mesh_proto.ProtocolTag: "grpc",
-									},
-								},
-							},
-						},
-					},
-				},
+				Dataplane: samples.DataplaneBackendBuilder().
+					AddOutbound(
+						builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
+							mesh_proto.ServiceTag:  httpServiceTag,
+							mesh_proto.ProtocolTag: "http",
+						}),
+					).
+					AddOutbound(
+						builders.Outbound().WithAddress("127.0.0.1").WithPort(27778).WithTags(map[string]string{
+							mesh_proto.ServiceTag:  tcpServiceTag,
+							mesh_proto.ProtocolTag: "tcp",
+						}),
+					).
+					AddOutbound(
+						builders.Outbound().WithAddress("127.0.0.1").WithPort(27779).WithTags(map[string]string{
+							mesh_proto.ServiceTag:  grpcServiceTag,
+							mesh_proto.ProtocolTag: "grpc",
+						}),
+					).
+					Build(),
 				Policies: xds.MatchedPolicies{
 					Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
 						api.MeshHealthCheckType: {
