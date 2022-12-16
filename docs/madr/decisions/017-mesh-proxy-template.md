@@ -113,6 +113,7 @@ A couple of name alternatives:
 * MeshXDSConfig
 * MeshEnvoyMods (but the policy can potentially include other stuff than modifications in the future)
 * MeshProxyConfig (too generic? sounds like configuration of Kuma DP)
+* MeshProxyPatch
 
 While `MeshEnvoyConfig` seems to be the most accurate name, I'm hesitant to make this change. I think that changing the name may confuse existing users. 
 
