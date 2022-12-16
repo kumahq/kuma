@@ -1,10 +1,7 @@
-ARG BASE_IMAGE_ARCH=amd64
-# When updatinng image version, remember to update it in tools/releases/distros.sh as well
-ARG EBPF_IMAGE=kumahq/kuma-net-ebpf:0.8.6
-
-FROM --platform=linux/$BASE_IMAGE_ARCH $EBPF_IMAGE as ebpf
-FROM --platform=linux/$BASE_IMAGE_ARCH ubuntu:jammy
-
+# When updatinng image version, remember to update it in tools/releases/distros.sh and enterprise version
+FROM kumahq/kuma-net-ebpf:0.8.10 as ebpf
+# until there is a distroless iptables image we have to use something else
+FROM ubuntu:jammy
 ARG ARCH
 
 RUN apt-get update && \
