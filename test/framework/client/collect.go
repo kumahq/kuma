@@ -409,8 +409,9 @@ func CollectResponsesAndFailures(
 
 	opts := CollectOptions(destination, fn...)
 
+	wg.Add(opts.NumberOfRequests)
+
 	for i := 0; i < opts.NumberOfRequests; i++ {
-		wg.Add(1)
 		go func() {
 			defer wg.Done()
 
@@ -425,6 +426,7 @@ func CollectResponsesAndFailures(
 			mut.Unlock()
 		}()
 	}
+
 	wg.Wait()
 
 	if err != nil {

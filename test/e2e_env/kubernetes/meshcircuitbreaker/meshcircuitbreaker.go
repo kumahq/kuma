@@ -58,10 +58,10 @@ func MeshCircuitBreaker() {
 				"demo-client",
 				fmt.Sprintf("test-server_%s_svc_80.mesh", namespace),
 				FromKubernetesPod(namespace, "demo-client"),
-				WithNumberOfRequests(25),
+				WithNumberOfRequests(50),
 			)
 		}, "30s", "500ms").Should(And(
-			HaveLen(25),
+			HaveLen(50),
 			HaveEach(HaveField("ResponseCode", 200)),
 		))
 
@@ -75,11 +75,11 @@ func MeshCircuitBreaker() {
 				"demo-client",
 				fmt.Sprintf("test-server_%s_svc_80.mesh", namespace),
 				FromKubernetesPod(namespace, "demo-client"),
-				WithNumberOfRequests(25),
+				WithNumberOfRequests(50),
 				WithoutRetries(),
 			)
 		}, "90s", "1s").Should(And(
-			HaveLen(25),
+			HaveLen(50),
 			ContainElement(HaveField("ResponseCode", 503)),
 		))
 	},
