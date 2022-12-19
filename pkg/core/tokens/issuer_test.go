@@ -32,8 +32,7 @@ func (t *TestClaims) ID() string {
 	return t.RegisteredClaims.ID
 }
 
-func (t *TestClaims) KeyIDFallback() (int, error) {
-	return 0, nil
+func (t *TestClaims) KeyIDFallback() {
 }
 
 func (t *TestClaims) SetRegisteredClaims(claims jwt.RegisteredClaims) {
@@ -88,6 +87,7 @@ var _ = Describe("Token issuer", func() {
 			signingKeyManager = tokens.NewSigningKeyManager(secretManager, TestTokenSigningKeyPrefix)
 			issuer = tokens.NewTokenIssuer(signingKeyManager)
 			validator = tokens.NewValidator(
+				core.Log.WithName("test"),
 				tokens.NewSigningKeyAccessor(secretManager, TestTokenSigningKeyPrefix),
 				tokens.NewRevocations(secretManager, TokenRevocationsGlobalSecretKey),
 				store_config.MemoryStore,
@@ -186,6 +186,7 @@ var _ = Describe("Token issuer", func() {
 			signingKeyManager = tokens.NewMeshedSigningKeyManager(secretManager, TestTokenSigningKeyPrefix, core_model.DefaultMesh)
 			issuer = tokens.NewTokenIssuer(signingKeyManager)
 			validator = tokens.NewValidator(
+				core.Log.WithName("test"),
 				tokens.NewMeshedSigningKeyAccessor(secretManager, TestTokenSigningKeyPrefix, core_model.DefaultMesh),
 				tokens.NewRevocations(secretManager, TokenRevocationsSecretKey(core_model.DefaultMesh)),
 				store_config.MemoryStore,
