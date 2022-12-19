@@ -1,4 +1,7 @@
 #!/bin/bash
+
+set -e
+
 OUTPUT_DIR=$1/bin
 VERSION="3.20.0"
 PROTOC=${OUTPUT_DIR}/protoc

@@ -39,10 +39,10 @@ func PluginTest() {
 		Eventually(func(g Gomega) {
 			start := time.Now()
 			stdout, _, err := env.Cluster.Exec("", "", "demo-client",
-				"curl", "-v", "-H", "\"x-set-response-delay-ms: 5000\"", "--fail", "test-server.mesh")
+				"curl", "-v", "-H", "\"x-set-response-delay-ms: 3000\"", "--fail", "test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-			g.Expect(time.Since(start)).To(BeNumerically(">", time.Second*5))
+			g.Expect(time.Since(start)).To(BeNumerically(">", time.Second*3))
 		}).Should(Succeed())
 
 		By("apply a new policy")
@@ -51,10 +51,10 @@ func PluginTest() {
 		By("eventually requests timeout consistently")
 		Eventually(func(g Gomega) {
 			stdout, _, err := env.Cluster.Exec("", "", "demo-client",
-				"curl", "-v", "-H", "\"x-set-response-delay-ms: 5000\"", "test-server.mesh")
+				"curl", "-v", "-H", "\"x-set-response-delay-ms: 3000\"", "test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("upstream request timeout"))
-		}).Should(Succeed())
+		}).WithTimeout(15 * time.Second).Should(Succeed())
 	},
 		Entry("outbound timeout", fmt.Sprintf(`
 type: MeshTimeout
@@ -70,7 +70,7 @@ spec:
       default:
         connectionTimeout: 20s
         http:
-          requestTimeout: 2s`, meshName)),
+          requestTimeout: 1s`, meshName)),
 		Entry("inbound timeout", fmt.Sprintf(`
 type: MeshTimeout
 name: default

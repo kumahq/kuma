@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 OUTPUT_DIR=$1/bin
 VERSION="1.23.5"
 KUBECTL=${OUTPUT_DIR}/kubectl

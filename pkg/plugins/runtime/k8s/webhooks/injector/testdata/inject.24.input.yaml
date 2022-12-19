@@ -7,6 +7,7 @@ metadata:
   annotations:
     docs: "Documentation"
     kuma.io/sidecar-env-vars: "KUMA_DATAPLANE_DRAIN_TIME=5s;NEW_ENV_VAR=123" # drain time overrides the file, NEW_ENV_VAR is completely new var
+    kuma.io/sidecar-proxy-concurrency: "99"
 spec:
   volumes:
   - name: default-token-w7dxf

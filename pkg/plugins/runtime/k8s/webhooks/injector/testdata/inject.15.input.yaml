@@ -5,7 +5,7 @@ metadata:
   labels:
     run: busybox
   annotations:
-    kuma.io/virtual-probes-port: "19000"
+    kuma.io/virtual-probes: "disabled"
 spec:
   volumes:
     - name: default-token-w7dxf

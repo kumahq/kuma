@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
@@ -79,10 +80,12 @@ spec:
 		// then
 		Expect(len(pod.Spec.InitContainers)).To(Equal(1))
 		Expect(len(pod.Spec.Containers)).To(Equal(2))
+		// and kuma-sidecar is the first container
+		Expect(pod.Spec.Containers[0].Name).To(BeEquivalentTo(k8s_util.KumaSidecarContainerName))
 		// should have default value *int64 = 0
 		Expect(pod.Spec.InitContainers[0].SecurityContext.RunAsUser).To(Equal(new(int64)))
 		// kuma-sidecar container have Nil value
-		Expect(pod.Spec.Containers[1].SecurityContext.Privileged).To(BeNil())
+		Expect(pod.Spec.Containers[0].SecurityContext.Privileged).To(BeNil())
 
 		// when
 		// pod with patch
@@ -96,10 +99,12 @@ spec:
 		*pointerTrue = true
 		Expect(len(pod.Spec.InitContainers)).To(Equal(1))
 		Expect(len(pod.Spec.Containers)).To(Equal(2))
+		// and kuma-sidecar is the first container
+		Expect(pod.Spec.Containers[0].Name).To(BeEquivalentTo(k8s_util.KumaSidecarContainerName))
 		// should doesn't have defined RunAsUser
 		Expect(pod.Spec.InitContainers[0].SecurityContext.RunAsUser).To(BeNil())
 		// kuma-sidecar container should have value *true
-		Expect(pod.Spec.Containers[1].SecurityContext.Privileged).To(Equal(pointerTrue))
+		Expect(pod.Spec.Containers[0].SecurityContext.Privileged).To(Equal(pointerTrue))
 	})
 
 	It("should reject ContainerPatch in non-system namespace", func() {

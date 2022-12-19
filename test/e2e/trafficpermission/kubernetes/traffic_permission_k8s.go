@@ -20,7 +20,10 @@ var _ = E2EBeforeSuite(func() {
 
 	k8sCluster = k8sClusters.GetCluster(Kuma1)
 
-	Expect(Kuma(config_core.Standalone, WithEnv("KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS", "true"))(k8sCluster)).To(Succeed())
+	Expect(Kuma(config_core.Standalone,
+		WithEnv("KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS", "true"),
+		WithCtlOpts(map[string]string{"--set": "controlPlane.terminationGracePeriodSeconds=5"}),
+	)(k8sCluster)).To(Succeed())
 
 	E2EDeferCleanup(func() {
 		Expect(k8sCluster.DeleteKuma()).To(Succeed())
