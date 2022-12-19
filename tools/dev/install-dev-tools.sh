@@ -12,9 +12,10 @@ GOARCH="$6"
 TOOLS_DEPS_DIRS=${TOOLS_DEPS_DIRS//,/ }
 
 mkdir -p "$CI_TOOLS_BIN_DIR" "$CI_TOOLS_DIR"/protos
+read -ra TOOLS_DEPS_DIRS <<< "${TOOLS_DEPS_DIRS[@]}"
 
 # Also compute a hash to use for caching
-FILES=$(find $TOOLS_DEPS_DIRS -name '*.sh' | sort)
+FILES=$(find "$TOOLS_DEPS_DIRS" -name '*.sh' | sort)
 for i in ${FILES}; do OS="$GOOS" ARCH="$GOARCH" "$i" "${CI_TOOLS_DIR}"; done
 for i in ${FILES}; do echo "---${i}"; cat "${i}"; done | git hash-object --stdin > "$TOOLS_DEPS_LOCK_FILE"
 
