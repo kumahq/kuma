@@ -38,8 +38,7 @@ func (d *DataplaneClaims) ID() string {
 	return d.RegisteredClaims.ID
 }
 
-func (d *DataplaneClaims) KeyIDFallback() (int, error) {
-	return 0, nil
+func (d *DataplaneClaims) KeyIDFallback() {
 }
 
 func (d *DataplaneClaims) SetRegisteredClaims(claims jwt.RegisteredClaims) {

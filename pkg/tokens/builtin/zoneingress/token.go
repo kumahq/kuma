@@ -25,8 +25,7 @@ func (c *ZoneIngressClaims) ID() string {
 	return c.RegisteredClaims.ID
 }
 
-func (c *ZoneIngressClaims) KeyIDFallback() (int, error) {
-	return 0, nil
+func (c *ZoneIngressClaims) KeyIDFallback() {
 }
 
 func (c *ZoneIngressClaims) SetRegisteredClaims(claims jwt.RegisteredClaims) {
