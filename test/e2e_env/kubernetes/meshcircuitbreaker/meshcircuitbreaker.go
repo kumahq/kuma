@@ -44,7 +44,7 @@ func MeshCircuitBreaker() {
 		Expect(env.Cluster.DeleteMesh(mesh)).To(Succeed())
 	})
 
-	DescribeTable("should configure circuit breaker limits and outlier" +
+	DescribeTable("should configure circuit breaker limits and outlier"+
 		" detectors for connections", func(config string) {
 		// given no MeshCircuitBreaker
 		mcbs, err := env.Cluster.GetKumactlOptions().
