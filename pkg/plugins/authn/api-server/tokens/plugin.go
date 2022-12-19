@@ -5,6 +5,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	config_access "github.com/kumahq/kuma/pkg/config/access"
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/plugins"
 	core_tokens "github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/access"
@@ -38,6 +39,7 @@ func init() {
 func (c plugin) NewAuthenticator(context plugins.PluginContext) (authn.Authenticator, error) {
 	validator := issuer.NewUserTokenValidator(
 		core_tokens.NewValidator(
+			core.Log.WithName("test"),
 			core_tokens.NewSigningKeyAccessor(context.ResourceManager(), issuer.UserTokenSigningKeyPrefix),
 			core_tokens.NewRevocations(context.ResourceManager(), issuer.UserTokenRevocationsGlobalSecretKey),
 			context.Config().Store.Type,

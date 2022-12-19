@@ -6,14 +6,12 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/go-logr/logr"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/pkg/errors"
 
 	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core"
 )
-
-var log = core.Log.WithName("tokens-validator")
 
 type Validator interface {
 	// ParseWithValidation parses token and fills data in provided Claims.
@@ -24,10 +22,12 @@ type jwtTokenValidator struct {
 	keyAccessor SigningKeyAccessor
 	revocations Revocations
 	storeType   store_config.StoreType
+	log         logr.Logger
 }
 
-func NewValidator(keyAccessor SigningKeyAccessor, revocations Revocations, storeType store_config.StoreType) Validator {
+func NewValidator(log logr.Logger, keyAccessor SigningKeyAccessor, revocations Revocations, storeType store_config.StoreType) Validator {
 	return &jwtTokenValidator{
+		log:         log,
 		keyAccessor: keyAccessor,
 		revocations: revocations,
 		storeType:   storeType,
@@ -43,7 +43,7 @@ func (j *jwtTokenValidator) ParseWithValidation(ctx context.Context, rawToken To
 			if _, ok := claims.(KeyIDFallback); ok {
 				// KID wasn't supported in the past, so we use a marker interface to indicate which tokens were allowed
 				// This will be removed with https://github.com/kumahq/kuma/issues/5519
-				log.Info("[WARNING] Using token with KID header, you should rotate this token as it will not be valid in future versions of Kuma", "jti", claims.ID(), KeyIDHeader, 0)
+				j.log.Info("[WARNING] Using token with KID header, you should rotate this token as it will not be valid in future versions of Kuma", "claims", claims, KeyIDHeader, 0)
 				serialNumberRaw = "0"
 			} else {
 				return 0, fmt.Errorf("JWT token must have %s header", KeyIDHeader)
