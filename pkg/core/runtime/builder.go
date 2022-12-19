@@ -23,6 +23,7 @@ import (
 	dp_server "github.com/kumahq/kuma/pkg/dp-server/server"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/events"
+	"github.com/kumahq/kuma/pkg/intercp/client"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
@@ -57,6 +58,7 @@ type BuilderContext interface {
 	Access() Access
 	TokenIssuers() builtin.TokenIssuers
 	MeshCache() *mesh.Cache
+	InterCPClientPool() *client.Pool
 }
 
 var _ BuilderContext = &Builder{}
@@ -93,6 +95,7 @@ type Builder struct {
 	extraReportsFn ExtraReportsFn
 	tokenIssuers   builtin.TokenIssuers
 	meshCache      *mesh.Cache
+	interCpPool    *client.Pool
 	*runtimeInfo
 }
 
@@ -264,6 +267,11 @@ func (b *Builder) WithMeshCache(meshCache *mesh.Cache) *Builder {
 	return b
 }
 
+func (b *Builder) WithInterCPClientPool(interCpPool *client.Pool) *Builder {
+	b.interCpPool = interCpPool
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -328,6 +336,9 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.meshCache == nil {
 		return nil, errors.Errorf("MeshCache has not been configured")
 	}
+	if b.interCpPool == nil {
+		return nil, errors.Errorf("InterCP client pool has not been configured")
+	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
@@ -359,6 +370,7 @@ func (b *Builder) Build() (Runtime, error) {
 			extraReportsFn: b.extraReportsFn,
 			tokenIssuers:   b.tokenIssuers,
 			meshCache:      b.meshCache,
+			interCpPool:    b.interCpPool,
 		},
 		Manager: b.cm,
 	}, nil
@@ -448,7 +460,9 @@ func (b *Builder) TokenIssuers() builtin.TokenIssuers {
 func (b *Builder) EnvoyAdminClient() admin.EnvoyAdminClient {
 	return b.eac
 }
-
 func (b *Builder) MeshCache() *mesh.Cache {
 	return b.meshCache
+}
+func (b *Builder) InterCPClientPool() *client.Pool {
+	return b.interCpPool
 }
