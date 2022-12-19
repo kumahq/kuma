@@ -36,6 +36,7 @@ If we ever see a need to skip the default config, we can do this by introducing 
 ### No modifications on zone proxies
 
 Since ProxyTemplate is a mesh-wide policy, we cannot modify zone proxies.
+Solving this would require duplicating ProxyTemplate policy with global scope. This won't be covered by this MADR.
 
 ### Providing parts of config as a secret
 
@@ -48,6 +49,20 @@ While applying modifications we can gather statistics of what modification was a
 Then we could either log it or add it to Dataplane Insight, so we can show it in the GUI.
 
 This is not required to deliver a new policy, but it would improve the UX. We can implement this as an improvement.
+
+### Routes are hard to modify
+
+We allow to modify VirtualHost, in which you can replace list of routes. You cannot modify a single route.
+You also cannot modify routes if routes are delivered through RDS.
+
+### Merging of TypedConfig
+
+Some parts in Envoy Config are encoded as TypedConfig (marshaled proto in proto).
+Merging such configs results in just replacing. That's why we cannot currently patch TransportSocketMatch.
+
+### Appending to lists
+
+The default strategy for list is replace. Sometimes we may want to add something to the list. There is no such option right now.
 
 ### Other resources
 
@@ -89,6 +104,11 @@ spec:
             origin: inbound # optional: if absent, all clusters regardless of its origin will be patched
           value: | # you can specify only part of cluster definition that will be merged into existing cluster
             connectTimeout: 5s
+          jsonPatches: # either jsonPatches or value. Only possible to use with operation: patch. See https://jsonpatch.com/ for more.
+            - op: add
+              from: ""
+              path: "/connectTimeout"
+              value: "5s"
       - cluster:
           operation: remove
           match: # optional: if absent, all clusters will be removed
@@ -102,7 +122,12 @@ A couple of things to note when you compare this to the old policy:
 * Because list are appended, there is no way to override or exclude modifications.
   This should be fine for this time being, since proxy templates are managed by the mesh operator.
   We could introduce `modifications` next to `appendModifications` or provide more general mechanism for excluding/overriding.
-* `modifications` section stays the same as with the old policy
+* `modifications` section stays almost the same as with the old policy except `jsonPatches` field.
+* `jsonPatches` is the alternative way of patching config which we also use in `ContainerPatch`.
+  It is more expensive to execute, because before applying the patch we need to marshal the config to JSON.
+  It should not be a default way of patching things, but this way we can overcome some limitations of a default proto merge. 
+  You can modify TypedConfig, because TypedConfig is serialized to JSON. This solves _Merging of TypedConfig_
+  You can modify parts of lists (add element, etc.). This solves _Appending to lists_
 
 #### Name alternatives
 
@@ -115,9 +140,13 @@ A couple of name alternatives:
 * MeshProxyConfig (too generic? sounds like configuration of Kuma DP)
 * MeshProxyPatch
 
-While `MeshEnvoyConfig` seems to be the most accurate name, I'm hesitant to make this change. I think that changing the name may confuse existing users. 
+While `MeshProxyPatch` seems to be the most accurate name, I'm hesitant to make this change. I think that changing the name may confuse existing users. 
 
-#### Transport Socket modifications
+#### Other resources
+
+##### Transport Socket modifications
+
+We could introduce "native" transport_socket modification, but if we introduce `jsonPatches` we can also rely on it.
 
 ```yaml
 appendModifications:
@@ -170,4 +199,46 @@ appendModifications:
           commonTlsContext:
             tlsParams:
               tlsMinimumProtocolVersion: TLSv1_3
+```
+
+##### Route modifications
+
+Route modifications will support ordered modifications by allowing the same operations as `httpFilter` - `addFirst`, `addBefore`, `addAfter`, `addLast`, `patch`, `remove`.
+Route modifications will support static routes (in-cluster communication) and dynamic routes through RDS (gateway).
+To support name matching, we also need to name all the routes from now.
+
+```yaml
+appendModifications:
+  - route:
+      operation: addFirst # it will be added as a first route in the virtual host.  
+      match:
+        virtualHostName: vh-1
+      value: |
+        match:
+          prefix: /x
+        route:
+          cluster: demo-app_kuma-demo_svc_5000
+  - route:
+      operation: addBefore # it will be added before route named `catch-all` in virtual host named vh-1 
+      match:
+        name: catch-all # requires name so we know before what route we need to add it. Same with addAfter
+        virtualHostName: vh-1
+      value: |
+        match:
+          prefix: /x
+        route:
+          cluster: demo-app_kuma-demo_svc_5000
+  - route:
+      operation: remove 
+      match:
+        name: catch-all # removes route of 'catch-all' name. If not specified, then all routes in virtual host vh-1 are removed  
+        virtualHostName: vh-1
+  - route:
+      operation: patch
+      match:
+        name: catch-all # optional: if not specified, patch will be executed on all routes in virtual host  
+        virtualHostName: vh-1
+        origin: outbound # optional: it enables a user to patch route in all virtual hosts of all outbound listeners.
+      value: |
+        timeout: 10s
 ```
