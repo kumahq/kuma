@@ -54,7 +54,6 @@ var _ = SynchronizedBeforeSuite(
 					WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 					WithCtlOpts(map[string]string{
 						"--experimental-gatewayapi": gatewayAPI,
-						"--set":                     "experimental.transparentProxy=true",
 					}),
 					WithEgress(),
 				))

@@ -1,1 +1,0 @@
-import{E as o,o as s,j as t,J as n}from"./index.0cb244cf.js";const r={},c={class:"component-frame"};function a(e,_){return s(),t("div",c,[n(e.$slots,"default")])}const f=o(r,[["render",a]]);export{f as F};

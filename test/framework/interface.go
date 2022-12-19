@@ -31,26 +31,27 @@ type kumaDeploymentOptions struct {
 	verbose *bool
 
 	// cp specific
-	ctlOpts                     map[string]string
-	globalAddress               string
-	installationMode            InstallationMode
-	skipDefaultMesh             bool
-	helmReleaseName             string
-	helmChartPath               *string
-	helmChartVersion            string
-	helmOpts                    map[string]string
-	noHelmOpts                  []string
-	env                         map[string]string
-	zoneIngress                 bool
-	zoneIngressEnvoyAdminTunnel bool
-	zoneEgress                  bool
-	zoneEgressEnvoyAdminTunnel  bool
-	cni                         bool
-	cniExperimental             bool
-	cpReplicas                  int
-	hdsDisabled                 bool
-	runPostgresMigration        bool
-	yamlConfig                  string
+	ctlOpts                      map[string]string
+	globalAddress                string
+	installationMode             InstallationMode
+	skipDefaultMesh              bool
+	helmReleaseName              string
+	helmChartPath                *string
+	helmChartVersion             string
+	helmOpts                     map[string]string
+	noHelmOpts                   []string
+	env                          map[string]string
+	zoneIngress                  bool
+	zoneIngressEnvoyAdminTunnel  bool
+	zoneEgress                   bool
+	zoneEgressEnvoyAdminTunnel   bool
+	cni                          bool
+	cniExperimental              bool
+	cpReplicas                   int
+	hdsDisabled                  bool
+	runPostgresMigration         bool
+	yamlConfig                   string
+	experimentalTransparentProxy bool
 
 	// Functions to apply to each mesh after the control plane
 	// is provisioned.
@@ -63,6 +64,7 @@ func (k *kumaDeploymentOptions) apply(opts ...KumaDeploymentOption) {
 	k.installationMode = KumactlInstallationMode
 	k.env = map[string]string{}
 	k.meshUpdateFuncs = map[string][]func(*mesh_proto.Mesh) *mesh_proto.Mesh{}
+	k.experimentalTransparentProxy = true
 
 	// Apply options.
 	for _, o := range opts {
@@ -88,29 +90,30 @@ type appDeploymentOptions struct {
 	verbose *bool
 
 	// app specific
-	namespace             string
-	appname               string
-	name                  string
-	appYaml               string
-	appArgs               []string
-	token                 string
-	transparent           *bool
-	builtindns            *bool // true by default
-	protocol              string
-	serviceName           string
-	serviceVersion        string
-	serviceInstance       string
-	mesh                  string
-	dpVersion             string
-	kumactlFlow           bool
-	concurrency           int
-	omitDataplane         bool
-	proxyOnly             bool
-	serviceProbe          bool
-	reachableServices     []string
-	appendDataplaneConfig string
-	boundToContainerIp    bool
-	serviceAddress        string
+	namespace                    string
+	appname                      string
+	name                         string
+	appYaml                      string
+	appArgs                      []string
+	token                        string
+	transparent                  *bool
+	builtindns                   *bool // true by default
+	protocol                     string
+	serviceName                  string
+	serviceVersion               string
+	serviceInstance              string
+	mesh                         string
+	dpVersion                    string
+	kumactlFlow                  bool
+	concurrency                  int
+	omitDataplane                bool
+	proxyOnly                    bool
+	serviceProbe                 bool
+	reachableServices            []string
+	appendDataplaneConfig        string
+	boundToContainerIp           bool
+	serviceAddress               string
+	experimentalTransparentProxy bool
 
 	dockerVolumes       []string
 	dockerContainerName string
@@ -465,6 +468,13 @@ func WithToken(token string) AppDeploymentOption {
 func WithTransparentProxy(transparent bool) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.transparent = &transparent
+		o.experimentalTransparentProxy = true
+	})
+}
+
+func WithoutExperimentalTransparentProxy() AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.experimentalTransparentProxy = false
 	})
 }
 

@@ -44,7 +44,7 @@ var _ = Describe("Heartbeats", func() {
 			c,
 			currentInstance,
 			10*time.Millisecond,
-			func(serverURL string) (catalog.Client, error) {
+			func(serverURL string) (system_proto.InterCpPingServiceClient, error) {
 				pc.SetServerURL(serverURL)
 				return pc, nil
 			},
@@ -150,11 +150,7 @@ type staticPingClient struct {
 	sync.Mutex
 }
 
-var _ catalog.Client = &staticPingClient{}
-
-func (s *staticPingClient) Close() error {
-	return nil
-}
+var _ system_proto.InterCpPingServiceClient = &staticPingClient{}
 
 func (s *staticPingClient) Ping(ctx context.Context, in *system_proto.PingRequest, opts ...grpc.CallOption) (*system_proto.PingResponse, error) {
 	s.Lock()

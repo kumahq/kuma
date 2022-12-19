@@ -1,5 +1,5 @@
 # When updatinng image version, remember to update it in tools/releases/distros.sh and enterprise version
-FROM kumahq/kuma-net-ebpf:0.8.9 as ebpf
+FROM kumahq/kuma-net-ebpf:0.8.10 as ebpf
 # until there is a distroless iptables image we have to use something else
 FROM ubuntu:jammy
 ARG ARCH
