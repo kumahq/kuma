@@ -177,7 +177,7 @@ func (m *MeshResource) MarshalLog() interface{} {
 			continue
 		}
 	}
-	return MeshResource{
+	return &MeshResource{
 		Meta: m.Meta,
 		Spec: spec,
 	}
