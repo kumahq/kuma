@@ -36,7 +36,7 @@ $ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api
       --name string          name of the Dataplane
       --proxy-type string    type of the Dataplane ("dataplane", "ingress")
       --tag stringToString   required tag values for dataplane (split values by comma to provide multiple values) (default [])
-      --valid-for duration   how long the token will be valid (for example "24h") (default 87600h0m0s)
+      --valid-for duration   how long the token will be valid (for example "24h")
 ```
 
 ### Options inherited from parent commands
