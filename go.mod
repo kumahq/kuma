@@ -27,7 +27,7 @@ require (
 	github.com/gruntwork-io/terratest v0.41.4
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/kumahq/kuma-net v0.8.9
+	github.com/kumahq/kuma-net v0.8.10
 	github.com/kumahq/protoc-gen-kumadoc v0.3.1
 	github.com/lib/pq v1.10.7
 	github.com/miekg/dns v1.1.50
