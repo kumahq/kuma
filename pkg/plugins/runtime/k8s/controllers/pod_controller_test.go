@@ -237,7 +237,7 @@ var _ = Describe("PodReconciler", func() {
 								Type:   kube_intstr.Int,
 								IntVal: 8080,
 							},
-							AppProtocol: utilpointer.StringPtr("http"),
+							AppProtocol: utilpointer.String("http"),
 						},
 						{
 							Protocol: "TCP",
@@ -587,7 +587,7 @@ var _ = Describe("PodReconciler", func() {
 				Namespace: "demo",
 				Name:      "dp-1",
 				OwnerReferences: []kube_meta.OwnerReference{{
-					Controller: utilpointer.BoolPtr(true),
+					Controller: utilpointer.Bool(true),
 					Kind:       "Pod",
 					Name:       "dp-1",
 				}},
@@ -604,7 +604,7 @@ var _ = Describe("PodReconciler", func() {
 				Namespace: "demo",
 				Name:      "dp-2",
 				OwnerReferences: []kube_meta.OwnerReference{{
-					Controller: utilpointer.BoolPtr(true),
+					Controller: utilpointer.Bool(true),
 					Kind:       "Pod",
 					Name:       "dp-2",
 				}},
@@ -621,7 +621,7 @@ var _ = Describe("PodReconciler", func() {
 				Namespace: "demo",
 				Name:      "dp-3",
 				OwnerReferences: []kube_meta.OwnerReference{{
-					Controller: utilpointer.BoolPtr(true),
+					Controller: utilpointer.Bool(true),
 					Kind:       "Pod",
 					Name:       "dp-3",
 				}},
