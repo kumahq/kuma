@@ -44,7 +44,8 @@ func MeshCircuitBreaker() {
 		Expect(env.Cluster.DeleteMesh(mesh)).To(Succeed())
 	})
 
-	DescribeTable("should add timeouts for outbound connections", func(config string) {
+	DescribeTable("should configure circuit breaker limits and outlier" +
+		" detectors for connections", func(config string) {
 		// given no MeshCircuitBreaker
 		mcbs, err := env.Cluster.GetKumactlOptions().
 			KumactlList("meshcircuitbreakers", mesh)
@@ -60,7 +61,7 @@ func MeshCircuitBreaker() {
 				WithNumberOfRequests(50),
 			)
 		}, "30s", "500ms").Should(And(
-			HaveLen(15),
+			HaveLen(50),
 			HaveEach(HaveField("ResponseCode", 200)),
 		))
 
