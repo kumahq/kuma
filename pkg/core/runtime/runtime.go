@@ -23,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/envoy/admin/access"
 	"github.com/kumahq/kuma/pkg/events"
+	"github.com/kumahq/kuma/pkg/intercp/client"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
@@ -82,6 +83,7 @@ type RuntimeContext interface {
 	ExtraReportsFn() ExtraReportsFn
 	TokenIssuers() builtin.TokenIssuers
 	MeshCache() *mesh.Cache
+	InterCPClientPool() *client.Pool
 }
 
 type Access struct {
@@ -168,6 +170,7 @@ type runtimeContext struct {
 	extraReportsFn ExtraReportsFn
 	tokenIssuers   builtin.TokenIssuers
 	meshCache      *mesh.Cache
+	interCpPool    *client.Pool
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
@@ -283,4 +286,8 @@ func (rc *runtimeContext) TokenIssuers() builtin.TokenIssuers {
 
 func (rc *runtimeContext) MeshCache() *mesh.Cache {
 	return rc.meshCache
+}
+
+func (rc *runtimeContext) InterCPClientPool() *client.Pool {
+	return rc.interCpPool
 }
