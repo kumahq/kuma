@@ -61,7 +61,7 @@ spec:
         failTrafficOnPanic: true
         noTrafficInterval: 1s
         healthyPanicThreshold: 0
-        reuse_connection: true
+        reuseConnection: true
         http:
           path: /
           expectedStatuses: [200]
@@ -106,7 +106,7 @@ spec:
         failTrafficOnPanic: true
         noTrafficInterval: 1s
         healthyPanicThreshold: 0
-        reuse_connection: true
+        reuseConnection: true
         http:
           path: /
           expectedStatuses: [200]
