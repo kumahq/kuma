@@ -1,8 +1,13 @@
 package framework
 
 import (
+	"fmt"
+	"strings"
+
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
@@ -23,6 +28,33 @@ func DeleteAllResourcesUniversal(kumactl KumactlOptions, descriptor core_model.R
 			return err
 		}
 	}
+	return nil
+}
+
+func DeleteMeshResourcesKubernetes(cluster Cluster, mesh string, resources ...string) error {
+	var errs []string
+
+	for _, resource := range resources {
+		if err := k8s.RunKubectlE(
+			cluster.GetTesting(),
+			cluster.GetKubectlOptions(),
+			"delete",
+			resource,
+			"--all-namespaces",
+			"--selector",
+			fmt.Sprintf("%s=%s", mesh_proto.MeshTag, mesh),
+		); err != nil {
+			errs = append(errs, err.Error())
+		}
+	}
+
+	if len(errs) != 0 {
+		return fmt.Errorf(
+			"deleting mesh resources failed with errors:\n\t%s",
+			strings.Join(errs, "\n\t"),
+		)
+	}
+
 	return nil
 }
 

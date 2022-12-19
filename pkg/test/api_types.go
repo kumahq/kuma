@@ -15,6 +15,10 @@ func PointerBool(val bool) *bool {
 }
 
 func ParseDuration(duration string) *k8s.Duration {
-	d, _ := time.ParseDuration(duration)
+	d, err := time.ParseDuration(duration)
+	if err != nil {
+		panic(err)
+	}
+
 	return &k8s.Duration{Duration: d}
 }

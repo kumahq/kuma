@@ -22,6 +22,7 @@ import (
 	test_xds "github.com/kumahq/kuma/pkg/test/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
@@ -45,7 +46,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 
 	genOutlierDetection := func(disabled bool) *api.OutlierDetection {
 		return &api.OutlierDetection{
-			Disabled:                    test.PointerBool(disabled),
+			Disabled:                    disabled,
 			Interval:                    test.ParseDuration("10s"),
 			BaseEjectionTime:            test.ParseDuration("8s"),
 			MaxEjectionPercent:          test.PointerUint32(88),
@@ -262,7 +263,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				{
 					Name:     "inbound",
 					Origin:   generator.OriginInbound,
-					Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundPort)),
+					Resource: test_xds.ClusterWithName(envoy_names.GetLocalClusterName(builders.FirstInboundPort)),
 				},
 			},
 			fromRules: core_xds.FromRules{

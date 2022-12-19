@@ -58,11 +58,7 @@ func configureCircuitBreakers(cluster *envoy_cluster.Cluster, conf *api.Connecti
 }
 
 func configureOutlierDetection(cluster *envoy_cluster.Cluster, conf *api.OutlierDetection) {
-	if conf == nil {
-		return
-	}
-
-	if conf.Disabled != nil && *conf.Disabled {
+	if conf == nil || conf.Disabled {
 		return
 	}
 

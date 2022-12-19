@@ -402,72 +402,22 @@ func CollectResponsesAndFailures(
 	container, destination string,
 	fn ...CollectResponsesOptsFn,
 ) ([]FailureResponse, error) {
-	opts := CollectOptions(destination, fn...)
-	cmd := collectCommand(opts, "curl",
-		"--request", opts.Method,
-		"--max-time", "3",
-		"--silent",               // Suppress human-readable errors.
-		"--write-out", "%{json}", // Write JSON result. Requires curl 7.70.0, April 2020.
-		// Silence output so that we don't try to parse it. A future refactor could try to address this
-		// by using "%{stderr}%{json}", but that needs a bit more investigation.
-		"--output", os.DevNull,
-		opts.ShellEscaped(opts.URL),
-	)
-
-	var appPodName string
-	if opts.namespace != "" && opts.application != "" {
-		var err error
-		appPodName, err = framework.PodNameOfApp(cluster, opts.application, opts.namespace)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	mut := sync.Mutex{}
+	var mut sync.Mutex
 	var responses []FailureResponse
-
 	var wg sync.WaitGroup
 	var err error
+
+	opts := CollectOptions(destination, fn...)
+
 	for i := 0; i < opts.NumberOfRequests; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 
-			stdout, _, localErr := cluster.Exec(opts.namespace, appPodName, container, cmd...)
-
-			// 1. If we fail to decode the JSON status, return the JSON error,
-			// but prefer the original error if we have it.
-			empty := FailureResponse{}
-			response := FailureResponse{}
-			if jsonErr := json.Unmarshal([]byte(stdout), &response); jsonErr != nil {
-				// Prefer the original error to a JSON decoding error.
-				if localErr == nil {
-					err = jsonErr
-					return
-				}
-			}
-
-			// 2. If there was no error response, we still prefer the original
-			// error, but fall back to reporting that the JSON  is missing.
-			if response == empty {
-				if localErr != nil {
-					err = localErr
-					return
-				}
-
-				err = errors.Errorf("empty JSON response from curl: %q", stdout)
+			response, collectErr := CollectFailure(cluster, container, destination, fn...)
+			if collectErr != nil {
+				err = collectErr
 				return
-			}
-
-			// for k8s
-			k8sExitErr := k8s_exec.CodeExitError{}
-			if errors.As(err, &k8sExitErr) {
-				response.Exitcode = k8sExitErr.Code
-			}
-			// for universal
-			var exitErr *exec.ExitError
-			if errors.As(err, &exitErr) {
-				response.Exitcode = exitErr.ExitCode()
 			}
 
 			mut.Lock()

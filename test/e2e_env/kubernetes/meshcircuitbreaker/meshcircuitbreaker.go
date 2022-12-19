@@ -3,7 +3,6 @@ package meshcircuitbreaker
 import (
 	"fmt"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -26,44 +25,18 @@ func MeshCircuitBreaker() {
 			Setup(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		// Clean legacy CircuitBreaker policies
-		Expect(
-			k8s.RunKubectlE(
-				env.Cluster.GetTesting(),
-				env.Cluster.GetKubectlOptions(),
-				"delete",
-				"circuitbreakers",
-				"-A",
-				"--all",
-			),
-		).To(Succeed())
-
-		// Clean Retry policies
-		Expect(
-			k8s.RunKubectlE(
-				env.Cluster.GetTesting(),
-				env.Cluster.GetKubectlOptions(),
-				"delete",
-				"retries",
-				"-A",
-				"--all",
-			),
-		).To(Succeed())
+		Expect(DeleteMeshResourcesKubernetes(
+			env.Cluster,
+			mesh,
+			"circuitbreakers",
+			"retries",
+			"meshcircuitbreakers",
+		)).To(Succeed())
 	})
 
-	// Clean existing MeshCircuitBreaker policies (necessary when there will be
-	// a default policy)
 	E2EAfterEach(func() {
-		Expect(
-			k8s.RunKubectlE(
-				env.Cluster.GetTesting(),
-				env.Cluster.GetKubectlOptions(),
-				"delete",
-				"meshcircuitbreakers",
-				"-A",
-				"--all",
-			),
-		).To(Succeed())
+		Expect(DeleteMeshResourcesKubernetes(env.Cluster, mesh, "meshcircuitbreakers")).
+			To(Succeed())
 	})
 
 	E2EAfterAll(func() {
@@ -84,7 +57,7 @@ func MeshCircuitBreaker() {
 				"demo-client",
 				fmt.Sprintf("test-server_%s_svc_80.mesh", namespace),
 				FromKubernetesPod(namespace, "demo-client"),
-				WithNumberOfRequests(15),
+				WithNumberOfRequests(50),
 			)
 		}, "30s", "500ms").Should(And(
 			HaveLen(15),
@@ -101,7 +74,7 @@ func MeshCircuitBreaker() {
 				"demo-client",
 				fmt.Sprintf("test-server_%s_svc_80.mesh", namespace),
 				FromKubernetesPod(namespace, "demo-client"),
-				WithNumberOfRequests(15),
+				WithNumberOfRequests(50),
 				WithoutRetries(),
 			)
 		}, "90s", "1s").Should(And(
