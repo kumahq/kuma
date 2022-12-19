@@ -29,6 +29,7 @@ import (
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/dp-server/server"
 	"github.com/kumahq/kuma/pkg/events"
+	"github.com/kumahq/kuma/pkg/intercp"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
@@ -117,6 +118,7 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 		ZoneIngressToken: tokens_builtin.NewZoneIngressTokenIssuer(builder.ResourceManager()),
 		ZoneToken:        tokens_builtin.NewZoneTokenIssuer(builder.ResourceManager()),
 	})
+	builder.WithInterCPClientPool(intercp.DefaultClientPool())
 
 	initializeConfigManager(builder)
 
@@ -177,14 +179,19 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 }
 
 type DummyEnvoyAdminClient struct {
-	PostQuitCalled *int
+	PostQuitCalled   *int
+	ConfigDumpCalled int
+	StatsCalled      int
+	ClustersCalled   int
 }
 
 func (d *DummyEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+	d.StatsCalled++
 	return []byte("server.live: 1\n"), nil
 }
 
 func (d *DummyEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+	d.ClustersCalled++
 	return []byte("kuma:envoy:admin\n"), nil
 }
 
@@ -201,5 +208,6 @@ func (d *DummyEnvoyAdminClient) PostQuit(ctx context.Context, dataplane *core_me
 }
 
 func (d *DummyEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+	d.ConfigDumpCalled++
 	return []byte(fmt.Sprintf(`{"envoyAdminAddress": "%s"}`, proxy.AdminAddress(9901))), nil
 }
