@@ -318,7 +318,7 @@ func WithGlobalAddress(address string) KumaDeploymentOption {
 	})
 }
 
-// WithCtlOpt allows arbitrary options to be passed to kuma, which is important
+// WithCtlOpts allows arbitrary options to be passed to kuma, which is important
 // for using test/framework in other libraries where additional options may have
 // been added.
 func WithCtlOpts(opts map[string]string) KumaDeploymentOption {
