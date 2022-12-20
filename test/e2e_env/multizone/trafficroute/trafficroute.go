@@ -80,11 +80,7 @@ func TrafficRoute() {
 	})
 
 	BeforeEach(func() {
-		Expect(DeleteAllResourcesUniversal(
-			*env.Global.GetKumactlOptions(),
-			mesh.TrafficRouteResourceTypeDescriptor,
-			meshName),
-		).To(Succeed())
+		Expect(DeleteMeshResources(env.Global, meshName, mesh.TrafficRouteResourceTypeDescriptor)).To(Succeed())
 	})
 
 	It("should access all instances of the service", func() {

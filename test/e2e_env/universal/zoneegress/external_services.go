@@ -127,8 +127,7 @@ func ExternalServices() {
 
 	Context("Fault Injection", func() {
 		AfterEach(func() {
-			err := DeleteAllResourcesUniversal(*env.Cluster.GetKumactlOptions(), core_mesh.FaultInjectionResourceTypeDescriptor, meshName)
-			Expect(err).ToNot(HaveOccurred())
+			Expect(DeleteMeshResources(env.Cluster, meshName, core_mesh.FaultInjectionResourceTypeDescriptor)).To(Succeed())
 		})
 
 		It("should inject faults for external service", func() {
@@ -162,8 +161,7 @@ conf:
 
 	Context("Rate Limit", func() {
 		AfterEach(func() {
-			err := DeleteAllResourcesUniversal(*env.Cluster.GetKumactlOptions(), core_mesh.RateLimitResourceTypeDescriptor, meshName)
-			Expect(err).ToNot(HaveOccurred())
+			Expect(DeleteMeshResources(env.Cluster, meshName, core_mesh.RateLimitResourceTypeDescriptor)).To(Succeed())
 		})
 
 		It("should rate limit requests to external service", func() {
