@@ -23,6 +23,6 @@ func Enabled() []plugins.PluginName {
 	return policies
 }
 
-func SetPolicies(newPolicies []plugins.PluginName){
+func SetPolicies(newPolicies []plugins.PluginName) {
 	policies = newPolicies
 }
