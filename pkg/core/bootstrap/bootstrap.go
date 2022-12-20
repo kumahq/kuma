@@ -42,6 +42,9 @@ import (
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/envoy/admin/access"
 	"github.com/kumahq/kuma/pkg/events"
+	"github.com/kumahq/kuma/pkg/intercp"
+	"github.com/kumahq/kuma/pkg/intercp/catalog"
+	"github.com/kumahq/kuma/pkg/intercp/envoyadmin"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
@@ -120,12 +123,21 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	builder.WithCAProvider(caProvider)
 	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, builder.Metrics()))
 	builder.WithKDSContext(kds_context.DefaultContext(appCtx, builder.ResourceManager(), cfg.Multizone.Zone.Name))
+	builder.WithInterCPClientPool(intercp.DefaultClientPool())
 
 	if cfg.Mode == config_core.Global {
-		builder.WithEnvoyAdminClient(admin.NewKDSEnvoyAdminClient(
+		kdsEnvoyAdminClient := admin.NewKDSEnvoyAdminClient(
 			builder.KDSContext().EnvoyAdminRPCs,
 			cfg.Store.Type == store.KubernetesStore,
-		))
+		)
+		forwardingClient := envoyadmin.NewForwardingEnvoyAdminClient(
+			builder.ReadOnlyResourceManager(),
+			catalog.NewConfigCatalog(builder.ResourceManager()),
+			builder.GetInstanceId(),
+			intercp.PooledEnvoyAdminClientFn(builder.InterCPClientPool()),
+			kdsEnvoyAdminClient,
+		)
+		builder.WithEnvoyAdminClient(forwardingClient)
 	} else {
 		builder.WithEnvoyAdminClient(admin.NewEnvoyAdminClient(
 			builder.ResourceManager(),

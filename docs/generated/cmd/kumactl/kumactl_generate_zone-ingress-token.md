@@ -26,7 +26,7 @@ $ kumactl generate zone-ingress-token --zone zone-1 --valid-for 30d
 
 ```
   -h, --help                 help for zone-ingress-token
-      --valid-for duration   how long the token will be valid (for example "24h") (default 87600h0m0s)
+      --valid-for duration   how long the token will be valid (for example "24h")
       --zone string          name of the zone where ingress resides
 ```
 

@@ -35,6 +35,8 @@ type CollectResponsesOpts struct {
 
 	namespace   string
 	application string
+
+	withoutRetries bool
 }
 
 func DefaultCollectResponsesOpts() CollectResponsesOpts {
@@ -60,6 +62,12 @@ func WithNumberOfRequests(numberOfRequests int) CollectResponsesOptsFn {
 func WithMethod(method string) CollectResponsesOptsFn {
 	return func(opts *CollectResponsesOpts) {
 		opts.Method = method
+	}
+}
+
+func WithoutRetries() CollectResponsesOptsFn {
+	return func(opts *CollectResponsesOpts) {
+		opts.withoutRetries = true
 	}
 }
 
@@ -387,6 +395,47 @@ func CollectFailure(cluster framework.Cluster, container, destination string, fn
 	// 3. Finally, report the JSON status and no execution error
 	// since the JSON contains all the Curl error information.
 	return response, nil
+}
+
+func CollectResponsesAndFailures(
+	cluster framework.Cluster,
+	container, destination string,
+	fn ...CollectResponsesOptsFn,
+) ([]FailureResponse, error) {
+	var mut sync.Mutex
+	var responses []FailureResponse
+	var wg sync.WaitGroup
+	var err error
+
+	opts := CollectOptions(destination, fn...)
+
+	wg.Add(opts.NumberOfRequests)
+
+	for i := 0; i < opts.NumberOfRequests; i++ {
+		go func() {
+			defer wg.Done()
+
+			response, collectErr := CollectFailure(cluster, container, destination, fn...)
+			if collectErr != nil {
+				err = collectErr
+				return
+			}
+
+			mut.Lock()
+			responses = append(responses, response)
+			mut.Unlock()
+		}()
+	}
+
+	wg.Wait()
+
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. Finally, report the JSON status and no execution error
+	// since the JSON contains all the Curl error information.
+	return responses, nil
 }
 
 func CollectResponses(cluster framework.Cluster, source, destination string, fn ...CollectResponsesOptsFn) ([]types.EchoResponse, error) {

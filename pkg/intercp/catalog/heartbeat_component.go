@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/api/system/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
@@ -17,16 +17,16 @@ var heartbeatLog = core.Log.WithName("intercp").WithName("catalog").WithName("he
 type heartbeatComponent struct {
 	catalog     Catalog
 	newClientFn NewClientFn
-	request     *v1alpha1.PingRequest
+	request     *system_proto.PingRequest
 	interval    time.Duration
 
 	leader *Instance
-	client Client
+	client system_proto.InterCpPingServiceClient
 }
 
 var _ component.Component = &heartbeatComponent{}
 
-type NewClientFn = func(url string) (Client, error)
+type NewClientFn = func(url string) (system_proto.InterCpPingServiceClient, error)
 
 func NewHeartbeatComponent(
 	catalog Catalog,
@@ -36,7 +36,7 @@ func NewHeartbeatComponent(
 ) component.Component {
 	return &heartbeatComponent{
 		catalog: catalog,
-		request: &v1alpha1.PingRequest{
+		request: &system_proto.PingRequest{
 			InstanceId:  instance.Id,
 			Address:     instance.Address,
 			InterCpPort: uint32(instance.InterCpPort),
@@ -105,16 +105,10 @@ func (h *heartbeatComponent) connectToLeader(ctx context.Context) error {
 	if h.leader.Id == h.request.InstanceId {
 		return nil
 	}
-	heartbeatLog.Info("leader has changed. Closing connection to the old leader. Creating connection to the new leader.",
+	heartbeatLog.Info("leader has changed. Creating connection to the new leader.",
 		"previousLeaderAddress", h.leader.Address,
 		"newLeaderAddress", newLeader.Leader,
 	)
-	if h.client != nil {
-		if err := h.client.Close(); err != nil {
-			heartbeatLog.Error(err, "could not close a client to a previous leader")
-			// continue anyway. This is a better fallback of this error, because the component would restart and create new client anyways.
-		}
-	}
 	h.client, err = h.newClientFn(h.leader.InterCpURL())
 	if err != nil {
 		return errors.Wrap(err, "could not create a client to a leader")

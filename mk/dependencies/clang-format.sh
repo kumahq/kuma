@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 OUTPUT_DIR=$1/bin
 VERSION="13.0.0"
 CLANG_FORMAT=${OUTPUT_DIR}/clang-format

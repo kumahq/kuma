@@ -180,11 +180,11 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 		return errors.Wrap(err, "failed to list k8s resources")
 	}
 	predicate := func(r core_model.Resource) bool {
-		if opts.Mesh != "" {
-			return r.GetMeta().GetMesh() == opts.Mesh
+		if opts.Mesh != "" && r.GetMeta().GetMesh() != opts.Mesh {
+			return false
 		}
-		if opts.NamePrefix != "" {
-			return strings.HasPrefix(r.GetMeta().GetName(), opts.NamePrefix)
+		if opts.NamePrefix != "" && !strings.HasPrefix(r.GetMeta().GetName(), opts.NamePrefix) {
+			return false
 		}
 		return true
 	}

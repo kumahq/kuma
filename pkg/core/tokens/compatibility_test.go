@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -37,6 +38,7 @@ var _ = Describe("Compatibility with old ASN.1 format", func() {
 		signingKeyManager = tokens.NewMeshedSigningKeyManager(resManager, TestTokenSigningKeyPrefix, model.DefaultMesh)
 		issuer = tokens.NewTokenIssuer(signingKeyManager)
 		validator = tokens.NewValidator(
+			core.Log.WithName("test"),
 			tokens.NewMeshedSigningKeyAccessor(resManager, TestTokenSigningKeyPrefix, model.DefaultMesh),
 			tokens.NewRevocations(resManager, TokenRevocationsGlobalSecretKey),
 			store_config.MemoryStore,
