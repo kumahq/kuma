@@ -141,7 +141,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, useTokenPath 
 				},
 				{
 					TagName:  "kafka_type",
-					TagValue: &envoy_metrics_v3.TagSpecifier_Regex{Regex: "^kafka\\..*\\.(.*)"},
+					TagValue: &envoy_metrics_v3.TagSpecifier_Regex{Regex: "^kafka\\..*\\.(.*?(?=_duration|$))"},
 				},
 				{
 					TagName:  "worker",
