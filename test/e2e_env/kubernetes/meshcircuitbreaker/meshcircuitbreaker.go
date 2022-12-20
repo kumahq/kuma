@@ -74,6 +74,8 @@ func MeshCircuitBreaker() {
 				fmt.Sprintf("test-server_%s_svc_80.mesh", namespace),
 				FromKubernetesPod(namespace, "demo-client"),
 				WithNumberOfRequests(10),
+				// increase processing time of a request to increase a probability of triggering maxPendingRequest limit
+				WithHeader("x-set-response-delay-ms", "1000"),
 				WithoutRetries(),
 			)
 		}, "30s", "1s").Should(And(
