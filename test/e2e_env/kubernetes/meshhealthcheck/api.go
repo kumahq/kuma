@@ -2,6 +2,7 @@ package meshhealthcheck
 
 import (
 	"fmt"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
@@ -23,7 +24,7 @@ func API() {
 
 	E2EAfterEach(func() {
 		Expect(
-			k8s.RunKubectlE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(), "delete", "meshhealthchecks", "-A", "--all"),
+			DeleteMeshResources(env.Cluster, meshName, v1alpha1.MeshHealthCheckResourceTypeDescriptor),
 		).To(Succeed())
 	})
 

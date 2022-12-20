@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"github.com/kumahq/kuma/pkg/test"
 	"path/filepath"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -15,10 +16,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
-	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -27,7 +26,6 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
@@ -107,13 +105,13 @@ var _ = Describe("MeshTimeout", func() {
 					{
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
-							ConnectionTimeout: policies_xds.ParseDuration("10s"),
-							IdleTimeout:       policies_xds.ParseDuration("1h"),
+							ConnectionTimeout: test.ParseDuration("10s"),
+							IdleTimeout:       test.ParseDuration("1h"),
 							Http: &api.Http{
-								RequestTimeout:        policies_xds.ParseDuration("5s"),
-								StreamIdleTimeout:     policies_xds.ParseDuration("1s"),
-								MaxStreamDuration:     policies_xds.ParseDuration("10m"),
-								MaxConnectionDuration: policies_xds.ParseDuration("10m"),
+								RequestTimeout:        test.ParseDuration("5s"),
+								StreamIdleTimeout:     test.ParseDuration("1s"),
+								MaxStreamDuration:     test.ParseDuration("10m"),
+								MaxConnectionDuration: test.ParseDuration("10m"),
 							},
 						},
 					},
@@ -152,8 +150,8 @@ var _ = Describe("MeshTimeout", func() {
 							Value: "second-service",
 						}},
 						Conf: api.Conf{
-							ConnectionTimeout: policies_xds.ParseDuration("10s"),
-							IdleTimeout:       policies_xds.ParseDuration("30s"),
+							ConnectionTimeout: test.ParseDuration("10s"),
+							IdleTimeout:       test.ParseDuration("30s"),
 						},
 					},
 				},
@@ -181,13 +179,13 @@ var _ = Describe("MeshTimeout", func() {
 						{
 							Subset: core_xds.Subset{},
 							Conf: api.Conf{
-								ConnectionTimeout: policies_xds.ParseDuration("10s"),
-								IdleTimeout:       policies_xds.ParseDuration("1h"),
+								ConnectionTimeout: test.ParseDuration("10s"),
+								IdleTimeout:       test.ParseDuration("1h"),
 								Http: &api.Http{
-									RequestTimeout:        policies_xds.ParseDuration("5s"),
-									StreamIdleTimeout:     policies_xds.ParseDuration("1s"),
-									MaxStreamDuration:     policies_xds.ParseDuration("10m"),
-									MaxConnectionDuration: policies_xds.ParseDuration("10m"),
+									RequestTimeout:        test.ParseDuration("5s"),
+									StreamIdleTimeout:     test.ParseDuration("1s"),
+									MaxStreamDuration:     test.ParseDuration("10m"),
+									MaxConnectionDuration: test.ParseDuration("10m"),
 								},
 							},
 						},
@@ -218,8 +216,8 @@ var _ = Describe("MeshTimeout", func() {
 							},
 						},
 						Conf: api.Conf{
-							ConnectionTimeout: policies_xds.ParseDuration("10s"),
-							IdleTimeout:       policies_xds.ParseDuration("1h"),
+							ConnectionTimeout: test.ParseDuration("10s"),
+							IdleTimeout:       test.ParseDuration("1h"),
 						},
 					},
 				},
@@ -236,13 +234,13 @@ var _ = Describe("MeshTimeout", func() {
 				{
 					Subset: core_xds.Subset{},
 					Conf: api.Conf{
-						ConnectionTimeout: policies_xds.ParseDuration("10s"),
-						IdleTimeout:       policies_xds.ParseDuration("1h"),
+						ConnectionTimeout: test.ParseDuration("10s"),
+						IdleTimeout:       test.ParseDuration("1h"),
 						Http: &api.Http{
-							RequestTimeout:        policies_xds.ParseDuration("5s"),
-							StreamIdleTimeout:     policies_xds.ParseDuration("1s"),
-							MaxStreamDuration:     policies_xds.ParseDuration("10m"),
-							MaxConnectionDuration: policies_xds.ParseDuration("10m"),
+							RequestTimeout:        test.ParseDuration("5s"),
+							StreamIdleTimeout:     test.ParseDuration("1s"),
+							MaxStreamDuration:     test.ParseDuration("10m"),
+							MaxConnectionDuration: test.ParseDuration("10m"),
 						},
 					},
 				},

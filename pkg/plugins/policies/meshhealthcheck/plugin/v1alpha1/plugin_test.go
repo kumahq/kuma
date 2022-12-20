@@ -2,6 +2,7 @@ package v1alpha1_test
 
 import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	"github.com/kumahq/kuma/pkg/test"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -129,18 +130,18 @@ var _ = Describe("MeshHealthCheck", func() {
 					{
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
-							Interval:                     *policies_xds.ParseDuration("10s"),
-							Timeout:                      *policies_xds.ParseDuration("2s"),
+							Interval:                     *test.ParseDuration("10s"),
+							Timeout:                      *test.ParseDuration("2s"),
 							UnhealthyThreshold:           3,
 							HealthyThreshold:             1,
-							InitialJitter:                policies_xds.ParseDuration("13s"),
-							IntervalJitter:               policies_xds.ParseDuration("15s"),
+							InitialJitter:                test.ParseDuration("13s"),
+							IntervalJitter:               test.ParseDuration("15s"),
 							IntervalJitterPercent:        policies_xds.PointerOf[int32](10),
 							HealthyPanicThreshold:        policies_xds.PointerOf[int32](11),
 							FailTrafficOnPanic:           policies_xds.PointerOf[bool](true),
 							EventLogPath:                 policies_xds.PointerOf[string]("/tmp/log.txt"),
 							AlwaysLogHealthCheckFailures: policies_xds.PointerOf[bool](false),
-							NoTrafficInterval:            policies_xds.ParseDuration("16s"),
+							NoTrafficInterval:            test.ParseDuration("16s"),
 							Http: &api.HttpHealthCheck{
 								Disabled: false,
 								Path:     "/health",
@@ -198,8 +199,8 @@ healthChecks:
 					{
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
-							Interval:           *policies_xds.ParseDuration("10s"),
-							Timeout:            *policies_xds.ParseDuration("2s"),
+							Interval:           *test.ParseDuration("10s"),
+							Timeout:            *test.ParseDuration("2s"),
 							UnhealthyThreshold: 3,
 							HealthyThreshold:   1,
 							Tcp: &api.TcpHealthCheck{
@@ -232,8 +233,8 @@ healthChecks:
 					{
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
-							Interval:           *policies_xds.ParseDuration("10s"),
-							Timeout:            *policies_xds.ParseDuration("2s"),
+							Interval:           *test.ParseDuration("10s"),
+							Timeout:            *test.ParseDuration("2s"),
 							UnhealthyThreshold: 3,
 							HealthyThreshold:   1,
 							Grpc: &api.GrpcHealthCheck{
