@@ -22,3 +22,7 @@ var policies = []plugins.PluginName{
 func Enabled() []plugins.PluginName {
 	return policies
 }
+
+func SetPolicies(newPolicies []plugins.PluginName){
+	policies = newPolicies
+}
