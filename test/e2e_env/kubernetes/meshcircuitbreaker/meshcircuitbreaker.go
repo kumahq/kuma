@@ -27,7 +27,7 @@ func MeshCircuitBreaker() {
 			Setup(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(DeleteAllResourcesKubernetes(env.Cluster, mesh,
+		Expect(DeleteMeshResources(env.Cluster, mesh,
 			core_mesh.CircuitBreakerResourceTypeDescriptor,
 			core_mesh.RetryResourceTypeDescriptor,
 			v1alpha1.MeshCircuitBreakerResourceTypeDescriptor,
@@ -35,8 +35,7 @@ func MeshCircuitBreaker() {
 	})
 
 	E2EAfterEach(func() {
-		Expect(DeleteAllResourcesKubernetes(env.Cluster, mesh, v1alpha1.MeshCircuitBreakerResourceTypeDescriptor)).
-			To(Succeed())
+		Expect(DeleteMeshResources(env.Cluster, mesh, v1alpha1.MeshCircuitBreakerResourceTypeDescriptor)).To(Succeed())
 	})
 
 	E2EAfterAll(func() {

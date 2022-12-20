@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/util/channels"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
@@ -126,12 +127,7 @@ spec:
 		}, "60s", "1s").Should(Succeed(), "could not get a LoadBalancer IP of the Gateway")
 
 		// remove retries to avoid covering failed request
-		err = k8s.RunKubectlE(
-			env.Cluster.GetTesting(),
-			env.Cluster.GetKubectlOptions(),
-			"delete", "retry", "retry-all-graceful",
-		)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(DeleteMeshResources(env.Cluster, mesh, core_mesh.RetryResourceTypeDescriptor)).To(Succeed())
 	})
 
 	requestThroughGateway := func() error {
