@@ -10,7 +10,7 @@ import (
 )
 
 func TestE2E(t *testing.T) {
-	test.RunSpecs(t, "E2E Resilience Suite")
+	test.RunE2ESpecs(t, "E2E Resilience Suite")
 }
 
 var _ = Describe("Test Leader Election with Postgres", Label("job-4"), resilience.LeaderElectionPostgres)

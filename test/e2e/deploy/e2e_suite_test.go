@@ -10,7 +10,7 @@ import (
 )
 
 func TestE2E(t *testing.T) {
-	test.RunSpecs(t, "E2E Deploy Suite")
+	test.RunE2ESpecs(t, "E2E Deploy Suite")
 }
 
 var _ = Describe("Test Universal deployment", Label("job-1"), deploy.UniversalDeployment)

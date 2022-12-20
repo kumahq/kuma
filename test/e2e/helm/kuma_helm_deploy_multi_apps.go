@@ -58,20 +58,26 @@ func AppDeploymentWithHelmChart() {
 			clientPodName, err := PodNameOfApp(cluster, "demo-client", TestNamespace)
 			Expect(err).ToNot(HaveOccurred())
 
-			_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "test-server")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+			Eventually(func(g Gomega) {
+				_, stderr, err := cluster.Exec(TestNamespace, clientPodName, "demo-client",
+					"curl", "-v", "-m", "3", "--fail", "test-server")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+			}).Should(Succeed())
 
-			_, stderr, err = cluster.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "test-server_kuma-test_svc_80.mesh")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+			Eventually(func(g Gomega) {
+				_, stderr, err := cluster.Exec(TestNamespace, clientPodName, "demo-client",
+					"curl", "-v", "-m", "3", "--fail", "test-server_kuma-test_svc_80.mesh")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+			}).Should(Succeed())
 
-			_, stderr, err = cluster.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "test-server.kuma-test.svc.80.mesh")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+			Eventually(func(g Gomega) {
+				_, stderr, err := cluster.Exec(TestNamespace, clientPodName, "demo-client",
+					"curl", "-v", "-m", "3", "--fail", "test-server.kuma-test.svc.80.mesh")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+			}).Should(Succeed())
 		},
 		Entry("with default cni", WithCNI()),
 		Entry("with new cni (experimental)", WithExperimentalCNI()),

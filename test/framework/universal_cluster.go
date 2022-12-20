@@ -1,15 +1,12 @@
 package framework
 
 import (
-	"fmt"
 	"net"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
@@ -414,35 +411,6 @@ func (c *UniversalCluster) Exec(namespace, podName, appname string, cmd ...strin
 	sshApp := ssh.NewApp(app.containerName, c.verbose, app.ports[sshPort], nil, cmd)
 	err := sshApp.Run()
 	return sshApp.Out(), sshApp.Err(), err
-}
-
-func (c *UniversalCluster) ExecWithRetries(namespace, podName, appname string, cmd ...string) (string, string, error) {
-	return c.ExecWithCustomRetries(namespace, podName, appname, c.defaultRetries, c.defaultTimeout, cmd...)
-}
-
-func (c *UniversalCluster) ExecWithCustomRetries(namespace, podName, appname string, retries int, timeout time.Duration, cmd ...string) (string, string, error) {
-	var stdout string
-	var stderr string
-	_, err := retry.DoWithRetryE(
-		c.t,
-		fmt.Sprintf("Trying %s", strings.Join(cmd, " ")),
-		retries,
-		timeout,
-		func() (string, error) {
-			app, ok := c.apps[appname]
-			if !ok {
-				return "", errors.Errorf("App %s not found", appname)
-			}
-			sshApp := ssh.NewApp(app.containerName, c.verbose, app.ports[sshPort], nil, cmd)
-			err := sshApp.Run()
-			stdout = sshApp.Out()
-			stderr = sshApp.Err()
-
-			return stdout, err
-		},
-	)
-
-	return stdout, stderr, err
 }
 
 func (c *UniversalCluster) GetTesting() testing.TestingT {

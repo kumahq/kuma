@@ -540,7 +540,6 @@ type Cluster interface {
 	DeleteNamespace(namespace string) error
 	DeployApp(fs ...AppDeploymentOption) error
 	Exec(namespace, podName, containerName string, cmd ...string) (string, string, error)
-	ExecWithRetries(namespace, podName, containerName string, cmd ...string) (string, string, error)
 
 	// Testing
 	GetTesting() testing.TestingT

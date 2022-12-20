@@ -159,20 +159,20 @@ func CrossMeshGatewayOnKubernetes() {
 
 		It("should proxy HTTP requests from a different mesh", func() {
 			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
-			SuccessfullyProxyRequestToGateway(
+			Eventually(SuccessfullyProxyRequestToGateway(
 				env.Cluster, gatewayMesh,
 				gatewayAddr,
 				gatewayClientNamespaceOtherMesh,
-			)
+			), "1m", "1s").Should(Succeed())
 		})
 
 		It("should proxy HTTP requests from the same mesh", func() {
 			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
-			SuccessfullyProxyRequestToGateway(
+			Eventually(SuccessfullyProxyRequestToGateway(
 				env.Cluster, gatewayMesh,
 				gatewayAddr,
 				gatewayClientNamespaceSameMesh,
-			)
+			), "1m", "1s").Should(Succeed())
 		})
 
 		It("doesn't allow HTTP requests from outside the mesh", func() {
@@ -181,19 +181,19 @@ func CrossMeshGatewayOnKubernetes() {
 				env.Cluster,
 				gatewayAddr,
 				gatewayClientOutsideMesh,
-			), "10s", "1s").Should(Succeed())
+			), "1m", "1s").Should(Succeed())
 		})
 
-		Specify("HTTP requests to a non-crossMesh gateway should still be proxied", func() {
+		It("HTTP requests to a non-crossMesh gateway should still be proxied", func() {
 			gatewayAddr := gatewayAddress(edgeGatewayName, gatewayTestNamespace, edgeGatewayPort)
-			SuccessfullyProxyRequestToGateway(
+			Eventually(SuccessfullyProxyRequestToGateway(
 				env.Cluster, gatewayOtherMesh,
 				gatewayAddr,
 				gatewayClientNamespaceOtherMesh,
-			)
+			)).Should(Succeed())
 		})
 
-		Specify("doesn't break when two cross-mesh gateways exist with the same service value", func() {
+		It("doesn't break when two cross-mesh gateways exist with the same service value", func() {
 			const gatewayMesh2 = "cross-mesh-gateway2"
 			crossMeshGatewayYaml2 := mkGateway(
 				crossMeshGatewayName+"2", crossMeshGatewayName, gatewayMesh2, true, "gateway2.mesh", echoServerService(gatewayMesh2, gatewayTestNamespace), crossMeshGatewayPort,
@@ -294,11 +294,11 @@ spec:
 		})
 		It("should proxy HTTP requests from a different mesh", func() {
 			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
-			SuccessfullyProxyRequestToGateway(
+			Eventually(SuccessfullyProxyRequestToGateway(
 				env.Cluster, gatewayMesh,
 				gatewayAddr,
 				gatewayClientNamespaceOtherMesh,
-			)
+			), "1m", "1s").Should(Succeed())
 		})
 	})
 }

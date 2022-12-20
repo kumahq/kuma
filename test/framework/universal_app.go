@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/gruntwork-io/terratest/modules/docker"
@@ -345,13 +346,9 @@ func (s *UniversalApp) Stop() error {
 }
 
 func (s *UniversalApp) ReStart() error {
-	if err := s.mainApp.Kill(); err != nil {
+	if err := s.mainApp.Signal(syscall.SIGKILL, true); err != nil {
 		return err
 	}
-	if err := s.mainApp.ProcessWait(); err != nil {
-		return err
-	}
-
 	s.CreateMainApp(s.mainAppEnv, s.mainAppArgs)
 
 	if err := s.mainApp.Start(); err != nil {

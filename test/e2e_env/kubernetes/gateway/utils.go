@@ -25,19 +25,20 @@ func GatewayAPICRDs(cluster Cluster) error {
 		"apply", "-f", "https://github.com/kubernetes-sigs/gateway-api/releases/download/v0.5.1/experimental-install.yaml")
 }
 
-func SuccessfullyProxyRequestToGateway(cluster Cluster, instance string, gatewayAddr string, namespace string) {
-	Logf("expecting 200 response from %q", gatewayAddr)
-	target := fmt.Sprintf("http://%s/%s",
-		gatewayAddr, path.Join("test", url.PathEscape(GinkgoT().Name())),
-	)
+func SuccessfullyProxyRequestToGateway(cluster Cluster, instance string, gatewayAddr string, namespace string) func(Gomega) {
+	return func(g Gomega) {
+		target := fmt.Sprintf("http://%s/%s",
+			gatewayAddr, path.Join("test", url.PathEscape(GinkgoT().Name())),
+		)
 
-	response, err := client.CollectResponse(
-		cluster, "demo-client", target,
-		client.FromKubernetesPod(namespace, "demo-client"),
-	)
+		response, err := client.CollectResponse(
+			cluster, "demo-client", target,
+			client.FromKubernetesPod(namespace, "demo-client"),
+		)
 
-	Expect(err).ToNot(HaveOccurred())
-	Expect(response.Instance).To(Equal(instance))
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(response.Instance).To(Equal(instance))
+	}
 }
 
 func FailToProxyRequestToGateway(cluster Cluster, gatewayAddr string, namespace string) func(Gomega) {

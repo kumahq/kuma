@@ -119,18 +119,18 @@ func CrossMeshGatewayOnMultizone() {
 		Context("Intrazone", func() {
 			zone := &env.KubeZone1
 			It("proxies HTTP requests from a different mesh", func() {
-				k8s_gateway.SuccessfullyProxyRequestToGateway(
+				Eventually(k8s_gateway.SuccessfullyProxyRequestToGateway(
 					*zone, gatewayMesh,
 					gatewayAddr,
 					gatewayClientNamespaceOtherMesh,
-				)
+				)).Should(Succeed())
 			})
 			It("proxies HTTP requests from the same mesh", func() {
-				k8s_gateway.SuccessfullyProxyRequestToGateway(
+				Eventually(k8s_gateway.SuccessfullyProxyRequestToGateway(
 					*zone, gatewayMesh,
 					gatewayAddr,
 					gatewayClientNamespaceSameMesh,
-				)
+				)).Should(Succeed())
 			})
 		})
 		Context("Crosszone", func() {
@@ -151,21 +151,21 @@ func CrossMeshGatewayOnMultizone() {
 			})
 
 			It("proxies HTTP requests from a different mesh", func() {
-				k8s_gateway.SuccessfullyProxyRequestToGateway(
+				Eventually(k8s_gateway.SuccessfullyProxyRequestToGateway(
 					*zone, gatewayMesh,
 					gatewayAddr,
 					gatewayClientNamespaceOtherMesh,
-				)
+				)).Should(Succeed())
 
 				egress := (*zone).GetZoneEgressEnvoyTunnel()
 				Expect(egress.GetStats(filter)).To(stats.BeGreaterThan(currentStat))
 			})
 			It("proxies HTTP requests from the same mesh", func() {
-				k8s_gateway.SuccessfullyProxyRequestToGateway(
+				Eventually(k8s_gateway.SuccessfullyProxyRequestToGateway(
 					*zone, gatewayMesh,
 					gatewayAddr,
 					gatewayClientNamespaceSameMesh,
-				)
+				)).Should(Succeed())
 
 				egress := (*zone).GetZoneEgressEnvoyTunnel()
 				Expect(egress.GetStats(filter)).To(stats.BeGreaterThan(currentStat))

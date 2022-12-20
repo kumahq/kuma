@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"runtime"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
@@ -19,10 +18,6 @@ import (
 func GatewayAPI() {
 	if Config.IPV6 {
 		fmt.Println("IPv6 tests use kind which doesn't support the LoadBalancer ServiceType")
-		return
-	}
-	if runtime.GOARCH == "arm64" {
-		fmt.Println("The webhook doesn't provide an arm64 image")
 		return
 	}
 

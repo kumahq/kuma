@@ -35,7 +35,7 @@ import (
 )
 
 func TestE2E(t *testing.T) {
-	test.RunSpecs(t, "E2E Kubernetes Suite")
+	test.RunE2ESpecs(t, "E2E Kubernetes Suite")
 }
 
 var _ = SynchronizedBeforeSuite(
@@ -101,7 +101,7 @@ var _ = SynchronizedAfterSuite(func() {}, func() {})
 var _ = Describe("Virtual Probes", healthcheck.VirtualProbes, Ordered)
 var _ = Describe("Gateway", gateway.Gateway, Ordered)
 var _ = Describe("Gateway - Cross-mesh", gateway.CrossMeshGatewayOnKubernetes, Ordered)
-var _ = Describe("Gateway - Gateway API", gateway.GatewayAPI, Ordered)
+var _ = Describe("Gateway - Gateway API", Label("arm-not-supported"), gateway.GatewayAPI, Ordered)
 var _ = Describe("Gateway - mTLS", gateway.Mtls, Ordered)
 var _ = Describe("Gateway - Resources", gateway.Resources, Ordered)
 var _ = Describe("Graceful", graceful.Graceful, Ordered)
