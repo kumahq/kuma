@@ -12,6 +12,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
@@ -162,9 +164,7 @@ conf:
 			).To(Succeed())
 		})
 		AfterAll(func() {
-			Expect(
-				env.Cluster.GetKumactlOptions().KumactlDelete("rate-limit", "echo-rate-limit", mesh),
-			).To(Succeed())
+			Expect(DeleteMeshResources(env.Cluster, mesh, core_mesh.RateLimitResourceTypeDescriptor)).To(Succeed())
 		})
 
 		It("should be rate limited", func() {
@@ -210,9 +210,7 @@ spec:
 			).To(Succeed())
 		})
 		AfterAll(func() {
-			Expect(
-				env.Cluster.GetKumactlOptions().KumactlDelete("meshratelimit", "mesh-rate-limit-all-sources", mesh),
-			).To(Succeed())
+			Expect(DeleteMeshResources(env.Cluster, mesh, api.MeshRateLimitResourceTypeDescriptor)).To(Succeed())
 		})
 
 		It("should be rate limited", func() {
