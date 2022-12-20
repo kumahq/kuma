@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/plugin/util"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	rate_limit "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
@@ -21,7 +22,7 @@ type Configurer struct {
 	Tcp  *api.LocalTCP
 }
 
-func (c *Configurer) ConfigureListener(filterChain *envoy_listener.FilterChain) error {
+func (c *Configurer) ConfigureFilterChain(filterChain *envoy_listener.FilterChain) error {
 	if c.Http != nil {
 		if err := c.configureHttpListener(filterChain); err != nil {
 			return err
@@ -40,7 +41,7 @@ func (c *Configurer) ConfigureRoute(route *envoy_route.RouteConfiguration) error
 		return nil
 	}
 	rateLimit, err := rate_limit.NewRateLimitConfiguration(
-		rate_limit.RateLimitConfigurationFromPolicy(c.Http))
+		util.RateLimitConfigurationFromPolicy(c.Http))
 	if err != nil {
 		return err
 	}
@@ -54,7 +55,7 @@ func (c *Configurer) ConfigureRoute(route *envoy_route.RouteConfiguration) error
 
 func (c *Configurer) configureHttpListener(filterChain *envoy_listener.FilterChain) error {
 	rateLimit, err := rate_limit.NewRateLimitConfiguration(
-		rate_limit.RateLimitConfigurationFromPolicy(c.Http))
+		util.RateLimitConfigurationFromPolicy(c.Http))
 	if err != nil {
 		return err
 	}
@@ -78,8 +79,7 @@ func (c *Configurer) configureHttpListener(filterChain *envoy_listener.FilterCha
 				c.addRateLimitToRoute(route, rateLimit)
 			}
 		}
-		// we don't configure rate limiting on listeners, just enabling it. Problem with enabling
-		// rate limiting on listeners is filter ordering.
+
 		for _, filter := range hcm.HttpFilters {
 			if filter.Name == "envoy.filters.http.local_ratelimit" {
 				return nil
@@ -122,8 +122,6 @@ func (c *Configurer) configureTcpListener(filterChain *envoy_listener.FilterChai
 		return err
 	}
 
-	// ratelimiting should be before others filters, except RBAC - we need to ensure
-	// that RBAC is before
 	filters := []*envoy_listener.Filter{}
 	filters = append(filters, &envoy_listener.Filter{
 		Name: "envoy.extensions.filters.network.local_ratelimit.v3.LocalRateLimit",

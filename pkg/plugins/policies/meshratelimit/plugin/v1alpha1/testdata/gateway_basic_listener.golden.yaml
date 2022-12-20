@@ -1,6 +1,6 @@
 address:
   socketAddress:
-    address: 127.0.0.1
+    address: 192.168.0.1
     portValue: 8080
 enableReusePort: true
 filterChains:
@@ -40,10 +40,10 @@ filterChains:
         configSource:
           ads: {}
           resourceApiVersion: V3
-        routeConfigName: gateway:HTTP:8080
+        routeConfigName: sample-gateway:HTTP:8080
       requestHeadersTimeout: 0.500s
       serverName: Kuma Gateway
-      statPrefix: gateway
+      statPrefix: sample-gateway
       streamIdleTimeout: 5s
       stripAnyHostPort: true
       useRemoteAddress: true
@@ -51,6 +51,6 @@ listenerFilters:
 - name: envoy.filters.listener.tls_inspector
   typedConfig:
     '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
-name: gateway:HTTP:8080
+name: sample-gateway:HTTP:8080
 perConnectionBufferLimitBytes: 32768
 trafficDirection: INBOUND

@@ -6,7 +6,6 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 
-	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -19,7 +18,6 @@ import (
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
-var log = core.Log.WithName("MeshRateLimit")
 
 type plugin struct {
 }
@@ -89,7 +87,7 @@ func applyToGateways(
 			continue
 		}
 
-		if err := configure(rules, proxy.Dataplane, gatewayListener, route); err != nil {
+		if err := configure(rules, gatewayListener, route); err != nil {
 			return err
 		}
 	}
@@ -120,7 +118,7 @@ func applyToInbounds(
 			continue
 		}
 
-		if err := configure(rules, proxy.Dataplane, listener, nil); err != nil {
+		if err := configure(rules, listener, nil); err != nil {
 			return err
 		}
 	}
@@ -129,7 +127,6 @@ func applyToInbounds(
 
 func configure(
 	fromRules core_xds.Rules,
-	dataplane *core_mesh.DataplaneResource,
 	listener *envoy_listener.Listener,
 	route *envoy_route.RouteConfiguration,
 ) error {
@@ -145,15 +142,9 @@ func configure(
 		Http: conf.Local.HTTP,
 		Tcp:  conf.Local.TCP,
 	}
-	log.V(1).Info(
-		"applying MeshRateLimit policies",
-		"dataplane", dataplane.Meta.GetName(),
-		"rules", conf,
-		"listener", listener,
-	)
 
 	for _, chain := range listener.FilterChains {
-		if err := configurer.ConfigureListener(chain); err != nil {
+		if err := configurer.ConfigureFilterChain(chain); err != nil {
 			return err
 		}
 	}

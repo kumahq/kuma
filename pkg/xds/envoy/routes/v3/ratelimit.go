@@ -9,7 +9,6 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	ratelimit_api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -58,34 +57,6 @@ func RateLimitConfigurationFromProto(rl *mesh_proto.RateLimit) *RateLimitConfigu
 		}
 	}
 	return rateLimit
-}
-
-func RateLimitConfigurationFromPolicy(rl *ratelimit_api.LocalHTTP) *RateLimitConfiguration {
-	headers := []*Headers{}
-	if rl.OnRateLimit != nil {
-		for _, h := range rl.OnRateLimit.Headers {
-			header := &Headers{
-				Key:   h.Key,
-				Value: h.Value,
-			}
-			if h.Append != nil {
-				header.Append = *h.Append
-			}
-			headers = append(headers, header)
-		}
-	}
-	var status uint32
-	if rl.OnRateLimit != nil && rl.OnRateLimit.Status != nil {
-		status = *rl.OnRateLimit.Status
-	}
-	return &RateLimitConfiguration{
-		Interval: rl.Interval.Duration,
-		Requests: rl.Requests,
-		OnRateLimit: &OnRateLimit{
-			Status:  status,
-			Headers: headers,
-		},
-	}
 }
 
 func NewRateLimitConfiguration(rlHttp *RateLimitConfiguration) (*anypb.Any, error) {

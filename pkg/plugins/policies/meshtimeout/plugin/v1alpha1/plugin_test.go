@@ -16,11 +16,9 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	test_xds "github.com/kumahq/kuma/pkg/test/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -46,8 +44,7 @@ var _ = Describe("MeshTimeout", func() {
 			resourceSet.Add(&r)
 		}
 
-		context := createSimpleMeshContextWith(xds_context.NewResources())
-
+		context := samples.CreateSimpleMeshContext()
 		proxy := xds.Proxy{
 			Dataplane: builders.Dataplane().
 				WithName("backend").
@@ -255,7 +252,7 @@ var _ = Describe("MeshTimeout", func() {
 			Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 		}
 
-		context := createSimpleMeshContextWith(resources)
+		context := samples.CreateSimpleMeshContextWith(resources)
 		proxy := xds.Proxy{
 			APIVersion: "v3",
 			Dataplane:  samples.GatewayDataplane(),
@@ -287,29 +284,6 @@ func getResourceYaml(list core_xds.ResourceList) []byte {
 	actualListener, err := util_proto.ToYAML(list[0].Resource)
 	Expect(err).ToNot(HaveOccurred())
 	return actualListener
-}
-
-func createSimpleMeshContextWith(resources xds_context.Resources) xds_context.Context {
-	return xds_context.Context{
-		Mesh: xds_context.MeshContext{
-			Resource: &core_mesh.MeshResource{
-				Meta: &test_model.ResourceMeta{
-					Name: "default",
-				},
-			},
-			Resources: resources,
-			EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
-				"backend": {
-					{
-						Tags: map[string]string{
-							controllers.KubeServiceTag: "some-service",
-						},
-					},
-				},
-			},
-		},
-		ControlPlane: &xds_context.ControlPlaneContext{CLACache: &test_xds.DummyCLACache{}, Zone: "test-zone"},
-	}
 }
 
 func gatewayGenerator() gateway_plugin.Generator {

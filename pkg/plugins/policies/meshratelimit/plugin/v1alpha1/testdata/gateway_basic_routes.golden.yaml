@@ -1,4 +1,4 @@
-name: gateway:HTTP:8080
+name: sample-gateway:HTTP:8080
 requestHeadersToRemove:
 - x-kuma-tags
 validateClusters: false
@@ -12,11 +12,11 @@ virtualHosts:
     route:
       weightedClusters:
         clusters:
-        - name: some-service-21868a8801354f8d
+        - name: backend-26cb64fa4e85e7b7
           requestHeadersToAdd:
           - header:
               key: x-kuma-tags
-              value: '&kuma.io/service=gateway&'
+              value: '&kuma.io/service=sample-gateway&'
           weight: 1
         totalWeight: 1
     typedPerFilterConfig:

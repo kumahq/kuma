@@ -10,7 +10,7 @@ filterChains:
       '@type': type.googleapis.com/envoy.extensions.filters.network.local_ratelimit.v3.LocalRateLimit
       statPrefix: tcp_rate_limit
       tokenBucket:
-        fillInterval: 0.100s
+        fillInterval: 10s
         maxTokens: 100
         tokensPerFill: 100
   - name: envoy.filters.network.tcp_proxy

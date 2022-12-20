@@ -14,14 +14,15 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/plugin/v1alpha1"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/pkg/test"
 	test_matchers "github.com/kumahq/kuma/pkg/test/matchers"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	test_xds "github.com/kumahq/kuma/pkg/test/xds"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -38,45 +39,29 @@ var _ = Describe("MeshRateLimit", func() {
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given sidecarTestCase) {
+			// given
 			resourceSet := core_xds.NewResourceSet()
 			resourceSet.Add(given.resources...)
 
-			context := xds_context.Context{
-				Mesh: xds_context.MeshContext{
-					Resource: &core_mesh.MeshResource{
-						Meta: &test_model.ResourceMeta{
-							Name: "default",
-						},
-					},
-				},
-			}
+			context := samples.CreateSimpleMeshContext()
 			proxy := core_xds.Proxy{
-				Dataplane: &core_mesh.DataplaneResource{
-					Meta: &test_model.ResourceMeta{
-						Mesh: "default",
-						Name: "test",
-					},
-					Spec: &mesh_proto.Dataplane{
-						Networking: &mesh_proto.Dataplane_Networking{
-							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-								{
-									Tags: map[string]string{
-										mesh_proto.ServiceTag: "backend",
-									},
-									Address: "127.0.0.1",
-									Port:    17777,
-								},
-								{
-									Tags: map[string]string{
-										mesh_proto.ServiceTag: "frontend",
-									},
-									Address: "127.0.0.1",
-									Port:    17778,
-								},
-							},
-						},
-					},
-				},
+				Dataplane: builders.Dataplane().
+					WithName("test").
+					WithMesh("default").
+					WithAddress("127.0.0.1").
+					AddInbound(
+						builders.Inbound().
+							WithAddress("127.0.0.1").
+							WithPort(17777).
+							WithService("backend"),
+					).
+					AddInbound(
+						builders.Inbound().
+							WithAddress("127.0.0.1").
+							WithPort(17778).
+							WithService("frontend"),
+					).
+					Build(),
 				Policies: core_xds.MatchedPolicies{
 					RateLimitsInbound: given.inboundRateLimitsMap,
 					Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
@@ -89,7 +74,10 @@ var _ = Describe("MeshRateLimit", func() {
 			}
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
+			// when
 			Expect(plugin.Apply(resourceSet, context, &proxy)).To(Succeed())
+
+			// then
 			for i, expected := range given.expectedListeners {
 				Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ListenerType)[i].Resource)).To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", expected)))
 			}
@@ -135,14 +123,14 @@ var _ = Describe("MeshRateLimit", func() {
 							Local: api.Local{
 								HTTP: &api.LocalHTTP{
 									Requests: 100,
-									Interval: v1.Duration{Duration: 10 * time.Second},
+									Interval: *test.ParseDuration("10s"),
 									OnRateLimit: &api.OnRateLimit{
-										Status: policies_xds.PointerOf(uint32(444)),
+										Status: test.PointerOf(uint32(444)),
 										Headers: []api.HeaderValue{
 											{
 												Key:    "x-kuma-rate-limit-header",
 												Value:  "test-value",
-												Append: policies_xds.PointerOf(true),
+												Append: test.PointerOf(true),
 											},
 											{
 												Key:   "x-kuma-rate-limit",
@@ -160,11 +148,11 @@ var _ = Describe("MeshRateLimit", func() {
 							Local: api.Local{
 								HTTP: &api.LocalHTTP{
 									Requests: 100,
-									Interval: v1.Duration{Duration: 10 * time.Second},
+									Interval: *test.ParseDuration("10s"),
 								},
 								TCP: &api.LocalTCP{
 									Connections: 100,
-									Interval:    v1.Duration{Duration: 100 * time.Millisecond},
+									Interval:    *test.ParseDuration("10s"),
 								},
 							},
 						},
@@ -221,14 +209,14 @@ var _ = Describe("MeshRateLimit", func() {
 							Local: api.Local{
 								HTTP: &api.LocalHTTP{
 									Requests: 100,
-									Interval: v1.Duration{Duration: 10 * time.Second},
+									Interval: *test.ParseDuration("10s"),
 									OnRateLimit: &api.OnRateLimit{
-										Status: policies_xds.PointerOf(uint32(444)),
+										Status: test.PointerOf(uint32(444)),
 										Headers: []api.HeaderValue{
 											{
 												Key:    "x-kuma-rate-limit-header",
 												Value:  "test-value",
-												Append: policies_xds.PointerOf(true),
+												Append: test.PointerOf(true),
 											},
 											{
 												Key:   "x-kuma-rate-limit",
@@ -239,7 +227,7 @@ var _ = Describe("MeshRateLimit", func() {
 								},
 								TCP: &api.LocalTCP{
 									Connections: 100,
-									Interval:    v1.Duration{Duration: 99 * time.Second},
+									Interval:    *test.ParseDuration("99s"),
 								},
 							},
 						},
@@ -277,147 +265,72 @@ var _ = Describe("MeshRateLimit", func() {
 		}),
 	)
 
-	It("should generate proper Envoy config for MeshGateway Dataplanes",
-		func() {
-			fromRules := core_xds.FromRules{
-				Rules: map[core_xds.InboundListener]core_xds.Rules{
-					{Address: "127.0.0.1", Port: 8080}: {{
-						Subset: core_xds.Subset{},
-						Conf: api.Conf{
-							Local: api.Local{
-								HTTP: &api.LocalHTTP{
-									Requests: 100,
-									Interval: v1.Duration{Duration: 10 * time.Second},
-									OnRateLimit: &api.OnRateLimit{
-										Status: policies_xds.PointerOf(uint32(444)),
-										Headers: []api.HeaderValue{
-											{
-												Key:    "x-kuma-rate-limit-header",
-												Value:  "test-value",
-												Append: policies_xds.PointerOf(true),
-											},
-											{
-												Key:   "x-kuma-rate-limit",
-												Value: "other-value",
-											},
+	It("should generate proper Envoy config for MeshGateway Dataplanes", func() {
+		// given
+		fromRules := core_xds.FromRules{
+			Rules: map[core_xds.InboundListener]core_xds.Rules{
+				{Address: "192.168.0.1", Port: 8080}: {{
+					Subset: core_xds.Subset{},
+					Conf: api.Conf{
+						Local: api.Local{
+							HTTP: &api.LocalHTTP{
+								Requests: 100,
+								Interval: v1.Duration{Duration: 10 * time.Second},
+								OnRateLimit: &api.OnRateLimit{
+									Status: test.PointerOf(uint32(444)),
+									Headers: []api.HeaderValue{
+										{
+											Key:    "x-kuma-rate-limit-header",
+											Value:  "test-value",
+											Append: test.PointerOf(true),
+										},
+										{
+											Key:   "x-kuma-rate-limit",
+											Value: "other-value",
 										},
 									},
 								},
 							},
 						},
-					}},
-				},
-			}
-
-			resources := xds_context.NewResources()
-			resources.MeshLocalResources[core_mesh.MeshGatewayType] = GatewayResources()
-			resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = GatewayRoutes()
-
-			context := createSimpleMeshContextWith(resources)
-			proxy := core_xds.Proxy{
-				APIVersion: "v3",
-				Dataplane: &core_mesh.DataplaneResource{
-					Meta: &test_model.ResourceMeta{
-						Mesh: "default",
-						Name: "gateway",
 					},
-					Spec: &mesh_proto.Dataplane{
-						Networking: &mesh_proto.Dataplane_Networking{
-							Address: "127.0.0.1",
-							Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-								Tags: map[string]string{
-									mesh_proto.ServiceTag: "gateway",
-								},
-								Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
-							},
-						},
+				}},
+			},
+		}
+
+		resources := xds_context.NewResources()
+		resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
+			Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
+		}
+		resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
+			Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
+		}
+
+		context := samples.CreateSimpleMeshContextWith(resources)
+		proxy := xds.Proxy{
+			APIVersion: "v3",
+			Dataplane:  samples.GatewayDataplane(),
+			Policies: core_xds.MatchedPolicies{
+				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
+					api.MeshRateLimitType: {
+						Type:      api.MeshRateLimitType,
+						FromRules: fromRules,
 					},
 				},
-				Policies: core_xds.MatchedPolicies{
-					Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-						api.MeshRateLimitType: {
-							Type:      api.MeshRateLimitType,
-							FromRules: fromRules,
-						},
-					},
-				},
-			}
-			gatewayGenerator := gatewayGenerator()
-			generatedResources, err := gatewayGenerator.Generate(context, &proxy)
-			if err != nil {
-				return
-			}
-			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+			},
+		}
+		gatewayGenerator := gatewayGenerator()
+		generatedResources, err := gatewayGenerator.Generate(context, &proxy)
+		Expect(err).NotTo(HaveOccurred())
 
-			Expect(plugin.Apply(generatedResources, context, &proxy)).To(Succeed())
-			Expect(util_proto.ToYAML(generatedResources.ListOf(envoy_resource.RouteType)[0].Resource)).To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", "gateway_basic_routes.golden.yaml")))
-			Expect(util_proto.ToYAML(generatedResources.ListOf(envoy_resource.ListenerType)[0].Resource)).To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", "gateway_basic_listener.golden.yaml")))
-		})
+		// when
+		plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+
+		// then
+		Expect(plugin.Apply(generatedResources, context, &proxy)).To(Succeed())
+		Expect(util_proto.ToYAML(generatedResources.ListOf(envoy_resource.RouteType)[0].Resource)).To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", "gateway_basic_routes.golden.yaml")))
+		Expect(util_proto.ToYAML(generatedResources.ListOf(envoy_resource.ListenerType)[0].Resource)).To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", "gateway_basic_listener.golden.yaml")))
+	})
 })
-
-func GatewayResources() *core_mesh.MeshGatewayResourceList {
-	return &core_mesh.MeshGatewayResourceList{
-		Items: []*core_mesh.MeshGatewayResource{{
-			Meta: &test_model.ResourceMeta{Name: "gateway", Mesh: "default"},
-			Spec: &mesh_proto.MeshGateway{
-				Selectors: []*mesh_proto.Selector{{
-					Match: map[string]string{
-						mesh_proto.ServiceTag: "gateway",
-					}},
-				},
-				Conf: &mesh_proto.MeshGateway_Conf{
-					Listeners: []*mesh_proto.MeshGateway_Listener{
-						{
-							Protocol: mesh_proto.MeshGateway_Listener_HTTP,
-							Port:     8080,
-						},
-					},
-				},
-			},
-		}},
-	}
-}
-
-func GatewayRoutes() *core_mesh.MeshGatewayRouteResourceList {
-	return &core_mesh.MeshGatewayRouteResourceList{
-		Items: []*core_mesh.MeshGatewayRouteResource{
-			{
-				Meta: &test_model.ResourceMeta{Name: "gateway", Mesh: "default"},
-				Spec: &mesh_proto.MeshGatewayRoute{
-					Selectors: []*mesh_proto.Selector{{
-						Match: map[string]string{
-							mesh_proto.ServiceTag: "gateway",
-						}},
-					},
-					Conf: &mesh_proto.MeshGatewayRoute_Conf{
-						Route: &mesh_proto.MeshGatewayRoute_Conf_Http{
-							Http: &mesh_proto.MeshGatewayRoute_HttpRoute{
-								Rules: []*mesh_proto.MeshGatewayRoute_HttpRoute_Rule{
-									{
-										Matches: []*mesh_proto.MeshGatewayRoute_HttpRoute_Match{
-											{Path: &mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path{
-												Match: 0,
-												Value: "/",
-											}},
-										},
-										Backends: []*mesh_proto.MeshGatewayRoute_Backend{
-											{
-												Weight: 1,
-												Destination: map[string]string{
-													"kuma.io/service": "some-service",
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-}
 
 func gatewayGenerator() gateway_plugin.Generator {
 	return gateway_plugin.Generator{
@@ -431,28 +344,5 @@ func gatewayGenerator() gateway_plugin.Generator {
 			Zone: "test-zone",
 		},
 		Zone: "test-zone",
-	}
-}
-
-func createSimpleMeshContextWith(resources xds_context.Resources) xds_context.Context {
-	return xds_context.Context{
-		Mesh: xds_context.MeshContext{
-			Resource: &core_mesh.MeshResource{
-				Meta: &test_model.ResourceMeta{
-					Name: "default",
-				},
-			},
-			Resources: resources,
-			EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
-				"some-service": {
-					{
-						Tags: map[string]string{
-							"app": "some-service",
-						},
-					},
-				},
-			},
-		},
-		ControlPlane: &xds_context.ControlPlaneContext{CLACache: &test_xds.DummyCLACache{}, Zone: "test-zone"},
 	}
 }
