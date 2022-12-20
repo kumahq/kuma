@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
 )
@@ -22,16 +23,7 @@ func API() {
 	})
 
 	E2EAfterEach(func() {
-		Expect(
-			k8s.RunKubectlE(
-				env.Cluster.GetTesting(),
-				env.Cluster.GetKubectlOptions(),
-				"delete",
-				"meshcircuitbreaker",
-				"-A",
-				"--all",
-			),
-		).To(Succeed())
+		Expect(DeleteMeshResources(env.Cluster, meshName, v1alpha1.MeshCircuitBreakerResourceTypeDescriptor)).To(Succeed())
 	})
 
 	E2EAfterAll(func() {
