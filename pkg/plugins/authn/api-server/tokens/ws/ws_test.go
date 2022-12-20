@@ -67,7 +67,7 @@ var _ = Describe("Auth Tokens WS", func() {
 
 		// wait for the server
 		Eventually(func() error {
-			_, err := userTokenClient.Generate("john.doe@example.com", []string{"team-a"}, 0)
+			_, err := userTokenClient.Generate("john.doe@example.com", []string{"team-a"}, time.Hour)
 			return err
 		}).ShouldNot(HaveOccurred())
 	})
@@ -84,7 +84,7 @@ var _ = Describe("Auth Tokens WS", func() {
 		Expect(u.Groups).To(Equal([]string{"team-a"}))
 	})
 
-	It("should throw an error when zone is not passed", func() {
+	It("should throw an error when name is not passed", func() {
 		// when
 		_, err := userTokenClient.Generate("", nil, 1*time.Hour)
 
@@ -101,7 +101,24 @@ var _ = Describe("Auth Tokens WS", func() {
 		}))
 	})
 
-	It("should throw an validFor is not present", func() {
+	It("should throw an error with 0 for validFor", func() {
+		// when
+		_, err := userTokenClient.Generate("foo@example.com", nil, 0)
+
+		// then
+		Expect(err).To(Equal(&error_types.Error{
+			Title:   "Invalid request",
+			Details: "Resource is not valid",
+			Causes: []error_types.Cause{
+				{
+					Field:   "validFor",
+					Message: "cannot be empty or nil",
+				},
+			},
+		}))
+	})
+
+	It("should throw an error if validFor is not present", func() {
 		// given invalid request (cannot be implemented using UserTokenClient)
 		req, err := http.NewRequest("POST", "/tokens/user", strings.NewReader(`{"name": "xyz"}`))
 		req.Header.Add("content-type", "application/json")

@@ -66,6 +66,9 @@ func (d *userTokenWebService) handleIdentityRequest(request *restful.Request, re
 			verr.AddViolation("validFor", "is invalid: "+err.Error())
 		}
 		validFor = dur
+		if validFor == 0 {
+			verr.AddViolation("validFor", "cannot be empty or nil")
+		}
 	}
 
 	if verr.HasViolations() {
