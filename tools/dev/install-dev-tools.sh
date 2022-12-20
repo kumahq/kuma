@@ -10,8 +10,8 @@ GOOS="$5"
 GOARCH="$6"
 
 mkdir -p "$CI_TOOLS_BIN_DIR" "$CI_TOOLS_DIR"/protos
-# We cannot provide list of arguments not as a string, so we join them with a comma
-IFS="," read -ra TOOLS_DEPS_DIRS <<< "${TOOLS_DEPS_DIRS[@]}"
+# TOOLS_DEPS_DIRS has space separated directories
+IFS=" " read -ra TOOLS_DEPS_DIRS <<< "${TOOLS_DEPS_DIRS[@]}"
 
 # Also compute a hash to use for caching
 FILES=$(find "${TOOLS_DEPS_DIRS[@]}" -name '*.sh' | sort)
