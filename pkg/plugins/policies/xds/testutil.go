@@ -2,11 +2,13 @@ package xds
 
 import (
 	_ "embed"
+
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	. "github.com/onsi/gomega"
+
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	clusters_builder "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-	. "github.com/onsi/gomega"
 )
 
 func ResourceArrayShouldEqual(resources core_xds.ResourceList, expected []string) {
