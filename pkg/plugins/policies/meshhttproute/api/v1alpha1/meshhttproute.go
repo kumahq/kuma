@@ -7,6 +7,11 @@ import (
 
 // MeshHTTPRoute
 // +kuma:policy:skip_registration=true
+//
+// This policy defines its own `GetDefault` method so that it can have the given
+// structure for deserialization but still use the generic policy merging
+// machinery.
+//
 // +kuma:policy:skip_get_default=true
 type MeshHTTPRoute struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
@@ -30,7 +35,7 @@ type To struct {
 	Rules []Rule `json:"rules,omitempty"`
 
 	// Default is here to satisfy the many assumptions of the policy generation
-	// code that it exists
+	// code that it exists. It isn't included in the schema.
 	Default Empty `json:",omitempty"`
 }
 
