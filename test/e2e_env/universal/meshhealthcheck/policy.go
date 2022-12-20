@@ -29,14 +29,14 @@ spec:
         kind: MeshService
         name: test-server
       default:
-        interval: 10s
+        interval: 5s
         timeout: 2s
         unhealthyThreshold: 3
         healthyThreshold: 1
         failTrafficOnPanic: true
         noTrafficInterval: 1s
         healthyPanicThreshold: 0
-        reuse_connection: true
+        reuseConnection: true
         http: 
           path: /%s
           expectedStatuses: 
@@ -111,7 +111,7 @@ spec:
         failTrafficOnPanic: true
         noTrafficInterval: 1s
         healthyPanicThreshold: 0
-        reuse_connection: true
+        reuseConnection: true
         tcp: 
           send: %s
           receive:
@@ -201,7 +201,7 @@ spec:
         failTrafficOnPanic: true
         noTrafficInterval: 1s
         healthyPanicThreshold: 0
-        reuse_connection: true
+        reuseConnection: true
         tcp: 
           send: %s
           receive:
@@ -278,7 +278,7 @@ spec:
         failTrafficOnPanic: true
         noTrafficInterval: 1s
         healthyPanicThreshold: 0
-        reuse_connection: true
+        reuseConnection: true
         grpc: {}`, mesh)
 		}
 		BeforeAll(func() {
