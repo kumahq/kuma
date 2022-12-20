@@ -1,0 +1,122 @@
+properties:
+  type:
+    description: 'the type of the resource'
+    type: string
+    enum:
+      - MeshHTTPRoute
+  mesh:
+    description: 'Mesh is the name of the Kuma mesh this resource belongs to. It may be omitted for cluster-scoped resources.'
+    type: string
+    default: default
+  name:
+    description: 'Name of the Kuma resource'
+    type: string
+  spec:
+    description: Spec is the specification of the Kuma MeshHTTPRoute resource.
+    properties:
+      targetRef:
+        description: TargetRef is a reference to the resource the policy takes an effect on. The resource could be either a real store object or virtual resource defined inplace.
+        properties:
+          kind:
+            description: Kind of the referenced resource
+            enum:
+              - Mesh
+              - MeshSubset
+              - MeshService
+              - MeshServiceSubset
+              - MeshGatewayRoute
+            type: string
+          mesh:
+            description: Mesh is reserved for future use to identify cross mesh resources.
+            type: string
+          name:
+            description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
+            type: string
+          tags:
+            additionalProperties:
+              type: string
+            description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+            type: object
+        type: object
+      to:
+        description: To matches destination services of requests and holds configuration.
+        items:
+          properties:
+            rules:
+              description: Rules contains the routing rules applies to a combination of top-level targetRef and the targetRef in this entry.
+              items:
+                properties:
+                  default:
+                    description: Default holds routing rules that can be merged with rules from other policies.
+                    properties:
+                      backendRefs:
+                        items:
+                          properties:
+                            kind:
+                              description: Kind of the referenced resource
+                              enum:
+                                - Mesh
+                                - MeshSubset
+                                - MeshService
+                                - MeshServiceSubset
+                                - MeshGatewayRoute
+                              type: string
+                            mesh:
+                              description: Mesh is reserved for future use to identify cross mesh resources.
+                              type: string
+                            name:
+                              description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
+                              type: string
+                            tags:
+                              additionalProperties:
+                                type: string
+                              description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                              type: object
+                            weight:
+                              type: integer
+                          type: object
+                        type: array
+                      filters:
+                        items:
+                          type: object
+                        type: array
+                    type: object
+                  matches:
+                    items:
+                      properties:
+                        path:
+                          properties:
+                            prefix:
+                              type: string
+                          type: object
+                      type: object
+                    type: array
+                type: object
+              type: array
+            targetRef:
+              description: TargetRef is a reference to the resource that represents a group of request destinations.
+              properties:
+                kind:
+                  description: Kind of the referenced resource
+                  enum:
+                    - Mesh
+                    - MeshSubset
+                    - MeshService
+                    - MeshServiceSubset
+                    - MeshGatewayRoute
+                  type: string
+                mesh:
+                  description: Mesh is reserved for future use to identify cross mesh resources.
+                  type: string
+                name:
+                  description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
+                  type: string
+                tags:
+                  additionalProperties:
+                    type: string
+                  description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                  type: object
+              type: object
+          type: object
+        type: array
+    type: object
