@@ -6,6 +6,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
 	. "github.com/kumahq/kuma/test/framework/client"
@@ -25,17 +27,15 @@ func MeshCircuitBreaker() {
 			Setup(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(DeleteMeshResourcesKubernetes(
-			env.Cluster,
-			mesh,
-			"circuitbreakers",
-			"retries",
-			"meshcircuitbreakers",
+		Expect(DeleteAllResourcesKubernetes(env.Cluster, mesh,
+			core_mesh.CircuitBreakerResourceTypeDescriptor,
+			core_mesh.RetryResourceTypeDescriptor,
+			v1alpha1.MeshCircuitBreakerResourceTypeDescriptor,
 		)).To(Succeed())
 	})
 
 	E2EAfterEach(func() {
-		Expect(DeleteMeshResourcesKubernetes(env.Cluster, mesh, "meshcircuitbreakers")).
+		Expect(DeleteAllResourcesKubernetes(env.Cluster, mesh, v1alpha1.MeshCircuitBreakerResourceTypeDescriptor)).
 			To(Succeed())
 	})
 
@@ -47,8 +47,7 @@ func MeshCircuitBreaker() {
 	DescribeTable("should configure circuit breaker limits and outlier"+
 		" detectors for connections", func(config string) {
 		// given no MeshCircuitBreaker
-		mcbs, err := env.Cluster.GetKumactlOptions().
-			KumactlList("meshcircuitbreakers", mesh)
+		mcbs, err := env.Cluster.GetKumactlOptions().KumactlList("meshcircuitbreakers", mesh)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(mcbs).To(HaveLen(0))
 
@@ -58,15 +57,15 @@ func MeshCircuitBreaker() {
 				"demo-client",
 				fmt.Sprintf("test-server_%s_svc_80.mesh", namespace),
 				FromKubernetesPod(namespace, "demo-client"),
-				WithNumberOfRequests(50),
+				WithNumberOfRequests(10),
 			)
-		}, "30s", "500ms").Should(And(
-			HaveLen(50),
+		}, "30s", "1s").Should(And(
+			HaveLen(10),
 			HaveEach(HaveField("ResponseCode", 200)),
 		))
 
 		// when
-		Expect(YamlK8s(config)(env.Cluster)).To(Succeed())
+		Expect(env.Cluster.Install(YamlK8s(config))).To(Succeed())
 
 		// then
 		Eventually(func(g Gomega) ([]FailureResponse, error) {
@@ -75,11 +74,11 @@ func MeshCircuitBreaker() {
 				"demo-client",
 				fmt.Sprintf("test-server_%s_svc_80.mesh", namespace),
 				FromKubernetesPod(namespace, "demo-client"),
-				WithNumberOfRequests(50),
+				WithNumberOfRequests(10),
 				WithoutRetries(),
 			)
-		}, "90s", "1s").Should(And(
-			HaveLen(50),
+		}, "30s", "1s").Should(And(
+			HaveLen(10),
 			ContainElement(HaveField("ResponseCode", 503)),
 		))
 	},

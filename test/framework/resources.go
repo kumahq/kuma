@@ -14,12 +14,8 @@ import (
 )
 
 func DeleteAllResourcesUniversal(kumactl KumactlOptions, descriptor core_model.ResourceTypeDescriptor, mesh string) error {
-	dpps, err := kumactl.RunKumactlAndGetOutput("get", descriptor.KumactlListArg, "-m", mesh, "-o", "json")
+	list, err := allResourcesOfType(kumactl, descriptor, mesh)
 	if err != nil {
-		return err
-	}
-	list := descriptor.NewList()
-	if err := rest.JSON.UnmarshalListToCore([]byte(dpps), list); err != nil {
 		return err
 	}
 	for _, item := range list.GetItems() {
@@ -31,20 +27,41 @@ func DeleteAllResourcesUniversal(kumactl KumactlOptions, descriptor core_model.R
 	return nil
 }
 
-func DeleteMeshResourcesKubernetes(cluster Cluster, mesh string, resources ...string) error {
+func allResourcesOfType(kumactl KumactlOptions, descriptor core_model.ResourceTypeDescriptor, mesh string) (core_model.ResourceList, error) {
+	dpps, err := kumactl.RunKumactlAndGetOutput("get", descriptor.KumactlListArg, "-m", mesh, "-o", "json")
+	if err != nil {
+		return nil, err
+	}
+	list := descriptor.NewList()
+	if err := rest.JSON.UnmarshalListToCore([]byte(dpps), list); err != nil {
+		return nil, err
+	}
+	return list, err
+}
+
+func DeleteAllResourcesKubernetes(cluster Cluster, mesh string, resources ...core_model.ResourceTypeDescriptor) error {
 	var errs []string
 
 	for _, resource := range resources {
-		if err := k8s.RunKubectlE(
-			cluster.GetTesting(),
-			cluster.GetKubectlOptions(),
-			"delete",
-			resource,
-			"--all-namespaces",
-			"--selector",
-			fmt.Sprintf("%s=%s", mesh_proto.MeshTag, mesh),
-		); err != nil {
-			errs = append(errs, err.Error())
+		args := []string{"delete", strings.ReplaceAll(strings.ToLower(resource.PluralDisplayName), " ", "")}
+		if resource.IsPluginOriginated {
+			// because all new policies have a mesh label, we can just delete by selecting a label
+			args = append(args, "--all-namespaces", "--selector", fmt.Sprintf("%s=%s", mesh_proto.MeshTag, mesh))
+			if err := k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), args...); err != nil {
+				errs = append(errs, err.Error())
+			}
+		} else {
+			list, err := allResourcesOfType(*cluster.GetKumactlOptions(), resource, mesh)
+			if err != nil {
+				errs = append(errs, err.Error())
+				continue
+			}
+			for _, item := range list.GetItems() {
+				itemDelArgs := append(args, item.GetMeta().GetName())
+				if err := k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), itemDelArgs...); err != nil {
+					errs = append(errs, err.Error())
+				}
+			}
 		}
 	}
 
