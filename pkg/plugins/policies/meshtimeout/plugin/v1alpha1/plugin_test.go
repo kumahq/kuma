@@ -18,6 +18,7 @@ import (
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
+	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -99,7 +100,7 @@ var _ = Describe("MeshTimeout", func() {
 				{
 					Name:     "outbound",
 					Origin:   generator.OriginOutbound,
-					Resource: clusterWithName("other-service"),
+					Resource: test_xds.ClusterWithName("other-service"),
 				}},
 			toRules: core_xds.ToRules{
 				Rules: []*core_xds.Rule{
@@ -141,7 +142,7 @@ var _ = Describe("MeshTimeout", func() {
 				{
 					Name:     "outbound",
 					Origin:   generator.OriginOutbound,
-					Resource: clusterWithName("second-service"),
+					Resource: test_xds.ClusterWithName("second-service"),
 				}},
 			toRules: core_xds.ToRules{
 				Rules: []*core_xds.Rule{
@@ -169,7 +170,7 @@ var _ = Describe("MeshTimeout", func() {
 				{
 					Name:     "inbound",
 					Origin:   generator.OriginInbound,
-					Resource: clusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundServicePort)),
+					Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundServicePort)),
 				}},
 			fromRules: core_xds.FromRules{
 				Rules: map[core_xds.InboundListener]core_xds.Rules{
@@ -204,7 +205,7 @@ var _ = Describe("MeshTimeout", func() {
 				{
 					Name:     "outbound",
 					Origin:   generator.OriginOutbound,
-					Resource: clusterWithName("other-service"),
+					Resource: test_xds.ClusterWithName("other-service"),
 				},
 			},
 			toRules: core_xds.ToRules{
@@ -283,12 +284,6 @@ var _ = Describe("MeshTimeout", func() {
 		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.RouteType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "gateway_route.golden.yaml")))
 	})
 })
-
-func clusterWithName(name string) envoy_common.NamedResource {
-	return clusters.NewClusterBuilder(envoy_common.APIV3).
-		Configure(policies_xds.WithName(name)).
-		MustBuild()
-}
 
 func getResourceYaml(list core_xds.ResourceList) []byte {
 	actualListener, err := util_proto.ToYAML(list[0].Resource)

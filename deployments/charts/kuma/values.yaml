@@ -696,6 +696,7 @@ plugins:
   policies:
     - meshaccesslogs
     - meshhealthchecks
+    - meshcircuitbreakers
     - meshratelimits
     - meshtimeouts
     - meshtraces

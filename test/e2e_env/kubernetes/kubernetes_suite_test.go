@@ -23,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/kic"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/membership"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshhealthcheck"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshcircuitbreaker"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshtimeout"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/observability"
@@ -55,7 +56,6 @@ var _ = SynchronizedBeforeSuite(
 					WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 					WithCtlOpts(map[string]string{
 						"--experimental-gatewayapi": gatewayAPI,
-						"--set":                     "experimental.transparentProxy=true",
 					}),
 					WithEgress(),
 				))
@@ -122,3 +122,5 @@ var _ = Describe("Kong Ingress Controller", Label("arm-not-supported"), kic.KICK
 var _ = Describe("MeshTrafficPermission API", meshtrafficpermission.API, Ordered)
 var _ = Describe("MeshTimeout API", meshtimeout.MeshTimeout, Ordered)
 var _ = Describe("MeshHealthCheck API", meshhealthcheck.API, Ordered)
+var _ = Describe("MeshCircuitBreaker API", meshcircuitbreaker.API, Ordered)
+var _ = Describe("MeshCircuitBreaker", meshcircuitbreaker.MeshCircuitBreaker, Ordered)

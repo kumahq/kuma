@@ -37,7 +37,7 @@ func (es *ExternalServiceResource) MarshalLog() interface{} {
 	tls.CaCert = tls.CaCert.MaskInlineDatasource()
 	tls.ClientCert = tls.ClientCert.MaskInlineDatasource()
 	tls.ClientKey = tls.ClientKey.MaskInlineDatasource()
-	return ExternalServiceResource{
+	return &ExternalServiceResource{
 		Meta: es.Meta,
 		Spec: spec,
 	}

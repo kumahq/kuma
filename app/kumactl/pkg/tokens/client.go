@@ -31,6 +31,9 @@ type httpDataplaneTokenClient struct {
 var _ DataplaneTokenClient = &httpDataplaneTokenClient{}
 
 func (h *httpDataplaneTokenClient) Generate(name string, mesh string, tags map[string][]string, dpType string, validFor time.Duration) (string, error) {
+	if validFor == 0 {
+		return "", errors.Errorf("You must set a token validFor value")
+	}
 	tokenReq := &types.DataplaneTokenRequest{
 		Name:     name,
 		Mesh:     mesh,
