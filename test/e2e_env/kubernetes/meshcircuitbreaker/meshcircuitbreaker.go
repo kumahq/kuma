@@ -87,7 +87,7 @@ func MeshCircuitBreaker() {
 apiVersion: kuma.io/v1alpha1
 kind: MeshCircuitBreaker
 metadata:
-  name: mcb1
+  name: mcb-outbound
   namespace: %s
   labels:
     kuma.io/mesh: %s
@@ -109,7 +109,7 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: MeshCircuitBreaker
 metadata:
-  name: mcb1
+  name: mcb-inbound
   namespace: %s
   labels:
     kuma.io/mesh: %s
