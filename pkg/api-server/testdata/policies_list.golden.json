@@ -57,6 +57,14 @@
    "isExperimental": true
   },
   {
+   "name": "MeshHealthCheck",
+   "readOnly": false,
+   "path": "meshhealthchecks",
+   "singularDisplayName": "Mesh Health Check",
+   "pluralDisplayName": "Mesh Health Checks",
+   "isExperimental": false
+  },
+  {
    "name": "MeshRateLimit",
    "readOnly": false,
    "path": "meshratelimits",

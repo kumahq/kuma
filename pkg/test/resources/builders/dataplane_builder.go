@@ -116,6 +116,11 @@ func (d *DataplaneBuilder) AddInbound(inbound *InboundBuilder) *DataplaneBuilder
 	return d
 }
 
+func (d *DataplaneBuilder) AddOutbound(outbound *OutboundBuilder) *DataplaneBuilder {
+	d.res.Spec.Networking.Outbound = append(d.res.Spec.Networking.Outbound, outbound.Build())
+	return d
+}
+
 func (d *DataplaneBuilder) AddOutboundToService(service string) *DataplaneBuilder {
 	d.res.Spec.Networking.Outbound = append(d.res.Spec.Networking.Outbound, &mesh_proto.Dataplane_Networking_Outbound{
 		Port: FirstOutboundPort + uint32(len(d.res.Spec.Networking.Outbound)),
@@ -211,5 +216,43 @@ func (b *InboundBuilder) WithService(name string) *InboundBuilder {
 }
 
 func (b *InboundBuilder) Build() *mesh_proto.Dataplane_Networking_Inbound {
+	return b.res
+}
+
+type OutboundBuilder struct {
+	res *mesh_proto.Dataplane_Networking_Outbound
+}
+
+func Outbound() *OutboundBuilder {
+	return &OutboundBuilder{
+		res: &mesh_proto.Dataplane_Networking_Outbound{
+			Tags: map[string]string{},
+		},
+	}
+}
+
+func (b *OutboundBuilder) WithAddress(addr string) *OutboundBuilder {
+	b.res.Address = addr
+	return b
+}
+
+func (b *OutboundBuilder) WithPort(port uint32) *OutboundBuilder {
+	b.res.Port = port
+	return b
+}
+
+func (b *OutboundBuilder) WithTags(tags map[string]string) *OutboundBuilder {
+	for k, v := range tags {
+		b.res.Tags[k] = v
+	}
+	return b
+}
+
+func (b *OutboundBuilder) WithService(name string) *OutboundBuilder {
+	b.WithTags(map[string]string{mesh_proto.ServiceTag: name})
+	return b
+}
+
+func (b *OutboundBuilder) Build() *mesh_proto.Dataplane_Networking_Outbound {
 	return b.res
 }
