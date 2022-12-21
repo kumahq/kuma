@@ -137,7 +137,11 @@ spec:
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != 200 {
-			return errors.Errorf("status code: %d", resp.StatusCode)
+			bytes, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return err
+			}
+			return errors.Errorf("status code: %d body: %s", resp.StatusCode, string(bytes))
 		}
 		_, err = io.Copy(io.Discard, resp.Body)
 		return err
@@ -157,13 +161,15 @@ spec:
 			defer close(closeCh)
 			go func() {
 				for {
+					if channels.IsClosed(closeCh) {
+						return
+					}
 					if err := requestThroughGateway(); err != nil {
 						failedErr = err
 						return
 					}
-					if channels.IsClosed(closeCh) {
-						return
-					}
+					// add a slight delay to not overwhelm completely the host running this test and leave more resources to other tests running in parallel.
+					time.Sleep(50 * time.Millisecond)
 				}
 			}()
 
