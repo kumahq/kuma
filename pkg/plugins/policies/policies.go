@@ -11,7 +11,7 @@ import (
 	meshtrafficpermission_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 )
 
-var policies = []plugins.PluginName{
+var Policies = []plugins.PluginName{
 	plugins.PluginName(meshaccesslog_api.MeshAccessLogResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshtrace_api.MeshTraceResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshratelimit_api.MeshRateLimitResourceTypeDescriptor.KumactlArg),
@@ -19,8 +19,4 @@ var policies = []plugins.PluginName{
 	plugins.PluginName(meshtrafficpermission_api.MeshTrafficPermissionResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshcircuitbreaker_api.MeshCircuitBreakerResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshhealthcheck_api.MeshHealthCheckResourceTypeDescriptor.KumactlArg),
-}
-
-func Enabled() []plugins.PluginName {
-	return policies
 }

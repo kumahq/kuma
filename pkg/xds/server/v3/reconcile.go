@@ -175,7 +175,7 @@ func (s *TemplateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, pr
 		return nil, err
 	}
 	allPolicies := plugins.Plugins().PolicyPlugins()
-	for _, policyName := range policies.Enabled() {
+	for _, policyName := range policies.Policies {
 		policy, exists := allPolicies[policyName]
 		if !exists {
 			reconcileLog.Error(errors.Errorf("policy doesn't exist"), "failed to apply policy's changes", "policyName", policyName)
