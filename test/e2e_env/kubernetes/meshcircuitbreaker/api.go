@@ -41,7 +41,7 @@ func API() {
 apiVersion: kuma.io/v1alpha1
 kind: MeshCircuitBreaker
 metadata:
-  name: mcb1
+  name: mcb-api-1
   namespace: %s
   labels:
     kuma.io/mesh: meshcircuitbreaker-api
@@ -91,7 +91,7 @@ spec:
 		mcb, err = env.Cluster.GetKumactlOptions().KumactlList("meshcircuitbreakers", meshName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(mcb).To(HaveLen(1))
-		Expect(mcb[0]).To(Equal(fmt.Sprintf("mcb1.%s", Config.KumaNamespace)))
+		Expect(mcb[0]).To(Equal(fmt.Sprintf("mcb-api-1.%s", Config.KumaNamespace)))
 	})
 
 	It("should deny creating policy in the non-system namespace", func() {
@@ -107,7 +107,7 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: MeshCircuitBreaker
 metadata:
-  name: mcb1
+  name: mcb-api-invalid
   namespace: default
   labels:
     kuma.io/mesh: meshcircuitbreaker-api
