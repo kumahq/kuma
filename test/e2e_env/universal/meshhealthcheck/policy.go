@@ -29,7 +29,7 @@ spec:
         kind: MeshService
         name: test-server
       default:
-        interval: 5s
+        interval: 10s
         timeout: 2s
         unhealthyThreshold: 3
         healthyThreshold: 1
