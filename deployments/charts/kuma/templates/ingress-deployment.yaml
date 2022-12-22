@@ -42,6 +42,10 @@ spec:
       nodeSelector:
       {{ toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.ingress.tolerations }}
+      tolerations:
+      {{ toYaml . | nindent 8 }}
+      {{- end }}
       terminationGracePeriodSeconds: {{ .Values.ingress.terminationGracePeriodSeconds }}
       containers:
         - name: ingress

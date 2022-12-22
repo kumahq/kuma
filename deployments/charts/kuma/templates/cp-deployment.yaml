@@ -58,6 +58,10 @@ spec:
       nodeSelector:
         {{ toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.controlPlane.tolerations }}
+      tolerations:
+      {{ toYaml . | nindent 8 }}
+      {{- end }}
       hostNetwork: {{ .Values.controlPlane.hostNetwork }}
       terminationGracePeriodSeconds: {{ .Values.controlPlane.terminationGracePeriodSeconds }}
       containers:

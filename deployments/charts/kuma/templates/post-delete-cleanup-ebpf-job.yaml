@@ -92,6 +92,10 @@ spec:
       nodeSelector:
       {{ toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.hooks.tolerations }}
+      tolerations:
+      {{ toYaml . | nindent 8 }}
+      {{- end }}
       restartPolicy: OnFailure
       {{- if .Values.hooks.podSecurityContext }}
       securityContext:

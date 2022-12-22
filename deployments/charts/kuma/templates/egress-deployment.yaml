@@ -42,6 +42,10 @@ spec:
       nodeSelector:
       {{ toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.egress.tolerations }}
+      tolerations:
+      {{ toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: egress
           image: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.image "root" $) | quote }}
