@@ -73,6 +73,14 @@
    "isExperimental": false
   },
   {
+   "name": "MeshRetry",
+   "readOnly": false,
+   "path": "meshretries",
+   "singularDisplayName": "Mesh Retry",
+   "pluralDisplayName": "Mesh Retries",
+   "isExperimental": false
+  },
+  {
    "name": "MeshTimeout",
    "readOnly": false,
    "path": "meshtimeouts",

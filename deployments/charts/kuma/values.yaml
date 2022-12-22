@@ -698,6 +698,7 @@ plugins:
     - meshcircuitbreakers
     - meshhealthchecks
     - meshratelimits
+    - meshretries
     - meshtimeouts
     - meshtraces
     - meshtrafficpermissions
