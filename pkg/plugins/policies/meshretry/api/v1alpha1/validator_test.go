@@ -342,7 +342,7 @@ violations:
   - field: spec.to[0].default.conf.grpc.retryOn[2]
     message: unknown item 'wrong'`,
 			}),
-			Entry("http retriableHeaders wrong values", testCase{
+			Entry("http retriableRequestHeaders wrong values", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
@@ -355,6 +355,21 @@ to:
           - type: WRONG_TYPE
             name: headername
             value: headervalue
+`,
+				expected: `
+violations:
+  - field: spec
+    message: to[0].default.http.retriableRequestHeaders[0].type in body should be one of [REGULAR_EXPRESSION EXACT PREFIX]`,
+			}),
+			Entry("http retriableResponseHeaders wrong values", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      http:
         retriableResponseHeaders: 
           - type: ANOTHER_WRONG_TYPE
             name: headername
@@ -362,8 +377,6 @@ to:
 `,
 				expected: `
 violations:
-  - field: spec
-    message: to[0].default.http.retriableRequestHeaders[0].type in body should be one of [REGULAR_EXPRESSION EXACT PREFIX]
   - field: spec
     message: to[0].default.http.retriableResponseHeaders[0].type in body should be one of [REGULAR_EXPRESSION EXACT PREFIX]`,
 			}),
