@@ -19,7 +19,7 @@ type PolicyConfig struct {
 	NameLower           string
 	Plural              string
 	SkipRegistration    bool
-	SkipDefault         bool
+	SkipGetDefault      bool
 	SingularDisplayName string
 	PluralDisplayName   string
 	Path                string
@@ -128,8 +128,8 @@ func newPolicyConfig(pkg, name string, markers map[string]string, hasTo, hasFrom
 	if v, ok := parseBool(markers, "kuma:policy:skip_registration"); ok {
 		res.SkipRegistration = v
 	}
-	if v, ok := parseBool(markers, "kuma:policy:skip_default"); ok {
-		res.SkipDefault = v
+	if v, ok := parseBool(markers, "kuma:policy:skip_get_default"); ok {
+		res.SkipGetDefault = v
 	}
 
 	if v, ok := markers["kuma:policy:plural"]; ok {
