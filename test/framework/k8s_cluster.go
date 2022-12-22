@@ -353,6 +353,10 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		}
 	}
 
+	if !c.opts.cni && c.opts.experimentalTransparentProxy {
+		argsMap["--set"] = "experimental.transparentProxy=true"
+	}
+
 	if Config.XDSApiVersion != "" {
 		argsMap["--env-var"] = "KUMA_BOOTSTRAP_SERVER_API_VERSION=" + Config.XDSApiVersion
 	}

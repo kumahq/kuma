@@ -1,10 +1,10 @@
 package virtualoutbound
 
 import (
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
@@ -35,12 +35,7 @@ func VirtualOutbound() {
 	})
 
 	BeforeEach(func() {
-		err := k8s.RunKubectlE(
-			env.Cluster.GetTesting(),
-			env.Cluster.GetKubectlOptions(),
-			"delete", "virtualoutbounds", "--all",
-		)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(DeleteMeshResources(env.Cluster, meshName, mesh.VirtualOutboundResourceTypeDescriptor)).To(Succeed())
 	})
 
 	It("simple virtual outbound", func() {

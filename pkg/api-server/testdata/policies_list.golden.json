@@ -33,6 +33,14 @@
    "isExperimental": false
   },
   {
+   "name": "MeshCircuitBreaker",
+   "readOnly": false,
+   "path": "meshcircuitbreakers",
+   "singularDisplayName": "Mesh Circuit Breaker",
+   "pluralDisplayName": "Mesh Circuit Breakers",
+   "isExperimental": false
+  },
+  {
    "name": "MeshGateway",
    "readOnly": false,
    "path": "meshgateways",
@@ -47,6 +55,14 @@
    "singularDisplayName": "Mesh Gateway Route",
    "pluralDisplayName": "Mesh Gateway Routes",
    "isExperimental": true
+  },
+  {
+   "name": "MeshHealthCheck",
+   "readOnly": false,
+   "path": "meshhealthchecks",
+   "singularDisplayName": "Mesh Health Check",
+   "pluralDisplayName": "Mesh Health Checks",
+   "isExperimental": false
   },
   {
    "name": "MeshRateLimit",

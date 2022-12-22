@@ -7,11 +7,13 @@ type Token = string
 type Claims interface {
 	jwt.Claims
 	ID() string
-	// KeyIDFallback returns KID when it is not provided as a header.
-	// It helps us to built backwards compatibility with a tokens that did not have KID in the past.
-	// https://github.com/kumahq/kuma/issues/4006
-	KeyIDFallback() (int, error)
 	SetRegisteredClaims(claims jwt.RegisteredClaims)
+}
+
+type KeyIDFallback interface {
+	// KeyIDFallback Marker function to indicate this can be used for tokens with v0
+	// This will be removed with https://github.com/kumahq/kuma/issues/5519
+	KeyIDFallback()
 }
 
 const KeyIDHeader = "kid" // standard JWT header that indicates which signing key we should use

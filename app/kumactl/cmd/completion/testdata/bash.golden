@@ -1585,6 +1585,76 @@ _kumactl_get_meshaccesslogs()
     noun_aliases=()
 }
 
+_kumactl_get_meshcircuitbreaker()
+{
+    last_command="kumactl_get_meshcircuitbreaker"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--api-timeout=")
+    two_word_flags+=("--api-timeout")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--no-config")
+    flags+=("--output=")
+    two_word_flags+=("--output")
+    two_word_flags+=("-o")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_kumactl_get_meshcircuitbreakers()
+{
+    last_command="kumactl_get_meshcircuitbreakers"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--offset=")
+    two_word_flags+=("--offset")
+    flags+=("--size=")
+    two_word_flags+=("--size")
+    flags+=("--api-timeout=")
+    two_word_flags+=("--api-timeout")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--no-config")
+    flags+=("--output=")
+    two_word_flags+=("--output")
+    two_word_flags+=("-o")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _kumactl_get_meshes()
 {
     last_command="kumactl_get_meshes"
@@ -1728,6 +1798,76 @@ _kumactl_get_meshgatewayroutes()
 _kumactl_get_meshgateways()
 {
     last_command="kumactl_get_meshgateways"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--offset=")
+    two_word_flags+=("--offset")
+    flags+=("--size=")
+    two_word_flags+=("--size")
+    flags+=("--api-timeout=")
+    two_word_flags+=("--api-timeout")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--no-config")
+    flags+=("--output=")
+    two_word_flags+=("--output")
+    two_word_flags+=("-o")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_kumactl_get_meshhealthcheck()
+{
+    last_command="kumactl_get_meshhealthcheck"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--api-timeout=")
+    two_word_flags+=("--api-timeout")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--no-config")
+    flags+=("--output=")
+    two_word_flags+=("--output")
+    two_word_flags+=("-o")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_kumactl_get_meshhealthchecks()
+{
+    last_command="kumactl_get_meshhealthchecks"
 
     command_aliases=()
 
@@ -3044,11 +3184,15 @@ _kumactl_get()
     commands+=("mesh")
     commands+=("meshaccesslog")
     commands+=("meshaccesslogs")
+    commands+=("meshcircuitbreaker")
+    commands+=("meshcircuitbreakers")
     commands+=("meshes")
     commands+=("meshgateway")
     commands+=("meshgatewayroute")
     commands+=("meshgatewayroutes")
     commands+=("meshgateways")
+    commands+=("meshhealthcheck")
+    commands+=("meshhealthchecks")
     commands+=("meshratelimit")
     commands+=("meshratelimits")
     commands+=("meshretries")
@@ -3328,6 +3472,36 @@ _kumactl_inspect_meshaccesslog()
     noun_aliases=()
 }
 
+_kumactl_inspect_meshcircuitbreaker()
+{
+    last_command="kumactl_inspect_meshcircuitbreaker"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--api-timeout=")
+    two_word_flags+=("--api-timeout")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--no-config")
+    flags+=("--output=")
+    two_word_flags+=("--output")
+    two_word_flags+=("-o")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _kumactl_inspect_meshes()
 {
     last_command="kumactl_inspect_meshes"
@@ -3361,6 +3535,36 @@ _kumactl_inspect_meshes()
 _kumactl_inspect_meshgateway()
 {
     last_command="kumactl_inspect_meshgateway"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--api-timeout=")
+    two_word_flags+=("--api-timeout")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--no-config")
+    flags+=("--output=")
+    two_word_flags+=("--output")
+    two_word_flags+=("-o")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_kumactl_inspect_meshhealthcheck()
+{
+    last_command="kumactl_inspect_meshhealthcheck"
 
     command_aliases=()
 
@@ -3978,8 +4182,10 @@ _kumactl_inspect()
     commands+=("fault-injection")
     commands+=("healthcheck")
     commands+=("meshaccesslog")
+    commands+=("meshcircuitbreaker")
     commands+=("meshes")
     commands+=("meshgateway")
+    commands+=("meshhealthcheck")
     commands+=("meshratelimit")
     commands+=("meshretry")
     commands+=("meshtimeout")

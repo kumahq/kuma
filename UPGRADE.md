@@ -17,6 +17,9 @@ Make sure you are using a recent `kumactl` or that you use the right path if usi
 
 The sidecar container is always injected first (since [#5436](https://github.com/kumahq/kuma/pull/5436)). This should only impact you when modifying the sidecar container with a container-patch. If you do so, upgrade Kuma and then change your container patch to modify the right container.
 
+### Kumactl
+
+`--valid-for` must be set for all token types, before it was defaulting to 10 years.
 
 ## Upgrade to `2.0.x`
 

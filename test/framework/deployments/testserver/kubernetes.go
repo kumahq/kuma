@@ -137,7 +137,9 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 				},
 			},
 			InitialDelaySeconds: 3,
-			PeriodSeconds:       3,
+			PeriodSeconds:       5,
+			TimeoutSeconds:      3,
+			FailureThreshold:    60,
 		}
 		readiness = &corev1.Probe{
 			ProbeHandler: corev1.ProbeHandler{
@@ -147,7 +149,9 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 				},
 			},
 			InitialDelaySeconds: 3,
-			PeriodSeconds:       3,
+			PeriodSeconds:       5,
+			TimeoutSeconds:      3,
+			FailureThreshold:    12,
 		}
 	}
 	if !k.opts.EnableProbes {

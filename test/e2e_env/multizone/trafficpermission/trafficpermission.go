@@ -40,11 +40,7 @@ func TrafficPermission() {
 	})
 
 	BeforeEach(func() {
-		Expect(DeleteAllResourcesUniversal(
-			*env.Global.GetKumactlOptions(),
-			core_mesh.TrafficPermissionResourceTypeDescriptor,
-			meshName),
-		).To(Succeed())
+		Expect(DeleteMeshResources(env.Global, meshName, core_mesh.TrafficPermissionResourceTypeDescriptor)).To(Succeed())
 	})
 
 	E2EAfterAll(func() {

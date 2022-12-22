@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/util/channels"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
@@ -126,12 +127,7 @@ spec:
 		}, "60s", "1s").Should(Succeed(), "could not get a LoadBalancer IP of the Gateway")
 
 		// remove retries to avoid covering failed request
-		err = k8s.RunKubectlE(
-			env.Cluster.GetTesting(),
-			env.Cluster.GetKubectlOptions(),
-			"delete", "retry", "retry-all-graceful",
-		)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(DeleteMeshResources(env.Cluster, mesh, core_mesh.RetryResourceTypeDescriptor)).To(Succeed())
 	})
 
 	requestThroughGateway := func() error {
@@ -141,7 +137,11 @@ spec:
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != 200 {
-			return errors.Errorf("status code: %d", resp.StatusCode)
+			bytes, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return err
+			}
+			return errors.Errorf("status code: %d body: %s", resp.StatusCode, string(bytes))
 		}
 		_, err = io.Copy(io.Discard, resp.Body)
 		return err
@@ -161,13 +161,15 @@ spec:
 			defer close(closeCh)
 			go func() {
 				for {
+					if channels.IsClosed(closeCh) {
+						return
+					}
 					if err := requestThroughGateway(); err != nil {
 						failedErr = err
 						return
 					}
-					if channels.IsClosed(closeCh) {
-						return
-					}
+					// add a slight delay to not overwhelm completely the host running this test and leave more resources to other tests running in parallel.
+					time.Sleep(50 * time.Millisecond)
 				}
 			}()
 

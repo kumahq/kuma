@@ -4,21 +4,25 @@ EXAMPLE_DATAPLANE_MESH ?= default
 EXAMPLE_DATAPLANE_NAME ?= example
 EXAMPLE_DATAPLANE_INBOUND_PORT ?= 8000
 EXAMPLE_DATAPLANE_SERVICE_PORT ?= 10011
+EXAMPLE_DATAPLANE_SERVICE_TAG ?= echo-service
+ENVOY_ADMIN_PORT ?= 9901
+
 define EXAMPLE_DATAPLANE_RESOURCE
 type: Dataplane
 mesh: $(EXAMPLE_DATAPLANE_MESH)
 name: $(EXAMPLE_DATAPLANE_NAME)
 networking:
   address: 127.0.0.1
+  admin:
+    port: $(ENVOY_ADMIN_PORT)
   inbound:
   - port: $(EXAMPLE_DATAPLANE_INBOUND_PORT)
     servicePort: $(EXAMPLE_DATAPLANE_SERVICE_PORT)
     tags:
-      kuma.io/service: echo-service
+      kuma.io/service: $(EXAMPLE_DATAPLANE_SERVICE_TAG)
       kuma.io/protocol: http
 endef
 
-ENVOY_ADMIN_PORT ?= 9901
 
 POSTGRES_SSL_MODE ?= disable
 

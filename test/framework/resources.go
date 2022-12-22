@@ -1,26 +1,73 @@
 package framework
 
 import (
+	"fmt"
+	"strings"
+
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 )
 
-func DeleteAllResourcesUniversal(kumactl KumactlOptions, descriptor core_model.ResourceTypeDescriptor, mesh string) error {
-	dpps, err := kumactl.RunKumactlAndGetOutput("get", descriptor.KumactlListArg, "-m", mesh, "-o", "json")
-	if err != nil {
-		return err
+func DeleteMeshResources(cluster Cluster, mesh string, descriptor ...core_model.ResourceTypeDescriptor) error {
+	for _, desc := range descriptor {
+		if _, ok := cluster.(*K8sCluster); ok {
+			return deleteMeshResourcesKubernetes(cluster, mesh, desc)
+		} else {
+			return deleteMeshResourcesUniversal(*cluster.GetKumactlOptions(), mesh, desc)
+		}
 	}
-	list := descriptor.NewList()
-	if err := rest.JSON.UnmarshalListToCore([]byte(dpps), list); err != nil {
+	return nil
+}
+
+func deleteMeshResourcesUniversal(kumactl KumactlOptions, mesh string, descriptor core_model.ResourceTypeDescriptor) error {
+	list, err := allResourcesOfType(kumactl, descriptor, mesh)
+	if err != nil {
 		return err
 	}
 	for _, item := range list.GetItems() {
 		_, err := kumactl.RunKumactlAndGetOutput("delete", descriptor.KumactlArg, item.GetMeta().GetName(), "-m", mesh)
 		if err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func allResourcesOfType(kumactl KumactlOptions, descriptor core_model.ResourceTypeDescriptor, mesh string) (core_model.ResourceList, error) {
+	dpps, err := kumactl.RunKumactlAndGetOutput("get", descriptor.KumactlListArg, "-m", mesh, "-o", "json")
+	if err != nil {
+		return nil, err
+	}
+	list := descriptor.NewList()
+	if err := rest.JSON.UnmarshalListToCore([]byte(dpps), list); err != nil {
+		return nil, err
+	}
+	return list, err
+}
+
+func deleteMeshResourcesKubernetes(cluster Cluster, mesh string, resource core_model.ResourceTypeDescriptor) error {
+	args := []string{"delete", strings.ReplaceAll(strings.ToLower(resource.PluralDisplayName), " ", "")}
+	if resource.IsPluginOriginated {
+		// because all new policies have a mesh label, we can just delete by selecting a label
+		args = append(args, "--all-namespaces", "--selector", fmt.Sprintf("%s=%s", mesh_proto.MeshTag, mesh))
+		if err := k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), args...); err != nil {
+			return err
+		}
+	} else {
+		list, err := allResourcesOfType(*cluster.GetKumactlOptions(), resource, mesh)
+		if err != nil {
+			return err
+		}
+		for _, item := range list.GetItems() {
+			itemDelArgs := append(args, item.GetMeta().GetName())
+			if err := k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), itemDelArgs...); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

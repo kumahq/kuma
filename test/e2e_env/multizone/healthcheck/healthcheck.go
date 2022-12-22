@@ -20,8 +20,7 @@ func ApplicationOnUniversalClientOnK8s() {
 		err := env.Global.Install(MTLSMeshUniversal(meshName))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = DeleteAllResourcesUniversal(*env.Global.GetKumactlOptions(), mesh.RetryResourceTypeDescriptor, meshName)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(DeleteMeshResources(env.Global, meshName, mesh.RetryResourceTypeDescriptor)).To(Succeed())
 
 		err = NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).

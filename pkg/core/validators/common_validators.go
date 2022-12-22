@@ -20,8 +20,8 @@ func ValidateDurationNotNegativeOrNil(path PathBuilder, duration *k8s.Duration) 
 	return
 }
 
-func ValidateDurationGreaterThanZero(path PathBuilder, duration *k8s.Duration) (err ValidationError) {
-	if duration == nil || duration.Duration <= 0 {
+func ValidateDurationGreaterThanZero(path PathBuilder, duration k8s.Duration) (err ValidationError) {
+	if duration.Duration <= 0 {
 		err.AddViolationAt(path, MustBeDefinedAndGreaterThanZero)
 	}
 	return
@@ -39,8 +39,8 @@ func ValidateDurationGreaterThanZeroOrNil(path PathBuilder, duration *k8s.Durati
 	return
 }
 
-func ValidateValueGreaterThanZero(path PathBuilder, value *int32) (err ValidationError) {
-	if value == nil || *value <= 0 {
+func ValidateValueGreaterThanZero(path PathBuilder, value int32) (err ValidationError) {
+	if value <= 0 {
 		err.AddViolationAt(path, MustBeDefinedAndGreaterThanZero)
 	}
 	return

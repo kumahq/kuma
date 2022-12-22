@@ -123,7 +123,7 @@ statsConfig:
     tagName: status
   - regex: ^kafka(\.(\S*[0-9]))\.
     tagName: kafka_name
-  - regex: ^kafka\..*\.(.*)
+  - regex: ^kafka\..*\.(.*?(?=_duration|$))
     tagName: kafka_type
   - regex: (worker_([0-9]+)\.)
     tagName: worker

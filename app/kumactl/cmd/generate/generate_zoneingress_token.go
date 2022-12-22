@@ -47,8 +47,6 @@ $ kumactl generate zone-ingress-token --zone zone-1 --valid-for 30d
 		},
 	}
 	cmd.Flags().StringVar(&ctx.args.zone, "zone", "", "name of the zone where ingress resides")
-	// Backwards compatibility with 1.3.x. Right now we pick 10 years as default, but in the future this should be required argument without default.
-	// https://github.com/kumahq/kuma/issues/4001
-	cmd.Flags().DurationVar(&ctx.args.validFor, "valid-for", 24*time.Hour*365*10, `how long the token will be valid (for example "24h")`)
+	cmd.Flags().DurationVar(&ctx.args.validFor, "valid-for", 0, `how long the token will be valid (for example "24h")`)
 	return cmd
 }

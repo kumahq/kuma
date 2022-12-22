@@ -8,7 +8,6 @@ import (
 )
 
 // MeshCircuitBreaker
-// +kuma:policy:skip_registration=true
 type MeshCircuitBreaker struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
@@ -78,7 +77,7 @@ type ConnectionLimits struct {
 
 type OutlierDetection struct {
 	// When set to true, outlierDetection configuration won't take any effect
-	Disabled *bool `json:"disabled,omitempty"`
+	Disabled bool `json:"disabled,omitempty"`
 	// The time interval between ejection analysis sweeps. This can result in
 	// both new ejections and hosts being returned to service.
 	Interval *k8s.Duration `json:"interval,omitempty"`

@@ -3,10 +3,12 @@ package client
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"io"
 	"net/url"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -16,7 +18,13 @@ type TLSConfig struct {
 	ClientCert tls.Certificate
 }
 
-func New(serverURL string, tlsCfg *TLSConfig) (*grpc.ClientConn, error) {
+type Conn interface {
+	grpc.ClientConnInterface
+	io.Closer
+	GetState() connectivity.State
+}
+
+func New(serverURL string, tlsCfg *TLSConfig) (Conn, error) {
 	url, err := url.Parse(serverURL)
 	if err != nil {
 		return nil, err

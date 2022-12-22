@@ -81,6 +81,8 @@ function release {
     [ -z "$GH_REPO_URL" ] && GH_REPO_URL="https://${GH_TOKEN}@github.com/${GH_OWNER}/${GH_REPO}.git"
   fi
 
+  git clone --single-branch --branch "${GH_PAGES_BRANCH}" "$GH_REPO_URL"
+
   # First upload the packaged charts to the release
   cr upload \
     --owner "${GH_OWNER}" \
@@ -89,8 +91,6 @@ function release {
     --package-path "${CHARTS_PACKAGE_PATH}"
 
   # Then build and upload the index file to github pages
-  git clone --single-branch --branch "${GH_PAGES_BRANCH}" "$GH_REPO_URL"
-
   cr index \
     --owner "${GH_OWNER}" \
     --git-repo "${GH_REPO}" \
