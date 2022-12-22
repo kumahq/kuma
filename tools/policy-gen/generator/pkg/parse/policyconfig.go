@@ -19,6 +19,7 @@ type PolicyConfig struct {
 	NameLower           string
 	Plural              string
 	SkipRegistration    bool
+	SkipDefault         bool
 	SingularDisplayName string
 	PluralDisplayName   string
 	Path                string
@@ -100,6 +101,18 @@ func parseMarkers(cg *ast.CommentGroup) (map[string]string, error) {
 	return result, nil
 }
 
+func parseBool(markers map[string]string, key string) (bool, bool) {
+	if v, ok := markers[key]; ok {
+		vbool, err := strconv.ParseBool(v)
+		if err != nil {
+			return false, false
+		}
+		return vbool, true
+	}
+
+	return false, false
+}
+
 func newPolicyConfig(pkg, name string, markers map[string]string, hasTo, hasFrom bool) (PolicyConfig, error) {
 	res := PolicyConfig{
 		Package:             pkg,
@@ -112,12 +125,11 @@ func newPolicyConfig(pkg, name string, markers map[string]string, hasTo, hasFrom
 		HasFrom:             hasFrom,
 	}
 
-	if v, ok := markers["kuma:policy:skip_registration"]; ok {
-		vbool, err := strconv.ParseBool(v)
-		if err != nil {
-			return PolicyConfig{}, err
-		}
-		res.SkipRegistration = vbool
+	if v, ok := parseBool(markers, "kuma:policy:skip_registration"); ok {
+		res.SkipRegistration = v
+	}
+	if v, ok := parseBool(markers, "kuma:policy:skip_default"); ok {
+		res.SkipDefault = v
 	}
 
 	if v, ok := markers["kuma:policy:plural"]; ok {

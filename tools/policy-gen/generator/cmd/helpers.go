@@ -34,6 +34,7 @@ func newHelpers(rootArgs *args) *cobra.Command {
 				"version":               pconfig.Package,
 				"generateTo":            pconfig.HasTo,
 				"generateFrom":          pconfig.HasFrom,
+				"skipDefault":           pconfig.SkipDefault,
 				"generateGetPolicyItem": !pconfig.HasFrom && !pconfig.HasTo,
 			}, outPath)
 		},
@@ -64,10 +65,12 @@ func (x *{{.name}}) GetTargetRef() common_api.TargetRef {
 func (x *From) GetTargetRef() common_api.TargetRef {
 	return x.TargetRef
 }
+{{ if not .skipDefault }}
 
 func (x *From) GetDefault() interface{} {
 	return x.Default
 }
+{{- end }}
 
 func (x *{{.name}}) GetFromList() []core_xds.PolicyItem {
 	var result []core_xds.PolicyItem
