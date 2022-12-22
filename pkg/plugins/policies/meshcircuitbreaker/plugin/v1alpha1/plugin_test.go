@@ -36,11 +36,11 @@ var _ = Describe("MeshCircuitBreaker", func() {
 
 	genConnectionLimits := func() *api.ConnectionLimits {
 		return &api.ConnectionLimits{
-			MaxConnectionPools: test.PointerUint32(1111),
-			MaxConnections:     test.PointerUint32(2222),
-			MaxPendingRequests: test.PointerUint32(3333),
-			MaxRequests:        test.PointerUint32(4444),
-			MaxRetries:         test.PointerUint32(5555),
+			MaxConnectionPools: test.PointerOf(uint32(1111)),
+			MaxConnections:     test.PointerOf(uint32(2222)),
+			MaxPendingRequests: test.PointerOf(uint32(3333)),
+			MaxRequests:        test.PointerOf(uint32(4444)),
+			MaxRetries:         test.PointerOf(uint32(5555)),
 		}
 	}
 
@@ -49,27 +49,27 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			Disabled:                    disabled,
 			Interval:                    test.ParseDuration("10s"),
 			BaseEjectionTime:            test.ParseDuration("8s"),
-			MaxEjectionPercent:          test.PointerUint32(88),
-			SplitExternalAndLocalErrors: test.PointerBool(true),
+			MaxEjectionPercent:          test.PointerOf(uint32(88)),
+			SplitExternalAndLocalErrors: test.PointerOf(true),
 			Detectors: &api.Detectors{
 				TotalFailures: &api.DetectorTotalFailures{
-					Consecutive: test.PointerUint32(12),
+					Consecutive: test.PointerOf(uint32(12)),
 				},
 				GatewayFailures: &api.DetectorGatewayFailures{
-					Consecutive: test.PointerUint32(91),
+					Consecutive: test.PointerOf(uint32(91)),
 				},
 				LocalOriginFailures: &api.DetectorLocalOriginFailures{
-					Consecutive: test.PointerUint32(3),
+					Consecutive: test.PointerOf(uint32(3)),
 				},
 				SuccessRate: &api.DetectorSuccessRateFailures{
-					MinimumHosts:            test.PointerUint32(33),
-					RequestVolume:           test.PointerUint32(99),
-					StandardDeviationFactor: test.PointerUint32(1900),
+					MinimumHosts:            test.PointerOf(uint32(33)),
+					RequestVolume:           test.PointerOf(uint32(99)),
+					StandardDeviationFactor: test.PointerOf(uint32(1900)),
 				},
 				FailurePercentage: &api.DetectorFailurePercentageFailures{
-					MinimumHosts:  test.PointerUint32(32),
-					RequestVolume: test.PointerUint32(182),
-					Threshold:     test.PointerUint32(80),
+					MinimumHosts:  test.PointerOf(uint32(32)),
+					RequestVolume: test.PointerOf(uint32(182)),
+					Threshold:     test.PointerOf(uint32(80)),
 				},
 			},
 		}

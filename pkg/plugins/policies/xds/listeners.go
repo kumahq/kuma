@@ -8,11 +8,13 @@ import (
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/pkg/xds/generator"
+	egress_generator "github.com/kumahq/kuma/pkg/xds/generator/egress"
 )
 
 type Listeners struct {
 	Inbound         map[xds.InboundListener]*envoy_listener.Listener
 	Outbound        map[mesh_proto.OutboundInterface]*envoy_listener.Listener
+	Egress          map[xds.InboundListener]*envoy_listener.Listener
 	Gateway         map[xds.InboundListener]*envoy_listener.Listener
 	Ipv4Passthrough *envoy_listener.Listener
 	Ipv6Passthrough *envoy_listener.Listener
@@ -38,6 +40,11 @@ func GatherListeners(rs *xds.ResourceSet) Listeners {
 				DataplanePort: address.GetPortValue(),
 			}] = listener
 		case generator.OriginInbound:
+			listeners.Inbound[xds.InboundListener{
+				Address: address.GetAddress(),
+				Port:    address.GetPortValue(),
+			}] = listener
+		case egress_generator.OriginEgress:
 			listeners.Inbound[xds.InboundListener{
 				Address: address.GetAddress(),
 				Port:    address.GetPortValue(),

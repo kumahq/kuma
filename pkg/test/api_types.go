@@ -6,12 +6,8 @@ import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func PointerUint32(val uint32) *uint32 {
-	return &val
-}
-
-func PointerBool(val bool) *bool {
-	return &val
+func PointerOf[T any](value T) *T {
+	return &value
 }
 
 func ParseDuration(duration string) *k8s.Duration {

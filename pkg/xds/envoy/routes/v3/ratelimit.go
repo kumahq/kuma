@@ -1,30 +1,81 @@
 package v3
 
 import (
+	"time"
+
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_extensions_filters_http_local_ratelimit_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
-func NewRateLimitConfiguration(rlHttp *v1alpha1.RateLimit_Conf_Http) (*anypb.Any, error) {
+type RateLimitConfiguration struct {
+	Interval    time.Duration
+	Requests    uint32
+	OnRateLimit *OnRateLimit
+}
+
+type OnRateLimit struct {
+	Status  uint32
+	Headers []*Headers
+}
+
+type Headers struct {
+	Key    string
+	Value  string
+	Append bool
+}
+
+func RateLimitConfigurationFromProto(rl *mesh_proto.RateLimit) *RateLimitConfiguration {
+	if rl.GetConf() == nil || rl.GetConf().GetHttp() == nil {
+		return &RateLimitConfiguration{}
+	}
+	rateLimit := &RateLimitConfiguration{
+		Interval:    rl.GetConf().GetHttp().GetInterval().AsDuration(),
+		Requests:    rl.GetConf().GetHttp().GetRequests(),
+		OnRateLimit: &OnRateLimit{},
+	}
+	if rl.GetConf().GetHttp().GetOnRateLimit() != nil {
+		headers := []*Headers{}
+		for _, h := range rl.GetConf().GetHttp().GetOnRateLimit().GetHeaders() {
+			header := &Headers{
+				Key:   h.GetKey(),
+				Value: h.GetValue(),
+			}
+			if h.GetAppend() != nil {
+				header.Append = h.GetAppend().Value
+			}
+			headers = append(headers, header)
+		}
+		rateLimit.OnRateLimit.Headers = headers
+
+		if rl.GetConf().GetHttp().GetOnRateLimit().GetStatus() != nil {
+			rateLimit.OnRateLimit.Status = rl.GetConf().GetHttp().GetOnRateLimit().GetStatus().GetValue()
+		}
+	}
+	return rateLimit
+}
+
+func NewRateLimitConfiguration(rlHttp *RateLimitConfiguration) (*anypb.Any, error) {
 	var status *envoy_type_v3.HttpStatus
 	var responseHeaders []*envoy_config_core_v3.HeaderValueOption
-	if rlHttp.GetOnRateLimit() != nil {
-		status = &envoy_type_v3.HttpStatus{
-			Code: envoy_type_v3.StatusCode(rlHttp.GetOnRateLimit().GetStatus().GetValue()),
+	if rlHttp.OnRateLimit != nil {
+		if rlHttp.OnRateLimit.Status != 0 {
+			status = &envoy_type_v3.HttpStatus{
+				Code: envoy_type_v3.StatusCode(rlHttp.OnRateLimit.Status),
+			}
 		}
 		responseHeaders = []*envoy_config_core_v3.HeaderValueOption{}
-		for _, h := range rlHttp.GetOnRateLimit().GetHeaders() {
+		for _, h := range rlHttp.OnRateLimit.Headers {
 			responseHeaders = append(responseHeaders, &envoy_config_core_v3.HeaderValueOption{
 				Header: &envoy_config_core_v3.HeaderValue{
-					Key:   h.GetKey(),
-					Value: h.GetValue(),
+					Key:   h.Key,
+					Value: h.Value,
 				},
-				Append: h.GetAppend(),
+				Append: proto.Bool(h.Append),
 			})
 		}
 	}
@@ -33,9 +84,9 @@ func NewRateLimitConfiguration(rlHttp *v1alpha1.RateLimit_Conf_Http) (*anypb.Any
 		StatPrefix: "rate_limit",
 		Status:     status,
 		TokenBucket: &envoy_type_v3.TokenBucket{
-			MaxTokens:     rlHttp.GetRequests(),
-			TokensPerFill: proto.UInt32(rlHttp.GetRequests()),
-			FillInterval:  rlHttp.GetInterval(),
+			MaxTokens:     rlHttp.Requests,
+			TokensPerFill: proto.UInt32(rlHttp.Requests),
+			FillInterval:  proto.Duration(rlHttp.Interval),
 		},
 		FilterEnabled: &envoy_config_core_v3.RuntimeFractionalPercent{
 			DefaultValue: &envoy_type_v3.FractionalPercent{

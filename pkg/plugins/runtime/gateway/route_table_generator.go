@@ -85,7 +85,7 @@ func GenerateVirtualHost(
 
 		if r := match.BestConnectionPolicyForDestination(e.Action.Forward, core_mesh.RateLimitType); r != nil {
 			ratelimit := r.(*core_mesh.RateLimitResource)
-			conf, err := v3.NewRateLimitConfiguration(ratelimit.Spec.GetConf().GetHttp())
+			conf, err := v3.NewRateLimitConfiguration(v3.RateLimitConfigurationFromProto(ratelimit.Spec))
 			if err != nil {
 				return nil, err
 			}
