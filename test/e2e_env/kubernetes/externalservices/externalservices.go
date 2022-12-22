@@ -3,7 +3,6 @@ package externalservices
 import (
 	"fmt"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -49,9 +48,6 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		clientPodName, err = PodNameOfApp(env.Cluster, "demo-client", clientNamespace)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = k8s.RunKubectlE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(), "delete", "trafficpermission", "allow-all-external-services")
 		Expect(err).ToNot(HaveOccurred())
 	})
 
