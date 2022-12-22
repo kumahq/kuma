@@ -68,8 +68,8 @@ require (
 	k8s.io/client-go v0.26.1
 	k8s.io/klog/v2 v2.80.1
 	k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280
-	k8s.io/utils v0.0.0-20221107191617-1a15be271d1d
-	sigs.k8s.io/controller-runtime v0.13.1
+	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448
+	sigs.k8s.io/controller-runtime v0.14.1
 	sigs.k8s.io/controller-tools v0.11.1
 	// When updating this also update version in: `test/e2e_env/kubernetes/gateway/utils.go`
 	sigs.k8s.io/gateway-api v0.5.1
