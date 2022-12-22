@@ -34,7 +34,7 @@ spec:
     zoneEgress: %s
 `
 
-externalService := `
+	externalService := `
 apiVersion: kuma.io/v1alpha1
 kind: ExternalService
 mesh: default
