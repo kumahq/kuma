@@ -86,7 +86,7 @@ func validateHTTP(http *HTTP) validators.ValidationError {
 		verr.AddErrorAt(path, validateBackOff(http.BackOff))
 	}
 	if http.RetryOn != nil {
-		verr.AddErrorAt(path, validateHTTPRetryOn(http.RetryOn))
+		verr.AddErrorAt(path, validateHTTPRetryOn(*http.RetryOn))
 	}
 	return verr
 }
@@ -134,7 +134,7 @@ func validateGRPC(grpc *GRPC) validators.ValidationError {
 		verr.AddErrorAt(path, validateBackOff(grpc.BackOff))
 	}
 	if grpc.RetryOn != nil {
-		verr.AddErrorAt(path, validateGRPCRetryOn(grpc.RetryOn))
+		verr.AddErrorAt(path, validateGRPCRetryOn(*grpc.RetryOn))
 	}
 	return verr
 }

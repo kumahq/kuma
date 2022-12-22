@@ -114,21 +114,20 @@ type HTTP struct {
 	// BackOff is a configuration of durations which will be used in exponential
 	// backoff strategy between retries
 	BackOff *BackOff `json:"backOff,omitempty"`
-	// +optional
-	// +nullable
-	// RetryOn is a list of conditions which will cause a retry.
-	RetryOn []HTTPRetryOn `json:"retryOn"`
-	// +optional
-	// +nullable
+	// RetryOn is a list of conditions which will cause a retry. Available values are:
+	// [5XX, GATEWAY_ERROR, RESET, RETRIABLE_4XX, CONNECT_FAILURE, ENVOY_RATELIMITED,
+	// REFUSED_STREAM, HTTP3_POST_CONNECT_FAILURE, HTTP_METHOD_CONNECT, HTTP_METHOD_DELETE,
+	// HTTP_METHOD_GET, HTTP_METHOD_HEAD, HTTP_METHOD_OPTIONS, HTTP_METHOD_PATCH,
+	// HTTP_METHOD_POST, HTTP_METHOD_PUT, HTTP_METHOD_TRACE].
+	// Also, any HTTP status code (500, 503, etc).
+	RetryOn *[]HTTPRetryOn `json:"retryOn,omitempty"`
 	// RetriableResponseHeaders is an HTTP response headers that trigger a retry
 	// if present in the response. A retry will be triggered if any of the header
 	// matches match the upstream response headers.
-	RetriableResponseHeaders []common_api.HeaderMatcher `json:"retriableResponseHeaders"`
-	// +optional
-	// +nullable
+	RetriableResponseHeaders *[]common_api.HeaderMatcher `json:"retriableResponseHeaders,omitempty"`
 	// RetriableRequestHeaders is an HTTP headers which must be present in the request
 	// for retries to be attempted.
-	RetriableRequestHeaders []common_api.HeaderMatcher `json:"retriableRequestHeaders"`
+	RetriableRequestHeaders *[]common_api.HeaderMatcher `json:"retriableRequestHeaders,omitempty"`
 }
 
 type GRPCRetryOn string
@@ -164,10 +163,9 @@ type GRPC struct {
 	// BackOff is a configuration of durations which will be used in exponential
 	// backoff strategy between retries
 	BackOff *BackOff `json:"backOff,omitempty"`
-	// +optional
-	// +nullable
-	// RetryOn is a list of conditions which will cause a retry.
-	RetryOn []GRPCRetryOn `json:"retryOn"`
+	// RetryOn is a list of conditions which will cause a retry. Available values are:
+	// [CANCELED, DEADLINE_EXCEEDED, INTERNAL, RESOURCE_EXHAUSTED, UNAVAILABLE]
+	RetryOn *[]GRPCRetryOn `json:"retryOn,omitempty"`
 }
 
 type BackOff struct {

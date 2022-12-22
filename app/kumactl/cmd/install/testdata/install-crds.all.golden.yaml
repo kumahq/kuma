@@ -1378,11 +1378,11 @@ spec:
                                 to 0 will disable it. Default is 15s.
                               type: string
                             retryOn:
-                              description: RetryOn is a list of conditions which will
-                                cause a retry.
+                              description: 'RetryOn is a list of conditions which
+                                will cause a retry. Available values are: [CANCELED,
+                                DEADLINE_EXCEEDED, INTERNAL, RESOURCE_EXHAUSTED, UNAVAILABLE]'
                               items:
                                 type: string
-                              nullable: true
                               type: array
                           type: object
                         http:
@@ -1433,7 +1433,6 @@ spec:
                                   value:
                                     type: string
                                 type: object
-                              nullable: true
                               type: array
                             retriableResponseHeaders:
                               description: RetriableResponseHeaders is an HTTP response
@@ -1453,14 +1452,18 @@ spec:
                                   value:
                                     type: string
                                 type: object
-                              nullable: true
                               type: array
                             retryOn:
-                              description: RetryOn is a list of conditions which will
-                                cause a retry.
+                              description: 'RetryOn is a list of conditions which
+                                will cause a retry. Available values are: [5XX, GATEWAY_ERROR,
+                                RESET, RETRIABLE_4XX, CONNECT_FAILURE, ENVOY_RATELIMITED,
+                                REFUSED_STREAM, HTTP3_POST_CONNECT_FAILURE, HTTP_METHOD_CONNECT,
+                                HTTP_METHOD_DELETE, HTTP_METHOD_GET, HTTP_METHOD_HEAD,
+                                HTTP_METHOD_OPTIONS, HTTP_METHOD_PATCH, HTTP_METHOD_POST,
+                                HTTP_METHOD_PUT, HTTP_METHOD_TRACE]. Also, any HTTP
+                                status code (500, 503, etc).'
                               items:
                                 type: string
-                              nullable: true
                               type: array
                           type: object
                         tcp:

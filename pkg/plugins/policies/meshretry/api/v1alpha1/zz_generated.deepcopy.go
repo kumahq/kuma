@@ -101,8 +101,12 @@ func (in *GRPC) DeepCopyInto(out *GRPC) {
 	}
 	if in.RetryOn != nil {
 		in, out := &in.RetryOn, &out.RetryOn
-		*out = make([]GRPCRetryOn, len(*in))
-		copy(*out, *in)
+		*out = new([]GRPCRetryOn)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]GRPCRetryOn, len(*in))
+			copy(*out, *in)
+		}
 	}
 }
 
@@ -136,18 +140,30 @@ func (in *HTTP) DeepCopyInto(out *HTTP) {
 	}
 	if in.RetryOn != nil {
 		in, out := &in.RetryOn, &out.RetryOn
-		*out = make([]HTTPRetryOn, len(*in))
-		copy(*out, *in)
+		*out = new([]HTTPRetryOn)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]HTTPRetryOn, len(*in))
+			copy(*out, *in)
+		}
 	}
 	if in.RetriableResponseHeaders != nil {
 		in, out := &in.RetriableResponseHeaders, &out.RetriableResponseHeaders
-		*out = make([]commonv1alpha1.HeaderMatcher, len(*in))
-		copy(*out, *in)
+		*out = new([]commonv1alpha1.HeaderMatcher)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]commonv1alpha1.HeaderMatcher, len(*in))
+			copy(*out, *in)
+		}
 	}
 	if in.RetriableRequestHeaders != nil {
 		in, out := &in.RetriableRequestHeaders, &out.RetriableRequestHeaders
-		*out = make([]commonv1alpha1.HeaderMatcher, len(*in))
-		copy(*out, *in)
+		*out = new([]commonv1alpha1.HeaderMatcher)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]commonv1alpha1.HeaderMatcher, len(*in))
+			copy(*out, *in)
+		}
 	}
 }
 
