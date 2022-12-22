@@ -11,11 +11,38 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/plugin/util"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	rate_limit "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 )
+
+func RateLimitConfigurationFromPolicy(rl *api.LocalHTTP) *rate_limit.RateLimitConfiguration {
+	headers := []*rate_limit.Headers{}
+	if rl.OnRateLimit != nil {
+		for _, h := range rl.OnRateLimit.Headers {
+			header := &rate_limit.Headers{
+				Key:   h.Key,
+				Value: h.Value,
+			}
+			if h.Append != nil {
+				header.Append = *h.Append
+			}
+			headers = append(headers, header)
+		}
+	}
+	var status uint32
+	if rl.OnRateLimit != nil && rl.OnRateLimit.Status != nil {
+		status = *rl.OnRateLimit.Status
+	}
+	return &rate_limit.RateLimitConfiguration{
+		Interval: rl.Interval.Duration,
+		Requests: rl.Requests,
+		OnRateLimit: &rate_limit.OnRateLimit{
+			Status:  status,
+			Headers: headers,
+		},
+	}
+}
 
 type Configurer struct {
 	Http *api.LocalHTTP
@@ -40,8 +67,7 @@ func (c *Configurer) ConfigureRoute(route *envoy_route.RouteConfiguration) error
 	if route == nil {
 		return nil
 	}
-	rateLimit, err := rate_limit.NewRateLimitConfiguration(
-		util.RateLimitConfigurationFromPolicy(c.Http))
+	rateLimit, err := rate_limit.NewRateLimitConfiguration(RateLimitConfigurationFromPolicy(c.Http))
 	if err != nil {
 		return err
 	}
@@ -54,8 +80,7 @@ func (c *Configurer) ConfigureRoute(route *envoy_route.RouteConfiguration) error
 }
 
 func (c *Configurer) configureHttpListener(filterChain *envoy_listener.FilterChain) error {
-	rateLimit, err := rate_limit.NewRateLimitConfiguration(
-		util.RateLimitConfigurationFromPolicy(c.Http))
+	rateLimit, err := rate_limit.NewRateLimitConfiguration(RateLimitConfigurationFromPolicy(c.Http))
 	if err != nil {
 		return err
 	}

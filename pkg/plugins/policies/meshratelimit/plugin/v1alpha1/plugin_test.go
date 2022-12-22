@@ -23,6 +23,7 @@ import (
 	test_matchers "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
+	test_xds "github.com/kumahq/kuma/pkg/test/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -43,7 +44,7 @@ var _ = Describe("MeshRateLimit", func() {
 			resourceSet := core_xds.NewResourceSet()
 			resourceSet.Add(given.resources...)
 
-			context := samples.CreateSimpleMeshContext()
+			context := test_xds.CreateSampleMeshContext()
 			proxy := core_xds.Proxy{
 				Dataplane: builders.Dataplane().
 					WithName("test").
@@ -134,7 +135,7 @@ var _ = Describe("MeshRateLimit", func() {
 											},
 											{
 												Key:   "x-kuma-rate-limit",
-												Value: "-value",
+												Value: "other-value",
 											},
 										},
 									},
@@ -305,7 +306,7 @@ var _ = Describe("MeshRateLimit", func() {
 			Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 		}
 
-		context := samples.CreateSimpleMeshContextWith(resources)
+		context := test_xds.CreateSampleMeshContextWith(resources)
 		proxy := xds.Proxy{
 			APIVersion: "v3",
 			Dataplane:  samples.GatewayDataplane(),

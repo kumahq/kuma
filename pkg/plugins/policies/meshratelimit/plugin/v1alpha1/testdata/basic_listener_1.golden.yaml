@@ -50,7 +50,7 @@ filterChains:
                 - append: false
                   header:
                     key: x-kuma-rate-limit
-                    value: -value
+                    value: other-value
                 statPrefix: rate_limit
                 status:
                   code: 444
