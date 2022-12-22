@@ -37,7 +37,7 @@ spec:
 	externalService := `
 apiVersion: kuma.io/v1alpha1
 kind: ExternalService
-mesh: default
+mesh: %s
 metadata:
   name: external-service-%s
 spec:
@@ -98,7 +98,7 @@ spec:
 
 		// when apply external service
 		err = YamlK8s(fmt.Sprintf(externalService,
-			"1", "1",
+			meshName, "1", "1",
 			"externalservice-http-server.externalservice-namespace.svc.cluster.local", 10080, // .svc.cluster.local is needed, otherwise Kubernetes will resolve this to the real IP
 			"false"))(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -118,7 +118,7 @@ spec:
 
 		// when apply external service
 		err = YamlK8s(fmt.Sprintf(externalService,
-			"2", "2",
+			meshName, "2", "2",
 			"externalservice-https-server.externalservice-namespace.svc.cluster.local", 10080,
 			"true"))(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
