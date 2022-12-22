@@ -86,10 +86,12 @@ func (x *{{.name}}) GetFromList() []core_xds.PolicyItem {
 func (x *To) GetTargetRef() common_api.TargetRef {
 	return x.TargetRef
 }
+{{ if not .skipDefault }}
 
 func (x *To) GetDefault() interface{} {
 	return x.Default
 }
+{{- end }}
 
 func (x *{{.name}}) GetToList() []core_xds.PolicyItem {
 	var result []core_xds.PolicyItem
@@ -102,10 +104,12 @@ func (x *{{.name}}) GetToList() []core_xds.PolicyItem {
 {{- end }}
 
 {{ if .generateGetPolicyItem}}
+{{ if not .skipDefault }}
 
 func (x *{{.name}}) GetDefault() interface{} {
 	return x.Default
 }
+{{- end }}
 
 func (x *{{.name}}) GetPolicyItem() core_xds.PolicyItem {
 	return &policyItem{
