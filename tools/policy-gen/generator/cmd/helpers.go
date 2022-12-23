@@ -34,6 +34,7 @@ func newHelpers(rootArgs *args) *cobra.Command {
 				"version":               pconfig.Package,
 				"generateTo":            pconfig.HasTo,
 				"generateFrom":          pconfig.HasFrom,
+				"skipGetDefault":        pconfig.SkipGetDefault,
 				"generateGetPolicyItem": !pconfig.HasFrom && !pconfig.HasTo,
 			}, outPath)
 		},
@@ -64,10 +65,12 @@ func (x *{{.name}}) GetTargetRef() common_api.TargetRef {
 func (x *From) GetTargetRef() common_api.TargetRef {
 	return x.TargetRef
 }
+{{ if not .skipGetDefault }}
 
 func (x *From) GetDefault() interface{} {
 	return x.Default
 }
+{{- end }}
 
 func (x *{{.name}}) GetFromList() []core_xds.PolicyItem {
 	var result []core_xds.PolicyItem
@@ -83,10 +86,12 @@ func (x *{{.name}}) GetFromList() []core_xds.PolicyItem {
 func (x *To) GetTargetRef() common_api.TargetRef {
 	return x.TargetRef
 }
+{{ if not .skipGetDefault }}
 
 func (x *To) GetDefault() interface{} {
 	return x.Default
 }
+{{- end }}
 
 func (x *{{.name}}) GetToList() []core_xds.PolicyItem {
 	var result []core_xds.PolicyItem
@@ -99,10 +104,12 @@ func (x *{{.name}}) GetToList() []core_xds.PolicyItem {
 {{- end }}
 
 {{ if .generateGetPolicyItem}}
+{{ if not .skipGetDefault }}
 
 func (x *{{.name}}) GetDefault() interface{} {
 	return x.Default
 }
+{{- end }}
 
 func (x *{{.name}}) GetPolicyItem() core_xds.PolicyItem {
 	return &policyItem{
