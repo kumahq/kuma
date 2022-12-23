@@ -1,0 +1,22 @@
+address:
+  socketAddress:
+    address: 127.0.0.1
+    portValue: 17778
+enableReusePort: false
+filterChains:
+- filters:
+  - name: envoy.extensions.filters.network.local_ratelimit.v3.LocalRateLimit
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.network.local_ratelimit.v3.LocalRateLimit
+      statPrefix: tcp_rate_limit
+      tokenBucket:
+        fillInterval: 10s
+        maxTokens: 100
+        tokensPerFill: 100
+  - name: envoy.filters.network.tcp_proxy
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+      cluster: frontend
+      statPrefix: "127_0_0_1_17778"
+name: inbound:127.0.0.1:17778
+trafficDirection: INBOUND

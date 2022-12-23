@@ -40,22 +40,12 @@ func validateFrom(from []From) validators.ValidationError {
 	for idx, fromItem := range from {
 		path := validators.RootedAt("from").Index(idx)
 		defaultField := path.Field("default")
-		verr.Add(validateDefault(defaultField, fromItem.Default))
-		hasTcpConfig := isTcp(fromItem.Default)
-		supportedKinds := []common_api.TargetRefKind{
-			common_api.Mesh,
-			common_api.MeshSubset,
-			common_api.MeshService,
-			common_api.MeshServiceSubset,
-		}
-		if hasTcpConfig {
-			supportedKinds = []common_api.TargetRefKind{
-				common_api.Mesh,
-			}
-		}
 		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(fromItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
-			SupportedKinds: supportedKinds,
+			SupportedKinds: []common_api.TargetRefKind{
+				common_api.Mesh,
+			},
 		}))
+		verr.Add(validateDefault(defaultField, fromItem.Default))
 	}
 	return verr
 }

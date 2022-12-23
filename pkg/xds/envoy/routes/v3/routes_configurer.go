@@ -239,7 +239,7 @@ func (c *RoutesConfigurer) typedPerFilterConfig(route *envoy_common.Route) (map[
 	typedPerFilterConfig := map[string]*anypb.Any{}
 
 	if route.RateLimit != nil {
-		rateLimit, err := NewRateLimitConfiguration(route.RateLimit.GetConf().GetHttp())
+		rateLimit, err := NewRateLimitConfiguration(RateLimitConfigurationFromProto(route.RateLimit))
 		if err != nil {
 			return nil, err
 		}

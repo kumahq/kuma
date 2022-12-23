@@ -274,6 +274,24 @@ violations:
     message: value is not supported
   - field: spec.from[0].targetRef.kind
     message: value is not supported`}),
+			Entry("not allow from to be MeshService", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshGatewayRoute
+  name: web-frontend
+from:
+- targetRef:
+    kind: MeshService
+    name: backend
+  default:
+    local:
+      http:
+        requests: 100
+        interval: 500ms`,
+				expected: `
+violations:
+  - field: spec.from[0].targetRef.kind
+    message: value is not supported`}),
 		)
 	})
 })
