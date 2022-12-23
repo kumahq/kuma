@@ -29,6 +29,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.autoscaling.targetCPUUtilizationPercentage | int | `80` | For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used |
 | controlPlane.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | For clusters that do support autoscaling/v2beta, use metrics |
 | controlPlane.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the Kuma Control Plane pods |
+| controlPlane.tolerations | list | `[]` | Tolerations for the Kuma Control Plane pods |
 | controlPlane.podDisruptionBudget.enabled | bool | `false` | Whether to create a pod disruption budget |
 | controlPlane.podDisruptionBudget.maxUnavailable | int | `1` | The maximum number of unavailable pods allowed by the budget |
 | controlPlane.affinity | object | `{"podAntiAffinity":{"preferredDuringSchedulingIgnoredDuringExecution":[{"podAffinityTerm":{"labelSelector":{"matchExpressions":[{"key":"app.kubernetes.io/name","operator":"In","values":["{{ include \"kuma.name\" . }}"]},{"key":"app.kubernetes.io/instance","operator":"In","values":["{{ .Release.Name }}"]},{"key":"app","operator":"In","values":["{{ include \"kuma.name\" . }}-control-plane"]}]},"topologyKey":"kubernetes.io/hostname"},"weight":100}]}}` | Affinity placement rule for the Kuma Control Plane pods. This is rendered as a template, so you can reference other helm variables or includes. |
@@ -85,6 +86,7 @@ A Helm chart for the Kuma Control Plane
 | cni.confName | string | `"kuma-cni.conf"` | Set the CNI configuration name |
 | cni.logLevel | string | `"info"` | CNI log level: one of off,info,debug |
 | cni.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node Selector for the CNI pods |
+| cni.tolerations | list | `[]` | Tolerations for the CNI pods |
 | cni.podAnnotations | object | `{}` | Additional pod annotations |
 | cni.image.registry | string | `"docker.io/kumahq"` | CNI image registry |
 | cni.image.repository | string | `"install-cni"` | CNI image repository |
@@ -125,6 +127,7 @@ A Helm chart for the Kuma Control Plane
 | ingress.annotations | object | `{}` | Additional pod annotations (deprecated favor `podAnnotations`) |
 | ingress.podAnnotations | object | `{}` | Additional pod annotations |
 | ingress.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node Selector for the Ingress pods |
+| ingress.tolerations | list | `[]` | Tolerations for the Ingress pods |
 | ingress.podDisruptionBudget.enabled | bool | `false` | Whether to create a pod disruption budget |
 | ingress.podDisruptionBudget.maxUnavailable | int | `1` | The maximum number of unavailable pods allowed by the budget |
 | ingress.affinity | object | `{"podAntiAffinity":{"preferredDuringSchedulingIgnoredDuringExecution":[{"podAffinityTerm":{"labelSelector":{"matchExpressions":[{"key":"app.kubernetes.io/name","operator":"In","values":["{{ include \"kuma.name\" . }}"]},{"key":"app.kubernetes.io/instance","operator":"In","values":["{{ .Release.Name }}"]},{"key":"app","operator":"In","values":["kuma-ingress"]}]},"topologyKey":"kubernetes.io/hostname"},"weight":100}]}}` | Affinity placement rule for the Kuma Ingress pods This is rendered as a template, so you can reference other helm variables or includes. |
@@ -149,6 +152,7 @@ A Helm chart for the Kuma Control Plane
 | egress.annotations | object | `{}` | Additional pod annotations (deprecated favor `podAnnotations`) |
 | egress.podAnnotations | object | `{}` | Additional pod annotations |
 | egress.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node Selector for the Egress pods |
+| egress.tolerations | list | `[]` | Tolerations for the Egress pods |
 | egress.podDisruptionBudget.enabled | bool | `false` | Whether to create a pod disruption budget |
 | egress.podDisruptionBudget.maxUnavailable | int | `1` | The maximum number of unavailable pods allowed by the budget |
 | egress.affinity | object | `{"podAntiAffinity":{"preferredDuringSchedulingIgnoredDuringExecution":[{"podAffinityTerm":{"labelSelector":{"matchExpressions":[{"key":"app.kubernetes.io/name","operator":"In","values":["{{ include \"kuma.name\" . }}"]},{"key":"app.kubernetes.io/instance","operator":"In","values":["{{ .Release.Name }}"]},{"key":"app","operator":"In","values":["kuma-egress"]}]},"topologyKey":"kubernetes.io/hostname"},"weight":100}]}}` | Affinity placement rule for the Kuma Egress pods. This is rendered as a template, so you can reference other helm variables or includes. |
@@ -161,6 +165,7 @@ A Helm chart for the Kuma Control Plane
 | kubectl.image.repository | string | `"kubectl"` | The kubectl image repository |
 | kubectl.image.tag | string | `"v1.20.15"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
+| hooks.tolerations | list | `[]` | Tolerations for the HELM hooks |
 | hooks.podSecurityContext | object | `{}` | Security context at the pod level for crd/webhook/ns |
 | hooks.containerSecurityContext | object | `{}` | Security context at the container level for crd/webhook/ns |
 | experimental.gatewayAPI | bool | `false` | If true, it installs experimental Gateway API support |

@@ -32,6 +32,10 @@ spec:
       nodeSelector:
       {{ toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.cni.tolerations }}
+      tolerations:
+      {{ toYaml . | nindent 8 }}
+      {{- end }}
       hostNetwork: true
       tolerations:
         # Make sure kuma-cni-node gets scheduled on all nodes.

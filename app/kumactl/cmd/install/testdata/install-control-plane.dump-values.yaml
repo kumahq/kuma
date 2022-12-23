@@ -64,6 +64,9 @@ controlPlane:
   nodeSelector:
     kubernetes.io/os: linux
 
+  # -- Tolerations for the Kuma Control Plane pods
+  tolerations: []
+
   podDisruptionBudget:
     # -- Whether to create a pod disruption budget
     enabled: false
@@ -311,6 +314,8 @@ cni:
   # -- Node Selector for the CNI pods
   nodeSelector:
     kubernetes.io/os: linux
+  # -- Tolerations for the CNI pods
+  tolerations: []
   # -- Additional pod annotations
   podAnnotations: { }
 
@@ -453,7 +458,8 @@ ingress:
   # -- Node Selector for the Ingress pods
   nodeSelector:
     kubernetes.io/os: linux
-
+  # -- Tolerations for the Ingress pods
+  tolerations: []
   podDisruptionBudget:
     # -- Whether to create a pod disruption budget
     enabled: false
@@ -564,7 +570,8 @@ egress:
   # -- Node Selector for the Egress pods
   nodeSelector:
     kubernetes.io/os: linux
-
+  # -- Tolerations for the Egress pods
+  tolerations: []
   podDisruptionBudget:
     # -- Whether to create a pod disruption budget
     enabled: false
@@ -644,7 +651,8 @@ hooks:
   # -- Node selector for the HELM hooks
   nodeSelector:
     kubernetes.io/os: linux
-
+  # -- Tolerations for the HELM hooks
+  tolerations: []
   # -- Security context at the pod level for crd/webhook/ns
   podSecurityContext: {}
 #    # The values below are examples. More values can be added as needed, since the field resolves as free form.
