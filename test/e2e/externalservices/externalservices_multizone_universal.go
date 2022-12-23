@@ -128,7 +128,7 @@ routing:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	AfterAll(func() {
+	E2EAfterAll(func() {
 		Expect(external.DismissCluster()).To(Succeed())
 		Expect(zone1.DismissCluster()).To(Succeed())
 		Expect(zone2.DismissCluster()).To(Succeed())
