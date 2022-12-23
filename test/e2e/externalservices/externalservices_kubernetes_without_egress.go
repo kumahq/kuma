@@ -75,7 +75,7 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	AfterAll(func() {
+	E2EAfterAll(func() {
 		err := cluster.DeleteNamespace(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
 
