@@ -153,43 +153,39 @@ conf:
 		Expect(global.DismissCluster()).To(Succeed())
 	})
 
-	Context("passthrough false with zoneegress false", func() {
-		BeforeAll(func() {
-			Expect(YamlUniversal(fmt.Sprintf(meshMTLSOn, nonDefaultMesh, "false", "false"))(global)).To(Succeed())
-		})
+	It("passthrough false with zoneegress false", func() {
+		Expect(YamlUniversal(fmt.Sprintf(meshMTLSOn, nonDefaultMesh, "false", "false"))(global)).To(Succeed())
 
-		It("should reach external service from k8s", func() {
-			_, _, err := zone1.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
+		By("reaching external service from k8s")
+		Eventually(func(g Gomega) {
+			_, _, err := zone1.Exec(TestNamespace, clientPodName, "demo-client",
 				"curl", "--verbose", "--max-time", "3", "--fail", "external-service-1.mesh")
-			Expect(err).ToNot(HaveOccurred())
-		})
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "1s").Should(Succeed())
 
-		It("should reach external service from universal", func() {
-			_, _, err := zone4.ExecWithRetries("", "", "zone4-demo-client",
+		By("reaching external service from universal")
+		Eventually(func(g Gomega) {
+			_, _, err := zone4.Exec("", "", "zone4-demo-client",
 				"curl", "-v", "-m", "3", "--fail", "external-service-2.mesh")
-			Expect(err).ToNot(HaveOccurred())
-		})
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "1s").Should(Succeed())
 	})
 
-	Context("passthrough false with zoneegress true", func() {
-		BeforeAll(func() {
-			Expect(YamlUniversal(fmt.Sprintf(meshMTLSOn, nonDefaultMesh, "false", "true"))(global)).To(Succeed())
-		})
+	It("passthrough false with zoneegress true", func() {
+		Expect(YamlUniversal(fmt.Sprintf(meshMTLSOn, nonDefaultMesh, "false", "true"))(global)).To(Succeed())
 
-		It("should not reach external service from k8s when zone egress is down", func() {
-			Eventually(func() error {
-				_, _, err := zone1.Exec(TestNamespace, clientPodName, "demo-client",
-					"curl", "--verbose", "--max-time", "3", "--fail", "external-service-1.mesh")
-				return err
-			}, "30s", "1s").Should(HaveOccurred())
-		})
+		By("not reaching external service from k8s when zone egress is down")
+		Eventually(func() error {
+			_, _, err := zone1.Exec(TestNamespace, clientPodName, "demo-client",
+				"curl", "--verbose", "--max-time", "3", "--fail", "external-service-1.mesh")
+			return err
+		}, "30s", "1s").Should(HaveOccurred())
 
-		It("should not reach external service from universal when zone egress is down", func() {
-			Eventually(func() error {
-				_, _, err := zone4.Exec("", "", "zone4-demo-client",
-					"curl", "-v", "-m", "3", "--fail", "external-service-2.mesh")
-				return err
-			}, "30s", "1s").Should(HaveOccurred())
-		})
+		By("not reaching external service from universal when zone egress is down")
+		Eventually(func() error {
+			_, _, err := zone4.Exec("", "", "zone4-demo-client",
+				"curl", "-v", "-m", "3", "--fail", "external-service-2.mesh")
+			return err
+		}, "30s", "1s").Should(HaveOccurred())
 	})
 }

@@ -13,7 +13,6 @@ import (
 	"os/exec"
 	"path"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -25,10 +24,11 @@ import (
 )
 
 type CollectResponsesOpts struct {
-	NumberOfRequests int
-	URL              string
-	Method           string
-	Headers          map[string]string
+	numberOfRequests      int
+	maxConcurrentRequests int
+	URL                   string
+	Method                string
+	Headers               map[string]string
 
 	Flags        []string
 	ShellEscaped func(string) string
@@ -41,12 +41,14 @@ type CollectResponsesOpts struct {
 
 func DefaultCollectResponsesOpts() CollectResponsesOpts {
 	return CollectResponsesOpts{
-		NumberOfRequests: 10,
-		Method:           "GET",
-		Headers:          map[string]string{},
-		ShellEscaped:     utils.ShellEscape,
+		numberOfRequests:      10,
+		maxConcurrentRequests: 10,
+		Method:                "GET",
+		Headers:               map[string]string{},
+		ShellEscaped:          utils.ShellEscape,
 		Flags: []string{
 			"--fail",
+			"--max-time", "5",
 		},
 	}
 }
@@ -55,7 +57,13 @@ type CollectResponsesOptsFn func(opts *CollectResponsesOpts)
 
 func WithNumberOfRequests(numberOfRequests int) CollectResponsesOptsFn {
 	return func(opts *CollectResponsesOpts) {
-		opts.NumberOfRequests = numberOfRequests
+		opts.numberOfRequests = numberOfRequests
+	}
+}
+
+func WithMaxConcurrentReqeusts(maxConcurrentRequests int) CollectResponsesOptsFn {
+	return func(opts *CollectResponsesOpts) {
+		opts.maxConcurrentRequests = maxConcurrentRequests
 	}
 }
 
@@ -205,9 +213,9 @@ func CollectTCPResponse(
 		}
 	}
 
-	stdout, _, err := cluster.ExecWithRetries(opts.namespace, appPodName, container, cmd...)
+	stdout, stderr, err := cluster.Exec(opts.namespace, appPodName, container, cmd...)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("stderr: '%s', %v", stderr, err)
 	}
 
 	return stdout, nil
@@ -222,7 +230,6 @@ func CollectResponse(
 	opts := CollectOptions(destination, fn...)
 	cmd := collectCommand(opts, "curl",
 		"--request", opts.Method,
-		"--max-time", "3",
 		opts.ShellEscaped(opts.URL),
 	)
 
@@ -235,9 +242,9 @@ func CollectResponse(
 		}
 	}
 
-	stdout, _, err := cluster.ExecWithRetries(opts.namespace, appPodName, container, cmd...)
+	stdout, stderr, err := cluster.Exec(opts.namespace, appPodName, container, cmd...)
 	if err != nil {
-		return types.EchoResponse{}, err
+		return types.EchoResponse{}, fmt.Errorf("stderr: '%s', %v", stderr, err)
 	}
 
 	response := &types.EchoResponse{}
@@ -402,66 +409,74 @@ func CollectResponsesAndFailures(
 	container, destination string,
 	fn ...CollectResponsesOptsFn,
 ) ([]FailureResponse, error) {
-	var mut sync.Mutex
-	var responses []FailureResponse
-	var wg sync.WaitGroup
-	var err error
-
-	opts := CollectOptions(destination, fn...)
-
-	wg.Add(opts.NumberOfRequests)
-
-	for i := 0; i < opts.NumberOfRequests; i++ {
-		go func() {
-			defer wg.Done()
-
-			response, collectErr := CollectFailure(cluster, container, destination, fn...)
-			if collectErr != nil {
-				err = collectErr
-				return
-			}
-
-			mut.Lock()
-			responses = append(responses, response)
-			mut.Unlock()
-		}()
-	}
-
-	wg.Wait()
-
+	res, err := callConcurrently(destination, func() (interface{}, error) {
+		return CollectFailure(cluster, container, destination, fn...)
+	}, fn...)
 	if err != nil {
 		return nil, err
 	}
-
-	// 3. Finally, report the JSON status and no execution error
-	// since the JSON contains all the Curl error information.
+	responses := make([]FailureResponse, len(res))
+	for i := range res {
+		responses[i] = res[i].(FailureResponse)
+	}
 	return responses, nil
 }
 
 func CollectResponses(cluster framework.Cluster, source, destination string, fn ...CollectResponsesOptsFn) ([]types.EchoResponse, error) {
-	opts := CollectOptions(destination, fn...)
-
-	mut := sync.Mutex{}
-	var responses []types.EchoResponse
-
-	var wg sync.WaitGroup
-	var err error
-	for i := 0; i < opts.NumberOfRequests; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			response, localErr := CollectResponse(cluster, source, destination, fn...)
-			if localErr != nil {
-				err = localErr
-			}
-			mut.Lock()
-			responses = append(responses, response)
-			mut.Unlock()
-		}()
-	}
-	wg.Wait()
+	res, err := callConcurrently(destination, func() (interface{}, error) {
+		return CollectResponse(cluster, source, destination, fn...)
+	}, fn...)
 	if err != nil {
 		return nil, err
+	}
+	responses := make([]types.EchoResponse, len(res))
+	for i := range res {
+		responses[i] = res[i].(types.EchoResponse)
+	}
+	return responses, nil
+}
+
+type result struct {
+	idx int
+	res interface{}
+	err error
+}
+
+func callConcurrently(destination string, call func() (interface{}, error), fn ...CollectResponsesOptsFn) ([]interface{}, error) {
+	opts := CollectOptions(destination, fn...)
+	var responses []interface{}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	inJobs := make(chan result, opts.numberOfRequests)
+	results := make(chan result, opts.numberOfRequests)
+	for i := 0; i < opts.maxConcurrentRequests; i++ {
+		go func() {
+			for {
+				select {
+				case res, ok := <-inJobs:
+					if !ok {
+						return
+					}
+					res.res, res.err = call()
+					results <- res
+				case <-ctx.Done():
+					return
+				}
+			}
+		}()
+	}
+	for i := 0; i < opts.numberOfRequests; i++ {
+		inJobs <- result{idx: i}
+	}
+	close(inJobs)
+	for i := 0; i < opts.numberOfRequests; i++ {
+		res := <-results
+		if res.err != nil {
+			framework.Logf("got error", "idx", res.idx, "err", res.err)
+			return nil, res.err
+		}
+		responses = append(responses, res.res)
 	}
 	return responses, nil
 }

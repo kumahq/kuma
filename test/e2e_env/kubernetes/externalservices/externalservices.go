@@ -106,10 +106,12 @@ spec:
 
 		It("should route to external-service", func() {
 			// given working communication outside of the mesh with passthrough enabled and no traffic permission
-			_, stderr, err := env.Cluster.ExecWithRetries(clientNamespace, clientPodName, "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "http://external-service.external-services:80")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+			Eventually(func(g Gomega) {
+				_, stderr, err := env.Cluster.Exec(clientNamespace, clientPodName, "demo-client",
+					"curl", "-v", "-m", "3", "--fail", "http://external-service.external-services:80")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+			}).Should(Succeed())
 
 			// when passthrough is disabled on the Mesh
 			Expect(env.Cluster.Install(YamlK8s(meshPassthroughDisabled))).To(Succeed())
@@ -127,16 +129,20 @@ spec:
 			Expect(env.Cluster.Install(YamlK8s(trafficPermission))).To(Succeed())
 
 			// then you can access external service again
-			_, stderr, err = env.Cluster.ExecWithRetries(clientNamespace, clientPodName, "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "http://external-service.external-services:80")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+			Eventually(func(g Gomega) {
+				_, stderr, err := env.Cluster.Exec(clientNamespace, clientPodName, "demo-client",
+					"curl", "-v", "-m", "3", "--fail", "http://external-service.external-services:80")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+			}).Should(Succeed())
 
 			// and you can also use .mesh on port of the provided host
-			_, stderr, err = env.Cluster.ExecWithRetries(clientNamespace, clientPodName, "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "http://external-service.mesh:80")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+			Eventually(func(g Gomega) {
+				_, stderr, err := env.Cluster.Exec(clientNamespace, clientPodName, "demo-client",
+					"curl", "-v", "-m", "3", "--fail", "http://external-service.mesh:80")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+			}).Should(Succeed())
 		})
 	})
 
@@ -187,10 +193,12 @@ spec:
 		})
 
 		It("should access tls external service", func() {
-			_, stderr, err := env.Cluster.ExecWithRetries(clientNamespace, clientPodName, "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "http://tls-external-service.mesh:80")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+			Eventually(func(g Gomega) {
+				_, stderr, err := env.Cluster.Exec(clientNamespace, clientPodName, "demo-client",
+					"curl", "-v", "-m", "3", "--fail", "http://tls-external-service.mesh:80")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+			}).Should(Succeed())
 		})
 	})
 }

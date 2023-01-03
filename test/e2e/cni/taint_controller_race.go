@@ -88,19 +88,19 @@ metadata:
 			Expect(err).ToNot(HaveOccurred())
 
 			Eventually(func() (string, error) {
-				_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
+				_, stderr, err := cluster.Exec(TestNamespace, clientPodName, "demo-client",
 					"curl", "-v", "-m", "3", "--fail", "test-server")
 				return stderr, err
 			}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
 
 			Eventually(func() (string, error) {
-				_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
+				_, stderr, err := cluster.Exec(TestNamespace, clientPodName, "demo-client",
 					"curl", "-v", "-m", "3", "--fail", "test-server_kuma-test_svc_80.mesh")
 				return stderr, err
 			}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
 
 			Eventually(func() (string, error) { // should access a service with . instead of _
-				_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
+				_, stderr, err := cluster.Exec(TestNamespace, clientPodName, "demo-client",
 					"curl", "-v", "-m", "3", "--fail", "test-server.kuma-test.svc.80.mesh")
 				return stderr, err
 			}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))

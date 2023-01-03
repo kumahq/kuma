@@ -10,7 +10,7 @@ import (
 )
 
 func TestE2E(t *testing.T) {
-	test.RunSpecs(t, "E2E Ebpf Suite")
+	test.RunE2ESpecs(t, "E2E Ebpf Suite")
 }
 
 var _ = Describe("Test Cleanup eBPF", Label("job-0"), Label("arm-not-supported"), Label("legacy-k3s-not-supported"), ebpf.CleanupEbpfConfigFromNode, Ordered)

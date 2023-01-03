@@ -2,7 +2,6 @@ package meshhealthcheck
 
 import (
 	"fmt"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -78,10 +77,10 @@ networking:
 	})
 
 	It("should switch to panic mode and dismiss all requests", func() {
-		Eventually(func() bool {
+		Eventually(func(g Gomega) {
 			stdout, _, _ := env.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "test-server.mesh")
-			return strings.Contains(stdout, "no healthy upstream")
-		}, "120m", "1m").Should(BeTrue())
+			g.Expect(stdout).To(ContainSubstring("no healthy upstream"))
+		}, "30s", "500ms").Should(Succeed())
 	})
 }

@@ -17,63 +17,43 @@ type Stats struct {
 
 func BeEqual(expected interface{}) types.GomegaMatcher {
 	return &statMatcher{
-		expected:  expected,
-		predicate: &equalPredicate,
-	}
-}
-
-func BeGreaterThan(other StatItem) types.GomegaMatcher {
-	fn := greaterThanOther(other)
-	return &statMatcher{
-		predicate: &fn,
-	}
-}
-
-func BeGreaterThanZero() types.GomegaMatcher {
-	return &statMatcher{
-		predicate: &greaterThanZeroPredicate,
+		predicate: func(item StatItem) bool {
+			return item.Value == expected
+		},
+		msg: func() string {
+			return fmt.Sprintf("equal %v", expected)
+		},
 	}
 }
 
 func BeEqualZero() types.GomegaMatcher {
+	return BeEqual(float64(0))
+}
+
+func BeGreaterThan(other interface{}) types.GomegaMatcher {
+	var expected float64
+	if si, ok := other.(StatItem); ok {
+		expected = si.Value.(float64)
+	} else {
+		expected = other.(float64)
+	}
 	return &statMatcher{
-		predicate: &equalZeroPredicate,
+		predicate: func(item StatItem) bool {
+			return item.Value.(float64) > expected
+		},
+		msg: func() string {
+			return fmt.Sprintf("greater than %v", expected)
+		},
 	}
 }
 
-var equalZero = func(stat StatItem) bool {
-	return stat.Value.(float64) == 0
-}
-
-var equalZeroPredicate = func(interface{}) func(item StatItem) bool {
-	return equalZero
-}
-
-var greaterThanZero = func(stat StatItem) bool {
-	return stat.Value.(float64) > 0
-}
-
-var greaterThanZeroPredicate = func(interface{}) func(item StatItem) bool {
-	return greaterThanZero
-}
-
-var equalPredicate = func(expected interface{}) func(item StatItem) bool {
-	return func(stat StatItem) bool {
-		return int(stat.Value.(float64)) == expected.(int)
-	}
-}
-
-func greaterThanOther(other StatItem) func(interface{}) func(StatItem) bool {
-	return func(expected interface{}) func(item StatItem) bool {
-		return func(item StatItem) bool {
-			return item.Value.(float64) > other.Value.(float64)
-		}
-	}
+func BeGreaterThanZero() types.GomegaMatcher {
+	return BeGreaterThan(float64(0))
 }
 
 type statMatcher struct {
-	expected  interface{}
-	predicate *func(interface{}) func(StatItem) bool
+	predicate func(StatItem) bool
+	msg       func() string
 }
 
 func (m *statMatcher) Match(actual interface{}) (success bool, err error) {
@@ -90,32 +70,17 @@ func (m *statMatcher) Match(actual interface{}) (success bool, err error) {
 		return false, fmt.Errorf("actual stats have more items than 1: %+q", stats)
 	}
 
-	return (*m.predicate)(m.expected)(stats.Stats[0]), nil
-}
-
-func (m *statMatcher) genFailureMessage(toBeOrNotToBe string, actual interface{}) (message string) {
-	actualStats := actual.(*Stats)
-	actualStat := actualStats.Stats[0]
-
-	var expectation string
-	switch m.predicate {
-	case &equalPredicate:
-		expectation = fmt.Sprintf("%s: %v %s equal %v", toBeOrNotToBe, actualStat.Name, actualStat.Value, m.expected)
-	case &equalZeroPredicate:
-		expectation = fmt.Sprintf("%s: %v %s equal 0", toBeOrNotToBe, actualStat.Name, actualStat.Value)
-	case &greaterThanZeroPredicate:
-		expectation = fmt.Sprintf("%s: %v %s greater than 0", actualStat.Name, actualStat.Value, toBeOrNotToBe)
-	default:
-		panic("unknown predicate")
-	}
-
-	return fmt.Sprintf("Expected %s", expectation)
+	return m.predicate(stats.Stats[0]), nil
 }
 
 func (m *statMatcher) FailureMessage(actual interface{}) (message string) {
-	return m.genFailureMessage("to be", actual)
+	actualStats := actual.(*Stats)
+	actualStat := actualStats.Stats[0]
+	return fmt.Sprintf(": %v %s to be: %s", actualStat.Name, actualStat.Value, m.msg())
 }
 
 func (m *statMatcher) NegatedFailureMessage(actual interface{}) (message string) {
-	return m.genFailureMessage("not to be", actual)
+	actualStats := actual.(*Stats)
+	actualStat := actualStats.Stats[0]
+	return fmt.Sprintf(": %v %s not to be: %s", actualStat.Name, actualStat.Value, m.msg())
 }

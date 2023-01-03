@@ -24,19 +24,17 @@ func CleanupEbpfConfigFromNode() {
 	}
 
 	var cluster Cluster
-	var k8sCluster *K8sCluster
 	releaseName := fmt.Sprintf(
 		"kuma-%s",
 		strings.ToLower(random.UniqueId()),
 	)
 
 	BeforeAll(func() {
-		k8sCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
-		cluster = k8sCluster.
+		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent).
 			WithTimeout(6 * time.Second).
 			WithRetries(60)
 
-		Expect(NewClusterSetup().
+		err := NewClusterSetup().
 			Install(Kuma(core.Standalone,
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
@@ -50,8 +48,9 @@ func CleanupEbpfConfigFromNode() {
 			Install(ebpf_checker.Install(
 				ebpf_checker.WithNamespace(TestNamespace),
 				ebpf_checker.WithoutSidecar(),
-			)).
-			Setup(cluster)).ToNot(HaveOccurred())
+			)).Setup(cluster)
+
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterAll(func() {

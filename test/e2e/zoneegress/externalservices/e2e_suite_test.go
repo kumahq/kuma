@@ -10,7 +10,7 @@ import (
 )
 
 func TestE2E(t *testing.T) {
-	test.RunSpecs(t, "E2E ZoneEgress for ExternalServices Suite")
+	test.RunE2ESpecs(t, "E2E ZoneEgress for ExternalServices Suite")
 }
 
 // arm-not-supported because of https://github.com/kumahq/kuma/issues/4822

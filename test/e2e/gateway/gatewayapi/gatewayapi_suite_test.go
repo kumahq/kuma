@@ -7,5 +7,5 @@ import (
 )
 
 func TestE2E(t *testing.T) {
-	test.RunSpecs(t, "E2E Gateway API Suite")
+	test.RunE2ESpecs(t, "E2E Gateway API Suite")
 }

@@ -39,10 +39,12 @@ func MeshTrafficPermissionUniversal() {
 	})
 
 	trafficAllowed := func() {
-		stdout, _, err := env.Cluster.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "--fail", "test-server.mesh")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Eventually(func(g Gomega) {
+			stdout, _, err := env.Cluster.Exec("", "", "demo-client",
+				"curl", "-v", "--fail", "test-server.mesh")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		}).Should(Succeed())
 	}
 
 	trafficBlocked := func() {
@@ -50,7 +52,7 @@ func MeshTrafficPermissionUniversal() {
 			_, _, err := env.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "--fail", "test-server.mesh")
 			return err
-		}, "30s", "1s").Should(HaveOccurred())
+		}).Should(HaveOccurred())
 	}
 
 	It("should allow the traffic with meshtrafficpermission based on MeshService", func() {

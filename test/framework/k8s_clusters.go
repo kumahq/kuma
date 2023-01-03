@@ -83,10 +83,6 @@ func (cs *K8sClusters) Exec(namespace, podName, containerName string, cmd ...str
 	panic("not supported")
 }
 
-func (cs *K8sClusters) ExecWithRetries(namespace, podName, containerName string, cmd ...string) (string, string, error) {
-	panic("not supported")
-}
-
 func (cs *K8sClusters) GetCluster(name string) Cluster {
 	c, found := cs.clusters[name]
 	if !found {

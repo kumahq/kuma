@@ -3,7 +3,6 @@ package healthcheck
 import (
 	"encoding/base64"
 	"fmt"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -51,7 +50,6 @@ conf:
 				Setup(env.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
-
 		E2EAfterAll(func() {
 			Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
 			Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
@@ -59,29 +57,31 @@ conf:
 
 		It("should mark host as unhealthy if it doesn't reply on health checks", func() {
 			// check that test-server is healthy
-			cmd := []string{"curl", "--fail", "test-server.mesh/content"}
-			stdout, _, err := env.Cluster.ExecWithRetries("", "", "dp-demo-client", cmd...)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(stdout).To(ContainSubstring("response"))
+			Eventually(func(g Gomega) {
+				cmd := []string{"curl", "--fail", "test-server.mesh/content"}
+				stdout, _, err := env.Cluster.Exec("", "", "dp-demo-client", cmd...)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stdout).To(ContainSubstring("response"))
+			}).Should(Succeed())
 
 			// update HealthCheck policy to check for another status code
 			Expect(YamlUniversal(healthCheck(meshName, "are-you-healthy", "500"))(env.Cluster)).To(Succeed())
 
 			// wait cluster 'test-server' to be marked as unhealthy
-			Eventually(func() bool {
+			Eventually(func(g Gomega) {
 				cmd := []string{"/bin/bash", "-c", "\"curl localhost:9901/clusters | grep test-server\""}
-				stdout, _, err := env.Cluster.ExecWithRetries("", "", "dp-demo-client", cmd...)
-				if err != nil {
-					return false
-				}
-				return strings.Contains(stdout, "health_flags::/failed_active_hc")
-			}, "30s", "500ms").Should(BeTrue())
+				stdout, _, err := env.Cluster.Exec("", "", "dp-demo-client", cmd...)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stdout).To(ContainSubstring("health_flags::/failed_active_hc"))
+			}).Should(Succeed())
 
 			// check that test-server is unhealthy
-			cmd = []string{"curl", "test-server.mesh/content"}
-			stdout, _, err = env.Cluster.ExecWithRetries("", "", "dp-demo-client", cmd...)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(stdout).To(ContainSubstring("no healthy upstream"))
+			Consistently(func(g Gomega) {
+				cmd := []string{"curl", "test-server.mesh/content"}
+				stdout, _, err := env.Cluster.Exec("", "", "dp-demo-client", cmd...)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stdout).To(ContainSubstring("no healthy upstream"))
+			}).Should(Succeed())
 		})
 	}, Ordered)
 
@@ -135,34 +135,36 @@ conf:
 
 		It("should mark host as unhealthy if it doesn't reply on health checks", func() {
 			// check that test-server is healthy
-			cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server.mesh 80\""}
-			stdout, _, err := env.Cluster.ExecWithRetries("", "", "dp-demo-client", cmd...)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(stdout).To(ContainSubstring("response"))
+			Eventually(func(g Gomega) {
+				cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server.mesh 80\""}
+				stdout, _, err := env.Cluster.Exec("", "", "dp-demo-client", cmd...)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stdout).To(ContainSubstring("response"))
+			}).Should(Succeed())
 
 			// update HealthCheck policy to check for another 'recv' line
 			Expect(YamlUniversal(healthCheck(meshName, "test-server", "foo", "baz"))(env.Cluster)).To(Succeed())
 
 			// wait cluster 'test-server' to be marked as unhealthy
-			Eventually(func() bool {
+			Eventually(func(g Gomega) {
 				cmd := []string{"/bin/bash", "-c", "\"curl localhost:9901/clusters | grep test-server\""}
-				stdout, _, err := env.Cluster.ExecWithRetries("", "", "dp-demo-client", cmd...)
-				if err != nil {
-					return false
-				}
-				return strings.Contains(stdout, "health_flags::/failed_active_hc")
-			}, "30s", "500ms").Should(BeTrue())
+				stdout, _, err := env.Cluster.Exec("", "", "dp-demo-client", cmd...)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stdout).To(ContainSubstring("health_flags::/failed_active_hc"))
+			}, "30s", "1s").Should(Succeed())
 
-			cmd = []string{"/bin/bash", "-c", "\"echo request | nc test-server.mesh 80\""}
-			stdout, _, _ = env.Cluster.ExecWithRetries("", "", "dp-demo-client", cmd...)
+			Consistently(func(g Gomega) {
+				cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server.mesh 80\""}
+				stdout, _, _ := env.Cluster.Exec("", "", "dp-demo-client", cmd...)
 
-			// there is no real attempt to setup a connection with test-server, but Envoy may return either
-			// empty response with EXIT_CODE = 0, or  'Ncat: Connection reset by peer.' with EXIT_CODE = 1
-			Expect(stdout).To(Or(BeEmpty(), ContainSubstring("Ncat: Connection reset by peer.")))
+				// there is no real attempt to setup a connection with test-server, but Envoy may return either
+				// empty response with EXIT_CODE = 0, or  'Ncat: Connection reset by peer.' with EXIT_CODE = 1
+				g.Expect(stdout).To(Or(BeEmpty(), ContainSubstring("Ncat: Connection reset by peer.")))
+			}).Should(Succeed())
 		})
 	}, Ordered)
 
-	Context("TCP with permissive mTLS", func() {
+	Describe("TCP with permissive mTLS", func() {
 		mtlsPermissiveMesh := func(mesh string) InstallFunc {
 			return YamlUniversal(fmt.Sprintf(`
 type: Mesh
@@ -223,32 +225,33 @@ conf:
 			Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 		})
 
-		It("should mark host as unhealthy if it doesn't reply on health checks when Permissive mTLS enabled", func() {
+		It("should mark host as unhealthy if it doesn't reply on health checks", func() {
 			// check that test-server-mtls is healthy
-			cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server-mtls.mesh 80\""}
-			stdout, _, err := env.Cluster.ExecWithRetries("", "", "dp-demo-client-mtls", cmd...)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(stdout).To(ContainSubstring("response"))
+			Eventually(func(g Gomega) {
+				cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server-mtls.mesh 80\""}
+				stdout, _, err := env.Cluster.Exec("", "", "dp-demo-client-mtls", cmd...)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stdout).To(ContainSubstring("response"))
+			}).Should(Succeed())
 
 			// update HealthCheck policy to check for another 'recv' line
 			Expect(YamlUniversal(healthCheck(meshName, "test-server-mtls", "foo", "baz"))(env.Cluster)).To(Succeed())
 
 			// wait cluster 'test-server-mtls' to be marked as unhealthy
-			Eventually(func() bool {
+			Eventually(func(g Gomega) {
 				cmd := []string{"/bin/bash", "-c", "\"curl localhost:9901/clusters | grep test-server-mtls\""}
-				stdout, _, err := env.Cluster.ExecWithRetries("", "", "dp-demo-client-mtls", cmd...)
-				if err != nil {
-					return false
-				}
-				return strings.Contains(stdout, "health_flags::/failed_active_hc")
-			}, "30s", "500ms").Should(BeTrue())
+				stdout, _, err := env.Cluster.Exec("", "", "dp-demo-client-mtls", cmd...)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stdout).To(ContainSubstring("health_flags::/failed_active_hc"))
+			}, "30s", "1s").Should(Succeed())
 
-			cmd = []string{"/bin/bash", "-c", "\"echo request | nc test-server-mtls.mesh 80\""}
-			stdout, _, _ = env.Cluster.ExecWithRetries("", "", "dp-demo-client-mtls", cmd...)
-
-			// there is no real attempt to setup a connection with test-server, but Envoy may return either
-			// empty response with EXIT_CODE = 0, or  'Ncat: Connection reset by peer.' with EXIT_CODE = 1
-			Expect(stdout).To(Or(BeEmpty(), ContainSubstring("Ncat: Connection reset by peer.")))
+			Consistently(func(g Gomega) {
+				cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server-mtls.mesh 80\""}
+				stdout, _, _ := env.Cluster.Exec("", "", "dp-demo-client-mtls", cmd...)
+				// there is no real attempt to setup a connection with test-server, but Envoy may return either
+				// empty response with EXIT_CODE = 0, or  'Ncat: Connection reset by peer.' with EXIT_CODE = 1
+				g.Expect(stdout).To(Or(BeEmpty(), ContainSubstring("Ncat: Connection reset by peer.")))
+			}).Should(Succeed())
 		})
 	}, Ordered)
 }
