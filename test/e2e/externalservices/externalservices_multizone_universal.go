@@ -139,29 +139,37 @@ routing:
 		err := ResourceUniversal(externalServiceRes(es1, "kuma-3_externalservice-http-server:80", false, nil))(global)
 		Expect(err).ToNot(HaveOccurred())
 
-		stdout, _, err := zone1.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "external-service-1.mesh")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
+		Eventually(func(g Gomega) {
+			stdout, _, err := zone1.Exec("", "", "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "external-service-1.mesh")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(stdout).ToNot(ContainSubstring("HTTPS"))
+		}, "1m", "3s").Should(Succeed())
 
-		stdout, _, err = zone1.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "kuma-3_externalservice-http-server:80")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
+		Eventually(func(g Gomega) {
+			stdout, _, err := zone1.Exec("", "", "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "kuma-3_externalservice-http-server:80")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(stdout).ToNot(ContainSubstring("HTTPS"))
+		}, "1m", "3s").Should(Succeed())
 
-		stdout, _, err = zone2.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "external-service-1.mesh")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
+		Eventually(func(g Gomega) {
+			stdout, _, err := zone2.Exec("", "", "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "external-service-1.mesh")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(stdout).ToNot(ContainSubstring("HTTPS"))
+		}, "1m", "3s").Should(Succeed())
 
-		stdout, _, err = zone2.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "kuma-3_externalservice-http-server:80")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
+		Eventually(func(g Gomega) {
+			stdout, _, err := zone2.Exec("", "", "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "kuma-3_externalservice-http-server:80")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(stdout).ToNot(ContainSubstring("HTTPS"))
+		}, "1m", "3s").Should(Succeed())
 	})
 
 	It("should route to external-service over tls", func() {
@@ -172,9 +180,11 @@ routing:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then accessing the secured external service fails
-		_, _, err = zone1.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "http://kuma-3_externalservice-https-server:443")
-		Expect(err).To(HaveOccurred())
+		Eventually(func(g Gomega) {
+			_, _, err = zone1.Exec("", "", "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "http://kuma-3_externalservice-https-server:443")
+			g.Expect(err).To(HaveOccurred())
+		}, "1m", "3s").Should(Succeed())
 
 		// when set proper certificate
 		externalServiceCaCert := externalservice.From(external, externalservice.HttpsServer).GetCert()
@@ -184,17 +194,21 @@ routing:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then accessing the secured external service succeeds
-		stdout, _, err := zone1.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "http://kuma-3_externalservice-https-server:443")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-		Expect(stdout).To(ContainSubstring("HTTPS"))
+		Eventually(func(g Gomega) {
+			stdout, _, err := zone1.Exec("", "", "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "http://kuma-3_externalservice-https-server:443")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(stdout).To(ContainSubstring("HTTPS"))
+		}, "1m", "3s").Should(Succeed())
 
-		stdout, _, err = zone2.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "http://kuma-3_externalservice-https-server:443")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-		Expect(stdout).To(ContainSubstring("HTTPS"))
+		Eventually(func(g Gomega) {
+			stdout, _, err := zone2.Exec("", "", "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "http://kuma-3_externalservice-https-server:443")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(stdout).To(ContainSubstring("HTTPS"))
+		}, "1m", "3s").Should(Succeed())
 	})
 
 	It("should respect external-service's zone tag in locality-aware lb mode", func() {

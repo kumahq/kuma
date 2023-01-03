@@ -144,7 +144,7 @@ spec:
 			tcpSinkPodName, err := PodNameOfApp(env.Cluster, tcpSinkAppName, tcpSinkNamespace)
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(func() error {
-				_, _, err = env.Cluster.ExecWithRetries(trafficNamespace, clientPodName,
+				_, _, err = env.Cluster.Exec(trafficNamespace, clientPodName,
 					AppModeDemoClient, "curl", "-v", "--fail", "test-server")
 				if err != nil {
 					return err
@@ -160,7 +160,7 @@ spec:
 				}
 				startTimeStr, src, dst = parts[0], parts[1], parts[2]
 				return nil
-			}, "30s", "1ms").ShouldNot(HaveOccurred())
+			}).ShouldNot(HaveOccurred())
 			startTimeInt, err := strconv.Atoi(startTimeStr)
 			Expect(err).ToNot(HaveOccurred())
 			startTime := time.Unix(int64(startTimeInt), 0)

@@ -24,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/membership"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshcircuitbreaker"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshhealthcheck"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshratelimit"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshtimeout"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/observability"
@@ -34,7 +35,7 @@ import (
 )
 
 func TestE2E(t *testing.T) {
-	test.RunSpecs(t, "E2E Kubernetes Suite")
+	test.RunE2ESpecs(t, "E2E Kubernetes Suite")
 }
 
 var _ = SynchronizedBeforeSuite(
@@ -100,7 +101,7 @@ var _ = SynchronizedAfterSuite(func() {}, func() {})
 var _ = Describe("Virtual Probes", healthcheck.VirtualProbes, Ordered)
 var _ = Describe("Gateway", gateway.Gateway, Ordered)
 var _ = Describe("Gateway - Cross-mesh", gateway.CrossMeshGatewayOnKubernetes, Ordered)
-var _ = Describe("Gateway - Gateway API", gateway.GatewayAPI, Ordered)
+var _ = Describe("Gateway - Gateway API", Label("arm-not-supported"), gateway.GatewayAPI, Ordered)
 var _ = Describe("Gateway - mTLS", gateway.Mtls, Ordered)
 var _ = Describe("Gateway - Resources", gateway.Resources, Ordered)
 var _ = Describe("Graceful", graceful.Graceful, Ordered)
@@ -120,6 +121,7 @@ var _ = Describe("External Services", externalservices.ExternalServices, Ordered
 var _ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)
 var _ = Describe("Kong Ingress Controller", Label("arm-not-supported"), kic.KICKubernetes, Ordered)
 var _ = Describe("MeshTrafficPermission API", meshtrafficpermission.API, Ordered)
+var _ = Describe("MeshRateLimit API", meshratelimit.API, Ordered)
 var _ = Describe("MeshTimeout API", meshtimeout.MeshTimeout, Ordered)
 var _ = Describe("MeshHealthCheck API", meshhealthcheck.API, Ordered)
 var _ = Describe("MeshCircuitBreaker API", meshcircuitbreaker.API, Ordered)

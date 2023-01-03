@@ -10,7 +10,7 @@ import (
 )
 
 func TestE2E(t *testing.T) {
-	test.RunSpecs(t, "E2E Projected SAT")
+	test.RunE2ESpecs(t, "E2E Projected SAT")
 }
 
 var _ = Describe("Test Projected Service Account Token on Universal", Label("job-0"), projectedsatoken.ProjectedServiceAccountToken)

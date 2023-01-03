@@ -68,26 +68,32 @@ conf:
 		time.Sleep(5 * time.Second)
 
 		// Check we can reach the first instance
-		stdout, stderr, err := env.Cluster.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "test-server.1:8080")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(BeEmpty())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-		Expect(stdout).To(ContainSubstring(`"instance":"srv-1"`))
+		Eventually(func(g Gomega) {
+			stdout, stderr, err := env.Cluster.Exec("", "", "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "test-server.1:8080")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stderr).To(BeEmpty())
+			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(stdout).To(ContainSubstring(`"instance":"srv-1"`))
+		}).Should(Succeed())
 
 		// Check we can reach the second instance
-		stdout, stderr, err = env.Cluster.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "test-server.2:8080")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(BeEmpty())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-		Expect(stdout).To(ContainSubstring(`"instance":"srv-2"`))
+		Eventually(func(g Gomega) {
+			stdout, stderr, err := env.Cluster.Exec("", "", "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "test-server.2:8080")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stderr).To(BeEmpty())
+			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(stdout).To(ContainSubstring(`"instance":"srv-2"`))
+		}).Should(Succeed())
 
-		stdout, stderr, err = env.Cluster.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "test-server:8080")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(BeEmpty())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-		Expect(stdout).To(Or(ContainSubstring(`"instance":"srv-2"`), ContainSubstring(`"instance":"srv-1"`)))
+		Eventually(func(g Gomega) {
+			stdout, stderr, err := env.Cluster.Exec("", "", "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "test-server:8080")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stderr).To(BeEmpty())
+			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(stdout).To(Or(ContainSubstring(`"instance":"srv-2"`), ContainSubstring(`"instance":"srv-1"`)))
+		}).Should(Succeed())
 	})
 }

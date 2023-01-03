@@ -86,18 +86,16 @@ func CrossMeshGatewayOnUniversal() {
 	Context("when mTLS is enabled", func() {
 		It("should proxy HTTP requests from a different mesh", func() {
 			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
-			successfullyProxyRequestToGateway(
-				env.Cluster, demoClientOtherMesh, gatewayMesh,
-				gatewayAddr,
-			)
+			Eventually(successfullyProxyRequestToGateway(
+				env.Cluster, demoClientOtherMesh, gatewayMesh, gatewayAddr,
+			), "30s", "1s").Should(Succeed())
 		})
 
 		It("should proxy HTTP requests from the same mesh", func() {
 			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
-			successfullyProxyRequestToGateway(
-				env.Cluster, demoClientInMesh, gatewayMesh,
-				gatewayAddr,
-			)
+			Eventually(successfullyProxyRequestToGateway(
+				env.Cluster, demoClientInMesh, gatewayMesh, gatewayAddr,
+			)).Should(Succeed())
 		})
 
 		It("doesn't allow HTTP requests from outside the mesh", func() {
@@ -109,18 +107,17 @@ func CrossMeshGatewayOnUniversal() {
 
 		Specify("HTTP requests to a non-crossMesh gateway should still be proxied", func() {
 			gatewayAddr := net.JoinHostPort(env.Cluster.GetApp(edgeGatewayName).GetIP(), strconv.Itoa(edgeGatewayPort))
-			successfullyProxyRequestToGateway(
-				env.Cluster, demoClientOtherMesh, gatewayOtherMesh,
-				gatewayAddr,
-			)
+			Eventually(successfullyProxyRequestToGateway(
+				env.Cluster, demoClientOtherMesh, gatewayOtherMesh, gatewayAddr,
+			)).Should(Succeed())
 		})
 
 		It("should be reachable without transparent proxy", func() {
 			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
-			successfullyProxyRequestToGateway(
+			Eventually(successfullyProxyRequestToGateway(
 				env.Cluster, demoClientNoTransparent, gatewayMesh,
 				gatewayAddr, client.Resolve(gatewayAddr, "127.0.0.1"),
-			)
+			)).Should(Succeed())
 		})
 	})
 }

@@ -12,6 +12,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
@@ -161,6 +163,9 @@ conf:
 `, mesh))),
 			).To(Succeed())
 		})
+		AfterAll(func() {
+			Expect(DeleteMeshResources(env.Cluster, mesh, core_mesh.RateLimitResourceTypeDescriptor)).To(Succeed())
+		})
 
 		It("should be rate limited", func() {
 			gatewayAddr := GatewayAddressPort("gateway-proxy", gatewayPort)
@@ -174,6 +179,52 @@ conf:
 
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.ResponseCode).To(Equal(429))
+			}, "30s", "1s").Should(Succeed())
+		})
+	})
+
+	Context("when a MeshRateLimit is configured", func() {
+		BeforeAll(func() {
+			Expect(
+				env.Cluster.Install(YamlUniversal(fmt.Sprintf(`
+type: MeshRateLimit
+mesh: "%s"
+name: mesh-rate-limit-all-sources
+spec:
+  targetRef:
+    kind: MeshService
+    name: edge-gateway
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        local:
+          http:
+            requests: 1
+            interval: 10s
+            onRateLimit:
+              status: 428
+              headers:
+                - key: "x-kuma-rate-limited"
+                  value: "true"`, mesh))),
+			).To(Succeed())
+		})
+		AfterAll(func() {
+			Expect(DeleteMeshResources(env.Cluster, mesh, api.MeshRateLimitResourceTypeDescriptor)).To(Succeed())
+		})
+
+		It("should be rate limited", func() {
+			gatewayAddr := GatewayAddressPort("gateway-proxy", gatewayPort)
+			Logf("expecting 428 response from %q", gatewayAddr)
+			Eventually(func(g Gomega) {
+				target := fmt.Sprintf("http://%s/%s",
+					gatewayAddr, path.Join("test", url.PathEscape(GinkgoT().Name())),
+				)
+
+				response, err := client.CollectFailure(env.Cluster, "gateway-client", target, client.WithHeader("Host", "example.kuma.io"))
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(428))
 			}, "30s", "1s").Should(Succeed())
 		})
 	})

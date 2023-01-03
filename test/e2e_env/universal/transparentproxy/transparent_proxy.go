@@ -34,19 +34,21 @@ func TransparentProxy() {
 		Eventually(func(g Gomega) {
 			_, err := client.CollectResponses(env.Cluster, "tp-client", "test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
-		}, "30s", "1s").Should(Succeed())
+		}).Should(Succeed())
 
 		// when
-		stdout, _, err := env.Cluster.ExecWithRetries("", "", "tp-client",
-			"/usr/bin/kumactl", "install", "transparent-proxy",
-			"--kuma-dp-user", "kuma-dp", "--verbose")
-		Expect(stdout).To(ContainSubstring("Transparent proxy set up successfully"))
-		Expect(err).ToNot(HaveOccurred())
+		Eventually(func(g Gomega) {
+			stdout, _, err := env.Cluster.Exec("", "", "tp-client",
+				"/usr/bin/kumactl", "install", "transparent-proxy",
+				"--kuma-dp-user", "kuma-dp", "--verbose")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).To(ContainSubstring("Transparent proxy set up successfully"))
+		}).Should(Succeed())
 
 		// then
 		Eventually(func(g Gomega) {
 			_, err := client.CollectResponses(env.Cluster, "tp-client", "test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
-		}, "30s", "1s").Should(Succeed())
+		}).Should(Succeed())
 	})
 }

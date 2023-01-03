@@ -1,0 +1,48 @@
+address:
+  socketAddress:
+    address: 127.0.0.1
+    portValue: 17777
+enableReusePort: false
+filterChains:
+- filters:
+  - name: envoy.filters.network.http_connection_manager
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+      httpFilters:
+      - name: envoy.filters.http.router
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+      routeConfig:
+        name: inbound:backend
+        requestHeadersToRemove:
+        - x-kuma-tags
+        validateClusters: false
+        virtualHosts:
+        - domains:
+          - '*'
+          name: backend
+          routes:
+          - match:
+              prefix: /
+            route:
+              cluster: backend
+              timeout: 0s
+            typedPerFilterConfig:
+              envoy.filters.http.local_ratelimit:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                filterEnabled:
+                  defaultValue:
+                    numerator: 100
+                  runtimeKey: local_rate_limit_enabled
+                filterEnforced:
+                  defaultValue:
+                    numerator: 100
+                  runtimeKey: local_rate_limit_enforced
+                statPrefix: rate_limit
+                tokenBucket:
+                  fillInterval: 14s
+                  maxTokens: 100
+                  tokensPerFill: 100
+      statPrefix: "127_0_0_1_17777"
+name: inbound:127.0.0.1:17777
+trafficDirection: INBOUND

@@ -127,8 +127,6 @@ spec:
 			CaptureStdout:      true,
 			CaptureStderr:      true,
 			PreserveWhitespace: false,
-			Retries:            DefaultRetries,
-			Timeout:            DefaultTimeout,
 		})
 	}
 
@@ -149,6 +147,14 @@ spec:
 
 		go keepConnectionOpen()
 
+		Eventually(func(g Gomega) {
+			_, err := client.CollectResponse(
+				env.Cluster, "demo-client", target,
+				client.FromKubernetesPod(curlingClientNamespace, "demo-client"),
+			)
+
+			g.Expect(err).ToNot(HaveOccurred())
+		}).Should(Succeed())
 		Consistently(func(g Gomega) {
 			response, err := client.CollectResponse(
 				env.Cluster, "demo-client", target,

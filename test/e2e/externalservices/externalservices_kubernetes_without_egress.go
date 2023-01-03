@@ -98,20 +98,24 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then communication outside of the Mesh works
-		_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace:10080")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Eventually(func(g Gomega) {
+			_, stderr, err := cluster.Exec(TestNamespace, clientPodName, "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace:10080")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+		}, "1m", "3s").Should(Succeed())
 
 		// when passthrough is disabled on the Mesh and no egress
 		err = YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "false", "false"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then communication outside of the Mesh works
-		_, stderr, err = cluster.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace:10080")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Eventually(func(g Gomega) {
+			_, stderr, err := cluster.Exec(TestNamespace, clientPodName, "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace:10080")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+		}, "1m", "3s").Should(Succeed())
 
 		// when apply external service
 		err = YamlK8s(fmt.Sprintf(externalService,

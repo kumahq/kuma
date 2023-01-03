@@ -3,7 +3,6 @@ package auth_test
 import (
 	"encoding/json"
 	"testing"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -22,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/membership"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshaccesslog"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshhealthcheck"
+	"github.com/kumahq/kuma/test/e2e_env/universal/meshratelimit"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/universal/mtls"
 	"github.com/kumahq/kuma/test/e2e_env/universal/observability"
@@ -40,11 +40,7 @@ import (
 )
 
 func TestE2E(t *testing.T) {
-	SetDefaultConsistentlyDuration(time.Second * 5)
-	SetDefaultConsistentlyPollingInterval(time.Millisecond * 200)
-	SetDefaultEventuallyPollingInterval(time.Millisecond * 500)
-	SetDefaultEventuallyTimeout(time.Second * 10)
-	test.RunSpecs(t, "E2E Universal Suite")
+	test.RunE2ESpecs(t, "E2E Universal Suite")
 }
 
 var _ = SynchronizedBeforeSuite(
@@ -94,7 +90,7 @@ var _ = Describe("Gateway - Cross-mesh", gateway.CrossMeshGatewayOnUniversal, Or
 var _ = Describe("HealthCheck panic threshold", healthcheck.HealthCheckPanicThreshold, Ordered)
 var _ = Describe("HealthCheck", healthcheck.Policy)
 var _ = Describe("MeshHealthCheck panic threshold", meshhealthcheck.MeshHealthCheckPanicThreshold, Ordered)
-var _ = Describe("HealthCheck", meshhealthcheck.MeshHealthCheck)
+var _ = Describe("MeshHealthCheck", meshhealthcheck.MeshHealthCheck)
 var _ = Describe("Service Probes", healthcheck.ServiceProbes, Ordered)
 var _ = Describe("External Services", externalservices.Policy, Ordered)
 var _ = Describe("Inspect", inspect.Inspect, Ordered)
@@ -119,4 +115,5 @@ var _ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)
 var _ = Describe("Transparent Proxy", transparentproxy.TransparentProxy, Ordered)
 var _ = Describe("Mesh Traffic Permission", meshtrafficpermission.MeshTrafficPermissionUniversal, Ordered)
 var _ = Describe("GRPC", grpc.GRPC, Ordered)
+var _ = Describe("MeshRateLimit", meshratelimit.Policy, Ordered)
 var _ = Describe("MeshTimeout", timeout.PluginTest, Ordered)

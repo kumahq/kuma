@@ -56,10 +56,12 @@ destinations:
 	})
 
 	trafficAllowed := func() {
-		stdout, _, err := env.Cluster.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "--fail", "test-server.mesh")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Eventually(func(g Gomega) {
+			stdout, _, err := env.Cluster.Exec("", "", "demo-client",
+				"curl", "-v", "--fail", "test-server.mesh")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		}).Should(Succeed())
 	}
 
 	trafficBlocked := func() {

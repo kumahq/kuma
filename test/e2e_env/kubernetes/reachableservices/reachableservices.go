@@ -48,28 +48,34 @@ func ReachableServices() {
 	})
 
 	It("should be able to connect to reachable services", func() {
-		// when
-		_, stderr, err := env.Cluster.ExecWithRetries(namespace, clientPodName, "client-server",
-			"curl", "-v", "-m", "3", "--fail", "first-test-server_reachable-svc_svc_80.mesh")
+		Eventually(func(g Gomega) {
+			// when
+			_, stderr, err := env.Cluster.Exec(namespace, clientPodName, "client-server",
+				"curl", "-v", "-m", "3", "--fail", "first-test-server_reachable-svc_svc_80.mesh")
 
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+			// then
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+		}).Should(Succeed())
 	})
 
 	It("should not connect to non reachable service", func() {
-		// when trying to connect to non-reachable services via Kuma DNS
-		_, _, err := env.Cluster.Exec(namespace, clientPodName, "client-server",
-			"curl", "-v", "second-test-server_reachable-svc_svc_80.mesh")
+		Consistently(func(g Gomega) {
+			// when trying to connect to non-reachable services via Kuma DNS
+			_, _, err := env.Cluster.Exec(namespace, clientPodName, "client-server",
+				"curl", "-v", "second-test-server_reachable-svc_svc_80.mesh")
 
-		// then it fails because Kuma DP has no such DNS
-		Expect(err).To(HaveOccurred())
+			// then it fails because Kuma DP has no such DNS
+			g.Expect(err).To(HaveOccurred())
+		}).Should(Succeed())
 
-		// when trying to connect to non-reachable service via Kubernetes DNS
-		_, _, err = env.Cluster.Exec(namespace, clientPodName, "client-server",
-			"curl", "-v", "second-test-server")
+		Consistently(func(g Gomega) {
+			// when trying to connect to non-reachable service via Kubernetes DNS
+			_, _, err := env.Cluster.Exec(namespace, clientPodName, "client-server",
+				"curl", "-v", "second-test-server")
 
-		// then it fails because we don't encrypt traffic to unknown destination in the mesh
-		Expect(err).To(HaveOccurred())
+			// then it fails because we don't encrypt traffic to unknown destination in the mesh
+			g.Expect(err).To(HaveOccurred())
+		}).Should(Succeed())
 	})
 }

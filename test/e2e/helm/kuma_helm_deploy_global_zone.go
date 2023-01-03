@@ -103,7 +103,7 @@ interCp:
 				return false, nil
 			}
 			return clustersStatus[0].Active, nil
-		}, time.Minute, DefaultTimeout).Should(BeTrue())
+		}, "1m", "1s").Should(BeTrue())
 
 		// then
 		active := true
