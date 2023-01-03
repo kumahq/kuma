@@ -35,29 +35,35 @@ type Configurer struct {
 	Protocol core_mesh.Protocol
 }
 
-func (c *Configurer) ConfigureListener(filterChain *envoy_listener.FilterChain) error {
-	httpTimeouts := func(hcm *envoy_hcm.HttpConnectionManager) error {
-		if c.Conf.Http != nil {
-			hcm.StreamIdleTimeout = toProtoDurationOrDefault(c.Conf.Http.StreamIdleTimeout, defaultStreamIdleTimeout)
-			c.configureRequestTimeout(hcm.GetRouteConfig())
-		} else {
-			hcm.StreamIdleTimeout = util_proto.Duration(defaultStreamIdleTimeout)
-			c.configureRequestTimeout(hcm.GetRouteConfig())
-		}
+func (c *Configurer) ConfigureListener(listener *envoy_listener.Listener) error {
+	if listener == nil {
 		return nil
 	}
-	tcpTimeouts := func(proxy *envoy_tcp.TcpProxy) error {
-		proxy.IdleTimeout = toProtoDurationOrDefault(c.Conf.IdleTimeout, defaultIdleTimeout)
-		return nil
-	}
-	switch c.Protocol {
-	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
-		if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, httpTimeouts); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
-			return err
+
+	for _, filterChain := range listener.FilterChains {
+		httpTimeouts := func(hcm *envoy_hcm.HttpConnectionManager) error {
+			if c.Conf.Http != nil {
+				hcm.StreamIdleTimeout = toProtoDurationOrDefault(c.Conf.Http.StreamIdleTimeout, defaultStreamIdleTimeout)
+				c.configureRequestTimeout(hcm.GetRouteConfig())
+			} else {
+				hcm.StreamIdleTimeout = util_proto.Duration(defaultStreamIdleTimeout)
+				c.configureRequestTimeout(hcm.GetRouteConfig())
+			}
+			return nil
 		}
-	case core_mesh.ProtocolUnknown, core_mesh.ProtocolTCP, core_mesh.ProtocolKafka:
-		if err := listeners_v3.UpdateTCPProxy(filterChain, tcpTimeouts); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
-			return err
+		tcpTimeouts := func(proxy *envoy_tcp.TcpProxy) error {
+			proxy.IdleTimeout = toProtoDurationOrDefault(c.Conf.IdleTimeout, defaultIdleTimeout)
+			return nil
+		}
+		switch c.Protocol {
+		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
+			if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, httpTimeouts); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
+				return err
+			}
+		case core_mesh.ProtocolUnknown, core_mesh.ProtocolTCP, core_mesh.ProtocolKafka:
+			if err := listeners_v3.UpdateTCPProxy(filterChain, tcpTimeouts); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
+				return err
+			}
 		}
 	}
 
