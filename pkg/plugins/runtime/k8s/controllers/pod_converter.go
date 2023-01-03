@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/pkg/errors"
-	kube_apps "k8s.io/api/apps/v1"
 	kube_core "k8s.io/api/core/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -27,8 +27,8 @@ var (
 type PodConverter struct {
 	ServiceGetter       kube_client.Reader
 	NodeGetter          kube_client.Reader
-	ReplicaSetGetter    kube_client.Reader
 	ResourceConverter   k8s_common.Converter
+	InboundConverter    InboundConverter
 	Zone                string
 	KubeOutboundsAsVIPs bool
 }
@@ -60,10 +60,10 @@ func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.Z
 	return nil
 }
 
-func (p *PodConverter) PodToEgress(zoneEgress *mesh_k8s.ZoneEgress, pod *kube_core.Pod, services []*kube_core.Service) error {
+func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.ZoneEgress, pod *kube_core.Pod, services []*kube_core.Service) error {
 	zoneEgressProto := &mesh_proto.ZoneEgress{}
 	// Pass the current dataplane, so we won't override available services in Egress section
-	if err := p.EgressFor(zoneEgressProto, pod, services); err != nil {
+	if err := p.EgressFor(ctx, zoneEgressProto, pod, services); err != nil {
 		return err
 	}
 
@@ -128,7 +128,7 @@ func (p *PodConverter) dataplaneFor(
 	if exist {
 		switch gwType {
 		case "enabled":
-			gateway, err := GatewayByServiceFor(p.Zone, pod, services)
+			gateway, err := p.GatewayByServiceFor(ctx, p.Zone, pod, services)
 			if err != nil {
 				return nil, err
 			}
@@ -143,7 +143,7 @@ func (p *PodConverter) dataplaneFor(
 			return nil, errors.Errorf("invalid delegated gateway type '%s'", gwType)
 		}
 	} else {
-		ifaces, err := InboundInterfacesFor(p.Zone, pod, services)
+		ifaces, err := p.InboundConverter.InboundInterfacesFor(ctx, p.Zone, pod, services)
 		if err != nil {
 			return nil, err
 		}
@@ -181,8 +181,8 @@ func (p *PodConverter) dataplaneFor(
 	return dataplane, nil
 }
 
-func GatewayByServiceFor(clusterName string, pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {
-	interfaces, err := InboundInterfacesFor(clusterName, pod, services)
+func (p *PodConverter) GatewayByServiceFor(ctx context.Context, clusterName string, pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {
+	interfaces, err := p.InboundConverter.InboundInterfacesFor(ctx, clusterName, pod, services)
 	if err != nil {
 		return nil, err
 	}
@@ -192,46 +192,14 @@ func GatewayByServiceFor(clusterName string, pod *kube_core.Pod, services []*kub
 	}, nil
 }
 
-// DeploymentFor returns the name of the deployment that the pod exists within. The second return
-// value indicates whether or not the deployment was found when no error occurs, otherwise an
-// error is returned as the third return value.
-func (p *PodConverter) DeploymentFor(ctx context.Context, namespace string, pod *kube_core.Pod) (string, bool, error) {
-	owners := pod.GetObjectMeta().GetOwnerReferences()
-	var rs *kube_apps.ReplicaSet
-	for _, owner := range owners {
-		if owner.Kind == "ReplicaSet" {
-			rs = &kube_apps.ReplicaSet{}
-			rsKey := kube_client.ObjectKey{Namespace: namespace, Name: owner.Name}
-			if err := p.ReplicaSetGetter.Get(ctx, rsKey, rs); err != nil {
-				return "", false, err
-			}
-			break
-		}
-	}
-
-	if rs == nil {
-		return "", false, nil
-	}
-
-	rsOwners := rs.GetObjectMeta().GetOwnerReferences()
-	for _, owner := range rsOwners {
-		if owner.Kind == "Deployment" {
-			return owner.Name, true, nil
-		}
-	}
-
-	return "", false, nil
-}
-
 func (p *PodConverter) GatewayByDeploymentFor(ctx context.Context, clusterName string, pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {
 	namespace := pod.GetObjectMeta().GetNamespace()
-	deployment, found, err := p.DeploymentFor(ctx, namespace, pod)
+	deployment, kind, err := p.InboundConverter.NameExtractor.Name(ctx, pod)
 	if err != nil {
 		return nil, err
 	}
-	if !found {
-		// Fall back on old service tags if Pod not part of Deployment
-		return GatewayByServiceFor(clusterName, pod, services)
+	if !strings.Contains(kind, "Deployment") {
+		return p.GatewayByServiceFor(ctx, clusterName, pod, services)
 	}
 	return &mesh_proto.Dataplane_Networking_Gateway{
 		Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,

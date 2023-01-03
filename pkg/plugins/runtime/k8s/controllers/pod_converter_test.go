@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	kube_apps "k8s.io/api/apps/v1"
+	kube_batch "k8s.io/api/batch/v1"
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
@@ -25,6 +26,54 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 )
+
+var ParseReplicaSets = func(values []string) ([]*kube_apps.ReplicaSet, error) {
+	rsets := make([]*kube_apps.ReplicaSet, len(values))
+	for i, value := range values {
+		rset := kube_apps.ReplicaSet{}
+		if err := yaml.Unmarshal([]byte(value), &rset); err != nil {
+			return nil, err
+		}
+		rsets[i] = &rset
+	}
+	return rsets, nil
+}
+
+var ParseJobs = func(values []string) ([]*kube_batch.Job, error) {
+	jobs := make([]*kube_batch.Job, len(values))
+	for i, value := range values {
+		job := kube_batch.Job{}
+		if err := yaml.Unmarshal([]byte(value), &job); err != nil {
+			return nil, err
+		}
+		jobs[i] = &job
+	}
+	return jobs, nil
+}
+
+var ParseServices = func(values []string) ([]*kube_core.Service, error) {
+	services := make([]*kube_core.Service, len(values))
+	for i, value := range values {
+		service := kube_core.Service{}
+		if err := yaml.Unmarshal([]byte(value), &service); err != nil {
+			return nil, err
+		}
+		services[i] = &service
+	}
+	return services, nil
+}
+
+var ParseDataplanes = func(values []string) ([]*mesh_k8s.Dataplane, error) {
+	dataplanes := make([]*mesh_k8s.Dataplane, len(values))
+	for i, value := range values {
+		dataplane := mesh_k8s.Dataplane{}
+		if err := yaml.Unmarshal([]byte(value), &dataplane); err != nil {
+			return nil, err
+		}
+		dataplanes[i] = &dataplane
+	}
+	return dataplanes, nil
+}
 
 var _ = Describe("PodToDataplane(..)", func() {
 
@@ -51,48 +100,13 @@ var _ = Describe("PodToDataplane(..)", func() {
       podIP: 192.168.0.1
 `
 
-	ParseServices := func(values []string) ([]*kube_core.Service, error) {
-		services := make([]*kube_core.Service, len(values))
-		for i, value := range values {
-			service := kube_core.Service{}
-			if err := yaml.Unmarshal([]byte(value), &service); err != nil {
-				return nil, err
-			}
-			services[i] = &service
-		}
-		return services, nil
-	}
-
-	ParseReplicaSets := func(values []string) ([]*kube_apps.ReplicaSet, error) {
-		rsets := make([]*kube_apps.ReplicaSet, len(values))
-		for i, value := range values {
-			rset := kube_apps.ReplicaSet{}
-			if err := yaml.Unmarshal([]byte(value), &rset); err != nil {
-				return nil, err
-			}
-			rsets[i] = &rset
-		}
-		return rsets, nil
-	}
-
-	ParseDataplanes := func(values []string) ([]*mesh_k8s.Dataplane, error) {
-		dataplanes := make([]*mesh_k8s.Dataplane, len(values))
-		for i, value := range values {
-			dataplane := mesh_k8s.Dataplane{}
-			if err := yaml.Unmarshal([]byte(value), &dataplane); err != nil {
-				return nil, err
-			}
-			dataplanes[i] = &dataplane
-		}
-		return dataplanes, nil
-	}
-
 	type testCase struct {
 		pod              string
 		servicesForPod   string
 		otherDataplanes  string
 		otherServices    string
 		otherReplicaSets string
+		otherJobs        string
 		node             string
 		dataplane        string
 	}
@@ -138,14 +152,12 @@ var _ = Describe("PodToDataplane(..)", func() {
 			// other ReplicaSets
 			var replicaSetGetter kube_client.Reader
 			if given.otherReplicaSets != "" {
-				bytes, err = os.ReadFile(filepath.Join("testdata", given.otherReplicaSets))
-				Expect(err).ToNot(HaveOccurred())
-				YAMLs := util_yaml.SplitYAML(string(bytes))
-				rsets, err := ParseReplicaSets(YAMLs)
-				Expect(err).ToNot(HaveOccurred())
-				reader, err := newFakeReplicaSetReader(rsets)
-				Expect(err).ToNot(HaveOccurred())
-				replicaSetGetter = reader
+				replicaSetGetter = getReplicaSetsReader("testdata", given.otherReplicaSets)
+			}
+
+			var jobGetter kube_client.Reader
+			if given.otherJobs != "" {
+				jobGetter = getJobsReader("testdata", given.otherJobs)
 			}
 
 			// other dataplanes
@@ -159,8 +171,13 @@ var _ = Describe("PodToDataplane(..)", func() {
 			}
 
 			converter := PodConverter{
-				ServiceGetter:     serviceGetter,
-				ReplicaSetGetter:  replicaSetGetter,
+				ServiceGetter: serviceGetter,
+				InboundConverter: InboundConverter{
+					NameExtractor: NameExtractor{
+						ReplicaSetGetter: replicaSetGetter,
+						JobGetter:        jobGetter,
+					},
+				},
 				Zone:              "zone-1",
 				ResourceConverter: k8s.NewSimpleConverter(),
 			}
@@ -383,6 +400,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			Expect(err).ToNot(HaveOccurred())
 			err = yaml.Unmarshal(bytes, pod)
 			Expect(err).ToNot(HaveOccurred())
+			ctx := context.Background()
 
 			// services for pod
 			bytes, err = os.ReadFile(filepath.Join("testdata", "egress", given.servicesForPod))
@@ -407,7 +425,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 
 			// when
 			egress := &mesh_k8s.ZoneEgress{}
-			err = converter.PodToEgress(egress, pod, services)
+			err = converter.PodToEgress(ctx, egress, pod, services)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -885,6 +903,85 @@ var _ = Describe("ProtocolTagFor(..)", func() {
 	)
 })
 
+var _ = Describe("Serviceless Name for(...)", func() {
+	type testCase struct {
+		pod          string
+		replicaSets  string
+		jobs         string
+		expectedName string
+		expectedKind string
+	}
+	DescribeTable("should infer name based on the resource type",
+		func(given testCase) {
+			// given
+			ctx := context.Background()
+
+			pod := &kube_core.Pod{}
+			bytes, err := os.ReadFile(filepath.Join("testdata", "serviceless", given.pod))
+			Expect(err).ToNot(HaveOccurred())
+			err = yaml.Unmarshal(bytes, pod)
+			Expect(err).ToNot(HaveOccurred())
+
+			var replicaSetGetter kube_client.Reader
+			if given.replicaSets != "" {
+				replicaSetGetter = getReplicaSetsReader("testdata", "serviceless", given.replicaSets)
+			}
+
+			var jobGetter kube_client.Reader
+			if given.jobs != "" {
+				jobGetter = getJobsReader("testdata", "serviceless", given.jobs)
+			}
+
+			nameExtractor := NameExtractor{
+				ReplicaSetGetter: replicaSetGetter,
+				JobGetter:        jobGetter,
+			}
+
+			// when
+			name, kind, err := nameExtractor.Name(ctx, pod)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(name).To(Equal(given.expectedName))
+			Expect(kind).To(Equal(given.expectedKind))
+		},
+		Entry("name from deployment", testCase{
+			pod:          "01.pod.yaml",
+			replicaSets:  "01.replicasets-for-pod.yaml",
+			expectedName: "test-server",
+			expectedKind: "Deployment",
+		}),
+		Entry("name from cronjob", testCase{
+			pod:          "02.pod.yaml",
+			jobs:         "02.job-for-pod.yaml",
+			expectedName: "test-job",
+			expectedKind: "CronJob",
+		}),
+		Entry("name from replicaset", testCase{
+			pod:          "03.pod.yaml",
+			replicaSets:  "03.replicasets-for-pod.yaml",
+			expectedName: "test",
+			expectedKind: "Pod",
+		}),
+		Entry("name from job", testCase{
+			pod:          "04.pod.yaml",
+			jobs:         "04.job-for-pod.yaml",
+			expectedName: "test",
+			expectedKind: "Pod",
+		}),
+		Entry("name from pod", testCase{
+			pod:          "05.pod.yaml",
+			expectedName: "test",
+			expectedKind: "Pod",
+		}),
+		Entry("name from daemonset", testCase{
+			pod:          "06.pod.yaml",
+			expectedName: "test",
+			expectedKind: "Pod",
+		}),
+	)
+})
+
 type fakeServiceReader map[string]string
 
 func newFakeServiceReader(services []*kube_core.Service) (fakeServiceReader, error) {
@@ -945,6 +1042,20 @@ func newFakeReplicaSetReader(replicaSets []*kube_apps.ReplicaSet) (fakeReplicaSe
 	return replicaSetsMap, nil
 }
 
+type fakeJobReader map[string]string
+
+func newFakeJobReader(jobs []*kube_batch.Job) (fakeJobReader, error) {
+	jobsMap := map[string]string{}
+	for _, job := range jobs {
+		bytes, err := yaml.Marshal(job)
+		if err != nil {
+			return nil, err
+		}
+		jobsMap[job.GetNamespace()+"/"+job.GetName()] = string(bytes)
+	}
+	return jobsMap, nil
+}
+
 var _ kube_client.Reader = fakeReplicaSetReader{}
 
 func (r fakeReplicaSetReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_client.Object, _ ...kube_client.GetOption) error {
@@ -958,4 +1069,41 @@ func (r fakeReplicaSetReader) Get(ctx context.Context, key kube_client.ObjectKey
 
 func (f fakeReplicaSetReader) List(ctx context.Context, list kube_client.ObjectList, opts ...kube_client.ListOption) error {
 	return errors.New("not implemented")
+}
+
+var _ kube_client.Reader = fakeJobReader{}
+
+func (r fakeJobReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_client.Object, _ ...kube_client.GetOption) error {
+	fqName := fmt.Sprintf("%s/%s", key.Namespace, key.Name)
+	data, ok := r[fqName]
+	if !ok {
+		return errors.Errorf("job not found: %s", fqName)
+	}
+	return yaml.Unmarshal([]byte(data), obj)
+}
+
+func (f fakeJobReader) List(ctx context.Context, list kube_client.ObjectList, opts ...kube_client.ListOption) error {
+	return errors.New("not implemented")
+}
+
+func getReplicaSetsReader(path ...string) fakeReplicaSetReader {
+	bytes, err := os.ReadFile(filepath.Join(path...))
+	Expect(err).ToNot(HaveOccurred())
+	YAMLs := util_yaml.SplitYAML(string(bytes))
+	rsets, err := ParseReplicaSets(YAMLs)
+	Expect(err).ToNot(HaveOccurred())
+	reader, err := newFakeReplicaSetReader(rsets)
+	Expect(err).ToNot(HaveOccurred())
+	return reader
+}
+
+func getJobsReader(path ...string) fakeJobReader {
+	bytes, err := os.ReadFile(filepath.Join(path...))
+	Expect(err).ToNot(HaveOccurred())
+	YAMLs := util_yaml.SplitYAML(string(bytes))
+	rsets, err := ParseJobs(YAMLs)
+	Expect(err).ToNot(HaveOccurred())
+	reader, err := newFakeJobReader(rsets)
+	Expect(err).ToNot(HaveOccurred())
+	return reader
 }
