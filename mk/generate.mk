@@ -50,7 +50,7 @@ cleanup/policy/%:
 
 generate/deep-copy/common:
 	for version in $(foreach dir,$(wildcard $(COMMON_DIR)/*),$(notdir $(dir))); do \
-		$(CONTROLLER_GEN) object:headerFile=$(TOOLS_DIR)/policy-gen/boilerplate.go.txt,year=$$(date +%Y) paths=$(COMMON_DIR)/$$version/targetref.go ; \
+		$(CONTROLLER_GEN) object paths=$(COMMON_DIR)/$$version/targetref.go ; \
 	done
 
 generate/policy/%: generate/schema/%
@@ -70,8 +70,8 @@ generate/policy-helm:
 generate/controller-gen/%: generate/kumapolicy-gen/%
 	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \
 		$(CONTROLLER_GEN) "crd:crdVersions=v1,ignoreUnexportedFields=true" paths="./$(POLICIES_DIR)/$*/k8s/..." output:crd:artifacts:config=$(POLICIES_DIR)/$*/k8s/crd && \
-		$(CONTROLLER_GEN) object:headerFile=$(TOOLS_DIR)/policy-gen/boilerplate.go.txt,year=$$(date +%Y) paths=$(POLICIES_DIR)/$*/k8s/$$version/zz_generated.types.go ; \
-		$(CONTROLLER_GEN) object:headerFile=$(TOOLS_DIR)/policy-gen/boilerplate.go.txt,year=$$(date +%Y) paths=$(POLICIES_DIR)/$*/api/$$version/$*.go ; \
+		$(CONTROLLER_GEN) object paths=$(POLICIES_DIR)/$*/k8s/$$version/zz_generated.types.go ; \
+		$(CONTROLLER_GEN) object paths=$(POLICIES_DIR)/$*/api/$$version/$*.go ; \
 	done
 
 generate/kumapolicy-gen/%: generate/dirs/%
@@ -97,7 +97,7 @@ generate/builtin-crds:
 .PHONY: crd/controller-gen
 crd/controller-gen:
 	$(CONTROLLER_GEN) "crd:crdVersions=v1" paths=$(IN_CRD) output:crd:artifacts:config=$(OUT_CRD)
-	$(CONTROLLER_GEN) object:headerFile=$(TOOLS_DIR)/policy-gen/boilerplate.go.txt,year=$$(date +%Y) paths=$(IN_CRD)
+	$(CONTROLLER_GEN) object paths=$(IN_CRD)
 
 .PHONY: generate/envoy-imports
 generate/envoy-imports:
