@@ -1,4 +1,4 @@
-# MeshProxyTemplate
+# MeshProxyPatch
 
 * Status: accepted
 
@@ -70,17 +70,17 @@ We could support TransportSocketMatch https://github.com/kumahq/kuma/issues/4948
 
 ## Considered Options
 
-* MeshProxyTemplate
+* MeshProxyPatch
 
 ## Decision Outcome
 
-Chosen option: "MeshProxyTemplate".
+Chosen option: "MeshProxyPatch".
 
-### MeshProxyTemplate
+### MeshProxyPatch
 
 ```yaml
 apiVersion: kuma.io/v1alpha1
-kind: MeshProxyTemplate
+kind: MeshProxyPatch
 metadata:
   name: custom-template-1
   namespace: kuma-system
@@ -88,7 +88,7 @@ metadata:
     kuma.io/mesh: default
 spec:
   targetRef:
-    - kind: Mesh
+    kind: Mesh
   defaults:
     appendModifications:
       - cluster:
@@ -120,7 +120,7 @@ A couple of things to note when you compare this to the old policy:
 * `imports` is gone, solving _Profile imports section_ problem.
 * `appendModifications` allows to append modifications. This solves _No aggregation_ problem.
 * Because list are appended, there is no way to override or exclude modifications.
-  This should be fine for this time being, since proxy templates are managed by the mesh operator.
+  This should be fine for the time being, since proxy templates are managed by the mesh operator.
   We could introduce `modifications` next to `appendModifications` or provide more general mechanism for excluding/overriding.
 * `modifications` section stays almost the same as with the old policy except `jsonPatches` field.
 * `jsonPatches` is the alternative way of patching config which we also use in `ContainerPatch`.
@@ -129,7 +129,7 @@ A couple of things to note when you compare this to the old policy:
   You can modify TypedConfig, because TypedConfig is serialized to JSON. This solves _Merging of TypedConfig_
   You can modify parts of lists (add element, etc.). This solves _Appending to lists_
 
-#### Name alternatives
+#### Name
 
 We could argue that `Proxy Template` may not be the most accurate name. After all, we are not providing template, but we are altering Envoy Config.
 
@@ -140,7 +140,7 @@ A couple of name alternatives:
 * MeshProxyConfig (too generic? sounds like configuration of Kuma DP)
 * MeshProxyPatch
 
-While `MeshProxyPatch` seems to be the most accurate name, I'm hesitant to make this change. I think that changing the name may confuse existing users. 
+We decided to name the new resource `MeshProxyPatch` 
 
 #### Other resources
 
