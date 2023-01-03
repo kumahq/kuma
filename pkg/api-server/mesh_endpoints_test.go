@@ -160,7 +160,7 @@ var _ = Describe("Resource Endpoints", func() {
 			// given
 			json := `
 			{
-				"type": "Mesh-1",
+				"type": "MeshTrafficPermission",
 				"name": "tr-1"
 			}
 			`
