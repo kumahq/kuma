@@ -78,7 +78,7 @@ spec:
 
 	E2EAfterEach(func() {
 		Expect(cluster.DeleteNamespace(namespace)).ToNot(HaveOccurred())
-		Expect(cluster.DeleteNamespace(fmt.Sprintf("%s-%s", externalservice.DeploymentName, "namespace"))).ToNot(HaveOccurred())
+		Expect(cluster.DeleteNamespace(fmt.Sprintf("%s%s", externalservice.DeploymentName, "namespace"))).ToNot(HaveOccurred())
 		Expect(cluster.DeleteKuma()).ToNot(HaveOccurred())
 		Expect(cluster.DismissCluster()).ToNot(HaveOccurred())
 	})

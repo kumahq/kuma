@@ -45,6 +45,9 @@ func CleanupEbpfConfigFromNode() {
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh("default"),
 				testserver.WithName("test-server"),
+				// k3d has some problems with ebpf and sometimes mounting doesn't work
+				// it might not start and because of if fails
+				// ebpf files are created so we can still check if cleanup works
 				testserver.WithoutWaitingToBeReady(),
 			)).
 			Install(ebpf_checker.Install(

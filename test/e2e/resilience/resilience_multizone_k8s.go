@@ -139,7 +139,10 @@ metadata:
 
 	It("should see zone entities in global after a zone restart", func() {
 		// Run an app
-		Expect(testserver.Install(testserver.WithName("kds-before-zone-restart"))(zone1)).To(Succeed())
+		Expect(testserver.Install(
+			testserver.WithName("kds-before-zone-restart"),
+			testserver.WithNamespace(namespace),
+		)(zone1)).To(Succeed())
 
 		// Check the dp goes to global
 		Eventually(func() (string, error) {
