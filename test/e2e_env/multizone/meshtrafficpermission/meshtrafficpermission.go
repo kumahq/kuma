@@ -52,9 +52,11 @@ func MeshTrafficPermission() {
 	})
 
 	trafficAllowed := func() {
-		_, _, err := env.KubeZone1.ExecWithRetries(namespace, clientPodName, "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
-		Expect(err).ToNot(HaveOccurred())
+		Eventually(func(g Gomega) {
+			_, _, err := env.KubeZone1.Exec(namespace, clientPodName, "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
+			g.Expect(err).ToNot(HaveOccurred())
+		}).Should(Succeed())
 	}
 
 	trafficBlocked := func() {
@@ -62,7 +64,7 @@ func MeshTrafficPermission() {
 			_, _, err := env.KubeZone1.Exec(namespace, clientPodName, "demo-client",
 				"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
 			return err
-		}, "30s", "1s").Should(HaveOccurred())
+		}).Should(HaveOccurred())
 	}
 
 	It("should allow the traffic with allow-all meshtrafficpermission", func() {

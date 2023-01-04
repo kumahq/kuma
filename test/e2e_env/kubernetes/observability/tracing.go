@@ -79,18 +79,18 @@ func Tracing() {
 		clientPod, err := PodNameOfApp(env.Cluster, "demo-client", ns)
 		Expect(err).ToNot(HaveOccurred())
 
-		Eventually(func() ([]string, error) {
-			_, _, err := env.Cluster.ExecWithRetries(ns, clientPod, "demo-client",
+		Eventually(func(g Gomega) {
+			_, _, err := env.Cluster.Exec(ns, clientPod, "demo-client",
 				"curl", "-v", "-m", "3", "--fail", "test-server")
-			if err != nil {
-				return nil, err
-			}
+			g.Expect(err).ToNot(HaveOccurred())
 			// then traces are published
-			return obsClient.TracedServices()
-		}, "30s", "1s").Should(Equal([]string{
-			fmt.Sprintf("demo-client_%s_svc", ns),
-			"jaeger-query",
-			fmt.Sprintf("test-server_%s_svc_80", ns),
-		}))
+			srvs, err := obsClient.TracedServices()
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(srvs).To(Equal([]string{
+				fmt.Sprintf("demo-client_%s_svc", ns),
+				"jaeger-query",
+				fmt.Sprintf("test-server_%s_svc_80", ns),
+			}))
+		}, "30s", "1s").Should(Succeed())
 	})
 }

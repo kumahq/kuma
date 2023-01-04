@@ -3,7 +3,6 @@ package auth_test
 import (
 	"encoding/json"
 	"testing"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -41,11 +40,7 @@ import (
 )
 
 func TestE2E(t *testing.T) {
-	SetDefaultConsistentlyDuration(time.Second * 5)
-	SetDefaultConsistentlyPollingInterval(time.Millisecond * 200)
-	SetDefaultEventuallyPollingInterval(time.Millisecond * 500)
-	SetDefaultEventuallyTimeout(time.Second * 10)
-	test.RunSpecs(t, "E2E Universal Suite")
+	test.RunE2ESpecs(t, "E2E Universal Suite")
 }
 
 var _ = SynchronizedBeforeSuite(
@@ -95,7 +90,7 @@ var _ = Describe("Gateway - Cross-mesh", gateway.CrossMeshGatewayOnUniversal, Or
 var _ = Describe("HealthCheck panic threshold", healthcheck.HealthCheckPanicThreshold, Ordered)
 var _ = Describe("HealthCheck", healthcheck.Policy)
 var _ = Describe("MeshHealthCheck panic threshold", meshhealthcheck.MeshHealthCheckPanicThreshold, Ordered)
-var _ = Describe("HealthCheck", meshhealthcheck.MeshHealthCheck)
+var _ = Describe("MeshHealthCheck", meshhealthcheck.MeshHealthCheck)
 var _ = Describe("Service Probes", healthcheck.ServiceProbes, Ordered)
 var _ = Describe("External Services", externalservices.Policy, Ordered)
 var _ = Describe("Inspect", inspect.Inspect, Ordered)

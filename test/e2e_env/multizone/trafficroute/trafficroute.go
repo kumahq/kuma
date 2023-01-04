@@ -8,44 +8,21 @@ import (
 	"github.com/onsi/gomega/types"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/env"
 	. "github.com/kumahq/kuma/test/framework"
 	. "github.com/kumahq/kuma/test/framework/client"
 )
-
-func meshMTLSOn(mesh, localityAware string) string {
-	return fmt.Sprintf(`
-type: Mesh
-name: %s
-mtls:
-  enabledBackend: ca-1
-  backends:
-  - name: ca-1
-    type: builtin
-routing:
-  localityAwareLoadBalancing: %s
-`, mesh, localityAware)
-}
 
 func TrafficRoute() {
 	const meshName = "tr-test"
 
 	BeforeAll(func() {
 		// Global
-		err := env.Global.Install(YamlUniversal(meshMTLSOn(meshName, "false")))
-		E2EDeferCleanup(func() {
-			out, _ := env.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshes")
-			println(out)
-			Expect(env.Global.DeleteMesh(meshName)).To(Succeed())
-		})
-		Expect(err).ToNot(HaveOccurred())
+		Expect(env.Global.Install(MTLSMeshUniversal(meshName))).To(Succeed())
 		Expect(WaitForMesh(meshName, env.Zones())).To(Succeed())
 
-		// Universal Zone 1
-		E2EDeferCleanup(func() {
-			Expect(env.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
-		})
-		err = NewClusterSetup().
+		err := NewClusterSetup().
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true), WithConcurrency(8))).
 			Install(TestServerUniversal("dp-echo-1", meshName,
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
@@ -54,10 +31,6 @@ func TrafficRoute() {
 			Setup(env.UniZone1)
 		Expect(err).ToNot(HaveOccurred())
 
-		// Universal Zone 2
-		E2EDeferCleanup(func() {
-			Expect(env.UniZone2.DeleteMeshApps(meshName)).To(Succeed())
-		})
 		err = NewClusterSetup().
 			Install(TestServerUniversal("dp-echo-2", meshName,
 				WithArgs([]string{"echo", "--instance", "echo-v2"}),
@@ -77,6 +50,11 @@ func TrafficRoute() {
 			)).
 			Setup(env.UniZone2)
 		Expect(err).ToNot(HaveOccurred())
+	})
+	E2EAfterAll(func() {
+		Expect(env.UniZone2.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(env.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(env.Global.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	BeforeEach(func() {
@@ -112,6 +90,7 @@ conf:
         version: v4
 `
 		Expect(YamlUniversal(trafficRoute)(env.Global)).To(Succeed())
+		Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "three-way-route"}, env.Zones()...)).Should(Succeed())
 
 		Eventually(func() (map[string]int, error) {
 			return CollectResponsesByInstance(env.UniZone1, "demo-client", "test-server.mesh")
@@ -144,6 +123,7 @@ conf:
     kuma.io/service: another-test-server
 `
 		Expect(YamlUniversal(trafficRoute)(env.Global)).To(Succeed())
+		Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-echo-to-backend"}, env.Zones()...)).Should(Succeed())
 
 		Eventually(func() (map[string]int, error) {
 			return CollectResponsesByInstance(env.UniZone1, "demo-client", "test-server.mesh")
@@ -183,16 +163,17 @@ conf:
         version: v2
 `, v1Weight, v2Weight)
 		Expect(YamlUniversal(trafficRoute)(env.Global)).To(Succeed())
+		Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-20-80-split"}, env.Zones()...)).Should(Succeed())
 
-		Eventually(func() (map[string]int, error) {
-			return CollectResponsesByInstance(env.UniZone1, "demo-client", "test-server.mesh", WithNumberOfRequests(100))
-		}, "30s", "500ms").Should(
-			And(
+		Eventually(func(g Gomega) {
+			res, err := CollectResponsesByInstance(env.UniZone1, "demo-client", "test-server.mesh", WithNumberOfRequests(200))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res).To(And(
 				HaveLen(2),
-				HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), BeNumerically("~", v1Weight, 10)),
-				HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), BeNumerically("~", v2Weight, 10)),
-			),
-		)
+				HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), BeNumerically("~", 2*v1Weight, 20)),
+				HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), BeNumerically("~", 2*v2Weight, 20)),
+			))
+		}, "1m", "5s").Should(Succeed())
 	})
 
 	Context("HTTP routing", func() {
@@ -241,6 +222,7 @@ conf:
     version: v4
 `
 			Expect(YamlUniversal(trafficRoute)(env.Global)).To(Succeed())
+			Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-by-path"}, env.Zones()...)).Should(Succeed())
 
 			Eventually(func() (map[string]int, error) {
 				return CollectResponsesByInstance(env.UniZone1, "demo-client", "test-server.mesh/version1")
@@ -294,6 +276,7 @@ conf:
       version: v2
 `
 			Expect(YamlUniversal(trafficRoute)(env.Global)).To(Succeed())
+			Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "two-splits"}, env.Zones()...)).Should(Succeed())
 
 			Eventually(func() (map[string]int, error) {
 				return CollectResponsesByInstance(env.UniZone1, "demo-client", "test-server.mesh/split", WithNumberOfRequests(10))
@@ -336,6 +319,7 @@ conf:
     kuma.io/service: '*'
 `
 			Expect(YamlUniversal(trafficRoute)(env.Global)).To(Succeed())
+			Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-all-tr-test"}, env.Zones()...)).Should(Succeed())
 		})
 
 		It("should loadbalance all requests equally by default", func() {
@@ -359,7 +343,17 @@ conf:
 
 		It("should keep the request in the zone when locality aware loadbalancing is enabled", func() {
 			// given
-			Expect(YamlUniversal(meshMTLSOn(meshName, "true"))(env.Global)).To(Succeed())
+			Expect(YamlUniversal(fmt.Sprintf(`
+type: Mesh
+name: %s
+mtls:
+  enabledBackend: ca-1
+  backends:
+  - name: ca-1
+    type: builtin
+routing:
+  localityAwareLoadBalancing: true
+`, meshName))(env.Global)).To(Succeed())
 
 			Eventually(func() (map[string]int, error) {
 				return CollectResponsesByInstance(env.UniZone1, "demo-client", "test-server.mesh")

@@ -97,11 +97,6 @@ spec:
 	}
 
 	BeforeAll(func() {
-		E2EDeferCleanup(func() {
-			Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-			Expect(env.Cluster.DeleteMesh(mesh))
-		})
-
 		err := NewClusterSetup().
 			Install(MeshKubernetes(mesh)).
 			Install(NamespaceWithSidecarInjection(namespace)).
@@ -128,6 +123,11 @@ spec:
 
 		// remove retries to avoid covering failed request
 		Expect(DeleteMeshResources(env.Cluster, mesh, core_mesh.RetryResourceTypeDescriptor)).To(Succeed())
+	})
+
+	E2EAfterAll(func() {
+		Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(env.Cluster.DeleteMesh(mesh))
 	})
 
 	requestThroughGateway := func() error {

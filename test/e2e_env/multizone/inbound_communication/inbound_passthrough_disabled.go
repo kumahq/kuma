@@ -27,7 +27,7 @@ func InboundPassthroughDisabled() {
 			Setup(env.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, env.Zones())).To(Succeed())
 
-		// Universal Zone 4
+		// Universal Zone 4 We pick the second set of zones to test with passthrough disabled
 		Expect(NewClusterSetup().
 			Install(DemoClientUniversal(
 				"uni-demo-client",
@@ -91,159 +91,75 @@ func InboundPassthroughDisabled() {
 		Expect(env.Global.DeleteMesh(mesh)).To(Succeed())
 	})
 
-	Describe("k8s to k8s communication", func() {
-		It("should succeed when application binds to wildcard", func() {
-			// when
-			response, err := client.CollectResponse(
-				env.KubeZone2, "demo-client", "k8s-test-server-wildcard.inbound-passthrough-disabled.svc.80.mesh",
-				client.FromKubernetesPod(namespace, "demo-client"),
-			)
+	Context("k8s communication", func() {
+		DescribeTable("should success when application",
+			func(url string, expectedInstance string) {
+				Eventually(func(g Gomega) {
+					// when
+					response, err := client.CollectResponse(
+						env.KubeZone2, "demo-client", url,
+						client.FromKubernetesPod(namespace, "demo-client"),
+					)
 
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			Expect(response.Instance).To(Equal("k8s-bound-wildcard"))
-		})
-		It("should succeed when application binds to localhost", func() {
-			// when
-			response, err := client.CollectResponse(
-				env.KubeZone2, "demo-client", "k8s-test-server-localhost.inbound-passthrough-disabled.svc.80.mesh",
-				client.FromKubernetesPod(namespace, "demo-client"),
-			)
+					// then
+					g.Expect(err).ToNot(HaveOccurred())
+					g.Expect(response.Instance).To(Equal(expectedInstance))
+				}).Should(Succeed())
+			},
+			Entry("on k8s binds to wildcard", "k8s-test-server-wildcard.inbound-passthrough-disabled.svc.80.mesh", "k8s-bound-wildcard"),
+			Entry("on k8s binds to localhost", "k8s-test-server-localhost.inbound-passthrough-disabled.svc.80.mesh", "k8s-bound-localhost"),
+			Entry("on universal binds to wildcard", "uni-test-server-wildcard.mesh", "uni-bound-wildcard"),
+			Entry("on universal binds to localhost", "uni-test-server-localhost.mesh", "uni-bound-localhost"),
+			Entry("on universal is not using transparent-proxy", "uni-test-server-wildcard-no-tp.mesh", "uni-bound-wildcard-no-tp"),
+		)
+		DescribeTable("should fail when application",
+			func(url string) {
+				Consistently(func(g Gomega) {
+					// when
+					_, err := client.CollectResponse(
+						env.KubeZone2, "demo-client", url,
+						client.FromKubernetesPod(namespace, "demo-client"),
+					)
 
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			Expect(response.Instance).To(Equal("k8s-bound-localhost"))
-		})
-		It("should fail when application binds to pod", func() {
-			// given
-			podName, err := PodNameOfApp(env.KubeZone2, "demo-client", namespace)
-			Expect(err).ToNot(HaveOccurred())
-
-			// when
-			_, _, err = env.KubeZone2.Exec(namespace, podName, "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "k8s-test-server-pod.inbound-passthrough-disabled.svc.80.mesh")
-
-			// then
-			Expect(err).To(HaveOccurred())
-		})
+					// then
+					g.Expect(err).To(HaveOccurred())
+				}).Should(Succeed())
+			},
+			Entry("on k8s binds to pod", "k8s-test-server-pod.inbound-passthrough-disabled.svc.80.mesh"),
+			Entry("on universal binds to containerip", "uni-test-server-containerip.mesh"),
+		)
 	})
 
-	Describe("universal to universal communication", func() {
-		It("should succeed when application binds to wildcard", func() {
-			// when
-			response, err := client.CollectResponse(
-				env.UniZone2, "uni-demo-client", "uni-test-server-wildcard.mesh",
-			)
+	Context("universal communication", func() {
+		DescribeTable("should succeed when application",
+			func(url string, expectedInstance string) {
+				Eventually(func(g Gomega) {
+					// when
+					response, err := client.CollectResponse(env.UniZone2, "uni-demo-client", url)
 
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			Expect(response.Instance).To(Equal("uni-bound-wildcard"))
-		})
-		It("should succeed when application binds to localhost", func() {
-			// when
-			response, err := client.CollectResponse(
-				env.UniZone2, "uni-demo-client", "uni-test-server-localhost.mesh",
-			)
+					// then
+					g.Expect(err).ToNot(HaveOccurred())
+					g.Expect(response.Instance).To(Equal(expectedInstance))
+				}).Should(Succeed())
+			},
+			Entry("on universal binds to wildcard", "uni-test-server-wildcard.mesh", "uni-bound-wildcard"),
+			Entry("on universal binds to localhost", "uni-test-server-localhost.mesh", "uni-bound-localhost"),
+			Entry("on universal is not using transparent-proxy", "uni-test-server-wildcard-no-tp.mesh", "uni-bound-wildcard-no-tp"),
+			Entry("on k8s binds to wildcard", "k8s-test-server-wildcard.inbound-passthrough-disabled.svc.80.mesh", "k8s-bound-wildcard"),
+			Entry("on k8s binds to localhost", "k8s-test-server-localhost.inbound-passthrough-disabled.svc.80.mesh", "k8s-bound-localhost"),
+		)
+		DescribeTable("should fail when application",
+			func(url string) {
+				Consistently(func(g Gomega) {
+					// when
+					_, err := client.CollectResponse(env.UniZone2, "uni-demo-client", url)
 
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			Expect(response.Instance).To(Equal("uni-bound-localhost"))
-		})
-		It("should succeed when container is not using transparent proxy", func() {
-			// when
-			response, err := client.CollectResponse(
-				env.UniZone2, "uni-demo-client", "uni-test-server-wildcard-no-tp.mesh",
-			)
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			Expect(response.Instance).To(Equal("uni-bound-wildcard-no-tp"))
-		})
-		It("should fail when application binds to container ip", func() {
-			// when
-			_, _, err := env.UniZone2.Exec("", "", "uni-demo-client",
-				"curl", "-v", "-m", "3", "--fail", "uni-test-server-containerip.mesh")
-
-			// then
-			Expect(err).To(HaveOccurred())
-		})
-	})
-
-	Describe("k8s to universal communication", func() {
-		It("should succeed when application binds to wildcard", func() {
-			// when
-			response, err := client.CollectResponse(
-				env.KubeZone2, "demo-client", "uni-test-server-wildcard.mesh",
-				client.FromKubernetesPod(namespace, "demo-client"),
-			)
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			Expect(response.Instance).To(Equal("uni-bound-wildcard"))
-		})
-		It("should succeed when application binds to localhost", func() {
-			// when
-			response, err := client.CollectResponse(
-				env.KubeZone2, "demo-client", "uni-test-server-localhost.mesh",
-				client.FromKubernetesPod(namespace, "demo-client"),
-			)
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			Expect(response.Instance).To(Equal("uni-bound-localhost"))
-		})
-		It("should succeed when container is not using transparent proxy", func() {
-			// when
-			response, err := client.CollectResponse(
-				env.KubeZone2, "demo-client", "uni-test-server-wildcard-no-tp.mesh",
-				client.FromKubernetesPod(namespace, "demo-client"),
-			)
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			Expect(response.Instance).To(Equal("uni-bound-wildcard-no-tp"))
-		})
-		It("should fail when application binds to container ip", func() {
-			// given
-			podName, err := PodNameOfApp(env.KubeZone2, "demo-client", namespace)
-			Expect(err).ToNot(HaveOccurred())
-
-			// when
-			_, _, err = env.KubeZone2.Exec(namespace, podName, "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "uni-test-server-containerip.mesh")
-
-			// then
-			Expect(err).To(HaveOccurred())
-		})
-	})
-
-	Describe("universal to k8s communication", func() {
-		It("should succeed when application binds to wildcard", func() {
-			// when
-			response, err := client.CollectResponse(
-				env.UniZone2, "uni-demo-client", "k8s-test-server-wildcard.inbound-passthrough-disabled.svc.80.mesh",
-			)
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			Expect(response.Instance).To(Equal("k8s-bound-wildcard"))
-		})
-		It("should succeed when application binds to localhost", func() {
-			// when
-			response, err := client.CollectResponse(
-				env.UniZone2, "uni-demo-client", "k8s-test-server-localhost.inbound-passthrough-disabled.svc.80.mesh",
-			)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			Expect(response.Instance).To(Equal("k8s-bound-localhost"))
-		})
-		It("should fail when application binds to pod", func() {
-			// when
-			_, _, err := env.UniZone2.Exec("", "", "uni-demo-client",
-				"curl", "-v", "-m", "3", "--fail", "k8s-test-server-pod.inbound-passthrough-disabled.svc.80.mesh")
-
-			// then
-			Expect(err).To(HaveOccurred())
-		})
+					// then
+					Expect(err).To(HaveOccurred())
+				}).Should(Succeed())
+			},
+			Entry("on universal binds to containerip", "uni-test-server-containerip.mesh"),
+			Entry("on k8s binds to pod", "k8s-test-server-pod.inbound-passthrough-disabled.svc.80.mesh"),
+		)
 	})
 }

@@ -10,7 +10,7 @@ import (
 )
 
 func TestE2E(t *testing.T) {
-	test.RunSpecs(t, "E2E Helm Suite")
+	test.RunE2ESpecs(t, "E2E Helm Suite")
 }
 
 var _ = Describe("Test Zone and Global with Helm chart", Label("job-3"), Label("arm-not-supported"), helm.ZoneAndGlobalWithHelmChart, Ordered)

@@ -247,23 +247,25 @@ func WaitService(namespace, service string) InstallFunc {
 
 func WaitNumPods(namespace string, num int, app string) InstallFunc {
 	return func(c Cluster) error {
+		ck8s := c.(*K8sCluster)
 		k8s.WaitUntilNumPodsCreated(c.GetTesting(), c.GetKubectlOptions(namespace),
 			metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("app=%s", app),
-			}, num, DefaultRetries, DefaultTimeout)
+			}, num, ck8s.defaultRetries, ck8s.defaultTimeout)
 		return nil
 	}
 }
 
 func WaitPodsAvailable(namespace, app string) InstallFunc {
 	return func(c Cluster) error {
+		ck8s := c.(*K8sCluster)
 		pods, err := k8s.ListPodsE(c.GetTesting(), c.GetKubectlOptions(namespace),
 			metav1.ListOptions{LabelSelector: fmt.Sprintf("app=%s", app)})
 		if err != nil {
 			return err
 		}
 		for _, p := range pods {
-			err := k8s.WaitUntilPodAvailableE(c.GetTesting(), c.GetKubectlOptions(namespace), p.GetName(), DefaultRetries, DefaultTimeout)
+			err := k8s.WaitUntilPodAvailableE(c.GetTesting(), c.GetKubectlOptions(namespace), p.GetName(), ck8s.defaultRetries, ck8s.defaultTimeout)
 			if err != nil {
 				return err
 			}
@@ -274,7 +276,8 @@ func WaitPodsAvailable(namespace, app string) InstallFunc {
 
 func WaitUntilJobSucceed(namespace, app string) InstallFunc {
 	return func(c Cluster) error {
-		return k8s.WaitUntilJobSucceedE(c.GetTesting(), c.GetKubectlOptions(namespace), app, DefaultRetries, DefaultTimeout)
+		ck8s := c.(*K8sCluster)
+		return k8s.WaitUntilJobSucceedE(c.GetTesting(), c.GetKubectlOptions(namespace), app, ck8s.defaultRetries, ck8s.defaultTimeout)
 	}
 }
 

@@ -148,18 +148,20 @@ metrics:
 		ip := env.Cluster.GetApp("test-server").GetIP()
 
 		// when
-		stdout, _, err := env.Cluster.ExecWithRetries("", "", "test-server",
-			"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(ip, "1234")+"/metrics?filter=concurrency")
+		Eventually(func(g Gomega) {
+			stdout, _, err := env.Cluster.Exec("", "", "test-server",
+				"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(ip, "1234")+"/metrics?filter=concurrency")
 
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).ToNot(BeNil())
-		// response returned by test-server
-		Expect(stdout).To(ContainSubstring("path-stats"))
-		// metric from envoy
-		Expect(stdout).To(ContainSubstring("envoy_server_concurrency"))
-		// response doesn't exist
-		Expect(stdout).ToNot(ContainSubstring("not-working-service"))
+			// then
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).ToNot(BeNil())
+			// response returned by test-server
+			g.Expect(stdout).To(ContainSubstring("path-stats"))
+			// metric from envoy
+			g.Expect(stdout).To(ContainSubstring("envoy_server_concurrency"))
+			// response doesn't exist
+			g.Expect(stdout).ToNot(ContainSubstring("not-working-service"))
+		}).Should(Succeed())
 	})
 
 	It("should override mesh configuration with dataplane configuration", func() {
@@ -167,28 +169,30 @@ metrics:
 		ip := env.Cluster.GetApp("test-server-override-mesh").GetIP()
 
 		// when
-		stdout, _, err := env.Cluster.ExecWithRetries("", "", "test-server-override-mesh",
-			"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(ip, "1234")+"/metrics/overridden?filter=concurrency")
+		Eventually(func(g Gomega) {
+			stdout, _, err := env.Cluster.Exec("", "", "test-server-override-mesh",
+				"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(ip, "1234")+"/metrics/overridden?filter=concurrency")
 
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).ToNot(BeNil())
+			// then
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).ToNot(BeNil())
 
-		// response doesn't exist because was disabled
-		Expect(stdout).ToNot(ContainSubstring("path-stats"))
-		// path has been overridden
-		Expect(stdout).ToNot(ContainSubstring("service-to-override"))
-		// response doesn't exist
-		Expect(stdout).ToNot(ContainSubstring("not-working-service"))
+			// response doesn't exist because was disabled
+			g.Expect(stdout).ToNot(ContainSubstring("path-stats"))
+			// path has been overridden
+			g.Expect(stdout).ToNot(ContainSubstring("service-to-override"))
+			// response doesn't exist
+			g.Expect(stdout).ToNot(ContainSubstring("not-working-service"))
 
-		// overridden by pod
-		Expect(stdout).To(ContainSubstring("overridden"))
-		// overridden by pod
-		Expect(stdout).To(ContainSubstring("mesh-default"))
-		// added in pod
-		Expect(stdout).To(ContainSubstring("my-app"))
-		// metric from envoy
-		Expect(stdout).To(ContainSubstring("envoy_server_concurrency"))
+			// overridden by pod
+			g.Expect(stdout).To(ContainSubstring("overridden"))
+			// overridden by pod
+			g.Expect(stdout).To(ContainSubstring("mesh-default"))
+			// added in pod
+			g.Expect(stdout).To(ContainSubstring("my-app"))
+			// metric from envoy
+			g.Expect(stdout).To(ContainSubstring("envoy_server_concurrency"))
+		}).Should(Succeed())
 	})
 
 	It("should use only configuration from dataplane", func() {
@@ -196,25 +200,27 @@ metrics:
 		ip := env.Cluster.GetApp("test-server-dp-metrics").GetIP()
 
 		// when
-		stdout, _, err := env.Cluster.ExecWithRetries("", "", "test-server-dp-metrics",
-			"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(ip, "5555")+"/stats?filter=concurrency")
+		Eventually(func(g Gomega) {
+			stdout, _, err := env.Cluster.Exec("", "", "test-server-dp-metrics",
+				"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(ip, "5555")+"/stats?filter=concurrency")
 
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).ToNot(BeNil())
-		Expect(stdout).To(ContainSubstring(string(expfmt.FmtText)))
+			// then
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).ToNot(BeNil())
+			g.Expect(stdout).To(ContainSubstring(string(expfmt.FmtText)))
 
-		// response doesn't exist because was disabled
-		Expect(stdout).ToNot(ContainSubstring("path-stats"))
-		// path has been overridden
-		Expect(stdout).ToNot(ContainSubstring("service-to-override"))
+			// response doesn't exist because was disabled
+			g.Expect(stdout).ToNot(ContainSubstring("path-stats"))
+			// path has been overridden
+			g.Expect(stdout).ToNot(ContainSubstring("service-to-override"))
 
-		// overridden by pod
-		Expect(stdout).To(ContainSubstring("my-app"))
-		// overridden by pod
-		Expect(stdout).To(ContainSubstring("other-app"))
-		// metric from envoy
-		Expect(stdout).To(ContainSubstring("envoy_server_concurrency"))
+			// overridden by pod
+			g.Expect(stdout).To(ContainSubstring("my-app"))
+			// overridden by pod
+			g.Expect(stdout).To(ContainSubstring("other-app"))
+			// metric from envoy
+			g.Expect(stdout).To(ContainSubstring("envoy_server_concurrency"))
+		}).Should(Succeed())
 	})
 
 	It("should allow to define and expose localhost bound server", func() {
@@ -222,20 +228,22 @@ metrics:
 		ip := env.Cluster.GetApp("test-server-dp-metrics-localhost").GetIP()
 
 		// when
-		stdout, _, err := env.Cluster.ExecWithRetries("", "", "test-server-dp-metrics-localhost",
-			"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(ip, "1234")+"/metrics?filter=concurrency")
+		Eventually(func(g Gomega) {
+			stdout, _, err := env.Cluster.Exec("", "", "test-server-dp-metrics-localhost",
+				"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(ip, "1234")+"/metrics?filter=concurrency")
 
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).ToNot(BeNil())
-		Expect(stdout).To(ContainSubstring(string(expfmt.FmtText)))
+			// then
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).ToNot(BeNil())
+			g.Expect(stdout).To(ContainSubstring(string(expfmt.FmtText)))
 
-		// path doesn't have defined address
-		Expect(stdout).ToNot(ContainSubstring("localhost-bound-not-exposed"))
+			// path doesn't have defined address
+			g.Expect(stdout).ToNot(ContainSubstring("localhost-bound-not-exposed"))
 
-		// exposed localhost bound service
-		Expect(stdout).To(ContainSubstring("localhost-bound"))
-		// metric from envoy
-		Expect(stdout).To(ContainSubstring("envoy_server_concurrency"))
+			// exposed localhost bound service
+			g.Expect(stdout).To(ContainSubstring("localhost-bound"))
+			// metric from envoy
+			g.Expect(stdout).To(ContainSubstring("envoy_server_concurrency"))
+		}).Should(Succeed())
 	})
 }

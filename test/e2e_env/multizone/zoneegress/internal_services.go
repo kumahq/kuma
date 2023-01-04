@@ -97,10 +97,12 @@ routing:
 				g.Expect(env.KubeZone1.GetZoneEgressEnvoyTunnel().GetStats(filter)).To(stats.BeEqualZero())
 			}, "30s", "1s").Should(Succeed())
 
-			_, stderr, err := env.KubeZone1.ExecWithRetries(namespace, zone1ClientPodName, "demo-client",
-				"curl", "--verbose", "--max-time", "3", "--fail", "test-server_ze-internal_svc_80.mesh")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+			Eventually(func(g Gomega) {
+				_, stderr, err := env.KubeZone1.Exec(namespace, zone1ClientPodName, "demo-client",
+					"curl", "--verbose", "--max-time", "3", "--fail", "test-server_ze-internal_svc_80.mesh")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+			}).Should(Succeed())
 
 			Eventually(func(g Gomega) {
 				g.Expect(env.KubeZone1.GetZoneEgressEnvoyTunnel().GetStats(filter)).
@@ -122,10 +124,12 @@ routing:
 					To(stats.BeEqualZero())
 			}, "30s", "1s").Should(Succeed())
 
-			stdout, _, err := env.UniZone1.ExecWithRetries("", "", "zone3-demo-client",
-				"curl", "--verbose", "--max-time", "3", "--fail", "zone4-test-server.mesh")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			Eventually(func(g Gomega) {
+				stdout, _, err := env.UniZone1.Exec("", "", "zone3-demo-client",
+					"curl", "--verbose", "--max-time", "3", "--fail", "zone4-test-server.mesh")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			}, "30s", "1s").Should(Succeed())
 
 			Eventually(func(g Gomega) {
 				g.Expect(env.UniZone1.GetZoneEgressEnvoyTunnel().GetStats(filter)).

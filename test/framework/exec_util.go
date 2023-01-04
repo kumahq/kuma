@@ -85,6 +85,14 @@ func (c *K8sCluster) execOnce(options ExecOptions) (string, string, error) {
 func (c *K8sCluster) ExecWithOptions(options ExecOptions) (string, string, error) {
 	var stdout string
 	var stderr string
+	retries := options.Retries
+	if retries == 0 {
+		retries = c.defaultRetries
+	}
+	timeout := options.Timeout
+	if timeout == 0 {
+		timeout = options.Timeout
+	}
 	_, err := retry.DoWithRetryE(
 		c.t,
 		fmt.Sprintf("kubectl exec -c %q -n %q %s -- %s",
@@ -92,8 +100,8 @@ func (c *K8sCluster) ExecWithOptions(options ExecOptions) (string, string, error
 			options.Namespace,
 			options.PodName,
 			strings.Join(options.Command, " ")),
-		options.Retries,
-		options.Timeout,
+		retries,
+		timeout,
 		func() (string, error) {
 			var err error
 			stdout, stderr, err = c.execOnce(options)
@@ -137,23 +145,6 @@ type BlockingReader struct {
 
 func (*BlockingReader) Read([]byte) (int, error) {
 	select {}
-}
-
-// ExecWithRetries executes a command in the specified container and
-// return stdout, stderr and error. It retries a default number of times
-// if the command fails.
-func (c *K8sCluster) ExecWithRetries(namespace, podName, containerName string, cmd ...string) (string, string, error) {
-	return c.ExecWithOptions(ExecOptions{
-		Command:            cmd,
-		Namespace:          namespace,
-		PodName:            podName,
-		ContainerName:      containerName,
-		CaptureStdout:      true,
-		CaptureStderr:      true,
-		PreserveWhitespace: false,
-		Retries:            DefaultRetries,
-		Timeout:            DefaultTimeout,
-	})
 }
 
 func executeK8s(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool) error {

@@ -10,7 +10,7 @@ import (
 )
 
 func TestE2E(t *testing.T) {
-	test.RunSpecs(t, "E2E Traffic Permission Kubernetes Suite")
+	test.RunE2ESpecs(t, "E2E Traffic Permission Kubernetes Suite")
 }
 
 var _ = Describe("Traffic Permission on Kubernetes", Label("job-2"), kubernetes.TrafficPermission)

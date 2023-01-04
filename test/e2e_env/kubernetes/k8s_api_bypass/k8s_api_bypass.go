@@ -56,23 +56,24 @@ spec:
 		caCert := fmt.Sprintf("%s/ca.crt", serviceAccount)
 		header := fmt.Sprintf("Authorization: Bearer %s", token)
 		url := fmt.Sprintf("%s/api", apiServer)
-
 		cmd := fmt.Sprintf("curl -s --cacert %s --header %q -o /dev/null -w '%%{http_code}\\n' -m 3 --fail %s", caCert, header, url)
 
 		// given Mesh with passthrough enabled then communication with API Server works
-		stdout, _, err := env.Cluster.ExecWithRetries(namespace, clientPodName, "demo-client",
-			"bash", "-c", cmd)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(Equal("200"))
+		Eventually(func(g Gomega) {
+			stdout, _, err := env.Cluster.Exec(namespace, clientPodName, "demo-client", "bash", "-c", cmd)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).To(Equal("200"))
+		}).Should(Succeed())
 
 		// when passthrough is disabled on the Mesh
-		err = env.Cluster.Install(YamlK8s(fmt.Sprintf(meshDefaultMtlsOn, "false")))
+		err := env.Cluster.Install(YamlK8s(fmt.Sprintf(meshDefaultMtlsOn, "false")))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then communication with API Server still works
-		stdout, _, err = env.Cluster.ExecWithRetries(namespace, clientPodName, "demo-client",
-			"bash", "-c", cmd)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(Equal("200"))
+		Eventually(func(g Gomega) {
+			stdout, _, err := env.Cluster.Exec(namespace, clientPodName, "demo-client", "bash", "-c", cmd)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).To(Equal("200"))
+		}).Should(Succeed())
 	})
 }

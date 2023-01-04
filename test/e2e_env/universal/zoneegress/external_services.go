@@ -110,18 +110,20 @@ func ExternalServices() {
 				stat, err := env.Cluster.GetZoneEgressEnvoyTunnel().GetStats(filter)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stat).To(stats.BeEqualZero())
-			}, "30s", "1s").Should(Succeed())
+			}).Should(Succeed())
 
-			stdout, _, err := env.Cluster.ExecWithRetries("", "", "demo-client",
-				"curl", "--verbose", "--max-time", "3", "--fail", "external-service.mesh")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			Eventually(func(g Gomega) {
+				stdout, _, err := env.Cluster.Exec("", "", "demo-client",
+					"curl", "--verbose", "--max-time", "3", "--fail", "external-service.mesh")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			}).Should(Succeed())
 
 			Eventually(func(g Gomega) {
 				stat, err := env.Cluster.GetZoneEgressEnvoyTunnel().GetStats(filter)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stat).To(stats.BeGreaterThanZero())
-			}, "30s", "1s").Should(Succeed())
+			}).Should(Succeed())
 		})
 	})
 
@@ -184,10 +186,11 @@ conf:
 `
 			Expect(env.Cluster.Install(YamlUniversal(specificRateLimitPolicy))).To(Succeed())
 
-			Eventually(func() bool {
+			Eventually(func(g Gomega) {
 				stdout, _, err := env.Cluster.Exec("", "", "demo-client", "curl", "-v", "external-service.mesh")
-				return err == nil && strings.Contains(stdout, "429")
-			}, "30s", "100ms").Should(BeTrue())
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stdout).To(ContainSubstring("429"))
+			}).Should(Succeed())
 		})
 	})
 }

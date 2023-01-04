@@ -15,11 +15,6 @@ func VirtualProbes() {
 	const mesh = "virtual-probes"
 
 	BeforeAll(func() {
-		E2EDeferCleanup(func() {
-			Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-			Expect(env.Cluster.DeleteMesh(mesh))
-		})
-
 		err := NewClusterSetup().
 			Install(MTLSMeshKubernetes(mesh)).
 			Install(NamespaceWithSidecarInjection(namespace)).
@@ -30,6 +25,10 @@ func VirtualProbes() {
 			)).
 			Setup(env.Cluster)
 		Expect(err).To(Succeed())
+	})
+	E2EAfterAll(func() {
+		Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(env.Cluster.DeleteMesh(mesh))
 	})
 
 	It("should deploy test-server with probes", func() {

@@ -50,7 +50,7 @@ func MultizoneUniversal() {
 	has := func(resourceURI string) func() bool {
 		return func() bool {
 			cmd := []string{"curl", "-v", "-m", "3", "--fail", "localhost:5681/" + resourceURI}
-			stdout, _, err := global.ExecWithRetries("", "", AppModeCP, cmd...)
+			stdout, _, err := global.Exec("", "", AppModeCP, cmd...)
 			Expect(err).ToNot(HaveOccurred())
 			return strings.Contains(stdout, `"total": 1`)
 		}

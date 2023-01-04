@@ -10,7 +10,7 @@ import (
 )
 
 func TestE2E(t *testing.T) {
-	test.RunSpecs(t, "E2E Ownership tests")
+	test.RunE2ESpecs(t, "E2E Ownership tests")
 }
 
 var _ = Describe("Test Multizone Ownership for Universal", Label("job-1"), ownership.MultizoneUniversal)

@@ -1,7 +1,9 @@
 package test
 
 import (
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/onsi/ginkgo/v2"
@@ -14,6 +16,21 @@ import (
 
 // RunSpecs wraps ginkgo+gomega test suite initialization.
 func RunSpecs(t *testing.T, description string) {
+	if strings.HasPrefix(description, "E2E") {
+		panic("Use RunE2ESpecs for e2e tests!")
+	}
+	runSpecs(t, description)
+}
+
+func RunE2ESpecs(t *testing.T, description string) {
+	gomega.SetDefaultConsistentlyDuration(time.Second * 5)
+	gomega.SetDefaultConsistentlyPollingInterval(time.Millisecond * 200)
+	gomega.SetDefaultEventuallyPollingInterval(time.Millisecond * 500)
+	gomega.SetDefaultEventuallyTimeout(time.Second * 30)
+	runSpecs(t, description)
+}
+
+func runSpecs(t *testing.T, description string) {
 	// Make resetting the core logger a no-op so that internal
 	// code doesn't interfere with testing.
 	core.SetLogger = func(l logr.Logger) {}

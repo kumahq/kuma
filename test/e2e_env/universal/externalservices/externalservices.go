@@ -94,7 +94,7 @@ networking:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 			g.Expect(stdout).To(matcher)
-		}).WithOffset(1).Should(Succeed())
+		}, "30s", "500ms").WithOffset(1).Should(Succeed())
 	}
 
 	It("should route to external-service", func() {

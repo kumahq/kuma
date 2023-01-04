@@ -63,9 +63,11 @@ destinations:
 		It("should send a traffic log to TCP port", func() {
 			// given traffic between apps with invalid logging backend
 			Expect(env.Cluster.Install(YamlUniversal(invalidLoggingBackend))).To(Succeed())
-			_, _, err := env.Cluster.ExecWithRetries("", "", AppModeDemoClient,
-				"curl", "-v", "--fail", "test-server.mesh")
-			Expect(err).ToNot(HaveOccurred())
+			Eventually(func(g Gomega) {
+				_, _, err := env.Cluster.Exec("", "", AppModeDemoClient,
+					"curl", "-v", "--fail", "test-server.mesh")
+				g.Expect(err).ToNot(HaveOccurred())
+			}).Should(Succeed())
 
 			// when valid backend is present
 			Expect(env.Cluster.Install(YamlUniversal(validLoggingBackend))).To(Succeed())
@@ -74,7 +76,7 @@ destinations:
 			var startTimeStr, src, dst string
 			sinkDeployment := env.Cluster.Deployment("externalservice-tcp-sink").(*externalservice.UniversalDeployment)
 			Eventually(func(g Gomega) {
-				_, _, err := env.Cluster.ExecWithRetries("", "", AppModeDemoClient,
+				_, _, err := env.Cluster.Exec("", "", AppModeDemoClient,
 					"curl", "-v", "--fail", "test-server.mesh")
 				g.Expect(err).ToNot(HaveOccurred())
 

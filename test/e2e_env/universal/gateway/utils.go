@@ -18,19 +18,21 @@ func demoClientName(mesh string) string {
 	return fmt.Sprintf("demo-client-%s", mesh)
 }
 
-func successfullyProxyRequestToGateway(cluster Cluster, clientName, instance, gatewayAddr string, opt ...client.CollectResponsesOptsFn) {
-	Logf("expecting 200 response from %q", gatewayAddr)
-	target := fmt.Sprintf("http://%s/%s",
-		gatewayAddr, path.Join("test", url.PathEscape(GinkgoT().Name())),
-	)
+func successfullyProxyRequestToGateway(cluster Cluster, clientName, instance, gatewayAddr string, opt ...client.CollectResponsesOptsFn) func(Gomega) {
+	return func(g Gomega) {
+		Logf("expecting 200 response from %q", gatewayAddr)
+		target := fmt.Sprintf("http://%s/%s",
+			gatewayAddr, path.Join("test", url.PathEscape(GinkgoT().Name())),
+		)
 
-	response, err := client.CollectResponse(
-		cluster, clientName, target,
-		opt...,
-	)
+		response, err := client.CollectResponse(
+			cluster, clientName, target,
+			opt...,
+		)
 
-	Expect(err).NotTo(HaveOccurred())
-	Expect(response.Instance).To(Equal(instance))
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(response.Instance).To(Equal(instance))
+	}
 }
 
 func failToProxyRequestToGateway(cluster Cluster, containerName, gatewayAddr, host string) func(Gomega) {

@@ -186,10 +186,6 @@ func (cs *UniversalClusters) Exec(string, string, string, ...string) (string, st
 	panic("not supported")
 }
 
-func (cs *UniversalClusters) ExecWithRetries(string, string, string, ...string) (string, string, error) {
-	panic("not supported")
-}
-
 func (cs *UniversalClusters) Deployment(string) Deployment {
 	panic("not supported")
 }

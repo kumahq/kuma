@@ -74,23 +74,23 @@ func deleteMeshResourcesKubernetes(cluster Cluster, mesh string, resource core_m
 }
 
 func WaitForMesh(mesh string, clusters []Cluster) error {
-	for _, cluster := range clusters {
-		if err := WaitForResource(cluster, core_mesh.MeshResourceTypeDescriptor, core_model.ResourceKey{Name: mesh}); err != nil {
+	return WaitForResource(core_mesh.MeshResourceTypeDescriptor, core_model.ResourceKey{Name: mesh}, clusters...)
+}
+
+func WaitForResource(descriptor core_model.ResourceTypeDescriptor, key core_model.ResourceKey, clusters ...Cluster) error {
+	for _, c := range clusters {
+		_, err := retry.DoWithRetryE(c.GetTesting(), "wait for resource "+key.Mesh+"/"+key.Name, DefaultRetries, DefaultTimeout,
+			func() (string, error) {
+				args := []string{"get", descriptor.KumactlArg, key.Name}
+				if key.Mesh != "" {
+					args = append(args, "-m", key.Mesh)
+				}
+				_, err := c.GetKumactlOptions().RunKumactlAndGetOutput(args...)
+				return "", err
+			})
+		if err != nil {
 			return err
 		}
 	}
 	return nil
-}
-
-func WaitForResource(cluster Cluster, descriptor core_model.ResourceTypeDescriptor, key core_model.ResourceKey) error {
-	_, err := retry.DoWithRetryE(cluster.GetTesting(), "wait for resource "+key.Mesh+"/"+key.Name, DefaultRetries, DefaultTimeout,
-		func() (string, error) {
-			args := []string{"get", descriptor.KumactlArg, key.Name}
-			if key.Mesh != "" {
-				args = append(args, "-m", key.Mesh)
-			}
-			_, err := cluster.GetKumactlOptions().RunKumactlAndGetOutput(args...)
-			return "", err
-		})
-	return err
 }
