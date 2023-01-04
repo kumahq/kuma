@@ -27,52 +27,16 @@ import (
 	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 )
 
-var ParseReplicaSets = func(values []string) ([]*kube_apps.ReplicaSet, error) {
-	rsets := make([]*kube_apps.ReplicaSet, len(values))
+func Parse[T any](values []string)([]T, error){
+	l := make([]T, len(values))
 	for i, value := range values {
-		rset := kube_apps.ReplicaSet{}
-		if err := yaml.Unmarshal([]byte(value), &rset); err != nil {
+		obj := new(T)
+		if err := yaml.Unmarshal([]byte(value), obj); err != nil {
 			return nil, err
 		}
-		rsets[i] = &rset
+		l[i] = *obj
 	}
-	return rsets, nil
-}
-
-var ParseJobs = func(values []string) ([]*kube_batch.Job, error) {
-	jobs := make([]*kube_batch.Job, len(values))
-	for i, value := range values {
-		job := kube_batch.Job{}
-		if err := yaml.Unmarshal([]byte(value), &job); err != nil {
-			return nil, err
-		}
-		jobs[i] = &job
-	}
-	return jobs, nil
-}
-
-var ParseServices = func(values []string) ([]*kube_core.Service, error) {
-	services := make([]*kube_core.Service, len(values))
-	for i, value := range values {
-		service := kube_core.Service{}
-		if err := yaml.Unmarshal([]byte(value), &service); err != nil {
-			return nil, err
-		}
-		services[i] = &service
-	}
-	return services, nil
-}
-
-var ParseDataplanes = func(values []string) ([]*mesh_k8s.Dataplane, error) {
-	dataplanes := make([]*mesh_k8s.Dataplane, len(values))
-	for i, value := range values {
-		dataplane := mesh_k8s.Dataplane{}
-		if err := yaml.Unmarshal([]byte(value), &dataplane); err != nil {
-			return nil, err
-		}
-		dataplanes[i] = &dataplane
-	}
-	return dataplanes, nil
+	return l, nil
 }
 
 var _ = Describe("PodToDataplane(..)", func() {
@@ -126,7 +90,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				bytes, err = os.ReadFile(filepath.Join("testdata", given.servicesForPod))
 				Expect(err).ToNot(HaveOccurred())
 				YAMLs := util_yaml.SplitYAML(string(bytes))
-				services, err = ParseServices(YAMLs)
+				services, err = Parse[*kube_core.Service](YAMLs)
 				Expect(err).ToNot(HaveOccurred())
 			}
 
@@ -142,7 +106,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				bytes, err = os.ReadFile(filepath.Join("testdata", given.otherServices))
 				Expect(err).ToNot(HaveOccurred())
 				YAMLs := util_yaml.SplitYAML(string(bytes))
-				services, err := ParseServices(YAMLs)
+				services, err := Parse[*kube_core.Service](YAMLs)
 				Expect(err).ToNot(HaveOccurred())
 				reader, err := newFakeServiceReader(services)
 				Expect(err).ToNot(HaveOccurred())
@@ -166,7 +130,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				bytes, err = os.ReadFile(filepath.Join("testdata", given.otherDataplanes))
 				Expect(err).ToNot(HaveOccurred())
 				YAMLs := util_yaml.SplitYAML(string(bytes))
-				otherDataplanes, err = ParseDataplanes(YAMLs)
+				otherDataplanes, err = Parse[*mesh_k8s.Dataplane](YAMLs)
 				Expect(err).ToNot(HaveOccurred())
 			}
 
@@ -329,7 +293,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			bytes, err = os.ReadFile(filepath.Join("testdata", "ingress", given.servicesForPod))
 			Expect(err).ToNot(HaveOccurred())
 			YAMLs := util_yaml.SplitYAML(string(bytes))
-			services, err := ParseServices(YAMLs)
+			services, err := Parse[*kube_core.Service](YAMLs)
 			Expect(err).ToNot(HaveOccurred())
 
 			// node
@@ -406,7 +370,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			bytes, err = os.ReadFile(filepath.Join("testdata", "egress", given.servicesForPod))
 			Expect(err).ToNot(HaveOccurred())
 			YAMLs := util_yaml.SplitYAML(string(bytes))
-			services, err := ParseServices(YAMLs)
+			services, err := Parse[*kube_core.Service](YAMLs)
 			Expect(err).ToNot(HaveOccurred())
 
 			// node
@@ -485,7 +449,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 					},
 				}
 
-				services, err := ParseServices(given.services)
+				services, err := Parse[*kube_core.Service](given.services)
 				Expect(err).ToNot(HaveOccurred())
 
 				dataplane := &mesh_k8s.Dataplane{}
@@ -960,24 +924,24 @@ var _ = Describe("Serviceless Name for(...)", func() {
 		Entry("name from replicaset", testCase{
 			pod:          "03.pod.yaml",
 			replicaSets:  "03.replicasets-for-pod.yaml",
-			expectedName: "test",
-			expectedKind: "Pod",
+			expectedName: "test-rs",
+			expectedKind: "ReplicaSet",
 		}),
 		Entry("name from job", testCase{
 			pod:          "04.pod.yaml",
 			jobs:         "04.job-for-pod.yaml",
-			expectedName: "test",
-			expectedKind: "Pod",
+			expectedName: "test-job",
+			expectedKind: "Job",
 		}),
 		Entry("name from pod", testCase{
 			pod:          "05.pod.yaml",
-			expectedName: "test",
+			expectedName: "test-pod-1",
 			expectedKind: "Pod",
 		}),
 		Entry("name from daemonset", testCase{
 			pod:          "06.pod.yaml",
-			expectedName: "test",
-			expectedKind: "Pod",
+			expectedName: "test-ds",
+			expectedKind: "DaemonSet",
 		}),
 	)
 })
@@ -1090,7 +1054,7 @@ func getReplicaSetsReader(path ...string) fakeReplicaSetReader {
 	bytes, err := os.ReadFile(filepath.Join(path...))
 	Expect(err).ToNot(HaveOccurred())
 	YAMLs := util_yaml.SplitYAML(string(bytes))
-	rsets, err := ParseReplicaSets(YAMLs)
+	rsets, err := Parse[*kube_apps.ReplicaSet](YAMLs)
 	Expect(err).ToNot(HaveOccurred())
 	reader, err := newFakeReplicaSetReader(rsets)
 	Expect(err).ToNot(HaveOccurred())
@@ -1101,7 +1065,7 @@ func getJobsReader(path ...string) fakeJobReader {
 	bytes, err := os.ReadFile(filepath.Join(path...))
 	Expect(err).ToNot(HaveOccurred())
 	YAMLs := util_yaml.SplitYAML(string(bytes))
-	rsets, err := ParseJobs(YAMLs)
+	rsets, err := Parse[*kube_batch.Job](YAMLs)
 	Expect(err).ToNot(HaveOccurred())
 	reader, err := newFakeJobReader(rsets)
 	Expect(err).ToNot(HaveOccurred())

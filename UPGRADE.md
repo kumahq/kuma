@@ -8,16 +8,28 @@ does not have any particular instructions.
 
 ## Upcoming release
 
-### http api
+### **List of breaking changes**
+
+#### **Naming of Serviceless has changed**
+
+Currently, serviceless pods' name is generated based on the `Pod` name. `Kuma-cp` takes the pod's name and removes 2 last elements after splitting by `-`. This behavior is correct when `Pod` is managed by `Deployment` or `CronJob` but not for other types. We've introduced the change that takes the name from the parent resource which breaks current behavior.
+Before upgrade:
+1. Identify all serviceless pods that are not managed by `Deployment` or `CronJob`.
+2. Create policies that were created for services but with a new name. The name is an owner name, in case there is no owner `Kuma` uses `Pod` name.
+3. Upgrade `Kuma`.
+
+### Other changes
+
+#### http api
 
 We've removed the endpoint `POST /tokens` which has been moved by `POST /tokens/dataplane` (same request and response) some time ago.
 Make sure you are using a recent `kumactl` or that you use the right path if using the api directly to upgrade with no issues.
 
-### Kubernetes
+#### Kubernetes
 
 The sidecar container is always injected first (since [#5436](https://github.com/kumahq/kuma/pull/5436)). This should only impact you when modifying the sidecar container with a container-patch. If you do so, upgrade Kuma and then change your container patch to modify the right container.
 
-### Kumactl
+#### Kumactl
 
 `--valid-for` must be set for all token types, before it was defaulting to 10 years.
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"regexp"
-	"strings"
 
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
@@ -198,7 +197,7 @@ func (p *PodConverter) GatewayByDeploymentFor(ctx context.Context, clusterName s
 	if err != nil {
 		return nil, err
 	}
-	if !strings.Contains(kind, "Deployment") {
+	if kind != "Deployment" {
 		return p.GatewayByServiceFor(ctx, clusterName, pod, services)
 	}
 	return &mesh_proto.Dataplane_Networking_Gateway{
