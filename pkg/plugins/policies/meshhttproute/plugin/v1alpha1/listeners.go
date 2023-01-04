@@ -186,6 +186,9 @@ func makeClusters(
 			name = envoy_names.GetSplitClusterName(service, splitCounter.getAndIncrement())
 		}
 
+		// The mesh tag is present here if this destination is generated
+		// from a cross-mesh MeshGateway listener virtual outbound.
+		// It is not part of the service tags.
 		if mesh, ok := ref.Tags[mesh_proto.MeshTag]; ok {
 			// The name should be distinct to the service & mesh combination
 			name = fmt.Sprintf("%s_%s", name, mesh)
@@ -206,9 +209,6 @@ func makeClusters(
 			envoy_common.WithService(service),
 			envoy_common.WithName(name),
 			envoy_common.WithWeight(uint32(ref.Weight)),
-			// The mesh tag is set here if this destination is generated
-			// from a MeshGateway virtual outbound and is not part of the
-			// service tags
 			envoy_common.WithTags(allTags.WithoutTags(mesh_proto.MeshTag)),
 			envoy_common.WithExternalService(isExternalService),
 		)

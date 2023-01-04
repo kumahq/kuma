@@ -91,6 +91,9 @@ properties:
                           type: object
                       type: object
                     type: array
+                required:
+                  - default
+                  - matches
                 type: object
               type: array
             targetRef:

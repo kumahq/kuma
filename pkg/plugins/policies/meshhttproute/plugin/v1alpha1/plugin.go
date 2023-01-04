@@ -44,7 +44,7 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
-	// These policies have alreadu been merged using the custom `GetDefault`
+	// These policies have already been merged using the custom `GetDefault`
 	// method and therefore are of the
 	// `ToRouteRule` type, where rules have been appended together.
 	policies := proxy.Policies.Dynamic[api.MeshHTTPRouteType]

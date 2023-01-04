@@ -40,10 +40,10 @@ type To struct {
 }
 
 type Rule struct {
-	Matches []Match `json:"matches,omitempty"`
+	Matches []Match `json:"matches"`
 	// Default holds routing rules that can be merged with rules from other
 	// policies.
-	Default RuleConf `json:"default,omitempty"`
+	Default RuleConf `json:"default"`
 }
 
 type Match struct {
