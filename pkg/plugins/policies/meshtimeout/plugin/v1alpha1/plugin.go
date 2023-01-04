@@ -50,7 +50,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, clusters.Outbound, proxy.Dataplane, proxy.Routing); err != nil {
 		return err
 	}
-	if err := applyToGateway(policies.ToRules, listeners.Gateway, clusters.Gateway, routes.Gateway, proxy.Dataplane, ctx, proxy); err != nil {
+	if err := applyToGateway(policies.ToRules, clusters.Gateway, routes.Gateway, ctx, proxy); err != nil {
 		return err
 	}
 	return nil
@@ -114,10 +114,8 @@ func applyToOutbounds(rules core_xds.ToRules, outboundListeners map[mesh_proto.O
 
 func applyToGateway(
 	toRules core_xds.ToRules,
-	gatewayListeners map[core_xds.InboundListener]*envoy_listener.Listener,
 	gatewayClusters map[string]*envoy_cluster.Cluster,
 	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
-	dataplane *core_mesh.DataplaneResource,
 	ctx xds_context.Context,
 	proxy *core_xds.Proxy,
 ) error {
@@ -126,16 +124,6 @@ func applyToGateway(
 		return err
 	}
 	for _, listenerInfo := range gatewayListerInfos {
-		address := dataplane.Spec.GetNetworking().Address
-		port := listenerInfo.Listener.Port
-		listenerKey := core_xds.InboundListener{
-			Address: address,
-			Port:    port,
-		}
-		gatewayListener, ok := gatewayListeners[listenerKey]
-		if !ok {
-			continue
-		}
 		route, ok := gatewayRoutes[listenerInfo.Listener.ResourceName]
 		if !ok {
 			continue
@@ -165,7 +153,7 @@ func applyToGateway(
 					toRules.Rules,
 					core_xds.MeshService(serviceName),
 					toProtocol(listenerInfo.Listener.Protocol),
-					gatewayListener,
+					nil,
 					cluster,
 					routeActions,
 				); err != nil {
@@ -191,10 +179,8 @@ func configure(rules core_xds.Rules, subset core_xds.Subset, protocol core_mesh.
 		Protocol: protocol,
 	}
 
-	for _, chain := range listener.FilterChains {
-		if err := configurer.ConfigureListener(chain); err != nil {
-			return err
-		}
+	if err := configurer.ConfigureListener(listener); err != nil {
+		return err
 	}
 
 	for _, routeAction := range routeActions {
