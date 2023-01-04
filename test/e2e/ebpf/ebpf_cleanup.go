@@ -16,6 +16,7 @@ import (
 )
 
 func CleanupEbpfConfigFromNode() {
+	namespace := "ebpf-cleanup"
 	// IPv6 currently not supported by our eBPF
 	// https://github.com/kumahq/kuma-net/issues/72
 	if Config.IPV6 {
@@ -39,14 +40,14 @@ func CleanupEbpfConfigFromNode() {
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
 				WithHelmOpt("experimental.ebpf.enabled", "true"))).
-			Install(NamespaceWithSidecarInjection(TestNamespace)).
+			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(testserver.Install(
-				testserver.WithNamespace(TestNamespace),
+				testserver.WithNamespace(namespace),
 				testserver.WithMesh("default"),
 				testserver.WithName("test-server"),
 			)).
 			Install(ebpf_checker.Install(
-				ebpf_checker.WithNamespace(TestNamespace),
+				ebpf_checker.WithNamespace(namespace),
 				ebpf_checker.WithoutSidecar(),
 			)).Setup(cluster)
 
@@ -54,19 +55,19 @@ func CleanupEbpfConfigFromNode() {
 	})
 
 	AfterAll(func() {
-		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
+		Expect(cluster.DeleteNamespace(namespace)).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
 	It("should cleanup ebpf files from node", func() {
-		ebpfCheckerPodName, err := PodNameOfApp(cluster, "ebpf-checker", TestNamespace)
+		ebpfCheckerPodName, err := PodNameOfApp(cluster, "ebpf-checker", namespace)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when remove application
 		Expect(cluster.DeleteDeployment("test-server")).To(Succeed())
 
 		// then should have bpf files left on the node
-		stdout, _, err := cluster.Exec(TestNamespace, ebpfCheckerPodName, "ebpf-checker", "ls", "/sys/fs/bpf")
+		stdout, _, err := cluster.Exec(namespace, ebpfCheckerPodName, "ebpf-checker", "ls", "/sys/fs/bpf")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("cookie_orig_dst"))
 
@@ -75,7 +76,7 @@ func CleanupEbpfConfigFromNode() {
 
 		// then should not have ebpf files left
 		Eventually(func(g Gomega) {
-			stdout, _, err = cluster.Exec(TestNamespace, ebpfCheckerPodName, "ebpf-checker", "ls", "/sys/fs/bpf")
+			stdout, _, err = cluster.Exec(namespace, ebpfCheckerPodName, "ebpf-checker", "ls", "/sys/fs/bpf")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).ToNot(ContainSubstring("cookie_orig_dst"))
 		}, "30s", "1s").Should(Succeed())
