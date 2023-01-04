@@ -27,7 +27,7 @@ import (
 	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 )
 
-func Parse[T any](values []string)([]T, error){
+func Parse[T any](values []string) ([]T, error) {
 	l := make([]T, len(values))
 	for i, value := range values {
 		obj := new(T)
