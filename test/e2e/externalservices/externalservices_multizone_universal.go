@@ -72,7 +72,7 @@ routing:
 
 	var global, zone1, zone2, external Cluster
 
-	BeforeAll(func() {
+	BeforeEach(func() {
 		clusters, err := NewUniversalClusters(
 			[]string{Kuma3, Kuma4, Kuma5, Kuma6},
 			Silent)
@@ -128,7 +128,7 @@ routing:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	E2EAfterAll(func() {
+	E2EAfterEach(func() {
 		Expect(external.DismissCluster()).To(Succeed())
 		Expect(zone1.DismissCluster()).To(Succeed())
 		Expect(zone2.DismissCluster()).To(Succeed())

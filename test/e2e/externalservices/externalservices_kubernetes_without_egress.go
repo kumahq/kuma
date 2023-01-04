@@ -52,7 +52,7 @@ spec:
 	var cluster Cluster
 	var clientPodName string
 
-	BeforeAll(func() {
+	BeforeEach(func() {
 		clusters, err := NewK8sClusters(
 			[]string{Kuma1},
 			Silent)
@@ -75,7 +75,7 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	E2EAfterAll(func() {
+	E2EAfterEach(func() {
 		err := cluster.DeleteNamespace(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
 
