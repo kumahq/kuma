@@ -12,6 +12,7 @@ import (
 )
 
 func ExternalServicesOnKubernetesWithoutEgress() {
+	namespace := "external-service-k8s-no-egress"
 	meshDefaulMtlsOn := `
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
@@ -61,8 +62,8 @@ spec:
 		cluster = clusters.GetCluster(Kuma1)
 		err = NewClusterSetup().
 			Install(Kuma(core.Standalone)).
-			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(DemoClientK8s("default", TestNamespace)).
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(DemoClientK8s("default", namespace)).
 			Install(externalservice.Install(externalservice.HttpServer, []string{})).
 			Install(externalservice.Install(externalservice.HttpsServer, []string{})).
 			Setup(cluster)
@@ -71,23 +72,19 @@ spec:
 		err = YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "false", "false"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		clientPodName, err = PodNameOfApp(cluster, "demo-client", TestNamespace)
+		clientPodName, err = PodNameOfApp(cluster, "demo-client", namespace)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterEach(func() {
-		err := cluster.DeleteNamespace(TestNamespace)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = cluster.DeleteKuma()
-		Expect(err).ToNot(HaveOccurred())
-
-		err = cluster.DismissCluster()
-		Expect(err).ToNot(HaveOccurred())
+		Expect(cluster.DeleteNamespace(namespace)).ToNot(HaveOccurred())
+		Expect(cluster.DeleteNamespace(fmt.Sprintf("%s-%s", externalservice.DeploymentName, "namespace"))).ToNot(HaveOccurred())
+		Expect(cluster.DeleteKuma()).ToNot(HaveOccurred())
+		Expect(cluster.DismissCluster()).ToNot(HaveOccurred())
 	})
 
 	trafficBlocked := func() error {
-		_, _, err := cluster.Exec(TestNamespace, clientPodName, "demo-client",
+		_, _, err := cluster.Exec(namespace, clientPodName, "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace:10080")
 		return err
 	}
@@ -99,7 +96,7 @@ spec:
 
 		// then communication outside of the Mesh works
 		Eventually(func(g Gomega) {
-			_, stderr, err := cluster.Exec(TestNamespace, clientPodName, "demo-client",
+			_, stderr, err := cluster.Exec(namespace, clientPodName, "demo-client",
 				"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace:10080")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
@@ -111,7 +108,7 @@ spec:
 
 		// then communication outside of the Mesh works
 		Eventually(func(g Gomega) {
-			_, stderr, err := cluster.Exec(TestNamespace, clientPodName, "demo-client",
+			_, stderr, err := cluster.Exec(namespace, clientPodName, "demo-client",
 				"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace:10080")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
@@ -145,7 +142,7 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() error {
-			_, _, err = cluster.Exec(TestNamespace, clientPodName, "demo-client",
+			_, _, err = cluster.Exec(namespace, clientPodName, "demo-client",
 				"curl", "-v", "-m", "3", "--fail", "http://external-service.mesh:10080")
 			return err
 		}, "30s", "1s").Should(HaveOccurred())

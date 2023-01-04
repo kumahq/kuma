@@ -11,6 +11,7 @@ import (
 
 func ResilienceMultizoneK8s() {
 	var global, zone1 *K8sCluster
+	namespace := "resilience-multizone-k8s"
 
 	BeforeAll(func() {
 		clusters, err := NewK8sClusters([]string{Kuma1, Kuma2}, Silent)
@@ -30,13 +31,13 @@ func ResilienceMultizoneK8s() {
 
 		Expect(NewClusterSetup().
 			Install(Kuma(core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()), WithCtlOpts(map[string]string{"--set": "controlPlane.terminationGracePeriodSeconds=5"}))).
-			Install(NamespaceWithSidecarInjection(TestNamespace)).
+			Install(NamespaceWithSidecarInjection(namespace)).
 			Setup(zone1)).To(Succeed())
 		Expect(zone1.VerifyKuma()).To(Succeed())
 	})
 
 	E2EAfterAll(func() {
-		Expect(zone1.DeleteNamespace(TestNamespace)).To(Succeed())
+		Expect(zone1.DeleteNamespace(namespace)).To(Succeed())
 		Expect(zone1.DeleteKuma()).To(Succeed())
 		Expect(zone1.DismissCluster()).To(Succeed())
 

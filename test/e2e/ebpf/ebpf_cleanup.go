@@ -45,6 +45,7 @@ func CleanupEbpfConfigFromNode() {
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh("default"),
 				testserver.WithName("test-server"),
+				testserver.WithoutWaitingToBeReady(),
 			)).
 			Install(ebpf_checker.Install(
 				ebpf_checker.WithNamespace(namespace),

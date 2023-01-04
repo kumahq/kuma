@@ -58,6 +58,7 @@ func InstallExternalService(name string) InstallFunc {
 }
 
 func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
+	namespace := "locality-multizone-hybrid"
 	BeforeAll(func() {
 		k8sClusters, err := NewK8sClusters(
 			[]string{Kuma1},
@@ -89,7 +90,7 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 				WithEgressEnvoyAdminTunnel(),
 				WithGlobalAddress(globalCP.GetKDSServerAddress()),
 			)).
-			Install(NamespaceWithSidecarInjection(TestNamespace)).
+			Install(NamespaceWithSidecarInjection(namespace)).
 			Setup(zone1)).To(Succeed())
 
 		// Universal Cluster 4
@@ -116,7 +117,7 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 	})
 
 	AfterAll(func() {
-		Expect(zone1.DeleteNamespace(TestNamespace)).To(Succeed())
+		Expect(zone1.DeleteNamespace(namespace)).To(Succeed())
 		Expect(zone1.DeleteKuma()).To(Succeed())
 		Expect(zone1.DismissCluster()).To(Succeed())
 		Expect(zone4.DismissCluster()).To(Succeed())
