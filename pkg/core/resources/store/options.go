@@ -211,6 +211,10 @@ func ListOrdered() ListOptionsFunc {
 	}
 }
 
+func (l *ListOptions) IsCachable() bool {
+	return l.FilterFunc == nil
+}
+
 func (l *ListOptions) HashCode() string {
 	return l.Mesh
 }
