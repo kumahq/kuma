@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"reflect"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -34,27 +35,31 @@ func generateListeners(
 			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 			Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(outbound.GetTagsIncludingLegacy()).WithoutTags(mesh_proto.MeshTag)))
 
+		filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
+			Configure(envoy_listeners.HttpConnectionManager(serviceName, false))
+
+		var routes []xds.OutboundRoute
 		for _, route := range FindRoutes(rules, serviceName) {
 			clusters := makeClusters(proxy, map[string]string{}, splitCounter, route.BackendRefs)
 			servicesAcc.Add(clusters...)
 
-			filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion)
-
-			serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
-			configurer := &xds.HttpOutboundRouteConfigurer{
-				Service:  serviceName,
+			routes = append(routes, xds.OutboundRoute{
 				Matches:  route.Matches,
 				Filters:  route.Filters,
 				Clusters: clusters,
-				DpTags:   proxy.Dataplane.Spec.TagSet(),
-			}
-			filterChainBuilder.
-				Configure(envoy_listeners.HttpConnectionManager(serviceName, false)).
-				Configure(envoy_listeners.AddFilterChainConfigurer(configurer))
-
-			listenerBuilder = listenerBuilder.Configure(envoy_listeners.FilterChain(filterChainBuilder))
+			})
 		}
 
+		outboundRouteConfigurer := &xds.HttpOutboundRouteConfigurer{
+			Service: serviceName,
+			Routes:  routes,
+			DpTags:  proxy.Dataplane.Spec.TagSet(),
+		}
+
+		filterChainBuilder.
+			Configure(envoy_listeners.AddFilterChainConfigurer(outboundRouteConfigurer))
+
+		listenerBuilder.Configure(envoy_listeners.FilterChain(filterChainBuilder))
 		listener, err := listenerBuilder.Build()
 		if err != nil {
 			return nil, err
@@ -67,6 +72,79 @@ func generateListeners(
 	}
 
 	return resources, nil
+}
+
+func FindRoutes(
+	rules []ToRouteRule,
+	serviceName string,
+) []Route {
+	var unmergedRules []RuleAcc
+
+	for _, rule := range rules {
+		if !rule.Subset.IsSubset(core_xds.MeshService(serviceName)) {
+			continue
+		}
+		// Look through all the rules and accumulate all filters/refs for a
+		// given matches value.
+		// TODO: this is O(#rules^2*#matches) because Go can't use a list of
+		// matches as a key.
+		for _, routeRules := range rule.Rules {
+			var found bool
+			// Treat the list of (matches, filters/refs) as a map
+			for i, accRule := range unmergedRules {
+				if !reflect.DeepEqual(accRule.MatchKey, routeRules.Matches) {
+					continue
+				}
+				unmergedRules[i] = RuleAcc{
+					MatchKey:  accRule.MatchKey,
+					RuleConfs: append(accRule.RuleConfs, routeRules.Default),
+				}
+				found = true
+			}
+			if !found {
+				unmergedRules = append(unmergedRules, RuleAcc{
+					MatchKey:  routeRules.Matches,
+					RuleConfs: []api.RuleConf{routeRules.Default},
+				})
+			}
+		}
+	}
+
+	var routes []Route
+
+	for _, rule := range unmergedRules {
+		route := Route{
+			Matches: rule.MatchKey,
+		}
+		for _, conf := range rule.RuleConfs {
+			if conf.Filters != nil {
+				route.Filters = *conf.Filters
+			}
+			if conf.BackendRefs != nil {
+				route.BackendRefs = *conf.BackendRefs
+			}
+		}
+		routes = append(routes, route)
+	}
+
+	// append the default route
+	routes = append(routes, Route{
+		Matches: []api.Match{{
+			Path: api.PathMatch{
+				Prefix: "/",
+			},
+		}},
+		Filters: nil,
+		BackendRefs: []api.BackendRef{{
+			TargetRef: common_api.TargetRef{
+				Kind: common_api.MeshService,
+				Name: serviceName,
+			},
+			Weight: 100,
+		}},
+	})
+
+	return routes
 }
 
 // Whenever `split` is specified in the TrafficRoute which has more than kuma.io/service tag

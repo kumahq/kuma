@@ -1,11 +1,8 @@
 package v1alpha1
 
 import (
-	"reflect"
-
 	"github.com/pkg/errors"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -96,77 +93,4 @@ func ApplyToOutbounds(
 	rs.AddSet(endpoints)
 
 	return nil
-}
-
-func FindRoutes(
-	rules []ToRouteRule,
-	serviceName string,
-) []Route {
-	var unmergedRules []RuleAcc
-
-	for _, rule := range rules {
-		if !rule.Subset.IsSubset(core_xds.MeshService(serviceName)) {
-			continue
-		}
-		// Look through all the rules and accumulate all filters/refs for a
-		// given matches value.
-		// TODO: this is O(#rules^2*#matches) because Go can't use a list of
-		// matches as a key.
-		for _, routeRules := range rule.Rules {
-			var found bool
-			// Treat the list of (matches, filters/refs) as a map
-			for i, accRule := range unmergedRules {
-				if !reflect.DeepEqual(accRule.MatchKey, routeRules.Matches) {
-					continue
-				}
-				unmergedRules[i] = RuleAcc{
-					MatchKey:  accRule.MatchKey,
-					RuleConfs: append(accRule.RuleConfs, routeRules.Default),
-				}
-				found = true
-			}
-			if !found {
-				unmergedRules = append(unmergedRules, RuleAcc{
-					MatchKey:  routeRules.Matches,
-					RuleConfs: []api.RuleConf{routeRules.Default},
-				})
-			}
-		}
-	}
-
-	var routes []Route
-
-	for _, rule := range unmergedRules {
-		route := Route{
-			Matches: rule.MatchKey,
-		}
-		for _, conf := range rule.RuleConfs {
-			if conf.Filters != nil {
-				route.Filters = *conf.Filters
-			}
-			if conf.BackendRefs != nil {
-				route.BackendRefs = *conf.BackendRefs
-			}
-		}
-		routes = append(routes, route)
-	}
-
-	// append the default route
-	routes = append(routes, Route{
-		Matches: []api.Match{{
-			Path: api.PathMatch{
-				Prefix: "/",
-			},
-		}},
-		Filters: nil,
-		BackendRefs: []api.BackendRef{{
-			TargetRef: common_api.TargetRef{
-				Kind: common_api.MeshService,
-				Name: serviceName,
-			},
-			Weight: 100,
-		}},
-	})
-
-	return routes
 }
