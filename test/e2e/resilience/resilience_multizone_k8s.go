@@ -164,7 +164,10 @@ metadata:
 		}, "30s", "1s").Should(ContainSubstring("Online"))
 
 		// Start a new app
-		Expect(testserver.Install(testserver.WithName("kds-after-zone-restart"))(zone1)).To(Succeed())
+		Expect(testserver.Install(
+			testserver.WithName("kds-after-zone-restart"),
+			testserver.WithNamespace(namespace),
+		)(zone1)).To(Succeed())
 
 		// Check all 2 dps are in the local zone
 		Eventually(func() (string, error) {
@@ -185,7 +188,10 @@ metadata:
 
 	It("should see zone entities in global after a global restart", func() {
 		// Start an app
-		Expect(testserver.Install(testserver.WithName("kds-before-global-restart"))(zone1)).To(Succeed())
+		Expect(testserver.Install(
+			testserver.WithName("kds-before-global-restart"),
+			testserver.WithNamespace(namespace),
+		)(zone1)).To(Succeed())
 
 		// Check the dp gets to global
 		Eventually(func() (string, error) {
@@ -196,7 +202,10 @@ metadata:
 		Expect(global.StopControlPlane()).To(Succeed())
 
 		// Start an app while the global CP is down
-		Expect(testserver.Install(testserver.WithName("kds-during-global-restart"))(zone1)).To(Succeed())
+		Expect(testserver.Install(
+			testserver.WithName("kds-during-global-restart"),
+			testserver.WithNamespace(namespace),
+		)(zone1)).To(Succeed())
 
 		// Check the dp is in the zone
 		Eventually(func() (string, error) {
@@ -210,7 +219,10 @@ metadata:
 		}, "30s", "1s").Should(ContainSubstring("Online"))
 
 		// Start a new app
-		Expect(testserver.Install(testserver.WithName("kds-after-global-restart"))(zone1)).To(Succeed())
+		Expect(testserver.Install(
+			testserver.WithName("kds-after-global-restart"),
+			testserver.WithNamespace(namespace),
+		)(zone1)).To(Succeed())
 
 		// Check all 3 dps are in the local zone
 		Eventually(func() (string, error) {
