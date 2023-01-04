@@ -211,7 +211,7 @@ func ListOrdered() ListOptionsFunc {
 	}
 }
 
-func (l *ListOptions) IsCachable() bool {
+func (l *ListOptions) IsCacheable() bool {
 	return l.FilterFunc == nil
 }
 

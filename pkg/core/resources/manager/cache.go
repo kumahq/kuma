@@ -85,7 +85,7 @@ func (c *cachedManager) Get(ctx context.Context, res model.Resource, fs ...store
 
 func (c *cachedManager) List(ctx context.Context, list model.ResourceList, fs ...store.ListOptionsFunc) error {
 	opts := store.NewListOptions(fs...)
-	if !opts.IsCachable() {
+	if !opts.IsCacheable() {
 		return fmt.Errorf("filter functions are not allowed for cached store")
 	}
 	cacheKey := fmt.Sprintf("LIST:%s:%s", list.GetItemType(), opts.HashCode())
