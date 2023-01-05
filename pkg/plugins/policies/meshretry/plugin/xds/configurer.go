@@ -41,7 +41,6 @@ func genGrpcRetryPolicy(conf *api.GRPC) *envoy_route.RetryPolicy {
 
 	if conf.PerTryTimeout != nil {
 		policy.PerTryTimeout = util_proto.Duration(conf.PerTryTimeout.Duration)
-
 	}
 
 	if conf.NumRetries != nil {

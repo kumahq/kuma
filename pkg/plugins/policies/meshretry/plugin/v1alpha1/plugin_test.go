@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"fmt"
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test"
 	"path/filepath"
@@ -88,7 +87,7 @@ var _ = Describe("MeshRetry", func() {
 			resources: []core_xds.Resource{{
 				Name:     "outbound",
 				Origin:   generator.OriginOutbound,
-				Resource: httpOutboundListenerWith(10001),
+				Resource: listener(),
 			}},
 			toRules: core_xds.ToRules{
 				Rules: []*core_xds.Rule{
@@ -108,7 +107,7 @@ var _ = Describe("MeshRetry", func() {
 			resources: []core_xds.Resource{{
 				Name:     "outbound",
 				Origin:   generator.OriginOutbound,
-				Resource: httpOutboundListenerWith(10001),
+				Resource: listener(),
 			}},
 			toRules: core_xds.ToRules{
 				Rules: []*core_xds.Rule{
@@ -122,7 +121,7 @@ var _ = Describe("MeshRetry", func() {
 									BaseInterval: test.ParseDuration("3s"),
 									MaxInterval:  test.ParseDuration("4s"),
 								},
-								RetryOn:                  &[]api.HTTPRetryOn{api.ALL_5XX},
+								RetryOn:                  &[]api.HTTPRetryOn{api.ALL_5XX, api.HTTP_METHOD_GET, api.CONNECT_FAILURE, "429"},
 								RetriableResponseHeaders: &[]common_api.HeaderMatcher{
 									{
 										Type:  common_api.REGULAR_EXPRESSION,
@@ -149,7 +148,7 @@ var _ = Describe("MeshRetry", func() {
 			},
 			expectedListener: "http_retry_listener.golden.yaml",
 		}),
-		PEntry("grpc retry", testCase{
+		Entry("grpc retry", testCase{
 			resources: []core_xds.Resource{{
 				Name:   "outbound",
 				Origin: generator.OriginOutbound,
@@ -189,33 +188,24 @@ func getResourceYaml(list core_xds.ResourceList) []byte {
 	return actualListener
 }
 
-func httpOutboundListenerWith(port uint32) envoy_common.NamedResource {
-	return createListener(
-		port,
-		OutboundListener(fmt.Sprintf("outbound:127.0.0.1:%d", port), "127.0.0.1", port, core_xds.SocketAddressProtocolTCP),
-		HttpOutboundRoute(
-			"backend",
-			envoy_common.Routes{{
-				Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-					envoy_common.WithService("backend"),
-					envoy_common.WithWeight(100),
-				)},
-			}},
-			map[string]map[string]bool{
-				"kuma.io/service": {
-					"web": true,
-				},
-			},
-		),
-		"outbound",
-	)
-}
-
-func createListener(port uint32, listener ListenerBuilderOpt, route FilterChainBuilderOpt, direction string) envoy_common.NamedResource {
+func listener() envoy_common.NamedResource {
 	return NewListenerBuilder(envoy_common.APIV3).
-		Configure(listener).
+		Configure(OutboundListener("outbound:127.0.0.1:10001", "127.0.0.1", 10001, core_xds.SocketAddressProtocolTCP)).
 		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-			Configure(HttpConnectionManager(fmt.Sprintf("%s:127.0.0.1:%d", direction, port), false)).
-			Configure(route),
-		)).MustBuild()
+			Configure(HttpConnectionManager("outbound:127.0.0.1:10001", false)).
+			Configure(HttpOutboundRoute(
+				"backend",
+				envoy_common.Routes{{
+					Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+						envoy_common.WithService("backend"),
+						envoy_common.WithWeight(100),
+					)},
+				}},
+				map[string]map[string]bool{
+					"kuma.io/service": {
+						"web": true,
+					},
+				},
+			)))).
+		MustBuild()
 }

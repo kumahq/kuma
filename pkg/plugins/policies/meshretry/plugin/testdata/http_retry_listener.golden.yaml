@@ -35,13 +35,18 @@ filterChains:
               stringMatch:
                 exact: exact-value
             retriableRequestHeaders:
+            - name: :method
+              stringMatch:
+                exact: GET
             - name: x-retry-prefix
               stringMatch:
                 prefix: prefix-
+            retriableStatusCodes:
+            - 429
             retryBackOff:
               baseInterval: 3s
               maxInterval: 4s
-            retryOn: 5XX
+            retryOn: 5XX,CONNECT-FAILURE,retriable-status-codes
           routes:
           - match:
               prefix: /
