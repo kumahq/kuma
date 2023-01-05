@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"k8s.io/kube-openapi/pkg/validation/spec"
 )
 
 const (
@@ -113,6 +114,8 @@ type ResourceTypeDescriptor struct {
 	IsExperimental bool
 	// IsPluginOriginated indicates if a policy is implemented as a plugin
 	IsPluginOriginated bool
+	// Schema contains an unmarshalled OpenAPI schema of the resource
+	Schema *spec.Schema
 }
 
 func (d ResourceTypeDescriptor) NewObject() Resource {
@@ -177,6 +180,12 @@ func AllowedToInspect() TypeFilter {
 func HasScope(scope ResourceScope) TypeFilter {
 	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
 		return descriptor.Scope == scope
+	})
+}
+
+func IsPolicy() TypeFilter {
+	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
+		return descriptor.IsPolicy
 	})
 }
 

@@ -446,7 +446,7 @@ func (r *resyncer) createOrUpdateMeshInsight(ctx context.Context, mesh string, n
 		External: uint32(len(externalServices.Items)),
 	}
 
-	for _, resDesc := range r.registry.ObjectDescriptors(model.HasScope(model.ScopeMesh), model.Not(model.Named(core_mesh.DataplaneType, core_mesh.DataplaneInsightType))) {
+	for _, resDesc := range r.registry.ObjectDescriptors(model.HasScope(model.ScopeMesh), model.IsPolicy()) {
 		list := resDesc.NewList()
 
 		if err := r.rm.List(ctx, list, store.ListByMesh(mesh)); err != nil {
