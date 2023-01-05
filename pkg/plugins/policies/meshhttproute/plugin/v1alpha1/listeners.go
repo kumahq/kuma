@@ -170,7 +170,7 @@ func makeClusters(
 	splitCounter *splitCounter,
 	refs []api.BackendRef,
 ) []envoy.Cluster {
-	var clustersInternal, clustersExternal []envoy.Cluster
+	var clusters []envoy.Cluster
 
 	for _, ref := range refs {
 		switch ref.Kind {
@@ -227,12 +227,8 @@ func makeClusters(
 			clusterCache[allTags.String()] = cluster.Name()
 		}
 
-		if isExternalService {
-			clustersExternal = append(clustersExternal, cluster)
-		} else {
-			clustersInternal = append(clustersInternal, cluster)
-		}
+		clusters = append(clusters, cluster)
 	}
 
-	return append(clustersExternal, clustersInternal...)
+	return clusters
 }
