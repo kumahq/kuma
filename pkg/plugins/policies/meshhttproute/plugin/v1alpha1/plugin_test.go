@@ -9,8 +9,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -21,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/pkg/test/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
@@ -48,13 +47,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(routes.ToRules).To(Equal(given.expectedRoutes))
 	}, Entry("basic", policiesTestCase{
-		dataplane: builders.Dataplane().
-			WithName("frontend").
-			WithMesh("default").
-			WithAddress("127.0.0.1").
-			AddOutboundsToServices("backend").
-			WithInboundOfTags(mesh_proto.ServiceTag, "frontend", mesh_proto.ProtocolTag, "http").
-			Build(),
+		dataplane: samples.DataplaneWeb(),
 		resources: xds_context.Resources{
 			MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
 				api.MeshHTTPRouteType: &api.MeshHTTPRouteResourceList{
@@ -64,14 +57,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 							Name: "route-1",
 						},
 						Spec: &api.MeshHTTPRoute{
-							TargetRef: common_api.TargetRef{
-								Kind: common_api.Mesh,
-							},
+							TargetRef: builders.TargetRefMesh(),
 							To: []api.To{{
-								TargetRef: common_api.TargetRef{
-									Kind: common_api.MeshService,
-									Name: "backend",
-								},
+								TargetRef: builders.TargetRefService("backend"),
 								Rules: []api.Rule{{
 									Matches: []api.Match{{
 										Path: api.PathMatch{
@@ -80,11 +68,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 									}},
 									Default: api.RuleConf{
 										BackendRefs: &[]api.BackendRef{{
-											TargetRef: common_api.TargetRef{
-												Kind: common_api.MeshService,
-												Name: "backend",
-											},
-											Weight: 100,
+											TargetRef: builders.TargetRefService("backend"),
+											Weight:    100,
 										}},
 									},
 								}},
@@ -96,15 +81,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 							Name: "route-2",
 						},
 						Spec: &api.MeshHTTPRoute{
-							TargetRef: common_api.TargetRef{
-								Kind: common_api.MeshService,
-								Name: "frontend",
-							},
+							TargetRef: builders.TargetRefService("web"),
 							To: []api.To{{
-								TargetRef: common_api.TargetRef{
-									Kind: common_api.MeshService,
-									Name: "backend",
-								},
+								TargetRef: builders.TargetRefService("backend"),
 								Rules: []api.Rule{{
 									Matches: []api.Match{{
 										Path: api.PathMatch{
@@ -113,11 +92,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 									}},
 									Default: api.RuleConf{
 										BackendRefs: &[]api.BackendRef{{
-											TargetRef: common_api.TargetRef{
-												Kind: common_api.MeshService,
-												Name: "backend",
-											},
-											Weight: 100,
+											TargetRef: builders.TargetRefService("backend"),
+											Weight:    100,
 										}},
 									},
 								}},
@@ -141,11 +117,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 								}},
 								Default: api.RuleConf{
 									BackendRefs: &[]api.BackendRef{{
-										TargetRef: common_api.TargetRef{
-											Kind: common_api.MeshService,
-											Name: "backend",
-										},
-										Weight: 100,
+										TargetRef: builders.TargetRefService("backend"),
+										Weight:    100,
 									}},
 								},
 							},
@@ -157,11 +130,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 								}},
 								Default: api.RuleConf{
 									BackendRefs: &[]api.BackendRef{{
-										TargetRef: common_api.TargetRef{
-											Kind: common_api.MeshService,
-											Name: "backend",
-										},
-										Weight: 100,
+										TargetRef: builders.TargetRefService("backend"),
+										Weight:    100,
 									}},
 								},
 							},
@@ -201,11 +171,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 				}},
 				Default: api.RuleConf{
 					BackendRefs: &[]api.BackendRef{{
-						TargetRef: common_api.TargetRef{
-							Kind: common_api.MeshService,
-							Name: "backend",
-						},
-						Weight: 100,
+						TargetRef: builders.TargetRefService("backend"),
+						Weight:    100,
 					}},
 				},
 			}},
@@ -219,11 +186,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 				}},
 				Default: api.RuleConf{
 					BackendRefs: &[]api.BackendRef{{
-						TargetRef: common_api.TargetRef{
-							Kind: common_api.MeshService,
-							Name: "backend",
-						},
-						Weight: 100,
+						TargetRef: builders.TargetRefService("backend"),
+						Weight:    100,
 					}},
 				},
 			}},
@@ -237,7 +201,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}},
 			BackendRefs: []api.BackendRef{
 				{
-					TargetRef: common_api.TargetRef{Kind: "MeshService", Name: "backend", Tags: nil, Mesh: ""},
+					TargetRef: builders.TargetRefService("backend"),
 					Weight:    100,
 				},
 			},
@@ -249,7 +213,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}},
 			BackendRefs: []api.BackendRef{
 				{
-					TargetRef: common_api.TargetRef{Kind: "MeshService", Name: "backend", Tags: nil, Mesh: ""},
+					TargetRef: builders.TargetRefService("backend"),
 					Weight:    100,
 				},
 			},
@@ -261,7 +225,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}},
 			BackendRefs: []api.BackendRef{
 				{
-					TargetRef: common_api.TargetRef{Kind: "MeshService", Name: "backend", Tags: nil, Mesh: ""},
+					TargetRef: builders.TargetRefService("backend"),
 					Weight:    100,
 				},
 			},
@@ -305,19 +269,13 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Secrets: &xds.TestSecrets{},
 				},
 				Mesh: xds_context.MeshContext{
-					Resource:    builders.Mesh().WithName("default").Build(),
+					Resource:    samples.MeshDefault(),
 					EndpointMap: outboundTargets,
 				},
 			},
 			proxy: core_xds.Proxy{
 				APIVersion: xds_envoy.APIV3,
-				Dataplane: builders.Dataplane().
-					WithName("frontend").
-					WithMesh("default").
-					WithAddress("127.0.0.1").
-					AddOutboundsToServices("backend").
-					WithInboundOfTags(mesh_proto.ServiceTag, "frontend", mesh_proto.ProtocolTag, "http").
-					Build(),
+				Dataplane:  samples.DataplaneWeb(),
 				Routing: core_xds.Routing{
 					OutboundTargets: outboundTargets,
 				},
@@ -349,13 +307,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			},
 			proxy: core_xds.Proxy{
 				APIVersion: xds_envoy.APIV3,
-				Dataplane: builders.Dataplane().
-					WithName("frontend").
-					WithMesh("default").
-					WithAddress("127.0.0.1").
-					AddOutboundsToServices("backend").
-					WithInboundOfTags(mesh_proto.ServiceTag, "frontend", mesh_proto.ProtocolTag, "http").
-					Build(),
+				Dataplane:  samples.DataplaneWeb(),
 				Routing: core_xds.Routing{
 					OutboundTargets: outboundTargets,
 				},
@@ -373,11 +325,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 										}},
 										Default: api.RuleConf{
 											BackendRefs: &[]api.BackendRef{{
-												TargetRef: common_api.TargetRef{
-													Kind: common_api.MeshService,
-													Name: "backend",
-												},
-												Weight: 100,
+												TargetRef: builders.TargetRefService("backend"),
+												Weight:    100,
 											}},
 										},
 									}, {
@@ -388,14 +337,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 										}},
 										Default: api.RuleConf{
 											BackendRefs: &[]api.BackendRef{{
-												TargetRef: common_api.TargetRef{
-													Kind: common_api.MeshServiceSubset,
-													Name: "backend",
-													Tags: map[string]string{
-														"region": "us",
-													},
-												},
-												Weight: 100,
+												TargetRef: builders.TargetRefServiceSubset("backend", "region", "us"),
+												Weight:    100,
 											}},
 										},
 									}},

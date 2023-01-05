@@ -20,7 +20,7 @@ resources:
             requestHeadersToAdd:
             - header:
                 key: x-kuma-tags
-                value: '&kuma.io/protocol=http&&kuma.io/service=frontend&'
+                value: '&kuma.io/protocol=http&&kuma.io/service=web&'
             validateClusters: false
             virtualHosts:
             - domains:
