@@ -456,6 +456,11 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 			},
 		}
 
+		container.Resources.Limits = kube_core.ResourceList{
+			kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(100, kube_api.Milli),
+			kube_core.ResourceMemory: *kube_api.NewScaledQuantity(80, kube_api.Mega),
+		}
+
 		container.VolumeMounts = []kube_core.VolumeMount{
 			{Name: "sys-fs-cgroup", MountPath: i.cfg.EBPF.CgroupPath},
 			{Name: "bpf-fs", MountPath: i.cfg.EBPF.BPFFSPath, MountPropagation: &bidirectional},
