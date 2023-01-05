@@ -79,7 +79,7 @@ func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Servi
 	return
 }
 
-func inboundForServiceless(zone string, pod *kube_core.Pod, name string) (ifaces []*mesh_proto.Dataplane_Networking_Inbound) {
+func inboundForServiceless(zone string, pod *kube_core.Pod, name string) *mesh_proto.Dataplane_Networking_Inbound {
 	// The Pod does not have any services associated with it, just get the data from the Pod itself
 
 	// We still need that extra listener with a service because it is required in many places of the code (e.g. mTLS)
@@ -114,13 +114,11 @@ func inboundForServiceless(zone string, pod *kube_core.Pod, name string) (ifaces
 		}
 	}
 
-	ifaces = append(ifaces, &mesh_proto.Dataplane_Networking_Inbound{
+	return &mesh_proto.Dataplane_Networking_Inbound{
 		Port:   mesh_proto.TCPPortReserved,
 		Tags:   tags,
 		Health: health,
-	})
-
-	return
+	}
 }
 
 func (i *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
@@ -139,7 +137,7 @@ func (i *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string
 			return nil, err
 		}
 
-		ifaces = append(ifaces, inboundForServiceless(zone, pod, name)...)
+		ifaces = append(ifaces, inboundForServiceless(zone, pod, name))
 	}
 	return ifaces, nil
 }

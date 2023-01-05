@@ -12,13 +12,12 @@ does not have any particular instructions.
 
 ### **Naming Serviceless dataplanes has changed**
 
-Currently, serviceless pods' name is generated based on the `Pod` name. `Kuma-cp` takes the pod's name and removes 2 last elements after splitting by `-`. This behavior is correct when `Pod` is managed by `Deployment` or `CronJob` but not for other types. We've introduced the change that takes the name from the parent resource which breaks current behavior.
+Currently, the `kuma.io/service` value of the inbound of a `Dataplane` generated for a `Pod` without a `Service` is based on the `Pod` name. The Kuma CP takes the pod's name and removes 2 last elements after splitting by `-`. This behavior is correct when the `Pod` is owned by a `Deployment` or `CronJob` but not for other owner kinds. Kuma will now use the name of the owner resource as the `kuma.io/service` value.
 Before upgrade:
-1. Identify all serviceless pods that are not managed by `Deployment` or `CronJob`.
-2. Create policies that were created for services but with a new name. The name is an owner name, in case there is no owner `Kuma` uses `Pod` name.
-3. Upgrade `Kuma`.
+1. Identify all `Service`less `Pods` that are not managed by a `Deployment` or `CronJob`.
+2. Create copies of policies that were created for the services corresponding to these `Pods`. The `kuma.io/service` value is the name of the owner resource. If there is no owner, `Kuma` uses the `Pod`'s name.
 
-This breaking change is required to provide correct naming. The previous behavior could produce the same name for many different serviceless Dataplanes.
+This breaking change is required to provide correct naming. The previous behavior could produce the same `kuma.io/service` value of the inbound of a `Dataplane` for many different serviceless Dataplanes.
 
 ### http api
 
