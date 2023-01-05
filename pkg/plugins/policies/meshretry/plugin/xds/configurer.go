@@ -3,6 +3,7 @@ package xds
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	"github.com/kumahq/kuma/api/common/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	"net/http"
@@ -93,6 +94,8 @@ func genHttpRetryPolicy(conf *api.HTTP) *envoy_route.RetryPolicy {
 		if conf.BackOff.MaxInterval != nil {
 			retryBackOff.MaxInterval = util_proto.Duration(conf.BackOff.MaxInterval.Duration)
 		}
+
+		policy.RetryBackOff = retryBackOff
 	}
 
 	retryOn, retriableStatusCodes, retriableMethods := splitRetryOn(conf.RetryOn)
@@ -120,7 +123,60 @@ func genHttpRetryPolicy(conf *api.HTTP) *envoy_route.RetryPolicy {
 			})
 	}
 
+	if conf.RetriableRequestHeaders != nil {
+		for _, requestHeader := range *conf.RetriableRequestHeaders {
+			policy.RetriableRequestHeaders = append(policy.RetriableRequestHeaders, headerMatcher(requestHeader))
+		}
+	}
+
+	if conf.RetriableResponseHeaders != nil {
+		for _, responseHeader := range *conf.RetriableResponseHeaders {
+			policy.RetriableHeaders = append(policy.RetriableHeaders, headerMatcher(responseHeader))
+		}
+	}
+
 	return &policy
+}
+
+func headerMatcher(header v1alpha1.HeaderMatcher) *envoy_route.HeaderMatcher {
+	matcher := &envoy_route.HeaderMatcher{
+		Name:        header.Name,
+		InvertMatch: false,
+	}
+
+	switch header.Type {
+	case v1alpha1.REGULAR_EXPRESSION:
+		matcher.HeaderMatchSpecifier = &envoy_route.HeaderMatcher_StringMatch{
+			StringMatch: &envoy_type_matcher.StringMatcher{
+				MatchPattern: &envoy_type_matcher.StringMatcher_SafeRegex{
+					SafeRegex: &envoy_type_matcher.RegexMatcher{
+						Regex: header.Value,
+						EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
+							GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
+						},
+					},
+				},
+			},
+		}
+	case v1alpha1.PREFIX:
+		matcher.HeaderMatchSpecifier = &envoy_route.HeaderMatcher_StringMatch{
+			StringMatch: &envoy_type_matcher.StringMatcher{
+				MatchPattern: &envoy_type_matcher.StringMatcher_Prefix{
+					Prefix: header.Value,
+				},
+			},
+		}
+	case v1alpha1.EXACT:
+		matcher.HeaderMatchSpecifier = &envoy_route.HeaderMatcher_StringMatch{
+			StringMatch: &envoy_type_matcher.StringMatcher{
+				MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+					Exact: header.Value,
+				},
+			},
+		}
+	}
+
+	return matcher
 }
 
 func splitRetryOn(conf *[]api.HTTPRetryOn) (string, []uint32, []string) {

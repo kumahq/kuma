@@ -1,0 +1,53 @@
+address:
+  socketAddress:
+    address: 127.0.0.1
+    portValue: 10001
+filterChains:
+- filters:
+  - name: envoy.filters.network.http_connection_manager
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+      httpFilters:
+      - name: envoy.filters.http.router
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+      routeConfig:
+        name: outbound:backend
+        requestHeadersToAdd:
+        - header:
+            key: x-kuma-tags
+            value: '&kuma.io/service=web&'
+        validateClusters: false
+        virtualHosts:
+        - domains:
+          - '*'
+          name: backend
+          retryPolicy:
+            numRetries: 1
+            perTryTimeout: 2s
+            retriableHeaders:
+            - name: x-retry-regex
+              stringMatch:
+                safeRegex:
+                  googleRe2: {}
+                  regex: .*
+            - name: x-retry-exact
+              stringMatch:
+                exact: exact-value
+            retriableRequestHeaders:
+            - name: x-retry-prefix
+              stringMatch:
+                prefix: prefix-
+            retryBackOff:
+              baseInterval: 3s
+              maxInterval: 4s
+            retryOn: 5XX
+          routes:
+          - match:
+              prefix: /
+            route:
+              cluster: backend
+              timeout: 0s
+      statPrefix: outbound_127_0_0_1_10001
+name: outbound:127.0.0.1:10001
+trafficDirection: OUTBOUND
