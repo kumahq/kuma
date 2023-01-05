@@ -74,7 +74,7 @@ func (c *Pool) Client(serverURL string) (Conn, error) {
 			url:  serverURL,
 		}
 	}
-	ac.lastAccessTime = core.Now()
+	ac.lastAccessTime = c.now()
 	c.connections[serverURL] = ac
 	return ac.conn, nil
 }
@@ -90,19 +90,19 @@ func (c *Pool) SetTLSConfig(tlsCfg *TLSConfig) {
 func (c *Pool) StartCleanup(ctx context.Context, ticker *time.Ticker) {
 	for {
 		select {
-		case <-ticker.C:
-			c.cleanup()
+		case now := <-ticker.C:
+			c.cleanup(now)
 		case <-ctx.Done():
 			return
 		}
 	}
 }
 
-func (c *Pool) cleanup() {
+func (c *Pool) cleanup(now time.Time) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
 	for url, accessedConn := range c.connections {
-		if c.now().Sub(accessedConn.lastAccessTime) > c.idleDeadline {
+		if now.Sub(accessedConn.lastAccessTime) > c.idleDeadline {
 			poolLog.Info("closing connection due to lack of activity", "url", accessedConn.url)
 			if err := accessedConn.conn.Close(); err != nil {
 				poolLog.Error(err, "cannot close the connection", "url", accessedConn.url)
