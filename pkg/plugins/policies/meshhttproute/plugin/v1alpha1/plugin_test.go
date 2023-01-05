@@ -196,6 +196,18 @@ var _ = Describe("MeshHTTPRoute", func() {
 		expectedRoutes: []plugin.Route{{
 			Matches: []api.Match{{
 				Path: api.PathMatch{
+					Prefix: "/",
+				},
+			}},
+			BackendRefs: []api.BackendRef{
+				{
+					TargetRef: builders.TargetRefService("backend"),
+					Weight:    100,
+				},
+			},
+		}, {
+			Matches: []api.Match{{
+				Path: api.PathMatch{
 					Prefix: "/v1",
 				},
 			}},
@@ -217,7 +229,26 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Weight:    100,
 				},
 			},
-		}, {
+		}},
+	}), Entry("overwrite-passthrough-rule", routesTestCase{
+		rules: []plugin.ToRouteRule{{
+			Subset: core_xds.MeshService("backend"),
+			Rules: []api.Rule{{
+				Matches: []api.Match{{
+					Path: api.PathMatch{
+						Prefix: "/",
+					},
+				}},
+				Default: api.RuleConf{
+					BackendRefs: &[]api.BackendRef{{
+						TargetRef: builders.TargetRefService("other-service"),
+						Weight:    100,
+					}},
+				},
+			}},
+		}},
+		serviceName: "backend",
+		expectedRoutes: []plugin.Route{{
 			Matches: []api.Match{{
 				Path: api.PathMatch{
 					Prefix: "/",
@@ -225,13 +256,12 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}},
 			BackendRefs: []api.BackendRef{
 				{
-					TargetRef: builders.TargetRefService("backend"),
+					TargetRef: builders.TargetRefService("other-service"),
 					Weight:    100,
 				},
 			},
 		}},
-	}),
-	)
+	}))
 	type outboundsTestCase struct {
 		proxy      core_xds.Proxy
 		xdsContext xds_context.Context

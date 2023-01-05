@@ -85,6 +85,27 @@ func FindRoutes(
 ) []Route {
 	var unmergedRules []RuleAcc
 
+	// Prepend a rule to passthrough unmatched traffic
+	rules = append([]ToRouteRule{{
+		Subset: core_xds.MeshService(serviceName),
+		Rules: []api.Rule{{
+			Matches: []api.Match{{
+				Path: api.PathMatch{
+					Prefix: "/",
+				},
+			}},
+			Default: api.RuleConf{
+				BackendRefs: &[]api.BackendRef{{
+					TargetRef: common_api.TargetRef{
+						Kind: common_api.MeshService,
+						Name: serviceName,
+					},
+					Weight: 100,
+				}},
+			},
+		}},
+	}}, rules...)
+
 	for _, rule := range rules {
 		if !rule.Subset.IsSubset(core_xds.MeshService(serviceName)) {
 			continue
@@ -131,23 +152,6 @@ func FindRoutes(
 		}
 		routes = append(routes, route)
 	}
-
-	// append the default route
-	routes = append(routes, Route{
-		Matches: []api.Match{{
-			Path: api.PathMatch{
-				Prefix: "/",
-			},
-		}},
-		Filters: nil,
-		BackendRefs: []api.BackendRef{{
-			TargetRef: common_api.TargetRef{
-				Kind: common_api.MeshService,
-				Name: serviceName,
-			},
-			Weight: 100,
-		}},
-	})
 
 	return routes
 }
