@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"fmt"
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test"
 	"path/filepath"
@@ -44,7 +45,7 @@ var _ = Describe("MeshRetry", func() {
 				WithName("backend").
 				WithMesh("default").
 				WithAddress("127.0.0.1").
-				AddOutboundsToServices("http-service", "tcp-service", "grpc-service").
+				AddOutboundsToServices("http-service", "grpc-service", "tcp-service").
 				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http").
 				Build(),
 			Policies: xds.MatchedPolicies{
@@ -83,31 +84,11 @@ var _ = Describe("MeshRetry", func() {
 		// then
 		Expect(getResourceYaml(resourceSet.ListOf(envoy_resource.ListenerType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", given.expectedListener)))
 	},
-		PEntry("tcp retry", testCase{
-			resources: []core_xds.Resource{{
-				Name:     "outbound",
-				Origin:   generator.OriginOutbound,
-				Resource: listener(),
-			}},
-			toRules: core_xds.ToRules{
-				Rules: []*core_xds.Rule{
-					{
-						Subset: core_xds.Subset{},
-						Conf: api.Conf{
-							TCP: &api.TCP{
-								MaxConnectAttempt: test.PointerOf[uint32](5),
-							},
-						},
-					},
-				},
-			},
-			expectedListener: "tcp_retry_listener.golden.yaml",
-		}),
 		Entry("http retry", testCase{
 			resources: []core_xds.Resource{{
 				Name:     "outbound",
 				Origin:   generator.OriginOutbound,
-				Resource: listener(),
+				Resource: listener(10001),
 			}},
 			toRules: core_xds.ToRules{
 				Rules: []*core_xds.Rule{
@@ -152,32 +133,50 @@ var _ = Describe("MeshRetry", func() {
 			resources: []core_xds.Resource{{
 				Name:   "outbound",
 				Origin: generator.OriginOutbound,
-				Resource: NewListenerBuilder(envoy_common.APIV3).
-					Configure(OutboundListener("outbound:127.0.0.1:10002", "127.0.0.1", 10002, core_xds.SocketAddressProtocolTCP)).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-						Configure(TcpProxy(
-							"127.0.0.1:10002",
-							envoy_common.NewCluster(
-								envoy_common.WithService("backend"),
-								envoy_common.WithWeight(100),
-							),
-						)),
-					)).
-					MustBuild(),
+				Resource: listener(10002),
 			}},
 			toRules: core_xds.ToRules{
 				Rules: []*core_xds.Rule{
 					{
 						Subset: core_xds.Subset{core_xds.Tag{
 							Key:   mesh_proto.ServiceTag,
-							Value: "second-service",
+							Value: "grpc-service",
 						}},
 						Conf: api.Conf{
+							GRPC: &api.GRPC{
+								NumRetries:    test.PointerOf[uint32](11),
+								PerTryTimeout: test.ParseDuration("12s"),
+								BackOff:                  &api.BackOff{
+									BaseInterval: test.ParseDuration("13s"),
+									MaxInterval:  test.ParseDuration("14s"),
+								},
+								RetryOn: &[]api.GRPCRetryOn{api.CANCELED, api.RESOURCE_EXHAUSTED},
+							},
 						},
 					},
 				},
 			},
-			expectedListener: "basic_tcp_listener.golden.yaml",
+			expectedListener: "grpc_retry_listener.golden.yaml",
+		}),
+		PEntry("tcp retry", testCase{
+			resources: []core_xds.Resource{{
+				Name:     "outbound",
+				Origin:   generator.OriginOutbound,
+				Resource: listener(10003),
+			}},
+			toRules: core_xds.ToRules{
+				Rules: []*core_xds.Rule{
+					{
+						Subset: core_xds.Subset{},
+						Conf: api.Conf{
+							TCP: &api.TCP{
+								MaxConnectAttempt: test.PointerOf[uint32](5),
+							},
+						},
+					},
+				},
+			},
+			expectedListener: "tcp_retry_listener.golden.yaml",
 		}),
 	)
 })
@@ -188,11 +187,11 @@ func getResourceYaml(list core_xds.ResourceList) []byte {
 	return actualListener
 }
 
-func listener() envoy_common.NamedResource {
+func listener(port uint32) envoy_common.NamedResource {
 	return NewListenerBuilder(envoy_common.APIV3).
-		Configure(OutboundListener("outbound:127.0.0.1:10001", "127.0.0.1", 10001, core_xds.SocketAddressProtocolTCP)).
+		Configure(OutboundListener(fmt.Sprintf("inbound:127.0.0.1:%d", port), "127.0.0.1", port, core_xds.SocketAddressProtocolTCP)).
 		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-			Configure(HttpConnectionManager("outbound:127.0.0.1:10001", false)).
+			Configure(HttpConnectionManager(fmt.Sprintf("%s:127.0.0.1:%d", "outbound", port), false)).
 			Configure(HttpOutboundRoute(
 				"backend",
 				envoy_common.Routes{{
