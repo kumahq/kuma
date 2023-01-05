@@ -3,6 +3,7 @@ package api_server
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/emicklei/go-restful/v3"
@@ -127,8 +128,14 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 	name := request.PathParameter("name")
 	meshName := r.meshFromRequest(request)
 
-	resourceRest := rest.From.Resource(r.descriptor.NewObject())
-	if err := request.ReadEntity(resourceRest); err != nil {
+	bodyBytes, err := io.ReadAll(request.Request.Body)
+	if err != nil {
+		rest_errors.HandleError(response, err, "Could not process a resource")
+		return
+	}
+
+	resourceRest, err := rest.JSON.Unmarshal(bodyBytes)
+	if err != nil {
 		rest_errors.HandleError(response, err, "Could not process a resource")
 		return
 	}

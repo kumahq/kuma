@@ -12,6 +12,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -296,11 +297,13 @@ var _ = Describe("Insight Persistence", func() {
 		}).Should(Succeed())
 	})
 
-	It("should not count dataplane as a policy", func() {
+	It("should not count dataplane or secrets as a policy", func() {
 		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = rm.Create(context.Background(), &core_mesh.DataplaneResource{Spec: samples.Dataplane}, store.CreateByKey("dp-1", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+		err = rm.Create(context.Background(), &system.SecretResource{Spec: samples.Secret}, store.CreateByKey("secret-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		tickCh <- start.Add(time.Minute + time.Second)
@@ -310,6 +313,7 @@ var _ = Describe("Insight Persistence", func() {
 			return rm.Get(context.Background(), insight, store.GetByKey("mesh-1", model.NoMesh))
 		}, "10s", "100ms").Should(BeNil())
 		Expect(insight.Spec.Policies[string(core_mesh.DataplaneType)]).To(BeNil())
+		Expect(insight.Spec.Policies[string(system.SecretType)]).To(BeNil())
 		Expect(insight.Spec.Dataplanes.Total).To(Equal(uint32(1)))
 	})
 

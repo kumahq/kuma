@@ -527,7 +527,8 @@ spec:
       default:
         action: foo
 `,
-			err: `YAML contains invalid resource: spec: from[0].default.action in body should be one of [ALLOW DENY ALLOW_WITH_SHADOW_DENY]`,
+			err: `YAML contains invalid resource: validation failure list:
+spec.from[0].default.action in body should be one of [ALLOW DENY ALLOW_WITH_SHADOW_DENY]`,
 		}),
 	)
 })
