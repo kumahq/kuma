@@ -3,6 +3,7 @@ package xds
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	"github.com/kumahq/kuma/api/common/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
@@ -228,26 +229,33 @@ func (c *Configurer) Configure(
 		return nil
 	}
 
-	updateFunc := func(manager *envoy_hcm.HttpConnectionManager) error {
-		var policy *envoy_route.RetryPolicy
+	if c.Protocol == core_mesh.ProtocolTCP && c.Retry.TCP != nil && c.Retry.TCP.MaxConnectAttempt != nil {
+		return v3.UpdateTCPProxy(filterChain, func(proxy *envoy_tcp.TcpProxy) error {
+			proxy.MaxConnectAttempts = util_proto.UInt32(*c.Retry.TCP.MaxConnectAttempt)
+			return nil
+		})
+	} else {
+		updateFunc := func(manager *envoy_hcm.HttpConnectionManager) error {
+			var policy *envoy_route.RetryPolicy
 
-		switch c.Protocol {
-		case "http":
-			policy = genHttpRetryPolicy(c.Retry.HTTP)
-		case "grpc":
-			policy = genGrpcRetryPolicy(c.Retry.GRPC)
-		default:
+			switch c.Protocol {
+			case "http":
+				policy = genHttpRetryPolicy(c.Retry.HTTP)
+			case "grpc":
+				policy = genGrpcRetryPolicy(c.Retry.GRPC)
+			default:
+				return nil
+			}
+
+			for _, virtualHost := range manager.GetRouteConfig().VirtualHosts {
+				virtualHost.RetryPolicy = policy
+			}
+
 			return nil
 		}
 
-		for _, virtualHost := range manager.GetRouteConfig().VirtualHosts {
-			virtualHost.RetryPolicy = policy
-		}
-
-		return nil
+		return v3.UpdateHTTPConnectionManager(filterChain, updateFunc)
 	}
-
-	return v3.UpdateHTTPConnectionManager(filterChain, updateFunc)
 }
 
 func ensureRetriableStatusCodes(policyRetryOn string) string {
