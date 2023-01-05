@@ -2,6 +2,7 @@ package auth_test
 
 import (
 	"encoding/json"
+	"github.com/kumahq/kuma/test/e2e_env/universal/meshretry"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -102,6 +103,7 @@ var _ = Describe("Traffic Logging", trafficlog.TCPLogging, Ordered)
 var _ = Describe("MeshAccessLog", meshaccesslog.TestPlugin, Ordered)
 var _ = Describe("Timeout", timeout.Policy, Ordered)
 var _ = Describe("Retry", retry.Policy, Ordered)
+var _ = Describe("MeshRetry", meshretry.Policy, Ordered)
 var _ = Describe("RateLimit", ratelimit.Policy, Ordered)
 var _ = Describe("ProxyTemplate", proxytemplate.ProxyTemplate, Ordered)
 var _ = Describe("Matching", matching.Matching, Ordered)

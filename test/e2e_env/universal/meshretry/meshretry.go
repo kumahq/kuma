@@ -1,4 +1,4 @@
-package retry
+package meshretry
 
 import (
 	"fmt"
@@ -21,9 +21,9 @@ func Policy() {
 			Setup(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		// Delete the default meshretry policy
+		// Delete the default retry policy
 		Eventually(func() error {
-			return env.Cluster.GetKumactlOptions().RunKumactl("delete", "meshretry", "--mesh", meshName, "meshretry-all-"+meshName)
+			return env.Cluster.GetKumactlOptions().RunKumactl("delete", "retry", "--mesh", meshName, "retry-all-"+meshName)
 		}).Should(Succeed())
 	})
 
@@ -32,7 +32,7 @@ func Policy() {
 		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	It("should retry on TCP connection failure", func() {
+	It("should retry on HTTP connection failure", func() {
 		echoServerDataplane := fmt.Sprintf(`
 type: Dataplane
 mesh: "%s"
@@ -46,19 +46,21 @@ networking:
       kuma.io/service: test-server
       kuma.io/protocol: http
 `, meshName)
-		meshretryPolicy := fmt.Sprintf(`
+		meshRetryPolicy := fmt.Sprintf(`
 type: MeshRetry
 mesh: "%s"
 name: fake-meshretry-policy
-sources:
-- match:
-    kuma.io/service: demo-client
-destinations:
-- match:
-    kuma.io/service: test-server
-conf:
-  http:
-    numRetries: 5
+spec:
+  targetRef:
+    kind: MeshService
+    name: demo-client
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        http:
+          numRetries: 5
 `, meshName)
 
 		By("Checking requests succeed")
@@ -91,8 +93,8 @@ conf:
 		}
 		Expect(errs).ToNot(BeEmpty())
 
-		By("Apply a meshretry policy")
-		Expect(env.Cluster.Install(YamlUniversal(meshretryPolicy))).To(Succeed())
+		By("Apply a MeshRetry policy")
+		Expect(env.Cluster.Install(YamlUniversal(meshRetryPolicy))).To(Succeed())
 
 		By("Eventually all requests succeed consistently")
 		Eventually(func(g Gomega) {
