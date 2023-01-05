@@ -183,6 +183,12 @@ func HasScope(scope ResourceScope) TypeFilter {
 	})
 }
 
+func IsPolicy() TypeFilter {
+	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
+		return descriptor.IsPolicy
+	})
+}
+
 func Named(names ...ResourceType) TypeFilter {
 	included := map[ResourceType]bool{}
 	for _, n := range names {
