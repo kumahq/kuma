@@ -24,6 +24,10 @@ func generateListeners(
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 	splitCounter := &splitCounter{}
+	// ClusterCache (cluster hash -> cluster name) protects us from creating excessive amount of caches.
+	// For one outbound we pick one traffic route so LB and Timeout are the same.
+	// If we have same split in many HTTP matches we can use the same cluster with different weight
+	clusterCache := map[string]string{}
 
 	for _, outbound := range proxy.Dataplane.Spec.GetNetworking().GetOutbound() {
 		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
@@ -40,7 +44,7 @@ func generateListeners(
 
 		var routes []xds.OutboundRoute
 		for _, route := range FindRoutes(rules, serviceName) {
-			clusters := makeClusters(proxy, map[string]string{}, splitCounter, route.BackendRefs)
+			clusters := makeClusters(proxy, clusterCache, splitCounter, route.BackendRefs)
 			servicesAcc.Add(clusters...)
 
 			routes = append(routes, xds.OutboundRoute{
