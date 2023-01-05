@@ -1,6 +1,7 @@
 package samples
 
 import (
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 )
@@ -19,7 +20,7 @@ func DataplaneWebBuilder() *builders.DataplaneBuilder {
 	return builders.Dataplane().
 		WithName("web-01").
 		WithAddress("192.168.0.2").
-		WithServices("web").
+		WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http").
 		AddOutboundToService("backend")
 }
 
