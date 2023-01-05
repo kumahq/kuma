@@ -5,6 +5,9 @@ import (
 	"net/url"
 
 	"github.com/pkg/errors"
+	"k8s.io/kube-openapi/pkg/validation/spec"
+	"k8s.io/kube-openapi/pkg/validation/strfmt"
+	"k8s.io/kube-openapi/pkg/validation/validate"
 	"sigs.k8s.io/yaml"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -55,23 +58,49 @@ func (u *unmarshaler) Unmarshal(bytes []byte) (Resource, error) {
 		return nil, errors.Wrap(err, "invalid meta type")
 	}
 
-	resource, err := registry.Global().NewObject(core_model.ResourceType(meta.Type))
+	desc, err := registry.Global().DescriptorFor(core_model.ResourceType(meta.Type))
 	if err != nil {
 		return nil, err
 	}
 
+	resource := desc.NewObject()
 	restResource := From.Resource(resource)
-	if err := u.unmarshalFn(bytes, restResource); err != nil {
-		return nil, errors.Wrapf(err, "invalid %s object %q", meta.Type, meta.Name)
-	}
 
-	if rv, ok := resource.(core_model.ResourceValidator); ok {
-		if err := rv.Validate(); err != nil {
+	if desc.IsPluginOriginated {
+		// desc.Schema is set only for new plugin originated policies
+		if err := u.rawSchemaValidation(bytes, desc.Schema); err != nil {
 			return nil, err
 		}
 	}
 
+	if err := u.unmarshalFn(bytes, restResource); err != nil {
+		return nil, errors.Wrapf(err, "invalid %s object %q", meta.Type, meta.Name)
+	}
+
+	if err := core_model.Validate(resource); err != nil {
+		return nil, err
+	}
+
 	return restResource, nil
+}
+
+func (u *unmarshaler) rawSchemaValidation(bytes []byte, schema *spec.Schema) error {
+	rawObj := map[string]interface{}{}
+
+	if err := u.unmarshalFn(bytes, &rawObj); err != nil {
+		return err
+	}
+
+	var rootSchema *spec.Schema = nil
+	var root = ""
+	validator := validate.NewSchemaValidator(schema, rootSchema, root, strfmt.Default)
+
+	res := validator.Validate(rawObj)
+	if res.IsValid() {
+		return nil
+	}
+
+	return res.AsError()
 }
 
 func (u *unmarshaler) UnmarshalListToCore(b []byte, rs core_model.ResourceList) error {
