@@ -430,10 +430,24 @@ var _ = Describe("Resource Endpoints", func() {
 			// given
 			json := `
 			{
-				"type": "InvalidType",
+				"type": "MeshTrafficPermission",
 				"name": "tr-1",
 				"mesh": "default",
-				"path": "/sample-path"
+				"spec": {
+					"targetRef": {
+						"kind": "Mesh"
+					},
+					"from": [
+						{
+							"targetRef": {
+								"kind": "Mesh"
+							},
+							"default": {
+								"action": "ALLOW"
+							}
+						}
+					]
+				}
 			}
 			`
 
@@ -466,7 +480,26 @@ var _ = Describe("Resource Endpoints", func() {
 			{
 				"type": "TrafficRoute",
 				"name": "different-name",
-				"mesh": "default"
+				"mesh": "default",
+				"sources": [
+					{
+						"match": {
+							"kuma.io/service": "frontend"
+						}
+					}
+				],
+				"destinations": [
+					{
+						"match": {
+							"kuma.io/service": "backend"
+						}
+					}
+				],
+				"conf": {
+					"destination": {
+						"kuma.io/service": "backend-v2"
+					}
+				}
 			}
 			`
 
@@ -499,7 +532,26 @@ var _ = Describe("Resource Endpoints", func() {
 			{
 				"type": "TrafficRoute",
 				"name": "tr-1",
-				"mesh": "different-mesh"
+				"mesh": "different-mesh",
+				"sources": [
+					{
+						"match": {
+							"kuma.io/service": "frontend"
+						}
+					}
+				],
+				"destinations": [
+					{
+						"match": {
+							"kuma.io/service": "backend"
+						}
+					}
+				],
+				"conf": {
+					"destination": {
+						"kuma.io/service": "backend-v2"
+					}
+				}
 			}
 			`
 
@@ -563,7 +615,7 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(respBytes).To(MatchJSON(`
 			{
-				"title": "Could not create a resource",
+				"title": "Could not process a resource",
 				"details": "Resource is not valid",
 				"causes": [
 					{
@@ -581,7 +633,26 @@ var _ = Describe("Resource Endpoints", func() {
 			{
 				"type": "TrafficRoute",
 				"name": "invalid@",
-				"mesh": "invalid$"
+				"mesh": "invalid$",
+				"sources": [
+					{
+						"match": {
+							"kuma.io/service": "frontend"
+						}
+					}
+				],
+				"destinations": [
+					{
+						"match": {
+							"kuma.io/service": "backend"
+						}
+					}
+				],
+				"conf": {
+					"destination": {
+						"kuma.io/service": "backend-v2"
+					}
+				}
 			}
 			`
 

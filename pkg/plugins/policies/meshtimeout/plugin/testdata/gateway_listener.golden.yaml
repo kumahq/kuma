@@ -44,7 +44,7 @@ filterChains:
       requestHeadersTimeout: 0.500s
       serverName: Kuma Gateway
       statPrefix: sample-gateway
-      streamIdleTimeout: 1s
+      streamIdleTimeout: 5s
       stripAnyHostPort: true
       useRemoteAddress: true
 listenerFilters:

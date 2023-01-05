@@ -12,7 +12,6 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/plugins/policies/validation"
 )
 
 //go:embed schema.yaml
@@ -23,7 +22,6 @@ func init() {
 	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
 		panic(err)
 	}
-	schema = schema.Properties["spec"]
 }
 
 const (
@@ -74,10 +72,6 @@ func (t *MeshRetryResource) Descriptor() model.ResourceTypeDescriptor {
 }
 
 func (t *MeshRetryResource) Validate() error {
-	if err := validation.ValidateSchema(t.GetSpec(), &schema); err != nil {
-		return err
-	}
-
 	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
 		return nil
 	} else {
@@ -136,4 +130,5 @@ var MeshRetryResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Mesh Retry",
 	PluralDisplayName:   "Mesh Retries",
 	IsPluginOriginated:  true,
+	Schema:              &schema,
 }
