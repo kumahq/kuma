@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -25,6 +26,11 @@ import (
 )
 
 var _ = Describe("MeshAccessLog", func() {
+
+	core.TempDir = func() string {
+		return "/tmp"
+	}
+
 	type sidecarTestCase struct {
 		resources         []core_xds.Resource
 		toRules           core_xds.ToRules
@@ -123,7 +129,7 @@ var _ = Describe("MeshAccessLog", func() {
 					{
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
-							Backends: []api.Backend{{
+							Backends: &[]api.Backend{{
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},
@@ -175,7 +181,7 @@ var _ = Describe("MeshAccessLog", func() {
             name: outbound:127.0.0.1:27777
             trafficDirection: OUTBOUND`,
 			}}),
-		Entry("basic outbound tcp", sidecarTestCase{
+		Entry("outbound tcpproxy with file backend and default format", sidecarTestCase{
 			resources: []core_xds.Resource{{
 				Name:   "outbound",
 				Origin: generator.OriginOutbound,
@@ -196,7 +202,7 @@ var _ = Describe("MeshAccessLog", func() {
 					{
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
-							Backends: []api.Backend{{
+							Backends: &[]api.Backend{{
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},
@@ -223,6 +229,293 @@ var _ = Describe("MeshAccessLog", func() {
                                         inlineString: |
                                             [%START_TIME%] %RESPONSE_FLAGS% default (backend)->%UPSTREAM_HOST%(other-service) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
                                 path: /tmp/log
+                        cluster: backend
+                        statPrefix: "127_0_0_1_27777"
+            name: outbound:127.0.0.1:27777
+            trafficDirection: OUTBOUND`,
+			}}),
+		Entry("outbound tcpproxy with file backend and plain format", sidecarTestCase{
+			resources: []core_xds.Resource{{
+				Name:   "outbound",
+				Origin: generator.OriginOutbound,
+				Resource: NewListenerBuilder(envoy_common.APIV3).
+					Configure(OutboundListener("outbound:127.0.0.1:27777", "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP)).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+						Configure(TcpProxy(
+							"127.0.0.1:27777",
+							envoy_common.NewCluster(
+								envoy_common.WithService("backend"),
+								envoy_common.WithWeight(100),
+							),
+						)),
+					)).MustBuild(),
+			}},
+			toRules: core_xds.ToRules{
+				Rules: []*core_xds.Rule{
+					{
+						Subset: core_xds.Subset{},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								File: &api.FileBackend{
+									Path: "/tmp/log",
+									Format: &api.Format{
+										Plain: core_model.PtrTo("custom format [%START_TIME%] %RESPONSE_FLAGS%"),
+									},
+								},
+							}},
+						},
+					},
+				}},
+			expectedListeners: []string{`
+            address:
+              socketAddress:
+                address: 127.0.0.1
+                portValue: 27777
+            filterChains:
+                - filters:
+                    - name: envoy.filters.network.tcp_proxy
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+                        accessLog:
+                            - name: envoy.access_loggers.file
+                              typedConfig:
+                                '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
+                                logFormat:
+                                    textFormatSource:
+                                        inlineString: |
+                                            custom format [%START_TIME%] %RESPONSE_FLAGS%
+                                path: /tmp/log
+                        cluster: backend
+                        statPrefix: "127_0_0_1_27777"
+            name: outbound:127.0.0.1:27777
+            trafficDirection: OUTBOUND`,
+			}}),
+		Entry("outbound tcpproxy with file backend and json format", sidecarTestCase{
+			resources: []core_xds.Resource{{
+				Name:   "outbound",
+				Origin: generator.OriginOutbound,
+				Resource: NewListenerBuilder(envoy_common.APIV3).
+					Configure(OutboundListener("outbound:127.0.0.1:27777", "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP)).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+						Configure(TcpProxy(
+							"127.0.0.1:27777",
+							envoy_common.NewCluster(
+								envoy_common.WithService("backend"),
+								envoy_common.WithWeight(100),
+							),
+						)),
+					)).MustBuild(),
+			}},
+			toRules: core_xds.ToRules{
+				Rules: []*core_xds.Rule{
+					{
+						Subset: core_xds.Subset{},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								File: &api.FileBackend{
+									Path: "/tmp/log",
+									Format: &api.Format{
+										Json: core_model.PtrTo([]api.JsonValue{
+											{Key: "protocol", Value: "%PROTOCOL%"},
+											{Key: "duration", Value: "%DURATION%"},
+										}),
+									},
+								},
+							}},
+						},
+					},
+				}},
+			expectedListeners: []string{`
+            address:
+              socketAddress:
+                address: 127.0.0.1
+                portValue: 27777
+            filterChains:
+                - filters:
+                    - name: envoy.filters.network.tcp_proxy
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+                        accessLog:
+                            - name: envoy.access_loggers.file
+                              typedConfig:
+                                '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
+                                logFormat:
+                                    jsonFormat:
+                                      duration: '%DURATION%'
+                                      protocol: '%PROTOCOL%'
+                                path: /tmp/log
+                        cluster: backend
+                        statPrefix: "127_0_0_1_27777"
+            name: outbound:127.0.0.1:27777
+            trafficDirection: OUTBOUND`,
+			}}),
+		Entry("outbound tcpproxy with tcp backend and default format", sidecarTestCase{
+			resources: []core_xds.Resource{{
+				Name:   "outbound",
+				Origin: generator.OriginOutbound,
+				Resource: NewListenerBuilder(envoy_common.APIV3).
+					Configure(OutboundListener("outbound:127.0.0.1:27777", "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP)).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+						Configure(TcpProxy(
+							"127.0.0.1:27777",
+							envoy_common.NewCluster(
+								envoy_common.WithService("backend"),
+								envoy_common.WithWeight(100),
+							),
+						)),
+					)).MustBuild(),
+			}},
+			toRules: core_xds.ToRules{
+				Rules: []*core_xds.Rule{
+					{
+						Subset: core_xds.Subset{},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								Tcp: &api.TCPBackend{
+									Address: "logging.backend",
+								},
+							}},
+						},
+					},
+				}},
+			expectedListeners: []string{`
+            address:
+              socketAddress:
+                address: 127.0.0.1
+                portValue: 27777
+            filterChains:
+                - filters:
+                    - name: envoy.filters.network.tcp_proxy
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+                        accessLog:
+                            - name: envoy.access_loggers.file
+                              typedConfig:
+                                '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
+                                logFormat:
+                                    jsonFormat:
+                                        address: logging.backend
+                                        message: |
+                                            [%START_TIME%] %RESPONSE_FLAGS% default (backend)->%UPSTREAM_HOST%(other-service) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
+                                path: /tmp/kuma-al-backend-default.sock
+                        cluster: backend
+                        statPrefix: "127_0_0_1_27777"
+            name: outbound:127.0.0.1:27777
+            trafficDirection: OUTBOUND`,
+			}}),
+		Entry("outbound tcpproxy with tcp backend and plain format", sidecarTestCase{
+			resources: []core_xds.Resource{{
+				Name:   "outbound",
+				Origin: generator.OriginOutbound,
+				Resource: NewListenerBuilder(envoy_common.APIV3).
+					Configure(OutboundListener("outbound:127.0.0.1:27777", "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP)).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+						Configure(TcpProxy(
+							"127.0.0.1:27777",
+							envoy_common.NewCluster(
+								envoy_common.WithService("backend"),
+								envoy_common.WithWeight(100),
+							),
+						)),
+					)).MustBuild(),
+			}},
+			toRules: core_xds.ToRules{
+				Rules: []*core_xds.Rule{
+					{
+						Subset: core_xds.Subset{},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								Tcp: &api.TCPBackend{
+									Address: "logging.backend",
+									Format: &api.Format{
+										Plain: core_model.PtrTo("custom format [%START_TIME%] %RESPONSE_FLAGS%"),
+									},
+								},
+							}},
+						},
+					},
+				}},
+			expectedListeners: []string{`
+            address:
+              socketAddress:
+                address: 127.0.0.1
+                portValue: 27777
+            filterChains:
+                - filters:
+                    - name: envoy.filters.network.tcp_proxy
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+                        accessLog:
+                            - name: envoy.access_loggers.file
+                              typedConfig:
+                                '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
+                                logFormat:
+                                    jsonFormat:
+                                        address: logging.backend
+                                        message: |
+                                            custom format [%START_TIME%] %RESPONSE_FLAGS%
+                                path: /tmp/kuma-al-backend-default.sock
+                        cluster: backend
+                        statPrefix: "127_0_0_1_27777"
+            name: outbound:127.0.0.1:27777
+            trafficDirection: OUTBOUND`,
+			}}),
+		Entry("outbound tcpproxy with tcp backend and json format", sidecarTestCase{
+			resources: []core_xds.Resource{{
+				Name:   "outbound",
+				Origin: generator.OriginOutbound,
+				Resource: NewListenerBuilder(envoy_common.APIV3).
+					Configure(OutboundListener("outbound:127.0.0.1:27777", "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP)).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+						Configure(TcpProxy(
+							"127.0.0.1:27777",
+							envoy_common.NewCluster(
+								envoy_common.WithService("backend"),
+								envoy_common.WithWeight(100),
+							),
+						)),
+					)).MustBuild(),
+			}},
+			toRules: core_xds.ToRules{
+				Rules: []*core_xds.Rule{
+					{
+						Subset: core_xds.Subset{},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								Tcp: &api.TCPBackend{
+									Address: "logging.backend",
+									Format: &api.Format{
+										Json: core_model.PtrTo([]api.JsonValue{
+											{Key: "protocol", Value: "%PROTOCOL%"},
+											{Key: "duration", Value: "%DURATION%"},
+										}),
+									},
+								},
+							}},
+						},
+					},
+				}},
+			expectedListeners: []string{`
+            address:
+              socketAddress:
+                address: 127.0.0.1
+                portValue: 27777
+            filterChains:
+                - filters:
+                    - name: envoy.filters.network.tcp_proxy
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+                        accessLog:
+                            - name: envoy.access_loggers.file
+                              typedConfig:
+                                '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
+                                logFormat:
+                                    jsonFormat:
+                                        address: logging.backend
+                                        message: 
+                                            duration: '%DURATION%'
+                                            protocol: '%PROTOCOL%'
+                                path: /tmp/kuma-al-backend-default.sock
                         cluster: backend
                         statPrefix: "127_0_0_1_27777"
             name: outbound:127.0.0.1:27777
@@ -264,7 +557,7 @@ var _ = Describe("MeshAccessLog", func() {
 							Value: "other",
 						}},
 						Conf: api.Conf{
-							Backends: []api.Backend{{
+							Backends: &[]api.Backend{{
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},
@@ -335,7 +628,7 @@ var _ = Describe("MeshAccessLog", func() {
 					{Address: "127.0.0.1", Port: 17777}: {{
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
-							Backends: []api.Backend{{
+							Backends: &[]api.Backend{{
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},
@@ -495,7 +788,7 @@ var _ = Describe("MeshAccessLog", func() {
 					{
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
-							Backends: []api.Backend{{
+							Backends: &[]api.Backend{{
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 								},

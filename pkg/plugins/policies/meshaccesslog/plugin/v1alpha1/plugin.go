@@ -6,6 +6,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/matchers"
@@ -201,7 +202,7 @@ func configureInbound(
 		return nil
 	}
 
-	for _, backend := range conf.Backends {
+	for _, backend := range core_model.SafeDeref(conf.Backends) {
 		configurer := plugin_xds.Configurer{
 			Mesh:               dataplane.GetMeta().GetMesh(),
 			TrafficDirection:   envoy.TrafficDirectionInbound,
@@ -237,7 +238,7 @@ func configureOutbound(
 		return nil
 	}
 
-	for _, backend := range conf.Backends {
+	for _, backend := range core_model.SafeDeref(conf.Backends) {
 		configurer := plugin_xds.Configurer{
 			Mesh:               dataplane.GetMeta().GetMesh(),
 			TrafficDirection:   envoy.TrafficDirectionOutbound,

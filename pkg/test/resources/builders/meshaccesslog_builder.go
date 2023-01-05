@@ -62,13 +62,13 @@ type MeshAccessLogConfBuilder struct {
 }
 
 func (m *MeshAccessLogConfBuilder) AddFileBackend(fileBackend *meshaccesslog_proto.FileBackend) *MeshAccessLogConfBuilder {
-	m.res.Backends = append(m.res.Backends, meshaccesslog_proto.Backend{
+	m.res.Backends = core_model.PtrTo(append(core_model.SafeDeref(m.res.Backends), meshaccesslog_proto.Backend{
 		File: fileBackend,
-	})
+	}))
 	return m
 }
 
 func (m *MeshAccessLogConfBuilder) AddBackends(bs []meshaccesslog_proto.Backend) *MeshAccessLogConfBuilder {
-	m.res.Backends = bs
+	m.res.Backends = &bs
 	return m
 }
