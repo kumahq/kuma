@@ -51,8 +51,8 @@ var _ = Describe("MeshRetry", func() {
 			Policies: xds.MatchedPolicies{
 				Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
 					api.MeshRetryType: {
-						Type:      api.MeshRetryType,
-						ToRules:   given.toRules,
+						Type:    api.MeshRetryType,
+						ToRules: given.toRules,
 					},
 				},
 			},
@@ -96,13 +96,13 @@ var _ = Describe("MeshRetry", func() {
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
 							HTTP: &api.HTTP{
-								NumRetries:               test.PointerOf[uint32](1),
-								PerTryTimeout:            test.ParseDuration("2s"),
-								BackOff:                  &api.BackOff{
+								NumRetries:    test.PointerOf[uint32](1),
+								PerTryTimeout: test.ParseDuration("2s"),
+								BackOff: &api.BackOff{
 									BaseInterval: test.ParseDuration("3s"),
 									MaxInterval:  test.ParseDuration("4s"),
 								},
-								RetryOn:                  &[]api.HTTPRetryOn{api.ALL_5XX, api.HTTP_METHOD_GET, api.CONNECT_FAILURE, "429"},
+								RetryOn: &[]api.HTTPRetryOn{api.ALL_5XX, api.HTTP_METHOD_GET, api.CONNECT_FAILURE, "429"},
 								RetriableResponseHeaders: &[]common_api.HeaderMatcher{
 									{
 										Type:  common_api.REGULAR_EXPRESSION,
@@ -146,7 +146,7 @@ var _ = Describe("MeshRetry", func() {
 							GRPC: &api.GRPC{
 								NumRetries:    test.PointerOf[uint32](11),
 								PerTryTimeout: test.ParseDuration("12s"),
-								BackOff:                  &api.BackOff{
+								BackOff: &api.BackOff{
 									BaseInterval: test.ParseDuration("13s"),
 									MaxInterval:  test.ParseDuration("14s"),
 								},
