@@ -2,7 +2,8 @@ package v1alpha1
 
 import (
 	"fmt"
-	"reflect"
+
+	"golang.org/x/exp/slices"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -96,7 +97,7 @@ func FindRoutes(
 			var found bool
 			// Treat the list of (matches, filters/refs) as a map
 			for i, accRule := range unmergedRules {
-				if !reflect.DeepEqual(accRule.MatchKey, routeRules.Matches) {
+				if !slices.Equal(accRule.MatchKey, routeRules.Matches) {
 					continue
 				}
 				unmergedRules[i] = RuleAcc{
