@@ -23,9 +23,6 @@ type MeshHTTPRoute struct {
 	To []To `json:"to,omitempty"`
 }
 
-// This type exists to avoid a NPE in controller-tools
-type Empty struct{}
-
 type To struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// request destinations.
@@ -33,10 +30,6 @@ type To struct {
 	// Rules contains the routing rules applies to a combination of top-level
 	// targetRef and the targetRef in this entry.
 	Rules []Rule `json:"rules,omitempty"`
-
-	// Default is here to satisfy the many assumptions of the policy generation
-	// code that it exists. It isn't included in the schema.
-	Default Empty `json:",omitempty"`
 }
 
 type Rule struct {
