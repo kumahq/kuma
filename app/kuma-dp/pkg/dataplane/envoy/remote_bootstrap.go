@@ -148,6 +148,8 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, url *net_url.
 	if cfg.DataplaneRuntime.Token != "" {
 		token = cfg.DataplaneRuntime.Token
 	}
+	// Remove any trailing and starting spaces.
+	token = strings.TrimSpace(token)
 
 	resources := b.resourceMetadata(cfg.DataplaneRuntime.Resources)
 
