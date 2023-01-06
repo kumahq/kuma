@@ -8,10 +8,11 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	_ "github.com/kumahq/kuma/pkg/plugins/policies"
-	meshtrace_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
+	meshaccesslog_api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	meshtrafficpermission_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
@@ -147,21 +148,31 @@ var _ = Describe("Rules", func() {
 		type testCase struct {
 			policyFile string
 			goldenFile string
+			typ        string
 		}
 
 		DescribeTable("should build a rule-based view for the policy with a from list",
 			func(given testCase) {
 				// given
-				policyBytes, err := os.ReadFile(path.Join("testdata", "rules", given.policyFile))
+				policiesBytes, err := os.ReadFile(path.Join("testdata", "rules", given.policyFile))
 				Expect(err).ToNot(HaveOccurred())
 
-				policy, err := rest.YAML.UnmarshalCore(policyBytes)
-				Expect(err).ToNot(HaveOccurred())
-				mtp, ok := policy.GetSpec().(xds.PolicyWithFromList)
-				Expect(ok).To(BeTrue())
+				policies := util_yaml.SplitYAML(string(policiesBytes))
+
+				listener := xds.InboundListener{
+					Address: "127.0.0.1",
+					Port:    80,
+				}
+				policiesByInbound := map[xds.InboundListener][]core_model.Resource{}
+
+				for _, policyBytes := range policies {
+					policy, err := rest.YAML.UnmarshalCore([]byte(policyBytes))
+					Expect(err).ToNot(HaveOccurred())
+					policiesByInbound[listener] = append(policiesByInbound[listener], policy)
+				}
 
 				// when
-				rules, err := xds.BuildRules(xds.BuildPolicyItemsWithMeta(mtp.GetFromList(), policy.GetMeta()))
+				rules, err := xds.BuildFromRules(policiesByInbound)
 				Expect(err).ToNot(HaveOccurred())
 
 				// then
@@ -173,22 +184,27 @@ var _ = Describe("Rules", func() {
 			Entry("01. MeshTrafficPermission with 2 'env' tags that have different values", testCase{
 				policyFile: "01.policy.yaml",
 				goldenFile: "01.golden.yaml",
+				typ:        string(meshtrafficpermission_api.MeshTrafficPermissionType),
 			}),
 			Entry("02. MeshTrafficPermission with 3 different tags", testCase{
 				policyFile: "02.policy.yaml",
 				goldenFile: "02.golden.yaml",
+				typ:        string(meshtrafficpermission_api.MeshTrafficPermissionType),
 			}),
 			Entry("03. MeshTrafficPermission with MeshService targets", testCase{
 				policyFile: "03.policy.yaml",
 				goldenFile: "03.golden.yaml",
+				typ:        string(meshtrafficpermission_api.MeshTrafficPermissionType),
 			}),
 			Entry("04. MeshAccessLog with overriding empty backend list", testCase{
 				policyFile: "04.policy.yaml",
 				goldenFile: "04.golden.yaml",
+				typ:        string(meshaccesslog_api.MeshAccessLogType),
 			}),
 			Entry("05. MeshAccessLog with overriding list of different backend type", testCase{
 				policyFile: "05.policy.yaml",
 				goldenFile: "05.golden.yaml",
+				typ:        string(meshaccesslog_api.MeshAccessLogType),
 			}),
 		)
 
@@ -199,17 +215,16 @@ var _ = Describe("Rules", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				yamls := util_yaml.SplitYAML(string(policyBytes))
-				policies := []xds.PolicyItemWithMeta{}
+				var policies []core_model.Resource
 				for _, yaml := range yamls {
 					policy, err := rest.YAML.UnmarshalCore([]byte(yaml))
 					Expect(err).ToNot(HaveOccurred())
-					mt, ok := policy.(*meshtrace_api.MeshTraceResource)
-					Expect(ok).To(BeTrue())
-					policies = append(policies, xds.PolicyItemWithMeta{mt.Spec.GetPolicyItem(), policy.GetMeta()})
+
+					policies = append(policies, policy)
 				}
 
 				// when
-				rules, err := xds.BuildRules(policies)
+				rules, err := xds.BuildSingleItemRules(policies)
 				Expect(err).ToNot(HaveOccurred())
 
 				// then
