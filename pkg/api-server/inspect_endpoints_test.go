@@ -252,9 +252,11 @@ var _ = Describe("Inspect WS", func() {
 				Host:   apiServer.Address(),
 				Path:   given.path,
 			}).String())
-			Expect(err).ToNot(HaveOccurred())
 
 			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+
 			bytes, err := io.ReadAll(resp.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(given.matcher)
