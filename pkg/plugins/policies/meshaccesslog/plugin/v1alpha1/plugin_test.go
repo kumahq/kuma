@@ -27,9 +27,11 @@ import (
 
 var _ = Describe("MeshAccessLog", func() {
 
-	core.TempDir = func() string {
-		return "/tmp"
-	}
+	BeforeEach(func() {
+		core.TempDir = func() string {
+			return "/tmp"
+		}
+	})
 
 	type sidecarTestCase struct {
 		resources         []core_xds.Resource
