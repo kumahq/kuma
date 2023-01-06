@@ -206,6 +206,11 @@ var _ = Describe("Rules", func() {
 				goldenFile: "05.golden.yaml",
 				typ:        string(meshaccesslog_api.MeshAccessLogType),
 			}),
+			Entry("Multiple policies", testCase{
+				policyFile: "multiple-mtp.policy.yaml",
+				goldenFile: "multiple-mtp.golden.yaml",
+				typ:        string(meshaccesslog_api.MeshAccessLogType),
+			}),
 		)
 
 		DescribeTable("should build a rule-based view for list of single item policies",
