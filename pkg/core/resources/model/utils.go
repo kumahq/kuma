@@ -92,15 +92,3 @@ func IsEmpty(spec ResourceSpec) bool {
 		return reflect.ValueOf(spec).Elem().IsZero()
 	}
 }
-
-func PtrTo[T any](t T) *T {
-	return &t
-}
-
-func SafeDeref[T any](ptr *T) T {
-	if ptr == nil {
-		var zero T
-		return zero
-	}
-	return *ptr
-}

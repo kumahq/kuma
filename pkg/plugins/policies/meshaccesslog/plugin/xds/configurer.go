@@ -13,10 +13,10 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	accesslog "github.com/kumahq/kuma/pkg/envoy/accesslog/v3"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
@@ -91,7 +91,7 @@ func (c *Configurer) tcpBackend(backend *api.TCPBackend, defaultFormat string) (
 		sfs = c.sfsJSON(map[string]*structpb.Value{
 			"address": structpb.NewStringValue(backend.Address),
 			"message": structpb.NewStringValue(envoyFormat.String()),
-		}, core_model.SafeDeref(backend.Format.OmitEmptyValues))
+		}, pointer.Deref(backend.Format.OmitEmptyValues))
 	case backend.Format.Json != nil:
 		if fields, err := c.jsonToFields(*backend.Format.Json); err != nil {
 			return nil, err
@@ -99,7 +99,7 @@ func (c *Configurer) tcpBackend(backend *api.TCPBackend, defaultFormat string) (
 			sfs = c.sfsJSON(map[string]*structpb.Value{
 				"address": structpb.NewStringValue(backend.Address),
 				"message": structpb.NewStructValue(&structpb.Struct{Fields: fields}),
-			}, core_model.SafeDeref(backend.Format.OmitEmptyValues))
+			}, pointer.Deref(backend.Format.OmitEmptyValues))
 		}
 	default:
 		return nil, errors.New(validators.MustHaveOnlyOne("format", "plain", "json"))
@@ -119,7 +119,7 @@ func (c *Configurer) fileBackend(backend *api.FileBackend, defaultFormat string)
 			sfs = plain
 		}
 	case backend.Format.Plain != nil:
-		if plain, err := c.sfsPlain(newLine(*backend.Format.Plain), core_model.SafeDeref(backend.Format.OmitEmptyValues)); err != nil {
+		if plain, err := c.sfsPlain(newLine(*backend.Format.Plain), pointer.Deref(backend.Format.OmitEmptyValues)); err != nil {
 			return nil, err
 		} else {
 			sfs = plain
@@ -128,7 +128,7 @@ func (c *Configurer) fileBackend(backend *api.FileBackend, defaultFormat string)
 		if fields, err := c.jsonToFields(*backend.Format.Json); err != nil {
 			return nil, err
 		} else {
-			sfs = c.sfsJSON(fields, core_model.SafeDeref(backend.Format.OmitEmptyValues))
+			sfs = c.sfsJSON(fields, pointer.Deref(backend.Format.OmitEmptyValues))
 		}
 	default:
 		return nil, errors.New(validators.MustHaveOnlyOne("format", "plain", "json"))

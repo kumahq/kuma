@@ -15,6 +15,7 @@ import (
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/plugin/v1alpha1"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -109,12 +110,12 @@ var _ = Describe("MeshTrace", func() {
 						Subset: []core_xds.Tag{},
 						Conf: api.Conf{
 							Sampling: api.Sampling{
-								Random: core_model.PtrTo(uint32(50)),
+								Random: pointer.To(uint32(50)),
 							},
 							Backends: []api.Backend{{
 								Zipkin: &api.ZipkinBackend{
 									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
-									SharedSpanContext: core_model.PtrTo(true),
+									SharedSpanContext: pointer.To(true),
 									ApiVersion:        "httpProto",
 									TraceId128Bit:     true,
 								},
@@ -208,7 +209,7 @@ var _ = Describe("MeshTrace", func() {
 						Subset: []core_xds.Tag{},
 						Conf: api.Conf{
 							Sampling: api.Sampling{
-								Random: core_model.PtrTo(uint32(50)),
+								Random: pointer.To(uint32(50)),
 							},
 							Backends: []api.Backend{{
 								Datadog: &api.DatadogBackend{
