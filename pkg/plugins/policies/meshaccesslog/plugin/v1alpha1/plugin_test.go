@@ -17,6 +17,7 @@ import (
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -261,7 +262,7 @@ var _ = Describe("MeshAccessLog", func() {
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 									Format: &api.Format{
-										Plain: core_model.PtrTo("custom format [%START_TIME%] %RESPONSE_FLAGS%"),
+										Plain: pointer.To("custom format [%START_TIME%] %RESPONSE_FLAGS%"),
 									},
 								},
 							}},
@@ -317,7 +318,7 @@ var _ = Describe("MeshAccessLog", func() {
 								File: &api.FileBackend{
 									Path: "/tmp/log",
 									Format: &api.Format{
-										Json: core_model.PtrTo([]api.JsonValue{
+										Json: pointer.To([]api.JsonValue{
 											{Key: "protocol", Value: "%PROTOCOL%"},
 											{Key: "duration", Value: "%DURATION%"},
 										}),
@@ -430,7 +431,7 @@ var _ = Describe("MeshAccessLog", func() {
 								Tcp: &api.TCPBackend{
 									Address: "logging.backend",
 									Format: &api.Format{
-										Plain: core_model.PtrTo("custom format [%START_TIME%] %RESPONSE_FLAGS%"),
+										Plain: pointer.To("custom format [%START_TIME%] %RESPONSE_FLAGS%"),
 									},
 								},
 							}},
@@ -487,7 +488,7 @@ var _ = Describe("MeshAccessLog", func() {
 								Tcp: &api.TCPBackend{
 									Address: "logging.backend",
 									Format: &api.Format{
-										Json: core_model.PtrTo([]api.JsonValue{
+										Json: pointer.To([]api.JsonValue{
 											{Key: "protocol", Value: "%PROTOCOL%"},
 											{Key: "duration", Value: "%DURATION%"},
 										}),
