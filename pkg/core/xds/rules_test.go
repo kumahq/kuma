@@ -213,6 +213,35 @@ var _ = Describe("Rules", func() {
 			}),
 		)
 
+		DescribeTable("should build a rule-based view for the policy with a to list",
+			func(given testCase) {
+				// given
+				policiesBytes, err := os.ReadFile(path.Join("testdata", "rules", given.policyFile))
+				Expect(err).ToNot(HaveOccurred())
+
+				var policies []core_model.Resource
+				for _, policyBytes := range util_yaml.SplitYAML(string(policiesBytes)) {
+					policy, err := rest.YAML.UnmarshalCore([]byte(policyBytes))
+					Expect(err).ToNot(HaveOccurred())
+					policies = append(policies, policy)
+				}
+
+				// when
+				rules, err := xds.BuildToRules(policies)
+				Expect(err).ToNot(HaveOccurred())
+
+				// then
+				bytes, err := yaml.Marshal(rules)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "rules", given.goldenFile)))
+			},
+			Entry("Single to policy", testCase{
+				policyFile: "single-to.policy.yaml",
+				goldenFile: "single-to.golden.yaml",
+			}),
+		)
+
 		DescribeTable("should build a rule-based view for list of single item policies",
 			func(given testCase) {
 				// given
