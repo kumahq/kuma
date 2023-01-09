@@ -119,7 +119,7 @@ func newPolicyConfig(pkg, name string, markers map[string]string, hasTo, hasFrom
 		Name:                name,
 		NameLower:           strings.ToLower(name),
 		SingularDisplayName: core_model.DisplayName(name),
-		PluralDisplayName:   core_model.PluralDisplayName(name),
+		PluralDisplayName:   core_model.PluralType(core_model.DisplayName(name)),
 		AlternativeNames:    []string{strings.ToLower(name)},
 		HasTo:               hasTo,
 		HasFrom:             hasFrom,
@@ -130,6 +130,11 @@ func newPolicyConfig(pkg, name string, markers map[string]string, hasTo, hasFrom
 	}
 	if v, ok := parseBool(markers, "kuma:policy:skip_get_default"); ok {
 		res.SkipGetDefault = v
+	}
+
+	if v, ok := markers["kuma:policy:singular_display_name"]; ok {
+		res.SingularDisplayName = v
+		res.PluralDisplayName = core_model.PluralType(v)
 	}
 
 	if v, ok := markers["kuma:policy:plural"]; ok {
