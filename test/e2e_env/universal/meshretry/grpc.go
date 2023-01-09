@@ -2,6 +2,7 @@ package meshretry
 
 import (
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -110,6 +111,7 @@ spec:
 			defer func() { lastFailureStats = failureStats.Stats[0] }()
 			g.Expect(grpcFailureStats(g)).To(stats.BeGreaterThanZero())
 		}, "90s", "10s").Should(Succeed())
+		time.Sleep(10 * time.Second)
 		Consistently(func(g Gomega) {
 			failureStats := grpcFailureStats(g)
 			defer func() { lastFailureStats = failureStats.Stats[0] }()
