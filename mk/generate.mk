@@ -40,18 +40,8 @@ generate/policies: $(cleanup_policy_targets) $(generate_policy_targets)
 
 # deletes all files in policy directory except *.proto and validator.go
 cleanup/policy/%:
-<<<<<<< HEAD
 	$(shell find $(POLICIES_DIR)/$* -not -name '*.proto' -not -name 'validator.go' -type f -delete)
 	@rm -r $(POLICIES_DIR)/$*/k8s || true
-=======
-	$(shell find $(POLICIES_DIR)/$* \( -name '*.pb.go' -o -name '*.yaml' -o -name 'zz_generated.*'  \) -not -path '*/testdata/*' -type f -delete)
-	@rm -fr $(POLICIES_DIR)/$*/k8s
-
-generate/deep-copy/common:
-	for version in $(foreach dir,$(wildcard $(COMMON_DIR)/*),$(notdir $(dir))); do \
-		$(CONTROLLER_GEN) object paths=$(COMMON_DIR)/$$version/targetref.go ; \
-	done
->>>>>>> fdac0e281 (chore: remove Apache license header from generated files (#5565))
 
 generate/policy/%: generate/schema/%
 	@echo "Copy CRD to helm directory"
@@ -68,10 +58,6 @@ generate/controller-gen/%: generate/kumapolicy-gen/%
 	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \
 		$(CONTROLLER_GEN) "crd:crdVersions=v1,ignoreUnexportedFields=true" paths="./$(POLICIES_DIR)/$*/k8s/..." output:crd:artifacts:config=$(POLICIES_DIR)/$*/k8s/crd && \
 		$(CONTROLLER_GEN) object paths=$(POLICIES_DIR)/$*/k8s/$$version/zz_generated.types.go ; \
-<<<<<<< HEAD
-=======
-		$(CONTROLLER_GEN) object paths=$(POLICIES_DIR)/$*/api/$$version/$*.go ; \
->>>>>>> fdac0e281 (chore: remove Apache license header from generated files (#5565))
 	done
 
 generate/kumapolicy-gen/%: generate/dirs/%
@@ -94,7 +80,6 @@ generate/dirs/%:
 	done
 
 
-<<<<<<< HEAD
 generate/helm/%:
 	tools/policy-gen/crd-helm-copy.sh $*
 
@@ -111,12 +96,6 @@ upgrade/gui:
 	cd $(KUMA_GUI_WORK_FOLDER) && yarn install && yarn build
 	rm -rf $(KUMA_GUI_FOLDER) && mv $(KUMA_GUI_WORK_FOLDER)/dist/ $(KUMA_GUI_FOLDER)
 	rm -rf $(KUMA_GUI_WORK_FOLDER)
-=======
-.PHONY: crd/controller-gen
-crd/controller-gen:
-	$(CONTROLLER_GEN) "crd:crdVersions=v1" paths=$(IN_CRD) output:crd:artifacts:config=$(OUT_CRD)
-	$(CONTROLLER_GEN) object paths=$(IN_CRD)
->>>>>>> fdac0e281 (chore: remove Apache license header from generated files (#5565))
 
 .PHONY: generate/envoy-imports
 generate/envoy-imports:
