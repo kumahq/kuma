@@ -36,5 +36,5 @@ filterChains:
               cluster: backend
               timeout: 0s
       statPrefix: outbound_127_0_0_1_10002
-name: inbound:127.0.0.1:10002
+name: outbound:127.0.0.1:10002
 trafficDirection: OUTBOUND

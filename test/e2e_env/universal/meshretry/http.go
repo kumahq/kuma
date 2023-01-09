@@ -11,8 +11,8 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-func Policy() {
-	meshName := "meshretry"
+func HttpRetry() {
+	meshName := "meshretry-http"
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MeshUniversal(meshName)).
