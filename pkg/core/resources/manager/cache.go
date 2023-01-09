@@ -88,7 +88,7 @@ func (c *cachedManager) List(ctx context.Context, list model.ResourceList, fs ..
 	if !opts.IsCacheable() {
 		return fmt.Errorf("filter functions are not allowed for cached store")
 	}
-	cacheKey := fmt.Sprintf("LIST:%s:%s", list.GetItemType(), opts.HashCode())
+	cacheKey := fmt.Sprintf("LIST:%s:%s:%t:%s:%d:%s", list.GetItemType(), opts.HashCode(), opts.Ordered, opts.NamePrefix, opts.PageSize, opts.PageOffset)
 	obj, found := c.cache.Get(cacheKey)
 	if !found {
 		// There might be a situation when cache just expired and there are many concurrent goroutines here.
@@ -99,7 +99,7 @@ func (c *cachedManager) List(ctx context.Context, list model.ResourceList, fs ..
 		if !found {
 			// After many goroutines are unlocked one by one, only one should execute this branch, the rest should retrieve object from the cache
 			c.metrics.WithLabelValues("list", string(list.GetItemType()), "miss").Inc()
-			if err := c.delegate.List(ctx, list, append(fs, store.ListOrdered())...); err != nil {
+			if err := c.delegate.List(ctx, list, fs...); err != nil {
 				mutex.Unlock()
 				return err
 			}

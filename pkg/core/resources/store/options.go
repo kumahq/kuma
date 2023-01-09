@@ -212,7 +212,7 @@ func ListOrdered() ListOptionsFunc {
 }
 
 func (l *ListOptions) IsCacheable() bool {
-	return l.FilterFunc == nil && l.NamePrefix == "" && l.PageOffset == "" && l.PageSize == 0
+	return l.FilterFunc == nil
 }
 
 func (l *ListOptions) HashCode() string {
