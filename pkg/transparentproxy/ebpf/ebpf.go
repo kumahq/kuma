@@ -1,5 +1,4 @@
 //go:build linux
-//go:generate cp -r ../../../build/ebpf-programs ./
 
 package ebpf
 
@@ -51,19 +50,19 @@ const (
 )
 
 var (
-	//go:embed ebpf-programs/mb_connect
+	//go:embed programs/mb_connect
 	mbConnect []byte
-	//go:embed ebpf-programs/mb_sockops
+	//go:embed programs/mb_sockops
 	mbSockops []byte
-	//go:embed ebpf-programs/mb_get_sockopts
+	//go:embed programs/mb_get_sockopts
 	mbGetSockopts []byte
-	//go:embed ebpf-programs/mb_sendmsg
+	//go:embed programs/mb_sendmsg
 	mbSendmsg []byte
-	//go:embed ebpf-programs/mb_recvmsg
+	//go:embed programs/mb_recvmsg
 	mbRecvmsg []byte
-	//go:embed ebpf-programs/mb_redir
+	//go:embed programs/mb_redir
 	mbRedir []byte
-	//go:embed ebpf-programs/mb_tc
+	//go:embed programs/mb_tc
 	mbTc []byte
 )
 

@@ -28,8 +28,12 @@ COREDNS_VERSION ?= v1.10.0
 COREDNS_TMP_DIRECTORY ?= $(BUILD_DIR)/coredns
 COREDNS_PLUGIN_CFG_PATH ?= $(TOP)/tools/builds/coredns/templates/plugin.cfg
 
+EBPF_GIT_REPOSITORY ?= https://github.com/kumahq/merbridge.git
+EBPF_GIT_BRANCH ?= main
+EBPF_TMP_DIRECTORY ?= $(BUILD_DIR)/ebpf
+
 # List of binaries that we have release build rules for.
-BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl coredns envoy kuma-cni install-cni
+BUILD_RELEASE_BINARIES := ebpf kuma-cp kuma-dp kumactl coredns envoy kuma-cni install-cni
 
 # List of binaries that we have test build roles for.
 BUILD_TEST_BINARIES := test-server
@@ -79,7 +83,7 @@ build/kuma-dp: ## Dev: Build `kuma-dp` binary
 	$(Build_Go_Application) ./app/$(notdir $@)
 
 .PHONY: build/kumactl
-build/kumactl: ## Dev: Build `kumactl` binary
+build/kumactl: build/ebpf ## Dev: Build `kumactl` binary
 	$(Build_Go_Application) ./app/$(notdir $@)
 
 .PHONY: build/kuma-cni
@@ -103,6 +107,50 @@ ifeq (,$(wildcard $(BUILD_ARTIFACTS_DIR)/coredns/coredns))
 	rm -rf "$(COREDNS_TMP_DIRECTORY)"
 else
 	@echo "CoreDNS is already built. If you want to rebuild it, remove the binary: rm $(BUILD_ARTIFACTS_DIR)/coredns/coredns"
+endif
+
+foo:
+	echo $(shell uname)
+
+.PHONY: build/ebpf
+build/ebpf:
+ifeq ($(shell uname), Linux)
+ifeq (,$(wildcard $(BUILD_ARTIFACTS_DIR)/ebpf))
+	rm -rf "$(EBPF_TMP_DIRECTORY)"
+
+	git clone \
+		--recurse-submodules \
+		--branch $(EBPF_GIT_BRANCH) \
+		$(EBPF_GIT_REPOSITORY) \
+		$(EBPF_TMP_DIRECTORY)
+
+	make \
+		LLVM_STRIP=llvm-strip-14 \
+		--directory $(EBPF_TMP_DIRECTORY)/bpf \
+		$(EBPF_TMP_DIRECTORY)/bpf/.output/bpftool \
+		$(EBPF_TMP_DIRECTORY)/bpf/.output/bpftool/bootstrap/bpftool \
+		$(EBPF_TMP_DIRECTORY)/bpf/.output/libbpf.a
+
+	make \
+		MESH_MODE=kuma \
+		DEBUG=0 \
+		USE_RECONNECT=1 \
+		LLVM_STRIP=llvm-strip-14 \
+		--directory $(EBPF_TMP_DIRECTORY)/bpf \
+		all
+
+	rm -rf $(EBPF_TMP_DIRECTORY)/bpf/mb_*.*
+
+	mkdir -p $(BUILD_ARTIFACTS_DIR)/ebpf
+	mkdir -p pkg/transparentproxy/ebpf/programs
+
+	cp $(EBPF_TMP_DIRECTORY)/bpf/mb_* $(BUILD_ARTIFACTS_DIR)/ebpf/
+	cp $(EBPF_TMP_DIRECTORY)/bpf/mb_* pkg/transparentproxy/ebpf/programs/
+
+	rm -rf "$(EBPF_TMP_DIRECTORY)"
+else
+	@echo "eBPF programs are already built. If you want to rebuild it, remove them: rm -r $(BUILD_ARTIFACTS_DIR)/ebpf"
+endif
 endif
 
 .PHONY: build/test-server
