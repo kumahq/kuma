@@ -33,7 +33,7 @@ EBPF_GIT_BRANCH ?= main
 EBPF_TMP_DIRECTORY ?= $(BUILD_DIR)/ebpf
 
 # List of binaries that we have release build rules for.
-BUILD_RELEASE_BINARIES := ebpf kuma-cp kuma-dp kumactl coredns envoy kuma-cni install-cni
+BUILD_RELEASE_BINARIES := ebpf/copy-for-kumactl kuma-cp kuma-dp kumactl coredns envoy kuma-cni install-cni
 
 # List of binaries that we have test build roles for.
 BUILD_TEST_BINARIES := test-server
@@ -83,7 +83,7 @@ build/kuma-dp: ## Dev: Build `kuma-dp` binary
 	$(Build_Go_Application) ./app/$(notdir $@)
 
 .PHONY: build/kumactl
-build/kumactl: build/ebpf ## Dev: Build `kumactl` binary
+build/kumactl: build/ebpf/copy-for-kumactl ## Dev: Build `kumactl` binary
 	$(Build_Go_Application) ./app/$(notdir $@)
 
 .PHONY: build/kuma-cni
@@ -151,6 +151,14 @@ ifeq (,$(wildcard $(BUILD_ARTIFACTS_DIR)/ebpf))
 else
 	@echo "eBPF programs are already built. If you want to rebuild it, remove them: rm -r $(BUILD_ARTIFACTS_DIR)/ebpf"
 endif
+endif
+
+.PHONY: build/ebpf/copy-for-kumactl
+build/ebpf/copy-for-kumactl: build/ebpf
+ifeq ($(shell uname), Linux)
+	mkdir -p pkg/transparentproxy/ebpf/programs
+
+	cp $(BUILD_ARTIFACTS_DIR)/ebpf/mb_* pkg/transparentproxy/ebpf/programs/
 endif
 
 .PHONY: build/test-server

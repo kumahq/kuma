@@ -534,7 +534,7 @@ workflows:
           parallelism: 1
           requires: [ build-<< matrix.arch >>, check ]
       - blackbox_tests:
-          name: test/blackbox--<< matrix.arch >>
+          name: test/blackbox-<< matrix.arch >>
           matrix:
             alias: test/blackbox
             parameters:
