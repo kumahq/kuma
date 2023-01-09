@@ -9,8 +9,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	kumanet_config "github.com/kumahq/kuma/pkg/transparentproxy/config"
-
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy/istio/tools/istio-iptables/pkg/constants"
 )
@@ -114,7 +112,7 @@ func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyC
 		}
 	}
 
-	var excludePortsForUIDs []kumanet_config.UIDsToPorts
+	var excludePortsForUIDs []config.UIDsToPorts
 	if len(tpConfig.ExcludeOutboundTCPPortsForUIDs) > 0 {
 		excludeTCPPortsForUIDs, err := parseExcludePortsForUIDs(tpConfig.ExcludeOutboundTCPPortsForUIDs, "tcp")
 		if err != nil {
@@ -144,35 +142,35 @@ func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyC
 		return "", errors.Wrap(err, "cannot verify if IPv6 should be enabled")
 	}
 
-	cfg := kumanet_config.Config{
-		Owner: kumanet_config.Owner{
+	cfg := config.Config{
+		Owner: config.Owner{
 			UID: tpConfig.UID,
 		},
-		Redirect: kumanet_config.Redirect{
+		Redirect: config.Redirect{
 			NamePrefix: "KUMA_",
-			Inbound: kumanet_config.TrafficFlow{
+			Inbound: config.TrafficFlow{
 				Enabled:      tpConfig.RedirectInBound,
 				Port:         redirectInboundPort,
 				PortIPv6:     redirectInboundPortIPv6,
 				ExcludePorts: excludeInboundPorts,
 			},
-			Outbound: kumanet_config.TrafficFlow{
+			Outbound: config.TrafficFlow{
 				Enabled:             true,
 				Port:                redirectOutboundPort,
 				ExcludePorts:        excludeOutboundPorts,
 				ExcludePortsForUIDs: excludePortsForUIDs,
 			},
-			DNS: kumanet_config.DNS{
+			DNS: config.DNS{
 				Enabled:            tpConfig.RedirectDNS,
 				CaptureAll:         tpConfig.RedirectAllDNSTraffic,
 				Port:               agentDNSListenerPort,
 				ConntrackZoneSplit: !tpConfig.SkipDNSConntrackZoneSplit,
 			},
-			VNet: kumanet_config.VNet{
+			VNet: config.VNet{
 				Networks: tpConfig.VnetNetworks,
 			},
 		},
-		Ebpf: kumanet_config.Ebpf{
+		Ebpf: config.Ebpf{
 			Enabled:            tpConfig.EbpfEnabled,
 			InstanceIP:         tpConfig.EbpfInstanceIP,
 			BPFFSPath:          tpConfig.EbpfBPFFSPath,
@@ -190,8 +188,8 @@ func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyC
 	return Setup(cfg)
 }
 
-func parseExcludePortsForUIDs(excludeOutboundPortsForUIDs []string, protocol string) ([]kumanet_config.UIDsToPorts, error) {
-	var uidsToPorts []kumanet_config.UIDsToPorts
+func parseExcludePortsForUIDs(excludeOutboundPortsForUIDs []string, protocol string) ([]config.UIDsToPorts, error) {
+	var uidsToPorts []config.UIDsToPorts
 	for _, excludePort := range excludeOutboundPortsForUIDs {
 		parts := strings.Split(excludePort, ":")
 		if len(parts) != 2 {
@@ -208,9 +206,9 @@ func parseExcludePortsForUIDs(excludeOutboundPortsForUIDs []string, protocol str
 			return nil, err
 		}
 
-		uidsToPorts = append(uidsToPorts, kumanet_config.UIDsToPorts{
-			Ports:    kumanet_config.ValueOrRangeList(portValuesOrRange),
-			UIDs:     kumanet_config.ValueOrRangeList(uidValuesOrRange),
+		uidsToPorts = append(uidsToPorts, config.UIDsToPorts{
+			Ports:    config.ValueOrRangeList(portValuesOrRange),
+			UIDs:     config.ValueOrRangeList(uidValuesOrRange),
 			Protocol: protocol,
 		})
 	}
@@ -244,8 +242,8 @@ func validateUintValueOrRange(valueOrRange string) error {
 }
 
 func (tp *ExperimentalTransparentProxy) Cleanup(tpConfig *config.TransparentProxyConfig) (string, error) {
-	return Cleanup(kumanet_config.Config{
-		Ebpf: kumanet_config.Ebpf{
+	return Cleanup(config.Config{
+		Ebpf: config.Ebpf{
 			Enabled:   tpConfig.EbpfEnabled,
 			BPFFSPath: tpConfig.EbpfBPFFSPath,
 		},

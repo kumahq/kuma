@@ -21,4 +21,3 @@ func Cleanup(cfg config.Config) (string, error) {
 
 	panic("currently not supported")
 }
-
