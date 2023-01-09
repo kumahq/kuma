@@ -20,10 +20,9 @@ func TestPostgresStore(t *testing.T) {
 		Expect(c.Start()).To(Succeed())
 	})
 	AfterSuite(func() {
-		err := c.Stop()
-		if err != nil {
+		if err := c.Stop(); err != nil {
 			// Exception around delete image bug: https://github.com/moby/moby/issues/44290
-			Expect(err).To(ContainSubstring(err.Error(), "unrecognized image"))
+			Expect(err.Error()).To(ContainSubstring("unrecognized image"))
 		}
 	})
 	test.RunSpecs(t, "Postgres Resource Store Suite")

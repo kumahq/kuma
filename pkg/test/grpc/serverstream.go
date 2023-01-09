@@ -36,38 +36,32 @@ func (stream *MockServerStream) Recv() (*envoy_sd.DiscoveryRequest, error) {
 }
 
 func (stream *MockServerStream) ClientStream(stopCh chan struct{}) *MockClientStream {
-	sentCh := make(chan *envoy_sd.DiscoveryRequest)
-	recvCh := make(chan *envoy_sd.DiscoveryResponse)
+	mockClientStream := NewMockClientStream()
 	go func() {
 		for {
-			r, more := <-sentCh
-			if more {
-				stream.RecvCh <- r
-			} else {
+			r, more := <-mockClientStream.SentCh
+			if !more {
 				close(stream.RecvCh)
 				return
 			}
+			stream.RecvCh <- r
 		}
 	}()
 	go func() {
 		for {
 			select {
 			case <-stopCh:
-				close(recvCh)
+				close(mockClientStream.RecvCh)
 				return
 			case r := <-stream.SentCh:
-				recvCh <- r
+				mockClientStream.RecvCh <- r
 			}
 		}
 	}()
-	return &MockClientStream{
-		Ctx:    stream.Ctx,
-		SentCh: sentCh,
-		RecvCh: recvCh,
-	}
+	return mockClientStream
 }
 
-func MakeMockStream() *MockServerStream {
+func NewMockServerStream() *MockServerStream {
 	return &MockServerStream{
 		Ctx:    context.Background(),
 		SentCh: make(chan *envoy_sd.DiscoveryResponse, 10),

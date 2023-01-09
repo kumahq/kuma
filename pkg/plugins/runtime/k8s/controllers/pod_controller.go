@@ -337,7 +337,7 @@ func (r *PodReconciler) createOrUpdateEgress(ctx context.Context, pod *kube_core
 		Mesh: model.NoMesh,
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, egress, func() error {
-		if err := r.PodConverter.PodToEgress(egress, pod, services); err != nil {
+		if err := r.PodConverter.PodToEgress(ctx, egress, pod, services); err != nil {
 			return errors.Wrap(err, "unable to translate a Pod into a Egress")
 		}
 		if err := kube_controllerutil.SetControllerReference(pod, egress, r.Scheme); err != nil {

@@ -819,8 +819,12 @@ spec:
                             tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
+            required:
+            - targetRef
             type: object
         type: object
     served: true
@@ -1018,6 +1022,8 @@ spec:
                             tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
               targetRef:
@@ -1049,6 +1055,8 @@ spec:
                       Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                     type: object
                 type: object
+            required:
+            - targetRef
             type: object
         type: object
     served: true
@@ -1290,8 +1298,12 @@ spec:
                             tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
+            required:
+            - targetRef
             type: object
         type: object
     served: true
@@ -1415,6 +1427,8 @@ spec:
                             tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
               targetRef:
@@ -1527,8 +1541,12 @@ spec:
                             tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
+            required:
+            - targetRef
             type: object
         type: object
     served: true
@@ -1709,6 +1727,8 @@ spec:
                       Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                     type: object
                 type: object
+            required:
+            - targetRef
             type: object
         type: object
     served: true
@@ -1799,6 +1819,8 @@ spec:
                             tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
               targetRef:
@@ -1830,6 +1852,8 @@ spec:
                       Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                     type: object
                 type: object
+            required:
+            - targetRef
             type: object
         type: object
     served: true
@@ -2918,6 +2942,8 @@ spec:
                             tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
               targetRef:
@@ -3049,8 +3075,12 @@ spec:
                             tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
+            required:
+            - targetRef
             type: object
         type: object
     served: true
@@ -3379,6 +3409,8 @@ spec:
                             tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
               targetRef:
@@ -3695,8 +3727,12 @@ spec:
                             tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
+            required:
+            - targetRef
             type: object
         type: object
     served: true
@@ -3771,6 +3807,7 @@ rules:
       - "apps"
     resources:
       - deployments
+      - replicasets
     verbs:
       - create
       - delete
@@ -3778,6 +3815,14 @@ rules:
       - list
       - patch
       - update
+      - watch
+  - apiGroups:
+      - "batch"
+    resources:
+      - jobs
+    verbs:
+      - get
+      - list
       - watch
   - apiGroups:
       - gateway.networking.k8s.io

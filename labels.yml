@@ -44,3 +44,6 @@ default:
     - color: 965E20
       name: "ci/skip-e2e-test"
       description: "PR: Don't run e2e tests"
+    - color: 965E20
+      name: "ci/auto-merge"
+      description: "PR: Approve and Merge PRs automatically"
