@@ -3,12 +3,8 @@ version: 2.1 # Adds support for executors, parameterized jobs, etc
 reusable:
 
   constants:
-<<<<<<< HEAD
-    - &go_version "1.18"
-    - &docker_version "20.10.7"
-=======
     - &go_version "1.18.9"
->>>>>>> 1833fe6df (build: update to go 1.18.9 (#5607))
+    - &docker_version "20.10.7"
 
   docker_images:
     - &golang_image "cimg/go:1.18.9"
