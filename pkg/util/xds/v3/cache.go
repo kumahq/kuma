@@ -81,8 +81,8 @@ type SnapshotCache interface {
 	// HasSnapshot checks whether there is a snapshot present for a node.
 	HasSnapshot(node string) bool
 
-	// ClearSnapshot removes all status and snapshot information associated with a node.
-	ClearSnapshot(node string)
+	// ClearSnapshot removes all status and snapshot information associated with a node. Return the removed snapshot or nil
+	ClearSnapshot(node string) Snapshot
 
 	// GetStatusInfo retrieves status information for a node ID.
 	GetStatusInfo(string) StatusInfo
@@ -191,12 +191,14 @@ func (cache *snapshotCache) HasSnapshot(node string) bool {
 }
 
 // ClearSnapshot clears snapshot and info for a node.
-func (cache *snapshotCache) ClearSnapshot(node string) {
+func (cache *snapshotCache) ClearSnapshot(node string) Snapshot {
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 
+	snapshot := cache.snapshots[node]
 	delete(cache.snapshots, node)
 	delete(cache.status, node)
+	return snapshot
 }
 
 // nameSet creates a map from a string slice to value true.

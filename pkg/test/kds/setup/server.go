@@ -1,10 +1,7 @@
 package setup
 
 import (
-	"sync"
 	"time"
-
-	. "github.com/onsi/gomega"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
@@ -16,7 +13,6 @@ import (
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	kds_server "github.com/kumahq/kuma/pkg/kds/server"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	test_grpc "github.com/kumahq/kuma/pkg/test/grpc"
 )
 
 type testRuntimeContext struct {
@@ -44,21 +40,15 @@ func (t *testRuntimeContext) Add(c ...component.Component) error {
 	return nil
 }
 
-func StartServer(store store.ResourceStore, wg *sync.WaitGroup, clusterID string, providedTypes []model.ResourceType, providedFilter reconcile.ResourceFilter, providedMapper reconcile.ResourceMapper) *test_grpc.MockServerStream {
+func StartServer(store store.ResourceStore, clusterID string, providedTypes []model.ResourceType, providedFilter reconcile.ResourceFilter, providedMapper reconcile.ResourceMapper) (kds_server.Server, error) {
 	metrics, err := core_metrics.NewMetrics("Global")
-	Expect(err).ToNot(HaveOccurred())
+	if err != nil {
+		return nil, err
+	}
 	rt := &testRuntimeContext{
 		rom:     manager.NewResourceManager(store),
 		cfg:     kuma_cp.Config{},
 		metrics: metrics,
 	}
-	srv, err := kds_server.New(core.Log.WithName("kds").WithName(clusterID), rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, providedMapper, false)
-	Expect(err).ToNot(HaveOccurred())
-	stream := test_grpc.MakeMockStream()
-	go func() {
-		defer wg.Done()
-		err := srv.StreamKumaResources(stream)
-		Expect(err).ToNot(HaveOccurred())
-	}()
-	return stream
+	return kds_server.New(core.Log.WithName("kds").WithName(clusterID), rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, providedMapper, false)
 }

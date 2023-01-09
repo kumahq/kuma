@@ -25,7 +25,7 @@ var _ = Describe("KDS Sink", func() {
 	var tc kds_verifier.TestContext
 
 	BeforeEach(func() {
-		mockClientStream := test_grpc.MakeMockClientStream()
+		mockClientStream := test_grpc.NewMockClientStream()
 		stopCh := make(chan struct{})
 		kds_setup.StartClient([]*test_grpc.MockClientStream{mockClientStream}, []model.ResourceType{mesh.MeshType, mesh.DataplaneType}, stopCh, nil)
 
