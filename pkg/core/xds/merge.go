@@ -63,6 +63,9 @@ func newConf(t reflect.Type) (interface{}, error) {
 
 func clearAppendSlices(val reflect.Value) {
 	strVal := mustUnwrapStruct(val)
+	if strVal == reflect.ValueOf(nil) {
+		return
+	}
 	for i := 0; i < strVal.NumField(); i++ {
 		valField := strVal.Field(i)
 		fieldName := strVal.Type().Field(i).Name
@@ -85,6 +88,9 @@ func clearAppendSlices(val reflect.Value) {
 func appendSlices(dst reflect.Value, src reflect.Value) {
 	strDst := mustUnwrapStruct(dst)
 	strSrc := mustUnwrapStruct(src)
+	if strSrc == reflect.ValueOf(nil) || strDst == reflect.ValueOf(nil) {
+		return
+	}
 	for i := 0; i < strDst.NumField(); i++ {
 		dstField := strDst.Field(i)
 		srcField := strSrc.Field(i)
@@ -109,6 +115,9 @@ func appendSlices(dst reflect.Value, src reflect.Value) {
 func mustUnwrapStruct(val reflect.Value) reflect.Value {
 	resVal := val
 	if val.Kind() == reflect.Interface || val.Kind() == reflect.Pointer {
+		if val.IsNil() {
+			return reflect.ValueOf(nil)
+		}
 		resVal = val.Elem()
 	}
 	if resVal.Kind() != reflect.Struct {
