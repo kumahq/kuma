@@ -16,12 +16,14 @@ import (
 
 //go:embed schema.yaml
 var rawSchema []byte
-var schema = spec.Schema{}
 
 func init() {
+	var schema spec.Schema
 	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
 		panic(err)
 	}
+	rawSchema = nil
+	MeshHTTPRouteResourceTypeDescriptor.Schema = &schema
 }
 
 const (
@@ -130,5 +132,4 @@ var MeshHTTPRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Mesh HTTP Route",
 	PluralDisplayName:   "Mesh HTTP Routes",
 	IsPluginOriginated:  true,
-	Schema:              &schema,
 }
