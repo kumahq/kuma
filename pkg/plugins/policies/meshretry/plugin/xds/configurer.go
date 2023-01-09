@@ -189,7 +189,7 @@ func splitRetryOn(conf *[]api.HTTPRetryOn) (string, []uint32, []string) {
 
 	for _, item := range *conf {
 		key := string(item)
-		statusCode, err := strconv.ParseInt(key, 10, 0)
+		statusCode, err := strconv.ParseUint(key, 10, 0)
 		switch {
 		case err == nil && http.StatusText(int(statusCode)) != "":
 			retriableStatusCodes = append(retriableStatusCodes, uint32(statusCode))
