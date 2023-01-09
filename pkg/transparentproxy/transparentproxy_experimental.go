@@ -9,8 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	kumanet_tproxy "github.com/kumahq/kuma-net/transparent-proxy"
-	kumanet_config "github.com/kumahq/kuma-net/transparent-proxy/config"
+	kumanet_config "github.com/kumahq/kuma/pkg/transparentproxy/config"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy/istio/tools/istio-iptables/pkg/constants"
@@ -188,7 +187,7 @@ func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyC
 		DryRun:        tpConfig.DryRun,
 	}
 
-	return kumanet_tproxy.Setup(cfg)
+	return Setup(cfg)
 }
 
 func parseExcludePortsForUIDs(excludeOutboundPortsForUIDs []string, protocol string) ([]kumanet_config.UIDsToPorts, error) {
@@ -245,7 +244,7 @@ func validateUintValueOrRange(valueOrRange string) error {
 }
 
 func (tp *ExperimentalTransparentProxy) Cleanup(tpConfig *config.TransparentProxyConfig) (string, error) {
-	return kumanet_tproxy.Cleanup(kumanet_config.Config{
+	return Cleanup(kumanet_config.Config{
 		Ebpf: kumanet_config.Ebpf{
 			Enabled:   tpConfig.EbpfEnabled,
 			BPFFSPath: tpConfig.EbpfBPFFSPath,

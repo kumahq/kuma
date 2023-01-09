@@ -230,6 +230,47 @@ jobs:
     - store_test_results:
         path: build/reports
 
+  blackbox_tests:
+    parameters:
+      arch:
+        description: The golang arch.
+        type: string
+        default: amd64
+    executor:
+      name: vm-<< parameters.arch >>
+    steps:
+    - checkout
+    - run:
+        # Label based skip-test runs
+        name: "Check if skip"
+        command: |
+          echo "Running with: \
+            arch:<< parameters.arch >> \
+          "
+          function skip() {
+            echo "Non valid job combination halting job reason: $1"
+            circleci-agent step halt
+            exit 0
+          }
+          if [[ $(./tools/ci/has_label.sh ci/skip-test) == "true" ]]; then
+            skip "Not running tests as the PR has label: ci/skip-test"
+          fi
+          if [[ $(./tools/ci/has_label.sh ci/skip-blackbox-test) == "true" ]]; then
+            skip "Not running tests as the PR has label: ci/skip-blackbox-test"
+          fi
+          echo "Continuing tests"
+    - install_build_tools:
+        go_arch: << parameters.arch >>
+        go_os: linux
+    - restore_cache:
+        keys:
+        # prefer the exact match
+        - vm-<< parameters.arch >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}
+    - run:
+        name: "Run blackbox tests"
+        command: |
+          sudo "PATH=$PATH" /home/circleci/.kuma-dev/bin/ginkgo run ./test/blackbox_tests/...
+
   e2e:
     parameters:
       k8sVersion:
@@ -487,6 +528,13 @@ workflows:
               arch: [ amd64, arm64 ]
           parallelism: 1
           requires: [ build-<< matrix.arch >>, check ]
+      - blackbox_tests:
+          name: test/blackbox--<< matrix.arch >>
+          matrix:
+            alias: test/blackbox
+            parameters:
+              arch: [ amd64, arm64 ]
+          requires: [ check ]
       - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
           matrix:
