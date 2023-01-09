@@ -30,5 +30,5 @@ func PluralType(resType string) string {
 }
 
 func PluralDisplayName(resType string) string {
-	return DisplayName(PluralType(resType))
+	return PluralType(DisplayName(resType))
 }
