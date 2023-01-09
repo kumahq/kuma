@@ -171,6 +171,12 @@ jobs:
         # prefer the exact match
         - golang_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
     - run:
+        name: "Create dummy eBPF programs"
+        command: |
+          mkdir -p ./pkg/transparentproxy/ebpf/programs
+          touch ./pkg/transparentproxy/ebpf/programs/mb_{connect,sockops,get_sockopts,sendmsg,recvmsg,redir,tc}
+          ls -lah ./pkg/transparentproxy/ebpf/programs
+    - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: make check
 
