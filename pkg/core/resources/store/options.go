@@ -153,12 +153,12 @@ func (g *GetOptions) HashCode() string {
 type ListFilterFunc func(rs core_model.Resource) bool
 
 type ListOptions struct {
-	Mesh       string
-	PageSize   int
-	PageOffset string
-	FilterFunc ListFilterFunc
-	NamePrefix string
-	Ordered    bool
+	Mesh         string
+	PageSize     int
+	PageOffset   string
+	FilterFunc   ListFilterFunc
+	NameContains string
+	Ordered      bool
 }
 
 type ListOptionsFunc func(*ListOptions)
@@ -180,9 +180,9 @@ func (l *ListOptions) Filter(rs core_model.Resource) bool {
 	return l.FilterFunc(rs)
 }
 
-func ListByNamePrefix(name string) ListOptionsFunc {
+func ListByNameContains(name string) ListOptionsFunc {
 	return func(opts *ListOptions) {
-		opts.NamePrefix = name
+		opts.NameContains = name
 	}
 }
 
