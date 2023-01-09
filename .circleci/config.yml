@@ -34,7 +34,7 @@ reusable:
 
   docker_images:
     - &golang_image "golang:1.18.9"
-    - &circleci_golang_image "circleci/golang:1.18.9"
+    - &circleci_golang_image "cimg/go:1.18.9"
 
   vm_images:
   - &ubuntu_vm_image "ubuntu-2004:202111-01"
@@ -156,6 +156,9 @@ commands:
         command: |
           curl -s --fail --location https://dl.google.com/go/go<<parameters.go_version>>.<<parameters.go_os>>-<<parameters.go_arch>>.tar.gz | tar -xz -C $HOME
           echo 'export PATH=$HOME/go/bin:$PATH' >> $BASH_ENV
+          # if GOPATH is not set, `golang-ci` fails with an obscure message
+          # "ERRO Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
+          echo 'export GOPATH=$HOME/go' >> $BASH_ENV
     - run:
         name: "Update runc"
         # See https://github.com/rancher/k3d/issues/807 (runc's default version on the instance fails k3d)
