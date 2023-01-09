@@ -28,7 +28,3 @@ func PluralType(resType string) string {
 		return resType + "s"
 	}
 }
-
-func PluralDisplayName(resType string) string {
-	return PluralType(DisplayName(resType))
-}
