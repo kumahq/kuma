@@ -127,8 +127,8 @@ var MeshHTTPRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowToInspect:      true,
 	IsPolicy:            true,
 	IsExperimental:      false,
-	SingularDisplayName: "Mesh H T T P Route",
-	PluralDisplayName:   "Mesh H T T P Routes",
+	SingularDisplayName: "Mesh HTTP Route",
+	PluralDisplayName:   "Mesh HTTP Routes",
 	IsPluginOriginated:  true,
 	Schema:              &schema,
 }
