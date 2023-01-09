@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -19,6 +20,10 @@ const (
 	KubeServiceTag   = "k8s.kuma.io/service-name"
 	KubePortTag      = "k8s.kuma.io/service-port"
 )
+
+type InboundConverter struct {
+	NameExtractor NameExtractor
+}
 
 func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Service) (ifaces []*mesh_proto.Dataplane_Networking_Inbound) {
 	for _, svcPort := range service.Spec.Ports {
@@ -74,7 +79,7 @@ func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Servi
 	return
 }
 
-func inboundForServiceless(zone string, pod *kube_core.Pod) (ifaces []*mesh_proto.Dataplane_Networking_Inbound) {
+func inboundForServiceless(zone string, pod *kube_core.Pod, name string) *mesh_proto.Dataplane_Networking_Inbound {
 	// The Pod does not have any services associated with it, just get the data from the Pod itself
 
 	// We still need that extra listener with a service because it is required in many places of the code (e.g. mTLS)
@@ -85,7 +90,7 @@ func inboundForServiceless(zone string, pod *kube_core.Pod) (ifaces []*mesh_prot
 	// will create lots of code changes to account for this other type of dataplne (we already have GW and Ingress),
 	// including GUI and CLI changes
 
-	tags := InboundTagsForPod(zone, pod)
+	tags := InboundTagsForPod(zone, pod, name)
 	var health *mesh_proto.Dataplane_Networking_Inbound_Health
 
 	for _, container := range pod.Spec.Containers {
@@ -109,16 +114,14 @@ func inboundForServiceless(zone string, pod *kube_core.Pod) (ifaces []*mesh_prot
 		}
 	}
 
-	ifaces = append(ifaces, &mesh_proto.Dataplane_Networking_Inbound{
+	return &mesh_proto.Dataplane_Networking_Inbound{
 		Port:   mesh_proto.TCPPortReserved,
 		Tags:   tags,
 		Health: health,
-	})
-
-	return
+	}
 }
 
-func InboundInterfacesFor(zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
+func (i *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
 	ifaces := []*mesh_proto.Dataplane_Networking_Inbound{}
 	for _, svc := range services {
 		svcIfaces := inboundForService(zone, pod, svc)
@@ -129,8 +132,12 @@ func InboundInterfacesFor(zone string, pod *kube_core.Pod, services []*kube_core
 		if len(services) > 0 {
 			return nil, errors.Errorf("A service that selects pod %s was found, but it doesn't match any container ports.", pod.GetName())
 		}
+		name, _, err := i.NameExtractor.Name(ctx, pod)
+		if err != nil {
+			return nil, err
+		}
 
-		ifaces = append(ifaces, inboundForServiceless(zone, pod)...)
+		ifaces = append(ifaces, inboundForServiceless(zone, pod, name))
 	}
 	return ifaces, nil
 }
@@ -193,7 +200,7 @@ func ProtocolTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) stri
 	return strings.ToLower(protocolValue)
 }
 
-func InboundTagsForPod(zone string, pod *kube_core.Pod) map[string]string {
+func InboundTagsForPod(zone string, pod *kube_core.Pod, name string) map[string]string {
 	tags := util_k8s.CopyStringMap(pod.Labels)
 	for key, value := range tags {
 		if value == "" {
@@ -204,7 +211,7 @@ func InboundTagsForPod(zone string, pod *kube_core.Pod) map[string]string {
 		tags = make(map[string]string)
 	}
 	tags[KubeNamespaceTag] = pod.Namespace
-	tags[mesh_proto.ServiceTag] = fmt.Sprintf("%s_%s_svc", nameFromPod(pod), pod.Namespace)
+	tags[mesh_proto.ServiceTag] = fmt.Sprintf("%s_%s_svc", name, pod.Namespace)
 	if zone != "" {
 		tags[mesh_proto.ZoneTag] = zone
 	}
@@ -212,14 +219,4 @@ func InboundTagsForPod(zone string, pod *kube_core.Pod) map[string]string {
 	tags[mesh_proto.InstanceTag] = pod.Name
 
 	return tags
-}
-
-func nameFromPod(pod *kube_core.Pod) string {
-	// the name is in format <name>-<replica set id>-<pod id>
-	split := strings.Split(pod.Name, "-")
-	if len(split) > 2 {
-		split = split[:len(split)-2]
-	}
-
-	return strings.Join(split, "-")
 }

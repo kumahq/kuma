@@ -3765,6 +3765,7 @@ rules:
       - "apps"
     resources:
       - deployments
+      - replicasets
     verbs:
       - create
       - delete
@@ -3772,6 +3773,14 @@ rules:
       - list
       - patch
       - update
+      - watch
+  - apiGroups:
+      - "batch"
+    resources:
+      - jobs
+    verbs:
+      - get
+      - list
       - watch
   - apiGroups:
       - gateway.networking.k8s.io
