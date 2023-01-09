@@ -175,7 +175,6 @@ jobs:
         command: |
           mkdir -p ./pkg/transparentproxy/ebpf/programs
           touch ./pkg/transparentproxy/ebpf/programs/mb_{connect,sockops,get_sockopts,sendmsg,recvmsg,redir,tc}
-          ls -lah ./pkg/transparentproxy/ebpf/programs
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: make check

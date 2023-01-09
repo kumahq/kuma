@@ -3,7 +3,7 @@
 package ebpf
 
 import (
-	 _ "embed"
+	_ "embed"
 	"fmt"
 	"net"
 	"os"
@@ -68,7 +68,7 @@ var (
 
 var programs = []*Program{
 	{
-		Name: "mb_connect",
+		Name:    "mb_connect",
 		Program: mbConnect,
 		Flags: func(
 			cfg config.Config,
@@ -92,7 +92,7 @@ var programs = []*Program{
 		),
 	},
 	{
-		Name: "mb_sockops",
+		Name:    "mb_sockops",
 		Program: mbSockops,
 		Flags: func(
 			cfg config.Config,
@@ -114,16 +114,16 @@ var programs = []*Program{
 		),
 	},
 	{
-		Name:  "mb_get_sockopts",
+		Name:    "mb_get_sockopts",
 		Program: mbGetSockopts,
-		Flags: CgroupFlags,
+		Flags:   CgroupFlags,
 		Cleanup: CleanPathsRelativeToBPFFS(
 			"get_sockopts",
 			MapRelativePathPairOrigDst,
 		),
 	},
 	{
-		Name: "mb_sendmsg",
+		Name:    "mb_sendmsg",
 		Program: mbSendmsg,
 		Flags: func(
 			cfg config.Config,
@@ -143,7 +143,7 @@ var programs = []*Program{
 		),
 	},
 	{
-		Name: "mb_recvmsg",
+		Name:    "mb_recvmsg",
 		Program: mbRecvmsg,
 		Flags: func(
 			cfg config.Config,
@@ -162,16 +162,16 @@ var programs = []*Program{
 		),
 	},
 	{
-		Name:  "mb_redir",
+		Name:    "mb_redir",
 		Program: mbRedir,
-		Flags: Flags(nil),
+		Flags:   Flags(nil),
 		Cleanup: CleanPathsRelativeToBPFFS(
 			"redir",
 			MapRelativePathSockPairMap,
 		),
 	},
 	{
-		Name: "mb_tc",
+		Name:    "mb_tc",
 		Program: mbTc,
 		Flags: func(
 			cfg config.Config,
