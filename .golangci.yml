@@ -1,15 +1,4 @@
-linters:
-  enable:
-    - bodyclose
-    - contextcheck
-    - gci
-    - gocritic
-    - gofmt
-    - gomodguard
-    - importas
-    - misspell
-    - unconvert
-    - whitespace
+# mk/check.mk sets the enabled/disable linters
 
 run:
   skip-files:
