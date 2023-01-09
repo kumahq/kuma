@@ -16,7 +16,11 @@ linters-settings:
     disabled-checks:
       - singleCaseSwitch
   gci:
-    local-prefixes: github.com/kumahq/kuma
+    sections:
+    - standard
+    - default
+    - prefix(github.com/kumahq/kuma-net)
+    - prefix(github.com/kumahq/kuma)
   importas:
     alias:
     - pkg: github.com/kumahq/kuma/pkg/core/resources/apis/mesh
