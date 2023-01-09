@@ -60,6 +60,7 @@ require (
 	google.golang.org/grpc v1.48.0
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
+<<<<<<< HEAD
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.8.1
 	istio.io/pkg v0.0.0-20201202160453-b7f8c8c88ca3
@@ -71,6 +72,21 @@ require (
 	sigs.k8s.io/controller-runtime v0.12.3
 	sigs.k8s.io/controller-tools v0.9.2
 	sigs.k8s.io/gateway-api v0.5.0
+=======
+	helm.sh/helm/v3 v3.10.3
+	istio.io/pkg v0.0.0-20221115183735-2aabb09bf0bb
+	k8s.io/api v0.25.4
+	k8s.io/apiextensions-apiserver v0.25.4
+	k8s.io/apimachinery v0.25.4
+	k8s.io/client-go v0.25.4
+	k8s.io/klog/v2 v2.80.1
+	k8s.io/kube-openapi v0.0.0-20220803162953-67bda5d908f1
+	k8s.io/utils v0.0.0-20220728103510-ee6ede2d64ed
+	sigs.k8s.io/controller-runtime v0.13.1
+	sigs.k8s.io/controller-tools v0.10.0
+	// When updating this also update version in: `test/e2e_env/kubernetes/gateway/utils.go`
+	sigs.k8s.io/gateway-api v0.5.1
+>>>>>>> f50be1546 (chore(deps): bump helm.sh/helm/v3 from 3.8.1 to 3.10.3 (#5592))
 	sigs.k8s.io/testing_frameworks v0.1.2
 )
 
@@ -83,7 +99,7 @@ require (
 	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
-	github.com/BurntSushi/toml v0.4.1 // indirect
+	github.com/BurntSushi/toml v1.1.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/sprig/v3 v3.2.2 // indirect
@@ -106,9 +122,14 @@ require (
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v20.10.13+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
+<<<<<<< HEAD
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/emicklei/go-restful v2.15.0+incompatible // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
+=======
+	github.com/docker/go-units v0.5.0 // indirect
+	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
+>>>>>>> f50be1546 (chore(deps): bump helm.sh/helm/v3 from 3.8.1 to 3.10.3 (#5592))
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/go-errors/errors v1.4.2 // indirect
