@@ -42,7 +42,7 @@ commands:
             fi
 
             sudo apt update
-            sudo env DEBIAN_FRONTEND=noninteractive apt install -y curl git make unzip gcc xz-utils
+            sudo env DEBIAN_FRONTEND=noninteractive apt install -y curl git make unzip gcc xz-utils libelf-dev clang pkg-config
             ;;
           esac
     - run:
