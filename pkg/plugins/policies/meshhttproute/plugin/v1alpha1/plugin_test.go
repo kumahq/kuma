@@ -62,8 +62,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 								TargetRef: builders.TargetRefService("backend"),
 								Rules: []api.Rule{{
 									Matches: []api.Match{{
-										Path: api.PathMatch{
-											Prefix: "/v1",
+										Path: &api.PathMatch{
+											Type:  api.Prefix,
+											Value: "/v1",
 										},
 									}},
 									Default: api.RuleConf{
@@ -86,8 +87,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 								TargetRef: builders.TargetRefService("backend"),
 								Rules: []api.Rule{{
 									Matches: []api.Match{{
-										Path: api.PathMatch{
-											Prefix: "/v1",
+										Path: &api.PathMatch{
+											Type:  api.Prefix,
+											Value: "/v1",
 										},
 									}},
 									Default: api.RuleConf{
@@ -111,8 +113,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 						AppendRules: []api.Rule{
 							{
 								Matches: []api.Match{{
-									Path: api.PathMatch{
-										Prefix: "/v1",
+									Path: &api.PathMatch{
+										Type:  api.Prefix,
+										Value: "/v1",
 									},
 								}},
 								Default: api.RuleConf{
@@ -124,8 +127,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 							},
 							{
 								Matches: []api.Match{{
-									Path: api.PathMatch{
-										Prefix: "/v1",
+									Path: &api.PathMatch{
+										Type:  api.Prefix,
+										Value: "/v1",
 									},
 								}},
 								Default: api.RuleConf{
@@ -165,8 +169,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 			Subset: core_xds.MeshService("backend"),
 			Rules: []api.Rule{{
 				Matches: []api.Match{{
-					Path: api.PathMatch{
-						Prefix: "/v1",
+					Path: &api.PathMatch{
+						Type:  api.Prefix,
+						Value: "/v1",
 					},
 				}},
 				Default: api.RuleConf{
@@ -180,8 +185,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 			Subset: core_xds.MeshService("backend"),
 			Rules: []api.Rule{{
 				Matches: []api.Match{{
-					Path: api.PathMatch{
-						Prefix: "/v2",
+					Path: &api.PathMatch{
+						Type:  api.Prefix,
+						Value: "/v2",
 					},
 				}},
 				Default: api.RuleConf{
@@ -195,8 +201,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 		serviceName: "backend",
 		expectedRoutes: []plugin.Route{{
 			Matches: []api.Match{{
-				Path: api.PathMatch{
-					Prefix: "/",
+				Path: &api.PathMatch{
+					Type:  api.Prefix,
+					Value: "/",
 				},
 			}},
 			BackendRefs: []api.BackendRef{
@@ -207,8 +214,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 			},
 		}, {
 			Matches: []api.Match{{
-				Path: api.PathMatch{
-					Prefix: "/v1",
+				Path: &api.PathMatch{
+					Type:  api.Prefix,
+					Value: "/v1",
 				},
 			}},
 			BackendRefs: []api.BackendRef{
@@ -219,8 +227,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 			},
 		}, {
 			Matches: []api.Match{{
-				Path: api.PathMatch{
-					Prefix: "/v2",
+				Path: &api.PathMatch{
+					Type:  api.Prefix,
+					Value: "/v2",
 				},
 			}},
 			BackendRefs: []api.BackendRef{
@@ -235,8 +244,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 			Subset: core_xds.MeshService("backend"),
 			Rules: []api.Rule{{
 				Matches: []api.Match{{
-					Path: api.PathMatch{
-						Prefix: "/",
+					Path: &api.PathMatch{
+						Type:  api.Prefix,
+						Value: "/",
 					},
 				}},
 				Default: api.RuleConf{
@@ -250,8 +260,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 		serviceName: "backend",
 		expectedRoutes: []plugin.Route{{
 			Matches: []api.Match{{
-				Path: api.PathMatch{
-					Prefix: "/",
+				Path: &api.PathMatch{
+					Type:  api.Prefix,
+					Value: "/",
 				},
 			}},
 			BackendRefs: []api.BackendRef{
@@ -349,8 +360,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 									Subset: core_xds.MeshService("backend"),
 									Conf: []api.Rule{{
 										Matches: []api.Match{{
-											Path: api.PathMatch{
-												Prefix: "/v1",
+											Path: &api.PathMatch{
+												Type:  api.Prefix,
+												Value: "/v1",
 											},
 										}},
 										Default: api.RuleConf{
@@ -361,8 +373,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 										},
 									}, {
 										Matches: []api.Match{{
-											Path: api.PathMatch{
-												Prefix: "/v2",
+											Path: &api.PathMatch{
+												Type:  api.Prefix,
+												Value: "/v2",
 											},
 										}},
 										Default: api.RuleConf{
