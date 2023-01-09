@@ -30,18 +30,11 @@ parameters:
 reusable:
 
   constants:
-<<<<<<< HEAD
-    - &go_version "1.17.3"
-
-  docker_images:
-    - &golang_image "golang:1.17.3"
-    - &circleci_golang_image "circleci/golang:1.17.3"
-=======
     - &go_version "1.18.9"
 
   docker_images:
-    - &golang_image "cimg/go:1.18.9"
->>>>>>> 1833fe6df (build: update to go 1.18.9 (#5607))
+    - &golang_image "golang:1.18.9"
+    - &circleci_golang_image "circleci/golang:1.18.9"
 
   vm_images:
   - &ubuntu_vm_image "ubuntu-2004:202111-01"
