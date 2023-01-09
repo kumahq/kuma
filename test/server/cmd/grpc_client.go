@@ -27,7 +27,7 @@ func newGRPCClientCmd() *cobra.Command {
 		Long:  "Run GRPC Test Server.",
 		Example: `
 # Start a GRPC client that connects to localhost:8080, and
-# sends "Request #${n_of_streams}.${n_of_requests}" every 2 seconds.
+# sends "Request #${n_of_streams}.${n_of_requests}" every 1 seconds.
 test-server grpc client address="localhost:8080" unary=true`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			streamCounter := 0
@@ -87,7 +87,7 @@ func startStreamingRequests(c api.GreeterClient, streamCounter int) error {
 			}
 			grpcClientLog.Info("received response", "msg", resp.GetMessage())
 
-			time.Sleep(2 * time.Second)
+			time.Sleep(1 * time.Second)
 			requestCounter++
 		}
 	}
@@ -104,7 +104,7 @@ func startUnaryRequests(c api.GreeterClient, streamCounter int) error {
 		}
 		grpcClientLog.Info("received response", "msg", resp.GetMessage())
 
-		time.Sleep(2 * time.Second)
+		time.Sleep(1 * time.Second)
 		requestCounter++
 	}
 }
