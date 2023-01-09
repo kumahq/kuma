@@ -53,7 +53,7 @@ require (
 	golang.org/x/exp v0.0.0-20221031165847-c99f073a8326
 	golang.org/x/net v0.4.0
 	golang.org/x/sync v0.1.0
-	golang.org/x/sys v0.3.0
+	golang.org/x/sys v0.4.0
 	golang.org/x/text v0.6.0
 	golang.org/x/time v0.3.0
 	google.golang.org/genproto v0.0.0-20221027153422-115e99e71e1c
