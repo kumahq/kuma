@@ -87,8 +87,17 @@ properties:
                       properties:
                         path:
                           properties:
-                            prefix:
+                            type:
+                              enum:
+                                - Exact
+                                - Prefix
+                                - RegularExpression
                               type: string
+                            value:
+                              type: string
+                          required:
+                            - type
+                            - value
                           type: object
                       type: object
                     type: array

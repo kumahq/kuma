@@ -41,11 +41,21 @@ type Rule struct {
 }
 
 type Match struct {
-	Path PathMatch `json:"path,omitempty"`
+	Path *PathMatch `json:"path,omitempty"`
 }
 
+// +kubebuilder:validation:Enum=Exact;Prefix;RegularExpression
+type PathMatchType string
+
+const (
+	Exact             PathMatchType = "Exact"
+	Prefix            PathMatchType = "Prefix"
+	RegularExpression PathMatchType = "RegularExpression"
+)
+
 type PathMatch struct {
-	Prefix string `json:"prefix,omitempty"`
+	Value string        `json:"value"`
+	Type  PathMatchType `json:"type"`
 }
 
 type RuleConf struct {
