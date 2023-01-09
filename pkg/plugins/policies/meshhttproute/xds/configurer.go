@@ -2,6 +2,7 @@ package xds
 
 import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -29,17 +30,38 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 }
 
 func (c RoutesConfigurer) routeMatch(matches []api.Match) *envoy_route.RouteMatch {
-	envoyMatch := &envoy_route.RouteMatch{}
+	envoyMatch := envoy_route.RouteMatch{}
 
 	for _, match := range matches {
-		if match.Path.Prefix != "" {
-			envoyMatch.PathSpecifier = &envoy_route.RouteMatch_Prefix{
-				Prefix: match.Path.Prefix,
-			}
+		if match.Path != nil {
+			c.routePathMatch(&envoyMatch, *match.Path)
 		}
 	}
 
-	return envoyMatch
+	return &envoyMatch
+}
+
+func (c RoutesConfigurer) routePathMatch(envoyMatch *envoy_route.RouteMatch, match api.PathMatch) {
+	switch match.Type {
+	case api.Exact:
+		envoyMatch.PathSpecifier = &envoy_route.RouteMatch_Path{
+			Path: match.Value,
+		}
+	case api.Prefix:
+		envoyMatch.PathSpecifier = &envoy_route.RouteMatch_Prefix{
+			Prefix: match.Value,
+		}
+	case api.RegularExpression:
+		matcher := &envoy_type_matcher.RegexMatcher{
+			Regex: match.Value,
+			EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
+				GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
+			},
+		}
+		envoyMatch.PathSpecifier = &envoy_route.RouteMatch_SafeRegex{
+			SafeRegex: matcher,
+		}
+	}
 }
 
 func (c RoutesConfigurer) hasExternal(clusters []envoy_common.Cluster) bool {

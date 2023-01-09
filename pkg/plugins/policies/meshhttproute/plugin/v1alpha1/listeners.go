@@ -90,8 +90,9 @@ func FindRoutes(
 		Subset: core_xds.MeshService(serviceName),
 		Rules: []api.Rule{{
 			Matches: []api.Match{{
-				Path: api.PathMatch{
-					Prefix: "/",
+				Path: &api.PathMatch{
+					Value: "/",
+					Type:  api.Prefix,
 				},
 			}},
 			Default: api.RuleConf{
