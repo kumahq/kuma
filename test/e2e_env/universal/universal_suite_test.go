@@ -2,7 +2,6 @@ package auth_test
 
 import (
 	"encoding/json"
-	"github.com/kumahq/kuma/test/e2e_env/universal/meshretry"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -23,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshaccesslog"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshhealthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshratelimit"
+	"github.com/kumahq/kuma/test/e2e_env/universal/meshretry"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/universal/mtls"
 	"github.com/kumahq/kuma/test/e2e_env/universal/observability"

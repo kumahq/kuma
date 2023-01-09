@@ -2,20 +2,20 @@ package v1alpha1
 
 import (
 	"fmt"
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	"github.com/kumahq/kuma/pkg/test"
 	"path/filepath"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_xds "github.com/kumahq/kuma/pkg/test/xds"

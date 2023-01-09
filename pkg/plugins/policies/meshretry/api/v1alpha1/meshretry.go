@@ -43,6 +43,8 @@ type TCP struct {
 
 type HTTPRetryOn string
 
+var HTTP_METHOD_PREFIX HTTPRetryOn = "HTTP_METHOD_"
+
 var (
 	// ALL_5XX means Envoy will attempt a retry if the upstream server responds with
 	// any 5xx response code, or does not respond at all (disconnect/reset/read timeout).
@@ -78,31 +80,31 @@ var (
 	HTTP3_POST_CONNECT_FAILURE HTTPRetryOn = "HTTP3_POST_CONNECT_FAILURE"
 
 	// HTTP_METHOD_CONNECT means Envoy will attempt a retry if the used HTTP method is CONNECT.
-	HTTP_METHOD_CONNECT HTTPRetryOn = "HTTP_METHOD_CONNECT"
+	HTTP_METHOD_CONNECT = HTTP_METHOD_PREFIX + "CONNECT"
 
 	// HTTP_METHOD_DELETE means Envoy will attempt a retry if the used HTTP method is DELETE.
-	HTTP_METHOD_DELETE HTTPRetryOn = "HTTP_METHOD_DELETE"
+	HTTP_METHOD_DELETE = HTTP_METHOD_PREFIX + "DELETE"
 
 	// HTTP_METHOD_GET means Envoy will attempt a retry if the used HTTP method is GET.
-	HTTP_METHOD_GET HTTPRetryOn = "HTTP_METHOD_GET"
+	HTTP_METHOD_GET = HTTP_METHOD_PREFIX + "GET"
 
 	// HTTP_METHOD_HEAD means Envoy will attempt a retry if the used HTTP method is HEAD.
-	HTTP_METHOD_HEAD HTTPRetryOn = "HTTP_METHOD_HEAD"
+	HTTP_METHOD_HEAD = HTTP_METHOD_PREFIX + "HEAD"
 
 	// HTTP_METHOD_OPTIONS means Envoy will attempt a retry if the used HTTP method is OPTIONS.
-	HTTP_METHOD_OPTIONS HTTPRetryOn = "HTTP_METHOD_OPTIONS"
+	HTTP_METHOD_OPTIONS = HTTP_METHOD_PREFIX + "OPTIONS"
 
 	// HTTP_METHOD_PATCH means Envoy will attempt a retry if the used HTTP method is PATCH.
-	HTTP_METHOD_PATCH HTTPRetryOn = "HTTP_METHOD_PATCH"
+	HTTP_METHOD_PATCH = HTTP_METHOD_PREFIX + "PATCH"
 
 	// HTTP_METHOD_POST means Envoy will attempt a retry if the used HTTP method is POST.
-	HTTP_METHOD_POST HTTPRetryOn = "HTTP_METHOD_POST"
+	HTTP_METHOD_POST = HTTP_METHOD_PREFIX + "POST"
 
 	// HTTP_METHOD_PUT means Envoy will attempt a retry if the used HTTP method is PUT.
-	HTTP_METHOD_PUT HTTPRetryOn = "HTTP_METHOD_PUT"
+	HTTP_METHOD_PUT = HTTP_METHOD_PREFIX + "PUT"
 
 	// HTTP_METHOD_TRACE means Envoy will attempt a retry if the used HTTP method is TRACE.
-	HTTP_METHOD_TRACE HTTPRetryOn = "HTTP_METHOD_TRACE"
+	HTTP_METHOD_TRACE = HTTP_METHOD_PREFIX + "TRACE"
 )
 
 type HTTP struct {

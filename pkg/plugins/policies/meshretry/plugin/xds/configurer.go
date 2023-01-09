@@ -1,21 +1,21 @@
 package xds
 
 import (
-	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
-	"github.com/kumahq/kuma/api/common/v1alpha1"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
-	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	"net/http"
 	"strconv"
 	"strings"
 
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
+	"github.com/kumahq/kuma/api/common/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 )
 
 const (
@@ -189,19 +189,19 @@ func splitRetryOn(conf *[]api.HTTPRetryOn) (string, []uint32, []string) {
 
 	for _, item := range *conf {
 		key := string(item)
-		// As `retryOn` is an enum value, and as in protobuf we can't use
-		// hyphens we are using underscores instead, but as envoy expect
-		// values with hyphens it's being changed here
 		statusCode, err := strconv.Atoi(key)
-		if err == nil && http.StatusText(statusCode) != "" {
+		switch {
+		case err == nil && http.StatusText(statusCode) != "":
 			retriableStatusCodes = append(retriableStatusCodes, uint32(statusCode))
-		} else if strings.HasPrefix(key, "HTTP_METHOD_") {
-			method := strings.TrimPrefix(key, "HTTP_METHOD_")
+		case strings.HasPrefix(key, string(api.HTTP_METHOD_PREFIX)):
+			method := strings.TrimPrefix(key, string(api.HTTP_METHOD_PREFIX))
 			retriableMethods = append(retriableMethods, method)
-		} else {
+		default:
+			// As `retryOn` is an enum value, and as in protobuf we can't use
+			// hyphens we are using underscores instead, but as envoy expect
+			// values with hyphens it's being changed here
 			retryOn = append(retryOn, strings.ReplaceAll(string(item), "_", "-"))
 		}
-
 	}
 	return strings.Join(retryOn, ","), retriableStatusCodes, retriableMethods
 }
