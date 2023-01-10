@@ -5,9 +5,6 @@ import (
 	"net/url"
 
 	"github.com/pkg/errors"
-	"k8s.io/kube-openapi/pkg/validation/spec"
-	"k8s.io/kube-openapi/pkg/validation/strfmt"
-	"k8s.io/kube-openapi/pkg/validation/validate"
 	"sigs.k8s.io/yaml"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -82,25 +79,6 @@ func (u *unmarshaler) Unmarshal(bytes []byte) (Resource, error) {
 	}
 
 	return restResource, nil
-}
-
-func (u *unmarshaler) rawSchemaValidation(bytes []byte, schema *spec.Schema) error {
-	rawObj := map[string]interface{}{}
-
-	if err := u.unmarshalFn(bytes, &rawObj); err != nil {
-		return err
-	}
-
-	var rootSchema *spec.Schema = nil
-	var root = ""
-	validator := validate.NewSchemaValidator(schema, rootSchema, root, strfmt.Default)
-
-	res := validator.Validate(rawObj)
-	if res.IsValid() {
-		return nil
-	}
-
-	return res.AsError()
 }
 
 func (u *unmarshaler) UnmarshalListToCore(b []byte, rs core_model.ResourceList) error {

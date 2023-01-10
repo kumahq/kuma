@@ -353,6 +353,32 @@ violations:
 - field: spec.from[0].default.backends[1].tcp.format.json
   message: 'must not be empty'`,
 			}),
+			Entry("empty format.plain", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      backends:
+        - file:
+            path: '/tmp/logs.txt'
+            format:
+              plain: ""
+        - tcp:
+            address: http://logs.com
+            format:
+              plain: ""
+`,
+				expected: `
+violations:
+- field: spec.from[0].default.backends[0].file.format.plain
+  message: 'must not be empty'
+- field: spec.from[0].default.backends[1].tcp.format.plain
+  message: 'must not be empty'`,
+			}),
 		)
 	})
 })

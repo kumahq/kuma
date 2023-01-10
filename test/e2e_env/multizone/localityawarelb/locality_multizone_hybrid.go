@@ -146,9 +146,11 @@ func ExternalServicesWithLocalityAwareLb() {
 		Eventually(EgressStats(env.KubeZone1, filterEgress), "30s", "1s").Should(stats.BeEqualZero())
 
 		// when
-		response, err := client.CollectResponse(env.UniZone1, "uni-zone4-demo-client", "external-service-in-kube-zone1.mesh")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(response.Instance).Should(Equal("external-service-in-kube-zone1"))
+		Eventually(func(g Gomega) {
+			response, err := client.CollectResponse(env.UniZone1, "uni-zone4-demo-client", "external-service-in-kube-zone1.mesh")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Instance).Should(Equal("external-service-in-kube-zone1"))
+		}, "30s", "1s").Should(Succeed())
 
 		// then should route:
 		// app -> zone egress (zone4) -> zone ingress (zone1) -> zone egress (zone1) -> external service
@@ -171,12 +173,14 @@ func ExternalServicesWithLocalityAwareLb() {
 		Eventually(EgressStats(env.UniZone1, filterEgress), "30s", "1s").Should(stats.BeEqualZero())
 
 		// when request to external service in zone 1
-		response, err := client.CollectResponse(
-			env.KubeZone1, "demo-client", "external-service-in-uni-zone4.mesh",
-			client.FromKubernetesPod(namespace, "demo-client"),
-		)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(response.Instance).To(Equal("external-service-in-uni-zone4"))
+		Eventually(func(g Gomega) {
+			response, err := client.CollectResponse(
+				env.KubeZone1, "demo-client", "external-service-in-uni-zone4.mesh",
+				client.FromKubernetesPod(namespace, "demo-client"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Instance).To(Equal("external-service-in-uni-zone4"))
+		}, "30s", "1s").Should(Succeed())
 
 		// then should route:
 		// app -> zone egress (zone1) -> zone ingress (zone4) -> zone egress (zone4) -> external service
@@ -201,9 +205,11 @@ func ExternalServicesWithLocalityAwareLb() {
 		}, "30s", "1s").Should(Succeed())
 
 		// when doing requests to external service with tag zone1
-		response, err := client.CollectResponse(env.UniZone1, "uni-zone4-demo-client-no-egress", "demo-es-in-uni-zone4.mesh")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(response.Instance).Should(Equal("external-service-in-uni-zone4"))
+		Eventually(func(g Gomega) {
+			response, err := client.CollectResponse(env.UniZone1, "uni-zone4-demo-client-no-egress", "demo-es-in-uni-zone4.mesh")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Instance).Should(Equal("external-service-in-uni-zone4"))
+		}, "30s", "1s").Should(Succeed())
 
 		// then there is no stat because external service is not exposed through egress
 		Eventually(func(g Gomega) {

@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 
@@ -9,6 +11,7 @@ import (
 )
 
 func (p *PodConverter) EgressFor(
+	ctx context.Context,
 	zoneEgress *mesh_proto.ZoneEgress,
 	pod *kube_core.Pod,
 	services []*kube_core.Service,
@@ -16,7 +19,7 @@ func (p *PodConverter) EgressFor(
 	if len(services) != 1 {
 		return errors.Errorf("egress should be matched by exactly one service. Matched %d services", len(services))
 	}
-	ifaces, err := InboundInterfacesFor(p.Zone, pod, services)
+	ifaces, err := p.InboundConverter.InboundInterfacesFor(ctx, p.Zone, pod, services)
 	if err != nil {
 		return errors.Wrap(err, "could not generate inbound interfaces")
 	}

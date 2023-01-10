@@ -47,6 +47,8 @@ properties:
                           path:
                             description: Path to a file that logs will be written to
                             type: string
+                        required:
+                          - path
                         type: object
                       tcp:
                         description: TCPBackend defines a TCP logging backend.
@@ -71,9 +73,10 @@ properties:
                               plain:
                                 type: string
                             type: object
+                        required:
+                          - address
                         type: object
                     type: object
-                  nullable: true
                   type: array
               type: object
             targetRef:
@@ -100,6 +103,8 @@ properties:
                   description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                   type: object
               type: object
+          required:
+            - targetRef
           type: object
         type: array
       targetRef:
@@ -159,6 +164,8 @@ properties:
                           path:
                             description: Path to a file that logs will be written to
                             type: string
+                        required:
+                          - path
                         type: object
                       tcp:
                         description: TCPBackend defines a TCP logging backend.
@@ -183,9 +190,10 @@ properties:
                               plain:
                                 type: string
                             type: object
+                        required:
+                          - address
                         type: object
                     type: object
-                  nullable: true
                   type: array
               type: object
             targetRef:
@@ -212,6 +220,10 @@ properties:
                   description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                   type: object
               type: object
+          required:
+            - targetRef
           type: object
         type: array
+    required:
+      - targetRef
     type: object

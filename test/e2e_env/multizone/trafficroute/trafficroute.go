@@ -167,8 +167,8 @@ conf:
 
 		Eventually(func(g Gomega) {
 			res, err := CollectResponsesByInstance(env.UniZone1, "demo-client", "test-server.mesh", WithNumberOfRequests(200))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(res).To(And(
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(res).To(And(
 				HaveLen(2),
 				HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), BeNumerically("~", 2*v1Weight, 20)),
 				HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), BeNumerically("~", 2*v2Weight, 20)),

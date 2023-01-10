@@ -93,7 +93,7 @@ func SelectInboundDataplanePolicies(dataplane *mesh.DataplaneResource, policies 
 					continue
 				}
 				tagSelector := mesh_proto.TagSelector(selector.Match)
-				if inbound.MatchTags(tagSelector) {
+				if tagSelector.Matches(inbound.Tags) {
 					rank := tagSelector.Rank()
 					if rank.CompareTo(bestRank) > 0 || sameRankCreatedLater(policy, rank) {
 						bestRank = rank

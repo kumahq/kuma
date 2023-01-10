@@ -5,6 +5,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	meshaccesslog_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 type MeshAccessLogBuilder struct {
@@ -62,13 +63,13 @@ type MeshAccessLogConfBuilder struct {
 }
 
 func (m *MeshAccessLogConfBuilder) AddFileBackend(fileBackend *meshaccesslog_proto.FileBackend) *MeshAccessLogConfBuilder {
-	m.res.Backends = append(m.res.Backends, meshaccesslog_proto.Backend{
+	m.res.Backends = pointer.To(append(pointer.Deref(m.res.Backends), meshaccesslog_proto.Backend{
 		File: fileBackend,
-	})
+	}))
 	return m
 }
 
 func (m *MeshAccessLogConfBuilder) AddBackends(bs []meshaccesslog_proto.Backend) *MeshAccessLogConfBuilder {
-	m.res.Backends = bs
+	m.res.Backends = &bs
 	return m
 }

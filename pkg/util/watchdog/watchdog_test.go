@@ -113,4 +113,33 @@ var _ = Describe("SimpleWatchdog", func() {
 		// then
 		<-doneCh
 	}))
+
+	It("should not crash the whole application when watchdog crashes", test.Within(5*time.Second, func() {
+		// given
+		watchdog := SimpleWatchdog{
+			NewTicker: func() *time.Ticker {
+				return &time.Ticker{
+					C: timeTicks,
+				}
+			},
+			OnTick: func() error {
+				panic("xyz")
+			},
+			OnError: func(err error) {
+				onErrorCalls <- err
+			},
+		}
+
+		// when
+		go func() {
+			watchdog.Start(stopCh)
+			close(doneCh)
+		}()
+		timeTicks <- time.Time{}
+
+		// then watchdog returned an error
+		Expect(<-onErrorCalls).To(HaveOccurred())
+		close(stopCh)
+		<-doneCh
+	}))
 })

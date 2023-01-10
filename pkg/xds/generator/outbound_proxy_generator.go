@@ -62,7 +62,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 		clusters := routes.Clusters()
 		servicesAcc.Add(clusters...)
 
-		protocol := g.inferProtocol(proxy, clusters)
+		protocol := InferProtocol(proxy, clusters)
 
 		// Generate listener
 		listener, err := g.generateLDS(ctx, proxy, routes, outbound, protocol)
@@ -193,7 +193,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 		service := services[serviceName]
 		healthCheck := proxy.Policies.HealthChecks[serviceName]
 		circuitBreaker := proxy.Policies.CircuitBreakers[serviceName]
-		protocol := g.inferProtocol(proxy, service.Clusters())
+		protocol := InferProtocol(proxy, service.Clusters())
 		tlsReady := service.TLSReady()
 
 		for _, cluster := range service.Clusters() {
@@ -310,8 +310,8 @@ func (OutboundProxyGenerator) generateEDS(
 	return resources, nil
 }
 
-// inferProtocol infers protocol for the destination listener. It will only return HTTP when all endpoints are tagged with HTTP.
-func (OutboundProxyGenerator) inferProtocol(proxy *model.Proxy, clusters []envoy_common.Cluster) core_mesh.Protocol {
+// InferProtocol infers protocol for the destination listener. It will only return HTTP when all endpoints are tagged with HTTP.
+func InferProtocol(proxy *model.Proxy, clusters []envoy_common.Cluster) core_mesh.Protocol {
 	var allEndpoints []model.Endpoint
 	for _, cluster := range clusters {
 		serviceName := cluster.Tags()[mesh_proto.ServiceTag]
