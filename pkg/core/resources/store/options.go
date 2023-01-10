@@ -216,5 +216,5 @@ func (l *ListOptions) IsCacheable() bool {
 }
 
 func (l *ListOptions) HashCode() string {
-	return l.Mesh
+	return fmt.Sprintf("%s:%t:%s:%d:%s", l.Mesh, l.Ordered, l.NamePrefix, l.PageSize, l.PageOffset)
 }
