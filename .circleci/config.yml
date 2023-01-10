@@ -179,7 +179,7 @@ jobs:
         - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
     - run:
         name: "Install check tools (clang-format, ...)"
-        command: apt update && apt install -y clang-format unzip
+        command: apt update && apt install -y clang-format unzip xz-utils
     - run:
         name: "Install all development tools"
         command: make dev/tools
