@@ -8,6 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
@@ -120,5 +121,42 @@ func (p *IngressProxyBuilder) updateIngress(zoneIngress *core_mesh.ZoneIngressRe
 	// Update Ingress' Available Services
 	// This was placed as an operation of DataplaneWatchdog out of the convenience.
 	// Consider moving to the outside of this component (follow the pattern of updating VIP outbounds)
+<<<<<<< HEAD
 	return ingress.UpdateAvailableServices(ctx, p.ResManager, zoneIngress, allMeshDataplanes.Items)
+=======
+	return ingress.UpdateAvailableServices(ctx, p.ResManager, zoneIngress, allMeshDataplanes.Items, allMeshGateways.Items, availableExternalServices.Items)
+}
+
+func (p *IngressProxyBuilder) getIngressExternalServices(ctx context.Context) (*core_mesh.ExternalServiceResourceList, error) {
+	meshList := &core_mesh.MeshResourceList{}
+	if err := p.ReadOnlyResManager.List(ctx, meshList, store.ListOrdered()); err != nil {
+		return nil, err
+	}
+
+	allMeshExternalServices := &core_mesh.ExternalServiceResourceList{}
+	var externalServices []*core_mesh.ExternalServiceResource
+	for _, mesh := range meshList.Items {
+		if !mesh.ZoneEgressEnabled() {
+			continue
+		}
+		meshName := mesh.GetMeta().GetName()
+
+		meshCtx, err := p.meshCache.GetMeshContext(ctx, syncLog, meshName)
+		if err != nil {
+			return nil, err
+		}
+
+		meshExternalServices := meshCtx.Resources.ExternalServices().Items
+
+		// look for external services that are only available in my zone and expose them
+		for _, es := range meshExternalServices {
+			if es.Spec.Tags[mesh_proto.ZoneTag] == p.zone {
+				externalServices = append(externalServices, es)
+			}
+		}
+	}
+
+	allMeshExternalServices.Items = externalServices
+	return allMeshExternalServices, nil
+>>>>>>> f5b8d76c5 (fix(kuma-cp): don't cache filtered data (#5574))
 }

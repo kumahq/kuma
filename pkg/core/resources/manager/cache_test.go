@@ -209,4 +209,53 @@ var _ = Describe("Cached Resource Manager", func() {
 		// then first request does not block request for other type
 		Expect(err).ToNot(HaveOccurred())
 	}))
+
+	It("should cache List() at different key when ordered", test.Within(5*time.Second, func() {
+		// when fetched resources multiple times
+		fetch := func(ordered bool) core_mesh.DataplaneResourceList {
+			fetched := core_mesh.DataplaneResourceList{}
+			var err error
+			if ordered {
+				err = cachedManager.List(context.Background(), &fetched, core_store.ListOrdered(), core_store.ListByMesh("default"))
+			} else {
+				err = cachedManager.List(context.Background(), &fetched, core_store.ListByMesh("default"))
+			}
+			Expect(err).ToNot(HaveOccurred())
+			return fetched
+		}
+
+		var wg sync.WaitGroup
+		for i := 0; i < 100; i++ {
+			wg.Add(1)
+			go func() {
+				fetch(false)
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+
+		// then real manager should be called only once
+		list := fetch(false)
+		Expect(list.Items).To(HaveLen(1))
+		Expect(list.Items[0].GetSpec()).To(MatchProto(res.Spec))
+		Expect(countingManager.listQueries).To(Equal(1))
+
+		// when call for ordered data
+		list = fetch(true)
+
+		// then real manager should be called
+		Expect(list.Items).To(HaveLen(1))
+		Expect(list.Items[0].GetSpec()).To(MatchProto(res.Spec))
+		Expect(countingManager.listQueries).To(Equal(2))
+
+		// and metrics are published
+		Expect(test_metrics.FindMetric(metrics, "store_cache", "operation", "list", "result", "miss").Counter.GetValue()).To(Equal(2.0))
+		hits := test_metrics.FindMetric(metrics, "store_cache", "operation", "list", "result", "hit").Counter.GetValue()
+		hitWaits := 0.0
+		hitWaitMetric := test_metrics.FindMetric(metrics, "store_cache", "operation", "list", "result", "hit-wait")
+		if hitWaitMetric != nil {
+			hitWaits = hitWaitMetric.Counter.GetValue()
+		}
+		Expect(hits + hitWaits).To(Equal(100.0))
+	}))
 })
