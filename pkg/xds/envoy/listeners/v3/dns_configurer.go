@@ -14,17 +14,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-)
-
-/*
-	Envoy DNS API had a version change from 'v3alpha' to 'v3' in Envoy v1.20.0.
-	Since go-control-plane contains only the latest protos, we had to vendor old 'v3alpha'
-	protos for backward compatibility with previous versions of the Envoy.
-
-	Imported directory contains copies of dns_filter protos from
-	'envoyproxy/go-control-plane v0.9.9-0.20210914001841-ec3541a22836'
-*/
-import (
 	envoy_dns_v3alpha "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3/compatibility/v3alpha"
 )
 

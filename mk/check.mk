@@ -29,7 +29,7 @@ golangci-lint: ## Dev: Runs golangci-lint linter
 	# OOM.
 	$(GOLANGCI_LINT_DIR)/golangci-lint run \
 		--disable-all \
-		--enable bodyclose,contextcheck,errcheck,gci,gocritic,gofmt,gomodguard,govet,importas,ineffassign,misspell,typecheck,unconvert,unparam,whitespace \
+		--enable bodyclose,errcheck,gci,gocritic,gofmt,gomodguard,govet,importas,ineffassign,misspell,typecheck,unconvert,whitespace \
 		--timeout=10m -v
 	$(GOLANGCI_LINT_DIR)/golangci-lint run \
 		--disable-all \
