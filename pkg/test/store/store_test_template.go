@@ -348,7 +348,7 @@ func ExecuteStoreTests(
 			list := core_mesh.TrafficRouteResourceList{}
 
 			// when
-			err := s.List(context.Background(), &list, store.ListByNamePrefix("list-res"))
+			err := s.List(context.Background(), &list, store.ListByNameContains("list-res"))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -373,7 +373,7 @@ func ExecuteStoreTests(
 			list := core_mesh.TrafficRouteResourceList{}
 
 			// when
-			err := s.List(context.Background(), &list, store.ListByNamePrefix("list-res"), store.ListByMesh(mesh))
+			err := s.List(context.Background(), &list, store.ListByNameContains("list-res"), store.ListByMesh(mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

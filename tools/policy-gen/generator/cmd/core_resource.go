@@ -56,12 +56,14 @@ import (
 
 //_DELETE_GO_EMBED_WORKAROUND_go:embed schema.yaml
 var rawSchema []byte
-var schema = spec.Schema{}
 
 func init() {
+	var schema spec.Schema
 	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
 		panic(err)
 	}
+	rawSchema = nil
+	{{.Name}}ResourceTypeDescriptor.Schema = &schema
 }
 
 const (
@@ -170,6 +172,5 @@ var {{.Name}}ResourceTypeDescriptor = model.ResourceTypeDescriptor{
 		SingularDisplayName: "{{.SingularDisplayName}}",
 		PluralDisplayName: "{{.PluralDisplayName}}",
 		IsPluginOriginated: true,
-		Schema: &schema,
 	}
 `))
