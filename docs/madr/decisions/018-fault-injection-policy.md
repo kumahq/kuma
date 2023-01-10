@@ -100,10 +100,10 @@ Fault injection supports only `HTTP` protocol and is configured in `HttpFilter`.
 Top-level targetRef can have all available kinds:
 ```yaml
 targetRef:
- kind: Mesh|MeshSubset|MeshService|MeshServiceSubset
+ kind: Mesh|MeshSubset|MeshService|MeshServiceSubset|MeshGatewayRoute
  name: ...
 ```
-Fault injection is an inbound policy so only `from` should be configured.
+Fault injection can be configured on inbound and outbound.
 
 #### From level
 
@@ -119,20 +119,30 @@ The only issue is `MeshHealthCheck` which doesn't set the `x-kuma-tags` flag and
 * set `x-kuma-tags` header by default for `MeshHealthCheck`
 * change the scope of `From` to `Mesh` so the policy will affect all sources
 
+#### To level
+
+We can allow configuration to different destinations.
+```yaml
+from:
+ - targetRef:
+     kind: Mesh|MeshSubset|MeshService|MeshServiceSubset
+     name: ...
+```
+
 #### Configuration
 
 ```yaml
 default:
-  disabled: false
-  abort:
-    httpStatus: 500
-    percentage: 50
-  delay:
-    percentage: 50.5
-    value: 5s
-  responseBandwidth:
-    limit: 50 mbps
-    percentage: 50
+  http:
+    abort:
+      httpStatus: 500
+      percentage: 50
+    delay:
+      percentage: 50.5 # we could parse string or use default denominator: e.g.: 505000 = 50.5% like envoy config so we can accept int
+      value: 5s
+    responseBandwidth:
+      limit: 50 mbps
+      percentage: 50
 ```
 
 #### **Result**
@@ -143,8 +153,24 @@ mesh: example
 name: example-fault-injection
 spec:
  targetRef:
-   kind: Mesh|MeshSubset|MeshService|MeshServiceSubset
+   kind: Mesh|MeshSubset|MeshService|MeshServiceSubset|MeshGatewayRoute
    name: example-fault-injection
+ to:
+   - targetRef:
+       kind: Mesh|MeshSubset|MeshService|MeshServiceSubset
+       name: backend
+       mesh: example
+     default:
+       disabled: false
+       abort:
+         httpStatus: 500
+         percentage: 50
+       delay:
+         percentage: 50.5
+         value: 5s
+       responseBandwidth:
+         limit: 50 mbps
+         percentage: 50 
  from:
    - targetRef:
        kind: Mesh|MeshSubset|MeshService|MeshServiceSubset
@@ -183,9 +209,10 @@ spec:
         kind: MeshService
         name: frontend
       default:
-        abort:
-          httpStatus: 500
-          percentage: 50
+        http:
+          abort:
+            httpStatus: 500
+            percentage: 50
 ```
 
 #### All services to one service fault injection
@@ -203,12 +230,13 @@ spec:
         kind: Mesh
         name: default
       default:
-        delay:
-          percentage: 50.5
-          value: 5s
+        http:
+          delay:
+            percentage: 50.5
+            value: 5s
 ```
 
-#### All services to one service fault injection disabled
+#### Requests to one service failing
 
 ```yaml
 type: MeshFaultInjection
@@ -218,13 +246,13 @@ spec:
   targetRef:
     kind: MeshService
     name: backend
-  from:
+  to:
     - targetRef:
-        kind: Mesh
-        name: default
+        kind: MeshService
+        name: backend2
       default:
-        disabled: true
-        delay:
-          percentage: 50.5
-          value: 5s
+        http:
+          abort:
+            httpStatus: 500
+            percentage: 50
 ```
