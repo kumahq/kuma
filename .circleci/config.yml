@@ -7,6 +7,7 @@ reusable:
 
   docker_images:
     - &golang_image "golang:1.18.9"
+    - &circleci_golang_image "cimg/go:1.18.9"
 
   vm_images:
     - &ubuntu_vm_image "ubuntu-2004:202111-01"
@@ -83,6 +84,13 @@ executors:
       GO_VERSION: *go_version
       GO111MODULE: "on"
     working_directory: /go/src/github.com/kumahq/kuma
+
+  remote-docker:
+    docker:
+    - image: *circleci_golang_image
+    environment:
+      GO_VERSION: *go_version
+      GO111MODULE: "on"
 
   vm:
     resource_class: large
@@ -331,14 +339,13 @@ jobs:
                 path: /tmp/ginkgo-test-results
 
   build:
-    executor: golang
+    executor: remote-docker
     steps:
     - checkout
     - restore_cache:
         keys:
         # prefer the exact match
         - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
-    - install_build_tools
     - run:
         name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp, kuma-prometheus-sd)
         command: make build
