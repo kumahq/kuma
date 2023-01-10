@@ -27,10 +27,22 @@ commands:
         default: *go_version
     steps:
     - run:
-        # `unzip`    is necessary to install `protoc`
-        # `gcc`      is necessary to run `go test -race`
-        # `git`      is necessary because the CircleCI version is different somehow ¯\_(ツ)_/¯
-        # `xz-utils` is necessary to decompress xz files
+        # It's necessary in Ubuntu 22.04 as without setting it, our tests which
+        # need to ssh into docker containers are failing
+        name: "Set locale to en_US.UTF-8"
+        command: |
+          sudo sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
+          echo 'LANG="en_US.UTF-8"' | sudo tee /etc/default/locale && \
+          sudo dpkg-reconfigure --frontend=noninteractive locales && \
+          sudo update-locale LANG=en_US.UTF-8
+    - run:
+        # `unzip`                            is necessary to install `protoc`
+        # `gcc`                              is necessary to run `go test -race`
+        # `git`                              is necessary because the CircleCI
+        #                                    version is different somehow ¯\_(ツ)_/¯
+        # `xz-utils`                         is necessary to decompress xz files
+        # `libelf-dev`, `clang, `pkg-config` are necessary for compiling ebpf
+        #                                    programs
         name: "Install basic tools"
         command: |
           if [ -r /etc/os-release ]; then source /etc/os-release; fi
