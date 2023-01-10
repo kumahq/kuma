@@ -31,35 +31,35 @@ targetRef:
 default:
   appendModifications:
   - cluster:
-      operation: add
+      operation: Add
       value: |
         name: xyz
         connectTimeout: 5s
         type: STATIC
   - cluster:
-      operation: patch
+      operation: Patch
       value: |
         connectTimeout: 5s
   - cluster:
-      operation: patch
+      operation: Patch
       match:
         name: inbound:127.0.0.1:8080
       value: |
         connectTimeout: 5s
   - cluster:
-      operation: patch
+      operation: Patch
       match:
         origin: inbound
       value: |
         connectTimeout: 5s
   - cluster:
-      operation: remove
+      operation: Remove
   - cluster:
-      operation: remove
+      operation: Remove
       match:
         name: inbound:127.0.0.1:8080
   - cluster:
-      operation: remove
+      operation: Remove
       match:
         origin: inbound
     `),
@@ -72,7 +72,7 @@ targetRef:
 default:
   appendModifications:
   - listener:
-      operation: add
+      operation: Add
       value: |
         name: xyz
         address:
@@ -80,13 +80,13 @@ default:
             address: 192.168.0.1
             portValue: 8080
   - listener:
-      operation: patch
+      operation: Patch
       value: |
         address:
           socketAddress:
             portValue: 8080
   - listener:
-      operation: patch
+      operation: Patch
       match:
         name: inbound:127.0.0.1:8080
       value: |
@@ -94,7 +94,7 @@ default:
           socketAddress:
             portValue: 8080
   - listener:
-      operation: patch
+      operation: Patch
       match:
         origin: inbound
       value: |
@@ -102,13 +102,13 @@ default:
           socketAddress:
             portValue: 8080
   - listener:
-      operation: remove
+      operation: Remove
   - listener:
-      operation: remove
+      operation: Remove
       match:
         name: inbound:127.0.0.1:8080
   - listener:
-      operation: remove
+      operation: Remove
       match:
         origin: inbound
     `),
@@ -118,21 +118,21 @@ targetRef:
 default:
   appendModifications:
   - networkFilter:
-      operation: addFirst
+      operation: AddFirst
       value: |
         name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: backend
   - networkFilter:
-      operation: addLast
+      operation: AddLast
       value: |
         name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: backend
   - networkFilter:
-      operation: addBefore
+      operation: AddBefore
       match:
         name: envoy.filters.network.direct_response
       value: |
@@ -141,7 +141,7 @@ default:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: backend
   - networkFilter:
-      operation: addAfter
+      operation: AddAfter
       match:
         name: envoy.filters.network.direct_response
         listenerName: inbound:127.0.0.0:8080
@@ -151,7 +151,7 @@ default:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: backend
   - networkFilter:
-      operation: patch
+      operation: Patch
       match:
         name: envoy.filters.network.tcp_proxy
         listenerName: inbound:127.0.0.0:8080
@@ -161,7 +161,7 @@ default:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: backend
   - networkFilter:
-      operation: remove
+      operation: Remove
     `),
 			Entry("http filter modifications", `
 targetRef:
@@ -171,34 +171,34 @@ targetRef:
 default:
   appendModifications:
   - httpFilter:
-      operation: addFirst
+      operation: AddFirst
       value: |
         name: envoy.filters.http.router
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           dynamicStats: false
   - httpFilter:
-      operation: addLast
+      operation: AddLast
       value: |
         name: envoy.filters.http.router
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           dynamicStats: false
   - httpFilter:
-      operation: addAfter
+      operation: AddAfter
       match:
         name: envoy.filters.http.router
       value: |
         name: envoy.filters.http.gzip
   - httpFilter:
-      operation: addAfter
+      operation: AddAfter
       match:
         name: envoy.filters.http.router
         listenerName: inbound:127.0.0.0:8080
       value: |
         name: envoy.filters.http.gzip
   - httpFilter:
-      operation: patch
+      operation: Patch
       match:
         name: envoy.filters.network.tcp_proxy
         listenerName: inbound:127.0.0.0:8080
@@ -208,7 +208,7 @@ default:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           dynamicStats: false
   - httpFilter:
-      operation: remove
+      operation: Remove
     `),
 		)
 
@@ -262,32 +262,32 @@ targetRef:
 default:
   appendModifications:
   - cluster:
-      operation: addFirst
+      operation: AddFirst
   - cluster:
-      operation: add
+      operation: Add
       value: '{'
   - cluster:
-      operation: patch
+      operation: Patch
       value: '{'
   - cluster:
-      operation: add
+      operation: Add
       match:
         name: inbound:127.0.0.1:80
       value: |
         name: xyz
   - cluster:
-      operation: remove
+      operation: Remove
       value: |
         name: xyz
   - cluster:
-      operation: add
+      operation: Add
   - cluster:
-      operation: patch
+      operation: Patch
 `,
 				expected: `
                 violations:
                 - field: spec.default.appendModifications[0].cluster.operation
-                  message: 'invalid operation. Available operations: "add", "patch", "remove"'
+                  message: 'invalid operation. Available operations: "Add", "Patch", "Remove"'
                 - field: spec.default.appendModifications[1].cluster.value
                   message: 'native Envoy resource is not valid: unexpected EOF'
                 - field: spec.default.appendModifications[2].cluster.value
@@ -308,15 +308,15 @@ targetRef:
 default:
   appendModifications:
   - listener:
-      operation: addFirst
+      operation: AddFirst
   - listener:
-      operation: add
+      operation: Add
       value: '{'
   - listener:
-      operation: patch
+      operation: Patch
       value: '{'
   - listener:
-      operation: add
+      operation: Add
       match:
         name: inbound:127.0.0.1:80
       value: |
@@ -326,14 +326,14 @@ default:
             address: 192.168.0.1
             portValue: 8080
   - listener:
-      operation: remove
+      operation: Remove
       value: |
         name: xyz
 `,
 				expected: `
                 violations:
                 - field: spec.default.appendModifications[0].listener.operation
-                  message: 'invalid operation. Available operations: "add", "patch", "remove"'
+                  message: 'invalid operation. Available operations: "Add", "Patch", "Remove"'
                 - field: spec.default.appendModifications[1].listener.value
                   message: 'native Envoy resource is not valid: unexpected EOF'
                 - field: spec.default.appendModifications[2].listener.value
@@ -350,22 +350,22 @@ targetRef:
 default:
   appendModifications:
   - networkFilter:
-      operation: addFirst
+      operation: AddFirst
       value: '{'
   - networkFilter:
-      operation: addBefore
+      operation: AddBefore
       value: '{'
   - networkFilter:
-      operation: addAfter
+      operation: AddAfter
       value: '{'
   - networkFilter:
-      operation: patch
+      operation: Patch
       value: '{'
   - networkFilter:
-      operation: remove
+      operation: Remove
       value: '{'
   - networkFilter:
-      operation: add
+      operation: Add
 `,
 				expected: `
                 violations:
@@ -386,7 +386,7 @@ default:
                 - field: spec.default.appendModifications[4].networkFilter.value
                   message: must not be defined
                 - field: spec.default.appendModifications[5].networkFilter.operation
-                  message: 'invalid operation. Available operations: "addFirst", "addLast", "addBefore", "addAfter", "patch", "remove"'`,
+                  message: 'invalid operation. Available operations: "AddFirst", "AddLast", "AddBefore", "AddAfter", "Patch", "Remove"'`,
 			}),
 			Entry("invalid http filter operation", testCase{
 				inputYaml: `
@@ -395,22 +395,22 @@ targetRef:
 default:
   appendModifications:
   - httpFilter:
-      operation: addFirst
+      operation: AddFirst
       value: '{'
   - httpFilter:
-      operation: addBefore
+      operation: AddBefore
       value: '{'
   - httpFilter:
-      operation: addAfter
+      operation: AddAfter
       value: '{'
   - httpFilter:
-      operation: patch
+      operation: Patch
       value: '{'
   - httpFilter:
-      operation: remove
+      operation: Remove
       value: '{'
   - httpFilter:
-      operation: add
+      operation: Add
 `,
 				expected: `
                 violations:
@@ -431,7 +431,7 @@ default:
                 - field: spec.default.appendModifications[4].httpFilter.value
                   message: must not be defined
                 - field: spec.default.appendModifications[5].httpFilter.operation
-                  message: 'invalid operation. Available operations: "addFirst", "addLast", "addBefore", "addAfter", "patch", "remove"'`,
+                  message: 'invalid operation. Available operations: "AddFirst", "AddLast", "AddBefore", "AddAfter", "Patch", "Remove"'`,
 			}),
 			Entry("invalid virtual host operation", testCase{
 				inputYaml: `
@@ -440,17 +440,17 @@ targetRef:
 default:
   appendModifications:
   - virtualHost:
-      operation: add
+      operation: Add
       match:
         name: xyz
       value: '{'
   - virtualHost:
-      operation: addFirst
+      operation: AddFirst
   - virtualHost:
-      operation: patch
+      operation: Patch
       value: '{'
   - virtualHost:
-      operation: remove
+      operation: Remove
       value: '{'
 `,
 				expected: `
@@ -460,11 +460,25 @@ default:
                 - field: spec.default.appendModifications[0].virtualHost.value
                   message: 'native Envoy resource is not valid: unexpected EOF'
                 - field: spec.default.appendModifications[1].virtualHost.operation
-                  message: 'invalid operation. Available operations: "add", "patch", "remove"'
+                  message: 'invalid operation. Available operations: "Add", "Patch", "Remove"'
                 - field: spec.default.appendModifications[2].virtualHost.value
                   message: 'native Envoy resource is not valid: unexpected EOF'
                 - field: spec.default.appendModifications[3].virtualHost.value
                   message: must not be defined`,
+			}),
+			Entry("invalid target ref", testCase{
+				inputYaml: `
+targetRef:
+  kind: Unknown
+default:
+  appendModifications:
+  - virtualHost:
+      operation: Remove
+`,
+				expected: `
+                violations:
+                - field: spec.targetRef.kind
+                  message: value is not supported`,
 			}),
 		)
 	})
