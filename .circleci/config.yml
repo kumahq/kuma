@@ -339,18 +339,17 @@ jobs:
                 path: /tmp/ginkgo-test-results
 
   build:
-    executor: remote-docker
+    executor: vm
     steps:
+    - install_build_tools
     - checkout
     - restore_cache:
         keys:
         # prefer the exact match
-        - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+        - vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
     - run:
         name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp, kuma-prometheus-sd)
         command: make build
-    - setup_remote_docker:
-        version: 20.10.14
     - run:
         name: Build Docker images
         command: |
