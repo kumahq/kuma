@@ -178,11 +178,11 @@ jobs:
         # prefer the exact match
         - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
     - run:
-        name: "Install all development tools"
-        command: make dev/tools
-    - run:
         name: "Install check tools (clang-format, ...)"
         command: sudo apt install -y clang-format unzip
+    - run:
+        name: "Install all development tools"
+        command: make dev/tools
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: make check
