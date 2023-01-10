@@ -36,6 +36,9 @@ func (c RoutesConfigurer) routeMatch(matches []api.Match) *envoy_route.RouteMatc
 		if match.Path != nil {
 			c.routePathMatch(&envoyMatch, *match.Path)
 		}
+		if match.Method != nil {
+			c.routeMethodMatch(&envoyMatch, *match.Method)
+		}
 	}
 
 	return &envoyMatch
@@ -62,6 +65,22 @@ func (c RoutesConfigurer) routePathMatch(envoyMatch *envoy_route.RouteMatch, mat
 			SafeRegex: matcher,
 		}
 	}
+}
+
+func (c RoutesConfigurer) routeMethodMatch(envoyMatch *envoy_route.RouteMatch, method api.Method) {
+	matcher := envoy_type_matcher.StringMatcher{
+		MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+			Exact: string(method),
+		},
+	}
+	envoyMatch.Headers = append(envoyMatch.Headers,
+		&envoy_route.HeaderMatcher{
+			Name: ":method",
+			HeaderMatchSpecifier: &envoy_route.HeaderMatcher_StringMatch{
+				StringMatch: &matcher,
+			},
+		},
+	)
 }
 
 func (c RoutesConfigurer) hasExternal(clusters []envoy_common.Cluster) bool {
