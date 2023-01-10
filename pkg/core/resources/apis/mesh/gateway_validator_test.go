@@ -4,25 +4,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 
 	. "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	_ "github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
+	. "github.com/kumahq/kuma/pkg/test/resources"
 )
-
-// GatewayGenerateor is a ResourceGenerator that creates GatewayResource objects.
-type GatewayGenerator func() *MeshGatewayResource
-
-func (g GatewayGenerator) New() model.Resource {
-	if g != nil {
-		return g()
-	}
-
-	return nil
-}
 
 var _ = Describe("Gateway", func() {
 	DescribeValidCases(
-		GatewayGenerator(NewMeshGatewayResource),
+		NewMeshGatewayResource,
 		Entry("HTTPS listener", `
 type: MeshGateway
 name: gateway
@@ -112,7 +101,7 @@ conf:
 	)
 
 	DescribeErrorCases(
-		GatewayGenerator(NewMeshGatewayResource),
+		NewMeshGatewayResource,
 		ErrorCase("doesn't have any selectors",
 			validators.Violation{
 				Field:   `selectors`,
