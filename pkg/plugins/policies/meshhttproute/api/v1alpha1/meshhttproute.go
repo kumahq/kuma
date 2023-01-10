@@ -41,11 +41,15 @@ type Rule struct {
 }
 
 type Match struct {
-	Path *PathMatch `json:"path,omitempty"`
+	Path   *PathMatch `json:"path,omitempty"`
+	Method *Method    `json:"method,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Exact;Prefix;RegularExpression
 type PathMatchType string
+
+// +kubebuilder:validation:Enum=CONNECT;DELETE;GET;HEAD;OPTIONS;PATCH;POST;PUT;TRACE
+type Method string
 
 const (
 	Exact             PathMatchType = "Exact"

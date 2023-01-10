@@ -120,6 +120,18 @@ spec:
                           matches:
                             items:
                               properties:
+                                method:
+                                  enum:
+                                  - CONNECT
+                                  - DELETE
+                                  - GET
+                                  - HEAD
+                                  - OPTIONS
+                                  - PATCH
+                                  - POST
+                                  - PUT
+                                  - TRACE
+                                  type: string
                                 path:
                                   properties:
                                     type:
