@@ -204,6 +204,10 @@ func ListOrdered() ListOptionsFunc {
 	}
 }
 
+func (l *ListOptions) IsCacheable() bool {
+	return l.FilterFunc == nil
+}
+
 func (l *ListOptions) HashCode() string {
-	return l.Mesh
+	return fmt.Sprintf("%s:%t:%s:%d:%s", l.Mesh, l.Ordered, l.NamePrefix, l.PageSize, l.PageOffset)
 }
