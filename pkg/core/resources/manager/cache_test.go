@@ -24,6 +24,7 @@ type countingResourcesManager struct {
 	store       core_store.ResourceStore
 	getQueries  int
 	listQueries int
+	mutex       sync.Mutex
 }
 
 func (c *countingResourcesManager) Get(ctx context.Context, res core_model.Resource, fn ...core_store.GetOptionsFunc) error {
@@ -36,7 +37,9 @@ func (c *countingResourcesManager) List(ctx context.Context, list core_model.Res
 	if list.GetItemType() == core_mesh.TrafficLogType && opts.Mesh == "slow" {
 		time.Sleep(10 * time.Second)
 	}
+	c.mutex.Lock()
 	c.listQueries++
+	c.mutex.Unlock()
 	return c.store.List(ctx, list, fn...)
 }
 
@@ -187,12 +190,14 @@ var _ = Describe("Cached Resource Manager", func() {
 		Expect(hits + hitWaits).To(Equal(100.0))
 	})
 
-	It("should let concurrent List() queries for different types and meshes", test.Within(5*time.Second, func() {
+	It("should let concurrent List() queries for different types and meshes", test.Within(15*time.Second, func() {
 		// given ongoing TrafficLog from mesh slow that takes a lot of time to complete
+		done := make(chan struct{})
 		go func() {
 			fetched := core_mesh.TrafficLogResourceList{}
 			err := cachedManager.List(context.Background(), &fetched, core_store.ListByMesh("slow"))
 			Expect(err).ToNot(HaveOccurred())
+			close(done)
 		}()
 
 		// when trying to fetch TrafficLog from different mesh that takes normal time to response
@@ -208,6 +213,7 @@ var _ = Describe("Cached Resource Manager", func() {
 
 		// then first request does not block request for other type
 		Expect(err).ToNot(HaveOccurred())
+		Eventually(done, "15s", "1s").Should(BeClosed())
 	}))
 
 	It("should cache List() at different key when ordered", test.Within(5*time.Second, func() {
