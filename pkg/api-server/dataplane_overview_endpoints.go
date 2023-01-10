@@ -109,9 +109,9 @@ func (r *dataplaneOverviewEndpoints) inspectDataplanes(request *restful.Request,
 		rest_errors.HandleError(response, err, "Could not retrieve dataplane overviews")
 		return
 	}
-	namePrefix := request.QueryParameter("namePrefix")
+	nameContains := request.QueryParameter("name")
 
-	overviews, err := r.fetchOverviews(request.Request.Context(), page, meshName, namePrefix, filter)
+	overviews, err := r.fetchOverviews(request.Request.Context(), page, meshName, nameContains, filter)
 	if err != nil {
 		rest_errors.HandleError(response, err, "Could not retrieve dataplane overviews")
 		return
@@ -126,9 +126,9 @@ func (r *dataplaneOverviewEndpoints) inspectDataplanes(request *restful.Request,
 	}
 }
 
-func (r *dataplaneOverviewEndpoints) fetchOverviews(ctx context.Context, p page, meshName string, namePrefix string, filter store.ListFilterFunc) (mesh.DataplaneOverviewResourceList, error) {
+func (r *dataplaneOverviewEndpoints) fetchOverviews(ctx context.Context, p page, meshName string, nameContains string, filter store.ListFilterFunc) (mesh.DataplaneOverviewResourceList, error) {
 	dataplanes := mesh.DataplaneResourceList{}
-	if err := r.resManager.List(ctx, &dataplanes, store.ListByMesh(meshName), store.ListByPage(p.size, p.offset), store.ListByFilterFunc(filter), store.ListByNamePrefix(namePrefix)); err != nil {
+	if err := r.resManager.List(ctx, &dataplanes, store.ListByMesh(meshName), store.ListByPage(p.size, p.offset), store.ListByFilterFunc(filter), store.ListByNameContains(nameContains)); err != nil {
 		return mesh.DataplaneOverviewResourceList{}, err
 	}
 

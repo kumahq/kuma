@@ -102,7 +102,7 @@ func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 		}
 	}
 	if out.PluralDisplayName == "" {
-		out.PluralDisplayName = core_model.PluralDisplayName(r.Type)
+		out.PluralDisplayName = core_model.PluralType(core_model.DisplayName(r.Type))
 	}
 	// Working around the fact we don't really differentiate policies from the rest of resources:
 	// Anything global can't be a policy as it need to be on a mesh. Anything with locked Ws config is something internal and therefore not a policy
