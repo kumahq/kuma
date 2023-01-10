@@ -1,16 +1,4 @@
-linters:
-  enable:
-    - bodyclose
-    - contextcheck
-    - gci
-    - gocritic
-    - gofmt
-    - gomodguard
-    - importas
-    - misspell
-    - unconvert
-    - unparam
-    - whitespace
+# mk/check.mk sets the enabled/disable linters
 
 run:
   skip-files:
@@ -28,7 +16,11 @@ linters-settings:
     disabled-checks:
       - singleCaseSwitch
   gci:
-    local-prefixes: github.com/kumahq/kuma
+    sections:
+    - standard
+    - default
+    - prefix(github.com/kumahq/kuma)
+    custom-order: true
   importas:
     alias:
     - pkg: github.com/kumahq/kuma/pkg/core/resources/apis/mesh
@@ -63,7 +55,7 @@ issues:
   exclude-rules:
     - linters:
         - staticcheck
-      text: "SA1019: package github.com/golang/protobuf/proto is deprecated" # TODO ignore deprecation of proto library. We don't want to migrate yet because go-control-plane is not ready
+      text: 'SA1019: "github.com/golang/protobuf' # TODO ignore deprecation of proto library. We don't want to migrate yet because go-control-plane is not ready
     - linters:
         - staticcheck
       text: "SA1019: package github.com/golang/protobuf/jsonpb" # TODO ignore deprecation of proto library. We don't want to migrate yet because go-control-plane is not ready

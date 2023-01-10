@@ -194,8 +194,8 @@ type ResourceType string
 // Technically, ResourceNameExtensions is a mapping between
 // a component identifier and a component value, e.g.
 //
-//   "k8s.kuma.io/namespace" => "my-namespace"
-//   "k8s.kuma.io/name"      => "my-policy"
+//	"k8s.kuma.io/namespace" => "my-namespace"
+//	"k8s.kuma.io/name"      => "my-policy"
 //
 // Component identifier must be considered a part of user-facing Kuma API.
 // In other words, it is supposed to be visible to users and should not be changed lightly.

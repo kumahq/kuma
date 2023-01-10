@@ -106,24 +106,24 @@ func BuildEdsEndpointMap(
 
 // endpointWeight defines default weight for in-cluster endpoint.
 // Examples of having service "backend":
-// 1) Standalone deployment, 2 instances in one cluster (zone1)
-//    All endpoints have to have the same weight (ex. 1) to achieve fair loadbalancing.
-//    Endpoints:
-//    * backend-zone1-1 - weight: 1
-//    * backend-zone1-2 - weight: 1
-// 2) Multi-zone deployment, 2 instances in "zone1" (local zone), 3 instances in "zone2" (remote zone) with 1 Ingress instance
-//    Endpoints:
-//    * backend-zone1-1 - weight: 1
-//    * backend-zone1-2 - weight: 1
-//    * ingress-zone2-1 - weight: 3 (all remote endpoints are aggregated to one Ingress, it needs to have weight of instances in other cluster)
-// 3) Multi-zone deployment, 2 instances in "zone1" (local zone), 2 instances in "zone2" (remote zone) with 1 Ingress instance
-//    Many instances of Ingress will forward the traffic to the same endpoints in "zone2" so we need to lower the weights.
-//    Since weights are integers, we cannot put fractional on ingress endpoints weights, we need to adjust "default" weight for local zone
-//    Endpoints:
-//    * backend-zone1-1 - weight: 2
-//    * backend-zone1-2 - weight: 2
-//    * ingress-zone2-1 - weight: 3
-//    * ingress-zone2-2 - weight: 3
+//  1. Standalone deployment, 2 instances in one cluster (zone1)
+//     All endpoints have to have the same weight (ex. 1) to achieve fair loadbalancing.
+//     Endpoints:
+//     * backend-zone1-1 - weight: 1
+//     * backend-zone1-2 - weight: 1
+//  2. Multi-zone deployment, 2 instances in "zone1" (local zone), 3 instances in "zone2" (remote zone) with 1 Ingress instance
+//     Endpoints:
+//     * backend-zone1-1 - weight: 1
+//     * backend-zone1-2 - weight: 1
+//     * ingress-zone2-1 - weight: 3 (all remote endpoints are aggregated to one Ingress, it needs to have weight of instances in other cluster)
+//  3. Multi-zone deployment, 2 instances in "zone1" (local zone), 2 instances in "zone2" (remote zone) with 1 Ingress instance
+//     Many instances of Ingress will forward the traffic to the same endpoints in "zone2" so we need to lower the weights.
+//     Since weights are integers, we cannot put fractional on ingress endpoints weights, we need to adjust "default" weight for local zone
+//     Endpoints:
+//     * backend-zone1-1 - weight: 2
+//     * backend-zone1-2 - weight: 2
+//     * ingress-zone2-1 - weight: 3
+//     * ingress-zone2-2 - weight: 3
 func fillDataplaneOutbounds(
 	outbound core_xds.EndpointMap,
 	dataplanes []*core_mesh.DataplaneResource,
