@@ -37,14 +37,14 @@ func (c Converter) ConvertAll(assignments []*observability_v1.MonitoringAssignme
 //
 //     // Group is a set of targets with a common label set (production, test, staging etc.).
 //     type Group struct {
-//         // Targets is a list of targets identified by a label set. Each target is
-//         // uniquely identifiable in the group by its address label.
-//         Targets []model.LabelSet
-//         // Labels is a set of labels that is common across all targets in the group.
-//         Labels model.LabelSet
+//     // Targets is a list of targets identified by a label set. Each target is
+//     // uniquely identifiable in the group by its address label.
+//     Targets []model.LabelSet
+//     // Labels is a set of labels that is common across all targets in the group.
+//     Labels model.LabelSet
 //
-//         // Source is an identifier that describes a group of targets.
-//         Source string
+//     // Source is an identifier that describes a group of targets.
+//     Source string
 //     }
 //
 //     That is why Kuma's MonitoringAssignment was designed to be close to that model.
@@ -52,8 +52,8 @@ func (c Converter) ConvertAll(assignments []*observability_v1.MonitoringAssignme
 //  2. However, `file_sd` uses different model for reading data from a file:
 //
 //     struct {
-//         Targets []string       `yaml:"targets"`
-//         Labels  model.LabelSet `yaml:"labels"`
+//     Targets []string       `yaml:"targets"`
+//     Labels  model.LabelSet `yaml:"labels"`
 //     }
 //
 //     Notice that Targets is just a list of addresses rather than a list of model.LabelSet.
@@ -71,8 +71,8 @@ func (c Converter) ConvertAll(assignments []*observability_v1.MonitoringAssignme
 //
 //  5. Therefore, we need to convert MonitoringAssignment into a model that `custom-sd` expects.
 //
-//  In practice, it means that generated MonitoringAssignment will be mapped to a set of groups, one per target.
-//	In the Prometheus native SD, this will not be the case and there will be a 1-1 mapping between assignments and groups.
+//     In practice, it means that generated MonitoringAssignment will be mapped to a set of groups, one per target.
+//     In the Prometheus native SD, this will not be the case and there will be a 1-1 mapping between assignments and groups.
 func (c Converter) Convert(assignment *observability_v1.MonitoringAssignment) []*targetgroup.Group {
 	commonLabels := convertLabels(assignment.Labels)
 
