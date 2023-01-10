@@ -9,7 +9,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	xds_cache "github.com/kumahq/kuma/pkg/xds/cache/mesh"
@@ -143,7 +142,7 @@ func (p *IngressProxyBuilder) updateIngress(ctx context.Context, zoneIngress *co
 
 func (p *IngressProxyBuilder) getIngressExternalServices(ctx context.Context) (*core_mesh.ExternalServiceResourceList, error) {
 	meshList := &core_mesh.MeshResourceList{}
-	if err := p.ReadOnlyResManager.List(ctx, meshList, store.ListOrdered()); err != nil {
+	if err := p.ReadOnlyResManager.List(ctx, meshList, core_store.ListOrdered()); err != nil {
 		return nil, err
 	}
 
