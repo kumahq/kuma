@@ -7,6 +7,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	xds "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
@@ -46,6 +47,13 @@ func generateListeners(
 		var routes []xds.OutboundRoute
 		for _, route := range FindRoutes(rules, serviceName) {
 			clusters := makeClusters(proxy, clusterCache, splitCounter, route.BackendRefs)
+			protocol := generator.InferProtocol(proxy, clusters)
+			switch protocol {
+			case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
+			default:
+				continue
+			}
+
 			servicesAcc.Add(clusters...)
 
 			routes = append(routes, xds.OutboundRoute{
@@ -53,6 +61,10 @@ func generateListeners(
 				Filters:  route.Filters,
 				Clusters: clusters,
 			})
+		}
+
+		if len(routes) == 0 {
+			continue
 		}
 
 		outboundRouteConfigurer := &xds.HttpOutboundRouteConfigurer{
