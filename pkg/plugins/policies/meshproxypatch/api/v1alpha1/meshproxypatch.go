@@ -69,7 +69,7 @@ type ClusterMod struct {
 	// Match is a set of conditions that have to be matched for modification operation to happen.
 	Match *ClusterMatch `json:"match,omitempty"`
 	// Operation to execute on matched cluster.
-	// +kubebuilder:validation:Enum=add;remove;patch
+	// +kubebuilder:validation:Enum=Add;Remove;Patch
 	Operation ModOperation `json:"operation"`
 	// Value of xDS resource in YAML format to add or patch.
 	Value *string `json:"value,omitempty"`
@@ -101,7 +101,7 @@ type ListenerMod struct {
 	// Match is a set of conditions that have to be matched for modification operation to happen.
 	Match *ListenerMatch `json:"match,omitempty"`
 	// Operation to execute on matched listener.
-	// +kubebuilder:validation:Enum=add;remove;patch
+	// +kubebuilder:validation:Enum=Add;Remove;Patch
 	Operation ModOperation `json:"operation"`
 	// Value of xDS resource in YAML format to add or patch.
 	Value *string `json:"value,omitempty"`
@@ -135,7 +135,7 @@ type NetworkFilterMod struct {
 	// Match is a set of conditions that have to be matched for modification operation to happen.
 	Match *NetworkFilterMatch `json:"match,omitempty"`
 	// Operation to execute on matched listener.
-	// +kubebuilder:validation:Enum=remove;patch;addFirst;addBefore;addAfter;addLast
+	// +kubebuilder:validation:Enum=Remove;Patch;AddFirst;AddBefore;AddAfter;AddLast
 	Operation ModOperation `json:"operation"`
 	// Value of xDS resource in YAML format to add or patch.
 	Value *string `json:"value,omitempty"`
@@ -172,7 +172,7 @@ type HTTPFilterMod struct {
 	// Match is a set of conditions that have to be matched for modification operation to happen.
 	Match *HTTPFilterMatch `json:"match,omitempty"`
 	// Operation to execute on matched listener.
-	// +kubebuilder:validation:Enum=remove;patch;addFirst;addBefore;addAfter;addLast
+	// +kubebuilder:validation:Enum=Remove;Patch;AddFirst;AddBefore;AddAfter;AddLast
 	Operation ModOperation `json:"operation"`
 	// Value of xDS resource in YAML format to add or patch.
 	Value *string `json:"value,omitempty"`
@@ -209,7 +209,7 @@ type VirtualHostMod struct {
 	// Match is a set of conditions that have to be matched for modification operation to happen.
 	Match *VirtualHostMatch `json:"match"`
 	// Operation to execute on matched listener.
-	// +kubebuilder:validation:Enum=add;remove;patch
+	// +kubebuilder:validation:Enum=Add;Remove;Patch
 	Operation ModOperation `json:"operation"`
 	// Value of xDS resource in YAML format to add or patch.
 	Value *string `json:"value,omitempty"`

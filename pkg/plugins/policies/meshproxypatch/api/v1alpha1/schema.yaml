@@ -37,9 +37,9 @@ properties:
                     operation:
                       description: Operation to execute on matched cluster.
                       enum:
-                        - add
-                        - remove
-                        - patch
+                        - Add
+                        - Remove
+                        - Patch
                       type: string
                     value:
                       description: Value of xDS resource in YAML format to add or patch.
@@ -71,12 +71,12 @@ properties:
                     operation:
                       description: Operation to execute on matched listener.
                       enum:
-                        - remove
-                        - patch
-                        - addFirst
-                        - addBefore
-                        - addAfter
-                        - addLast
+                        - Remove
+                        - Patch
+                        - AddFirst
+                        - AddBefore
+                        - AddAfter
+                        - AddLast
                       type: string
                     value:
                       description: Value of xDS resource in YAML format to add or patch.
@@ -105,9 +105,9 @@ properties:
                     operation:
                       description: Operation to execute on matched listener.
                       enum:
-                        - add
-                        - remove
-                        - patch
+                        - Add
+                        - Remove
+                        - Patch
                       type: string
                     value:
                       description: Value of xDS resource in YAML format to add or patch.
@@ -139,12 +139,12 @@ properties:
                     operation:
                       description: Operation to execute on matched listener.
                       enum:
-                        - remove
-                        - patch
-                        - addFirst
-                        - addBefore
-                        - addAfter
-                        - addLast
+                        - Remove
+                        - Patch
+                        - AddFirst
+                        - AddBefore
+                        - AddAfter
+                        - AddLast
                       type: string
                     value:
                       description: Value of xDS resource in YAML format to add or patch.
@@ -171,9 +171,9 @@ properties:
                     operation:
                       description: Operation to execute on matched listener.
                       enum:
-                        - add
-                        - remove
-                        - patch
+                        - Add
+                        - Remove
+                        - Patch
                       type: string
                     value:
                       description: Value of xDS resource in YAML format to add or patch.
