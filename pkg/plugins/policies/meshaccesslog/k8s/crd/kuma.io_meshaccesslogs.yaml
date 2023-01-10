@@ -74,6 +74,8 @@ spec:
                                     description: Path to a file that logs will be
                                       written to
                                     type: string
+                                required:
+                                - path
                                 type: object
                               tcp:
                                 description: TCPBackend defines a TCP logging backend.
@@ -99,9 +101,10 @@ spec:
                                       plain:
                                         type: string
                                     type: object
+                                required:
+                                - address
                                 type: object
                             type: object
-                          nullable: true
                           type: array
                       type: object
                     targetRef:
@@ -204,6 +207,8 @@ spec:
                                     description: Path to a file that logs will be
                                       written to
                                     type: string
+                                required:
+                                - path
                                 type: object
                               tcp:
                                 description: TCPBackend defines a TCP logging backend.
@@ -229,9 +234,10 @@ spec:
                                       plain:
                                         type: string
                                     type: object
+                                required:
+                                - address
                                 type: object
                             type: object
-                          nullable: true
                           type: array
                       type: object
                     targetRef:

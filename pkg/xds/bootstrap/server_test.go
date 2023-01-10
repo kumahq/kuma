@@ -39,10 +39,6 @@ var _ = Describe("Bootstrap Server", func() {
 	var baseURL string
 	var metrics core_metrics.Metrics
 
-	core.TempDir = func() string {
-		return "/tmp"
-	}
-
 	version := `
 	"version": {
 	  "kumaDp": {
@@ -115,6 +111,9 @@ var _ = Describe("Bootstrap Server", func() {
 		core.Now = func() time.Time {
 			now, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 			return now
+		}
+		core.TempDir = func() string {
+			return "/tmp"
 		}
 	})
 

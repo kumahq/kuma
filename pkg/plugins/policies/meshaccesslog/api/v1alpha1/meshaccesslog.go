@@ -37,9 +37,7 @@ type From struct {
 }
 
 type Conf struct {
-	// +optional
-	// +nullable
-	Backends []Backend `json:"backends"`
+	Backends *[]Backend `json:"backends,omitempty"`
 }
 
 type Backend struct {
@@ -51,24 +49,24 @@ type Backend struct {
 type TCPBackend struct {
 	// Format of access logs. Placeholders available on
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
-	Format Format `json:"format,omitempty"`
+	Format *Format `json:"format,omitempty"`
 	// Address of the TCP logging backend
-	Address string `json:"address,omitempty"`
+	Address string `json:"address"`
 }
 
 // FileBackend defines configuration for file based access logs
 type FileBackend struct {
 	// Format of access logs. Placeholders available on
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
-	Format Format `json:"format,omitempty"`
+	Format *Format `json:"format,omitempty"`
 	// Path to a file that logs will be written to
-	Path string `json:"path,omitempty"`
+	Path string `json:"path"`
 }
 
 type Format struct {
-	Plain           string      `json:"plain,omitempty"`
-	Json            []JsonValue `json:"json,omitempty"`
-	OmitEmptyValues bool        `json:"omitEmptyValues,omitempty"`
+	Plain           *string      `json:"plain,omitempty"`
+	Json            *[]JsonValue `json:"json,omitempty"`
+	OmitEmptyValues *bool        `json:"omitEmptyValues,omitempty"`
 }
 
 type JsonValue struct {
