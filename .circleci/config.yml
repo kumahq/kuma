@@ -338,6 +338,7 @@ jobs:
         keys:
         # prefer the exact match
         - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+    - install_build_tools
     - run:
         name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp, kuma-prometheus-sd)
         command: make build
