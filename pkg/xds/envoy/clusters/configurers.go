@@ -84,20 +84,20 @@ func HealthCheck(protocol core_mesh.Protocol, healthCheck *core_mesh.HealthCheck
 
 // LbSubset is required for MetadataMatch in Weighted Cluster in TCP Proxy to work.
 // Subset loadbalancing is used in two use cases
-// 1) TrafficRoute for splitting traffic. Example: TrafficRoute that splits 10% of the traffic to version 1 of the service backend and 90% traffic to version 2 of the service backend
-// 2) Multiple outbound sections with the same service
-//    Example:
-//    type: Dataplane
-//    networking:
-//      outbound:
-//      - port: 1234
-//        tags:
-//          kuma.io/service: backend
-//      - port: 1234
-//        tags:
-//          kuma.io/service: backend
-//          version: v1
-//    Only one cluster "backend" is generated for such dataplane, but with lb subset by version.
+//  1. TrafficRoute for splitting traffic. Example: TrafficRoute that splits 10% of the traffic to version 1 of the service backend and 90% traffic to version 2 of the service backend
+//  2. Multiple outbound sections with the same service
+//     Example:
+//     type: Dataplane
+//     networking:
+//     outbound:
+//     - port: 1234
+//     tags:
+//     kuma.io/service: backend
+//     - port: 1234
+//     tags:
+//     kuma.io/service: backend
+//     version: v1
+//     Only one cluster "backend" is generated for such dataplane, but with lb subset by version.
 func LbSubset(tagSets envoy.TagKeysSlice) ClusterBuilderOptFunc {
 	return func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.LbSubsetConfigurer{
