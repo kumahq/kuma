@@ -5,6 +5,7 @@ CONTROLLER_GEN := go run -mod=mod sigs.k8s.io/controller-tools/cmd/controller-ge
 RESOURCE_GEN := go run -mod=mod $(TOOLS_DIR)/resource-gen/main.go
 POLICY_GEN := go run -mod=mod $(TOOLS_DIR)/policy-gen/generator/main.go
 
+GENERATE_TARGET ?= clean/proto generate/api protoc/pkg/config/app/kumactl/v1alpha1 protoc/plugins resources/type generate/policies
 GO_MODULE := github.com/kumahq/kuma
 
 .PHONY: clean/proto
@@ -14,7 +15,7 @@ clean/proto: ## Dev: Remove auto-generated Protobuf files
 
 .PHONY: generate
 generate:  ## Dev: Run code generators
-generate: clean/proto generate/api protoc/pkg/config/app/kumactl/v1alpha1 protoc/plugins resources/type generate/policies
+generate: $(GENERATE_TARGET)
 
 .PHONY: resources/type
 resources/type:
