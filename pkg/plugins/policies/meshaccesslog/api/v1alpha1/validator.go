@@ -70,8 +70,9 @@ func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
 	if conf.Backends == nil {
 		verr.AddViolation("backends", validators.MustBeDefined)
+		return verr
 	}
-	for backendIdx, backend := range conf.Backends {
+	for backendIdx, backend := range *conf.Backends {
 		verr.AddErrorAt(validators.RootedAt("backends").Index(backendIdx), validateBackend(backend))
 	}
 	return verr
@@ -84,17 +85,20 @@ func validateBackend(backend Backend) validators.ValidationError {
 		verr.AddViolation("", validators.MustHaveOnlyOne("backend", "tcp", "file"))
 	}
 
-	if file := backend.File; file != nil {
-		verr.AddErrorAt(validators.RootedAt("file").Field("format"), validateFormat(file.Format))
-		isFilePath, _ := govalidator.IsFilePath(file.Path)
+	switch {
+	case backend.File != nil:
+		if backend.File.Format != nil {
+			verr.AddErrorAt(validators.RootedAt("file").Field("format"), validateFormat(*backend.File.Format))
+		}
+		isFilePath, _ := govalidator.IsFilePath(backend.File.Path)
 		if !isFilePath {
 			verr.AddViolationAt(validators.RootedAt("file").Field("path"), `file backend requires a valid path`)
 		}
-	}
-
-	if tcp := backend.Tcp; tcp != nil {
-		verr.AddErrorAt(validators.RootedAt("tcp").Field("format"), validateFormat(tcp.Format))
-		if !govalidator.IsURL(tcp.Address) {
+	case backend.Tcp != nil:
+		if backend.Tcp.Format != nil {
+			verr.AddErrorAt(validators.RootedAt("tcp").Field("format"), validateFormat(*backend.Tcp.Format))
+		}
+		if !govalidator.IsURL(backend.Tcp.Address) {
 			verr.AddViolationAt(validators.RootedAt("tcp").Field("address"), `tcp backend requires valid address`)
 		}
 	}
@@ -105,26 +109,33 @@ func validateBackend(backend Backend) validators.ValidationError {
 func validateFormat(format Format) validators.ValidationError {
 	var verr validators.ValidationError
 
-	if format.Json != nil && len(format.Json) == 0 {
-		verr.AddViolation("json", validators.MustNotBeEmpty)
-	}
-
-	if format.Plain != "" && format.Json != nil {
+	if (format.Plain != nil) == (format.Json != nil) {
 		verr.AddViolation("", validators.MustHaveOnlyOne("format", "plain", "json"))
 	}
 
-	for idx, field := range format.Json {
-		path := validators.RootedAt("json").Index(idx)
-		if field.Key == "" {
-			verr.AddViolationAt(path.Field("key"), `key cannot be empty`)
+	switch {
+	case format.Plain != nil:
+		if *format.Plain == "" {
+			verr.AddViolation("plain", validators.MustNotBeEmpty)
 		}
-		if field.Value == "" {
-			verr.AddViolationAt(path.Field("value"), `value cannot be empty`)
+	case format.Json != nil:
+		if len(*format.Json) == 0 {
+			verr.AddViolation("json", validators.MustNotBeEmpty)
 		}
-		if !govalidator.IsJSON(fmt.Sprintf(`{"%s": "%s"}`, field.Key, field.Value)) {
-			verr.AddViolationAt(path, `is not a valid JSON object`)
+		for idx, field := range *format.Json {
+			path := validators.RootedAt("json").Index(idx)
+			if field.Key == "" {
+				verr.AddViolationAt(path.Field("key"), `key cannot be empty`)
+			}
+			if field.Value == "" {
+				verr.AddViolationAt(path.Field("value"), `value cannot be empty`)
+			}
+			if !govalidator.IsJSON(fmt.Sprintf(`{"%s": "%s"}`, field.Key, field.Value)) {
+				verr.AddViolationAt(path, `is not a valid JSON object`)
+			}
 		}
 	}
+
 	return verr
 }
 

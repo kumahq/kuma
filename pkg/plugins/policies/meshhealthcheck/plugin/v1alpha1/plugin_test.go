@@ -89,6 +89,12 @@ var _ = Describe("MeshHealthCheck", func() {
 							mesh_proto.ProtocolTag: "grpc",
 						}),
 					).
+					AddOutbound(
+						builders.Outbound().WithAddress("240.0.0.1").WithPort(27779).WithTags(map[string]string{
+							mesh_proto.ServiceTag:  grpcServiceTag,
+							mesh_proto.ProtocolTag: "grpc",
+						}),
+					).
 					Build(),
 				Policies: xds.MatchedPolicies{
 					Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{

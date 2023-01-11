@@ -49,6 +49,8 @@ Show Kuma resources.
 * [kumactl get meshgateways](kumactl_get_meshgateways.md)	 - Show MeshGateway
 * [kumactl get meshhealthcheck](kumactl_get_meshhealthcheck.md)	 - Show a single MeshHealthCheck resource
 * [kumactl get meshhealthchecks](kumactl_get_meshhealthchecks.md)	 - Show MeshHealthCheck
+* [kumactl get meshproxypatch](kumactl_get_meshproxypatch.md)	 - Show a single MeshProxyPatch resource
+* [kumactl get meshproxypatches](kumactl_get_meshproxypatches.md)	 - Show MeshProxyPatch
 * [kumactl get meshratelimit](kumactl_get_meshratelimit.md)	 - Show a single MeshRateLimit resource
 * [kumactl get meshratelimits](kumactl_get_meshratelimits.md)	 - Show MeshRateLimit
 * [kumactl get meshretries](kumactl_get_meshretries.md)	 - Show MeshRetry

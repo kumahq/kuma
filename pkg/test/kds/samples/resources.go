@@ -396,7 +396,7 @@ var (
 					Kind: "Mesh",
 				},
 				Default: meshaccesslog.Conf{
-					Backends: []meshaccesslog.Backend{
+					Backends: &[]meshaccesslog.Backend{
 						{
 							File: &meshaccesslog.FileBackend{
 								Path: "/dev/null",
