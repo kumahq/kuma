@@ -145,20 +145,22 @@ ifeq (,$(wildcard $(BUILD_ARTIFACTS_DIR)/ebpf))
 	mkdir -p pkg/transparentproxy/ebpf/programs
 
 	cp $(EBPF_TMP_DIRECTORY)/bpf/mb_* $(BUILD_ARTIFACTS_DIR)/ebpf/
-	cp $(EBPF_TMP_DIRECTORY)/bpf/mb_* pkg/transparentproxy/ebpf/programs/
+	cp $(EBPF_TMP_DIRECTORY)/bpf/mb_* $(KUMA_DIR)/pkg/transparentproxy/ebpf/programs/
 
 	rm -rf "$(EBPF_TMP_DIRECTORY)"
 else
 	@echo "eBPF programs are already built. If you want to rebuild it, remove them: rm -r $(BUILD_ARTIFACTS_DIR)/ebpf"
 endif
+else
+	@echo "You can build ebpf programs only on Linux machine"
 endif
 
 .PHONY: build/ebpf/copy-for-kumactl
 build/ebpf/copy-for-kumactl: build/ebpf
 ifeq ($(shell uname), Linux)
-	mkdir -p pkg/transparentproxy/ebpf/programs
+	mkdir -p $(KUMA_DIR)/pkg/transparentproxy/ebpf/programs
 
-	cp $(BUILD_ARTIFACTS_DIR)/ebpf/mb_* pkg/transparentproxy/ebpf/programs/
+	cp $(BUILD_ARTIFACTS_DIR)/ebpf/mb_* $(KUMA_DIR)/pkg/transparentproxy/ebpf/programs/
 endif
 
 .PHONY: build/test-server
