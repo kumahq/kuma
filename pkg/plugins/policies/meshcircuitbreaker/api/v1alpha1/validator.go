@@ -109,15 +109,14 @@ func validateOutlierDetection(path validators.PathBuilder, outlierDetection *Out
 func validateDetectors(path validators.PathBuilder, detectors *Detectors) validators.ValidationError {
 	var verr validators.ValidationError
 	if detectors == nil {
-		verr.AddViolationAt(path, "'detectors' should be configured")
+		verr.AddViolationAt(path, validators.MustBeDefined)
 		return verr
 	}
 
 	if detectors.FailurePercentage == nil && detectors.GatewayFailures == nil &&
 		detectors.LocalOriginFailures == nil && detectors.TotalFailures == nil &&
 		detectors.SuccessRate == nil {
-		verr.AddViolationAt(path, "at least one of the detectors ('totalFailures', 'gatewayFailures',"+
-			" 'localOriginFailures', 'successRate' or 'failurePercentage') should be configured")
+		verr.AddViolationAt(path, validators.MustHaveAtLeastOne("totalFailures", "gatewayFailures", "localOriginFailures", "successRate", "failurePercentage"))
 		return verr
 	}
 
