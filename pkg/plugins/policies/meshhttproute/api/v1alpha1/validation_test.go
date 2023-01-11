@@ -11,7 +11,7 @@ import (
 var _ = Describe("validation", func() {
 	DescribeErrorCases(
 		api.NewMeshHTTPRouteResource,
-		ErrorCase("basic error",
+		ErrorCase("spec.targetRef error",
 			validators.Violation{
 				Field:   `spec.targetRef.kind`,
 				Message: `value is not supported`,
@@ -23,6 +23,22 @@ targetRef:
   kind: BlahBlah
   name: frontend
 to: []
+`),
+		ErrorCase("spec.to.targetRef error",
+			validators.Violation{
+				Field:   `spec.to[0].targetRef.kind`,
+				Message: `value is not supported`,
+			}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: frontend
+to:
+- targetRef:
+    kind: BlahBlah
+    name: frontend
 `),
 	)
 	DescribeValidCases(

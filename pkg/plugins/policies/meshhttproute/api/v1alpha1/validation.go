@@ -10,7 +10,7 @@ func (r *MeshHTTPRouteResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
-	verr.AddErrorAt(path.Field("to"), validateRules(path, r.Spec.To))
+	verr.AddErrorAt(path.Field("to"), validateRules(r.Spec.To))
 	return verr.OrNil()
 }
 
@@ -33,11 +33,11 @@ func validateToRef(targetRef common_api.TargetRef) validators.ValidationError {
 	})
 }
 
-func validateRules(path validators.PathBuilder, tos []To) validators.ValidationError {
+func validateRules(tos []To) validators.ValidationError {
 	var errs validators.ValidationError
 
 	for i, to := range tos {
-		errs.AddErrorAt(path.Index(i), validateToRef(to.TargetRef))
+		errs.AddErrorAt(validators.PathBuilder{}.Index(i).Field("targetRef"), validateToRef(to.TargetRef))
 	}
 
 	return errs
