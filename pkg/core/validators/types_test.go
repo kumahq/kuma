@@ -105,7 +105,7 @@ var _ = Describe("Validation Error", func() {
 			path := validators.RootedAt("spec").Field("fields")
 			err := validators.ValidationError{}
 			subErr := validators.ValidationError{}
-			subErr.AddViolationAt(validators.PathBuilder{}.Index(2), "something bad")
+			subErr.AddViolationAt(validators.Root().Index(2), "something bad")
 
 			// when
 			err.AddErrorAt(path, subErr)
@@ -193,7 +193,7 @@ var _ = Describe("Validation Error", func() {
 
 var _ = Describe("PathBuilder", func() {
 	It("should produce empty path by default", func() {
-		Expect(validators.PathBuilder{}.String()).To(Equal(""))
+		Expect(validators.Root().String()).To(Equal(""))
 	})
 
 	It("should produce valid root path", func() {

@@ -54,32 +54,30 @@ func (v *ValidationError) AddViolation(field string, message string) {
 	v.Violations = append(v.Violations, violation)
 }
 
-func (v *ValidationError) Add(err ValidationError) {
-	v.AddError("", err)
-}
-
 func (v *ValidationError) AddErrorAt(path PathBuilder, validationErr ValidationError) {
-	v.AddError(path.String(), validationErr)
-}
-
-func (v *ValidationError) AddError(rootField string, validationErr ValidationError) {
 	for _, violation := range validationErr.Violations {
-		field := ""
-		if violation.Field == "" {
-			field = rootField
-		} else {
-			sep := ""
-			if rootField != "" && !strings.HasPrefix(violation.Field, "[") {
-				sep = "."
-			}
-			field = fmt.Sprintf("%s%s%s", rootField, sep, violation.Field)
+		field := Root()
+		if violation.Field != "" {
+			field = RootedAt(violation.Field)
 		}
 		newViolation := Violation{
-			Field:   field,
+			Field:   path.concat(field).String(),
 			Message: violation.Message,
 		}
 		v.Violations = append(v.Violations, newViolation)
 	}
+}
+
+func (v *ValidationError) Add(err ValidationError) {
+	v.AddErrorAt(Root(), err)
+}
+
+func (v *ValidationError) AddError(rootField string, validationErr ValidationError) {
+	root := Root()
+	if rootField != "" {
+		root = RootedAt(rootField)
+	}
+	v.AddErrorAt(root, validationErr)
 }
 
 // Transform returns a new ValidationError with every violation
@@ -124,6 +122,10 @@ func RootedAt(name string) PathBuilder {
 	return PathBuilder{name}
 }
 
+func Root() PathBuilder {
+	return PathBuilder{}
+}
+
 func (p PathBuilder) Field(name string) PathBuilder {
 	return append(p, fmt.Sprintf(".%s", name))
 }
@@ -138,4 +140,20 @@ func (p PathBuilder) Key(key string) PathBuilder {
 
 func (p PathBuilder) String() string {
 	return strings.Join(p, "")
+}
+
+func (p PathBuilder) concat(other PathBuilder) PathBuilder {
+	if len(other) == 0 {
+		return p
+	}
+	if len(p) == 0 {
+		return other
+	}
+
+	firstOther := other[0]
+	if !strings.HasPrefix(firstOther, "[") {
+		firstOther = "." + firstOther
+	}
+
+	return append(append(p, firstOther), other[1:]...)
 }
