@@ -89,6 +89,12 @@ var _ = Describe("MeshHealthCheck", func() {
 							mesh_proto.ProtocolTag: "grpc",
 						}),
 					).
+					AddOutbound(
+						builders.Outbound().WithAddress("240.0.0.1").WithPort(27779).WithTags(map[string]string{
+							mesh_proto.ServiceTag:  grpcServiceTag,
+							mesh_proto.ProtocolTag: "grpc",
+						}),
+					).
 					Build(),
 				Policies: xds.MatchedPolicies{
 					Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
@@ -247,6 +253,13 @@ healthChecks:
 			expectedClusters: []string{`
 name: echo-grpc
 healthChecks:
+- healthyThreshold: 1
+  interval: 10s
+  timeout: 2s
+  unhealthyThreshold: 3
+  grpcHealthCheck:
+    authority: grpc-client.default.svc.cluster.local
+    serviceName: grpc-client
 - healthyThreshold: 1
   interval: 10s
   timeout: 2s
