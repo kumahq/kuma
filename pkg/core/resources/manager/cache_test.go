@@ -3,6 +3,7 @@ package manager_test
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -22,13 +23,12 @@ import (
 
 type countingResourcesManager struct {
 	store       core_store.ResourceStore
-	getQueries  int
-	listQueries int
-	mutex       sync.Mutex
+	getQueries  uint32
+	listQueries uint32
 }
 
 func (c *countingResourcesManager) Get(ctx context.Context, res core_model.Resource, fn ...core_store.GetOptionsFunc) error {
-	c.getQueries++
+	atomic.AddUint32(&c.getQueries, 1)
 	return c.store.Get(ctx, res, fn...)
 }
 
@@ -37,9 +37,7 @@ func (c *countingResourcesManager) List(ctx context.Context, list core_model.Res
 	if list.GetItemType() == core_mesh.TrafficLogType && opts.Mesh == "slow" {
 		time.Sleep(10 * time.Second)
 	}
-	c.mutex.Lock()
-	c.listQueries++
-	c.mutex.Unlock()
+	atomic.AddUint32(&c.listQueries, 1)
 	return c.store.List(ctx, list, fn...)
 }
 
@@ -105,14 +103,14 @@ var _ = Describe("Cached Resource Manager", func() {
 
 		// then real manager should be called only once
 		Expect(fetch().Spec).To(MatchProto(res.Spec))
-		Expect(countingManager.getQueries).To(Equal(1))
+		Expect(int(countingManager.getQueries)).To(Equal(1))
 
 		// when
 		time.Sleep(expiration)
 
 		// then
 		Expect(fetch().Spec).To(MatchProto(res.Spec))
-		Expect(countingManager.getQueries).To(Equal(2))
+		Expect(int(countingManager.getQueries)).To(Equal(2))
 
 		// and metrics are published
 		Expect(test_metrics.FindMetric(metrics, "store_cache", "operation", "get", "result", "miss").Counter.GetValue()).To(Equal(2.0))
@@ -142,7 +140,7 @@ var _ = Describe("Cached Resource Manager", func() {
 		wg.Wait()
 
 		// then real manager should be called every time
-		Expect(countingManager.getQueries).To(Equal(100))
+		Expect(int(countingManager.getQueries)).To(Equal(100))
 	})
 
 	It("should cache List() queries", func() {
@@ -168,7 +166,7 @@ var _ = Describe("Cached Resource Manager", func() {
 		list := fetch()
 		Expect(list.Items).To(HaveLen(1))
 		Expect(list.Items[0].GetSpec()).To(MatchProto(res.Spec))
-		Expect(countingManager.listQueries).To(Equal(1))
+		Expect(int(countingManager.listQueries)).To(Equal(1))
 
 		// when
 		time.Sleep(expiration)
@@ -177,7 +175,7 @@ var _ = Describe("Cached Resource Manager", func() {
 		list = fetch()
 		Expect(list.Items).To(HaveLen(1))
 		Expect(list.Items[0].GetSpec()).To(MatchProto(res.Spec))
-		Expect(countingManager.listQueries).To(Equal(2))
+		Expect(int(countingManager.listQueries)).To(Equal(2))
 
 		// and metrics are published
 		Expect(test_metrics.FindMetric(metrics, "store_cache", "operation", "list", "result", "miss").Counter.GetValue()).To(Equal(2.0))
@@ -213,7 +211,7 @@ var _ = Describe("Cached Resource Manager", func() {
 
 		// then first request does not block request for other type
 		Expect(err).ToNot(HaveOccurred())
-		Eventually(done, "15s", "1s").Should(BeClosed())
+		<- done
 	}))
 
 	It("should cache List() at different key when ordered", test.Within(5*time.Second, func() {
@@ -244,7 +242,7 @@ var _ = Describe("Cached Resource Manager", func() {
 		list := fetch(false)
 		Expect(list.Items).To(HaveLen(1))
 		Expect(list.Items[0].GetSpec()).To(MatchProto(res.Spec))
-		Expect(countingManager.listQueries).To(Equal(1))
+		Expect(int(countingManager.listQueries)).To(Equal(1))
 
 		// when call for ordered data
 		list = fetch(true)
@@ -252,7 +250,7 @@ var _ = Describe("Cached Resource Manager", func() {
 		// then real manager should be called
 		Expect(list.Items).To(HaveLen(1))
 		Expect(list.Items[0].GetSpec()).To(MatchProto(res.Spec))
-		Expect(countingManager.listQueries).To(Equal(2))
+		Expect(int(countingManager.listQueries)).To(Equal(2))
 
 		// and metrics are published
 		Expect(test_metrics.FindMetric(metrics, "store_cache", "operation", "list", "result", "miss").Counter.GetValue()).To(Equal(2.0))
