@@ -1624,15 +1624,9 @@ spec:
       annotations:
         kuma.io/egress: enabled
       labels:
-<<<<<<< HEAD
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
         app: kuma-egress
-=======
-        app: kuma-egress
-        app.kubernetes.io/name: kuma
-        app.kubernetes.io/instance: kuma
->>>>>>> 610662ae0 (chore(helm): remove duplicate keys in resources (#4681))
     spec:
       affinity:
         podAntiAffinity:
