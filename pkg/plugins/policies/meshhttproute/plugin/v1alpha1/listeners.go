@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"reflect"
 
 	"golang.org/x/exp/slices"
 
@@ -44,7 +45,7 @@ func generateListeners(
 			Configure(envoy_listeners.HttpConnectionManager(serviceName, false))
 
 		var routes []xds.OutboundRoute
-		for _, route := range FindRoutes(rules, serviceName) {
+		for _, route := range prepareRoutes(rules, serviceName) {
 			clusters := makeClusters(proxy, clusterCache, splitCounter, route.BackendRefs)
 			servicesAcc.Add(clusters...)
 
@@ -79,76 +80,54 @@ func generateListeners(
 	return resources, nil
 }
 
-func FindRoutes(
-	rules []ToRouteRule,
+// prepareRoutes handles the always present, catch all default route
+func prepareRoutes(
+	toRules []ToRouteRule,
 	serviceName string,
 ) []Route {
-	var unmergedRules []RuleAcc
+	var rules []api.Rule
 
-	// Prepend a rule to passthrough unmatched traffic
-	rules = append([]ToRouteRule{{
-		Subset: core_xds.MeshService(serviceName),
-		Rules: []api.Rule{{
-			Matches: []api.Match{{
-				Path: api.PathMatch{
-					Prefix: "/",
-				},
-			}},
-			Default: api.RuleConf{
-				BackendRefs: &[]api.BackendRef{{
-					TargetRef: common_api.TargetRef{
-						Kind: common_api.MeshService,
-						Name: serviceName,
-					},
-					Weight: 100,
-				}},
-			},
-		}},
-	}}, rules...)
-
-	for _, rule := range rules {
-		if !rule.Subset.IsSubset(core_xds.MeshService(serviceName)) {
-			continue
-		}
-		// Look through all the rules and accumulate all filters/refs for a
-		// given matches value.
-		// TODO: this is O(#rules^2*#matches) because Go can't use a list of
-		// matches as a key.
-		for _, routeRules := range rule.Rules {
-			var found bool
-			// Treat the list of (matches, filters/refs) as a map
-			for i, accRule := range unmergedRules {
-				if !slices.Equal(accRule.MatchKey, routeRules.Matches) {
-					continue
-				}
-				unmergedRules[i] = RuleAcc{
-					MatchKey:  accRule.MatchKey,
-					RuleConfs: append(accRule.RuleConfs, routeRules.Default),
-				}
-				found = true
-			}
-			if !found {
-				unmergedRules = append(unmergedRules, RuleAcc{
-					MatchKey:  routeRules.Matches,
-					RuleConfs: []api.RuleConf{routeRules.Default},
-				})
-			}
+	for _, toRule := range toRules {
+		if toRule.Subset.IsSubset(core_xds.MeshService(serviceName)) {
+			rules = toRule.Rules
 		}
 	}
 
-	var routes []Route
+	catchAllMatch := []api.Match{{
+		Path: api.PathMatch{
+			Prefix: "/",
+		},
+	}}
 
-	for _, rule := range unmergedRules {
+	noCatchAll := slices.IndexFunc(rules, func(rule api.Rule) bool {
+		return reflect.DeepEqual(rule.Matches, catchAllMatch)
+	}) == -1
+
+	if noCatchAll {
+		rules = append(rules, api.Rule{
+			Matches: catchAllMatch,
+		})
+	}
+
+	var routes []Route
+	for _, rule := range rules {
 		route := Route{
-			Matches: rule.MatchKey,
+			Matches: rule.Matches,
 		}
-		for _, conf := range rule.RuleConfs {
-			if conf.Filters != nil {
-				route.Filters = *conf.Filters
-			}
-			if conf.BackendRefs != nil {
-				route.BackendRefs = *conf.BackendRefs
-			}
+
+		if rule.Default.BackendRefs != nil {
+			route.BackendRefs = *rule.Default.BackendRefs
+		} else {
+			route.BackendRefs = []api.BackendRef{{
+				TargetRef: common_api.TargetRef{
+					Kind: common_api.MeshService,
+					Name: serviceName,
+				},
+				Weight: 100,
+			}}
+		}
+		if rule.Default.Filters != nil {
+			route.Filters = *rule.Default.Filters
 		}
 		routes = append(routes, route)
 	}
