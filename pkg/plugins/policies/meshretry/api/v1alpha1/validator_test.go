@@ -47,23 +47,23 @@ to:
           baseInterval: 15s
           maxInterval: 20m
         retryOn:
-          - 5XX
-          - GATEWAY_ERROR
-          - RESET
-          - RETRIABLE_4XX
-          - CONNECT_FAILURE
-          - ENVOY_RATELIMITED
-          - REFUSED_STREAM
-          - HTTP3_POST_CONNECT_FAILURE
-          - HTTP_METHOD_CONNECT
-          - HTTP_METHOD_DELETE
-          - HTTP_METHOD_GET
-          - HTTP_METHOD_HEAD
-          - HTTP_METHOD_OPTIONS
-          - HTTP_METHOD_PATCH
-          - HTTP_METHOD_POST
-          - HTTP_METHOD_PUT
-          - HTTP_METHOD_TRACE
+          - 5xx
+          - GatewayError
+          - Reset
+          - Retriable4xx
+          - ConnectFailure
+          - EnvoyRatelimited
+          - RefusedStream
+          - Http3PostConnectFailure
+          - HttpMethodConnect
+          - HttpMethodDelete
+          - HttpMethodGet
+          - HttpMethodHead
+          - HttpMethodOptions
+          - HttpMethodPatch
+          - HttpMethodPost
+          - HttpMethodPut
+          - HttpMethodTrace
           - 500
           - 409
           - 503
@@ -94,11 +94,11 @@ to:
           baseInterval: 15s
           maxInterval: 20m
         retryOn:
-          - CANCELED
-          - DEADLINE_EXCEEDED
-          - INTERNAL
-          - RESOURCE_EXHAUSTED
-          - UNAVAILABLE
+          - Canceled
+          - DeadlineExceeded
+          - Internal
+          - ResourceExhausted
+          - Unavailable
 `),
 			Entry("minimalistic http retry", `
 targetRef:
@@ -298,7 +298,7 @@ to:
       http: 
         retryOn: 
           - WRONG_VALUE
-          - 5xx
+          - 5XX
           - reset
           - DEADLINE_EXCEEDED
           - 123
@@ -309,7 +309,7 @@ violations:
   - field: spec.to[0].default.conf.http.retryOn[0]
     message: unknown item 'WRONG_VALUE'
   - field: spec.to[0].default.conf.http.retryOn[1]
-    message: unknown item '5xx'
+    message: unknown item '5XX'
   - field: spec.to[0].default.conf.http.retryOn[2]
     message: unknown item 'reset'
   - field: spec.to[0].default.conf.http.retryOn[3]

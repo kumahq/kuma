@@ -57,7 +57,7 @@ var (
 
 	// RESET means Envoy will attempt a retry if the upstream server does not respond at all
 	// (disconnect/reset/read timeout.)
-	RESET HTTPRetryOn = "RESET"
+	RESET HTTPRetryOn = "Reset"
 
 	// RETRIABLE_4XX means Envoy will attempt a retry if the upstream server responds with
 	// a retriable 4xx response code. Currently, the only response code in this category is 409.
