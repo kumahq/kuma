@@ -6,7 +6,7 @@ set -o nounset
 set -e
 
 POLICY=$1
-VERSION=${2:-"v1alpha1"}
+VERSION=$2
 TOOLS_LOCATION=$3
 
 POLICIES_DIR=pkg/plugins/policies
