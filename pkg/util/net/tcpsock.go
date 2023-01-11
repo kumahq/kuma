@@ -6,8 +6,6 @@ import (
 )
 
 func PickTCPPort(ip string, leftPort, rightPort uint32) (uint32, error) {
-	var actualPort uint32
-	var err error
 	lowestPort, highestPort := leftPort, rightPort
 	if highestPort < lowestPort {
 		lowestPort, highestPort = highestPort, lowestPort
@@ -15,11 +13,11 @@ func PickTCPPort(ip string, leftPort, rightPort uint32) (uint32, error) {
 	// we prefer a port to remain stable over time, that's why we do sequential availability check
 	// instead of random selection
 	for port := lowestPort; port <= highestPort; port++ {
-		if actualPort, err = ReserveTCPAddr(fmt.Sprintf("%s:%d", ip, port)); err == nil {
+		if actualPort, err := ReserveTCPAddr(fmt.Sprintf("%s:%d", ip, port)); err == nil {
 			return actualPort, nil
 		}
 	}
-	return 0, err
+	return 0, fmt.Errorf("unable to find port in range %d:%d", lowestPort, highestPort)
 }
 
 func ReserveTCPAddr(address string) (uint32, error) {

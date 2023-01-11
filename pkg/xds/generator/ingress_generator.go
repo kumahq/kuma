@@ -178,7 +178,6 @@ func (i IngressGenerator) generateCDS(
 	apiVersion core_xds.APIVersion,
 ) ([]*core_xds.Resource, error) {
 	var resources []*core_xds.Resource
-	var err error
 	for _, service := range services {
 		tagSlice := tags.TagsSlice(append(destinationsPerService[service], destinationsPerService[mesh_proto.MatchAllTag]...))
 		tagKeySlice := tagSlice.ToTagKeysSlice().Transform(tags.Without(mesh_proto.ServiceTag), tags.With("mesh"))
@@ -196,7 +195,7 @@ func (i IngressGenerator) generateCDS(
 			Resource: edsCluster,
 		})
 	}
-	return resources, err
+	return resources, nil
 }
 
 func (_ IngressGenerator) generateEDS(
@@ -205,7 +204,6 @@ func (_ IngressGenerator) generateEDS(
 	apiVersion core_xds.APIVersion,
 ) ([]*core_xds.Resource, error) {
 	var resources []*core_xds.Resource
-	var err error
 	for _, service := range services {
 		endpoints := proxy.Routing.OutboundTargets[service]
 		cla, err := envoy_endpoints.CreateClusterLoadAssignment(service, endpoints, apiVersion)
@@ -218,5 +216,5 @@ func (_ IngressGenerator) generateEDS(
 			Resource: cla,
 		})
 	}
-	return resources, err
+	return resources, nil
 }

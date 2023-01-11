@@ -108,12 +108,10 @@ func k8sService(ctx context.Context, serviceTag string, client kube_client.Reade
 }
 
 func parseService(host string) (string, string, uint32, error) {
-	var name string
-	var namespace string
-	var port uint32
-	var err error
 	// split host into <name>_<namespace>_svc_<port>
 	segments := strings.Split(host, "_")
+
+	var port uint32
 	switch len(segments) {
 	case 4:
 		p, err := strconv.ParseInt(segments[3], 10, 32)
@@ -129,6 +127,6 @@ func parseService(host string) (string, string, uint32, error) {
 		return "", "", 0, errors.Errorf("service tag in unexpected format")
 	}
 
-	name, namespace = segments[0], segments[1]
-	return name, namespace, port, err
+	name, namespace := segments[0], segments[1]
+	return name, namespace, port, nil
 }

@@ -872,11 +872,12 @@ func (c *K8sCluster) closePortForwards(name string) {
 }
 
 func (c *K8sCluster) deleteCRDs() error {
-	var errs error
 	stdout, err := k8s.RunKubectlAndGetOutputE(c.GetTesting(), c.GetKubectlOptions(), "get", "crds", "-o", "yaml")
 	if err != nil {
 		return err
 	}
+
+	var errs error
 	if tmpfile, err := os.CreateTemp("", "crds.yaml"); err != nil {
 		errs = multierr.Append(errs, err)
 	} else {
@@ -894,7 +895,6 @@ func (c *K8sCluster) deleteCRDs() error {
 }
 
 func (c *K8sCluster) deleteKumaViaHelm() error {
-	var errs error
 	if c.opts.helmReleaseName == "" {
 		return errors.New("must supply a helm release name for cleanup")
 	}
@@ -903,6 +903,7 @@ func (c *K8sCluster) deleteKumaViaHelm() error {
 		KubectlOptions: c.GetKubectlOptions(Config.KumaNamespace),
 	}
 
+	var errs error
 	if err := helm.DeleteE(c.t, helmOpts, c.opts.helmReleaseName, true); err != nil {
 		errs = multierr.Append(errs, err)
 	}

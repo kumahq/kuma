@@ -9,9 +9,8 @@ import (
 )
 
 func ensureDataplaneTokenSigningKey(ctx context.Context, resManager manager.ResourceManager, meshName string) (bool, error) {
-	var err error
 	signingKeyManager := tokens.NewMeshedSigningKeyManager(resManager, issuer.DataplaneTokenSigningKeyPrefix(meshName), meshName)
-	_, _, err = signingKeyManager.GetLatestSigningKey(ctx)
+	_, _, err := signingKeyManager.GetLatestSigningKey(ctx)
 	if err == nil {
 		return false, nil
 	}

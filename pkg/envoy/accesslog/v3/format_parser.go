@@ -136,7 +136,6 @@ func (p formatParser) parseCommandOperator(token, command, args, limit string) (
 }
 
 func (p formatParser) parseHeaderOperator(token, command, args, limit string) (string, string, int, error) {
-	var altHeader string
 	if p.hasNoArguments(token, command, args, limit) {
 		return "", "", 0, errors.Errorf(`command %q requires a header and optional alternative header names as its arguments, instead got %q`, CommandOperatorDescriptor(command), token)
 	}
@@ -147,6 +146,7 @@ func (p formatParser) parseHeaderOperator(token, command, args, limit string) (s
 	if len(altHeaders) > 1 {
 		return "", "", 0, errors.Errorf("more than 1 alternative header specified in %q", token)
 	}
+	var altHeader string
 	if len(altHeaders) > 0 {
 		altHeader = altHeaders[0]
 	}
@@ -197,23 +197,23 @@ func (p formatParser) parseFieldOperator(token, command string) (string, error) 
 }
 
 func (p formatParser) parseOperator(token, args, limit string, separator string) (string, []string, int, error) {
-	var firstArg string
-	var otherArgs []string
 	var maxLen int
-	var err error
 	if limit != "" {
+		var err error
 		maxLen, err = strconv.Atoi(limit)
 		if err != nil {
 			return "", nil, 0, errors.Errorf("length must be an integer, instead got %q in %q", limit, token)
 		}
 	}
+	var firstArg string
+	var otherArgs []string
 	if separator != "" {
 		allArgs := strings.Split(args, separator)
 		firstArg, otherArgs = allArgs[0], allArgs[1:]
 	} else {
 		firstArg = args
 	}
-	return firstArg, otherArgs, maxLen, err
+	return firstArg, otherArgs, maxLen, nil
 }
 
 func (p formatParser) hasNoArguments(token, command, args, limit string) bool {
