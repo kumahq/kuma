@@ -67,10 +67,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 										},
 									}},
 									Default: api.RuleConf{
-										BackendRefs: &[]api.BackendRef{{
-											TargetRef: builders.TargetRefService("backend"),
-											Weight:    100,
-										}},
+										Filters: &[]api.Filter{{}},
 									},
 								}},
 							}},
@@ -92,7 +89,19 @@ var _ = Describe("MeshHTTPRoute", func() {
 									}},
 									Default: api.RuleConf{
 										BackendRefs: &[]api.BackendRef{{
-											TargetRef: builders.TargetRefService("backend"),
+											TargetRef: builders.TargetRefServiceSubset("backend", "version", "v1"),
+											Weight:    100,
+										}},
+									},
+								}, {
+									Matches: []api.Match{{
+										Path: api.PathMatch{
+											Prefix: "/v2",
+										},
+									}},
+									Default: api.RuleConf{
+										BackendRefs: &[]api.BackendRef{{
+											TargetRef: builders.TargetRefServiceSubset("backend", "version", "v2"),
 											Weight:    100,
 										}},
 									},
@@ -108,34 +117,32 @@ var _ = Describe("MeshHTTPRoute", func() {
 				{
 					Subset: core_xds.MeshService("backend"),
 					Conf: api.PolicyDefault{
-						AppendRules: []api.Rule{
-							{
-								Matches: []api.Match{{
-									Path: api.PathMatch{
-										Prefix: "/v1",
-									},
-								}},
-								Default: api.RuleConf{
-									BackendRefs: &[]api.BackendRef{{
-										TargetRef: builders.TargetRefService("backend"),
-										Weight:    100,
-									}},
+						AppendRules: []api.Rule{{
+							Matches: []api.Match{{
+								Path: api.PathMatch{
+									Prefix: "/v1",
 								},
-							},
-							{
-								Matches: []api.Match{{
-									Path: api.PathMatch{
-										Prefix: "/v1",
-									},
+							}},
+							Default: api.RuleConf{
+								Filters: &[]api.Filter{{}},
+								BackendRefs: &[]api.BackendRef{{
+									TargetRef: builders.TargetRefServiceSubset("backend", "version", "v1"),
+									Weight:    100,
 								}},
-								Default: api.RuleConf{
-									BackendRefs: &[]api.BackendRef{{
-										TargetRef: builders.TargetRefService("backend"),
-										Weight:    100,
-									}},
-								},
 							},
-						},
+						}, {
+							Matches: []api.Match{{
+								Path: api.PathMatch{
+									Prefix: "/v2",
+								},
+							}},
+							Default: api.RuleConf{
+								BackendRefs: &[]api.BackendRef{{
+									TargetRef: builders.TargetRefServiceSubset("backend", "version", "v2"),
+									Weight:    100,
+								}},
+							},
+						}},
 					},
 					Origin: []core_model.ResourceMeta{
 						&test_model.ResourceMeta{
