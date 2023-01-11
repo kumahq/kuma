@@ -63,16 +63,16 @@ func (v *ValidationError) AddErrorAt(path PathBuilder, validationErr ValidationE
 }
 
 func (v *ValidationError) AddError(rootField string, validationErr ValidationError) {
-	rootPrefix := ""
-	if rootField != "" {
-		rootPrefix += fmt.Sprintf("%s.", rootField)
-	}
 	for _, violation := range validationErr.Violations {
 		field := ""
 		if violation.Field == "" {
 			field = rootField
 		} else {
-			field = fmt.Sprintf("%s%s", rootPrefix, violation.Field)
+			sep := ""
+			if rootField != "" && !strings.HasPrefix(violation.Field, "[") {
+				sep = "."
+			}
+			field = fmt.Sprintf("%s%s%s", rootField, sep, violation.Field)
 		}
 		newViolation := Violation{
 			Field:   field,
