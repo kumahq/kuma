@@ -26,6 +26,7 @@ type PolicyConfig struct {
 	AlternativeNames    []string
 	HasTo               bool
 	HasFrom             bool
+	GoModule            string
 }
 
 func Policy(path string) (PolicyConfig, error) {
