@@ -32,6 +32,7 @@ commands:
           sudo update-alternatives --set iptables /usr/sbin/iptables-legacy
           sudo update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
           sudo systemctl restart docker
+          sleep 60
     - run:
         # It's necessary in Ubuntu 22.04 as without setting it, our tests which
         # need to ssh into docker containers are failing
