@@ -2214,10 +2214,8 @@ spec:
     metadata:
       annotations:
         kuma.io/ingress: enabled
-      labels: 
+      labels:
         app: kuma-ingress
-        app.kubernetes.io/name: kuma
-        app.kubernetes.io/instance: kuma
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
     spec:
