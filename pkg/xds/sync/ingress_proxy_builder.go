@@ -142,15 +142,16 @@ func (p *IngressProxyBuilder) updateIngress(ctx context.Context, zoneIngress *co
 
 func (p *IngressProxyBuilder) getIngressExternalServices(ctx context.Context) (*core_mesh.ExternalServiceResourceList, error) {
 	meshList := &core_mesh.MeshResourceList{}
-	if err := p.ReadOnlyResManager.List(ctx, meshList, core_store.ListOrdered(), core_store.ListByFilterFunc(func(rs core_model.Resource) bool {
-		return rs.(*core_mesh.MeshResource).ZoneEgressEnabled()
-	})); err != nil {
+	if err := p.ReadOnlyResManager.List(ctx, meshList, core_store.ListOrdered()); err != nil {
 		return nil, err
 	}
 
 	allMeshExternalServices := &core_mesh.ExternalServiceResourceList{}
 	var externalServices []*core_mesh.ExternalServiceResource
-	for _, mesh := range meshList.GetItems() {
+	for _, mesh := range meshList.Items {
+		if !mesh.ZoneEgressEnabled() {
+			continue
+		}
 		meshName := mesh.GetMeta().GetName()
 
 		meshCtx, err := p.meshCache.GetMeshContext(ctx, syncLog, meshName)

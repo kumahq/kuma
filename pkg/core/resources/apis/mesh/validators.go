@@ -180,9 +180,9 @@ const dnsLabel = `[a-z0-9]([-a-z0-9]*[a-z0-9])?`
 var domainRegexp = regexp.MustCompile("^" + dnsLabel + "(\\." + dnsLabel + ")*" + "$")
 
 // ValidateHostname validates a gateway hostname field. A hostname may be one of
-//	- '*'
-//	- '*.domain.name'
-//	- 'domain.name'
+//   - '*'
+//   - '*.domain.name'
+//   - 'domain.name'
 func ValidateHostname(path validators.PathBuilder, hostname string) validators.ValidationError {
 	if hostname == "*" {
 		return validators.ValidationError{}

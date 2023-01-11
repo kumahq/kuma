@@ -3,10 +3,11 @@ version: 2.1 # Adds support for executors, parameterized jobs, etc
 reusable:
 
   constants:
-    - &go_version "1.17.3"
+    - &go_version "1.18.9"
 
   docker_images:
-    - &golang_image "circleci/golang:1.17.3"
+    - &golang_image "golang:1.18.9"
+    - &circleci_golang_image "cimg/go:1.18.9"
 
   vm_images:
     - &ubuntu_vm_image "ubuntu-2004:202111-01"
@@ -62,6 +63,9 @@ commands:
         command: |
           curl -s --fail --location https://dl.google.com/go/go<<parameters.go_version>>.<<parameters.go_os>>-<<parameters.go_arch>>.tar.gz | tar -xz -C $HOME
           echo 'export PATH=$HOME/go/bin:$PATH' >> $BASH_ENV
+          # if GOPATH is not set, `golang-ci` fails with an obscure message
+          # "ERRO Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
+          echo 'export GOPATH=$HOME/go' >> $BASH_ENV
     - run:
         name: "Update runc"
         # See https://github.com/rancher/k3d/issues/807 (runc's default version on the instance fails k3d)
@@ -80,6 +84,13 @@ executors:
       GO_VERSION: *go_version
       GO111MODULE: "on"
     working_directory: /go/src/github.com/kumahq/kuma
+
+  remote-docker:
+    docker:
+    - image: *circleci_golang_image
+    environment:
+      GO_VERSION: *go_version
+      GO111MODULE: "on"
 
   vm:
     resource_class: large
@@ -175,11 +186,11 @@ jobs:
         # prefer the exact match
         - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
     - run:
+        name: "Install check tools (clang-format, ...)"
+        command: apt update && apt install -y clang-format unzip xz-utils
+    - run:
         name: "Install all development tools"
         command: make dev/tools
-    - run:
-        name: "Install check tools (clang-format, ...)"
-        command: sudo apt install -y clang-format
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: make check
@@ -328,18 +339,17 @@ jobs:
                 path: /tmp/ginkgo-test-results
 
   build:
-    executor: golang
+    executor: vm
     steps:
+    - install_build_tools
     - checkout
     - restore_cache:
         keys:
         # prefer the exact match
-        - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+        - vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
     - run:
         name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp, kuma-prometheus-sd)
         command: make build
-    - setup_remote_docker:
-        version: 20.10.14
     - run:
         name: Build Docker images
         command: |

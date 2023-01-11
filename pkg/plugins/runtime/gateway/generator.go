@@ -364,15 +364,15 @@ func MakeGatewayListener(
 //
 // This process is necessary because:
 //
-// 1. We might have a listener with hostname A and some routes, but also
-//    a wildcard listener with routes for hostname A. We want all the routes
-//    for hostname A in the same virtual host.
-// 2. Routes with hostnames that are attached to a wildcard listener
-//    should implicitly create virtual hosts so that we can generate a
-//    consistent config. For example, if a wildcard listener has a route for
-//    hostname A and a route for hostname B, that doesn't mean that the routes
-//    are for hostnames A or B. We still want the routes to match the hostname
-//    that they were specified with.
+//  1. We might have a listener with hostname A and some routes, but also
+//     a wildcard listener with routes for hostname A. We want all the routes
+//     for hostname A in the same virtual host.
+//  2. Routes with hostnames that are attached to a wildcard listener
+//     should implicitly create virtual hosts so that we can generate a
+//     consistent config. For example, if a wildcard listener has a route for
+//     hostname A and a route for hostname B, that doesn't mean that the routes
+//     are for hostnames A or B. We still want the routes to match the hostname
+//     that they were specified with.
 func RedistributeWildcardRoutes(
 	hosts []GatewayHost,
 ) []GatewayHost {
