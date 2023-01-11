@@ -199,4 +199,79 @@ var _ = Describe("MergeConfs", func() {
 			},
 		}),
 	)
+
+	type mergeKey struct {
+		Left  bool
+		Right bool
+	}
+	type mergeConf struct {
+		A *bool `json:"a,omitempty"`
+		B *bool `json:"b,omitempty"`
+	}
+	type mergeEntry struct {
+		Key     mergeKey  `json:"key" xdsMerge:"mergeKey"`
+		Default mergeConf `json:"default"`
+	}
+	type nonMergeEntry struct {
+		Key     mergeKey  `json:"key"`
+		Default mergeConf `json:"default"`
+	}
+	type testPolicy struct {
+		MergeValues []mergeEntry     `xdsMerge:"mergeValuesByKey"`
+		OtherValues *[]nonMergeEntry `json:"otherValues,omitempty"`
+	}
+
+	type mergeValuesByKeyCase struct {
+		policies []testPolicy
+		expected testPolicy
+	}
+
+	t := true
+	DescribeTable("mergeValuesByKey",
+		func(given mergeValuesByKeyCase) {
+			var givens []interface{}
+			for _, p := range given.policies {
+				givens = append(givens, p)
+			}
+
+			merged, err := xds.MergeConfs(givens)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(merged).To(Equal(given.expected))
+		},
+		Entry("should work with a basic policy", mergeValuesByKeyCase{
+			policies: []testPolicy{{
+				MergeValues: []mergeEntry{{
+					Key: mergeKey{Left: true}, Default: mergeConf{A: &t},
+				}, {
+					Key: mergeKey{Left: true}, Default: mergeConf{B: &t},
+				}},
+				OtherValues: &[]nonMergeEntry{{
+					Key: mergeKey{Left: true}, Default: mergeConf{A: &t},
+				}, {
+					Key: mergeKey{Left: true}, Default: mergeConf{B: &t},
+				}, {
+					Key: mergeKey{Right: true}, Default: mergeConf{B: &t},
+				}},
+			}, {
+				MergeValues: []mergeEntry{{
+					Key: mergeKey{Right: true}, Default: mergeConf{B: &t},
+				}},
+			}},
+			expected: testPolicy{
+				MergeValues: []mergeEntry{{
+					Key: mergeKey{Left: true}, Default: mergeConf{A: &t, B: &t},
+				}, {
+					Key: mergeKey{Right: true}, Default: mergeConf{B: &t},
+				}},
+				OtherValues: &[]nonMergeEntry{{
+					Key: mergeKey{Left: true}, Default: mergeConf{A: &t},
+				}, {
+					Key: mergeKey{Left: true}, Default: mergeConf{B: &t},
+				}, {
+					Key: mergeKey{Right: true}, Default: mergeConf{B: &t},
+				}},
+			},
+		}),
+	)
+
 })
