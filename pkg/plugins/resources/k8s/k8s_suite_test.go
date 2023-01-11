@@ -32,7 +32,6 @@ import (
 
 	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
-
 	// +kubebuilder:scaffold:imports
 	sample_v1alpha1 "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/test/api/sample/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test"

@@ -30,7 +30,7 @@ func makeHostname(name string) hostname {
 // any of the given matches. All the hostnames are assumed to be fully
 // qualified (e.g. "foo.example.com") or wildcards (e.g. "*.example.com).
 //
-// Two hostnames match if
+// # Two hostnames match if
 //
 // 1. They are exactly equal, OR
 // 2. One of them is a domain wildcard and the domain part matches.
