@@ -9,8 +9,9 @@ import (
 	"log"
 	"os"
 	"sort"
-	"strings"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
@@ -341,7 +342,8 @@ func SelectorsForMessage(m protoreflect.MessageDescriptor) []string {
 		m := field.Message()
 		if m != nil && m.FullName() == "kuma.mesh.v1alpha1.Selector" {
 			fieldName := string(field.Name())
-			selectors = append(selectors, strings.Title(fieldName))
+			caser := cases.Title(language.English)
+			selectors = append(selectors, caser.String(fieldName))
 		}
 	}
 
