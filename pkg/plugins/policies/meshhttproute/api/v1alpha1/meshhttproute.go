@@ -58,5 +58,6 @@ type Filter struct {
 
 type BackendRef struct {
 	common_api.TargetRef `json:",omitempty"`
-	Weight               int `json:"weight,omitempty"`
+	// +kubebuilder:validation:Minimum=0
+	Weight uint `json:"weight,omitempty"`
 }
