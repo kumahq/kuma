@@ -211,7 +211,7 @@ var _ = Describe("Cached Resource Manager", func() {
 
 		// then first request does not block request for other type
 		Expect(err).ToNot(HaveOccurred())
-		<- done
+		<-done
 	}))
 
 	It("should cache List() at different key when ordered", test.Within(5*time.Second, func() {
