@@ -16,12 +16,14 @@ import (
 
 //go:embed schema.yaml
 var rawSchema []byte
-var schema = spec.Schema{}
 
 func init() {
+	var schema spec.Schema
 	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
 		panic(err)
 	}
+	rawSchema = nil
+	MeshCircuitBreakerResourceTypeDescriptor.Schema = &schema
 }
 
 const (
@@ -130,5 +132,4 @@ var MeshCircuitBreakerResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Mesh Circuit Breaker",
 	PluralDisplayName:   "Mesh Circuit Breakers",
 	IsPluginOriginated:  true,
-	Schema:              &schema,
 }

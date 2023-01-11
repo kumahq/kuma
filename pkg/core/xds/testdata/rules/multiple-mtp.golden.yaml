@@ -8,13 +8,35 @@ Rules:
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-1
       type: MeshTrafficPermission
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-2
+      type: MeshTrafficPermission
+    Subset:
+    - Key: env
+      Not: false
+      Value: prod
+    - Key: zone
+      Not: false
+      Value: us-east
+  - Conf:
+      action: ALLOW
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-1
+      type: MeshTrafficPermission
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-2
+      type: MeshTrafficPermission
     Subset:
     - Key: env
       Not: false
       Value: dev
-    - Key: version
-      Not: false
-      Value: v1
     - Key: zone
       Not: false
       Value: us-east
@@ -26,13 +48,18 @@ Rules:
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-1
       type: MeshTrafficPermission
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-2
+      type: MeshTrafficPermission
     Subset:
     - Key: env
       Not: true
       Value: dev
-    - Key: version
-      Not: false
-      Value: v1
+    - Key: env
+      Not: true
+      Value: prod
     - Key: zone
       Not: false
       Value: us-east
@@ -44,15 +71,17 @@ Rules:
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-1
       type: MeshTrafficPermission
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mtp-2
+      type: MeshTrafficPermission
     Subset:
     - Key: env
       Not: false
-      Value: dev
-    - Key: version
-      Not: true
-      Value: v1
+      Value: prod
     - Key: zone
-      Not: false
+      Not: true
       Value: us-east
   - Conf:
       action: ALLOW
@@ -62,49 +91,15 @@ Rules:
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp-1
       type: MeshTrafficPermission
-    Subset:
-    - Key: env
-      Not: false
-      Value: dev
-    - Key: version
-      Not: false
-      Value: v1
-    - Key: zone
-      Not: true
-      Value: us-east
-  - Conf:
-      action: DENY
-    Origin:
     - creationTime: "0001-01-01T00:00:00Z"
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-1
+      name: mtp-2
       type: MeshTrafficPermission
     Subset:
     - Key: env
-      Not: true
-      Value: dev
-    - Key: version
-      Not: true
-      Value: v1
-    - Key: zone
       Not: false
-      Value: us-east
-  - Conf:
-      action: ALLOW
-    Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: mesh-1
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp-1
-      type: MeshTrafficPermission
-    Subset:
-    - Key: env
-      Not: true
       Value: dev
-    - Key: version
-      Not: false
-      Value: v1
     - Key: zone
       Not: true
       Value: us-east
@@ -118,11 +113,11 @@ Rules:
       type: MeshTrafficPermission
     Subset:
     - Key: env
-      Not: false
-      Value: dev
-    - Key: version
       Not: true
-      Value: v1
+      Value: dev
+    - Key: env
+      Not: true
+      Value: prod
     - Key: zone
       Not: true
       Value: us-east

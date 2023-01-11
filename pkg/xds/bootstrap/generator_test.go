@@ -43,15 +43,14 @@ var _ = Describe("bootstrapGenerator", func() {
 
 	var resManager core_manager.ResourceManager
 
-	core.TempDir = func() string {
-		return "/tmp"
-	}
-
 	BeforeEach(func() {
 		resManager = core_manager.NewResourceManager(memory.NewStore())
 		core.Now = func() time.Time {
 			now, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 			return now
+		}
+		core.TempDir = func() string {
+			return "/tmp"
 		}
 	})
 
