@@ -1510,8 +1510,8 @@ spec:
                   description: "Condition contains details for one aspect of the current
                     state of this API Resource. --- This struct is intended for direct
                     use as an array at the field path .status.conditions.  For example,
-                    type FooStatus struct{ // Represents the observations of a foo's
-                    current state. // Known .status.conditions.type are: \"Available\",
+                    \n type FooStatus struct{ // Represents the observations of a
+                    foo's current state. // Known .status.conditions.type are: \"Available\",
                     \"Progressing\", and \"Degraded\" // +patchMergeKey=type // +patchStrategy=merge
                     // +listType=map // +listMapKey=type Conditions []metav1.Condition
                     `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\"
@@ -2245,10 +2245,8 @@ spec:
     metadata:
       annotations:
         kuma.io/egress: enabled
-      labels: 
+      labels:
         app: kuma-egress
-        app.kubernetes.io/name: kuma
-        app.kubernetes.io/instance: kuma
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
     spec:
@@ -2364,10 +2362,8 @@ spec:
     metadata:
       annotations:
         kuma.io/ingress: enabled
-      labels: 
+      labels:
         app: kuma-ingress
-        app.kubernetes.io/name: kuma
-        app.kubernetes.io/instance: kuma
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
     spec:
