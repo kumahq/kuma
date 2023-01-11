@@ -213,8 +213,6 @@ var _ = Describe("Cached Resource Manager", func() {
 		Expect(err).ToNot(HaveOccurred())
 		<-done
 	}))
-<<<<<<< HEAD
-=======
 
 	It("should cache List() at different key when ordered", test.Within(5*time.Second, func() {
 		// when fetched resources multiple times
@@ -264,5 +262,4 @@ var _ = Describe("Cached Resource Manager", func() {
 		}
 		Expect(hits + hitWaits).To(Equal(100.0))
 	}))
->>>>>>> 31ae2bdde (test(kuma-cp): fix wait for goroutine to be done (#5638))
 })
