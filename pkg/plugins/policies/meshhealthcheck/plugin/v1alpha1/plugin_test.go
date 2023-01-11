@@ -260,13 +260,6 @@ healthChecks:
   grpcHealthCheck:
     authority: grpc-client.default.svc.cluster.local
     serviceName: grpc-client
-- healthyThreshold: 1
-  interval: 10s
-  timeout: 2s
-  unhealthyThreshold: 3
-  grpcHealthCheck:
-    authority: grpc-client.default.svc.cluster.local
-    serviceName: grpc-client
 `},
 		}),
 	)
