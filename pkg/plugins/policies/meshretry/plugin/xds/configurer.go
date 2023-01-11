@@ -194,13 +194,11 @@ func splitRetryOn(conf *[]api.HTTPRetryOn) (string, []uint32, []string) {
 		case err == nil && http.StatusText(int(statusCode)) != "":
 			retriableStatusCodes = append(retriableStatusCodes, uint32(statusCode))
 		case strings.HasPrefix(key, string(api.HTTP_METHOD_PREFIX)):
-			method := strings.TrimPrefix(key, string(api.HTTP_METHOD_PREFIX))
-			retriableMethods = append(retriableMethods, method)
+			retriableMethods = append(retriableMethods, api.HttpRetryOnEnumToEnvoyValue[item])
 		default:
-			// As `retryOn` is an enum value, and as in protobuf we can't use
-			// hyphens we are using underscores instead, but as envoy expect
-			// values with hyphens it's being changed here
-			retryOn = append(retryOn, strings.ReplaceAll(string(item), "_", "-"))
+			// As `retryOn` is an enum value, and we use Kubernetes PascalCase convention but Envoy is using hyphens,
+			// so we need to convert it
+			retryOn = append(retryOn, api.HttpRetryOnEnumToEnvoyValue[item])
 		}
 	}
 	return strings.Join(retryOn, ","), retriableStatusCodes, retriableMethods
@@ -213,10 +211,9 @@ func GrpcRetryOn(conf *[]api.GRPCRetryOn) string {
 	var retryOn []string
 
 	for _, item := range *conf {
-		// As `retryOn` is an enum value, and as in protobuf we can't use
-		// hyphens we are using underscores instead, but as envoy expect
-		// values with hyphens it's being changed here
-		retryOn = append(retryOn, strings.ReplaceAll(string(item), "_", "-"))
+		// As `retryOn` is an enum value, and we use Kubernetes PascalCase convention but Envoy is using hyphens,
+		// so we need to convert it
+		retryOn = append(retryOn, api.GrpcRetryOnEnumToEnvoyValue[item])
 	}
 
 	return strings.Join(retryOn, ",")

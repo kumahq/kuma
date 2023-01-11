@@ -28,7 +28,7 @@ filterChains:
             retryBackOff:
               baseInterval: 13s
               maxInterval: 14s
-            retryOn: CANCELED,RESOURCE-EXHAUSTED
+            retryOn: canceled,deadline-exceeded,internal,resource-exhausted,unavailable
           routes:
           - match:
               prefix: /

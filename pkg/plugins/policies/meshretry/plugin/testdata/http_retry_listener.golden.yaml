@@ -37,7 +37,31 @@ filterChains:
             retriableRequestHeaders:
             - name: :method
               stringMatch:
+                exact: CONNECT
+            - name: :method
+              stringMatch:
+                exact: DELETE
+            - name: :method
+              stringMatch:
                 exact: GET
+            - name: :method
+              stringMatch:
+                exact: HEAD
+            - name: :method
+              stringMatch:
+                exact: OPTIONS
+            - name: :method
+              stringMatch:
+                exact: PATCH
+            - name: :method
+              stringMatch:
+                exact: POST
+            - name: :method
+              stringMatch:
+                exact: PUT
+            - name: :method
+              stringMatch:
+                exact: TRACE
             - name: x-retry-prefix
               stringMatch:
                 prefix: prefix-
@@ -46,7 +70,7 @@ filterChains:
             retryBackOff:
               baseInterval: 3s
               maxInterval: 4s
-            retryOn: 5XX,CONNECT-FAILURE,retriable-status-codes
+            retryOn: 5xx,gateway-error,reset,retriable-4xx,connect-failure,envoy-ratelimited,refused-stream,http3-post-connect-failure,retriable-status-codes
           routes:
           - match:
               prefix: /
