@@ -108,6 +108,7 @@ spec:
                                         `MeshSubset` and `MeshServiceSubset`
                                       type: object
                                     weight:
+                                      minimum: 0
                                       type: integer
                                   type: object
                                 type: array
