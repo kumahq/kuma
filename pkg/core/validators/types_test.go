@@ -99,6 +99,25 @@ var _ = Describe("Validation Error", func() {
 		})
 	})
 
+	Describe("AddErrorAt()", func() {
+		It("does not properly concatenate paths with index/keys", func() {
+			// given
+			path := validators.RootedAt("spec").Field("fields")
+			err := validators.ValidationError{}
+			subErr := validators.ValidationError{}
+			subErr.AddViolationAt(validators.PathBuilder{}.Index(2), "something bad")
+
+			// when
+			err.AddErrorAt(path, subErr)
+			// then
+			Expect(err).To(Equal(validators.ValidationError{
+				Violations: []validators.Violation{
+					{Field: "spec.fields.[2]", Message: "something bad"},
+				},
+			}))
+		})
+	})
+
 	Describe("Transform()", func() {
 		type testCase struct {
 			input         *validators.ValidationError
