@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/generator"
@@ -40,7 +41,11 @@ func generateListeners(
 			Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(outbound.GetTagsIncludingLegacy()).WithoutTags(mesh_proto.MeshTag)))
 
 		filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
-			Configure(envoy_listeners.HttpConnectionManager(serviceName, false))
+			Configure(envoy_listeners.AddFilterChainConfigurer(&envoy_listeners_v3.HttpConnectionManagerConfigurer{
+				StatsName:                serviceName,
+				ForwardClientCertDetails: false,
+				NormalizePath:            true,
+			}))
 
 		var routes []xds.OutboundRoute
 		for _, route := range FindRoutes(rules, serviceName) {
