@@ -58,6 +58,7 @@ const (
 )
 
 type PathMatch struct {
+	// +kubebuilder:validation:MinLength=1
 	Value string        `json:"value"`
 	Type  PathMatchType `json:"type"`
 }

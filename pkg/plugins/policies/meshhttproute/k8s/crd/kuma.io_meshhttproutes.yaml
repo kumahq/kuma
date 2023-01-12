@@ -141,6 +141,7 @@ spec:
                                       - RegularExpression
                                       type: string
                                     value:
+                                      minLength: 1
                                       type: string
                                   required:
                                   - type

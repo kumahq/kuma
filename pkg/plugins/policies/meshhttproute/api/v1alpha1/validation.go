@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"strings"
+
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
@@ -69,7 +71,34 @@ func validateMatches(matches []Match) validators.ValidationError {
 }
 
 func validatePath(match *PathMatch) validators.ValidationError {
-	return validators.ValidationError{}
+	var errs validators.ValidationError
+
+	if match == nil {
+		return errs
+	}
+
+	valuePath := validators.RootedAt("value")
+
+	switch match.Type {
+	case RegularExpression:
+		break
+	case Prefix:
+		if match.Value == "/" {
+			break
+		}
+		if strings.HasSuffix(match.Value, "/") {
+			errs.AddViolationAt(valuePath, "does not need a trailing slash because only a `/`-separated prefix or an entire path is matched")
+		}
+		if !strings.HasPrefix(match.Value, "/") {
+			errs.AddViolationAt(valuePath, "must be an absolute path")
+		}
+	case Exact:
+		if !strings.HasPrefix(match.Value, "/") {
+			errs.AddViolationAt(valuePath, "must be an absolute path")
+		}
+	}
+
+	return errs
 }
 
 func validateMethod(match *Method) validators.ValidationError {
