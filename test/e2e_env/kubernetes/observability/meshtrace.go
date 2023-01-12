@@ -6,10 +6,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
 	obs "github.com/kumahq/kuma/test/framework/deployments/observability"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
 func traceAllK8s(meshName string, url string) string {
@@ -48,27 +48,27 @@ func PluginTest() {
 			Install(DemoClientK8s(mesh, ns)).
 			Install(testserver.Install(testserver.WithMesh(mesh), testserver.WithNamespace(ns))).
 			Install(obs.Install(obsDeployment, obs.WithNamespace(obsNs), obs.WithComponents(obs.JaegerComponent))).
-			Setup(env.Cluster)
-		obsClient = obs.From(obsDeployment, env.Cluster)
+			Setup(kubernetes.Cluster)
+		obsClient = obs.From(obsDeployment, kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 	E2EAfterAll(func() {
-		Expect(env.Cluster.TriggerDeleteNamespace(ns)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(mesh)).To(Succeed())
-		Expect(env.Cluster.DeleteDeployment(obsDeployment)).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(ns)).To(Succeed())
+		Expect(kubernetes.Cluster.DeleteMesh(mesh)).To(Succeed())
+		Expect(kubernetes.Cluster.DeleteDeployment(obsDeployment)).To(Succeed())
 	})
 
 	It("should emit traces to jaeger", func() {
 		// given MeshTrace and with tracing backend
-		err := YamlK8s(traceAllK8s(mesh, obsClient.ZipkinCollectorURL()))(env.Cluster)
+		err := YamlK8s(traceAllK8s(mesh, obsClient.ZipkinCollectorURL()))(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when client sends requests to server
-		clientPod, err := PodNameOfApp(env.Cluster, "demo-client", ns)
+		clientPod, err := PodNameOfApp(kubernetes.Cluster, "demo-client", ns)
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func(g Gomega) {
-			_, _, err := env.Cluster.Exec(ns, clientPod, "demo-client",
+			_, _, err := kubernetes.Cluster.Exec(ns, clientPod, "demo-client",
 				"curl", "-v", "-m", "3", "--fail", "test-server")
 			g.Expect(err).ToNot(HaveOccurred())
 			srvs, err := obsClient.TracedServices()

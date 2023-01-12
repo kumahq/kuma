@@ -5,8 +5,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
 func Eviction() {
@@ -17,13 +17,13 @@ func Eviction() {
 		err := NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(nsName)).
 			Install(MeshKubernetes(meshName)).
-			Setup(env.Cluster)
+			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cluster.TriggerDeleteNamespace(nsName)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(nsName)).To(Succeed())
+		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("remove Dataplane of evicted Pod", func() {
@@ -51,18 +51,18 @@ spec:
         memory: 64Mi`
 
 		// when faulty pod is applied
-		Expect(env.Cluster.Install(YamlK8s(evictionPod))).To(Succeed())
+		Expect(kubernetes.Cluster.Install(YamlK8s(evictionPod))).To(Succeed())
 
 		// when it's evicted
 		Eventually(func(g Gomega) {
-			out, err := k8s.RunKubectlAndGetOutputE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(nsName), "get", "pods")
+			out, err := k8s.RunKubectlAndGetOutputE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(nsName), "get", "pods")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(out).To(ContainSubstring("Evicted"))
 		}, "60s", "1s").Should(Succeed())
 
 		// then Dataplane is removed
 		Eventually(func(g Gomega) {
-			dataplanes, err := env.Cluster.GetKumactlOptions().KumactlList("dataplanes", meshName)
+			dataplanes, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("dataplanes", meshName)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(dataplanes).ShouldNot(ContainElement(ContainSubstring("to-be-evicted")))
 		}, "60s", "1s").Should(Succeed())

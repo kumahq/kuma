@@ -6,8 +6,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func VirtualOutbound() {
@@ -19,13 +19,13 @@ func VirtualOutbound() {
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Install(TestServerUniversal("test-server1", meshName, WithArgs([]string{"echo", "--instance", "srv-1"}), WithServiceInstance("1"))).
 			Install(TestServerUniversal("test-server2", meshName, WithArgs([]string{"echo", "--instance", "srv-2"}), WithServiceInstance("2"))).
-			Setup(env.Cluster)
+			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should add hostnames for individual instances", func() {
@@ -45,7 +45,7 @@ conf:
       tagKey: "kuma.io/service"
     - name: "instance"
 `
-		err := YamlUniversal(virtualOutboundInstance)(env.Cluster)
+		err := YamlUniversal(virtualOutboundInstance)(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		virtualOutboundAll := `
@@ -62,14 +62,14 @@ conf:
     - name: "svc"
       tagKey: "kuma.io/service"
 `
-		err = YamlUniversal(virtualOutboundAll)(env.Cluster)
+		err = YamlUniversal(virtualOutboundAll)(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		time.Sleep(5 * time.Second)
 
 		// Check we can reach the first instance
 		Eventually(func(g Gomega) {
-			stdout, stderr, err := env.Cluster.Exec("", "", "demo-client",
+			stdout, stderr, err := universal.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "-m", "3", "--fail", "test-server.1:8080")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stderr).To(BeEmpty())
@@ -79,7 +79,7 @@ conf:
 
 		// Check we can reach the second instance
 		Eventually(func(g Gomega) {
-			stdout, stderr, err := env.Cluster.Exec("", "", "demo-client",
+			stdout, stderr, err := universal.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "-m", "3", "--fail", "test-server.2:8080")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stderr).To(BeEmpty())
@@ -88,7 +88,7 @@ conf:
 		}).Should(Succeed())
 
 		Eventually(func(g Gomega) {
-			stdout, stderr, err := env.Cluster.Exec("", "", "demo-client",
+			stdout, stderr, err := universal.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "-m", "3", "--fail", "test-server:8080")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stderr).To(BeEmpty())

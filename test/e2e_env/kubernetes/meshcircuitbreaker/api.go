@@ -8,8 +8,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
 func API() {
@@ -18,21 +18,21 @@ func API() {
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MeshKubernetes(meshName)).
-			Setup(env.Cluster)
+			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterEach(func() {
-		Expect(DeleteMeshResources(env.Cluster, meshName, v1alpha1.MeshCircuitBreakerResourceTypeDescriptor)).To(Succeed())
+		Expect(DeleteMeshResources(kubernetes.Cluster, meshName, v1alpha1.MeshCircuitBreakerResourceTypeDescriptor)).To(Succeed())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should create MeshCircuitBreaker policy", func() {
 		// given no MeshCircuitBreakers
-		mcb, err := env.Cluster.GetKumactlOptions().KumactlList("meshcircuitbreakers", meshName)
+		mcb, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("meshcircuitbreakers", meshName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(mcb).To(HaveLen(0))
 
@@ -85,10 +85,10 @@ spec:
               requestVolume: 10
               minimumHosts: 5
               threshold: 85
-`, Config.KumaNamespace))(env.Cluster)).To(Succeed())
+`, Config.KumaNamespace))(kubernetes.Cluster)).To(Succeed())
 
 		// then
-		mcb, err = env.Cluster.GetKumactlOptions().KumactlList("meshcircuitbreakers", meshName)
+		mcb, err = kubernetes.Cluster.GetKumactlOptions().KumactlList("meshcircuitbreakers", meshName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(mcb).To(HaveLen(1))
 		Expect(mcb[0]).To(Equal(fmt.Sprintf("mcb-api-1.%s", Config.KumaNamespace)))
@@ -96,14 +96,14 @@ spec:
 
 	It("should deny creating policy in the non-system namespace", func() {
 		// given no MeshCircuitBreakers
-		mcb, err := env.Cluster.GetKumactlOptions().KumactlList("meshcircuitbreakers", meshName)
+		mcb, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("meshcircuitbreakers", meshName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(mcb).To(HaveLen(0))
 
 		// when
 		err = k8s.KubectlApplyFromStringE(
-			env.Cluster.GetTesting(),
-			env.Cluster.GetKubectlOptions(), `
+			kubernetes.Cluster.GetTesting(),
+			kubernetes.Cluster.GetKubectlOptions(), `
 apiVersion: kuma.io/v1alpha1
 kind: MeshCircuitBreaker
 metadata:

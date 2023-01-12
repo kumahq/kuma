@@ -4,9 +4,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
 func ReachableServices() {
@@ -35,22 +35,22 @@ func ReachableServices() {
 				testserver.WithMesh(meshName),
 				testserver.WithNamespace(namespace),
 			)).
-			Setup(env.Cluster)
+			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		clientPodName, err = PodNameOfApp(env.Cluster, "client-server", namespace)
+		clientPodName, err = PodNameOfApp(kubernetes.Cluster, "client-server", namespace)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(meshName))
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(kubernetes.Cluster.DeleteMesh(meshName))
 	})
 
 	It("should be able to connect to reachable services", func() {
 		Eventually(func(g Gomega) {
 			// when
-			_, stderr, err := env.Cluster.Exec(namespace, clientPodName, "client-server",
+			_, stderr, err := kubernetes.Cluster.Exec(namespace, clientPodName, "client-server",
 				"curl", "-v", "-m", "3", "--fail", "first-test-server_reachable-svc_svc_80.mesh")
 
 			// then
@@ -62,7 +62,7 @@ func ReachableServices() {
 	It("should not connect to non reachable service", func() {
 		Consistently(func(g Gomega) {
 			// when trying to connect to non-reachable services via Kuma DNS
-			_, _, err := env.Cluster.Exec(namespace, clientPodName, "client-server",
+			_, _, err := kubernetes.Cluster.Exec(namespace, clientPodName, "client-server",
 				"curl", "-v", "second-test-server_reachable-svc_svc_80.mesh")
 
 			// then it fails because Kuma DP has no such DNS
@@ -71,7 +71,7 @@ func ReachableServices() {
 
 		Consistently(func(g Gomega) {
 			// when trying to connect to non-reachable service via Kubernetes DNS
-			_, _, err := env.Cluster.Exec(namespace, clientPodName, "client-server",
+			_, _, err := kubernetes.Cluster.Exec(namespace, clientPodName, "client-server",
 				"curl", "-v", "second-test-server")
 
 			// then it fails because we don't encrypt traffic to unknown destination in the mesh

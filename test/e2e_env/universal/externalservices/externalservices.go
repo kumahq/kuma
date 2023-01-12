@@ -14,8 +14,8 @@ import (
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func Policy() {
@@ -75,21 +75,21 @@ networking:
 			Install(TestServerExternalServiceUniversal("es-https", meshName, 443, true)).
 			Install(TestServerExternalServiceUniversal("es-http-2", meshName, 81, false)).
 			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
-			Setup(env.Cluster)
+			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
-		esHttpHostPort = net.JoinHostPort(env.Cluster.GetApp("es-http").GetContainerName(), "80")
-		esHttp2HostPort = net.JoinHostPort(env.Cluster.GetApp("es-http-2").GetContainerName(), "81")
-		esHttpsHostPort = net.JoinHostPort(env.Cluster.GetApp("es-https").GetContainerName(), "443")
+		esHttpHostPort = net.JoinHostPort(universal.Cluster.GetApp("es-http").GetContainerName(), "80")
+		esHttp2HostPort = net.JoinHostPort(universal.Cluster.GetApp("es-http-2").GetContainerName(), "81")
+		esHttpsHostPort = net.JoinHostPort(universal.Cluster.GetApp("es-https").GetContainerName(), "443")
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	checkSuccessfulRequest := func(url string, matcher types.GomegaMatcher) {
 		Eventually(func(g Gomega) {
-			stdout, _, err := env.Cluster.Exec("", "", "demo-client",
+			stdout, _, err := universal.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "-m", "3", "--fail", url)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
@@ -99,7 +99,7 @@ networking:
 
 	It("should route to external-service", func() {
 		ResourceUniversal(externalService("ext-srv-1", esHttpHostPort, false, nil))
-		err := env.Cluster.Install(ResourceUniversal(externalService("ext-srv-1", esHttpHostPort, false, nil)))
+		err := universal.Cluster.Install(ResourceUniversal(externalService("ext-srv-1", esHttpHostPort, false, nil)))
 		Expect(err).ToNot(HaveOccurred())
 
 		checkSuccessfulRequest("ext-srv-1.mesh", And(
@@ -111,10 +111,10 @@ networking:
 	})
 
 	It("should route to external-service with same hostname but different ports", func() {
-		err := env.Cluster.Install(ResourceUniversal(externalService("ext-srv-1", esHttpHostPort, false, nil)))
+		err := universal.Cluster.Install(ResourceUniversal(externalService("ext-srv-1", esHttpHostPort, false, nil)))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = env.Cluster.Install(ResourceUniversal(externalService("ext-srv-2", esHttp2HostPort, false, nil)))
+		err = universal.Cluster.Install(ResourceUniversal(externalService("ext-srv-2", esHttp2HostPort, false, nil)))
 		Expect(err).ToNot(HaveOccurred())
 
 		// when access the first external service with .mesh
@@ -133,22 +133,22 @@ networking:
 		// when set invalid certificate
 		otherCert := "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURMRENDQWhTZ0F3SUJBZ0lRSGRQaHhPZlhnV3VOeG9GbFYvRXdxVEFOQmdrcWhraUc5dzBCQVFzRkFEQVAKTVEwd0N3WURWUVFERXdScmRXMWhNQjRYRFRJd01Ea3hOakV5TWpnME5Gb1hEVE13TURreE5ERXlNamcwTkZvdwpEekVOTUFzR0ExVUVBeE1FYTNWdFlUQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQURnZ0VQQURDQ0FRb0NnZ0VCCkFPWkdiV2hTbFFTUnhGTnQ1cC8yV0NLRnlIWjNDdXdOZ3lMRVA3blM0Wlh5a3hzRmJZU3VWM2JJZ0Y3YlQvdXEKYTVRaXJlK0M2MGd1aEZicExjUGgyWjZVZmdJZDY5R2xRekhNVlljbUxHalZRdXlBdDRGTU1rVGZWRWw1STRPYQorMml0M0J2aWhWa0toVXo4eTVSUjVLYnFKZkdwNFoyMEZoNmZ0dG9DRmJlT0RtdkJzWUpGbVVRUytpZm95TVkvClAzUjAzU3U3ZzVpSXZuejd0bWt5ZG9OQzhuR1JEemRENUM4Zkp2clZJMVVYNkpSR3lMS3Q0NW9RWHQxbXhLMTAKNUthTjJ6TlYyV3RIc2FKcDlid3JQSCtKaVpHZVp5dnVoNVV3ckxkSENtcUs3c205VG9kR3p0VVpZMFZ6QWM0cQprWVZpWFk4Z1VqZk5tK2NRclBPMWtOOENBd0VBQWFPQmd6Q0JnREFPQmdOVkhROEJBZjhFQkFNQ0FxUXdIUVlEClZSMGxCQll3RkFZSUt3WUJCUVVIQXdFR0NDc0dBUVVGQndNQk1BOEdBMVVkRXdFQi93UUZNQU1CQWY4d0hRWUQKVlIwT0JCWUVGR01EQlBQaUJGSjNtdjJvQTlDVHFqZW1GVFYyTUI4R0ExVWRFUVFZTUJhQ0NXeHZZMkZzYUc5egpkSUlKYkc5allXeG9iM04wTUEwR0NTcUdTSWIzRFFFQkN3VUFBNElCQVFDLzE3UXdlT3BHZGIxTUVCSjhYUEc3CjNzSy91dG9XTFgxdGpmOFN1MURnYTZDRFQvZVRXSFpyV1JmODFLT1ZZMDdkbGU1U1JJREsxUWhmYkdHdEZQK1QKdlprcm9vdXNJOVVTMmFDV2xrZUNaV0dUbnF2TG1Eb091anFhZ0RvS1JSdWs0bVFkdE5Ob254aUwvd1p0VEZLaQorMWlOalVWYkxXaURYZEJMeG9SSVZkTE96cWIvTU54d0VsVXlhVERBa29wUXlPV2FURGtZUHJHbWFXamNzZlBHCmFPS293MHplK3pIVkZxVEhiam5DcUVWM2huc1V5UlV3c0JsbjkrakRKWGd3Wk0vdE1sVkpyWkNoMFNsZTlZNVoKTU9CMGZDZjZzVE1OUlRHZzVMcGw2dUlZTS81SU5wbUhWTW8zbjdNQlNucEVEQVVTMmJmL3VvNWdJaXE2WENkcAotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg=="
 		caCert, _ := base64.StdEncoding.DecodeString(otherCert)
-		err := env.Cluster.Install(ResourceUniversal(externalService("ext-srv-tls", esHttpsHostPort, true, caCert)))
+		err := universal.Cluster.Install(ResourceUniversal(externalService("ext-srv-tls", esHttpsHostPort, true, caCert)))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then accessing the secured external service fails
 		Consistently(func() error {
-			_, _, err = env.Cluster.Exec("", "", "demo-client",
+			_, _, err = universal.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "-m", "3", "--fail", "http://"+esHttpsHostPort)
 			return err
 		}).Should(HaveOccurred())
 
 		// when set proper certificate
-		cert, _, err := env.Cluster.Exec("", "", "es-https", "cat /certs/cert.pem")
+		cert, _, err := universal.Cluster.Exec("", "", "es-https", "cat /certs/cert.pem")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(cert).ToNot(BeEmpty())
 
-		err = env.Cluster.Install(ResourceUniversal(externalService("ext-srv-tls", esHttpsHostPort, true, []byte(cert))))
+		err = universal.Cluster.Install(ResourceUniversal(externalService("ext-srv-tls", esHttpsHostPort, true, []byte(cert))))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then accessing the secured external service succeeds
@@ -181,11 +181,11 @@ networking:
       inline: "LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb2dJQkFBS0NBUUVBc1JOcnJUWFZuUTRycW1hSE9KNDViblcyUUtieXE4dzRnN2Z6SVlQbVcvdWVyL1VkClo3WStPeWVKd25RRXBsMHdzNlJxMUZDdDUrb3RxcXZTOHN5RlJHSTloeXBhMENEVktPN2RrUTZKdktkTFp1RmsKV0lNK3I5Tmt2TEhQVGhDZGt4elVGR3EwYTFRT3FuQ0c3SFRrVFdTM1ExYlZtY0hYSjFTN0Q0aWdveUp6NE44NQo2TUpuR2ZGcGE0L3R4bCt5RmRCZ0ZROTNPcFFGVnV3S2xuazZyYlMxRWpWZm5rbTU1Y1JSZTZNZlhZRUs3K1RMCmhlanFVMGJZY0VzRTgvSjNNYVZJOGFETkJuUEVEKzZDQSsxcWp1a0Uwb0JFQVdkR1NORmV2UDdIaE1LazlZR3IKVzgvam9UdlZwNFV5ZjNkcVRseFRPTXRxbTc2TnNmWjc5dVpUVlFJREFRQUJBb0lCQURqaGdDazNyZEt4aHAxSwpLZzJwNWREeHh3V2xtelpNZDZyNElBV1lGUnRmREc2QlVsektVZHMyckMzbWpzZlNENTdsSmR2bHZyZE1wamE0CjB4NWpURHZYUXVSMFdvK1l2R0JWdXA2cUNOeXM4Syt2bjBnL2dKZUNWRTI0NEZxM1E2YktEK1l2RUoyWmRzeVIKTVFZcjFscDJDOWg1d0V1UDFNa3hrcFUrMGpzVWdVWFpBeStVNWQ2RS9CU0s0UTZSQkZBMnY4VEViMGxWdGpVWgpaajRiRUxNL2Z1MXpibEFwSWc3Q3A0d2lObktXRjM3N0IyUEl6eGhIMWNmL1VmSVFTL0h3bDRCelV0c1hiRVlZCnU4UXQ3c2NFdElqeFkwSVI2NGVUNGZDYklNVzNEV2cydWR3WFFWSnJpdEh5UGRUaFRwYm04bFJsMW1sSHJMa3YKdXBUd1k0RUNnWUVBenhTYUVPTFpIRVFsUStTelBVM0l4S1pTdXNNQStFZkVncEtuVUZKMEVyZ3oxOHEyYzROWApCRnVRNU5uYlhKQ2dHZWUycmlGUmxNUm5UeFM2MWFMZDFBVXF5SnFyay9jaTNCQjZyejVUMnl3dlB6aHhSM1JXCmdrMGxYcW5xVGxHd3pENHVmWmEwNlJpMnZ6YzF0M3BpN3RZNldXeXRiTGRQMUN6L0pHZTBpMzBDZ1lFQTJ1aEMKaFdMUXdtY203YmRyUE80VkJROXZjVlFsVHQ2RDFJd2tHT0VkdkF0SzJJeXZGSWdDUzh0cm9EVG1PazE2NmtINwo3OGdiOGNmOXhEZERaNnpqYjd1R3lrTVQ3SkRxOWlKUTdMdzljaVA4QnVoQUtSejdNcXcvWFk2MnJRcUJQd1NkClZQRFNERVJjMkpqcHhpSUlPeW1ueGdDTTlSbFVQVWRVK3NxK2Zya0NnWUIra3I4Zzl5ZHhpWTJsbEJLaXMvcTEKaUZ3azM3Q21FV2ZoejdZSStIME9QQjBrRnpteUhXT0F2Rjh5SXA5Y1V1SXBNMktMeUwzT3lzWENwbzhVcWZvZwo4QStZa2tHeHJXdFhTNU5ScmkwZldFQ0F5Z1VqZ2M2bTBuUzNDZkMzY21NNFZBR2lyZzFpTk1MdTJkWXhrZE1LCjNWTEkrZzUrMXdVcVVWNmFaL0VKR1FLQmdCQlRzbUp3ZEZHTGtBTzY0bXl3OVRCamJsUnRpanJQcmRWMGZseTgKclpNUTVJd3lNZnkrQ0MzUEJqLzBzaGMzSUN2SXNCbTZPeHRWWnovelB6dkVVVkpNRWttVHB6REZ2a0NOWHF2SgpmbXU4ODFjd2kxaUZxTmFtc2pNd0tiL09RTVdLZXBHVFJKZFZvZmNsc0ludWo5Nlp4TUduMk51UEFCRngrSXljCkFvbEJBb0dBUmdLeUlKa2xocUN4elFUUEJQK0VpM2ZXNzV3NWp5bjQ2N0dqQVQ1NVRkb1VsYWJxTTVPTTJwUkMKWXByMTEyNnZEdkU3VDJWdkcwS1RqRFJoai82YmFnSjE5ZTNqc2twQVZxdGUxM3lGUFk4ZTdaMkNKU1hBUS9FVQpsL2grcnJxb0ozNjNRdVB4eGhCWDRTMkMxRG9ndWlrSHprMW5iNUdCeXN1WjVzeE9RbE09Ci0tLS0tRU5EIFJTQSBQUklWQVRFIEtFWS0tLS0tCg=="
 `, meshName)
 
-		Expect(env.Cluster.Install(YamlUniversal(es))).To(Succeed())
+		Expect(universal.Cluster.Install(YamlUniversal(es))).To(Succeed())
 
 		// then
 		Eventually(func(g Gomega) {
-			stdout, _, err := env.Cluster.Exec("", "", "demo-client",
+			stdout, _, err := universal.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "--fail", "-m", "3", "testmtls.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))

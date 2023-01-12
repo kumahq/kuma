@@ -7,24 +7,24 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
 func Defaults() {
 	meshName := "defaults-non-default"
 
 	BeforeAll(func() {
-		Expect(env.Cluster.Install(MeshKubernetes(meshName))).To(Succeed())
+		Expect(kubernetes.Cluster.Install(MeshKubernetes(meshName))).To(Succeed())
 	})
 
 	AfterAll(func() {
-		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	policyCreated := func(typ, name string) func() bool {
 		return func() bool {
-			output, err := k8s.RunKubectlAndGetOutputE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(), "get", typ)
+			output, err := k8s.RunKubectlAndGetOutputE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(), "get", typ)
 			if err != nil {
 				return false
 			}

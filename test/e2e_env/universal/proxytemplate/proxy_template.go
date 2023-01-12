@@ -6,9 +6,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func ProxyTemplate() {
@@ -23,12 +23,12 @@ func ProxyTemplate() {
 				WithServiceName("test-server"),
 			)).
 			Install(DemoClientUniversal(AppModeDemoClient, mesh, WithTransparentProxy(true))).
-			Setup(env.Cluster)
+			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 	E2EAfterAll(func() {
-		Expect(env.Cluster.DeleteMeshApps(mesh)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(mesh)).To(Succeed())
+		Expect(universal.Cluster.DeleteMeshApps(mesh)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(mesh)).To(Succeed())
 	})
 
 	It("should add a header using Lua filter", func() {
@@ -62,12 +62,12 @@ conf:
 `, mesh)
 
 		// when
-		err := YamlUniversal(proxyTemplate)(env.Cluster)
+		err := YamlUniversal(proxyTemplate)(universal.Cluster)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(func(g Gomega) {
-			responses, err := client.CollectResponses(env.Cluster, "demo-client", "test-server.mesh")
+			responses, err := client.CollectResponses(universal.Cluster, "demo-client", "test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses[0].Received.Headers["X-Header"]).To(ContainElements("test"))
 		}, "30s", "1s").Should(Succeed())
