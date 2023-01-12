@@ -10,21 +10,19 @@ import (
 )
 
 func LeaderElectionPostgres() {
+	const clusterName1 = "kuma-leader1"
+	const clusterName2 = "kuma-leader2"
 	var standalone1, standalone2 Cluster
 
 	BeforeEach(func() {
-		clusters, err := NewUniversalClusters(
-			[]string{Kuma1, Kuma2},
-			Silent)
-		Expect(err).ToNot(HaveOccurred())
-		standalone1 = clusters.GetCluster(Kuma1)
-		standalone2 = clusters.GetCluster(Kuma2)
+		standalone1 = NewUniversalCluster(NewTestingT(), clusterName1, Silent)
+		standalone2 = NewUniversalCluster(NewTestingT(), clusterName2, Silent)
 
-		err = NewClusterSetup().
-			Install(postgres.Install(Kuma1)).
+		err := NewClusterSetup().
+			Install(postgres.Install(clusterName1)).
 			Setup(standalone1)
 		Expect(err).ToNot(HaveOccurred())
-		postgresInstance := postgres.From(standalone1, Kuma1)
+		postgresInstance := postgres.From(standalone1, clusterName1)
 
 		// Standalone 1
 		err = NewClusterSetup().
@@ -73,7 +71,7 @@ func LeaderElectionPostgres() {
 		}, "30s", "1s").Should(ContainSubstring(`leader{zone="Standalone"} 1`))
 
 		// when postgres is down
-		err = standalone1.DeleteDeployment(postgres.AppPostgres + Kuma1)
+		err = standalone1.DeleteDeployment(postgres.AppPostgres + clusterName1)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then CP 2 is not a leader anymore

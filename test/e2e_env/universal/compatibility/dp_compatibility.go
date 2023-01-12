@@ -13,7 +13,7 @@ func UniversalCompatibility() {
 	var cluster Cluster
 
 	BeforeEach(func() {
-		cluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
+		cluster = NewUniversalCluster(NewTestingT(), "kuma-compat", Silent)
 
 		err := NewClusterSetup().
 			Install(Kuma(core.Standalone)).
