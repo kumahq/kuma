@@ -10,19 +10,17 @@ import (
 )
 
 func ResilienceStandaloneUniversal() {
+	const clusterName = "kuma-resilience"
 	var universal Cluster
 
 	BeforeEach(func() {
-		clusters, err := NewUniversalClusters([]string{Kuma1}, Silent)
-		Expect(err).ToNot(HaveOccurred())
+		universal = NewUniversalCluster(NewTestingT(), clusterName, Silent)
 
-		universal = clusters.GetCluster(Kuma1)
+		Expect(postgres.Install(clusterName)(universal)).To(Succeed())
 
-		Expect(postgres.Install(Kuma1)(universal)).To(Succeed())
-
-		err = NewClusterSetup().
+		err := NewClusterSetup().
 			Install(Kuma(core.Standalone,
-				WithPostgres(postgres.From(universal, Kuma1).GetEnvVars()),
+				WithPostgres(postgres.From(universal, clusterName).GetEnvVars()),
 				WithEnv("KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT", "10s"),
 			)).
 			Install(DemoClientUniversal(AppModeDemoClient, "default", WithKumactlFlow())).

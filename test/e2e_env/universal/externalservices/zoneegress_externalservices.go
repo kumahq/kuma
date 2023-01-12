@@ -12,7 +12,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
 )
 
-func UniversalStandalone() {
+func ThroughZoneEgress() {
 	meshDefaulMtlsOn := `
 type: Mesh
 name: default
@@ -36,20 +36,17 @@ tags:
   kuma.io/service: external-service-1
   kuma.io/protocol: http
 networking:
-  address: "kuma-3_externalservice-http-server:80"
+  address: "kuma-es-ze_externalservice-http-server:80"
 `
 
 	var cluster Cluster
 
+	const clusterName = "kuma-es-ze"
+
 	BeforeEach(func() {
-		clusters, err := NewUniversalClusters(
-			[]string{Kuma3},
-			Silent)
-		Expect(err).ToNot(HaveOccurred())
+		cluster = NewUniversalCluster(NewTestingT(), clusterName, Silent)
 
-		cluster = clusters.GetCluster(Kuma3)
-
-		err = NewClusterSetup().
+		err := NewClusterSetup().
 			Install(Kuma(core.Standalone)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())

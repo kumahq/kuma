@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/test/e2e_env/universal/api"
 	"github.com/kumahq/kuma/test/e2e_env/universal/auth"
+	"github.com/kumahq/kuma/test/e2e_env/universal/compatibility"
 	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	"github.com/kumahq/kuma/test/e2e_env/universal/externalservices"
 	"github.com/kumahq/kuma/test/e2e_env/universal/gateway"
@@ -25,9 +26,11 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/universal/mtls"
 	"github.com/kumahq/kuma/test/e2e_env/universal/observability"
+	"github.com/kumahq/kuma/test/e2e_env/universal/projectedsatoken"
 	"github.com/kumahq/kuma/test/e2e_env/universal/proxytemplate"
 	"github.com/kumahq/kuma/test/e2e_env/universal/ratelimit"
 	"github.com/kumahq/kuma/test/e2e_env/universal/reachableservices"
+	"github.com/kumahq/kuma/test/e2e_env/universal/resilience"
 	"github.com/kumahq/kuma/test/e2e_env/universal/retry"
 	"github.com/kumahq/kuma/test/e2e_env/universal/timeout"
 	"github.com/kumahq/kuma/test/e2e_env/universal/trafficlog"
@@ -93,6 +96,7 @@ var _ = Describe("MeshHealthCheck panic threshold", meshhealthcheck.MeshHealthCh
 var _ = Describe("MeshHealthCheck", meshhealthcheck.MeshHealthCheck)
 var _ = Describe("Service Probes", healthcheck.ServiceProbes, Ordered)
 var _ = Describe("External Services", externalservices.Policy, Ordered)
+var _ = Describe("External Services through Zone Egress", externalservices.ThroughZoneEgress, Ordered)
 var _ = Describe("Inspect", inspect.Inspect, Ordered)
 var _ = Describe("Applications Metrics", observability.ApplicationsMetrics, Ordered)
 var _ = Describe("Tracing", observability.Tracing, Ordered)
@@ -117,3 +121,7 @@ var _ = Describe("Mesh Traffic Permission", meshtrafficpermission.MeshTrafficPer
 var _ = Describe("GRPC", grpc.GRPC, Ordered)
 var _ = Describe("MeshRateLimit", meshratelimit.Policy, Ordered)
 var _ = Describe("MeshTimeout", timeout.PluginTest, Ordered)
+var _ = Describe("Projected Service Account Token", projectedsatoken.ProjectedServiceAccountToken, Ordered)
+var _ = Describe("Compatibility", compatibility.UniversalCompatibility, Ordered)
+var _ = Describe("Resilience", resilience.ResilienceStandaloneUniversal, Ordered)
+var _ = Describe("Leader Election", resilience.LeaderElectionPostgres, Ordered)
