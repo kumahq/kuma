@@ -24,7 +24,7 @@ func UniversalCompatibility() {
 				WithDPVersion("1.5.0"),
 				WithTransparentProxy(true)),
 			).
-			Setup(cluster)
+			SetupWithRetries(cluster, 3)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
