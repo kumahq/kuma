@@ -9,6 +9,7 @@ import (
 type args struct {
 	pluginDir string
 	version   string
+	goModule  string
 }
 
 func newRootCmd() *cobra.Command {
@@ -34,6 +35,7 @@ func newRootCmd() *cobra.Command {
 
 	cmd.PersistentFlags().StringVar(&rootArgs.pluginDir, "plugin-dir", "", "path to the policy plugin director")
 	cmd.PersistentFlags().StringVar(&rootArgs.version, "version", "v1alpha1", "policy version")
+	cmd.PersistentFlags().StringVar(&rootArgs.goModule, "gomodule", "github.com/kumahq/kuma", "Where to put the generated code")
 
 	return cmd
 }

@@ -111,6 +111,7 @@ rules:
       - "apps"
     resources:
       - deployments
+      - replicasets
     verbs:
       - create
       - delete
@@ -118,6 +119,14 @@ rules:
       - list
       - patch
       - update
+      - watch
+  - apiGroups:
+      - "batch"
+    resources:
+      - jobs
+    verbs:
+      - get
+      - list
       - watch
   - apiGroups:
       - gateway.networking.k8s.io
@@ -209,6 +218,7 @@ rules:
       - meshaccesslogs
       - meshcircuitbreakers
       - meshhealthchecks
+      - meshproxypatches
       - meshratelimits
       - meshretries
       - meshtimeouts
@@ -506,7 +516,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: b44819fedfad8c7b5cf5320f22aa34f7264803794c752f7b6b4f2109aec31a79
+        checksum/tls-secrets: f3c3b1cdcb385fee544304c964718ce141530727a2040090d74b8f2dcad570c4
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -671,6 +681,7 @@ webhooks:
           - meshaccesslogs
           - meshcircuitbreakers
           - meshhealthchecks
+          - meshproxypatches
           - meshratelimits
           - meshretries
           - meshtimeouts
@@ -712,6 +723,7 @@ webhooks:
           - meshaccesslogs
           - meshcircuitbreakers
           - meshhealthchecks
+          - meshproxypatches
           - meshratelimits
           - meshretries
           - meshtimeouts
@@ -835,6 +847,7 @@ webhooks:
           - meshaccesslogs
           - meshcircuitbreakers
           - meshhealthchecks
+          - meshproxypatches
           - meshratelimits
           - meshretries
           - meshtimeouts

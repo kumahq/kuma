@@ -1,0 +1,17 @@
+name: auto-merge
+on:
+  pull_request:
+    types: [labeled,opened,reopened]
+    branches:
+      - 'master'
+      - 'release-*'
+
+jobs:
+  pr-mgmt:
+    uses: kumahq/.github/.github/workflows/wfc_pr_management.yml@main
+    with:
+      approve: true
+      merge: true
+      matchLabel: "ci/auto-merge"
+    secrets:
+      github-token: ${{ secrets.GITHUB_TOKEN }}

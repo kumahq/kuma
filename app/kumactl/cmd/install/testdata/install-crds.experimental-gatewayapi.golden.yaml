@@ -455,6 +455,8 @@ spec:
                                     description: Path to a file that logs will be
                                       written to
                                     type: string
+                                required:
+                                - path
                                 type: object
                               tcp:
                                 description: TCPBackend defines a TCP logging backend.
@@ -480,9 +482,10 @@ spec:
                                       plain:
                                         type: string
                                     type: object
+                                required:
+                                - address
                                 type: object
                             type: object
-                          nullable: true
                           type: array
                       type: object
                     targetRef:
@@ -514,6 +517,8 @@ spec:
                             tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
               targetRef:
@@ -583,6 +588,8 @@ spec:
                                     description: Path to a file that logs will be
                                       written to
                                     type: string
+                                required:
+                                - path
                                 type: object
                               tcp:
                                 description: TCPBackend defines a TCP logging backend.
@@ -608,9 +615,10 @@ spec:
                                       plain:
                                         type: string
                                     type: object
+                                required:
+                                - address
                                 type: object
                             type: object
-                          nullable: true
                           type: array
                       type: object
                     targetRef:
@@ -642,8 +650,12 @@ spec:
                             tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
+            required:
+            - targetRef
             type: object
         type: object
     served: true
@@ -972,6 +984,8 @@ spec:
                             tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
               targetRef:
@@ -1288,8 +1302,12 @@ spec:
                             tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
+            required:
+            - targetRef
             type: object
         type: object
     served: true
@@ -2084,8 +2102,12 @@ spec:
                             tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
+            required:
+            - targetRef
             type: object
         type: object
     served: true
@@ -2132,6 +2154,349 @@ spec:
           spec:
             description: Spec is the specification of the Kuma MeshInsight resource.
             x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.10.0
+  creationTimestamp: null
+  name: meshproxypatches.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: MeshProxyPatch
+    listKind: MeshProxyPatchList
+    plural: meshproxypatches
+    singular: meshproxypatch
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma MeshProxyPatch resource.
+            properties:
+              default:
+                description: Default is a configuration specific to the group of destinations
+                  referenced in 'targetRef'.
+                properties:
+                  appendModifications:
+                    description: AppendModifications is a list of modifications applied
+                      on the selected proxy.
+                    items:
+                      properties:
+                        cluster:
+                          description: Cluster is a modification of Envoy's Cluster
+                            resource.
+                          properties:
+                            match:
+                              description: Match is a set of conditions that have
+                                to be matched for modification operation to happen.
+                              properties:
+                                name:
+                                  description: Name of the cluster to match.
+                                  type: string
+                                origin:
+                                  description: "Origin is the name of the component
+                                    or plugin that generated the resource. \n Here
+                                    is the list of well-known origins: inbound - resources
+                                    generated for handling incoming traffic. outbound
+                                    - resources generated for handling outgoing traffic.
+                                    transparent - resources generated for transparent
+                                    proxy functionality. prometheus - resources generated
+                                    when Prometheus metrics are enabled. direct-access
+                                    - resources generated for Direct Access functionality.
+                                    ingress - resources generated for Zone Ingress.
+                                    egress - resources generated for Zone Egress.
+                                    gateway - resources generated for MeshGateway.
+                                    \n The list is not complete, because policy plugins
+                                    can introduce new resources. For example MeshTrace
+                                    plugin can create Cluster with \"mesh-trace\"
+                                    origin."
+                                  type: string
+                              type: object
+                            operation:
+                              description: Operation to execute on matched cluster.
+                              enum:
+                              - Add
+                              - Remove
+                              - Patch
+                              type: string
+                            value:
+                              description: Value of xDS resource in YAML format to
+                                add or patch.
+                              type: string
+                          required:
+                          - operation
+                          type: object
+                        httpFilter:
+                          description: HTTPFilter is a modification of Envoy HTTP
+                            Filter available in HTTP Connection Manager in a Listener
+                            resource.
+                          properties:
+                            match:
+                              description: Match is a set of conditions that have
+                                to be matched for modification operation to happen.
+                              properties:
+                                listenerName:
+                                  description: Name of the listener to match.
+                                  type: string
+                                listenerTags:
+                                  additionalProperties:
+                                    type: string
+                                  description: Listener tags available in Listener#Metadata#FilterMetadata[io.kuma.tags]
+                                  type: object
+                                name:
+                                  description: Name of the HTTP filter. For example
+                                    "envoy.filters.http.local_ratelimit"
+                                  type: string
+                                origin:
+                                  description: "Origin is the name of the component
+                                    or plugin that generated the resource. \n Here
+                                    is the list of well-known origins: inbound - resources
+                                    generated for handling incoming traffic. outbound
+                                    - resources generated for handling outgoing traffic.
+                                    transparent - resources generated for transparent
+                                    proxy functionality. prometheus - resources generated
+                                    when Prometheus metrics are enabled. direct-access
+                                    - resources generated for Direct Access functionality.
+                                    ingress - resources generated for Zone Ingress.
+                                    egress - resources generated for Zone Egress.
+                                    gateway - resources generated for MeshGateway.
+                                    \n The list is not complete, because policy plugins
+                                    can introduce new resources. For example MeshTrace
+                                    plugin can create Cluster with \"mesh-trace\"
+                                    origin."
+                                  type: string
+                              type: object
+                            operation:
+                              description: Operation to execute on matched listener.
+                              enum:
+                              - Remove
+                              - Patch
+                              - AddFirst
+                              - AddBefore
+                              - AddAfter
+                              - AddLast
+                              type: string
+                            value:
+                              description: Value of xDS resource in YAML format to
+                                add or patch.
+                              type: string
+                          required:
+                          - operation
+                          type: object
+                        listener:
+                          description: Listener is a modification of Envoy's Listener
+                            resource.
+                          properties:
+                            match:
+                              description: Match is a set of conditions that have
+                                to be matched for modification operation to happen.
+                              properties:
+                                name:
+                                  description: Name of the listener to match.
+                                  type: string
+                                origin:
+                                  description: "Origin is the name of the component
+                                    or plugin that generated the resource. \n Here
+                                    is the list of well-known origins: inbound - resources
+                                    generated for handling incoming traffic. outbound
+                                    - resources generated for handling outgoing traffic.
+                                    transparent - resources generated for transparent
+                                    proxy functionality. prometheus - resources generated
+                                    when Prometheus metrics are enabled. direct-access
+                                    - resources generated for Direct Access functionality.
+                                    ingress - resources generated for Zone Ingress.
+                                    egress - resources generated for Zone Egress.
+                                    gateway - resources generated for MeshGateway.
+                                    \n The list is not complete, because policy plugins
+                                    can introduce new resources. For example MeshTrace
+                                    plugin can create Cluster with \"mesh-trace\"
+                                    origin."
+                                  type: string
+                                tags:
+                                  additionalProperties:
+                                    type: string
+                                  description: Tags available in Listener#Metadata#FilterMetadata[io.kuma.tags]
+                                  type: object
+                              type: object
+                            operation:
+                              description: Operation to execute on matched listener.
+                              enum:
+                              - Add
+                              - Remove
+                              - Patch
+                              type: string
+                            value:
+                              description: Value of xDS resource in YAML format to
+                                add or patch.
+                              type: string
+                          required:
+                          - operation
+                          type: object
+                        networkFilter:
+                          description: NetworkFilter is a modification of Envoy Listener's
+                            filter.
+                          properties:
+                            match:
+                              description: Match is a set of conditions that have
+                                to be matched for modification operation to happen.
+                              properties:
+                                listenerName:
+                                  description: Name of the listener to match.
+                                  type: string
+                                listenerTags:
+                                  additionalProperties:
+                                    type: string
+                                  description: Listener tags available in Listener#Metadata#FilterMetadata[io.kuma.tags]
+                                  type: object
+                                name:
+                                  description: Name of the network filter. For example
+                                    "envoy.filters.network.ratelimit"
+                                  type: string
+                                origin:
+                                  description: "Origin is the name of the component
+                                    or plugin that generated the resource. \n Here
+                                    is the list of well-known origins: inbound - resources
+                                    generated for handling incoming traffic. outbound
+                                    - resources generated for handling outgoing traffic.
+                                    transparent - resources generated for transparent
+                                    proxy functionality. prometheus - resources generated
+                                    when Prometheus metrics are enabled. direct-access
+                                    - resources generated for Direct Access functionality.
+                                    ingress - resources generated for Zone Ingress.
+                                    egress - resources generated for Zone Egress.
+                                    gateway - resources generated for MeshGateway.
+                                    \n The list is not complete, because policy plugins
+                                    can introduce new resources. For example MeshTrace
+                                    plugin can create Cluster with \"mesh-trace\"
+                                    origin."
+                                  type: string
+                              type: object
+                            operation:
+                              description: Operation to execute on matched listener.
+                              enum:
+                              - Remove
+                              - Patch
+                              - AddFirst
+                              - AddBefore
+                              - AddAfter
+                              - AddLast
+                              type: string
+                            value:
+                              description: Value of xDS resource in YAML format to
+                                add or patch.
+                              type: string
+                          required:
+                          - operation
+                          type: object
+                        virtualHost:
+                          description: VirtualHost is a modification of Envoy's VirtualHost
+                            referenced in HTTP Connection Manager in a Listener resource.
+                          properties:
+                            match:
+                              description: Match is a set of conditions that have
+                                to be matched for modification operation to happen.
+                              properties:
+                                name:
+                                  description: Name of the VirtualHost to match.
+                                  type: string
+                                origin:
+                                  description: "Origin is the name of the component
+                                    or plugin that generated the resource. \n Here
+                                    is the list of well-known origins: inbound - resources
+                                    generated for handling incoming traffic. outbound
+                                    - resources generated for handling outgoing traffic.
+                                    transparent - resources generated for transparent
+                                    proxy functionality. prometheus - resources generated
+                                    when Prometheus metrics are enabled. direct-access
+                                    - resources generated for Direct Access functionality.
+                                    ingress - resources generated for Zone Ingress.
+                                    egress - resources generated for Zone Egress.
+                                    gateway - resources generated for MeshGateway.
+                                    \n The list is not complete, because policy plugins
+                                    can introduce new resources. For example MeshTrace
+                                    plugin can create Cluster with \"mesh-trace\"
+                                    origin."
+                                  type: string
+                                routeConfigurationName:
+                                  description: Name of the RouteConfiguration resource
+                                    to match.
+                                  type: string
+                              type: object
+                            operation:
+                              description: Operation to execute on matched listener.
+                              enum:
+                              - Add
+                              - Remove
+                              - Patch
+                              type: string
+                            value:
+                              description: Value of xDS resource in YAML format to
+                                add or patch.
+                              type: string
+                          required:
+                          - match
+                          - operation
+                          type: object
+                      type: object
+                    type: array
+                required:
+                - appendModifications
+                type: object
+              targetRef:
+                description: TargetRef is a reference to the resource the policy takes
+                  an effect on. The resource could be either a real store object or
+                  virtual resource defined inplace.
+                properties:
+                  kind:
+                    description: Kind of the referenced resource
+                    enum:
+                    - Mesh
+                    - MeshSubset
+                    - MeshService
+                    - MeshServiceSubset
+                    - MeshGatewayRoute
+                    type: string
+                  mesh:
+                    description: Mesh is reserved for future use to identify cross
+                      mesh resources.
+                    type: string
+                  name:
+                    description: 'Name of the referenced resource. Can only be used
+                      with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
+                    type: string
+                  tags:
+                    additionalProperties:
+                      type: string
+                    description: Tags used to select a subset of proxies by tags.
+                      Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                    type: object
+                type: object
+            required:
+            - default
+            - targetRef
+            type: object
         type: object
     served: true
     storage: true
@@ -2283,6 +2648,8 @@ spec:
                             tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
               targetRef:
@@ -2314,6 +2681,8 @@ spec:
                       Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                     type: object
                 type: object
+            required:
+            - targetRef
             type: object
         type: object
     served: true
@@ -2555,8 +2924,12 @@ spec:
                             tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
+            required:
+            - targetRef
             type: object
         type: object
     served: true
@@ -2680,6 +3053,8 @@ spec:
                             tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
               targetRef:
@@ -2792,8 +3167,12 @@ spec:
                             tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
+            required:
+            - targetRef
             type: object
         type: object
     served: true
@@ -2974,6 +3353,8 @@ spec:
                       Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                     type: object
                 type: object
+            required:
+            - targetRef
             type: object
         type: object
     served: true
@@ -3064,6 +3445,8 @@ spec:
                             tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
               targetRef:
@@ -3095,6 +3478,8 @@ spec:
                       Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                     type: object
                 type: object
+            required:
+            - targetRef
             type: object
         type: object
     served: true

@@ -1,0 +1,11 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: test-rs
+  namespace: demo
+spec:
+  template:
+    spec:
+      containers:
+      - name: app
+        image: app-image

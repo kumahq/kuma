@@ -5,6 +5,9 @@ CONTROLLER_GEN := go run -mod=mod sigs.k8s.io/controller-tools/cmd/controller-ge
 RESOURCE_GEN := go run -mod=mod $(TOOLS_DIR)/resource-gen/main.go
 POLICY_GEN := go run -mod=mod $(TOOLS_DIR)/policy-gen/generator/main.go
 
+GENERATE_TARGET ?= clean/proto generate/api protoc/pkg/config/app/kumactl/v1alpha1 protoc/plugins resources/type generate/policies
+GO_MODULE ?= github.com/kumahq/kuma
+
 .PHONY: clean/proto
 clean/proto: ## Dev: Remove auto-generated Protobuf files
 	find $(PROTO_DIRS) -name '*.pb.go' -delete
@@ -12,7 +15,7 @@ clean/proto: ## Dev: Remove auto-generated Protobuf files
 
 .PHONY: generate
 generate:  ## Dev: Run code generators
-generate: clean/proto generate/api protoc/pkg/config/app/kumactl/v1alpha1 protoc/plugins resources/type generate/policies
+generate: $(GENERATE_TARGET)
 
 .PHONY: resources/type
 resources/type:
@@ -58,7 +61,7 @@ generate/policy/%: generate/schema/%
 
 generate/schema/%: generate/controller-gen/%
 	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \
-		PATH=$(CI_TOOLS_BIN_DIR):$$PATH $(TOOLS_DIR)/policy-gen/crd-extract-openapi.sh $* $$version ; \
+		PATH=$(CI_TOOLS_BIN_DIR):$$PATH $(TOOLS_DIR)/policy-gen/crd-extract-openapi.sh $* $$version $(TOOLS_DIR) ; \
 	done
 
 generate/policy-import:
@@ -75,11 +78,11 @@ generate/controller-gen/%: generate/kumapolicy-gen/%
 	done
 
 generate/kumapolicy-gen/%: generate/dirs/%
-	$(POLICY_GEN) core-resource --plugin-dir $(POLICIES_DIR)/$* && \
-	$(POLICY_GEN) k8s-resource --plugin-dir $(POLICIES_DIR)/$* && \
-	$(POLICY_GEN) openapi --plugin-dir $(POLICIES_DIR)/$* --openapi-template-path=$(TOOLS_DIR)/policy-gen/templates/endpoints.yaml && \
-	$(POLICY_GEN) plugin-file --plugin-dir $(POLICIES_DIR)/$* && \
-	$(POLICY_GEN) helpers --plugin-dir $(POLICIES_DIR)/$*
+	$(POLICY_GEN) core-resource --plugin-dir $(POLICIES_DIR)/$* --gomodule $(GO_MODULE) && \
+	$(POLICY_GEN) k8s-resource --plugin-dir $(POLICIES_DIR)/$* --gomodule $(GO_MODULE) && \
+	$(POLICY_GEN) openapi --plugin-dir $(POLICIES_DIR)/$* --openapi-template-path=$(TOOLS_DIR)/policy-gen/templates/endpoints.yaml --gomodule $(GO_MODULE) && \
+	$(POLICY_GEN) plugin-file --plugin-dir $(POLICIES_DIR)/$* --gomodule $(GO_MODULE) && \
+	$(POLICY_GEN) helpers --plugin-dir $(POLICIES_DIR)/$* --gomodule $(GO_MODULE)
 
 generate/dirs/%:
 	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \

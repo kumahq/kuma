@@ -65,6 +65,14 @@
    "isExperimental": false
   },
   {
+   "name": "MeshProxyPatch",
+   "readOnly": false,
+   "path": "meshproxypatches",
+   "singularDisplayName": "Mesh Proxy Patch",
+   "pluralDisplayName": "Mesh Proxy Patches",
+   "isExperimental": false
+  },
+  {
    "name": "MeshRateLimit",
    "readOnly": false,
    "path": "meshratelimits",

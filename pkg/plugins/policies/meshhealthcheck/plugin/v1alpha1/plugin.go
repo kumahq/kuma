@@ -43,6 +43,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, _ xds_context.Context, proxy *co
 }
 
 func applyToOutbounds(rules core_xds.ToRules, outboundClusters map[string]*envoy_cluster.Cluster, dataplane *core_mesh.DataplaneResource, routing core_xds.Routing) error {
+	targetedClusters := map[*envoy_cluster.Cluster]string{}
 	for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
 		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
 		cluster, ok := outboundClusters[serviceName]
@@ -50,6 +51,10 @@ func applyToOutbounds(rules core_xds.ToRules, outboundClusters map[string]*envoy
 			continue
 		}
 
+		targetedClusters[cluster] = serviceName
+	}
+
+	for cluster, serviceName := range targetedClusters {
 		protocol := policies_xds.InferProtocol(routing, serviceName)
 
 		if err := configure(rules.Rules, core_xds.MeshService(serviceName), protocol, cluster); err != nil {

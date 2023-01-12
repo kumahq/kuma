@@ -22,13 +22,9 @@ func PluralType(resType string) string {
 		return resType + "s"
 	case strings.HasSuffix(resType, "y"):
 		return strings.TrimSuffix(resType, "y") + "ies"
-	case strings.HasSuffix(resType, "s"), strings.HasSuffix(resType, "sh"):
+	case strings.HasSuffix(resType, "s"), strings.HasSuffix(resType, "sh"), strings.HasSuffix(resType, "ch"):
 		return resType + "es"
 	default:
 		return resType + "s"
 	}
-}
-
-func PluralDisplayName(resType string) string {
-	return DisplayName(PluralType(resType))
 }

@@ -99,6 +99,25 @@ var _ = Describe("Validation Error", func() {
 		})
 	})
 
+	Describe("AddErrorAt()", func() {
+		It("properly concatenates paths with index/keys", func() {
+			// given
+			path := validators.RootedAt("spec").Field("fields")
+			err := validators.ValidationError{}
+			subErr := validators.ValidationError{}
+			subErr.AddViolationAt(validators.Root().Index(2), "something bad")
+
+			// when
+			err.AddErrorAt(path, subErr)
+			// then
+			Expect(err).To(Equal(validators.ValidationError{
+				Violations: []validators.Violation{
+					{Field: "spec.fields[2]", Message: "something bad"},
+				},
+			}))
+		})
+	})
+
 	Describe("Transform()", func() {
 		type testCase struct {
 			input         *validators.ValidationError
@@ -174,7 +193,7 @@ var _ = Describe("Validation Error", func() {
 
 var _ = Describe("PathBuilder", func() {
 	It("should produce empty path by default", func() {
-		Expect(validators.PathBuilder{}.String()).To(Equal(""))
+		Expect(validators.Root().String()).To(Equal(""))
 	})
 
 	It("should produce valid root path", func() {

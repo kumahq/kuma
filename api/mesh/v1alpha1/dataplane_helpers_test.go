@@ -180,49 +180,6 @@ var _ = Describe("Dataplane_Networking", func() {
 	})
 })
 
-var _ = Describe("Dataplane_Networking_Outbound", func() {
-	type testCase struct {
-		serviceTag    string
-		selector      TagSelector
-		expectedMatch bool
-	}
-	DescribeTable("MatchTags()",
-		func(given testCase) {
-			// given
-			outbound := Dataplane_Networking_Outbound{
-				Service: given.serviceTag,
-			}
-
-			// when
-			matched := outbound.MatchTags(given.selector)
-
-			// then
-			Expect(matched).To(Equal(given.expectedMatch))
-		},
-		Entry("it should match *", testCase{
-			serviceTag: "backend",
-			selector: map[string]string{
-				"kuma.io/service": "*",
-			},
-			expectedMatch: true,
-		}),
-		Entry("it should match service", testCase{
-			serviceTag: "backend",
-			selector: map[string]string{
-				"kuma.io/service": "backend",
-			},
-			expectedMatch: true,
-		}),
-		Entry("it shouldn't match tag other than service", testCase{
-			serviceTag: "backend",
-			selector: map[string]string{
-				"version": "1.0",
-			},
-			expectedMatch: false,
-		}),
-	)
-})
-
 var _ = Describe("Dataplane_Networking_Inbound", func() {
 
 	Describe("GetService()", func() {
@@ -326,29 +283,6 @@ var _ = Describe("Dataplane with inbound", func() {
 			Expect(tags.Values("role")).To(Equal([]string{"metrics"}))
 		})
 	})
-
-	Describe("MatchTags()", func() {
-		It("should match any inbound", func() {
-			// when
-			selector := TagSelector{
-				"kuma.io/service": "backend",
-				"version":         "v1",
-			}
-
-			// then
-			Expect(d.MatchTags(selector)).To(BeTrue())
-		})
-
-		It("should not match if all inbounds did not match", func() {
-			// when
-			selector := TagSelector{
-				"kuma.io/service": "unknown",
-			}
-
-			// then
-			Expect(d.MatchTags(selector)).To(BeFalse())
-		})
-	})
 })
 
 var _ = Describe("Dataplane classification", func() {
@@ -422,29 +356,6 @@ var _ = Describe("Dataplane with gateway", func() {
 
 			// then
 			Expect(tags.Values("kuma.io/service")).To(Equal([]string{"backend"}))
-		})
-	})
-
-	Describe("MatchTags()", func() {
-		It("should match gateway", func() {
-			// when
-			selector := TagSelector{
-				"kuma.io/service": "backend",
-				"version":         "v1",
-			}
-
-			// then
-			Expect(d.MatchTags(selector)).To(BeTrue())
-		})
-
-		It("should not match if gateway did not match", func() {
-			// when
-			selector := TagSelector{
-				"kuma.io/service": "unknown",
-			}
-
-			// then
-			Expect(d.MatchTags(selector)).To(BeFalse())
 		})
 	})
 })
