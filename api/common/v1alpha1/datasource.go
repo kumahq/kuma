@@ -1,3 +1,4 @@
+// +kubebuilder:object:generate=true
 package v1alpha1
 
 // DataSource defines the source of bytes to use.
