@@ -60,8 +60,7 @@ func NewClient(
 	}
 }
 
-func (c *client) Start(stop <-chan struct{}) error {
-	var errs error
+func (c *client) Start(stop <-chan struct{}) (errs error) {
 	u, err := url.Parse(c.globalURL)
 	if err != nil {
 		return err
