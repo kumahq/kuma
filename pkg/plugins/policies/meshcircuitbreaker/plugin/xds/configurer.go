@@ -5,6 +5,7 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -58,7 +59,7 @@ func configureCircuitBreakers(cluster *envoy_cluster.Cluster, conf *api.Connecti
 }
 
 func configureOutlierDetection(cluster *envoy_cluster.Cluster, conf *api.OutlierDetection) {
-	if conf == nil || conf.Disabled {
+	if conf == nil || pointer.Deref(conf.Disabled) {
 		return
 	}
 

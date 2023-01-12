@@ -1134,11 +1134,14 @@ func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 	}
 
 	for i := 0; i < replicas; i++ {
-		k8s.WaitUntilPodAvailable(c.t,
+		err := WaitUntilPodAvailableE(c.t,
 			c.GetKubectlOptions(namespace),
 			pods[i].Name,
 			c.defaultRetries,
 			c.defaultTimeout)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
