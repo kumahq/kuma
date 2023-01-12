@@ -3,10 +3,6 @@ name: "CodeQL"
 on:
   push:
     branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
-  schedule:
-    - cron: '36 7 * * 0'
 
 jobs:
   analyze:
@@ -31,7 +27,7 @@ jobs:
       with:
         config-file: ./.github/codeql/codeql-config.yml
         languages: ${{ matrix.language }}
-      
+
     - name: Autobuild
       uses: github/codeql-action/autobuild@v2
 
