@@ -209,7 +209,7 @@ var _ = Describe("MergeConfs", func() {
 		B *bool `json:"b,omitempty"`
 	}
 	type mergeEntry struct {
-		Key     mergeKey  `json:"key" xdsMerge:"mergeKey"`
+		Key     mergeKey  `json:"key" policyMerge:"mergeKey"`
 		Default mergeConf `json:"default"`
 	}
 	type nonMergeEntry struct {
@@ -217,7 +217,7 @@ var _ = Describe("MergeConfs", func() {
 		Default mergeConf `json:"default"`
 	}
 	type testPolicy struct {
-		MergeValues []mergeEntry     `xdsMerge:"mergeValuesByKey"`
+		MergeValues []mergeEntry     `policyMerge:"mergeValuesByKey"`
 		OtherValues *[]nonMergeEntry `json:"otherValues,omitempty"`
 	}
 

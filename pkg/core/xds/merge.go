@@ -68,7 +68,7 @@ type acc struct {
 
 const (
 	defaultFieldName = "Default"
-	xdsMergeTag      = "xdsMerge"
+	policyMergeTag   = "policyMerge"
 	mergeValuesByKey = "mergeValuesByKey"
 	mergeKey         = "mergeKey"
 )
@@ -77,7 +77,7 @@ func handleMergeByKeyFields(valueResult reflect.Value) error {
 	confType := valueResult.Elem().Type()
 	for i := 0; i < confType.NumField(); i++ {
 		field := confType.Field(i)
-		if !strings.Contains(field.Tag.Get(xdsMergeTag), mergeValuesByKey) {
+		if !strings.Contains(field.Tag.Get(policyMergeTag), mergeValuesByKey) {
 			continue
 		}
 		if field.Type.Kind() != reflect.Slice && field.Type.Elem().Kind() != reflect.Struct {
@@ -147,7 +147,7 @@ func findKeyAndSpec(typ reflect.Type) (reflect.StructField, bool) {
 	var key *reflect.StructField
 	for i := 0; i < typ.NumField(); i++ {
 		field := typ.Field(i)
-		if strings.Contains(field.Tag.Get(xdsMergeTag), mergeKey) {
+		if strings.Contains(field.Tag.Get(policyMergeTag), mergeKey) {
 			key = &field
 			break
 		}
@@ -178,7 +178,7 @@ func clearAppendSlices(val reflect.Value) {
 		field := strVal.Type().Field(i)
 		switch valField.Kind() {
 		case reflect.Slice:
-			mergeByKey := strings.Contains(field.Tag.Get(xdsMergeTag), mergeValuesByKey)
+			mergeByKey := strings.Contains(field.Tag.Get(policyMergeTag), mergeValuesByKey)
 			if strings.HasPrefix(field.Name, appendSlicesPrefix) || mergeByKey {
 				valField.Set(reflect.Zero(valField.Type()))
 			}
@@ -206,7 +206,7 @@ func appendSlices(dst reflect.Value, src reflect.Value) {
 		field := strDst.Type().Field(i)
 		switch dstField.Kind() {
 		case reflect.Slice:
-			mergeByKey := strings.Contains(field.Tag.Get(xdsMergeTag), mergeValuesByKey)
+			mergeByKey := strings.Contains(field.Tag.Get(policyMergeTag), mergeValuesByKey)
 			if strings.HasPrefix(field.Name, appendSlicesPrefix) || mergeByKey {
 				s := reflect.AppendSlice(dstField, srcField)
 				dstField.Set(s)
