@@ -165,7 +165,7 @@ var _ = Describe("PickTCPPort()", func() {
 		// when
 		actualPort, err := PickTCPPort(loopback, freePort, freePort)
 		// then
-		Expect(err.Error()).To(ContainSubstring(`bind: address already in use`))
+		Expect(err.Error()).To(ContainSubstring("unable to find port in range"))
 		// and
 		Expect(actualPort).To(Equal(uint32(0)))
 	})
