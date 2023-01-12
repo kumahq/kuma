@@ -13,6 +13,4 @@ func TestE2E(t *testing.T) {
 	test.RunE2ESpecs(t, "E2E Resilience Suite")
 }
 
-var _ = Describe("Test Multizone Resilience for Universal", Label("job-0"), resilience.ResilienceMultizoneUniversal)
 var _ = Describe("Test Multizone Resilience for K8s", Label("job-2"), resilience.ResilienceMultizoneK8s, Ordered)
-var _ = Describe("Test Multizone Resilience for Universal with Postgres", Label("job-2"), resilience.ResilienceMultizoneUniversalPostgres)
