@@ -136,13 +136,13 @@ default:
   http:
     abort:
       httpStatus: 500
-      percentage: 50
+      percentage: "50" # K8s shows warning when using float so we agree to use string and parse in the code
     delay:
-      percentage: 50.5 # we could parse string or use default denominator: e.g.: 505000 = 50.5% like envoy config so we can accept int
+      percentage: "50.5" # K8s shows warning when using float so we agree to use string and parse in the code
       value: 5s
     responseBandwidth:
       limit: 50 mbps
-      percentage: 50
+      percentage: "50" # K8s shows warning when using float so we agree to use string and parse in the code
 ```
 
 #### **Result**
@@ -164,13 +164,13 @@ spec:
        disabled: false
        abort:
          httpStatus: 500
-         percentage: 50
+         percentage: "50"
        delay:
-         percentage: 50.5
+         percentage: "50.5"
          value: 5s
        responseBandwidth:
          limit: 50 mbps
-         percentage: 50 
+         percentage: "50"
  from:
    - targetRef:
        kind: Mesh|MeshSubset|MeshService|MeshServiceSubset
@@ -180,13 +180,13 @@ spec:
        disabled: false
        abort:
          httpStatus: 500
-         percentage: 50
+         percentage: "50"
        delay:
-         percentage: 50.5
+         percentage: "50.5"
          value: 5s
        responseBandwidth:
          limit: 50 mbps
-         percentage: 50
+         percentage: "50"
 ```
 
 ### Considered Options
@@ -212,7 +212,7 @@ spec:
         http:
           abort:
             httpStatus: 500
-            percentage: 50
+            percentage: "50"
 ```
 
 #### All services to one service fault injection
@@ -232,7 +232,7 @@ spec:
       default:
         http:
           delay:
-            percentage: 50.5
+            percentage: "50.5"
             value: 5s
 ```
 
@@ -254,5 +254,5 @@ spec:
         http:
           abort:
             httpStatus: 500
-            percentage: 50
+            percentage: "50"
 ```
