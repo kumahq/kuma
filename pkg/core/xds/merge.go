@@ -75,20 +75,22 @@ const (
 
 func handleMergeByKeyFields(valueResult reflect.Value) error {
 	confType := valueResult.Elem().Type()
-	for i := 0; i < confType.NumField(); i++ {
-		field := confType.Field(i)
+	for fieldIndex := 0; fieldIndex < confType.NumField(); fieldIndex++ {
+		field := confType.Field(fieldIndex)
 		if !strings.Contains(field.Tag.Get(policyMergeTag), mergeValuesByKey) {
 			continue
 		}
 		if field.Type.Kind() != reflect.Slice && field.Type.Elem().Kind() != reflect.Struct {
 			return errors.New("a merge by key field must be a slice of structs")
 		}
-		entriesValue := valueResult.Elem().Field(i)
+
+		entriesValue := valueResult.Elem().Field(fieldIndex)
+
 		merged, err := mergeByKey(entriesValue)
 		if err != nil {
 			return err
 		}
-		valueResult.Elem().Field(i).Set(merged)
+		entriesValue.Set(merged)
 	}
 	return nil
 }
@@ -103,15 +105,15 @@ func mergeByKey(vals reflect.Value) (reflect.Value, error) {
 		return reflect.Value{}, fmt.Errorf("a merge by key field must have a field tagged as %s and a Default field", mergeKey)
 	}
 	var defaultsByKey []acc
-	for i := 0; i < vals.Len(); i++ {
-		value := vals.Index(i)
+	for valueIndex := 0; valueIndex < vals.Len(); valueIndex++ {
+		value := vals.Index(valueIndex)
 		mergeKeyValue := value.FieldByName(key.Name).Interface()
 		var found bool
-		for i, accRule := range defaultsByKey {
+		for accIndex, accRule := range defaultsByKey {
 			if !reflect.DeepEqual(accRule.Key, mergeKeyValue) {
 				continue
 			}
-			defaultsByKey[i] = acc{
+			defaultsByKey[accIndex] = acc{
 				Key:      accRule.Key,
 				Defaults: append(accRule.Defaults, value.FieldByName(defaultFieldName).Interface()),
 			}
@@ -135,7 +137,6 @@ func mergeByKey(vals reflect.Value) (reflect.Value, error) {
 		keyValue := keyValueP.Elem()
 
 		keyValue.FieldByName(key.Name).Set(reflect.ValueOf(confs.Key))
-		// TODO: can we create a new type to set fields directly?
 		keyValue.FieldByName(defaultFieldName).Set(reflect.ValueOf(merged))
 
 		keyValues = reflect.Append(keyValues, keyValue)
