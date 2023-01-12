@@ -65,11 +65,14 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 		return errors.Errorf("counting KIC pods. Got: %d. Expected: 1", len(pods))
 	}
 
-	k8s.WaitUntilPodAvailable(cluster.GetTesting(),
+	err = framework.WaitUntilPodAvailableE(cluster.GetTesting(),
 		cluster.GetKubectlOptions(t.ingressNamespace),
 		pods[0].Name,
 		framework.DefaultRetries,
 		framework.DefaultTimeout)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
