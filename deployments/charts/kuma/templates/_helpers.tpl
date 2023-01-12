@@ -169,6 +169,9 @@ returns: formatted image string
 {{- printf "%s/%s:%s" $registry $repo $tag -}}
 {{- end -}}
 
+{{- define "kuma.parentEnv" -}}
+{{- end -}}
+
 {{- define "kuma.defaultEnv" -}}
 {{ if not (or (eq .Values.controlPlane.mode "zone") (eq .Values.controlPlane.mode "global") (eq .Values.controlPlane.mode "standalone")) }}
   {{ $msg := printf "controlPlane.mode invalid got:'%s' supported values: global,zone,standalone" .Values.controlPlane.mode }}
@@ -196,6 +199,7 @@ returns: formatted image string
   {{ end }}
 {{ end }}
 env:
+{{ include "kuma.parentEnv" . }}
 - name: KUMA_ENVIRONMENT
   value: "kubernetes"
 - name: KUMA_STORE_TYPE
