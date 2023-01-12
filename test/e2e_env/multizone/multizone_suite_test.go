@@ -51,6 +51,7 @@ var _ = SynchronizedBeforeSuite(
 		env.KubeZone1 = NewK8sCluster(NewTestingT(), Kuma1, Verbose)
 		go func() {
 			defer GinkgoRecover()
+			defer wg.Done()
 			Expect(env.KubeZone1.Install(Kuma(core.Zone,
 				WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 				WithIngress(),
@@ -59,12 +60,12 @@ var _ = SynchronizedBeforeSuite(
 				WithEgressEnvoyAdminTunnel(),
 				WithGlobalAddress(env.Global.GetKuma().GetKDSServerAddress()),
 			))).To(Succeed())
-			wg.Done()
 		}()
 
 		env.KubeZone2 = NewK8sCluster(NewTestingT(), Kuma2, Verbose)
 		go func() {
 			defer GinkgoRecover()
+			defer wg.Done()
 			Expect(env.KubeZone2.Install(Kuma(core.Zone,
 				WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 				WithEnv("KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS", "true"),
@@ -75,13 +76,13 @@ var _ = SynchronizedBeforeSuite(
 				WithGlobalAddress(env.Global.GetKuma().GetKDSServerAddress()),
 				WithExperimentalCNI(),
 			))).To(Succeed())
-			wg.Done()
 		}()
 
 		env.UniZone1 = NewUniversalCluster(NewTestingT(), Kuma4, Silent)
 		E2EDeferCleanup(env.UniZone1.DismissCluster) // clean up any containers if needed
 		go func() {
 			defer GinkgoRecover()
+			defer wg.Done()
 			err := NewClusterSetup().
 				Install(Kuma(core.Zone,
 					WithGlobalAddress(env.Global.GetKuma().GetKDSServerAddress()),
@@ -93,13 +94,13 @@ var _ = SynchronizedBeforeSuite(
 				Install(EgressUniversal(env.Global.GetKuma().GenerateZoneEgressToken)).
 				Setup(env.UniZone1)
 			Expect(err).ToNot(HaveOccurred())
-			wg.Done()
 		}()
 
 		env.UniZone2 = NewUniversalCluster(NewTestingT(), Kuma5, Silent)
 		E2EDeferCleanup(env.UniZone2.DismissCluster) // clean up any containers if needed
 		go func() {
 			defer GinkgoRecover()
+			defer wg.Done()
 			err := NewClusterSetup().
 				Install(Kuma(core.Zone,
 					WithGlobalAddress(env.Global.GetKuma().GetKDSServerAddress()),
@@ -112,7 +113,6 @@ var _ = SynchronizedBeforeSuite(
 				Install(EgressUniversal(env.Global.GetKuma().GenerateZoneEgressToken)).
 				Setup(env.UniZone2)
 			Expect(err).ToNot(HaveOccurred())
-			wg.Done()
 		}()
 		wg.Wait()
 

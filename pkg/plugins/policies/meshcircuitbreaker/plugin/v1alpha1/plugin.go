@@ -90,6 +90,7 @@ func applyToOutbounds(
 	outboundClusters map[string]*envoy_cluster.Cluster,
 	dataplane *core_mesh.DataplaneResource,
 ) error {
+	targetedClusters := map[*envoy_cluster.Cluster]string{}
 	for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
 		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
 		cluster, ok := outboundClusters[serviceName]
@@ -97,6 +98,10 @@ func applyToOutbounds(
 			continue
 		}
 
+		targetedClusters[cluster] = serviceName
+	}
+
+	for cluster, serviceName := range targetedClusters {
 		if err := configure(rules.Rules, core_xds.MeshService(serviceName), cluster); err != nil {
 			return err
 		}

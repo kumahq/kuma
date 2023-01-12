@@ -608,6 +608,25 @@ func Combine(fs ...InstallFunc) InstallFunc {
 	}
 }
 
+func CombineWithRetries(maxRetries int, fs ...InstallFunc) InstallFunc {
+	return func(cluster Cluster) error {
+		for _, f := range fs {
+			_, err := retry.DoWithRetryE(
+				cluster.GetTesting(),
+				"installing component to cluster",
+				maxRetries,
+				0,
+				func() (string, error) {
+					return "", f(cluster)
+				})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
 func Namespace(name string) InstallFunc {
 	return func(cluster Cluster) error {
 		return k8s.CreateNamespaceE(cluster.GetTesting(), cluster.GetKubectlOptions(), name)
@@ -629,6 +648,10 @@ func (cs *ClusterSetup) Install(fn InstallFunc) *ClusterSetup {
 
 func (cs *ClusterSetup) Setup(cluster Cluster) error {
 	return Combine(cs.installFuncs...)(cluster)
+}
+
+func (cs *ClusterSetup) SetupWithRetries(cluster Cluster, maxRetries int) error {
+	return CombineWithRetries(maxRetries, cs.installFuncs...)(cluster)
 }
 
 func CreateCertsFor(names ...string) (string, string, error) {

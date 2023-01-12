@@ -1138,11 +1138,14 @@ func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 	}
 
 	for i := 0; i < replicas; i++ {
-		k8s.WaitUntilPodAvailable(c.t,
+		err := WaitUntilPodAvailableE(c.t,
 			c.GetKubectlOptions(namespace),
 			pods[i].Name,
 			c.defaultRetries,
 			c.defaultTimeout)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -1171,7 +1174,7 @@ func (c *K8sCluster) CreateNode(name string, label string) error {
 }
 
 func (c *K8sCluster) LoadImages(names ...string) error {
-	_, err := retry.DoWithRetryE(c.GetTesting(), "load images", 2, time.Second*5, func() (string, error) {
+	_, err := retry.DoWithRetryE(c.GetTesting(), "load images", 3, 0, func() (string, error) {
 		err := c.loadImages(names...)
 		return "Loaded images " + strings.Join(names, ", "), err
 	})
@@ -1190,7 +1193,11 @@ func (c *K8sCluster) loadImages(names ...string) error {
 		defaultArgs := []string{"image", "import", "-m", "direct", "-c", c.name}
 		allArgs := append(defaultArgs, fullImageNames...)
 
-		importCmd := exec.Command("k3d", allArgs...)
+		// Put a timeout of 1 minute to this command, because for some reason the command can be stuck with
+		// ERRO[0004] Failed to copy read stream. write unix @->/run/docker.sock: use of closed network connection
+		ctx, cancelFn := context.WithTimeout(context.Background(), 1*time.Minute)
+		defer cancelFn()
+		importCmd := exec.CommandContext(ctx, "k3d", allArgs...)
 		importCmd.Stdout = os.Stdout
 		importCmd.Stderr = os.Stderr
 		return importCmd.Run()
