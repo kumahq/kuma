@@ -64,6 +64,10 @@ func genGrpcRetryPolicy(conf *api.GRPC) *envoy_route.RetryPolicy {
 		}
 	}
 
+	if conf.RateLimitedBackOff != nil {
+		policy.RateLimitedRetryBackOff = configureRateLimitedRetryBackOff(conf.RateLimitedBackOff)
+	}
+
 	return &policy
 }
 
@@ -96,6 +100,10 @@ func genHttpRetryPolicy(conf *api.HTTP) *envoy_route.RetryPolicy {
 		}
 
 		policy.RetryBackOff = retryBackOff
+	}
+
+	if conf.RateLimitedBackOff != nil {
+		policy.RateLimitedRetryBackOff = configureRateLimitedRetryBackOff(conf.RateLimitedBackOff)
 	}
 
 	retryOn, retriableStatusCodes, retriableMethods := splitRetryOn(conf.RetryOn)
@@ -136,6 +144,24 @@ func genHttpRetryPolicy(conf *api.HTTP) *envoy_route.RetryPolicy {
 	}
 
 	return &policy
+}
+
+func configureRateLimitedRetryBackOff(rateLimitedBackOff *api.RateLimitedBackOff) *envoy_route.RetryPolicy_RateLimitedRetryBackOff {
+	rateLimitedRetryBackoff := &envoy_route.RetryPolicy_RateLimitedRetryBackOff{
+		ResetHeaders: []*envoy_route.RetryPolicy_ResetHeader{},
+	}
+	for _, resetHeader := range rateLimitedBackOff.ResetHeaders {
+		rateLimitedRetryBackoff.ResetHeaders = append(rateLimitedRetryBackoff.ResetHeaders, &envoy_route.RetryPolicy_ResetHeader{
+			Name:   resetHeader.Name,
+			Format: api.RateLimitFormatEnumToEnvoyValue[resetHeader.Format],
+		})
+	}
+
+	if rateLimitedBackOff.MaxInterval != nil {
+		rateLimitedRetryBackoff.MaxInterval = util_proto.Duration(rateLimitedBackOff.MaxInterval.Duration)
+	}
+
+	return rateLimitedRetryBackoff
 }
 
 func headerMatcher(header v1alpha1.HeaderMatcher) *envoy_route.HeaderMatcher {

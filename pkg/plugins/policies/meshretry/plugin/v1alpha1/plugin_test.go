@@ -102,6 +102,19 @@ var _ = Describe("MeshRetry", func() {
 									BaseInterval: test.ParseDuration("3s"),
 									MaxInterval:  test.ParseDuration("4s"),
 								},
+								RateLimitedBackOff: &api.RateLimitedBackOff{
+									MaxInterval: test.ParseDuration("5s"),
+									ResetHeaders: []api.ResetHeader{
+										{
+											Name:   "retry-after-http",
+											Format: "Seconds",
+										},
+										{
+											Name:   "x-retry-after-http",
+											Format: "UnixTimestamp",
+										},
+									},
+								},
 								RetryOn: &[]api.HTTPRetryOn{
 									api.ALL_5XX,
 									api.GATEWAY_ERROR,
@@ -168,6 +181,19 @@ var _ = Describe("MeshRetry", func() {
 								BackOff: &api.BackOff{
 									BaseInterval: test.ParseDuration("13s"),
 									MaxInterval:  test.ParseDuration("14s"),
+								},
+								RateLimitedBackOff: &api.RateLimitedBackOff{
+									MaxInterval: test.ParseDuration("15s"),
+									ResetHeaders: []api.ResetHeader{
+										{
+											Name:   "retry-after-grpc",
+											Format: "Seconds",
+										},
+										{
+											Name:   "x-retry-after-grpc",
+											Format: "UnixTimestamp",
+										},
+									},
 								},
 								RetryOn: &[]api.GRPCRetryOn{
 									api.CANCELED,

@@ -2,6 +2,7 @@
 package v1alpha1
 
 import (
+	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -136,6 +137,9 @@ type HTTP struct {
 	// BackOff is a configuration of durations which will be used in exponential
 	// backoff strategy between retries
 	BackOff *BackOff `json:"backOff,omitempty"`
+	// RateLimitedBackOff is a configuration of backoff which will be used
+	// when the upstream returns one of the headers configured.
+	RateLimitedBackOff *RateLimitedBackOff `json:"rateLimitedBackOff,omitempty"`
 	// RetryOn is a list of conditions which will cause a retry. Available values are:
 	// [5XX, GATEWAY_ERROR, RESET, RETRIABLE_4XX, CONNECT_FAILURE, ENVOY_RATELIMITED,
 	// REFUSED_STREAM, HTTP3_POST_CONNECT_FAILURE, HTTP_METHOD_CONNECT, HTTP_METHOD_DELETE,
@@ -185,16 +189,19 @@ var GrpcRetryOnEnumToEnvoyValue = map[GRPCRetryOn]string{
 }
 
 type GRPC struct {
-	// NumRetries is the number of attempts that will be made on failed (and retriable) requests
+	// NumRetries is the number of attempts that will be made on failed (and retriable) requests.
 	NumRetries *uint32 `json:"numRetries,omitempty"`
 	// PerTryTimeout is the amount of time after which retry attempt should timeout.
 	// Setting this timeout to 0 will disable it. Default is 15s.
 	PerTryTimeout *k8s.Duration `json:"perTryTimeout,omitempty"`
 	// BackOff is a configuration of durations which will be used in exponential
-	// backoff strategy between retries
+	// backoff strategy between retries.
 	BackOff *BackOff `json:"backOff,omitempty"`
+	// RateLimitedBackOff is a configuration of backoff which will be used
+	// when the upstream returns one of the headers configured.
+	RateLimitedBackOff *RateLimitedBackOff `json:"rateLimitedBackOff,omitempty"`
 	// RetryOn is a list of conditions which will cause a retry. Available values are:
-	// [CANCELED, DEADLINE_EXCEEDED, INTERNAL, RESOURCE_EXHAUSTED, UNAVAILABLE]
+	// [CANCELED, DEADLINE_EXCEEDED, INTERNAL, RESOURCE_EXHAUSTED, UNAVAILABLE].
 	RetryOn *[]GRPCRetryOn `json:"retryOn,omitempty"`
 }
 
@@ -206,4 +213,36 @@ type BackOff struct {
 	// MaxInterval is a maximal amount of time which will be taken between retries.
 	// Default is 10 times the "BaseInterval".
 	MaxInterval *k8s.Duration `json:"maxInterval,omitempty"`
+}
+
+type RateLimitedBackOff struct {
+	// ResetHeaders specifies the list of headers (like Retry-After or X-RateLimit-Reset) to match against the response.
+	// Headers are tried in order, and matched case-insensitive. The first header to be parsed successfully is used.
+	// If no headers match the default exponential BackOff is used instead.
+	ResetHeaders []ResetHeader `json:"resetHeaders,omitempty"`
+	// MaxInterval is a maximal amount of time which will be taken between retries.
+	// Default is 300 seconds.
+	MaxInterval *k8s.Duration `json:"maxInterval,omitempty"`
+}
+
+type RateLimitFormat string
+
+var (
+	// SECONDS is an integer that represents the number of seconds to wait before retrying.
+	SECONDS RateLimitFormat = "Seconds"
+
+	// UNIX_TIMESTAMP is an integer that represents the point in time at which to retry, as a Unix timestamp in seconds.
+	UNIX_TIMESTAMP RateLimitFormat = "UnixTimestamp"
+)
+
+var RateLimitFormatEnumToEnvoyValue = map[RateLimitFormat]envoy_route.RetryPolicy_ResetHeaderFormat{
+	SECONDS:        envoy_route.RetryPolicy_SECONDS,
+	UNIX_TIMESTAMP: envoy_route.RetryPolicy_UNIX_TIMESTAMP,
+}
+
+type ResetHeader struct {
+	// The Name of the reset header.
+	Name string `json:"name,omitempty"`
+	// The format of the reset header, either "Seconds" or "UnixTimestamp".
+	Format RateLimitFormat `json:"format,omitempty"`
 }

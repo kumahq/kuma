@@ -25,6 +25,12 @@ filterChains:
           retryPolicy:
             numRetries: 11
             perTryTimeout: 12s
+            rateLimitedRetryBackOff:
+              maxInterval: 15s
+              resetHeaders:
+              - name: retry-after-grpc
+              - format: UNIX_TIMESTAMP
+                name: x-retry-after-grpc
             retryBackOff:
               baseInterval: 13s
               maxInterval: 14s

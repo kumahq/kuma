@@ -46,6 +46,13 @@ to:
         backOff:
           baseInterval: 15s
           maxInterval: 20m
+        rateLimitedBackOff:
+          resetHeaders:
+            - name: retry-after-http
+              format: Seconds
+            - name: x-retry-after-http
+              format: UnixTimestamp
+          maxInterval: 21m
         retryOn:
           - 5xx
           - GatewayError
@@ -93,6 +100,13 @@ to:
         backOff:
           baseInterval: 15s
           maxInterval: 20m
+        rateLimitedBackOff:
+          resetHeaders:
+            - name: retry-after-grpc
+              format: Seconds
+            - name: x-retry-after-grpc
+              format: UnixTimestamp
+          maxInterval: 21m
         retryOn:
           - Canceled
           - DeadlineExceeded
@@ -271,6 +285,22 @@ violations:
   - field: spec.to[0].default.conf.http.backOff
     message: must not be empty`,
 			}),
+			Entry("empty http.rateLimitedBackOff.resetHeaders", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      http: 
+        rateLimitedBackOff: {}
+`,
+				expected: `
+violations:
+  - field: spec.to[0].default.conf.http.rateLimitedBackOff.resetHeaders
+    message: must be defined`,
+			}),
 			Entry("empty grpc.backOff", testCase{
 				inputYaml: `
 targetRef:
@@ -286,6 +316,22 @@ to:
 violations:
   - field: spec.to[0].default.conf.grpc.backOff
     message: must not be empty`,
+			}),
+			Entry("empty grpc.rateLimitedBackOff.resetHeaders", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      grpc: 
+        rateLimitedBackOff: {}
+`,
+				expected: `
+violations:
+  - field: spec.to[0].default.conf.grpc.rateLimitedBackOff.resetHeaders
+    message: must be defined`,
 			}),
 			Entry("http.retryOn with not allowed values", testCase{
 				inputYaml: `
@@ -366,6 +412,27 @@ violations:
     message: to[0].default.http.retriableRequestHeaders[0].type in body should be one of [REGULAR_EXPRESSION EXACT PREFIX]
   - field: spec
     message: to[0].default.http.retriableResponseHeaders[0].type in body should be one of [REGULAR_EXPRESSION EXACT PREFIX]`,
+			}),
+
+			Entry("empty http.rateLimitedBackOff.resetHeaders.name and wrong format", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      http: 
+        rateLimitedBackOff:
+          resetHeaders:
+            - name: ""
+`,
+				expected: `
+violations:
+  - field: spec.to[0].default.conf.http.rateLimitedBackOff.resetHeaders[0].name
+    message: must be defined
+  - field: spec.to[0].default.conf.http.rateLimitedBackOff.resetHeaders[0].format
+    message: 'must be only one of: Seconds, UnixTimestamp'`,
 			}),
 		)
 	})

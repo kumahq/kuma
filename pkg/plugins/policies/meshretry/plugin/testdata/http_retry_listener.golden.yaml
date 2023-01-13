@@ -25,6 +25,12 @@ filterChains:
           retryPolicy:
             numRetries: 1
             perTryTimeout: 2s
+            rateLimitedRetryBackOff:
+              maxInterval: 5s
+              resetHeaders:
+              - name: retry-after-http
+              - format: UNIX_TIMESTAMP
+                name: x-retry-after-http
             retriableHeaders:
             - name: x-retry-regex
               stringMatch:
