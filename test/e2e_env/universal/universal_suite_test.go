@@ -22,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/membership"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshaccesslog"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshhealthcheck"
+	"github.com/kumahq/kuma/test/e2e_env/universal/meshproxypatch"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshratelimit"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/universal/mtls"
@@ -108,6 +109,7 @@ var _ = Describe("Timeout", timeout.Policy, Ordered)
 var _ = Describe("Retry", retry.Policy, Ordered)
 var _ = Describe("RateLimit", ratelimit.Policy, Ordered)
 var _ = Describe("ProxyTemplate", proxytemplate.ProxyTemplate, Ordered)
+var _ = Describe("MeshProxyPatch", meshproxypatch.MeshProxyPatch, Ordered)
 var _ = Describe("Matching", matching.Matching, Ordered)
 var _ = Describe("Mtls", mtls.Policy, Ordered)
 var _ = Describe("Reachable Services", reachableservices.ReachableServices, Ordered)
