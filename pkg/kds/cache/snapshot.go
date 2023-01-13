@@ -59,11 +59,12 @@ type Snapshot struct {
 
 var _ util_xds_v3.Snapshot = &Snapshot{}
 
-func (s *Snapshot) GetSupportedTypes() (types []string) {
+func (s *Snapshot) GetSupportedTypes() []string {
+	var types []string
 	for _, def := range registry.Global().ObjectTypes(model.HasKdsEnabled()) {
 		types = append(types, string(def))
 	}
-	return
+	return types
 }
 
 func (s *Snapshot) Consistent() error {

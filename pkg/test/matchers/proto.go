@@ -18,7 +18,7 @@ type ProtoMatcher struct {
 	Expected interface{}
 }
 
-func (p *ProtoMatcher) Match(actual interface{}) (success bool, err error) {
+func (p *ProtoMatcher) Match(actual interface{}) (bool, error) {
 	if actual == nil && p.Expected == nil {
 		return true, nil
 	}
@@ -42,12 +42,12 @@ func (p *ProtoMatcher) Match(actual interface{}) (success bool, err error) {
 	return proto.Equal(actualProto, expectedProto), nil
 }
 
-func (p *ProtoMatcher) FailureMessage(actual interface{}) (message string) {
+func (p *ProtoMatcher) FailureMessage(actual interface{}) string {
 	differences := cmp.Diff(p.Expected, actual, protocmp.Transform())
 	return "Expected matching protobuf message:\n" + differences
 }
 
-func (p *ProtoMatcher) NegatedFailureMessage(actual interface{}) (message string) {
+func (p *ProtoMatcher) NegatedFailureMessage(actual interface{}) string {
 	return "Expected different protobuf but was the same"
 }
 

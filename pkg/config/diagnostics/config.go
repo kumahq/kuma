@@ -32,7 +32,8 @@ var _ config.Config = &DiagnosticsConfig{}
 func (d *DiagnosticsConfig) Sanitize() {
 }
 
-func (d *DiagnosticsConfig) Validate() (errs error) {
+func (d *DiagnosticsConfig) Validate() error {
+	var errs error
 	if d.TlsCertFile == "" && d.TlsKeyFile != "" {
 		errs = multierr.Append(errs, errors.New(".TlsCertFile cannot be empty if TlsKeyFile has been set"))
 	}
@@ -48,7 +49,7 @@ func (d *DiagnosticsConfig) Validate() (errs error) {
 	if _, err := config_types.TLSCiphers(d.TlsCipherSuites); err != nil {
 		errs = multierr.Append(errs, errors.New(".TlsCipherSuites"+err.Error()))
 	}
-	return
+	return errs
 }
 
 func DefaultDiagnosticsConfig() *DiagnosticsConfig {

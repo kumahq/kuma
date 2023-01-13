@@ -70,8 +70,8 @@ func EnsureDefaultMeshResources(ctx context.Context, resManager manager.Resource
 	return nil
 }
 
-func ensureDefaultResource(ctx context.Context, resManager manager.ResourceManager, res model.Resource, resourceKey model.ResourceKey) (err error, created bool) {
-	err = resManager.Get(ctx, res, store.GetBy(resourceKey))
+func ensureDefaultResource(ctx context.Context, resManager manager.ResourceManager, res model.Resource, resourceKey model.ResourceKey) (error, bool) {
+	err := resManager.Get(ctx, res, store.GetBy(resourceKey))
 	if err == nil {
 		return nil, false
 	}

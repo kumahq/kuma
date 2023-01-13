@@ -167,7 +167,7 @@ func objectKeyToStoreKey(k client.ObjectKey) string {
 }
 
 // requiresExactMatch checks if the given field selector is of the form `k=v` or `k==v`.
-func requiresExactMatch(sel fields.Selector) (field, val string, required bool) {
+func requiresExactMatch(sel fields.Selector) (string, string, bool) {
 	reqs := sel.Requirements()
 	if len(reqs) != 1 {
 		return "", "", false

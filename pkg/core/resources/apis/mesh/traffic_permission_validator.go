@@ -20,7 +20,7 @@ func (d *TrafficPermissionResource) validateSources() validators.ValidationError
 	})
 }
 
-func (d *TrafficPermissionResource) validateDestinations() (err validators.ValidationError) {
+func (d *TrafficPermissionResource) validateDestinations() validators.ValidationError {
 	return ValidateSelectors(validators.RootedAt("destinations"), d.Spec.Destinations, ValidateSelectorsOpts{
 		RequireAtLeastOneSelector: true,
 		ValidateTagsOpts: ValidateTagsOpts{

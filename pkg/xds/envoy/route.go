@@ -21,11 +21,12 @@ func NewRouteFromCluster(cluster Cluster) Route {
 
 type Routes []Route
 
-func (r Routes) Clusters() (clusters []Cluster) {
+func (r Routes) Clusters() []Cluster {
+	var clusters []Cluster
 	for _, route := range r {
 		clusters = append(clusters, route.Clusters...)
 	}
-	return
+	return clusters
 }
 
 type NewRouteOpt interface {

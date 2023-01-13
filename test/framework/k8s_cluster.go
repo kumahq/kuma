@@ -602,7 +602,7 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 			"get default mesh",
 			c.defaultRetries,
 			c.defaultTimeout,
-			func() (s string, err error) {
+			func() (string, error) {
 				return k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", "mesh", "default")
 			})
 		if err != nil {
@@ -689,7 +689,7 @@ func (c *K8sCluster) UpgradeKuma(mode string, opt ...KumaDeploymentOption) error
 			"get default mesh",
 			c.defaultRetries,
 			c.defaultTimeout,
-			func() (s string, err error) {
+			func() (string, error) {
 				return k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", "mesh", "default")
 			})
 		if err != nil {
@@ -871,11 +871,13 @@ func (c *K8sCluster) closePortForwards(name string) {
 	delete(c.envoyTunnels, name)
 }
 
-func (c *K8sCluster) deleteCRDs() (errs error) {
+func (c *K8sCluster) deleteCRDs() error {
 	stdout, err := k8s.RunKubectlAndGetOutputE(c.GetTesting(), c.GetKubectlOptions(), "get", "crds", "-o", "yaml")
 	if err != nil {
 		return err
 	}
+
+	var errs error
 	if tmpfile, err := os.CreateTemp("", "crds.yaml"); err != nil {
 		errs = multierr.Append(errs, err)
 	} else {
@@ -892,7 +894,7 @@ func (c *K8sCluster) deleteCRDs() (errs error) {
 	return errs
 }
 
-func (c *K8sCluster) deleteKumaViaHelm() (errs error) {
+func (c *K8sCluster) deleteKumaViaHelm() error {
 	if c.opts.helmReleaseName == "" {
 		return errors.New("must supply a helm release name for cleanup")
 	}
@@ -901,6 +903,7 @@ func (c *K8sCluster) deleteKumaViaHelm() (errs error) {
 		KubectlOptions: c.GetKubectlOptions(Config.KumaNamespace),
 	}
 
+	var errs error
 	if err := helm.DeleteE(c.t, helmOpts, c.opts.helmReleaseName, true); err != nil {
 		errs = multierr.Append(errs, err)
 	}
@@ -1086,14 +1089,15 @@ func (c *K8sCluster) GetTesting() testing.TestingT {
 	return c.t
 }
 
-func (c *K8sCluster) DismissCluster() (errs error) {
+func (c *K8sCluster) DismissCluster() error {
+	var errs error
 	for name, deployment := range c.deployments {
 		if err := deployment.Delete(c); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 		delete(c.deployments, name)
 	}
-	return nil
+	return errs
 }
 
 func (c *K8sCluster) Deploy(deployment Deployment) error {

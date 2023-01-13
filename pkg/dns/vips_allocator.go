@@ -81,7 +81,7 @@ func (d *VIPsAllocator) CreateOrUpdateVIPConfig(ctx context.Context, mesh string
 	return nil
 }
 
-func (d *VIPsAllocator) createOrUpdateVIPConfigs(ctx context.Context, mesh string) (err error) {
+func (d *VIPsAllocator) createOrUpdateVIPConfigs(ctx context.Context, mesh string) error {
 	oldView, globalView, err := d.fetchView(ctx, mesh)
 	if err != nil {
 		return err
@@ -269,7 +269,8 @@ func (d *VIPsAllocator) BuildVirtualOutboundMeshView(ctx context.Context, mesh s
 	return outboundSet, nil
 }
 
-func AllocateVIPs(global *vips.GlobalView, voView *vips.VirtualOutboundMeshView) (errs error) {
+func AllocateVIPs(global *vips.GlobalView, voView *vips.VirtualOutboundMeshView) error {
+	var errs error
 	// Assign ips for all services
 	for _, hostnameEntry := range voView.HostnameEntries() {
 		vo := voView.Get(hostnameEntry)

@@ -249,13 +249,15 @@ func (i *KumaInjector) loadContainerPatches(
 	ctx context.Context,
 	logger logr.Logger,
 	pod *kube_core.Pod,
-) (sidecarPatches namedContainerPatches, initPatches namedContainerPatches, err error) {
+) (namedContainerPatches, namedContainerPatches, error) {
 	patchNames := i.cfg.ContainerPatches
 	otherPatches, _ := metadata.Annotations(pod.Annotations).GetList(metadata.KumaContainerPatches)
 	patchNames = append(patchNames, otherPatches...)
 
 	var missingPatches []string
 
+	var initPatches namedContainerPatches
+	var sidecarPatches namedContainerPatches
 	for _, patchName := range patchNames {
 		containerPatch := &mesh_k8s.ContainerPatch{}
 		if err := i.client.Get(ctx, kube_types.NamespacedName{Namespace: i.systemNamespace, Name: patchName}, containerPatch); err != nil {
