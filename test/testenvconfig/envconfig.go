@@ -49,16 +49,25 @@ func isTrue(s string) bool {
 	return b
 }
 
-func interfaceFrom(field reflect.Value, fn func(interface{}, *bool)) {
+func interfaceFrom[T any](field reflect.Value) T {
 	// it may be impossible for a struct field to fail this check
 	if !field.CanInterface() {
-		return
+		var zero T
+		return zero
 	}
-	var ok bool
-	fn(field.Interface(), &ok)
-	if !ok && field.CanAddr() {
-		fn(field.Addr().Interface(), &ok)
+
+	if val, ok := field.Interface().(T); ok {
+		return val
 	}
+
+	if field.CanAddr() {
+		if val, ok := field.Addr().Interface().(T); ok {
+			return val
+		}
+	}
+
+	var zero T
+	return zero
 }
 
 // Decoder has the same semantics as Setter, but takes higher precedence.
@@ -74,27 +83,19 @@ type Setter interface {
 }
 
 func decoderFrom(field reflect.Value) Decoder {
-	var d Decoder
-	interfaceFrom(field, func(v interface{}, ok *bool) { d, *ok = v.(Decoder) })
-	return d
+	return interfaceFrom[Decoder](field)
 }
 
 func setterFrom(field reflect.Value) Setter {
-	var s Setter
-	interfaceFrom(field, func(v interface{}, ok *bool) { s, *ok = v.(Setter) })
-	return s
+	return interfaceFrom[Setter](field)
 }
 
 func textUnmarshaler(field reflect.Value) encoding.TextUnmarshaler {
-	var t encoding.TextUnmarshaler
-	interfaceFrom(field, func(v interface{}, ok *bool) { t, *ok = v.(encoding.TextUnmarshaler) })
-	return t
+	return interfaceFrom[encoding.TextUnmarshaler](field)
 }
 
 func binaryUnmarshaler(field reflect.Value) encoding.BinaryUnmarshaler {
-	var b encoding.BinaryUnmarshaler
-	interfaceFrom(field, func(v interface{}, ok *bool) { b, *ok = v.(encoding.BinaryUnmarshaler) })
-	return b
+	return interfaceFrom[encoding.BinaryUnmarshaler](field)
 }
 
 var gatherRegexp = regexp.MustCompile("([^A-Z]+|[A-Z]+[^A-Z]+|[A-Z]+)")
