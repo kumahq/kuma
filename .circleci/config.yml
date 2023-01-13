@@ -55,7 +55,7 @@ commands:
           curl -s --fail --location https://dl.google.com/go/go<<parameters.go_version>>.<<parameters.go_os>>-<<parameters.go_arch>>.tar.gz | tar -xz -C $HOME
           echo 'export PATH=$HOME/go/bin:$PATH' >> $BASH_ENV
           # if GOPATH is not set, `golang-ci` fails with an obscure message
-          # "ERRO Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
+          # "ERROR Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
           echo 'export GOPATH=$HOME/go' >> $BASH_ENV
     - run:
         name: "Set DNS server for docker daemon"
@@ -66,14 +66,6 @@ commands:
           }
           EOF
           sudo service docker restart
-#    - run:
-#        name: "Update runc"
-#        # See https://github.com/rancher/k3d/issues/807 (runc's default version on the instance fails k3d)
-#        command: |
-#          if [[ `uname -s` == "Linux" ]]; then
-#            sudo sh -c 'curl -s --fail --location https://github.com/opencontainers/runc/releases/download/v1.1.0/runc.<<parameters.go_arch>> > /usr/bin/runc'
-#            sudo chown root:root /usr/bin/runc ; sudo chmod o+x /usr/bin/runc
-#          fi
 
 executors:
   golang:

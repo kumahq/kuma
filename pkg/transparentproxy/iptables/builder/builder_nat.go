@@ -189,7 +189,12 @@ func buildMeshRedirect(cfg config.TrafficFlow, prefix string, ipv6 bool) *Chain 
 		)
 }
 
-func addOutputRules(cfg config.Config, dnsServers []string, nat *table.NatTable) error {
+func addOutputRules(
+	cfg config.Config,
+	dnsServers []string,
+	nat *table.NatTable,
+	ipv6 bool,
+) error {
 	outboundChainName := cfg.Redirect.Outbound.Chain.GetFullName(cfg.Redirect.NamePrefix)
 	dnsRedirectPort := cfg.Redirect.DNS.Port
 	uid := cfg.Owner.UID
@@ -226,7 +231,7 @@ func addOutputRules(cfg config.Config, dnsServers []string, nat *table.NatTable)
 
 	if cfg.ShouldRedirectDNS() {
 		jumpTarget := Return()
-		if cfg.ShouldFallbackDNSToUpstreamChain() {
+		if !ipv6 && cfg.ShouldFallbackDNSToUpstreamChain() {
 			jumpTarget = ToUserDefinedChain(cfg.Redirect.DNS.UpstreamTargetChain)
 		}
 
@@ -332,7 +337,7 @@ func buildNatTable(
 	inboundRedirectChainName := cfg.Redirect.Inbound.RedirectChain.GetFullName(prefix)
 	nat := table.Nat()
 
-	if err := addOutputRules(cfg, dnsServers, nat); err != nil {
+	if err := addOutputRules(cfg, dnsServers, nat, ipv6); err != nil {
 		return nil, fmt.Errorf("could not add output rules %s", err)
 	}
 	if err := addPreroutingRules(cfg, nat, ipv6); err != nil {
