@@ -53,6 +53,10 @@ func (cs *K8sClusters) Verbose() bool {
 	return cs.verbose
 }
 
+func (c *K8sClusters) Install(fn InstallFunc) error {
+	panic("not implemented")
+}
+
 func (cs *K8sClusters) WithRetries(retries int) Cluster {
 	for _, c := range cs.clusters {
 		c.WithRetries(retries)
