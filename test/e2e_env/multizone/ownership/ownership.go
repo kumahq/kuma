@@ -11,17 +11,17 @@ import (
 )
 
 func MultizoneUniversal() {
+	const clusterName1 = "kuma-owner1"
+	const clusterName2 = "kuma-owner2"
+
 	var global, zoneUniversal Cluster
 	BeforeEach(func() {
-		clusters, err := NewUniversalClusters([]string{Kuma1, Kuma2}, Silent)
-		Expect(err).ToNot(HaveOccurred())
-
 		// Global
-		global = clusters.GetCluster(Kuma1)
+		global = NewUniversalCluster(NewTestingT(), clusterName1, Silent)
 		Expect(Kuma(core.Global)(global)).To(Succeed())
 
 		// Cluster 1
-		zoneUniversal = clusters.GetCluster(Kuma2)
+		zoneUniversal = NewUniversalCluster(NewTestingT(), clusterName2, Silent)
 		Expect(Kuma(core.Zone,
 			WithGlobalAddress(global.GetKuma().GetKDSServerAddress()))(zoneUniversal),
 		).To(Succeed())
@@ -67,7 +67,7 @@ func MultizoneUniversal() {
 		Eventually(func() (string, error) {
 			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
 		}, "30s", "1s").Should(ContainSubstring("Offline"))
-		Expect(global.GetKumactlOptions().RunKumactl("delete", "zone", Kuma2)).To(Succeed())
+		Expect(global.GetKumactlOptions().RunKumactl("delete", "zone", clusterName2)).To(Succeed())
 	}
 
 	It("should delete ZoneInsight when Zone is deleted", func() {
