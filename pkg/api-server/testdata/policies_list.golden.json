@@ -57,6 +57,14 @@
    "isExperimental": true
   },
   {
+   "name": "MeshHTTPRoute",
+   "readOnly": false,
+   "path": "meshhttproutes",
+   "singularDisplayName": "Mesh HTTP Route",
+   "pluralDisplayName": "Mesh HTTP Routes",
+   "isExperimental": false
+  },
+  {
    "name": "MeshHealthCheck",
    "readOnly": false,
    "path": "meshhealthchecks",
