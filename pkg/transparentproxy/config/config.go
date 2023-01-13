@@ -69,9 +69,9 @@ type TrafficFlow struct {
 }
 
 type DNS struct {
-	Enabled             bool
-	CaptureAll          bool
-	Port                uint16
+	Enabled    bool
+	CaptureAll bool
+	Port       uint16
 	// The iptables chain where the upstream DNS requests should be directed to.
 	// It is only applied for IP V4. Use with care. (default "RETURN")
 	UpstreamTargetChain string
