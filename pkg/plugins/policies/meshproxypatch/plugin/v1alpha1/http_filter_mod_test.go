@@ -55,7 +55,7 @@ var _ = Describe("HTTP Filter modifications", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual).To(MatchYAML(given.expected))
 		},
-		Entry("should add filter as a first", testCase{
+		Entry("should add filter as the last", testCase{
 			listeners: []string{
 				`
                 name: inbound:192.168.0.1:8080
@@ -97,6 +97,52 @@ var _ = Describe("HTTP Filter modifications", func() {
                       httpFilters:
                       - name: envoy.filters.http.router
                       - name: envoy.filters.http.cors
+                      statPrefix: localhost_8080
+                name: inbound:192.168.0.1:8080
+                trafficDirection: INBOUND`,
+		}),
+		Entry("should add filter as the first", testCase{
+			listeners: []string{
+				`
+                name: inbound:192.168.0.1:8080
+                trafficDirection: INBOUND
+                address:
+                  socketAddress:
+                    address: 192.168.0.1
+                    portValue: 8080
+                filterChains:
+                - filters:
+                  - name: envoy.filters.network.http_connection_manager
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                      statPrefix: localhost_8080
+                      httpFilters:
+                      - name: envoy.filters.http.router`,
+			},
+			modifications: []string{`
+                httpFilter:
+                   operation: AddFirst
+                   value: |
+                     name: envoy.filters.http.cors
+`,
+			},
+			expected: `
+            resources:
+            - name: inbound:192.168.0.1:8080
+              resource:
+                '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+                address:
+                  socketAddress:
+                    address: 192.168.0.1
+                    portValue: 8080
+                filterChains:
+                - filters:
+                  - name: envoy.filters.network.http_connection_manager
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                      httpFilters:
+                      - name: envoy.filters.http.cors
+                      - name: envoy.filters.http.router
                       statPrefix: localhost_8080
                 name: inbound:192.168.0.1:8080
                 trafficDirection: INBOUND`,

@@ -85,7 +85,7 @@ var _ = Describe("Network Filter modifications", func() {
                     portValue: 8080
                 name: inbound:192.168.0.1:8080`,
 		}),
-		Entry("should add filter as a first", testCase{
+		Entry("should add filter as the first", testCase{
 			listeners: []string{
 				`
                 name: inbound:192.168.0.1:8080
@@ -123,6 +123,46 @@ var _ = Describe("Network Filter modifications", func() {
                       '@type': type.googleapis.com/envoy.extensions.filters.network.direct_response.v3.Config
                       response:
                         inlineString: xyz
+                name: inbound:192.168.0.1:8080`,
+		}),
+		Entry("should add filter as the last", testCase{
+			listeners: []string{
+				`
+                name: inbound:192.168.0.1:8080
+                filterChains:
+                - filters:
+                  - name: envoy.filters.network.direct_response
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.network.direct_response.v3.Config
+                      response:
+                        inlineString: "xyz"`,
+			},
+			modifications: []string{`
+                networkFilter:
+                   operation: AddLast
+                   value: |
+                     name: envoy.filters.network.tcp_proxy
+                     typedConfig:
+                       '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+                       cluster: backend
+`,
+			},
+			expected: `
+            resources:
+            - name: inbound:192.168.0.1:8080
+              resource:
+                '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+                filterChains:
+                - filters:
+                  - name: envoy.filters.network.direct_response
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.network.direct_response.v3.Config
+                      response:
+                        inlineString: xyz
+                  - name: envoy.filters.network.tcp_proxy
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+                      cluster: backend
                 name: inbound:192.168.0.1:8080`,
 		}),
 		Entry("should remove all filters from all listeners when there is no match section", testCase{
