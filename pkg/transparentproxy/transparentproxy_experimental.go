@@ -161,10 +161,11 @@ func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyC
 				ExcludePortsForUIDs: excludePortsForUIDs,
 			},
 			DNS: config.DNS{
-				Enabled:            tpConfig.RedirectDNS,
-				CaptureAll:         tpConfig.RedirectAllDNSTraffic,
-				Port:               agentDNSListenerPort,
-				ConntrackZoneSplit: !tpConfig.SkipDNSConntrackZoneSplit,
+				Enabled:             tpConfig.RedirectDNS,
+				CaptureAll:          tpConfig.RedirectAllDNSTraffic,
+				Port:                agentDNSListenerPort,
+				UpstreamTargetChain: tpConfig.DNSUpstreamTargetChain,
+				ConntrackZoneSplit:  !tpConfig.SkipDNSConntrackZoneSplit,
 			},
 			VNet: config.VNet{
 				Networks: tpConfig.VnetNetworks,

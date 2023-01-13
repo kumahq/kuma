@@ -225,13 +225,19 @@ func addOutputRules(cfg config.Config, dnsServers []string, nat *table.NatTable)
 	}
 
 	if cfg.ShouldRedirectDNS() {
+		jumpTarget := Return()
+		if cfg.ShouldFallbackDNSToUpstreamChain() {
+			jumpTarget = ToUserDefinedChain(cfg.Redirect.DNS.UpstreamTargetChain)
+		}
+
 		nat.Output().Insert(
 			rulePosition,
 			Protocol(Udp(DestinationPort(DNSPort))),
 			Match(Owner(Uid(uid))),
-			Jump(Return()),
+			Jump(jumpTarget),
 		)
 		rulePosition++
+
 		if cfg.ShouldCaptureAllDNS() {
 			nat.Output().Insert(
 				rulePosition,

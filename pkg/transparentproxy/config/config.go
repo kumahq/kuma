@@ -69,11 +69,14 @@ type TrafficFlow struct {
 }
 
 type DNS struct {
-	Enabled            bool
-	CaptureAll         bool
-	Port               uint16
-	ConntrackZoneSplit bool
-	ResolvConfigPath   string
+	Enabled             bool
+	CaptureAll          bool
+	Port                uint16
+	// The iptables chain where the upstream DNS requests should be directed to.
+	// It is only applied for IP V4. Use with care. (default "RETURN")
+	UpstreamTargetChain string
+	ConntrackZoneSplit  bool
+	ResolvConfigPath    string
 }
 
 type VNet struct {
@@ -151,6 +154,13 @@ func (c Config) ShouldDropInvalidPackets() bool {
 // i.e. AppendIf(ShouldRedirectDNS, Match(...), Jump(Drop()))
 func (c Config) ShouldRedirectDNS() bool {
 	return c.Redirect.DNS.Enabled
+}
+
+// ShouldFallbackDNSToUpstreamChain is just a convenience function which can be used in
+// iptables conditional command generations instead of inlining anonymous functions
+// i.e. AppendIf(ShouldFallbackDNSToUpstreamChain, Match(...), Jump(Drop()))
+func (c Config) ShouldFallbackDNSToUpstreamChain() bool {
+	return c.Redirect.DNS.UpstreamTargetChain != ""
 }
 
 // ShouldCaptureAllDNS is just a convenience function which can be used in
@@ -307,6 +317,10 @@ func MergeConfigWithDefaults(cfg Config) Config {
 	result.Redirect.DNS.CaptureAll = cfg.Redirect.DNS.CaptureAll
 	if cfg.Redirect.DNS.ResolvConfigPath != "" {
 		result.Redirect.DNS.ResolvConfigPath = cfg.Redirect.DNS.ResolvConfigPath
+	}
+
+	if cfg.Redirect.DNS.UpstreamTargetChain != "" {
+		result.Redirect.DNS.UpstreamTargetChain = cfg.Redirect.DNS.UpstreamTargetChain
 	}
 
 	if cfg.Redirect.DNS.Port != 0 {
