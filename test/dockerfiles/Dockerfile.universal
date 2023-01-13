@@ -10,6 +10,8 @@ RUN apt update \
   && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     curl \
     dnsutils \
+    iproute2 \
+    iptables \
     ncat \
     net-tools \
     openssh-server \
