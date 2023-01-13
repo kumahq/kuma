@@ -37,55 +37,59 @@ func (t *TimeoutResource) validateDestinations() validators.ValidationError {
 	)
 }
 
-func (t *TimeoutResource) validateConf() (err validators.ValidationError) {
+func (t *TimeoutResource) validateConf() validators.ValidationError {
+	var err validators.ValidationError
 	path := validators.RootedAt("conf")
 	conf := t.Spec.GetConf()
 
 	if conf == nil {
 		err.AddViolationAt(path, HasToBeDefinedViolation)
-		return
+		return err
 	}
 
 	err.Add(t.validateConfTcp(path.Field("tcp"), conf.GetTcp()))
 	err.Add(t.validateConfHttp(path.Field("http"), conf.GetHttp()))
 	err.Add(t.validateConfGrpc(path.Field("grpc"), conf.GetGrpc()))
 
-	return
+	return err
 }
 
-func (t *TimeoutResource) validateConfTcp(path validators.PathBuilder, conf *mesh_proto.Timeout_Conf_Tcp) (err validators.ValidationError) {
+func (t *TimeoutResource) validateConfTcp(path validators.PathBuilder, conf *mesh_proto.Timeout_Conf_Tcp) validators.ValidationError {
+	var err validators.ValidationError
 	if conf == nil {
-		return
+		return err
 	}
 	if conf.IdleTimeout == nil {
 		err.AddViolationAt(path, "at least one timeout in section has to be defined")
-		return
+		return err
 	}
 	return validateDuration_GreaterThan0(path.Field("idleTimeout"), conf.IdleTimeout)
 }
 
-func (t *TimeoutResource) validateConfHttp(path validators.PathBuilder, conf *mesh_proto.Timeout_Conf_Http) (err validators.ValidationError) {
+func (t *TimeoutResource) validateConfHttp(path validators.PathBuilder, conf *mesh_proto.Timeout_Conf_Http) validators.ValidationError {
+	var err validators.ValidationError
 	if conf == nil {
-		return
+		return err
 	}
 	if conf.RequestTimeout == nil && conf.IdleTimeout == nil {
 		err.AddViolationAt(path, "at least one timeout in section has to be defined")
-		return
+		return err
 	}
 	err.Add(validateDuration_GreaterThan0OrNil(path.Field("requestTimeout"), conf.RequestTimeout))
 	err.Add(validateDuration_GreaterThan0OrNil(path.Field("idleTimeout"), conf.IdleTimeout))
-	return
+	return err
 }
 
-func (t *TimeoutResource) validateConfGrpc(path validators.PathBuilder, conf *mesh_proto.Timeout_Conf_Grpc) (err validators.ValidationError) {
+func (t *TimeoutResource) validateConfGrpc(path validators.PathBuilder, conf *mesh_proto.Timeout_Conf_Grpc) validators.ValidationError {
+	var err validators.ValidationError
 	if conf == nil {
-		return
+		return err
 	}
 	if conf.StreamIdleTimeout == nil && conf.MaxStreamDuration == nil {
 		err.AddViolationAt(path, "at least one timeout in section has to be defined")
-		return
+		return err
 	}
 	err.Add(validateDuration_GreaterThan0OrNil(path.Field("streamIdleTimeout"), conf.StreamIdleTimeout))
 	err.Add(validateDuration_GreaterThan0OrNil(path.Field("maxStreamDuration"), conf.MaxStreamDuration))
-	return
+	return err
 }

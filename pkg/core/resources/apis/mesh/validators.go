@@ -37,7 +37,8 @@ var tagNameCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9\.\-_:/]*$`)
 var tagValueCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9\.\-_:]*$`)
 var selectorCharacterSet = regexp.MustCompile(`^([a-zA-Z0-9\.\-_:/]*|\*)$`)
 
-func ValidateSelectors(path validators.PathBuilder, sources []*mesh_proto.Selector, opts ValidateSelectorsOpts) (err validators.ValidationError) {
+func ValidateSelectors(path validators.PathBuilder, sources []*mesh_proto.Selector, opts ValidateSelectorsOpts) validators.ValidationError {
+	var err validators.ValidationError
 	if opts.RequireAtLeastOneSelector && len(sources) == 0 {
 		err.AddViolationAt(path, "must have at least one element")
 	}
@@ -48,10 +49,10 @@ func ValidateSelectors(path validators.PathBuilder, sources []*mesh_proto.Select
 			err.AddViolationAt(path.Index(i), `there can be at most one selector`)
 		}
 	}
-	return
+	return err
 }
 
-func ValidateSelector(path validators.PathBuilder, tags map[string]string, opts ValidateTagsOpts) (err validators.ValidationError) {
+func ValidateSelector(path validators.PathBuilder, tags map[string]string, opts ValidateTagsOpts) validators.ValidationError {
 	opts.ExtraTagValueValidators = append([]TagValueValidatorFunc{
 		func(path validators.PathBuilder, key, value string) validators.ValidationError {
 			var err validators.ValidationError
@@ -65,7 +66,7 @@ func ValidateSelector(path validators.PathBuilder, tags map[string]string, opts 
 	return validateTagKeyValues(path, tags, opts)
 }
 
-func ValidateTags(path validators.PathBuilder, tags map[string]string, opts ValidateTagsOpts) (err validators.ValidationError) {
+func ValidateTags(path validators.PathBuilder, tags map[string]string, opts ValidateTagsOpts) validators.ValidationError {
 	opts.ExtraTagValueValidators = append([]TagValueValidatorFunc{
 		func(path validators.PathBuilder, key, value string) validators.ValidationError {
 			var err validators.ValidationError
@@ -79,7 +80,8 @@ func ValidateTags(path validators.PathBuilder, tags map[string]string, opts Vali
 	return validateTagKeyValues(path, tags, opts)
 }
 
-func validateTagKeyValues(path validators.PathBuilder, keyValues map[string]string, opts ValidateTagsOpts) (err validators.ValidationError) {
+func validateTagKeyValues(path validators.PathBuilder, keyValues map[string]string, opts ValidateTagsOpts) validators.ValidationError {
+	var err validators.ValidationError
 	if opts.RequireAtLeastOneTag && len(keyValues) == 0 {
 		err.AddViolationAt(path, "must have at least one tag")
 	}
@@ -109,7 +111,7 @@ func validateTagKeyValues(path validators.PathBuilder, keyValues map[string]stri
 	if opts.RequireService && !defined {
 		err.AddViolationAt(path, fmt.Sprintf("mandatory tag %q is missing", mesh_proto.ServiceTag))
 	}
-	return
+	return err
 }
 
 var OnlyServiceTagAllowed = ValidateSelectorsOpts{
@@ -117,20 +119,22 @@ var OnlyServiceTagAllowed = ValidateSelectorsOpts{
 	ValidateTagsOpts: ValidateTagsOpts{
 		RequireService: true,
 		ExtraTagsValidators: []TagsValidatorFunc{
-			func(path validators.PathBuilder, selector map[string]string) (err validators.ValidationError) {
+			func(path validators.PathBuilder, selector map[string]string) validators.ValidationError {
+				var err validators.ValidationError
 				_, defined := selector[mesh_proto.ServiceTag]
 				if len(selector) != 1 || !defined {
 					err.AddViolationAt(path, fmt.Sprintf("must consist of exactly one tag %q", mesh_proto.ServiceTag))
 				}
-				return
+				return err
 			},
 		},
 		ExtraTagKeyValidators: []TagKeyValidatorFunc{
-			func(path validators.PathBuilder, key string) (err validators.ValidationError) {
+			func(path validators.PathBuilder, key string) validators.ValidationError {
+				var err validators.ValidationError
 				if key != mesh_proto.ServiceTag {
 					err.AddViolationAt(path.Key(key), fmt.Sprintf("tag %q is not allowed", key))
 				}
-				return
+				return err
 			},
 		},
 	},
@@ -146,26 +150,28 @@ func Keys(tags map[string]string) []string {
 	return keys
 }
 
-func ValidateDuration(path validators.PathBuilder, duration *durationpb.Duration) (errs validators.ValidationError) {
+func ValidateDuration(path validators.PathBuilder, duration *durationpb.Duration) validators.ValidationError {
+	var errs validators.ValidationError
 	if duration == nil {
 		errs.AddViolationAt(path, "must have a positive value")
-		return
+		return errs
 	}
 	if err := duration.CheckValid(); err != nil {
 		errs.AddViolationAt(path, "must have a valid value")
-		return
+		return errs
 	}
 	if duration.AsDuration() == 0 {
 		errs.AddViolationAt(path, "must have a positive value")
 	}
-	return
+	return errs
 }
 
-func ValidateThreshold(path validators.PathBuilder, threshold uint32) (err validators.ValidationError) {
+func ValidateThreshold(path validators.PathBuilder, threshold uint32) validators.ValidationError {
+	var err validators.ValidationError
 	if threshold == 0 {
 		err.AddViolationAt(path, "must have a positive value")
 	}
-	return
+	return err
 }
 
 // ValidatePort validates that port is a valid TCP or UDP port number.
@@ -218,20 +224,21 @@ func AllowedValuesHint(values ...string) string {
 }
 
 func ProtocolValidator(protocols ...string) TagsValidatorFunc {
-	return func(path validators.PathBuilder, selector map[string]string) (err validators.ValidationError) {
+	return func(path validators.PathBuilder, selector map[string]string) validators.ValidationError {
+		var err validators.ValidationError
 		v, defined := selector[mesh_proto.ProtocolTag]
 		if !defined {
 			err.AddViolationAt(path, "protocol must be specified")
-			return
+			return err
 		}
 		for _, protocol := range protocols {
 			if v == protocol {
-				return
+				return err
 			}
 		}
 		err.AddViolationAt(path.Key(mesh_proto.ProtocolTag), fmt.Sprintf("must be one of the [%s]",
 			strings.Join(protocols, ", ")))
-		return
+		return err
 	}
 }
 

@@ -55,7 +55,8 @@ func (f *FaultInjectionResource) validateDestinations() validators.ValidationErr
 	})
 }
 
-func (f *FaultInjectionResource) validateConf() (err validators.ValidationError) {
+func (f *FaultInjectionResource) validateConf() validators.ValidationError {
+	var err validators.ValidationError
 	root := validators.RootedAt("conf")
 	if !f.HasFaultDelay() && !f.HasFaultAbort() && !f.HasFaultResponseBandwidth() {
 		err.AddViolationAt(root, "must have at least one of the faults configured")
@@ -69,61 +70,67 @@ func (f *FaultInjectionResource) validateConf() (err validators.ValidationError)
 	if f.HasFaultResponseBandwidth() {
 		err.Add(validateResponseBandwidth(root.Field("responseBandwidth"), f.Spec.GetConf().GetResponseBandwidth()))
 	}
-	return
+	return err
 }
 
-func validateDelay(path validators.PathBuilder, delay *v1alpha1.FaultInjection_Conf_Delay) (err validators.ValidationError) {
+func validateDelay(path validators.PathBuilder, delay *v1alpha1.FaultInjection_Conf_Delay) validators.ValidationError {
+	var err validators.ValidationError
 	err.Add(validatePercentage(path, delay.GetPercentage()))
 	if delay.GetValue() == nil {
 		err.AddViolationAt(path.Field("value"), "cannot be empty")
 	}
-	return
+	return err
 }
 
-func validateAbort(path validators.PathBuilder, abort *v1alpha1.FaultInjection_Conf_Abort) (err validators.ValidationError) {
+func validateAbort(path validators.PathBuilder, abort *v1alpha1.FaultInjection_Conf_Abort) validators.ValidationError {
+	var err validators.ValidationError
 	err.Add(validatePercentage(path, abort.GetPercentage()))
 	err.Add(validateHttpStatus(path, abort.GetHttpStatus()))
-	return
+	return err
 }
 
-func validateResponseBandwidth(path validators.PathBuilder, bandwidth *v1alpha1.FaultInjection_Conf_ResponseBandwidth) (err validators.ValidationError) {
+func validateResponseBandwidth(path validators.PathBuilder, bandwidth *v1alpha1.FaultInjection_Conf_ResponseBandwidth) validators.ValidationError {
+	var err validators.ValidationError
 	err.Add(validatePercentage(path, bandwidth.GetPercentage()))
 	err.Add(validateLimit(path, bandwidth.GetLimit()))
-	return
+	return err
 }
 
-func validatePercentage(path validators.PathBuilder, percentage *wrapperspb.DoubleValue) (err validators.ValidationError) {
+func validatePercentage(path validators.PathBuilder, percentage *wrapperspb.DoubleValue) validators.ValidationError {
+	var err validators.ValidationError
 	if percentage == nil {
 		err.AddViolationAt(path.Field("percentage"), "cannot be empty")
-		return
+		return err
 	}
 
 	if percentage.GetValue() < 0.0 || percentage.GetValue() > 100.0 {
 		err.AddViolationAt(path.Field("percentage"), "has to be in [0.0 - 100.0] range")
 	}
-	return
+	return err
 }
 
-func validateLimit(path validators.PathBuilder, limit *wrapperspb.StringValue) (err validators.ValidationError) {
+func validateLimit(path validators.PathBuilder, limit *wrapperspb.StringValue) validators.ValidationError {
+	var err validators.ValidationError
 	if limit == nil {
 		err.AddViolationAt(path.Field("limit"), "cannot be empty")
-		return
+		return err
 	}
 
 	if matched, _ := regexp.MatchString(`\d*\s?[gmk]bps`, limit.GetValue()); !matched {
 		err.AddViolationAt(path.Field("limit"), "has to be in kbps/mbps/gbps units")
 	}
-	return
+	return err
 }
 
-func validateHttpStatus(path validators.PathBuilder, httpStatus *wrapperspb.UInt32Value) (err validators.ValidationError) {
+func validateHttpStatus(path validators.PathBuilder, httpStatus *wrapperspb.UInt32Value) validators.ValidationError {
+	var err validators.ValidationError
 	if httpStatus == nil {
 		err.AddViolationAt(path.Field("httpStatus"), "cannot be empty")
-		return
+		return err
 	}
 
 	if status := http.StatusText(int(httpStatus.GetValue())); len(status) == 0 {
 		err.AddViolationAt(path.Field("httpStatus"), "http status code is incorrect")
 	}
-	return
+	return err
 }

@@ -108,34 +108,37 @@ func getRepeatedRetryOnViolations(
 func validateDuration_GreaterThan0(
 	path validators.PathBuilder,
 	duration *durationpb.Duration,
-) (err validators.ValidationError) {
+) validators.ValidationError {
+	var err validators.ValidationError
 	if duration.Seconds == 0 && duration.Nanos == 0 {
 		err.AddViolationAt(path, HasToBeGreaterThan0Violation)
 	}
 
-	return
+	return err
 }
 func validateDuration_GreaterThan0OrNil(
 	path validators.PathBuilder,
 	duration *durationpb.Duration,
-) (err validators.ValidationError) {
+) validators.ValidationError {
+	var err validators.ValidationError
 	if duration == nil {
-		return
+		return err
 	}
 
 	if duration.Seconds == 0 && duration.Nanos == 0 {
 		err.AddViolationAt(path, WhenDefinedHasToBeGreaterThan0Violation)
 	}
 
-	return
+	return err
 }
 
 func validateConfProtocolBackOff(
 	path validators.PathBuilder,
 	conf *mesh_proto.Retry_Conf_BackOff,
-) (err validators.ValidationError) {
+) validators.ValidationError {
+	var err validators.ValidationError
 	if conf == nil {
-		return
+		return err
 	}
 
 	if conf.BaseInterval == nil {
@@ -157,30 +160,32 @@ func validateConfProtocolBackOff(
 		}
 	}
 
-	return
+	return err
 }
 
 func validateUint32_GreaterThan0OrNil(
 	path validators.PathBuilder,
 	value *wrapperspb.UInt32Value,
-) (err validators.ValidationError) {
+) validators.ValidationError {
+	var err validators.ValidationError
 	if value == nil {
-		return
+		return err
 	}
 
 	if value.Value == 0 {
 		err.AddViolationAt(path, WhenDefinedHasToBeGreaterThan0Violation)
 	}
 
-	return
+	return err
 }
 
 func validateConfHttp(
 	path validators.PathBuilder,
 	conf *mesh_proto.Retry_Conf_Http,
-) (err validators.ValidationError) {
+) validators.ValidationError {
+	var err validators.ValidationError
 	if conf == nil {
-		return
+		return err
 	}
 
 	numRetries, perTryTimeout, backOff, retriableStatusCodes, retriableMethods, retryOn :=
@@ -216,15 +221,16 @@ func validateConfHttp(
 		}
 	}
 
-	return
+	return err
 }
 
 func validateConfGrpc(
 	path validators.PathBuilder,
 	conf *mesh_proto.Retry_Conf_Grpc,
-) (err validators.ValidationError) {
+) validators.ValidationError {
+	var err validators.ValidationError
 	if conf == nil {
-		return
+		return err
 	}
 
 	numRetries, perTryTimeout, backOff, retryOn :=
@@ -251,15 +257,16 @@ func validateConfGrpc(
 
 	err.Add(validateConfProtocolBackOff(path.Field("backOff"), backOff))
 
-	return
+	return err
 }
 
 func validateConfTcp(
 	path validators.PathBuilder,
 	conf *mesh_proto.Retry_Conf_Tcp,
-) (err validators.ValidationError) {
+) validators.ValidationError {
+	var err validators.ValidationError
 	if conf == nil {
-		return
+		return err
 	}
 
 	if conf.MaxConnectAttempts == 0 {
@@ -269,16 +276,17 @@ func validateConfTcp(
 		)
 	}
 
-	return
+	return err
 }
 
-func (r *RetryResource) validateConf() (err validators.ValidationError) {
+func (r *RetryResource) validateConf() validators.ValidationError {
+	var err validators.ValidationError
 	path := validators.RootedAt("conf")
 	conf := r.Spec.GetConf()
 
 	if conf == nil {
 		err.AddViolationAt(path, HasToBeDefinedViolation)
-		return
+		return err
 	}
 
 	if conf.Http == nil && conf.Grpc == nil && conf.Tcp == nil {
@@ -286,12 +294,12 @@ func (r *RetryResource) validateConf() (err validators.ValidationError) {
 			path,
 			"missing protocol [grpc|http|tcp] configuration",
 		)
-		return
+		return err
 	}
 
 	err.Add(validateConfHttp(path.Field("http"), conf.GetHttp()))
 	err.Add(validateConfGrpc(path.Field("grpc"), conf.GetGrpc()))
 	err.Add(validateConfTcp(path.Field("tcp"), conf.GetTcp()))
 
-	return
+	return err
 }

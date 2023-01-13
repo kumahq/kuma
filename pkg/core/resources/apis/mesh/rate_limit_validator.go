@@ -24,7 +24,7 @@ func (d *RateLimitResource) validateSources() validators.ValidationError {
 	})
 }
 
-func (d *RateLimitResource) validateDestinations() (err validators.ValidationError) {
+func (d *RateLimitResource) validateDestinations() validators.ValidationError {
 	return ValidateSelectors(validators.RootedAt("destinations"), d.Spec.Destinations, ValidateSelectorsOpts{
 		RequireAtLeastOneSelector: true,
 		ValidateTagsOpts: ValidateTagsOpts{
@@ -33,7 +33,8 @@ func (d *RateLimitResource) validateDestinations() (err validators.ValidationErr
 	})
 }
 
-func (d *RateLimitResource) validateConf() (err validators.ValidationError) {
+func (d *RateLimitResource) validateConf() validators.ValidationError {
+	var err validators.ValidationError
 	root := validators.RootedAt("conf")
 	if d.Spec.GetConf() == nil {
 		err.AddViolationAt(root, "must have conf")
@@ -43,10 +44,11 @@ func (d *RateLimitResource) validateConf() (err validators.ValidationError) {
 		err.Add(d.validateHttp(root.Field("http"), d.Spec.GetConf().GetHttp()))
 	}
 
-	return
+	return err
 }
 
-func (d *RateLimitResource) validateHttp(path validators.PathBuilder, http *v1alpha1.RateLimit_Conf_Http) (err validators.ValidationError) {
+func (d *RateLimitResource) validateHttp(path validators.PathBuilder, http *v1alpha1.RateLimit_Conf_Http) validators.ValidationError {
+	var err validators.ValidationError
 	if http.GetRequests() == 0 {
 		err.AddViolationAt(path.Field("requests"), "requests must be set")
 	}
@@ -59,10 +61,11 @@ func (d *RateLimitResource) validateHttp(path validators.PathBuilder, http *v1al
 		err.Add(d.validateOnRateLimit(path.Field("onRateLimit"), http.GetOnRateLimit()))
 	}
 
-	return
+	return err
 }
 
-func (d *RateLimitResource) validateOnRateLimit(path validators.PathBuilder, onRateLimit *v1alpha1.RateLimit_Conf_Http_OnRateLimit) (err validators.ValidationError) {
+func (d *RateLimitResource) validateOnRateLimit(path validators.PathBuilder, onRateLimit *v1alpha1.RateLimit_Conf_Http_OnRateLimit) validators.ValidationError {
+	var err validators.ValidationError
 	for i, h := range onRateLimit.GetHeaders() {
 		if h.Key == "" {
 			err.AddViolationAt(path.Field("header").Key(fmt.Sprintf("%d", i)), "key must be set")
@@ -71,5 +74,5 @@ func (d *RateLimitResource) validateOnRateLimit(path validators.PathBuilder, onR
 			err.AddViolationAt(path.Field("header").Key(fmt.Sprintf("%d", i)), "value must be set")
 		}
 	}
-	return
+	return err
 }

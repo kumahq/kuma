@@ -12,25 +12,23 @@ import (
 )
 
 func ResilienceMultizoneUniversalPostgres() {
+	const clusterName1 = "kuma-respos1"
+	const clusterName2 = "kuma-respos2"
+
 	var global, zoneUniversal Cluster
 
 	BeforeEach(func() {
-		clusters, err := NewUniversalClusters(
-			[]string{Kuma1, Kuma2},
-			Verbose)
-		Expect(err).ToNot(HaveOccurred())
-
 		// Global
-		global = clusters.GetCluster(Kuma1)
+		global = NewUniversalCluster(NewTestingT(), clusterName1, Verbose)
 
-		err = NewClusterSetup().
-			Install(postgres.Install(Kuma1)).
+		err := NewClusterSetup().
+			Install(postgres.Install(clusterName1)).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Global,
-				WithPostgres(postgres.From(global, Kuma1).GetEnvVars()),
+				WithPostgres(postgres.From(global, clusterName1).GetEnvVars()),
 				WithEnv("KUMA_METRICS_ZONE_IDLE_TIMEOUT", "10s"),
 			)).
 			Setup(global)
@@ -39,17 +37,17 @@ func ResilienceMultizoneUniversalPostgres() {
 		globalCP := global.GetKuma()
 
 		// Cluster 1
-		zoneUniversal = clusters.GetCluster(Kuma2)
+		zoneUniversal = NewUniversalCluster(NewTestingT(), clusterName2, Verbose)
 
 		err = NewClusterSetup().
-			Install(postgres.Install(Kuma2)).
+			Install(postgres.Install(clusterName2)).
 			Setup(zoneUniversal)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone,
 				WithGlobalAddress(globalCP.GetKDSServerAddress()),
-				WithPostgres(postgres.From(zoneUniversal, Kuma2).GetEnvVars()),
+				WithPostgres(postgres.From(zoneUniversal, clusterName2).GetEnvVars()),
 				WithEnv("KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT", "10s"),
 			)).
 			Setup(zoneUniversal)

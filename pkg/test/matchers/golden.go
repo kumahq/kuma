@@ -46,7 +46,7 @@ type GoldenMatcher struct {
 
 var _ types.GomegaMatcher = &GoldenMatcher{}
 
-func (g *GoldenMatcher) Match(actual interface{}) (success bool, err error) {
+func (g *GoldenMatcher) Match(actual interface{}) (bool, error) {
 	actualContent, err := g.actualString(actual)
 	if err != nil {
 		return false, err
@@ -73,7 +73,7 @@ func (g *GoldenMatcher) Match(actual interface{}) (success bool, err error) {
 	return g.Matcher.Match(actualContent)
 }
 
-func (g *GoldenMatcher) FailureMessage(actual interface{}) (message string) {
+func (g *GoldenMatcher) FailureMessage(actual interface{}) string {
 	actualContent, err := g.actualString(actual)
 	if err != nil {
 		return err.Error()
@@ -81,7 +81,7 @@ func (g *GoldenMatcher) FailureMessage(actual interface{}) (message string) {
 	return golden.RerunMsg + "\n\n" + g.Matcher.FailureMessage(actualContent)
 }
 
-func (g *GoldenMatcher) NegatedFailureMessage(actual interface{}) (message string) {
+func (g *GoldenMatcher) NegatedFailureMessage(actual interface{}) string {
 	actualContent, err := g.actualString(actual)
 	if err != nil {
 		return err.Error()

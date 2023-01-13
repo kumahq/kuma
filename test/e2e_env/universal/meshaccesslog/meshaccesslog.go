@@ -68,7 +68,8 @@ func TestPlugin() {
 	})
 
 	trafficLogFormat := "%START_TIME(%s)%,%KUMA_SOURCE_SERVICE%,%KUMA_DESTINATION_SERVICE%"
-	expectTrafficLogged := func(makeRequest func(g Gomega)) (src, dst string) {
+	expectTrafficLogged := func(makeRequest func(g Gomega)) (string, string) {
+		var src, dst string
 		sinkDeployment := env.Cluster.Deployment(externalServiceDeployment).(*externalservice.UniversalDeployment)
 
 		Eventually(func(g Gomega) {
