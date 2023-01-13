@@ -265,7 +265,7 @@ func WaitPodsAvailable(namespace, app string) InstallFunc {
 			return err
 		}
 		for _, p := range pods {
-			err := WaitUntilPodAvailableE(c.GetTesting(), c.GetKubectlOptions(namespace), p.GetName(), ck8s.defaultRetries, ck8s.defaultTimeout)
+			err := k8s.WaitUntilPodAvailableE(c.GetTesting(), c.GetKubectlOptions(namespace), p.GetName(), ck8s.defaultRetries, ck8s.defaultTimeout)
 			if err != nil {
 				return err
 			}
