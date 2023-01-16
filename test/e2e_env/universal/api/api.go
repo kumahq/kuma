@@ -7,12 +7,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/universal/env"
+	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func Api() {
 	It("Works with /policies", func() {
-		r, err := http.Get(env.Cluster.GetKuma().GetAPIServerAddress() + "/policies")
+		r, err := http.Get(universal.Cluster.GetKuma().GetAPIServerAddress() + "/policies")
 		Expect(err).ToNot(HaveOccurred())
 		defer r.Body.Close()
 
@@ -22,7 +22,7 @@ func Api() {
 	})
 
 	It("Works with /", func() {
-		r, err := http.Get(env.Cluster.GetKuma().GetAPIServerAddress())
+		r, err := http.Get(universal.Cluster.GetKuma().GetAPIServerAddress())
 		Expect(err).ToNot(HaveOccurred())
 		defer r.Body.Close()
 

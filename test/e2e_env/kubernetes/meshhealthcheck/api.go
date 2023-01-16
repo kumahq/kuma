@@ -8,8 +8,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
 func API() {
@@ -18,23 +18,23 @@ func API() {
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MeshKubernetes(meshName)).
-			Setup(env.Cluster)
+			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterEach(func() {
 		Expect(
-			DeleteMeshResources(env.Cluster, meshName, v1alpha1.MeshHealthCheckResourceTypeDescriptor),
+			DeleteMeshResources(kubernetes.Cluster, meshName, v1alpha1.MeshHealthCheckResourceTypeDescriptor),
 		).To(Succeed())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should create MeshHealthCheck policy", func() {
 		// given no MeshHealthChecks
-		mtps, err := env.Cluster.GetKumactlOptions().KumactlList("meshhealthchecks", meshName)
+		mtps, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("meshhealthchecks", meshName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(mtps).To(HaveLen(0))
 
@@ -66,10 +66,10 @@ spec:
         http:
           path: /
           expectedStatuses: [200]
-`, Config.KumaNamespace))(env.Cluster)).To(Succeed())
+`, Config.KumaNamespace))(kubernetes.Cluster)).To(Succeed())
 
 		// then
-		mtps, err = env.Cluster.GetKumactlOptions().KumactlList("meshhealthchecks", meshName)
+		mtps, err = kubernetes.Cluster.GetKumactlOptions().KumactlList("meshhealthchecks", meshName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(mtps).To(HaveLen(1))
 		Expect(mtps[0]).To(Equal(fmt.Sprintf("mhc1.%s", Config.KumaNamespace)))
@@ -77,14 +77,14 @@ spec:
 
 	It("should deny creating policy in the non-system namespace", func() {
 		// given no MeshHealthChecks
-		mtps, err := env.Cluster.GetKumactlOptions().KumactlList("meshhealthchecks", meshName)
+		mtps, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("meshhealthchecks", meshName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(mtps).To(HaveLen(0))
 
 		// when
 		err = k8s.KubectlApplyFromStringE(
-			env.Cluster.GetTesting(),
-			env.Cluster.GetKubectlOptions(), `
+			kubernetes.Cluster.GetTesting(),
+			kubernetes.Cluster.GetKubectlOptions(), `
 apiVersion: kuma.io/v1alpha1
 kind: MeshHealthCheck
 metadata:

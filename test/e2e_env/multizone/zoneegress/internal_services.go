@@ -6,10 +6,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/multizone/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
+	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
 
 func InternalServices() {
@@ -30,12 +30,12 @@ routing:
 
 	BeforeAll(func() {
 		// Global
-		err := env.Global.Install(YamlUniversal(mesh))
+		err := multizone.Global.Install(YamlUniversal(mesh))
 		Expect(err).ToNot(HaveOccurred())
-		Expect(WaitForMesh(meshName, env.Zones())).To(Succeed())
+		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
 		// Universal Zone 1
-		err = env.UniZone1.Install(DemoClientUniversal(
+		err = multizone.UniZone1.Install(DemoClientUniversal(
 			"zone3-demo-client",
 			meshName,
 			WithTransparentProxy(true),
@@ -43,7 +43,7 @@ routing:
 		Expect(err).ToNot(HaveOccurred())
 
 		// Universal Zone 2
-		err = env.UniZone2.Install(TestServerUniversal("zone4-dp-echo", meshName,
+		err = multizone.UniZone2.Install(TestServerUniversal("zone4-dp-echo", meshName,
 			WithArgs([]string{"echo", "--instance", "echo-v1"}),
 			WithServiceName("zone4-test-server"),
 		))
@@ -53,7 +53,7 @@ routing:
 		err = NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(DemoClientK8s(meshName, namespace)).
-			Setup(env.KubeZone1)
+			Setup(multizone.KubeZone1)
 		Expect(err).ToNot(HaveOccurred())
 
 		// Kubernetes Zone 2
@@ -64,23 +64,23 @@ routing:
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(meshName),
 			)).
-			Setup(env.KubeZone2)
+			Setup(multizone.KubeZone2)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterAll(func() {
-		Expect(env.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(env.KubeZone2.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(env.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(env.UniZone2.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(env.Global.DeleteMesh(meshName)).To(Succeed())
+		Expect(multizone.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(multizone.KubeZone2.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(multizone.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(multizone.UniZone2.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(multizone.Global.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	Context("when the client is from kubernetes cluster", func() {
 		var zone1ClientPodName string
 
 		BeforeAll(func() {
-			podName, err := PodNameOfApp(env.KubeZone1, "demo-client", namespace)
+			podName, err := PodNameOfApp(multizone.KubeZone1, "demo-client", namespace)
 			Expect(err).ToNot(HaveOccurred())
 			zone1ClientPodName = podName
 		})
@@ -94,18 +94,18 @@ routing:
 			)
 
 			Eventually(func(g Gomega) {
-				g.Expect(env.KubeZone1.GetZoneEgressEnvoyTunnel().GetStats(filter)).To(stats.BeEqualZero())
+				g.Expect(multizone.KubeZone1.GetZoneEgressEnvoyTunnel().GetStats(filter)).To(stats.BeEqualZero())
 			}, "30s", "1s").Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				_, stderr, err := env.KubeZone1.Exec(namespace, zone1ClientPodName, "demo-client",
+				_, stderr, err := multizone.KubeZone1.Exec(namespace, zone1ClientPodName, "demo-client",
 					"curl", "--verbose", "--max-time", "3", "--fail", "test-server_ze-internal_svc_80.mesh")
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 			}).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				g.Expect(env.KubeZone1.GetZoneEgressEnvoyTunnel().GetStats(filter)).
+				g.Expect(multizone.KubeZone1.GetZoneEgressEnvoyTunnel().GetStats(filter)).
 					To(stats.BeGreaterThanZero())
 			}, "30s", "1s").Should(Succeed())
 		})
@@ -120,19 +120,19 @@ routing:
 			)
 
 			Eventually(func(g Gomega) {
-				g.Expect(env.UniZone1.GetZoneEgressEnvoyTunnel().GetStats(filter)).
+				g.Expect(multizone.UniZone1.GetZoneEgressEnvoyTunnel().GetStats(filter)).
 					To(stats.BeEqualZero())
 			}, "30s", "1s").Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				stdout, _, err := env.UniZone1.Exec("", "", "zone3-demo-client",
+				stdout, _, err := multizone.UniZone1.Exec("", "", "zone3-demo-client",
 					"curl", "--verbose", "--max-time", "3", "--fail", "zone4-test-server.mesh")
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 			}, "30s", "1s").Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				g.Expect(env.UniZone1.GetZoneEgressEnvoyTunnel().GetStats(filter)).
+				g.Expect(multizone.UniZone1.GetZoneEgressEnvoyTunnel().GetStats(filter)).
 					To(stats.BeGreaterThanZero())
 			}, "30s", "1s").Should(Succeed())
 		})

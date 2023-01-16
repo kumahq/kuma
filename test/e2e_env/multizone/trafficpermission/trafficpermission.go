@@ -6,8 +6,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/test/e2e_env/multizone/env"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
 
 func TrafficPermission() {
@@ -18,12 +18,12 @@ func TrafficPermission() {
 
 	BeforeAll(func() {
 		// Global
-		err := env.Global.Install(MTLSMeshUniversal(meshName))
+		err := multizone.Global.Install(MTLSMeshUniversal(meshName))
 		Expect(err).ToNot(HaveOccurred())
-		Expect(WaitForMesh(meshName, env.Zones())).To(Succeed())
+		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
 		// Universal Zone 1
-		err = env.UniZone1.Install(TestServerUniversal("test-server", meshName,
+		err = multizone.UniZone1.Install(TestServerUniversal("test-server", meshName,
 			WithArgs([]string{"echo", "--instance", "echo"}),
 		))
 		Expect(err).ToNot(HaveOccurred())
@@ -32,26 +32,26 @@ func TrafficPermission() {
 		err = NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(DemoClientK8s(meshName, namespace)).
-			Setup(env.KubeZone1)
+			Setup(multizone.KubeZone1)
 		Expect(err).ToNot(HaveOccurred())
 
-		clientPodName, err = PodNameOfApp(env.KubeZone1, "demo-client", namespace)
+		clientPodName, err = PodNameOfApp(multizone.KubeZone1, "demo-client", namespace)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	BeforeEach(func() {
-		Expect(DeleteMeshResources(env.Global, meshName, core_mesh.TrafficPermissionResourceTypeDescriptor)).To(Succeed())
+		Expect(DeleteMeshResources(multizone.Global, meshName, core_mesh.TrafficPermissionResourceTypeDescriptor)).To(Succeed())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(env.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(env.Global.DeleteMesh(meshName)).To(Succeed())
+		Expect(multizone.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(multizone.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(multizone.Global.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	trafficAllowed := func() {
 		Eventually(func(g Gomega) {
-			_, _, err := env.KubeZone1.Exec(namespace, clientPodName, "demo-client",
+			_, _, err := multizone.KubeZone1.Exec(namespace, clientPodName, "demo-client",
 				"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
 		}).Should(Succeed())
@@ -59,7 +59,7 @@ func TrafficPermission() {
 
 	trafficBlocked := func() {
 		Eventually(func() error {
-			_, _, err := env.KubeZone1.Exec(namespace, clientPodName, "demo-client",
+			_, _, err := multizone.KubeZone1.Exec(namespace, clientPodName, "demo-client",
 				"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
 			return err
 		}).Should(HaveOccurred())
@@ -81,7 +81,7 @@ destinations:
   - match:
       kuma.io/service: '*'
 `
-		err := YamlUniversal(yaml)(env.Global)
+		err := YamlUniversal(yaml)(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -104,7 +104,7 @@ destinations:
  - match:
      kuma.io/zone: kuma-4
 `
-		err := YamlUniversal(yaml)(env.Global)
+		err := YamlUniversal(yaml)(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -127,7 +127,7 @@ destinations:
  - match:
      kuma.io/service: test-server
 `
-		err := YamlUniversal(yaml)(env.Global)
+		err := YamlUniversal(yaml)(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -150,11 +150,11 @@ destinations:
  - match:
      kuma.io/service: test-server
 `
-		err := YamlUniversal(yaml)(env.Global)
+		err := YamlUniversal(yaml)(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
 
 		// and when Kubernetes pod is labeled
-		err = k8s.RunKubectlE(env.KubeZone1.GetTesting(), env.KubeZone1.GetKubectlOptions(namespace), "label", "pod", clientPodName, "newtag=client")
+		err = k8s.RunKubectlE(multizone.KubeZone1.GetTesting(), multizone.KubeZone1.GetKubectlOptions(namespace), "label", "pod", clientPodName, "newtag=client")
 		Expect(err).ToNot(HaveOccurred())
 
 		// then

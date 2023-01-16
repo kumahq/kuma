@@ -7,10 +7,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/multizone/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
 
 func GatewayHybrid() {
@@ -21,8 +21,8 @@ func GatewayHybrid() {
 	const UniResponse = "universal"
 
 	BeforeAll(func() {
-		Expect(env.Global.Install(MTLSMeshUniversal(meshName))).To(Succeed())
-		Expect(WaitForMesh(meshName, env.Zones())).To(Succeed())
+		Expect(multizone.Global.Install(MTLSMeshUniversal(meshName))).To(Succeed())
+		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
 		err := NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
@@ -31,7 +31,7 @@ func GatewayHybrid() {
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(meshName),
 			)).
-			Setup(env.KubeZone1)
+			Setup(multizone.KubeZone1)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
@@ -41,14 +41,14 @@ func GatewayHybrid() {
 				WithServiceName("test-server_gateway-hybrid_svc_80"),
 			)).
 			Install(TestServerUniversal("gateway-client", meshName, WithoutDataplane())).
-			Setup(env.UniZone1)
+			Setup(multizone.UniZone1)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(env.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(env.Global.DeleteMesh(meshName)).To(Succeed())
+		Expect(multizone.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(multizone.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(multizone.Global.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	type testCase struct {
@@ -110,13 +110,13 @@ conf:
       - destination:
           kuma.io/service: test-server_gateway-hybrid_svc_80
 `)).
-					Setup(env.Global)
+					Setup(multizone.Global)
 				Expect(err).ToNot(HaveOccurred())
 
 				Eventually(func(g Gomega) {
-					gatewayIP := env.UniZone1.GetApp("edge-gateway").GetIP()
+					gatewayIP := multizone.UniZone1.GetApp("edge-gateway").GetIP()
 					responses, err := client.CollectResponsesByInstance(
-						env.UniZone1,
+						multizone.UniZone1,
 						"gateway-client",
 						fmt.Sprintf("http://%s%s", net.JoinHostPort(gatewayIP, "8080"), given.path),
 						client.WithHeader("Host", "example.kuma.io"),

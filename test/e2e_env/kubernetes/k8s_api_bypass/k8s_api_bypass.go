@@ -6,8 +6,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
 func K8sApiBypass() {
@@ -37,16 +37,16 @@ spec:
 			Install(YamlK8s(fmt.Sprintf(meshDefaultMtlsOn, "true"))).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(DemoClientK8s(meshName, namespace)).
-			Setup(env.Cluster)
+			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		clientPodName, err = PodNameOfApp(env.Cluster, "demo-client", namespace)
+		clientPodName, err = PodNameOfApp(kubernetes.Cluster, "demo-client", namespace)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should be able to communicate with API Server", func() {
@@ -60,18 +60,18 @@ spec:
 
 		// given Mesh with passthrough enabled then communication with API Server works
 		Eventually(func(g Gomega) {
-			stdout, _, err := env.Cluster.Exec(namespace, clientPodName, "demo-client", "bash", "-c", cmd)
+			stdout, _, err := kubernetes.Cluster.Exec(namespace, clientPodName, "demo-client", "bash", "-c", cmd)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(Equal("200"))
 		}).Should(Succeed())
 
 		// when passthrough is disabled on the Mesh
-		err := env.Cluster.Install(YamlK8s(fmt.Sprintf(meshDefaultMtlsOn, "false")))
+		err := kubernetes.Cluster.Install(YamlK8s(fmt.Sprintf(meshDefaultMtlsOn, "false")))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then communication with API Server still works
 		Eventually(func(g Gomega) {
-			stdout, _, err := env.Cluster.Exec(namespace, clientPodName, "demo-client", "bash", "-c", cmd)
+			stdout, _, err := kubernetes.Cluster.Exec(namespace, clientPodName, "demo-client", "bash", "-c", cmd)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(Equal("200"))
 		}).Should(Succeed())
