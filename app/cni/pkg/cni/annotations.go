@@ -90,7 +90,7 @@ func validatePortList(ports string) error {
 	return nil
 }
 
-func getAnnotationOrDefault(name string, annotations map[string]string) (val string, err error) {
+func getAnnotationOrDefault(name string, annotations map[string]string) (string, error) {
 	if _, ok := annotationRegistry[name]; !ok {
 		return "", errors.Errorf("no registered annotation with name %s", name)
 	}

@@ -65,7 +65,7 @@ func MatchExternalServicesTrafficPermissions(
 		}
 		matched := false
 		for _, selector := range permission.Spec.Sources {
-			if dataplane.Spec.MatchTags(selector.Match) {
+			if dataplane.Spec.Matches(selector.Match) {
 				matched = true
 			}
 		}

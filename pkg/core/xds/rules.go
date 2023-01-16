@@ -106,6 +106,70 @@ func (rs Rules) Compute(sub Subset) *Rule {
 	return nil
 }
 
+func BuildFromRules(
+	matchedPoliciesByInbound map[InboundListener][]core_model.Resource,
+) (FromRules, error) {
+	rulesByInbound := map[InboundListener]Rules{}
+	for inbound, policies := range matchedPoliciesByInbound {
+		fromList := []PolicyItemWithMeta{}
+		for _, p := range policies {
+			policyWithFrom, ok := p.GetSpec().(PolicyWithFromList)
+			if !ok {
+				return FromRules{}, nil
+			}
+			fromList = append(fromList, BuildPolicyItemsWithMeta(policyWithFrom.GetFromList(), p.GetMeta())...)
+		}
+		rules, err := BuildRules(fromList)
+		if err != nil {
+			return FromRules{}, err
+		}
+		rulesByInbound[inbound] = rules
+	}
+	return FromRules{Rules: rulesByInbound}, nil
+}
+
+func BuildToRules(matchedPolicies []core_model.Resource) (ToRules, error) {
+	toList := []PolicyItemWithMeta{}
+	for _, mp := range matchedPolicies {
+		policyWithTo, ok := mp.GetSpec().(PolicyWithToList)
+		if !ok {
+			return ToRules{}, nil
+		}
+		BuildPolicyItemsWithMeta(policyWithTo.GetToList(), mp.GetMeta())
+		toList = append(toList, BuildPolicyItemsWithMeta(policyWithTo.GetToList(), mp.GetMeta())...)
+	}
+
+	rules, err := BuildRules(toList)
+	if err != nil {
+		return ToRules{}, err
+	}
+
+	return ToRules{Rules: rules}, nil
+}
+
+func BuildSingleItemRules(matchedPolicies []core_model.Resource) (SingleItemRules, error) {
+	items := []PolicyItemWithMeta{}
+	for _, mp := range matchedPolicies {
+		policyWithSingleItem, ok := mp.GetSpec().(PolicyWithSingleItem)
+		if !ok {
+			// policy doesn't support single item
+			return SingleItemRules{}, nil
+		}
+		item := PolicyItemWithMeta{
+			PolicyItem:   policyWithSingleItem.GetPolicyItem(),
+			ResourceMeta: mp.GetMeta(),
+		}
+		items = append(items, item)
+	}
+
+	rules, err := BuildRules(items)
+	if err != nil {
+		return SingleItemRules{}, err
+	}
+
+	return SingleItemRules{Rules: rules}, nil
+}
+
 // BuildRules creates a list of rules with negations sorted by the number of positive tags.
 // If rules with negative tags are filtered out then the order becomes 'most specific to less specific'.
 // Filtering out of negative rules could be useful for XDS generators that don't have a way to configure negations.

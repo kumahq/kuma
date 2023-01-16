@@ -59,7 +59,7 @@ func (m *meshManager) List(ctx context.Context, list core_model.ResourceList, fs
 	return m.store.List(ctx, meshes, fs...)
 }
 
-func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, fs ...core_store.CreateOptionsFunc) (errs error) {
+func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, fs ...core_store.CreateOptionsFunc) error {
 	opts := core_store.NewCreateOptions(fs...)
 	mesh, err := m.mesh(resource)
 	if err != nil {

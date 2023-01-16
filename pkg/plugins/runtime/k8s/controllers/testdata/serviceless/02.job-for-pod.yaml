@@ -1,0 +1,14 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: test-job-1
+  namespace: demo
+  ownerReferences:
+    - kind: CronJob
+      name: test-job
+spec:
+  template:
+    spec:
+      containers:
+      - name: app
+        image: app-image

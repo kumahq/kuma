@@ -1,0 +1,18 @@
+kind: Pod
+metadata:
+  namespace: demo
+  ownerReferences:
+    - name: test-server-1
+      kind: ReplicaSet
+  name: test-server-1-1
+  labels:
+    app: example
+    version: "0.1"
+spec:
+  containers:
+    - ports:
+        - containerPort: 7070
+        - containerPort: 6060
+          name: metrics
+status:
+  podIP: 192.168.0.1

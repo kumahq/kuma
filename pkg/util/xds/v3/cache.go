@@ -81,8 +81,8 @@ type SnapshotCache interface {
 	// HasSnapshot checks whether there is a snapshot present for a node.
 	HasSnapshot(node string) bool
 
-	// ClearSnapshot removes all status and snapshot information associated with a node.
-	ClearSnapshot(node string)
+	// ClearSnapshot removes all status and snapshot information associated with a node. Return the removed snapshot or nil
+	ClearSnapshot(node string) Snapshot
 
 	// GetStatusInfo retrieves status information for a node ID.
 	GetStatusInfo(string) StatusInfo
@@ -191,12 +191,14 @@ func (cache *snapshotCache) HasSnapshot(node string) bool {
 }
 
 // ClearSnapshot clears snapshot and info for a node.
-func (cache *snapshotCache) ClearSnapshot(node string) {
+func (cache *snapshotCache) ClearSnapshot(node string) Snapshot {
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 
+	snapshot := cache.snapshots[node]
 	delete(cache.snapshots, node)
 	delete(cache.status, node)
+	return snapshot
 }
 
 // nameSet creates a map from a string slice to value true.
@@ -218,12 +220,12 @@ func superset(names map[string]bool, resources map[string]types.Resource) error 
 	return nil
 }
 
-func (cache *snapshotCache) CreateDeltaWatch(*envoy_cache.DeltaRequest, stream.StreamState, chan envoy_cache.DeltaResponse) (cancel func()) {
+func (cache *snapshotCache) CreateDeltaWatch(*envoy_cache.DeltaRequest, stream.StreamState, chan envoy_cache.DeltaResponse) func() {
 	return nil
 }
 
 // CreateWatch returns a watch for an xDS request.
-func (cache *snapshotCache) CreateWatch(request *envoy_cache.Request, _ stream.StreamState, responseChan chan envoy_cache.Response) (cancel func()) {
+func (cache *snapshotCache) CreateWatch(request *envoy_cache.Request, _ stream.StreamState, responseChan chan envoy_cache.Response) func() {
 	nodeID := cache.hash.ID(request.Node)
 
 	cache.mu.Lock()

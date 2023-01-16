@@ -40,7 +40,7 @@ func (stream *MockClientStream) Recv() (*envoy_sd.DiscoveryResponse, error) {
 	return req, nil
 }
 
-func MakeMockClientStream() *MockClientStream {
+func NewMockClientStream() *MockClientStream {
 	return &MockClientStream{
 		Ctx:    context.Background(),
 		RecvCh: make(chan *envoy_sd.DiscoveryResponse, 10),

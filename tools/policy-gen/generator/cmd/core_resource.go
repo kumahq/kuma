@@ -52,18 +52,18 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/plugins/policies/validation"
 )
 
 //_DELETE_GO_EMBED_WORKAROUND_go:embed schema.yaml
 var rawSchema []byte
-var schema = spec.Schema{}
 
 func init() {
+	var schema spec.Schema
 	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
 		panic(err)
 	}
-	schema = schema.Properties["spec"]
+	rawSchema = nil
+	{{.Name}}ResourceTypeDescriptor.Schema = &schema
 }
 
 const (
@@ -114,10 +114,6 @@ func (t *{{.Name}}Resource) Descriptor() model.ResourceTypeDescriptor {
 }
 
 func (t *{{.Name}}Resource) Validate() error {
-	if err := validation.ValidateSchema(t.GetSpec(), &schema); err != nil {
-		return err
-	}
-
 	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
 		return nil
 	} else {

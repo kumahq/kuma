@@ -262,7 +262,7 @@ func (c *memoryStore) List(_ context.Context, rs core_model.ResourceList, fs ...
 
 	opts := store.NewListOptions(fs...)
 
-	records := c.findRecords(string(rs.GetItemType()), opts.Mesh, opts.NamePrefix)
+	records := c.findRecords(string(rs.GetItemType()), opts.Mesh, opts.NameContains)
 
 	for i := 0; i < len(records); i++ {
 		r := rs.NewItem()
@@ -289,7 +289,7 @@ func (c *memoryStore) findRecord(
 	return -1, nil
 }
 
-func (c *memoryStore) findRecords(resourceType string, mesh string, prefix string) []*memoryStoreRecord {
+func (c *memoryStore) findRecords(resourceType string, mesh string, contains string) []*memoryStoreRecord {
 	res := make([]*memoryStoreRecord, 0)
 	for _, rec := range c.records {
 		if rec.ResourceType != resourceType {
@@ -298,7 +298,7 @@ func (c *memoryStore) findRecords(resourceType string, mesh string, prefix strin
 		if mesh != "" && rec.Mesh != mesh {
 			continue
 		}
-		if prefix != "" && !strings.HasPrefix(rec.Name, prefix) {
+		if contains != "" && !strings.Contains(rec.Name, contains) {
 			continue
 		}
 		res = append(res, rec)

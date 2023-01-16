@@ -96,7 +96,7 @@ func (s *accessLogStreamer) cleanup() {
 	s.senders = map[string]*logSender{}
 }
 
-func (s *accessLogStreamer) streamAccessLogs(reader *bufio.Reader) (err error) {
+func (s *accessLogStreamer) streamAccessLogs(reader *bufio.Reader) error {
 	for {
 		msg, err := reader.ReadBytes('\n')
 		if err != nil {

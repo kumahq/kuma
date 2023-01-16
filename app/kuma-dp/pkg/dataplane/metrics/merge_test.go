@@ -15,12 +15,13 @@ import (
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
-func toLines(r io.Reader) (lines []string) {
+func toLines(r io.Reader) []string {
+	var lines []string
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
-	return
+	return lines
 }
 
 var _ = Describe("Merge", func() {

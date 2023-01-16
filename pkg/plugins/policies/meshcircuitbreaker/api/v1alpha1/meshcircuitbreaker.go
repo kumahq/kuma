@@ -12,7 +12,7 @@ type MeshCircuitBreaker struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
 	// defined in place.
-	TargetRef common_api.TargetRef `json:"targetRef,omitempty"`
+	TargetRef common_api.TargetRef `json:"targetRef"`
 
 	// To list makes a match between the consumed services and corresponding
 	// configurations
@@ -25,7 +25,7 @@ type MeshCircuitBreaker struct {
 type To struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// destinations.
-	TargetRef common_api.TargetRef `json:"targetRef,omitempty"`
+	TargetRef common_api.TargetRef `json:"targetRef"`
 	// Default is a configuration specific to the group of destinations
 	// referenced in 'targetRef'
 	Default Conf `json:"default,omitempty"`
@@ -34,7 +34,7 @@ type To struct {
 type From struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// destinations.
-	TargetRef common_api.TargetRef `json:"targetRef,omitempty"`
+	TargetRef common_api.TargetRef `json:"targetRef"`
 	// Default is a configuration specific to the group of destinations
 	// referenced in 'targetRef'
 	Default Conf `json:"default,omitempty"`
@@ -77,7 +77,7 @@ type ConnectionLimits struct {
 
 type OutlierDetection struct {
 	// When set to true, outlierDetection configuration won't take any effect
-	Disabled bool `json:"disabled,omitempty"`
+	Disabled *bool `json:"disabled,omitempty"`
 	// The time interval between ejection analysis sweeps. This can result in
 	// both new ejections and hosts being returned to service.
 	Interval *k8s.Duration `json:"interval,omitempty"`

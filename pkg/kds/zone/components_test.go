@@ -68,8 +68,17 @@ var _ = Describe("Zone Sync", func() {
 		wg := &sync.WaitGroup{}
 
 		kdsCtx := kds_context.DefaultContext(context.Background(), manager.NewResourceManager(globalStore), "global")
+		srv, err := setup.StartServer(globalStore, "global", registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kdsCtx.GlobalProvidedFilter, kdsCtx.GlobalResourceMapper)
+		Expect(err).ToNot(HaveOccurred())
+		serverStream := grpc.NewMockServerStream()
 		wg.Add(1)
-		serverStream := setup.StartServer(globalStore, wg, "global", registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kdsCtx.GlobalProvidedFilter, kdsCtx.GlobalResourceMapper)
+		go func() {
+			defer func() {
+				wg.Done()
+				GinkgoRecover()
+			}()
+			Expect(srv.StreamKumaResources(serverStream)).ToNot(HaveOccurred())
+		}()
 
 		stop := make(chan struct{})
 		clientStream := serverStream.ClientStream(stop)
@@ -83,6 +92,7 @@ var _ = Describe("Zone Sync", func() {
 			_ = newPolicySink(zoneName, zoneSyncer, clientStream, kdsCtx.Configs).Receive()
 		}()
 		closeFunc = func() {
+			defer GinkgoRecover()
 			Expect(clientStream.CloseSend()).To(Succeed())
 			close(stop)
 			wg.Wait()
@@ -97,12 +107,12 @@ var _ = Describe("Zone Sync", func() {
 		err := globalStore.Create(context.Background(), &mesh.MeshResource{Spec: samples.Mesh1}, store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
-		Eventually(func() int {
+		Eventually(func(g Gomega) {
 			actual := mesh.MeshResourceList{}
 			err := zoneStore.List(context.Background(), &actual)
-			Expect(err).ToNot(HaveOccurred())
-			return len(actual.Items)
-		}, "5s", "100ms").Should(Equal(1))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(actual.Items).To(HaveLen(1))
+		}, "5s", "100ms").Should(Succeed())
 
 		actual := mesh.MeshResourceList{}
 		err = zoneStore.List(context.Background(), &actual)

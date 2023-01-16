@@ -43,7 +43,8 @@ type ApiServerGUI struct {
 	BasePath string `json:"basePath" envconfig:"kuma_api_server_gui_base_path"`
 }
 
-func (a *ApiServerGUI) Validate() (errs error) {
+func (a *ApiServerGUI) Validate() error {
+	var errs error
 	if a.RootUrl != "" {
 		_, err := url.Parse(a.RootUrl)
 		if err != nil {
@@ -56,7 +57,7 @@ func (a *ApiServerGUI) Validate() (errs error) {
 			errs = multierr.Append(errs, errors.New("BaseGuiPath is not a valid url"))
 		}
 	}
-	return
+	return errs
 }
 
 // API Server HTTP configuration
@@ -69,14 +70,15 @@ type ApiServerHTTPConfig struct {
 	Port uint32 `json:"port" envconfig:"kuma_api_server_http_port"`
 }
 
-func (a *ApiServerHTTPConfig) Validate() (errs error) {
+func (a *ApiServerHTTPConfig) Validate() error {
+	var errs error
 	if a.Interface == "" {
 		errs = multierr.Append(errs, errors.New("Interface cannot be empty"))
 	}
 	if a.Port > 65535 {
 		errs = multierr.Append(errs, errors.New("Port must be in range [0, 65535]"))
 	}
-	return
+	return errs
 }
 
 // API Server HTTPS configuration
@@ -99,7 +101,8 @@ type ApiServerHTTPSConfig struct {
 	TlsCipherSuites []string `json:"tlsCipherSuites" envconfig:"kuma_api_server_https_tls_cipher_suites"`
 }
 
-func (a *ApiServerHTTPSConfig) Validate() (errs error) {
+func (a *ApiServerHTTPSConfig) Validate() error {
+	var errs error
 	if a.Interface == "" {
 		errs = multierr.Append(errs, errors.New(".Interface cannot be empty"))
 	}
@@ -118,7 +121,7 @@ func (a *ApiServerHTTPSConfig) Validate() (errs error) {
 	if _, err := config_types.TLSCiphers(a.TlsCipherSuites); err != nil {
 		errs = multierr.Append(errs, errors.New(".TlsCipherSuites"+err.Error()))
 	}
-	return
+	return errs
 }
 
 // API Server authentication configuration
@@ -145,7 +148,8 @@ type ApiServerAuthnTokens struct {
 func (a *ApiServerConfig) Sanitize() {
 }
 
-func (a *ApiServerConfig) Validate() (errs error) {
+func (a *ApiServerConfig) Validate() error {
+	var errs error
 	if err := a.HTTP.Validate(); err != nil {
 		errs = multierr.Append(err, errors.Wrap(err, ".HTTP not valid"))
 	}
@@ -166,7 +170,7 @@ func (a *ApiServerConfig) Validate() (errs error) {
 			errs = multierr.Append(errs, errors.New("BaseGuiPath is not a valid url"))
 		}
 	}
-	return
+	return errs
 }
 
 func DefaultApiServerConfig() *ApiServerConfig {

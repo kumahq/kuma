@@ -34,7 +34,8 @@ var (
 	kdsGlobalLog = core.Log.WithName("kds-global")
 )
 
-func Setup(rt runtime.Runtime) (err error) {
+func Setup(rt runtime.Runtime) error {
+	var err error
 	if rt.Config().Mode != config_core.Global {
 		// Only run on global
 		return nil

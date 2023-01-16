@@ -4,25 +4,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 
 	. "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	_ "github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
+	. "github.com/kumahq/kuma/pkg/test/resources"
 )
 
-// MeshGatewayRouteGenerator is a ResourceGenerator that creates MeshGatewayResource objects.
-type MeshGatewayRouteGenerator func() *MeshGatewayRouteResource
-
-func (g MeshGatewayRouteGenerator) New() model.Resource {
-	if g != nil {
-		return g()
-	}
-
-	return nil
-}
-
 var _ = Describe("MeshGatewayRoute", func() {
-	DescribeValidCases(MeshGatewayRouteGenerator(NewMeshGatewayRouteResource),
-
+	DescribeValidCases(NewMeshGatewayRouteResource,
 		Entry("HTTP route", `
 type: MeshGatewayRoute
 name: route
@@ -115,7 +103,7 @@ conf:
 `),
 	)
 
-	DescribeErrorCases(MeshGatewayRouteGenerator(NewMeshGatewayRouteResource),
+	DescribeErrorCases(NewMeshGatewayRouteResource,
 		ErrorCase("missing conf", validators.Violation{
 			Field:   "conf",
 			Message: "cannot be empty",

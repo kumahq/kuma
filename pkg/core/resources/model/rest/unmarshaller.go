@@ -55,20 +55,27 @@ func (u *unmarshaler) Unmarshal(bytes []byte) (Resource, error) {
 		return nil, errors.Wrap(err, "invalid meta type")
 	}
 
-	resource, err := registry.Global().NewObject(core_model.ResourceType(meta.Type))
+	desc, err := registry.Global().DescriptorFor(core_model.ResourceType(meta.Type))
 	if err != nil {
 		return nil, err
 	}
 
+	resource := desc.NewObject()
 	restResource := From.Resource(resource)
+
+	if desc.IsPluginOriginated {
+		// desc.Schema is set only for new plugin originated policies
+		if err := u.rawSchemaValidation(bytes, desc.Schema); err != nil {
+			return nil, err
+		}
+	}
+
 	if err := u.unmarshalFn(bytes, restResource); err != nil {
 		return nil, errors.Wrapf(err, "invalid %s object %q", meta.Type, meta.Name)
 	}
 
-	if rv, ok := resource.(core_model.ResourceValidator); ok {
-		if err := rv.Validate(); err != nil {
-			return nil, err
-		}
+	if err := core_model.Validate(resource); err != nil {
+		return nil, err
 	}
 
 	return restResource, nil

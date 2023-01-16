@@ -68,6 +68,10 @@ func (cs *UniversalClusters) Name() string {
 	panic("not supported")
 }
 
+func (c *UniversalClusters) Install(fn InstallFunc) error {
+	panic("not implemented")
+}
+
 func (cs *UniversalClusters) DismissCluster() error {
 	for name, c := range cs.clusters {
 		if err := c.DismissCluster(); err != nil {

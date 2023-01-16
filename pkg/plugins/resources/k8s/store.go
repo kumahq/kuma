@@ -183,7 +183,7 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 		if opts.Mesh != "" && r.GetMeta().GetMesh() != opts.Mesh {
 			return false
 		}
-		if opts.NamePrefix != "" && !strings.HasPrefix(r.GetMeta().GetName(), opts.NamePrefix) {
+		if opts.NameContains != "" && !strings.Contains(r.GetMeta().GetName(), opts.NameContains) {
 			return false
 		}
 		return true

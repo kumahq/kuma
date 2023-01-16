@@ -43,7 +43,7 @@ func (m *rateLimitManager) List(ctx context.Context, list core_model.ResourceLis
 	return m.store.List(ctx, rateLimits, fs...)
 }
 
-func (m *rateLimitManager) Create(ctx context.Context, resource core_model.Resource, fs ...core_store.CreateOptionsFunc) (errs error) {
+func (m *rateLimitManager) Create(ctx context.Context, resource core_model.Resource, fs ...core_store.CreateOptionsFunc) error {
 	opts := core_store.NewCreateOptions(fs...)
 	rateLimit, err := m.rateLimit(resource)
 	if err != nil {

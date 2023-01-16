@@ -28,6 +28,8 @@ func newK8sResource(rootArgs *args) *cobra.Command {
 				return err
 			}
 
+			pconfig.GoModule = rootArgs.goModule
+
 			k8sPath := filepath.Join(rootArgs.pluginDir, "k8s", rootArgs.version)
 			if err := os.MkdirAll(k8sPath, 0755); err != nil {
 				return err
@@ -66,7 +68,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	policy "github.com/kumahq/kuma/pkg/plugins/policies/{{.NameLower}}/api/{{.Package}}"
+	policy "{{.GoModule}}/pkg/plugins/policies/{{.NameLower}}/api/{{.Package}}"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	{{- if not .SkipRegistration }}
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"

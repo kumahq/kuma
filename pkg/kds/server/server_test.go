@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test/grpc"
 	kds_samples "github.com/kumahq/kuma/pkg/test/kds/samples"
 	kds_setup "github.com/kumahq/kuma/pkg/test/kds/setup"
 	kds_verifier "github.com/kumahq/kuma/pkg/test/kds/verifier"
@@ -43,7 +44,16 @@ var _ = Describe("KDS Server", func() {
 
 		wg := &sync.WaitGroup{}
 		wg.Add(1)
-		stream := kds_setup.StartServer(s, wg, "test-cluster", registry.Global().ObjectTypes(model.HasKdsEnabled()), reconcile.Any, reconcile.NoopResourceMapper)
+		srv, err := kds_setup.StartServer(s, "test-cluster", registry.Global().ObjectTypes(model.HasKdsEnabled()), reconcile.Any, reconcile.NoopResourceMapper)
+		Expect(err).ToNot(HaveOccurred())
+		stream := grpc.NewMockServerStream()
+		go func() {
+			defer func() {
+				wg.Done()
+				GinkgoRecover()
+			}()
+			Expect(srv.StreamKumaResources(stream)).ToNot(HaveOccurred())
+		}()
 
 		tc = &kds_verifier.TestContextImpl{
 			ResourceStore:      s,

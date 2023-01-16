@@ -533,6 +533,7 @@ type Cluster interface {
 	GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel
 	GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel
 	Verbose() bool
+	Install(fn InstallFunc) error
 
 	// K8s
 	GetKubectlOptions(namespace ...string) *k8s.KubectlOptions

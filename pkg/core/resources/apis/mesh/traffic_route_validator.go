@@ -23,15 +23,16 @@ func (d *TrafficRouteResource) validateSources() validators.ValidationError {
 	})
 }
 
-func (d *TrafficRouteResource) validateDestinations() (err validators.ValidationError) {
+func (d *TrafficRouteResource) validateDestinations() validators.ValidationError {
 	return ValidateSelectors(validators.RootedAt("destinations"), d.Spec.Destinations, OnlyServiceTagAllowed)
 }
 
-func (d *TrafficRouteResource) validateConf() (err validators.ValidationError) {
+func (d *TrafficRouteResource) validateConf() validators.ValidationError {
+	var err validators.ValidationError
 	root := validators.RootedAt("conf")
 	if d.Spec.GetConf() == nil {
 		err.AddViolationAt(root, "cannot be empty")
-		return
+		return err
 	}
 
 	err.Add(d.validateSplitAndDestination(root, d.Spec.GetConf().GetSplit(), d.Spec.GetConf().GetDestination()))
@@ -39,21 +40,23 @@ func (d *TrafficRouteResource) validateConf() (err validators.ValidationError) {
 		err.Add(d.validateHTTP(root.Field("http").Index(i), http))
 	}
 	err.Add(d.validateLb())
-	return
+	return err
 }
 
-func (d *TrafficRouteResource) validateHTTP(pathBuilder validators.PathBuilder, http *mesh_proto.TrafficRoute_Http) (err validators.ValidationError) {
+func (d *TrafficRouteResource) validateHTTP(pathBuilder validators.PathBuilder, http *mesh_proto.TrafficRoute_Http) validators.ValidationError {
+	var err validators.ValidationError
 	err.Add(d.validateHTTPMatch(pathBuilder.Field("match"), http.GetMatch()))
 	err.Add(d.validateHTTPModify(pathBuilder.Field("modify"), http.GetModify(), http.GetMatch()))
 	err.Add(d.validateSplitAndDestination(pathBuilder, http.GetSplit(), http.GetDestination()))
-	return
+	return err
 }
 
 func (d *TrafficRouteResource) validateHTTPModify(
 	pathBuilder validators.PathBuilder,
 	modify *mesh_proto.TrafficRoute_Http_Modify,
 	match *mesh_proto.TrafficRoute_Http_Match,
-) (err validators.ValidationError) {
+) validators.ValidationError {
+	var err validators.ValidationError
 	if modify.GetPath() != nil {
 		err.Add(d.validateModificationPath(pathBuilder.Field("path"), modify.GetPath(), match))
 	}
@@ -66,14 +69,15 @@ func (d *TrafficRouteResource) validateHTTPModify(
 	if modify.GetResponseHeaders() != nil {
 		err.Add(d.validateModificationHeaders(pathBuilder.Field("responseHeaders"), modify.GetResponseHeaders()))
 	}
-	return
+	return err
 }
 
 func (d *TrafficRouteResource) validateModificationPath(
 	pathBuilder validators.PathBuilder,
 	path *mesh_proto.TrafficRoute_Http_Modify_Path,
 	match *mesh_proto.TrafficRoute_Http_Match,
-) (err validators.ValidationError) {
+) validators.ValidationError {
+	var err validators.ValidationError
 	switch path.Type.(type) {
 	case *mesh_proto.TrafficRoute_Http_Modify_Path_RewritePrefix:
 		if path.GetRewritePrefix() == "" {
@@ -92,13 +96,14 @@ func (d *TrafficRouteResource) validateModificationPath(
 	default:
 		err.AddViolationAt(pathBuilder, `either "rewritePrefix" or "regex" has to be set`)
 	}
-	return
+	return err
 }
 
 func (d *TrafficRouteResource) validateModificationHost(
 	pathBuilder validators.PathBuilder,
 	host *mesh_proto.TrafficRoute_Http_Modify_Host,
-) (err validators.ValidationError) {
+) validators.ValidationError {
+	var err validators.ValidationError
 	switch host.Type.(type) {
 	case *mesh_proto.TrafficRoute_Http_Modify_Host_Value:
 		if host.GetValue() == "" {
@@ -114,13 +119,14 @@ func (d *TrafficRouteResource) validateModificationHost(
 	default:
 		err.AddViolationAt(pathBuilder, `either "value" or "fromPath" has to be set`)
 	}
-	return
+	return err
 }
 
 func (d *TrafficRouteResource) validateModificationHeaders(
 	pathBuilder validators.PathBuilder,
 	headers *mesh_proto.TrafficRoute_Http_Modify_Headers,
-) (err validators.ValidationError) {
+) validators.ValidationError {
+	var err validators.ValidationError
 	for i, add := range headers.GetAdd() {
 		err.Add(validateHeaderName(pathBuilder.Field("add").Index(i).Field("name"), add.GetName()))
 		if add.GetValue() == "" {
@@ -130,21 +136,23 @@ func (d *TrafficRouteResource) validateModificationHeaders(
 	for i, remove := range headers.GetRemove() {
 		err.Add(validateHeaderName(pathBuilder.Field("remove").Index(i).Field("name"), remove.GetName()))
 	}
-	return
+	return err
 }
 
-func validateHeaderName(pathBuilder validators.PathBuilder, headerName string) (err validators.ValidationError) {
+func validateHeaderName(pathBuilder validators.PathBuilder, headerName string) validators.ValidationError {
+	var err validators.ValidationError
 	if headerName == "" {
 		err.AddViolationAt(pathBuilder, "cannot be empty")
-		return
+		return err
 	}
 	if headerName[0] == ':' || headerName == "host" || headerName == "Host" {
 		err.AddViolationAt(pathBuilder, "host header and HTTP/2 pseudo-headers are not allowed to be modified")
 	}
-	return
+	return err
 }
 
-func (d *TrafficRouteResource) validateSplitAndDestination(pathBuilder validators.PathBuilder, split []*mesh_proto.TrafficRoute_Split, destination map[string]string) (err validators.ValidationError) {
+func (d *TrafficRouteResource) validateSplitAndDestination(pathBuilder validators.PathBuilder, split []*mesh_proto.TrafficRoute_Split, destination map[string]string) validators.ValidationError {
+	var err validators.ValidationError
 	if split == nil && destination == nil {
 		err.AddViolationAt(pathBuilder, `requires either "destination" or "split"`)
 	}
@@ -158,13 +166,14 @@ func (d *TrafficRouteResource) validateSplitAndDestination(pathBuilder validator
 	if destination != nil {
 		err.Add(d.validateDestination(pathBuilder.Field("destination"), destination))
 	}
-	return
+	return err
 }
 
-func (d *TrafficRouteResource) validateHTTPMatch(pathBuilder validators.PathBuilder, match *mesh_proto.TrafficRoute_Http_Match) (err validators.ValidationError) {
+func (d *TrafficRouteResource) validateHTTPMatch(pathBuilder validators.PathBuilder, match *mesh_proto.TrafficRoute_Http_Match) validators.ValidationError {
+	var err validators.ValidationError
 	if match.GetPath() == nil && match.GetMethod() == nil && match.GetHeaders() == nil {
 		err.AddViolationAt(pathBuilder, `must be present and contain at least one of the elements: "method", "path" or "headers"`)
-		return
+		return err
 	}
 	if match.GetMethod() != nil {
 		err.Add(d.validateStringMatcher(pathBuilder.Field("method"), match.GetMethod()))
@@ -182,10 +191,11 @@ func (d *TrafficRouteResource) validateHTTPMatch(pathBuilder validators.PathBuil
 		}
 		err.Add(d.validateStringMatcher(path, matcher))
 	}
-	return
+	return err
 }
 
-func (d *TrafficRouteResource) validateStringMatcher(pathBuilder validators.PathBuilder, matcher *mesh_proto.TrafficRoute_Http_Match_StringMatcher) (err validators.ValidationError) {
+func (d *TrafficRouteResource) validateStringMatcher(pathBuilder validators.PathBuilder, matcher *mesh_proto.TrafficRoute_Http_Match_StringMatcher) validators.ValidationError {
+	var err validators.ValidationError
 	switch matcher.GetMatcherType().(type) {
 	case *mesh_proto.TrafficRoute_Http_Match_StringMatcher_Exact:
 	case *mesh_proto.TrafficRoute_Http_Match_StringMatcher_Prefix:
@@ -199,13 +209,14 @@ func (d *TrafficRouteResource) validateStringMatcher(pathBuilder validators.Path
 	default:
 		err.AddViolationAt(pathBuilder, `cannot be empty. Available options: "exact", "split" or "regex"`)
 	}
-	return
+	return err
 }
 
-func (d *TrafficRouteResource) validateSplit(pathBuilder validators.PathBuilder, split []*mesh_proto.TrafficRoute_Split) (err validators.ValidationError) {
+func (d *TrafficRouteResource) validateSplit(pathBuilder validators.PathBuilder, split []*mesh_proto.TrafficRoute_Split) validators.ValidationError {
+	var err validators.ValidationError
 	if len(split) == 0 {
 		err.AddViolationAt(pathBuilder, "must have at least one element")
-		return
+		return err
 	}
 	var totalWeight uint32
 	for i, routeEntry := range split {
@@ -221,7 +232,7 @@ func (d *TrafficRouteResource) validateSplit(pathBuilder validators.PathBuilder,
 	if totalWeight == 0 {
 		err.AddViolationAt(pathBuilder, "there must be at least one split entry with weight above 0")
 	}
-	return
+	return err
 }
 
 func (d *TrafficRouteResource) validateDestination(pathBuilder validators.PathBuilder, destination map[string]string) validators.ValidationError {
@@ -231,10 +242,11 @@ func (d *TrafficRouteResource) validateDestination(pathBuilder validators.PathBu
 	})
 }
 
-func (d *TrafficRouteResource) validateLb() (err validators.ValidationError) {
+func (d *TrafficRouteResource) validateLb() validators.ValidationError {
+	var err validators.ValidationError
 	lb := d.Spec.GetConf().GetLoadBalancer()
 	if lb == nil {
-		return
+		return err
 	}
 
 	switch lb.LbType.(type) {
@@ -249,5 +261,5 @@ func (d *TrafficRouteResource) validateLb() (err validators.ValidationError) {
 			err.AddViolationAt(root, "must have a valid hash function")
 		}
 	}
-	return
+	return err
 }

@@ -253,6 +253,10 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 				url:          "/meshes/mesh1/dataplanes+insights?tag=service:backend",
 				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, dp1Json),
 			}),
+			Entry("should list with only subset tag", testCase{
+				url:          "/meshes/mesh1/dataplanes+insights?tag=service:ck",
+				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, dp1Json),
+			}),
 			Entry("should list all with all matching tags", testCase{
 				url:          "/meshes/mesh1/dataplanes+insights?tag=service:backend&tag=version:v1",
 				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, dp1Json),
@@ -278,7 +282,11 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, gatewayDelegatedJson),
 			}),
 			Entry("should list only dataplanes that starts with gateway", testCase{
-				url:          "/meshes/mesh1/dataplanes+insights?namePrefix=gateway",
+				url:          "/meshes/mesh1/dataplanes+insights?name=gateway",
+				expectedJson: fmt.Sprintf(`{"total": 2, "items": [%s, %s], "next": null}`, gatewayBuiltinJson, gatewayDelegatedJson),
+			}),
+			Entry("should list only dataplanes that contains with tew", testCase{
+				url:          "/meshes/mesh1/dataplanes+insights?name=tew",
 				expectedJson: fmt.Sprintf(`{"total": 2, "items": [%s, %s], "next": null}`, gatewayBuiltinJson, gatewayDelegatedJson),
 			}),
 		)
