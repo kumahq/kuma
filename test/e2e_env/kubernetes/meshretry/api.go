@@ -32,7 +32,7 @@ func API() {
 
 	It("should create MeshRetry policy", func() {
 		// given no MeshRetry
-		mrls, err := env.Cluster.GetKumactlOptions().KumactlList("meshretrys", meshName)
+		mrls, err := env.Cluster.GetKumactlOptions().KumactlList("meshretries", meshName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(mrls).To(HaveLen(0))
 
@@ -60,7 +60,7 @@ spec:
 `, Config.KumaNamespace, meshName))(env.Cluster)).To(Succeed())
 
 		// then
-		mrls, err = env.Cluster.GetKumactlOptions().KumactlList("meshretrys", meshName)
+		mrls, err = env.Cluster.GetKumactlOptions().KumactlList("meshretries", meshName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(mrls).To(HaveLen(1))
 		Expect(mrls[0]).To(Equal(fmt.Sprintf("mesh-retry.%s", Config.KumaNamespace)))
@@ -68,7 +68,7 @@ spec:
 
 	It("should deny creating policy in the non-system namespace", func() {
 		// given no MeshRetry
-		mrls, err := env.Cluster.GetKumactlOptions().KumactlList("meshretrys", meshName)
+		mrls, err := env.Cluster.GetKumactlOptions().KumactlList("meshretries", meshName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(mrls).To(HaveLen(0))
 
