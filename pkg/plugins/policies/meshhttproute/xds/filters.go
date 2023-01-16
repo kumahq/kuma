@@ -2,6 +2,7 @@ package xds
 
 import (
 	"net/http"
+	"strings"
 
 	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -19,28 +20,36 @@ func routeFilter(filter api.Filter, route *envoy_route.Route) {
 	}
 }
 
+func headerValues(raw string) []string {
+	return strings.Split(raw, ",")
+}
+
 func headerModifiers(mod api.HeaderModifier) ([]*envoy_config_core.HeaderValueOption, []string) {
 	var options []*envoy_config_core.HeaderValueOption
 
 	for _, set := range mod.Set {
-		replace := &envoy_config_core.HeaderValueOption{
-			Append: util_proto.Bool(false),
-			Header: &envoy_config_core.HeaderValue{
-				Key:   http.CanonicalHeaderKey(string(set.Name)),
-				Value: set.Value,
-			},
+		for i, headerValue := range headerValues(set.Value) {
+			replace := &envoy_config_core.HeaderValueOption{
+				Append: util_proto.Bool(i > 0),
+				Header: &envoy_config_core.HeaderValue{
+					Key:   http.CanonicalHeaderKey(string(set.Name)),
+					Value: headerValue,
+				},
+			}
+			options = append(options, replace)
 		}
-		options = append(options, replace)
 	}
 	for _, add := range mod.Add {
-		app := &envoy_config_core.HeaderValueOption{
-			Append: util_proto.Bool(true),
-			Header: &envoy_config_core.HeaderValue{
-				Key:   http.CanonicalHeaderKey(string(add.Name)),
-				Value: add.Value,
-			},
+		for _, headerValue := range headerValues(add.Value) {
+			appendOption := &envoy_config_core.HeaderValueOption{
+				Append: util_proto.Bool(true),
+				Header: &envoy_config_core.HeaderValue{
+					Key:   http.CanonicalHeaderKey(string(add.Name)),
+					Value: headerValue,
+				},
+			}
+			options = append(options, appendOption)
 		}
-		options = append(options, app)
 	}
 
 	return options, mod.Remove

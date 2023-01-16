@@ -429,6 +429,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 														Set: []api.HeaderKeyValue{{
 															Name:  "request-set-header",
 															Value: "set-value",
+														}, {
+															Name:  "request-set-header-multiple",
+															Value: "one-value,second-value",
 														}},
 														Remove: []string{
 															"request-header-to-remove",

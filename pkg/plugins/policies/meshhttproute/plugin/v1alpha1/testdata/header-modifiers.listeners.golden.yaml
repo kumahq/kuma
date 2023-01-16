@@ -39,6 +39,14 @@ resources:
                   header:
                     key: Request-Set-Header
                     value: set-value
+                - append: false
+                  header:
+                    key: Request-Set-Header-Multiple
+                    value: one-value
+                - append: true
+                  header:
+                    key: Request-Set-Header-Multiple
+                    value: second-value
                 - append: true
                   header:
                     key: Request-Add-Header
