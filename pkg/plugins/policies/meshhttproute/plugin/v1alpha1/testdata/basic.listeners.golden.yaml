@@ -34,12 +34,22 @@ resources:
                   cluster: backend
                   timeout: 0s
               - match:
-                  prefix: /v1
+                  path: /v1
                 route:
                   cluster: backend
                   timeout: 0s
               - match:
-                  prefix: /v2
+                  prefix: /v1/
+                route:
+                  cluster: backend
+                  timeout: 0s
+              - match:
+                  path: /v2
+                route:
+                  cluster: backend-_0_
+                  timeout: 0s
+              - match:
+                  prefix: /v2/
                 route:
                   cluster: backend-_0_
                   timeout: 0s

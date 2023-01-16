@@ -1,6 +1,8 @@
 package xds
 
 import (
+	"strings"
+
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -17,43 +19,75 @@ type RoutesConfigurer struct {
 }
 
 func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
-	envoyRoute := &envoy_route.Route{
-		Match: c.routeMatch(c.Matches),
-		Action: &envoy_route.Route_Route{
-			Route: c.routeAction(c.Clusters, c.Filters),
-		},
-		TypedPerFilterConfig: map[string]*anypb.Any{},
+	matches := c.routeMatch(c.Matches)
+
+	var envoyRoutes []*envoy_route.Route
+	for _, match := range matches {
+		envoyRoutes = append(envoyRoutes, &envoy_route.Route{
+			Match: match,
+			Action: &envoy_route.Route_Route{
+				Route: c.routeAction(c.Clusters, c.Filters),
+			},
+			TypedPerFilterConfig: map[string]*anypb.Any{},
+		})
 	}
 
-	virtualHost.Routes = append(virtualHost.Routes, envoyRoute)
+	virtualHost.Routes = append(virtualHost.Routes, envoyRoutes...)
 	return nil
 }
 
-func (c RoutesConfigurer) routeMatch(matches []api.Match) *envoy_route.RouteMatch {
-	envoyMatch := envoy_route.RouteMatch{}
+func (c RoutesConfigurer) routeMatch(matches []api.Match) []*envoy_route.RouteMatch {
+	var allEnvoyMatches []*envoy_route.RouteMatch
 
 	for _, match := range matches {
+		var envoyMatches []*envoy_route.RouteMatch
+
 		if match.Path != nil {
-			c.routePathMatch(&envoyMatch, *match.Path)
+			envoyMatches = c.routePathMatch(*match.Path)
+		} else {
+			envoyMatches = []*envoy_route.RouteMatch{{}}
 		}
-		if match.Method != nil {
-			c.routeMethodMatch(&envoyMatch, *match.Method)
+
+		for _, envoyMatch := range envoyMatches {
+			if match.Method != nil {
+				c.routeMethodMatch(envoyMatch, *match.Method)
+			}
 		}
+
+		allEnvoyMatches = append(allEnvoyMatches, envoyMatches...)
 	}
 
-	return &envoyMatch
+	return allEnvoyMatches
 }
 
-func (c RoutesConfigurer) routePathMatch(envoyMatch *envoy_route.RouteMatch, match api.PathMatch) {
+func (c RoutesConfigurer) routePathMatch(match api.PathMatch) []*envoy_route.RouteMatch {
 	switch match.Type {
 	case api.Exact:
-		envoyMatch.PathSpecifier = &envoy_route.RouteMatch_Path{
-			Path: match.Value,
-		}
+		return []*envoy_route.RouteMatch{{
+			PathSpecifier: &envoy_route.RouteMatch_Path{
+				Path: match.Value,
+			},
+		}}
 	case api.Prefix:
-		envoyMatch.PathSpecifier = &envoy_route.RouteMatch_Prefix{
-			Prefix: match.Value,
+		if match.Value == "/" {
+			return []*envoy_route.RouteMatch{{
+				PathSpecifier: &envoy_route.RouteMatch_Prefix{
+					Prefix: match.Value,
+				},
+			}}
 		}
+		// This case forces us to create two different envoy matches to
+		// replicate the "path-separated prefixes only" semantics
+		trimmed := strings.TrimSuffix(match.Value, "/")
+		return []*envoy_route.RouteMatch{{
+			PathSpecifier: &envoy_route.RouteMatch_Path{
+				Path: trimmed,
+			},
+		}, {
+			PathSpecifier: &envoy_route.RouteMatch_Prefix{
+				Prefix: trimmed + "/",
+			},
+		}}
 	case api.RegularExpression:
 		matcher := &envoy_type_matcher.RegexMatcher{
 			Regex: match.Value,
@@ -61,9 +95,13 @@ func (c RoutesConfigurer) routePathMatch(envoyMatch *envoy_route.RouteMatch, mat
 				GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
 			},
 		}
-		envoyMatch.PathSpecifier = &envoy_route.RouteMatch_SafeRegex{
-			SafeRegex: matcher,
-		}
+		return []*envoy_route.RouteMatch{{
+			PathSpecifier: &envoy_route.RouteMatch_SafeRegex{
+				SafeRegex: matcher,
+			},
+		}}
+	default:
+		panic("impossible")
 	}
 }
 
