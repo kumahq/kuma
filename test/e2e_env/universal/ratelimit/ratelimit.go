@@ -6,8 +6,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func Policy() {
@@ -39,15 +39,15 @@ conf:
 			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
 			Install(DemoClientUniversal("web", meshName, WithTransparentProxy(true))).
 			Install(TestServerExternalServiceUniversal("rate-limit", meshName, 80, false)).
-			Setup(env.Cluster)).To(Succeed())
+			Setup(universal.Cluster)).To(Succeed())
 	})
 	E2EAfterAll(func() {
-		Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 	requestRateLimited := func(client string, svc string, status string) func(g Gomega) {
 		return func(g Gomega) {
-			stdout, _, err := env.Cluster.Exec("", "", client, "curl", "-v", fmt.Sprintf("%s.mesh", svc))
+			stdout, _, err := universal.Cluster.Exec("", "", client, "curl", "-v", fmt.Sprintf("%s.mesh", svc))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).Should(ContainSubstring(status))
 		}
@@ -71,7 +71,7 @@ conf:
     requests: 1
     interval: 10s
 `, meshName)
-		Expect(env.Cluster.Install(YamlUniversal(specificRateLimitPolicy))).To(Succeed())
+		Expect(universal.Cluster.Install(YamlUniversal(specificRateLimitPolicy))).To(Succeed())
 
 		By("demo-client specific RateLimit works")
 		Eventually(requestRateLimited("demo-client", "test-server", "400"), "10s", "100ms").Should(Succeed())
@@ -91,7 +91,7 @@ tags:
   kuma.io/protocol: http
 networking:
   address: "%s_externalservice-rate-limit:88"
-`, meshName, env.Cluster.Name())
+`, meshName, universal.Cluster.Name())
 		specificRateLimitPolicy := fmt.Sprintf(`
 type: RateLimit
 mesh: "%s"
@@ -111,8 +111,8 @@ conf:
 `, meshName)
 
 		By("Exposing external service and specific rate limit")
-		Expect(env.Cluster.Install(YamlUniversal(externalService))).To(Succeed())
-		Expect(env.Cluster.Install(YamlUniversal(specificRateLimitPolicy))).To(Succeed())
+		Expect(universal.Cluster.Install(YamlUniversal(externalService))).To(Succeed())
+		Expect(universal.Cluster.Install(YamlUniversal(specificRateLimitPolicy))).To(Succeed())
 
 		By("demo-client specific RateLimit works")
 		Eventually(requestRateLimited("demo-client", "external-service", "429"), "10s", "100ms").Should(Succeed())

@@ -36,7 +36,7 @@ func (e HostnameEntry) String() string {
 	return fmt.Sprintf("%s:%s", e.Type, e.Name)
 }
 
-func (e HostnameEntry) MarshalText() (text []byte, err error) {
+func (e HostnameEntry) MarshalText() ([]byte, error) {
 	return []byte(fmt.Sprintf("%d:%s", e.Type, e.Name)), nil
 }
 

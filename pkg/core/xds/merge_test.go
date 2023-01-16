@@ -18,71 +18,260 @@ var _ = Describe("MergeConfs", func() {
 		Strings       []string
 		AppendStrings []string
 		Sub           subPolicy
-		SubPtr        *subPolicy
+		SubPtr        *subPolicy `json:"subPtr,omitempty"`
 	}
 
-	It("should replace slices by default but append slices that start with append", func() {
-		// given
-		p1 := policy{
-			FieldString:   "p1",
-			Strings:       []string{"p1"},
-			AppendStrings: []string{"p1"},
-			Sub: subPolicy{
-				Ints:       []int{1},
-				AppendInts: []int{1},
-			},
-			SubPtr: &subPolicy{
-				Ints:       []int{1},
-				AppendInts: []int{1},
-			},
-		}
+	type testCase struct {
+		policies []policy
+		expected policy
+	}
 
-		p2 := policy{
-			FieldString:   "p2",
-			Strings:       []string{"p2"},
-			AppendStrings: []string{"p2"},
-			Sub: subPolicy{
-				Ints:       []int{2},
-				AppendInts: []int{2},
-			},
-			SubPtr: &subPolicy{
-				Ints:       []int{2},
-				AppendInts: []int{2},
-			},
-		}
+	DescribeTable("merge confs",
+		func(given testCase) {
+			// given
+			var policies []interface{}
+			for _, policy := range given.policies {
+				policies = append(policies, policy)
+			}
 
-		p3 := policy{
-			Strings:       []string{"p3"},
-			AppendStrings: []string{"p3"},
-			Sub: subPolicy{
-				Ints:       []int{3},
-				AppendInts: []int{3},
-			},
-			SubPtr: &subPolicy{
-				Ints:       []int{3},
-				AppendInts: []int{3},
-			},
-		}
+			// when
+			merged, err := xds.MergeConfs(policies)
 
-		policies := []interface{}{p1, p2, p3}
-
-		// when
-		merged, err := xds.MergeConfs(policies)
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(merged.(policy)).To(Equal(policy{
-			FieldString:   "p2",
-			Strings:       []string{"p3"},
-			AppendStrings: []string{"p1", "p2", "p3"},
-			Sub: subPolicy{
-				Ints:       []int{3},
-				AppendInts: []int{1, 2, 3},
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(merged.(policy)).To(Equal(given.expected))
+		},
+		Entry("should replace slices by default but append slices that start with append", testCase{
+			policies: []policy{
+				{
+					FieldString:   "p1",
+					Strings:       []string{"p1"},
+					AppendStrings: []string{"p1"},
+					Sub: subPolicy{
+						Ints:       []int{1},
+						AppendInts: []int{1},
+					},
+					SubPtr: &subPolicy{
+						Ints:       []int{1},
+						AppendInts: []int{1},
+					},
+				},
+				{
+					FieldString:   "p2",
+					Strings:       []string{"p2"},
+					AppendStrings: []string{"p2"},
+					Sub: subPolicy{
+						Ints:       []int{2},
+						AppendInts: []int{2},
+					},
+					SubPtr: &subPolicy{
+						Ints:       []int{2},
+						AppendInts: []int{2},
+					},
+				},
+				{
+					Strings:       []string{"p3"},
+					AppendStrings: []string{"p3"},
+					Sub: subPolicy{
+						Ints:       []int{3},
+						AppendInts: []int{3},
+					},
+					SubPtr: &subPolicy{
+						Ints:       []int{3},
+						AppendInts: []int{3},
+					},
+				},
 			},
-			SubPtr: &subPolicy{
-				Ints:       []int{3},
-				AppendInts: []int{1, 2, 3},
+			expected: policy{
+				FieldString:   "p2",
+				Strings:       []string{"p3"},
+				AppendStrings: []string{"p1", "p2", "p3"},
+				Sub: subPolicy{
+					Ints:       []int{3},
+					AppendInts: []int{1, 2, 3},
+				},
+				SubPtr: &subPolicy{
+					Ints:       []int{3},
+					AppendInts: []int{1, 2, 3},
+				},
 			},
-		}))
-	})
+		}),
+		Entry("should handle nils on destination side", testCase{
+			policies: []policy{
+				{
+					FieldString:   "p1",
+					Strings:       []string{"p1"},
+					AppendStrings: []string{"p1"},
+					Sub: subPolicy{
+						Ints:       []int{1},
+						AppendInts: []int{1},
+					},
+					SubPtr: &subPolicy{
+						Ints:       []int{1},
+						AppendInts: []int{1},
+					},
+				},
+				{
+					FieldString:   "p2",
+					Strings:       nil,
+					AppendStrings: nil,
+					Sub: subPolicy{
+						Ints:       nil,
+						AppendInts: nil,
+					},
+					SubPtr: nil,
+				},
+			},
+			expected: policy{
+				FieldString:   "p2",
+				Strings:       nil,
+				AppendStrings: []string{"p1"},
+				Sub: subPolicy{
+					Ints:       nil,
+					AppendInts: []int{1},
+				},
+				SubPtr: &subPolicy{
+					Ints:       []int{1},
+					AppendInts: []int{1},
+				},
+			},
+		}),
+		Entry("should handle nils on source side", testCase{
+			policies: []policy{
+				{
+					FieldString:   "p1",
+					Strings:       nil,
+					AppendStrings: nil,
+					Sub: subPolicy{
+						Ints:       nil,
+						AppendInts: nil,
+					},
+					SubPtr: nil,
+				},
+				{
+					FieldString: "p2",
+					Sub: subPolicy{
+						AppendInts: []int{2},
+					},
+					SubPtr: &subPolicy{
+						AppendInts: []int{2},
+					},
+				},
+				{
+					FieldString:   "p3",
+					Strings:       nil,
+					AppendStrings: nil,
+					Sub: subPolicy{
+						Ints:       nil,
+						AppendInts: nil,
+					},
+					SubPtr: &subPolicy{
+						Ints:       []int{3},
+						AppendInts: nil,
+					},
+				},
+				{
+					FieldString:   "p4",
+					Strings:       []string{"4"},
+					AppendStrings: []string{"4"},
+					Sub: subPolicy{
+						Ints:       []int{4},
+						AppendInts: []int{4},
+					},
+					SubPtr: &subPolicy{
+						Ints:       []int{4},
+						AppendInts: []int{4},
+					},
+				},
+			},
+			expected: policy{
+				FieldString:   "p4",
+				Strings:       []string{"4"},
+				AppendStrings: []string{"4"},
+				Sub: subPolicy{
+					Ints:       []int{4},
+					AppendInts: []int{2, 4},
+				},
+				SubPtr: &subPolicy{
+					Ints:       []int{4},
+					AppendInts: []int{2, 4},
+				},
+			},
+		}),
+	)
+
+	type mergeKey struct {
+		Left  bool
+		Right bool
+	}
+	type mergeConf struct {
+		A *bool `json:"a,omitempty"`
+		B *bool `json:"b,omitempty"`
+	}
+	type mergeEntry struct {
+		Key     mergeKey  `json:"key" policyMerge:"mergeKey"`
+		Default mergeConf `json:"default"`
+	}
+	type nonMergeEntry struct {
+		Key     mergeKey  `json:"key"`
+		Default mergeConf `json:"default"`
+	}
+	type testPolicy struct {
+		MergeValues []mergeEntry     `policyMerge:"mergeValuesByKey"`
+		OtherValues *[]nonMergeEntry `json:"otherValues,omitempty"`
+	}
+
+	type mergeValuesByKeyCase struct {
+		policies []testPolicy
+		expected testPolicy
+	}
+
+	t := true
+	DescribeTable("mergeValuesByKey",
+		func(given mergeValuesByKeyCase) {
+			var givens []interface{}
+			for _, p := range given.policies {
+				givens = append(givens, p)
+			}
+
+			merged, err := xds.MergeConfs(givens)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(merged).To(Equal(given.expected))
+		},
+		Entry("should work with a basic policy", mergeValuesByKeyCase{
+			policies: []testPolicy{{
+				MergeValues: []mergeEntry{{
+					Key: mergeKey{Left: true}, Default: mergeConf{A: &t},
+				}, {
+					Key: mergeKey{Left: true}, Default: mergeConf{B: &t},
+				}},
+				OtherValues: &[]nonMergeEntry{{
+					Key: mergeKey{Left: true}, Default: mergeConf{A: &t},
+				}, {
+					Key: mergeKey{Left: true}, Default: mergeConf{B: &t},
+				}, {
+					Key: mergeKey{Right: true}, Default: mergeConf{B: &t},
+				}},
+			}, {
+				MergeValues: []mergeEntry{{
+					Key: mergeKey{Right: true}, Default: mergeConf{B: &t},
+				}},
+			}},
+			expected: testPolicy{
+				MergeValues: []mergeEntry{{
+					Key: mergeKey{Left: true}, Default: mergeConf{A: &t, B: &t},
+				}, {
+					Key: mergeKey{Right: true}, Default: mergeConf{B: &t},
+				}},
+				OtherValues: &[]nonMergeEntry{{
+					Key: mergeKey{Left: true}, Default: mergeConf{A: &t},
+				}, {
+					Key: mergeKey{Left: true}, Default: mergeConf{B: &t},
+				}, {
+					Key: mergeKey{Right: true}, Default: mergeConf{B: &t},
+				}},
+			},
+		}),
+	)
+
 })

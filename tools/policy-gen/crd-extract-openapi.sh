@@ -6,13 +6,14 @@ set -o nounset
 set -e
 
 POLICY=$1
-VERSION=${2:-"v1alpha1"}
+VERSION=$2
+TOOLS_LOCATION=$3
 
 POLICIES_DIR=pkg/plugins/policies
 POLICIES_API_DIR="${POLICIES_DIR}/${POLICY}/api/${VERSION}"
 POLICIES_CRD_DIR="${POLICIES_DIR}/${POLICY}/k8s/crd"
 
-SCHEMA_TEMPLATE=tools/policy-gen/templates/schema.yaml
+SCHEMA_TEMPLATE="${TOOLS_LOCATION}/policy-gen/templates/schema.yaml"
 
 # 1. Copy file ${SCHEMA_TEMPLATE} to ${POLICIES_API_DIR}/schema.yaml. It contains
 #    information about fields that are equal for all resources 'type', 'mesh' and 'name'.

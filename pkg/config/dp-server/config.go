@@ -59,7 +59,8 @@ func (a *DpServerAuthConfig) Validate() error {
 func (a *DpServerConfig) Sanitize() {
 }
 
-func (a *DpServerConfig) Validate() (errs error) {
+func (a *DpServerConfig) Validate() error {
+	var errs error
 	if a.Port < 0 {
 		errs = multierr.Append(errs, errors.New(".Port cannot be negative"))
 	}
@@ -75,7 +76,7 @@ func (a *DpServerConfig) Validate() (errs error) {
 	if _, err := config_types.TLSCiphers(a.TlsCipherSuites); err != nil {
 		errs = multierr.Append(errs, errors.New(".TlsCipherSuites"+err.Error()))
 	}
-	return
+	return errs
 }
 
 func DefaultDpServerConfig() *DpServerConfig {

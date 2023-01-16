@@ -16,12 +16,14 @@ import (
 
 //go:embed schema.yaml
 var rawSchema []byte
-var schema = spec.Schema{}
 
 func init() {
+	var schema spec.Schema
 	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
 		panic(err)
 	}
+	rawSchema = nil
+	MeshTraceResourceTypeDescriptor.Schema = &schema
 }
 
 const (
@@ -130,5 +132,4 @@ var MeshTraceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Mesh Trace",
 	PluralDisplayName:   "Mesh Traces",
 	IsPluginOriginated:  true,
-	Schema:              &schema,
 }

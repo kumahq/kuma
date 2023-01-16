@@ -115,7 +115,7 @@ func YamlK8sObject(obj runtime.Object) InstallFunc {
 		}
 
 		_, err = retry.DoWithRetryE(cluster.GetTesting(), "install yaml resource", DefaultRetries, DefaultTimeout,
-			func() (s string, err error) {
+			func() (string, error) {
 				return "", k8s.KubectlApplyFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), string(bytes))
 			})
 		return err
@@ -125,7 +125,7 @@ func YamlK8sObject(obj runtime.Object) InstallFunc {
 func YamlK8s(yaml string) InstallFunc {
 	return func(cluster Cluster) error {
 		_, err := retry.DoWithRetryE(cluster.GetTesting(), "install yaml resource", DefaultRetries, DefaultTimeout,
-			func() (s string, err error) {
+			func() (string, error) {
 				return "", k8s.KubectlApplyFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), yaml)
 			})
 		return err
@@ -135,7 +135,7 @@ func YamlK8s(yaml string) InstallFunc {
 func DeleteYamlK8s(yaml string) InstallFunc {
 	return func(cluster Cluster) error {
 		_, err := retry.DoWithRetryE(cluster.GetTesting(), "delete yaml resource", DefaultRetries, DefaultTimeout,
-			func() (s string, err error) {
+			func() (string, error) {
 				return "", k8s.KubectlDeleteFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), yaml)
 			})
 		return err
@@ -192,7 +192,7 @@ mtls:
 func YamlUniversal(yaml string) InstallFunc {
 	return func(cluster Cluster) error {
 		_, err := retry.DoWithRetryE(cluster.GetTesting(), "install yaml resource", DefaultRetries, DefaultTimeout,
-			func() (s string, err error) {
+			func() (string, error) {
 				kumactl := cluster.GetKumactlOptions()
 				return "", kumactl.KumactlApplyFromString(yaml)
 			})
@@ -203,7 +203,7 @@ func YamlUniversal(yaml string) InstallFunc {
 func ResourceUniversal(resource model.Resource) InstallFunc {
 	return func(cluster Cluster) error {
 		_, err := retry.DoWithRetryE(cluster.GetTesting(), "install resource", DefaultRetries, DefaultTimeout,
-			func() (s string, err error) {
+			func() (string, error) {
 				kumactl := cluster.GetKumactlOptions()
 
 				res := core_rest.From.Resource(resource)
@@ -224,7 +224,7 @@ func ResourceUniversal(resource model.Resource) InstallFunc {
 func YamlPathK8s(path string) InstallFunc {
 	return func(cluster Cluster) error {
 		_, err := retry.DoWithRetryE(cluster.GetTesting(), "install yaml resource by path", DefaultRetries, DefaultTimeout,
-			func() (s string, err error) {
+			func() (string, error) {
 				return "", k8s.KubectlApplyE(cluster.GetTesting(), cluster.GetKubectlOptions(), path)
 			})
 		return err
@@ -608,6 +608,25 @@ func Combine(fs ...InstallFunc) InstallFunc {
 	}
 }
 
+func CombineWithRetries(maxRetries int, fs ...InstallFunc) InstallFunc {
+	return func(cluster Cluster) error {
+		for _, f := range fs {
+			_, err := retry.DoWithRetryE(
+				cluster.GetTesting(),
+				"installing component to cluster",
+				maxRetries,
+				0,
+				func() (string, error) {
+					return "", f(cluster)
+				})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
 func Namespace(name string) InstallFunc {
 	return func(cluster Cluster) error {
 		return k8s.CreateNamespaceE(cluster.GetTesting(), cluster.GetKubectlOptions(), name)
@@ -631,7 +650,11 @@ func (cs *ClusterSetup) Setup(cluster Cluster) error {
 	return Combine(cs.installFuncs...)(cluster)
 }
 
-func CreateCertsFor(names ...string) (cert, key string, err error) {
+func (cs *ClusterSetup) SetupWithRetries(cluster Cluster, maxRetries int) error {
+	return CombineWithRetries(maxRetries, cs.installFuncs...)(cluster)
+}
+
+func CreateCertsFor(names ...string) (string, string, error) {
 	keyPair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType, tls.DefaultKeyType, names...)
 	if err != nil {
 		return "", "", err

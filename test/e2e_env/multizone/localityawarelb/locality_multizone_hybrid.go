@@ -7,10 +7,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/multizone/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
+	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
 
 func MeshMTLSOnAndZoneEgressAndNoPassthrough(mesh string, zoneEgress string) string {
@@ -77,8 +77,8 @@ func ExternalServicesWithLocalityAwareLb() {
 		Expect(NewClusterSetup().
 			Install(YamlUniversal(MeshMTLSOnAndZoneEgressAndNoPassthrough(mesh, "true"))).
 			Install(YamlUniversal(MeshMTLSOnAndZoneEgressAndNoPassthrough(meshNoZoneEgress, "false"))).
-			Setup(env.Global)).To(Succeed())
-		Expect(WaitForMesh(mesh, env.Zones())).To(Succeed())
+			Setup(multizone.Global)).To(Succeed())
+		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 
 		// Universal Zone 4
 		Expect(NewClusterSetup().
@@ -95,29 +95,29 @@ func ExternalServicesWithLocalityAwareLb() {
 			Install(InstallExternalService("external-service-in-uni-zone4")).
 			Install(InstallExternalService("external-service-in-kube-zone1")).
 			Install(InstallExternalService("external-service-in-both-zones")).
-			Setup(env.UniZone1),
+			Setup(multizone.UniZone1),
 		).To(Succeed())
 
 		// Kubernetes Zone 1
 		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(DemoClientK8s(mesh, namespace)).
-			Setup(env.KubeZone1)).ToNot(HaveOccurred())
+			Setup(multizone.KubeZone1)).ToNot(HaveOccurred())
 
 		Expect(NewClusterSetup().
-			Install(YamlUniversal(zoneExternalService(mesh, env.UniZone1.GetApp("external-service-in-uni-zone4").GetIP(), "external-service-in-uni-zone4", "kuma-4"))).
-			Install(YamlUniversal(zoneExternalService(mesh, env.UniZone1.GetApp("external-service-in-kube-zone1").GetIP(), "external-service-in-kube-zone1", "kuma-1-zone"))).
-			Install(YamlUniversal(externalService(mesh, env.UniZone1.GetApp("external-service-in-both-zones").GetIP()))).
-			Install(YamlUniversal(zoneExternalService(meshNoZoneEgress, env.UniZone1.GetApp("external-service-in-uni-zone4").GetIP(), "demo-es-in-uni-zone4", "kuma-4"))).
-			Setup(env.Global)).ToNot(HaveOccurred())
+			Install(YamlUniversal(zoneExternalService(mesh, multizone.UniZone1.GetApp("external-service-in-uni-zone4").GetIP(), "external-service-in-uni-zone4", "kuma-4"))).
+			Install(YamlUniversal(zoneExternalService(mesh, multizone.UniZone1.GetApp("external-service-in-kube-zone1").GetIP(), "external-service-in-kube-zone1", "kuma-1-zone"))).
+			Install(YamlUniversal(externalService(mesh, multizone.UniZone1.GetApp("external-service-in-both-zones").GetIP()))).
+			Install(YamlUniversal(zoneExternalService(meshNoZoneEgress, multizone.UniZone1.GetApp("external-service-in-uni-zone4").GetIP(), "demo-es-in-uni-zone4", "kuma-4"))).
+			Setup(multizone.Global)).ToNot(HaveOccurred())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.UniZone1.DeleteMeshApps(mesh)).To(Succeed())
-		Expect(env.UniZone1.DeleteMeshApps(meshNoZoneEgress)).To(Succeed())
-		Expect(env.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(env.Global.DeleteMesh(mesh)).To(Succeed())
-		Expect(env.Global.DeleteMesh(meshNoZoneEgress)).To(Succeed())
+		Expect(multizone.UniZone1.DeleteMeshApps(mesh)).To(Succeed())
+		Expect(multizone.UniZone1.DeleteMeshApps(meshNoZoneEgress)).To(Succeed())
+		Expect(multizone.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(multizone.Global.DeleteMesh(mesh)).To(Succeed())
+		Expect(multizone.Global.DeleteMesh(meshNoZoneEgress)).To(Succeed())
 	})
 
 	EgressStats := func(cluster Cluster, filter string) func() (*stats.Stats, error) {
@@ -141,20 +141,22 @@ func ExternalServicesWithLocalityAwareLb() {
 		)
 		filterIngress := "cluster.external-service-in-kube-zone1.upstream_rq_total"
 
-		Eventually(EgressStats(env.UniZone1, filterEgress), "30s", "1s").Should(stats.BeEqualZero())
-		Eventually(IngressStats(env.KubeZone1, filterIngress), "30s", "1s").Should(stats.BeEqualZero())
-		Eventually(EgressStats(env.KubeZone1, filterEgress), "30s", "1s").Should(stats.BeEqualZero())
+		Eventually(EgressStats(multizone.UniZone1, filterEgress), "30s", "1s").Should(stats.BeEqualZero())
+		Eventually(IngressStats(multizone.KubeZone1, filterIngress), "30s", "1s").Should(stats.BeEqualZero())
+		Eventually(EgressStats(multizone.KubeZone1, filterEgress), "30s", "1s").Should(stats.BeEqualZero())
 
 		// when
-		response, err := client.CollectResponse(env.UniZone1, "uni-zone4-demo-client", "external-service-in-kube-zone1.mesh")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(response.Instance).Should(Equal("external-service-in-kube-zone1"))
+		Eventually(func(g Gomega) {
+			response, err := client.CollectResponse(multizone.UniZone1, "uni-zone4-demo-client", "external-service-in-kube-zone1.mesh")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Instance).Should(Equal("external-service-in-kube-zone1"))
+		}, "30s", "1s").Should(Succeed())
 
 		// then should route:
 		// app -> zone egress (zone4) -> zone ingress (zone1) -> zone egress (zone1) -> external service
-		Eventually(EgressStats(env.UniZone1, filterEgress), "30s", "1s").Should(stats.BeGreaterThanZero())
-		Eventually(IngressStats(env.KubeZone1, filterIngress), "30s", "1s").Should(stats.BeGreaterThanZero())
-		Eventually(EgressStats(env.KubeZone1, filterEgress), "30s", "1s").Should(stats.BeGreaterThanZero())
+		Eventually(EgressStats(multizone.UniZone1, filterEgress), "30s", "1s").Should(stats.BeGreaterThanZero())
+		Eventually(IngressStats(multizone.KubeZone1, filterIngress), "30s", "1s").Should(stats.BeGreaterThanZero())
+		Eventually(EgressStats(multizone.KubeZone1, filterEgress), "30s", "1s").Should(stats.BeGreaterThanZero())
 	})
 
 	It("should route to external-service from k8s through universal", func() {
@@ -166,23 +168,25 @@ func ExternalServicesWithLocalityAwareLb() {
 		)
 		filterIngress := "cluster.external-service-in-uni-zone4.upstream_rq_total"
 
-		Eventually(EgressStats(env.KubeZone1, filterEgress), "30s", "1s").Should(stats.BeEqualZero())
-		Eventually(IngressStats(env.UniZone1, filterIngress), "30s", "1s").Should(stats.BeEqualZero())
-		Eventually(EgressStats(env.UniZone1, filterEgress), "30s", "1s").Should(stats.BeEqualZero())
+		Eventually(EgressStats(multizone.KubeZone1, filterEgress), "30s", "1s").Should(stats.BeEqualZero())
+		Eventually(IngressStats(multizone.UniZone1, filterIngress), "30s", "1s").Should(stats.BeEqualZero())
+		Eventually(EgressStats(multizone.UniZone1, filterEgress), "30s", "1s").Should(stats.BeEqualZero())
 
 		// when request to external service in zone 1
-		response, err := client.CollectResponse(
-			env.KubeZone1, "demo-client", "external-service-in-uni-zone4.mesh",
-			client.FromKubernetesPod(namespace, "demo-client"),
-		)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(response.Instance).To(Equal("external-service-in-uni-zone4"))
+		Eventually(func(g Gomega) {
+			response, err := client.CollectResponse(
+				multizone.KubeZone1, "demo-client", "external-service-in-uni-zone4.mesh",
+				client.FromKubernetesPod(namespace, "demo-client"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Instance).To(Equal("external-service-in-uni-zone4"))
+		}, "30s", "1s").Should(Succeed())
 
 		// then should route:
 		// app -> zone egress (zone1) -> zone ingress (zone4) -> zone egress (zone4) -> external service
-		Eventually(EgressStats(env.KubeZone1, filterEgress), "30s", "1s").Should(stats.BeGreaterThanZero())
-		Eventually(IngressStats(env.UniZone1, filterIngress), "30s", "1s").Should(stats.BeGreaterThanZero())
-		Eventually(EgressStats(env.UniZone1, filterEgress), "30s", "1s").Should(stats.BeGreaterThanZero())
+		Eventually(EgressStats(multizone.KubeZone1, filterEgress), "30s", "1s").Should(stats.BeGreaterThanZero())
+		Eventually(IngressStats(multizone.UniZone1, filterIngress), "30s", "1s").Should(stats.BeGreaterThanZero())
+		Eventually(EgressStats(multizone.UniZone1, filterEgress), "30s", "1s").Should(stats.BeGreaterThanZero())
 	})
 
 	It("requests should be routed directly through local sidecar when zone egress disabled", func() {
@@ -195,24 +199,26 @@ func ExternalServicesWithLocalityAwareLb() {
 
 		// and there is no stat because external service is not exposed through ingress
 		Eventually(func(g Gomega) {
-			s, err := env.KubeZone1.GetZoneIngressEnvoyTunnel().GetStats(filterIngress)
+			s, err := multizone.KubeZone1.GetZoneIngressEnvoyTunnel().GetStats(filterIngress)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(s.Stats).To(BeEmpty())
 		}, "30s", "1s").Should(Succeed())
 
 		// when doing requests to external service with tag zone1
-		response, err := client.CollectResponse(env.UniZone1, "uni-zone4-demo-client-no-egress", "demo-es-in-uni-zone4.mesh")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(response.Instance).Should(Equal("external-service-in-uni-zone4"))
+		Eventually(func(g Gomega) {
+			response, err := client.CollectResponse(multizone.UniZone1, "uni-zone4-demo-client-no-egress", "demo-es-in-uni-zone4.mesh")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Instance).Should(Equal("external-service-in-uni-zone4"))
+		}, "30s", "1s").Should(Succeed())
 
 		// then there is no stat because external service is not exposed through egress
 		Eventually(func(g Gomega) {
-			s, err := env.KubeZone1.GetZoneIngressEnvoyTunnel().GetStats(filterEgress)
+			s, err := multizone.KubeZone1.GetZoneIngressEnvoyTunnel().GetStats(filterEgress)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(s.Stats).To(BeEmpty())
 		}, "30s", "1s").Should(Succeed())
 		Eventually(func(g Gomega) {
-			s, err := env.UniZone1.GetZoneIngressEnvoyTunnel().GetStats(filterEgress)
+			s, err := multizone.UniZone1.GetZoneIngressEnvoyTunnel().GetStats(filterEgress)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(s.Stats).To(BeEmpty())
 		}, "30s", "1s").Should(Succeed())

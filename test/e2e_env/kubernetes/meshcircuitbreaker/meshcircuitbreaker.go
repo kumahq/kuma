@@ -8,10 +8,10 @@ import (
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
 	. "github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
 func MeshCircuitBreaker() {
@@ -24,10 +24,10 @@ func MeshCircuitBreaker() {
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(DemoClientK8s(mesh, namespace)).
 			Install(testserver.Install(testserver.WithMesh(mesh), testserver.WithNamespace(namespace))).
-			Setup(env.Cluster)
+			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(DeleteMeshResources(env.Cluster, mesh,
+		Expect(DeleteMeshResources(kubernetes.Cluster, mesh,
 			core_mesh.CircuitBreakerResourceTypeDescriptor,
 			core_mesh.RetryResourceTypeDescriptor,
 			v1alpha1.MeshCircuitBreakerResourceTypeDescriptor,
@@ -35,24 +35,24 @@ func MeshCircuitBreaker() {
 	})
 
 	E2EAfterEach(func() {
-		Expect(DeleteMeshResources(env.Cluster, mesh, v1alpha1.MeshCircuitBreakerResourceTypeDescriptor)).To(Succeed())
+		Expect(DeleteMeshResources(kubernetes.Cluster, mesh, v1alpha1.MeshCircuitBreakerResourceTypeDescriptor)).To(Succeed())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(mesh)).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(kubernetes.Cluster.DeleteMesh(mesh)).To(Succeed())
 	})
 
 	DescribeTable("should configure circuit breaker limits and outlier"+
 		" detectors for connections", func(config string) {
 		// given no MeshCircuitBreaker
-		mcbs, err := env.Cluster.GetKumactlOptions().KumactlList("meshcircuitbreakers", mesh)
+		mcbs, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("meshcircuitbreakers", mesh)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(mcbs).To(HaveLen(0))
 
 		Eventually(func() ([]FailureResponse, error) {
 			return CollectResponsesAndFailures(
-				env.Cluster,
+				kubernetes.Cluster,
 				"demo-client",
 				fmt.Sprintf("test-server_%s_svc_80.mesh", namespace),
 				FromKubernetesPod(namespace, "demo-client"),
@@ -64,12 +64,12 @@ func MeshCircuitBreaker() {
 		))
 
 		// when
-		Expect(env.Cluster.Install(YamlK8s(config))).To(Succeed())
+		Expect(kubernetes.Cluster.Install(YamlK8s(config))).To(Succeed())
 
 		// then
 		Eventually(func(g Gomega) ([]FailureResponse, error) {
 			return CollectResponsesAndFailures(
-				env.Cluster,
+				kubernetes.Cluster,
 				"demo-client",
 				fmt.Sprintf("test-server_%s_svc_80.mesh", namespace),
 				FromKubernetesPod(namespace, "demo-client"),

@@ -42,7 +42,7 @@ var _ = Describe("Insight Persistence", func() {
 			MaxResyncTimeout:   1 * time.Minute,
 			ResourceManager:    rm,
 			EventReaderFactory: &test_insights.TestEventReaderFactory{Reader: &test_insights.TestEventReader{Ch: make(chan events.Event)}},
-			Tick: func(d time.Duration) (rv <-chan time.Time) {
+			Tick: func(d time.Duration) <-chan time.Time {
 				Expect(d).To(Equal(55 * time.Second)) // should be equal MaxResyncTimeout - MinResyncTimeout
 				return tickCh
 			},

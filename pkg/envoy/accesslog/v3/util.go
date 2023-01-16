@@ -12,13 +12,14 @@ func (s stringList) Contains(given string) bool {
 	return false
 }
 
-func (s stringList) Filter(predicate func(string) bool) (filtered stringList) {
+func (s stringList) Filter(predicate func(string) bool) stringList {
+	var filtered stringList
 	for _, value := range s {
 		if predicate(value) {
 			filtered = append(filtered, value)
 		}
 	}
-	return
+	return filtered
 }
 
 func (s stringList) AppendToSet(dest []string) []string {

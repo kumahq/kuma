@@ -180,7 +180,8 @@ func TagKeySlice(tags []Tags) TagKeysSlice {
 	return r
 }
 
-func MatchingRegex(tags mesh_proto.SingleValueTagSet) (re string) {
+func MatchingRegex(tags mesh_proto.SingleValueTagSet) string {
+	var re string
 	for _, key := range tags.Keys() {
 		keyIsEqual := fmt.Sprintf(`&%s=`, key)
 		var value string
@@ -195,7 +196,7 @@ func MatchingRegex(tags mesh_proto.SingleValueTagSet) (re string) {
 		re += expr
 	}
 	re = `.*` + re
-	return
+	return re
 }
 
 func RegexOR(r ...string) string {

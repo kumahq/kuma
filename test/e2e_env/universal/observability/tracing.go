@@ -6,9 +6,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
 	obs "github.com/kumahq/kuma/test/framework/deployments/observability"
+	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func meshWithTracing(meshName, zipkinURL string) string {
@@ -47,27 +47,27 @@ func Tracing() {
 			Install(MeshUniversal(mesh)).
 			Install(TestServerUniversal("test-server", mesh, WithArgs([]string{"echo", "--instance", "universal1"}))).
 			Install(DemoClientUniversal(AppModeDemoClient, mesh, WithTransparentProxy(true))).
-			Setup(env.Cluster)
-		obsClient = obs.From(obsDeployment, env.Cluster)
+			Setup(universal.Cluster)
+		obsClient = obs.From(obsDeployment, universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cluster.DeleteMeshApps(mesh)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(mesh)).To(Succeed())
-		Expect(env.Cluster.DeleteDeployment(obsDeployment)).To(Succeed())
+		Expect(universal.Cluster.DeleteMeshApps(mesh)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(mesh)).To(Succeed())
+		Expect(universal.Cluster.DeleteDeployment(obsDeployment)).To(Succeed())
 	})
 
 	It("should emit traces to jaeger", func() {
 		// given TrafficTrace and mesh with tracing backend
-		err := YamlUniversal(meshWithTracing(mesh, obsClient.ZipkinCollectorURL()))(env.Cluster)
+		err := YamlUniversal(meshWithTracing(mesh, obsClient.ZipkinCollectorURL()))(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
-		err = YamlUniversal(traceAllUniversal(mesh))(env.Cluster)
+		err = YamlUniversal(traceAllUniversal(mesh))(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() ([]string, error) {
 			// when client sends requests to server
-			_, _, err := env.Cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "3", "--fail", "test-server.mesh")
+			_, _, err := universal.Cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "3", "--fail", "test-server.mesh")
 			if err != nil {
 				return nil, err
 			}

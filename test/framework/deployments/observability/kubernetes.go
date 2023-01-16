@@ -63,11 +63,14 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 		return errors.Errorf("counting Jaeger pods. Got: %d. Expected: 1", len(pods))
 	}
 
-	k8s.WaitUntilPodAvailable(cluster.GetTesting(),
+	err = k8s.WaitUntilPodAvailableE(cluster.GetTesting(),
 		cluster.GetKubectlOptions(t.namespace),
 		pods[0].Name,
 		framework.DefaultRetries,
 		framework.DefaultTimeout)
+	if err != nil {
+		return err
+	}
 
 	t.jaegerApiTunnel = k8s.NewTunnel(cluster.GetKubectlOptions(t.namespace), k8s.ResourceTypePod, pods[0].Name, 0, 16686)
 	t.jaegerApiTunnel.ForwardPort(cluster.GetTesting())

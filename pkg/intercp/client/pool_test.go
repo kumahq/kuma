@@ -69,8 +69,8 @@ var _ = Describe("Pool", func() {
 
 			// when
 			clock.Add(idleDeadline + 1*time.Millisecond)
-			ticks <- time.Now()
-			ticks <- time.Now() // send a second tick to make sure that the cleanup triggered by the first one is done
+			ticks <- clock.Now()
+			ticks <- clock.Now() // send a second tick to make sure that the cleanup triggered by the first one is done
 			c2, err := pool.Client("http://192.168.0.1")
 			Expect(err).ToNot(HaveOccurred())
 
@@ -86,8 +86,8 @@ var _ = Describe("Pool", func() {
 			c.(*testConn).state = connectivity.TransientFailure
 
 			// when
-			ticks <- time.Now()
-			ticks <- time.Now() // send a second tick to make sure that the cleanup triggered by the first one is done
+			ticks <- clock.Now()
+			ticks <- clock.Now() // send a second tick to make sure that the cleanup triggered by the first one is done
 			c2, err := pool.Client("http://192.168.0.1")
 			Expect(err).ToNot(HaveOccurred())
 
