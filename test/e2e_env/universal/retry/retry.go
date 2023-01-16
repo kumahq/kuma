@@ -32,7 +32,7 @@ func Policy() {
 		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	It("should retry on TCP connection failure", func() {
+	It("should retry on HTTP connection failure", func() {
 		echoServerDataplane := fmt.Sprintf(`
 type: Dataplane
 mesh: "%s"

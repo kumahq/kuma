@@ -79,11 +79,14 @@ func validateHTTP(http *HTTP) validators.ValidationError {
 	var verr validators.ValidationError
 	path := validators.RootedAt("http")
 	if http.NumRetries == nil && http.PerTryTimeout == nil && http.BackOff == nil && http.RetryOn == nil &&
-		http.RetriableRequestHeaders == nil && http.RetriableResponseHeaders == nil {
+		http.RetriableRequestHeaders == nil && http.RetriableResponseHeaders == nil && http.RateLimitedBackOff == nil {
 		verr.AddViolationAt(path, validators.MustNotBeEmpty)
 	}
 	if http.BackOff != nil {
 		verr.AddErrorAt(path, validateBackOff(http.BackOff))
+	}
+	if http.RateLimitedBackOff != nil {
+		verr.AddErrorAt(path, validateRateLimitedBackOff(http.RateLimitedBackOff))
 	}
 	if http.RetryOn != nil {
 		verr.AddErrorAt(path, validateHTTPRetryOn(*http.RetryOn))
@@ -127,11 +130,14 @@ func validateHTTPRetryOn(retryOn []HTTPRetryOn) validators.ValidationError {
 func validateGRPC(grpc *GRPC) validators.ValidationError {
 	var verr validators.ValidationError
 	path := validators.RootedAt("grpc")
-	if grpc.NumRetries == nil && grpc.PerTryTimeout == nil && grpc.BackOff == nil && grpc.RetryOn == nil {
+	if grpc.NumRetries == nil && grpc.PerTryTimeout == nil && grpc.BackOff == nil && grpc.RetryOn == nil && grpc.RateLimitedBackOff == nil {
 		verr.AddViolationAt(path, validators.MustNotBeEmpty)
 	}
 	if grpc.BackOff != nil {
 		verr.AddErrorAt(path, validateBackOff(grpc.BackOff))
+	}
+	if grpc.RateLimitedBackOff != nil {
+		verr.AddErrorAt(path, validateRateLimitedBackOff(grpc.RateLimitedBackOff))
 	}
 	if grpc.RetryOn != nil {
 		verr.AddErrorAt(path, validateGRPCRetryOn(*grpc.RetryOn))
@@ -145,6 +151,29 @@ func validateBackOff(b *BackOff) validators.ValidationError {
 	if b.BaseInterval == nil && b.MaxInterval == nil {
 		verr.AddViolationAt(path, validators.MustNotBeEmpty)
 	}
+	return verr
+}
+
+func validateRateLimitedBackOff(rateLimitedBackOff *RateLimitedBackOff) validators.ValidationError {
+	var verr validators.ValidationError
+	path := validators.RootedAt("rateLimitedBackOff")
+
+	if rateLimitedBackOff.MaxInterval != nil {
+		verr.Add(validators.ValidateDurationGreaterThanZero(path.Field("maxInterval"), *rateLimitedBackOff.MaxInterval))
+	}
+
+	if len(rateLimitedBackOff.ResetHeaders) == 0 {
+		verr.AddViolationAt(path.Field("resetHeaders"), validators.MustBeDefined)
+	}
+
+	for i, header := range rateLimitedBackOff.ResetHeaders {
+		index := path.Field("resetHeaders").Index(i)
+		verr.Add(validators.ValidateStringDefined(index.Field("name"), header.Name))
+		if _, ok := RateLimitFormatEnumToEnvoyValue[header.Format]; !ok {
+			verr.AddViolationAt(index.Field("format"), validators.MustBeOnlyOneOf([]string{string(SECONDS), string(UNIX_TIMESTAMP)}))
+		}
+	}
+
 	return verr
 }
 
