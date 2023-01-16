@@ -134,16 +134,19 @@ from:
 ```yaml
 default:
   http:
-    abort:
-      httpStatus: 500
-      percentage: "50" # K8s shows warning when using float so we agree to use string and parse in the code
-    delay:
+    appendAbort:
+      - httpStatus: 500
+        percentage: "50" # K8s shows warning when using float so we agree to use string and parse in the code
+      - httpStatus: 404
+        percentage: "5" # K8s shows warning when using float so we agree to use string and parse in the code        delay:
       percentage: "50.5" # K8s shows warning when using float so we agree to use string and parse in the code
       value: 5s
     responseBandwidth:
       limit: 50 mbps
       percentage: "50" # K8s shows warning when using float so we agree to use string and parse in the code
 ```
+
+`appendAbort` appends `FaultInjection` that were added for whole `Mesh` with the one for service.
 
 #### **Result**
 
@@ -162,7 +165,7 @@ spec:
        mesh: example
      default:
        disabled: false
-       abort:
+       appendAbort:
          httpStatus: 500
          percentage: "50"
        delay:
@@ -210,7 +213,7 @@ spec:
         name: frontend
       default:
         http:
-          abort:
+          appendAbort:
             httpStatus: 500
             percentage: "50"
 ```
@@ -255,4 +258,65 @@ spec:
           abort:
             httpStatus: 500
             percentage: "50"
+```
+
+#### Service to service fault injection and Mesh fault injection
+
+```yaml
+type: MeshFaultInjection
+mesh: default
+name: default-fault-injection
+spec:
+  targetRef:
+    kind: MeshService
+    name: backend
+  from:
+    - targetRef:
+        kind: MeshService
+        name: frontend
+      default:
+        http:
+          appendAbort:
+            - httpStatus: 500
+              percentage: "50"
+```
+
+```yaml
+type: MeshFaultInjection
+mesh: default
+name: default-fault-injection-2
+spec:
+  targetRef:
+    kind: Mesh
+    name: backend
+  from:
+    - targetRef:
+        kind: MeshService
+        name: frontend
+      default:
+        http:
+          appendAbort:
+            - httpStatus: 504
+              percentage: "5"
+```
+
+
+The result is going to to have:
+
+```yaml
+spec:
+  targetRef:
+    kind: MeshService
+    name: backend
+  from:
+    - targetRef:
+        kind: MeshService
+        name: frontend
+      default:
+        http:
+          appendAbort:
+            - httpStatus: 500
+              percentage: "50"
+            - httpStatus: 504
+              percentage: "5"
 ```
