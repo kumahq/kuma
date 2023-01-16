@@ -3,7 +3,7 @@ package v1alpha1_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"gopkg.in/yaml.v2"
+	"sigs.k8s.io/yaml"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	meshfaultinjection_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
