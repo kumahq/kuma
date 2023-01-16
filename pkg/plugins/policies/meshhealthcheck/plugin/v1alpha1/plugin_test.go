@@ -184,6 +184,9 @@ healthChecks:
         start: "201"
     path: /health
     requestHeadersToAdd:
+      - header:
+          key: x-kuma-tags
+          value: '&kuma.io/service=backend&'
       - append: true
         header:
           key: x-some-header
