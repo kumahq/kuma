@@ -11,9 +11,9 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
 func TCPLogging() {
@@ -125,31 +125,31 @@ spec:
 					testserver.WithNamespace(trafficNamespace),
 					testserver.WithMesh(meshName),
 					testserver.WithName(testServer))).
-				Setup(env.Cluster)
+				Setup(kubernetes.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		E2EAfterAll(func() {
-			Expect(env.Cluster.TriggerDeleteNamespace(trafficNamespace)).To(Succeed())
-			Expect(env.Cluster.TriggerDeleteNamespace(tcpSinkNamespace)).To(Succeed())
-			Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+			Expect(kubernetes.Cluster.TriggerDeleteNamespace(trafficNamespace)).To(Succeed())
+			Expect(kubernetes.Cluster.TriggerDeleteNamespace(tcpSinkNamespace)).To(Succeed())
+			Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 		})
 
 		It("should send a traffic log to TCP port", func() {
 			var startTimeStr, src, dst string
 			var err error
 			var stdout string
-			clientPodName, err := PodNameOfApp(env.Cluster, "demo-client", trafficNamespace)
+			clientPodName, err := PodNameOfApp(kubernetes.Cluster, "demo-client", trafficNamespace)
 			Expect(err).ToNot(HaveOccurred())
-			tcpSinkPodName, err := PodNameOfApp(env.Cluster, tcpSinkAppName, tcpSinkNamespace)
+			tcpSinkPodName, err := PodNameOfApp(kubernetes.Cluster, tcpSinkAppName, tcpSinkNamespace)
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(func() error {
-				_, _, err = env.Cluster.Exec(trafficNamespace, clientPodName,
+				_, _, err = kubernetes.Cluster.Exec(trafficNamespace, clientPodName,
 					AppModeDemoClient, "curl", "-v", "--fail", "test-server")
 				if err != nil {
 					return err
 				}
-				stdout, _, err = env.Cluster.Exec(tcpSinkNamespace, tcpSinkPodName,
+				stdout, _, err = kubernetes.Cluster.Exec(tcpSinkNamespace, tcpSinkPodName,
 					"tcp-sink", "head", "-1", "/nc.out")
 				if err != nil {
 					return err

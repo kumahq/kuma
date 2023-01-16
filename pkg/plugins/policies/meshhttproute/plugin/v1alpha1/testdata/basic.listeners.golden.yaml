@@ -29,11 +29,6 @@ resources:
               name: backend
               routes:
               - match:
-                  prefix: /
-                route:
-                  cluster: backend
-                  timeout: 0s
-              - match:
                   path: /v1
                 route:
                   cluster: backend
@@ -54,14 +49,19 @@ resources:
                   cluster: backend-_0_
                   timeout: 0s
               - match:
-                  path: /v2
+                  path: /v3
                 route:
                   cluster: backend-_0_
                   timeout: 0s
               - match:
-                  prefix: /v2/
+                  prefix: /v3/
                 route:
                   cluster: backend-_0_
+                  timeout: 0s
+              - match:
+                  prefix: /
+                route:
+                  cluster: backend
                   timeout: 0s
           statPrefix: backend
     metadata:

@@ -6,8 +6,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func HealthCheckPanicThreshold() {
@@ -51,32 +51,32 @@ networking:
 		err := NewClusterSetup().
 			Install(MeshUniversal(meshName)).
 			Install(YamlUniversal(healthCheck)).
-			Setup(env.Cluster)
+			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		for i := 1; i <= 6; i++ {
 			dpName := fmt.Sprintf("dp-echo-%d", i)
 			response := fmt.Sprintf("universal-%d", i)
-			err = TestServerUniversal(dpName, meshName, WithArgs([]string{"echo", "--instance", response}))(env.Cluster)
+			err = TestServerUniversal(dpName, meshName, WithArgs([]string{"echo", "--instance", response}))(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		}
 		for i := 7; i <= 10; i++ {
-			err := NewClusterSetup().Install(YamlUniversal(dp(i))).Setup(env.Cluster)
+			err := NewClusterSetup().Install(YamlUniversal(dp(i))).Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		}
 
-		err = DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))(env.Cluster)
+		err = DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should switch to panic mode and dismiss all requests", func() {
 		Eventually(func(g Gomega) {
-			stdout, _, _ := env.Cluster.Exec("", "", "demo-client",
+			stdout, _, _ := universal.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "test-server.mesh")
 			g.Expect(stdout).To(ContainSubstring("no healthy upstream"))
 		}, "30s", "500ms").Should(Succeed())

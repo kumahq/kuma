@@ -8,9 +8,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func CrossMeshGatewayOnUniversal() {
@@ -73,49 +73,49 @@ func CrossMeshGatewayOnUniversal() {
 			Install(crossMeshGatewayDataplane).
 			Install(edgeGatewayDataplane)
 
-		Expect(setup.Setup(env.Cluster)).To(Succeed())
+		Expect(setup.Setup(universal.Cluster)).To(Succeed())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cluster.DeleteMeshApps(gatewayMesh)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(gatewayMesh)).To(Succeed())
-		Expect(env.Cluster.DeleteMeshApps(gatewayOtherMesh)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(gatewayOtherMesh)).To(Succeed())
+		Expect(universal.Cluster.DeleteMeshApps(gatewayMesh)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(gatewayMesh)).To(Succeed())
+		Expect(universal.Cluster.DeleteMeshApps(gatewayOtherMesh)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(gatewayOtherMesh)).To(Succeed())
 	})
 
 	Context("when mTLS is enabled", func() {
 		It("should proxy HTTP requests from a different mesh", func() {
 			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
 			Eventually(successfullyProxyRequestToGateway(
-				env.Cluster, demoClientOtherMesh, gatewayMesh, gatewayAddr,
+				universal.Cluster, demoClientOtherMesh, gatewayMesh, gatewayAddr,
 			), "30s", "1s").Should(Succeed())
 		})
 
 		It("should proxy HTTP requests from the same mesh", func() {
 			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
 			Eventually(successfullyProxyRequestToGateway(
-				env.Cluster, demoClientInMesh, gatewayMesh, gatewayAddr,
+				universal.Cluster, demoClientInMesh, gatewayMesh, gatewayAddr,
 			)).Should(Succeed())
 		})
 
 		It("doesn't allow HTTP requests from outside the mesh", func() {
 			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
 			Consistently(failToProxyRequestToGateway(
-				env.Cluster, demoClientOutsideMesh, gatewayAddr, env.Cluster.GetApp(crossMeshGatewayName).GetIP(),
+				universal.Cluster, demoClientOutsideMesh, gatewayAddr, universal.Cluster.GetApp(crossMeshGatewayName).GetIP(),
 			), "10s", "1s").Should(Succeed())
 		})
 
 		Specify("HTTP requests to a non-crossMesh gateway should still be proxied", func() {
-			gatewayAddr := net.JoinHostPort(env.Cluster.GetApp(edgeGatewayName).GetIP(), strconv.Itoa(edgeGatewayPort))
+			gatewayAddr := net.JoinHostPort(universal.Cluster.GetApp(edgeGatewayName).GetIP(), strconv.Itoa(edgeGatewayPort))
 			Eventually(successfullyProxyRequestToGateway(
-				env.Cluster, demoClientOtherMesh, gatewayOtherMesh, gatewayAddr,
+				universal.Cluster, demoClientOtherMesh, gatewayOtherMesh, gatewayAddr,
 			)).Should(Succeed())
 		})
 
 		It("should be reachable without transparent proxy", func() {
 			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
 			Eventually(successfullyProxyRequestToGateway(
-				env.Cluster, demoClientNoTransparent, gatewayMesh,
+				universal.Cluster, demoClientNoTransparent, gatewayMesh,
 				gatewayAddr, client.Resolve(gatewayAddr, "127.0.0.1"),
 			)).Should(Succeed())
 		})

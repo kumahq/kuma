@@ -34,7 +34,7 @@ type To struct {
 }
 
 type Rule struct {
-	Matches []Match `json:"matches"`
+	Matches []Match `json:"matches" policyMerge:"mergeKey"`
 	// Default holds routing rules that can be merged with rules from other
 	// policies.
 	Default RuleConf `json:"default"`

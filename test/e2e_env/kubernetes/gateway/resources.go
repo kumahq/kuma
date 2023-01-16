@@ -6,10 +6,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
 func Resources() {
@@ -94,15 +94,15 @@ spec:
 				testserver.WithName("test-server"),
 				testserver.WithEchoArgs("echo", "--instance", "kubernetes"),
 			)).
-			Setup(env.Cluster)
+			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(env.Cluster.TriggerDeleteNamespace(waitingClientNamespace)).To(Succeed())
-		Expect(env.Cluster.TriggerDeleteNamespace(curlingClientNamespace)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(waitingClientNamespace)).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(curlingClientNamespace)).To(Succeed())
+		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	gatewayHost := fmt.Sprintf("%s.%s", gatewayName, namespace)
@@ -112,13 +112,13 @@ spec:
 		// Open TCP connections to the gateway
 		defer GinkgoRecover()
 
-		demoClientPod, err := PodNameOfApp(env.Cluster, "demo-client", waitingClientNamespace)
+		demoClientPod, err := PodNameOfApp(kubernetes.Cluster, "demo-client", waitingClientNamespace)
 		Expect(err).ToNot(HaveOccurred())
 
 		cmd := []string{"telnet", gatewayHost, "8080"}
 		// We pass in a stdin that blocks so that telnet will keep the
 		// connection open
-		_, _, _ = env.Cluster.ExecWithOptions(ExecOptions{
+		_, _, _ = kubernetes.Cluster.ExecWithOptions(ExecOptions{
 			Command:            cmd,
 			Namespace:          waitingClientNamespace,
 			PodName:            demoClientPod,
@@ -135,7 +135,7 @@ spec:
 
 		Eventually(func(g Gomega) {
 			response, err := client.CollectResponse(
-				env.Cluster, "demo-client", target,
+				kubernetes.Cluster, "demo-client", target,
 				client.FromKubernetesPod(curlingClientNamespace, "demo-client"),
 			)
 
@@ -149,7 +149,7 @@ spec:
 
 		Eventually(func(g Gomega) {
 			_, err := client.CollectResponse(
-				env.Cluster, "demo-client", target,
+				kubernetes.Cluster, "demo-client", target,
 				client.FromKubernetesPod(curlingClientNamespace, "demo-client"),
 			)
 
@@ -157,7 +157,7 @@ spec:
 		}).Should(Succeed())
 		Consistently(func(g Gomega) {
 			response, err := client.CollectResponse(
-				env.Cluster, "demo-client", target,
+				kubernetes.Cluster, "demo-client", target,
 				client.FromKubernetesPod(curlingClientNamespace, "demo-client"),
 			)
 
@@ -167,15 +167,15 @@ spec:
 
 		By("not allowing more than 1 connection with a limit of 1")
 
-		Expect(env.Cluster.Install(YamlK8s(meshGatewayWithLimit))).To(Succeed())
+		Expect(kubernetes.Cluster.Install(YamlK8s(meshGatewayWithLimit))).To(Succeed())
 
-		Expect(env.Cluster.KillAppPod("demo-client", waitingClientNamespace)).To(Succeed())
+		Expect(kubernetes.Cluster.KillAppPod("demo-client", waitingClientNamespace)).To(Succeed())
 
 		go keepConnectionOpen()
 
 		Eventually(func(g Gomega) {
 			response, err := client.CollectFailure(
-				env.Cluster, "demo-client", target,
+				kubernetes.Cluster, "demo-client", target,
 				client.FromKubernetesPod(curlingClientNamespace, "demo-client"),
 			)
 

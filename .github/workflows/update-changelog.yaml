@@ -33,6 +33,7 @@ jobs:
           delete-branch: true
           title: "docs(CHANGELOG.md): updating changelog"
           draft: false
+          labels: ci/auto-merge,ci/skip-test
           token: ${{ steps.github-app-token.outputs.token }}
           committer: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>
           author: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>

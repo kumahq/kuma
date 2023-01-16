@@ -7,11 +7,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
 	client "github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/kic"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
 func KICKubernetes() {
@@ -36,8 +36,8 @@ func KICKubernetes() {
 		var ip string
 		Eventually(func(g Gomega) {
 			out, err := k8s.RunKubectlAndGetOutputE(
-				env.Cluster.GetTesting(),
-				env.Cluster.GetKubectlOptions(namespace),
+				kubernetes.Cluster.GetTesting(),
+				kubernetes.Cluster.GetKubectlOptions(namespace),
 				"get", "service", "gateway", "-ojsonpath={.spec.clusterIP}",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -65,15 +65,15 @@ func KICKubernetes() {
 				testserver.WithMesh(mesh),
 				testserver.WithName("test-server"),
 			)).
-			Setup(env.Cluster)).To(Succeed())
+			Setup(kubernetes.Cluster)).To(Succeed())
 
 		kicIP = getKICIP()
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(env.Cluster.TriggerDeleteNamespace(namespaceOutsideMesh)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(mesh)).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespaceOutsideMesh)).To(Succeed())
+		Expect(kubernetes.Cluster.DeleteMesh(mesh)).To(Succeed())
 	})
 
 	It("should route to service using Kube DNS", func() {
@@ -94,11 +94,11 @@ spec:
           serviceName: test-server
           servicePort: 80
 `
-		Expect(env.Cluster.Install(YamlK8s(ingress))).To(Succeed())
+		Expect(kubernetes.Cluster.Install(YamlK8s(ingress))).To(Succeed())
 
 		Eventually(func(g Gomega) {
 			_, err := client.CollectResponse(
-				env.Cluster, "demo-client", fmt.Sprintf("http://%s/test-server", kicIP),
+				kubernetes.Cluster, "demo-client", fmt.Sprintf("http://%s/test-server", kicIP),
 				client.FromKubernetesPod(namespaceOutsideMesh, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -134,11 +134,11 @@ spec:
           servicePort: 80
 `
 
-		Expect(env.Cluster.Install(YamlK8s(ingressMeshDNS))).To(Succeed())
+		Expect(kubernetes.Cluster.Install(YamlK8s(ingressMeshDNS))).To(Succeed())
 
 		Eventually(func(g Gomega) {
 			_, err := client.CollectResponse(
-				env.Cluster, "demo-client", fmt.Sprintf("http://%s/dot-mesh", kicIP),
+				kubernetes.Cluster, "demo-client", fmt.Sprintf("http://%s/dot-mesh", kicIP),
 				client.FromKubernetesPod(namespaceOutsideMesh, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())

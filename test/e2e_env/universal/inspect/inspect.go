@@ -4,8 +4,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func Inspect() {
@@ -15,17 +15,17 @@ func Inspect() {
 		err := NewClusterSetup().
 			Install(MeshUniversal(meshName)).
 			Install(DemoClientUniversal(AppModeDemoClient, meshName)).
-			Setup(env.Cluster)
+			Setup(universal.Cluster)
 		Expect(err).To(BeNil())
 	})
 	E2EAfterAll(func() {
-		Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should return envoy config_dump", func() {
 		Eventually(func(g Gomega) {
-			output, err := env.Cluster.GetKumactlOptions().
+			output, err := universal.Cluster.GetKumactlOptions().
 				RunKumactlAndGetOutput("inspect", "dataplane", AppModeDemoClient, "--type", "config-dump",
 					"--mesh", meshName)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -39,7 +39,7 @@ func Inspect() {
 
 	It("should return stats", func() {
 		Eventually(func(g Gomega) {
-			output, err := env.Cluster.GetKumactlOptions().
+			output, err := universal.Cluster.GetKumactlOptions().
 				RunKumactlAndGetOutput("inspect", "dataplane", AppModeDemoClient, "--type", "stats",
 					"--mesh", meshName)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -50,7 +50,7 @@ func Inspect() {
 
 	It("should return clusters", func() {
 		Eventually(func(g Gomega) {
-			output, err := env.Cluster.GetKumactlOptions().
+			output, err := universal.Cluster.GetKumactlOptions().
 				RunKumactlAndGetOutput("inspect", "dataplane", AppModeDemoClient, "--type", "clusters",
 					"--mesh", meshName)
 			g.Expect(err).ToNot(HaveOccurred())

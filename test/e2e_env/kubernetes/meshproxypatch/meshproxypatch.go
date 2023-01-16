@@ -6,10 +6,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
 func MeshProxyPatch() {
@@ -30,12 +30,12 @@ func MeshProxyPatch() {
 				testserver.WithMesh(meshName),
 				testserver.WithNamespace(namespace),
 			)).
-			Setup(env.Cluster)
+			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 	E2EAfterAll(func() {
-		Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should add a header using Lua filter", func() {
@@ -70,12 +70,12 @@ spec:
 `, Config.KumaNamespace, meshName)
 
 		// when
-		err := env.Cluster.Install(YamlK8s(meshProxyPatch))
+		err := kubernetes.Cluster.Install(YamlK8s(meshProxyPatch))
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(func(g Gomega) {
-			responses, err := client.CollectResponses(env.Cluster, "test-client", "test-server_mesh-proxy-patch_svc_80.mesh", client.FromKubernetesPod(namespace, "test-client"))
+			responses, err := client.CollectResponses(kubernetes.Cluster, "test-client", "test-server_mesh-proxy-patch_svc_80.mesh", client.FromKubernetesPod(namespace, "test-client"))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses[0].Received.Headers["X-Header"]).To(ContainElements("test"))
 		}, "30s", "1s").Should(Succeed())
