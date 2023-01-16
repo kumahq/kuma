@@ -2,6 +2,7 @@ package validators
 
 import (
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/asaskevich/govalidator"
@@ -47,6 +48,20 @@ func ValidateValueGreaterThanZero(path PathBuilder, value int32) ValidationError
 	if value <= 0 {
 		err.AddViolationAt(path, MustBeDefinedAndGreaterThanZero)
 	}
+	return err
+}
+
+func ValidateIntPercentage(path PathBuilder, percentage *int32) ValidationError {
+	var err ValidationError
+	if percentage == nil {
+		err.AddViolationAt(path, MustBeDefined)
+		return err
+	}
+
+	if *percentage < 0 || *percentage > 100 {
+		err.AddViolationAt(path, HasToBeInUintPercentageRange)
+	}
+
 	return err
 }
 
@@ -137,5 +152,17 @@ func ValidateIntegerGreaterThan(path PathBuilder, value uint32, minValue uint32)
 		err.AddViolationAt(path, fmt.Sprintf("%s %d", HasToBeGreaterThan, minValue))
 	}
 
+	return err
+}
+
+func ValidateBandwidth(path PathBuilder, value *string) ValidationError {
+	var err ValidationError
+	if value == nil {
+		err.AddViolationAt(path, MustBeDefined)
+		return err
+	}
+	if matched, _ := regexp.MatchString(`\d*\s?[gmk]bps`, *value); !matched {
+		err.AddViolationAt(path, "has to be in kbps/mbps/gbps units")
+	}
 	return err
 }
