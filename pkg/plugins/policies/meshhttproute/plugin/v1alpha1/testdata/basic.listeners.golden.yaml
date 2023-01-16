@@ -15,6 +15,7 @@ resources:
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          normalizePath: true
           routeConfig:
             name: outbound:backend
             requestHeadersToAdd:
@@ -28,12 +29,32 @@ resources:
               name: backend
               routes:
               - match:
-                  prefix: /v1
+                  path: /v1
                 route:
                   cluster: backend
                   timeout: 0s
               - match:
-                  prefix: /v2
+                  prefix: /v1/
+                route:
+                  cluster: backend
+                  timeout: 0s
+              - match:
+                  path: /v2
+                route:
+                  cluster: backend-_0_
+                  timeout: 0s
+              - match:
+                  prefix: /v2/
+                route:
+                  cluster: backend-_0_
+                  timeout: 0s
+              - match:
+                  path: /v3
+                route:
+                  cluster: backend-_0_
+                  timeout: 0s
+              - match:
+                  prefix: /v3/
                 route:
                   cluster: backend-_0_
                   timeout: 0s

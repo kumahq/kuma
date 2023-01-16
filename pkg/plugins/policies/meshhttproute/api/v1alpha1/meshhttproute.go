@@ -41,11 +41,28 @@ type Rule struct {
 }
 
 type Match struct {
-	Path PathMatch `json:"path,omitempty"`
+	Path   *PathMatch `json:"path,omitempty"`
+	Method *Method    `json:"method,omitempty"`
 }
 
+// +kubebuilder:validation:Enum=Exact;Prefix;RegularExpression
+type PathMatchType string
+
+// +kubebuilder:validation:Enum=CONNECT;DELETE;GET;HEAD;OPTIONS;PATCH;POST;PUT;TRACE
+type Method string
+
+const (
+	Exact             PathMatchType = "Exact"
+	Prefix            PathMatchType = "Prefix"
+	RegularExpression PathMatchType = "RegularExpression"
+)
+
 type PathMatch struct {
-	Prefix string `json:"prefix,omitempty"`
+	// Exact or prefix matches must be an absolute path. A prefix matches only
+	// if separated by a slash or the entire path.
+	// +kubebuilder:validation:MinLength=1
+	Value string        `json:"value"`
+	Type  PathMatchType `json:"type"`
 }
 
 type RuleConf struct {

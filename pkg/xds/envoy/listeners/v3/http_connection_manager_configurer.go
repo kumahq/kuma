@@ -11,6 +11,7 @@ import (
 type HttpConnectionManagerConfigurer struct {
 	StatsName                string
 	ForwardClientCertDetails bool
+	NormalizePath            bool
 }
 
 func (c *HttpConnectionManagerConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
@@ -26,6 +27,10 @@ func (c *HttpConnectionManagerConfigurer) Configure(filterChain *envoy_listener.
 		config.SetCurrentClientCertDetails = &envoy_hcm.HttpConnectionManager_SetCurrentClientCertDetails{
 			Uri: true,
 		}
+	}
+
+	if c.NormalizePath {
+		config.NormalizePath = util_proto.Bool(true)
 	}
 
 	pbst, err := util_proto.MarshalAnyDeterministic(config)
