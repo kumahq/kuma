@@ -2,6 +2,7 @@ package kubernetes_test
 
 import (
 	"encoding/json"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshretry"
 	"runtime"
 	"testing"
 
@@ -126,3 +127,4 @@ var _ = Describe("MeshTimeout API", meshtimeout.MeshTimeout, Ordered)
 var _ = Describe("MeshHealthCheck API", meshhealthcheck.API, Ordered)
 var _ = Describe("MeshCircuitBreaker API", meshcircuitbreaker.API, Ordered)
 var _ = Describe("MeshCircuitBreaker", meshcircuitbreaker.MeshCircuitBreaker, Ordered)
+var _ = Describe("MeshRetry", meshretry.API, Ordered)
