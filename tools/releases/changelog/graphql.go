@@ -105,7 +105,9 @@ query($name: String!, $owner: String!) {
 	return res.Data.Repository.Releases.Nodes, nil
 }
 
-func (c GQLClient) historyGraphQl(owner, name, branch, commitLimit string) (out []GQLCommit, err error) {
+func (c GQLClient) historyGraphQl(owner, name, branch, commitLimit string) ([]GQLCommit, error) {
+	var out []GQLCommit
+	var err error
 	var res GQLOutput
 	for {
 		cursorStr := ""
@@ -143,16 +145,16 @@ query($name: String!, $owner: String!, $branch: String!) {
 }
 `, cursorStr), map[string]interface{}{"owner": owner, "name": name, "branch": branch})
 		if err != nil {
-			return
+			return out, err
 		}
 		for _, r := range res.Data.Repository.Object.History.Nodes {
 			if commitLimit != "" && strings.HasPrefix(r.Oid, commitLimit) {
-				return
+				return out, err
 			}
 			out = append(out, r)
 		}
 		if !res.Data.Repository.Object.History.PageInfo.HasNextPage {
-			return
+			return out, err
 		}
 	}
 }
@@ -176,30 +178,32 @@ query ($owner: String!, $name: String!, $ref: String!) {
 	return res.Data.Repository.Ref.Target.Oid, nil
 }
 
-func (c GQLClient) graphqlQuery(query string, variables map[string]interface{}) (out GQLOutput, err error) {
+func (c GQLClient) graphqlQuery(query string, variables map[string]interface{}) (GQLOutput, error) {
+	var out GQLOutput
+	var err error
 	b2 := bytes.Buffer{}
 	err = json.NewEncoder(&b2).Encode(map[string]interface{}{"query": query, "variables": variables})
 	if err != nil {
-		return
+		return out, err
 	}
 	var r *http.Request
 	r, err = http.NewRequest(http.MethodPost, "https://api.github.com/graphql", &b2)
 	if err != nil {
-		return
+		return out, err
 	}
 	r.Header.Set("Authorization", fmt.Sprintf("bearer %s", c.Token))
 	r.Header.Set("Content-Type", "application/json")
 	var res *http.Response
 	res, err = http.DefaultClient.Do(r)
 	if err != nil {
-		return
+		return out, err
 	}
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
 		b, _ := io.ReadAll(res.Body)
 		err = fmt.Errorf("got status: %d body:%s", res.StatusCode, b)
-		return
+		return out, err
 	}
 	err = json.NewDecoder(res.Body).Decode(&out)
-	return
+	return out, err
 }

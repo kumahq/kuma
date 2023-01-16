@@ -53,7 +53,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	for _, policy := range policies.ToRules.Rules {
 		toRules = append(toRules, ToRouteRule{
 			Subset: policy.Subset,
-			Rules:  policy.Conf.([]api.Rule),
+			Rules:  policy.Conf.(api.PolicyDefault).Rules,
 			Origin: policy.Origin,
 		})
 	}

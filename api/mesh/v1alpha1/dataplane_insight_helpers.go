@@ -38,7 +38,7 @@ func NewVersion() *Version {
 	}
 }
 
-func (x *EnvoyVersion) ParseVersion() (version, label string) {
+func (x *EnvoyVersion) ParseVersion() (string, string) {
 	parts := strings.SplitN(x.Version, "-", 2)
 	if len(parts) == 2 {
 		return parts[0], parts[1]

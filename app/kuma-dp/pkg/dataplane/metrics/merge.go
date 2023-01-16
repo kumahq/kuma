@@ -311,7 +311,7 @@ func metricsByClusterNames(metricsFamily []*io_prometheus_client.Metric) (map[st
 	return indexedMetrics, nil
 }
 
-func getClusterName(metric *io_prometheus_client.Metric) (clusterName string, ok bool) {
+func getClusterName(metric *io_prometheus_client.Metric) (string, bool) {
 	for _, label := range metric.Label {
 		if *label.Name == EnvoyClusterLabelName {
 			return *label.Value, true

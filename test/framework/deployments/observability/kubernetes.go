@@ -63,7 +63,7 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 		return errors.Errorf("counting Jaeger pods. Got: %d. Expected: 1", len(pods))
 	}
 
-	err = framework.WaitUntilPodAvailableE(cluster.GetTesting(),
+	err = k8s.WaitUntilPodAvailableE(cluster.GetTesting(),
 		cluster.GetKubectlOptions(t.namespace),
 		pods[0].Name,
 		framework.DefaultRetries,

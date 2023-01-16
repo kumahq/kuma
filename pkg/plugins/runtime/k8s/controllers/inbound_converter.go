@@ -25,7 +25,8 @@ type InboundConverter struct {
 	NameExtractor NameExtractor
 }
 
-func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Service) (ifaces []*mesh_proto.Dataplane_Networking_Inbound) {
+func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Service) []*mesh_proto.Dataplane_Networking_Inbound {
+	var ifaces []*mesh_proto.Dataplane_Networking_Inbound
 	for _, svcPort := range service.Spec.Ports {
 		if svcPort.Protocol != "" && svcPort.Protocol != kube_core.ProtocolTCP {
 			// ignore non-TCP ports
@@ -76,7 +77,7 @@ func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Servi
 		})
 	}
 
-	return
+	return ifaces
 }
 
 func inboundForServiceless(zone string, pod *kube_core.Pod, name string) *mesh_proto.Dataplane_Networking_Inbound {

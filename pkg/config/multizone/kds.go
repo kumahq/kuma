@@ -38,7 +38,8 @@ var _ config.Config = &KdsServerConfig{}
 func (c *KdsServerConfig) Sanitize() {
 }
 
-func (c *KdsServerConfig) Validate() (errs error) {
+func (c *KdsServerConfig) Validate() error {
+	var errs error
 	if c.GrpcPort > 65535 {
 		errs = multierr.Append(errs, errors.Errorf(".GrpcPort must be in the range [0, 65535]"))
 	}
@@ -63,7 +64,7 @@ func (c *KdsServerConfig) Validate() (errs error) {
 	if _, err := config_types.TLSCiphers(c.TlsCipherSuites); err != nil {
 		errs = multierr.Append(errs, errors.New(".TlsCipherSuites"+err.Error()))
 	}
-	return
+	return errs
 }
 
 type KdsClientConfig struct {

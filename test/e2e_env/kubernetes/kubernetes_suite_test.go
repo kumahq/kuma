@@ -24,7 +24,9 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/membership"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshcircuitbreaker"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshhealthcheck"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshproxypatch"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshratelimit"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshretry"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshtimeout"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/observability"
@@ -126,3 +128,5 @@ var _ = Describe("MeshTimeout API", meshtimeout.MeshTimeout, Ordered)
 var _ = Describe("MeshHealthCheck API", meshhealthcheck.API, Ordered)
 var _ = Describe("MeshCircuitBreaker API", meshcircuitbreaker.API, Ordered)
 var _ = Describe("MeshCircuitBreaker", meshcircuitbreaker.MeshCircuitBreaker, Ordered)
+var _ = Describe("MeshRetry", meshretry.API, Ordered)
+var _ = Describe("MeshProxyPatch", meshproxypatch.MeshProxyPatch, Ordered)

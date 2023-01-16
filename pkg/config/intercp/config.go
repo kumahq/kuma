@@ -70,7 +70,8 @@ type InterCpServerConfig struct {
 	TlsCipherSuites []string `json:"tlsCipherSuites" envconfig:"kuma_inter_cp_server_tls_cipher_suites"`
 }
 
-func (i *InterCpServerConfig) Validate() (errs error) {
+func (i *InterCpServerConfig) Validate() error {
+	var errs error
 	if i.Port == 0 {
 		errs = multierr.Append(errs, errors.New(".Port cannot be zero"))
 	}
@@ -83,5 +84,5 @@ func (i *InterCpServerConfig) Validate() (errs error) {
 	if _, err := config_types.TLSCiphers(i.TlsCipherSuites); err != nil {
 		errs = multierr.Append(errs, errors.New(".TlsCipherSuites "+err.Error()))
 	}
-	return
+	return errs
 }

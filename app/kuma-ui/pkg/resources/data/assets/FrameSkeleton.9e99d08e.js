@@ -1,0 +1,1 @@
+import{k as o,o as c,c as s,c0 as t}from"./index.bd548025.js";const n={},r={class:"component-frame"};function a(e,_){return c(),s("div",r,[t(e.$slots,"default")])}const f=o(n,[["render",a]]);export{f as F};
