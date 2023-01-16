@@ -357,34 +357,34 @@ var _ = Describe("MeshHTTPRoute", func() {
 						api.MeshHTTPRouteType: {
 							ToRules: core_xds.ToRules{
 								Rules: core_xds.Rules{{
-									Subset: core_xds.MeshService("backend"),
-									Conf: []api.Rule{{
-										Matches: []api.Match{{
-											Path: &api.PathMatch{
-												Type:  api.Prefix,
-												Value: "/v1",
-											},
-										}},
-										Default: api.RuleConf{
-											BackendRefs: &[]api.BackendRef{{
-												TargetRef: builders.TargetRefService("backend"),
-												Weight:    100,
+									Conf: api.PolicyDefault{
+										AppendRules: []api.Rule{{
+											Matches: []api.Match{{
+												Path: &api.PathMatch{
+													Type:  api.Prefix,
+													Value: "/v1",
+												},
 											}},
-										},
-									}, {
-										Matches: []api.Match{{
-											Path: &api.PathMatch{
-												Type:  api.Prefix,
-												Value: "/v2",
+											Default: api.RuleConf{
+												BackendRefs: &[]api.BackendRef{{
+													TargetRef: builders.TargetRefService("backend"),
+													Weight:    100,
+												}},
 											},
-										}},
-										Default: api.RuleConf{
-											BackendRefs: &[]api.BackendRef{{
-												TargetRef: builders.TargetRefServiceSubset("backend", "region", "us"),
-												Weight:    100,
+										}, {
+											Matches: []api.Match{{
+												Path: &api.PathMatch{
+													Type:  api.Prefix,
+													Value: "/v2",
+												},
 											}},
-										},
-									}},
+											Default: api.RuleConf{
+												BackendRefs: &[]api.BackendRef{{
+													TargetRef: builders.TargetRefServiceSubset("backend", "region", "us"),
+													Weight:    100,
+												}},
+											},
+										}}},
 								}},
 							},
 						},

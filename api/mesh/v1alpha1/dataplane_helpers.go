@@ -177,14 +177,15 @@ func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_
 	return iface
 }
 
-func (n *Dataplane_Networking) GetHealthyInbounds() (inbounds []*Dataplane_Networking_Inbound) {
+func (n *Dataplane_Networking) GetHealthyInbounds() []*Dataplane_Networking_Inbound {
+	var inbounds []*Dataplane_Networking_Inbound
 	for _, inbound := range n.GetInbound() {
 		if inbound.Health != nil && !inbound.Health.Ready {
 			continue
 		}
 		inbounds = append(inbounds, inbound)
 	}
-	return
+	return inbounds
 }
 
 // Matches is simply an alias for MatchTags to make source code more aesthetic.
@@ -281,7 +282,9 @@ func (s TagSelector) MatchesFuzzy(tags map[string]string) bool {
 	return true
 }
 
-func (s TagSelector) Rank() (r TagSelectorRank) {
+func (s TagSelector) Rank() TagSelectorRank {
+	var r TagSelectorRank
+
 	for _, value := range s {
 		if value == MatchAllTag {
 			r.WildcardMatches++
@@ -289,7 +292,7 @@ func (s TagSelector) Rank() (r TagSelectorRank) {
 			r.ExactMatches++
 		}
 	}
-	return
+	return r
 }
 
 func (s TagSelector) Equal(other TagSelector) bool {

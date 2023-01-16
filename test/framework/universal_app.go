@@ -291,7 +291,7 @@ func (s *UniversalApp) allocatePublicPortsFor(ports ...string) {
 	}
 }
 
-func (s *UniversalApp) publishPortsForDocker(isipv6 bool) (args []string) {
+func (s *UniversalApp) publishPortsForDocker(isipv6 bool) []string {
 	// If we aren't using IPv6 in the container then we only want to listen on
 	// IPv4 interfaces to prevent resolving 'localhost' to the IPv6 address of
 	// the container and having the container not respond.
@@ -299,10 +299,11 @@ func (s *UniversalApp) publishPortsForDocker(isipv6 bool) (args []string) {
 	if isipv6 {
 		ip = ""
 	}
+	var args []string
 	for port := range s.ports {
 		args = append(args, "--publish="+ip+port)
 	}
-	return
+	return args
 }
 
 func (s *UniversalApp) GetPublicPort(port string) string {

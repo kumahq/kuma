@@ -23,28 +23,30 @@ type TracingProxyGenerator struct {
 
 var _ core.ResourceGenerator = TracingProxyGenerator{}
 
-func (t TracingProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (resources *core_xds.ResourceSet, err error) {
+func (t TracingProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	tracingBackend := ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace)
 	if tracingBackend == nil {
 		return nil, nil
 	}
-	resources = core_xds.NewResourceSet()
+	resources := core_xds.NewResourceSet()
 	var endpoint *core_xds.Endpoint
 	switch tracingBackend.Type {
 	case mesh_proto.TracingZipkinType:
 		cfg := mesh_proto.ZipkinTracingBackendConfig{}
-		if err = proto.ToTyped(tracingBackend.Conf, &cfg); err != nil {
+		if err := proto.ToTyped(tracingBackend.Conf, &cfg); err != nil {
 			return nil, errors.Wrap(err, "could not convert backend to zipkin")
 		}
+		var err error
 		endpoint, err = t.endpointForZipkin(&cfg)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not generate zipkin cluster")
 		}
 	case mesh_proto.TracingDatadogType:
 		cfg := mesh_proto.DatadogTracingBackendConfig{}
-		if err = proto.ToTyped(tracingBackend.Conf, &cfg); err != nil {
+		if err := proto.ToTyped(tracingBackend.Conf, &cfg); err != nil {
 			return nil, errors.Wrap(err, "could not convert backend to datadog")
 		}
+		var err error
 		endpoint, err = t.endpointForDatadog(&cfg)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not generate datadog cluster")

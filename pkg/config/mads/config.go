@@ -52,7 +52,8 @@ var _ config.Config = &MonitoringAssignmentServerConfig{}
 func (c *MonitoringAssignmentServerConfig) Sanitize() {
 }
 
-func (c *MonitoringAssignmentServerConfig) Validate() (errs error) {
+func (c *MonitoringAssignmentServerConfig) Validate() error {
+	var errs error
 	if 65535 < c.Port {
 		errs = multierr.Append(errs, errors.Errorf(".Port must be in the range [0, 65535]"))
 	}
@@ -85,7 +86,7 @@ func (c *MonitoringAssignmentServerConfig) Validate() (errs error) {
 	if _, err := config_types.TLSCiphers(c.TlsCipherSuites); err != nil {
 		errs = multierr.Append(errs, errors.New(".TlsCipherSuites"+err.Error()))
 	}
-	return
+	return errs
 }
 
 // VersionIsEnabled checks whether a MADS version has been enabled and should be served.

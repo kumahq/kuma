@@ -61,7 +61,7 @@ var _ = Describe("Counter", func() {
 			MaxResyncTimeout:   1 * time.Minute,
 			ResourceManager:    resManager,
 			EventReaderFactory: &test_insights.TestEventReaderFactory{Reader: &test_insights.TestEventReader{Ch: eventCh}},
-			Tick: func(d time.Duration) (rv <-chan time.Time) {
+			Tick: func(d time.Duration) <-chan time.Time {
 				return tickCh
 			},
 			Registry: registry.Global(),

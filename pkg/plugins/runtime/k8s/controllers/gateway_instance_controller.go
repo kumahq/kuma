@@ -130,14 +130,15 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 
 			service := &kube_core.Service{
 				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace:   gatewayInstance.Namespace,
-					Name:        gatewayInstance.Name,
-					Annotations: svcAnnotations,
+					Namespace: gatewayInstance.Namespace,
+					Name:      gatewayInstance.Name,
 				},
 			}
 			if obj != nil {
 				service = obj.(*kube_core.Service)
 			}
+
+			service.Annotations = svcAnnotations
 
 			var ports []kube_core.ServicePort
 			seenPorts := map[uint32]struct{}{}

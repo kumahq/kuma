@@ -24,7 +24,6 @@ func newPluginFile(rootArgs *args) *cobra.Command {
 			if _, err := os.Stat(policyPath); err != nil {
 				return err
 			}
-
 			pconfig, err := parse.Policy(policyPath)
 			if err != nil {
 				return err
@@ -51,10 +50,12 @@ func newPluginFile(rootArgs *args) *cobra.Command {
 				Package  string
 				Versions []string
 				Name     string
+				GoModule string
 			}{
 				Package:  strings.ToLower(pconfig.Name),
 				Name:     pconfig.Name,
 				Versions: versions,
+				GoModule: rootArgs.goModule,
 			}, outPath)
 		},
 	}
@@ -67,13 +68,14 @@ package {{ .Package }}
 
 {{ $pkg := .Package }}
 {{ $name := .Name }}
+{{ $gomodule := .GoModule }}
 
 import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core"
 {{- range $idx, $version := .Versions}}
-	api_{{ $version }} "github.com/kumahq/kuma/pkg/plugins/policies/{{ $pkg }}/api/{{ $version }}"
-	k8s_{{ $version }} "github.com/kumahq/kuma/pkg/plugins/policies/{{ $pkg }}/k8s/{{ $version }}"
-	plugin_{{ $version }} "github.com/kumahq/kuma/pkg/plugins/policies/{{ $pkg }}/plugin/{{ $version }}"
+	api_{{ $version }} "{{ $gomodule }}/pkg/plugins/policies/{{ $pkg }}/api/{{ $version }}"
+	k8s_{{ $version }} "{{ $gomodule }}/pkg/plugins/policies/{{ $pkg }}/k8s/{{ $version }}"
+	plugin_{{ $version }} "{{ $gomodule }}/pkg/plugins/policies/{{ $pkg }}/plugin/{{ $version }}"
 {{- end}}
 )
 

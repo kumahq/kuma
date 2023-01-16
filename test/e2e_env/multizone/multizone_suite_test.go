@@ -12,15 +12,19 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/connectivity"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/env"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/externalservices"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/gateway"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/healthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/inbound_communication"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/inspect"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/localityawarelb"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/meshtrafficpermission"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/ownership"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/resilience"
 	multizone_sync "github.com/kumahq/kuma/test/e2e_env/multizone/sync"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/trafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/trafficroute"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/zonedisable"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/zoneegress"
 	. "github.com/kumahq/kuma/test/framework"
 )
@@ -51,6 +55,7 @@ var _ = SynchronizedBeforeSuite(
 		env.KubeZone1 = NewK8sCluster(NewTestingT(), Kuma1, Verbose)
 		go func() {
 			defer GinkgoRecover()
+			defer wg.Done()
 			Expect(env.KubeZone1.Install(Kuma(core.Zone,
 				WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 				WithIngress(),
@@ -59,12 +64,12 @@ var _ = SynchronizedBeforeSuite(
 				WithEgressEnvoyAdminTunnel(),
 				WithGlobalAddress(env.Global.GetKuma().GetKDSServerAddress()),
 			))).To(Succeed())
-			wg.Done()
 		}()
 
 		env.KubeZone2 = NewK8sCluster(NewTestingT(), Kuma2, Verbose)
 		go func() {
 			defer GinkgoRecover()
+			defer wg.Done()
 			Expect(env.KubeZone2.Install(Kuma(core.Zone,
 				WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 				WithEnv("KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS", "true"),
@@ -75,13 +80,13 @@ var _ = SynchronizedBeforeSuite(
 				WithGlobalAddress(env.Global.GetKuma().GetKDSServerAddress()),
 				WithExperimentalCNI(),
 			))).To(Succeed())
-			wg.Done()
 		}()
 
 		env.UniZone1 = NewUniversalCluster(NewTestingT(), Kuma4, Silent)
 		E2EDeferCleanup(env.UniZone1.DismissCluster) // clean up any containers if needed
 		go func() {
 			defer GinkgoRecover()
+			defer wg.Done()
 			err := NewClusterSetup().
 				Install(Kuma(core.Zone,
 					WithGlobalAddress(env.Global.GetKuma().GetKDSServerAddress()),
@@ -93,13 +98,13 @@ var _ = SynchronizedBeforeSuite(
 				Install(EgressUniversal(env.Global.GetKuma().GenerateZoneEgressToken)).
 				Setup(env.UniZone1)
 			Expect(err).ToNot(HaveOccurred())
-			wg.Done()
 		}()
 
 		env.UniZone2 = NewUniversalCluster(NewTestingT(), Kuma5, Silent)
 		E2EDeferCleanup(env.UniZone2.DismissCluster) // clean up any containers if needed
 		go func() {
 			defer GinkgoRecover()
+			defer wg.Done()
 			err := NewClusterSetup().
 				Install(Kuma(core.Zone,
 					WithGlobalAddress(env.Global.GetKuma().GetKDSServerAddress()),
@@ -112,7 +117,6 @@ var _ = SynchronizedBeforeSuite(
 				Install(EgressUniversal(env.Global.GetKuma().GenerateZoneEgressToken)).
 				Setup(env.UniZone2)
 			Expect(err).ToNot(HaveOccurred())
-			wg.Done()
 		}()
 		wg.Wait()
 
@@ -239,3 +243,8 @@ var _ = Describe("ZoneEgress Internal Services", zoneegress.InternalServices, Or
 var _ = Describe("Connectivity", connectivity.Connectivity, Ordered)
 var _ = Describe("Sync", multizone_sync.Sync, Ordered)
 var _ = Describe("MeshTrafficPermission", meshtrafficpermission.MeshTrafficPermission, Ordered)
+var _ = Describe("Zone Disable", zonedisable.ZoneDisable, Ordered)
+var _ = Describe("External Services", externalservices.ExternalServicesOnMultizoneUniversal, Ordered)
+var _ = Describe("Ownership", ownership.MultizoneUniversal, Ordered)
+var _ = Describe("Resilience", resilience.ResilienceMultizoneUniversal, Ordered)
+var _ = Describe("Resilience Postgres", resilience.ResilienceMultizoneUniversalPostgres, Ordered)

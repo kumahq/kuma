@@ -79,7 +79,7 @@ func CpCompatibilityMultizoneKubernetes() {
 					WithInstallationMode(HelmInstallationMode),
 					WithHelmReleaseName(globalReleaseName))...,
 			)).
-			Setup(globalCluster)
+			SetupWithRetries(globalCluster, 3)
 		Expect(err).ToNot(HaveOccurred())
 
 		// Start a zone
@@ -92,7 +92,7 @@ func CpCompatibilityMultizoneKubernetes() {
 					WithHelmOpt("ingress.enabled", "true"))...,
 			)).
 			Install(NamespaceWithSidecarInjectionOnAnnotation(TestNamespace)).
-			Setup(zoneCluster)
+			SetupWithRetries(zoneCluster, 3)
 		Expect(err).ToNot(HaveOccurred())
 
 		// and new resource is created on Global

@@ -72,9 +72,9 @@ func (vo *VirtualOutboundMeshView) HostnameEntries() []HostnameEntry {
 }
 
 // Update merges `new` and `vo` in a new `out` and returns a list of changes.
-func (vo *VirtualOutboundMeshView) Update(new *VirtualOutboundMeshView) (changes []Change, out *VirtualOutboundMeshView) {
-	changes = []Change{}
-	out = NewEmptyVirtualOutboundView()
+func (vo *VirtualOutboundMeshView) Update(new *VirtualOutboundMeshView) ([]Change, *VirtualOutboundMeshView) {
+	changes := []Change{}
+	out := NewEmptyVirtualOutboundView()
 	// Let's find the removed ones (in old but not in new)
 	for entry := range vo.byHostname {
 		if _, ok := new.byHostname[entry]; !ok {
@@ -98,7 +98,7 @@ func (vo *VirtualOutboundMeshView) Update(new *VirtualOutboundMeshView) (changes
 		}
 		return changes[i].Entry.String() < changes[j].Entry.String()
 	})
-	return
+	return changes, out
 }
 
 func (vo *VirtualOutboundMeshView) DeleteByOrigin(origin string) {

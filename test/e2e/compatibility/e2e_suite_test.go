@@ -14,6 +14,3 @@ func TestE2E(t *testing.T) {
 }
 
 var _ = Describe("Test Kubernetes Multizone Compatibility", Label("job-1"), Label("arm-not-supported"), compatibility.CpCompatibilityMultizoneKubernetes)
-
-// Set FlakeAttempts because sometimes there is a problem with fetching Kuma binaries from pulp.
-var _ = Describe("Test Universal Compatibility", Label("job-1"), Label("arm-not-supported"), FlakeAttempts(3), compatibility.UniversalCompatibility)

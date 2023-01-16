@@ -14,9 +14,9 @@ type Headers interface {
 // HeaderMap represents a set of regular headers.
 type HeaderMap map[string]string
 
-func (m HeaderMap) Get(name string) (value string, exists bool) {
-	value, exists = m[name]
-	return
+func (m HeaderMap) Get(name string) (string, bool) {
+	value, exists := m[name]
+	return value, exists
 }
 
 // HeaderFormatter represents reusable formatting logic that is
@@ -43,7 +43,8 @@ func (f *HeaderFormatter) Format(headers Headers) (string, error) {
 	return value, nil
 }
 
-func (f *HeaderFormatter) GetOperandHeaders() (headers []string) {
+func (f *HeaderFormatter) GetOperandHeaders() []string {
+	var headers []string
 	// apparently, Envoy allows both `Header` and `AltHeader` to be empty
 	if f.Header != "" {
 		headers = append(headers, f.Header)

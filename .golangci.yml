@@ -63,6 +63,8 @@ linters-settings:
     locale: US
     ignore-words:
     - cancelled # US English should be "canceled", but this is in the Retry API, so we can't change it.
+  nonamedreturns:
+    report-error-in-defer: false
   gofmt:
     simplify: true
 

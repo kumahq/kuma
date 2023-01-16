@@ -31,7 +31,7 @@ golangci-lint: ## Dev: Runs golangci-lint linter
 		--timeout=10m -v
 	$(GOLANGCI_LINT) run \
 		--disable-all \
-		--enable gosimple,staticcheck,unused \
+		--enable gosimple,nonamedreturns,staticcheck,unused \
 		--timeout=10m -v
 
 .PHONY: helm-lint
