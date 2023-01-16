@@ -55,8 +55,9 @@ spec:
       default:
         local:
           http:
-            requests: 1
-            interval: 10s
+            requestRate:
+              num: 1
+              interval: 10s
             onRateLimit:
               status: 429
               headers:
@@ -67,16 +68,18 @@ spec:
       default:
         local:
           http:
-            requests: 1
-            interval: 10s
+            requestRate:
+              num: 1
+              interval: 10s
             onRateLimit:
               status: 429
               headers:
                 - key: "x-kuma-rate-limited"
                   value: "true"
           tcp:
-            connections: 100
-            interval: 10s
+            connectionRate:
+              num: 100
+              interval: 10s
 `, Config.KumaNamespace, meshName))(kubernetes.Cluster)).To(Succeed())
 
 		// then
@@ -113,8 +116,9 @@ spec:
       default:
         local:
           http:
-            requests: 1
-            interval: 10s
+            requestRate:
+              num: 1
+              interval: 10s
             onRateLimit:
               status: 429
               headers:
@@ -125,16 +129,18 @@ spec:
       default:
         local:
           http:
-            requests: 1
-            interval: 10s
+            requestRate:
+              num: 1
+              interval: 10s
             onRateLimit:
               status: 429
               headers:
                 - key: "x-kuma-rate-limited"
                   value: "true"
           tcp:
-            connections: 100
-            interval: 10s
+            connectionRate:
+              num: 100
+              interval: 10s
 `, meshName))
 
 		Expect(err).To(HaveOccurred())
