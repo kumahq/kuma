@@ -166,8 +166,8 @@ spec:
      default:
        disabled: false
        appendAbort:
-         httpStatus: 500
-         percentage: "50"
+         - httpStatus: 500
+           percentage: "50"
        delay:
          percentage: "50.5"
          value: 5s
@@ -181,9 +181,9 @@ spec:
        mesh: example
      default:
        disabled: false
-       abort:
-         httpStatus: 500
-         percentage: "50"
+       appendAbort:
+         - httpStatus: 500
+           percentage: "50"
        delay:
          percentage: "50.5"
          value: 5s
@@ -214,8 +214,8 @@ spec:
       default:
         http:
           appendAbort:
-            httpStatus: 500
-            percentage: "50"
+            - httpStatus: 500
+              percentage: "50"
 ```
 
 #### All services to one service fault injection
@@ -255,9 +255,9 @@ spec:
         name: backend2
       default:
         http:
-          abort:
-            httpStatus: 500
-            percentage: "50"
+          appendAbort:
+            - httpStatus: 500
+              percentage: "50"
 ```
 
 #### Service to service fault injection and Mesh fault injection
