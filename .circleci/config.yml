@@ -474,7 +474,7 @@ workflows:
             parameters:
               k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
               arch: [ amd64, arm64 ]
-          parallelism: 5
+          parallelism: 3
           target: test/e2e
           requires: [ build-<< matrix.arch >>, check ]
       - e2e:
