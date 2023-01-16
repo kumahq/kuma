@@ -114,6 +114,86 @@ spec:
                                 type: array
                               filters:
                                 items:
+                                  properties:
+                                    requestHeaderModifier:
+                                      properties:
+                                        add:
+                                          items:
+                                            properties:
+                                              name:
+                                                type: string
+                                              value:
+                                                type: string
+                                            required:
+                                            - name
+                                            - value
+                                            type: object
+                                          type: array
+                                        remove:
+                                          items:
+                                            type: string
+                                          type: array
+                                        set:
+                                          items:
+                                            properties:
+                                              name:
+                                                type: string
+                                              value:
+                                                type: string
+                                            required:
+                                            - name
+                                            - value
+                                            type: object
+                                          type: array
+                                      required:
+                                      - add
+                                      - remove
+                                      - set
+                                      type: object
+                                    responseHeaderModifier:
+                                      properties:
+                                        add:
+                                          items:
+                                            properties:
+                                              name:
+                                                type: string
+                                              value:
+                                                type: string
+                                            required:
+                                            - name
+                                            - value
+                                            type: object
+                                          type: array
+                                        remove:
+                                          items:
+                                            type: string
+                                          type: array
+                                        set:
+                                          items:
+                                            properties:
+                                              name:
+                                                type: string
+                                              value:
+                                                type: string
+                                            required:
+                                            - name
+                                            - value
+                                            type: object
+                                          type: array
+                                      required:
+                                      - add
+                                      - remove
+                                      - set
+                                      type: object
+                                    type:
+                                      enum:
+                                      - RequestHeaderModifier
+                                      - ResponseHeaderModifier
+                                      type: string
+                                  required:
+                                  - requestHeaderModifier
+                                  - responseHeaderModifier
+                                  - type
                                   type: object
                                 type: array
                             type: object

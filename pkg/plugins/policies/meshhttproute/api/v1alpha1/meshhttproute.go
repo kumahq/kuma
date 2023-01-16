@@ -53,7 +53,31 @@ type RuleConf struct {
 	BackendRefs *[]BackendRef `json:"backendRefs,omitempty"`
 }
 
+// +kubebuilder:validation:Enum=RequestHeaderModifier;ResponseHeaderModifier
+type FilterType string
+
+const (
+	RequestHeaderModifierType  FilterType = "RequestHeaderModifier"
+	ResponseHeaderModifierType FilterType = "ResponseHeaderModifier"
+)
+
+type HeaderName string
+
+type HeaderKeyValue struct {
+	Name  HeaderName `json:"name"`
+	Value string     `json:"value"`
+}
+
+type HeaderModifier struct {
+	Set    []HeaderKeyValue `json:"set"`
+	Add    []HeaderKeyValue `json:"add"`
+	Remove []string         `json:"remove"`
+}
+
 type Filter struct {
+	Type                   FilterType     `json:"type"`
+	RequestHeaderModifier  HeaderModifier `json:"requestHeaderModifier"`
+	ResponseHeaderModifier HeaderModifier `json:"responseHeaderModifier"`
 }
 
 type BackendRef struct {
