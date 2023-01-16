@@ -27,7 +27,7 @@ type From struct {
 }
 
 type Conf struct {
-	Local Local `json:"local,omitempty"`
+	Local *Local `json:"local,omitempty"`
 }
 
 // LocalConf defines local http or/and tcp rate limit configuration
@@ -40,48 +40,26 @@ type Local struct {
 // https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/local_rate_limit_filter
 type LocalHTTP struct {
 	// Define if rate limiting should be disabled.
-	// Default: false
-	// +optional
-	Disabled bool `json:"disabled,omitempty"`
-
-	// The number of HTTP requests this RateLimiter allows
-	// +required
-	Requests uint32 `json:"requests,omitempty"`
-
-	// The interval for which `requests` will be accounted.
-	// +required
-	Interval k8s.Duration `json:"interval,omitempty"`
-
+	Disabled *bool `json:"disabled,omitempty"`
+	// Defines how many requests are allowed per interval.
+	RequestRate *Rate `json:"requestRate,omitempty"`
 	// Describes the actions to take on a rate limit event
-	// +optional
-	// +nullable
 	OnRateLimit *OnRateLimit `json:"onRateLimit,omitempty"`
 }
 
 type OnRateLimit struct {
 	// The HTTP status code to be set on a rate limit event
-	// +optional
-	// +nullable
 	Status *uint32 `json:"status,omitempty"`
-
 	// The Headers to be added to the HTTP response on a rate limit event
-	// +optional
-	// +nullable
-	Headers []HeaderValue `json:"headers,omitempty"`
+	Headers *[]HeaderValue `json:"headers,omitempty"`
 }
 
 type HeaderValue struct {
 	// Header name
-	// +optional
-	Key string `json:"key,omitempty"`
-
+	Key string `json:"key"`
 	// Header value
-	// +optional
-	Value string `json:"value,omitempty"`
-
+	Value string `json:"value"`
 	// Should the header be appended
-	// +optional
-	// +nullable
 	Append *bool `json:"append,omitempty"`
 }
 
@@ -90,14 +68,14 @@ type HeaderValue struct {
 type LocalTCP struct {
 	// Define if rate limiting should be disabled.
 	// Default: false
-	// +optional
-	Disabled bool `json:"disabled,omitempty"`
+	Disabled *bool `json:"disabled,omitempty"`
+	// Defines how many connections are allowed per interval.
+	ConnectionRate *Rate `json:"connectionRate,omitempty"`
+}
 
-	// The number of connections that RateLimiter allows
-	// +required
-	Connections uint32 `json:"connections,omitempty"`
-
+type Rate struct {
+	// The number of tokens that are added every interval.
+	Num uint32 `json:"num"`
 	// The interval of adding tokens into bucket. Must be >= 50ms
-	// +required
-	Interval k8s.Duration `json:"interval,omitempty"`
+	Interval k8s.Duration `json:"interval"`
 }

@@ -28,8 +28,9 @@ spec:
       default:
         local:
           http:
-            requests: 1
-            interval: 10s
+            requestRate:
+              num: 1
+              interval: 10s
             onRateLimit:
               status: 429
               headers:
@@ -49,8 +50,9 @@ spec:
       default:
         local:
           tcp:
-            connections: 1
-            interval: 10s`, meshName)
+            connectionRate: 
+              num: 1
+              interval: 10s`, meshName)
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
 			Install(MeshUniversal(meshName)).
