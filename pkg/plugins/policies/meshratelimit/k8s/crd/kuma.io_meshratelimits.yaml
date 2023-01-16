@@ -90,12 +90,13 @@ spec:
                                     per interval.
                                   properties:
                                     interval:
-                                      description: The interval of adding tokens into
-                                        bucket. Must be >= 50ms
+                                      description: The interval the number of units
+                                        is accounted for.
                                       type: string
                                     num:
-                                      description: The number of tokens that are added
-                                        every interval.
+                                      description: Number of units per interval (depending
+                                        on usage it can be a number of requests, or
+                                        a number of connections).
                                       format: int32
                                       type: integer
                                   required:
@@ -112,12 +113,13 @@ spec:
                                     per interval.
                                   properties:
                                     interval:
-                                      description: The interval of adding tokens into
-                                        bucket. Must be >= 50ms
+                                      description: The interval the number of units
+                                        is accounted for.
                                       type: string
                                     num:
-                                      description: The number of tokens that are added
-                                        every interval.
+                                      description: Number of units per interval (depending
+                                        on usage it can be a number of requests, or
+                                        a number of connections).
                                       format: int32
                                       type: integer
                                   required:

@@ -74,8 +74,9 @@ type LocalTCP struct {
 }
 
 type Rate struct {
-	// The number of tokens that are added every interval.
+	// Number of units per interval (depending on usage it can be a number of requests,
+	// or a number of connections).
 	Num uint32 `json:"num"`
-	// The interval of adding tokens into bucket. Must be >= 50ms
+	// The interval the number of units is accounted for.
 	Interval k8s.Duration `json:"interval"`
 }
