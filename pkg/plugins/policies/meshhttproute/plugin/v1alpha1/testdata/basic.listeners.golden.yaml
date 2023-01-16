@@ -53,6 +53,16 @@ resources:
                 route:
                   cluster: backend-_0_
                   timeout: 0s
+              - match:
+                  path: /v2
+                route:
+                  cluster: backend-_0_
+                  timeout: 0s
+              - match:
+                  prefix: /v2/
+                route:
+                  cluster: backend-_0_
+                  timeout: 0s
           statPrefix: backend
     metadata:
       filterMetadata:

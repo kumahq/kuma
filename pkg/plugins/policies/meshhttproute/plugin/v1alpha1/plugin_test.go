@@ -377,6 +377,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 													Type:  api.Prefix,
 													Value: "/v2",
 												},
+											}, {
+												Path: &api.PathMatch{
+													Type:  api.Prefix,
+													Value: "/v3",
+												},
 											}},
 											Default: api.RuleConf{
 												BackendRefs: &[]api.BackendRef{{
