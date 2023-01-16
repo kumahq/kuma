@@ -2,7 +2,6 @@ package kubernetes_test
 
 import (
 	"encoding/json"
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshretry"
 	"runtime"
 	"testing"
 
@@ -27,6 +26,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshhealthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshproxypatch"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshratelimit"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshretry"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshtimeout"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/observability"
