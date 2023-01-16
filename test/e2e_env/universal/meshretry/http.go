@@ -1,4 +1,4 @@
-package retry
+package meshretry
 
 import (
 	"fmt"
@@ -11,8 +11,8 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-func Policy() {
-	meshName := "retry"
+func HttpRetry() {
+	meshName := "meshretry-http"
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MeshUniversal(meshName)).
@@ -46,19 +46,21 @@ networking:
       kuma.io/service: test-server
       kuma.io/protocol: http
 `, meshName)
-		retryPolicy := fmt.Sprintf(`
-type: Retry
+		meshRetryPolicy := fmt.Sprintf(`
+type: MeshRetry
 mesh: "%s"
-name: fake-retry-policy
-sources:
-- match:
-    kuma.io/service: demo-client
-destinations:
-- match:
-    kuma.io/service: test-server
-conf:
-  http:
-    numRetries: 5
+name: fake-meshretry-policy
+spec:
+  targetRef:
+    kind: MeshService
+    name: demo-client
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        http:
+          numRetries: 5
 `, meshName)
 
 		By("Checking requests succeed")
@@ -91,8 +93,8 @@ conf:
 		}
 		Expect(errs).ToNot(BeEmpty())
 
-		By("Apply a retry policy")
-		Expect(env.Cluster.Install(YamlUniversal(retryPolicy))).To(Succeed())
+		By("Apply a MeshRetry policy")
+		Expect(env.Cluster.Install(YamlUniversal(meshRetryPolicy))).To(Succeed())
 
 		By("Eventually all requests succeed consistently")
 		Eventually(func(g Gomega) {

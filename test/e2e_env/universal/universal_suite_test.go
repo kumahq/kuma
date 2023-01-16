@@ -24,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshhealthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshproxypatch"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshratelimit"
+	"github.com/kumahq/kuma/test/e2e_env/universal/meshretry"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/universal/mtls"
 	"github.com/kumahq/kuma/test/e2e_env/universal/observability"
@@ -107,6 +108,8 @@ var _ = Describe("Traffic Logging", trafficlog.TCPLogging, Ordered)
 var _ = Describe("MeshAccessLog", meshaccesslog.TestPlugin, Ordered)
 var _ = Describe("Timeout", timeout.Policy, Ordered)
 var _ = Describe("Retry", retry.Policy, Ordered)
+var _ = Describe("MeshRetry", meshretry.HttpRetry, Ordered)
+var _ = Describe("MeshRetry", meshretry.GrpcRetry, Ordered)
 var _ = Describe("RateLimit", ratelimit.Policy, Ordered)
 var _ = Describe("ProxyTemplate", proxytemplate.ProxyTemplate, Ordered)
 var _ = Describe("MeshProxyPatch", meshproxypatch.MeshProxyPatch, Ordered)
