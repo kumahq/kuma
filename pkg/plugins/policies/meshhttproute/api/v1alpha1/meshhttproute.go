@@ -58,7 +58,7 @@ const (
 )
 
 type PathMatch struct {
-	// Exaxt or prefix matches must be an absolute path. A prefix matches only
+	// Exact or prefix matches must be an absolute path. A prefix matches only
 	// if separated by a slash or the entire path.
 	// +kubebuilder:validation:MinLength=1
 	Value string        `json:"value"`

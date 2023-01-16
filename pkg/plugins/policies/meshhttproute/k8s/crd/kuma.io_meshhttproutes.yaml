@@ -141,7 +141,7 @@ spec:
                                       - RegularExpression
                                       type: string
                                     value:
-                                      description: Exaxt or prefix matches must be
+                                      description: Exact or prefix matches must be
                                         an absolute path. A prefix matches only if
                                         separated by a slash or the entire path.
                                       minLength: 1
