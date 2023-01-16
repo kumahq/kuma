@@ -118,10 +118,7 @@ from:
      kind: Mesh|MeshSubset|MeshService|MeshServiceSubset
      name: ...
 ```
-The only issue is `MeshHealthCheck` which doesn't set the `x-kuma-tags` flag and might not match the specific fault injection configuration. We have 2 options:
-
-* set `x-kuma-tags` header by default for `MeshHealthCheck`
-* change the scope of `From` to `Mesh` so the policy will affect all sources
+The only issue is `MeshHealthCheck` which doesn't set the `x-kuma-tags` flag but we decided to set the calue of `x-kuma-tags` while doing health check requests.
 
 #### To level
 
