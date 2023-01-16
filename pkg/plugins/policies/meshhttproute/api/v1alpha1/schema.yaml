@@ -81,11 +81,15 @@ properties:
                         items:
                           properties:
                             requestHeaderModifier:
+                              description: Only one action is supported per header name.
                               properties:
                                 add:
                                   items:
                                     properties:
                                       name:
+                                        maxLength: 256
+                                        minLength: 1
+                                        pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
                                         type: string
                                       value:
                                         type: string
@@ -93,15 +97,23 @@ properties:
                                       - name
                                       - value
                                     type: object
+                                  maxItems: 16
                                   type: array
+                                  x-kubernetes-list-map-keys:
+                                    - name
+                                  x-kubernetes-list-type: map
                                 remove:
                                   items:
                                     type: string
+                                  maxItems: 16
                                   type: array
                                 set:
                                   items:
                                     properties:
                                       name:
+                                        maxLength: 256
+                                        minLength: 1
+                                        pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
                                         type: string
                                       value:
                                         type: string
@@ -109,18 +121,22 @@ properties:
                                       - name
                                       - value
                                     type: object
+                                  maxItems: 16
                                   type: array
-                              required:
-                                - add
-                                - remove
-                                - set
+                                  x-kubernetes-list-map-keys:
+                                    - name
+                                  x-kubernetes-list-type: map
                               type: object
                             responseHeaderModifier:
+                              description: Only one action is supported per header name.
                               properties:
                                 add:
                                   items:
                                     properties:
                                       name:
+                                        maxLength: 256
+                                        minLength: 1
+                                        pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
                                         type: string
                                       value:
                                         type: string
@@ -128,15 +144,23 @@ properties:
                                       - name
                                       - value
                                     type: object
+                                  maxItems: 16
                                   type: array
+                                  x-kubernetes-list-map-keys:
+                                    - name
+                                  x-kubernetes-list-type: map
                                 remove:
                                   items:
                                     type: string
+                                  maxItems: 16
                                   type: array
                                 set:
                                   items:
                                     properties:
                                       name:
+                                        maxLength: 256
+                                        minLength: 1
+                                        pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
                                         type: string
                                       value:
                                         type: string
@@ -144,11 +168,11 @@ properties:
                                       - name
                                       - value
                                     type: object
+                                  maxItems: 16
                                   type: array
-                              required:
-                                - add
-                                - remove
-                                - set
+                                  x-kubernetes-list-map-keys:
+                                    - name
+                                  x-kubernetes-list-type: map
                               type: object
                             type:
                               enum:

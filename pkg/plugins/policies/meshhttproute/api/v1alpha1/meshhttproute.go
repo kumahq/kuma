@@ -61,6 +61,9 @@ const (
 	ResponseHeaderModifierType FilterType = "ResponseHeaderModifier"
 )
 
+// +kubebuilder:validation:MinLength=1
+// +kubebuilder:validation:MaxLength=256
+// +kubebuilder:validation:Pattern=`^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$`
 type HeaderName string
 
 type HeaderKeyValue struct {
@@ -68,10 +71,18 @@ type HeaderKeyValue struct {
 	Value string     `json:"value"`
 }
 
+// Only one action is supported per header name.
 type HeaderModifier struct {
-	Set    []HeaderKeyValue `json:"set"`
-	Add    []HeaderKeyValue `json:"add"`
-	Remove []string         `json:"remove"`
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=16
+	Set []HeaderKeyValue `json:"set,omitempty"`
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=16
+	Add []HeaderKeyValue `json:"add,omitempty"`
+	// +kubebuilder:validation:MaxItems=16
+	Remove []string `json:"remove,omitempty"`
 }
 
 type Filter struct {
