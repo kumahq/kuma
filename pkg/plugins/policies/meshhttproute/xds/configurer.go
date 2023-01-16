@@ -19,10 +19,12 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 	envoyRoute := &envoy_route.Route{
 		Match: c.routeMatch(c.Matches),
 		Action: &envoy_route.Route_Route{
-			Route: c.routeAction(c.Clusters, c.Filters),
+			Route: c.routeAction(c.Clusters),
 		},
 		TypedPerFilterConfig: map[string]*anypb.Any{},
 	}
+
+	applyRouteFilters(c.Filters, envoyRoute)
 
 	virtualHost.Routes = append(virtualHost.Routes, envoyRoute)
 	return nil
@@ -51,7 +53,7 @@ func (c RoutesConfigurer) hasExternal(clusters []envoy_common.Cluster) bool {
 	return false
 }
 
-func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster, _ []api.Filter) *envoy_route.RouteAction {
+func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster) *envoy_route.RouteAction {
 	routeAction := &envoy_route.RouteAction{}
 	if len(clusters) != 0 {
 		routeAction.Timeout = util_proto.Duration(clusters[0].Timeout().GetHttp().GetRequestTimeout().AsDuration())
@@ -83,4 +85,10 @@ func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster, _ []api.F
 		}
 	}
 	return routeAction
+}
+
+func applyRouteFilters(filters []api.Filter, route *envoy_route.Route) {
+	for _, filter := range filters {
+		routeFilter(filter, route)
+	}
 }
