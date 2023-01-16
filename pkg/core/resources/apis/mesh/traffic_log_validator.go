@@ -22,6 +22,6 @@ func (d *TrafficLogResource) validateSources() validators.ValidationError {
 	})
 }
 
-func (d *TrafficLogResource) validateDestinations() (err validators.ValidationError) {
+func (d *TrafficLogResource) validateDestinations() validators.ValidationError {
 	return ValidateSelectors(validators.RootedAt("destinations"), d.Spec.Destinations, OnlyServiceTagAllowed)
 }

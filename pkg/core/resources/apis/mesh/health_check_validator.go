@@ -24,25 +24,27 @@ func (d *HealthCheckResource) validateSources() validators.ValidationError {
 	})
 }
 
-func (d *HealthCheckResource) validateDestinations() (err validators.ValidationError) {
+func (d *HealthCheckResource) validateDestinations() validators.ValidationError {
 	return ValidateSelectors(validators.RootedAt("destinations"), d.Spec.Destinations, OnlyServiceTagAllowed)
 }
 
 func (d *HealthCheckResource) validateConfHttpPath(
 	path validators.PathBuilder,
-) (err validators.ValidationError) {
+) validators.ValidationError {
+	var err validators.ValidationError
 	httpConf := d.Spec.Conf.GetHttp()
 
 	if httpConf.Path == "" {
 		err.AddViolationAt(path, "has to be defined and cannot be empty")
 	}
 
-	return
+	return err
 }
 
 func (d *HealthCheckResource) validateConfHttpRequestHeadersToAdd(
 	path validators.PathBuilder,
-) (err validators.ValidationError) {
+) validators.ValidationError {
+	var err validators.ValidationError
 	httpConf := d.Spec.Conf.GetHttp()
 
 	for i, header := range httpConf.RequestHeadersToAdd {
@@ -58,12 +60,13 @@ func (d *HealthCheckResource) validateConfHttpRequestHeadersToAdd(
 		}
 	}
 
-	return
+	return err
 }
 
 func (d *HealthCheckResource) validateConfHttpExpectedStatuses(
 	path validators.PathBuilder,
-) (err validators.ValidationError) {
+) validators.ValidationError {
+	var err validators.ValidationError
 	httpConf := d.Spec.Conf.GetHttp()
 
 	if httpConf.ExpectedStatuses != nil {
@@ -77,23 +80,25 @@ func (d *HealthCheckResource) validateConfHttpExpectedStatuses(
 		}
 	}
 
-	return
+	return err
 }
 
 func (d *HealthCheckResource) validateConfHttp(
 	path validators.PathBuilder,
-) (err validators.ValidationError) {
+) validators.ValidationError {
+	var err validators.ValidationError
 	err.Add(d.validateConfHttpPath(path.Field("path")))
 	err.Add(d.validateConfHttpExpectedStatuses(path.Field("expectedStatuses")))
 	err.Add(d.validateConfHttpRequestHeadersToAdd(path.Field("requestHeadersToAdd")))
-	return
+	return err
 }
 
-func (d *HealthCheckResource) validateConf() (err validators.ValidationError) {
+func (d *HealthCheckResource) validateConf() validators.ValidationError {
+	var err validators.ValidationError
 	path := validators.RootedAt("conf")
 	if d.Spec.GetConf() == nil {
 		err.AddViolationAt(path, "has to be defined")
-		return
+		return err
 	}
 	err.Add(ValidateDuration(path.Field("interval"), d.Spec.Conf.Interval))
 	err.Add(ValidateDuration(path.Field("timeout"), d.Spec.Conf.Timeout))
@@ -115,12 +120,13 @@ func (d *HealthCheckResource) validateConf() (err validators.ValidationError) {
 	if d.Spec.Conf.GetTcp() != nil && d.Spec.Conf.GetHttp() != nil {
 		err.AddViolationAt(path, "http and tcp cannot be defined at the same time")
 	}
-	return
+	return err
 }
 
-func (d *HealthCheckResource) validatePercentage(path validators.PathBuilder, value *wrapperspb.FloatValue) (err validators.ValidationError) {
+func (d *HealthCheckResource) validatePercentage(path validators.PathBuilder, value *wrapperspb.FloatValue) validators.ValidationError {
+	var err validators.ValidationError
 	if value.GetValue() < 0.0 || value.GetValue() > 100.0 {
 		err.AddViolationAt(path, "must be in range [0.0 - 100.0]")
 	}
-	return
+	return err
 }

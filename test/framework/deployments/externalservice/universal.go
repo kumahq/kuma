@@ -155,11 +155,12 @@ func (j *UniversalDeployment) allocatePublicPortsFor(ports ...uint32) error {
 	return nil
 }
 
-func (j *UniversalDeployment) publishPortsForDocker() (args []string) {
+func (j *UniversalDeployment) publishPortsForDocker() []string {
+	var args []string
 	for port := range j.ports {
 		args = append(args, "--publish="+strconv.Itoa(int(port)))
 	}
-	return
+	return args
 }
 
 func (j *UniversalDeployment) updatePublishedPorts(t testing.TestingT) error {

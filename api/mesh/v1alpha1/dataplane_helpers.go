@@ -177,40 +177,40 @@ func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_
 	return iface
 }
 
-func (n *Dataplane_Networking) GetHealthyInbounds() (inbounds []*Dataplane_Networking_Inbound) {
+func (n *Dataplane_Networking) GetHealthyInbounds() []*Dataplane_Networking_Inbound {
+	var inbounds []*Dataplane_Networking_Inbound
 	for _, inbound := range n.GetInbound() {
 		if inbound.Health != nil && !inbound.Health.Ready {
 			continue
 		}
 		inbounds = append(inbounds, inbound)
 	}
-	return
+	return inbounds
 }
 
 // Matches is simply an alias for MatchTags to make source code more aesthetic.
 func (d *Dataplane) Matches(selector TagSelector) bool {
-	if d != nil {
-		return d.MatchTags(selector)
+	if d == nil {
+		return false
 	}
-	return false
-}
-
-func (d *Dataplane) MatchTags(selector TagSelector) bool {
 	for _, inbound := range d.GetNetworking().GetInbound() {
-		if inbound.MatchTags(selector) {
+		if selector.Matches(inbound.Tags) {
 			return true
 		}
 	}
-	if d.GetNetworking().GetGateway() != nil {
-		if d.Networking.Gateway.MatchTags(selector) {
-			return true
-		}
-	}
-	return false
+	return selector.Matches(d.GetNetworking().GetGateway().GetTags())
 }
 
-func (d *Dataplane_Networking_Gateway) MatchTags(selector TagSelector) bool {
-	return selector.Matches(d.Tags)
+func (d *Dataplane) MatchTagsFuzzy(selector TagSelector) bool {
+	if d == nil {
+		return false
+	}
+	for _, inbound := range d.GetNetworking().GetInbound() {
+		if selector.MatchesFuzzy(inbound.Tags) {
+			return true
+		}
+	}
+	return selector.MatchesFuzzy(d.GetNetworking().GetGateway().GetTags())
 }
 
 // GetService returns a service represented by this inbound interface.
@@ -233,14 +233,6 @@ func (d *Dataplane_Networking_Inbound) GetProtocol() string {
 		return ""
 	}
 	return d.Tags[ProtocolTag]
-}
-
-func (d *Dataplane_Networking_Inbound) MatchTags(selector TagSelector) bool {
-	return selector.Matches(d.Tags)
-}
-
-func (d *Dataplane_Networking_Outbound) MatchTags(selector TagSelector) bool {
-	return selector.Matches(d.GetTagsIncludingLegacy())
 }
 
 // GetTagsIncludingLegacy returns tags but taking on account old legacy format of "kuma.io/service" field in outbound
@@ -274,7 +266,25 @@ func (s TagSelector) Matches(tags map[string]string) bool {
 	return true
 }
 
-func (s TagSelector) Rank() (r TagSelectorRank) {
+func (s TagSelector) MatchesFuzzy(tags map[string]string) bool {
+	if len(s) == 0 {
+		return true
+	}
+	for tag, value := range s {
+		inboundVal, exist := tags[tag]
+		if !exist {
+			return false
+		}
+		if !strings.Contains(inboundVal, value) && value != MatchAllTag {
+			return false
+		}
+	}
+	return true
+}
+
+func (s TagSelector) Rank() TagSelectorRank {
+	var r TagSelectorRank
+
 	for _, value := range s {
 		if value == MatchAllTag {
 			r.WildcardMatches++
@@ -282,7 +292,7 @@ func (s TagSelector) Rank() (r TagSelectorRank) {
 			r.ExactMatches++
 		}
 	}
-	return
+	return r
 }
 
 func (s TagSelector) Equal(other TagSelector) bool {

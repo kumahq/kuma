@@ -49,7 +49,7 @@ properties:
                   description: GRPC defines a configuration of retries for GRPC traffic
                   properties:
                     backOff:
-                      description: BackOff is a configuration of durations which will be used in exponential backoff strategy between retries
+                      description: BackOff is a configuration of durations which will be used in exponential backoff strategy between retries.
                       properties:
                         baseInterval:
                           description: BaseInterval is an amount of time which should be taken between retries. Must be greater than zero. Values less than 1 ms are rounded up to 1 ms. Default is 25ms.
@@ -59,14 +59,33 @@ properties:
                           type: string
                       type: object
                     numRetries:
-                      description: NumRetries is the number of attempts that will be made on failed (and retriable) requests
+                      description: NumRetries is the number of attempts that will be made on failed (and retriable) requests.
                       format: int32
                       type: integer
                     perTryTimeout:
                       description: PerTryTimeout is the amount of time after which retry attempt should timeout. Setting this timeout to 0 will disable it. Default is 15s.
                       type: string
+                    rateLimitedBackOff:
+                      description: RateLimitedBackOff is a configuration of backoff which will be used when the upstream returns one of the headers configured.
+                      properties:
+                        maxInterval:
+                          description: MaxInterval is a maximal amount of time which will be taken between retries. Default is 300 seconds.
+                          type: string
+                        resetHeaders:
+                          description: ResetHeaders specifies the list of headers (like Retry-After or X-RateLimit-Reset) to match against the response. Headers are tried in order, and matched case-insensitive. The first header to be parsed successfully is used. If no headers match the default exponential BackOff is used instead.
+                          items:
+                            properties:
+                              format:
+                                description: The format of the reset header, either "Seconds" or "UnixTimestamp".
+                                type: string
+                              name:
+                                description: The Name of the reset header.
+                                type: string
+                            type: object
+                          type: array
+                      type: object
                     retryOn:
-                      description: 'RetryOn is a list of conditions which will cause a retry. Available values are: [CANCELED, DEADLINE_EXCEEDED, INTERNAL, RESOURCE_EXHAUSTED, UNAVAILABLE]'
+                      description: 'RetryOn is a list of conditions which will cause a retry. Available values are: [CANCELED, DEADLINE_EXCEEDED, INTERNAL, RESOURCE_EXHAUSTED, UNAVAILABLE].'
                       items:
                         type: string
                       type: array
@@ -91,6 +110,25 @@ properties:
                     perTryTimeout:
                       description: PerTryTimeout is the amount of time after which retry attempt should timeout. Setting this timeout to 0 will disable it. Default is 15s.
                       type: string
+                    rateLimitedBackOff:
+                      description: RateLimitedBackOff is a configuration of backoff which will be used when the upstream returns one of the headers configured.
+                      properties:
+                        maxInterval:
+                          description: MaxInterval is a maximal amount of time which will be taken between retries. Default is 300 seconds.
+                          type: string
+                        resetHeaders:
+                          description: ResetHeaders specifies the list of headers (like Retry-After or X-RateLimit-Reset) to match against the response. Headers are tried in order, and matched case-insensitive. The first header to be parsed successfully is used. If no headers match the default exponential BackOff is used instead.
+                          items:
+                            properties:
+                              format:
+                                description: The format of the reset header, either "Seconds" or "UnixTimestamp".
+                                type: string
+                              name:
+                                description: The Name of the reset header.
+                                type: string
+                            type: object
+                          type: array
+                      type: object
                     retriableRequestHeaders:
                       description: RetriableRequestHeaders is an HTTP headers which must be present in the request for retries to be attempted.
                       items:
@@ -162,6 +200,10 @@ properties:
                   description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                   type: object
               type: object
+          required:
+            - targetRef
           type: object
         type: array
+    required:
+      - targetRef
     type: object

@@ -13,17 +13,10 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
-
-func GatewayAPICRDs(cluster Cluster) error {
-	return k8s.RunKubectlE(
-		cluster.GetTesting(),
-		cluster.GetKubectlOptions(),
-		"apply", "-f", "https://github.com/kubernetes-sigs/gateway-api/releases/download/v0.5.1/experimental-install.yaml")
-}
 
 func SuccessfullyProxyRequestToGateway(cluster Cluster, instance string, gatewayAddr string, namespace string) func(Gomega) {
 	return func(g Gomega) {
@@ -121,7 +114,7 @@ spec:
 }
 
 func gatewayAddress(instanceName, instanceNamespace string, port int) string {
-	services, err := k8s.ListServicesE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(instanceNamespace), metav1.ListOptions{})
+	services, err := k8s.ListServicesE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(instanceNamespace), metav1.ListOptions{})
 	Expect(err).ToNot(HaveOccurred())
 
 	var rawIP string

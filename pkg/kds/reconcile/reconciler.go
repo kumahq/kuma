@@ -43,11 +43,10 @@ type reconciler struct {
 
 func (r *reconciler) Clear(node *envoy_core.Node) {
 	id := r.hasher.ID(node)
-	snapshot, err := r.cache.GetSnapshot(id)
-	if err != nil {
-		return // snapshot is not present
+	snapshot := r.cache.ClearSnapshot(id)
+	if snapshot == nil {
+		return
 	}
-	r.cache.ClearSnapshot(id)
 	for _, typ := range snapshot.GetSupportedTypes() {
 		r.statsCallbacks.DiscardConfig(snapshot.GetVersion(typ))
 	}

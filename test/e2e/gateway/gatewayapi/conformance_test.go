@@ -15,7 +15,6 @@ import (
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/gateway"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -45,7 +44,7 @@ func TestConformance(t *testing.T) {
 		g.Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
-	g.Expect(cluster.Install(gateway.GatewayAPICRDs)).To(Succeed())
+	g.Expect(cluster.Install(GatewayAPICRDs)).To(Succeed())
 	g.Eventually(func() error {
 		return NewClusterSetup().
 			Install(Kuma(config_core.Standalone,

@@ -113,7 +113,7 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	select {
 	case <-stop:
 		cancel()
-		return
+		return errs
 	case err = <-errorCh:
 		return err
 	}

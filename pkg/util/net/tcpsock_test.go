@@ -80,7 +80,9 @@ var _ = Describe("PickTCPPort()", func() {
 		// given
 		loopback := "127.0.0.1"
 
-		findFreePortRange := func(n uint32) (lowestPort uint32, highestPort uint32) {
+		findFreePortRange := func(n uint32) (uint32, uint32) {
+			var lowestPort uint32
+			var highestPort uint32
 			Expect(n).To(BeNumerically(">", 0))
 		attempts:
 			for a := 0; a < 65535; a++ {
@@ -99,7 +101,7 @@ var _ = Describe("PickTCPPort()", func() {
 				return freePort, freePort + n - 1
 			}
 			Fail(fmt.Sprintf(`unable to find "%d" free ports in a row`, n))
-			return
+			return lowestPort, highestPort
 		}
 
 		type testCase struct {
@@ -163,7 +165,7 @@ var _ = Describe("PickTCPPort()", func() {
 		// when
 		actualPort, err := PickTCPPort(loopback, freePort, freePort)
 		// then
-		Expect(err.Error()).To(ContainSubstring(`bind: address already in use`))
+		Expect(err.Error()).To(ContainSubstring("unable to find port in range"))
 		// and
 		Expect(actualPort).To(Equal(uint32(0)))
 	})

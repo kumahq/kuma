@@ -46,7 +46,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 
 	genOutlierDetection := func(disabled bool) *api.OutlierDetection {
 		return &api.OutlierDetection{
-			Disabled:                    disabled,
+			Disabled:                    &disabled,
 			Interval:                    test.ParseDuration("10s"),
 			BaseEjectionTime:            test.ParseDuration("8s"),
 			MaxEjectionPercent:          test.PointerOf(uint32(88)),

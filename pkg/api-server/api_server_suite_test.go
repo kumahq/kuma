@@ -170,9 +170,10 @@ func StartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_cp.
 	var cfg kuma_cp.Config
 	var stop func()
 
-	Eventually(func() (err error) {
+	Eventually(func() error {
+		var err error
 		apiServer, cfg, stop, err = tryStartApiServer(t)
-		return
+		return err
 	}).
 		WithTimeout(time.Second * 30).
 		WithPolling(time.Millisecond * 500).

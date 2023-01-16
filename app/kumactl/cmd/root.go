@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"k8s.io/klog/v2"
 
 	"github.com/kumahq/kuma/app/kumactl/cmd/apply"
 	"github.com/kumahq/kuma/app/kumactl/cmd/completion"
@@ -44,7 +45,10 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			core.SetLogger(core.NewLogger(level))
+			l := core.NewLogger(level)
+			core.SetLogger(l)
+			// Required for any k8s stuff that may log.
+			klog.SetLogger(l)
 
 			// once command line flags have been parsed,
 			// avoid printing usage instructions

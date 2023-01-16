@@ -83,7 +83,8 @@ func (c *UniversalCluster) Name() string {
 	return c.name
 }
 
-func (c *UniversalCluster) DismissCluster() (errs error) {
+func (c *UniversalCluster) DismissCluster() error {
+	var errs error
 	for _, app := range c.apps {
 		err := app.Stop()
 		if err != nil {
@@ -96,7 +97,7 @@ func (c *UniversalCluster) DismissCluster() (errs error) {
 		}
 		delete(c.deployments, name)
 	}
-	return
+	return errs
 }
 
 func (c *UniversalCluster) Verbose() bool {

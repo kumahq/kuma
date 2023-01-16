@@ -66,7 +66,7 @@ func genFilter(request *restful.Request) (store.ListFilterFunc, error) {
 			return false
 		}
 
-		if !dataplane.Spec.MatchTags(tags) {
+		if !dataplane.Spec.MatchTagsFuzzy(tags) {
 			return false
 		}
 
