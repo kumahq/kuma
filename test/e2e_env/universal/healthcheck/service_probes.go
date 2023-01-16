@@ -4,8 +4,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func ServiceProbes() {
@@ -20,24 +20,24 @@ func ServiceProbes() {
 				ServiceProbe()),
 			).
 			Install(DemoClientUniversal("demo-client", meshName, ServiceProbe())).
-			Setup(env.Cluster)
+			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	ProxyHealthy := func(name string) {
 		Eventually(func() (string, error) {
-			return env.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplane", name, "-oyaml", "--mesh", meshName)
+			return universal.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplane", name, "-oyaml", "--mesh", meshName)
 		}, "30s", "1s").Should(ContainSubstring("ready: true"))
 	}
 
 	ProxyUnhealthy := func(name string) {
 		Eventually(func() (string, error) {
-			return env.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplane", name, "-oyaml", "--mesh", meshName)
+			return universal.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplane", name, "-oyaml", "--mesh", meshName)
 		}, "30s", "1s").Should(ContainSubstring("health: {}"))
 	}
 
@@ -50,7 +50,7 @@ func ServiceProbes() {
 		ProxyHealthy("demo-client")
 
 		// when kuma-dp is draining state (not terminated) after receiving with SIGTERM
-		_, _, err := env.Cluster.Exec("", "", "demo-client", "pkill", "-15", "kuma-dp")
+		_, _, err := universal.Cluster.Exec("", "", "demo-client", "pkill", "-15", "kuma-dp")
 		Expect(err).ToNot(HaveOccurred())
 
 		// then proxy is offline rather than missing

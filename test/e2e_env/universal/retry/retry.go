@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func Policy() {
@@ -18,18 +18,18 @@ func Policy() {
 			Install(MeshUniversal(meshName)).
 			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "universal"}))).
-			Setup(env.Cluster)
+			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// Delete the default retry policy
 		Eventually(func() error {
-			return env.Cluster.GetKumactlOptions().RunKumactl("delete", "retry", "--mesh", meshName, "retry-all-"+meshName)
+			return universal.Cluster.GetKumactlOptions().RunKumactl("delete", "retry", "--mesh", meshName, "retry-all-"+meshName)
 		}).Should(Succeed())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should retry on HTTP connection failure", func() {
@@ -63,27 +63,27 @@ conf:
 
 		By("Checking requests succeed")
 		Eventually(func(g Gomega) {
-			stdout, _, err := env.Cluster.Exec("", "", "demo-client",
+			stdout, _, err := universal.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		}).Should(Succeed())
 		Consistently(func(g Gomega) {
 			// -m 8 to wait for 8 seconds to beat the default 5s connect timeout
-			stdout, stderr, err := env.Cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "test-server.mesh")
+			stdout, stderr, err := universal.Cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stderr).To(BeEmpty())
 			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		})
 
 		By("Adding a faulty dataplane")
-		Expect(env.Cluster.Install(YamlUniversal(echoServerDataplane))).To(Succeed())
+		Expect(universal.Cluster.Install(YamlUniversal(echoServerDataplane))).To(Succeed())
 
 		By("Check some errors happen")
 		var errs []error
 		for i := 0; i < 50; i++ {
 			time.Sleep(time.Millisecond * 100)
-			_, _, err := env.Cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "test-server.mesh")
+			_, _, err := universal.Cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "test-server.mesh")
 
 			if err != nil {
 				errs = append(errs, err)
@@ -92,18 +92,18 @@ conf:
 		Expect(errs).ToNot(BeEmpty())
 
 		By("Apply a retry policy")
-		Expect(env.Cluster.Install(YamlUniversal(retryPolicy))).To(Succeed())
+		Expect(universal.Cluster.Install(YamlUniversal(retryPolicy))).To(Succeed())
 
 		By("Eventually all requests succeed consistently")
 		Eventually(func(g Gomega) {
-			stdout, _, err := env.Cluster.Exec("", "", "demo-client",
+			stdout, _, err := universal.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "-m", "8", "--fail", "test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		}).Should(Succeed())
 		Consistently(func(g Gomega) {
 			// -m 8 to wait for 8 seconds to beat the default 5s connect timeout
-			stdout, stderr, err := env.Cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "test-server.mesh")
+			stdout, stderr, err := universal.Cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stderr).To(BeEmpty())
 			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))

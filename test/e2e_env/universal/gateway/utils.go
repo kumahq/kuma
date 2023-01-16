@@ -9,9 +9,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func demoClientName(mesh string) string {
@@ -124,7 +124,7 @@ conf:
 
 func mkGatewayDataplane(name, mesh string) InstallFunc {
 	return func(cluster Cluster) error {
-		token, err := env.Cluster.GetKuma().GenerateDpToken(mesh, name)
+		token, err := universal.Cluster.GetKuma().GenerateDpToken(mesh, name)
 		if err != nil {
 			return err
 		}
@@ -141,7 +141,7 @@ networking:
       kuma.io/service: %s
 `, mesh, name)
 
-		return env.Cluster.DeployApp(
+		return universal.Cluster.DeployApp(
 			WithName(name),
 			WithToken(token),
 			WithVerbose(),

@@ -6,10 +6,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
+	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func Policy() {
@@ -65,15 +65,15 @@ spec:
 			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
 			Install(DemoClientUniversal("tcp-client", meshName, WithTransparentProxy(false))).
 			Install(DemoClientUniversal("web", meshName, WithTransparentProxy(true))).
-			Setup(env.Cluster)).To(Succeed())
+			Setup(universal.Cluster)).To(Succeed())
 	})
 	E2EAfterAll(func() {
-		Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 	requestRateLimited := func(client string, svc string, status string) func(g Gomega) {
 		return func(g Gomega) {
-			stdout, _, err := env.Cluster.Exec("", "", client, "curl", "-v", fmt.Sprintf("%s.mesh", svc))
+			stdout, _, err := universal.Cluster.Exec("", "", client, "curl", "-v", fmt.Sprintf("%s.mesh", svc))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).Should(ContainSubstring(status))
 		}
@@ -81,8 +81,8 @@ spec:
 	keepConnectionOpen := func() {
 		// Open TCP connections to the test-server
 		defer GinkgoRecover()
-		ip := env.Cluster.GetApp("test-server-tcp").GetIP()
-		_, _, _ = env.Cluster.Exec("", "", "tcp-client", "telnet", ip, "80")
+		ip := universal.Cluster.GetApp("test-server-tcp").GetIP()
+		_, _, _ = universal.Cluster.Exec("", "", "tcp-client", "telnet", ip, "80")
 	}
 
 	tcpRateLimitStats := func(admin envoy_admin.Tunnel) *stats.Stats {
@@ -100,7 +100,7 @@ spec:
 	})
 
 	It("should limit tcp connections", func() {
-		admin, err := env.Cluster.GetApp("test-server-tcp").GetEnvoyAdminTunnel()
+		admin, err := universal.Cluster.GetApp("test-server-tcp").GetEnvoyAdminTunnel()
 		Expect(err).ToNot(HaveOccurred())
 		// should have no ratelimited connections
 		Expect(tcpRateLimitStats(admin)).To(stats.BeEqualZero())

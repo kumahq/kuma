@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func PluginTest() {
@@ -23,22 +23,22 @@ func PluginTest() {
 			Install(TestServerUniversal("test-server", meshName,
 				WithArgs([]string{"echo", "--instance", "universal-1"})),
 			).
-			Setup(env.Cluster)
+			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 	E2EAfterAll(func() {
-		Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 	E2EAfterEach(func() {
-		Expect(env.Cluster.GetKumactlOptions().KumactlDelete("meshtimeout", "default", meshName)).To(Succeed())
+		Expect(universal.Cluster.GetKumactlOptions().KumactlDelete("meshtimeout", "default", meshName)).To(Succeed())
 	})
 
 	DescribeTable("should reset the connection by timeout", func(timeoutConfig string) {
 		By("check requests take over 5s")
 		Eventually(func(g Gomega) {
 			start := time.Now()
-			stdout, _, err := env.Cluster.Exec("", "", "demo-client",
+			stdout, _, err := universal.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "-H", "\"x-set-response-delay-ms: 3000\"", "--fail", "test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
@@ -46,11 +46,11 @@ func PluginTest() {
 		}).Should(Succeed())
 
 		By("apply a new policy")
-		Expect(env.Cluster.Install(YamlUniversal(timeoutConfig))).To(Succeed())
+		Expect(universal.Cluster.Install(YamlUniversal(timeoutConfig))).To(Succeed())
 
 		By("eventually requests timeout consistently")
 		Eventually(func(g Gomega) {
-			stdout, _, err := env.Cluster.Exec("", "", "demo-client",
+			stdout, _, err := universal.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "-H", "\"x-set-response-delay-ms: 3000\"", "test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("upstream request timeout"))

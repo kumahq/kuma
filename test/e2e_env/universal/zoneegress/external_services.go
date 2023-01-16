@@ -9,9 +9,9 @@ import (
 	. "github.com/onsi/gomega"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
+	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func meshMTLSOn(mesh string) string {
@@ -77,25 +77,25 @@ func ExternalServices() {
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Install(ExternalServerUniversal("zef-test-server-v1")).
 			Install(ExternalServerUniversal("zef-test-server-v2")).
-			Setup(env.Cluster)
+			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
 			Install(YamlUniversal(ExternalServiceV1(
 				meshName,
-				net.JoinHostPort(env.Cluster.GetApp("zef-test-server-v1").GetIP(), "8080"),
+				net.JoinHostPort(universal.Cluster.GetApp("zef-test-server-v1").GetIP(), "8080"),
 			))).
 			Install(YamlUniversal(ExternalServiceV2(
 				meshName,
-				net.JoinHostPort(env.Cluster.GetApp("zef-test-server-v2").GetIP(), "8080"),
+				net.JoinHostPort(universal.Cluster.GetApp("zef-test-server-v2").GetIP(), "8080"),
 			))).
-			Setup(env.Cluster)
+			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	Context("Proxy", func() {
@@ -107,20 +107,20 @@ func ExternalServices() {
 
 		It("should access external service through zoneegress", func() {
 			Eventually(func(g Gomega) {
-				stat, err := env.Cluster.GetZoneEgressEnvoyTunnel().GetStats(filter)
+				stat, err := universal.Cluster.GetZoneEgressEnvoyTunnel().GetStats(filter)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stat).To(stats.BeEqualZero())
 			}).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				stdout, _, err := env.Cluster.Exec("", "", "demo-client",
+				stdout, _, err := universal.Cluster.Exec("", "", "demo-client",
 					"curl", "--verbose", "--max-time", "3", "--fail", "external-service.mesh")
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 			}).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				stat, err := env.Cluster.GetZoneEgressEnvoyTunnel().GetStats(filter)
+				stat, err := universal.Cluster.GetZoneEgressEnvoyTunnel().GetStats(filter)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stat).To(stats.BeGreaterThanZero())
 			}).Should(Succeed())
@@ -129,7 +129,7 @@ func ExternalServices() {
 
 	Context("Fault Injection", func() {
 		AfterEach(func() {
-			Expect(DeleteMeshResources(env.Cluster, meshName, core_mesh.FaultInjectionResourceTypeDescriptor)).To(Succeed())
+			Expect(DeleteMeshResources(universal.Cluster, meshName, core_mesh.FaultInjectionResourceTypeDescriptor)).To(Succeed())
 		})
 
 		It("should inject faults for external service", func() {
@@ -148,10 +148,10 @@ destinations:
 conf:
    abort:
      httpStatus: 401
-     percentage: 100`)(env.Cluster)).To(Succeed())
+     percentage: 100`)(universal.Cluster)).To(Succeed())
 
 			Eventually(func() bool {
-				stdout, _, err := env.Cluster.Exec("", "", "demo-client",
+				stdout, _, err := universal.Cluster.Exec("", "", "demo-client",
 					"curl", "-v", "-m", "8", "external-service.mesh")
 				if err != nil {
 					return false
@@ -163,7 +163,7 @@ conf:
 
 	Context("Rate Limit", func() {
 		AfterEach(func() {
-			Expect(DeleteMeshResources(env.Cluster, meshName, core_mesh.RateLimitResourceTypeDescriptor)).To(Succeed())
+			Expect(DeleteMeshResources(universal.Cluster, meshName, core_mesh.RateLimitResourceTypeDescriptor)).To(Succeed())
 		})
 
 		It("should rate limit requests to external service", func() {
@@ -184,10 +184,10 @@ conf:
     requests: 1
     interval: 10s
 `
-			Expect(env.Cluster.Install(YamlUniversal(specificRateLimitPolicy))).To(Succeed())
+			Expect(universal.Cluster.Install(YamlUniversal(specificRateLimitPolicy))).To(Succeed())
 
 			Eventually(func(g Gomega) {
-				stdout, _, err := env.Cluster.Exec("", "", "demo-client", "curl", "-v", "external-service.mesh")
+				stdout, _, err := universal.Cluster.Exec("", "", "demo-client", "curl", "-v", "external-service.mesh")
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("429"))
 			}).Should(Succeed())

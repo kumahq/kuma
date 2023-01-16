@@ -9,9 +9,9 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/test/e2e_env/multizone/env"
 	. "github.com/kumahq/kuma/test/framework"
 	. "github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
 
 func TrafficRoute() {
@@ -19,8 +19,8 @@ func TrafficRoute() {
 
 	BeforeAll(func() {
 		// Global
-		Expect(env.Global.Install(MTLSMeshUniversal(meshName))).To(Succeed())
-		Expect(WaitForMesh(meshName, env.Zones())).To(Succeed())
+		Expect(multizone.Global.Install(MTLSMeshUniversal(meshName))).To(Succeed())
+		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
 		err := NewClusterSetup().
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true), WithConcurrency(8))).
@@ -28,7 +28,7 @@ func TrafficRoute() {
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
 				WithServiceVersion("v1"),
 			)).
-			Setup(env.UniZone1)
+			Setup(multizone.UniZone1)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
@@ -48,17 +48,17 @@ func TrafficRoute() {
 				WithArgs([]string{"echo", "--instance", "another-test-server"}),
 				WithServiceName("another-test-server"),
 			)).
-			Setup(env.UniZone2)
+			Setup(multizone.UniZone2)
 		Expect(err).ToNot(HaveOccurred())
 	})
 	E2EAfterAll(func() {
-		Expect(env.UniZone2.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(env.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(env.Global.DeleteMesh(meshName)).To(Succeed())
+		Expect(multizone.UniZone2.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(multizone.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(multizone.Global.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	BeforeEach(func() {
-		Expect(DeleteMeshResources(env.Global, meshName, mesh.TrafficRouteResourceTypeDescriptor)).To(Succeed())
+		Expect(DeleteMeshResources(multizone.Global, meshName, mesh.TrafficRouteResourceTypeDescriptor)).To(Succeed())
 	})
 
 	It("should access all instances of the service", func() {
@@ -89,11 +89,11 @@ conf:
         kuma.io/service: test-server
         version: v4
 `
-		Expect(YamlUniversal(trafficRoute)(env.Global)).To(Succeed())
-		Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "three-way-route"}, env.Zones()...)).Should(Succeed())
+		Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
+		Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "three-way-route"}, multizone.Zones()...)).Should(Succeed())
 
 		Eventually(func() (map[string]int, error) {
-			return CollectResponsesByInstance(env.UniZone1, "demo-client", "test-server.mesh")
+			return CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(3),
@@ -122,11 +122,11 @@ conf:
   destination:
     kuma.io/service: another-test-server
 `
-		Expect(YamlUniversal(trafficRoute)(env.Global)).To(Succeed())
-		Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-echo-to-backend"}, env.Zones()...)).Should(Succeed())
+		Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
+		Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-echo-to-backend"}, multizone.Zones()...)).Should(Succeed())
 
 		Eventually(func() (map[string]int, error) {
-			return CollectResponsesByInstance(env.UniZone1, "demo-client", "test-server.mesh")
+			return CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(1),
@@ -162,11 +162,11 @@ conf:
         kuma.io/service: test-server
         version: v2
 `, v1Weight, v2Weight)
-		Expect(YamlUniversal(trafficRoute)(env.Global)).To(Succeed())
-		Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-20-80-split"}, env.Zones()...)).Should(Succeed())
+		Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
+		Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-20-80-split"}, multizone.Zones()...)).Should(Succeed())
 
 		Eventually(func(g Gomega) {
-			res, err := CollectResponsesByInstance(env.UniZone1, "demo-client", "test-server.mesh", WithNumberOfRequests(200))
+			res, err := CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh", WithNumberOfRequests(200))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(res).To(And(
 				HaveLen(2),
@@ -221,20 +221,20 @@ conf:
     kuma.io/service: test-server
     version: v4
 `
-			Expect(YamlUniversal(trafficRoute)(env.Global)).To(Succeed())
-			Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-by-path"}, env.Zones()...)).Should(Succeed())
+			Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
+			Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-by-path"}, multizone.Zones()...)).Should(Succeed())
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(env.UniZone1, "demo-client", "test-server.mesh/version1")
+				return CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/version1")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v1"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(env.UniZone1, "demo-client", "test-server.mesh/version2")
+				return CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/version2")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v2"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(env.UniZone1, "demo-client", "test-server.mesh/version3")
+				return CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/version3")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v3"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(env.UniZone1, "demo-client", "test-server.mesh")
+				return CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v4"))
 		})
 
@@ -275,11 +275,11 @@ conf:
       kuma.io/service: test-server
       version: v2
 `
-			Expect(YamlUniversal(trafficRoute)(env.Global)).To(Succeed())
-			Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "two-splits"}, env.Zones()...)).Should(Succeed())
+			Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
+			Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "two-splits"}, multizone.Zones()...)).Should(Succeed())
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(env.UniZone1, "demo-client", "test-server.mesh/split", WithNumberOfRequests(10))
+				return CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/split", WithNumberOfRequests(10))
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
@@ -289,7 +289,7 @@ conf:
 			)
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(env.UniZone1, "demo-client", "test-server.mesh", WithNumberOfRequests(10))
+				return CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh", WithNumberOfRequests(10))
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
@@ -318,13 +318,13 @@ conf:
   destination:
     kuma.io/service: '*'
 `
-			Expect(YamlUniversal(trafficRoute)(env.Global)).To(Succeed())
-			Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-all-tr-test"}, env.Zones()...)).Should(Succeed())
+			Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
+			Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-all-tr-test"}, multizone.Zones()...)).Should(Succeed())
 		})
 
 		It("should loadbalance all requests equally by default", func() {
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(env.UniZone1, "demo-client", "test-server.mesh/split", WithNumberOfRequests(40))
+				return CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/split", WithNumberOfRequests(40))
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(4),
@@ -353,10 +353,10 @@ mtls:
     type: builtin
 routing:
   localityAwareLoadBalancing: true
-`, meshName))(env.Global)).To(Succeed())
+`, meshName))(multizone.Global)).To(Succeed())
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(env.UniZone1, "demo-client", "test-server.mesh")
+				return CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(1),

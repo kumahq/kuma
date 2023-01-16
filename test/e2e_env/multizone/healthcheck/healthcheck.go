@@ -7,9 +7,9 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/test/e2e_env/multizone/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
 
 func ApplicationOnUniversalClientOnK8s() {
@@ -17,15 +17,15 @@ func ApplicationOnUniversalClientOnK8s() {
 	meshName := "healthcheck-app-on-universal"
 
 	BeforeAll(func() {
-		err := env.Global.Install(MTLSMeshUniversal(meshName))
+		err := multizone.Global.Install(MTLSMeshUniversal(meshName))
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(DeleteMeshResources(env.Global, meshName, mesh.RetryResourceTypeDescriptor)).To(Succeed())
+		Expect(DeleteMeshResources(multizone.Global, meshName, mesh.RetryResourceTypeDescriptor)).To(Succeed())
 
 		err = NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(DemoClientK8s(meshName, namespace)).
-			Setup(env.KubeZone1)
+			Setup(multizone.KubeZone1)
 		Expect(err).ToNot(HaveOccurred())
 
 		// This is deliberately deployed on UniZone2 where KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS is set to false
@@ -43,18 +43,18 @@ func ApplicationOnUniversalClientOnK8s() {
 			Install(TestServerUniversal("test-server-3", meshName,
 				WithArgs([]string{"echo", "--instance", "dp-universal-3"}),
 				WithProtocol("tcp"))).
-			Setup(env.UniZone2)
+			Setup(multizone.UniZone2)
 		Expect(err).ToNot(HaveOccurred())
 	})
 	E2EAfterAll(func() {
-		Expect(env.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(env.UniZone2.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(env.Global.DeleteMesh(meshName)).To(Succeed())
+		Expect(multizone.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(multizone.UniZone2.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(multizone.Global.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should not load balance requests to unhealthy instance", func() {
 		expectHealthyInstances := func(g Gomega) {
-			instances, err := client.CollectResponsesByInstance(env.KubeZone1, "demo-client", "test-server.mesh",
+			instances, err := client.CollectResponsesByInstance(multizone.KubeZone1, "demo-client", "test-server.mesh",
 				client.FromKubernetesPod(namespace, "demo-client"),
 				client.WithNumberOfRequests(10),
 			)
