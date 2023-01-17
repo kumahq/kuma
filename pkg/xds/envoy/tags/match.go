@@ -10,6 +10,8 @@ import (
 	core_policy "github.com/kumahq/kuma/pkg/core/policy"
 )
 
+const TagsHeaderName = "x-kuma-tags"
+
 type Tags map[string]string
 
 func (t Tags) WithoutTags(tags ...string) Tags {

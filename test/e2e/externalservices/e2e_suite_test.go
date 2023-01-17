@@ -13,4 +13,4 @@ func TestE2E(t *testing.T) {
 	test.RunE2ESpecs(t, "E2E External Services Suite")
 }
 
-var _ = Describe("Test ExternalServices on Kubernetes without Egress", Label("job-4"), externalservices.ExternalServicesOnKubernetesWithoutEgress)
+var _ = Describe("Test ExternalServices on Kubernetes without Egress", Label("job-1"), externalservices.ExternalServicesOnKubernetesWithoutEgress)

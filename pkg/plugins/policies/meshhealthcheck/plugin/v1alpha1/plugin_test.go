@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -142,11 +143,11 @@ var _ = Describe("MeshHealthCheck", func() {
 							HealthyThreshold:             1,
 							InitialJitter:                test.ParseDuration("13s"),
 							IntervalJitter:               test.ParseDuration("15s"),
-							IntervalJitterPercent:        policies_xds.PointerOf[int32](10),
-							HealthyPanicThreshold:        policies_xds.PointerOf[int32](11),
-							FailTrafficOnPanic:           policies_xds.PointerOf[bool](true),
-							EventLogPath:                 policies_xds.PointerOf[string]("/tmp/log.txt"),
-							AlwaysLogHealthCheckFailures: policies_xds.PointerOf[bool](false),
+							IntervalJitterPercent:        pointer.To[int32](10),
+							HealthyPanicThreshold:        pointer.To[int32](11),
+							FailTrafficOnPanic:           pointer.To(true),
+							EventLogPath:                 pointer.To("/tmp/log.txt"),
+							AlwaysLogHealthCheckFailures: pointer.To(false),
 							NoTrafficInterval:            test.ParseDuration("16s"),
 							Http: &api.HttpHealthCheck{
 								Disabled: false,
@@ -157,12 +158,12 @@ var _ = Describe("MeshHealthCheck", func() {
 											Key:   "x-some-header",
 											Value: "value",
 										},
-										Append: policies_xds.PointerOf[bool](true),
+										Append: pointer.To(true),
 									},
 								},
 								ExpectedStatuses: &[]int32{200, 201},
 							},
-							ReuseConnection: policies_xds.PointerOf[bool](true),
+							ReuseConnection: pointer.To(true),
 						},
 					},
 				}},
@@ -184,6 +185,9 @@ healthChecks:
         start: "201"
     path: /health
     requestHeadersToAdd:
+      - header:
+          key: x-kuma-tags
+          value: '&kuma.io/service=backend&'
       - append: true
         header:
           key: x-some-header
@@ -211,7 +215,7 @@ healthChecks:
 							HealthyThreshold:   1,
 							Tcp: &api.TcpHealthCheck{
 								Disabled: false,
-								Send:     policies_xds.PointerOf[string]("cGluZwo="),
+								Send:     pointer.To("cGluZwo="),
 								Receive:  &[]string{"cG9uZwo="},
 							},
 						},

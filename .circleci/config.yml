@@ -62,10 +62,20 @@ commands:
             sudo sh -c 'curl -s --fail --location https://github.com/opencontainers/runc/releases/download/v1.1.0/runc.<<parameters.go_arch>> > /usr/bin/runc'
             sudo chown root:root /usr/bin/runc ; sudo chmod o+x /usr/bin/runc
           fi
+  skip_on_branch:
+    description: "Skip the job on the branch"
+    steps:
+    - run:
+        name: "Skip the job on the branch"
+        command: |
+          if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* ]]; then
+            circleci-agent step halt
+            exit 0
+          fi
 
 executors:
   golang:
-    resource_class: large
+    resource_class: xlarge
     docker:
     - image: *golang_image
     environment:
@@ -187,6 +197,10 @@ jobs:
     executor:
       name: vm-<< parameters.arch >>
     steps:
+    - when:
+        condition: {equal: [arm64, << parameters.arch >>]}
+        steps:
+          - skip_on_branch
     - checkout
     - run:
         # Label based skip-test runs
@@ -367,6 +381,10 @@ jobs:
     executor: # we are using linux/arm64 and linux/amd64 vm's for build
       name: vm-<< parameters.arch >>
     steps:
+    - when:
+        condition: {equal: [arm64, << parameters.arch >>]}
+        steps:
+          - skip_on_branch
     - install_build_tools:
         go_arch: <<parameters.arch>>
     - checkout
@@ -474,7 +492,7 @@ workflows:
             parameters:
               k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
               arch: [ amd64, arm64 ]
-          parallelism: 5
+          parallelism: 3
           target: test/e2e
           requires: [ build-<< matrix.arch >>, check ]
       - e2e:

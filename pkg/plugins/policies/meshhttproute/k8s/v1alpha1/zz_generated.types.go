@@ -12,6 +12,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	policy "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )
 
@@ -84,4 +85,20 @@ func (l *MeshHTTPRouteList) GetItems() []model.KubernetesObject {
 		result[i] = &l.Items[i]
 	}
 	return result
+}
+
+func init() {
+	SchemeBuilder.Register(&MeshHTTPRoute{}, &MeshHTTPRouteList{})
+	registry.RegisterObjectType(&policy.MeshHTTPRoute{}, &MeshHTTPRoute{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "MeshHTTPRoute",
+		},
+	})
+	registry.RegisterListType(&policy.MeshHTTPRoute{}, &MeshHTTPRouteList{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "MeshHTTPRouteList",
+		},
+	})
 }

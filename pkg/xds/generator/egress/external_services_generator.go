@@ -9,7 +9,6 @@ import (
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
@@ -199,7 +198,7 @@ func (g *ExternalServicesGenerator) addFilterChains(
 
 					routes = append(routes, envoy_common.NewRoute(
 						envoy_common.WithCluster(cluster),
-						envoy_common.WithMatchHeaderRegex(envoy_routes.TagsHeaderName, tags.MatchSourceRegex(rl)),
+						envoy_common.WithMatchHeaderRegex(tags.TagsHeaderName, tags.MatchSourceRegex(rl)),
 						envoy_common.WithRateLimit(rl.Spec),
 					))
 				}

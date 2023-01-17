@@ -22,6 +22,13 @@ func HandleError(response *restful.Response, err error, title string) {
 		handleNotFound(title, response)
 	case store.IsResourcePreconditionFailed(err):
 		handlePreconditionFailed(title, response)
+	case errors.Is(err, &store.PreconditionError{}):
+		var err2 *store.PreconditionError
+		errors.As(err, &err2)
+		WriteError(response, 400, types.Error{
+			Title:   "Bad Request",
+			Details: err2.Reason,
+		})
 	case err == store.ErrorInvalidOffset:
 		handleInvalidOffset(title, response)
 	case manager.IsMeshNotFound(err):

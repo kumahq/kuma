@@ -6,7 +6,6 @@ import (
 )
 
 // MeshHTTPRoute
-// +kuma:policy:skip_registration=true
 // +kuma:policy:singular_display_name=Mesh HTTP Route
 //
 // This policy defines its own `GetDefault` method so that it can have the given
@@ -34,18 +33,35 @@ type To struct {
 }
 
 type Rule struct {
-	Matches []Match `json:"matches"`
+	Matches []Match `json:"matches" policyMerge:"mergeKey"`
 	// Default holds routing rules that can be merged with rules from other
 	// policies.
 	Default RuleConf `json:"default"`
 }
 
 type Match struct {
-	Path PathMatch `json:"path,omitempty"`
+	Path   *PathMatch `json:"path,omitempty"`
+	Method *Method    `json:"method,omitempty"`
 }
 
+// +kubebuilder:validation:Enum=Exact;Prefix;RegularExpression
+type PathMatchType string
+
+// +kubebuilder:validation:Enum=CONNECT;DELETE;GET;HEAD;OPTIONS;PATCH;POST;PUT;TRACE
+type Method string
+
+const (
+	Exact             PathMatchType = "Exact"
+	Prefix            PathMatchType = "Prefix"
+	RegularExpression PathMatchType = "RegularExpression"
+)
+
 type PathMatch struct {
-	Prefix string `json:"prefix,omitempty"`
+	// Exact or prefix matches must be an absolute path. A prefix matches only
+	// if separated by a slash or the entire path.
+	// +kubebuilder:validation:MinLength=1
+	Value string        `json:"value"`
+	Type  PathMatchType `json:"type"`
 }
 
 type RuleConf struct {

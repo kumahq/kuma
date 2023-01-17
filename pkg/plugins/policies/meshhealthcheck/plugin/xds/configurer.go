@@ -8,15 +8,18 @@ import (
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 type Configurer struct {
 	Conf     api.Conf
 	Protocol core_mesh.Protocol
+	Tags     v1alpha1.MultiValueTagSet
 }
 
 type HCProtocol string
@@ -48,7 +51,7 @@ func (e *Configurer) Configure(cluster *envoy_cluster.Cluster) error {
 		case HCProtocolTCP:
 			healthChecker = tcpHealthCheck(tcp)
 		case HCProtocolHTTP:
-			healthChecker = httpHealthCheck(e.Protocol, http)
+			healthChecker = httpHealthCheck(e.Protocol, http, e.Tags)
 		case HCProtocolGRPC:
 			healthChecker = grpcHealthCheck(grpc)
 		}
@@ -92,8 +95,16 @@ func mapUInt32ToInt64Range(value uint32) *envoy_type.Int64Range {
 	}
 }
 
-func mapHttpHeaders(headers *[]api.HeaderValueOption) []*envoy_core.HeaderValueOption {
+func mapHttpHeaders(headers *[]api.HeaderValueOption, srcTags v1alpha1.MultiValueTagSet) []*envoy_core.HeaderValueOption {
 	var envoyHeaders []*envoy_core.HeaderValueOption
+	if len(srcTags) > 0 {
+		envoyHeaders = append(envoyHeaders, &envoy_core.HeaderValueOption{
+			Header: &envoy_core.HeaderValue{
+				Key:   tags.TagsHeaderName,
+				Value: tags.Serialize(srcTags),
+			},
+		})
+	}
 	if headers != nil {
 		for _, header := range *headers {
 			hvo := &envoy_core.HeaderValueOption{
@@ -143,10 +154,7 @@ func tcpHealthCheck(
 	}
 }
 
-func httpHealthCheck(
-	protocol core_mesh.Protocol,
-	httpConf *api.HttpHealthCheck,
-) *envoy_core.HealthCheck_HttpHealthCheck_ {
+func httpHealthCheck(protocol core_mesh.Protocol, httpConf *api.HttpHealthCheck, srcTags v1alpha1.MultiValueTagSet) *envoy_core.HealthCheck_HttpHealthCheck_ {
 	var expectedStatuses []*envoy_type.Int64Range
 	if httpConf.ExpectedStatuses != nil {
 		for _, status := range *httpConf.ExpectedStatuses {
@@ -164,7 +172,7 @@ func httpHealthCheck(
 
 	httpHealthCheck := envoy_core.HealthCheck_HttpHealthCheck{
 		Path:                httpConf.Path,
-		RequestHeadersToAdd: mapHttpHeaders(httpConf.RequestHeadersToAdd),
+		RequestHeadersToAdd: mapHttpHeaders(httpConf.RequestHeadersToAdd, srcTags),
 		ExpectedStatuses:    expectedStatuses,
 		CodecClientType:     codecClientType,
 	}

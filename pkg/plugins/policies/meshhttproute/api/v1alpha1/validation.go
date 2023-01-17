@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"strings"
+
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
@@ -10,7 +12,7 @@ func (r *MeshHTTPRouteResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
-	verr.AddErrorAt(path.Field("to"), validateRules(r.Spec.To))
+	verr.AddErrorAt(path.Field("to"), validateTos(r.Spec.To))
 	return verr.OrNil()
 }
 
@@ -33,12 +35,72 @@ func validateToRef(targetRef common_api.TargetRef) validators.ValidationError {
 	})
 }
 
-func validateRules(tos []To) validators.ValidationError {
+func validateTos(tos []To) validators.ValidationError {
 	var errs validators.ValidationError
 
 	for i, to := range tos {
-		errs.AddErrorAt(validators.PathBuilder{}.Index(i).Field("targetRef"), validateToRef(to.TargetRef))
+		path := validators.Root().Index(i)
+		errs.AddErrorAt(path.Field("targetRef"), validateToRef(to.TargetRef))
+		errs.AddErrorAt(path.Field("rules"), validateRules(to.Rules))
 	}
 
 	return errs
+}
+
+func validateRules(rules []Rule) validators.ValidationError {
+	var errs validators.ValidationError
+
+	for i, rule := range rules {
+		path := validators.Root().Index(i)
+		errs.AddErrorAt(path.Field("matches"), validateMatches(rule.Matches))
+	}
+
+	return errs
+}
+
+func validateMatches(matches []Match) validators.ValidationError {
+	var errs validators.ValidationError
+
+	for i, match := range matches {
+		path := validators.Root().Index(i)
+		errs.AddErrorAt(path.Field("path"), validatePath(match.Path))
+		errs.AddErrorAt(path.Field("method"), validateMethod(match.Method))
+	}
+
+	return errs
+}
+
+func validatePath(match *PathMatch) validators.ValidationError {
+	var errs validators.ValidationError
+
+	if match == nil {
+		return errs
+	}
+
+	valuePath := validators.RootedAt("value")
+
+	switch match.Type {
+	case RegularExpression:
+		break
+	case Prefix:
+		if match.Value == "/" {
+			break
+		}
+		if strings.HasSuffix(match.Value, "/") {
+			errs.AddViolationAt(valuePath, "does not need a trailing slash because only a `/`-separated prefix or an entire path is matched")
+		}
+		if !strings.HasPrefix(match.Value, "/") {
+			errs.AddViolationAt(valuePath, "must be an absolute path")
+		}
+	case Exact:
+		if !strings.HasPrefix(match.Value, "/") {
+			errs.AddViolationAt(valuePath, "must be an absolute path")
+		}
+	}
+
+	return errs
+}
+
+func validateMethod(match *Method) validators.ValidationError {
+	return validators.ValidationError{}
 }

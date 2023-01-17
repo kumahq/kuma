@@ -411,7 +411,7 @@ func RouteActionForward(mesh *core_mesh.MeshResource, endpoints core_xds.Endpoin
 
 			if isMeshCluster {
 				requestHeadersToAdd = []*envoy_config_core.HeaderValueOption{{
-					Header: &envoy_config_core.HeaderValue{Key: v3.TagsHeaderName, Value: tags.Serialize(proxyTags)},
+					Header: &envoy_config_core.HeaderValue{Key: tags.TagsHeaderName, Value: tags.Serialize(proxyTags)},
 				}}
 			}
 

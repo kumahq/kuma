@@ -2119,6 +2119,175 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
+  name: meshhttproutes.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: MeshHTTPRoute
+    listKind: MeshHTTPRouteList
+    plural: meshhttproutes
+    singular: meshhttproute
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma MeshHTTPRoute resource.
+            properties:
+              targetRef:
+                description: TargetRef is a reference to the resource the policy takes
+                  an effect on. The resource could be either a real store object or
+                  virtual resource defined inplace.
+                properties:
+                  kind:
+                    description: Kind of the referenced resource
+                    enum:
+                    - Mesh
+                    - MeshSubset
+                    - MeshService
+                    - MeshServiceSubset
+                    - MeshGatewayRoute
+                    type: string
+                  mesh:
+                    description: Mesh is reserved for future use to identify cross
+                      mesh resources.
+                    type: string
+                  name:
+                    description: 'Name of the referenced resource. Can only be used
+                      with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
+                    type: string
+                  tags:
+                    additionalProperties:
+                      type: string
+                    description: Tags used to select a subset of proxies by tags.
+                      Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                    type: object
+                type: object
+              to:
+                description: To matches destination services of requests and holds
+                  configuration.
+                items:
+                  properties:
+                    rules:
+                      description: Rules contains the routing rules applies to a combination
+                        of top-level targetRef and the targetRef in this entry.
+                      items:
+                        properties:
+                          default:
+                            description: Default holds routing rules that can be merged
+                              with rules from other policies.
+                            properties:
+                              backendRefs:
+                                items:
+                                  properties:
+                                    kind:
+                                      description: Kind of the referenced resource
+                                      enum:
+                                      - Mesh
+                                      - MeshSubset
+                                      - MeshService
+                                      - MeshServiceSubset
+                                      - MeshGatewayRoute
+                                      type: string
+                                    mesh:
+                                      description: Mesh is reserved for future use
+                                        to identify cross mesh resources.
+                                      type: string
+                                    name:
+                                      description: 'Name of the referenced resource.
+                                        Can only be used with kinds: `MeshService`,
+                                        `MeshServiceSubset` and `MeshGatewayRoute`'
+                                      type: string
+                                    tags:
+                                      additionalProperties:
+                                        type: string
+                                      description: Tags used to select a subset of
+                                        proxies by tags. Can only be used with kinds
+                                        `MeshSubset` and `MeshServiceSubset`
+                                      type: object
+                                    weight:
+                                      minimum: 0
+                                      type: integer
+                                  type: object
+                                type: array
+                              filters:
+                                items:
+                                  type: object
+                                type: array
+                            type: object
+                          matches:
+                            items:
+                              properties:
+                                path:
+                                  properties:
+                                    prefix:
+                                      type: string
+                                  type: object
+                              type: object
+                            type: array
+                        required:
+                        - default
+                        - matches
+                        type: object
+                      type: array
+                    targetRef:
+                      description: TargetRef is a reference to the resource that represents
+                        a group of request destinations.
+                      properties:
+                        kind:
+                          description: Kind of the referenced resource
+                          enum:
+                          - Mesh
+                          - MeshSubset
+                          - MeshService
+                          - MeshServiceSubset
+                          - MeshGatewayRoute
+                          type: string
+                        mesh:
+                          description: Mesh is reserved for future use to identify
+                            cross mesh resources.
+                          type: string
+                        name:
+                          description: 'Name of the referenced resource. Can only
+                            be used with kinds: `MeshService`, `MeshServiceSubset`
+                            and `MeshGatewayRoute`'
+                          type: string
+                        tags:
+                          additionalProperties:
+                            type: string
+                          description: Tags used to select a subset of proxies by
+                            tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                          type: object
+                      type: object
+                  type: object
+                type: array
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.10.0
+  creationTimestamp: null
   name: meshinsights.kuma.io
 spec:
   group: kuma.io
@@ -2556,17 +2725,11 @@ spec:
                                 HTTP rate limiting https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/local_rate_limit_filter
                               properties:
                                 disabled:
-                                  description: 'Define if rate limiting should be
-                                    disabled. Default: false'
+                                  description: Define if rate limiting should be disabled.
                                   type: boolean
-                                interval:
-                                  description: The interval for which `requests` will
-                                    be accounted.
-                                  type: string
                                 onRateLimit:
                                   description: Describes the actions to take on a
                                     rate limit event
-                                  nullable: true
                                   properties:
                                     headers:
                                       description: The Headers to be added to the
@@ -2575,7 +2738,6 @@ spec:
                                         properties:
                                           append:
                                             description: Should the header be appended
-                                            nullable: true
                                             type: boolean
                                           key:
                                             description: Header name
@@ -2583,39 +2745,62 @@ spec:
                                           value:
                                             description: Header value
                                             type: string
+                                        required:
+                                        - key
+                                        - value
                                         type: object
-                                      nullable: true
                                       type: array
                                     status:
                                       description: The HTTP status code to be set
                                         on a rate limit event
                                       format: int32
-                                      nullable: true
                                       type: integer
                                   type: object
-                                requests:
-                                  description: The number of HTTP requests this RateLimiter
-                                    allows
-                                  format: int32
-                                  type: integer
+                                requestRate:
+                                  description: Defines how many requests are allowed
+                                    per interval.
+                                  properties:
+                                    interval:
+                                      description: The interval the number of units
+                                        is accounted for.
+                                      type: string
+                                    num:
+                                      description: Number of units per interval (depending
+                                        on usage it can be a number of requests, or
+                                        a number of connections).
+                                      format: int32
+                                      type: integer
+                                  required:
+                                  - interval
+                                  - num
+                                  type: object
                               type: object
                             tcp:
                               description: LocalTCP defines confguration of local
                                 TCP rate limiting https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/network_filters/local_rate_limit_filter
                               properties:
-                                connections:
-                                  description: The number of connections that RateLimiter
-                                    allows
-                                  format: int32
-                                  type: integer
+                                connectionRate:
+                                  description: Defines how many connections are allowed
+                                    per interval.
+                                  properties:
+                                    interval:
+                                      description: The interval the number of units
+                                        is accounted for.
+                                      type: string
+                                    num:
+                                      description: Number of units per interval (depending
+                                        on usage it can be a number of requests, or
+                                        a number of connections).
+                                      format: int32
+                                      type: integer
+                                  required:
+                                  - interval
+                                  - num
+                                  type: object
                                 disabled:
                                   description: 'Define if rate limiting should be
                                     disabled. Default: false'
                                   type: boolean
-                                interval:
-                                  description: The interval of adding tokens into
-                                    bucket. Must be >= 50ms
-                                  type: string
                               type: object
                           type: object
                       type: object
