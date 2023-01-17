@@ -180,8 +180,6 @@ properties:
                                 - ResponseHeaderModifier
                               type: string
                           required:
-                            - requestHeaderModifier
-                            - responseHeaderModifier
                             - type
                           type: object
                         type: array
