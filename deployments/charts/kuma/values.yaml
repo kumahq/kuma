@@ -260,6 +260,10 @@ controlPlane:
       # -- Additional rules to apply on Kuma owner reference webhook. Useful when building custom policy on top of Kuma.
       additionalRules: ""
 
+  plugins:
+    # -- Additional policies to configure. Useful when building custom policy on top of Kuma
+    additionalPolicies: []
+
   # -- Specifies if the deployment should be started in hostNetwork mode.
   hostNetwork: false
 

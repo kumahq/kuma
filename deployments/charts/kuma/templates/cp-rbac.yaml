@@ -144,7 +144,10 @@ rules:
   {{- end }}
   {{- range $idx, $policy := .Values.plugins.policies }}
       - {{ $policy }}
-  {{- end}}
+  {{- end }}
+  {{- range $idx, $additionalPolicy := .Values.controlPlane.plugins.additionalPolicies }}
+      - {{ $additionalPolicy }}
+  {{- end }}
     verbs:
       - get
       - list
