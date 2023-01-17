@@ -6,6 +6,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (r *MeshRateLimitResource) validate() error {
@@ -52,22 +53,36 @@ func validateFrom(from []From) validators.ValidationError {
 
 func validateDefault(path validators.PathBuilder, conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
-	local := conf.Local
 	path = path.Field("local")
-	if local.HTTP != nil {
-		verr.Add(validateLocalHttp(path.Field("http"), local.HTTP))
+
+	if conf.Local == nil {
+		verr.AddViolationAt(path, validators.MustBeDefined)
+		return verr
 	}
-	if local.TCP != nil {
-		verr.Add(validateLocalTcp(path.Field("tcp"), local.TCP))
+
+	if conf.Local.TCP == nil && conf.Local.HTTP == nil {
+		verr.AddViolationAt(path, validators.MustHaveAtLeastOne("tcp", "http"))
 	}
+
+	if conf.Local.HTTP != nil {
+		verr.Add(validateLocalHttp(path.Field("http"), conf.Local.HTTP))
+	}
+
+	if conf.Local.TCP != nil {
+		verr.Add(validateLocalTcp(path.Field("tcp"), conf.Local.TCP))
+	}
+
 	return verr
 }
 
 func validateLocalHttp(path validators.PathBuilder, localHttp *LocalHTTP) validators.ValidationError {
 	var verr validators.ValidationError
-	if !localHttp.Disabled {
-		verr.Add(validators.ValidateIntegerGreaterThan(path.Field("requests"), localHttp.Requests, 0))
-		verr.Add(validators.ValidateDurationGreaterThan(path.Field("interval"), &localHttp.Interval, 50*time.Millisecond))
+	if localHttp.Disabled == nil && localHttp.RequestRate == nil && localHttp.OnRateLimit == nil {
+		verr.AddViolationAt(path, validators.MustHaveAtLeastOne("disabled", "requestRate", "onRateLimit"))
+		return verr
+	}
+	if localHttp.RequestRate != nil {
+		verr.Add(validateRate(path.Field("requestRate"), localHttp.RequestRate))
 	}
 	if localHttp.OnRateLimit != nil {
 		path = path.Field("onRateLimit")
@@ -78,10 +93,20 @@ func validateLocalHttp(path validators.PathBuilder, localHttp *LocalHTTP) valida
 
 func validateLocalTcp(path validators.PathBuilder, localTcp *LocalTCP) validators.ValidationError {
 	var verr validators.ValidationError
-	if !localTcp.Disabled {
-		verr.Add(validators.ValidateIntegerGreaterThan(path.Field("connections"), localTcp.Connections, 0))
-		verr.Add(validators.ValidateDurationGreaterThan(path.Field("interval"), &localTcp.Interval, 50*time.Millisecond))
+	if localTcp.Disabled == nil && localTcp.ConnectionRate == nil {
+		verr.AddViolationAt(path, validators.MustHaveAtLeastOne("disabled", "connectionRate"))
+		return verr
 	}
+	if localTcp.ConnectionRate != nil {
+		verr.Add(validateRate(path.Field("connectionRate"), localTcp.ConnectionRate))
+	}
+	return verr
+}
+
+func validateRate(path validators.PathBuilder, rate *Rate) validators.ValidationError {
+	var verr validators.ValidationError
+	verr.Add(validators.ValidateIntegerGreaterThan(path.Field("num"), rate.Num, 0))
+	verr.Add(validators.ValidateDurationGreaterThan(path.Field("interval"), &rate.Interval, 50*time.Millisecond))
 	return verr
 }
 
@@ -95,5 +120,5 @@ func hasTcpConfiguration(from []From) bool {
 }
 
 func isTcp(conf Conf) bool {
-	return conf.Local.TCP != nil
+	return pointer.Deref(conf.Local).TCP != nil
 }

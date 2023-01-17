@@ -8,8 +8,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
-const TagsHeaderName = "x-kuma-tags"
-
 type TagsHeaderConfigurer struct {
 	Tags mesh_proto.MultiValueTagSet
 }
@@ -19,7 +17,7 @@ func (t *TagsHeaderConfigurer) Configure(rc *envoy_route.RouteConfiguration) err
 		return nil
 	}
 	rc.RequestHeadersToAdd = append(rc.RequestHeadersToAdd, &envoy_core.HeaderValueOption{
-		Header: &envoy_core.HeaderValue{Key: TagsHeaderName, Value: tags.Serialize(t.Tags)},
+		Header: &envoy_core.HeaderValue{Key: tags.TagsHeaderName, Value: tags.Serialize(t.Tags)},
 	})
 	return nil
 }

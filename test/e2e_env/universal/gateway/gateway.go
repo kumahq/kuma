@@ -200,8 +200,9 @@ spec:
       default:
         local:
           http:
-            requests: 1
-            interval: 10s
+            requestRate:
+              num: 1
+              interval: 10s
             onRateLimit:
               status: 428
               headers:

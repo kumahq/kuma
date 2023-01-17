@@ -2,8 +2,9 @@ package config
 
 import (
 	"os"
-	"unicode"
+	"strings"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/pkg/errors"
 
@@ -27,7 +28,11 @@ func ValidateTokenPath(path string) error {
 		return errors.Wrapf(err, "could not read the token in the file %s", path)
 	}
 
-	token, parts, err := new(jwt.Parser).ParseUnverified(string(rawToken), &jwt.MapClaims{})
+	strToken := strings.TrimSpace(string(rawToken))
+	if !govalidator.Matches(strToken, "^[^\\x00\\n\\r]*$") {
+		return errors.New("Token shouldn't contain line breaks within the token, only at the start or end")
+	}
+	token, _, err := new(jwt.Parser).ParseUnverified(strToken, &jwt.MapClaims{})
 	if err != nil {
 		return errors.Wrap(err, "not valid JWT token. Can't parse it.")
 	}
@@ -39,20 +44,6 @@ func ValidateTokenPath(path string) error {
 	if token.Header == nil {
 		return errors.New("not valid JWT token. No Header.")
 	}
-	for _, part := range parts {
-		if !isASCII(part) {
-			return errors.New("The file cannot have blank characters like empty lines. Example how to get rid of non-printable characters: sed -i '' '/^$/d' token.file")
-		}
-	}
 
 	return nil
-}
-
-func isASCII(s string) bool {
-	for i := 0; i < len(s); i++ {
-		if !unicode.IsPrint(rune(s[i])) {
-			return false
-		}
-	}
-	return true
 }
