@@ -288,25 +288,38 @@ jobs:
               circleci-agent step halt
               exit 0
             }
+
+            # Handle skip tests on labels
             if [[ $(./tools/ci/has_label.sh ci/skip-test) == "true" ]]; then
               skip "Not running tests as the PR has label: ci/skip-test"
             fi
             if [[ $(./tools/ci/has_label.sh ci/skip-e2e-test) == "true" ]]; then
               skip "Not running tests as the PR has label: ci/skip-e2e-test"
             fi
+            
+            # Handle invalid test combinations
             if [[ "<< parameters.k8sVersion >>" == "kind" && "<< parameters.target >>" != "test/e2e-universal" ]]; then
               skip "kind should only be used when testing ipv6 or with test/e2e-universal"
             fi
             if [[ "<< parameters.k8sVersion >>" != kind* && "<< parameters.target >>" == "test/e2e-universal" ]]; then
               skip "universal only runs on kind"
             fi
-            if [[ ! $(./tools/ci/has_label.sh ci/run-full-matrix) == "true" ]]; then
-              if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* ]]; then
-                if [[ "<< parameters.cniNetworkPlugin >>" == "calico" || "<< parameters.k8sVersion >>" == "kindIpv6" || "<< parameters.k8sVersion >>" == "v1.19.16-k3s1" || "<< parameters.arch >>" == "arm64" ]]; then
+            
+            # Handle force run tests on labels
+            if [[ $(./tools/ci/has_label.sh ci/run-full-matrix) == "true" ]]; then
+              exit 0
+            fi
+            
+            # Handle legacy tests on branch
+            if [[ "<< parameters.target >>" == "test/e2e-legacy" && "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* ]]; then
+              if [[ ! $(./tools/ci/has_label.sh ci/run-e2e-legacy) == "true" ]];
+                skip "we do not run legacy E2E on branch by default. To run them add ci/run-e2e-legacy label"
+              fi
+              if [[ "<< parameters.cniNetworkPlugin >>" == "calico" || "<< parameters.k8sVersion >>" == "kindIpv6" || "<< parameters.k8sVersion >>" == "v1.19.16-k3s1" || "<< parameters.arch >>" == "arm64" ]]; then
                   skip "Not running tests on PRs with kindIpv6, oldK8s, calico and arm64"
-                fi
               fi
             fi
+
             echo "Continuing tests"
       - install_build_tools:
           go_arch: << parameters.arch >>
