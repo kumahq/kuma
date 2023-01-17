@@ -3633,6 +3633,7 @@ spec:
                           description: Zipkin backend configuration.
                           properties:
                             apiVersion:
+                              default: httpJson
                               description: 'Version of the API. values: httpJson,
                                 httpProto. Default: httpJson see https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L66'
                               type: string
