@@ -137,10 +137,10 @@ var _ = Describe("MeshHealthCheck", func() {
 					{
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
-							Interval:                     *test.ParseDuration("10s"),
-							Timeout:                      *test.ParseDuration("2s"),
-							UnhealthyThreshold:           3,
-							HealthyThreshold:             1,
+							Interval:                     test.ParseDuration("10s"),
+							Timeout:                      test.ParseDuration("2s"),
+							UnhealthyThreshold:           pointer.To[int32](3),
+							HealthyThreshold:             pointer.To[int32](1),
 							InitialJitter:                test.ParseDuration("13s"),
 							IntervalJitter:               test.ParseDuration("15s"),
 							IntervalJitterPercent:        pointer.To[int32](10),
@@ -150,15 +150,17 @@ var _ = Describe("MeshHealthCheck", func() {
 							AlwaysLogHealthCheckFailures: pointer.To(false),
 							NoTrafficInterval:            test.ParseDuration("16s"),
 							Http: &api.HttpHealthCheck{
-								Disabled: false,
-								Path:     "/health",
-								RequestHeadersToAdd: &[]api.HeaderValueOption{
+								Disabled: pointer.To(false),
+								Path:     pointer.To("/health"),
+								RequestHeadersToAdd: &[]api.HeaderValue{
 									{
-										Header: &api.HeaderValue{
-											Key:   "x-some-header",
-											Value: "value",
-										},
+										Key:    "x-some-header",
+										Value:  "value",
 										Append: pointer.To(true),
+									},
+									{
+										Key:   "x-some-other-header",
+										Value: "value",
 									},
 								},
 								ExpectedStatuses: &[]int32{200, 201},
@@ -192,6 +194,9 @@ healthChecks:
         header:
           key: x-some-header
           value: value
+      - header:
+          key: x-some-other-header
+          value: value
   initialJitter: 13s
   interval: 10s
   intervalJitter: 15s
@@ -209,12 +214,12 @@ healthChecks:
 					{
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
-							Interval:           *test.ParseDuration("10s"),
-							Timeout:            *test.ParseDuration("2s"),
-							UnhealthyThreshold: 3,
-							HealthyThreshold:   1,
+							Interval:           test.ParseDuration("10s"),
+							Timeout:            test.ParseDuration("2s"),
+							UnhealthyThreshold: pointer.To[int32](3),
+							HealthyThreshold:   pointer.To[int32](1),
 							Tcp: &api.TcpHealthCheck{
-								Disabled: false,
+								Disabled: pointer.To(false),
 								Send:     pointer.To("cGluZwo="),
 								Receive:  &[]string{"cG9uZwo="},
 							},
@@ -243,13 +248,13 @@ healthChecks:
 					{
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
-							Interval:           *test.ParseDuration("10s"),
-							Timeout:            *test.ParseDuration("2s"),
-							UnhealthyThreshold: 3,
-							HealthyThreshold:   1,
+							Interval:           test.ParseDuration("10s"),
+							Timeout:            test.ParseDuration("2s"),
+							UnhealthyThreshold: pointer.To[int32](3),
+							HealthyThreshold:   pointer.To[int32](1),
 							Grpc: &api.GrpcHealthCheck{
-								ServiceName: "grpc-client",
-								Authority:   "grpc-client.default.svc.cluster.local",
+								ServiceName: pointer.To("grpc-client"),
+								Authority:   pointer.To("grpc-client.default.svc.cluster.local"),
 							},
 						},
 					},
