@@ -1,22 +1,79 @@
 package v3
 
 import (
+	"time"
+
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_filter_fault "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/common/fault/v3"
 	envoy_http_fault "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/fault/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/util/proto"
+
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
+type FaultInjectionConfiguration struct {
+	SourceTags        []map[string]string
+	Abort             *Abort
+	Delay             *Delay
+	ResponseBandwidth *ResponseBandwidth
+}
+
+type Abort struct {
+	HttpStatus uint32
+	Percentage float64
+}
+
+type Delay struct {
+	Value      time.Duration
+	Percentage float64
+}
+
+type ResponseBandwidth struct {
+	Limit      string
+	Percentage float64
+}
+
 type FaultInjectionConfigurer struct {
-	FaultInjections []*core_mesh.FaultInjectionResource
+	FaultInjections []*FaultInjectionConfiguration
+}
+
+func FaultInjectionConfigurationFromProto(fi *mesh_proto.FaultInjection) *FaultInjectionConfiguration {
+	faultInjection := FaultInjectionConfiguration{}
+	if fi.GetConf() == nil {
+		return &faultInjection
+	}
+
+	if fi.GetConf().GetAbort() != nil {
+		faultInjection.Abort = &Abort{
+			HttpStatus: fi.GetConf().GetAbort().GetHttpStatus().GetValue(),
+			Percentage: fi.GetConf().GetAbort().GetPercentage().GetValue(),	
+		}
+	}
+	if fi.GetConf().GetDelay() != nil {
+		faultInjection.Delay = &Delay{
+			Value: fi.GetConf().GetDelay().GetValue().AsDuration(),
+			Percentage: fi.GetConf().GetDelay().GetPercentage().GetValue(),
+		}
+	}
+	if fi.GetConf().GetResponseBandwidth() != nil {
+		faultInjection.ResponseBandwidth = &ResponseBandwidth{
+			Limit: fi.GetConf().GetResponseBandwidth().GetLimit().GetValue(),
+			Percentage: fi.GetConf().GetResponseBandwidth().GetPercentage().GetValue(),
+		}
+	}
+	sources := []map[string]string{}
+	if fi.GetSources() != nil{
+		for _, selector := range fi.GetSources() {
+			sources = append(sources, selector.GetMatch())
+		}
+		faultInjection.SourceTags = sources
+	}
+	return &faultInjection
 }
 
 func (f *FaultInjectionConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
@@ -27,20 +84,20 @@ func (f *FaultInjectionConfigurer) Configure(filterChain *envoy_listener.FilterC
 	// specific source matches come first.
 	for _, fi := range f.FaultInjections {
 		config := &envoy_http_fault.HTTPFault{
-			Delay: convertDelay(fi.Spec.Conf.GetDelay()),
-			Abort: convertAbort(fi.Spec.Conf.GetAbort()),
+			Delay: convertDelay(fi.Delay),
+			Abort: convertAbort(fi.Abort),
 			Headers: []*envoy_route.HeaderMatcher{
-				createHeaders(fi.Spec.SourceTags()),
+				createHeaders(fi.SourceTags),
 			},
 		}
 
-		rrl, err := convertResponseRateLimit(fi.Spec.Conf.GetResponseBandwidth())
+		rrl, err := convertResponseRateLimit(fi.ResponseBandwidth)
 		if err != nil {
 			return err
 		}
 		config.ResponseRateLimit = rrl
 
-		pbst, err := proto.MarshalAnyDeterministic(config)
+		pbst, err := util_proto.MarshalAnyDeterministic(config)
 		if err != nil {
 			return err
 		}
@@ -62,7 +119,7 @@ func (f *FaultInjectionConfigurer) Configure(filterChain *envoy_listener.FilterC
 	})
 }
 
-func createHeaders(selectors []mesh_proto.SingleValueTagSet) *envoy_route.HeaderMatcher {
+func createHeaders(selectors []map[string]string) *envoy_route.HeaderMatcher {
 	var selectorRegexs []string
 	for _, selector := range selectors {
 		selectorRegexs = append(selectorRegexs, tags.MatchingRegex(selector))
@@ -82,32 +139,32 @@ func createHeaders(selectors []mesh_proto.SingleValueTagSet) *envoy_route.Header
 	}
 }
 
-func convertDelay(delay *mesh_proto.FaultInjection_Conf_Delay) *envoy_filter_fault.FaultDelay {
+func convertDelay(delay *Delay) *envoy_filter_fault.FaultDelay {
 	if delay == nil {
 		return nil
 	}
 	return &envoy_filter_fault.FaultDelay{
-		FaultDelaySecifier: &envoy_filter_fault.FaultDelay_FixedDelay{FixedDelay: delay.GetValue()},
-		Percentage:         ConvertPercentage(delay.GetPercentage()),
+		FaultDelaySecifier: &envoy_filter_fault.FaultDelay_FixedDelay{FixedDelay: util_proto.Duration(delay.Value)},
+		Percentage:         ConvertPercentage(util_proto.Double(delay.Percentage)),
 	}
 }
 
-func convertAbort(abort *mesh_proto.FaultInjection_Conf_Abort) *envoy_http_fault.FaultAbort {
+func convertAbort(abort *Abort) *envoy_http_fault.FaultAbort {
 	if abort == nil {
 		return nil
 	}
 	return &envoy_http_fault.FaultAbort{
-		ErrorType:  &envoy_http_fault.FaultAbort_HttpStatus{HttpStatus: abort.HttpStatus.GetValue()},
-		Percentage: ConvertPercentage(abort.GetPercentage()),
+		ErrorType:  &envoy_http_fault.FaultAbort_HttpStatus{HttpStatus: abort.HttpStatus},
+		Percentage: ConvertPercentage(util_proto.Double(abort.Percentage)),
 	}
 }
 
-func convertResponseRateLimit(responseBandwidth *mesh_proto.FaultInjection_Conf_ResponseBandwidth) (*envoy_filter_fault.FaultRateLimit, error) {
+func convertResponseRateLimit(responseBandwidth *ResponseBandwidth) (*envoy_filter_fault.FaultRateLimit, error) {
 	if responseBandwidth == nil {
 		return nil, nil
 	}
 
-	limitKbps, err := ConvertBandwidthToKbps(responseBandwidth.GetLimit().GetValue())
+	limitKbps, err := ConvertBandwidthToKbps(responseBandwidth.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -118,6 +175,6 @@ func convertResponseRateLimit(responseBandwidth *mesh_proto.FaultInjection_Conf_
 				LimitKbps: limitKbps,
 			},
 		},
-		Percentage: ConvertPercentage(responseBandwidth.GetPercentage()),
+		Percentage: ConvertPercentage(util_proto.Double(responseBandwidth.Percentage)),
 	}, nil
 }

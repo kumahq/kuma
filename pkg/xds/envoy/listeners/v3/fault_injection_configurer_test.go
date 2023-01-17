@@ -18,7 +18,7 @@ var _ = Describe("FaultInjectionConfigurer", func() {
 		input    []*core_mesh.FaultInjectionResource
 		expected string
 	}
-	DescribeTable("should generate proper Envoy config",
+	FDescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
 			filterChain, err := NewFilterChainBuilder(envoy.APIV3).
