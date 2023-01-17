@@ -19,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_xds "github.com/kumahq/kuma/pkg/test/xds"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -96,7 +97,7 @@ var _ = Describe("MeshRetry", func() {
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
 							HTTP: &api.HTTP{
-								NumRetries:    test.PointerOf[uint32](1),
+								NumRetries:    pointer.To[uint32](1),
 								PerTryTimeout: test.ParseDuration("2s"),
 								BackOff: &api.BackOff{
 									BaseInterval: test.ParseDuration("3s"),
@@ -176,7 +177,7 @@ var _ = Describe("MeshRetry", func() {
 						}},
 						Conf: api.Conf{
 							GRPC: &api.GRPC{
-								NumRetries:    test.PointerOf[uint32](11),
+								NumRetries:    pointer.To[uint32](11),
 								PerTryTimeout: test.ParseDuration("12s"),
 								BackOff: &api.BackOff{
 									BaseInterval: test.ParseDuration("13s"),
@@ -221,7 +222,7 @@ var _ = Describe("MeshRetry", func() {
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
 							TCP: &api.TCP{
-								MaxConnectAttempt: test.PointerOf[uint32](21),
+								MaxConnectAttempt: pointer.To[uint32](21),
 							},
 						},
 					},
