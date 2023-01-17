@@ -63,9 +63,10 @@ commands:
             sudo chown root:root /usr/bin/runc ; sudo chmod o+x /usr/bin/runc
           fi
   skip_on_branch:
-    description: "Skips the job on the branch"
+    description: "Skip the job on the branch"
     steps:
     - run:
+        name: "Skip the job on the branch"
         command: |
           if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* ]]; then
             circleci-agent step halt
