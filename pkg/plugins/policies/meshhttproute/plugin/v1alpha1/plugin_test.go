@@ -330,7 +330,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											Default: api.RuleConf{
 												Filters: &[]api.Filter{{
 													Type: api.RequestHeaderModifierType,
-													RequestHeaderModifier: api.HeaderModifier{
+													RequestHeaderModifier: &api.HeaderModifier{
 														Add: []api.HeaderKeyValue{{
 															Name:  "request-add-header",
 															Value: "add-value",
@@ -348,7 +348,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 													},
 												}, {
 													Type: api.ResponseHeaderModifierType,
-													ResponseHeaderModifier: api.HeaderModifier{
+													ResponseHeaderModifier: &api.HeaderModifier{
 														Add: []api.HeaderKeyValue{{
 															Name:  "response-add-header",
 															Value: "add-value",

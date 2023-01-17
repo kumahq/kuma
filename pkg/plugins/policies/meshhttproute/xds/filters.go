@@ -14,9 +14,9 @@ import (
 func routeFilter(filter api.Filter, route *envoy_route.Route) {
 	switch filter.Type {
 	case api.RequestHeaderModifierType:
-		requestHeaderModifier(filter.RequestHeaderModifier, route)
+		requestHeaderModifier(*filter.RequestHeaderModifier, route)
 	case api.ResponseHeaderModifierType:
-		responseHeaderModifier(filter.ResponseHeaderModifier, route)
+		responseHeaderModifier(*filter.ResponseHeaderModifier, route)
 	}
 }
 

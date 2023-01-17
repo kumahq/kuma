@@ -105,9 +105,9 @@ type HeaderModifier struct {
 }
 
 type Filter struct {
-	Type                   FilterType     `json:"type"`
-	RequestHeaderModifier  HeaderModifier `json:"requestHeaderModifier,omitempty"`
-	ResponseHeaderModifier HeaderModifier `json:"responseHeaderModifier,omitempty"`
+	Type                   FilterType      `json:"type"`
+	RequestHeaderModifier  *HeaderModifier `json:"requestHeaderModifier,omitempty"`
+	ResponseHeaderModifier *HeaderModifier `json:"responseHeaderModifier,omitempty"`
 }
 
 type BackendRef struct {
