@@ -68,8 +68,10 @@ type Match struct {
 
 	Method string
 
-	ExactHeader []KeyValue // name -> value
-	RegexHeader []KeyValue // name -> regex
+	ExactHeader   []KeyValue // name -> value
+	RegexHeader   []KeyValue // name -> regex
+	AbsentHeader  []string
+	PresentHeader []string
 
 	ExactQuery []KeyValue // param -> value
 	RegexQuery []KeyValue // param -> regex

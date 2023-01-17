@@ -29,6 +29,10 @@ conf:
           match: EXACT
           value: /
         headers:
+        - match: ABSENT
+          name: x-baz
+        - match: PRESENT
+          name: x-bar
         - match: EXACT
           name: x-foo
           value: "my great foo"
@@ -286,6 +290,29 @@ conf:
     - matches:
       - headers:
         - name: value
+      backends:
+      - weight: 5
+        destination:
+          kuma.io/service: target-2
+`),
+		ErrorCase("match with header value when using PRESENT", validators.Violation{
+			Field:   "conf.http.rules[0].matches[0].headers[0].value",
+			Message: "cannot be set",
+		}, `
+type: MeshGatewayRoute
+name: route
+mesh: default
+selectors:
+- match:
+    kuma.io/service: gateway
+conf:
+  http:
+    rules:
+    - matches:
+      - headers:
+        - name: value
+          value: foo
+          match: PRESENT
       backends:
       - weight: 5
         destination:

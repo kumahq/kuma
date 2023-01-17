@@ -501,6 +501,20 @@ conf:
       backends:
       - destination:
           kuma.io/service: regex-header-match
+    - matches:
+      - headers:
+        - match: PRESENT
+          name: X-I-AM-PRESENT
+      backends:
+      - destination:
+          kuma.io/service: present-header-match
+    - matches:
+      - headers:
+        - match: ABSENT
+          name: X-I-AM-ABSENT
+      backends:
+      - destination:
+          kuma.io/service: absent-header-match
 `,
 		),
 
