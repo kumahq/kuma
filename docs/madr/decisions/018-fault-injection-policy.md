@@ -149,7 +149,7 @@ default:
         percentage: 50
 ```
 
-To support percentage we are going to introduce our own type so we can handle decimal values correctly.
+To support percentage we introduce a custom type to handle decimal values correctly see [#5717](https://github.com/kumahq/kuma/issues/5717).
 
 #### **Result**
 
