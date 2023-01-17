@@ -1856,6 +1856,7 @@ spec:
                               items:
                                 properties:
                                   append:
+                                    default: true
                                     description: If true (default) the header values
                                       should be appended to already present ones
                                     type: boolean

@@ -118,13 +118,16 @@ func mapHttpHeaders(headers *[]api.HeaderValue, srcTags v1alpha1.MultiValueTagSe
 	}
 	if headers != nil {
 		for _, header := range *headers {
-			envoyHeaders = append(envoyHeaders, &envoy_core.HeaderValueOption{
+			envoyHeader := &envoy_core.HeaderValueOption{
 				Header: &envoy_core.HeaderValue{
 					Key:   header.Key,
 					Value: header.Value,
 				},
-				Append: util_proto.Bool(pointer.Deref(header.Append)),
-			})
+			}
+			if header.Append != nil {
+				envoyHeader.Append = util_proto.Bool(*header.Append)
+			}
+			envoyHeaders = append(envoyHeaders, envoyHeader)
 		}
 	}
 	return envoyHeaders

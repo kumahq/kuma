@@ -158,6 +158,10 @@ var _ = Describe("MeshHealthCheck", func() {
 										Value:  "value",
 										Append: pointer.To(true),
 									},
+									{
+										Key:   "x-some-other-header",
+										Value: "value",
+									},
 								},
 								ExpectedStatuses: &[]int32{200, 201},
 							},
@@ -189,6 +193,9 @@ healthChecks:
       - append: true
         header:
           key: x-some-header
+          value: value
+      - header:
+          key: x-some-other-header
           value: value
   initialJitter: 13s
   interval: 10s

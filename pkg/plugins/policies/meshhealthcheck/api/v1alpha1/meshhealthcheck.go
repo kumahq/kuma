@@ -133,5 +133,6 @@ type HeaderValue struct {
 	// Header value
 	Value string `json:"value"`
 	// If true (default) the header values should be appended to already present ones
+	// +kubebuilder:default=true
 	Append *bool `json:"append,omitempty"`
 }
