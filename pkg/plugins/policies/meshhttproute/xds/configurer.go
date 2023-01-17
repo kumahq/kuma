@@ -52,6 +52,9 @@ func (c RoutesConfigurer) routeMatch(matches []api.Match) []*envoy_route.RouteMa
 			if match.Method != nil {
 				c.routeMethodMatch(envoyMatch, *match.Method)
 			}
+			if match.QueryParams != nil {
+				routeQueryParamsMatch(envoyMatch, match.QueryParams)
+			}
 		}
 
 		allEnvoyMatches = append(allEnvoyMatches, envoyMatches...)
@@ -89,15 +92,9 @@ func (c RoutesConfigurer) routePathMatch(match api.PathMatch) []*envoy_route.Rou
 			},
 		}}
 	case api.RegularExpression:
-		matcher := &envoy_type_matcher.RegexMatcher{
-			Regex: match.Value,
-			EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
-				GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
-			},
-		}
 		return []*envoy_route.RouteMatch{{
 			PathSpecifier: &envoy_route.RouteMatch_SafeRegex{
-				SafeRegex: matcher,
+				SafeRegex: regexMatcher(match.Value),
 			},
 		}}
 	default:
@@ -119,6 +116,46 @@ func (c RoutesConfigurer) routeMethodMatch(envoyMatch *envoy_route.RouteMatch, m
 			},
 		},
 	)
+}
+
+func routeQueryParamsMatch(envoyMatch *envoy_route.RouteMatch, matches []api.QueryParamsMatch) {
+	// We ignore multiple matchers for the same name, though this is also
+	// validated
+	matchedNames := map[string]struct{}{}
+
+	for _, match := range matches {
+		if _, ok := matchedNames[match.Name]; ok {
+			continue
+		}
+		matchedNames[match.Name] = struct{}{}
+
+		var matcher envoy_type_matcher.StringMatcher
+		switch match.Type {
+		case api.ExactQueryMatch:
+			matcher = envoy_type_matcher.StringMatcher{
+				MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+					Exact: match.Value,
+				},
+			}
+		case api.RegularExpressionQueryMatch:
+			matcher = envoy_type_matcher.StringMatcher{
+				MatchPattern: &envoy_type_matcher.StringMatcher_SafeRegex{
+					SafeRegex: regexMatcher(match.Value),
+				},
+			}
+		default:
+			panic("impossible")
+		}
+
+		envoyMatch.QueryParameters = append(envoyMatch.QueryParameters,
+			&envoy_route.QueryParameterMatcher{
+				Name: match.Name,
+				QueryParameterMatchSpecifier: &envoy_route.QueryParameterMatcher_StringMatch{
+					StringMatch: &matcher,
+				},
+			},
+		)
+	}
 }
 
 func (c RoutesConfigurer) hasExternal(clusters []envoy_common.Cluster) bool {
