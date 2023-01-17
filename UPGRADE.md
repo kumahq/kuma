@@ -8,9 +8,9 @@ does not have any particular instructions.
 
 ## Upcoming release
 
-## **Breaking changes**
+### **Breaking changes**
 
-### **Naming Serviceless dataplanes has changed**
+#### **Naming Serviceless dataplanes has changed**
 
 Currently, the `kuma.io/service` value of the inbound of a `Dataplane` generated for a `Pod` without a `Service` is based on the `Pod` name. The Kuma CP takes the pod's name and removes 2 last elements after splitting by `-`. This behavior is correct when the `Pod` is owned by a `Deployment` or `CronJob` but not for other owner kinds. Kuma will now use the name of the owner resource as the `kuma.io/service` value.
 Before upgrade:
@@ -18,6 +18,10 @@ Before upgrade:
 2. Create copies of policies that were created for the services corresponding to these `Pods`. The `kuma.io/service` value is the name of the owner resource. If there is no owner, `Kuma` uses the `Pod`'s name.
 
 This breaking change is required to provide correct naming. The previous behavior could produce the same `kuma.io/service` value of the inbound of a `Dataplane` for many different serviceless Dataplanes.
+
+#### MeshTrafficPermission
+
+Action value have switched to PascalCase. ALLOW is Allow, DENY is Deny and ALLOW_WITH_SHADOW_DENY is AllowWithShadowDeny.
 
 ### http api
 

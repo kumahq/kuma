@@ -97,14 +97,14 @@ var _ = Describe("Resource Utils", func() {
 							Kind: "MeshService",
 							Name: "backend",
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: "ALLOW"},
+						Default: meshtrafficpermissions_proto.Conf{Action: "Allow"},
 					},
 					{
 						TargetRef: common_api.TargetRef{
 							Kind: "MeshService",
 							Name: "web",
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: "DENY"},
+						Default: meshtrafficpermissions_proto.Conf{Action: "Deny"},
 					},
 					{
 						TargetRef: common_api.TargetRef{
@@ -113,7 +113,7 @@ var _ = Describe("Resource Utils", func() {
 								"version": "v3",
 							},
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: "ALLOW"},
+						Default: meshtrafficpermissions_proto.Conf{Action: "Allow"},
 					},
 				},
 			}
@@ -125,14 +125,14 @@ var _ = Describe("Resource Utils", func() {
 							Kind: "MeshService",
 							Name: "backend",
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: "ALLOW"},
+						Default: meshtrafficpermissions_proto.Conf{Action: "Allow"},
 					},
 					{
 						TargetRef: common_api.TargetRef{
 							Kind: "MeshService",
 							Name: "web",
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: "DENY"},
+						Default: meshtrafficpermissions_proto.Conf{Action: "Deny"},
 					},
 					{
 						TargetRef: common_api.TargetRef{
@@ -141,7 +141,7 @@ var _ = Describe("Resource Utils", func() {
 								"version": "v3",
 							},
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: "ALLOW"},
+						Default: meshtrafficpermissions_proto.Conf{Action: "Allow"},
 					},
 				},
 			}
@@ -161,14 +161,14 @@ var _ = Describe("Resource Utils", func() {
 							Kind: "MeshService",
 							Name: "backend",
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: "ALLOW"},
+						Default: meshtrafficpermissions_proto.Conf{Action: "Allow"},
 					},
 					{
 						TargetRef: common_api.TargetRef{
 							Kind: "MeshService",
 							Name: "web",
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: "DENY"},
+						Default: meshtrafficpermissions_proto.Conf{Action: "Deny"},
 					},
 					{
 						TargetRef: common_api.TargetRef{
@@ -177,7 +177,7 @@ var _ = Describe("Resource Utils", func() {
 								"version": "v3",
 							},
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: "ALLOW"},
+						Default: meshtrafficpermissions_proto.Conf{Action: "Allow"},
 					},
 				},
 			}
@@ -189,14 +189,14 @@ var _ = Describe("Resource Utils", func() {
 							Kind: "MeshService",
 							Name: "backend",
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: "ALLOW"},
+						Default: meshtrafficpermissions_proto.Conf{Action: "Allow"},
 					},
 					{
 						TargetRef: common_api.TargetRef{
 							Kind: "MeshService",
 							Name: "web",
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: "DENY"},
+						Default: meshtrafficpermissions_proto.Conf{Action: "Deny"},
 					},
 					{
 						TargetRef: common_api.TargetRef{
@@ -205,7 +205,7 @@ var _ = Describe("Resource Utils", func() {
 								"version": "v5", // different from 'v3'
 							},
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: "ALLOW"},
+						Default: meshtrafficpermissions_proto.Conf{Action: "Allow"},
 					},
 				},
 			}

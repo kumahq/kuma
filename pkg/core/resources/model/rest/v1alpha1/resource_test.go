@@ -59,7 +59,7 @@ var _ = Describe("Rest Resource", func() {
           "kind": "Mesh"
         },
         "default": {
-          "action": "ALLOW"
+          "action": "Allow"
         }
       }
     ]
