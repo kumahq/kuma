@@ -11,7 +11,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/util/proto"
-	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
@@ -70,7 +69,7 @@ func createHeaders(selectors []mesh_proto.SingleValueTagSet) *envoy_route.Header
 	regexOR := tags.RegexOR(selectorRegexs...)
 
 	return &envoy_route.HeaderMatcher{
-		Name: envoy_routes.TagsHeaderName,
+		Name: tags.TagsHeaderName,
 		HeaderMatchSpecifier: &envoy_route.HeaderMatcher_SafeRegexMatch{
 			SafeRegexMatch: &envoy_type_matcher.RegexMatcher{
 				EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
