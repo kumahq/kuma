@@ -31,11 +31,14 @@ properties:
                     url:
                       description: Address of Datadog collector, only host and port are allowed (no paths, fragments etc.)
                       type: string
+                  required:
+                    - url
                   type: object
                 zipkin:
                   description: Zipkin backend configuration.
                   properties:
                     apiVersion:
+                      default: httpJson
                       description: 'Version of the API. values: httpJson, httpProto. Default: httpJson see https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L66'
                       type: string
                     sharedSpanContext:
@@ -47,9 +50,10 @@ properties:
                     url:
                       description: Address of Zipkin collector.
                       type: string
+                  required:
+                    - url
                   type: object
               type: object
-            nullable: true
             type: array
           sampling:
             description: Sampling configuration. Sampling is the process by which a decision is made on whether to process/export a span or not.
@@ -81,6 +85,8 @@ properties:
                     name:
                       description: Name of the header.
                       type: string
+                  required:
+                    - name
                   type: object
                 literal:
                   description: Tag taken from literal value.
@@ -88,8 +94,9 @@ properties:
                 name:
                   description: Name of the tag.
                   type: string
+              required:
+                - name
               type: object
-            nullable: true
             type: array
         type: object
       targetRef:
