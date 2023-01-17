@@ -2436,6 +2436,7 @@ spec:
                                       items:
                                         properties:
                                           append:
+                                            default: true
                                             description: Should the header be appended
                                             type: boolean
                                           key:
