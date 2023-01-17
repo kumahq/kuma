@@ -11,6 +11,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/user"
 	model "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -41,6 +42,8 @@ func (s *splitCounter) getAndIncrement() int {
 }
 
 func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
+	hasMeshRoutes := len(proxy.Policies.Dynamic[v1alpha1.MeshHTTPRouteType].ToRules.Rules) > 0
+
 	outbounds := proxy.Dataplane.Spec.Networking.GetOutbound()
 	resources := model.NewResourceSet()
 	if len(outbounds) == 0 {
@@ -60,9 +63,16 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 		// For one outbound listener it may contain many subsets (ex. TrafficRoute to many destinations)
 		routes := g.determineRoutes(proxy, outbound, clusterCache, splitCounter, ctx.Mesh.Resource.ZoneEgressEnabled())
 		clusters := routes.Clusters()
-		servicesAcc.Add(clusters...)
 
 		protocol := InferProtocol(proxy, clusters)
+		switch protocol {
+		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
+			if hasMeshRoutes {
+				continue
+			}
+		}
+
+		servicesAcc.Add(clusters...)
 
 		// Generate listener
 		listener, err := g.generateLDS(ctx, proxy, routes, outbound, protocol)

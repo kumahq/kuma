@@ -211,6 +211,21 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Routing: core_xds.Routing{
 					OutboundTargets: outboundTargets,
 				},
+				// This is a policy that doesn't apply to these services on
+				// purpose, so that the plugin is activated
+				// TODO: remove this when the plugin runs by default
+				Policies: core_xds.MatchedPolicies{
+					Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
+						api.MeshHTTPRouteType: {
+							ToRules: core_xds.ToRules{
+								Rules: core_xds.Rules{{
+									Subset: core_xds.MeshService("some-nonexistent-service"),
+									Conf:   api.PolicyDefault{},
+								}},
+							},
+						},
+					},
+				},
 			},
 		}
 	}()), Entry("basic", func() outboundsTestCase {
