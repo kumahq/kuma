@@ -74,7 +74,7 @@ commands:
 
 executors:
   golang:
-    resource_class: large
+    resource_class: xlarge
     docker:
     - image: *golang_image
     environment:
