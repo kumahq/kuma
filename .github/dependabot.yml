@@ -6,7 +6,54 @@ updates:
       interval: "weekly"
     labels:
       - "dependencies"
-      
+  - package-ecosystem: "gomod"
+    # Setting open-pull-requests-limit to 0 means that dependabot will not
+    # update regular dependencies on this target branch, but still provide
+    # security updates for our gomod dependencies
+    open-pull-requests-limit: 0
+    target-branch: "release-1.5"
+    directory: "/"
+    schedule:
+      interval: "daily" # it's UTC, so I just want to check if it properly triggers today, will change this when checked
+      time: "12:25"
+    labels:
+      - "dependencies/security"
+  - package-ecosystem: "gomod"
+    open-pull-requests-limit: 0
+    target-branch: "release-1.6"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "12:25"
+    labels:
+      - "dependencies/security"
+  - package-ecosystem: "gomod"
+    open-pull-requests-limit: 0
+    target-branch: "release-1.7"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "12:25"
+    labels:
+      - "dependencies/security"
+  - package-ecosystem: "gomod"
+    open-pull-requests-limit: 0
+    target-branch: "release-1.8"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "12:25"
+    labels:
+      - "dependencies/security"
+  - package-ecosystem: "gomod"
+    open-pull-requests-limit: 0
+    target-branch: "release-2.0" # current release
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "12:25"
+    labels:
+      - "dependencies/security"
   - package-ecosystem: "docker"
     directory: "/tools/releases/dockerfiles"
     schedule:
