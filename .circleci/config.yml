@@ -62,6 +62,15 @@ commands:
             sudo sh -c 'curl -s --fail --location https://github.com/opencontainers/runc/releases/download/v1.1.0/runc.<<parameters.go_arch>> > /usr/bin/runc'
             sudo chown root:root /usr/bin/runc ; sudo chmod o+x /usr/bin/runc
           fi
+  skip_on_branch:
+    description: "Skips the job on the branch"
+    steps:
+    - run:
+        command: |
+          if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* ]]; then
+            circleci-agent step halt
+            exit 0
+          fi
 
 executors:
   golang:
@@ -187,6 +196,10 @@ jobs:
     executor:
       name: vm-<< parameters.arch >>
     steps:
+    - when:
+        condition: {equal: [arm64, << parameters.arch >>]}
+        steps:
+          - skip_on_branch
     - checkout
     - run:
         # Label based skip-test runs
@@ -367,6 +380,10 @@ jobs:
     executor: # we are using linux/arm64 and linux/amd64 vm's for build
       name: vm-<< parameters.arch >>
     steps:
+    - when:
+        condition: {equal: [arm64, << parameters.arch >>]}
+        steps:
+          - skip_on_branch
     - install_build_tools:
         go_arch: <<parameters.arch>>
     - checkout
