@@ -14,9 +14,9 @@ import (
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
-	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func Gateway() {
@@ -32,36 +32,36 @@ func Gateway() {
 			Install(GatewayProxyUniversal(mesh, "gateway-proxy")).
 			Install(YamlUniversal(MkGateway("edge-gateway", mesh, false, "example.kuma.io", "echo-service", gatewayPort)))
 
-		Expect(setup.Setup(env.Cluster)).To(Succeed())
+		Expect(setup.Setup(universal.Cluster)).To(Succeed())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cluster.DeleteApp("gateway-client")).To(Succeed())
-		Expect(env.Cluster.DeleteMeshApps(mesh)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(mesh)).To(Succeed())
+		Expect(universal.Cluster.DeleteApp("gateway-client")).To(Succeed())
+		Expect(universal.Cluster.DeleteMeshApps(mesh)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(mesh)).To(Succeed())
 	})
 
 	GatewayAddress := func(appName string) string {
-		return env.Cluster.GetApp(appName).GetIP()
+		return universal.Cluster.GetApp(appName).GetIP()
 	}
 
 	GatewayAddressPort := func(appName string, port int) string {
-		ip := env.Cluster.GetApp(appName).GetIP()
+		ip := universal.Cluster.GetApp(appName).GetIP()
 		return net.JoinHostPort(ip, strconv.Itoa(port))
 	}
 
 	Context("when mTLS is disabled", func() {
 		It("should proxy simple HTTP requests", func() {
-			ProxySimpleRequests(env.Cluster, "universal",
+			ProxySimpleRequests(universal.Cluster, "universal",
 				GatewayAddressPort("gateway-proxy", gatewayPort), "example.kuma.io")
 		})
 	})
 
 	Context("when mTLS is enabled", func() {
 		It("should proxy simple HTTP requests", func() {
-			Expect(env.Cluster.Install(MTLSMeshUniversal(mesh))).To(Succeed())
+			Expect(universal.Cluster.Install(MTLSMeshUniversal(mesh))).To(Succeed())
 
-			ProxySimpleRequests(env.Cluster, "universal",
+			ProxySimpleRequests(universal.Cluster, "universal",
 				GatewayAddressPort("gateway-proxy", gatewayPort), "example.kuma.io")
 		})
 	})
@@ -69,7 +69,7 @@ func Gateway() {
 	Context("when targeting an external service", func() {
 		BeforeAll(func() {
 			Expect(
-				env.Cluster.DeployApp(
+				universal.Cluster.DeployApp(
 					WithArgs([]string{"test-server", "echo", "--port", "8080", "--instance", "external-echo"}),
 					WithName("external-echo-"+mesh),
 					WithMesh(mesh),
@@ -78,7 +78,7 @@ func Gateway() {
 			).To(Succeed())
 
 			Expect(
-				env.Cluster.Install(YamlUniversal(fmt.Sprintf(`
+				universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
 type: MeshGatewayRoute
 mesh: %s
 name: external-routes
@@ -99,7 +99,7 @@ conf:
 			).To(Succeed())
 
 			Expect(
-				env.Cluster.Install(YamlUniversal(fmt.Sprintf(`
+				universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
 type: ExternalService
 mesh: %s
 name: external-service
@@ -107,12 +107,12 @@ tags:
   kuma.io/service: external-echo
 networking:
   address: "%s"
-`, mesh, net.JoinHostPort(env.Cluster.GetApp("external-echo-gateway").GetIP(), "8080")))),
+`, mesh, net.JoinHostPort(universal.Cluster.GetApp("external-echo-gateway").GetIP(), "8080")))),
 			).To(Succeed())
 		})
 
 		It("should proxy simple HTTP requests", func() {
-			ProxySimpleRequests(env.Cluster, "external-echo",
+			ProxySimpleRequests(universal.Cluster, "external-echo",
 				GatewayAddressPort("gateway-proxy", gatewayPort), "example.kuma.io",
 				client.WithPathPrefix("/external"))
 		})
@@ -121,7 +121,7 @@ networking:
 	Context("applying ProxyTemplate", func() {
 		It("shouldn't error with gateway-proxy import", func() {
 			Expect(
-				env.Cluster.Install(YamlUniversal(fmt.Sprintf(`
+				universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
 type: ProxyTemplate
 mesh: %s
 name: edge-gateway
@@ -146,7 +146,7 @@ conf:
 	Context("when a rate limit is configured", func() {
 		BeforeAll(func() {
 			Expect(
-				env.Cluster.Install(YamlUniversal(fmt.Sprintf(`
+				universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
 type: RateLimit
 mesh: %s
 name: echo-rate-limit
@@ -164,7 +164,7 @@ conf:
 			).To(Succeed())
 		})
 		AfterAll(func() {
-			Expect(DeleteMeshResources(env.Cluster, mesh, core_mesh.RateLimitResourceTypeDescriptor)).To(Succeed())
+			Expect(DeleteMeshResources(universal.Cluster, mesh, core_mesh.RateLimitResourceTypeDescriptor)).To(Succeed())
 		})
 
 		It("should be rate limited", func() {
@@ -175,7 +175,7 @@ conf:
 					gatewayAddr, path.Join("test", url.PathEscape(GinkgoT().Name())),
 				)
 
-				response, err := client.CollectFailure(env.Cluster, "gateway-client", target, client.WithHeader("Host", "example.kuma.io"))
+				response, err := client.CollectFailure(universal.Cluster, "gateway-client", target, client.WithHeader("Host", "example.kuma.io"))
 
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.ResponseCode).To(Equal(429))
@@ -186,7 +186,7 @@ conf:
 	Context("when a MeshRateLimit is configured", func() {
 		BeforeAll(func() {
 			Expect(
-				env.Cluster.Install(YamlUniversal(fmt.Sprintf(`
+				universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
 type: MeshRateLimit
 mesh: "%s"
 name: mesh-rate-limit-all-sources
@@ -200,8 +200,9 @@ spec:
       default:
         local:
           http:
-            requests: 1
-            interval: 10s
+            requestRate:
+              num: 1
+              interval: 10s
             onRateLimit:
               status: 428
               headers:
@@ -210,7 +211,7 @@ spec:
 			).To(Succeed())
 		})
 		AfterAll(func() {
-			Expect(DeleteMeshResources(env.Cluster, mesh, api.MeshRateLimitResourceTypeDescriptor)).To(Succeed())
+			Expect(DeleteMeshResources(universal.Cluster, mesh, api.MeshRateLimitResourceTypeDescriptor)).To(Succeed())
 		})
 
 		It("should be rate limited", func() {
@@ -221,7 +222,7 @@ spec:
 					gatewayAddr, path.Join("test", url.PathEscape(GinkgoT().Name())),
 				)
 
-				response, err := client.CollectFailure(env.Cluster, "gateway-client", target, client.WithHeader("Host", "example.kuma.io"))
+				response, err := client.CollectFailure(universal.Cluster, "gateway-client", target, client.WithHeader("Host", "example.kuma.io"))
 
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.ResponseCode).To(Equal(428))
@@ -238,7 +239,7 @@ spec:
 
 			// Create the TLS secret containing the self-signed certificate and corresponding private key.
 			Expect(
-				env.Cluster.Install(YamlUniversal(fmt.Sprintf(`
+				universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
 type: Secret
 mesh: %s
 name: example-kuma-io-certificate
@@ -248,7 +249,7 @@ data: %s
 
 			// Add HTTPS listeners
 			Expect(
-				env.Cluster.Install(YamlUniversal(fmt.Sprintf(`
+				universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
 type: MeshGateway
 mesh: %s
 name: edge-gateway
@@ -282,7 +283,7 @@ conf:
 		It("should proxy simple HTTPS requests with Host header", func() {
 			addr := net.JoinHostPort("example.kuma.io", strconv.Itoa(9080))
 			proxySecureRequests(
-				env.Cluster,
+				universal.Cluster,
 				"universal",
 				addr,
 				client.Resolve(addr, GatewayAddress("gateway-proxy")),
@@ -291,7 +292,7 @@ conf:
 
 		It("should proxy simple HTTPS requests without hostname", func() {
 			proxySecureRequests(
-				env.Cluster,
+				universal.Cluster,
 				"universal",
 				GatewayAddressPort("gateway-proxy", 9081),
 			)
@@ -305,7 +306,7 @@ conf:
 		PermissionName := "allow-all-" + mesh
 
 		Logf("deleting TrafficPermission %q", PermissionName)
-		Expect(env.Cluster.GetKumactlOptions().KumactlDelete(
+		Expect(universal.Cluster.GetKumactlOptions().KumactlDelete(
 			"traffic-permission", PermissionName, mesh),
 		).To(Succeed())
 
@@ -317,7 +318,7 @@ conf:
 				gatewayAddr, path.Join("test", url.PathEscape(GinkgoT().Name())),
 			)
 
-			status, err := client.CollectFailure(env.Cluster, "gateway-client", target, client.WithHeader("Host", host))
+			status, err := client.CollectFailure(universal.Cluster, "gateway-client", target, client.WithHeader("Host", host))
 
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(status.ResponseCode).To(Equal(503))

@@ -62,15 +62,13 @@ var _ = Describe("MeshHTTPRoute", func() {
 								TargetRef: builders.TargetRefService("backend"),
 								Rules: []api.Rule{{
 									Matches: []api.Match{{
-										Path: api.PathMatch{
-											Prefix: "/v1",
+										Path: &api.PathMatch{
+											Type:  api.Prefix,
+											Value: "/v1",
 										},
 									}},
 									Default: api.RuleConf{
-										BackendRefs: &[]api.BackendRef{{
-											TargetRef: builders.TargetRefService("backend"),
-											Weight:    100,
-										}},
+										Filters: &[]api.Filter{{}},
 									},
 								}},
 							}},
@@ -86,13 +84,27 @@ var _ = Describe("MeshHTTPRoute", func() {
 								TargetRef: builders.TargetRefService("backend"),
 								Rules: []api.Rule{{
 									Matches: []api.Match{{
-										Path: api.PathMatch{
-											Prefix: "/v1",
+										Path: &api.PathMatch{
+											Type:  api.Prefix,
+											Value: "/v1",
 										},
 									}},
 									Default: api.RuleConf{
 										BackendRefs: &[]api.BackendRef{{
-											TargetRef: builders.TargetRefService("backend"),
+											TargetRef: builders.TargetRefServiceSubset("backend", "version", "v1"),
+											Weight:    100,
+										}},
+									},
+								}, {
+									Matches: []api.Match{{
+										Path: &api.PathMatch{
+											Type:  api.Prefix,
+											Value: "/v2",
+										},
+									}},
+									Default: api.RuleConf{
+										BackendRefs: &[]api.BackendRef{{
+											TargetRef: builders.TargetRefServiceSubset("backend", "version", "v2"),
 											Weight:    100,
 										}},
 									},
@@ -108,34 +120,34 @@ var _ = Describe("MeshHTTPRoute", func() {
 				{
 					Subset: core_xds.MeshService("backend"),
 					Conf: api.PolicyDefault{
-						AppendRules: []api.Rule{
-							{
-								Matches: []api.Match{{
-									Path: api.PathMatch{
-										Prefix: "/v1",
-									},
-								}},
-								Default: api.RuleConf{
-									BackendRefs: &[]api.BackendRef{{
-										TargetRef: builders.TargetRefService("backend"),
-										Weight:    100,
-									}},
+						Rules: []api.Rule{{
+							Matches: []api.Match{{
+								Path: &api.PathMatch{
+									Type:  api.Prefix,
+									Value: "/v1",
 								},
-							},
-							{
-								Matches: []api.Match{{
-									Path: api.PathMatch{
-										Prefix: "/v1",
-									},
+							}},
+							Default: api.RuleConf{
+								Filters: &[]api.Filter{{}},
+								BackendRefs: &[]api.BackendRef{{
+									TargetRef: builders.TargetRefServiceSubset("backend", "version", "v1"),
+									Weight:    100,
 								}},
-								Default: api.RuleConf{
-									BackendRefs: &[]api.BackendRef{{
-										TargetRef: builders.TargetRefService("backend"),
-										Weight:    100,
-									}},
-								},
 							},
-						},
+						}, {
+							Matches: []api.Match{{
+								Path: &api.PathMatch{
+									Type:  api.Prefix,
+									Value: "/v2",
+								},
+							}},
+							Default: api.RuleConf{
+								BackendRefs: &[]api.BackendRef{{
+									TargetRef: builders.TargetRefServiceSubset("backend", "version", "v2"),
+									Weight:    100,
+								}},
+							},
+						}},
 					},
 					Origin: []core_model.ResourceMeta{
 						&test_model.ResourceMeta{
@@ -152,116 +164,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 		},
 	}),
 	)
-	type routesTestCase struct {
-		rules          []plugin.ToRouteRule
-		serviceName    string
-		expectedRoutes []plugin.Route
-	}
-	DescribeTable("FindRoutes", func(given routesTestCase) {
-		routes := plugin.FindRoutes(given.rules, given.serviceName)
-		Expect(routes).To(Equal(given.expectedRoutes))
-	}, Entry("basic", routesTestCase{
-		rules: []plugin.ToRouteRule{{
-			Subset: core_xds.MeshService("backend"),
-			Rules: []api.Rule{{
-				Matches: []api.Match{{
-					Path: api.PathMatch{
-						Prefix: "/v1",
-					},
-				}},
-				Default: api.RuleConf{
-					BackendRefs: &[]api.BackendRef{{
-						TargetRef: builders.TargetRefService("backend"),
-						Weight:    100,
-					}},
-				},
-			}},
-		}, {
-			Subset: core_xds.MeshService("backend"),
-			Rules: []api.Rule{{
-				Matches: []api.Match{{
-					Path: api.PathMatch{
-						Prefix: "/v2",
-					},
-				}},
-				Default: api.RuleConf{
-					BackendRefs: &[]api.BackendRef{{
-						TargetRef: builders.TargetRefService("backend"),
-						Weight:    100,
-					}},
-				},
-			}},
-		}},
-		serviceName: "backend",
-		expectedRoutes: []plugin.Route{{
-			Matches: []api.Match{{
-				Path: api.PathMatch{
-					Prefix: "/",
-				},
-			}},
-			BackendRefs: []api.BackendRef{
-				{
-					TargetRef: builders.TargetRefService("backend"),
-					Weight:    100,
-				},
-			},
-		}, {
-			Matches: []api.Match{{
-				Path: api.PathMatch{
-					Prefix: "/v1",
-				},
-			}},
-			BackendRefs: []api.BackendRef{
-				{
-					TargetRef: builders.TargetRefService("backend"),
-					Weight:    100,
-				},
-			},
-		}, {
-			Matches: []api.Match{{
-				Path: api.PathMatch{
-					Prefix: "/v2",
-				},
-			}},
-			BackendRefs: []api.BackendRef{
-				{
-					TargetRef: builders.TargetRefService("backend"),
-					Weight:    100,
-				},
-			},
-		}},
-	}), Entry("overwrite-passthrough-rule", routesTestCase{
-		rules: []plugin.ToRouteRule{{
-			Subset: core_xds.MeshService("backend"),
-			Rules: []api.Rule{{
-				Matches: []api.Match{{
-					Path: api.PathMatch{
-						Prefix: "/",
-					},
-				}},
-				Default: api.RuleConf{
-					BackendRefs: &[]api.BackendRef{{
-						TargetRef: builders.TargetRefService("other-service"),
-						Weight:    100,
-					}},
-				},
-			}},
-		}},
-		serviceName: "backend",
-		expectedRoutes: []plugin.Route{{
-			Matches: []api.Match{{
-				Path: api.PathMatch{
-					Prefix: "/",
-				},
-			}},
-			BackendRefs: []api.BackendRef{
-				{
-					TargetRef: builders.TargetRefService("other-service"),
-					Weight:    100,
-				},
-			},
-		}},
-	}))
 	type outboundsTestCase struct {
 		proxy      core_xds.Proxy
 		xdsContext xds_context.Context
@@ -346,12 +248,12 @@ var _ = Describe("MeshHTTPRoute", func() {
 						api.MeshHTTPRouteType: {
 							ToRules: core_xds.ToRules{
 								Rules: core_xds.Rules{{
-									Subset: core_xds.MeshService("backend"),
 									Conf: api.PolicyDefault{
-										AppendRules: []api.Rule{{
+										Rules: []api.Rule{{
 											Matches: []api.Match{{
-												Path: api.PathMatch{
-													Prefix: "/v1",
+												Path: &api.PathMatch{
+													Type:  api.Prefix,
+													Value: "/v1",
 												},
 											}},
 											Default: api.RuleConf{
@@ -362,8 +264,14 @@ var _ = Describe("MeshHTTPRoute", func() {
 											},
 										}, {
 											Matches: []api.Match{{
-												Path: api.PathMatch{
-													Prefix: "/v2",
+												Path: &api.PathMatch{
+													Type:  api.Prefix,
+													Value: "/v2",
+												},
+											}, {
+												Path: &api.PathMatch{
+													Type:  api.Prefix,
+													Value: "/v3",
 												},
 											}},
 											Default: api.RuleConf{
@@ -412,10 +320,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 								Rules: core_xds.Rules{{
 									Subset: core_xds.MeshService("backend"),
 									Conf: api.PolicyDefault{
-										AppendRules: []api.Rule{{
+										Rules: []api.Rule{{
 											Matches: []api.Match{{
-												Path: api.PathMatch{
-													Prefix: "/v1",
+												Path: &api.PathMatch{
+													Type:  api.Prefix,
+													Value: "/v1",
 												},
 											}},
 											Default: api.RuleConf{

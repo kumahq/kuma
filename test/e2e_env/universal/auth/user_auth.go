@@ -4,14 +4,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func UserAuth() {
 	It("should generate user for group admin and log in", func() {
 		// given
-		token, err := env.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("generate", "user-token",
+		token, err := universal.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("generate", "user-token",
 			"--name", "new-admin",
 			"--group", "mesh-system:admin",
 			"--valid-for", "24h",
@@ -19,10 +19,10 @@ func UserAuth() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when kumactl is configured with new token
-		kumactl := NewKumactlOptions(env.Cluster.GetTesting(), env.Cluster.GetKuma().GetName()+"test-admin", false)
+		kumactl := NewKumactlOptions(universal.Cluster.GetTesting(), universal.Cluster.GetKuma().GetName()+"test-admin", false)
 		err = kumactl.KumactlConfigControlPlanesAdd(
 			"test-admin",
-			env.Cluster.GetKuma().GetAPIServerAddress(),
+			universal.Cluster.GetKuma().GetAPIServerAddress(),
 			token,
 		)
 
@@ -33,7 +33,7 @@ func UserAuth() {
 
 	It("should generate user for group member and log in", func() {
 		// given
-		token, err := env.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("generate", "user-token",
+		token, err := universal.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("generate", "user-token",
 			"--name", "team-a-member",
 			"--group", "team-a",
 			"--valid-for", "24h",
@@ -41,10 +41,10 @@ func UserAuth() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when kumactl is configured with new token
-		kumactl := NewKumactlOptions(env.Cluster.GetTesting(), env.Cluster.GetKuma().GetName()+"test-user", false)
+		kumactl := NewKumactlOptions(universal.Cluster.GetTesting(), universal.Cluster.GetKuma().GetName()+"test-user", false)
 		err = kumactl.KumactlConfigControlPlanesAdd(
 			"test-user",
-			env.Cluster.GetKuma().GetAPIServerAddress(),
+			universal.Cluster.GetKuma().GetAPIServerAddress(),
 			token,
 		)
 

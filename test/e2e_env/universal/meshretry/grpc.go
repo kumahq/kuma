@@ -7,9 +7,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
+	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func GrpcRetry() {
@@ -29,18 +29,18 @@ func GrpcRetry() {
 				WithProtocol("grpc"),
 				WithTransparentProxy(true),
 			)).
-			Setup(env.Cluster)
+			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// Delete the default retry policy
 		Eventually(func() error {
-			return env.Cluster.GetKumactlOptions().RunKumactl("delete", "retry", "--mesh", meshName, "retry-all-"+meshName)
+			return universal.Cluster.GetKumactlOptions().RunKumactl("delete", "retry", "--mesh", meshName, "retry-all-"+meshName)
 		}).Should(Succeed())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should retry on GRPC connection failure", func() {
@@ -73,7 +73,7 @@ spec:
         grpc:
           numRetries: 5
 `, meshName)
-		admin, err := env.Cluster.GetApp("test-client").GetEnvoyAdminTunnel()
+		admin, err := universal.Cluster.GetApp("test-client").GetEnvoyAdminTunnel()
 		Expect(err).ToNot(HaveOccurred())
 
 		var lastFailureStats = stats.StatItem{Name: "", Value: float64(0)}
@@ -103,7 +103,7 @@ spec:
 		}).Should(Succeed())
 
 		By("Adding a faulty dataplane")
-		Expect(env.Cluster.Install(YamlUniversal(echoServerDataplane))).To(Succeed())
+		Expect(universal.Cluster.Install(YamlUniversal(echoServerDataplane))).To(Succeed())
 
 		By("Check some errors happen")
 		Eventually(func(g Gomega) {
@@ -120,7 +120,7 @@ spec:
 		}, "40s", "10s").Should(Succeed())
 
 		By("Apply a MeshRetry policy")
-		Expect(env.Cluster.Install(YamlUniversal(meshRetryPolicy))).To(Succeed())
+		Expect(universal.Cluster.Install(YamlUniversal(meshRetryPolicy))).To(Succeed())
 
 		By("Eventually all requests succeed consistently")
 		Eventually(func(g Gomega) {

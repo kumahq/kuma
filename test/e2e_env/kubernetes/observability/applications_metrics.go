@@ -7,9 +7,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
 func MeshAndMetricsAggregate(name string) InstallFunc {
@@ -136,24 +136,24 @@ func ApplicationsMetrics() {
 					"prometheus.metrics.kuma.io/aggregate-service-to-override-path": "/overridden",
 					"prometheus.metrics.kuma.io/aggregate-service-to-override-port": "80",
 				}))).
-			Setup(env.Cluster)
+			Setup(kubernetes.Cluster)
 		Expect(err).To(Succeed())
 	})
 	E2EAfterAll(func() {
-		Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(mesh))
-		Expect(env.Cluster.DeleteMesh(meshNoAggregate))
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(kubernetes.Cluster.DeleteMesh(mesh))
+		Expect(kubernetes.Cluster.DeleteMesh(meshNoAggregate))
 	})
 
 	It("should scrape metrics defined in mesh and not fail when defined service doesn't exist", func() {
 		// given
-		podName, err := PodNameOfApp(env.Cluster, "test-server", namespace)
+		podName, err := PodNameOfApp(kubernetes.Cluster, "test-server", namespace)
 		Expect(err).ToNot(HaveOccurred())
-		podIp, err := PodIPOfApp(env.Cluster, "test-server", namespace)
+		podIp, err := PodIPOfApp(kubernetes.Cluster, "test-server", namespace)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		stdout, _, err := env.Cluster.Exec(namespace, podName, "test-server",
+		stdout, _, err := kubernetes.Cluster.Exec(namespace, podName, "test-server",
 			"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(podIp, "1234")+"/metrics")
 
 		// then
@@ -169,13 +169,13 @@ func ApplicationsMetrics() {
 
 	It("should override mesh configuration with annotation", func() {
 		// given
-		podName, err := PodNameOfApp(env.Cluster, "test-server-override-mesh", namespace)
+		podName, err := PodNameOfApp(kubernetes.Cluster, "test-server-override-mesh", namespace)
 		Expect(err).ToNot(HaveOccurred())
-		podIp, err := PodIPOfApp(env.Cluster, "test-server-override-mesh", namespace)
+		podIp, err := PodIPOfApp(kubernetes.Cluster, "test-server-override-mesh", namespace)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		stdout, _, err := env.Cluster.Exec(namespace, podName, "test-server-override-mesh",
+		stdout, _, err := kubernetes.Cluster.Exec(namespace, podName, "test-server-override-mesh",
 			"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(podIp, "1234")+"/metrics")
 
 		// then
@@ -201,13 +201,13 @@ func ApplicationsMetrics() {
 
 	It("should use only configuration from dataplane", func() {
 		// given
-		podName, err := PodNameOfApp(env.Cluster, "test-server-dp-metrics", namespace)
+		podName, err := PodNameOfApp(kubernetes.Cluster, "test-server-dp-metrics", namespace)
 		Expect(err).ToNot(HaveOccurred())
-		podIp, err := PodIPOfApp(env.Cluster, "test-server-dp-metrics", namespace)
+		podIp, err := PodIPOfApp(kubernetes.Cluster, "test-server-dp-metrics", namespace)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		stdout, _, err := env.Cluster.Exec(namespace, podName, "test-server-dp-metrics",
+		stdout, _, err := kubernetes.Cluster.Exec(namespace, podName, "test-server-dp-metrics",
 			"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(podIp, "1234")+"/metrics")
 
 		// then
@@ -229,13 +229,13 @@ func ApplicationsMetrics() {
 
 	It("should return filtered Envoy metrics and react for change of usedOnly parameter", func() {
 		// given
-		podName, err := PodNameOfApp(env.Cluster, "test-server-filter", namespace)
+		podName, err := PodNameOfApp(kubernetes.Cluster, "test-server-filter", namespace)
 		Expect(err).ToNot(HaveOccurred())
-		podIp, err := PodIPOfApp(env.Cluster, "test-server-filter", namespace)
+		podIp, err := PodIPOfApp(kubernetes.Cluster, "test-server-filter", namespace)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		stdout, _, err := env.Cluster.Exec(namespace, podName, "test-server-filter",
+		stdout, _, err := kubernetes.Cluster.Exec(namespace, podName, "test-server-filter",
 			"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(podIp, "5555")+"/metrics/stats")
 
 		// then
@@ -248,11 +248,11 @@ func ApplicationsMetrics() {
 		Expect(stdout).To(ContainSubstring("kuma_envoy_admin"))
 
 		// when usedOnly is enabled
-		Expect(MeshAndEnvoyMetricsFilters(meshEnvoyFilter, "true")(env.Cluster)).To(Succeed())
+		Expect(MeshAndEnvoyMetricsFilters(meshEnvoyFilter, "true")(kubernetes.Cluster)).To(Succeed())
 
 		// then
 		Eventually(func() string {
-			stdout, _, err = env.Cluster.Exec(namespace, podName, "test-server-filter",
+			stdout, _, err = kubernetes.Cluster.Exec(namespace, podName, "test-server-filter",
 				"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(podIp, "5555")+"/metrics/stats")
 			if err != nil {
 				return ""

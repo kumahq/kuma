@@ -9,11 +9,11 @@ import (
 	. "github.com/onsi/gomega"
 
 	k8s_gateway "github.com/kumahq/kuma/test/e2e_env/kubernetes/gateway"
-	"github.com/kumahq/kuma/test/e2e_env/multizone/env"
 	universal_gateway "github.com/kumahq/kuma/test/e2e_env/universal/gateway"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
+	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
 
 func MTLSMeshUniversalEgress(name string) InstallFunc {
@@ -80,7 +80,7 @@ func CrossMeshGatewayOnMultizone() {
 			Install(MTLSMeshUniversalEgress(gatewayOtherMesh)).
 			Install(YamlUniversal(crossMeshGatewayYaml)).
 			Install(YamlUniversal(edgeGatewayYaml))
-		Expect(globalSetup.Setup(env.Global)).To(Succeed())
+		Expect(globalSetup.Setup(multizone.Global)).To(Succeed())
 
 		gatewayZoneSetup := NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(gatewayTestNamespace)).
@@ -92,32 +92,32 @@ func CrossMeshGatewayOnMultizone() {
 			Install(DemoClientK8s(gatewayMesh, gatewayClientNamespaceSameMesh)).
 			Install(YamlK8s(crossMeshGatewayInstanceYaml)).
 			Install(YamlK8s(edgeGatewayInstanceYaml))
-		Expect(gatewayZoneSetup.Setup(env.KubeZone1)).To(Succeed())
+		Expect(gatewayZoneSetup.Setup(multizone.KubeZone1)).To(Succeed())
 
 		otherZoneSetup := NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(gatewayClientNamespaceOtherMesh)).
 			Install(NamespaceWithSidecarInjection(gatewayClientNamespaceSameMesh)).
 			Install(DemoClientK8s(gatewayOtherMesh, gatewayClientNamespaceOtherMesh)).
 			Install(DemoClientK8s(gatewayMesh, gatewayClientNamespaceSameMesh))
-		Expect(otherZoneSetup.Setup(env.KubeZone2)).To(Succeed())
+		Expect(otherZoneSetup.Setup(multizone.KubeZone2)).To(Succeed())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.KubeZone1.TriggerDeleteNamespace(gatewayClientNamespaceOtherMesh)).To(Succeed())
-		Expect(env.KubeZone1.TriggerDeleteNamespace(gatewayClientNamespaceSameMesh)).To(Succeed())
-		Expect(env.KubeZone1.TriggerDeleteNamespace(gatewayTestNamespace)).To(Succeed())
+		Expect(multizone.KubeZone1.TriggerDeleteNamespace(gatewayClientNamespaceOtherMesh)).To(Succeed())
+		Expect(multizone.KubeZone1.TriggerDeleteNamespace(gatewayClientNamespaceSameMesh)).To(Succeed())
+		Expect(multizone.KubeZone1.TriggerDeleteNamespace(gatewayTestNamespace)).To(Succeed())
 
-		Expect(env.KubeZone2.TriggerDeleteNamespace(gatewayClientNamespaceOtherMesh)).To(Succeed())
-		Expect(env.KubeZone2.TriggerDeleteNamespace(gatewayClientNamespaceSameMesh)).To(Succeed())
+		Expect(multizone.KubeZone2.TriggerDeleteNamespace(gatewayClientNamespaceOtherMesh)).To(Succeed())
+		Expect(multizone.KubeZone2.TriggerDeleteNamespace(gatewayClientNamespaceSameMesh)).To(Succeed())
 
-		Expect(env.Global.DeleteMesh(gatewayMesh)).To(Succeed())
-		Expect(env.Global.DeleteMesh(gatewayOtherMesh)).To(Succeed())
+		Expect(multizone.Global.DeleteMesh(gatewayMesh)).To(Succeed())
+		Expect(multizone.Global.DeleteMesh(gatewayOtherMesh)).To(Succeed())
 	})
 
 	Context("when mTLS is enabled", func() {
 		gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
 		Context("Intrazone", func() {
-			zone := &env.KubeZone1
+			zone := &multizone.KubeZone1
 			It("proxies HTTP requests from a different mesh", func() {
 				Eventually(k8s_gateway.SuccessfullyProxyRequestToGateway(
 					*zone, gatewayMesh,
@@ -134,7 +134,7 @@ func CrossMeshGatewayOnMultizone() {
 			})
 		})
 		Context("Crosszone", func() {
-			zone := &env.KubeZone2
+			zone := &multizone.KubeZone2
 			filter := fmt.Sprintf(
 				"cluster.%s_%s.upstream_rq_total",
 				gatewayMesh,

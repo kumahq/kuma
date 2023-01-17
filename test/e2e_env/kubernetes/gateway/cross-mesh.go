@@ -11,9 +11,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
 func misconfiguredMTLSProvidedMeshKubernetes() InstallFunc {
@@ -111,21 +111,21 @@ func CrossMeshGatewayOnKubernetes() {
 			Install(DemoClientK8s(gatewayMesh, gatewayClientNamespaceSameMesh)).
 			Install(DemoClientK8s(gatewayMesh, gatewayClientOutsideMesh)) // this will not be in the mesh
 
-		Expect(setup.Setup(env.Cluster)).To(Succeed())
+		Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())
 
 		Expect(
-			k8s.RunKubectlE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(Config.KumaNamespace), "delete", "secret", "will-be-deleted"),
+			k8s.RunKubectlE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(Config.KumaNamespace), "delete", "secret", "will-be-deleted"),
 		).To(Succeed())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cluster.TriggerDeleteNamespace(gatewayClientNamespaceOtherMesh)).To(Succeed())
-		Expect(env.Cluster.TriggerDeleteNamespace(gatewayClientNamespaceSameMesh)).To(Succeed())
-		Expect(env.Cluster.TriggerDeleteNamespace(gatewayClientOutsideMesh)).To(Succeed())
-		Expect(env.Cluster.TriggerDeleteNamespace(gatewayTestNamespace)).To(Succeed())
-		Expect(env.Cluster.TriggerDeleteNamespace(gatewayTestNamespace2)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(gatewayMesh)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(gatewayOtherMesh)).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(gatewayClientNamespaceOtherMesh)).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(gatewayClientNamespaceSameMesh)).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(gatewayClientOutsideMesh)).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(gatewayTestNamespace)).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(gatewayTestNamespace2)).To(Succeed())
+		Expect(kubernetes.Cluster.DeleteMesh(gatewayMesh)).To(Succeed())
+		Expect(kubernetes.Cluster.DeleteMesh(gatewayOtherMesh)).To(Succeed())
 	})
 
 	Context("when mTLS is enabled", func() {
@@ -146,7 +146,7 @@ func CrossMeshGatewayOnKubernetes() {
 				Install(YamlK8s(crossMeshGatewayInstanceYaml)).
 				Install(YamlK8s(edgeGatewayYaml)).
 				Install(YamlK8s(edgeGatewayInstanceYaml))
-			Expect(setup.Setup(env.Cluster)).To(Succeed())
+			Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())
 		})
 		E2EAfterAll(func() {
 			setup := NewClusterSetup().
@@ -154,13 +154,13 @@ func CrossMeshGatewayOnKubernetes() {
 				Install(DeleteYamlK8s(crossMeshGatewayInstanceYaml)).
 				Install(DeleteYamlK8s(edgeGatewayYaml)).
 				Install(DeleteYamlK8s(edgeGatewayInstanceYaml))
-			Expect(setup.Setup(env.Cluster)).To(Succeed())
+			Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())
 		})
 
 		It("should proxy HTTP requests from a different mesh", func() {
 			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
 			Eventually(SuccessfullyProxyRequestToGateway(
-				env.Cluster, gatewayMesh,
+				kubernetes.Cluster, gatewayMesh,
 				gatewayAddr,
 				gatewayClientNamespaceOtherMesh,
 			), "1m", "1s").Should(Succeed())
@@ -169,7 +169,7 @@ func CrossMeshGatewayOnKubernetes() {
 		It("should proxy HTTP requests from the same mesh", func() {
 			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
 			Eventually(SuccessfullyProxyRequestToGateway(
-				env.Cluster, gatewayMesh,
+				kubernetes.Cluster, gatewayMesh,
 				gatewayAddr,
 				gatewayClientNamespaceSameMesh,
 			), "1m", "1s").Should(Succeed())
@@ -178,7 +178,7 @@ func CrossMeshGatewayOnKubernetes() {
 		It("doesn't allow HTTP requests from outside the mesh", func() {
 			gatewayAddr := gatewayAddress(crossMeshGatewayName, gatewayTestNamespace, crossMeshGatewayPort)
 			Consistently(FailToProxyRequestToGateway(
-				env.Cluster,
+				kubernetes.Cluster,
 				gatewayAddr,
 				gatewayClientOutsideMesh,
 			), "1m", "1s").Should(Succeed())
@@ -187,7 +187,7 @@ func CrossMeshGatewayOnKubernetes() {
 		It("HTTP requests to a non-crossMesh gateway should still be proxied", func() {
 			gatewayAddr := gatewayAddress(edgeGatewayName, gatewayTestNamespace, edgeGatewayPort)
 			Eventually(SuccessfullyProxyRequestToGateway(
-				env.Cluster, gatewayOtherMesh,
+				kubernetes.Cluster, gatewayOtherMesh,
 				gatewayAddr,
 				gatewayClientNamespaceOtherMesh,
 			)).Should(Succeed())
@@ -204,11 +204,11 @@ func CrossMeshGatewayOnKubernetes() {
 				Install(MTLSMeshKubernetes(gatewayMesh2)).
 				Install(YamlK8s(crossMeshGatewayYaml2)).
 				Install(YamlK8s(crossMeshGatewayInstanceYaml2))
-			Expect(setup.Setup(env.Cluster)).To(Succeed())
+			Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())
 
 			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
 			Consistently(FailToProxyRequestToGateway(
-				env.Cluster,
+				kubernetes.Cluster,
 				gatewayAddr,
 				gatewayClientNamespaceOtherMesh,
 			), "30s", "1s").ShouldNot(Succeed())
@@ -216,8 +216,8 @@ func CrossMeshGatewayOnKubernetes() {
 			setup = NewClusterSetup().
 				Install(DeleteYamlK8s(crossMeshGatewayYaml2)).
 				Install(DeleteYamlK8s(crossMeshGatewayInstanceYaml2))
-			Expect(setup.Setup(env.Cluster)).To(Succeed())
-			Expect(env.Cluster.DeleteMesh(gatewayMesh2)).To(Succeed())
+			Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())
+			Expect(kubernetes.Cluster.DeleteMesh(gatewayMesh2)).To(Succeed())
 		})
 	})
 
@@ -284,18 +284,18 @@ spec:
 				Install(YamlK8s(gatewayClass)).
 				Install(YamlK8s(gateway)).
 				Install(YamlK8s(route))
-			Expect(setup.Setup(env.Cluster)).To(Succeed())
+			Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())
 		})
 		E2EAfterAll(func() {
 			setup := NewClusterSetup().
 				Install(DeleteYamlK8s(gateway)).
 				Install(DeleteYamlK8s(route))
-			Expect(setup.Setup(env.Cluster)).To(Succeed())
+			Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())
 		})
 		It("should proxy HTTP requests from a different mesh", func() {
 			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
 			Eventually(SuccessfullyProxyRequestToGateway(
-				env.Cluster, gatewayMesh,
+				kubernetes.Cluster, gatewayMesh,
 				gatewayAddr,
 				gatewayClientNamespaceOtherMesh,
 			), "1m", "1s").Should(Succeed())

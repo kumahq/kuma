@@ -41,3 +41,10 @@ func PodIPOfApp(cluster Cluster, name string, namespace string) (string, error) 
 	}
 	return pods[0].Status.PodIP, nil
 }
+
+func GatewayAPICRDs(cluster Cluster) error {
+	return k8s.RunKubectlE(
+		cluster.GetTesting(),
+		cluster.GetKubectlOptions(),
+		"apply", "-f", "https://github.com/kubernetes-sigs/gateway-api/releases/download/v0.5.1/experimental-install.yaml")
+}

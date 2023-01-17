@@ -14,9 +14,9 @@ import (
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/util/channels"
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
 func Graceful() {
@@ -107,13 +107,13 @@ spec:
 				testserver.WithMesh(mesh),
 				testserver.WithName(name),
 			)).
-			Setup(env.Cluster)
+			Setup(kubernetes.Cluster)
 		Expect(err).To(Succeed())
 
 		Eventually(func(g Gomega) {
 			out, err := k8s.RunKubectlAndGetOutputE(
-				env.Cluster.GetTesting(),
-				env.Cluster.GetKubectlOptions(namespace),
+				kubernetes.Cluster.GetTesting(),
+				kubernetes.Cluster.GetKubectlOptions(namespace),
 				"get", "service", "edge-gateway", "-ojsonpath={.status.loadBalancer.ingress[0].ip}",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -122,12 +122,12 @@ spec:
 		}, "60s", "1s").Should(Succeed(), "could not get a LoadBalancer IP of the Gateway")
 
 		// remove retries to avoid covering failed request
-		Expect(DeleteMeshResources(env.Cluster, mesh, core_mesh.RetryResourceTypeDescriptor)).To(Succeed())
+		Expect(DeleteMeshResources(kubernetes.Cluster, mesh, core_mesh.RetryResourceTypeDescriptor)).To(Succeed())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(mesh))
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(kubernetes.Cluster.DeleteMesh(mesh))
 	})
 
 	requestThroughGateway := func() error {
@@ -178,8 +178,8 @@ spec:
 
 			// then
 			Eventually(func(g Gomega) {
-				g.Expect(WaitNumPods(namespace, 2, given.deploymentName)(env.Cluster)).To(Succeed())
-				g.Expect(WaitPodsAvailable(namespace, given.deploymentName)(env.Cluster)).To(Succeed())
+				g.Expect(WaitNumPods(namespace, 2, given.deploymentName)(kubernetes.Cluster)).To(Succeed())
+				g.Expect(WaitPodsAvailable(namespace, given.deploymentName)(kubernetes.Cluster)).To(Succeed())
 			}, "30s", "1s").Should(Succeed())
 			Expect(failedErr).ToNot(HaveOccurred())
 
@@ -188,7 +188,7 @@ spec:
 
 			// then
 			Eventually(func(g Gomega) {
-				g.Expect(WaitNumPods(namespace, 1, given.deploymentName)(env.Cluster)).To(Succeed())
+				g.Expect(WaitNumPods(namespace, 1, given.deploymentName)(kubernetes.Cluster)).To(Succeed())
 			}, "60s", "1s").Should(Succeed())
 
 			Expect(failedErr).ToNot(HaveOccurred())
@@ -197,8 +197,8 @@ spec:
 			deploymentName: name,
 			scaleFn: func(replicas int) error {
 				return k8s.RunKubectlE(
-					env.Cluster.GetTesting(),
-					env.Cluster.GetKubectlOptions(namespace),
+					kubernetes.Cluster.GetTesting(),
+					kubernetes.Cluster.GetKubectlOptions(namespace),
 					"scale", "deployment", name, "--replicas", strconv.Itoa(replicas),
 				)
 			},
@@ -206,7 +206,7 @@ spec:
 		Entry("a gateway", testCase{
 			deploymentName: "edge-gateway",
 			scaleFn: func(replicas int) error {
-				return env.Cluster.Install(YamlK8s(gatewayInstnace(replicas)))
+				return kubernetes.Cluster.Install(YamlK8s(gatewayInstnace(replicas)))
 			},
 		}),
 	)

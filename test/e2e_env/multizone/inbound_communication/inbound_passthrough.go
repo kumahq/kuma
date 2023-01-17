@@ -4,10 +4,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/multizone/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
 
 func InboundPassthrough() {
@@ -24,8 +24,8 @@ func InboundPassthrough() {
 		// Global
 		Expect(NewClusterSetup().
 			Install(MTLSMeshUniversal(mesh)).
-			Setup(env.Global)).To(Succeed())
-		Expect(WaitForMesh(mesh, env.Zones())).To(Succeed())
+			Setup(multizone.Global)).To(Succeed())
+		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 
 		// Universal Zone 4
 		Expect(NewClusterSetup().
@@ -62,7 +62,7 @@ func InboundPassthrough() {
 				BoundToContainerIp(),
 				WithServiceName("uni-test-server-containerip"),
 			)).
-			Setup(env.UniZone1),
+			Setup(multizone.UniZone1),
 		).To(Succeed())
 
 		// Kubernetes Zone 1
@@ -88,13 +88,13 @@ func InboundPassthrough() {
 				testserver.WithName("k8s-test-server-pod"),
 				testserver.WithEchoArgs("echo", "--instance", "k8s-bound-pod", "--ip", "$(POD_IP)"),
 			)).
-			Setup(env.KubeZone1),
+			Setup(multizone.KubeZone1),
 		).To(Succeed())
 	})
 	E2EAfterAll(func() {
-		Expect(env.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(env.UniZone1.DeleteMeshApps(mesh)).To(Succeed())
-		Expect(env.Global.DeleteMesh(mesh)).To(Succeed())
+		Expect(multizone.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(multizone.UniZone1.DeleteMeshApps(mesh)).To(Succeed())
+		Expect(multizone.Global.DeleteMesh(mesh)).To(Succeed())
 	})
 
 	Context("k8s communication", func() {
@@ -103,7 +103,7 @@ func InboundPassthrough() {
 				// when
 				Eventually(func(g Gomega) {
 					response, err := client.CollectResponse(
-						env.KubeZone1, "demo-client", url,
+						multizone.KubeZone1, "demo-client", url,
 						client.FromKubernetesPod(namespace, "demo-client"),
 					)
 
@@ -122,7 +122,7 @@ func InboundPassthrough() {
 			func(url string) {
 				Consistently(func(g Gomega) {
 					_, err := client.CollectResponse(
-						env.KubeZone1, "demo-client", url,
+						multizone.KubeZone1, "demo-client", url,
 						client.FromKubernetesPod(namespace, "demo-client"),
 					)
 
@@ -140,7 +140,7 @@ func InboundPassthrough() {
 			func(url string, expectedInstance string) {
 				Eventually(func(g Gomega) {
 					// when
-					response, err := client.CollectResponse(env.UniZone1, "uni-demo-client", url)
+					response, err := client.CollectResponse(multizone.UniZone1, "uni-demo-client", url)
 
 					// then
 					g.Expect(err).ToNot(HaveOccurred())
@@ -157,7 +157,7 @@ func InboundPassthrough() {
 			func(url string) {
 				Consistently(func(g Gomega) {
 					// when
-					_, err := client.CollectResponse(env.UniZone1, "uni-demo-client", url)
+					_, err := client.CollectResponse(multizone.UniZone1, "uni-demo-client", url)
 					// then
 					Expect(err).To(HaveOccurred())
 				}).Should(Succeed())

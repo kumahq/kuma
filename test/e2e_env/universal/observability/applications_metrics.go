@@ -8,8 +8,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/expfmt"
 
-	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func MeshWithMetricsEnabeld(mesh string) InstallFunc {
@@ -131,25 +131,25 @@ metrics:
 				WithServiceName("test-server-dp-metrics-localhost"),
 				WithAppendDataplaneYaml(dpLocalhostBoundAggregateConfig),
 			)).
-			Setup(env.Cluster)
+			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 	E2EAfterAll(func() {
-		Expect(env.Cluster.DeleteMeshApps(mesh)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(mesh)).To(Succeed())
-		Expect(env.Cluster.DeleteMeshApps(meshNoAggregate)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(meshNoAggregate)).To(Succeed())
-		Expect(env.Cluster.DeleteMeshApps(meshWithLocalhostBound)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(meshWithLocalhostBound)).To(Succeed())
+		Expect(universal.Cluster.DeleteMeshApps(mesh)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(mesh)).To(Succeed())
+		Expect(universal.Cluster.DeleteMeshApps(meshNoAggregate)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(meshNoAggregate)).To(Succeed())
+		Expect(universal.Cluster.DeleteMeshApps(meshWithLocalhostBound)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(meshWithLocalhostBound)).To(Succeed())
 	})
 
 	It("should scrape metrics defined in mesh and not fail when defined service doesn't exist", func() {
 		// given
-		ip := env.Cluster.GetApp("test-server").GetIP()
+		ip := universal.Cluster.GetApp("test-server").GetIP()
 
 		// when
 		Eventually(func(g Gomega) {
-			stdout, _, err := env.Cluster.Exec("", "", "test-server",
+			stdout, _, err := universal.Cluster.Exec("", "", "test-server",
 				"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(ip, "1234")+"/metrics?filter=concurrency")
 
 			// then
@@ -166,11 +166,11 @@ metrics:
 
 	It("should override mesh configuration with dataplane configuration", func() {
 		// given
-		ip := env.Cluster.GetApp("test-server-override-mesh").GetIP()
+		ip := universal.Cluster.GetApp("test-server-override-mesh").GetIP()
 
 		// when
 		Eventually(func(g Gomega) {
-			stdout, _, err := env.Cluster.Exec("", "", "test-server-override-mesh",
+			stdout, _, err := universal.Cluster.Exec("", "", "test-server-override-mesh",
 				"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(ip, "1234")+"/metrics/overridden?filter=concurrency")
 
 			// then
@@ -197,11 +197,11 @@ metrics:
 
 	It("should use only configuration from dataplane", func() {
 		// given
-		ip := env.Cluster.GetApp("test-server-dp-metrics").GetIP()
+		ip := universal.Cluster.GetApp("test-server-dp-metrics").GetIP()
 
 		// when
 		Eventually(func(g Gomega) {
-			stdout, _, err := env.Cluster.Exec("", "", "test-server-dp-metrics",
+			stdout, _, err := universal.Cluster.Exec("", "", "test-server-dp-metrics",
 				"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(ip, "5555")+"/stats?filter=concurrency")
 
 			// then
@@ -225,11 +225,11 @@ metrics:
 
 	It("should allow to define and expose localhost bound server", func() {
 		// given
-		ip := env.Cluster.GetApp("test-server-dp-metrics-localhost").GetIP()
+		ip := universal.Cluster.GetApp("test-server-dp-metrics-localhost").GetIP()
 
 		// when
 		Eventually(func(g Gomega) {
-			stdout, _, err := env.Cluster.Exec("", "", "test-server-dp-metrics-localhost",
+			stdout, _, err := universal.Cluster.Exec("", "", "test-server-dp-metrics-localhost",
 				"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(ip, "1234")+"/metrics?filter=concurrency")
 
 			// then

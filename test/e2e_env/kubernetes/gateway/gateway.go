@@ -8,10 +8,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
 func Gateway() {
@@ -75,14 +75,14 @@ type: system.kuma.io/secret
 			Install(YamlK8s(httpsSecret())).
 			Install(YamlK8s(meshGateway)).
 			Install(YamlK8s(MkGatewayInstance("simple-gateway", namespace, meshName))).
-			Setup(env.Cluster)
+			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(env.Cluster.TriggerDeleteNamespace(clientNamespace)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(clientNamespace)).To(Succeed())
+		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	route := func(name, path, destination string) string {
@@ -118,14 +118,14 @@ spec:
 					testserver.WithEchoArgs("echo", "--instance", "echo-server"),
 				)).
 				Install(YamlK8s(route("internal-service", "/", "echo-server_simple-gateway_svc_80"))).
-				Setup(env.Cluster)
+				Setup(kubernetes.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should proxy to service via HTTP", func() {
 			Eventually(func(g Gomega) {
 				response, err := client.CollectResponse(
-					env.Cluster, "demo-client",
+					kubernetes.Cluster, "demo-client",
 					"http://simple-gateway.simple-gateway:8080/",
 					client.WithHeader("host", "example.kuma.io"),
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
@@ -139,7 +139,7 @@ spec:
 		It("should proxy to service via HTTPS", func() {
 			Eventually(func(g Gomega) {
 				response, err := client.CollectResponse(
-					env.Cluster, "demo-client",
+					kubernetes.Cluster, "demo-client",
 					"https://simple-gateway.simple-gateway:8081/",
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 					client.Insecure(),
@@ -179,14 +179,14 @@ spec:
 				)).
 				Install(YamlK8s(rt)).
 				Install(YamlK8s(route("rt-echo-server", "/rt", "rt-echo-server_simple-gateway_svc_80"))).
-				Setup(env.Cluster)
+				Setup(kubernetes.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should rate limit", func() {
 			Eventually(func(g Gomega) {
 				response, err := client.CollectResponse(
-					env.Cluster, "demo-client",
+					kubernetes.Cluster, "demo-client",
 					"http://simple-gateway.simple-gateway:8080/rt",
 					client.WithHeader("host", "example.kuma.io"),
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
@@ -222,18 +222,18 @@ spec:
 					testserver.WithEchoArgs("echo", "--instance", "es-echo-server"),
 				)).
 				Install(YamlK8s(externalService)).
-				Setup(env.Cluster)
+				Setup(kubernetes.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should proxy to service via HTTP", func() {
 			route := route("es-echo-server", "/external-service", "external-service")
 			setup := NewClusterSetup().Install(YamlK8s(route))
-			Expect(setup.Setup(env.Cluster)).To(Succeed())
+			Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())
 
 			Eventually(func(g Gomega) {
 				response, err := client.CollectResponse(
-					env.Cluster, "demo-client",
+					kubernetes.Cluster, "demo-client",
 					"http://simple-gateway.simple-gateway:8080/external-service",
 					client.WithHeader("host", "example.kuma.io"),
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
@@ -243,7 +243,7 @@ spec:
 				g.Expect(response.Instance).To(Equal("es-echo-server"))
 			}, "30s", "1s").Should(Succeed())
 
-			Expect(NewClusterSetup().Install(DeleteYamlK8s(route)).Setup(env.Cluster)).To(Succeed())
+			Expect(NewClusterSetup().Install(DeleteYamlK8s(route)).Setup(kubernetes.Cluster)).To(Succeed())
 		})
 
 		It("should handle external-service excluded by tags", func() {
@@ -271,11 +271,11 @@ spec:
 `, "es-echo-server-broken", "/external-service", "external-service")
 
 			setup := NewClusterSetup().Install(YamlK8s(route))
-			Expect(setup.Setup(env.Cluster)).To(Succeed())
+			Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())
 
 			Eventually(func(g Gomega) {
 				response, err := client.CollectFailure(
-					env.Cluster, "demo-client",
+					kubernetes.Cluster, "demo-client",
 					"http://simple-gateway.simple-gateway:8080/external-service",
 					client.WithHeader("host", "example.kuma.io"),
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
@@ -285,7 +285,7 @@ spec:
 				g.Expect(response.ResponseCode).To(Equal(503))
 			}, "30s", "1s").Should(Succeed())
 
-			Expect(NewClusterSetup().Install(DeleteYamlK8s(route)).Setup(env.Cluster)).To(Succeed())
+			Expect(NewClusterSetup().Install(DeleteYamlK8s(route)).Setup(kubernetes.Cluster)).To(Succeed())
 		})
 	})
 }

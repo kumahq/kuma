@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func Matching() {
@@ -23,13 +23,13 @@ func Matching() {
 				WithTransparentProxy(true),
 				WithArgs([]string{"echo", "--instance", "echo-v1"})),
 			).
-			Setup(env.Cluster)
+			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cluster.DeleteMeshApps(mesh)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(mesh)).To(Succeed())
+		Expect(universal.Cluster.DeleteMeshApps(mesh)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(mesh)).To(Succeed())
 	})
 
 	// Added Flake because: https://github.com/kumahq/kuma/issues/4700
@@ -48,7 +48,7 @@ destinations:
 conf:
    abort:
      httpStatus: 401
-     percentage: 100`, mesh))(env.Cluster)).To(Succeed())
+     percentage: 100`, mesh))(universal.Cluster)).To(Succeed())
 
 		Expect(YamlUniversal(fmt.Sprintf(`
 type: FaultInjection
@@ -64,10 +64,10 @@ destinations:
 conf:
    abort:
      httpStatus: 402
-     percentage: 100`, mesh))(env.Cluster)).To(Succeed())
+     percentage: 100`, mesh))(universal.Cluster)).To(Succeed())
 
 		Eventually(func() bool {
-			stdout, _, err := env.Cluster.Exec("", "", "demo-client-1", "curl", "-v", "test-server.mesh")
+			stdout, _, err := universal.Cluster.Exec("", "", "demo-client-1", "curl", "-v", "test-server.mesh")
 			if err != nil {
 				return false
 			}
@@ -75,7 +75,7 @@ conf:
 		}, "60s", "1s").Should(BeTrue())
 
 		Eventually(func() bool {
-			stdout, _, err := env.Cluster.Exec("", "", "demo-client-2", "curl", "-v", "test-server.mesh")
+			stdout, _, err := universal.Cluster.Exec("", "", "demo-client-2", "curl", "-v", "test-server.mesh")
 			if err != nil {
 				return false
 			}

@@ -8,9 +8,9 @@ import (
 	. "github.com/onsi/gomega"
 
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
 func ContainerPatch() {
@@ -61,20 +61,20 @@ spec:
 				testserver.WithMesh(mesh),
 				testserver.WithName(appName),
 			)).
-			Setup(env.Cluster)
+			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 	E2EAfterAll(func() {
-		Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(mesh)).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(kubernetes.Cluster.DeleteMesh(mesh)).To(Succeed())
 	})
 
 	It("should apply container patch to kubernetes configuration", func() {
 		// when
 		// pod without container patch
-		podName, err := PodNameOfApp(env.Cluster, appName, namespace)
+		podName, err := PodNameOfApp(kubernetes.Cluster, appName, namespace)
 		Expect(err).ToNot(HaveOccurred())
-		pod, err := k8s.GetPodE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(namespace), podName)
+		pod, err := k8s.GetPodE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), podName)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -89,9 +89,9 @@ spec:
 
 		// when
 		// pod with patch
-		podName, err = PodNameOfApp(env.Cluster, appNameWithPatch, namespace)
+		podName, err = PodNameOfApp(kubernetes.Cluster, appNameWithPatch, namespace)
 		Expect(err).ToNot(HaveOccurred())
-		pod, err = k8s.GetPodE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(namespace), podName)
+		pod, err = k8s.GetPodE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), podName)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -109,7 +109,7 @@ spec:
 
 	It("should reject ContainerPatch in non-system namespace", func() {
 		// when
-		err := k8s.KubectlApplyFromStringE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(), containerPatch(namespace))
+		err := k8s.KubectlApplyFromStringE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(), containerPatch(namespace))
 
 		// then
 		Expect(err).To(HaveOccurred())

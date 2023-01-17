@@ -15,6 +15,7 @@ resources:
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          normalizePath: true
           routeConfig:
             name: outbound:backend
             requestHeadersToAdd:
@@ -28,12 +29,7 @@ resources:
               name: backend
               routes:
               - match:
-                  prefix: /
-                route:
-                  cluster: backend
-                  timeout: 0s
-              - match:
-                  prefix: /v1
+                  path: /v1
                 requestHeadersToAdd:
                 - append: false
                   header:
@@ -65,8 +61,48 @@ resources:
                 responseHeadersToRemove:
                 - response-header-to-remove
                 route:
-                  weightedClusters:
-                    totalWeight: 0
+                  cluster: backend
+                  timeout: 0s
+              - match:
+                  prefix: /v1/
+                requestHeadersToAdd:
+                - append: false
+                  header:
+                    key: Request-Set-Header
+                    value: set-value
+                - append: false
+                  header:
+                    key: Request-Set-Header-Multiple
+                    value: one-value
+                - append: true
+                  header:
+                    key: Request-Set-Header-Multiple
+                    value: second-value
+                - append: true
+                  header:
+                    key: Request-Add-Header
+                    value: add-value
+                requestHeadersToRemove:
+                - request-header-to-remove
+                responseHeadersToAdd:
+                - append: false
+                  header:
+                    key: Response-Set-Header
+                    value: set-value
+                - append: true
+                  header:
+                    key: Response-Add-Header
+                    value: add-value
+                responseHeadersToRemove:
+                - response-header-to-remove
+                route:
+                  cluster: backend
+                  timeout: 0s
+              - match:
+                  prefix: /
+                route:
+                  cluster: backend
+                  timeout: 0s
           statPrefix: backend
     metadata:
       filterMetadata:
