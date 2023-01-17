@@ -25,11 +25,11 @@ golangci-lint: ## Dev: Runs golangci-lint linter
 	# Starting with golangci-lint v1.47.1, the CI job runs OOM if all of these
 	# linters are used together. The first set is the largest that ran without
 	# OOM.
-	$(GOLANGCI_LINT) run \
+	GOMEMLIMIT=7GiB $(GOLANGCI_LINT) run \
 		--disable-all \
 		--enable bodyclose,contextcheck,errcheck,gci,gocritic,gofmt,gomodguard,govet,importas,ineffassign,misspell,typecheck,unconvert,unparam,whitespace \
 		--timeout=10m -v
-	$(GOLANGCI_LINT) run \
+	GOMEMLIMIT=7GiB $(GOLANGCI_LINT) run \
 		--disable-all \
 		--enable gosimple,nonamedreturns,staticcheck,unused \
 		--timeout=10m -v
