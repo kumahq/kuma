@@ -68,7 +68,7 @@ commands:
     - run:
         name: "Skip the job on the branch"
         command: |
-          if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* ]]; then
+          if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* && $(./tools/ci/has_label.sh ci/run-full-matrix) != "true" ]]; then
             circleci-agent step halt
             exit 0
           fi
