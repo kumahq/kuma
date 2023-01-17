@@ -931,10 +931,35 @@ spec:
                           matches:
                             items:
                               properties:
+                                method:
+                                  enum:
+                                  - CONNECT
+                                  - DELETE
+                                  - GET
+                                  - HEAD
+                                  - OPTIONS
+                                  - PATCH
+                                  - POST
+                                  - PUT
+                                  - TRACE
+                                  type: string
                                 path:
                                   properties:
-                                    prefix:
+                                    type:
+                                      enum:
+                                      - Exact
+                                      - Prefix
+                                      - RegularExpression
                                       type: string
+                                    value:
+                                      description: Exact or prefix matches must be
+                                        an absolute path. A prefix matches only if
+                                        separated by a slash or the entire path.
+                                      minLength: 1
+                                      type: string
+                                  required:
+                                  - type
+                                  - value
                                   type: object
                               type: object
                             type: array
