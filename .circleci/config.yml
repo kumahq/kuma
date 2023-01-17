@@ -197,11 +197,11 @@ jobs:
     executor:
       name: vm-<< parameters.arch >>
     steps:
+    - checkout
     - when:
         condition: {equal: [arm64, << parameters.arch >>]}
         steps:
           - skip_on_branch
-    - checkout
     - run:
         # Label based skip-test runs
         name: "Check if skip"
@@ -381,13 +381,13 @@ jobs:
     executor: # we are using linux/arm64 and linux/amd64 vm's for build
       name: vm-<< parameters.arch >>
     steps:
+    - checkout
     - when:
         condition: {equal: [arm64, << parameters.arch >>]}
         steps:
           - skip_on_branch
     - install_build_tools:
         go_arch: <<parameters.arch>>
-    - checkout
     - restore_cache:
         keys:
         # prefer the exact match
