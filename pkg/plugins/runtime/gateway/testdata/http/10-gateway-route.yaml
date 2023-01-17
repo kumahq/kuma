@@ -1,5 +1,33 @@
 Clusters:
   Resources:
+    absent-header-match-327fbb6df03159bd:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
+      connectTimeout: 5s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
+      name: absent-header-match-327fbb6df03159bd
+      outlierDetection:
+        enforcingConsecutive5xx: 0
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
+      perConnectionBufferLimitBytes: 32768
+      type: EDS
+      typedExtensionProtocolOptions:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          commonHttpProtocolOptions:
+            idleTimeout: 3600s
+          explicitHttpConfig:
+            httpProtocolOptions: {}
     exact-header-match-d7c910a2e5559eda:
       circuitBreakers:
         thresholds:
@@ -13,6 +41,34 @@ Clusters:
           ads: {}
           resourceApiVersion: V3
       name: exact-header-match-d7c910a2e5559eda
+      outlierDetection:
+        enforcingConsecutive5xx: 0
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
+      perConnectionBufferLimitBytes: 32768
+      type: EDS
+      typedExtensionProtocolOptions:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          commonHttpProtocolOptions:
+            idleTimeout: 3600s
+          explicitHttpConfig:
+            httpProtocolOptions: {}
+    present-header-match-b3e34381a1779ec6:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
+      connectTimeout: 5s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
+      name: present-header-match-b3e34381a1779ec6
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -58,6 +114,8 @@ Clusters:
             httpProtocolOptions: {}
 Endpoints:
   Resources:
+    absent-header-match-327fbb6df03159bd:
+      clusterName: absent-header-match-327fbb6df03159bd
     exact-header-match-d7c910a2e5559eda:
       clusterName: exact-header-match-d7c910a2e5559eda
       endpoints:
@@ -74,6 +132,8 @@ Endpoints:
                 kuma.io/protocol: http
               envoy.transport_socket_match:
                 kuma.io/protocol: http
+    present-header-match-b3e34381a1779ec6:
+      clusterName: present-header-match-b3e34381a1779ec6
     regex-header-match-70561bb2da83c870:
       clusterName: regex-header-match-70561bb2da83c870
       endpoints:
@@ -232,6 +292,52 @@ Routes:
             weightedClusters:
               clusters:
               - name: exact-header-match-d7c910a2e5559eda
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
+                weight: 1
+              totalWeight: 1
+        - match:
+            headers:
+            - name: X-I-AM-PRESENT
+              presentMatch: true
+            prefix: /
+          route:
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: present-header-match-b3e34381a1779ec6
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
+                weight: 1
+              totalWeight: 1
+        - match:
+            headers:
+            - name: X-I-AM-ABSENT
+              presentMatch: false
+            prefix: /
+          route:
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: absent-header-match-327fbb6df03159bd
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags
