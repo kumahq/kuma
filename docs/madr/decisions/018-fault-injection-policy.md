@@ -118,7 +118,7 @@ from:
      kind: Mesh|MeshSubset|MeshService|MeshServiceSubset
      name: ...
 ```
-The only issue is `MeshHealthCheck` which doesn't set the `x-kuma-tags` flag but we decided to set the calue of `x-kuma-tags` while doing health check requests.
+We'll use `x-kuma-tags` headers to select traffic from origin. `MeshHealthCheck` will need to send these headers by implementing: https://github.com/kumahq/kuma/issues/5718
 
 #### To level
 
