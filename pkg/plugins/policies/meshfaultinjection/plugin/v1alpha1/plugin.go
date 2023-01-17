@@ -1,12 +1,16 @@
 package v1alpha1
 
 import (
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+
 	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/matchers"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
+	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/plugin/xds"
+	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
@@ -25,6 +29,77 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
-	log.Info("apply is not implemented")
+	if proxy.Dataplane == nil {
+		// MeshRateLimit policy is applied only on DPP
+		// todo: add support for ExternalService and ZoneEgress, https://github.com/kumahq/kuma/issues/5050
+		return nil
+	}
+	policies, ok := proxy.Policies.Dynamic[api.MeshFaultInjectionType]
+	if !ok {
+		return nil
+	}
+	listeners := policies_xds.GatherListeners(rs)
+
+	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy); err != nil {
+		return err
+	}
+	return nil
+}
+
+func applyToInbounds(
+	fromRules core_xds.FromRules,
+	inboundListeners map[core_xds.InboundListener]*envoy_listener.Listener,
+	proxy *core_xds.Proxy,
+) error {
+	for _, inbound := range proxy.Dataplane.Spec.GetNetworking().GetInbound() {
+		iface := proxy.Dataplane.Spec.Networking.ToInboundInterface(inbound)
+		protocol := core_mesh.ParseProtocol(inbound.GetProtocol())
+		if _, exists := proxy.Policies.FaultInjections[iface]; exists {
+			continue
+		}
+
+		listenerKey := core_xds.InboundListener{
+			Address: iface.DataplaneIP,
+			Port:    iface.DataplanePort,
+		}
+		listener, ok := inboundListeners[listenerKey]
+		if !ok {
+			continue
+		}
+		rules, ok := fromRules.Rules[listenerKey]
+		if !ok {
+			continue
+		}
+
+		if err := configure(rules, listener, protocol); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func configure(
+	fromRules core_xds.Rules,
+	listener *envoy_listener.Listener,
+	protocol core_mesh.Protocol,
+) error {
+	switch protocol {
+	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
+		for _, rule := range fromRules {
+			conf := rule.Conf.(api.Conf)
+			from := rule.Subset
+
+			configurer := plugin_xds.Configurer{
+				FaultInjections: conf.Http,
+				From:            from,
+			}
+
+			for _, chain := range listener.FilterChains {
+				if err := configurer.ConfigureHttpListener(chain); err != nil {
+					return err
+				}
+			}
+		}
+	}
 	return nil
 }

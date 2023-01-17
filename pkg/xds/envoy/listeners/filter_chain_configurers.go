@@ -89,14 +89,8 @@ func TcpProxyWithMetadata(statsName string, clusters ...envoy_common.Cluster) Fi
 }
 
 func FaultInjection(faultInjections ...*core_mesh.FaultInjectionResource) FilterChainBuilderOpt {
-	faultInjectionConfs := []*v3.FaultInjectionConfiguration{}
-	for _, fi := range faultInjections {
-		if fi.GetSpec() != nil {
-			faultInjectionConfs = append(faultInjectionConfs, v3.FaultInjectionConfigurationFromProto(fi.Spec))
-		}
-	}
 	return AddFilterChainConfigurer(&v3.FaultInjectionConfigurer{
-		FaultInjections: faultInjectionConfs,
+		FaultInjections: faultInjections,
 	})
 }
 

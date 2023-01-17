@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/matching"
 	"github.com/kumahq/kuma/test/e2e_env/universal/membership"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshaccesslog"
+	"github.com/kumahq/kuma/test/e2e_env/universal/meshfaultinjection"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshhealthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshproxypatch"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshratelimit"
@@ -88,3 +89,4 @@ var _ = Describe("Projected Service Account Token", projectedsatoken.ProjectedSe
 var _ = Describe("Compatibility", compatibility.UniversalCompatibility, Label("arm-not-supported"), Ordered)
 var _ = Describe("Resilience", resilience.ResilienceStandaloneUniversal, Ordered)
 var _ = Describe("Leader Election", resilience.LeaderElectionPostgres, Ordered)
+var _ = Describe("MeshFaultInjection", meshfaultinjection.Policy, Ordered)
