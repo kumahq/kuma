@@ -13,4 +13,4 @@ func TestE2E(t *testing.T) {
 	test.RunE2ESpecs(t, "E2E VirtualOutbound Suite")
 }
 
-var _ = Describe("Test VirtualOutbound on K8s", Label("job-1"), virtualoutbound.VirtualOutboundOnK8s)
+var _ = Describe("Test VirtualOutbound on K8s", Label("job-2"), virtualoutbound.VirtualOutboundOnK8s)
