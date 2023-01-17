@@ -401,13 +401,12 @@ to:
         rateLimitedBackOff:
           resetHeaders:
             - name: ""
+            - format: "UnixTimestamp"
 `,
 				expected: `
 violations:
   - field: spec.to[0].default.conf.http.rateLimitedBackOff.resetHeaders[0].name
-    message: must be defined
-  - field: spec.to[0].default.conf.http.rateLimitedBackOff.resetHeaders[0].format
-    message: 'must be only one of: Seconds, UnixTimestamp'`,
+    message: must be defined`,
 			}),
 		)
 	})

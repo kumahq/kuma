@@ -225,6 +225,7 @@ type RateLimitedBackOff struct {
 	MaxInterval *k8s.Duration `json:"maxInterval,omitempty"`
 }
 
+// +kubebuilder:validation:Enum=Seconds;UnixTimestamp
 type RateLimitFormat string
 
 var (
@@ -243,6 +244,6 @@ var RateLimitFormatEnumToEnvoyValue = map[RateLimitFormat]envoy_route.RetryPolic
 type ResetHeader struct {
 	// The Name of the reset header.
 	Name string `json:"name,omitempty"`
-	// The format of the reset header, either "Seconds" or "UnixTimestamp".
+	// The format of the reset header.
 	Format RateLimitFormat `json:"format,omitempty"`
 }
