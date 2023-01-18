@@ -54,6 +54,7 @@ func validateRules(rules []Rule) validators.ValidationError {
 	for i, rule := range rules {
 		path := validators.Root().Index(i)
 		errs.AddErrorAt(path.Field("matches"), validateMatches(rule.Matches))
+		errs.AddErrorAt(path.Field("filters"), validateFilters(rule.Default.Filters))
 	}
 
 	return errs
@@ -117,6 +118,30 @@ func validateQueryParams(matches []QueryParamsMatch) validators.ValidationError 
 			errs.AddViolationAt(path, fmt.Sprintf("multiple entries for name %s", match.Name))
 		}
 		matchedNames[match.Name] = struct{}{}
+	}
+
+	return errs
+}
+
+func validateFilters(filters *[]Filter) validators.ValidationError {
+	var errs validators.ValidationError
+
+	if filters == nil {
+		return errs
+	}
+
+	for i, filter := range *filters {
+		path := validators.Root().Index(i)
+		switch filter.Type {
+		case RequestHeaderModifierType:
+			if filter.RequestHeaderModifier == nil {
+				errs.AddViolationAt(path.Field("requestHeaderModifier"), validators.MustBeDefined)
+			}
+		case ResponseHeaderModifierType:
+			if filter.ResponseHeaderModifier == nil {
+				errs.AddViolationAt(path.Field("responseHeaderModifier"), validators.MustBeDefined)
+			}
+		}
 	}
 
 	return errs

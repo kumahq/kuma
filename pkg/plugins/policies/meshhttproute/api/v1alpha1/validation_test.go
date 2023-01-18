@@ -86,6 +86,26 @@ to:
           name: foo
           value: baz
 `),
+		ErrorCase("invalid filter",
+			validators.Violation{
+				Field:   `spec.to[0].rules[0].filters[0].requestHeaderModifier`,
+				Message: validators.MustBeDefined,
+			}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: frontend
+to:
+- targetRef:
+    kind: MeshService
+    name: frontend
+  rules:
+    - default:
+        filters:
+          - type: RequestHeaderModifier
+`),
 	)
 	DescribeValidCases(
 		api.NewMeshHTTPRouteResource,
