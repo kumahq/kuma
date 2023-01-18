@@ -142,7 +142,7 @@ rules:
   {{- if .Values.experimental.gatewayAPI }}
       - meshgatewayconfigs
   {{- end }}
-  {{- range $idx, $policy := .Values.plugins.policies }}
+  {{- range $policy, $empty := .Values.plugins.policies }}
       - {{ $policy }}
   {{- end}}
     verbs:
