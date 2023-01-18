@@ -14,6 +14,8 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
+	v1alpha1_k8s "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/k8s/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
@@ -73,6 +75,7 @@ var _ = Describe("KubernetesStore", func() {
 		kubeTypes := k8s_registry.NewTypeRegistry()
 		Expect(kubeTypes.RegisterObjectType(&mesh_proto.TrafficRoute{}, &mesh_k8s.TrafficRoute{})).To(Succeed())
 		Expect(kubeTypes.RegisterObjectType(&mesh_proto.Mesh{}, &mesh_k8s.Mesh{})).To(Succeed())
+		Expect(kubeTypes.RegisterObjectType(&v1alpha1.MeshTrace{}, &v1alpha1_k8s.MeshTrace{})).To(Succeed())
 		Expect(kubeTypes.RegisterListType(&mesh_proto.TrafficRoute{}, &mesh_k8s.TrafficRouteList{})).To(Succeed())
 		Expect(kubeTypes.RegisterListType(&mesh_proto.Mesh{}, &mesh_k8s.MeshList{})).To(Succeed())
 
@@ -433,6 +436,24 @@ var _ = Describe("KubernetesStore", func() {
 
 			// then
 			Expect(err).To(MatchError(store.ErrorResourceNotFound(core_mesh.TrafficRouteType, name, mesh)))
+		})
+
+		It("should return an error if namespaced resource is not in the right format", func() {
+
+			// when
+			err := ks.Get(context.Background(), v1alpha1.NewMeshTraceResource(), store.GetByKey(name, mesh))
+
+			// then
+			Expect(err.Error()).To(ContainSubstring("must include namespace after the dot"))
+		})
+
+		It("should return an error if resource name is empty", func() {
+
+			// when
+			err := ks.Get(context.Background(), v1alpha1.NewMeshTraceResource(), store.GetByKey("", mesh))
+
+			// then
+			Expect(err.Error()).To(Equal("invalid format: name can't be empty"))
 		})
 
 		It("should return an existing resource", func() {

@@ -51,6 +51,17 @@ func ValidateValueGreaterThanZero(path PathBuilder, value int32) ValidationError
 	return err
 }
 
+func ValidateValueGreaterThanZeroOrNil(path PathBuilder, value *int32) ValidationError {
+	var err ValidationError
+	if value == nil {
+		return err
+	}
+	if *value <= 0 {
+		err.AddViolationAt(path, MustBeDefinedAndGreaterThanZero)
+	}
+	return err
+}
+
 func ValidateIntPercentage(path PathBuilder, percentage *int32) ValidationError {
 	var err ValidationError
 	if percentage == nil {
@@ -61,7 +72,6 @@ func ValidateIntPercentage(path PathBuilder, percentage *int32) ValidationError 
 	if *percentage < 0 || *percentage > 100 {
 		err.AddViolationAt(path, HasToBeInUintPercentageRange)
 	}
-
 	return err
 }
 

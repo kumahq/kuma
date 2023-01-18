@@ -128,6 +128,7 @@ func (c *client) startKDSMultiplex(ctx context.Context, log logr.Logger, conn *g
 		return
 	}
 	bufferSize := len(registry.Global().ObjectTypes())
+	// nolint:contextcheck
 	session := NewSession("global", stream, uint32(bufferSize), c.config.MsgSendTimeout.Duration)
 	if err := c.callbacks.OnSessionStarted(session); err != nil {
 		log.Error(err, "closing KDS stream after callback error")

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"reflect"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -144,4 +145,16 @@ func IsResourceNotFound(err error) bool {
 
 func IsResourcePreconditionFailed(err error) bool {
 	return err != nil && strings.HasPrefix(err.Error(), "Resource precondition failed")
+}
+
+type PreconditionError struct {
+	Reason string
+}
+
+func (a *PreconditionError) Error() string {
+	return "invalid format: " + a.Reason
+}
+
+func (a *PreconditionError) Is(err error) bool {
+	return reflect.TypeOf(a) == reflect.TypeOf(err)
 }

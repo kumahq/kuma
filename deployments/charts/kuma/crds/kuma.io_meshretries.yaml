@@ -127,7 +127,10 @@ spec:
                                     properties:
                                       format:
                                         description: The format of the reset header,
-                                          either "Seconds" or "UnixTimestamp".
+                                          either Seconds or UnixTimestamp.
+                                        enum:
+                                        - Seconds
+                                        - UnixTimestamp
                                         type: string
                                       name:
                                         description: The Name of the reset header.
@@ -137,8 +140,8 @@ spec:
                               type: object
                             retryOn:
                               description: 'RetryOn is a list of conditions which
-                                will cause a retry. Available values are: [CANCELED,
-                                DEADLINE_EXCEEDED, INTERNAL, RESOURCE_EXHAUSTED, UNAVAILABLE].'
+                                will cause a retry. Available values are: [Canceled,
+                                DeadlineExceeded, Internal, ResourceExhausted, Unavailable].'
                               items:
                                 type: string
                               type: array
@@ -196,7 +199,10 @@ spec:
                                     properties:
                                       format:
                                         description: The format of the reset header,
-                                          either "Seconds" or "UnixTimestamp".
+                                          either Seconds or UnixTimestamp.
+                                        enum:
+                                        - Seconds
+                                        - UnixTimestamp
                                         type: string
                                       name:
                                         description: The Name of the reset header.
@@ -243,13 +249,12 @@ spec:
                               type: array
                             retryOn:
                               description: 'RetryOn is a list of conditions which
-                                will cause a retry. Available values are: [5XX, GATEWAY_ERROR,
-                                RESET, RETRIABLE_4XX, CONNECT_FAILURE, ENVOY_RATELIMITED,
-                                REFUSED_STREAM, HTTP3_POST_CONNECT_FAILURE, HTTP_METHOD_CONNECT,
-                                HTTP_METHOD_DELETE, HTTP_METHOD_GET, HTTP_METHOD_HEAD,
-                                HTTP_METHOD_OPTIONS, HTTP_METHOD_PATCH, HTTP_METHOD_POST,
-                                HTTP_METHOD_PUT, HTTP_METHOD_TRACE]. Also, any HTTP
-                                status code (500, 503, etc).'
+                                will cause a retry. Available values are: [5XX, GatewayError,
+                                Reset, Retriable4xx, ConnectFailure, EnvoyRatelimited,
+                                RefusedStream, Http3PostConnectFailure, HttpMethodConnect,
+                                HttpMethodDelete, HttpMethodGet, HttpMethodHead, HttpMethodOptions,
+                                HttpMethodPatch, HttpMethodPost, HttpMethodPut, HttpMethodTrace].
+                                Also, any HTTP status code (500, 503, etc).'
                               items:
                                 type: string
                               type: array

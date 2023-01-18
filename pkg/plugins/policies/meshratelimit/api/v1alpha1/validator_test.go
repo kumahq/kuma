@@ -35,8 +35,9 @@ from:
       local:
         http:
           disabled: false
-          requests: 100
-          interval: 10s
+          requestRate:
+            num: 100
+            interval: 10s
           onRateLimit:
             status: 123
             headers:
@@ -45,8 +46,9 @@ from:
               append: true
         tcp:
           disabled: false
-          connections: 100
-          interval: 100ms`),
+          connectionRate:
+            num: 100
+            interval: 100ms`),
 			Entry("full example, only http", `
 targetRef:
   kind: MeshService
@@ -57,8 +59,9 @@ from:
     default:
       local:
         http:
-          requests: 100
-          interval: 10s
+          requestRate:
+            num: 100
+            interval: 10s
           onRateLimit:
             status: 123
             headers:
@@ -76,8 +79,9 @@ from:
       local:
         tcp:
           disabled: false
-          connections: 100
-          interval: 100ms`),
+          connectionRate:
+            num: 100
+            interval: 100ms`),
 			Entry("minimal example", `
 targetRef:
   kind: MeshService
@@ -88,11 +92,13 @@ from:
     default:
       local:
         http:
-          requests: 100
-          interval: 10s
+          requestRate:
+            num: 100
+            interval: 10s
         tcp:
-          connections: 100
-          interval: 100ms`),
+          connectionRate:
+            num: 100
+            interval: 100ms`),
 			Entry("disable rate limit", `
 targetRef:
   kind: MeshService
@@ -146,48 +152,15 @@ from:
   - targetRef:
       kind: MeshGatewayRoute
     default:
-      http:
-        requestTimeout: 1s`,
+      local:
+        http:
+          requestRate:
+            num: 10
+            interval: 10s`,
 				expected: `
 violations:
   - field: spec.from[0].targetRef.kind
     message: value is not supported`}),
-			Entry("requests and interval needs to be defined", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-- targetRef:
-    kind: Mesh
-  default:
-    local:
-      http:
-        disabled: false`,
-				expected: `
-violations:
-  - field: spec.from[0].default.local.http.requests
-    message: must be greater than 0
-  - field: spec.from[0].default.local.http.interval
-    message: 'must be greater than: 50ms'`}),
-			Entry("connections and interval needs to be defined", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: web-frontend
-from:
-- targetRef:
-    kind: Mesh
-  default:
-    local:
-      tcp:
-        disabled: false`,
-				expected: `
-violations:
-  - field: spec.from[0].default.local.tcp.connections
-    message: must be greater than 0
-  - field: spec.from[0].default.local.tcp.interval
-    message: 'must be greater than: 50ms'`}),
 			Entry("not allow invalid values", testCase{
 				inputYaml: `
 targetRef:
@@ -199,18 +172,22 @@ from:
   default:
     local:
       http:
-        interval: 49ms
+        requestRate:
+          num: 0
+          interval: 49ms
       tcp:
-        interval: 49ms`,
+        connectionRate:
+          num: 0
+          interval: 49ms`,
 				expected: `
 violations:
-  - field: spec.from[0].default.local.http.requests
+  - field: spec.from[0].default.local.http.requestRate.num
     message: must be greater than 0
-  - field: spec.from[0].default.local.http.interval
+  - field: spec.from[0].default.local.http.requestRate.interval
     message: 'must be greater than: 50ms'
-  - field: spec.from[0].default.local.tcp.connections
+  - field: spec.from[0].default.local.tcp.connectionRate.num
     message: must be greater than 0
-  - field: spec.from[0].default.local.tcp.interval
+  - field: spec.from[0].default.local.tcp.connectionRate.interval
     message: 'must be greater than: 50ms'`}),
 			Entry("not allow from to be MeshService for tcp", testCase{
 				inputYaml: `
@@ -224,8 +201,9 @@ from:
   default:
     local:
       tcp:
-        connections: 100
-        interval: 500ms`,
+        connectionRate:
+          num: 100
+          interval: 500ms`,
 				expected: `
 violations:
   - field: spec.from[0].targetRef.kind
@@ -242,11 +220,13 @@ from:
   default:
     local:
       http:
-        requests: 100
-        interval: 500ms
+        requestRate:
+          num: 100
+          interval: 500ms
       tcp:
-        connections: 100
-        interval: 500ms`,
+        connectionRate:
+          num: 100
+          interval: 500ms`,
 				expected: `
 violations:
   - field: spec.from[0].targetRef.kind
@@ -263,11 +243,13 @@ from:
   default:
     local:
       http:
-        requests: 100
-        interval: 500ms
+        requestRate:
+          num: 100
+          interval: 500ms
       tcp:
-        connections: 100
-        interval: 500ms`,
+        connectionRate:
+          num: 100
+          interval: 500ms`,
 				expected: `
 violations:
   - field: spec.targetRef.kind
@@ -286,12 +268,70 @@ from:
   default:
     local:
       http:
-        requests: 100
-        interval: 500ms`,
+        requestRate:
+          num: 100
+          interval: 500ms`,
 				expected: `
 violations:
   - field: spec.from[0].targetRef.kind
     message: value is not supported`}),
+			Entry("empty default", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshGatewayRoute
+  name: web-frontend
+from:
+- targetRef:
+    kind: Mesh
+  default: {}`,
+				expected: `
+violations:
+  - field: spec.from[0].default.local
+    message: must be defined`}),
+			Entry("neither tcp or http defined", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshGatewayRoute
+  name: web-frontend
+from:
+- targetRef:
+    kind: Mesh
+  default: 
+    local: {}`,
+				expected: `
+violations:
+  - field: spec.from[0].default.local
+    message: 'must have at least one defined: tcp, http'`}),
+			Entry("empty tcp", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+- targetRef:
+    kind: Mesh
+  default: 
+    local: 
+      tcp: {}`,
+				expected: `
+violations:
+  - field: spec.from[0].default.local.tcp
+    message: 'must have at least one defined: disabled, connectionRate'`}),
+			Entry("empty http", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+- targetRef:
+    kind: Mesh
+  default: 
+    local: 
+      http: {}`,
+				expected: `
+violations:
+  - field: spec.from[0].default.local.http
+    message: 'must have at least one defined: disabled, requestRate, onRateLimit'`}),
 		)
 	})
 })

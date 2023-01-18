@@ -19,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_xds "github.com/kumahq/kuma/pkg/test/xds"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -96,7 +97,7 @@ var _ = Describe("MeshRetry", func() {
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
 							HTTP: &api.HTTP{
-								NumRetries:    test.PointerOf[uint32](1),
+								NumRetries:    pointer.To[uint32](1),
 								PerTryTimeout: test.ParseDuration("2s"),
 								BackOff: &api.BackOff{
 									BaseInterval: test.ParseDuration("3s"),
@@ -116,23 +117,23 @@ var _ = Describe("MeshRetry", func() {
 									},
 								},
 								RetryOn: &[]api.HTTPRetryOn{
-									api.ALL_5XX,
-									api.GATEWAY_ERROR,
-									api.RESET,
-									api.RETRIABLE_4XX,
-									api.CONNECT_FAILURE,
-									api.ENVOY_RATELIMITED,
-									api.REFUSED_STREAM,
-									api.HTTP3_POST_CONNECT_FAILURE,
-									api.HTTP_METHOD_CONNECT,
-									api.HTTP_METHOD_DELETE,
-									api.HTTP_METHOD_GET,
-									api.HTTP_METHOD_HEAD,
-									api.HTTP_METHOD_OPTIONS,
-									api.HTTP_METHOD_PATCH,
-									api.HTTP_METHOD_POST,
-									api.HTTP_METHOD_PUT,
-									api.HTTP_METHOD_TRACE,
+									api.All5xx,
+									api.GatewayError,
+									api.Reset,
+									api.Retriable4xx,
+									api.ConnectFailure,
+									api.EnvoyRatelimited,
+									api.RefusedStream,
+									api.Http3PostConnectFailure,
+									api.HttpMethodConnect,
+									api.HttpMethodDelete,
+									api.HttpMethodGet,
+									api.HttpMethodHead,
+									api.HttpMethodOptions,
+									api.HttpMethodPatch,
+									api.HttpMethodPost,
+									api.HttpMethodPut,
+									api.HttpMethodTrace,
 									"429",
 								},
 								RetriableResponseHeaders: &[]common_api.HeaderMatcher{
@@ -176,7 +177,7 @@ var _ = Describe("MeshRetry", func() {
 						}},
 						Conf: api.Conf{
 							GRPC: &api.GRPC{
-								NumRetries:    test.PointerOf[uint32](11),
+								NumRetries:    pointer.To[uint32](11),
 								PerTryTimeout: test.ParseDuration("12s"),
 								BackOff: &api.BackOff{
 									BaseInterval: test.ParseDuration("13s"),
@@ -196,11 +197,11 @@ var _ = Describe("MeshRetry", func() {
 									},
 								},
 								RetryOn: &[]api.GRPCRetryOn{
-									api.CANCELED,
-									api.DEADLINE_EXCEEDED,
-									api.INTERNAL,
-									api.RESOURCE_EXHAUSTED,
-									api.UNAVAILABLE,
+									api.Canceled,
+									api.DeadlineExceeded,
+									api.Internal,
+									api.ResourceExhausted,
+									api.Unavailable,
 								},
 							},
 						},
@@ -221,7 +222,7 @@ var _ = Describe("MeshRetry", func() {
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
 							TCP: &api.TCP{
-								MaxConnectAttempt: test.PointerOf[uint32](21),
+								MaxConnectAttempt: pointer.To[uint32](21),
 							},
 						},
 					},

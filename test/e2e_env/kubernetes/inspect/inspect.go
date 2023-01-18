@@ -28,6 +28,12 @@ func Inspect() {
 		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
+	It("should return bad request on invalid name(#4985)", func() {
+		_, err := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", "-m", meshName, "dummy-name", "--type=config-dump")
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring(`Bad Request (name "dummy-name" must include namespace after the dot, ex. "name.namespace")`))
+	})
+
 	It("should return envoy config_dump", func() {
 		// Synchronize on the dataplanes coming up.
 		Eventually(func(g Gomega) {

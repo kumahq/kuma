@@ -13,6 +13,6 @@ func TestE2E(t *testing.T) {
 	test.RunE2ESpecs(t, "E2E Helm Suite")
 }
 
-var _ = Describe("Test Zone and Global with Helm chart", Label("job-3"), Label("arm-not-supported"), helm.ZoneAndGlobalWithHelmChart, Ordered)
-var _ = Describe("Test App deployment with Helm chart", Label("job-3"), Label("arm-not-supported"), helm.AppDeploymentWithHelmChart)
-var _ = Describe("Test upgrading with Helm chart", Label("job-3"), Label("arm-not-supported"), helm.UpgradingWithHelmChart)
+var _ = Describe("Test Zone and Global with Helm chart", Label("job-2"), Label("arm-not-supported"), helm.ZoneAndGlobalWithHelmChart, Ordered)
+var _ = Describe("Test App deployment with Helm chart", Label("job-2"), Label("arm-not-supported"), helm.AppDeploymentWithHelmChart)
+var _ = Describe("Test upgrading with Helm chart", Label("job-2"), Label("arm-not-supported"), helm.UpgradingWithHelmChart)
