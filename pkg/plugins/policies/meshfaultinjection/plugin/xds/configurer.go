@@ -9,11 +9,11 @@ import (
 	envoy_http_fault "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/fault/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
-	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
@@ -90,7 +90,7 @@ func (c *Configurer) createHeaders(from core_xds.Subset) *envoy_route.HeaderMatc
 	regexOR := tags.RegexOR(selectorRegexs...)
 
 	return &envoy_route.HeaderMatcher{
-		Name: envoy_routes.TagsHeaderName,
+		Name: tags.TagsHeaderName,
 		HeaderMatchSpecifier: &envoy_route.HeaderMatcher_SafeRegexMatch{
 			SafeRegexMatch: &envoy_type_matcher.RegexMatcher{
 				EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{

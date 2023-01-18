@@ -13,7 +13,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
+	meshfaultinjection_api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
+	meshratelimit_api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
@@ -211,7 +212,7 @@ spec:
 			).To(Succeed())
 		})
 		AfterAll(func() {
-			Expect(DeleteMeshResources(universal.Cluster, mesh, api.MeshRateLimitResourceTypeDescriptor)).To(Succeed())
+			Expect(DeleteMeshResources(universal.Cluster, mesh, meshratelimit_api.MeshRateLimitResourceTypeDescriptor)).To(Succeed())
 		})
 
 		It("should be rate limited", func() {
@@ -226,6 +227,47 @@ spec:
 
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.ResponseCode).To(Equal(428))
+			}, "30s", "1s").Should(Succeed())
+		})
+	})
+
+	Context("when a MeshFaultInjection is configured", func() {
+		BeforeAll(func() {
+			Expect(
+				universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
+type: MeshFaultInjection
+mesh: "%s"
+name: mesh-fault-injection-all-sources
+spec:
+  targetRef:
+    kind: MeshService
+    name: edge-gateway
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          - abort:
+              httpStatus: 421
+              percentage: 100`, mesh))),
+			).To(Succeed())
+		})
+		AfterAll(func() {
+			Expect(DeleteMeshResources(universal.Cluster, mesh, meshfaultinjection_api.MeshFaultInjectionResourceTypeDescriptor)).To(Succeed())
+		})
+
+		It("should return custom error code for all requests", func() {
+			gatewayAddr := GatewayAddressPort("gateway-proxy", gatewayPort)
+			Logf("expecting 421 response from %q", gatewayAddr)
+			Eventually(func(g Gomega) {
+				target := fmt.Sprintf("http://%s/%s",
+					gatewayAddr, path.Join("test", url.PathEscape(GinkgoT().Name())),
+				)
+
+				response, err := client.CollectFailure(universal.Cluster, "gateway-client", target, client.WithHeader("Host", "example.kuma.io"))
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(421))
 			}, "30s", "1s").Should(Succeed())
 		})
 	})

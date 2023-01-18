@@ -20,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	test_xds "github.com/kumahq/kuma/pkg/test/xds"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -125,16 +126,16 @@ var _ = Describe("MeshFaultInjection", func() {
 							Http: []api.FaultInjectionConf{
 								api.FaultInjectionConf{
 									Abort: &api.AbortConf{
-										HttpStatus: test.PointerOf(int32(444)),
-										Percentage: test.PointerOf(int32(12)),
+										HttpStatus: pointer.To(int32(444)),
+										Percentage: pointer.To(int32(12)),
 									},
 									Delay: &api.DelayConf{
 										Value:      test.ParseDuration("55s"),
-										Percentage: test.PointerOf(int32(55)),
+										Percentage: pointer.To(int32(55)),
 									},
 									ResponseBandwidth: &api.ResponseBandwidthConf{
-										Limit:      test.PointerOf("111mbps"),
-										Percentage: test.PointerOf(int32(62)),
+										Limit:      pointer.To("111mbps"),
+										Percentage: pointer.To(int32(62)),
 									},
 								},
 							},
@@ -146,16 +147,16 @@ var _ = Describe("MeshFaultInjection", func() {
 							Http: []api.FaultInjectionConf{
 								api.FaultInjectionConf{
 									Abort: &api.AbortConf{
-										HttpStatus: test.PointerOf(int32(444)),
-										Percentage: test.PointerOf(int32(12)),
+										HttpStatus: pointer.To(int32(444)),
+										Percentage: pointer.To(int32(12)),
 									},
 									Delay: &api.DelayConf{
 										Value:      test.ParseDuration("55s"),
-										Percentage: test.PointerOf(int32(55)),
+										Percentage: pointer.To(int32(55)),
 									},
 									ResponseBandwidth: &api.ResponseBandwidthConf{
-										Limit:      test.PointerOf("111mbps"),
-										Percentage: test.PointerOf(int32(62)),
+										Limit:      pointer.To("111mbps"),
+										Percentage: pointer.To(int32(62)),
 									},
 								},
 							},
@@ -177,16 +178,16 @@ var _ = Describe("MeshFaultInjection", func() {
 						Http: []api.FaultInjectionConf{
 							api.FaultInjectionConf{
 								Abort: &api.AbortConf{
-									HttpStatus: test.PointerOf(int32(444)),
-									Percentage: test.PointerOf(int32(12)),
+									HttpStatus: pointer.To(int32(444)),
+									Percentage: pointer.To(int32(12)),
 								},
 								Delay: &api.DelayConf{
 									Value:      test.ParseDuration("55s"),
-									Percentage: test.PointerOf(int32(55)),
+									Percentage: pointer.To(int32(55)),
 								},
 								ResponseBandwidth: &api.ResponseBandwidthConf{
-									Limit:      test.PointerOf("111mbps"),
-									Percentage: test.PointerOf(int32(62)),
+									Limit:      pointer.To("111mbps"),
+									Percentage: pointer.To(int32(62)),
 								},
 							},
 						},

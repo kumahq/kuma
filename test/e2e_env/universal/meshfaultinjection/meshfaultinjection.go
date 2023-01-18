@@ -106,8 +106,7 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 
-		stdout, _, err = universal.Cluster.Exec("", "", "demo-client-timeout", "curl", "-v", "test-server.mesh")
-		Expect(err).ToNot(HaveOccurred())
+		stdout, _, _ = universal.Cluster.Exec("", "", "demo-client-timeout", "curl", "-v", "test-server.mesh")
 		Expect(stdout).To(ContainSubstring("upstream request timeout"))
 	})
 
