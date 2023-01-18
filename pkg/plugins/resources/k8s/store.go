@@ -205,11 +205,18 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 }
 
 func k8sNameNamespace(coreName string, scope k8s_model.Scope) (string, string, error) {
+	if coreName == "" {
+		return "", "", &store.PreconditionError{Reason: "name can't be empty"}
+	}
 	switch scope {
 	case k8s_model.ScopeCluster:
 		return coreName, "", nil
 	case k8s_model.ScopeNamespace:
-		return util_k8s.CoreNameToK8sName(coreName)
+		name, ns, err := util_k8s.CoreNameToK8sName(coreName)
+		if err != nil {
+			return "", "", &store.PreconditionError{Reason: err.Error()}
+		}
+		return name, ns, nil
 	default:
 		return "", "", errors.Errorf("unknown scope %s", scope)
 	}

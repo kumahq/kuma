@@ -57,7 +57,7 @@ func applyToOutbounds(rules core_xds.ToRules, outboundClusters map[string]*envoy
 	for cluster, serviceName := range targetedClusters {
 		protocol := policies_xds.InferProtocol(routing, serviceName)
 
-		if err := configure(rules.Rules, core_xds.MeshService(serviceName), protocol, cluster); err != nil {
+		if err := configure(dataplane, rules.Rules, core_xds.MeshService(serviceName), protocol, cluster); err != nil {
 			return err
 		}
 	}
@@ -65,7 +65,7 @@ func applyToOutbounds(rules core_xds.ToRules, outboundClusters map[string]*envoy
 	return nil
 }
 
-func configure(rules core_xds.Rules, subset core_xds.Subset, protocol core_mesh.Protocol, cluster *envoy_cluster.Cluster) error {
+func configure(dataplane *core_mesh.DataplaneResource, rules core_xds.Rules, subset core_xds.Subset, protocol core_mesh.Protocol, cluster *envoy_cluster.Cluster) error {
 	var conf api.Conf
 	if computed := rules.Compute(subset); computed != nil {
 		conf = computed.Conf.(api.Conf)
@@ -76,6 +76,7 @@ func configure(rules core_xds.Rules, subset core_xds.Subset, protocol core_mesh.
 	configurer := plugin_xds.Configurer{
 		Conf:     conf,
 		Protocol: protocol,
+		Tags:     dataplane.Spec.TagSet(),
 	}
 
 	if err := configurer.Configure(cluster); err != nil {

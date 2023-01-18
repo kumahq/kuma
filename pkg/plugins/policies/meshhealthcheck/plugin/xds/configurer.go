@@ -2,21 +2,26 @@ package xds
 
 import (
 	"encoding/hex"
+	"time"
 
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 type Configurer struct {
 	Conf     api.Conf
 	Protocol core_mesh.Protocol
+	Tags     v1alpha1.MultiValueTagSet
 }
 
 type HCProtocol string
@@ -26,6 +31,15 @@ const (
 	HCProtocolHTTP = "http"
 	HCProtocolGRPC = "grpc"
 	HCNone         = "none"
+)
+
+const (
+	defaultInterval           = 1 * time.Minute
+	defaultTimeout            = 15 * time.Second
+	defaultUnhealthyThreshold = int32(5)
+	defaultHealthyThreshold   = int32(1)
+
+	defaultHTTPPath = "/"
 )
 
 func (e *Configurer) Configure(cluster *envoy_cluster.Cluster) error {
@@ -48,7 +62,7 @@ func (e *Configurer) Configure(cluster *envoy_cluster.Cluster) error {
 		case HCProtocolTCP:
 			healthChecker = tcpHealthCheck(tcp)
 		case HCProtocolHTTP:
-			healthChecker = httpHealthCheck(e.Protocol, http)
+			healthChecker = httpHealthCheck(e.Protocol, http, e.Tags)
 		case HCProtocolGRPC:
 			healthChecker = grpcHealthCheck(grpc)
 		}
@@ -62,23 +76,23 @@ func (e *Configurer) Configure(cluster *envoy_cluster.Cluster) error {
 
 func selectHealthCheckType(protocol core_mesh.Protocol, tcp *api.TcpHealthCheck, http *api.HttpHealthCheck, grpc *api.GrpcHealthCheck) HCProtocol {
 	// match exact
-	if (protocol == core_mesh.ProtocolHTTP || protocol == core_mesh.ProtocolHTTP2) && http != nil && !http.Disabled {
+	if (protocol == core_mesh.ProtocolHTTP || protocol == core_mesh.ProtocolHTTP2) && http != nil && !pointer.Deref(http.Disabled) {
 		return HCProtocolHTTP
 	}
-	if protocol == core_mesh.ProtocolGRPC && grpc != nil && !grpc.Disabled {
+	if protocol == core_mesh.ProtocolGRPC && grpc != nil && !pointer.Deref(grpc.Disabled) {
 		return HCProtocolGRPC
 	}
-	if protocol == core_mesh.ProtocolTCP && tcp != nil && !tcp.Disabled {
+	if protocol == core_mesh.ProtocolTCP && tcp != nil && !pointer.Deref(tcp.Disabled) {
 		return HCProtocolTCP
 	}
 
 	// match fallback HTTP
-	if (protocol == core_mesh.ProtocolHTTP || protocol == core_mesh.ProtocolHTTP2) && http != nil && http.Disabled && tcp != nil && !tcp.Disabled {
+	if (protocol == core_mesh.ProtocolHTTP || protocol == core_mesh.ProtocolHTTP2) && http != nil && pointer.Deref(http.Disabled) && tcp != nil && !pointer.Deref(tcp.Disabled) {
 		return HCProtocolTCP
 	}
 
 	// match fallback GRPC
-	if protocol == core_mesh.ProtocolGRPC && grpc != nil && grpc.Disabled && tcp != nil && !tcp.Disabled {
+	if protocol == core_mesh.ProtocolGRPC && grpc != nil && pointer.Deref(grpc.Disabled) && tcp != nil && !pointer.Deref(tcp.Disabled) {
 		return HCProtocolTCP
 	}
 
@@ -92,22 +106,28 @@ func mapUInt32ToInt64Range(value uint32) *envoy_type.Int64Range {
 	}
 }
 
-func mapHttpHeaders(headers *[]api.HeaderValueOption) []*envoy_core.HeaderValueOption {
+func mapHttpHeaders(headers *[]api.HeaderValue, srcTags v1alpha1.MultiValueTagSet) []*envoy_core.HeaderValueOption {
 	var envoyHeaders []*envoy_core.HeaderValueOption
+	if len(srcTags) > 0 {
+		envoyHeaders = append(envoyHeaders, &envoy_core.HeaderValueOption{
+			Header: &envoy_core.HeaderValue{
+				Key:   tags.TagsHeaderName,
+				Value: tags.Serialize(srcTags),
+			},
+		})
+	}
 	if headers != nil {
 		for _, header := range *headers {
-			hvo := &envoy_core.HeaderValueOption{
+			envoyHeader := &envoy_core.HeaderValueOption{
 				Header: &envoy_core.HeaderValue{
-					Key:   header.Header.Key,
-					Value: header.Header.Value,
+					Key:   header.Key,
+					Value: header.Value,
 				},
 			}
-
 			if header.Append != nil {
-				hvo.Append = util_proto.Bool(*header.Append)
+				envoyHeader.Append = util_proto.Bool(*header.Append)
 			}
-
-			envoyHeaders = append(envoyHeaders, hvo)
+			envoyHeaders = append(envoyHeaders, envoyHeader)
 		}
 	}
 	return envoyHeaders
@@ -143,10 +163,7 @@ func tcpHealthCheck(
 	}
 }
 
-func httpHealthCheck(
-	protocol core_mesh.Protocol,
-	httpConf *api.HttpHealthCheck,
-) *envoy_core.HealthCheck_HttpHealthCheck_ {
+func httpHealthCheck(protocol core_mesh.Protocol, httpConf *api.HttpHealthCheck, srcTags v1alpha1.MultiValueTagSet) *envoy_core.HealthCheck_HttpHealthCheck_ {
 	var expectedStatuses []*envoy_type.Int64Range
 	if httpConf.ExpectedStatuses != nil {
 		for _, status := range *httpConf.ExpectedStatuses {
@@ -162,9 +179,14 @@ func httpHealthCheck(
 		codecClientType = envoy_type.CodecClientType_HTTP2
 	}
 
+	path := defaultHTTPPath
+	if httpConf.Path != nil {
+		path = *httpConf.Path
+	}
+
 	httpHealthCheck := envoy_core.HealthCheck_HttpHealthCheck{
-		Path:                httpConf.Path,
-		RequestHeadersToAdd: mapHttpHeaders(httpConf.RequestHeadersToAdd),
+		Path:                path,
+		RequestHeadersToAdd: mapHttpHeaders(httpConf.RequestHeadersToAdd, srcTags),
 		ExpectedStatuses:    expectedStatuses,
 		CodecClientType:     codecClientType,
 	}
@@ -177,13 +199,11 @@ func httpHealthCheck(
 func grpcHealthCheck(
 	grpcConf *api.GrpcHealthCheck,
 ) *envoy_core.HealthCheck_GrpcHealthCheck_ {
-	grpcHealthCheck := envoy_core.HealthCheck_GrpcHealthCheck{
-		ServiceName: grpcConf.ServiceName,
-		Authority:   grpcConf.Authority,
-	}
-
 	return &envoy_core.HealthCheck_GrpcHealthCheck_{
-		GrpcHealthCheck: &grpcHealthCheck,
+		GrpcHealthCheck: &envoy_core.HealthCheck_GrpcHealthCheck{
+			ServiceName: pointer.Deref(grpcConf.ServiceName),
+			Authority:   pointer.Deref(grpcConf.Authority),
+		},
 	}
 }
 
@@ -223,14 +243,34 @@ func failTrafficOnPanic(cluster *envoy_cluster.Cluster, value *bool) {
 }
 
 func buildHealthCheck(conf api.Conf) *envoy_core.HealthCheck {
+	interval := defaultInterval
+	if conf.Interval != nil {
+		interval = conf.Interval.Duration
+	}
+
+	timeout := defaultTimeout
+	if conf.Timeout != nil {
+		timeout = conf.Timeout.Duration
+	}
+
+	unhealthyThreshold := defaultUnhealthyThreshold
+	if conf.UnhealthyThreshold != nil {
+		unhealthyThreshold = *conf.UnhealthyThreshold
+	}
+
+	healthyThreshold := defaultHealthyThreshold
+	if conf.HealthyThreshold != nil {
+		healthyThreshold = *conf.HealthyThreshold
+	}
+
 	hc := &envoy_core.HealthCheck{
 		HealthChecker: &envoy_core.HealthCheck_TcpHealthCheck_{
 			TcpHealthCheck: &envoy_core.HealthCheck_TcpHealthCheck{},
 		},
-		Interval:           util_proto.Duration(conf.Interval.Duration),
-		Timeout:            util_proto.Duration(conf.Timeout.Duration),
-		UnhealthyThreshold: util_proto.UInt32(uint32(conf.UnhealthyThreshold)),
-		HealthyThreshold:   util_proto.UInt32(uint32(conf.HealthyThreshold)),
+		Interval:           util_proto.Duration(interval),
+		Timeout:            util_proto.Duration(timeout),
+		UnhealthyThreshold: util_proto.UInt32(uint32(unhealthyThreshold)),
+		HealthyThreshold:   util_proto.UInt32(uint32(healthyThreshold)),
 	}
 
 	if conf.InitialJitter != nil {
