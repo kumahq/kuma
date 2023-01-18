@@ -193,6 +193,9 @@ spec:
                                           minimum: 1
                                           type: integer
                                         scheme:
+                                          enum:
+                                          - http
+                                          - https
                                           type: string
                                         statusCode:
                                           default: 302

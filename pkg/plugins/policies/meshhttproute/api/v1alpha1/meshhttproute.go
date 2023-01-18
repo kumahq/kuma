@@ -124,6 +124,7 @@ type PreciseHostname string
 type PortNumber int32
 
 type RequestRedirect struct {
+	// +kubebuilder:validation:Enum=http;https
 	Scheme   *string          `json:"scheme,omitempty"`
 	Hostname *PreciseHostname `json:"hostname,omitempty"`
 	// Port is the port to be used in the value of the `Location`
