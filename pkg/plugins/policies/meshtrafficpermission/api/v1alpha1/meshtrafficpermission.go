@@ -27,18 +27,18 @@ type From struct {
 
 type Action string
 
-// ALLOW action lets the requests pass
-var ALLOW Action = "ALLOW"
+// Allow action lets the requests pass
+var Allow Action = "Allow"
 
-// DENY action blocks the requests
-var DENY Action = "DENY"
+// Deny action blocks the requests
+var Deny Action = "Deny"
 
-// ALLOW_WITH_SHADOW_DENY action lets the requests pass but emits logs as if
+// AllowWithShadowDeny action lets the requests pass but emits logs as if
 // requests are denied
-var ALLOW_WITH_SHADOW_DENY Action = "ALLOW_WITH_SHADOW_DENY"
+var AllowWithShadowDeny Action = "AllowWithShadowDeny"
 
 type Conf struct {
 	// Action defines a behavior for the specified group of clients:
-	// +kubebuilder:validation:Enum=ALLOW;DENY;ALLOW_WITH_SHADOW_DENY
+	// +kubebuilder:validation:Enum=Allow;Deny;AllowWithShadowDeny
 	Action Action `json:"action,omitempty"`
 }

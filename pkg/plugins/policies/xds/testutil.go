@@ -21,10 +21,6 @@ func ResourceArrayShouldEqual(resources core_xds.ResourceList, expected []string
 	Expect(len(resources)).To(Equal(len(expected)))
 }
 
-func PointerOf[T any](value T) *T {
-	return &value
-}
-
 type NameConfigurer struct {
 	Name string
 }

@@ -16,7 +16,7 @@ spec:
           kuma.io/zone: us-east
           version: v2
       default:
-        action: ALLOW
+        action: Allow
 ---
 type: MeshTrafficPermission
 mesh: mesh-1
@@ -30,4 +30,4 @@ spec:
         tags:
           kuma.io/zone: us-east
       default:
-        action: DENY
+        action: Deny

@@ -293,6 +293,10 @@ func makeRouteMatch(ruleMatch *mesh_proto.MeshGatewayRoute_HttpRoute_Match) rout
 		case mesh_proto.MeshGatewayRoute_HttpRoute_Match_Header_REGEX:
 			match.RegexHeader = append(
 				match.RegexHeader, route.Pair(h.GetName(), h.GetValue()))
+		case mesh_proto.MeshGatewayRoute_HttpRoute_Match_Header_ABSENT:
+			match.AbsentHeader = append(match.AbsentHeader, h.Name)
+		case mesh_proto.MeshGatewayRoute_HttpRoute_Match_Header_PRESENT:
+			match.PresentHeader = append(match.PresentHeader, h.Name)
 		}
 	}
 

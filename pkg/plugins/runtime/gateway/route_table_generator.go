@@ -103,6 +103,14 @@ func GenerateVirtualHost(
 			routeBuilder.Configure(route.RouteMatchRegexHeader(m.Key, m.Value))
 		}
 
+		for _, m := range e.Match.PresentHeader {
+			routeBuilder.Configure(route.RouteMatchPresentHeader(m, true))
+		}
+
+		for _, m := range e.Match.AbsentHeader {
+			routeBuilder.Configure(route.RouteMatchPresentHeader(m, false))
+		}
+
 		for _, m := range e.Match.ExactQuery {
 			routeBuilder.Configure(route.RouteMatchExactQuery(m.Key, m.Value))
 		}

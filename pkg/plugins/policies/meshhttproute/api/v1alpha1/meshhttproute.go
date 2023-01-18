@@ -6,7 +6,6 @@ import (
 )
 
 // MeshHTTPRoute
-// +kuma:policy:skip_registration=true
 // +kuma:policy:singular_display_name=Mesh HTTP Route
 //
 // This policy defines its own `GetDefault` method so that it can have the given
@@ -70,7 +69,44 @@ type RuleConf struct {
 	BackendRefs *[]BackendRef `json:"backendRefs,omitempty"`
 }
 
+// +kubebuilder:validation:Enum=RequestHeaderModifier;ResponseHeaderModifier
+type FilterType string
+
+const (
+	RequestHeaderModifierType  FilterType = "RequestHeaderModifier"
+	ResponseHeaderModifierType FilterType = "ResponseHeaderModifier"
+)
+
+// +kubebuilder:validation:MinLength=1
+// +kubebuilder:validation:MaxLength=256
+// +kubebuilder:validation:Pattern=`^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$`
+type HeaderName string
+
+type HeaderKeyValue struct {
+	Name  HeaderName `json:"name"`
+	Value string     `json:"value"`
+}
+
+// Only one action is supported per header name.
+// Configuration to set or add multiple values for a header must use RFC 7230
+// header value formatting, separating each value with a comma.
+type HeaderModifier struct {
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=16
+	Set []HeaderKeyValue `json:"set,omitempty"`
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=16
+	Add []HeaderKeyValue `json:"add,omitempty"`
+	// +kubebuilder:validation:MaxItems=16
+	Remove []string `json:"remove,omitempty"`
+}
+
 type Filter struct {
+	Type                   FilterType      `json:"type"`
+	RequestHeaderModifier  *HeaderModifier `json:"requestHeaderModifier,omitempty"`
+	ResponseHeaderModifier *HeaderModifier `json:"responseHeaderModifier,omitempty"`
 }
 
 type BackendRef struct {

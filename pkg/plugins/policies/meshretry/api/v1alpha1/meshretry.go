@@ -44,88 +44,88 @@ type TCP struct {
 
 type HTTPRetryOn string
 
-var HTTP_METHOD_PREFIX HTTPRetryOn = "HttpMethod"
+var HttpMethodPrefix HTTPRetryOn = "HttpMethod"
 
 var (
-	// ALL_5XX means Envoy will attempt a retry if the upstream server responds with
+	// All5xx means Envoy will attempt a retry if the upstream server responds with
 	// any 5xx response code, or does not respond at all (disconnect/reset/read timeout).
-	// (Includes CONNECT_FAILURE and REFUSED_STREAM)
-	ALL_5XX HTTPRetryOn = "5xx"
+	// (Includes ConnectFailure and RefusedStream)
+	All5xx HTTPRetryOn = "5xx"
 
-	// GATEWAY_ERROR is similar to the 5XX policy but will only retry requests
+	// GatewayError is similar to the 5XX policy but will only retry requests
 	// that result in a 502, 503, or 504.
-	GATEWAY_ERROR HTTPRetryOn = "GatewayError"
+	GatewayError HTTPRetryOn = "GatewayError"
 
-	// RESET means Envoy will attempt a retry if the upstream server does not respond at all
+	// Reset means Envoy will attempt a retry if the upstream server does not respond at all
 	// (disconnect/reset/read timeout.)
-	RESET HTTPRetryOn = "Reset"
+	Reset HTTPRetryOn = "Reset"
 
-	// RETRIABLE_4XX means Envoy will attempt a retry if the upstream server responds with
+	// Retriable4xx means Envoy will attempt a retry if the upstream server responds with
 	// a retriable 4xx response code. Currently, the only response code in this category is 409.
-	RETRIABLE_4XX HTTPRetryOn = "Retriable4xx"
+	Retriable4xx HTTPRetryOn = "Retriable4xx"
 
-	// CONNECT_FAILURE means Envoy will attempt a retry if a request is failed because of
+	// ConnectFailure means Envoy will attempt a retry if a request is failed because of
 	// a connection failure to the upstream server (connect timeout, etc.). (Included in 5XX)
-	CONNECT_FAILURE HTTPRetryOn = "ConnectFailure"
+	ConnectFailure HTTPRetryOn = "ConnectFailure"
 
-	// ENVOY_RATELIMITED means Envoy will retry if the header x-envoy-ratelimited is present.
-	ENVOY_RATELIMITED HTTPRetryOn = "EnvoyRatelimited"
+	// EnvoyRatelimited means Envoy will retry if the header x-envoy-ratelimited is present.
+	EnvoyRatelimited HTTPRetryOn = "EnvoyRatelimited"
 
-	// REFUSED_STREAM means Envoy will attempt a retry if the upstream server resets the stream
-	// with a REFUSED_STREAM error code. This reset type indicates that a request is safe to retry.
+	// RefusedStream means Envoy will attempt a retry if the upstream server resets the stream
+	// with a RefusedStream error code. This reset type indicates that a request is safe to retry.
 	// (Included in 5XX)
-	REFUSED_STREAM HTTPRetryOn = "RefusedStream"
+	RefusedStream HTTPRetryOn = "RefusedStream"
 
-	// HTTP3_POST_CONNECT_FAILURE means Envoy will attempt a retry if a request is sent over
+	// Http3PostConnectFailure means Envoy will attempt a retry if a request is sent over
 	// HTTP/3 to the upstream server and failed after getting connected.
-	HTTP3_POST_CONNECT_FAILURE HTTPRetryOn = "Http3PostConnectFailure"
+	Http3PostConnectFailure HTTPRetryOn = "Http3PostConnectFailure"
 
-	// HTTP_METHOD_CONNECT means Envoy will attempt a retry if the used HTTP method is CONNECT.
-	HTTP_METHOD_CONNECT = HTTP_METHOD_PREFIX + "Connect"
+	// HttpMethodConnect means Envoy will attempt a retry if the used HTTP method is CONNECT.
+	HttpMethodConnect = HttpMethodPrefix + "Connect"
 
-	// HTTP_METHOD_DELETE means Envoy will attempt a retry if the used HTTP method is DELETE.
-	HTTP_METHOD_DELETE = HTTP_METHOD_PREFIX + "Delete"
+	// HttpMethodDelete means Envoy will attempt a retry if the used HTTP method is DELETE.
+	HttpMethodDelete = HttpMethodPrefix + "Delete"
 
-	// HTTP_METHOD_GET means Envoy will attempt a retry if the used HTTP method is GET.
-	HTTP_METHOD_GET = HTTP_METHOD_PREFIX + "Get"
+	// HttpMethodGet means Envoy will attempt a retry if the used HTTP method is GET.
+	HttpMethodGet = HttpMethodPrefix + "Get"
 
-	// HTTP_METHOD_HEAD means Envoy will attempt a retry if the used HTTP method is HEAD.
-	HTTP_METHOD_HEAD = HTTP_METHOD_PREFIX + "Head"
+	// HttpMethodHead means Envoy will attempt a retry if the used HTTP method is HEAD.
+	HttpMethodHead = HttpMethodPrefix + "Head"
 
-	// HTTP_METHOD_OPTIONS means Envoy will attempt a retry if the used HTTP method is OPTIONS.
-	HTTP_METHOD_OPTIONS = HTTP_METHOD_PREFIX + "Options"
+	// HttpMethodOptions means Envoy will attempt a retry if the used HTTP method is OPTIONS.
+	HttpMethodOptions = HttpMethodPrefix + "Options"
 
-	// HTTP_METHOD_PATCH means Envoy will attempt a retry if the used HTTP method is PATCH.
-	HTTP_METHOD_PATCH = HTTP_METHOD_PREFIX + "Patch"
+	// HttpMethodPatch means Envoy will attempt a retry if the used HTTP method is PATCH.
+	HttpMethodPatch = HttpMethodPrefix + "Patch"
 
-	// HTTP_METHOD_POST means Envoy will attempt a retry if the used HTTP method is POST.
-	HTTP_METHOD_POST = HTTP_METHOD_PREFIX + "Post"
+	// HttpMethodPost means Envoy will attempt a retry if the used HTTP method is POST.
+	HttpMethodPost = HttpMethodPrefix + "Post"
 
-	// HTTP_METHOD_PUT means Envoy will attempt a retry if the used HTTP method is PUT.
-	HTTP_METHOD_PUT = HTTP_METHOD_PREFIX + "Put"
+	// HttpMethodPut means Envoy will attempt a retry if the used HTTP method is PUT.
+	HttpMethodPut = HttpMethodPrefix + "Put"
 
-	// HTTP_METHOD_TRACE means Envoy will attempt a retry if the used HTTP method is TRACE.
-	HTTP_METHOD_TRACE = HTTP_METHOD_PREFIX + "Trace"
+	// HttpMethodTrace means Envoy will attempt a retry if the used HTTP method is TRACE.
+	HttpMethodTrace = HttpMethodPrefix + "Trace"
 )
 
 var HttpRetryOnEnumToEnvoyValue = map[HTTPRetryOn]string{
-	ALL_5XX:                    "5xx",
-	GATEWAY_ERROR:              "gateway-error",
-	RESET:                      "reset",
-	RETRIABLE_4XX:              "retriable-4xx",
-	CONNECT_FAILURE:            "connect-failure",
-	ENVOY_RATELIMITED:          "envoy-ratelimited",
-	REFUSED_STREAM:             "refused-stream",
-	HTTP3_POST_CONNECT_FAILURE: "http3-post-connect-failure",
-	HTTP_METHOD_CONNECT:        "CONNECT",
-	HTTP_METHOD_DELETE:         "DELETE",
-	HTTP_METHOD_GET:            "GET",
-	HTTP_METHOD_HEAD:           "HEAD",
-	HTTP_METHOD_OPTIONS:        "OPTIONS",
-	HTTP_METHOD_PATCH:          "PATCH",
-	HTTP_METHOD_POST:           "POST",
-	HTTP_METHOD_PUT:            "PUT",
-	HTTP_METHOD_TRACE:          "TRACE",
+	All5xx:                  "5xx",
+	GatewayError:            "gateway-error",
+	Reset:                   "reset",
+	Retriable4xx:            "retriable-4xx",
+	ConnectFailure:          "connect-failure",
+	EnvoyRatelimited:        "envoy-ratelimited",
+	RefusedStream:           "refused-stream",
+	Http3PostConnectFailure: "http3-post-connect-failure",
+	HttpMethodConnect:       "CONNECT",
+	HttpMethodDelete:        "DELETE",
+	HttpMethodGet:           "GET",
+	HttpMethodHead:          "HEAD",
+	HttpMethodOptions:       "OPTIONS",
+	HttpMethodPatch:         "PATCH",
+	HttpMethodPost:          "POST",
+	HttpMethodPut:           "PUT",
+	HttpMethodTrace:         "TRACE",
 }
 
 type HTTP struct {
@@ -141,10 +141,10 @@ type HTTP struct {
 	// when the upstream returns one of the headers configured.
 	RateLimitedBackOff *RateLimitedBackOff `json:"rateLimitedBackOff,omitempty"`
 	// RetryOn is a list of conditions which will cause a retry. Available values are:
-	// [5XX, GATEWAY_ERROR, RESET, RETRIABLE_4XX, CONNECT_FAILURE, ENVOY_RATELIMITED,
-	// REFUSED_STREAM, HTTP3_POST_CONNECT_FAILURE, HTTP_METHOD_CONNECT, HTTP_METHOD_DELETE,
-	// HTTP_METHOD_GET, HTTP_METHOD_HEAD, HTTP_METHOD_OPTIONS, HTTP_METHOD_PATCH,
-	// HTTP_METHOD_POST, HTTP_METHOD_PUT, HTTP_METHOD_TRACE].
+	// [5XX, GatewayError, Reset, Retriable4xx, ConnectFailure, EnvoyRatelimited,
+	// RefusedStream, Http3PostConnectFailure, HttpMethodConnect, HttpMethodDelete,
+	// HttpMethodGet, HttpMethodHead, HttpMethodOptions, HttpMethodPatch,
+	// HttpMethodPost, HttpMethodPut, HttpMethodTrace].
 	// Also, any HTTP status code (500, 503, etc).
 	RetryOn *[]HTTPRetryOn `json:"retryOn,omitempty"`
 	// RetriableResponseHeaders is an HTTP response headers that trigger a retry
@@ -159,33 +159,33 @@ type HTTP struct {
 type GRPCRetryOn string
 
 var (
-	// CANCELED means Envoy will attempt a retry if the gRPC status code in
+	// Canceled means Envoy will attempt a retry if the gRPC status code in
 	// the response headers is “cancelled” (1)
-	CANCELED GRPCRetryOn = "Canceled"
+	Canceled GRPCRetryOn = "Canceled"
 
-	// DEADLINE_EXCEEDED Envoy will attempt a retry if the gRPC status code in
+	// DeadlineExceeded Envoy will attempt a retry if the gRPC status code in
 	// the response headers is “deadline-exceeded” (4)
-	DEADLINE_EXCEEDED GRPCRetryOn = "DeadlineExceeded"
+	DeadlineExceeded GRPCRetryOn = "DeadlineExceeded"
 
-	// INTERNAL Envoy will attempt to retry if the gRPC status code in the
+	// Internal Envoy will attempt to retry if the gRPC status code in the
 	// response headers is “internal” (13)
-	INTERNAL GRPCRetryOn = "Internal"
+	Internal GRPCRetryOn = "Internal"
 
-	// RESOURCE_EXHAUSTED means Envoy will attempt a retry if the gRPC status code
+	// ResourceExhausted means Envoy will attempt a retry if the gRPC status code
 	// in the response headers is “resource-exhausted” (8)
-	RESOURCE_EXHAUSTED GRPCRetryOn = "ResourceExhausted"
+	ResourceExhausted GRPCRetryOn = "ResourceExhausted"
 
-	// UNAVAILABLE means Envoy will attempt a retry if the gRPC status code in
+	// Unavailable means Envoy will attempt a retry if the gRPC status code in
 	// the response headers is “unavailable” (14)
-	UNAVAILABLE GRPCRetryOn = "Unavailable"
+	Unavailable GRPCRetryOn = "Unavailable"
 )
 
 var GrpcRetryOnEnumToEnvoyValue = map[GRPCRetryOn]string{
-	CANCELED:           "canceled",
-	DEADLINE_EXCEEDED:  "deadline-exceeded",
-	INTERNAL:           "internal",
-	RESOURCE_EXHAUSTED: "resource-exhausted",
-	UNAVAILABLE:        "unavailable",
+	Canceled:          "canceled",
+	DeadlineExceeded:  "deadline-exceeded",
+	Internal:          "internal",
+	ResourceExhausted: "resource-exhausted",
+	Unavailable:       "unavailable",
 }
 
 type GRPC struct {
@@ -201,7 +201,7 @@ type GRPC struct {
 	// when the upstream returns one of the headers configured.
 	RateLimitedBackOff *RateLimitedBackOff `json:"rateLimitedBackOff,omitempty"`
 	// RetryOn is a list of conditions which will cause a retry. Available values are:
-	// [CANCELED, DEADLINE_EXCEEDED, INTERNAL, RESOURCE_EXHAUSTED, UNAVAILABLE].
+	// [Canceled, DeadlineExceeded, Internal, ResourceExhausted, Unavailable].
 	RetryOn *[]GRPCRetryOn `json:"retryOn,omitempty"`
 }
 
@@ -225,24 +225,25 @@ type RateLimitedBackOff struct {
 	MaxInterval *k8s.Duration `json:"maxInterval,omitempty"`
 }
 
+// +kubebuilder:validation:Enum=Seconds;UnixTimestamp
 type RateLimitFormat string
 
 var (
-	// SECONDS is an integer that represents the number of seconds to wait before retrying.
-	SECONDS RateLimitFormat = "Seconds"
+	// Seconds is an integer that represents the number of seconds to wait before retrying.
+	Seconds RateLimitFormat = "Seconds"
 
-	// UNIX_TIMESTAMP is an integer that represents the point in time at which to retry, as a Unix timestamp in seconds.
-	UNIX_TIMESTAMP RateLimitFormat = "UnixTimestamp"
+	// UnixTimestamp is an integer that represents the point in time at which to retry, as a Unix timestamp in seconds.
+	UnixTimestamp RateLimitFormat = "UnixTimestamp"
 )
 
 var RateLimitFormatEnumToEnvoyValue = map[RateLimitFormat]envoy_route.RetryPolicy_ResetHeaderFormat{
-	SECONDS:        envoy_route.RetryPolicy_SECONDS,
-	UNIX_TIMESTAMP: envoy_route.RetryPolicy_UNIX_TIMESTAMP,
+	Seconds:       envoy_route.RetryPolicy_SECONDS,
+	UnixTimestamp: envoy_route.RetryPolicy_UNIX_TIMESTAMP,
 }
 
 type ResetHeader struct {
 	// The Name of the reset header.
 	Name string `json:"name,omitempty"`
-	// The format of the reset header, either "Seconds" or "UnixTimestamp".
+	// The format of the reset header, either Seconds or UnixTimestamp.
 	Format RateLimitFormat `json:"format,omitempty"`
 }

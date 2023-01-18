@@ -844,6 +844,7 @@ spec:
                           format: int32
                           type: integer
                         healthyThreshold:
+                          default: 1
                           description: Number of consecutive healthy checks before
                             considering a host healthy.
                           format: int32
@@ -864,6 +865,7 @@ spec:
                                 type: integer
                               type: array
                             path:
+                              default: /
                               description: The HTTP path which will be requested during
                                 the health check (ie. /health)
                               type: string
@@ -873,20 +875,19 @@ spec:
                               items:
                                 properties:
                                   append:
+                                    default: true
                                     description: If true (default) the header values
                                       should be appended to already present ones
                                     type: boolean
-                                  header:
-                                    description: Key/Value representation of the HTTP
-                                      header
-                                    properties:
-                                      key:
-                                        description: Header name
-                                        type: string
-                                      value:
-                                        description: Header value
-                                        type: string
-                                    type: object
+                                  key:
+                                    description: Header name
+                                    type: string
+                                  value:
+                                    description: Header value
+                                    type: string
+                                required:
+                                - key
+                                - value
                                 type: object
                               type: array
                           type: object
@@ -896,6 +897,7 @@ spec:
                             This only applies to the first health check.
                           type: string
                         interval:
+                          default: 1m
                           description: Interval between consecutive health checks.
                           type: string
                         intervalJitter:
@@ -952,9 +954,11 @@ spec:
                               type: string
                           type: object
                         timeout:
+                          default: 15s
                           description: Maximum time to wait for a health check response.
                           type: string
                         unhealthyThreshold:
+                          default: 5
                           description: Number of consecutive unhealthy checks before
                             considering a host unhealthy.
                           format: int32
@@ -995,6 +999,310 @@ spec:
                 type: array
             required:
             - targetRef
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.10.0
+  creationTimestamp: null
+  name: meshhttproutes.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: MeshHTTPRoute
+    listKind: MeshHTTPRouteList
+    plural: meshhttproutes
+    singular: meshhttproute
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma MeshHTTPRoute resource.
+            properties:
+              targetRef:
+                description: TargetRef is a reference to the resource the policy takes
+                  an effect on. The resource could be either a real store object or
+                  virtual resource defined inplace.
+                properties:
+                  kind:
+                    description: Kind of the referenced resource
+                    enum:
+                    - Mesh
+                    - MeshSubset
+                    - MeshService
+                    - MeshServiceSubset
+                    - MeshGatewayRoute
+                    type: string
+                  mesh:
+                    description: Mesh is reserved for future use to identify cross
+                      mesh resources.
+                    type: string
+                  name:
+                    description: 'Name of the referenced resource. Can only be used
+                      with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
+                    type: string
+                  tags:
+                    additionalProperties:
+                      type: string
+                    description: Tags used to select a subset of proxies by tags.
+                      Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                    type: object
+                type: object
+              to:
+                description: To matches destination services of requests and holds
+                  configuration.
+                items:
+                  properties:
+                    rules:
+                      description: Rules contains the routing rules applies to a combination
+                        of top-level targetRef and the targetRef in this entry.
+                      items:
+                        properties:
+                          default:
+                            description: Default holds routing rules that can be merged
+                              with rules from other policies.
+                            properties:
+                              backendRefs:
+                                items:
+                                  properties:
+                                    kind:
+                                      description: Kind of the referenced resource
+                                      enum:
+                                      - Mesh
+                                      - MeshSubset
+                                      - MeshService
+                                      - MeshServiceSubset
+                                      - MeshGatewayRoute
+                                      type: string
+                                    mesh:
+                                      description: Mesh is reserved for future use
+                                        to identify cross mesh resources.
+                                      type: string
+                                    name:
+                                      description: 'Name of the referenced resource.
+                                        Can only be used with kinds: `MeshService`,
+                                        `MeshServiceSubset` and `MeshGatewayRoute`'
+                                      type: string
+                                    tags:
+                                      additionalProperties:
+                                        type: string
+                                      description: Tags used to select a subset of
+                                        proxies by tags. Can only be used with kinds
+                                        `MeshSubset` and `MeshServiceSubset`
+                                      type: object
+                                    weight:
+                                      minimum: 0
+                                      type: integer
+                                  type: object
+                                type: array
+                              filters:
+                                items:
+                                  properties:
+                                    requestHeaderModifier:
+                                      description: Only one action is supported per
+                                        header name. Configuration to set or add multiple
+                                        values for a header must use RFC 7230 header
+                                        value formatting, separating each value with
+                                        a comma.
+                                      properties:
+                                        add:
+                                          items:
+                                            properties:
+                                              name:
+                                                maxLength: 256
+                                                minLength: 1
+                                                pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                type: string
+                                              value:
+                                                type: string
+                                            required:
+                                            - name
+                                            - value
+                                            type: object
+                                          maxItems: 16
+                                          type: array
+                                          x-kubernetes-list-map-keys:
+                                          - name
+                                          x-kubernetes-list-type: map
+                                        remove:
+                                          items:
+                                            type: string
+                                          maxItems: 16
+                                          type: array
+                                        set:
+                                          items:
+                                            properties:
+                                              name:
+                                                maxLength: 256
+                                                minLength: 1
+                                                pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                type: string
+                                              value:
+                                                type: string
+                                            required:
+                                            - name
+                                            - value
+                                            type: object
+                                          maxItems: 16
+                                          type: array
+                                          x-kubernetes-list-map-keys:
+                                          - name
+                                          x-kubernetes-list-type: map
+                                      type: object
+                                    responseHeaderModifier:
+                                      description: Only one action is supported per
+                                        header name. Configuration to set or add multiple
+                                        values for a header must use RFC 7230 header
+                                        value formatting, separating each value with
+                                        a comma.
+                                      properties:
+                                        add:
+                                          items:
+                                            properties:
+                                              name:
+                                                maxLength: 256
+                                                minLength: 1
+                                                pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                type: string
+                                              value:
+                                                type: string
+                                            required:
+                                            - name
+                                            - value
+                                            type: object
+                                          maxItems: 16
+                                          type: array
+                                          x-kubernetes-list-map-keys:
+                                          - name
+                                          x-kubernetes-list-type: map
+                                        remove:
+                                          items:
+                                            type: string
+                                          maxItems: 16
+                                          type: array
+                                        set:
+                                          items:
+                                            properties:
+                                              name:
+                                                maxLength: 256
+                                                minLength: 1
+                                                pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                type: string
+                                              value:
+                                                type: string
+                                            required:
+                                            - name
+                                            - value
+                                            type: object
+                                          maxItems: 16
+                                          type: array
+                                          x-kubernetes-list-map-keys:
+                                          - name
+                                          x-kubernetes-list-type: map
+                                      type: object
+                                    type:
+                                      enum:
+                                      - RequestHeaderModifier
+                                      - ResponseHeaderModifier
+                                      type: string
+                                  required:
+                                  - type
+                                  type: object
+                                type: array
+                            type: object
+                          matches:
+                            items:
+                              properties:
+                                method:
+                                  enum:
+                                  - CONNECT
+                                  - DELETE
+                                  - GET
+                                  - HEAD
+                                  - OPTIONS
+                                  - PATCH
+                                  - POST
+                                  - PUT
+                                  - TRACE
+                                  type: string
+                                path:
+                                  properties:
+                                    type:
+                                      enum:
+                                      - Exact
+                                      - Prefix
+                                      - RegularExpression
+                                      type: string
+                                    value:
+                                      description: Exact or prefix matches must be
+                                        an absolute path. A prefix matches only if
+                                        separated by a slash or the entire path.
+                                      minLength: 1
+                                      type: string
+                                  required:
+                                  - type
+                                  - value
+                                  type: object
+                              type: object
+                            type: array
+                        required:
+                        - default
+                        - matches
+                        type: object
+                      type: array
+                    targetRef:
+                      description: TargetRef is a reference to the resource that represents
+                        a group of request destinations.
+                      properties:
+                        kind:
+                          description: Kind of the referenced resource
+                          enum:
+                          - Mesh
+                          - MeshSubset
+                          - MeshService
+                          - MeshServiceSubset
+                          - MeshGatewayRoute
+                          type: string
+                        mesh:
+                          description: Mesh is reserved for future use to identify
+                            cross mesh resources.
+                          type: string
+                        name:
+                          description: 'Name of the referenced resource. Can only
+                            be used with kinds: `MeshService`, `MeshServiceSubset`
+                            and `MeshGatewayRoute`'
+                          type: string
+                        tags:
+                          additionalProperties:
+                            type: string
+                          description: Tags used to select a subset of proxies by
+                            tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                          type: object
+                      type: object
+                  type: object
+                type: array
             type: object
         type: object
     served: true
@@ -1719,7 +2027,10 @@ spec:
                                     properties:
                                       format:
                                         description: The format of the reset header,
-                                          either "Seconds" or "UnixTimestamp".
+                                          either Seconds or UnixTimestamp.
+                                        enum:
+                                        - Seconds
+                                        - UnixTimestamp
                                         type: string
                                       name:
                                         description: The Name of the reset header.
@@ -1729,8 +2040,8 @@ spec:
                               type: object
                             retryOn:
                               description: 'RetryOn is a list of conditions which
-                                will cause a retry. Available values are: [CANCELED,
-                                DEADLINE_EXCEEDED, INTERNAL, RESOURCE_EXHAUSTED, UNAVAILABLE].'
+                                will cause a retry. Available values are: [Canceled,
+                                DeadlineExceeded, Internal, ResourceExhausted, Unavailable].'
                               items:
                                 type: string
                               type: array
@@ -1788,7 +2099,10 @@ spec:
                                     properties:
                                       format:
                                         description: The format of the reset header,
-                                          either "Seconds" or "UnixTimestamp".
+                                          either Seconds or UnixTimestamp.
+                                        enum:
+                                        - Seconds
+                                        - UnixTimestamp
                                         type: string
                                       name:
                                         description: The Name of the reset header.
@@ -1835,13 +2149,12 @@ spec:
                               type: array
                             retryOn:
                               description: 'RetryOn is a list of conditions which
-                                will cause a retry. Available values are: [5XX, GATEWAY_ERROR,
-                                RESET, RETRIABLE_4XX, CONNECT_FAILURE, ENVOY_RATELIMITED,
-                                REFUSED_STREAM, HTTP3_POST_CONNECT_FAILURE, HTTP_METHOD_CONNECT,
-                                HTTP_METHOD_DELETE, HTTP_METHOD_GET, HTTP_METHOD_HEAD,
-                                HTTP_METHOD_OPTIONS, HTTP_METHOD_PATCH, HTTP_METHOD_POST,
-                                HTTP_METHOD_PUT, HTTP_METHOD_TRACE]. Also, any HTTP
-                                status code (500, 503, etc).'
+                                will cause a retry. Available values are: [5XX, GatewayError,
+                                Reset, Retriable4xx, ConnectFailure, EnvoyRatelimited,
+                                RefusedStream, Http3PostConnectFailure, HttpMethodConnect,
+                                HttpMethodDelete, HttpMethodGet, HttpMethodHead, HttpMethodOptions,
+                                HttpMethodPatch, HttpMethodPost, HttpMethodPut, HttpMethodTrace].
+                                Also, any HTTP status code (500, 503, etc).'
                               items:
                                 type: string
                               type: array
@@ -1894,6 +2207,51 @@ spec:
             required:
             - targetRef
             type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.10.0
+  creationTimestamp: null
+  name: dataplaneinsights.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: DataplaneInsight
+    listKind: DataplaneInsightList
+    plural: dataplaneinsights
+    singular: dataplaneinsight
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          mesh:
+            description: Mesh is the name of the Kuma mesh this resource belongs to.
+              It may be omitted for cluster-scoped resources.
+            type: string
+          metadata:
+            type: object
+          status:
+            description: Status is the status the Kuma resource.
+            x-kubernetes-preserve-unknown-fields: true
         type: object
     served: true
     storage: true
@@ -2147,51 +2505,6 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
-  name: dataplaneinsights.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: DataplaneInsight
-    listKind: DataplaneInsightList
-    plural: dataplaneinsights
-    singular: dataplaneinsight
-  scope: Namespaced
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-            type: string
-          kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-            type: string
-          mesh:
-            description: Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          status:
-            description: Status is the status the Kuma resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
-  creationTimestamp: null
   name: meshtraces.kuma.io
 spec:
   group: kuma.io
@@ -2419,9 +2732,9 @@ spec:
                           description: 'Action defines a behavior for the specified
                             group of clients:'
                           enum:
-                          - ALLOW
-                          - DENY
-                          - ALLOW_WITH_SHADOW_DENY
+                          - Allow
+                          - Deny
+                          - AllowWithShadowDeny
                           type: string
                       type: object
                     targetRef:
@@ -2814,51 +3127,6 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
-  name: trafficroutes.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: TrafficRoute
-    listKind: TrafficRouteList
-    plural: trafficroutes
-    singular: trafficroute
-  scope: Cluster
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-            type: string
-          kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-            type: string
-          mesh:
-            description: Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma TrafficRoute resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
-  creationTimestamp: null
   name: dataplanes.kuma.io
 spec:
   group: kuma.io
@@ -2893,6 +3161,51 @@ spec:
             type: object
           spec:
             description: Spec is the specification of the Kuma Dataplane resource.
+            x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.10.0
+  creationTimestamp: null
+  name: trafficroutes.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: TrafficRoute
+    listKind: TrafficRouteList
+    plural: trafficroutes
+    singular: trafficroute
+  scope: Cluster
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          mesh:
+            description: Mesh is the name of the Kuma mesh this resource belongs to.
+              It may be omitted for cluster-scoped resources.
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma TrafficRoute resource.
             x-kubernetes-preserve-unknown-fields: true
         type: object
     served: true
@@ -4504,6 +4817,7 @@ rules:
       - meshcircuitbreakers
       - meshfaultinjections
       - meshhealthchecks
+      - meshhttproutes
       - meshproxypatches
       - meshratelimits
       - meshretries
@@ -4721,7 +5035,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: 925e98cd03f6f3310f61d29ba7297608d9914e41a2382a133fc58e1099092e2b
+        checksum/tls-secrets: 86ea761718bf0f0e59a68251ac0eace6afa0a6f256acc3f738729980f77e310d
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -5127,6 +5441,7 @@ webhooks:
           - meshcircuitbreakers
           - meshfaultinjections
           - meshhealthchecks
+          - meshhttproutes
           - meshproxypatches
           - meshratelimits
           - meshretries
@@ -5170,6 +5485,7 @@ webhooks:
           - meshcircuitbreakers
           - meshfaultinjections
           - meshhealthchecks
+          - meshhttproutes
           - meshproxypatches
           - meshratelimits
           - meshretries
@@ -5295,6 +5611,7 @@ webhooks:
           - meshcircuitbreakers
           - meshfaultinjections
           - meshhealthchecks
+          - meshhttproutes
           - meshproxypatches
           - meshratelimits
           - meshretries

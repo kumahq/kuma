@@ -127,12 +127,12 @@ var _ = Describe("MeshRateLimit", func() {
 								HTTP: &api.LocalHTTP{
 									RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
 									OnRateLimit: &api.OnRateLimit{
-										Status: test.PointerOf(uint32(444)),
+										Status: pointer.To(uint32(444)),
 										Headers: &[]api.HeaderValue{
 											{
 												Key:    "x-kuma-rate-limit-header",
 												Value:  "test-value",
-												Append: test.PointerOf(true),
+												Append: pointer.To(true),
 											},
 											{
 												Key:   "x-kuma-rate-limit",
@@ -213,12 +213,12 @@ var _ = Describe("MeshRateLimit", func() {
 										Interval: *test.ParseDuration("10s"),
 									},
 									OnRateLimit: &api.OnRateLimit{
-										Status: test.PointerOf(uint32(444)),
+										Status: pointer.To(uint32(444)),
 										Headers: &[]api.HeaderValue{
 											{
 												Key:    "x-kuma-rate-limit-header",
 												Value:  "test-value",
-												Append: test.PointerOf(true),
+												Append: pointer.To(true),
 											},
 											{
 												Key:   "x-kuma-rate-limit",
@@ -419,12 +419,12 @@ var _ = Describe("MeshRateLimit", func() {
 									Interval: v1.Duration{Duration: 10 * time.Second},
 								},
 								OnRateLimit: &api.OnRateLimit{
-									Status: test.PointerOf(uint32(444)),
+									Status: pointer.To(uint32(444)),
 									Headers: &[]api.HeaderValue{
 										{
 											Key:    "x-kuma-rate-limit-header",
 											Value:  "test-value",
-											Append: test.PointerOf(true),
+											Append: pointer.To(true),
 										},
 										{
 											Key:   "x-kuma-rate-limit",

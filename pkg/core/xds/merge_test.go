@@ -271,6 +271,9 @@ var _ = Describe("MergeConfs", func() {
 					Key: mergeKey{Right: true}, Default: mergeConf{B: &t},
 				}},
 			},
+		}), Entry("should work with an empty list of key values", mergeValuesByKeyCase{
+			policies: []testPolicy{{}},
+			expected: testPolicy{},
 		}),
 	)
 

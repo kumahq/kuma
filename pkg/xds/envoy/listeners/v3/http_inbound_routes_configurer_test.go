@@ -11,7 +11,6 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
@@ -35,7 +34,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 			}
 			regexOR := tags.RegexOR(selectorRegexs...)
 
-			route.Match.Headers[v3.TagsHeaderName] = &v1alpha1.TrafficRoute_Http_Match_StringMatcher{
+			route.Match.Headers[tags.TagsHeaderName] = &v1alpha1.TrafficRoute_Http_Match_StringMatcher{
 				MatcherType: &v1alpha1.TrafficRoute_Http_Match_StringMatcher_Regex{
 					Regex: regexOR,
 				},

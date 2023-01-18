@@ -702,13 +702,14 @@ experimental:
 # @ignored for helm-docs
 plugins:
   policies:
-    - meshaccesslogs
-    - meshcircuitbreakers
-    - meshfaultinjections
-    - meshhealthchecks
-    - meshproxypatches
-    - meshratelimits
-    - meshretries
-    - meshtimeouts
-    - meshtraces
-    - meshtrafficpermissions
+    meshaccesslogs: {}
+    meshcircuitbreakers: {}
+    meshfaultinjections: {}
+    meshhealthchecks: {}
+    meshhttproutes: {}
+    meshproxypatches: {}
+    meshratelimits: {}
+    meshretries: {}
+    meshtimeouts: {}
+    meshtraces: {}
+    meshtrafficpermissions: {}
