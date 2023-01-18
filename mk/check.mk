@@ -55,4 +55,14 @@ kube-lint:
 
 .PHONY: check
 check: format helm-lint golangci-lint shellcheck kube-lint ## Dev: Run code checks (go fmt, go vet, ...)
-	git diff --quiet || test $$(git diff --name-only | wc -l) -eq 0 || ( echo "The following changes (result of code generators and code checks) have been detected:" && git --no-pager diff && false ) # fail if Git working tree is dirty
+	# fail if Git working tree is dirty or there are untracked files
+	git diff --quiet || \
+	git ls-files --other --directory --exclude-standard --no-empty-directory | wc -l | read UNTRACKED_FILES; if [ "$$UNTRACKED_FILES" != "0" ]; then false; fi || \
+	test $$(git diff --name-only | wc -l) -eq 0 || \
+	( \
+		echo "The following changes (result of code generators and code checks) have been detected:" && \
+		git --no-pager diff && \
+		echo "The following files are untracked:" && \
+		git ls-files --other --directory --exclude-standard --no-empty-directory && \
+		false \
+	)
