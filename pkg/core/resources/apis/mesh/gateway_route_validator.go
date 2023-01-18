@@ -166,8 +166,15 @@ func validateMeshGatewayRouteHTTPMatch(
 		if h.GetName() == "" {
 			err.AddViolationAt(path.Field("name"), "cannot be empty")
 		}
-		if h.GetValue() == "" {
-			err.AddViolationAt(path.Field("value"), "cannot be empty")
+		switch h.Match {
+		case mesh_proto.MeshGatewayRoute_HttpRoute_Match_Header_ABSENT, mesh_proto.MeshGatewayRoute_HttpRoute_Match_Header_PRESENT:
+			if h.GetValue() != "" {
+				err.AddViolationAt(path.Field("value"), "cannot be set")
+			}
+		default:
+			if h.GetValue() == "" {
+				err.AddViolationAt(path.Field("value"), "cannot be empty")
+			}
 		}
 	}
 

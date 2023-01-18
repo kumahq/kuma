@@ -6,7 +6,6 @@ import (
 )
 
 // MeshHTTPRoute
-// +kuma:policy:skip_registration=true
 // +kuma:policy:singular_display_name=Mesh HTTP Route
 //
 // This policy defines its own `GetDefault` method so that it can have the given

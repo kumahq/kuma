@@ -705,6 +705,7 @@ plugins:
     - meshaccesslogs
     - meshcircuitbreakers
     - meshhealthchecks
+    - meshhttproutes
     - meshproxypatches
     - meshratelimits
     - meshretries
