@@ -401,7 +401,7 @@ to:
         rateLimitedBackOff:
           resetHeaders:
             - name: ""
-            - format: "UnixTimestamp"
+              format: "UnixTimestamp"
 `,
 				expected: `
 violations:
