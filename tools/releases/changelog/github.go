@@ -234,10 +234,14 @@ func NewCommitInfo(commit GQLCommit) *CommitInfo {
 		return nil
 	case "":
 		// Ignore prs with usually ignored prefix
-		for _, v := range []string{"build:", "ci:", "ci(", "test(", "refactor(", "chore(ci)", "fix(ci)", "fix(test)", "tests(", "build(", "docs(madr)"} {
+		for _, v := range []string{"build", "ci", "test", "refactor", "fix(ci)", "fix(test)", "docs"} {
 			if strings.HasPrefix(commit.Message, v) {
 				return nil
 			}
+		}
+		// Only prs with chore(deps) are included
+		if strings.HasPrefix(commit.Message, "chore") && !strings.HasPrefix(commit.Message, "chore(deps)") {
+			return nil
 		}
 		// Use the pr.Title as a changelog entry
 		res.Changelog = pr.Title

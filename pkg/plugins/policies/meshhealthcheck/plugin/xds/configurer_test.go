@@ -6,6 +6,7 @@ import (
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 var _ = Describe("MeshHealthCheck configurer", func() {
@@ -106,7 +107,7 @@ var _ = Describe("MeshHealthCheck configurer", func() {
 		// disabling matching health check
 		Entry("HC defined for grpc when service protocol is grpc", testCase{
 			protocol:       core_mesh.ProtocolGRPC,
-			grpc:           &v1alpha1.GrpcHealthCheck{Disabled: true},
+			grpc:           &v1alpha1.GrpcHealthCheck{Disabled: pointer.To(true)},
 			http:           nil,
 			tcp:            nil,
 			expectedHcType: HCNone,
@@ -114,14 +115,14 @@ var _ = Describe("MeshHealthCheck configurer", func() {
 		Entry("HC defined for http when service protocol is http", testCase{
 			protocol:       core_mesh.ProtocolHTTP,
 			grpc:           nil,
-			http:           &v1alpha1.HttpHealthCheck{Disabled: true},
+			http:           &v1alpha1.HttpHealthCheck{Disabled: pointer.To(true)},
 			tcp:            nil,
 			expectedHcType: HCNone,
 		}),
 		Entry("HC defined for http when service protocol is http2", testCase{
 			protocol:       core_mesh.ProtocolHTTP2,
 			grpc:           nil,
-			http:           &v1alpha1.HttpHealthCheck{Disabled: true},
+			http:           &v1alpha1.HttpHealthCheck{Disabled: pointer.To(true)},
 			tcp:            nil,
 			expectedHcType: HCNone,
 		}),
@@ -129,7 +130,7 @@ var _ = Describe("MeshHealthCheck configurer", func() {
 			protocol:       core_mesh.ProtocolTCP,
 			grpc:           nil,
 			http:           nil,
-			tcp:            &v1alpha1.TcpHealthCheck{Disabled: true},
+			tcp:            &v1alpha1.TcpHealthCheck{Disabled: pointer.To(true)},
 			expectedHcType: HCNone,
 		}),
 
@@ -137,7 +138,7 @@ var _ = Describe("MeshHealthCheck configurer", func() {
 		Entry("HC defined for tcp and disabled for http when service protocol is http", testCase{
 			protocol:       core_mesh.ProtocolHTTP,
 			grpc:           nil,
-			http:           &v1alpha1.HttpHealthCheck{Disabled: true},
+			http:           &v1alpha1.HttpHealthCheck{Disabled: pointer.To(true)},
 			tcp:            &v1alpha1.TcpHealthCheck{},
 			expectedHcType: HCProtocolTCP,
 		}),
@@ -145,7 +146,7 @@ var _ = Describe("MeshHealthCheck configurer", func() {
 		// fallback GRPC to TCP
 		Entry("HC defined for tcp and disabled for grpc when service protocol is grpc", testCase{
 			protocol:       core_mesh.ProtocolGRPC,
-			grpc:           &v1alpha1.GrpcHealthCheck{Disabled: true},
+			grpc:           &v1alpha1.GrpcHealthCheck{Disabled: pointer.To(true)},
 			http:           nil,
 			tcp:            &v1alpha1.TcpHealthCheck{},
 			expectedHcType: HCProtocolTCP,
@@ -163,9 +164,9 @@ var _ = Describe("MeshHealthCheck configurer", func() {
 		// all protocols disabled
 		Entry("HC disabled for all protocols when service protocol is http", testCase{
 			protocol:       core_mesh.ProtocolHTTP,
-			grpc:           &v1alpha1.GrpcHealthCheck{Disabled: true},
-			http:           &v1alpha1.HttpHealthCheck{Disabled: true},
-			tcp:            &v1alpha1.TcpHealthCheck{Disabled: true},
+			grpc:           &v1alpha1.GrpcHealthCheck{Disabled: pointer.To(true)},
+			http:           &v1alpha1.HttpHealthCheck{Disabled: pointer.To(true)},
+			tcp:            &v1alpha1.TcpHealthCheck{Disabled: pointer.To(true)},
 			expectedHcType: HCNone,
 		}),
 	)
