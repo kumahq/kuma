@@ -104,7 +104,7 @@ var _ = Describe("Apply", func() {
 											{Key: mesh_proto.ServiceTag, Value: "frontend"},
 										},
 										Conf: policies_api.Conf{
-											Action: "ALLOW",
+											Action: "Allow",
 										},
 									},
 								},

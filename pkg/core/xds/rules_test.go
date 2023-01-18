@@ -304,7 +304,7 @@ var _ = Describe("Rules", func() {
 							{Key: "key1", Value: "val1"},
 						},
 						Conf: meshtrafficpermission_api.Conf{
-							Action: "ALLOW",
+							Action: "Allow",
 						},
 					},
 				},
@@ -312,7 +312,7 @@ var _ = Describe("Rules", func() {
 					{Key: "key1", Value: "val1"},
 					{Key: "key2", Value: "val2"},
 				},
-				confYAML: []byte(`action: ALLOW`),
+				confYAML: []byte(`action: Allow`),
 			}),
 			Entry("single matched rule, rule and subset with negation", testCase{
 				rules: xds.Rules{
@@ -321,21 +321,21 @@ var _ = Describe("Rules", func() {
 							{Key: "key1", Value: "val1", Not: true},
 						},
 						Conf: meshtrafficpermission_api.Conf{
-							Action: "ALLOW",
+							Action: "Allow",
 						},
 					},
 				},
 				subset: []xds.Tag{
 					{Key: "key1", Value: "val1", Not: true},
 				},
-				confYAML: []byte(`action: ALLOW`),
+				confYAML: []byte(`action: Allow`),
 			}),
 			Entry("empty set is a superset for all subset", testCase{
 				rules: xds.Rules{
 					{
 						Subset: []xds.Tag{}, // empty set
 						Conf: meshtrafficpermission_api.Conf{
-							Action: "ALLOW",
+							Action: "Allow",
 						},
 					},
 				},
@@ -343,7 +343,7 @@ var _ = Describe("Rules", func() {
 					{Key: "key1", Value: "val1"},
 					{Key: "key2", Value: "val2"},
 				},
-				confYAML: []byte(`action: ALLOW`),
+				confYAML: []byte(`action: Allow`),
 			}),
 			Entry("no rules matched, rule with negation, subset without key", testCase{
 				rules: xds.Rules{
@@ -352,7 +352,7 @@ var _ = Describe("Rules", func() {
 							{Key: "key1", Value: "val1", Not: true},
 						},
 						Conf: meshtrafficpermission_api.Conf{
-							Action: "ALLOW",
+							Action: "Allow",
 						},
 					},
 				},
@@ -368,7 +368,7 @@ var _ = Describe("Rules", func() {
 							{Key: "key1", Value: "val1"},
 						},
 						Conf: meshtrafficpermission_api.Conf{
-							Action: "ALLOW",
+							Action: "Allow",
 						},
 					},
 				},
@@ -384,7 +384,7 @@ var _ = Describe("Rules", func() {
 							{Key: "key1", Value: "val1"},
 						},
 						Conf: meshtrafficpermission_api.Conf{
-							Action: "ALLOW",
+							Action: "Allow",
 						},
 					},
 				},
@@ -400,7 +400,7 @@ var _ = Describe("Rules", func() {
 							{Key: "key1", Value: "val1", Not: true},
 						},
 						Conf: meshtrafficpermission_api.Conf{
-							Action: "ALLOW",
+							Action: "Allow",
 						},
 					},
 				},
@@ -416,7 +416,7 @@ var _ = Describe("Rules", func() {
 							{Key: "key1", Value: "val1"},
 						},
 						Conf: meshtrafficpermission_api.Conf{
-							Action: "ALLOW",
+							Action: "Allow",
 						},
 					},
 				},
@@ -432,7 +432,7 @@ var _ = Describe("Rules", func() {
 							{Key: "key1", Value: "val1"}, // not matched
 						},
 						Conf: meshtrafficpermission_api.Conf{
-							Action: "ALLOW",
+							Action: "Allow",
 						},
 					},
 					{
@@ -440,13 +440,13 @@ var _ = Describe("Rules", func() {
 							{Key: "key2", Value: "val2"}, // the first matched
 						},
 						Conf: meshtrafficpermission_api.Conf{
-							Action: "DENY",
+							Action: "Deny",
 						},
 					},
 					{
 						Subset: xds.Subset{}, // matched but not the first
 						Conf: meshtrafficpermission_api.Conf{
-							Action: "ALLOW_WITH_SHADOW_DENY",
+							Action: "AllowWithShadowDeny",
 						},
 					},
 				},
@@ -454,7 +454,7 @@ var _ = Describe("Rules", func() {
 					{Key: "key2", Value: "val2"},
 					{Key: "key3", Value: "val3"},
 				},
-				confYAML: []byte(`action: DENY`),
+				confYAML: []byte(`action: Deny`),
 			}),
 		)
 	})

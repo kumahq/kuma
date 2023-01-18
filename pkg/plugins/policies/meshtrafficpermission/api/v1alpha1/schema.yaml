@@ -24,9 +24,9 @@ properties:
                 action:
                   description: 'Action defines a behavior for the specified group of clients:'
                   enum:
-                    - ALLOW
-                    - DENY
-                    - ALLOW_WITH_SHADOW_DENY
+                    - Allow
+                    - Deny
+                    - AllowWithShadowDeny
                   type: string
               type: object
             targetRef:

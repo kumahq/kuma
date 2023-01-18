@@ -83,8 +83,8 @@ func createRules(pm PrincipalMap) *rbac_config.RBAC {
 	}
 
 	principals := []*rbac_config.Principal{}
-	principals = append(principals, pm[policies_api.ALLOW]...)
-	principals = append(principals, pm[policies_api.ALLOW_WITH_SHADOW_DENY]...)
+	principals = append(principals, pm[policies_api.Allow]...)
+	principals = append(principals, pm[policies_api.AllowWithShadowDeny]...)
 
 	if len(principals) != 0 {
 		rules.Policies["MeshTrafficPermission"] = &rbac_config.Policy{
@@ -103,7 +103,7 @@ func createRules(pm PrincipalMap) *rbac_config.RBAC {
 }
 
 func createShadowRules(pm PrincipalMap) *rbac_config.RBAC {
-	deny := pm[policies_api.ALLOW_WITH_SHADOW_DENY]
+	deny := pm[policies_api.AllowWithShadowDeny]
 	if len(deny) == 0 {
 		return nil
 	}

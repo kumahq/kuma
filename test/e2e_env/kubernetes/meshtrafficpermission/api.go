@@ -53,19 +53,19 @@ spec:
     - targetRef:
         kind: Mesh
       default:
-        action: ALLOW
+        action: Allow
     - targetRef:
         kind: MeshService
         name: backend
       default:
-        action: ALLOW_WITH_SHADOW_DENY
+        action: AllowWithShadowDeny
     - targetRef:
         kind: MeshServiceSubset
         name: backend
         tags:
           version: v1
       default:
-        action: DENY
+        action: Deny
 `, Config.KumaNamespace))(kubernetes.Cluster)).To(Succeed())
 
 		// then
@@ -100,7 +100,7 @@ spec:
     - targetRef:
         kind: Mesh
       default:
-        action: ALLOW
+        action: Allow
 `)
 
 		Expect(err).To(HaveOccurred())

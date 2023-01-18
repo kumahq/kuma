@@ -443,7 +443,7 @@ var _ = Describe("Resource Endpoints", func() {
 								"kind": "Mesh"
 							},
 							"default": {
-								"action": "ALLOW"
+								"action": "Allow"
 							}
 						}
 					]

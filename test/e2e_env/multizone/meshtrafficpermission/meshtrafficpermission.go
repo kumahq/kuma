@@ -83,7 +83,7 @@ spec:
    - targetRef:
        kind: Mesh
      default:
-       action: ALLOW
+       action: Allow
 `
 		err := YamlUniversal(yaml)(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
@@ -111,7 +111,7 @@ spec:
        tags:
          kuma.io/zone: kuma-1-zone
      default:
-       action: ALLOW
+       action: Allow
 `
 		err := YamlUniversal(yaml)(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
@@ -139,7 +139,7 @@ spec:
        tags:
          k8s.kuma.io/namespace: mtp-test
      default:
-       action: ALLOW
+       action: Allow
 `
 		err := YamlUniversal(yaml)(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
@@ -167,7 +167,7 @@ spec:
        tags:
          newtag: client
      default:
-       action: ALLOW
+       action: Allow
 `
 		err := YamlUniversal(yaml)(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
