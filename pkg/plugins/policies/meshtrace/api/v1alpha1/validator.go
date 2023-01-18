@@ -1,14 +1,11 @@
 package v1alpha1
 
 import (
-	"fmt"
 	"math"
 	net_url "net/url"
 	"strconv"
-	"strings"
 
 	"github.com/asaskevich/govalidator"
-	"golang.org/x/exp/slices"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
@@ -139,13 +136,6 @@ func validateBackend(conf Conf, backendsPath validators.PathBuilder) validators.
 			verr.AddViolationAt(zipkinPath.Field("url"), validators.MustNotBeEmpty)
 		} else if !govalidator.IsURL(zipkinBackend.Url) {
 			verr.AddViolationAt(zipkinPath.Field("url"), "must be a valid url")
-		}
-
-		if zipkinBackend.ApiVersion != nil {
-			validZipkinApiVersions := []string{"httpJson", "httpProto"}
-			if !slices.Contains(validZipkinApiVersions, *zipkinBackend.ApiVersion) {
-				verr.AddViolationAt(zipkinPath.Field("apiVersion"), fmt.Sprintf("must be one of %s", strings.Join(validZipkinApiVersions, ", ")))
-			}
 		}
 	}
 

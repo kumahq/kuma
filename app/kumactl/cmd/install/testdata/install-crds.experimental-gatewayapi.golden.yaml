@@ -3636,6 +3636,9 @@ spec:
                               default: httpJson
                               description: 'Version of the API. values: httpJson,
                                 httpProto. Default: httpJson see https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L66'
+                              enum:
+                              - httpJson
+                              - httpProto
                               type: string
                             sharedSpanContext:
                               description: 'Determines whether client and server spans

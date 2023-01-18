@@ -174,22 +174,6 @@ violations:
   - field: spec.default.backends[0].zipkin.url
     message: must be a valid url`,
 			}),
-			Entry("invalid apiVersion for zipkin backend", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: backend
-default:
-  backends:
-    - zipkin:
-        url: http://jaeger-collector.mesh-observability:9411/api/v2/spans
-        apiVersion: invalid_api_version
-`,
-				expected: `
-violations:
-  - field: spec.default.backends[0].zipkin.apiVersion
-    message: must be one of httpJson, httpProto`,
-			}),
 			Entry("invalid url for datadog backend", testCase{
 				inputYaml: `
 targetRef:

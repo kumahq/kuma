@@ -50,6 +50,7 @@ type ZipkinBackend struct {
 	// httpJson see
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L66
 	// +kubebuilder:default="httpJson"
+	// +kubebuilder:validation:Enum=httpJson;httpProto
 	ApiVersion *string `json:"apiVersion,omitempty"`
 	// Determines whether client and server spans will share the same span
 	// context. Default: true.
