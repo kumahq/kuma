@@ -261,6 +261,7 @@ spec:
                                       enum:
                                       - RequestHeaderModifier
                                       - ResponseHeaderModifier
+                                      - RequestRedirect
                                       type: string
                                   required:
                                   - type

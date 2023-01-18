@@ -69,7 +69,7 @@ type RuleConf struct {
 	BackendRefs *[]BackendRef `json:"backendRefs,omitempty"`
 }
 
-// +kubebuilder:validation:Enum=RequestHeaderModifier;ResponseHeaderModifier
+// +kubebuilder:validation:Enum=RequestHeaderModifier;ResponseHeaderModifier;RequestRedirect
 type FilterType string
 
 const (
