@@ -37,9 +37,12 @@ func (c *Configurer) ConfigureHttpListener(filterChain *envoy_listener.FilterCha
 			config := &envoy_http_fault.HTTPFault{
 				Delay: c.convertDelay(fi.Delay),
 				Abort: c.convertAbort(fi.Abort),
-				Headers: []*envoy_route.HeaderMatcher{
+			}
+
+			if len(c.From) > 0 {
+				config.Headers = []*envoy_route.HeaderMatcher{
 					c.createHeaders(c.From),
-				},
+				}
 			}
 
 			rrl, err := c.convertResponseRateLimit(fi.ResponseBandwidth)
@@ -86,20 +89,16 @@ func (c *Configurer) createHeaders(from core_xds.Subset) *envoy_route.HeaderMatc
 	selectorRegexs = append(selectorRegexs, tags.MatchingRegex(tagsMap))
 	regexOR := tags.RegexOR(selectorRegexs...)
 
-	if regexOR == "" {
-		return &envoy_route.HeaderMatcher{}
-	} else {
-		return &envoy_route.HeaderMatcher{
-			Name: envoy_routes.TagsHeaderName,
-			HeaderMatchSpecifier: &envoy_route.HeaderMatcher_SafeRegexMatch{
-				SafeRegexMatch: &envoy_type_matcher.RegexMatcher{
-					EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
-						GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
-					},
-					Regex: regexOR,
+	return &envoy_route.HeaderMatcher{
+		Name: envoy_routes.TagsHeaderName,
+		HeaderMatchSpecifier: &envoy_route.HeaderMatcher_SafeRegexMatch{
+			SafeRegexMatch: &envoy_type_matcher.RegexMatcher{
+				EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
+					GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
 				},
+				Regex: regexOR,
 			},
-		}
+		},
 	}
 }
 

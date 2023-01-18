@@ -9,15 +9,19 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/plugin/v1alpha1"
+	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/test"
 	test_matchers "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	test_xds "github.com/kumahq/kuma/pkg/test/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/generator"
@@ -162,4 +166,80 @@ var _ = Describe("MeshFaultInjection", func() {
 			expectedListeners: []string{"basic_listener_1.golden.yaml", "basic_listener_2.golden.yaml"},
 		}),
 	)
+
+	It("should generate proper Envoy config for MeshGateway Dataplanes", func() {
+		// given
+		fromRules := core_xds.FromRules{
+			Rules: map[core_xds.InboundListener]core_xds.Rules{
+				{Address: "192.168.0.1", Port: 8080}: {{
+					Subset: core_xds.Subset{},
+					Conf: api.Conf{
+						Http: []api.FaultInjectionConf{
+							api.FaultInjectionConf{
+								Abort: &api.AbortConf{
+									HttpStatus: test.PointerOf(int32(444)),
+									Percentage: test.PointerOf(int32(12)),
+								},
+								Delay: &api.DelayConf{
+									Value:      test.ParseDuration("55s"),
+									Percentage: test.PointerOf(int32(55)),
+								},
+								ResponseBandwidth: &api.ResponseBandwidthConf{
+									Limit:      test.PointerOf("111mbps"),
+									Percentage: test.PointerOf(int32(62)),
+								},
+							},
+						},
+					},
+				}},
+			},
+		}
+
+		resources := xds_context.NewResources()
+		resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
+			Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
+		}
+		resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
+			Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
+		}
+
+		context := test_xds.CreateSampleMeshContextWith(resources)
+		proxy := core_xds.Proxy{
+			APIVersion: "v3",
+			Dataplane:  samples.GatewayDataplane(),
+			Policies: core_xds.MatchedPolicies{
+				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
+					api.MeshFaultInjectionType: {
+						Type:      api.MeshFaultInjectionType,
+						FromRules: fromRules,
+					},
+				},
+			},
+		}
+		gatewayGenerator := gatewayGenerator()
+		generatedResources, err := gatewayGenerator.Generate(context, &proxy)
+		Expect(err).NotTo(HaveOccurred())
+
+		// when
+		plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+
+		// then
+		Expect(plugin.Apply(generatedResources, context, &proxy)).To(Succeed())
+		Expect(util_proto.ToYAML(generatedResources.ListOf(envoy_resource.ListenerType)[0].Resource)).To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", "gateway_basic_listener.golden.yaml")))
+	})
 })
+
+func gatewayGenerator() gateway_plugin.Generator {
+	return gateway_plugin.Generator{
+		FilterChainGenerators: gateway_plugin.FilterChainGenerators{
+			FilterChainGenerators: map[mesh_proto.MeshGateway_Listener_Protocol]gateway_plugin.FilterChainGenerator{
+				mesh_proto.MeshGateway_Listener_HTTP:  &gateway_plugin.HTTPFilterChainGenerator{},
+				mesh_proto.MeshGateway_Listener_HTTPS: &gateway_plugin.HTTPSFilterChainGenerator{},
+				mesh_proto.MeshGateway_Listener_TCP:   &gateway_plugin.TCPFilterChainGenerator{},
+			}},
+		ClusterGenerator: gateway_plugin.ClusterGenerator{
+			Zone: "test-zone",
+		},
+		Zone: "test-zone",
+	}
+}
