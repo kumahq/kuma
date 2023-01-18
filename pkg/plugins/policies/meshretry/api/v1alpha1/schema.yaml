@@ -77,6 +77,9 @@ properties:
                             properties:
                               format:
                                 description: The format of the reset header, either Seconds or UnixTimestamp.
+                                enum:
+                                  - Seconds
+                                  - UnixTimestamp
                                 type: string
                               name:
                                 description: The Name of the reset header.
@@ -122,6 +125,9 @@ properties:
                             properties:
                               format:
                                 description: The format of the reset header, either Seconds or UnixTimestamp.
+                                enum:
+                                  - Seconds
+                                  - UnixTimestamp
                                 type: string
                               name:
                                 description: The Name of the reset header.
