@@ -46,5 +46,20 @@ kube-lint:
 	$(GOPATH_BIN_DIR)/kube-linter lint .
 
 .PHONY: check
+<<<<<<< HEAD
 check: format helm-lint golangci-lint shellcheck kube-lint ## Dev: Run code checks (go fmt, go vet, ...)
 	git diff --quiet || test $$(git diff --name-only | grep -v -e 'go.mod$$' -e 'go.sum$$' | wc -l) -eq 0 || ( echo "The following changes (result of code generators and code checks) have been detected:" && git --no-pager diff && false ) # fail if Git working tree is dirty
+=======
+check: format helm-lint golangci-lint shellcheck kube-lint hadolint ## Dev: Run code checks (go fmt, go vet, ...)
+	# fail if Git working tree is dirty or there are untracked files
+	git diff --quiet || \
+	git ls-files --other --directory --exclude-standard --no-empty-directory | wc -l | read UNTRACKED_FILES; if [ "$$UNTRACKED_FILES" != "0" ]; then false; fi || \
+	test $$(git diff --name-only | wc -l) -eq 0 || \
+	( \
+		echo "The following changes (result of code generators and code checks) have been detected:" && \
+		git --no-pager diff && \
+		echo "The following files are untracked:" && \
+		git ls-files --other --directory --exclude-standard --no-empty-directory && \
+		false \
+	)
+>>>>>>> 8832b47b5 (fix(lint): make check target fail if there are untracked files (#5748))
