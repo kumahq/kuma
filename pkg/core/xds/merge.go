@@ -97,7 +97,7 @@ func handleMergeByKeyFields(valueResult reflect.Value) error {
 
 func mergeByKey(vals reflect.Value) (reflect.Value, error) {
 	if vals.Len() == 0 {
-		return reflect.Value{}, nil
+		return reflect.Zero(vals.Type()), nil
 	}
 	valType := vals.Index(0).Type()
 	key, ok := findKeyAndSpec(valType)

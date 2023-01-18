@@ -31,7 +31,7 @@ for policy in "$@"; do
 
   plural=$(yq e '.spec.names.plural' "${policy_crd_file}")
 
-  policies="${policies}${policies:+, }\"${plural}\""
+  policies="${policies}${policies:+, }\"${plural}\": {}"
 
 done
 
@@ -42,5 +42,5 @@ function yq_patch() {
   rm "$2.noblank"
 }
 
-yq_patch '.plugins.policies = []' "${HELM_VALUES_FILE}"
-yq_patch '.plugins.policies = [ '"${policies}"' ]' "${HELM_VALUES_FILE}"
+yq_patch '.plugins.policies = {}' "${HELM_VALUES_FILE}"
+yq_patch '.plugins.policies = { '"${policies}"' }' "${HELM_VALUES_FILE}"
