@@ -2744,6 +2744,7 @@ spec:
                                       items:
                                         properties:
                                           append:
+                                            default: true
                                             description: Should the header be appended
                                             type: boolean
                                           key:
@@ -3009,6 +3010,9 @@ spec:
                                       format:
                                         description: The format of the reset header,
                                           either Seconds or UnixTimestamp.
+                                        enum:
+                                        - Seconds
+                                        - UnixTimestamp
                                         type: string
                                       name:
                                         description: The Name of the reset header.
@@ -3078,6 +3082,9 @@ spec:
                                       format:
                                         description: The format of the reset header,
                                           either Seconds or UnixTimestamp.
+                                        enum:
+                                        - Seconds
+                                        - UnixTimestamp
                                         type: string
                                       name:
                                         description: The Name of the reset header.

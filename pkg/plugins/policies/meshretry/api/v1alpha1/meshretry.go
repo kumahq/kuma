@@ -225,6 +225,7 @@ type RateLimitedBackOff struct {
 	MaxInterval *k8s.Duration `json:"maxInterval,omitempty"`
 }
 
+// +kubebuilder:validation:Enum=Seconds;UnixTimestamp
 type RateLimitFormat string
 
 var (

@@ -169,9 +169,6 @@ func validateRateLimitedBackOff(rateLimitedBackOff *RateLimitedBackOff) validato
 	for i, header := range rateLimitedBackOff.ResetHeaders {
 		index := path.Field("resetHeaders").Index(i)
 		verr.Add(validators.ValidateStringDefined(index.Field("name"), header.Name))
-		if _, ok := RateLimitFormatEnumToEnvoyValue[header.Format]; !ok {
-			verr.AddViolationAt(index.Field("format"), validators.MustBeOnlyOneOf([]string{string(Seconds), string(UnixTimestamp)}))
-		}
 	}
 
 	return verr
