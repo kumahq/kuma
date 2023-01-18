@@ -1968,8 +1968,10 @@ spec:
                                   items:
                                     properties:
                                       format:
-                                        description: The format of the reset header,
-                                          either "Seconds" or "UnixTimestamp".
+                                        description: The format of the reset header.
+                                        enum:
+                                        - Seconds
+                                        - UnixTimestamp
                                         type: string
                                       name:
                                         description: The Name of the reset header.
@@ -2037,8 +2039,10 @@ spec:
                                   items:
                                     properties:
                                       format:
-                                        description: The format of the reset header,
-                                          either "Seconds" or "UnixTimestamp".
+                                        description: The format of the reset header.
+                                        enum:
+                                        - Seconds
+                                        - UnixTimestamp
                                         type: string
                                       name:
                                         description: The Name of the reset header.
