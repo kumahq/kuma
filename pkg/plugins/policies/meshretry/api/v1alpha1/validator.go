@@ -99,23 +99,23 @@ func validateHTTPRetryOn(retryOn []HTTPRetryOn) validators.ValidationError {
 	path := validators.RootedAt("retryOn")
 	for idx, ro := range retryOn {
 		switch ro {
-		case ALL_5XX:
-		case GATEWAY_ERROR:
-		case RESET:
-		case RETRIABLE_4XX:
-		case CONNECT_FAILURE:
-		case ENVOY_RATELIMITED:
-		case REFUSED_STREAM:
-		case HTTP3_POST_CONNECT_FAILURE:
-		case HTTP_METHOD_CONNECT:
-		case HTTP_METHOD_DELETE:
-		case HTTP_METHOD_GET:
-		case HTTP_METHOD_HEAD:
-		case HTTP_METHOD_OPTIONS:
-		case HTTP_METHOD_PATCH:
-		case HTTP_METHOD_POST:
-		case HTTP_METHOD_PUT:
-		case HTTP_METHOD_TRACE:
+		case All5xx:
+		case GatewayError:
+		case Reset:
+		case Retriable4xx:
+		case ConnectFailure:
+		case EnvoyRatelimited:
+		case RefusedStream:
+		case Http3PostConnectFailure:
+		case HttpMethodConnect:
+		case HttpMethodDelete:
+		case HttpMethodGet:
+		case HttpMethodHead:
+		case HttpMethodOptions:
+		case HttpMethodPatch:
+		case HttpMethodPost:
+		case HttpMethodPut:
+		case HttpMethodTrace:
 		default:
 			// method http.StatusText returns empty string for unknown status codes
 			if i, err := strconv.Atoi(string(ro)); err != nil || http.StatusText(i) == "" {
@@ -179,11 +179,11 @@ func validateGRPCRetryOn(retryOn []GRPCRetryOn) validators.ValidationError {
 	path := validators.RootedAt("retryOn")
 	for idx, ro := range retryOn {
 		switch ro {
-		case CANCELED:
-		case DEADLINE_EXCEEDED:
-		case INTERNAL:
-		case RESOURCE_EXHAUSTED:
-		case UNAVAILABLE:
+		case Canceled:
+		case DeadlineExceeded:
+		case Internal:
+		case ResourceExhausted:
+		case Unavailable:
 		default:
 			verr.AddViolationAt(path.Index(idx), fmt.Sprintf("unknown item '%v'", ro))
 		}

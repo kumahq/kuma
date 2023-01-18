@@ -73,7 +73,7 @@ spec:
        kind: MeshService
        name: demo-client
      default:
-       action: ALLOW
+       action: Allow
 `
 		err := YamlUniversal(yaml)(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -102,7 +102,7 @@ spec:
         tags: 
           team: client-owners
       default:
-        action: ALLOW
+        action: Allow
 `
 		err := YamlUniversal(yaml)(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
