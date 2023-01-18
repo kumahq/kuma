@@ -58,7 +58,7 @@ var _ = Describe("GUI Server", func() {
 
 			Expect(received).To(WithTransform(func(in []byte) []byte {
 				// Remove the part of the file name that changes always
-				r := regexp.MustCompile(`index\.[a-z0-9]+\.`).ReplaceAll(in, []byte("index."))
+				r := regexp.MustCompile(`index[\-\.][a-z0-9]+\.`).ReplaceAll(in, []byte("index."))
 				r = regexp.MustCompile(`"[0-9]+\.[0-9]+\.[0-9]+[^"]*"`).ReplaceAll(r, []byte(`"0.0.0"`))
 				r = regexp.MustCompile(`"unknown"`).ReplaceAll(r, []byte(`"0.0.0"`))
 				if r[len(r)-1] != '\n' {
