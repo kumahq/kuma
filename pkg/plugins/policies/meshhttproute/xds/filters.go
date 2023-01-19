@@ -8,6 +8,7 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -17,6 +18,8 @@ func routeFilter(filter api.Filter, route *envoy_route.Route) {
 		requestHeaderModifier(*filter.RequestHeaderModifier, route)
 	case api.ResponseHeaderModifierType:
 		responseHeaderModifier(*filter.ResponseHeaderModifier, route)
+	case api.RequestRedirectType:
+		requestRedirect(*filter.RequestRedirect, route)
 	}
 }
 
@@ -67,4 +70,38 @@ func responseHeaderModifier(mod api.HeaderModifier, envoyRoute *envoy_route.Rout
 
 	envoyRoute.ResponseHeadersToAdd = append(envoyRoute.ResponseHeadersToAdd, options...)
 	envoyRoute.ResponseHeadersToRemove = append(envoyRoute.ResponseHeadersToRemove, removes...)
+}
+
+func requestRedirect(redirect api.RequestRedirect, envoyRoute *envoy_route.Route) {
+	envoyRedirect := &envoy_route.RedirectAction{}
+	if redirect.Hostname != nil {
+		envoyRedirect.HostRedirect = string(*redirect.Hostname)
+	}
+	if redirect.Port != nil {
+		envoyRedirect.PortRedirect = uint32(*redirect.Port)
+	}
+	if redirect.Scheme != nil {
+		envoyRedirect.SchemeRewriteSpecifier = &envoy_route.RedirectAction_SchemeRedirect{
+			SchemeRedirect: *redirect.Scheme,
+		}
+	}
+
+	switch pointer.DerefOr(redirect.StatusCode, 301) {
+	case 301:
+		envoyRedirect.ResponseCode = envoy_route.RedirectAction_MOVED_PERMANENTLY
+	case 302:
+		envoyRedirect.ResponseCode = envoy_route.RedirectAction_FOUND
+	case 303:
+		envoyRedirect.ResponseCode = envoy_route.RedirectAction_SEE_OTHER
+	case 307:
+		envoyRedirect.ResponseCode = envoy_route.RedirectAction_TEMPORARY_REDIRECT
+	case 308:
+		envoyRedirect.ResponseCode = envoy_route.RedirectAction_PERMANENT_REDIRECT
+	default:
+		panic("impossible redirect")
+	}
+
+	envoyRoute.Action = &envoy_route.Route_Redirect{
+		Redirect: envoyRedirect,
+	}
 }
