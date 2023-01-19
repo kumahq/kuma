@@ -1,7 +1,7 @@
 package api_server
 
 import (
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
 
 	"github.com/kumahq/kuma/pkg/version"
 )

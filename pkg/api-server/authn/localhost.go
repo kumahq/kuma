@@ -3,7 +3,7 @@ package authn
 import (
 	"net"
 
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
 
 	"github.com/kumahq/kuma/pkg/core"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"

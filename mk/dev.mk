@@ -113,9 +113,10 @@ dev/install/protoc-gen-kumadoc:
 
 .PHONY: dev/install/data-plane-api
 dev/install/data-plane-api:
-	go get github.com/envoyproxy/data-plane-api@$(DATAPLANE_API_LATEST_VERSION)
-	go get github.com/cncf/udpa@$(UDPA_LATEST_VERSION)
-	go get github.com/googleapis/googleapis@$(GOOGLEAPIS_LATEST_VERSION)
+	go mod download github.com/envoyproxy/data-plane-api@$(DATAPLANE_API_LATEST_VERSION)
+	go mod download github.com/cncf/udpa@$(UDPA_LATEST_VERSION)
+	go mod download github.com/googleapis/googleapis@$(GOOGLEAPIS_LATEST_VERSION)
+	go mod tidy
 
 .PHONY: dev/install/protoc
 dev/install/protoc: ## Bootstrap: Install Protoc (protobuf compiler)
