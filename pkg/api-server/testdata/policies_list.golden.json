@@ -41,6 +41,14 @@
    "isExperimental": false
   },
   {
+   "name": "MeshFaultInjection",
+   "readOnly": false,
+   "path": "meshfaultinjections",
+   "singularDisplayName": "Mesh Fault Injection",
+   "pluralDisplayName": "Mesh Fault Injections",
+   "isExperimental": false
+  },
+  {
    "name": "MeshGateway",
    "readOnly": false,
    "path": "meshgateways",

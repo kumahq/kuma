@@ -237,6 +237,7 @@ rules:
       - meshgatewayinstances
       - meshaccesslogs
       - meshcircuitbreakers
+      - meshfaultinjections
       - meshhealthchecks
       - meshhttproutes
       - meshproxypatches
@@ -587,7 +588,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: d4dafb3f347d3989753df803a7f2b48f535902402a22c949814f4ce4e603fa9e
+        checksum/tls-secrets: 86ea761718bf0f0e59a68251ac0eace6afa0a6f256acc3f738729980f77e310d
         bim: "bam"
         foo: "{\"bar\": \"baz\"}"
       labels: 
@@ -1025,6 +1026,7 @@ webhooks:
           - meshes
           - meshaccesslogs
           - meshcircuitbreakers
+          - meshfaultinjections
           - meshhealthchecks
           - meshhttproutes
           - meshproxypatches
@@ -1068,6 +1070,7 @@ webhooks:
           - virtualoutbounds
           - meshaccesslogs
           - meshcircuitbreakers
+          - meshfaultinjections
           - meshhealthchecks
           - meshhttproutes
           - meshproxypatches
@@ -1193,6 +1196,7 @@ webhooks:
           - containerpatches
           - meshaccesslogs
           - meshcircuitbreakers
+          - meshfaultinjections
           - meshhealthchecks
           - meshhttproutes
           - meshproxypatches

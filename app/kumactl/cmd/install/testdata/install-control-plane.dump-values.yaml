@@ -704,6 +704,7 @@ plugins:
   policies:
     meshaccesslogs: {}
     meshcircuitbreakers: {}
+    meshfaultinjections: {}
     meshhealthchecks: {}
     meshhttproutes: {}
     meshproxypatches: {}
