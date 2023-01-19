@@ -42,6 +42,9 @@ type Rule struct {
 type Match struct {
 	Path   *PathMatch `json:"path,omitempty"`
 	Method *Method    `json:"method,omitempty"`
+	// QueryParams matches based on HTTP URL query parameters. Multiple matches
+	// are ANDed together such that all listed matches must succeed.
+	QueryParams []QueryParamsMatch `json:"queryParams,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Exact;Prefix;RegularExpression
@@ -64,17 +67,33 @@ type PathMatch struct {
 	Type  PathMatchType `json:"type"`
 }
 
+// +kubebuilder:validation:Enum=Exact;RegularExpression
+type QueryParamsMatchType string
+
+const (
+	ExactQueryMatch             QueryParamsMatchType = "Exact"
+	RegularExpressionQueryMatch QueryParamsMatchType = "RegularExpression"
+)
+
+type QueryParamsMatch struct {
+	Type QueryParamsMatchType `json:"type"`
+	// +kubebuilder:validation:MinLength=1
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
 type RuleConf struct {
 	Filters     *[]Filter     `json:"filters,omitempty"`
 	BackendRefs *[]BackendRef `json:"backendRefs,omitempty"`
 }
 
-// +kubebuilder:validation:Enum=RequestHeaderModifier;ResponseHeaderModifier
+// +kubebuilder:validation:Enum=RequestHeaderModifier;ResponseHeaderModifier;RequestRedirect
 type FilterType string
 
 const (
 	RequestHeaderModifierType  FilterType = "RequestHeaderModifier"
 	ResponseHeaderModifierType FilterType = "ResponseHeaderModifier"
+	RequestRedirectType        FilterType = "RequestRedirect"
 )
 
 // +kubebuilder:validation:MinLength=1
@@ -103,10 +122,47 @@ type HeaderModifier struct {
 	Remove []string `json:"remove,omitempty"`
 }
 
+// PreciseHostname is the fully qualified domain name of a network host. This
+// matches the RFC 1123 definition of a hostname with 1 notable exception that
+// numeric IP addresses are not allowed.
+//
+// Note that as per RFC1035 and RFC1123, a *label* must consist of lower case
+// alphanumeric characters or '-', and must start and end with an alphanumeric
+// character. No other punctuation is allowed.
+//
+// +kubebuilder:validation:MinLength=1
+// +kubebuilder:validation:MaxLength=253
+// +kubebuilder:validation:Pattern=`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`
+type PreciseHostname string
+
+// PortNumber defines a network port.
+//
+// +kubebuilder:validation:Minimum=1
+// +kubebuilder:validation:Maximum=65535
+type PortNumber int32
+
+type RequestRedirect struct {
+	// +kubebuilder:validation:Enum=http;https
+	Scheme   *string          `json:"scheme,omitempty"`
+	Hostname *PreciseHostname `json:"hostname,omitempty"`
+	// Port is the port to be used in the value of the `Location`
+	// header in the response.
+	// When empty, port (if specified) of the request is used.
+	//
+	Port *PortNumber `json:"port,omitempty"`
+	// StatusCode is the HTTP status code to be used in response.
+	//
+	// +kubebuilder:default=302
+	// +kubebuilder:validation:Enum=301;302;303;307;308
+	StatusCode *int `json:"statusCode,omitempty"`
+}
+
 type Filter struct {
-	Type                   FilterType      `json:"type"`
-	RequestHeaderModifier  *HeaderModifier `json:"requestHeaderModifier,omitempty"`
-	ResponseHeaderModifier *HeaderModifier `json:"responseHeaderModifier,omitempty"`
+	Type                   FilterType       `json:"type"`
+	RequestHeaderModifier  *HeaderModifier  `json:"requestHeaderModifier,omitempty"`
+	ResponseHeaderModifier *HeaderModifier  `json:"responseHeaderModifier,omitempty"`
+	RequestRedirect        *RequestRedirect `json:"requestRedirect,omitempty"`
+	// TODO: add path to redirect after adding URL rewrite
 }
 
 type BackendRef struct {

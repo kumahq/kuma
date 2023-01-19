@@ -9,6 +9,18 @@ import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+func ValidateDurationNotNegative(path PathBuilder, duration *k8s.Duration) ValidationError {
+	var err ValidationError
+	if duration == nil {
+		err.AddViolationAt(path, MustBeDefined)
+		return err
+	}
+	if duration.Duration < 0 {
+		err.AddViolationAt(path, WhenDefinedHasToBeNonNegative)
+	}
+	return err
+}
+
 func ValidateDurationNotNegativeOrNil(path PathBuilder, duration *k8s.Duration) ValidationError {
 	var err ValidationError
 	if duration == nil {
@@ -165,13 +177,13 @@ func ValidateIntegerGreaterThan(path PathBuilder, value uint32, minValue uint32)
 	return err
 }
 
-func ValidateBandwidth(path PathBuilder, value *string) ValidationError {
+func ValidateBandwidth(path PathBuilder, value string) ValidationError {
 	var err ValidationError
-	if value == nil {
+	if value == "" {
 		err.AddViolationAt(path, MustBeDefined)
 		return err
 	}
-	if matched, _ := regexp.MatchString(`\d*\s?[gmk]bps`, *value); !matched {
+	if matched, _ := regexp.MatchString(`\d*\s?[gmk]bps`, value); !matched {
 		err.AddViolationAt(path, "has to be in kbps/mbps/gbps units")
 	}
 	return err

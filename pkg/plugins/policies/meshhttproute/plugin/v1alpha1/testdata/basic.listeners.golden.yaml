@@ -59,6 +59,14 @@ resources:
                   cluster: backend-_0_
                   timeout: 0s
               - match:
+                  queryParameters:
+                  - name: v1
+                    stringMatch:
+                      exact: "true"
+                route:
+                  cluster: backend
+                  timeout: 0s
+              - match:
                   prefix: /
                 route:
                   cluster: backend

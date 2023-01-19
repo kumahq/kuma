@@ -35,7 +35,7 @@ virtualHosts:
           header:
             key: x-kuma-rate-limit-header
             value: test-value
-        - append: false
+        - append: true
           header:
             key: x-kuma-rate-limit
             value: other-value

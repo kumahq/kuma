@@ -56,7 +56,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: circuitbreakers.kuma.io
 spec:
@@ -101,7 +101,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: containerpatches.kuma.io
 spec:
@@ -211,7 +211,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshfaultinjections.kuma.io
 spec:
@@ -246,6 +246,8 @@ spec:
               resource.
             properties:
               from:
+                description: From list makes a match between clients and corresponding
+                  configurations
                 items:
                   properties:
                     default:
@@ -253,6 +255,8 @@ spec:
                         of destinations referenced in 'targetRef'
                       properties:
                         http:
+                          description: Http allows to define list of Http faults between
+                            dataplanes.
                           items:
                             description: FaultInjection defines the configuration
                               of faults between dataplanes.
@@ -274,6 +278,9 @@ spec:
                                       range
                                     format: int32
                                     type: integer
+                                required:
+                                - httpStatus
+                                - percentage
                                 type: object
                               delay:
                                 description: Delay defines configuration of delaying
@@ -289,6 +296,9 @@ spec:
                                     description: The duration during which the response
                                       will be delayed
                                     type: string
+                                required:
+                                - percentage
+                                - value
                                 type: object
                               responseBandwidth:
                                 description: ResponseBandwidth defines a configuration
@@ -304,6 +314,9 @@ spec:
                                       in [0.0 - 100.0] range
                                     format: int32
                                     type: integer
+                                required:
+                                - limit
+                                - percentage
                                 type: object
                             type: object
                           type: array
@@ -381,7 +394,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshgatewayinstances.kuma.io
 spec:
@@ -429,6 +442,26 @@ spec:
                 description: Resources specifies the compute resources for the proxy
                   container. The default can be set in the control plane config.
                 properties:
+                  claims:
+                    description: "Claims lists the names of resources, defined in
+                      spec.resourceClaims, that are used by this container. \n This
+                      is an alpha field and requires enabling the DynamicResourceAllocation
+                      feature gate. \n This field is immutable."
+                    items:
+                      description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                      properties:
+                        name:
+                          description: Name must match the name of one entry in pod.spec.resourceClaims
+                            of the Pod where this field is used. It makes that resource
+                            available inside a container.
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    type: array
+                    x-kubernetes-list-map-keys:
+                    - name
+                    x-kubernetes-list-type: map
                   limits:
                     additionalProperties:
                       anyOf:
@@ -640,7 +673,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshgatewayroutes.kuma.io
 spec:
@@ -685,7 +718,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshgateways.kuma.io
 spec:
@@ -730,7 +763,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshhealthchecks.kuma.io
 spec:
@@ -1008,7 +1041,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshhttproutes.kuma.io
 spec:
@@ -1171,6 +1204,49 @@ spec:
                                           - name
                                           x-kubernetes-list-type: map
                                       type: object
+                                    requestRedirect:
+                                      properties:
+                                        hostname:
+                                          description: "PreciseHostname is the fully
+                                            qualified domain name of a network host.
+                                            This matches the RFC 1123 definition of
+                                            a hostname with 1 notable exception that
+                                            numeric IP addresses are not allowed.
+                                            \n Note that as per RFC1035 and RFC1123,
+                                            a *label* must consist of lower case alphanumeric
+                                            characters or '-', and must start and
+                                            end with an alphanumeric character. No
+                                            other punctuation is allowed."
+                                          maxLength: 253
+                                          minLength: 1
+                                          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                          type: string
+                                        port:
+                                          description: Port is the port to be used
+                                            in the value of the `Location` header
+                                            in the response. When empty, port (if
+                                            specified) of the request is used.
+                                          format: int32
+                                          maximum: 65535
+                                          minimum: 1
+                                          type: integer
+                                        scheme:
+                                          enum:
+                                          - http
+                                          - https
+                                          type: string
+                                        statusCode:
+                                          default: 302
+                                          description: StatusCode is the HTTP status
+                                            code to be used in response.
+                                          enum:
+                                          - 301
+                                          - 302
+                                          - 303
+                                          - 307
+                                          - 308
+                                          type: integer
+                                      type: object
                                     responseHeaderModifier:
                                       description: Only one action is supported per
                                         header name. Configuration to set or add multiple
@@ -1226,6 +1302,7 @@ spec:
                                       enum:
                                       - RequestHeaderModifier
                                       - ResponseHeaderModifier
+                                      - RequestRedirect
                                       type: string
                                   required:
                                   - type
@@ -1265,6 +1342,28 @@ spec:
                                   - type
                                   - value
                                   type: object
+                                queryParams:
+                                  description: QueryParams matches based on HTTP URL
+                                    query parameters. Multiple matches are ANDed together
+                                    such that all listed matches must succeed.
+                                  items:
+                                    properties:
+                                      name:
+                                        minLength: 1
+                                        type: string
+                                      type:
+                                        enum:
+                                        - Exact
+                                        - RegularExpression
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                    - name
+                                    - type
+                                    - value
+                                    type: object
+                                  type: array
                               type: object
                             type: array
                         required:
@@ -1312,7 +1411,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshinsights.kuma.io
 spec:
@@ -1357,7 +1456,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshproxypatches.kuma.io
 spec:
@@ -1700,7 +1799,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshratelimits.kuma.io
 spec:
@@ -1763,6 +1862,7 @@ spec:
                                       items:
                                         properties:
                                           append:
+                                            default: true
                                             description: Should the header be appended
                                             type: boolean
                                           key:
@@ -1903,7 +2003,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshretries.kuma.io
 spec:
@@ -2215,7 +2315,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: dataplaneinsights.kuma.io
 spec:
@@ -2260,7 +2360,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshtimeouts.kuma.io
 spec:
@@ -2503,7 +2603,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshtraces.kuma.io
 spec:
@@ -2564,13 +2664,19 @@ spec:
                               description: Address of Datadog collector, only host
                                 and port are allowed (no paths, fragments etc.)
                               type: string
+                          required:
+                          - url
                           type: object
                         zipkin:
                           description: Zipkin backend configuration.
                           properties:
                             apiVersion:
+                              default: httpJson
                               description: 'Version of the API. values: httpJson,
                                 httpProto. Default: httpJson see https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L66'
+                              enum:
+                              - httpJson
+                              - httpProto
                               type: string
                             sharedSpanContext:
                               description: 'Determines whether client and server spans
@@ -2582,9 +2688,10 @@ spec:
                             url:
                               description: Address of Zipkin collector.
                               type: string
+                          required:
+                          - url
                           type: object
                       type: object
-                    nullable: true
                     type: array
                   sampling:
                     description: Sampling configuration. Sampling is the process by
@@ -2634,6 +2741,8 @@ spec:
                             name:
                               description: Name of the header.
                               type: string
+                          required:
+                          - name
                           type: object
                         literal:
                           description: Tag taken from literal value.
@@ -2641,8 +2750,9 @@ spec:
                         name:
                           description: Name of the tag.
                           type: string
+                      required:
+                      - name
                       type: object
-                    nullable: true
                     type: array
                 type: object
               targetRef:
@@ -2685,7 +2795,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshtrafficpermissions.kuma.io
 spec:
@@ -2810,7 +2920,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: proxytemplates.kuma.io
 spec:
@@ -2855,7 +2965,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: ratelimits.kuma.io
 spec:
@@ -2900,7 +3010,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: retries.kuma.io
 spec:
@@ -2945,7 +3055,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: serviceinsights.kuma.io
 spec:
@@ -2990,7 +3100,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: timeouts.kuma.io
 spec:
@@ -3035,7 +3145,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: trafficlogs.kuma.io
 spec:
@@ -3080,7 +3190,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: trafficpermissions.kuma.io
 spec:
@@ -3125,7 +3235,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: dataplanes.kuma.io
 spec:
@@ -3170,7 +3280,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: trafficroutes.kuma.io
 spec:
@@ -3215,7 +3325,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: traffictraces.kuma.io
 spec:
@@ -3260,7 +3370,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: virtualoutbounds.kuma.io
 spec:
@@ -3305,7 +3415,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: zoneegresses.kuma.io
 spec:
@@ -3350,7 +3460,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: zoneegressinsights.kuma.io
 spec:
@@ -3395,7 +3505,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: zoneingresses.kuma.io
 spec:
@@ -3440,7 +3550,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: zoneingressinsights.kuma.io
 spec:
@@ -3486,7 +3596,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: zoneinsights.kuma.io
 spec:
@@ -3531,7 +3641,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: zones.kuma.io
 spec:
@@ -3576,7 +3686,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: externalservices.kuma.io
 spec:
@@ -3621,7 +3731,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: faultinjections.kuma.io
 spec:
@@ -3666,7 +3776,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: healthchecks.kuma.io
 spec:
@@ -3711,7 +3821,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshaccesslogs.kuma.io
 spec:
@@ -3992,7 +4102,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshcircuitbreakers.kuma.io
 spec:
@@ -4644,7 +4754,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshes.kuma.io
 spec:
