@@ -1,6 +1,9 @@
 package xds
 
 import (
+	"net/http"
+	"strings"
+
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_extensions_filters_http_local_ratelimit_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
@@ -22,30 +25,40 @@ func RateLimitConfigurationFromPolicy(rl *api.LocalHTTP) *rate_limit.RateLimitCo
 		return nil
 	}
 
-	headers := []*rate_limit.Headers{}
-	var status uint32
+	onRateLimit := &rate_limit.OnRateLimit{}
 	if rl.OnRateLimit != nil {
-		for _, h := range pointer.Deref(rl.OnRateLimit.Headers) {
-			header := &rate_limit.Headers{
-				Key:    h.Key,
-				Value:  h.Value,
+		for _, h := range pointer.Deref(rl.OnRateLimit.Headers).Add {
+			onRateLimit.Headers = append(onRateLimit.Headers, &rate_limit.Headers{
+				Key:    string(h.Name),
+				Value:  string(h.Value),
 				Append: true,
-			}
-			if h.Append != nil {
-				header.Append = *h.Append
-			}
-			headers = append(headers, header)
+			})
 		}
-		status = pointer.Deref(rl.OnRateLimit.Status)
+		for _, header := range pointer.Deref(rl.OnRateLimit.Headers).Set {
+			for _, val := range strings.Split(string(header.Value), ",") {
+				onRateLimit.Headers = append(onRateLimit.Headers, &rate_limit.Headers{
+					Key:    http.CanonicalHeaderKey(string(header.Name)),
+					Value:  val,
+					Append: true,
+				})
+			}
+		}
+		for _, header := range pointer.Deref(rl.OnRateLimit.Headers).Set {
+			for _, val := range strings.Split(string(header.Value), ",") {
+				onRateLimit.Headers = append(onRateLimit.Headers, &rate_limit.Headers{
+					Key:    http.CanonicalHeaderKey(string(header.Name)),
+					Value:  val,
+					Append: false,
+				})
+			}
+		}
+		onRateLimit.Status = pointer.Deref(rl.OnRateLimit.Status)
 	}
 
 	return &rate_limit.RateLimitConfiguration{
-		Interval: rl.RequestRate.Interval.Duration,
-		Requests: rl.RequestRate.Num,
-		OnRateLimit: &rate_limit.OnRateLimit{
-			Status:  status,
-			Headers: headers,
-		},
+		Interval:    rl.RequestRate.Interval.Duration,
+		Requests:    rl.RequestRate.Num,
+		OnRateLimit: onRateLimit,
 	}
 }
 

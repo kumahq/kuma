@@ -41,9 +41,9 @@ from:
           onRateLimit:
             status: 123
             headers:
-            - key: "test"
-              value: "123"
-              append: true
+              add:
+              - name: "test"
+                value: "123"
         tcp:
           disabled: false
           connectionRate:
@@ -65,9 +65,9 @@ from:
           onRateLimit:
             status: 123
             headers:
-            - key: "test"
-              value: "123"
-              append: true`),
+              set:
+              - name: "test"
+                value: "123"`),
 			Entry("full example, only tcp", `
 targetRef:
   kind: MeshService

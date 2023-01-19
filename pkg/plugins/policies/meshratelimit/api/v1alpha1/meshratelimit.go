@@ -51,17 +51,25 @@ type OnRateLimit struct {
 	// The HTTP status code to be set on a rate limit event
 	Status *uint32 `json:"status,omitempty"`
 	// The Headers to be added to the HTTP response on a rate limit event
-	Headers *[]HeaderValue `json:"headers,omitempty"`
+	Headers *HeaderModifier `json:"headers,omitempty"`
 }
 
-type HeaderValue struct {
-	// Header name
-	Key string `json:"key"`
-	// Header value
-	Value string `json:"value"`
-	// Should the header be appended
-	// +kubebuilder:default=true
-	Append *bool `json:"append,omitempty"`
+type HeaderKeyValue struct {
+	Name  common_api.HeaderName  `json:"name"`
+	Value common_api.HeaderValue `json:"value"`
+}
+
+// Configuration to set or add multiple values for a header must use RFC 7230
+// header value formatting, separating each value with a comma.
+type HeaderModifier struct {
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=16
+	Set []HeaderKeyValue `json:"set,omitempty"`
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=16
+	Add []HeaderKeyValue `json:"add,omitempty"`
 }
 
 // LocalTCP defines confguration of local TCP rate limiting

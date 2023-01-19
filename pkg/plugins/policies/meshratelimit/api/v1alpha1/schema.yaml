@@ -35,23 +35,46 @@ properties:
                           properties:
                             headers:
                               description: The Headers to be added to the HTTP response on a rate limit event
-                              items:
-                                properties:
-                                  append:
-                                    default: true
-                                    description: Should the header be appended
-                                    type: boolean
-                                  key:
-                                    description: Header name
-                                    type: string
-                                  value:
-                                    description: Header value
-                                    type: string
-                                required:
-                                  - key
-                                  - value
-                                type: object
-                              type: array
+                              properties:
+                                add:
+                                  items:
+                                    properties:
+                                      name:
+                                        maxLength: 256
+                                        minLength: 1
+                                        pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                      - name
+                                      - value
+                                    type: object
+                                  maxItems: 16
+                                  type: array
+                                  x-kubernetes-list-map-keys:
+                                    - name
+                                  x-kubernetes-list-type: map
+                                set:
+                                  items:
+                                    properties:
+                                      name:
+                                        maxLength: 256
+                                        minLength: 1
+                                        pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                      - name
+                                      - value
+                                    type: object
+                                  maxItems: 16
+                                  type: array
+                                  x-kubernetes-list-map-keys:
+                                    - name
+                                  x-kubernetes-list-type: map
+                              type: object
                             status:
                               description: The HTTP status code to be set on a rate limit event
                               format: int32

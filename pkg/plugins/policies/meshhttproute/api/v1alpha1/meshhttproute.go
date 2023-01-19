@@ -97,14 +97,9 @@ const (
 	URLRewriteType             FilterType = "URLRewrite"
 )
 
-// +kubebuilder:validation:MinLength=1
-// +kubebuilder:validation:MaxLength=256
-// +kubebuilder:validation:Pattern=`^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$`
-type HeaderName string
-
 type HeaderKeyValue struct {
-	Name  HeaderName `json:"name"`
-	Value string     `json:"value"`
+	Name  common_api.HeaderName  `json:"name"`
+	Value common_api.HeaderValue `json:"value"`
 }
 
 // Only one action is supported per header name.

@@ -166,7 +166,7 @@ func configureRateLimitedRetryBackOff(rateLimitedBackOff *api.RateLimitedBackOff
 
 func headerMatcher(header v1alpha1.HeaderMatcher) *envoy_route.HeaderMatcher {
 	matcher := &envoy_route.HeaderMatcher{
-		Name:        header.Name,
+		Name:        string(header.Name),
 		InvertMatch: false,
 	}
 
@@ -176,7 +176,7 @@ func headerMatcher(header v1alpha1.HeaderMatcher) *envoy_route.HeaderMatcher {
 			StringMatch: &envoy_type_matcher.StringMatcher{
 				MatchPattern: &envoy_type_matcher.StringMatcher_SafeRegex{
 					SafeRegex: &envoy_type_matcher.RegexMatcher{
-						Regex: header.Value,
+						Regex: string(header.Value),
 						EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
 							GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
 						},
@@ -188,7 +188,7 @@ func headerMatcher(header v1alpha1.HeaderMatcher) *envoy_route.HeaderMatcher {
 		matcher.HeaderMatchSpecifier = &envoy_route.HeaderMatcher_StringMatch{
 			StringMatch: &envoy_type_matcher.StringMatcher{
 				MatchPattern: &envoy_type_matcher.StringMatcher_Prefix{
-					Prefix: header.Value,
+					Prefix: string(header.Value),
 				},
 			},
 		}
@@ -196,7 +196,7 @@ func headerMatcher(header v1alpha1.HeaderMatcher) *envoy_route.HeaderMatcher {
 		matcher.HeaderMatchSpecifier = &envoy_route.HeaderMatcher_StringMatch{
 			StringMatch: &envoy_type_matcher.StringMatcher{
 				MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
-					Exact: header.Value,
+					Exact: string(header.Value),
 				},
 			},
 		}

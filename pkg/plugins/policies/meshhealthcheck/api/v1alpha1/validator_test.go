@@ -57,10 +57,11 @@ to:
         disabled: true # new, default false, can be disabled for override
         path: /health
         requestHeadersToAdd: # optional, empty by default
-        - append: false
-          key: Content-Type
+        set:
+        - name: Content-Type
           value: application/json
-        - key: Accept
+        add:
+        - name: Accept
           value: application/json
         expectedStatuses: [200, 201] # optional, by default [200]
       grpc: # new
@@ -231,58 +232,6 @@ to:
 violations:
   - field: spec.to[0].default.eventLogPath
     message: has to be a valid path when defined`,
-			}),
-			Entry("header missing in requestHeadersToAdd", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: backend
-to:
-  - targetRef:
-      kind: MeshService
-      name: web-backend
-    default:
-      interval: 10s
-      timeout: 2s
-      unhealthyThreshold: 3
-      healthyThreshold: 1
-      http:
-        path: /health
-        requestHeadersToAdd:
-        - {}
-`,
-				expected: `
-violations:
-  - field: spec.to[0].default.http.requestHeadersToAdd[0].header.key
-    message: must not be empty
-  - field: spec.to[0].default.http.requestHeadersToAdd[0].header.value
-    message: must not be empty`,
-			}),
-			Entry("key or value missing in requestHeadersToAdd", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: backend
-to:
-  - targetRef:
-      kind: MeshService
-      name: web-backend
-    default:
-      interval: 10s
-      timeout: 2s
-      unhealthyThreshold: 3
-      healthyThreshold: 1
-      http:
-        path: /health
-        requestHeadersToAdd:
-        - header: {}
-`,
-				expected: `
-violations:
-  - field: spec.to[0].default.http.requestHeadersToAdd[0].header.key
-    message: must not be empty
-  - field: spec.to[0].default.http.requestHeadersToAdd[0].header.value
-    message: must not be empty`,
 			}),
 			Entry("status codes out of range in expectedStatuses", testCase{
 				inputYaml: `

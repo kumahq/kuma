@@ -8,6 +8,7 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -26,8 +27,8 @@ func routeFilter(filter api.Filter, route *envoy_route.Route, matchesPrefix bool
 	}
 }
 
-func headerValues(raw string) []string {
-	return strings.Split(raw, ",")
+func headerValues(raw common_api.HeaderValue) []string {
+	return strings.Split(string(raw), ",")
 }
 
 func headerModifiers(mod api.HeaderModifier) ([]*envoy_config_core.HeaderValueOption, []string) {

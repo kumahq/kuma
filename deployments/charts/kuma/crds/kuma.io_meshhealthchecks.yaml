@@ -145,24 +145,46 @@ spec:
                             requestHeadersToAdd:
                               description: The list of HTTP headers which should be
                                 added to each health check request
-                              items:
-                                properties:
-                                  append:
-                                    default: true
-                                    description: If true (default) the header values
-                                      should be appended to already present ones
-                                    type: boolean
-                                  key:
-                                    description: Header name
-                                    type: string
-                                  value:
-                                    description: Header value
-                                    type: string
-                                required:
-                                - key
-                                - value
-                                type: object
-                              type: array
+                              properties:
+                                add:
+                                  items:
+                                    properties:
+                                      name:
+                                        maxLength: 256
+                                        minLength: 1
+                                        pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                    - name
+                                    - value
+                                    type: object
+                                  maxItems: 16
+                                  type: array
+                                  x-kubernetes-list-map-keys:
+                                  - name
+                                  x-kubernetes-list-type: map
+                                set:
+                                  items:
+                                    properties:
+                                      name:
+                                        maxLength: 256
+                                        minLength: 1
+                                        pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                    - name
+                                    - value
+                                    type: object
+                                  maxItems: 16
+                                  type: array
+                                  x-kubernetes-list-map-keys:
+                                  - name
+                                  x-kubernetes-list-type: map
+                              type: object
                           type: object
                         initialJitter:
                           description: If specified, Envoy will start health checking
