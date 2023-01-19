@@ -7,6 +7,7 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -65,7 +66,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				SuccessRate: &api.DetectorSuccessRateFailures{
 					MinimumHosts:            pointer.To(uint32(33)),
 					RequestVolume:           pointer.To(uint32(99)),
-					StandardDeviationFactor: pointer.To(uint32(1900)),
+					StandardDeviationFactor: pointer.To(intstr.FromString("1.9")),
 				},
 				FailurePercentage: &api.DetectorFailurePercentageFailures{
 					MinimumHosts:  pointer.To(uint32(32)),

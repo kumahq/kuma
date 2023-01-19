@@ -6,6 +6,8 @@ import (
 	"strconv"
 
 	"github.com/asaskevich/govalidator"
+	"github.com/shopspring/decimal"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
@@ -142,10 +144,15 @@ func validateBackend(conf Conf, backendsPath validators.PathBuilder) validators.
 	return verr
 }
 
-func validateSampling(sampling uint32) validators.ValidationError {
+func validateSampling(sampling intstr.IntOrString) validators.ValidationError {
 	var verr validators.ValidationError
 
-	if sampling > 100 {
+	dec, err := common_api.NewDecimalFromIntOrString(sampling)
+	if err != nil {
+		verr.AddViolation("", "string is not a number")
+	}
+
+	if dec.LessThan(decimal.Zero) || dec.GreaterThan(decimal.NewFromInt(100)) {
 		verr.AddViolation("", "must be between 0 and 100")
 	}
 

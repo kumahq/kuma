@@ -3,6 +3,7 @@ package v1alpha1
 
 import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 )
@@ -198,10 +199,9 @@ type DetectorSuccessRateFailures struct {
 	// outlier ejection. The ejection threshold is the difference between
 	// the mean success rate, and the product of this factor and the standard
 	// deviation of the mean success rate: mean - (standard_deviation *
-	// success_rate_standard_deviation_factor). This factor is divided by a
-	// thousand to get a double. That is, if the desired factor is 1.9,
-	// the runtime value should be 1900.
-	StandardDeviationFactor *uint32 `json:"standardDeviationFactor,omitempty"`
+	// success_rate_standard_deviation_factor).
+	// Either int or decimal represented as string.
+	StandardDeviationFactor *intstr.IntOrString `json:"standardDeviationFactor,omitempty"`
 }
 
 type DetectorFailurePercentageFailures struct {

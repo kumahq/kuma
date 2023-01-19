@@ -3,7 +3,9 @@ package xds
 import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	"github.com/shopspring/decimal"
 
+	"github.com/kumahq/kuma/api/common/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -19,9 +21,7 @@ func NewConfigurer(conf api.Conf) *Configurer {
 
 func (c *Configurer) ConfigureCluster(cluster *envoy_cluster.Cluster) error {
 	configureCircuitBreakers(cluster, c.Conf.ConnectionLimits)
-	configureOutlierDetection(cluster, c.Conf.OutlierDetection)
-
-	return nil
+	return configureOutlierDetection(cluster, c.Conf.OutlierDetection)
 }
 
 func configureCircuitBreakers(cluster *envoy_cluster.Cluster, conf *api.ConnectionLimits) {
@@ -58,9 +58,9 @@ func configureCircuitBreakers(cluster *envoy_cluster.Cluster, conf *api.Connecti
 	}
 }
 
-func configureOutlierDetection(cluster *envoy_cluster.Cluster, conf *api.OutlierDetection) {
+func configureOutlierDetection(cluster *envoy_cluster.Cluster, conf *api.OutlierDetection) error {
 	if conf == nil || pointer.Deref(conf.Disabled) {
-		return
+		return nil
 	}
 
 	cluster.OutlierDetection = &envoy_cluster.OutlierDetection{}
@@ -86,22 +86,25 @@ func configureOutlierDetection(cluster *envoy_cluster.Cluster, conf *api.Outlier
 		cluster.OutlierDetection.MaxEjectionPercent = util_proto.UInt32(*maxEjectionPercent)
 	}
 
-	configureDetectors(cluster.OutlierDetection, conf.Detectors)
+	if err := configureDetectors(cluster.OutlierDetection, conf.Detectors); err != nil {
+		return err
+	}
+	return nil
 }
 
-func configureDetectors(
-	outlierDetection *envoy_cluster.OutlierDetection,
-	detectors *api.Detectors,
-) {
+func configureDetectors(outlierDetection *envoy_cluster.OutlierDetection, detectors *api.Detectors) error {
 	if detectors == nil {
-		return
+		return nil
 	}
 
 	configureTotalFailures(outlierDetection, detectors.TotalFailures)
 	configureLocalOriginFailures(outlierDetection, detectors.LocalOriginFailures)
 	configureGatewayFailures(outlierDetection, detectors.GatewayFailures)
-	configureSuccessRate(outlierDetection, detectors.SuccessRate)
+	if err := configureSuccessRate(outlierDetection, detectors.SuccessRate); err != nil {
+		return err
+	}
 	configureFailurePercentage(outlierDetection, detectors.FailurePercentage)
+	return nil
 }
 
 func configureFailurePercentage(
@@ -133,16 +136,13 @@ func configureFailurePercentage(
 	}
 }
 
-func configureSuccessRate(
-	outlierDetection *envoy_cluster.OutlierDetection,
-	conf *api.DetectorSuccessRateFailures,
-) {
+func configureSuccessRate(outlierDetection *envoy_cluster.OutlierDetection, conf *api.DetectorSuccessRateFailures) error {
 	if conf == nil {
 		outlierDetection.EnforcingSuccessRate = util_proto.UInt32(0)
 		// outlierDetection.EnforcingLocalOriginSuccessRate takes effect only
 		// when SplitExternalLocalOriginErrors is true
 		outlierDetection.EnforcingLocalOriginSuccessRate = util_proto.UInt32(0)
-		return
+		return nil
 	}
 
 	outlierDetection.EnforcingSuccessRate = util_proto.UInt32(100)
@@ -159,8 +159,13 @@ func configureSuccessRate(
 	}
 
 	if conf.StandardDeviationFactor != nil {
-		outlierDetection.SuccessRateStdevFactor = util_proto.UInt32(*conf.StandardDeviationFactor)
+		dec, err := v1alpha1.NewDecimalFromIntOrString(*conf.StandardDeviationFactor)
+		if err != nil {
+			return err
+		}
+		outlierDetection.SuccessRateStdevFactor = util_proto.UInt32(uint32(dec.Mul(decimal.NewFromInt(1000)).IntPart()))
 	}
+	return nil
 }
 
 func configureGatewayFailures(

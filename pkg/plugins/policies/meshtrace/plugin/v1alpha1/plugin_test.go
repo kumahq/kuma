@@ -4,6 +4,7 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -117,9 +118,9 @@ var _ = Describe("MeshTrace", func() {
 								{Name: "client_id", Header: &api.HeaderTag{Name: "client_id", Default: pointer.To("none")}},
 							},
 							Sampling: &api.Sampling{
-								Overall: pointer.To(uint32(10)),
-								Client:  pointer.To(uint32(20)),
-								Random:  pointer.To(uint32(50)),
+								Overall: pointer.To(intstr.FromInt(10)),
+								Client:  pointer.To(intstr.FromInt(20)),
+								Random:  pointer.To(intstr.FromInt(50)),
 							},
 							Backends: &[]api.Backend{{
 								Zipkin: &api.ZipkinBackend{
@@ -248,7 +249,7 @@ var _ = Describe("MeshTrace", func() {
 						Subset: []core_xds.Tag{},
 						Conf: api.Conf{
 							Sampling: &api.Sampling{
-								Random: pointer.To(uint32(50)),
+								Random: pointer.To(intstr.FromInt(50)),
 							},
 							Backends: &[]api.Backend{{
 								Datadog: &api.DatadogBackend{

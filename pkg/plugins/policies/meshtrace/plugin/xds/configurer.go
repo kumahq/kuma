@@ -12,7 +12,9 @@ import (
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/util/proto"
@@ -50,19 +52,25 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 
 		if c.Conf.Sampling != nil {
 			if overall := c.Conf.Sampling.Overall; overall != nil {
-				hcm.Tracing.OverallSampling = &envoy_type.Percent{
-					Value: float64(*overall),
+				percent, err := c.envoyPercent(*overall)
+				if err != nil {
+					return err
 				}
+				hcm.Tracing.OverallSampling = percent
 			}
 			if client := c.Conf.Sampling.Client; client != nil {
-				hcm.Tracing.ClientSampling = &envoy_type.Percent{
-					Value: float64(*client),
+				percent, err := c.envoyPercent(*client)
+				if err != nil {
+					return err
 				}
+				hcm.Tracing.ClientSampling = percent
 			}
 			if random := c.Conf.Sampling.Random; random != nil {
-				hcm.Tracing.RandomSampling = &envoy_type.Percent{
-					Value: float64(*random),
+				percent, err := c.envoyPercent(*random)
+				if err != nil {
+					return err
 				}
+				hcm.Tracing.RandomSampling = percent
 			}
 		}
 
@@ -88,6 +96,17 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 
 		return nil
 	})
+}
+
+func (c *Configurer) envoyPercent(intOrStr intstr.IntOrString) (*envoy_type.Percent, error) {
+	decimal, err := common_api.NewDecimalFromIntOrString(intOrStr)
+	if err != nil {
+		return nil, err
+	}
+	value, _ := decimal.Float64()
+	return &envoy_type.Percent{
+		Value: value,
+	}, nil
 }
 
 func (c *Configurer) datadogConfig(clusterName string) (*envoy_trace.Tracing_Http, error) {
