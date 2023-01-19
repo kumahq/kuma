@@ -2311,6 +2311,9 @@ spec:
                                           minimum: 1
                                           type: integer
                                         scheme:
+                                          enum:
+                                          - http
+                                          - https
                                           type: string
                                         statusCode:
                                           default: 302
@@ -2379,6 +2382,7 @@ spec:
                                       enum:
                                       - RequestHeaderModifier
                                       - ResponseHeaderModifier
+                                      - RequestRedirect
                                       type: string
                                   required:
                                   - type
