@@ -123,7 +123,7 @@ var _ = Describe("MeshFaultInjection", func() {
 						},
 						Conf: api.Conf{
 							Http: []api.FaultInjectionConf{
-								api.FaultInjectionConf{
+								{
 									Abort: &api.AbortConf{
 										HttpStatus: int32(444),
 										Percentage: int32(12),
@@ -144,7 +144,7 @@ var _ = Describe("MeshFaultInjection", func() {
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
 							Http: []api.FaultInjectionConf{
-								api.FaultInjectionConf{
+								{
 									Abort: &api.AbortConf{
 										HttpStatus: int32(444),
 										Percentage: int32(12),
@@ -175,7 +175,7 @@ var _ = Describe("MeshFaultInjection", func() {
 					Subset: core_xds.Subset{},
 					Conf: api.Conf{
 						Http: []api.FaultInjectionConf{
-							api.FaultInjectionConf{
+							{
 								Abort: &api.AbortConf{
 									HttpStatus: int32(444),
 									Percentage: int32(12),
