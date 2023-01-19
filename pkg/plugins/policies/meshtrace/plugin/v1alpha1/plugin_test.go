@@ -29,24 +29,26 @@ var _ = Describe("MeshTrace", func() {
 		expectedListeners []string
 		expectedClusters  []string
 	}
-	inboundAndOutbound := []core_xds.Resource{
-		{
-			Name:   "inbound",
-			Origin: generator.OriginInbound,
-			Resource: NewListenerBuilder(envoy_common.APIV3).
-				Configure(InboundListener("inbound:127.0.0.1:17777", "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP)).
-				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-					Configure(HttpConnectionManager("127.0.0.1:17777", false)),
-				)).MustBuild(),
-		}, {
-			Name:   "outbound",
-			Origin: generator.OriginOutbound,
-			Resource: NewListenerBuilder(envoy_common.APIV3).
-				Configure(OutboundListener("outbound:127.0.0.1:27777", "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP)).
-				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-					Configure(HttpConnectionManager("127.0.0.1:27777", false)),
-				)).MustBuild(),
-		},
+	inboundAndOutbound := func() []core_xds.Resource {
+		return []core_xds.Resource{
+			{
+				Name:   "inbound",
+				Origin: generator.OriginInbound,
+				Resource: NewListenerBuilder(envoy_common.APIV3).
+					Configure(InboundListener("inbound:127.0.0.1:17777", "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP)).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+						Configure(HttpConnectionManager("127.0.0.1:17777", false)),
+					)).MustBuild(),
+			}, {
+				Name:   "outbound",
+				Origin: generator.OriginOutbound,
+				Resource: NewListenerBuilder(envoy_common.APIV3).
+					Configure(OutboundListener("outbound:127.0.0.1:27777", "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP)).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+						Configure(HttpConnectionManager("127.0.0.1:27777", false)),
+					)).MustBuild(),
+			},
+		}
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
@@ -103,21 +105,28 @@ var _ = Describe("MeshTrace", func() {
 			policies_xds.ResourceArrayShouldEqual(resources.ListOf(envoy_resource.ClusterType), given.expectedClusters)
 		},
 		Entry("inbound/outbound for zipkin", testCase{
-			resources: inboundAndOutbound,
+			resources: inboundAndOutbound(),
 			singleItemRules: core_xds.SingleItemRules{
 				Rules: []*core_xds.Rule{
 					{
 						Subset: []core_xds.Tag{},
 						Conf: api.Conf{
-							Sampling: api.Sampling{
-								Random: pointer.To(uint32(50)),
+							Tags: &[]api.Tag{
+								{Name: "app", Literal: pointer.To("backend")},
+								{Name: "app_code", Header: &api.HeaderTag{Name: "app_code"}},
+								{Name: "client_id", Header: &api.HeaderTag{Name: "client_id", Default: pointer.To("none")}},
 							},
-							Backends: []api.Backend{{
+							Sampling: &api.Sampling{
+								Overall: pointer.To(uint32(10)),
+								Client:  pointer.To(uint32(20)),
+								Random:  pointer.To(uint32(50)),
+							},
+							Backends: &[]api.Backend{{
 								Zipkin: &api.ZipkinBackend{
 									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
 									SharedSpanContext: pointer.To(true),
-									ApiVersion:        "httpProto",
-									TraceId128Bit:     true,
+									ApiVersion:        pointer.To("httpProto"),
+									TraceId128Bit:     pointer.To(true),
 								},
 							}},
 						},
@@ -140,6 +149,21 @@ var _ = Describe("MeshTrace", func() {
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: "127_0_0_1_17777"
                   tracing:
+                      clientSampling:
+                          value: 20
+                      customTags:
+                          - literal:
+                              value: backend
+                            tag: app
+                          - requestHeader:
+                              name: app_code
+                            tag: app_code
+                          - requestHeader:
+                              defaultValue: none
+                              name: client_id
+                            tag: client_id
+                      overallSampling:
+                          value: 10
                       provider:
                           name: envoy.zipkin
                           typedConfig:
@@ -169,6 +193,21 @@ var _ = Describe("MeshTrace", func() {
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: "127_0_0_1_27777"
                   tracing:
+                      clientSampling:
+                          value: 20
+                      customTags:
+                          - literal:
+                              value: backend
+                            tag: app
+                          - requestHeader:
+                              name: app_code
+                            tag: app_code
+                          - requestHeader:
+                              defaultValue: none
+                              name: client_id
+                            tag: client_id
+                      overallSampling:
+                          value: 10
                       provider:
                           name: envoy.zipkin
                           typedConfig:
@@ -202,19 +241,19 @@ var _ = Describe("MeshTrace", func() {
 `},
 		}),
 		Entry("inbound/outbound for datadog", testCase{
-			resources: inboundAndOutbound,
+			resources: inboundAndOutbound(),
 			singleItemRules: core_xds.SingleItemRules{
 				Rules: []*core_xds.Rule{
 					{
 						Subset: []core_xds.Tag{},
 						Conf: api.Conf{
-							Sampling: api.Sampling{
+							Sampling: &api.Sampling{
 								Random: pointer.To(uint32(50)),
 							},
-							Backends: []api.Backend{{
+							Backends: &[]api.Backend{{
 								Datadog: &api.DatadogBackend{
 									Url:          "http://ingest.datadog.eu:8126",
-									SplitService: true,
+									SplitService: pointer.To(true),
 								},
 							}},
 						},
@@ -289,6 +328,143 @@ var _ = Describe("MeshTrace", func() {
             name: meshtrace:datadog
             type: STRICT_DNS
 `},
+		}),
+		Entry("sampling is empty", testCase{
+			resources: inboundAndOutbound(),
+			singleItemRules: core_xds.SingleItemRules{
+				Rules: []*core_xds.Rule{
+					{
+						Subset: []core_xds.Tag{},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								Zipkin: &api.ZipkinBackend{
+									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
+									SharedSpanContext: pointer.To(true),
+									TraceId128Bit:     pointer.To(true),
+								},
+							}},
+						},
+					},
+				}},
+			expectedListeners: []string{`
+            address:
+                socketAddress:
+                    address: 127.0.0.1
+                    portValue: 17777
+            enableReusePort: false
+            filterChains:
+                - filters:
+                    - name: envoy.filters.network.http_connection_manager
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                        httpFilters:
+                            - name: envoy.filters.http.router
+                              typedConfig:
+                                '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                        statPrefix: "127_0_0_1_17777"
+                        tracing:
+                            provider:
+                                name: envoy.zipkin
+                                typedConfig:
+                                    '@type': type.googleapis.com/envoy.config.trace.v3.ZipkinConfig
+                                    collectorCluster: meshtrace:zipkin
+                                    collectorEndpoint: /api/v2/spans
+                                    collectorEndpointVersion: HTTP_JSON
+                                    collectorHostname: jaeger-collector.mesh-observability:9411
+                                    sharedSpanContext: true
+                                    traceId128bit: true
+            name: inbound:127.0.0.1:17777
+            trafficDirection: INBOUND`,
+				`
+            address:
+                socketAddress:
+                    address: 127.0.0.1
+                    portValue: 27777
+            filterChains:
+                - filters:
+                    - name: envoy.filters.network.http_connection_manager
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                        httpFilters:
+                            - name: envoy.filters.http.router
+                              typedConfig:
+                                '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                        statPrefix: "127_0_0_1_27777"
+                        tracing:
+                            provider:
+                                name: envoy.zipkin
+                                typedConfig:
+                                    '@type': type.googleapis.com/envoy.config.trace.v3.ZipkinConfig
+                                    collectorCluster: meshtrace:zipkin
+                                    collectorEndpoint: /api/v2/spans
+                                    collectorEndpointVersion: HTTP_JSON
+                                    collectorHostname: jaeger-collector.mesh-observability:9411
+                                    sharedSpanContext: true
+                                    traceId128bit: true
+            name: outbound:127.0.0.1:27777
+            trafficDirection: OUTBOUND`},
+			expectedClusters: []string{`
+            altStatName: meshtrace_zipkin
+            connectTimeout: 10s
+            dnsLookupFamily: V4_ONLY
+            loadAssignment:
+                clusterName: meshtrace:zipkin
+                endpoints:
+                    - lbEndpoints:
+                        - endpoint:
+                            address:
+                                socketAddress:
+                                    address: jaeger-collector.mesh-observability
+                                    portValue: 9411
+            name: meshtrace:zipkin
+            type: STRICT_DNS
+`},
+		}),
+		Entry("backends list is empty", testCase{
+			resources: inboundAndOutbound(),
+			singleItemRules: core_xds.SingleItemRules{
+				Rules: []*core_xds.Rule{
+					{
+						Subset: []core_xds.Tag{},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{},
+						},
+					},
+				}},
+			expectedListeners: []string{`
+            address:
+                socketAddress:
+                    address: 127.0.0.1
+                    portValue: 17777
+            enableReusePort: false
+            filterChains:
+                - filters:
+                    - name: envoy.filters.network.http_connection_manager
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                        httpFilters:
+                            - name: envoy.filters.http.router
+                              typedConfig:
+                                '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                        statPrefix: "127_0_0_1_17777"
+            name: inbound:127.0.0.1:17777
+            trafficDirection: INBOUND`, `
+            address:
+                socketAddress:
+                    address: 127.0.0.1
+                    portValue: 27777
+            filterChains:
+                - filters:
+                    - name: envoy.filters.network.http_connection_manager
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                        httpFilters:
+                            - name: envoy.filters.http.router
+                              typedConfig:
+                                '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                        statPrefix: "127_0_0_1_27777"
+            name: outbound:127.0.0.1:27777
+            trafficDirection: OUTBOUND`},
 		}),
 	)
 })
