@@ -14,6 +14,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
@@ -37,29 +38,36 @@ const (
 )
 
 func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
-	backend := c.Conf.Backends[0]
+	var backend api.Backend
+	if backends := pointer.Deref(c.Conf.Backends); len(backends) == 0 {
+		return nil
+	} else {
+		backend = backends[0]
+	}
 
 	return v3.UpdateHTTPConnectionManager(filterChain, func(hcm *envoy_hcm.HttpConnectionManager) error {
 		hcm.Tracing = &envoy_hcm.HttpConnectionManager_Tracing{}
 
-		if overall := c.Conf.Sampling.Overall; overall != nil {
-			hcm.Tracing.OverallSampling = &envoy_type.Percent{
-				Value: float64(*overall),
+		if c.Conf.Sampling != nil {
+			if overall := c.Conf.Sampling.Overall; overall != nil {
+				hcm.Tracing.OverallSampling = &envoy_type.Percent{
+					Value: float64(*overall),
+				}
 			}
-		}
-		if client := c.Conf.Sampling.Client; client != nil {
-			hcm.Tracing.ClientSampling = &envoy_type.Percent{
-				Value: float64(*client),
+			if client := c.Conf.Sampling.Client; client != nil {
+				hcm.Tracing.ClientSampling = &envoy_type.Percent{
+					Value: float64(*client),
+				}
 			}
-		}
-		if random := c.Conf.Sampling.Random; random != nil {
-			hcm.Tracing.RandomSampling = &envoy_type.Percent{
-				Value: float64(*random),
+			if random := c.Conf.Sampling.Random; random != nil {
+				hcm.Tracing.RandomSampling = &envoy_type.Percent{
+					Value: float64(*random),
+				}
 			}
 		}
 
 		if c.Conf.Tags != nil {
-			hcm.Tracing.CustomTags = mapTags(c.Conf.Tags)
+			hcm.Tracing.CustomTags = mapTags(pointer.Deref(c.Conf.Tags))
 		}
 
 		if backend.Zipkin != nil {
@@ -101,7 +109,7 @@ func (c *Configurer) datadogConfig(clusterName string) (*envoy_trace.Tracing_Htt
 }
 
 func (c *Configurer) zipkinConfig(clusterName string) (*envoy_trace.Tracing_Http, error) {
-	zipkin := c.Conf.Backends[0].Zipkin
+	zipkin := pointer.Deref(c.Conf.Backends)[0].Zipkin
 	url, err := net_url.ParseRequestURI(zipkin.Url)
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid URL of Zipkin")
@@ -114,8 +122,8 @@ func (c *Configurer) zipkinConfig(clusterName string) (*envoy_trace.Tracing_Http
 	zipkinConfig := envoy_trace.ZipkinConfig{
 		CollectorCluster:         clusterName,
 		CollectorEndpoint:        url.Path,
-		TraceId_128Bit:           zipkin.TraceId128Bit,
-		CollectorEndpointVersion: apiVersion(zipkin, url),
+		TraceId_128Bit:           pointer.Deref(zipkin.TraceId128Bit),
+		CollectorEndpointVersion: apiVersion(zipkin),
 		SharedSpanContext:        ssc,
 		CollectorHostname:        url.Host,
 	}
@@ -133,9 +141,9 @@ func (c *Configurer) zipkinConfig(clusterName string) (*envoy_trace.Tracing_Http
 }
 
 func (c *Configurer) createDatadogServiceName() string {
-	datadog := c.Conf.Backends[0].Datadog
+	datadog := pointer.Deref(c.Conf.Backends)[0].Datadog
 
-	if datadog.SplitService {
+	if pointer.Deref(datadog.SplitService) {
 		var datadogServiceName []string
 		switch c.TrafficDirection {
 		case envoy_core.TrafficDirection_INBOUND:
@@ -151,20 +159,15 @@ func (c *Configurer) createDatadogServiceName() string {
 	}
 }
 
-func apiVersion(zipkin *api.ZipkinBackend, url *net_url.URL) envoy_trace.ZipkinConfig_CollectorEndpointVersion {
-	if zipkin.ApiVersion == "" { // try to infer it from the URL
-		if url.Path == "/api/v2/spans" {
-			return envoy_trace.ZipkinConfig_HTTP_JSON
-		}
-	} else {
-		switch zipkin.ApiVersion {
-		case "httpJson":
-			return envoy_trace.ZipkinConfig_HTTP_JSON
-		case "httpProto":
-			return envoy_trace.ZipkinConfig_HTTP_PROTO
-		}
+func apiVersion(zipkin *api.ZipkinBackend) envoy_trace.ZipkinConfig_CollectorEndpointVersion {
+	switch pointer.Deref(zipkin.ApiVersion) {
+	case "httpJson":
+		return envoy_trace.ZipkinConfig_HTTP_JSON
+	case "httpProto":
+		return envoy_trace.ZipkinConfig_HTTP_PROTO
+	default:
+		return envoy_trace.ZipkinConfig_HTTP_JSON
 	}
-	return envoy_trace.ZipkinConfig_HTTP_JSON
 }
 
 func mapTags(tags []api.Tag) []*tracingv3.CustomTag {
@@ -174,7 +177,7 @@ func mapTags(tags []api.Tag) []*tracingv3.CustomTag {
 		if tag.Header != nil {
 			customTags = append(customTags, mapHeaderTag(tag.Name, tag.Header))
 		} else {
-			customTags = append(customTags, mapLiteralTag(tag.Name, tag.Literal))
+			customTags = append(customTags, mapLiteralTag(tag.Name, pointer.Deref(tag.Literal)))
 		}
 	}
 
@@ -198,7 +201,7 @@ func mapHeaderTag(name string, header *api.HeaderTag) *tracingv3.CustomTag {
 		Type: &tracingv3.CustomTag_RequestHeader{
 			RequestHeader: &tracingv3.CustomTag_Header{
 				Name:         header.Name,
-				DefaultValue: header.Default,
+				DefaultValue: pointer.Deref(header.Default),
 			},
 		},
 	}
