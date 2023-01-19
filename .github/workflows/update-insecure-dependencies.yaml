@@ -55,7 +55,7 @@ jobs:
       - name: "Create Pull Request"
         uses: peter-evans/create-pull-request@v4
         with:
-          commit-message: "chore(deps): security update for ${{ matrix.branch }}"
+          commit-message: "chore(deps): security update"
           signoff: true
           branch: chore/security-updates-${{ matrix.branch }}
           body: |
