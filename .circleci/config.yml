@@ -151,7 +151,7 @@ jobs:
         command: |
           if [[ ! $(./tools/ci/has_label.sh ci/run-full-matrix) == "true" ]]; then
             if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* ]]; then
-              if [[ "<< parameters.executor >>" == "vm-amd64" ]]; then
+              if [[ "<< parameters.executor >>" == "vm-arm64" ]]; then
                 echo "Not creating cache for arm64 on branch"
                 circleci-agent step halt
                 exit 0
