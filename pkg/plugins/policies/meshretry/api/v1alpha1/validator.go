@@ -168,7 +168,7 @@ func validateRateLimitedBackOff(rateLimitedBackOff *RateLimitedBackOff) validato
 
 	for i, header := range rateLimitedBackOff.ResetHeaders {
 		index := path.Field("resetHeaders").Index(i)
-		verr.Add(validators.ValidateStringDefined(index.Field("name"), header.Name))
+		verr.Add(validators.ValidateStringDefined(index.Field("name"), string(header.Name)))
 	}
 
 	return verr

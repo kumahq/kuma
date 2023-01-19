@@ -11,7 +11,6 @@ import (
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
-	"github.com/kumahq/kuma/api/common/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -152,7 +151,7 @@ func configureRateLimitedRetryBackOff(rateLimitedBackOff *api.RateLimitedBackOff
 	}
 	for _, resetHeader := range rateLimitedBackOff.ResetHeaders {
 		rateLimitedRetryBackoff.ResetHeaders = append(rateLimitedRetryBackoff.ResetHeaders, &envoy_route.RetryPolicy_ResetHeader{
-			Name:   resetHeader.Name,
+			Name:   http.CanonicalHeaderKey(string(resetHeader.Name)),
 			Format: api.RateLimitFormatEnumToEnvoyValue[resetHeader.Format],
 		})
 	}
@@ -164,14 +163,18 @@ func configureRateLimitedRetryBackOff(rateLimitedBackOff *api.RateLimitedBackOff
 	return rateLimitedRetryBackoff
 }
 
-func headerMatcher(header v1alpha1.HeaderMatcher) *envoy_route.HeaderMatcher {
+func headerMatcher(header api.HTTPHeaderMatch) *envoy_route.HeaderMatcher {
 	matcher := &envoy_route.HeaderMatcher{
-		Name:        string(header.Name),
+		Name:        http.CanonicalHeaderKey(string(header.Name)),
 		InvertMatch: false,
 	}
+	t := api.HeaderMatchExact
+	if header.Type != nil {
+		t = *header.Type
+	}
 
-	switch header.Type {
-	case v1alpha1.REGULAR_EXPRESSION:
+	switch t {
+	case api.HeaderMatchRegularExpression:
 		matcher.HeaderMatchSpecifier = &envoy_route.HeaderMatcher_StringMatch{
 			StringMatch: &envoy_type_matcher.StringMatcher{
 				MatchPattern: &envoy_type_matcher.StringMatcher_SafeRegex{
@@ -184,7 +187,7 @@ func headerMatcher(header v1alpha1.HeaderMatcher) *envoy_route.HeaderMatcher {
 				},
 			},
 		}
-	case v1alpha1.PREFIX:
+	case api.HeaderMatchPrefix:
 		matcher.HeaderMatchSpecifier = &envoy_route.HeaderMatcher_StringMatch{
 			StringMatch: &envoy_type_matcher.StringMatcher{
 				MatchPattern: &envoy_type_matcher.StringMatcher_Prefix{
@@ -192,13 +195,21 @@ func headerMatcher(header v1alpha1.HeaderMatcher) *envoy_route.HeaderMatcher {
 				},
 			},
 		}
-	case v1alpha1.EXACT:
+	case api.HeaderMatchExact:
 		matcher.HeaderMatchSpecifier = &envoy_route.HeaderMatcher_StringMatch{
 			StringMatch: &envoy_type_matcher.StringMatcher{
 				MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
 					Exact: string(header.Value),
 				},
 			},
+		}
+	case api.HeaderMatchPresent:
+		matcher.HeaderMatchSpecifier = &envoy_route.HeaderMatcher_PresentMatch{
+			PresentMatch: true,
+		}
+	case api.HeaderMatchAbsent:
+		matcher.HeaderMatchSpecifier = &envoy_route.HeaderMatcher_PresentMatch{
+			PresentMatch: false,
 		}
 	}
 

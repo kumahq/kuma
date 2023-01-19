@@ -28,9 +28,9 @@ filterChains:
             rateLimitedRetryBackOff:
               maxInterval: 15s
               resetHeaders:
-              - name: retry-after-grpc
+              - name: Retry-After-Grpc
               - format: UNIX_TIMESTAMP
-                name: x-retry-after-grpc
+                name: X-Retry-After-Grpc
             retryBackOff:
               baseInterval: 13s
               maxInterval: 14s
