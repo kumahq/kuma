@@ -113,7 +113,7 @@ k3d/stop/all:
 .PHONY: k3d/load/images
 k3d/load/images:
 	# https://github.com/k3d-io/k3d/issues/900 can cause failures that simple retry will fix
-	@$(K3D_BIN) image import $(KUMA_IMAGES) --cluster=$(KIND_CLUSTER_NAME) --verbose || $(K3D_BIN) image import $(KUMA_IMAGES) --cluster=$(KIND_CLUSTER_NAME) --verbose
+	for i in {1..5}; do $(K3D_BIN) image import --mode=direct $(KUMA_IMAGES) --cluster=$(KIND_CLUSTER_NAME) --verbose && s=0 && break || s=$$? && echo "Image import failed. Retrying..."; done; (exit $$s)
 
 .PHONY: k3d/load
 k3d/load:
