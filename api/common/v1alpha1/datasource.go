@@ -16,7 +16,7 @@ type DataSource struct {
 	InlineString *string `json:"inlineString,omitempty"`
 }
 
-func (ds *DataSource) convertToProto() *system_proto.DataSource {
+func (ds *DataSource) ConvertToProto() *system_proto.DataSource {
 	switch {
 	case ds.Secret != nil:
 		return &system_proto.DataSource{Type: &system_proto.DataSource_Secret{Secret: *ds.Secret}}
