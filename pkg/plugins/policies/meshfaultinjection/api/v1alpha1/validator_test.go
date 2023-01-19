@@ -2,30 +2,19 @@ package v1alpha1_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"sigs.k8s.io/yaml"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/validators"
 	meshfaultinjection_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
+	. "github.com/kumahq/kuma/pkg/test/resources"
 )
 
 var _ = Describe("MeshFaultInjection", func() {
-	Describe("Validate()", func() {
-		DescribeTable("should pass validation",
-			func(mhcYAML string) {
-				// setup
-				meshFaultInjection := meshfaultinjection_proto.NewMeshFaultInjectionResource()
-
-				// when
-				err := core_model.FromYAML([]byte(mhcYAML), &meshFaultInjection.Spec)
-				Expect(err).ToNot(HaveOccurred())
-				// and
-				verr := meshFaultInjection.Validate()
-
-				// then
-				Expect(verr).To(BeNil())
-			},
-			Entry("full example", `
+	DescribeValidCases(
+		meshfaultinjection_proto.NewMeshFaultInjectionResource,
+		Entry("accepts valid resource", `
+type: MeshFaultInjection
+mesh: mesh-1
+name: fi1
 targetRef:
   kind: MeshService
   name: backend
@@ -50,8 +39,11 @@ to:
         - abort:
             httpStatus: 500
             percentage: 50
-      `),
-			Entry("full example", `
+`),
+		Entry("empty faults", `
+type: MeshFaultInjection
+mesh: mesh-1
+name: fi1
 targetRef:
   kind: MeshService
   name: backend
@@ -61,32 +53,41 @@ to:
       name: web-backend
     default:
       http: []
-      `),
-		)
+`),
+	)
 
-		type testCase struct {
-			inputYaml string
-			expected  string
-		}
-
-		DescribeTable("should validate all fields and return as much individual errors as possible",
-			func(given testCase) {
-				// setup
-				meshFaultInjection := meshfaultinjection_proto.NewMeshFaultInjectionResource()
-
-				// when
-				err := core_model.FromYAML([]byte(given.inputYaml), &meshFaultInjection.Spec)
-				Expect(err).ToNot(HaveOccurred())
-				// and
-				verr := meshFaultInjection.Validate()
-				actual, err := yaml.Marshal(verr)
-				Expect(err).ToNot(HaveOccurred())
-
-				// then
-				Expect(actual).To(MatchYAML(given.expected))
-			},
-			Entry("percentages are out of range and some values incorrect", testCase{
-				inputYaml: `
+	DescribeErrorCases(
+		meshfaultinjection_proto.NewMeshFaultInjectionResource,
+		ErrorCases("incorrect values",
+			[]validators.Violation{
+				{
+					Field:   `spec.from[0].default.http.abort[0].httpStatus`,
+					Message: `must be in range [100, 600)`,
+				},
+				{
+					Field:   `spec.from[0].default.http.abort[0].percentage`,
+					Message: `has to be in [0 - 100] range`,
+				},
+				{
+					Field:   "spec.from[0].default.http.delay[1].value",
+					Message: "must not be negative when defined",
+				},
+				{
+					Field:   `spec.from[0].default.http.delay[1].percentage`,
+					Message: `has to be in [0 - 100] range`,
+				},
+				{
+					Field:   `spec.from[0].default.http.responseBandwidth[2].responseBandwidth`,
+					Message: `has to be in kbps/mbps/gbps units`,
+				},
+				{
+					Field:   `spec.from[0].default.http.responseBandwidth[2].percentage`,
+					Message: `has to be in [0 - 100] range`,
+				},
+			}, `
+type: MeshFaultInjection
+mesh: mesh-1
+name: fi1
 targetRef:
   kind: MeshService
   name: backend
@@ -100,27 +101,26 @@ from:
           httpStatus: 677
           percentage: 111
       - delay: 
-          value: 5s
+          value: -5s
           percentage: 1111
       - responseBandwidth:
           limit: 1000
           percentage: 1111
-`,
-				expected: `
-violations:
-  - field: spec.from[0].default.http.abort[0].httpStatus
-    message: must be in range [100, 600)
-  - field: spec.from[0].default.http.abort[0].percentage
-    message: has to be in [0 - 100] range
-  - field: spec.from[0].default.http.delay[1].percentage
-    message: has to be in [0 - 100] range
-  - field: spec.from[0].default.http.responseBandwidth[2].responseBandwidth
-    message: has to be in kbps/mbps/gbps units
-  - field: spec.from[0].default.http.responseBandwidth[2].percentage
-    message: has to be in [0 - 100] range
-`}),
-			Entry("percentage is missing", testCase{
-				inputYaml: `
+`),
+		ErrorCases("empty values",
+			[]validators.Violation{
+				{
+					Field:   "spec.from[0].default.http.abort[0].httpStatus",
+					Message: "must be in range [100, 600)",
+				},
+				{
+					Field:   "spec.from[0].default.http.responseBandwidth[2].responseBandwidth",
+					Message: "has to be in kbps/mbps/gbps units",
+				},
+			}, `
+type: MeshFaultInjection
+mesh: mesh-1
+name: fi1
 targetRef:
   kind: MeshService
   name: backend
@@ -130,25 +130,10 @@ from:
       name: web-backend
     default:
       http:
-      - abort:
-          httpStatus: 677
+      - abort: {}
       - delay: {}
       - responseBandwidth:
           limit: 1000
-`,
-				expected: `
-violations:
-  - field: spec.from[0].default.http.abort[0].httpStatus
-    message: must be in range [100, 600)
-  - field: spec.from[0].default.http.abort[0].percentage
-    message: must be defined
-  - field: spec.from[0].default.http.delay[1].percentage
-    message: must be defined
-  - field: spec.from[0].default.http.responseBandwidth[2].responseBandwidth
-    message: has to be in kbps/mbps/gbps units
-  - field: spec.from[0].default.http.responseBandwidth[2].percentage
-    message: must be defined
-`}),
-		)
-	})
+`),
+	)
 })

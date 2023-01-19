@@ -226,6 +226,8 @@ spec:
               resource.
             properties:
               from:
+                description: From list makes a match between clients and corresponding
+                  configurations
                 items:
                   properties:
                     default:
@@ -233,6 +235,8 @@ spec:
                         of destinations referenced in 'targetRef'
                       properties:
                         http:
+                          description: Http allows to define list of Http faults between
+                            dataplanes.
                           items:
                             description: FaultInjection defines the configuration
                               of faults between dataplanes.
@@ -254,6 +258,9 @@ spec:
                                       range
                                     format: int32
                                     type: integer
+                                required:
+                                - httpStatus
+                                - percentage
                                 type: object
                               delay:
                                 description: Delay defines configuration of delaying
@@ -269,6 +276,9 @@ spec:
                                     description: The duration during which the response
                                       will be delayed
                                     type: string
+                                required:
+                                - percentage
+                                - value
                                 type: object
                               responseBandwidth:
                                 description: ResponseBandwidth defines a configuration
@@ -284,6 +294,9 @@ spec:
                                       in [0.0 - 100.0] range
                                     format: int32
                                     type: integer
+                                required:
+                                - limit
+                                - percentage
                                 type: object
                             type: object
                           type: array

@@ -15,12 +15,14 @@ properties:
     description: Spec is the specification of the Kuma MeshFaultInjection resource.
     properties:
       from:
+        description: From list makes a match between clients and corresponding configurations
         items:
           properties:
             default:
               description: Default is a configuration specific to the group of destinations referenced in 'targetRef'
               properties:
                 http:
+                  description: Http allows to define list of Http faults between dataplanes.
                   items:
                     description: FaultInjection defines the configuration of faults between dataplanes.
                     properties:
@@ -35,6 +37,9 @@ properties:
                             description: Percentage of requests on which abort will be injected, has to be in [0.0 - 100.0] range
                             format: int32
                             type: integer
+                        required:
+                          - httpStatus
+                          - percentage
                         type: object
                       delay:
                         description: Delay defines configuration of delaying a response from a destination
@@ -46,6 +51,9 @@ properties:
                           value:
                             description: The duration during which the response will be delayed
                             type: string
+                        required:
+                          - percentage
+                          - value
                         type: object
                       responseBandwidth:
                         description: ResponseBandwidth defines a configuration to limit the speed of responding to the requests
@@ -57,6 +65,9 @@ properties:
                             description: Percentage of requests on which response bandwidth limit will be injected, has to be in [0.0 - 100.0] range
                             format: int32
                             type: integer
+                        required:
+                          - limit
+                          - percentage
                         type: object
                     type: object
                   type: array
