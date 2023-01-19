@@ -83,9 +83,14 @@ func TestConformance(t *testing.T) {
 			metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationTrue,
 		},
 		ValidUniqueListenerPorts: validUniqueListenerPorts,
-		SupportedFeatures: []suite.SupportedFeature{
-			suite.SupportHTTPRouteQueryParamMatching,
-			suite.SupportHTTPRouteMethodMatching,
+		SupportedFeatures: map[suite.SupportedFeature]bool{
+			suite.SupportHTTPRouteQueryParamMatching:        true,
+			suite.SupportHTTPRouteMethodMatching:            true,
+			suite.SupportHTTPResponseHeaderModification:     false, // supported in MeshGatewayRoute not yet HTTPRoute
+			suite.SupportHTTPRoutePortRedirect:              true,
+			suite.SupportHTTPRouteSchemeRedirect:            true,
+			suite.SupportHTTPRoutePathRedirect:              false, // not yet supported
+			suite.SupportGatewayClassObservedGenerationBump: false, // not yet supported
 		},
 	})
 
@@ -98,7 +103,8 @@ func TestConformance(t *testing.T) {
 			tests.HTTPRouteInvalidCrossNamespaceBackendRef.ShortName, // The following fail due to #4597
 			tests.HTTPRouteInvalidBackendRefUnknownKind.ShortName,
 			tests.HTTPRouteInvalidNonExistentBackendRef.ShortName,
-			tests.HTTPRouteInvalidReferenceGrant.ShortName:
+			tests.HTTPRoutePartiallyInvalidViaInvalidReferenceGrant.ShortName,
+			tests.GatewayInvalidTLSConfiguration.ShortName: // not setting correct statuses
 			continue
 		}
 		passingTests = append(passingTests, test)
