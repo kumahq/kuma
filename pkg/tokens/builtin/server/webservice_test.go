@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -36,8 +36,7 @@ func (s *staticTokenIssuer) Generate(context.Context, issuer.DataplaneIdentity, 
 	return s.resp, nil
 }
 
-type zoneIngressStaticTokenIssuer struct {
-}
+type zoneIngressStaticTokenIssuer struct{}
 
 var _ zoneingress.TokenIssuer = &zoneIngressStaticTokenIssuer{}
 
@@ -45,8 +44,7 @@ func (z *zoneIngressStaticTokenIssuer) Generate(ctx context.Context, identity zo
 	return fmt.Sprintf("token-for-%s", identity.Zone), nil
 }
 
-type zoneStaticTokenIssuer struct {
-}
+type zoneStaticTokenIssuer struct{}
 
 var _ zone.TokenIssuer = &zoneStaticTokenIssuer{}
 
@@ -55,7 +53,6 @@ func (z *zoneStaticTokenIssuer) Generate(ctx context.Context, identity zone.Iden
 }
 
 var _ = Describe("Dataplane Token Webservice", func() {
-
 	const credentials = "test"
 	var url string
 

@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
