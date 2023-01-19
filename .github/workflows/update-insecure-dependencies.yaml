@@ -69,7 +69,7 @@ jobs:
           delete-branch: true
           title: "chore(deps): security update for ${{ matrix.branch }}"
           draft: false
-          labels: dependencies
+          labels: dependencies ${{ matrix.branch }}
           token: ${{ steps.github-app-token.outputs.token }}
           committer: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>
           author: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>
