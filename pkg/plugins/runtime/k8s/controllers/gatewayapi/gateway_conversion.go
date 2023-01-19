@@ -50,7 +50,7 @@ func ValidateListeners(crossMesh bool, listeners []gatewayapi.Listener) ([]gatew
 				Message: message,
 			},
 			kube_meta.Condition{
-				Type:    string(gatewayapi.ListenerConditionReady),
+				Type:    string(gatewayapi.ListenerConditionProgrammed),
 				Status:  kube_meta.ConditionFalse,
 				Reason:  string(gatewayapi.ListenerReasonInvalid),
 				Message: "detached",
@@ -72,7 +72,7 @@ func ValidateListeners(crossMesh bool, listeners []gatewayapi.Listener) ([]gatew
 				Message: message,
 			},
 			kube_meta.Condition{
-				Type:    string(gatewayapi.ListenerConditionReady),
+				Type:    string(gatewayapi.ListenerConditionProgrammed),
 				Status:  kube_meta.ConditionFalse,
 				Reason:  string(gatewayapi.ListenerReasonInvalid),
 				Message: "conflicts found",
@@ -191,7 +191,7 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 			// TODO admission webhook should prevent this
 			listenerConditions[l.Name] = append(listenerConditions[l.Name],
 				kube_meta.Condition{
-					Type:    string(gatewayapi.ListenerConditionReady),
+					Type:    string(gatewayapi.ListenerConditionProgrammed),
 					Status:  kube_meta.ConditionFalse,
 					Reason:  string(gatewayapi.ListenerReasonInvalid),
 					Message: fmt.Sprintf("unexpected protocol %s", l.Protocol),
@@ -355,15 +355,15 @@ func handleConditions(conditions []kube_meta.Condition, unresolvableCertRef *cer
 		)
 		kube_apimeta.SetStatusCondition(&conditions,
 			kube_meta.Condition{
-				Type:   string(gatewayapi.ListenerConditionReady),
+				Type:   string(gatewayapi.ListenerConditionProgrammed),
 				Status: kube_meta.ConditionTrue,
-				Reason: string(gatewayapi.ListenerReasonReady),
+				Reason: string(gatewayapi.ListenerReasonProgrammed),
 			},
 		)
 	} else {
 		kube_apimeta.SetStatusCondition(&conditions,
 			kube_meta.Condition{
-				Type:    string(gatewayapi.ListenerConditionReady),
+				Type:    string(gatewayapi.ListenerConditionProgrammed),
 				Status:  kube_meta.ConditionFalse,
 				Reason:  string(gatewayapi.ListenerReasonInvalid),
 				Message: "unable to resolve refs",
