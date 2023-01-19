@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful/v3"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
