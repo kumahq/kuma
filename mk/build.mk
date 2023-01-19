@@ -12,7 +12,7 @@ build_info_ld_flags := $(foreach entry,$(build_info_fields), -X github.com/kumah
 
 LD_FLAGS := -ldflags="-s -w $(build_info_ld_flags) $(EXTRA_LD_FLAGS)"
 CGO_ENABLED := 0
-GOFLAGS := -v -trimpath $(EXTRA_GOFLAGS)
+GOFLAGS := -trimpath $(EXTRA_GOFLAGS)
 
 TOP := $(shell pwd)
 BUILD_DIR ?= $(TOP)/build
@@ -20,8 +20,8 @@ BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts-${GOOS}-${GOARCH}
 BUILD_KUMACTL_DIR := ${BUILD_ARTIFACTS_DIR}/kumactl
 export PATH := $(BUILD_KUMACTL_DIR):$(PATH)
 
-GO_BUILD := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=${CGO_ENABLED} go build $(GOFLAGS) $(LD_FLAGS)
-GO_BUILD_COREDNS := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=${CGO_ENABLED} go build
+GO_BUILD := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=${CGO_ENABLED} go build -v $(GOFLAGS) $(LD_FLAGS)
+GO_BUILD_COREDNS := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=${CGO_ENABLED} go build -v
 
 COREDNS_GIT_REPOSITORY ?= https://github.com/coredns/coredns.git
 COREDNS_VERSION ?= v1.10.0
