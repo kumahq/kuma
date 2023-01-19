@@ -14,6 +14,7 @@ jobs:
           - "release-1.7"
           - "release-1.6"
           - "release-1.5"
+          - "master"
     runs-on: ubuntu-latest
     steps:
       - name: Generate GitHub app token
@@ -31,7 +32,6 @@ jobs:
           go-version: "~1.18.9"
       - name: "Install tools"
         run: |
-          sudo apt install -y jq git
           GOBIN=/usr/local/bin/ go install github.com/google/osv-scanner/cmd/osv-scanner@v1
       - name: "Prepare commit body - before"
         id: prepare_commit_body_before
