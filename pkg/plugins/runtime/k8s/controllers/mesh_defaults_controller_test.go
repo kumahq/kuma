@@ -6,6 +6,7 @@ import (
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	kube_core "k8s.io/api/core/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -31,9 +32,17 @@ var _ = Describe("MeshDefaultsReconciler", func() {
 	var reconciler kube_reconcile.Reconciler
 
 	BeforeEach(func() {
-		kubeClient = kube_client_fake.NewClientBuilder().WithScheme(k8sClientScheme).Build()
+		kubeClient = kube_client_fake.NewClientBuilder().
+			WithScheme(k8sClientScheme).
+			WithIndex(&kube_core.Secret{}, "type",
+				func(object kube_client.Object) []string {
+					secret := object.(*kube_core.Secret)
+					return []string{string(secret.Type)}
+				}).
+			Build()
 		store, err := k8s.NewStore(kubeClient, k8sClientScheme, k8s.NewSimpleConverter())
 		Expect(err).ToNot(HaveOccurred())
+
 		secretStore, err := secrets_k8s.NewStore(kubeClient, kubeClient, "default")
 		Expect(err).ToNot(HaveOccurred())
 
