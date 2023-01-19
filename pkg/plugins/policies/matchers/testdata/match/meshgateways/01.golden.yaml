@@ -1,7 +1,7 @@
 Rules:
   127.0.0.1:8080:
   - Conf:
-      action: DENY
+      action: Deny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
       mesh: mesh-1
@@ -11,7 +11,7 @@ Rules:
     Subset: []
   127.0.0.1:8081:
   - Conf:
-      action: ALLOW
+      action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
       mesh: mesh-1

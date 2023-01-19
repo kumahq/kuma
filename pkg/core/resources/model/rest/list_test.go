@@ -235,7 +235,7 @@ var _ = Describe("Unmarshal ResourceList", func() {
                             "kind": "Mesh"
                         },
                         "default": {
-                            "action": "ALLOW"
+                            "action": "Allow"
                         }
                     },
                     {
@@ -246,7 +246,7 @@ var _ = Describe("Unmarshal ResourceList", func() {
                             }
                         },
                         "default": {
-                            "action": "DENY"
+                            "action": "Deny"
                         }
                     },
                     {
@@ -255,7 +255,7 @@ var _ = Describe("Unmarshal ResourceList", func() {
                             "name": "backend"
                         },
                         "default": {
-                            "action": "ALLOW_WITH_SHADOW_DENY"
+                            "action": "AllowWithShadowDeny"
                         }
                     },
                     {
@@ -267,7 +267,7 @@ var _ = Describe("Unmarshal ResourceList", func() {
                             }
                         },
                         "default": {
-                            "action": "DENY"
+                            "action": "Deny"
                         }
                     }
                 ]
@@ -290,7 +290,7 @@ var _ = Describe("Unmarshal ResourceList", func() {
                             }
                         },
                         "default": {
-                            "action": "DENY"
+                            "action": "Deny"
                         }
                     }
                 ]
@@ -326,25 +326,25 @@ var _ = Describe("Unmarshal ResourceList", func() {
 					{
 						TargetRef: common_api.TargetRef{Kind: "Mesh"},
 						Default: policies_api.Conf{
-							Action: "ALLOW",
+							Action: "Allow",
 						},
 					},
 					{
 						TargetRef: common_api.TargetRef{Kind: "MeshSubset", Tags: map[string]string{"kuma.io/zone": "us-east"}},
 						Default: policies_api.Conf{
-							Action: "DENY",
+							Action: "Deny",
 						},
 					},
 					{
 						TargetRef: common_api.TargetRef{Kind: "MeshService", Name: "backend"},
 						Default: policies_api.Conf{
-							Action: "ALLOW_WITH_SHADOW_DENY",
+							Action: "AllowWithShadowDeny",
 						},
 					},
 					{
 						TargetRef: common_api.TargetRef{Kind: "MeshServiceSubset", Name: "backend", Tags: map[string]string{"version": "v1"}},
 						Default: policies_api.Conf{
-							Action: "DENY",
+							Action: "Deny",
 						},
 					},
 				},
@@ -360,7 +360,7 @@ var _ = Describe("Unmarshal ResourceList", func() {
 					{
 						TargetRef: common_api.TargetRef{Kind: "MeshSubset", Tags: map[string]string{"kuma.io/zone": "us-east"}},
 						Default: policies_api.Conf{
-							Action: "DENY",
+							Action: "Deny",
 						},
 					},
 				},

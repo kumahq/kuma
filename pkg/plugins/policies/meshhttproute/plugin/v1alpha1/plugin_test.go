@@ -21,6 +21,7 @@ import (
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/pkg/test/xds"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -389,6 +390,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 														Remove: []string{
 															"response-header-to-remove",
 														},
+													},
+												}, {
+													Type: api.RequestRedirectType,
+													RequestRedirect: &api.RequestRedirect{
+														Scheme: pointer.To("other"),
 													},
 												}},
 											},

@@ -166,6 +166,49 @@ spec:
                                           - name
                                           x-kubernetes-list-type: map
                                       type: object
+                                    requestRedirect:
+                                      properties:
+                                        hostname:
+                                          description: "PreciseHostname is the fully
+                                            qualified domain name of a network host.
+                                            This matches the RFC 1123 definition of
+                                            a hostname with 1 notable exception that
+                                            numeric IP addresses are not allowed.
+                                            \n Note that as per RFC1035 and RFC1123,
+                                            a *label* must consist of lower case alphanumeric
+                                            characters or '-', and must start and
+                                            end with an alphanumeric character. No
+                                            other punctuation is allowed."
+                                          maxLength: 253
+                                          minLength: 1
+                                          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                          type: string
+                                        port:
+                                          description: Port is the port to be used
+                                            in the value of the `Location` header
+                                            in the response. When empty, port (if
+                                            specified) of the request is used.
+                                          format: int32
+                                          maximum: 65535
+                                          minimum: 1
+                                          type: integer
+                                        scheme:
+                                          enum:
+                                          - http
+                                          - https
+                                          type: string
+                                        statusCode:
+                                          default: 302
+                                          description: StatusCode is the HTTP status
+                                            code to be used in response.
+                                          enum:
+                                          - 301
+                                          - 302
+                                          - 303
+                                          - 307
+                                          - 308
+                                          type: integer
+                                      type: object
                                     responseHeaderModifier:
                                       description: Only one action is supported per
                                         header name. Configuration to set or add multiple
@@ -221,6 +264,7 @@ spec:
                                       enum:
                                       - RequestHeaderModifier
                                       - ResponseHeaderModifier
+                                      - RequestRedirect
                                       type: string
                                   required:
                                   - type

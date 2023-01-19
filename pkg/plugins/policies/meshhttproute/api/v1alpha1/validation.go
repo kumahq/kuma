@@ -141,6 +141,10 @@ func validateFilters(filters *[]Filter) validators.ValidationError {
 			if filter.ResponseHeaderModifier == nil {
 				errs.AddViolationAt(path.Field("responseHeaderModifier"), validators.MustBeDefined)
 			}
+		case RequestRedirectType:
+			if filter.RequestRedirect == nil {
+				errs.AddViolationAt(path.Field("requestRedirect"), validators.MustBeDefined)
+			}
 		}
 	}
 

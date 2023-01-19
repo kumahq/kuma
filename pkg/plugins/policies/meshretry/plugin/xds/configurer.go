@@ -219,7 +219,7 @@ func splitRetryOn(conf *[]api.HTTPRetryOn) (string, []uint32, []string) {
 		switch {
 		case err == nil && http.StatusText(int(statusCode)) != "":
 			retriableStatusCodes = append(retriableStatusCodes, uint32(statusCode))
-		case strings.HasPrefix(key, string(api.HTTP_METHOD_PREFIX)):
+		case strings.HasPrefix(key, string(api.HttpMethodPrefix)):
 			retriableMethods = append(retriableMethods, api.HttpRetryOnEnumToEnvoyValue[item])
 		default:
 			// As `retryOn` is an enum value, and we use Kubernetes PascalCase convention but Envoy is using hyphens,
