@@ -3,6 +3,7 @@ package v1alpha1
 
 import (
 	"github.com/golang/protobuf/ptypes/wrappers"
+
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 )
 
