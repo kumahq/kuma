@@ -4,8 +4,10 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -604,7 +606,7 @@ var _ = Describe("TrafficRoute", func() {
 				// when
 				routes := BuildRouteMap(given.dataplane, given.routes)
 				// expect
-				Expect(routes).Should(Equal(given.expected))
+				Expect(routes).Should(BeComparableTo(given.expected, cmp.Comparer(proto.Equal)))
 			},
 			Entry("if an outbound interface has no matching TrafficRoute, the default route should be used", testCase{
 				dataplane: &core_mesh.DataplaneResource{
@@ -831,7 +833,7 @@ var _ = Describe("TrafficRoute", func() {
 				// when
 				destinations := BuildDestinationMap(given.dataplane, given.routes)
 				// expect
-				Expect(destinations).Should(Equal(given.expected))
+				Expect(destinations).Should(BeComparableTo(given.expected, cmp.Comparer(proto.Equal)))
 			},
 			Entry("Dataplane without outbound interfaces", testCase{
 				dataplane: core_mesh.NewDataplaneResource(),
