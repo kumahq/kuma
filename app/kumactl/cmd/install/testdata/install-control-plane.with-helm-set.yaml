@@ -1102,6 +1102,7 @@ spec:
                                   items:
                                     properties:
                                       name:
+                                        minLength: 1
                                         type: string
                                       type:
                                         enum:
