@@ -108,7 +108,7 @@ func (c *Configurer) convertDelay(delay *api.DelayConf) *envoy_filter_fault.Faul
 	}
 	return &envoy_filter_fault.FaultDelay{
 		FaultDelaySecifier: &envoy_filter_fault.FaultDelay_FixedDelay{FixedDelay: util_proto.Duration(delay.Value.Duration)},
-		Percentage:         listeners_v3.ConvertPercentage(util_proto.Double(float64(*delay.Percentage))),
+		Percentage:         listeners_v3.ConvertPercentage(util_proto.Double(float64(delay.Percentage))),
 	}
 }
 
@@ -117,8 +117,8 @@ func (c *Configurer) convertAbort(abort *api.AbortConf) *envoy_http_fault.FaultA
 		return nil
 	}
 	return &envoy_http_fault.FaultAbort{
-		ErrorType:  &envoy_http_fault.FaultAbort_HttpStatus{HttpStatus: uint32(*abort.HttpStatus)},
-		Percentage: listeners_v3.ConvertPercentage(util_proto.Double(float64(*abort.Percentage))),
+		ErrorType:  &envoy_http_fault.FaultAbort_HttpStatus{HttpStatus: uint32(abort.HttpStatus)},
+		Percentage: listeners_v3.ConvertPercentage(util_proto.Double(float64(abort.Percentage))),
 	}
 }
 
@@ -127,7 +127,7 @@ func (c *Configurer) convertResponseRateLimit(responseBandwidth *api.ResponseBan
 		return nil, nil
 	}
 
-	limitKbps, err := listeners_v3.ConvertBandwidthToKbps(*responseBandwidth.Limit)
+	limitKbps, err := listeners_v3.ConvertBandwidthToKbps(responseBandwidth.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -138,6 +138,6 @@ func (c *Configurer) convertResponseRateLimit(responseBandwidth *api.ResponseBan
 				LimitKbps: limitKbps,
 			},
 		},
-		Percentage: listeners_v3.ConvertPercentage(util_proto.Double(float64(*responseBandwidth.Percentage))),
+		Percentage: listeners_v3.ConvertPercentage(util_proto.Double(float64(responseBandwidth.Percentage))),
 	}, nil
 }
