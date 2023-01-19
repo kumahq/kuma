@@ -76,9 +76,10 @@ const (
 )
 
 type QueryParamsMatch struct {
-	Type  QueryParamsMatchType `json:"type"`
-	Name  string               `json:"name"`
-	Value string               `json:"value"`
+	Type QueryParamsMatchType `json:"type"`
+	// +kubebuilder:validation:MinLength=1
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
 type RuleConf struct {
