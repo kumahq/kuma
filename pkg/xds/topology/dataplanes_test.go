@@ -3,9 +3,11 @@ package topology_test
 import (
 	"net"
 
+	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -73,7 +75,7 @@ var _ = Describe("Resolve Dataplane address", func() {
 
 			actual := topology.ResolveAddresses(core.Log, lif, given)
 			Expect(actual).To(HaveLen(4))
-			Expect(actual).To(Equal(expected))
+			Expect(actual).Should(BeComparableTo(expected, cmp.Comparer(proto.Equal)))
 		})
 		It("should skip dataplane if unable to resolve domain name", func() {
 			given := []*mesh.DataplaneResource{
@@ -91,7 +93,7 @@ var _ = Describe("Resolve Dataplane address", func() {
 			}
 			actual := topology.ResolveAddresses(core.Log, lif, given)
 			Expect(actual).To(HaveLen(3))
-			Expect(actual).To(Equal(expected))
+			Expect(actual).Should(BeComparableTo(expected, cmp.Comparer(proto.Equal)))
 		})
 	})
 })
