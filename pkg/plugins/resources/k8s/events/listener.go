@@ -58,8 +58,12 @@ func (k *listener) Start(stop <-chan struct{}) error {
 		if err != nil {
 			return err
 		}
+
 		informer := cache.NewSharedInformer(lw, obj, 0)
-		informer.AddEventHandler(k)
+		if _, err := informer.AddEventHandler(k); err != nil {
+			return err
+		}
+
 		go func(typ core_model.ResourceType) {
 			log.V(1).Info("start watching resource", "type", typ)
 			informer.Run(stop)

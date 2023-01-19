@@ -622,7 +622,7 @@ var _ = Describe("InboundTagsForService(..)", func() {
 				"app":     "example",
 				"version": "0.1",
 			},
-			appProtocol: utilpointer.StringPtr("http"),
+			appProtocol: utilpointer.String("http"),
 			expected: map[string]string{
 				"app":                      "example",
 				"version":                  "0.1",
@@ -833,7 +833,7 @@ var _ = Describe("ProtocolTagFor(..)", func() {
 			expected:    "tcp", // we want Kuma's default behavior to be explicit to a user
 		}),
 		Entry("appProtocol has an empty value", testCase{
-			appProtocol: utilpointer.StringPtr(""),
+			appProtocol: utilpointer.String(""),
 			expected:    "tcp", // we want Kuma's default behavior to be explicit to a user
 		}),
 		Entry("no appProtocol but with `<port>.service.kuma.io/protocol` annotation", testCase{
@@ -844,19 +844,19 @@ var _ = Describe("ProtocolTagFor(..)", func() {
 			expected: "http", // we want to support both ways of providing protocol
 		}),
 		Entry("appProtocol has an unknown value", testCase{
-			appProtocol: utilpointer.StringPtr("not-yet-supported-protocol"),
+			appProtocol: utilpointer.String("not-yet-supported-protocol"),
 			expected:    "not-yet-supported-protocol", // we want Kuma's behavior to be straightforward to a user (just copy appProtocol lowercase value)
 		}),
 		Entry("appProtocol has a lowercase value", testCase{
-			appProtocol: utilpointer.StringPtr("HtTp"),
+			appProtocol: utilpointer.String("HtTp"),
 			expected:    "http", // we want Kuma's behavior to be straightforward to a user (copy appProtocol lowercase value)
 		}),
 		Entry("appProtocol has a known value: http", testCase{
-			appProtocol: utilpointer.StringPtr("http"),
+			appProtocol: utilpointer.String("http"),
 			expected:    "http",
 		}),
 		Entry("appProtocol has a known value: tcp", testCase{
-			appProtocol: utilpointer.StringPtr("tcp"),
+			appProtocol: utilpointer.String("tcp"),
 			expected:    "tcp",
 		}),
 		Entry("no appProtocol and no `<port>.service.kuma.io/protocol`", testCase{
