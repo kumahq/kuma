@@ -325,7 +325,7 @@ func RoutePerFilterConfig(filterName string, filterConfig *anypb.Any) RouteConfi
 
 // RouteActionRedirect configures the route to automatically response
 // with a HTTP redirection. This replaces any previous action specification.
-func RouteActionRedirect(redirect *Redirection) RouteConfigurer {
+func RouteActionRedirect(redirect *Redirection, port uint32) RouteConfigurer {
 	if redirect == nil {
 		return RouteConfigureFunc(nil)
 	}
@@ -344,6 +344,12 @@ func RouteActionRedirect(redirect *Redirection) RouteConfigurer {
 		}
 		if redirect.Port > 0 {
 			envoyRedirect.PortRedirect = redirect.Port
+		} else {
+			// Here explicitly set the port the listener is listening on
+			// because apparently strip_any_host_port actually changes the port
+			// of the request even for redirecting...
+			// Looks like https://github.com/envoyproxy/envoy/issues/19589
+			envoyRedirect.PortRedirect = port
 		}
 
 		switch redirect.Status {
