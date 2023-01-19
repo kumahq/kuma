@@ -263,23 +263,34 @@ type certRefCondition struct {
 }
 
 func (r *GatewayReconciler) handleCertRefs(ctx context.Context, mesh string, gatewayNamespace string, l gatewayapi.Listener) (*mesh_proto.MeshGateway_TLS_Conf, *certRefCondition, error) {
-	var referencedSecrets []kube_types.NamespacedName
+	type referencedSecret struct {
+		name kube_types.NamespacedName
+		data []byte
+	}
+	var referencedSecrets []referencedSecret
 	for _, certRef := range l.TLS.CertificateRefs {
 		policyRef := policy.PolicyReferenceSecret(policy.FromGatewayIn(gatewayNamespace), certRef)
 
+		name := fmt.Sprintf("%q %q", policyRef.GroupKindReferredTo().String(), policyRef.NamespacedNameReferredTo().String())
 		if permitted, err := policy.IsReferencePermitted(ctx, r.Client, policyRef); err != nil {
 			return nil, nil, err
 		} else if !permitted {
-			name := fmt.Sprintf("%q %q", policyRef.GroupKindReferredTo().String(), policyRef.NamespacedNameReferredTo().String())
 			return nil, &certRefCondition{
 				reason:  string(gatewayapi.ListenerReasonRefNotPermitted),
 				message: fmt.Sprintf("reference to %s not permitted by any ReferenceGrant", name),
 			}, nil
 		}
 
-		if err := r.Client.Get(ctx, policyRef.NamespacedNameReferredTo(), &kube_core.Secret{}); err != nil {
+		if *certRef.Kind != "Secret" || *certRef.Group != "" {
+			return nil, &certRefCondition{
+				reason:  string(gatewayapi.ListenerReasonInvalidCertificateRef),
+				message: fmt.Sprintf("invalid reference to %s/%s", *certRef.Group, *certRef.Kind),
+			}, nil
+		}
+
+		secret := &kube_core.Secret{}
+		if err := r.Client.Get(ctx, policyRef.NamespacedNameReferredTo(), secret); err != nil {
 			if kube_apierrs.IsNotFound(err) {
-				name := fmt.Sprintf("%q %q", policyRef.GroupKindReferredTo().String(), policyRef.NamespacedNameReferredTo().String())
 				return nil, &certRefCondition{
 					reason:  string(gatewayapi.ListenerReasonInvalidCertificateRef),
 					message: fmt.Sprintf("invalid reference to %s", name),
@@ -289,7 +300,18 @@ func (r *GatewayReconciler) handleCertRefs(ctx context.Context, mesh string, gat
 			return nil, nil, err
 		}
 
-		referencedSecrets = append(referencedSecrets, policyRef.NamespacedNameReferredTo())
+		data, err := convertSecret(secret)
+		if err != nil {
+			return nil, &certRefCondition{
+				reason:  string(gatewayapi.ListenerReasonInvalidCertificateRef),
+				message: err.Error(),
+			}, nil
+		}
+
+		referencedSecrets = append(referencedSecrets, referencedSecret{
+			name: policyRef.NamespacedNameReferredTo(),
+			data: data,
+		})
 	}
 
 	if l.TLS.Mode != nil && *l.TLS.Mode == gatewayapi.TLSModePassthrough {
@@ -300,8 +322,7 @@ func (r *GatewayReconciler) handleCertRefs(ctx context.Context, mesh string, gat
 		Mode: mesh_proto.MeshGateway_TLS_TERMINATE,
 	}
 	for _, secretKey := range referencedSecrets {
-		// We only support canonical Secret of TLS type. Ignore other types
-		secretKey, err := r.createSecretIfMissing(ctx, secretKey, mesh)
+		secretKey, err := r.createSecretIfMissing(ctx, secretKey.name, secretKey.data, mesh)
 		if err != nil {
 			return nil, nil, err
 		}
