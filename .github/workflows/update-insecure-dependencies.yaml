@@ -67,7 +67,7 @@ jobs:
             After update:
             ${{ env.SCAN_OUTPUT_AFTER }}
           delete-branch: true
-          title: "chore(deps): security update
+          title: "chore(deps): security update"
           draft: false
           labels: dependencies,${{ matrix.branch }}
           token: ${{ steps.github-app-token.outputs.token }}
