@@ -36,9 +36,8 @@ jobs:
       - name: "Prepare commit body - before"
         id: prepare_commit_body_before
         run: |
-          SCAN_OUTPUT_BEFORE=$(osv-scanner --lockfile=go.mod | tr "+" "|" | awk 'NR>3 {print last} {last=$0}' || true)
           echo "SCAN_OUTPUT_BEFORE<<EOF" >> $GITHUB_ENV
-          echo "$SCAN_OUTPUT_BEFORE" >> $GITHUB_ENV
+          osv-scanner --lockfile=go.mod | tr "+" "|" | awk 'NR>3 {print last} {last=$0}' || true >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
       - name: "Update dependencies"
         id: update
@@ -48,9 +47,8 @@ jobs:
       - name: "Prepare commit body - after"
         id: prepare_commit_body_after
         run: |
-          SCAN_OUTPUT_AFTER=$(osv-scanner --lockfile=go.mod | tr "+" "|" | awk 'NR>3 {print last} {last=$0}' || true)
           echo "SCAN_OUTPUT_AFTER<<EOF" >> $GITHUB_ENV
-          echo "$SCAN_OUTPUT_AFTER" >> $GITHUB_ENV
+          osv-scanner --lockfile=go.mod | tr "+" "|" | awk 'NR>3 {print last} {last=$0}' || true >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
       - name: "Create Pull Request"
         uses: peter-evans/create-pull-request@v4
