@@ -30,6 +30,8 @@ resources:
               routes:
               - match:
                   path: /v1
+                redirect:
+                  schemeRedirect: other
                 requestHeadersToAdd:
                 - append: false
                   header:
@@ -60,11 +62,10 @@ resources:
                     value: add-value
                 responseHeadersToRemove:
                 - response-header-to-remove
-                route:
-                  cluster: backend
-                  timeout: 0s
               - match:
                   prefix: /v1/
+                redirect:
+                  schemeRedirect: other
                 requestHeadersToAdd:
                 - append: false
                   header:
@@ -95,9 +96,6 @@ resources:
                     value: add-value
                 responseHeadersToRemove:
                 - response-header-to-remove
-                route:
-                  cluster: backend
-                  timeout: 0s
               - match:
                   prefix: /
                 route:
