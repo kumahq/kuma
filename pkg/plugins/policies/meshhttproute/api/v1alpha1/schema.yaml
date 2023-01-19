@@ -246,6 +246,26 @@ properties:
                             - type
                             - value
                           type: object
+                        queryParams:
+                          description: QueryParams matches based on HTTP URL query parameters. Multiple matches are ANDed together such that all listed matches must succeed.
+                          items:
+                            properties:
+                              name:
+                                minLength: 1
+                                type: string
+                              type:
+                                enum:
+                                  - Exact
+                                  - RegularExpression
+                                type: string
+                              value:
+                                type: string
+                            required:
+                              - name
+                              - type
+                              - value
+                            type: object
+                          type: array
                       type: object
                     type: array
                 required:

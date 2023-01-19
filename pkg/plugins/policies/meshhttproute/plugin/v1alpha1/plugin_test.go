@@ -296,6 +296,20 @@ var _ = Describe("MeshHTTPRoute", func() {
 													Weight:    100,
 												}},
 											},
+										}, {
+											Matches: []api.Match{{
+												QueryParams: []api.QueryParamsMatch{{
+													Type:  api.ExactQueryMatch,
+													Name:  "v1",
+													Value: "true",
+												}},
+											}},
+											Default: api.RuleConf{
+												BackendRefs: &[]api.BackendRef{{
+													TargetRef: builders.TargetRefService("backend"),
+													Weight:    100,
+												}},
+											},
 										}}},
 								}},
 							},

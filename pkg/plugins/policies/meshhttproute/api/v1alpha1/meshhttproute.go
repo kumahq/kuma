@@ -42,6 +42,9 @@ type Rule struct {
 type Match struct {
 	Path   *PathMatch `json:"path,omitempty"`
 	Method *Method    `json:"method,omitempty"`
+	// QueryParams matches based on HTTP URL query parameters. Multiple matches
+	// are ANDed together such that all listed matches must succeed.
+	QueryParams []QueryParamsMatch `json:"queryParams,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Exact;Prefix;RegularExpression
@@ -62,6 +65,21 @@ type PathMatch struct {
 	// +kubebuilder:validation:MinLength=1
 	Value string        `json:"value"`
 	Type  PathMatchType `json:"type"`
+}
+
+// +kubebuilder:validation:Enum=Exact;RegularExpression
+type QueryParamsMatchType string
+
+const (
+	ExactQueryMatch             QueryParamsMatchType = "Exact"
+	RegularExpressionQueryMatch QueryParamsMatchType = "RegularExpression"
+)
+
+type QueryParamsMatch struct {
+	Type QueryParamsMatchType `json:"type"`
+	// +kubebuilder:validation:MinLength=1
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
 type RuleConf struct {
