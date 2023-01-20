@@ -2,7 +2,6 @@ package xds
 
 import (
 	"encoding/hex"
-	"net/http"
 	"strings"
 	"time"
 
@@ -113,7 +112,7 @@ func mapHttpHeaders(headers *api.HeaderModifier, srcTags v1alpha1.MultiValueTagS
 	if len(srcTags) > 0 {
 		envoyHeaders = append(envoyHeaders, &envoy_core.HeaderValueOption{
 			Header: &envoy_core.HeaderValue{
-				Key:   http.CanonicalHeaderKey(tags.TagsHeaderName),
+				Key:   tags.TagsHeaderName,
 				Value: tags.Serialize(srcTags),
 			},
 		})
@@ -122,7 +121,7 @@ func mapHttpHeaders(headers *api.HeaderModifier, srcTags v1alpha1.MultiValueTagS
 		for _, val := range strings.Split(string(header.Value), ",") {
 			envoyHeaders = append(envoyHeaders, &envoy_core.HeaderValueOption{
 				Header: &envoy_core.HeaderValue{
-					Key:   http.CanonicalHeaderKey(string(header.Name)),
+					Key:   string(header.Name),
 					Value: val,
 				},
 				Append: util_proto.Bool(true),
@@ -133,7 +132,7 @@ func mapHttpHeaders(headers *api.HeaderModifier, srcTags v1alpha1.MultiValueTagS
 		for _, val := range strings.Split(string(header.Value), ",") {
 			envoyHeaders = append(envoyHeaders, &envoy_core.HeaderValueOption{
 				Header: &envoy_core.HeaderValue{
-					Key:   http.CanonicalHeaderKey(string(header.Name)),
+					Key:   string(header.Name),
 					Value: val,
 				},
 				Append: util_proto.Bool(false),

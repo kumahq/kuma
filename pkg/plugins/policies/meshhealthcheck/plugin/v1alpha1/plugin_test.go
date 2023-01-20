@@ -191,15 +191,15 @@ healthChecks:
     path: /health
     requestHeadersToAdd:
       - header:
-          key: X-Kuma-Tags
+          key: x-kuma-tags
           value: '&kuma.io/service=backend&'
       - append: true
         header:
-          key: X-Some-Header
+          key: x-some-header
           value: value
       - append: false
         header:
-          key: X-Some-Other-Header 
+          key: x-some-other-header
           value: value
   initialJitter: 13s
   interval: 10s

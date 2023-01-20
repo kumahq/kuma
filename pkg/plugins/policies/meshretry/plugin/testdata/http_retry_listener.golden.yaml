@@ -28,16 +28,16 @@ filterChains:
             rateLimitedRetryBackOff:
               maxInterval: 5s
               resetHeaders:
-              - name: Retry-After-Http
+              - name: retry-after-http
               - format: UNIX_TIMESTAMP
-                name: X-Retry-After-Http
+                name: x-retry-after-http
             retriableHeaders:
-            - name: X-Retry-Regex
+            - name: x-retry-regex
               stringMatch:
                 safeRegex:
                   googleRe2: {}
                   regex: .*
-            - name: X-Retry-Exact
+            - name: x-retry-exact
               stringMatch:
                 exact: exact-value
             retriableRequestHeaders:
@@ -68,7 +68,7 @@ filterChains:
             - name: :method
               stringMatch:
                 exact: TRACE
-            - name: X-Retry-Prefix
+            - name: x-retry-prefix
               stringMatch:
                 prefix: prefix-
             retriableStatusCodes:

@@ -1,7 +1,6 @@
 package xds
 
 import (
-	"net/http"
 	"strings"
 
 	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -39,7 +38,7 @@ func headerModifiers(mod api.HeaderModifier) ([]*envoy_config_core.HeaderValueOp
 			replace := &envoy_config_core.HeaderValueOption{
 				Append: util_proto.Bool(i > 0),
 				Header: &envoy_config_core.HeaderValue{
-					Key:   http.CanonicalHeaderKey(string(set.Name)),
+					Key:   string(set.Name),
 					Value: headerValue,
 				},
 			}
@@ -51,7 +50,7 @@ func headerModifiers(mod api.HeaderModifier) ([]*envoy_config_core.HeaderValueOp
 			appendOption := &envoy_config_core.HeaderValueOption{
 				Append: util_proto.Bool(true),
 				Header: &envoy_config_core.HeaderValue{
-					Key:   http.CanonicalHeaderKey(string(add.Name)),
+					Key:   string(add.Name),
 					Value: headerValue,
 				},
 			}

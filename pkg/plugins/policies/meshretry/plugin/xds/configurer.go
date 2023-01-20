@@ -151,7 +151,7 @@ func configureRateLimitedRetryBackOff(rateLimitedBackOff *api.RateLimitedBackOff
 	}
 	for _, resetHeader := range rateLimitedBackOff.ResetHeaders {
 		rateLimitedRetryBackoff.ResetHeaders = append(rateLimitedRetryBackoff.ResetHeaders, &envoy_route.RetryPolicy_ResetHeader{
-			Name:   http.CanonicalHeaderKey(string(resetHeader.Name)),
+			Name:   string(resetHeader.Name),
 			Format: api.RateLimitFormatEnumToEnvoyValue[resetHeader.Format],
 		})
 	}
@@ -165,7 +165,7 @@ func configureRateLimitedRetryBackOff(rateLimitedBackOff *api.RateLimitedBackOff
 
 func headerMatcher(header api.HTTPHeaderMatch) *envoy_route.HeaderMatcher {
 	matcher := &envoy_route.HeaderMatcher{
-		Name:        http.CanonicalHeaderKey(string(header.Name)),
+		Name:        string(header.Name),
 		InvertMatch: false,
 	}
 	t := api.HeaderMatchExact

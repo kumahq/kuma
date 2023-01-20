@@ -912,7 +912,7 @@ spec:
                                       name:
                                         maxLength: 256
                                         minLength: 1
-                                        pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                        pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                         type: string
                                       value:
                                         type: string
@@ -931,7 +931,7 @@ spec:
                                       name:
                                         maxLength: 256
                                         minLength: 1
-                                        pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                        pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                         type: string
                                       value:
                                         type: string
@@ -1188,7 +1188,7 @@ spec:
                                               name:
                                                 maxLength: 256
                                                 minLength: 1
-                                                pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                                 type: string
                                               value:
                                                 type: string
@@ -1212,7 +1212,7 @@ spec:
                                               name:
                                                 maxLength: 256
                                                 minLength: 1
-                                                pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                                 type: string
                                               value:
                                                 type: string
@@ -1282,7 +1282,7 @@ spec:
                                               name:
                                                 maxLength: 256
                                                 minLength: 1
-                                                pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                                 type: string
                                               value:
                                                 type: string
@@ -1306,7 +1306,7 @@ spec:
                                               name:
                                                 maxLength: 256
                                                 minLength: 1
-                                                pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                                 type: string
                                               value:
                                                 type: string
@@ -1921,7 +1921,7 @@ spec:
                                               name:
                                                 maxLength: 256
                                                 minLength: 1
-                                                pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                                 type: string
                                               value:
                                                 type: string
@@ -1940,7 +1940,7 @@ spec:
                                               name:
                                                 maxLength: 256
                                                 minLength: 1
-                                                pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                                 type: string
                                               value:
                                                 type: string
@@ -2214,7 +2214,7 @@ spec:
                                         description: The Name of the reset header.
                                         maxLength: 256
                                         minLength: 1
-                                        pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                        pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                         type: string
                                     type: object
                                   type: array
@@ -2289,7 +2289,7 @@ spec:
                                         description: The Name of the reset header.
                                         maxLength: 256
                                         minLength: 1
-                                        pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                        pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                         type: string
                                     type: object
                                   type: array
@@ -2321,7 +2321,7 @@ spec:
                                       special handling for \"Set-Cookie\"."
                                     maxLength: 256
                                     minLength: 1
-                                    pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                    pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                     type: string
                                   type:
                                     default: Exact
@@ -2365,7 +2365,7 @@ spec:
                                       special handling for \"Set-Cookie\"."
                                     maxLength: 256
                                     minLength: 1
-                                    pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                    pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                     type: string
                                   type:
                                     default: Exact

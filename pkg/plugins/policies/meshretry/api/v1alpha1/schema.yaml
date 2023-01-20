@@ -85,7 +85,7 @@ properties:
                                 description: The Name of the reset header.
                                 maxLength: 256
                                 minLength: 1
-                                pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                 type: string
                             type: object
                           type: array
@@ -136,7 +136,7 @@ properties:
                                 description: The Name of the reset header.
                                 maxLength: 256
                                 minLength: 1
-                                pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                 type: string
                             type: object
                           type: array
@@ -150,7 +150,7 @@ properties:
                             description: "Name is the name of the HTTP Header to be matched. Name matching MUST be case insensitive. (See https://tools.ietf.org/html/rfc7230#section-3.2). \n If multiple entries specify equivalent header names, only the first entry with an equivalent name MUST be considered for a match. Subsequent entries with an equivalent header name MUST be ignored. Due to the case-insensitivity of header names, \"foo\" and \"Foo\" are considered equivalent. \n When a header is repeated in an HTTP request, it is implementation-specific behavior as to how this is represented. Generally, proxies should follow the guidance from the RFC: https://www.rfc-editor.org/rfc/rfc7230.html#section-3.2.2 regarding processing a repeated header, with special handling for \"Set-Cookie\"."
                             maxLength: 256
                             minLength: 1
-                            pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                            pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                             type: string
                           type:
                             default: Exact
@@ -173,7 +173,7 @@ properties:
                             description: "Name is the name of the HTTP Header to be matched. Name matching MUST be case insensitive. (See https://tools.ietf.org/html/rfc7230#section-3.2). \n If multiple entries specify equivalent header names, only the first entry with an equivalent name MUST be considered for a match. Subsequent entries with an equivalent header name MUST be ignored. Due to the case-insensitivity of header names, \"foo\" and \"Foo\" are considered equivalent. \n When a header is repeated in an HTTP request, it is implementation-specific behavior as to how this is represented. Generally, proxies should follow the guidance from the RFC: https://www.rfc-editor.org/rfc/rfc7230.html#section-3.2.2 regarding processing a repeated header, with special handling for \"Set-Cookie\"."
                             maxLength: 256
                             minLength: 1
-                            pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                            pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                             type: string
                           type:
                             default: Exact

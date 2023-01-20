@@ -1,7 +1,6 @@
 package xds
 
 import (
-	"net/http"
 	"strings"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -37,7 +36,7 @@ func RateLimitConfigurationFromPolicy(rl *api.LocalHTTP) *rate_limit.RateLimitCo
 		for _, header := range pointer.Deref(rl.OnRateLimit.Headers).Set {
 			for _, val := range strings.Split(string(header.Value), ",") {
 				onRateLimit.Headers = append(onRateLimit.Headers, &rate_limit.Headers{
-					Key:    http.CanonicalHeaderKey(string(header.Name)),
+					Key:    string(header.Name),
 					Value:  val,
 					Append: true,
 				})
@@ -46,7 +45,7 @@ func RateLimitConfigurationFromPolicy(rl *api.LocalHTTP) *rate_limit.RateLimitCo
 		for _, header := range pointer.Deref(rl.OnRateLimit.Headers).Set {
 			for _, val := range strings.Split(string(header.Value), ",") {
 				onRateLimit.Headers = append(onRateLimit.Headers, &rate_limit.Headers{
-					Key:    http.CanonicalHeaderKey(string(header.Name)),
+					Key:    string(header.Name),
 					Value:  val,
 					Append: false,
 				})
