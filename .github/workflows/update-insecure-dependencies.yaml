@@ -4,6 +4,8 @@ on:
   workflow_dispatch: { }
   schedule:
     - cron: 0 8 * * *
+env:
+  IGNORE_PACKAGES: "github.com/aws/aws-sdk-go"
 jobs:
   update-insecure-dependencies:
     strategy:
@@ -44,7 +46,7 @@ jobs:
       - name: "Update dependencies"
         id: update
         run: |
-          osv-scanner --lockfile=go.mod --json | jq '.results[].packages[].package.name' | xargs -I {} go get -u {}
+          osv-scanner --lockfile=go.mod --json | jq '.results[].packages[].package.name' | grep -Ev ${{ env.IGNORE_PACKAGES }} | xargs -I {} go get -u {}
           go mod tidy
       - name: "Prepare commit body - after"
         id: prepare_commit_body_after
@@ -67,6 +69,8 @@ jobs:
 
             After update:
             ${{ env.SCAN_OUTPUT_AFTER }}
+            
+            If a package is showing up in the scan but the script is not trying to update it then it might be in env.IGNORE_PACKAGES regex
           delete-branch: true
           title: "chore(deps): security update"
           draft: false
