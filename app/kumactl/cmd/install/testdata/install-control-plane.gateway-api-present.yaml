@@ -1435,7 +1435,40 @@ spec:
                                       - RequestHeaderModifier
                                       - ResponseHeaderModifier
                                       - RequestRedirect
+                                      - URLRewrite
                                       type: string
+                                    urlRewrite:
+                                      properties:
+                                        hostname:
+                                          description: "PreciseHostname is the fully
+                                            qualified domain name of a network host.
+                                            This matches the RFC 1123 definition of
+                                            a hostname with 1 notable exception that
+                                            numeric IP addresses are not allowed.
+                                            \n Note that as per RFC1035 and RFC1123,
+                                            a *label* must consist of lower case alphanumeric
+                                            characters or '-', and must start and
+                                            end with an alphanumeric character. No
+                                            other punctuation is allowed."
+                                          maxLength: 253
+                                          minLength: 1
+                                          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                          type: string
+                                        path:
+                                          properties:
+                                            replaceFullPath:
+                                              type: string
+                                            replacePrefixMatch:
+                                              type: string
+                                            type:
+                                              enum:
+                                              - ReplaceFullPath
+                                              - ReplacePrefixMatch
+                                              type: string
+                                          required:
+                                          - type
+                                          type: object
+                                      type: object
                                   required:
                                   - type
                                   type: object

@@ -87,13 +87,14 @@ type RuleConf struct {
 	BackendRefs *[]BackendRef `json:"backendRefs,omitempty"`
 }
 
-// +kubebuilder:validation:Enum=RequestHeaderModifier;ResponseHeaderModifier;RequestRedirect
+// +kubebuilder:validation:Enum=RequestHeaderModifier;ResponseHeaderModifier;RequestRedirect;URLRewrite
 type FilterType string
 
 const (
 	RequestHeaderModifierType  FilterType = "RequestHeaderModifier"
 	ResponseHeaderModifierType FilterType = "ResponseHeaderModifier"
 	RequestRedirectType        FilterType = "RequestRedirect"
+	URLRewriteType             FilterType = "URLRewrite"
 )
 
 // +kubebuilder:validation:MinLength=1
@@ -157,11 +158,31 @@ type RequestRedirect struct {
 	StatusCode *int `json:"statusCode,omitempty"`
 }
 
+// +kubebuilder:validation:Enum=ReplaceFullPath;ReplacePrefixMatch
+type PathRewriteType string
+
+const (
+	ReplaceFullPathType    PathRewriteType = "ReplaceFullPath"
+	ReplacePrefixMatchType PathRewriteType = "ReplacePrefixMatch"
+)
+
+type PathRewrite struct {
+	Type               PathRewriteType `json:"type"`
+	ReplaceFullPath    *string         `json:"replaceFullPath,omitempty"`
+	ReplacePrefixMatch *string         `json:"replacePrefixMatch,omitempty"`
+}
+
+type URLRewrite struct {
+	Hostname *PreciseHostname `json:"hostname,omitempty"`
+	Path     *PathRewrite     `json:"path,omitempty"`
+}
+
 type Filter struct {
 	Type                   FilterType       `json:"type"`
 	RequestHeaderModifier  *HeaderModifier  `json:"requestHeaderModifier,omitempty"`
 	ResponseHeaderModifier *HeaderModifier  `json:"responseHeaderModifier,omitempty"`
 	RequestRedirect        *RequestRedirect `json:"requestRedirect,omitempty"`
+	URLRewrite             *URLRewrite      `json:"urlRewrite,omitempty"`
 	// TODO: add path to redirect after adding URL rewrite
 }
 
