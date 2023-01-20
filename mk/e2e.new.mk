@@ -124,9 +124,13 @@ test/e2e/debug-universal: $(E2E_DEPS_TARGETS) build/kumactl images/test k3d/netw
 	GINKGO_EDITOR_INTEGRATION=true \
 		$(GINKGO_TEST_E2E) --keep-going=false --procs 1 --fail-fast $(UNIVERSAL_E2E_PKG_LIST)
 
+.PHONY: test/e2e/check-no-tests
+test/e2e/check-no-tests:
+	# check the number of tests run and fail if it's 0
+	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) --dry-run --no-color --procs 1 $(E2E_PKG_LIST) | grep -E "Will run [0-9]+ of [0-9]+ specs" | cut -d " " -f 3 | grep -v "0" | wc -l | { read TEST_COUNT; test $$TEST_COUNT -gt 0; } || (echo "no tests detected!" && exit 1)
 
 .PHONY: test/e2e
-test/e2e: $(E2E_DEPS_TARGETS)
+test/e2e: test/e2e/check-no-tests $(E2E_DEPS_TARGETS)
 	$(MAKE) test/e2e/k8s/start
 	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) --procs 1 $(E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop && exit $$ret)
 	$(MAKE) test/e2e/k8s/stop
