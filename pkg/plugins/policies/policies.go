@@ -4,6 +4,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/plugins"
 	meshaccesslog_api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	meshcircuitbreaker_api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	meshfaultinjection_api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	meshhealthcheck_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshproxypatch_api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
@@ -18,6 +19,7 @@ var Policies = []plugins.PluginName{
 	plugins.PluginName(meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshaccesslog_api.MeshAccessLogResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshtrace_api.MeshTraceResourceTypeDescriptor.KumactlArg),
+	plugins.PluginName(meshfaultinjection_api.MeshFaultInjectionResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshratelimit_api.MeshRateLimitResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshtimeout_api.MeshTimeoutResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshtrafficpermission_api.MeshTrafficPermissionResourceTypeDescriptor.KumactlArg),
