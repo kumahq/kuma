@@ -38,7 +38,7 @@ done
 
 # yq_patch preserves indentation and blank lines of the original file
 function yq_patch() {
-  cat '.' "$2" > "$2.noblank"
+  cat "$2" > "$2.noblank"
   yq eval "$1" "$2" | diff -w -B "$2.noblank" - | patch -f --no-backup-if-mismatch "$2" -
   rm "$2.noblank"
 }
@@ -48,6 +48,3 @@ yq_patch "${VALUES_FILE_POLICY_PATH}"' = {}' "${HELM_VALUES_FILE}"
 for policy in $policies; do
   yq_patch "${VALUES_FILE_POLICY_PATH}.${policy}"' = {}' "${HELM_VALUES_FILE}"
 done
-
-#yq_patch "${VALUES_FILE_POLICY_PATH}"' = {}' "${HELM_VALUES_FILE}"
-#yq_patch "${VALUES_FILE_POLICY_PATH}"' = { '"${policies}"' }' "${HELM_VALUES_FILE}"
