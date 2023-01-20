@@ -206,7 +206,8 @@ spec:
             onRateLimit:
               status: 428
               headers:
-                - key: "x-kuma-rate-limited"
+                add:
+                - name: "x-kuma-rate-limited"
                   value: "true"`, mesh))),
 			).To(Succeed())
 		})

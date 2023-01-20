@@ -2,6 +2,7 @@ package xds
 
 import (
 	"encoding/hex"
+	"strings"
 	"time"
 
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -106,7 +107,7 @@ func mapUInt32ToInt64Range(value uint32) *envoy_type.Int64Range {
 	}
 }
 
-func mapHttpHeaders(headers *[]api.HeaderValue, srcTags v1alpha1.MultiValueTagSet) []*envoy_core.HeaderValueOption {
+func mapHttpHeaders(headers *api.HeaderModifier, srcTags v1alpha1.MultiValueTagSet) []*envoy_core.HeaderValueOption {
 	var envoyHeaders []*envoy_core.HeaderValueOption
 	if len(srcTags) > 0 {
 		envoyHeaders = append(envoyHeaders, &envoy_core.HeaderValueOption{
@@ -116,18 +117,26 @@ func mapHttpHeaders(headers *[]api.HeaderValue, srcTags v1alpha1.MultiValueTagSe
 			},
 		})
 	}
-	if headers != nil {
-		for _, header := range *headers {
-			envoyHeader := &envoy_core.HeaderValueOption{
+	for _, header := range pointer.Deref(headers).Add {
+		for _, val := range strings.Split(string(header.Value), ",") {
+			envoyHeaders = append(envoyHeaders, &envoy_core.HeaderValueOption{
 				Header: &envoy_core.HeaderValue{
-					Key:   header.Key,
-					Value: header.Value,
+					Key:   string(header.Name),
+					Value: val,
 				},
-			}
-			if header.Append != nil {
-				envoyHeader.Append = util_proto.Bool(*header.Append)
-			}
-			envoyHeaders = append(envoyHeaders, envoyHeader)
+				Append: util_proto.Bool(true),
+			})
+		}
+	}
+	for _, header := range pointer.Deref(headers).Set {
+		for _, val := range strings.Split(string(header.Value), ",") {
+			envoyHeaders = append(envoyHeaders, &envoy_core.HeaderValueOption{
+				Header: &envoy_core.HeaderValue{
+					Key:   string(header.Name),
+					Value: val,
+				},
+				Append: util_proto.Bool(false),
+			})
 		}
 	}
 	return envoyHeaders

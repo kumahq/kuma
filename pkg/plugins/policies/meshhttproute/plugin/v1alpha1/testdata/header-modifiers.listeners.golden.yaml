@@ -35,30 +35,30 @@ resources:
                 requestHeadersToAdd:
                 - append: false
                   header:
-                    key: Request-Set-Header
+                    key: request-set-header
                     value: set-value
                 - append: false
                   header:
-                    key: Request-Set-Header-Multiple
+                    key: request-set-header-multiple
                     value: one-value
                 - append: true
                   header:
-                    key: Request-Set-Header-Multiple
+                    key: request-set-header-multiple
                     value: second-value
                 - append: true
                   header:
-                    key: Request-Add-Header
+                    key: request-add-header
                     value: add-value
                 requestHeadersToRemove:
                 - request-header-to-remove
                 responseHeadersToAdd:
                 - append: false
                   header:
-                    key: Response-Set-Header
+                    key: response-set-header
                     value: set-value
                 - append: true
                   header:
-                    key: Response-Add-Header
+                    key: response-add-header
                     value: add-value
                 responseHeadersToRemove:
                 - response-header-to-remove
@@ -69,30 +69,30 @@ resources:
                 requestHeadersToAdd:
                 - append: false
                   header:
-                    key: Request-Set-Header
+                    key: request-set-header
                     value: set-value
                 - append: false
                   header:
-                    key: Request-Set-Header-Multiple
+                    key: request-set-header-multiple
                     value: one-value
                 - append: true
                   header:
-                    key: Request-Set-Header-Multiple
+                    key: request-set-header-multiple
                     value: second-value
                 - append: true
                   header:
-                    key: Request-Add-Header
+                    key: request-add-header
                     value: add-value
                 requestHeadersToRemove:
                 - request-header-to-remove
                 responseHeadersToAdd:
                 - append: false
                   header:
-                    key: Response-Set-Header
+                    key: response-set-header
                     value: set-value
                 - append: true
                   header:
-                    key: Response-Add-Header
+                    key: response-add-header
                     value: add-value
                 responseHeadersToRemove:
                 - response-header-to-remove
