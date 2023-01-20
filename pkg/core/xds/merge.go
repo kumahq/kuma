@@ -189,6 +189,12 @@ func clearAppendSlices(val reflect.Value) {
 			if valField.Elem().Kind() == reflect.Struct {
 				clearAppendSlices(valField)
 			}
+			if valField.Elem().Kind() == reflect.Slice {
+				mergeByKey := strings.Contains(field.Tag.Get(policyMergeTag), mergeValuesByKey)
+				if strings.HasPrefix(field.Name, appendSlicesPrefix) || mergeByKey {
+					valField.Elem().Set(reflect.Zero(valField.Elem().Type()))
+				}
+			}
 		}
 	}
 }
@@ -217,6 +223,13 @@ func appendSlices(dst reflect.Value, src reflect.Value) {
 		case reflect.Pointer:
 			if dstField.Elem().Kind() == reflect.Struct {
 				appendSlices(dstField, srcField)
+			}
+			if dstField.Elem().Kind() == reflect.Slice {
+				mergeByKey := strings.Contains(field.Tag.Get(policyMergeTag), mergeValuesByKey)
+				if strings.HasPrefix(field.Name, appendSlicesPrefix) || mergeByKey {
+					s := reflect.AppendSlice(dstField.Elem(), srcField.Elem())
+					dstField.Elem().Set(s)
+				}
 			}
 		}
 	}
