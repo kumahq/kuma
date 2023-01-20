@@ -311,13 +311,8 @@ jobs:
             fi
             
             # Handle legacy tests on branch
-            if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* ]]; then
-              if [[ "<< parameters.target >>" == "test/e2e" && $(./tools/ci/has_label.sh ci/run-e2e-legacy) != "true" ]]; then
-                skip "we do not run legacy E2E on branch by default. To run them add ci/run-e2e-legacy label"
-              fi
-              if [[ "<< parameters.cniNetworkPlugin >>" == "calico" || "<< parameters.k8sVersion >>" == "kindIpv6" || "<< parameters.k8sVersion >>" == "v1.19.16-k3s1" || "<< parameters.arch >>" == "arm64" ]]; then
-                  skip "Not running tests on PRs with kindIpv6, oldK8s, calico and arm64"
-              fi
+            if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* && "<< parameters.target >>" == "test/e2e" ]]; then
+              skip "we do not run legacy E2E on branch by default. To run them add ci/run-full-matrix label to run them"
             fi
 
             echo "Continuing tests"
