@@ -1,8 +1,6 @@
 package xds
 
 import (
-	"errors"
-
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_filter_fault "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/common/fault/v3"
@@ -73,7 +71,7 @@ func (c *Configurer) ConfigureHttpListener(filterChain *envoy_listener.FilterCha
 		hcm.HttpFilters = filters
 		return nil
 	}
-	if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, httpRoutes); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
+	if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, httpRoutes); err != nil {
 		return err
 	}
 	return nil
