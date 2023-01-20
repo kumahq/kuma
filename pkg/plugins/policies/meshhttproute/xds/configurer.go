@@ -23,7 +23,7 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 
 	for _, match := range matches {
 		r := &envoy_route.Route{
-			Match: match.getRouteMatch(),
+			Match: match.routeMatch,
 			Action: &envoy_route.Route_Route{
 				Route: c.routeAction(c.Clusters),
 			},
@@ -33,9 +33,8 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 		// We pass the information about whether this match was created from
 		// a prefix match along to the filters because it's no longer
 		// possible to know for sure with just an envoy_route.Route
-		_, withPrefixMatch := match.(withPrefixMatch)
 		for _, filter := range c.Filters {
-			routeFilter(filter, r, withPrefixMatch)
+			routeFilter(filter, r, match.prefixMatch)
 		}
 
 		virtualHost.Routes = append(virtualHost.Routes, r)
@@ -44,27 +43,16 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 	return nil
 }
 
-type match interface {
-	getRouteMatch() *envoy_route.RouteMatch
+type routeMatch struct {
+	routeMatch  *envoy_route.RouteMatch
+	prefixMatch bool
 }
-
-type withPrefixMatch struct {
-	*envoy_route.RouteMatch
-}
-
-func (m withPrefixMatch) getRouteMatch() *envoy_route.RouteMatch { return m.RouteMatch }
-
-type withoutPrefixMatch struct {
-	*envoy_route.RouteMatch
-}
-
-func (m withoutPrefixMatch) getRouteMatch() *envoy_route.RouteMatch { return m.RouteMatch }
 
 // routeMatch returns a list of RouteMatches given a list of MeshHTTPRoute matches
 // Note that some MeshHTTPRoute matches result in multiple Envoy matches because
 // of prefix + rewrite handling. That's why we return the wrapper type as well.
-func (c RoutesConfigurer) routeMatch(matches []api.Match) []match {
-	var allEnvoyMatches []match
+func (c RoutesConfigurer) routeMatch(matches []api.Match) []routeMatch {
+	var allEnvoyMatches []routeMatch
 
 	for _, match := range matches {
 		var envoyMatches []*envoy_route.RouteMatch
@@ -83,9 +71,9 @@ func (c RoutesConfigurer) routeMatch(matches []api.Match) []match {
 				routeQueryParamsMatch(envoyMatch, match.QueryParams)
 			}
 			if match.Path != nil && match.Path.Type == api.Prefix {
-				allEnvoyMatches = append(allEnvoyMatches, withPrefixMatch{envoyMatch})
+				allEnvoyMatches = append(allEnvoyMatches, routeMatch{envoyMatch, true})
 			} else {
-				allEnvoyMatches = append(allEnvoyMatches, withoutPrefixMatch{envoyMatch})
+				allEnvoyMatches = append(allEnvoyMatches, routeMatch{envoyMatch, false})
 			}
 		}
 	}

@@ -142,7 +142,7 @@ func urlRewrite(rewrite api.URLRewrite, envoyRoute *envoy_route.Route, withPrefi
 						Substitution: *rewrite.Path.ReplacePrefixMatch,
 					}
 				} else if envoyRoute.Match.GetPrefix() != "" {
-					// We have the "predix /prefix/" match case
+					// We have the "prefix /prefix/" match case
 					action.PrefixRewrite = *rewrite.Path.ReplacePrefixMatch
 				}
 			}

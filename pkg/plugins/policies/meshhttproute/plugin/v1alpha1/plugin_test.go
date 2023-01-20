@@ -249,7 +249,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Secrets: &xds.TestSecrets{},
 				},
 				Mesh: xds_context.MeshContext{
-					Resource:    builders.Mesh().WithName("default").Build(),
+					Resource:    samples.MeshDefault(),
 					EndpointMap: outboundTargets,
 				},
 			},
@@ -333,7 +333,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Secrets: &xds.TestSecrets{},
 				},
 				Mesh: xds_context.MeshContext{
-					Resource:    builders.Mesh().WithName("default").Build(),
+					Resource:    samples.MeshDefault(),
 					EndpointMap: outboundTargets,
 				},
 			},
@@ -422,7 +422,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Secrets: &xds.TestSecrets{},
 				},
 				Mesh: xds_context.MeshContext{
-					Resource:    builders.Mesh().WithName("default").Build(),
+					Resource:    samples.MeshDefault(),
 					EndpointMap: outboundTargets,
 				},
 			},
