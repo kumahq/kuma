@@ -16,7 +16,6 @@ import (
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/plugin/xds"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
-	gateway_route "github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
@@ -133,7 +132,7 @@ func applyToGateway(
 		for _, hostInfo := range listenerInfo.HostInfos {
 			destinations := gateway_plugin.RouteDestinationsMutable(hostInfo.Entries)
 			for _, dest := range destinations {
-				clusterName, err := gateway_route.DestinationClusterName(dest, hostInfo.Host.Tags)
+				clusterName, err := dest.Destination.DestinationClusterName(hostInfo.Host.Tags)
 				if err != nil {
 					continue
 				}

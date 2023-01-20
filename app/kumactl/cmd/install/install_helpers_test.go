@@ -23,8 +23,8 @@ func ExpectMatchesGoldenFiles(actual []byte, goldenFilePath string) {
 	Expect(err).ToNot(HaveOccurred())
 	expectedManifests := data.SplitYAML(data.File{Data: expected})
 
-	Expect(len(actualManifests)).To(Equal(len(expectedManifests)), golden.RerunMsg)
+	Expect(len(actualManifests)).To(Equal(len(expectedManifests)), golden.RerunMsg(goldenFilePath))
 	for i := range expectedManifests {
-		Expect(actualManifests[i]).To(MatchYAML(expectedManifests[i]), golden.RerunMsg)
+		Expect(actualManifests[i]).To(MatchYAML(expectedManifests[i]), golden.RerunMsg(goldenFilePath))
 	}
 }

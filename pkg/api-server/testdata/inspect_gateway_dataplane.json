@@ -2,7 +2,7 @@
  "kind": "MeshGatewayDataplane",
  "gateway": {
   "mesh": "default",
-  "name": "gateway"
+  "name": "elastic"
  },
  "listeners": [
   {

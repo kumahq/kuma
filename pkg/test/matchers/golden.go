@@ -78,7 +78,7 @@ func (g *GoldenMatcher) FailureMessage(actual interface{}) string {
 	if err != nil {
 		return err.Error()
 	}
-	return golden.RerunMsg + "\n\n" + g.Matcher.FailureMessage(actualContent)
+	return golden.RerunMsg(g.GoldenFilePath) + "\n\n" + g.Matcher.FailureMessage(actualContent)
 }
 
 func (g *GoldenMatcher) NegatedFailureMessage(actual interface{}) string {

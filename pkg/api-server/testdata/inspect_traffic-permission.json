@@ -10,7 +10,7 @@
    "attachments": [
     {
      "type": "inbound",
-     "name": "192.168.0.1:80:81",
+     "name": "127.0.0.1:80:8080",
      "service": "backend"
     }
    ]
@@ -24,7 +24,7 @@
    "attachments": [
     {
      "type": "inbound",
-     "name": "192.168.0.1:80:81",
+     "name": "127.0.0.1:80:8080",
      "service": "redis"
     }
    ]
@@ -33,13 +33,13 @@
    "kind": "SidecarDataplane",
    "dataplane": {
     "mesh": "default",
-    "name": "gateway-1"
+    "name": "elastic-1"
    },
    "attachments": [
     {
      "type": "inbound",
-     "name": "192.168.0.1:80:81",
-     "service": "gateway"
+     "name": "127.0.0.1:80:8080",
+     "service": "elastic"
     }
    ]
   }

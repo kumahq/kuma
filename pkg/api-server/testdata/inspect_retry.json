@@ -42,8 +42,8 @@
    "attachments": [
     {
      "type": "service",
-     "name": "gateway",
-     "service": "gateway"
+     "name": "elastic",
+     "service": "elastic"
     },
     {
      "type": "service",
@@ -61,8 +61,8 @@
    "attachments": [
     {
      "type": "service",
-     "name": "gateway",
-     "service": "gateway"
+     "name": "elastic",
+     "service": "elastic"
     }
    ]
   }
