@@ -27,7 +27,9 @@ func Dataplane() *DataplaneBuilder {
 				Name: "dp-1",
 			},
 			Spec: &mesh_proto.Dataplane{
-				Networking: &mesh_proto.Dataplane_Networking{},
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "127.0.0.1",
+				},
 			},
 		},
 	}
@@ -81,6 +83,14 @@ func (d *DataplaneBuilder) WithServices(services ...string) *DataplaneBuilder {
 	return d
 }
 
+func (d *DataplaneBuilder) WithHttpServices(services ...string) *DataplaneBuilder {
+	d.WithoutInbounds()
+	for _, service := range services {
+		d.AddInboundHttpOfService(service)
+	}
+	return d
+}
+
 func (d *DataplaneBuilder) WithoutInbounds() *DataplaneBuilder {
 	d.res.Spec.Networking.Inbound = nil
 	return d
@@ -96,6 +106,10 @@ func (d *DataplaneBuilder) WithInboundOfTagsMap(tags map[string]string) *Datapla
 
 func (d *DataplaneBuilder) AddInboundOfService(service string) *DataplaneBuilder {
 	return d.AddInboundOfTags(mesh_proto.ServiceTag, service)
+}
+
+func (d *DataplaneBuilder) AddInboundHttpOfService(service string) *DataplaneBuilder {
+	return d.AddInboundOfTags(mesh_proto.ServiceTag, service, mesh_proto.ProtocolTag, "http")
 }
 
 func (d *DataplaneBuilder) AddInboundOfTags(tags ...string) *DataplaneBuilder {
@@ -172,6 +186,13 @@ func (d *DataplaneBuilder) WithBuiltInGateway(name string) *DataplaneBuilder {
 			mesh_proto.ServiceTag: name,
 		},
 		Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
+	}
+	return d
+}
+
+func (d *DataplaneBuilder) WithAdminPort(i int) *DataplaneBuilder {
+	d.res.Spec.Networking.Admin = &mesh_proto.EnvoyAdmin{
+		Port: uint32(i),
 	}
 	return d
 }

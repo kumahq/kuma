@@ -574,7 +574,7 @@ func inspectRulesAttachment(cfg *kuma_cp.Config, builder xds_context.MeshContext
 			rest_errors.HandleError(response, err, "Could not get MatchedPolicies")
 			return
 		}
-		rulesAttachments := inspect.BuildRulesAttachments(matchedPolicies.Dynamic, proxy.Dataplane.Spec.Networking)
+		rulesAttachments := inspect.BuildRulesAttachments(matchedPolicies.Dynamic, proxy.Dataplane.Spec.Networking, meshContext.VIPDomains)
 		resp := api_server_types.RuleInspectResponse{}
 		for _, ruleAttachment := range rulesAttachments {
 			subset := map[string]string{}
@@ -597,7 +597,9 @@ func inspectRulesAttachment(cfg *kuma_cp.Config, builder xds_context.MeshContext
 			resp.Items = append(resp.Items, api_server_types.RuleInspectEntry{
 				Type:       ruleAttachment.Type,
 				Name:       ruleAttachment.Name,
+				Addresses:  ruleAttachment.Addresses,
 				Service:    ruleAttachment.Service,
+				Tags:       ruleAttachment.Tags,
 				PolicyType: string(ruleAttachment.PolicyType),
 				Subset:     subset,
 				Conf:       ruleAttachment.Rule.Conf,

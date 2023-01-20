@@ -222,10 +222,7 @@ func buildClusterResource(
 
 	cluster := msg.(*envoy_cluster_v3.Cluster)
 
-	name, err := route.DestinationClusterName(
-		dest,
-		identifyingTags,
-	)
+	name, err := dest.Destination.DestinationClusterName(identifyingTags)
 	if err != nil {
 		return nil, err
 	}
