@@ -91,37 +91,54 @@ spec:
 		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	It("should return specific error code for the demo-client-blocked", func() {
-		stdout, _, err := universal.Cluster.Exec("", "", "demo-client", "curl", "-v", "test-server.mesh")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+	type testCase struct {
+		client           string
+		address          string
+		expectedResponse string
+	}
 
-		stdout, _, err = universal.Cluster.Exec("", "", "demo-client-blocked", "curl", "-v", "test-server.mesh")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 402 Payment Required"))
+	DescribeTable("should be affected by fault and return",
+		func(given testCase) {
+			Eventually(func(g Gomega) {
+				stdout, _, err := universal.Cluster.Exec("", "", given.client, "curl", "-v", given.address)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stdout).To(ContainSubstring(given.expectedResponse))
+			}, "30s", "1s").Should(Succeed())
+		},
+		Entry("402 when requests from the demo-client-blocked", testCase{
+			client:           "demo-client-blocked",
+			address:          "test-server.mesh",
+			expectedResponse: "HTTP/1.1 402 Payment Required",
+		}),
+		Entry("421 when requests from any client are blocked", testCase{
+			client:           "demo-client",
+			address:          "test-service-block-all-sources.mesh",
+			expectedResponse: "HTTP/1.1 421 Misdirected Request",
+		}),
+		Entry("421 when requests from the demo-client-blocked", testCase{
+			client:           "demo-client-timeout",
+			address:          "test-service-block-all-sources.mesh",
+			expectedResponse: "HTTP/1.1 421 Misdirected Request",
+		}),
+		Entry("421 when requests from the demo-client-blocked", testCase{
+			client:           "demo-client-blocked",
+			address:          "test-service-block-all-sources.mesh",
+			expectedResponse: "HTTP/1.1 421 Misdirected Request",
+		}),
+	)
+
+	It("should not be affected by any fault", func() {
+		Eventually(func(g Gomega) {
+			stdout, _, err := universal.Cluster.Exec("", "", "demo-client", "curl", "-v", "test-server.mesh")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		}, "30s", "1s").Should(Succeed())
 	})
 
-	It("should timeout for demo-client-timeout", func() {
-		stdout, _, err := universal.Cluster.Exec("", "", "demo-client", "curl", "-v", "test-server.mesh")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-
-		stdout, _, _ = universal.Cluster.Exec("", "", "demo-client-timeout", "curl", "-v", "test-server.mesh")
-		Expect(stdout).To(ContainSubstring("upstream request timeout"))
-	})
-
-	It("should return specific error code for all clients", func() {
-		stdout, _, err := universal.Cluster.Exec("", "", "demo-client", "curl", "-v", "test-service-block-all-sources.mesh")
-		println(stdout)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 421 Misdirected Request"))
-
-		stdout, _, err = universal.Cluster.Exec("", "", "demo-client-blocked", "curl", "-v", "test-service-block-all-sources.mesh")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 421 Misdirected Request"))
-
-		stdout, _, err = universal.Cluster.Exec("", "", "demo-client-timeout", "curl", "-v", "test-service-block-all-sources.mesh")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 421 Misdirected Request"))
+	It("should delay responses for demo-client-timeout", func() {
+		Eventually(func(g Gomega) {
+			stdout, _, _ := universal.Cluster.Exec("", "", "demo-client-timeout", "curl", "-v", "test-server.mesh")
+			g.Expect(stdout).To(ContainSubstring("upstream request timeout"))
+		}, "30s", "1s").Should(Succeed())
 	})
 }
