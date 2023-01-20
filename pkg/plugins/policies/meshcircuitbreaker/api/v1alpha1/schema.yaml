@@ -98,9 +98,11 @@ properties:
                               format: int32
                               type: integer
                             standardDeviationFactor:
-                              description: 'This factor is used to determine the ejection threshold for success rate outlier ejection. The ejection threshold is the difference between the mean success rate, and the product of this factor and the standard deviation of the mean success rate: mean - (standard_deviation * success_rate_standard_deviation_factor). This factor is divided by a thousand to get a double. That is, if the desired factor is 1.9, the runtime value should be 1900.'
-                              format: int32
-                              type: integer
+                              anyOf:
+                                - type: integer
+                                - type: string
+                              description: 'This factor is used to determine the ejection threshold for success rate outlier ejection. The ejection threshold is the difference between the mean success rate, and the product of this factor and the standard deviation of the mean success rate: mean - (standard_deviation * success_rate_standard_deviation_factor). Either int or decimal represented as string.'
+                              x-kubernetes-int-or-string: true
                           type: object
                         totalFailures:
                           description: 'In the default mode (outlierDetection.splitExternalAndLocalErrors is false) this detection type takes into account all generated errors: locally originated and externally originated (transaction) errors. In split mode (outlierDetection.splitExternalLocalOriginErrors is true) this detection type takes into account only externally originated (transaction) errors, ignoring locally originated errors. If an upstream host is an HTTP-server, only 5xx types of error are taken into account (see Consecutive Gateway Failure for exceptions). Properly formatted responses, even when they carry an operational error (like index not found, access denied) are not taken into account.'
@@ -262,9 +264,11 @@ properties:
                               format: int32
                               type: integer
                             standardDeviationFactor:
-                              description: 'This factor is used to determine the ejection threshold for success rate outlier ejection. The ejection threshold is the difference between the mean success rate, and the product of this factor and the standard deviation of the mean success rate: mean - (standard_deviation * success_rate_standard_deviation_factor). This factor is divided by a thousand to get a double. That is, if the desired factor is 1.9, the runtime value should be 1900.'
-                              format: int32
-                              type: integer
+                              anyOf:
+                                - type: integer
+                                - type: string
+                              description: 'This factor is used to determine the ejection threshold for success rate outlier ejection. The ejection threshold is the difference between the mean success rate, and the product of this factor and the standard deviation of the mean success rate: mean - (standard_deviation * success_rate_standard_deviation_factor). Either int or decimal represented as string.'
+                              x-kubernetes-int-or-string: true
                           type: object
                         totalFailures:
                           description: 'In the default mode (outlierDetection.splitExternalAndLocalErrors is false) this detection type takes into account all generated errors: locally originated and externally originated (transaction) errors. In split mode (outlierDetection.splitExternalLocalOriginErrors is true) this detection type takes into account only externally originated (transaction) errors, ignoring locally originated errors. If an upstream host is an HTTP-server, only 5xx types of error are taken into account (see Consecutive Gateway Failure for exceptions). Properly formatted responses, even when they carry an operational error (like index not found, access denied) are not taken into account.'

@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"github.com/shopspring/decimal"
+
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
@@ -170,7 +172,14 @@ func validateDetectorSuccessRate(path validators.PathBuilder, detector *Detector
 
 	verr.Add(validators.ValidateIntegerGreaterThanZeroOrNil(path.Field("minimumHosts"), detector.MinimumHosts))
 	verr.Add(validators.ValidateIntegerGreaterThanZeroOrNil(path.Field("requestVolume"), detector.RequestVolume))
-	verr.Add(validators.ValidateIntegerGreaterThanZeroOrNil(path.Field("standardDeviationFactor"), detector.StandardDeviationFactor))
+	if detector.StandardDeviationFactor != nil {
+		dec, err := common_api.NewDecimalFromIntOrString(*detector.StandardDeviationFactor)
+		if err != nil {
+			verr.AddViolationAt(path.Field("standardDeviationFactor"), "invalid number")
+		} else if dec.LessThanOrEqual(decimal.Zero) {
+			verr.AddViolationAt(path.Field("standardDeviationFactor"), validators.HasToBeGreaterThanZero)
+		}
+	}
 
 	return verr
 }

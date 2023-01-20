@@ -2679,12 +2679,18 @@ spec:
                       or not.
                     properties:
                       client:
+                        anyOf:
+                        - type: integer
+                        - type: string
                         description: 'Target percentage of requests that will be force
                           traced if the ''x-client-trace-id'' header is set. Default:
-                          100% Mirror of client_sampling in Envoy https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L127-L133'
-                        format: int32
-                        type: integer
+                          100% Mirror of client_sampling in Envoy https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L127-L133
+                          Either int or decimal represented as string.'
+                        x-kubernetes-int-or-string: true
                       overall:
+                        anyOf:
+                        - type: integer
+                        - type: string
                         description: 'Target percentage of requests will be traced
                           after all other sampling checks have been applied (client,
                           force tracing, random sampling). This field functions as
@@ -2692,16 +2698,19 @@ spec:
                           instance, setting client_sampling to 100% but overall_sampling
                           to 1% will result in only 1% of client requests with the
                           appropriate headers to be force traced. Default: 100% Mirror
-                          of overall_sampling in Envoy https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L142-L150'
-                        format: int32
-                        type: integer
+                          of overall_sampling in Envoy https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L142-L150
+                          Either int or decimal represented as string.'
+                        x-kubernetes-int-or-string: true
                       random:
+                        anyOf:
+                        - type: integer
+                        - type: string
                         description: 'Target percentage of requests that will be randomly
                           selected for trace generation, if not requested by the client
                           or not forced. Default: 100% Mirror of random_sampling in
-                          Envoy https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L135-L140'
-                        format: int32
-                        type: integer
+                          Envoy https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L135-L140
+                          Either int or decimal represented as string.'
+                        x-kubernetes-int-or-string: true
                     type: object
                   tags:
                     description: Custom tags configuration. You can add custom tags
@@ -4309,6 +4318,9 @@ spec:
                                       format: int32
                                       type: integer
                                     standardDeviationFactor:
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
                                       description: 'This factor is used to determine
                                         the ejection threshold for success rate outlier
                                         ejection. The ejection threshold is the difference
@@ -4316,11 +4328,8 @@ spec:
                                         of this factor and the standard deviation
                                         of the mean success rate: mean - (standard_deviation
                                         * success_rate_standard_deviation_factor).
-                                        This factor is divided by a thousand to get
-                                        a double. That is, if the desired factor is
-                                        1.9, the runtime value should be 1900.'
-                                      format: int32
-                                      type: integer
+                                        Either int or decimal represented as string.'
+                                      x-kubernetes-int-or-string: true
                                   type: object
                                 totalFailures:
                                   description: 'In the default mode (outlierDetection.splitExternalAndLocalErrors
@@ -4627,6 +4636,9 @@ spec:
                                       format: int32
                                       type: integer
                                     standardDeviationFactor:
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
                                       description: 'This factor is used to determine
                                         the ejection threshold for success rate outlier
                                         ejection. The ejection threshold is the difference
@@ -4634,11 +4646,8 @@ spec:
                                         of this factor and the standard deviation
                                         of the mean success rate: mean - (standard_deviation
                                         * success_rate_standard_deviation_factor).
-                                        This factor is divided by a thousand to get
-                                        a double. That is, if the desired factor is
-                                        1.9, the runtime value should be 1900.'
-                                      format: int32
-                                      type: integer
+                                        Either int or decimal represented as string.'
+                                      x-kubernetes-int-or-string: true
                                   type: object
                                 totalFailures:
                                   description: 'In the default mode (outlierDetection.splitExternalAndLocalErrors

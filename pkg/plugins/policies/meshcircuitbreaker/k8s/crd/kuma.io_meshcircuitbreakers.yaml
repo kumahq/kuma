@@ -230,6 +230,9 @@ spec:
                                       format: int32
                                       type: integer
                                     standardDeviationFactor:
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
                                       description: 'This factor is used to determine
                                         the ejection threshold for success rate outlier
                                         ejection. The ejection threshold is the difference
@@ -237,11 +240,8 @@ spec:
                                         of this factor and the standard deviation
                                         of the mean success rate: mean - (standard_deviation
                                         * success_rate_standard_deviation_factor).
-                                        This factor is divided by a thousand to get
-                                        a double. That is, if the desired factor is
-                                        1.9, the runtime value should be 1900.'
-                                      format: int32
-                                      type: integer
+                                        Either int or decimal represented as string.'
+                                      x-kubernetes-int-or-string: true
                                   type: object
                                 totalFailures:
                                   description: 'In the default mode (outlierDetection.splitExternalAndLocalErrors
@@ -548,6 +548,9 @@ spec:
                                       format: int32
                                       type: integer
                                     standardDeviationFactor:
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
                                       description: 'This factor is used to determine
                                         the ejection threshold for success rate outlier
                                         ejection. The ejection threshold is the difference
@@ -555,11 +558,8 @@ spec:
                                         of this factor and the standard deviation
                                         of the mean success rate: mean - (standard_deviation
                                         * success_rate_standard_deviation_factor).
-                                        This factor is divided by a thousand to get
-                                        a double. That is, if the desired factor is
-                                        1.9, the runtime value should be 1900.'
-                                      format: int32
-                                      type: integer
+                                        Either int or decimal represented as string.'
+                                      x-kubernetes-int-or-string: true
                                   type: object
                                 totalFailures:
                                   description: 'In the default mode (outlierDetection.splitExternalAndLocalErrors
