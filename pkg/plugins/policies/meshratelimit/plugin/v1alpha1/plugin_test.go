@@ -128,15 +128,16 @@ var _ = Describe("MeshRateLimit", func() {
 									RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
 									OnRateLimit: &api.OnRateLimit{
 										Status: pointer.To(uint32(444)),
-										Headers: &[]api.HeaderValue{
-											{
-												Key:    "x-kuma-rate-limit-header",
-												Value:  "test-value",
-												Append: pointer.To(true),
-											},
-											{
-												Key:   "x-kuma-rate-limit",
-												Value: "other-value",
+										Headers: &api.HeaderModifier{
+											Add: []api.HeaderKeyValue{
+												{
+													Name:  "x-kuma-rate-limit-header",
+													Value: "test-value",
+												},
+												{
+													Name:  "x-kuma-rate-limit",
+													Value: "other-value",
+												},
 											},
 										},
 									},
@@ -214,15 +215,18 @@ var _ = Describe("MeshRateLimit", func() {
 									},
 									OnRateLimit: &api.OnRateLimit{
 										Status: pointer.To(uint32(444)),
-										Headers: &[]api.HeaderValue{
-											{
-												Key:    "x-kuma-rate-limit-header",
-												Value:  "test-value",
-												Append: pointer.To(true),
+										Headers: &api.HeaderModifier{
+											Add: []api.HeaderKeyValue{
+												{
+													Name:  "x-kuma-rate-limit-header",
+													Value: "test-value",
+												},
 											},
-											{
-												Key:   "x-kuma-rate-limit",
-												Value: "other-value",
+											Set: []api.HeaderKeyValue{
+												{
+													Name:  "x-kuma-rate-limit",
+													Value: "other-value",
+												},
 											},
 										},
 									},
@@ -420,15 +424,16 @@ var _ = Describe("MeshRateLimit", func() {
 								},
 								OnRateLimit: &api.OnRateLimit{
 									Status: pointer.To(uint32(444)),
-									Headers: &[]api.HeaderValue{
-										{
-											Key:    "x-kuma-rate-limit-header",
-											Value:  "test-value",
-											Append: pointer.To(true),
-										},
-										{
-											Key:   "x-kuma-rate-limit",
-											Value: "other-value",
+									Headers: &api.HeaderModifier{
+										Add: []api.HeaderKeyValue{
+											{
+												Name:  "x-kuma-rate-limit-header",
+												Value: "test-value",
+											},
+											{
+												Name:  "x-kuma-rate-limit",
+												Value: "other-value",
+											},
 										},
 									},
 								},

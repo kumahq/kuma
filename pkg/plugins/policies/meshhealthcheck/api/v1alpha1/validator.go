@@ -73,7 +73,6 @@ func validateConfHttp(path validators.PathBuilder, http *HttpHealthCheck) valida
 		err.Add(validators.ValidateStringDefined(path.Field("path"), *http.Path))
 	}
 	err.Add(validateConfHttpExpectedStatuses(path.Field("expectedStatuses"), http.ExpectedStatuses))
-	err.Add(validateConfHttpRequestHeadersToAdd(path.Field("requestHeadersToAdd"), http.RequestHeadersToAdd))
 	return err
 }
 
@@ -82,24 +81,6 @@ func validateConfHttpExpectedStatuses(path validators.PathBuilder, expectedStatu
 	if expectedStatuses != nil {
 		for i, status := range *expectedStatuses {
 			err.Add(validators.ValidateStatusCode(path.Index(i), status))
-		}
-	}
-
-	return err
-}
-
-func validateConfHttpRequestHeadersToAdd(path validators.PathBuilder, requestHeadersToAdd *[]HeaderValue) validators.ValidationError {
-	var err validators.ValidationError
-	if requestHeadersToAdd != nil {
-		for i, header := range *requestHeadersToAdd {
-			path := path.Index(i).Field("header")
-
-			if header.Key == "" {
-				err.AddViolationAt(path.Field("key"), validators.MustNotBeEmpty)
-			}
-			if header.Value == "" {
-				err.AddViolationAt(path.Field("value"), validators.MustNotBeEmpty)
-			}
 		}
 	}
 

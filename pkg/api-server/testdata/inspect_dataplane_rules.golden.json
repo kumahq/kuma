@@ -2,9 +2,35 @@
  "total": 3,
  "items": [
   {
-   "type": "destinationSubset",
-   "name": "127.0.0.1:10001",
+   "type": "SingleItem",
+   "policyType": "MeshTrace",
+   "subset": {},
+   "conf": {
+    "backends": [
+     {
+      "zipkin": {
+       "url": "http://jaeger-collector.mesh-observability:9411/api/v2/spans"
+      }
+     }
+    ]
+   },
+   "origins": [
+    {
+     "mesh": "default",
+     "name": "mtp-1"
+    }
+   ]
+  },
+  {
+   "type": "DestinationSubset",
+   "name": "backend",
+   "addresses": [
+    "127.0.0.1:10001"
+   ],
    "service": "backend",
+   "tags": {
+    "kuma.io/service": "backend"
+   },
    "policyType": "MeshAccessLog",
    "subset": {},
    "conf": {
@@ -24,9 +50,16 @@
    ]
   },
   {
-   "type": "clientSubset",
-   "name": "192.168.0.2:80",
+   "type": "ClientSubset",
+   "name": "web-e816eaf96a14245f",
+   "addresses": [
+    "192.168.0.2:80"
+   ],
    "service": "web",
+   "tags": {
+    "kuma.io/protocol": "http",
+    "kuma.io/service": "web"
+   },
    "policyType": "MeshTrafficPermission",
    "subset": {
     "kuma.io/service": "client",
@@ -34,28 +67,6 @@
    },
    "conf": {
     "action": "DENY"
-   },
-   "origins": [
-    {
-     "mesh": "default",
-     "name": "mtp-1"
-    }
-   ]
-  },
-  {
-   "type": "singleItem",
-   "name": "dataplane",
-   "service": "",
-   "policyType": "MeshTrace",
-   "subset": {},
-   "conf": {
-    "backends": [
-     {
-      "zipkin": {
-       "url": "http://jaeger-collector.mesh-observability:9411/api/v2/spans"
-      }
-     }
-    ]
    },
    "origins": [
     {

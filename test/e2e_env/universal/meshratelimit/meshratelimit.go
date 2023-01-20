@@ -34,7 +34,8 @@ spec:
             onRateLimit:
               status: 429
               headers:
-                - key: "x-kuma-rate-limited"
+                add:
+                - name: "x-kuma-rate-limited"
                   value: "true"`, meshName)
 	var rateLimitPolicyTcp = fmt.Sprintf(`
 type: MeshRateLimit

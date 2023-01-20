@@ -1,18 +1,19 @@
 package xds
 
 import (
-	"net/http"
 	"strings"
 
 	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-func routeFilter(filter api.Filter, route *envoy_route.Route) {
+func routeFilter(filter api.Filter, route *envoy_route.Route, matchesPrefix bool) {
 	switch filter.Type {
 	case api.RequestHeaderModifierType:
 		requestHeaderModifier(*filter.RequestHeaderModifier, route)
@@ -20,11 +21,13 @@ func routeFilter(filter api.Filter, route *envoy_route.Route) {
 		responseHeaderModifier(*filter.ResponseHeaderModifier, route)
 	case api.RequestRedirectType:
 		requestRedirect(*filter.RequestRedirect, route)
+	case api.URLRewriteType:
+		urlRewrite(*filter.URLRewrite, route, matchesPrefix)
 	}
 }
 
-func headerValues(raw string) []string {
-	return strings.Split(raw, ",")
+func headerValues(raw common_api.HeaderValue) []string {
+	return strings.Split(string(raw), ",")
 }
 
 func headerModifiers(mod api.HeaderModifier) ([]*envoy_config_core.HeaderValueOption, []string) {
@@ -35,7 +38,7 @@ func headerModifiers(mod api.HeaderModifier) ([]*envoy_config_core.HeaderValueOp
 			replace := &envoy_config_core.HeaderValueOption{
 				Append: util_proto.Bool(i > 0),
 				Header: &envoy_config_core.HeaderValue{
-					Key:   http.CanonicalHeaderKey(string(set.Name)),
+					Key:   string(set.Name),
 					Value: headerValue,
 				},
 			}
@@ -47,7 +50,7 @@ func headerModifiers(mod api.HeaderModifier) ([]*envoy_config_core.HeaderValueOp
 			appendOption := &envoy_config_core.HeaderValueOption{
 				Append: util_proto.Bool(true),
 				Header: &envoy_config_core.HeaderValue{
-					Key:   http.CanonicalHeaderKey(string(add.Name)),
+					Key:   string(add.Name),
 					Value: headerValue,
 				},
 			}
@@ -103,5 +106,49 @@ func requestRedirect(redirect api.RequestRedirect, envoyRoute *envoy_route.Route
 
 	envoyRoute.Action = &envoy_route.Route_Redirect{
 		Redirect: envoyRedirect,
+	}
+}
+
+func urlRewrite(rewrite api.URLRewrite, envoyRoute *envoy_route.Route, withPrefixMatch bool) {
+	action := &envoy_route.RouteAction{}
+	if rewrite.Hostname != nil {
+		action.HostRewriteSpecifier = &envoy_route.RouteAction_HostRewriteLiteral{
+			HostRewriteLiteral: string(*rewrite.Hostname),
+		}
+	}
+	if rewrite.Path != nil {
+		switch rewrite.Path.Type {
+		case api.ReplaceFullPathType:
+			action.RegexRewrite = &envoy_type_matcher.RegexMatchAndSubstitute{
+				Pattern: &envoy_type_matcher.RegexMatcher{
+					EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
+						GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
+					},
+					Regex: `.*`,
+				},
+				Substitution: *rewrite.Path.ReplaceFullPath,
+			}
+		case api.ReplacePrefixMatchType:
+			if withPrefixMatch {
+				if envoyRoute.Match.GetPath() != "" {
+					// We have the "exact /prefix" match case
+					action.RegexRewrite = &envoy_type_matcher.RegexMatchAndSubstitute{
+						Pattern: &envoy_type_matcher.RegexMatcher{
+							EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
+								GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
+							},
+							Regex: `.*`,
+						},
+						Substitution: *rewrite.Path.ReplacePrefixMatch,
+					}
+				} else if envoyRoute.Match.GetPrefix() != "" {
+					// We have the "prefix /prefix/" match case
+					action.PrefixRewrite = *rewrite.Path.ReplacePrefixMatch
+				}
+			}
+		}
+	}
+	envoyRoute.Action = &envoy_route.Route_Route{
+		Route: action,
 	}
 }

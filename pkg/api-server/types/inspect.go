@@ -221,8 +221,10 @@ type RuleInspectResponse struct {
 
 type RuleInspectEntry struct {
 	Type       string                  `json:"type"`
-	Name       string                  `json:"name"`
-	Service    string                  `json:"service"`
+	Name       string                  `json:"name,omitempty"`
+	Addresses  []string                `json:"addresses,omitempty"`
+	Service    string                  `json:"service,omitempty"`
+	Tags       map[string]string       `json:"tags,omitempty"`
 	PolicyType string                  `json:"policyType"`
 	Subset     map[string]string       `json:"subset"`
 	Conf       core_model.ResourceSpec `json:"conf"`

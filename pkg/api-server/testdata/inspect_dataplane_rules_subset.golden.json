@@ -1,0 +1,170 @@
+{
+ "total": 6,
+ "items": [
+  {
+   "type": "SingleItem",
+   "policyType": "MeshTrace",
+   "subset": {},
+   "conf": {
+    "backends": [
+     {
+      "zipkin": {
+       "url": "http://jaeger-collector.mesh-observability:9411/api/v2/spans"
+      }
+     }
+    ]
+   },
+   "origins": [
+    {
+     "mesh": "default",
+     "name": "mtp-1"
+    }
+   ]
+  },
+  {
+   "type": "DestinationSubset",
+   "name": "backend",
+   "addresses": [
+    "10.3.2.3:2300",
+    "240.0.0.0:80"
+   ],
+   "service": "backend",
+   "tags": {
+    "kuma.io/service": "backend"
+   },
+   "policyType": "MeshAccessLog",
+   "subset": {},
+   "conf": {
+    "backends": [
+     {
+      "file": {
+       "path": "/tmp/access.logs"
+      }
+     }
+    ]
+   },
+   "origins": [
+    {
+     "mesh": "default",
+     "name": "mal-1"
+    }
+   ]
+  },
+  {
+   "type": "DestinationSubset",
+   "name": "backend-618c322a4d7e5dd7",
+   "addresses": [
+    "240.0.0.1:2300"
+   ],
+   "service": "backend",
+   "tags": {
+    "kuma.io/service": "backend",
+    "version": "2"
+   },
+   "policyType": "MeshAccessLog",
+   "subset": {},
+   "conf": {
+    "backends": [
+     {
+      "file": {
+       "path": "/tmp/access.logs"
+      }
+     }
+    ]
+   },
+   "origins": [
+    {
+     "mesh": "default",
+     "name": "mal-1"
+    }
+   ]
+  },
+  {
+   "type": "DestinationSubset",
+   "name": "backend-c703a1b1c0b78a12",
+   "addresses": [
+    "240.0.0.2:2300"
+   ],
+   "service": "backend",
+   "tags": {
+    "kuma.io/service": "backend",
+    "version": "1"
+   },
+   "policyType": "MeshAccessLog",
+   "subset": {},
+   "conf": {
+    "backends": [
+     {
+      "file": {
+       "path": "/tmp/access.logs"
+      }
+     }
+    ]
+   },
+   "origins": [
+    {
+     "mesh": "default",
+     "name": "mal-1"
+    }
+   ]
+  },
+  {
+   "type": "ClientSubset",
+   "name": "web-e816eaf96a14245f",
+   "addresses": [
+    "127.0.0.1:80"
+   ],
+   "service": "web",
+   "tags": {
+    "kuma.io/protocol": "http",
+    "kuma.io/service": "web"
+   },
+   "policyType": "MeshTrafficPermission",
+   "subset": {
+    "kuma.io/service": "client",
+    "kuma.io/zone": "east",
+    "version": "2"
+   },
+   "conf": {
+    "action": "ALLOW"
+   },
+   "origins": [
+    {
+     "mesh": "default",
+     "name": "mtp-1"
+    },
+    {
+     "mesh": "default",
+     "name": "mtp-2"
+    }
+   ]
+  },
+  {
+   "type": "ClientSubset",
+   "name": "web-e816eaf96a14245f",
+   "addresses": [
+    "127.0.0.1:80"
+   ],
+   "service": "web",
+   "tags": {
+    "kuma.io/protocol": "http",
+    "kuma.io/service": "web"
+   },
+   "policyType": "MeshTrafficPermission",
+   "subset": {
+    "kuma.io/service": "client",
+    "kuma.io/zone": "east",
+    "version": "!2"
+   },
+   "conf": {
+    "action": "DENY"
+   },
+   "origins": [
+    {
+     "mesh": "default",
+     "name": "mtp-1"
+    }
+   ]
+  }
+ ]
+}

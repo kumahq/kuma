@@ -150,12 +150,11 @@ type HTTP struct {
 	// RetriableResponseHeaders is an HTTP response headers that trigger a retry
 	// if present in the response. A retry will be triggered if any of the header
 	// matches match the upstream response headers.
-	RetriableResponseHeaders *[]common_api.HeaderMatcher `json:"retriableResponseHeaders,omitempty"`
+	RetriableResponseHeaders *[]HTTPHeaderMatch `json:"retriableResponseHeaders,omitempty"`
 	// RetriableRequestHeaders is an HTTP headers which must be present in the request
 	// for retries to be attempted.
-	RetriableRequestHeaders *[]common_api.HeaderMatcher `json:"retriableRequestHeaders,omitempty"`
+	RetriableRequestHeaders *[]HTTPHeaderMatch `json:"retriableRequestHeaders,omitempty"`
 }
-
 type GRPCRetryOn string
 
 var (
@@ -243,7 +242,35 @@ var RateLimitFormatEnumToEnvoyValue = map[RateLimitFormat]envoy_route.RetryPolic
 
 type ResetHeader struct {
 	// The Name of the reset header.
-	Name string `json:"name,omitempty"`
+	Name common_api.HeaderName `json:"name,omitempty"`
 	// The format of the reset header, either Seconds or UnixTimestamp.
 	Format RateLimitFormat `json:"format,omitempty"`
+}
+
+type HeaderMatchType string
+
+// HeaderMatchType constants.
+const (
+	HeaderMatchExact             HeaderMatchType = "Exact"
+	HeaderMatchPresent           HeaderMatchType = "Present"
+	HeaderMatchRegularExpression HeaderMatchType = "RegularExpression"
+	HeaderMatchAbsent            HeaderMatchType = "Absent"
+	HeaderMatchPrefix            HeaderMatchType = "Prefix"
+)
+
+// HTTPHeaderMatch describes how to select a HTTP route by matching HTTP request
+// headers.
+type HTTPHeaderMatch struct {
+	// Type specifies how to match against the value of the header.
+	// +optional
+	// +kubebuilder:default=Exact
+	// +kubebuilder:validation:Enum=Exact;Present;RegularExpression;Absent;Prefix
+	Type *HeaderMatchType `json:"type,omitempty"`
+
+	// Name is the name of the HTTP Header to be matched. Name MUST be lower case
+	// as they will be handled with case insensitivity (See https://tools.ietf.org/html/rfc7230#section-3.2).
+	Name common_api.HeaderName `json:"name"`
+
+	// Value is the value of HTTP Header to be matched.
+	Value common_api.HeaderValue `json:"value"`
 }

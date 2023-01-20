@@ -5,32 +5,22 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
-	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config/core"
+	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
 func AppDeploymentWithCniAndNoTaintController() {
-	defaultMesh := `
-apiVersion: kuma.io/v1alpha1
-kind: Mesh
-metadata:
-  name: default
-`
-
 	var cluster Cluster
 	var k8sCluster *K8sCluster
-	nodeName := fmt.Sprintf(
-		"second-%s",
-		strings.ToLower(random.UniqueId()),
-	)
 
-	var setup = func() {
+	BeforeEach(func() {
 		k8sCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 		cluster = k8sCluster.
 			WithTimeout(6 * time.Second).
@@ -45,49 +35,53 @@ metadata:
 			Install(Kuma(core.Standalone,
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
-				WithSkipDefaultMesh(true), // it's common case for HELM deployments that Mesh is also managed by HELM therefore it's not created by default
-				WithHelmOpt("cni.delayStartupSeconds", "40"),
+				WithHelmOpt("cni.delayStartupSeconds", "40000"),
 				WithHelmOpt("experimental.cni", "false"),
 				WithCNI(),
 			)).
-			Install(YamlK8s(defaultMesh)).
 			Setup(cluster)
 		// here we could patch the "command" of the CNI, kubectl patch ...
 		Expect(err).ToNot(HaveOccurred())
-	}
+	})
 
 	E2EAfterEach(func() {
 		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
-		Expect(k8sCluster.DeleteNode("k3d-" + nodeName + "-0")).To(Succeed())
 	})
 
 	It(
 		"is susceptible to the race condition",
 		func() {
-			setup()
+			// given a non-healthy CNI
 
-			// k3s1 v1.19.16 hangs if the name is the same in the previous test
-			err := k8sCluster.CreateNode(nodeName, "second=true")
-			Expect(err).ToNot(HaveOccurred())
-
-			err = k8sCluster.LoadImages("kuma-dp", "kuma-universal")
-			Expect(err).ToNot(HaveOccurred())
-
-			err = NewClusterSetup().
+			// when test server is deployed without working CNI
+			err := NewClusterSetup().
 				Install(NamespaceWithSidecarInjection(TestNamespace)).
-				Install(testserver.Install(func(opts *testserver.DeploymentOpts) {
-					opts.NodeSelector = map[string]string{
-						"second": "true",
-					}
-				})).
+				Install(testserver.Install(testserver.WithoutWaitingToBeReady())).
 				Setup(cluster)
 
-			// test-server probe will fail without iptables rules applied
-			Expect(err).Should(HaveOccurred())
-			_, errorIsOfTypeMaxRetriesExceeded := err.(retry.MaxRetriesExceeded)
-			Expect(errorIsOfTypeMaxRetriesExceeded).To(Equal(true))
+			// then
+			Expect(err).ShouldNot(HaveOccurred())
+			podName, err := PodNameOfApp(k8sCluster, "test-server", TestNamespace)
+			Expect(err).ToNot(HaveOccurred())
+
+			// and DP received config
+			Eventually(func(g Gomega) {
+				received, err := DataplaneReceivedConfig(k8sCluster, "default", fmt.Sprintf("%s.%s", podName, TestNamespace))
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(received).To(BeTrue())
+			}, "30s", "1s").Should(Succeed())
+
+			// and test-server container in the pod is unhealthy (probe fail without iptables rules applied)
+			Consistently(func(g Gomega) {
+				pod, err := k8s.GetPodE(cluster.GetTesting(), cluster.GetKubectlOptions(TestNamespace), podName)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				status := util_k8s.FindContainerStatus(pod, "test-server")
+				g.Expect(status).ToNot(BeNil())
+				g.Expect(status.Ready).To(BeFalse())
+			}, "10s", "1s").Should(Succeed())
 		},
 	)
 }

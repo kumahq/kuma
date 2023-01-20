@@ -2,6 +2,8 @@
 package v1alpha1
 
 import (
+	"k8s.io/apimachinery/pkg/util/intstr"
+
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 )
 
@@ -81,17 +83,20 @@ type Sampling struct {
 	// the appropriate headers to be force traced. Default: 100% Mirror of
 	// overall_sampling in Envoy
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L142-L150
-	Overall *uint32 `json:"overall,omitempty"`
+	// Either int or decimal represented as string.
+	Overall *intstr.IntOrString `json:"overall,omitempty"`
 	// Target percentage of requests that will be force traced if the
 	// 'x-client-trace-id' header is set. Default: 100% Mirror of
 	// client_sampling in Envoy
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L127-L133
-	Client *uint32 `json:"client,omitempty"`
+	// Either int or decimal represented as string.
+	Client *intstr.IntOrString `json:"client,omitempty"`
 	// Target percentage of requests that will be randomly selected for trace
 	// generation, if not requested by the client or not forced. Default: 100%
 	// Mirror of random_sampling in Envoy
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L135-L140
-	Random *uint32 `json:"random,omitempty"`
+	// Either int or decimal represented as string.
+	Random *intstr.IntOrString `json:"random,omitempty"`
 }
 
 // Custom tags configuration.

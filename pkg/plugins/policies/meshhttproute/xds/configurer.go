@@ -21,27 +21,38 @@ type RoutesConfigurer struct {
 func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
 	matches := c.routeMatch(c.Matches)
 
-	var envoyRoutes []*envoy_route.Route
 	for _, match := range matches {
-		envoyRoutes = append(envoyRoutes, &envoy_route.Route{
-			Match: match,
+		r := &envoy_route.Route{
+			Match: match.routeMatch,
 			Action: &envoy_route.Route_Route{
 				Route: c.routeAction(c.Clusters),
 			},
 			TypedPerFilterConfig: map[string]*anypb.Any{},
-		})
+		}
+
+		// We pass the information about whether this match was created from
+		// a prefix match along to the filters because it's no longer
+		// possible to know for sure with just an envoy_route.Route
+		for _, filter := range c.Filters {
+			routeFilter(filter, r, match.prefixMatch)
+		}
+
+		virtualHost.Routes = append(virtualHost.Routes, r)
 	}
 
-	for _, envoyRoute := range envoyRoutes {
-		applyRouteFilters(c.Filters, envoyRoute)
-	}
-
-	virtualHost.Routes = append(virtualHost.Routes, envoyRoutes...)
 	return nil
 }
 
-func (c RoutesConfigurer) routeMatch(matches []api.Match) []*envoy_route.RouteMatch {
-	var allEnvoyMatches []*envoy_route.RouteMatch
+type routeMatch struct {
+	routeMatch  *envoy_route.RouteMatch
+	prefixMatch bool
+}
+
+// routeMatch returns a list of RouteMatches given a list of MeshHTTPRoute matches
+// Note that some MeshHTTPRoute matches result in multiple Envoy matches because
+// of prefix + rewrite handling. That's why we return the wrapper type as well.
+func (c RoutesConfigurer) routeMatch(matches []api.Match) []routeMatch {
+	var allEnvoyMatches []routeMatch
 
 	for _, match := range matches {
 		var envoyMatches []*envoy_route.RouteMatch
@@ -59,14 +70,18 @@ func (c RoutesConfigurer) routeMatch(matches []api.Match) []*envoy_route.RouteMa
 			if match.QueryParams != nil {
 				routeQueryParamsMatch(envoyMatch, match.QueryParams)
 			}
+			if match.Path != nil && match.Path.Type == api.Prefix {
+				allEnvoyMatches = append(allEnvoyMatches, routeMatch{envoyMatch, true})
+			} else {
+				allEnvoyMatches = append(allEnvoyMatches, routeMatch{envoyMatch, false})
+			}
 		}
-
-		allEnvoyMatches = append(allEnvoyMatches, envoyMatches...)
 	}
 
 	return allEnvoyMatches
 }
 
+// Not every API match maps cleanly to a single envoy match
 func (c RoutesConfigurer) routePathMatch(match api.PathMatch) []*envoy_route.RouteMatch {
 	switch match.Type {
 	case api.Exact:
@@ -203,10 +218,4 @@ func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster) *envoy_ro
 		}
 	}
 	return routeAction
-}
-
-func applyRouteFilters(filters []api.Filter, route *envoy_route.Route) {
-	for _, filter := range filters {
-		routeFilter(filter, route)
-	}
 }

@@ -8,6 +8,10 @@ POLICY_GEN := go run -mod=mod $(TOOLS_DIR)/policy-gen/generator/main.go
 GENERATE_TARGET ?= clean/proto generate/api protoc/pkg/config/app/kumactl/v1alpha1 protoc/plugins resources/type generate/policies
 GO_MODULE ?= github.com/kumahq/kuma
 
+HELM_VALUES_FILE ?= "deployments/charts/kuma/values.yaml"
+HELM_CRD_DIR ?= "deployments/charts/kuma/crds/"
+HELM_VALUES_FILE_POLICY_PATH ?= ".plugins.policies"
+
 .PHONY: clean/proto
 clean/proto: ## Dev: Remove auto-generated Protobuf files
 	find $(PROTO_DIRS) -name '*.pb.go' -delete
@@ -38,7 +42,8 @@ policies = $(foreach dir,$(shell find pkg/plugins/policies -maxdepth 1 -mindepth
 generate_policy_targets = $(addprefix generate/policy/,$(policies))
 cleanup_policy_targets = $(addprefix cleanup/policy/,$(policies))
 
-generate/policies: cleanup/crds cleanup/policies generate/deep-copy/common $(generate_policy_targets) generate/policy-import generate/policy-helm generate/builtin-crds generate/fix-embed
+GENERATE_POLICIES_TARGET ?= cleanup/crds cleanup/policies generate/deep-copy/common $(generate_policy_targets) generate/policy-import generate/policy-helm generate/builtin-crds generate/fix-embed
+generate/policies: $(GENERATE_POLICIES_TARGET)
 
 cleanup/crds:
 	rm -f ./deployments/charts/kuma/crds/*
@@ -65,10 +70,10 @@ generate/schema/%: generate/controller-gen/%
 	done
 
 generate/policy-import:
-	$(TOOLS_DIR)/policy-gen/generate-policy-import.sh $(policies)
+	$(TOOLS_DIR)/policy-gen/generate-policy-import.sh $(GO_MODULE) $(policies)
 
 generate/policy-helm:
-	PATH=$(CI_TOOLS_BIN_DIR):$$PATH $(TOOLS_DIR)/policy-gen/generate-policy-helm.sh $(policies)
+	PATH=$(CI_TOOLS_BIN_DIR):$$PATH $(TOOLS_DIR)/policy-gen/generate-policy-helm.sh $(HELM_VALUES_FILE) $(HELM_CRD_DIR) $(HELM_VALUES_FILE_POLICY_PATH) $(policies)
 
 generate/controller-gen/%: generate/kumapolicy-gen/%
 	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \

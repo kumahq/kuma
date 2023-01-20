@@ -10,13 +10,13 @@
    "attachments": [
     {
      "type": "outbound",
-     "name": "192.168.0.2:8080",
+     "name": "127.0.0.1:10001",
      "service": "redis"
     },
     {
      "type": "outbound",
-     "name": "192.168.0.3:8080",
-     "service": "gateway"
+     "name": "127.0.0.1:10002",
+     "service": "elastic"
     }
    ]
   },
@@ -29,8 +29,8 @@
    "attachments": [
     {
      "type": "outbound",
-     "name": "192.168.0.2:8080",
-     "service": "gateway"
+     "name": "127.0.0.1:10001",
+     "service": "elastic"
     }
    ]
   }
