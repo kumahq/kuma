@@ -264,6 +264,7 @@ type HTTPHeaderMatch struct {
 	// Type specifies how to match against the value of the header.
 	// +optional
 	// +kubebuilder:default=Exact
+	// +kubebuilder:validation:Enum=Exact;Present;RegularExpression;Absent;Prefix
 	Type *HeaderMatchType `json:"type,omitempty"`
 
 	// Name is the name of the HTTP Header to be matched. Name matching MUST be

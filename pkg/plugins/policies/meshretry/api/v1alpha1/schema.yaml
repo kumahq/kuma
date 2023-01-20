@@ -155,6 +155,12 @@ properties:
                           type:
                             default: Exact
                             description: Type specifies how to match against the value of the header.
+                            enum:
+                              - Exact
+                              - Present
+                              - RegularExpression
+                              - Absent
+                              - Prefix
                             type: string
                           value:
                             description: Value is the value of HTTP Header to be matched.
@@ -178,6 +184,12 @@ properties:
                           type:
                             default: Exact
                             description: Type specifies how to match against the value of the header.
+                            enum:
+                              - Exact
+                              - Present
+                              - RegularExpression
+                              - Absent
+                              - Prefix
                             type: string
                           value:
                             description: Value is the value of HTTP Header to be matched.
