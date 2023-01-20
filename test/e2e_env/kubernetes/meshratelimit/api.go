@@ -61,7 +61,8 @@ spec:
             onRateLimit:
               status: 429
               headers:
-                - key: "x-kuma-rate-limited"
+                add:
+                - name: "x-kuma-rate-limited"
                   value: "true"
     - targetRef:
         kind: Mesh
@@ -74,7 +75,8 @@ spec:
             onRateLimit:
               status: 429
               headers:
-                - key: "x-kuma-rate-limited"
+                add:
+                - name: "x-kuma-rate-limited"
                   value: "true"
           tcp:
             connectionRate:
@@ -122,7 +124,8 @@ spec:
             onRateLimit:
               status: 429
               headers:
-                - key: "x-kuma-rate-limited"
+                add:
+                - name: "x-kuma-rate-limited"
                   value: "true"
     - targetRef:
         kind: Mesh
@@ -135,7 +138,8 @@ spec:
             onRateLimit:
               status: 429
               headers:
-                - key: "x-kuma-rate-limited"
+                add:
+                - name: "x-kuma-rate-limited"
                   value: "true"
           tcp:
             connectionRate:

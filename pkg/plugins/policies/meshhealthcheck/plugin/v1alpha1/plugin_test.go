@@ -152,15 +152,18 @@ var _ = Describe("MeshHealthCheck", func() {
 							Http: &api.HttpHealthCheck{
 								Disabled: pointer.To(false),
 								Path:     pointer.To("/health"),
-								RequestHeadersToAdd: &[]api.HeaderValue{
-									{
-										Key:    "x-some-header",
-										Value:  "value",
-										Append: pointer.To(true),
+								RequestHeadersToAdd: &api.HeaderModifier{
+									Add: []api.HeaderKeyValue{
+										{
+											Name:  "x-some-header",
+											Value: "value",
+										},
 									},
-									{
-										Key:   "x-some-other-header",
-										Value: "value",
+									Set: []api.HeaderKeyValue{
+										{
+											Name:  "x-some-other-header",
+											Value: "value",
+										},
 									},
 								},
 								ExpectedStatuses: &[]int32{200, 201},
@@ -194,7 +197,8 @@ healthChecks:
         header:
           key: x-some-header
           value: value
-      - header:
+      - append: false
+        header:
           key: x-some-other-header
           value: value
   initialJitter: 13s

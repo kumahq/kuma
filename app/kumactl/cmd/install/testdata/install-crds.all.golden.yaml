@@ -2056,24 +2056,46 @@ spec:
                             requestHeadersToAdd:
                               description: The list of HTTP headers which should be
                                 added to each health check request
-                              items:
-                                properties:
-                                  append:
-                                    default: true
-                                    description: If true (default) the header values
-                                      should be appended to already present ones
-                                    type: boolean
-                                  key:
-                                    description: Header name
-                                    type: string
-                                  value:
-                                    description: Header value
-                                    type: string
-                                required:
-                                - key
-                                - value
-                                type: object
-                              type: array
+                              properties:
+                                add:
+                                  items:
+                                    properties:
+                                      name:
+                                        maxLength: 256
+                                        minLength: 1
+                                        pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                    - name
+                                    - value
+                                    type: object
+                                  maxItems: 16
+                                  type: array
+                                  x-kubernetes-list-map-keys:
+                                  - name
+                                  x-kubernetes-list-type: map
+                                set:
+                                  items:
+                                    properties:
+                                      name:
+                                        maxLength: 256
+                                        minLength: 1
+                                        pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                    - name
+                                    - value
+                                    type: object
+                                  maxItems: 16
+                                  type: array
+                                  x-kubernetes-list-map-keys:
+                                  - name
+                                  x-kubernetes-list-type: map
+                              type: object
                           type: object
                         initialJitter:
                           description: If specified, Envoy will start health checking
@@ -2317,7 +2339,7 @@ spec:
                                               name:
                                                 maxLength: 256
                                                 minLength: 1
-                                                pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                                 type: string
                                               value:
                                                 type: string
@@ -2341,7 +2363,7 @@ spec:
                                               name:
                                                 maxLength: 256
                                                 minLength: 1
-                                                pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                                 type: string
                                               value:
                                                 type: string
@@ -2411,7 +2433,7 @@ spec:
                                               name:
                                                 maxLength: 256
                                                 minLength: 1
-                                                pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                                 type: string
                                               value:
                                                 type: string
@@ -2435,7 +2457,7 @@ spec:
                                               name:
                                                 maxLength: 256
                                                 minLength: 1
-                                                pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                                 type: string
                                               value:
                                                 type: string
@@ -3043,23 +3065,46 @@ spec:
                                     headers:
                                       description: The Headers to be added to the
                                         HTTP response on a rate limit event
-                                      items:
-                                        properties:
-                                          append:
-                                            default: true
-                                            description: Should the header be appended
-                                            type: boolean
-                                          key:
-                                            description: Header name
-                                            type: string
-                                          value:
-                                            description: Header value
-                                            type: string
-                                        required:
-                                        - key
-                                        - value
-                                        type: object
-                                      type: array
+                                      properties:
+                                        add:
+                                          items:
+                                            properties:
+                                              name:
+                                                maxLength: 256
+                                                minLength: 1
+                                                pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                type: string
+                                              value:
+                                                type: string
+                                            required:
+                                            - name
+                                            - value
+                                            type: object
+                                          maxItems: 16
+                                          type: array
+                                          x-kubernetes-list-map-keys:
+                                          - name
+                                          x-kubernetes-list-type: map
+                                        set:
+                                          items:
+                                            properties:
+                                              name:
+                                                maxLength: 256
+                                                minLength: 1
+                                                pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                type: string
+                                              value:
+                                                type: string
+                                            required:
+                                            - name
+                                            - value
+                                            type: object
+                                          maxItems: 16
+                                          type: array
+                                          x-kubernetes-list-map-keys:
+                                          - name
+                                          x-kubernetes-list-type: map
+                                      type: object
                                     status:
                                       description: The HTTP status code to be set
                                         on a rate limit event
@@ -3318,6 +3363,9 @@ spec:
                                         type: string
                                       name:
                                         description: The Name of the reset header.
+                                        maxLength: 256
+                                        minLength: 1
+                                        pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                         type: string
                                     type: object
                                   type: array
@@ -3390,6 +3438,9 @@ spec:
                                         type: string
                                       name:
                                         description: The Name of the reset header.
+                                        maxLength: 256
+                                        minLength: 1
+                                        pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                         type: string
                                     type: object
                                   type: array
@@ -3399,17 +3450,36 @@ spec:
                                 which must be present in the request for retries to
                                 be attempted.
                               items:
+                                description: HTTPHeaderMatch describes how to select
+                                  a HTTP route by matching HTTP request headers.
                                 properties:
                                   name:
+                                    description: Name is the name of the HTTP Header
+                                      to be matched. Name MUST be lower case as they
+                                      will be handled with case insensitivity (See
+                                      https://tools.ietf.org/html/rfc7230#section-3.2).
+                                    maxLength: 256
+                                    minLength: 1
+                                    pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                     type: string
                                   type:
+                                    default: Exact
+                                    description: Type specifies how to match against
+                                      the value of the header.
                                     enum:
-                                    - REGULAR_EXPRESSION
-                                    - EXACT
-                                    - PREFIX
+                                    - Exact
+                                    - Present
+                                    - RegularExpression
+                                    - Absent
+                                    - Prefix
                                     type: string
                                   value:
+                                    description: Value is the value of HTTP Header
+                                      to be matched.
                                     type: string
+                                required:
+                                - name
+                                - value
                                 type: object
                               type: array
                             retriableResponseHeaders:
@@ -3418,17 +3488,36 @@ spec:
                                 A retry will be triggered if any of the header matches
                                 match the upstream response headers.
                               items:
+                                description: HTTPHeaderMatch describes how to select
+                                  a HTTP route by matching HTTP request headers.
                                 properties:
                                   name:
+                                    description: Name is the name of the HTTP Header
+                                      to be matched. Name MUST be lower case as they
+                                      will be handled with case insensitivity (See
+                                      https://tools.ietf.org/html/rfc7230#section-3.2).
+                                    maxLength: 256
+                                    minLength: 1
+                                    pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                     type: string
                                   type:
+                                    default: Exact
+                                    description: Type specifies how to match against
+                                      the value of the header.
                                     enum:
-                                    - REGULAR_EXPRESSION
-                                    - EXACT
-                                    - PREFIX
+                                    - Exact
+                                    - Present
+                                    - RegularExpression
+                                    - Absent
+                                    - Prefix
                                     type: string
                                   value:
+                                    description: Value is the value of HTTP Header
+                                      to be matched.
                                     type: string
+                                required:
+                                - name
+                                - value
                                 type: object
                               type: array
                             retryOn:

@@ -110,7 +110,7 @@ type HttpHealthCheck struct {
 	Path *string `json:"path,omitempty"`
 	// The list of HTTP headers which should be added to each health check
 	// request
-	RequestHeadersToAdd *[]HeaderValue `json:"requestHeadersToAdd,omitempty"`
+	RequestHeadersToAdd *HeaderModifier `json:"requestHeadersToAdd,omitempty"`
 	// List of HTTP response statuses which are considered healthy
 	ExpectedStatuses *[]int32 `json:"expectedStatuses,omitempty"`
 }
@@ -127,12 +127,20 @@ type GrpcHealthCheck struct {
 	Authority *string `json:"authority,omitempty"`
 }
 
-type HeaderValue struct {
-	// Header name
-	Key string `json:"key"`
-	// Header value
-	Value string `json:"value"`
-	// If true (default) the header values should be appended to already present ones
-	// +kubebuilder:default=true
-	Append *bool `json:"append,omitempty"`
+type HeaderKeyValue struct {
+	Name  common_api.HeaderName  `json:"name"`
+	Value common_api.HeaderValue `json:"value"`
+}
+
+// Configuration to set or add multiple values for a header must use RFC 7230
+// header value formatting, separating each value with a comma.
+type HeaderModifier struct {
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=16
+	Set []HeaderKeyValue `json:"set,omitempty"`
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=16
+	Add []HeaderKeyValue `json:"add,omitempty"`
 }
