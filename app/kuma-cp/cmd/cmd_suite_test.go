@@ -19,12 +19,9 @@ package cmd
 import (
 	"testing"
 
-	"github.com/testcontainers/testcontainers-go"
-
 	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestCmd(t *testing.T) {
-	testcontainers.SkipIfProviderIsNotHealthy(t)
 	test.RunSpecs(t, "CMD Suite")
 }
