@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"fmt"
 	"strings"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -66,6 +67,7 @@ func validateMatches(matches []Match) validators.ValidationError {
 		path := validators.Root().Index(i)
 		errs.AddErrorAt(path.Field("path"), validatePath(match.Path))
 		errs.AddErrorAt(path.Field("method"), validateMethod(match.Method))
+		errs.AddErrorAt(path.Field("queryParams"), validateQueryParams(match.QueryParams))
 	}
 
 	return errs
@@ -106,6 +108,21 @@ func validateMethod(match *Method) validators.ValidationError {
 	return validators.ValidationError{}
 }
 
+func validateQueryParams(matches []QueryParamsMatch) validators.ValidationError {
+	var errs validators.ValidationError
+
+	matchedNames := map[string]struct{}{}
+	for i, match := range matches {
+		if _, ok := matchedNames[match.Name]; ok {
+			path := validators.Root().Index(i).Field("name")
+			errs.AddViolationAt(path, fmt.Sprintf("multiple entries for name %s", match.Name))
+		}
+		matchedNames[match.Name] = struct{}{}
+	}
+
+	return errs
+}
+
 func validateFilters(filters *[]Filter) validators.ValidationError {
 	var errs validators.ValidationError
 
@@ -123,6 +140,10 @@ func validateFilters(filters *[]Filter) validators.ValidationError {
 		case ResponseHeaderModifierType:
 			if filter.ResponseHeaderModifier == nil {
 				errs.AddViolationAt(path.Field("responseHeaderModifier"), validators.MustBeDefined)
+			}
+		case RequestRedirectType:
+			if filter.RequestRedirect == nil {
+				errs.AddViolationAt(path.Field("requestRedirect"), validators.MustBeDefined)
 			}
 		}
 	}

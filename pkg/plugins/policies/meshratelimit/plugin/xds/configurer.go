@@ -26,11 +26,15 @@ func RateLimitConfigurationFromPolicy(rl *api.LocalHTTP) *rate_limit.RateLimitCo
 	var status uint32
 	if rl.OnRateLimit != nil {
 		for _, h := range pointer.Deref(rl.OnRateLimit.Headers) {
-			headers = append(headers, &rate_limit.Headers{
+			header := &rate_limit.Headers{
 				Key:    h.Key,
 				Value:  h.Value,
-				Append: pointer.Deref(h.Append),
-			})
+				Append: true,
+			}
+			if h.Append != nil {
+				header.Append = *h.Append
+			}
+			headers = append(headers, header)
 		}
 		status = pointer.Deref(rl.OnRateLimit.Status)
 	}

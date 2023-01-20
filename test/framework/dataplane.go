@@ -16,3 +16,11 @@ func IsDataplaneOnline(cluster Cluster, mesh, name string) (bool, bool, error) {
 	}
 	return false, false, nil
 }
+
+func DataplaneReceivedConfig(cluster Cluster, mesh, name string) (bool, error) {
+	out, err := cluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplanes", "--mesh", mesh, "-o", "yaml", name)
+	if err != nil {
+		return false, err
+	}
+	return strings.Contains(out, `responsesAcknowledged`), nil
+}

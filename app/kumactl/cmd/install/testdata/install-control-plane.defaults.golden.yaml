@@ -36,7 +36,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: circuitbreakers.kuma.io
 spec:
@@ -81,7 +81,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: containerpatches.kuma.io
 spec:
@@ -191,7 +191,190 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
+  creationTimestamp: null
+  name: meshfaultinjections.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: MeshFaultInjection
+    listKind: MeshFaultInjectionList
+    plural: meshfaultinjections
+    singular: meshfaultinjection
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma MeshFaultInjection
+              resource.
+            properties:
+              from:
+                description: From list makes a match between clients and corresponding
+                  configurations
+                items:
+                  properties:
+                    default:
+                      description: Default is a configuration specific to the group
+                        of destinations referenced in 'targetRef'
+                      properties:
+                        http:
+                          description: Http allows to define list of Http faults between
+                            dataplanes.
+                          items:
+                            description: FaultInjection defines the configuration
+                              of faults between dataplanes.
+                            properties:
+                              abort:
+                                description: Abort defines a configuration of not
+                                  delivering requests to destination service and replacing
+                                  the responses from destination dataplane by predefined
+                                  status code
+                                properties:
+                                  httpStatus:
+                                    description: HTTP status code which will be returned
+                                      to source side
+                                    format: int32
+                                    type: integer
+                                  percentage:
+                                    description: Percentage of requests on which abort
+                                      will be injected, has to be in [0.0 - 100.0]
+                                      range
+                                    format: int32
+                                    type: integer
+                                required:
+                                - httpStatus
+                                - percentage
+                                type: object
+                              delay:
+                                description: Delay defines configuration of delaying
+                                  a response from a destination
+                                properties:
+                                  percentage:
+                                    description: Percentage of requests on which delay
+                                      will be injected, has to be in [0.0 - 100.0]
+                                      range
+                                    format: int32
+                                    type: integer
+                                  value:
+                                    description: The duration during which the response
+                                      will be delayed
+                                    type: string
+                                required:
+                                - percentage
+                                - value
+                                type: object
+                              responseBandwidth:
+                                description: ResponseBandwidth defines a configuration
+                                  to limit the speed of responding to the requests
+                                properties:
+                                  limit:
+                                    description: Limit is represented by value measure
+                                      in gbps, mbps, kbps or bps, e.g. 10kbps
+                                    type: string
+                                  percentage:
+                                    description: Percentage of requests on which response
+                                      bandwidth limit will be injected, has to be
+                                      in [0.0 - 100.0] range
+                                    format: int32
+                                    type: integer
+                                required:
+                                - limit
+                                - percentage
+                                type: object
+                            type: object
+                          type: array
+                      type: object
+                    targetRef:
+                      description: TargetRef is a reference to the resource that represents
+                        a group of destinations.
+                      properties:
+                        kind:
+                          description: Kind of the referenced resource
+                          enum:
+                          - Mesh
+                          - MeshSubset
+                          - MeshService
+                          - MeshServiceSubset
+                          - MeshGatewayRoute
+                          type: string
+                        mesh:
+                          description: Mesh is reserved for future use to identify
+                            cross mesh resources.
+                          type: string
+                        name:
+                          description: 'Name of the referenced resource. Can only
+                            be used with kinds: `MeshService`, `MeshServiceSubset`
+                            and `MeshGatewayRoute`'
+                          type: string
+                        tags:
+                          additionalProperties:
+                            type: string
+                          description: Tags used to select a subset of proxies by
+                            tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                          type: object
+                      type: object
+                  required:
+                  - targetRef
+                  type: object
+                type: array
+              targetRef:
+                description: TargetRef is a reference to the resource the policy takes
+                  an effect on. The resource could be either a real store object or
+                  virtual resource defined inplace.
+                properties:
+                  kind:
+                    description: Kind of the referenced resource
+                    enum:
+                    - Mesh
+                    - MeshSubset
+                    - MeshService
+                    - MeshServiceSubset
+                    - MeshGatewayRoute
+                    type: string
+                  mesh:
+                    description: Mesh is reserved for future use to identify cross
+                      mesh resources.
+                    type: string
+                  name:
+                    description: 'Name of the referenced resource. Can only be used
+                      with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
+                    type: string
+                  tags:
+                    additionalProperties:
+                      type: string
+                    description: Tags used to select a subset of proxies by tags.
+                      Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                    type: object
+                type: object
+            required:
+            - targetRef
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshgatewayinstances.kuma.io
 spec:
@@ -239,6 +422,26 @@ spec:
                 description: Resources specifies the compute resources for the proxy
                   container. The default can be set in the control plane config.
                 properties:
+                  claims:
+                    description: "Claims lists the names of resources, defined in
+                      spec.resourceClaims, that are used by this container. \n This
+                      is an alpha field and requires enabling the DynamicResourceAllocation
+                      feature gate. \n This field is immutable."
+                    items:
+                      description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                      properties:
+                        name:
+                          description: Name must match the name of one entry in pod.spec.resourceClaims
+                            of the Pod where this field is used. It makes that resource
+                            available inside a container.
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    type: array
+                    x-kubernetes-list-map-keys:
+                    - name
+                    x-kubernetes-list-type: map
                   limits:
                     additionalProperties:
                       anyOf:
@@ -450,7 +653,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshgatewayroutes.kuma.io
 spec:
@@ -495,7 +698,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshgateways.kuma.io
 spec:
@@ -540,7 +743,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshhealthchecks.kuma.io
 spec:
@@ -818,7 +1021,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshhttproutes.kuma.io
 spec:
@@ -981,6 +1184,49 @@ spec:
                                           - name
                                           x-kubernetes-list-type: map
                                       type: object
+                                    requestRedirect:
+                                      properties:
+                                        hostname:
+                                          description: "PreciseHostname is the fully
+                                            qualified domain name of a network host.
+                                            This matches the RFC 1123 definition of
+                                            a hostname with 1 notable exception that
+                                            numeric IP addresses are not allowed.
+                                            \n Note that as per RFC1035 and RFC1123,
+                                            a *label* must consist of lower case alphanumeric
+                                            characters or '-', and must start and
+                                            end with an alphanumeric character. No
+                                            other punctuation is allowed."
+                                          maxLength: 253
+                                          minLength: 1
+                                          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                          type: string
+                                        port:
+                                          description: Port is the port to be used
+                                            in the value of the `Location` header
+                                            in the response. When empty, port (if
+                                            specified) of the request is used.
+                                          format: int32
+                                          maximum: 65535
+                                          minimum: 1
+                                          type: integer
+                                        scheme:
+                                          enum:
+                                          - http
+                                          - https
+                                          type: string
+                                        statusCode:
+                                          default: 302
+                                          description: StatusCode is the HTTP status
+                                            code to be used in response.
+                                          enum:
+                                          - 301
+                                          - 302
+                                          - 303
+                                          - 307
+                                          - 308
+                                          type: integer
+                                      type: object
                                     responseHeaderModifier:
                                       description: Only one action is supported per
                                         header name. Configuration to set or add multiple
@@ -1036,6 +1282,7 @@ spec:
                                       enum:
                                       - RequestHeaderModifier
                                       - ResponseHeaderModifier
+                                      - RequestRedirect
                                       type: string
                                   required:
                                   - type
@@ -1075,6 +1322,28 @@ spec:
                                   - type
                                   - value
                                   type: object
+                                queryParams:
+                                  description: QueryParams matches based on HTTP URL
+                                    query parameters. Multiple matches are ANDed together
+                                    such that all listed matches must succeed.
+                                  items:
+                                    properties:
+                                      name:
+                                        minLength: 1
+                                        type: string
+                                      type:
+                                        enum:
+                                        - Exact
+                                        - RegularExpression
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                    - name
+                                    - type
+                                    - value
+                                    type: object
+                                  type: array
                               type: object
                             type: array
                         required:
@@ -1122,7 +1391,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshinsights.kuma.io
 spec:
@@ -1167,7 +1436,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshproxypatches.kuma.io
 spec:
@@ -1510,7 +1779,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshratelimits.kuma.io
 spec:
@@ -1573,6 +1842,7 @@ spec:
                                       items:
                                         properties:
                                           append:
+                                            default: true
                                             description: Should the header be appended
                                             type: boolean
                                           key:
@@ -1713,7 +1983,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshretries.kuma.io
 spec:
@@ -1837,7 +2107,10 @@ spec:
                                     properties:
                                       format:
                                         description: The format of the reset header,
-                                          either "Seconds" or "UnixTimestamp".
+                                          either Seconds or UnixTimestamp.
+                                        enum:
+                                        - Seconds
+                                        - UnixTimestamp
                                         type: string
                                       name:
                                         description: The Name of the reset header.
@@ -1847,8 +2120,8 @@ spec:
                               type: object
                             retryOn:
                               description: 'RetryOn is a list of conditions which
-                                will cause a retry. Available values are: [CANCELED,
-                                DEADLINE_EXCEEDED, INTERNAL, RESOURCE_EXHAUSTED, UNAVAILABLE].'
+                                will cause a retry. Available values are: [Canceled,
+                                DeadlineExceeded, Internal, ResourceExhausted, Unavailable].'
                               items:
                                 type: string
                               type: array
@@ -1906,7 +2179,10 @@ spec:
                                     properties:
                                       format:
                                         description: The format of the reset header,
-                                          either "Seconds" or "UnixTimestamp".
+                                          either Seconds or UnixTimestamp.
+                                        enum:
+                                        - Seconds
+                                        - UnixTimestamp
                                         type: string
                                       name:
                                         description: The Name of the reset header.
@@ -1953,13 +2229,12 @@ spec:
                               type: array
                             retryOn:
                               description: 'RetryOn is a list of conditions which
-                                will cause a retry. Available values are: [5XX, GATEWAY_ERROR,
-                                RESET, RETRIABLE_4XX, CONNECT_FAILURE, ENVOY_RATELIMITED,
-                                REFUSED_STREAM, HTTP3_POST_CONNECT_FAILURE, HTTP_METHOD_CONNECT,
-                                HTTP_METHOD_DELETE, HTTP_METHOD_GET, HTTP_METHOD_HEAD,
-                                HTTP_METHOD_OPTIONS, HTTP_METHOD_PATCH, HTTP_METHOD_POST,
-                                HTTP_METHOD_PUT, HTTP_METHOD_TRACE]. Also, any HTTP
-                                status code (500, 503, etc).'
+                                will cause a retry. Available values are: [5XX, GatewayError,
+                                Reset, Retriable4xx, ConnectFailure, EnvoyRatelimited,
+                                RefusedStream, Http3PostConnectFailure, HttpMethodConnect,
+                                HttpMethodDelete, HttpMethodGet, HttpMethodHead, HttpMethodOptions,
+                                HttpMethodPatch, HttpMethodPost, HttpMethodPut, HttpMethodTrace].
+                                Also, any HTTP status code (500, 503, etc).'
                               items:
                                 type: string
                               type: array
@@ -2020,7 +2295,52 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
+  creationTimestamp: null
+  name: dataplaneinsights.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: DataplaneInsight
+    listKind: DataplaneInsightList
+    plural: dataplaneinsights
+    singular: dataplaneinsight
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          mesh:
+            description: Mesh is the name of the Kuma mesh this resource belongs to.
+              It may be omitted for cluster-scoped resources.
+            type: string
+          metadata:
+            type: object
+          status:
+            description: Status is the status the Kuma resource.
+            x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshtimeouts.kuma.io
 spec:
@@ -2263,52 +2583,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
-  creationTimestamp: null
-  name: dataplaneinsights.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: DataplaneInsight
-    listKind: DataplaneInsightList
-    plural: dataplaneinsights
-    singular: dataplaneinsight
-  scope: Namespaced
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-            type: string
-          kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-            type: string
-          mesh:
-            description: Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          status:
-            description: Status is the status the Kuma resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshtraces.kuma.io
 spec:
@@ -2369,13 +2644,19 @@ spec:
                               description: Address of Datadog collector, only host
                                 and port are allowed (no paths, fragments etc.)
                               type: string
+                          required:
+                          - url
                           type: object
                         zipkin:
                           description: Zipkin backend configuration.
                           properties:
                             apiVersion:
+                              default: httpJson
                               description: 'Version of the API. values: httpJson,
                                 httpProto. Default: httpJson see https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L66'
+                              enum:
+                              - httpJson
+                              - httpProto
                               type: string
                             sharedSpanContext:
                               description: 'Determines whether client and server spans
@@ -2387,9 +2668,10 @@ spec:
                             url:
                               description: Address of Zipkin collector.
                               type: string
+                          required:
+                          - url
                           type: object
                       type: object
-                    nullable: true
                     type: array
                   sampling:
                     description: Sampling configuration. Sampling is the process by
@@ -2439,6 +2721,8 @@ spec:
                             name:
                               description: Name of the header.
                               type: string
+                          required:
+                          - name
                           type: object
                         literal:
                           description: Tag taken from literal value.
@@ -2446,8 +2730,9 @@ spec:
                         name:
                           description: Name of the tag.
                           type: string
+                      required:
+                      - name
                       type: object
-                    nullable: true
                     type: array
                 type: object
               targetRef:
@@ -2490,7 +2775,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshtrafficpermissions.kuma.io
 spec:
@@ -2537,9 +2822,9 @@ spec:
                           description: 'Action defines a behavior for the specified
                             group of clients:'
                           enum:
-                          - ALLOW
-                          - DENY
-                          - ALLOW_WITH_SHADOW_DENY
+                          - Allow
+                          - Deny
+                          - AllowWithShadowDeny
                           type: string
                       type: object
                     targetRef:
@@ -2615,7 +2900,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: proxytemplates.kuma.io
 spec:
@@ -2660,7 +2945,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: ratelimits.kuma.io
 spec:
@@ -2705,7 +2990,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: retries.kuma.io
 spec:
@@ -2750,7 +3035,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: serviceinsights.kuma.io
 spec:
@@ -2795,7 +3080,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: timeouts.kuma.io
 spec:
@@ -2840,7 +3125,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: trafficlogs.kuma.io
 spec:
@@ -2885,7 +3170,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: trafficpermissions.kuma.io
 spec:
@@ -2930,52 +3215,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
-  creationTimestamp: null
-  name: trafficroutes.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: TrafficRoute
-    listKind: TrafficRouteList
-    plural: trafficroutes
-    singular: trafficroute
-  scope: Cluster
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-            type: string
-          kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-            type: string
-          mesh:
-            description: Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma TrafficRoute resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: dataplanes.kuma.io
 spec:
@@ -3020,7 +3260,52 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
+  creationTimestamp: null
+  name: trafficroutes.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: TrafficRoute
+    listKind: TrafficRouteList
+    plural: trafficroutes
+    singular: trafficroute
+  scope: Cluster
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          mesh:
+            description: Mesh is the name of the Kuma mesh this resource belongs to.
+              It may be omitted for cluster-scoped resources.
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma TrafficRoute resource.
+            x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: traffictraces.kuma.io
 spec:
@@ -3065,7 +3350,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: virtualoutbounds.kuma.io
 spec:
@@ -3110,7 +3395,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: zoneegresses.kuma.io
 spec:
@@ -3155,7 +3440,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: zoneegressinsights.kuma.io
 spec:
@@ -3200,7 +3485,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: zoneingresses.kuma.io
 spec:
@@ -3245,7 +3530,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: zoneingressinsights.kuma.io
 spec:
@@ -3291,7 +3576,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: zoneinsights.kuma.io
 spec:
@@ -3336,7 +3621,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: zones.kuma.io
 spec:
@@ -3381,7 +3666,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: externalservices.kuma.io
 spec:
@@ -3426,7 +3711,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: faultinjections.kuma.io
 spec:
@@ -3471,7 +3756,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: healthchecks.kuma.io
 spec:
@@ -3516,7 +3801,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshaccesslogs.kuma.io
 spec:
@@ -3797,7 +4082,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshcircuitbreakers.kuma.io
 spec:
@@ -4449,7 +4734,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshes.kuma.io
 spec:
@@ -4620,6 +4905,7 @@ rules:
       - meshgatewayinstances
       - meshaccesslogs
       - meshcircuitbreakers
+      - meshfaultinjections
       - meshhealthchecks
       - meshhttproutes
       - meshproxypatches
@@ -4797,7 +5083,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: d4dafb3f347d3989753df803a7f2b48f535902402a22c949814f4ce4e603fa9e
+        checksum/tls-secrets: 86ea761718bf0f0e59a68251ac0eace6afa0a6f256acc3f738729980f77e310d
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -4961,6 +5247,7 @@ webhooks:
           - meshes
           - meshaccesslogs
           - meshcircuitbreakers
+          - meshfaultinjections
           - meshhealthchecks
           - meshhttproutes
           - meshproxypatches
@@ -5004,6 +5291,7 @@ webhooks:
           - virtualoutbounds
           - meshaccesslogs
           - meshcircuitbreakers
+          - meshfaultinjections
           - meshhealthchecks
           - meshhttproutes
           - meshproxypatches
@@ -5129,6 +5417,7 @@ webhooks:
           - containerpatches
           - meshaccesslogs
           - meshcircuitbreakers
+          - meshfaultinjections
           - meshhealthchecks
           - meshhttproutes
           - meshproxypatches

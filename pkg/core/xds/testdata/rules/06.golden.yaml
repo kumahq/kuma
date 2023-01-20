@@ -3,7 +3,6 @@ Rules:
     backends:
     - zipkin:
         url: http://jaeger-collector.mesh-observability:9411/api/v2/spans
-    sampling: {}
     tags:
     - literal: core
       name: team

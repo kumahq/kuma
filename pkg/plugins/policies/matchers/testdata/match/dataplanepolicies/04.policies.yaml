@@ -14,4 +14,4 @@ spec:
     - targetRef:
         kind: Mesh
       default:
-        action: ALLOW
+        action: Allow

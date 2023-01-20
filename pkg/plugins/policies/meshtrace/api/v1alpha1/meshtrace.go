@@ -22,18 +22,14 @@ type Conf struct {
 	// representing that would be just one object. Unfortunately due to the
 	// reasons explained in MADR 009-tracing-policy this has to be a one element
 	// array for now.
-	// +optional
-	// +nullable
-	Backends []Backend `json:"backends"`
+	Backends *[]Backend `json:"backends,omitempty"`
 	// Sampling configuration.
 	// Sampling is the process by which a decision is made on whether to
 	// process/export a span or not.
-	Sampling Sampling `json:"sampling,omitempty"`
+	Sampling *Sampling `json:"sampling,omitempty"`
 	// Custom tags configuration. You can add custom tags to traces based on
 	// headers or literal values.
-	// +optional
-	// +nullable
-	Tags []Tag `json:"tags"`
+	Tags *[]Tag `json:"tags,omitempty"`
 }
 
 // Only one of zipkin or datadog can be used.
@@ -47,13 +43,15 @@ type Backend struct {
 // Zipkin tracing backend configuration.
 type ZipkinBackend struct {
 	// Address of Zipkin collector.
-	Url string `json:"url,omitempty"`
+	Url string `json:"url"`
 	// Generate 128bit traces. Default: false
-	TraceId128Bit bool `json:"traceId128bit,omitempty"`
+	TraceId128Bit *bool `json:"traceId128bit,omitempty"`
 	// Version of the API. values: httpJson, httpProto. Default:
 	// httpJson see
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L66
-	ApiVersion string `json:"apiVersion,omitempty"`
+	// +kubebuilder:default="httpJson"
+	// +kubebuilder:validation:Enum=httpJson;httpProto
+	ApiVersion *string `json:"apiVersion,omitempty"`
 	// Determines whether client and server spans will share the same span
 	// context. Default: true.
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L63
@@ -64,13 +62,13 @@ type ZipkinBackend struct {
 type DatadogBackend struct {
 	// Address of Datadog collector, only host and port are allowed (no paths,
 	// fragments etc.)
-	Url string `json:"url,omitempty"`
+	Url string `json:"url"`
 	// Determines if datadog service name should be split based on traffic
 	// direction and destination. For example, with `splitService: true` and a
 	// `backend` service that communicates with a couple of databases, you would
 	// get service names like `backend_INBOUND`, `backend_OUTBOUND_db1`, and
 	// `backend_OUTBOUND_db2` in Datadog. Default: false
-	SplitService bool `json:"splitService,omitempty"`
+	SplitService *bool `json:"splitService,omitempty"`
 }
 
 // Sampling configuration.
@@ -100,9 +98,9 @@ type Sampling struct {
 // Only one of literal or header can be used.
 type Tag struct {
 	// Name of the tag.
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 	// Tag taken from literal value.
-	Literal string `json:"literal,omitempty"`
+	Literal *string `json:"literal,omitempty"`
 	// Tag taken from a header.
 	Header *HeaderTag `json:"header,omitempty"`
 }
@@ -110,9 +108,9 @@ type Tag struct {
 // Tag taken from a header configuration.
 type HeaderTag struct {
 	// Name of the header.
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 	// Default value to use if header is missing.
 	// If the default is missing and there is no value the tag will not be
 	// included.
-	Default string `json:"default,omitempty"`
+	Default *string `json:"default,omitempty"`
 }

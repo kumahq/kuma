@@ -1,7 +1,7 @@
 Rules:
   127.0.0.1:80:
   - Conf:
-      action: ALLOW
+      action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
       mesh: mesh-1
@@ -21,7 +21,7 @@ Rules:
       Not: false
       Value: us-east
   - Conf:
-      action: ALLOW
+      action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
       mesh: mesh-1
@@ -41,7 +41,7 @@ Rules:
       Not: false
       Value: us-east
   - Conf:
-      action: DENY
+      action: Deny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
       mesh: mesh-1
@@ -64,7 +64,7 @@ Rules:
       Not: false
       Value: us-east
   - Conf:
-      action: ALLOW
+      action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
       mesh: mesh-1
@@ -84,7 +84,7 @@ Rules:
       Not: true
       Value: us-east
   - Conf:
-      action: ALLOW
+      action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
       mesh: mesh-1
@@ -104,7 +104,7 @@ Rules:
       Not: true
       Value: us-east
   - Conf:
-      action: ALLOW
+      action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
       mesh: mesh-1
