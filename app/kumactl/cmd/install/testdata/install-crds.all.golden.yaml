@@ -3367,6 +3367,9 @@ spec:
                                         minLength: 1
                                         pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                         type: string
+                                    required:
+                                    - format
+                                    - name
                                     type: object
                                   type: array
                               type: object
@@ -3442,6 +3445,9 @@ spec:
                                         minLength: 1
                                         pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                         type: string
+                                    required:
+                                    - format
+                                    - name
                                     type: object
                                   type: array
                               type: object
