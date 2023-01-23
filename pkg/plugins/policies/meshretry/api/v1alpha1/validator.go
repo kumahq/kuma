@@ -162,13 +162,13 @@ func validateRateLimitedBackOff(rateLimitedBackOff *RateLimitedBackOff) validato
 		verr.Add(validators.ValidateDurationGreaterThanZero(path.Field("maxInterval"), *rateLimitedBackOff.MaxInterval))
 	}
 
-	if len(rateLimitedBackOff.ResetHeaders) == 0 {
+	if rateLimitedBackOff.ResetHeaders == nil {
 		verr.AddViolationAt(path.Field("resetHeaders"), validators.MustBeDefined)
-	}
-
-	for i, header := range rateLimitedBackOff.ResetHeaders {
-		index := path.Field("resetHeaders").Index(i)
-		verr.Add(validators.ValidateStringDefined(index.Field("name"), string(header.Name)))
+	} else {
+		for i, header := range *rateLimitedBackOff.ResetHeaders {
+			index := path.Field("resetHeaders").Index(i)
+			verr.Add(validators.ValidateStringDefined(index.Field("name"), string(header.Name)))
+		}
 	}
 
 	return verr

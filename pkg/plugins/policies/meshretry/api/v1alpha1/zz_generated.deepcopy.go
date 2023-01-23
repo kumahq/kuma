@@ -222,8 +222,12 @@ func (in *RateLimitedBackOff) DeepCopyInto(out *RateLimitedBackOff) {
 	*out = *in
 	if in.ResetHeaders != nil {
 		in, out := &in.ResetHeaders, &out.ResetHeaders
-		*out = make([]ResetHeader, len(*in))
-		copy(*out, *in)
+		*out = new([]ResetHeader)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]ResetHeader, len(*in))
+			copy(*out, *in)
+		}
 	}
 	if in.MaxInterval != nil {
 		in, out := &in.MaxInterval, &out.MaxInterval
