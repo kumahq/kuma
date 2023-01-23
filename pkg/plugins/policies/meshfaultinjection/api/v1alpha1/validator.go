@@ -51,17 +51,17 @@ func validateDefault(path validators.PathBuilder, conf Conf) validators.Validati
 		if fault.Abort != nil {
 			path := path.Field("abort").Index(idx)
 			verr.Add(validators.ValidateStatusCode(path.Field("httpStatus"), fault.Abort.HttpStatus))
-			verr.Add(validators.ValidateIntPercentage(path.Field("percentage"), &fault.Abort.Percentage))
+			verr.Add(validators.ValidatePercentage(path.Field("percentage"), &fault.Abort.Percentage))
 		}
 		if fault.Delay != nil {
 			path := path.Field("delay").Index(idx)
 			verr.Add(validators.ValidateDurationNotNegative(path.Field("value"), &fault.Delay.Value))
-			verr.Add(validators.ValidateIntPercentage(path.Field("percentage"), &fault.Delay.Percentage))
+			verr.Add(validators.ValidatePercentage(path.Field("percentage"), &fault.Delay.Percentage))
 		}
 		if fault.ResponseBandwidth != nil {
 			path := path.Field("responseBandwidth").Index(idx)
 			verr.Add(validators.ValidateBandwidth(path.Field("responseBandwidth"), fault.ResponseBandwidth.Limit))
-			verr.Add(validators.ValidateIntPercentage(path.Field("percentage"), &fault.ResponseBandwidth.Percentage))
+			verr.Add(validators.ValidatePercentage(path.Field("percentage"), &fault.ResponseBandwidth.Percentage))
 		}
 	}
 	return verr

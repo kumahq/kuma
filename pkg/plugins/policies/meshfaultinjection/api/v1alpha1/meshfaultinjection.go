@@ -3,6 +3,7 @@ package v1alpha1
 
 import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 )
@@ -48,17 +49,17 @@ type FaultInjectionConf struct {
 type AbortConf struct {
 	// HTTP status code which will be returned to source side
 	HttpStatus int32 `json:"httpStatus"`
-	// Percentage of requests on which abort will be injected, has to be in
-	// [0.0 - 100.0] range
-	Percentage int32 `json:"percentage"`
+	// Percentage of requests on which abort will be injected, has to be
+	// either int or decimal represented as string.
+	Percentage intstr.IntOrString `json:"percentage"`
 }
 
 type DelayConf struct {
 	// The duration during which the response will be delayed
 	Value k8s.Duration `json:"value"`
-	// Percentage of requests on which delay will be injected, has to be in
-	// [0.0 - 100.0] range
-	Percentage int32 `json:"percentage"`
+	// Percentage of requests on which delay will be injected, has to be
+	// either int or decimal represented as string.
+	Percentage intstr.IntOrString `json:"percentage"`
 }
 
 type ResponseBandwidthConf struct {
@@ -66,6 +67,6 @@ type ResponseBandwidthConf struct {
 	// 10kbps
 	Limit string `json:"limit"`
 	// Percentage of requests on which response bandwidth limit will be
-	// injected, has to be in [0.0 - 100.0] range
-	Percentage int32 `json:"percentage"`
+	// either int or decimal represented as string.
+	Percentage intstr.IntOrString `json:"percentage"`
 }

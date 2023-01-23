@@ -45,7 +45,8 @@ filterChains:
             fixedLimit:
               limitKbps: "111000"
             percentage:
-              numerator: 62
+              denominator: TEN_THOUSAND
+              numerator: 629000
       - name: envoy.filters.http.router
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router

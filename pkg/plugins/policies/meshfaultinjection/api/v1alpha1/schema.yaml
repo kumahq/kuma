@@ -34,9 +34,11 @@ properties:
                             format: int32
                             type: integer
                           percentage:
-                            description: Percentage of requests on which abort will be injected, has to be in [0.0 - 100.0] range
-                            format: int32
-                            type: integer
+                            anyOf:
+                              - type: integer
+                              - type: string
+                            description: Percentage of requests on which abort will be injected, has to be either int or decimal represented as string.
+                            x-kubernetes-int-or-string: true
                         required:
                           - httpStatus
                           - percentage
@@ -45,9 +47,11 @@ properties:
                         description: Delay defines configuration of delaying a response from a destination
                         properties:
                           percentage:
-                            description: Percentage of requests on which delay will be injected, has to be in [0.0 - 100.0] range
-                            format: int32
-                            type: integer
+                            anyOf:
+                              - type: integer
+                              - type: string
+                            description: Percentage of requests on which delay will be injected, has to be either int or decimal represented as string.
+                            x-kubernetes-int-or-string: true
                           value:
                             description: The duration during which the response will be delayed
                             type: string
@@ -62,9 +66,11 @@ properties:
                             description: Limit is represented by value measure in gbps, mbps, kbps or bps, e.g. 10kbps
                             type: string
                           percentage:
-                            description: Percentage of requests on which response bandwidth limit will be injected, has to be in [0.0 - 100.0] range
-                            format: int32
-                            type: integer
+                            anyOf:
+                              - type: integer
+                              - type: string
+                            description: Percentage of requests on which response bandwidth limit will be either int or decimal represented as string.
+                            x-kubernetes-int-or-string: true
                         required:
                           - limit
                           - percentage

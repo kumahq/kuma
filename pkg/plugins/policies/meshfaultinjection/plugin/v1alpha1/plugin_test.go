@@ -6,6 +6,7 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -126,15 +127,15 @@ var _ = Describe("MeshFaultInjection", func() {
 								{
 									Abort: &api.AbortConf{
 										HttpStatus: int32(444),
-										Percentage: int32(12),
+										Percentage: intstr.FromString("12"),
 									},
 									Delay: &api.DelayConf{
 										Value:      *test.ParseDuration("55s"),
-										Percentage: int32(55),
+										Percentage: intstr.FromString("55"),
 									},
 									ResponseBandwidth: &api.ResponseBandwidthConf{
 										Limit:      "111mbps",
-										Percentage: int32(62),
+										Percentage: intstr.FromString("62.9"),
 									},
 								},
 							},
@@ -147,15 +148,15 @@ var _ = Describe("MeshFaultInjection", func() {
 								{
 									Abort: &api.AbortConf{
 										HttpStatus: int32(444),
-										Percentage: int32(12),
+										Percentage: intstr.FromString("12.1"),
 									},
 									Delay: &api.DelayConf{
 										Value:      *test.ParseDuration("55s"),
-										Percentage: int32(55),
+										Percentage: intstr.FromInt(55),
 									},
 									ResponseBandwidth: &api.ResponseBandwidthConf{
 										Limit:      "111mbps",
-										Percentage: int32(62),
+										Percentage: intstr.FromString("62.9"),
 									},
 								},
 							},
@@ -178,15 +179,15 @@ var _ = Describe("MeshFaultInjection", func() {
 							{
 								Abort: &api.AbortConf{
 									HttpStatus: int32(444),
-									Percentage: int32(12),
+									Percentage: intstr.FromInt(12),
 								},
 								Delay: &api.DelayConf{
 									Value:      *test.ParseDuration("55s"),
-									Percentage: int32(55),
+									Percentage: intstr.FromString("55"),
 								},
 								ResponseBandwidth: &api.ResponseBandwidthConf{
 									Limit:      "111mbps",
-									Percentage: int32(62),
+									Percentage: intstr.FromString("62.9"),
 								},
 							},
 						},

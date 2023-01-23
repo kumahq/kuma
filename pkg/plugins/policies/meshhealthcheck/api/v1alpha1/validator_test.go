@@ -209,7 +209,7 @@ violations:
   - field: spec.to[0].default.intervalJitterPercent
     message: has to be in [0 - 100] range
   - field: spec.to[0].default.healthyPanicThreshold
-    message: has to be in [0 - 100] range`,
+    message: has to be in [0.0 - 100.0] range`,
 			}),
 			Entry("path is invalid", testCase{
 				inputYaml: `

@@ -7,7 +7,10 @@ import (
 	envoy_http_fault "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/fault/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -32,22 +35,30 @@ func (c *Configurer) ConfigureHttpListener(filterChain *envoy_listener.FilterCha
 		var fiFilters []*envoy_hcm.HttpFilter
 
 		for _, fi := range c.FaultInjections {
-			config := &envoy_http_fault.HTTPFault{
-				Delay: c.convertDelay(fi.Delay),
-				Abort: c.convertAbort(fi.Abort),
+			config := &envoy_http_fault.HTTPFault{}
+			delay, err := c.convertDelay(fi.Delay)
+			if err != nil {
+				return err
 			}
+			config.Delay = delay
 
-			if len(c.From) > 0 {
-				config.Headers = []*envoy_route.HeaderMatcher{
-					c.createHeaders(c.From),
-				}
+			abort, err := c.convertAbort(fi.Abort)
+			if err != nil {
+				return err
 			}
+			config.Abort = abort
 
 			rrl, err := c.convertResponseRateLimit(fi.ResponseBandwidth)
 			if err != nil {
 				return err
 			}
 			config.ResponseRateLimit = rrl
+
+			if len(c.From) > 0 {
+				config.Headers = []*envoy_route.HeaderMatcher{
+					c.createHeaders(c.From),
+				}
+			}
 
 			pbst, err := util_proto.MarshalAnyDeterministic(config)
 			if err != nil {
@@ -100,24 +111,32 @@ func (c *Configurer) createHeaders(from core_xds.Subset) *envoy_route.HeaderMatc
 	}
 }
 
-func (c *Configurer) convertDelay(delay *api.DelayConf) *envoy_filter_fault.FaultDelay {
+func (c *Configurer) convertDelay(delay *api.DelayConf) (*envoy_filter_fault.FaultDelay, error) {
 	if delay == nil {
-		return nil
+		return nil, nil
+	}
+	percentage, err := fractionalPercent(delay.Percentage)
+	if err != nil {
+		return nil, err
 	}
 	return &envoy_filter_fault.FaultDelay{
 		FaultDelaySecifier: &envoy_filter_fault.FaultDelay_FixedDelay{FixedDelay: util_proto.Duration(delay.Value.Duration)},
-		Percentage:         listeners_v3.ConvertPercentage(util_proto.Double(float64(delay.Percentage))),
-	}
+		Percentage:         percentage,
+	}, nil
 }
 
-func (c *Configurer) convertAbort(abort *api.AbortConf) *envoy_http_fault.FaultAbort {
+func (c *Configurer) convertAbort(abort *api.AbortConf) (*envoy_http_fault.FaultAbort, error) {
 	if abort == nil {
-		return nil
+		return nil, nil
+	}
+	percentage, err := fractionalPercent(abort.Percentage)
+	if err != nil {
+		return nil, err
 	}
 	return &envoy_http_fault.FaultAbort{
 		ErrorType:  &envoy_http_fault.FaultAbort_HttpStatus{HttpStatus: uint32(abort.HttpStatus)},
-		Percentage: listeners_v3.ConvertPercentage(util_proto.Double(float64(abort.Percentage))),
-	}
+		Percentage: percentage,
+	}, nil
 }
 
 func (c *Configurer) convertResponseRateLimit(responseBandwidth *api.ResponseBandwidthConf) (*envoy_filter_fault.FaultRateLimit, error) {
@@ -130,12 +149,26 @@ func (c *Configurer) convertResponseRateLimit(responseBandwidth *api.ResponseBan
 		return nil, err
 	}
 
+	percentage, err := fractionalPercent(responseBandwidth.Percentage)
+	if err != nil {
+		return nil, err
+	}
+
 	return &envoy_filter_fault.FaultRateLimit{
 		LimitType: &envoy_filter_fault.FaultRateLimit_FixedLimit_{
 			FixedLimit: &envoy_filter_fault.FaultRateLimit_FixedLimit{
 				LimitKbps: limitKbps,
 			},
 		},
-		Percentage: listeners_v3.ConvertPercentage(util_proto.Double(float64(responseBandwidth.Percentage))),
+		Percentage: percentage,
 	}, nil
+}
+
+func fractionalPercent(percentage intstr.IntOrString) (*envoy_type.FractionalPercent, error) {
+	decimal, err := common_api.NewDecimalFromIntOrString(percentage)
+	if err != nil {
+		return nil, err
+	}
+	value, _ := decimal.Float64()
+	return listeners_v3.ConvertPercentage(util_proto.Double(value)), nil
 }

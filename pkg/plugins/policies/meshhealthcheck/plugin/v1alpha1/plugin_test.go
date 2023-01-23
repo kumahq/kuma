@@ -4,6 +4,7 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -144,7 +145,7 @@ var _ = Describe("MeshHealthCheck", func() {
 							InitialJitter:                test.ParseDuration("13s"),
 							IntervalJitter:               test.ParseDuration("15s"),
 							IntervalJitterPercent:        pointer.To[int32](10),
-							HealthyPanicThreshold:        pointer.To[int32](11),
+							HealthyPanicThreshold:        pointer.To[intstr.IntOrString](intstr.FromString("62.9")),
 							FailTrafficOnPanic:           pointer.To(true),
 							EventLogPath:                 pointer.To("/tmp/log.txt"),
 							AlwaysLogHealthCheckFailures: pointer.To(false),
@@ -176,7 +177,7 @@ var _ = Describe("MeshHealthCheck", func() {
 name: echo-http
 commonLbConfig:
   healthyPanicThreshold:
-    value: 11
+    value: 62.9
   zoneAwareLbConfig:
     failTrafficOnPanic: true
 healthChecks:
