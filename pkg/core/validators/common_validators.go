@@ -6,10 +6,11 @@ import (
 	"time"
 
 	"github.com/asaskevich/govalidator"
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/shopspring/decimal"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 )
 
 func ValidateDurationNotNegative(path PathBuilder, duration *k8s.Duration) ValidationError {
