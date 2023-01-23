@@ -104,7 +104,7 @@ var _ = Describe("MeshRetry", func() {
 								},
 								RateLimitedBackOff: &api.RateLimitedBackOff{
 									MaxInterval: test.ParseDuration("5s"),
-									ResetHeaders: []api.ResetHeader{
+									ResetHeaders: &[]api.ResetHeader{
 										{
 											Name:   "retry-after-http",
 											Format: "Seconds",
@@ -184,7 +184,7 @@ var _ = Describe("MeshRetry", func() {
 								},
 								RateLimitedBackOff: &api.RateLimitedBackOff{
 									MaxInterval: test.ParseDuration("15s"),
-									ResetHeaders: []api.ResetHeader{
+									ResetHeaders: &[]api.ResetHeader{
 										{
 											Name:   "retry-after-grpc",
 											Format: "Seconds",

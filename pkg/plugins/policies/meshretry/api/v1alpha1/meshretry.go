@@ -218,7 +218,7 @@ type RateLimitedBackOff struct {
 	// ResetHeaders specifies the list of headers (like Retry-After or X-RateLimit-Reset) to match against the response.
 	// Headers are tried in order, and matched case-insensitive. The first header to be parsed successfully is used.
 	// If no headers match the default exponential BackOff is used instead.
-	ResetHeaders []ResetHeader `json:"resetHeaders,omitempty"`
+	ResetHeaders *[]ResetHeader `json:"resetHeaders,omitempty"`
 	// MaxInterval is a maximal amount of time which will be taken between retries.
 	// Default is 300 seconds.
 	MaxInterval *k8s.Duration `json:"maxInterval,omitempty"`
@@ -242,9 +242,9 @@ var RateLimitFormatEnumToEnvoyValue = map[RateLimitFormat]envoy_route.RetryPolic
 
 type ResetHeader struct {
 	// The Name of the reset header.
-	Name common_api.HeaderName `json:"name,omitempty"`
+	Name common_api.HeaderName `json:"name"`
 	// The format of the reset header, either Seconds or UnixTimestamp.
-	Format RateLimitFormat `json:"format,omitempty"`
+	Format RateLimitFormat `json:"format"`
 }
 
 type HeaderMatchType string

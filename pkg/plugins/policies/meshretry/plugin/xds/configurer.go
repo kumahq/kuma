@@ -13,6 +13,7 @@ import (
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 )
@@ -149,7 +150,7 @@ func configureRateLimitedRetryBackOff(rateLimitedBackOff *api.RateLimitedBackOff
 	rateLimitedRetryBackoff := &envoy_route.RetryPolicy_RateLimitedRetryBackOff{
 		ResetHeaders: []*envoy_route.RetryPolicy_ResetHeader{},
 	}
-	for _, resetHeader := range rateLimitedBackOff.ResetHeaders {
+	for _, resetHeader := range pointer.Deref(rateLimitedBackOff.ResetHeaders) {
 		rateLimitedRetryBackoff.ResetHeaders = append(rateLimitedRetryBackoff.ResetHeaders, &envoy_route.RetryPolicy_ResetHeader{
 			Name:   string(resetHeader.Name),
 			Format: api.RateLimitFormatEnumToEnvoyValue[resetHeader.Format],
