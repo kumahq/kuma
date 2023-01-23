@@ -59,7 +59,7 @@ spec:
           http:
             - abort:
                 httpStatus: 500
-                percentage: 3
+                percentage: "3.3"
               delay:
                 value: 5s
                 percentage: 3
@@ -68,7 +68,7 @@ spec:
                 percentage: 1
             - delay:
                 value: 11s
-                percentage: 2
+                percentage: "2.1"
     - targetRef:
         kind: MeshService
         name: test-server
@@ -79,7 +79,7 @@ spec:
                 percentage: 3
             - delay:
                 value: 5s
-                percentage: 3
+                percentage: "3.2"
             - responseBandwidth:
                 limit: 10mbps
                 percentage: 1

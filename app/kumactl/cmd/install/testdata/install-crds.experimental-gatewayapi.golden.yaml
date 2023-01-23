@@ -1424,11 +1424,13 @@ spec:
                                     format: int32
                                     type: integer
                                   percentage:
+                                    anyOf:
+                                    - type: integer
+                                    - type: string
                                     description: Percentage of requests on which abort
-                                      will be injected, has to be in [0.0 - 100.0]
-                                      range
-                                    format: int32
-                                    type: integer
+                                      will be injected, has to be either int or decimal
+                                      represented as string.
+                                    x-kubernetes-int-or-string: true
                                 required:
                                 - httpStatus
                                 - percentage
@@ -1438,11 +1440,13 @@ spec:
                                   a response from a destination
                                 properties:
                                   percentage:
+                                    anyOf:
+                                    - type: integer
+                                    - type: string
                                     description: Percentage of requests on which delay
-                                      will be injected, has to be in [0.0 - 100.0]
-                                      range
-                                    format: int32
-                                    type: integer
+                                      will be injected, has to be either int or decimal
+                                      represented as string.
+                                    x-kubernetes-int-or-string: true
                                   value:
                                     description: The duration during which the response
                                       will be delayed
@@ -1460,11 +1464,13 @@ spec:
                                       in gbps, mbps, kbps or bps, e.g. 10kbps
                                     type: string
                                   percentage:
+                                    anyOf:
+                                    - type: integer
+                                    - type: string
                                     description: Percentage of requests on which response
-                                      bandwidth limit will be injected, has to be
-                                      in [0.0 - 100.0] range
-                                    format: int32
-                                    type: integer
+                                      bandwidth limit will be either int or decimal
+                                      represented as string.
+                                    x-kubernetes-int-or-string: true
                                 required:
                                 - limit
                                 - percentage
@@ -2174,11 +2180,14 @@ spec:
                               type: string
                           type: object
                         healthyPanicThreshold:
+                          anyOf:
+                          - type: integer
+                          - type: string
                           description: Allows to configure panic threshold for Envoy
                             cluster. If not specified, the default is 50%. To disable
-                            panic mode, set to 0%.
-                          format: int32
-                          type: integer
+                            panic mode, set to 0%. Either int or decimal represented
+                            as string.
+                          x-kubernetes-int-or-string: true
                         healthyThreshold:
                           default: 1
                           description: Number of consecutive healthy checks before

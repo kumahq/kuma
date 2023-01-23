@@ -43,7 +43,7 @@ spec:
         http:
           - abort:
               httpStatus: 402
-              percentage: 100
+              percentage: "100.0"
     - targetRef:
         kind: MeshService
         name: demo-client-timeout
@@ -51,7 +51,7 @@ spec:
         http:
           - delay:
               value: 5s
-              percentage: 100
+              percentage: "100.0"
 `, meshName)
 	faultInjectionAllSources := fmt.Sprintf(`
 type: MeshFaultInjection

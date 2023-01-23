@@ -9,7 +9,9 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -46,7 +48,10 @@ const (
 func (e *Configurer) Configure(cluster *envoy_cluster.Cluster) error {
 	activeChecks := e.Conf
 
-	healthPanicThreshold(cluster, activeChecks.HealthyPanicThreshold)
+	err := healthPanicThreshold(cluster, activeChecks.HealthyPanicThreshold)
+	if err != nil {
+		return err
+	}
 	failTrafficOnPanic(cluster, activeChecks.FailTrafficOnPanic)
 
 	tcp := activeChecks.Tcp
@@ -216,14 +221,19 @@ func grpcHealthCheck(
 	}
 }
 
-func healthPanicThreshold(cluster *envoy_cluster.Cluster, value *int32) {
+func healthPanicThreshold(cluster *envoy_cluster.Cluster, value *intstr.IntOrString) error {
 	if value == nil {
-		return
+		return nil
 	}
 	if cluster.CommonLbConfig == nil {
 		cluster.CommonLbConfig = &envoy_cluster.Cluster_CommonLbConfig{}
 	}
-	cluster.CommonLbConfig.HealthyPanicThreshold = &envoy_type.Percent{Value: float64(*value)}
+	percentage, err := envoyPercent(*value)
+	if err != nil {
+		return err
+	}
+	cluster.CommonLbConfig.HealthyPanicThreshold = percentage
+	return nil
 }
 
 func failTrafficOnPanic(cluster *envoy_cluster.Cluster, value *bool) {
@@ -317,4 +327,15 @@ func addHealthChecker(healthCheck *envoy_core.HealthCheck, healthChecker interfa
 	}
 
 	return healthCheck
+}
+
+func envoyPercent(intOrStr intstr.IntOrString) (*envoy_type.Percent, error) {
+	decimal, err := common_api.NewDecimalFromIntOrString(intOrStr)
+	if err != nil {
+		return nil, err
+	}
+	value, _ := decimal.Float64()
+	return &envoy_type.Percent{
+		Value: value,
+	}, nil
 }

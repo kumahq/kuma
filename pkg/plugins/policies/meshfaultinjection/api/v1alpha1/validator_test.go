@@ -38,7 +38,7 @@ to:
             percentage: 5
         - abort:
             httpStatus: 500
-            percentage: 50
+            percentage: "50.5"
 `),
 		Entry("empty faults", `
 type: MeshFaultInjection
@@ -66,7 +66,7 @@ to:
 				},
 				{
 					Field:   `spec.from[0].default.http.abort[0].percentage`,
-					Message: `has to be in [0 - 100] range`,
+					Message: `has to be in [0.0 - 100.0] range`,
 				},
 				{
 					Field:   "spec.from[0].default.http.delay[1].value",
@@ -74,7 +74,7 @@ to:
 				},
 				{
 					Field:   `spec.from[0].default.http.delay[1].percentage`,
-					Message: `has to be in [0 - 100] range`,
+					Message: `has to be in [0.0 - 100.0] range`,
 				},
 				{
 					Field:   `spec.from[0].default.http.responseBandwidth[2].responseBandwidth`,
@@ -82,7 +82,7 @@ to:
 				},
 				{
 					Field:   `spec.from[0].default.http.responseBandwidth[2].percentage`,
-					Message: `has to be in [0 - 100] range`,
+					Message: `has to be in [0.0 - 100.0] range`,
 				},
 			}, `
 type: MeshFaultInjection
@@ -135,5 +135,32 @@ from:
       - responseBandwidth:
           limit: 1000
 `),
+		ErrorCases("incorrect value in percentage",
+			[]validators.Violation{
+				{
+					Field:   "spec.from[0].default.http.responseBandwidth[0].responseBandwidth",
+					Message: "has to be in kbps/mbps/gbps units",
+				},
+				{
+					Field:   "spec.from[0].default.http.responseBandwidth[0].percentage",
+					Message: "string has to be a valid number",
+				},
+			}, `
+type: MeshFaultInjection
+mesh: mesh-1
+name: fi1
+targetRef:
+  kind: MeshService
+  name: backend
+from:
+  - targetRef:
+      kind: MeshService
+      name: web-backend
+    default:
+      http:
+      - responseBandwidth:
+          limit: 1000
+          percentage: "xyz"`,
+		),
 	)
 })
