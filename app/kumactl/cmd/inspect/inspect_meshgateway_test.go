@@ -7,7 +7,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -49,9 +48,7 @@ var _ = DescribeTable("kumactl inspect meshgateway",
 			response: response,
 		}
 
-		rootCtx, err := test_kumactl.MakeRootContext(time.Now(), nil)
-		Expect(err).ToNot(HaveOccurred())
-
+		rootCtx := test_kumactl.MakeMinimalRootContext()
 		rootCtx.Runtime.NewMeshGatewayInspectClient = func(client util_http.Client) resources.MeshGatewayInspectClient {
 			return testClient
 		}
