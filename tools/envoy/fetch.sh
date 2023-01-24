@@ -31,7 +31,6 @@ function download_envoy() {
     "https://github.com/kumahq/envoy-builds/releases/download/${ENVOY_TAG}/${binary_name}.tar.gz")
 
     if [ "$status" -ne "200" ]; then
-        rm "${BINARY_PATH}"
         msg_err "Error: failed downloading Envoy: ${status} error"
     fi
 
