@@ -22,10 +22,15 @@ var defaultNewBaseAPIServerClient = func(server *config_proto.ControlPlaneCoordi
 	return nil, nil
 }
 
+var rootTime, _ = time.Parse(time.RFC3339, "2008-04-27T16:05:36.995Z")
+
 func MakeMinimalRootContext() *kumactl_cmd.RootContext {
 	return &kumactl_cmd.RootContext{
 		Args: defaultArgs,
 		Runtime: kumactl_cmd.RootRuntime{
+			Now: func() time.Time {
+				return rootTime
+			},
 			Registry:               registry.NewTypeRegistry(),
 			NewAPIServerClient:     defaultNewAPIServerClient,
 			NewBaseAPIServerClient: defaultNewBaseAPIServerClient,
