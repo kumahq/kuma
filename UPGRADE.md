@@ -8,6 +8,8 @@ does not have any particular instructions.
 
 ## Upcoming release
 
+## Upgrade to `2.1.x`
+
 ### **Breaking changes**
 
 #### **Naming Serviceless dataplanes has changed**
