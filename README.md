@@ -1,6 +1,7 @@
 [![][kuma-logo]][kuma-url]
 
 **Builds**
+[![CircleCI release-2.1](https://img.shields.io/circleci/build/github/kumahq/kuma/release-2.0?label=release-2.1)](https://circleci.com/gh/kumahq/kuma/tree/release-2.1)
 [![CircleCI release-2.0](https://img.shields.io/circleci/build/github/kumahq/kuma/release-2.0?label=release-2.0)](https://circleci.com/gh/kumahq/kuma/tree/release-2.0)
 [![CircleCI release-1.8](https://img.shields.io/circleci/build/github/kumahq/kuma/release-1.8?label=release-1.8)](https://circleci.com/gh/kumahq/kuma/tree/release-1.8)
 [![CircleCI release-1.7](https://img.shields.io/circleci/build/github/kumahq/kuma/release-1.7?label=release-1.7)](https://circleci.com/gh/kumahq/kuma/tree/release-1.7)
