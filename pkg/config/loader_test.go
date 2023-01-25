@@ -305,7 +305,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Access.Static.ViewClusters.Groups).To(Equal([]string{"zt-group1", "zt-group2"}))
 
 			Expect(cfg.Experimental.GatewayAPI).To(BeTrue())
-			Expect(cfg.Experimental.KubeOutboundsAsVIPs).To(BeTrue())
+			Expect(cfg.Experimental.KubeOutboundsAsVIPs).To(BeFalse())
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
 		},
@@ -584,7 +584,7 @@ access:
       groups: ["zt-group1", "zt-group2"]
 experimental:
   gatewayAPI: true
-  kubeOutboundsAsVIPs: true
+  kubeOutboundsAsVIPs: false
   cniApp: "kuma-cni"
 proxy:
   gateway:
@@ -791,7 +791,7 @@ proxy:
 				"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_USERS":                                                   "zt-admin1,zt-admin2",
 				"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_GROUPS":                                                  "zt-group1,zt-group2",
 				"KUMA_EXPERIMENTAL_GATEWAY_API":                                                            "true",
-				"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS":                                                 "true",
+				"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS":                                                 "false",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
 			},
 			yamlFileConfig: "",
