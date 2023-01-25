@@ -40,6 +40,72 @@ to:
     kind: BlahBlah
     name: frontend
 `),
+		ErrorCase("empty path match",
+			validators.Violation{
+				Field:   `spec.to[0].rules[0].matches[0].path.value`,
+				Message: `must be an absolute path`,
+			}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: frontend
+to:
+- targetRef:
+    kind: MeshService
+    name: frontend
+  rules:
+    - matches:
+      - path:
+          value: "relative"
+          type: Exact
+`),
+		ErrorCase("repeated match query param names",
+			validators.Violation{
+				Field:   `spec.to[0].rules[0].matches[0].queryParams[1].name`,
+				Message: `multiple entries for name foo`,
+			}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: frontend
+to:
+- targetRef:
+    kind: MeshService
+    name: frontend
+  rules:
+    - matches:
+      - queryParams:
+        - type: Exact
+          name: foo
+          value: bar
+        - type: Exact
+          name: foo
+          value: baz
+`),
+		ErrorCase("invalid filter",
+			validators.Violation{
+				Field:   `spec.to[0].rules[0].filters[0].requestHeaderModifier`,
+				Message: validators.MustBeDefined,
+			}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: frontend
+to:
+- targetRef:
+    kind: MeshService
+    name: frontend
+  rules:
+    - default:
+        filters:
+          - type: RequestHeaderModifier
+`),
 	)
 	DescribeValidCases(
 		api.NewMeshHTTPRouteResource,

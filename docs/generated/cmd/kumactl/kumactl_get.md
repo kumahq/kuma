@@ -43,12 +43,16 @@ Show Kuma resources.
 * [kumactl get meshcircuitbreaker](kumactl_get_meshcircuitbreaker.md)	 - Show a single MeshCircuitBreaker resource
 * [kumactl get meshcircuitbreakers](kumactl_get_meshcircuitbreakers.md)	 - Show MeshCircuitBreaker
 * [kumactl get meshes](kumactl_get_meshes.md)	 - Show Mesh
+* [kumactl get meshfaultinjection](kumactl_get_meshfaultinjection.md)	 - Show a single MeshFaultInjection resource
+* [kumactl get meshfaultinjections](kumactl_get_meshfaultinjections.md)	 - Show MeshFaultInjection
 * [kumactl get meshgateway](kumactl_get_meshgateway.md)	 - Show a single MeshGateway resource
 * [kumactl get meshgatewayroute](kumactl_get_meshgatewayroute.md)	 - Show a single MeshGatewayRoute resource
 * [kumactl get meshgatewayroutes](kumactl_get_meshgatewayroutes.md)	 - Show MeshGatewayRoute
 * [kumactl get meshgateways](kumactl_get_meshgateways.md)	 - Show MeshGateway
 * [kumactl get meshhealthcheck](kumactl_get_meshhealthcheck.md)	 - Show a single MeshHealthCheck resource
 * [kumactl get meshhealthchecks](kumactl_get_meshhealthchecks.md)	 - Show MeshHealthCheck
+* [kumactl get meshhttproute](kumactl_get_meshhttproute.md)	 - Show a single MeshHTTPRoute resource
+* [kumactl get meshhttproutes](kumactl_get_meshhttproutes.md)	 - Show MeshHTTPRoute
 * [kumactl get meshproxypatch](kumactl_get_meshproxypatch.md)	 - Show a single MeshProxyPatch resource
 * [kumactl get meshproxypatches](kumactl_get_meshproxypatches.md)	 - Show MeshProxyPatch
 * [kumactl get meshratelimit](kumactl_get_meshratelimit.md)	 - Show a single MeshRateLimit resource

@@ -14,11 +14,12 @@ var _ = Describe("MergeConfs", func() {
 		AppendInts []int
 	}
 	type policy struct {
-		FieldString   string `json:"fieldString,omitempty"`
-		Strings       []string
-		AppendStrings []string
-		Sub           subPolicy
-		SubPtr        *subPolicy `json:"subPtr,omitempty"`
+		FieldString            string `json:"fieldString,omitempty"`
+		Strings                []string
+		AppendStrings          []string
+		AppendPointerToStrings *[]string
+		Sub                    subPolicy
+		SubPtr                 *subPolicy `json:"subPtr,omitempty"`
 	}
 
 	type testCase struct {
@@ -44,9 +45,10 @@ var _ = Describe("MergeConfs", func() {
 		Entry("should replace slices by default but append slices that start with append", testCase{
 			policies: []policy{
 				{
-					FieldString:   "p1",
-					Strings:       []string{"p1"},
-					AppendStrings: []string{"p1"},
+					FieldString:            "p1",
+					Strings:                []string{"p1"},
+					AppendStrings:          []string{"p1"},
+					AppendPointerToStrings: &[]string{"p1"},
 					Sub: subPolicy{
 						Ints:       []int{1},
 						AppendInts: []int{1},
@@ -57,9 +59,10 @@ var _ = Describe("MergeConfs", func() {
 					},
 				},
 				{
-					FieldString:   "p2",
-					Strings:       []string{"p2"},
-					AppendStrings: []string{"p2"},
+					FieldString:            "p2",
+					Strings:                []string{"p2"},
+					AppendStrings:          []string{"p2"},
+					AppendPointerToStrings: &[]string{"p2"},
 					Sub: subPolicy{
 						Ints:       []int{2},
 						AppendInts: []int{2},
@@ -70,8 +73,9 @@ var _ = Describe("MergeConfs", func() {
 					},
 				},
 				{
-					Strings:       []string{"p3"},
-					AppendStrings: []string{"p3"},
+					Strings:                []string{"p3"},
+					AppendStrings:          []string{"p3"},
+					AppendPointerToStrings: &[]string{"p3"},
 					Sub: subPolicy{
 						Ints:       []int{3},
 						AppendInts: []int{3},
@@ -83,9 +87,10 @@ var _ = Describe("MergeConfs", func() {
 				},
 			},
 			expected: policy{
-				FieldString:   "p2",
-				Strings:       []string{"p3"},
-				AppendStrings: []string{"p1", "p2", "p3"},
+				FieldString:            "p2",
+				Strings:                []string{"p3"},
+				AppendStrings:          []string{"p1", "p2", "p3"},
+				AppendPointerToStrings: &[]string{"p1", "p2", "p3"},
 				Sub: subPolicy{
 					Ints:       []int{3},
 					AppendInts: []int{1, 2, 3},
@@ -271,6 +276,9 @@ var _ = Describe("MergeConfs", func() {
 					Key: mergeKey{Right: true}, Default: mergeConf{B: &t},
 				}},
 			},
+		}), Entry("should work with an empty list of key values", mergeValuesByKeyCase{
+			policies: []testPolicy{{}},
+			expected: testPolicy{},
 		}),
 	)
 

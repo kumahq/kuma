@@ -7,7 +7,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -59,8 +58,7 @@ var _ = Describe("kumactl inspect dataplane", func() {
 				response: response,
 			}
 
-			rootCtx, err := test_kumactl.MakeRootContext(time.Now(), nil)
-			Expect(err).ToNot(HaveOccurred())
+			rootCtx := test_kumactl.MakeMinimalRootContext()
 
 			rootCtx.Runtime.NewDataplaneInspectClient = func(client util_http.Client) resources.DataplaneInspectClient {
 				return testClient

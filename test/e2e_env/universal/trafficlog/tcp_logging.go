@@ -9,9 +9,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
+	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func TCPLogging() {
@@ -51,32 +51,32 @@ destinations:
 				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "universal-1"}))).
 				Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 				Install(externalservice.Install(externalservice.TcpSink, externalservice.UniversalTCPSink)).
-				Setup(env.Cluster)
+				Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		E2EAfterAll(func() {
-			Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-			Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+			Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+			Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 		})
 
 		It("should send a traffic log to TCP port", func() {
 			// given traffic between apps with invalid logging backend
-			Expect(env.Cluster.Install(YamlUniversal(invalidLoggingBackend))).To(Succeed())
+			Expect(universal.Cluster.Install(YamlUniversal(invalidLoggingBackend))).To(Succeed())
 			Eventually(func(g Gomega) {
-				_, _, err := env.Cluster.Exec("", "", AppModeDemoClient,
+				_, _, err := universal.Cluster.Exec("", "", AppModeDemoClient,
 					"curl", "-v", "--fail", "test-server.mesh")
 				g.Expect(err).ToNot(HaveOccurred())
 			}).Should(Succeed())
 
 			// when valid backend is present
-			Expect(env.Cluster.Install(YamlUniversal(validLoggingBackend))).To(Succeed())
+			Expect(universal.Cluster.Install(YamlUniversal(validLoggingBackend))).To(Succeed())
 
 			// and traffic is sent between applications
 			var startTimeStr, src, dst string
-			sinkDeployment := env.Cluster.Deployment("externalservice-tcp-sink").(*externalservice.UniversalDeployment)
+			sinkDeployment := universal.Cluster.Deployment("externalservice-tcp-sink").(*externalservice.UniversalDeployment)
 			Eventually(func(g Gomega) {
-				_, _, err := env.Cluster.Exec("", "", AppModeDemoClient,
+				_, _, err := universal.Cluster.Exec("", "", AppModeDemoClient,
 					"curl", "-v", "--fail", "test-server.mesh")
 				g.Expect(err).ToNot(HaveOccurred())
 

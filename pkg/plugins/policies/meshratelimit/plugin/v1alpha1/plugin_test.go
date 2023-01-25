@@ -24,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	test_xds "github.com/kumahq/kuma/pkg/test/xds"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -115,27 +116,28 @@ var _ = Describe("MeshRateLimit", func() {
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
 							Configure(TcpProxy("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
 						)).MustBuild(),
-				}},
+				},
+			},
 			fromRules: core_xds.FromRules{
 				Rules: map[core_xds.InboundListener]core_xds.Rules{
 					{Address: "127.0.0.1", Port: 17777}: {{
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
-							Local: api.Local{
+							Local: &api.Local{
 								HTTP: &api.LocalHTTP{
-									Requests: 100,
-									Interval: *test.ParseDuration("10s"),
+									RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
 									OnRateLimit: &api.OnRateLimit{
-										Status: test.PointerOf(uint32(444)),
-										Headers: []api.HeaderValue{
-											{
-												Key:    "x-kuma-rate-limit-header",
-												Value:  "test-value",
-												Append: test.PointerOf(true),
-											},
-											{
-												Key:   "x-kuma-rate-limit",
-												Value: "other-value",
+										Status: pointer.To(uint32(444)),
+										Headers: &api.HeaderModifier{
+											Add: []api.HeaderKeyValue{
+												{
+													Name:  "x-kuma-rate-limit-header",
+													Value: "test-value",
+												},
+												{
+													Name:  "x-kuma-rate-limit",
+													Value: "other-value",
+												},
 											},
 										},
 									},
@@ -146,14 +148,12 @@ var _ = Describe("MeshRateLimit", func() {
 					{Address: "127.0.0.1", Port: 17778}: {{
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
-							Local: api.Local{
+							Local: &api.Local{
 								HTTP: &api.LocalHTTP{
-									Requests: 100,
-									Interval: *test.ParseDuration("10s"),
+									RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
 								},
 								TCP: &api.LocalTCP{
-									Connections: 100,
-									Interval:    *test.ParseDuration("10s"),
+									ConnectionRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
 								},
 							},
 						},
@@ -207,28 +207,35 @@ var _ = Describe("MeshRateLimit", func() {
 					{Address: "127.0.0.1", Port: 17777}: {{
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
-							Local: api.Local{
+							Local: &api.Local{
 								HTTP: &api.LocalHTTP{
-									Requests: 100,
-									Interval: *test.ParseDuration("10s"),
+									RequestRate: &api.Rate{
+										Num:      100,
+										Interval: *test.ParseDuration("10s"),
+									},
 									OnRateLimit: &api.OnRateLimit{
-										Status: test.PointerOf(uint32(444)),
-										Headers: []api.HeaderValue{
-											{
-												Key:    "x-kuma-rate-limit-header",
-												Value:  "test-value",
-												Append: test.PointerOf(true),
+										Status: pointer.To(uint32(444)),
+										Headers: &api.HeaderModifier{
+											Add: []api.HeaderKeyValue{
+												{
+													Name:  "x-kuma-rate-limit-header",
+													Value: "test-value",
+												},
 											},
-											{
-												Key:   "x-kuma-rate-limit",
-												Value: "other-value",
+											Set: []api.HeaderKeyValue{
+												{
+													Name:  "x-kuma-rate-limit",
+													Value: "other-value",
+												},
 											},
 										},
 									},
 								},
 								TCP: &api.LocalTCP{
-									Connections: 100,
-									Interval:    *test.ParseDuration("99s"),
+									ConnectionRate: &api.Rate{
+										Num:      100,
+										Interval: *test.ParseDuration("99s"),
+									},
 								},
 							},
 						},
@@ -264,6 +271,142 @@ var _ = Describe("MeshRateLimit", func() {
 			},
 			expectedListeners: []string{"old_policy.golden.yaml"},
 		}),
+		Entry("tcp rate limiter is disabled", sidecarTestCase{
+			resources: []*core_xds.Resource{{
+				Name:   "inbound:127.0.0.1:17778",
+				Origin: generator.OriginInbound,
+				Resource: NewListenerBuilder(envoy_common.APIV3).
+					Configure(InboundListener("inbound:127.0.0.1:17778", "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP)).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+						Configure(TcpProxy("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
+					)).MustBuild(),
+			}},
+			fromRules: core_xds.FromRules{
+				Rules: map[core_xds.InboundListener]core_xds.Rules{
+					{Address: "127.0.0.1", Port: 17778}: {{
+						Subset: core_xds.Subset{},
+						Conf: api.Conf{
+							Local: &api.Local{
+								TCP: &api.LocalTCP{
+									Disabled:       pointer.To(true),
+									ConnectionRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
+								},
+							},
+						},
+					}},
+				},
+			},
+			inboundRateLimitsMap: core_xds.InboundRateLimitsMap{},
+			expectedListeners:    []string{"tcp_disabled.golden.yaml"},
+		}),
+		Entry("http rate limiter is disabled", sidecarTestCase{
+			resources: []*core_xds.Resource{{
+				Name:   "inbound:127.0.0.1:17777",
+				Origin: generator.OriginInbound,
+				Resource: NewListenerBuilder(envoy_common.APIV3).
+					Configure(InboundListener("inbound:127.0.0.1:17777", "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP)).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+						Configure(HttpConnectionManager("127.0.0.1:17777", false)).
+						Configure(
+							HttpInboundRoutes(
+								"backend",
+								envoy_common.Routes{
+									{
+										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+											envoy_common.WithService("backend"),
+											envoy_common.WithWeight(100),
+										)},
+									},
+								},
+							),
+						),
+					)).MustBuild(),
+			}},
+			fromRules: core_xds.FromRules{
+				Rules: map[core_xds.InboundListener]core_xds.Rules{
+					{Address: "127.0.0.1", Port: 17777}: {{
+						Subset: core_xds.Subset{},
+						Conf: api.Conf{
+							Local: &api.Local{
+								HTTP: &api.LocalHTTP{
+									Disabled:    pointer.To(true),
+									RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
+								},
+							},
+						},
+					}},
+				},
+			},
+			inboundRateLimitsMap: core_xds.InboundRateLimitsMap{},
+			expectedListeners:    []string{"http_disabled.golden.yaml"},
+		}),
+		Entry("tcp rate limiter is not configured", sidecarTestCase{
+			resources: []*core_xds.Resource{{
+				Name:   "inbound:127.0.0.1:17778",
+				Origin: generator.OriginInbound,
+				Resource: NewListenerBuilder(envoy_common.APIV3).
+					Configure(InboundListener("inbound:127.0.0.1:17778", "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP)).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+						Configure(TcpProxy("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
+					)).MustBuild(),
+			}},
+			fromRules: core_xds.FromRules{
+				Rules: map[core_xds.InboundListener]core_xds.Rules{
+					{Address: "127.0.0.1", Port: 17778}: {{
+						Subset: core_xds.Subset{},
+						Conf: api.Conf{
+							Local: &api.Local{
+								TCP: &api.LocalTCP{
+									ConnectionRate: nil,
+								},
+							},
+						},
+					}},
+				},
+			},
+			inboundRateLimitsMap: core_xds.InboundRateLimitsMap{},
+			expectedListeners:    []string{"tcp_disabled.golden.yaml"},
+		}),
+		Entry("http rate limiter is not configured", sidecarTestCase{
+			resources: []*core_xds.Resource{{
+				Name:   "inbound:127.0.0.1:17777",
+				Origin: generator.OriginInbound,
+				Resource: NewListenerBuilder(envoy_common.APIV3).
+					Configure(InboundListener("inbound:127.0.0.1:17777", "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP)).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+						Configure(HttpConnectionManager("127.0.0.1:17777", false)).
+						Configure(
+							HttpInboundRoutes(
+								"backend",
+								envoy_common.Routes{
+									{
+										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+											envoy_common.WithService("backend"),
+											envoy_common.WithWeight(100),
+										)},
+									},
+								},
+							),
+						),
+					)).MustBuild(),
+			}},
+			fromRules: core_xds.FromRules{
+				Rules: map[core_xds.InboundListener]core_xds.Rules{
+					{Address: "127.0.0.1", Port: 17777}: {{
+						Subset: core_xds.Subset{},
+						Conf: api.Conf{
+							Local: &api.Local{
+								HTTP: &api.LocalHTTP{
+									RequestRate: nil,
+								},
+							},
+						},
+					}},
+				},
+			},
+			inboundRateLimitsMap: core_xds.InboundRateLimitsMap{},
+			expectedListeners:    []string{"http_disabled.golden.yaml"},
+		}),
 	)
 
 	It("should generate proper Envoy config for MeshGateway Dataplanes", func() {
@@ -273,21 +416,24 @@ var _ = Describe("MeshRateLimit", func() {
 				{Address: "192.168.0.1", Port: 8080}: {{
 					Subset: core_xds.Subset{},
 					Conf: api.Conf{
-						Local: api.Local{
+						Local: &api.Local{
 							HTTP: &api.LocalHTTP{
-								Requests: 100,
-								Interval: v1.Duration{Duration: 10 * time.Second},
+								RequestRate: &api.Rate{
+									Num:      100,
+									Interval: v1.Duration{Duration: 10 * time.Second},
+								},
 								OnRateLimit: &api.OnRateLimit{
-									Status: test.PointerOf(uint32(444)),
-									Headers: []api.HeaderValue{
-										{
-											Key:    "x-kuma-rate-limit-header",
-											Value:  "test-value",
-											Append: test.PointerOf(true),
-										},
-										{
-											Key:   "x-kuma-rate-limit",
-											Value: "other-value",
+									Status: pointer.To(uint32(444)),
+									Headers: &api.HeaderModifier{
+										Add: []api.HeaderKeyValue{
+											{
+												Name:  "x-kuma-rate-limit-header",
+												Value: "test-value",
+											},
+											{
+												Name:  "x-kuma-rate-limit",
+												Value: "other-value",
+											},
 										},
 									},
 								},

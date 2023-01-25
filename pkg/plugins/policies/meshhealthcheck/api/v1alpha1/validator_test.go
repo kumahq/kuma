@@ -57,13 +57,12 @@ to:
         disabled: true # new, default false, can be disabled for override
         path: /health
         requestHeadersToAdd: # optional, empty by default
-        - append: false
-          header:
-            key: Content-Type
-            value: application/json
-        - header:
-            key: Accept
-            value: application/json
+        set:
+        - name: Content-Type
+          value: application/json
+        add:
+        - name: Accept
+          value: application/json
         expectedStatuses: [200, 201] # optional, by default [200]
       grpc: # new
         disabled: false # new, default false, can be disabled for override
@@ -129,14 +128,6 @@ to:
 `,
 				expected: `
 violations:
-  - field: spec.to[0].default.interval
-    message: must be defined and greater than zero
-  - field: spec.to[0].default.timeout
-    message: must be defined and greater than zero
-  - field: spec.to[0].default.unhealthyThreshold
-    message: must be defined and greater than zero
-  - field: spec.to[0].default.healthyThreshold
-    message: must be defined and greater than zero
   - field: spec.to[0].default
     message: 'must have at least one defined: http, tcp, grpc'`,
 			}),
@@ -185,9 +176,9 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].default.interval
-    message: must be defined and greater than zero
+    message: must be greater than zero when defined
   - field: spec.to[0].default.timeout
-    message: must be defined and greater than zero
+    message: must be greater than zero when defined
   - field: spec.to[0].default.initialJitter
     message: must be greater than zero when defined
   - field: spec.to[0].default.intervalJitter
@@ -218,7 +209,7 @@ violations:
   - field: spec.to[0].default.intervalJitterPercent
     message: has to be in [0 - 100] range
   - field: spec.to[0].default.healthyPanicThreshold
-    message: has to be in [0 - 100] range`,
+    message: has to be in [0.0 - 100.0] range`,
 			}),
 			Entry("path is invalid", testCase{
 				inputYaml: `
@@ -241,77 +232,6 @@ to:
 violations:
   - field: spec.to[0].default.eventLogPath
     message: has to be a valid path when defined`,
-			}),
-			Entry("http path is missing", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: backend
-to:
-  - targetRef:
-      kind: MeshService
-      name: web-backend
-    default:
-      interval: 10s
-      timeout: 2s
-      unhealthyThreshold: 3
-      healthyThreshold: 1
-      http: {}
-`,
-				expected: `
-violations:
-  - field: spec.to[0].default.http.path
-    message: must be defined`,
-			}),
-			Entry("header missing in requestHeadersToAdd", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: backend
-to:
-  - targetRef:
-      kind: MeshService
-      name: web-backend
-    default:
-      interval: 10s
-      timeout: 2s
-      unhealthyThreshold: 3
-      healthyThreshold: 1
-      http:
-        path: /health
-        requestHeadersToAdd:
-        - {}
-`,
-				expected: `
-violations:
-  - field: spec.to[0].default.http.requestHeadersToAdd[0].header
-    message: must be defined`,
-			}),
-			Entry("key or value missing in requestHeadersToAdd", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: backend
-to:
-  - targetRef:
-      kind: MeshService
-      name: web-backend
-    default:
-      interval: 10s
-      timeout: 2s
-      unhealthyThreshold: 3
-      healthyThreshold: 1
-      http:
-        path: /health
-        requestHeadersToAdd:
-        - header: {}
-`,
-				expected: `
-violations:
-  - field: spec.to[0].default.http.requestHeadersToAdd[0].header.key
-    message: must not be empty
-  - field: spec.to[0].default.http.requestHeadersToAdd[0].header.value
-    message: must not be empty`,
 			}),
 			Entry("status codes out of range in expectedStatuses", testCase{
 				inputYaml: `

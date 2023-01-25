@@ -46,7 +46,7 @@ default:
         name: x-version
   sampling:
     overall: 80
-    random: 60
+    random: "60.1"
     client: 40
 `),
 			Entry("with empty backends", `
@@ -173,22 +173,6 @@ default:
 violations:
   - field: spec.default.backends[0].zipkin.url
     message: must be a valid url`,
-			}),
-			Entry("invalid apiVersion for zipkin backend", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: backend
-default:
-  backends:
-    - zipkin:
-        url: http://jaeger-collector.mesh-observability:9411/api/v2/spans
-        apiVersion: invalid_api_version
-`,
-				expected: `
-violations:
-  - field: spec.default.backends[0].zipkin.apiVersion
-    message: must be one of httpJson, httpProto`,
 			}),
 			Entry("invalid url for datadog backend", testCase{
 				inputYaml: `
@@ -320,6 +304,30 @@ default:
 violations:
   - field: spec.default.sampling.overall
     message: must be between 0 and 100
+`,
+			}),
+			Entry("sampling invalid string", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - datadog:
+        url: http://intake.datadoghq.eu:443
+  sampling:
+    overall: xyz
+    client: xyz
+    random: xyz
+`,
+				expected: `
+violations:
+  - field: spec.default.sampling.client
+    message: string is not a number
+  - field: spec.default.sampling.random
+    message: string is not a number
+  - field: spec.default.sampling.overall
+    message: string is not a number
 `,
 			}),
 		)

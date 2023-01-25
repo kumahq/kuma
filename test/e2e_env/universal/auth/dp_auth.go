@@ -10,19 +10,19 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
-	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func DpAuth() {
 	const meshName = "dp-auth"
 
 	BeforeAll(func() {
-		Expect(env.Cluster.Install(MeshUniversal(meshName))).To(Succeed())
+		Expect(universal.Cluster.Install(MeshUniversal(meshName))).To(Succeed())
 	})
 	E2EAfterAll(func() {
-		Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should not be able to override someone else Dataplane", func() {
@@ -33,10 +33,10 @@ func DpAuth() {
 			WithAddress("192.168.0.1").
 			WithServices("not-test-server").
 			Build()
-		Expect(env.Cluster.Install(ResourceUniversal(dp))).To(Succeed())
+		Expect(universal.Cluster.Install(ResourceUniversal(dp))).To(Succeed())
 
 		// when trying to spin up dataplane with same name but token bound to a different service
-		err := TestServerUniversal("dp-01", meshName, WithServiceName("test-server"))(env.Cluster)
+		err := TestServerUniversal("dp-01", meshName, WithServiceName("test-server"))(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -54,29 +54,29 @@ func DpAuth() {
 			WithAddress("192.168.0.2").
 			WithServices("test-server").
 			Build()
-		Expect(env.Cluster.Install(ResourceUniversal(dp))).To(Succeed())
+		Expect(universal.Cluster.Install(ResourceUniversal(dp))).To(Succeed())
 
 		// when
-		err := TestServerUniversal("dp-02", meshName, WithServiceName("test-server"))(env.Cluster)
+		err := TestServerUniversal("dp-02", meshName, WithServiceName("test-server"))(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
 		Eventually(func() (string, error) {
-			return env.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes", "-oyaml")
+			return universal.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes", "-oyaml")
 		}, "30s", "1s").ShouldNot(ContainSubstring("192.168.0.2"))
 	})
 
 	It("should revoke token and kick out dataplane proxy out of the mesh", func() {
 		// given
 		serviceName := "test-server-to-be-revoked"
-		token, err := env.Cluster.GetKuma().GenerateDpToken(meshName, serviceName)
+		token, err := universal.Cluster.GetKuma().GenerateDpToken(meshName, serviceName)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = env.Cluster.Install(TestServerUniversal(serviceName, meshName, WithServiceName(serviceName), WithToken(token)))
+		err = universal.Cluster.Install(TestServerUniversal(serviceName, meshName, WithServiceName(serviceName), WithToken(token)))
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func(g Gomega) {
-			online, found, err := IsDataplaneOnline(env.Cluster, meshName, serviceName)
+			online, found, err := IsDataplaneOnline(universal.Cluster, meshName, serviceName)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(found).To(BeTrue())
 			g.Expect(online).To(BeTrue())
@@ -92,7 +92,7 @@ type: Secret
 mesh: dp-auth
 name: dataplane-token-revocations-dp-auth
 data: %s`, base64.StdEncoding.EncodeToString([]byte(claims.ID)))
-		Expect(env.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
+		Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
 
 		// then DPP is disconnected
 		Eventually(func(g Gomega) {
@@ -112,9 +112,9 @@ conf:
   http:
     numRetries: %d
 `, rand.Int()%100+1)
-			g.Expect(env.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
+			g.Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
 
-			online, _, err := IsDataplaneOnline(env.Cluster, meshName, serviceName)
+			online, _, err := IsDataplaneOnline(universal.Cluster, meshName, serviceName)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(online).To(BeFalse()) // either online or not found
 		}).Should(Succeed())

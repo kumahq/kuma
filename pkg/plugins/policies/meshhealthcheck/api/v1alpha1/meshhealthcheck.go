@@ -3,6 +3,7 @@ package v1alpha1
 
 import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 )
@@ -30,14 +31,18 @@ type To struct {
 
 type Conf struct {
 	// Interval between consecutive health checks.
-	Interval k8s.Duration `json:"interval,omitempty"`
+	// +kubebuilder:default="1m"
+	Interval *k8s.Duration `json:"interval,omitempty"`
 	// Maximum time to wait for a health check response.
-	Timeout k8s.Duration `json:"timeout,omitempty"`
+	// +kubebuilder:default="15s"
+	Timeout *k8s.Duration `json:"timeout,omitempty"`
 	// Number of consecutive unhealthy checks before considering a host
 	// unhealthy.
-	UnhealthyThreshold int32 `json:"unhealthyThreshold,omitempty"`
+	// +kubebuilder:default=5
+	UnhealthyThreshold *int32 `json:"unhealthyThreshold,omitempty"`
 	// Number of consecutive healthy checks before considering a host healthy.
-	HealthyThreshold int32 `json:"healthyThreshold,omitempty"`
+	// +kubebuilder:default=1
+	HealthyThreshold *int32 `json:"healthyThreshold,omitempty"`
 	// If specified, Envoy will start health checking after a random time in
 	// ms between 0 and initialJitter. This only applies to the first health
 	// check.
@@ -52,7 +57,8 @@ type Conf struct {
 	IntervalJitterPercent *int32 `json:"intervalJitterPercent,omitempty"`
 	// Allows to configure panic threshold for Envoy cluster. If not specified,
 	// the default is 50%. To disable panic mode, set to 0%.
-	HealthyPanicThreshold *int32 `json:"healthyPanicThreshold,omitempty"`
+	// Either int or decimal represented as string.
+	HealthyPanicThreshold *intstr.IntOrString `json:"healthyPanicThreshold,omitempty"`
 	// If set to true, Envoy will not consider any hosts when the cluster is in
 	// 'panic mode'. Instead, the cluster will fail all requests as if all hosts
 	// are unhealthy. This can help avoid potentially overwhelming a failing
@@ -85,8 +91,7 @@ type Conf struct {
 // expected response during the health check
 type TcpHealthCheck struct {
 	// If true the TcpHealthCheck is disabled
-	//  +optional
-	Disabled bool `json:"disabled,omitempty"`
+	Disabled *bool `json:"disabled,omitempty"`
 	// Base64 encoded content of the message which will be sent during the health check to the target
 	Send *string `json:"send,omitempty"`
 	// List of Base64 encoded blocks of strings expected as a response. When checking the response,
@@ -100,18 +105,15 @@ type TcpHealthCheck struct {
 // the health check will be made for is an HTTP service.
 type HttpHealthCheck struct {
 	// If true the HttpHealthCheck is disabled
-	//  +optional
-	Disabled bool `json:"disabled,omitempty"`
+	Disabled *bool `json:"disabled,omitempty"`
 	// The HTTP path which will be requested during the health check
 	// (ie. /health)
-	//  +required
-	Path string `json:"path,omitempty"`
+	// +kubebuilder:default="/"
+	Path *string `json:"path,omitempty"`
 	// The list of HTTP headers which should be added to each health check
 	// request
-	//  +optional
-	RequestHeadersToAdd *[]HeaderValueOption `json:"requestHeadersToAdd,omitempty"`
+	RequestHeadersToAdd *HeaderModifier `json:"requestHeadersToAdd,omitempty"`
 	// List of HTTP response statuses which are considered healthy
-	//  +optional
 	ExpectedStatuses *[]int32 `json:"expectedStatuses,omitempty"`
 }
 
@@ -119,31 +121,28 @@ type HttpHealthCheck struct {
 // the health check will be made for is a gRPC service.
 type GrpcHealthCheck struct {
 	// If true the GrpcHealthCheck is disabled
-	//  +optional
-	Disabled bool `json:"disabled,omitempty"`
+	Disabled *bool `json:"disabled,omitempty"`
 	// Service name parameter which will be sent to gRPC service
-	//  +optional
-	ServiceName string `json:"serviceName,omitempty"`
+	ServiceName *string `json:"serviceName,omitempty"`
 	// The value of the :authority header in the gRPC health check request,
 	// by default name of the cluster this health check is associated with
-	//  +optional
-	Authority string `json:"authority,omitempty"`
+	Authority *string `json:"authority,omitempty"`
 }
 
-type HeaderValueOption struct {
-	// Key/Value representation of the HTTP header
-	//  +required
-	Header *HeaderValue `json:"header,omitempty"`
-	// If true (default) the header values should be appended to already present ones
-	//  +optional
-	Append *bool `json:"append,omitempty"`
+type HeaderKeyValue struct {
+	Name  common_api.HeaderName  `json:"name"`
+	Value common_api.HeaderValue `json:"value"`
 }
 
-type HeaderValue struct {
-	// Header name
-	//  +required
-	Key string `json:"key,omitempty"`
-	// Header value
-	//  +required
-	Value string `json:"value,omitempty"`
+// Configuration to set or add multiple values for a header must use RFC 7230
+// header value formatting, separating each value with a comma.
+type HeaderModifier struct {
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=16
+	Set []HeaderKeyValue `json:"set,omitempty"`
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=16
+	Add []HeaderKeyValue `json:"add,omitempty"`
 }

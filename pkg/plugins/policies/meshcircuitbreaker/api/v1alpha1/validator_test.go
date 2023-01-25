@@ -54,7 +54,7 @@ from:
           successRate:
             minimumHosts: 5
             requestVolume: 10
-            standardDeviationFactor: 1900
+            standardDeviationFactor: "1.9"
           failurePercentage:
             requestVolume: 10
             minimumHosts: 5
@@ -434,6 +434,24 @@ to:
 violations:
   - field: spec.to[0].default.outlierDetection.detectors
     message: 'must have at least one defined: totalFailures, gatewayFailures, localOriginFailures, successRate, failurePercentage'`}),
+			Entry("detector is empty", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+to:
+  - targetRef:
+      kind: MeshService
+      name: web-backend
+    default:
+      outlierDetection:
+        detectors:
+          successRate:
+            standardDeviationFactor: "xyz"`,
+				expected: `
+violations:
+  - field: spec.to[0].default.outlierDetection.detectors.successRate.standardDeviationFactor
+    message: 'invalid number'`}),
 		)
 	})
 })

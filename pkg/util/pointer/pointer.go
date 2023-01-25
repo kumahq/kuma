@@ -9,6 +9,13 @@ func Deref[T any](ptr *T) T {
 	return *ptr
 }
 
+func DerefOr[T any](ptr *T, def T) T {
+	if ptr == nil {
+		return def
+	}
+	return *ptr
+}
+
 // To returns pointer to the passed value
 func To[T any](t T) *T {
 	return &t

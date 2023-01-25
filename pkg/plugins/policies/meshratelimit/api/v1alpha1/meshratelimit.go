@@ -27,7 +27,7 @@ type From struct {
 }
 
 type Conf struct {
-	Local Local `json:"local,omitempty"`
+	Local *Local `json:"local,omitempty"`
 }
 
 // LocalConf defines local http or/and tcp rate limit configuration
@@ -40,49 +40,36 @@ type Local struct {
 // https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/local_rate_limit_filter
 type LocalHTTP struct {
 	// Define if rate limiting should be disabled.
-	// Default: false
-	// +optional
-	Disabled bool `json:"disabled,omitempty"`
-
-	// The number of HTTP requests this RateLimiter allows
-	// +required
-	Requests uint32 `json:"requests,omitempty"`
-
-	// The interval for which `requests` will be accounted.
-	// +required
-	Interval k8s.Duration `json:"interval,omitempty"`
-
+	Disabled *bool `json:"disabled,omitempty"`
+	// Defines how many requests are allowed per interval.
+	RequestRate *Rate `json:"requestRate,omitempty"`
 	// Describes the actions to take on a rate limit event
-	// +optional
-	// +nullable
 	OnRateLimit *OnRateLimit `json:"onRateLimit,omitempty"`
 }
 
 type OnRateLimit struct {
 	// The HTTP status code to be set on a rate limit event
-	// +optional
-	// +nullable
 	Status *uint32 `json:"status,omitempty"`
-
 	// The Headers to be added to the HTTP response on a rate limit event
-	// +optional
-	// +nullable
-	Headers []HeaderValue `json:"headers,omitempty"`
+	Headers *HeaderModifier `json:"headers,omitempty"`
 }
 
-type HeaderValue struct {
-	// Header name
-	// +optional
-	Key string `json:"key,omitempty"`
+type HeaderKeyValue struct {
+	Name  common_api.HeaderName  `json:"name"`
+	Value common_api.HeaderValue `json:"value"`
+}
 
-	// Header value
-	// +optional
-	Value string `json:"value,omitempty"`
-
-	// Should the header be appended
-	// +optional
-	// +nullable
-	Append *bool `json:"append,omitempty"`
+// Configuration to set or add multiple values for a header must use RFC 7230
+// header value formatting, separating each value with a comma.
+type HeaderModifier struct {
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=16
+	Set []HeaderKeyValue `json:"set,omitempty"`
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=16
+	Add []HeaderKeyValue `json:"add,omitempty"`
 }
 
 // LocalTCP defines confguration of local TCP rate limiting
@@ -90,14 +77,15 @@ type HeaderValue struct {
 type LocalTCP struct {
 	// Define if rate limiting should be disabled.
 	// Default: false
-	// +optional
-	Disabled bool `json:"disabled,omitempty"`
+	Disabled *bool `json:"disabled,omitempty"`
+	// Defines how many connections are allowed per interval.
+	ConnectionRate *Rate `json:"connectionRate,omitempty"`
+}
 
-	// The number of connections that RateLimiter allows
-	// +required
-	Connections uint32 `json:"connections,omitempty"`
-
-	// The interval of adding tokens into bucket. Must be >= 50ms
-	// +required
-	Interval k8s.Duration `json:"interval,omitempty"`
+type Rate struct {
+	// Number of units per interval (depending on usage it can be a number of requests,
+	// or a number of connections).
+	Num uint32 `json:"num"`
+	// The interval the number of units is accounted for.
+	Interval k8s.Duration `json:"interval"`
 }

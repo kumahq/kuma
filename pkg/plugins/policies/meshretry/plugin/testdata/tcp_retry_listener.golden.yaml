@@ -1,0 +1,14 @@
+address:
+  socketAddress:
+    address: 127.0.0.1
+    portValue: 10003
+filterChains:
+- filters:
+  - name: envoy.filters.network.tcp_proxy
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+      cluster: backend
+      maxConnectAttempts: 21
+      statPrefix: outbound_127_0_0_1_10003
+name: outbound:127.0.0.1:10003
+trafficDirection: OUTBOUND

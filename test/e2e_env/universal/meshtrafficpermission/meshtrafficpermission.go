@@ -4,8 +4,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func MeshTrafficPermissionUniversal() {
@@ -16,31 +16,31 @@ func MeshTrafficPermissionUniversal() {
 			Install(MTLSMeshUniversal(meshName)).
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}))).
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
-			Setup(env.Cluster)).To(Succeed())
+			Setup(universal.Cluster)).To(Succeed())
 
 		// remove default traffic permission
-		err := env.Cluster.GetKumactlOptions().KumactlDelete("traffic-permission", "allow-all-"+meshName, meshName)
+		err := universal.Cluster.GetKumactlOptions().KumactlDelete("traffic-permission", "allow-all-"+meshName, meshName)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	E2EAfterEach(func() {
 		// remove all MeshTrafficPermissions
-		items, err := env.Cluster.GetKumactlOptions().KumactlList("meshtrafficpermissions", meshName)
+		items, err := universal.Cluster.GetKumactlOptions().KumactlList("meshtrafficpermissions", meshName)
 		Expect(err).ToNot(HaveOccurred())
 		for _, item := range items {
-			err := env.Cluster.GetKumactlOptions().KumactlDelete("meshtrafficpermission", item, meshName)
+			err := universal.Cluster.GetKumactlOptions().KumactlDelete("meshtrafficpermission", item, meshName)
 			Expect(err).ToNot(HaveOccurred())
 		}
 	})
 
 	trafficAllowed := func() {
 		Eventually(func(g Gomega) {
-			stdout, _, err := env.Cluster.Exec("", "", "demo-client",
+			stdout, _, err := universal.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "--fail", "test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
@@ -49,7 +49,7 @@ func MeshTrafficPermissionUniversal() {
 
 	trafficBlocked := func() {
 		Eventually(func() error {
-			_, _, err := env.Cluster.Exec("", "", "demo-client",
+			_, _, err := universal.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "--fail", "test-server.mesh")
 			return err
 		}).Should(HaveOccurred())
@@ -73,9 +73,9 @@ spec:
        kind: MeshService
        name: demo-client
      default:
-       action: ALLOW
+       action: Allow
 `
-		err := YamlUniversal(yaml)(env.Cluster)
+		err := YamlUniversal(yaml)(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -102,9 +102,9 @@ spec:
         tags: 
           team: client-owners
       default:
-        action: ALLOW
+        action: Allow
 `
-		err := YamlUniversal(yaml)(env.Cluster)
+		err := YamlUniversal(yaml)(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		trafficAllowed()

@@ -6,10 +6,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
 func Mtls() {
@@ -51,14 +51,14 @@ spec:
 			)).
 			Install(YamlK8s(meshGateway)).
 			Install(YamlK8s(MkGatewayInstance("mtls-edge-gateway", namespace, meshName))).
-			Setup(env.Cluster)
+			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(env.Cluster.TriggerDeleteNamespace(clientNamespace)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(clientNamespace)).To(Succeed())
+		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	Context("HTTP", func() {
@@ -146,14 +146,14 @@ spec:
 					testserver.WithEchoArgs("echo", "--instance", "non-accessible-echo-server"),
 				)).
 				Install(YamlK8s(meshGatewayRouteHTTP)).
-				Setup(env.Cluster)
+				Setup(kubernetes.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should proxy simple HTTP requests", func() {
 			Eventually(func(g Gomega) {
 				response, err := client.CollectResponse(
-					env.Cluster, "demo-client",
+					kubernetes.Cluster, "demo-client",
 					"http://mtls-edge-gateway.gateway-mtls:8080/",
 					client.WithHeader("host", "example.kuma.io"),
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
@@ -169,7 +169,7 @@ spec:
 				Specify("when the prefix is the entire path", func() {
 					Eventually(func(g Gomega) {
 						response, err := client.CollectResponse(
-							env.Cluster, "demo-client", fmt.Sprintf("http://mtls-edge-gateway.gateway-mtls:8080/%s/middle", prefix),
+							kubernetes.Cluster, "demo-client", fmt.Sprintf("http://mtls-edge-gateway.gateway-mtls:8080/%s/middle", prefix),
 							client.WithHeader("host", "example.kuma.io"),
 							client.FromKubernetesPod(clientNamespace, "demo-client"),
 						)
@@ -182,7 +182,7 @@ spec:
 				Specify("when it's a non-trivial prefix", func() {
 					Eventually(func(g Gomega) {
 						response, err := client.CollectResponse(
-							env.Cluster, "demo-client", fmt.Sprintf("http://mtls-edge-gateway.gateway-mtls:8080/%s/middle/tail", prefix),
+							kubernetes.Cluster, "demo-client", fmt.Sprintf("http://mtls-edge-gateway.gateway-mtls:8080/%s/middle/tail", prefix),
 							client.WithHeader("host", "example.kuma.io"),
 							client.FromKubernetesPod(clientNamespace, "demo-client"),
 						)
@@ -195,7 +195,7 @@ spec:
 				Specify("ignoring non-path-separated prefixes", func() {
 					Eventually(func(g Gomega) {
 						response, err := client.CollectResponse(
-							env.Cluster, "demo-client", fmt.Sprintf("http://mtls-edge-gateway.gateway-mtls:8080/%s/middle_andmore", prefix),
+							kubernetes.Cluster, "demo-client", fmt.Sprintf("http://mtls-edge-gateway.gateway-mtls:8080/%s/middle_andmore", prefix),
 							client.WithHeader("host", "example.kuma.io"),
 							client.FromKubernetesPod(clientNamespace, "demo-client"),
 						)
@@ -212,7 +212,7 @@ spec:
 				Specify("when the prefix is the entire path", func() {
 					Eventually(func(g Gomega) {
 						response, err := client.CollectResponse(
-							env.Cluster, "demo-client", fmt.Sprintf("http://mtls-edge-gateway.gateway-mtls:8080/%s", prefix),
+							kubernetes.Cluster, "demo-client", fmt.Sprintf("http://mtls-edge-gateway.gateway-mtls:8080/%s", prefix),
 							client.WithHeader("host", "example.kuma.io"),
 							client.FromKubernetesPod(clientNamespace, "demo-client"),
 						)
@@ -225,7 +225,7 @@ spec:
 				Specify("when it's a non-trivial prefix", func() {
 					Eventually(func(g Gomega) {
 						response, err := client.CollectResponse(
-							env.Cluster, "demo-client", fmt.Sprintf("http://mtls-edge-gateway.gateway-mtls:8080/%s/tail", prefix),
+							kubernetes.Cluster, "demo-client", fmt.Sprintf("http://mtls-edge-gateway.gateway-mtls:8080/%s/tail", prefix),
 							client.WithHeader("host", "example.kuma.io"),
 							client.FromKubernetesPod(clientNamespace, "demo-client"),
 						)
@@ -238,7 +238,7 @@ spec:
 				Specify("ignoring non-path-separated prefixes", func() {
 					Eventually(func(g Gomega) {
 						response, err := client.CollectResponse(
-							env.Cluster, "demo-client", fmt.Sprintf("http://mtls-edge-gateway.gateway-mtls:8080/%s_andmore", prefix),
+							kubernetes.Cluster, "demo-client", fmt.Sprintf("http://mtls-edge-gateway.gateway-mtls:8080/%s_andmore", prefix),
 							client.WithHeader("host", "example.kuma.io"),
 							client.FromKubernetesPod(clientNamespace, "demo-client"),
 						)
@@ -271,11 +271,11 @@ spec:
   - match:
       kuma.io/service: non-accessible-echo-server_gateway-mtls_svc_80
 `
-			Expect(env.Cluster.Install(YamlK8s(tp))).To(Succeed())
+			Expect(kubernetes.Cluster.Install(YamlK8s(tp))).To(Succeed())
 
 			Eventually(func(g Gomega) {
 				status, err := client.CollectFailure(
-					env.Cluster, "demo-client", "http://mtls-edge-gateway.gateway-mtls:8080/non-accessible",
+					kubernetes.Cluster, "demo-client", "http://mtls-edge-gateway.gateway-mtls:8080/non-accessible",
 					client.WithHeader("host", "example.kuma.io"),
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 				)
@@ -315,13 +315,13 @@ spec:
 					testserver.WithNamespace(namespace),
 					testserver.WithHealthCheckTCPArgs("health-check", "tcp", "--port", "80"),
 				)).
-				Setup(env.Cluster)
+				Setup(kubernetes.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should proxy TCP connections", func() {
 			Eventually(func(g Gomega) {
-				response, err := client.CollectTCPResponse(env.Cluster, "demo-client", "telnet://mtls-edge-gateway.gateway-mtls:8081", "request",
+				response, err := client.CollectTCPResponse(kubernetes.Cluster, "demo-client", "telnet://mtls-edge-gateway.gateway-mtls:8081", "request",
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 				)
 

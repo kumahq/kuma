@@ -41,6 +41,14 @@
    "isExperimental": false
   },
   {
+   "name": "MeshFaultInjection",
+   "readOnly": false,
+   "path": "meshfaultinjections",
+   "singularDisplayName": "Mesh Fault Injection",
+   "pluralDisplayName": "Mesh Fault Injections",
+   "isExperimental": false
+  },
+  {
    "name": "MeshGateway",
    "readOnly": false,
    "path": "meshgateways",
@@ -55,6 +63,14 @@
    "singularDisplayName": "Mesh Gateway Route",
    "pluralDisplayName": "Mesh Gateway Routes",
    "isExperimental": true
+  },
+  {
+   "name": "MeshHTTPRoute",
+   "readOnly": false,
+   "path": "meshhttproutes",
+   "singularDisplayName": "Mesh HTTP Route",
+   "pluralDisplayName": "Mesh HTTP Routes",
+   "isExperimental": false
   },
   {
    "name": "MeshHealthCheck",

@@ -1,7 +1,7 @@
 Rules:
   1.1.1.1:8080:
   - Conf:
-      action: ALLOW
+      action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
       mesh: mesh-1
@@ -24,7 +24,7 @@ Rules:
       Not: false
       Value: v2
   - Conf:
-      action: DENY
+      action: Deny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
       mesh: mesh-1
@@ -42,7 +42,7 @@ Rules:
       Not: false
       Value: v2
   - Conf:
-      action: DENY
+      action: Deny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
       mesh: mesh-1
@@ -60,7 +60,7 @@ Rules:
       Not: true
       Value: v2
   - Conf:
-      action: DENY
+      action: Deny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
       mesh: mesh-1
@@ -79,7 +79,7 @@ Rules:
       Value: v2
   1.1.1.1:8081:
   - Conf:
-      action: DENY
+      action: Deny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
       mesh: mesh-1

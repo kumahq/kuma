@@ -14,6 +14,7 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/plugin/xds"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
@@ -154,7 +155,12 @@ func applyToClusters(rules xds.SingleItemRules, rs *xds.ResourceSet, proxy *xds.
 
 	conf := rawConf.(api.Conf)
 
-	backend := conf.Backends[0]
+	var backend api.Backend
+	if backends := pointer.Deref(conf.Backends); len(backends) == 0 {
+		return nil
+	} else {
+		backend = backends[0]
+	}
 
 	var endpoint *xds.Endpoint
 	var provider string

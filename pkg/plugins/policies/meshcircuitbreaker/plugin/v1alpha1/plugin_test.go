@@ -7,6 +7,7 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -20,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	test_xds "github.com/kumahq/kuma/pkg/test/xds"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
@@ -36,11 +38,11 @@ var _ = Describe("MeshCircuitBreaker", func() {
 
 	genConnectionLimits := func() *api.ConnectionLimits {
 		return &api.ConnectionLimits{
-			MaxConnectionPools: test.PointerOf(uint32(1111)),
-			MaxConnections:     test.PointerOf(uint32(2222)),
-			MaxPendingRequests: test.PointerOf(uint32(3333)),
-			MaxRequests:        test.PointerOf(uint32(4444)),
-			MaxRetries:         test.PointerOf(uint32(5555)),
+			MaxConnectionPools: pointer.To(uint32(1111)),
+			MaxConnections:     pointer.To(uint32(2222)),
+			MaxPendingRequests: pointer.To(uint32(3333)),
+			MaxRequests:        pointer.To(uint32(4444)),
+			MaxRetries:         pointer.To(uint32(5555)),
 		}
 	}
 
@@ -49,27 +51,27 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			Disabled:                    &disabled,
 			Interval:                    test.ParseDuration("10s"),
 			BaseEjectionTime:            test.ParseDuration("8s"),
-			MaxEjectionPercent:          test.PointerOf(uint32(88)),
-			SplitExternalAndLocalErrors: test.PointerOf(true),
+			MaxEjectionPercent:          pointer.To(uint32(88)),
+			SplitExternalAndLocalErrors: pointer.To(true),
 			Detectors: &api.Detectors{
 				TotalFailures: &api.DetectorTotalFailures{
-					Consecutive: test.PointerOf(uint32(12)),
+					Consecutive: pointer.To(uint32(12)),
 				},
 				GatewayFailures: &api.DetectorGatewayFailures{
-					Consecutive: test.PointerOf(uint32(91)),
+					Consecutive: pointer.To(uint32(91)),
 				},
 				LocalOriginFailures: &api.DetectorLocalOriginFailures{
-					Consecutive: test.PointerOf(uint32(3)),
+					Consecutive: pointer.To(uint32(3)),
 				},
 				SuccessRate: &api.DetectorSuccessRateFailures{
-					MinimumHosts:            test.PointerOf(uint32(33)),
-					RequestVolume:           test.PointerOf(uint32(99)),
-					StandardDeviationFactor: test.PointerOf(uint32(1900)),
+					MinimumHosts:            pointer.To(uint32(33)),
+					RequestVolume:           pointer.To(uint32(99)),
+					StandardDeviationFactor: pointer.To(intstr.FromString("1.9")),
 				},
 				FailurePercentage: &api.DetectorFailurePercentageFailures{
-					MinimumHosts:  test.PointerOf(uint32(32)),
-					RequestVolume: test.PointerOf(uint32(182)),
-					Threshold:     test.PointerOf(uint32(80)),
+					MinimumHosts:  pointer.To(uint32(32)),
+					RequestVolume: pointer.To(uint32(182)),
+					Threshold:     pointer.To(uint32(80)),
 				},
 			},
 		}

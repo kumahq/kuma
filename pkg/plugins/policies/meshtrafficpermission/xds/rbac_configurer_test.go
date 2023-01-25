@@ -49,7 +49,7 @@ var _ = Describe("RBACConfigurer", func() {
 				{
 					Subset: []core_xds.Tag{},
 					Conf: v1alpha1.Conf{
-						Action: v1alpha1.ALLOW,
+						Action: v1alpha1.Allow,
 					},
 				},
 			},
@@ -74,7 +74,7 @@ filters:
 				{
 					Subset: []core_xds.Tag{},
 					Conf: v1alpha1.Conf{
-						Action: v1alpha1.DENY,
+						Action: v1alpha1.Deny,
 					},
 				},
 			},
@@ -96,7 +96,7 @@ filters:
 						{Key: "version", Value: "v1"},
 					},
 					Conf: v1alpha1.Conf{
-						Action: v1alpha1.ALLOW,
+						Action: v1alpha1.Allow,
 					},
 				},
 				{
@@ -105,7 +105,7 @@ filters:
 						{Key: "kuma.io/zone", Value: "us-east"},
 					},
 					Conf: v1alpha1.Conf{
-						Action: v1alpha1.ALLOW,
+						Action: v1alpha1.Allow,
 					},
 				},
 			},
@@ -148,7 +148,7 @@ filters:
 						{Key: "version", Value: "v2", Not: true},
 					},
 					Conf: v1alpha1.Conf{
-						Action: v1alpha1.ALLOW,
+						Action: v1alpha1.Allow,
 					},
 				},
 			},
@@ -184,7 +184,7 @@ filters:
 						{Key: "version", Value: "v2"},
 					},
 					Conf: v1alpha1.Conf{
-						Action: v1alpha1.ALLOW,
+						Action: v1alpha1.Allow,
 					},
 				},
 			},
@@ -231,7 +231,7 @@ filters:
 						{Key: "kuma.io/service", Value: "backend"},
 					},
 					Conf: v1alpha1.Conf{
-						Action: v1alpha1.ALLOW_WITH_SHADOW_DENY,
+						Action: v1alpha1.AllowWithShadowDeny,
 					},
 				},
 			},

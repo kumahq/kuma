@@ -32,26 +32,26 @@ from:
   - targetRef:
       kind: Mesh
     default:
-      action: ALLOW
+      action: Allow
   - targetRef:
       kind: MeshSubset
       tags:
         kuma.io/zone: us-east
         env: dev
     default:
-      action: DENY
+      action: Deny
   - targetRef:
       kind: MeshService
       name: backend
     default:
-      action: ALLOW
+      action: Allow
   - targetRef:
       kind: MeshServiceSubset
       name: backend
       tags:
         version: v1
     default:
-      action: DENY
+      action: Deny
 `),
 			Entry("allow MeshSubset at top-level targetRef", `
 targetRef:
@@ -62,7 +62,7 @@ from:
   - targetRef:
       kind: Mesh
     default:
-      action: DENY
+      action: Deny
 `),
 			Entry("allow MeshService at top-level targetRef", `
 targetRef:
@@ -72,7 +72,7 @@ from:
   - targetRef:
       kind: Mesh
     default:
-      action: DENY
+      action: Deny
 `),
 			Entry("allow MeshServiceSubset at top-level targetRef", `
 targetRef:
@@ -84,7 +84,7 @@ from:
   - targetRef:
       kind: Mesh
     default:
-      action: DENY
+      action: Deny
 `),
 			Entry("allow MeshGatewayRoute at top-level targetRef", `
 targetRef:
@@ -94,7 +94,7 @@ from:
   - targetRef:
       kind: Mesh
     default:
-      action: DENY
+      action: Deny
 `),
 		)
 
@@ -153,7 +153,7 @@ from:
       kind: MeshGatewayRoute
       name: mgr-1
     default:
-      action: ALLOW
+      action: Allow
 `,
 				expected: `
 violations:

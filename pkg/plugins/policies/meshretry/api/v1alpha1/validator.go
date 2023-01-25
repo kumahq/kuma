@@ -79,11 +79,14 @@ func validateHTTP(http *HTTP) validators.ValidationError {
 	var verr validators.ValidationError
 	path := validators.RootedAt("http")
 	if http.NumRetries == nil && http.PerTryTimeout == nil && http.BackOff == nil && http.RetryOn == nil &&
-		http.RetriableRequestHeaders == nil && http.RetriableResponseHeaders == nil {
+		http.RetriableRequestHeaders == nil && http.RetriableResponseHeaders == nil && http.RateLimitedBackOff == nil {
 		verr.AddViolationAt(path, validators.MustNotBeEmpty)
 	}
 	if http.BackOff != nil {
 		verr.AddErrorAt(path, validateBackOff(http.BackOff))
+	}
+	if http.RateLimitedBackOff != nil {
+		verr.AddErrorAt(path, validateRateLimitedBackOff(http.RateLimitedBackOff))
 	}
 	if http.RetryOn != nil {
 		verr.AddErrorAt(path, validateHTTPRetryOn(*http.RetryOn))
@@ -96,23 +99,23 @@ func validateHTTPRetryOn(retryOn []HTTPRetryOn) validators.ValidationError {
 	path := validators.RootedAt("retryOn")
 	for idx, ro := range retryOn {
 		switch ro {
-		case ALL_5XX:
-		case GATEWAY_ERROR:
-		case RESET:
-		case RETRIABLE_4XX:
-		case CONNECT_FAILURE:
-		case ENVOY_RATELIMITED:
-		case REFUSED_STREAM:
-		case HTTP3_POST_CONNECT_FAILURE:
-		case HTTP_METHOD_CONNECT:
-		case HTTP_METHOD_DELETE:
-		case HTTP_METHOD_GET:
-		case HTTP_METHOD_HEAD:
-		case HTTP_METHOD_OPTIONS:
-		case HTTP_METHOD_PATCH:
-		case HTTP_METHOD_POST:
-		case HTTP_METHOD_PUT:
-		case HTTP_METHOD_TRACE:
+		case All5xx:
+		case GatewayError:
+		case Reset:
+		case Retriable4xx:
+		case ConnectFailure:
+		case EnvoyRatelimited:
+		case RefusedStream:
+		case Http3PostConnectFailure:
+		case HttpMethodConnect:
+		case HttpMethodDelete:
+		case HttpMethodGet:
+		case HttpMethodHead:
+		case HttpMethodOptions:
+		case HttpMethodPatch:
+		case HttpMethodPost:
+		case HttpMethodPut:
+		case HttpMethodTrace:
 		default:
 			// method http.StatusText returns empty string for unknown status codes
 			if i, err := strconv.Atoi(string(ro)); err != nil || http.StatusText(i) == "" {
@@ -127,11 +130,14 @@ func validateHTTPRetryOn(retryOn []HTTPRetryOn) validators.ValidationError {
 func validateGRPC(grpc *GRPC) validators.ValidationError {
 	var verr validators.ValidationError
 	path := validators.RootedAt("grpc")
-	if grpc.NumRetries == nil && grpc.PerTryTimeout == nil && grpc.BackOff == nil && grpc.RetryOn == nil {
+	if grpc.NumRetries == nil && grpc.PerTryTimeout == nil && grpc.BackOff == nil && grpc.RetryOn == nil && grpc.RateLimitedBackOff == nil {
 		verr.AddViolationAt(path, validators.MustNotBeEmpty)
 	}
 	if grpc.BackOff != nil {
 		verr.AddErrorAt(path, validateBackOff(grpc.BackOff))
+	}
+	if grpc.RateLimitedBackOff != nil {
+		verr.AddErrorAt(path, validateRateLimitedBackOff(grpc.RateLimitedBackOff))
 	}
 	if grpc.RetryOn != nil {
 		verr.AddErrorAt(path, validateGRPCRetryOn(*grpc.RetryOn))
@@ -148,16 +154,36 @@ func validateBackOff(b *BackOff) validators.ValidationError {
 	return verr
 }
 
+func validateRateLimitedBackOff(rateLimitedBackOff *RateLimitedBackOff) validators.ValidationError {
+	var verr validators.ValidationError
+	path := validators.RootedAt("rateLimitedBackOff")
+
+	if rateLimitedBackOff.MaxInterval != nil {
+		verr.Add(validators.ValidateDurationGreaterThanZero(path.Field("maxInterval"), *rateLimitedBackOff.MaxInterval))
+	}
+
+	if rateLimitedBackOff.ResetHeaders == nil {
+		verr.AddViolationAt(path.Field("resetHeaders"), validators.MustBeDefined)
+	} else {
+		for i, header := range *rateLimitedBackOff.ResetHeaders {
+			index := path.Field("resetHeaders").Index(i)
+			verr.Add(validators.ValidateStringDefined(index.Field("name"), string(header.Name)))
+		}
+	}
+
+	return verr
+}
+
 func validateGRPCRetryOn(retryOn []GRPCRetryOn) validators.ValidationError {
 	var verr validators.ValidationError
 	path := validators.RootedAt("retryOn")
 	for idx, ro := range retryOn {
 		switch ro {
-		case CANCELED:
-		case DEADLINE_EXCEEDED:
-		case INTERNAL:
-		case RESOURCE_EXHAUSTED:
-		case UNAVAILABLE:
+		case Canceled:
+		case DeadlineExceeded:
+		case Internal:
+		case ResourceExhausted:
+		case Unavailable:
 		default:
 			verr.AddViolationAt(path.Index(idx), fmt.Sprintf("unknown item '%v'", ro))
 		}

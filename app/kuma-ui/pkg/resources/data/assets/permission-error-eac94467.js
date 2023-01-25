@@ -1,0 +1,1 @@
+const e="access_denied",s="Permission denied",t="You currently don’t have access to this data.",i=[{field:"id",message:"This field is required."}],d={code:e,title:s,details:t,causes:i};export{i as causes,e as code,d as default,t as details,s as title};

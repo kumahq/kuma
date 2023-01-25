@@ -8,22 +8,22 @@ spec:
     - targetRef:
         kind: Mesh
       default:
-        action: ALLOW
+        action: Allow
     - targetRef:
         kind: MeshSubset
         tags:
           zone: us-east
       default:
-        action: DENY
+        action: Deny
     - targetRef:
         kind: MeshSubset
         tags:
           env: dev
       default:
-        action: ALLOW
+        action: Allow
     - targetRef:
         kind: MeshSubset
         tags:
           env: prod
       default:
-        action: ALLOW
+        action: Allow

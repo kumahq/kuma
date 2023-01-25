@@ -46,24 +46,31 @@ to:
         backOff:
           baseInterval: 15s
           maxInterval: 20m
+        rateLimitedBackOff:
+          resetHeaders:
+            - name: retry-after-http
+              format: Seconds
+            - name: x-retry-after-http
+              format: UnixTimestamp
+          maxInterval: 21m
         retryOn:
-          - 5XX
-          - GATEWAY_ERROR
-          - RESET
-          - RETRIABLE_4XX
-          - CONNECT_FAILURE
-          - ENVOY_RATELIMITED
-          - REFUSED_STREAM
-          - HTTP3_POST_CONNECT_FAILURE
-          - HTTP_METHOD_CONNECT
-          - HTTP_METHOD_DELETE
-          - HTTP_METHOD_GET
-          - HTTP_METHOD_HEAD
-          - HTTP_METHOD_OPTIONS
-          - HTTP_METHOD_PATCH
-          - HTTP_METHOD_POST
-          - HTTP_METHOD_PUT
-          - HTTP_METHOD_TRACE
+          - 5xx
+          - GatewayError
+          - Reset
+          - Retriable4xx
+          - ConnectFailure
+          - EnvoyRatelimited
+          - RefusedStream
+          - Http3PostConnectFailure
+          - HttpMethodConnect
+          - HttpMethodDelete
+          - HttpMethodGet
+          - HttpMethodHead
+          - HttpMethodOptions
+          - HttpMethodPatch
+          - HttpMethodPost
+          - HttpMethodPut
+          - HttpMethodTrace
           - 500
           - 409
           - 503
@@ -93,12 +100,19 @@ to:
         backOff:
           baseInterval: 15s
           maxInterval: 20m
+        rateLimitedBackOff:
+          resetHeaders:
+            - name: retry-after-grpc
+              format: Seconds
+            - name: x-retry-after-grpc
+              format: UnixTimestamp
+          maxInterval: 21m
         retryOn:
-          - CANCELED
-          - DEADLINE_EXCEEDED
-          - INTERNAL
-          - RESOURCE_EXHAUSTED
-          - UNAVAILABLE
+          - Canceled
+          - DeadlineExceeded
+          - Internal
+          - ResourceExhausted
+          - Unavailable
 `),
 			Entry("minimalistic http retry", `
 targetRef:
@@ -271,6 +285,22 @@ violations:
   - field: spec.to[0].default.conf.http.backOff
     message: must not be empty`,
 			}),
+			Entry("empty http.rateLimitedBackOff.resetHeaders", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      http: 
+        rateLimitedBackOff: {}
+`,
+				expected: `
+violations:
+  - field: spec.to[0].default.conf.http.rateLimitedBackOff.resetHeaders
+    message: must be defined`,
+			}),
 			Entry("empty grpc.backOff", testCase{
 				inputYaml: `
 targetRef:
@@ -287,6 +317,22 @@ violations:
   - field: spec.to[0].default.conf.grpc.backOff
     message: must not be empty`,
 			}),
+			Entry("empty grpc.rateLimitedBackOff.resetHeaders", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      grpc: 
+        rateLimitedBackOff: {}
+`,
+				expected: `
+violations:
+  - field: spec.to[0].default.conf.grpc.rateLimitedBackOff.resetHeaders
+    message: must be defined`,
+			}),
 			Entry("http.retryOn with not allowed values", testCase{
 				inputYaml: `
 targetRef:
@@ -298,7 +344,7 @@ to:
       http: 
         retryOn: 
           - WRONG_VALUE
-          - 5xx
+          - 5XX
           - reset
           - DEADLINE_EXCEEDED
           - 123
@@ -309,7 +355,7 @@ violations:
   - field: spec.to[0].default.conf.http.retryOn[0]
     message: unknown item 'WRONG_VALUE'
   - field: spec.to[0].default.conf.http.retryOn[1]
-    message: unknown item '5xx'
+    message: unknown item '5XX'
   - field: spec.to[0].default.conf.http.retryOn[2]
     message: unknown item 'reset'
   - field: spec.to[0].default.conf.http.retryOn[3]
@@ -341,6 +387,26 @@ violations:
     message: unknown item 'reset'
   - field: spec.to[0].default.conf.grpc.retryOn[2]
     message: unknown item 'wrong'`,
+			}),
+
+			Entry("empty http.rateLimitedBackOff.resetHeaders.name and wrong format", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      http: 
+        rateLimitedBackOff:
+          resetHeaders:
+            - name: ""
+              format: "UnixTimestamp"
+`,
+				expected: `
+violations:
+  - field: spec.to[0].default.conf.http.rateLimitedBackOff.resetHeaders[0].name
+    message: must be defined`,
 			}),
 		)
 	})

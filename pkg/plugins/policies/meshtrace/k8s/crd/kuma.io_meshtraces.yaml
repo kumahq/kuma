@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
   name: meshtraces.kuma.io
 spec:
@@ -64,13 +64,19 @@ spec:
                               description: Address of Datadog collector, only host
                                 and port are allowed (no paths, fragments etc.)
                               type: string
+                          required:
+                          - url
                           type: object
                         zipkin:
                           description: Zipkin backend configuration.
                           properties:
                             apiVersion:
+                              default: httpJson
                               description: 'Version of the API. values: httpJson,
                                 httpProto. Default: httpJson see https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L66'
+                              enum:
+                              - httpJson
+                              - httpProto
                               type: string
                             sharedSpanContext:
                               description: 'Determines whether client and server spans
@@ -82,9 +88,10 @@ spec:
                             url:
                               description: Address of Zipkin collector.
                               type: string
+                          required:
+                          - url
                           type: object
                       type: object
-                    nullable: true
                     type: array
                   sampling:
                     description: Sampling configuration. Sampling is the process by
@@ -92,12 +99,18 @@ spec:
                       or not.
                     properties:
                       client:
+                        anyOf:
+                        - type: integer
+                        - type: string
                         description: 'Target percentage of requests that will be force
                           traced if the ''x-client-trace-id'' header is set. Default:
-                          100% Mirror of client_sampling in Envoy https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L127-L133'
-                        format: int32
-                        type: integer
+                          100% Mirror of client_sampling in Envoy https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L127-L133
+                          Either int or decimal represented as string.'
+                        x-kubernetes-int-or-string: true
                       overall:
+                        anyOf:
+                        - type: integer
+                        - type: string
                         description: 'Target percentage of requests will be traced
                           after all other sampling checks have been applied (client,
                           force tracing, random sampling). This field functions as
@@ -105,16 +118,19 @@ spec:
                           instance, setting client_sampling to 100% but overall_sampling
                           to 1% will result in only 1% of client requests with the
                           appropriate headers to be force traced. Default: 100% Mirror
-                          of overall_sampling in Envoy https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L142-L150'
-                        format: int32
-                        type: integer
+                          of overall_sampling in Envoy https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L142-L150
+                          Either int or decimal represented as string.'
+                        x-kubernetes-int-or-string: true
                       random:
+                        anyOf:
+                        - type: integer
+                        - type: string
                         description: 'Target percentage of requests that will be randomly
                           selected for trace generation, if not requested by the client
                           or not forced. Default: 100% Mirror of random_sampling in
-                          Envoy https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L135-L140'
-                        format: int32
-                        type: integer
+                          Envoy https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L135-L140
+                          Either int or decimal represented as string.'
+                        x-kubernetes-int-or-string: true
                     type: object
                   tags:
                     description: Custom tags configuration. You can add custom tags
@@ -134,6 +150,8 @@ spec:
                             name:
                               description: Name of the header.
                               type: string
+                          required:
+                          - name
                           type: object
                         literal:
                           description: Tag taken from literal value.
@@ -141,8 +159,9 @@ spec:
                         name:
                           description: Name of the tag.
                           type: string
+                      required:
+                      - name
                       type: object
-                    nullable: true
                     type: array
                 type: object
               targetRef:

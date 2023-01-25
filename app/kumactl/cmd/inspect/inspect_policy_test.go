@@ -7,7 +7,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -47,9 +46,7 @@ var _ = Describe("kumactl inspect POLICY", func() {
 			entryList := &api_server_types.PolicyInspectEntryList{}
 			Expect(json.Unmarshal(rawResponse, entryList)).To(Succeed())
 
-			rootCtx, err := test_kumactl.MakeRootContext(time.Now(), nil)
-			Expect(err).ToNot(HaveOccurred())
-
+			rootCtx := test_kumactl.MakeMinimalRootContext()
 			rootCtx.Runtime.NewPolicyInspectClient = func(client util_http.Client) resources.PolicyInspectClient {
 				return &testPolicyInspectClient{
 					response: entryList,

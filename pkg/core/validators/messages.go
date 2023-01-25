@@ -7,6 +7,7 @@ import (
 
 const (
 	HasToBeGreaterThan                = "must be greater than"
+	HasToBeGreaterThanZero            = "must be greater than 0"
 	MustNotBeEmpty                    = "must not be empty"
 	MustBeDefined                     = "must be defined"
 	MustNotBeDefined                  = "must not be defined"
@@ -16,6 +17,7 @@ const (
 	HasToBeInPercentageRange          = "has to be in [0.0 - 100.0] range"
 	HasToBeInUintPercentageRange      = "has to be in [0 - 100] range"
 	WhenDefinedHasToBeValidPath       = "has to be a valid path when defined"
+	StringHasToBeValidNumber          = "string has to be a valid number"
 )
 
 func MustHaveOnlyOne(entity string, allowedValues ...string) string {

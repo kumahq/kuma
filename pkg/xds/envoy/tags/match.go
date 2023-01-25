@@ -1,6 +1,7 @@
 package tags
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"sort"
@@ -10,7 +11,57 @@ import (
 	core_policy "github.com/kumahq/kuma/pkg/core/policy"
 )
 
+const TagsHeaderName = "x-kuma-tags"
+
 type Tags map[string]string
+
+// DestinationClusterName generates a unique cluster name for the
+// destination. identifyingTags are useful for adding extra metadata outside of just tags. Tags must at least contain `kuma.io/service`
+func (t Tags) DestinationClusterName(
+	identifyingTags map[string]string,
+) (string, error) {
+	serviceName := t[mesh_proto.ServiceTag]
+	if serviceName == "" {
+		return "", fmt.Errorf("missing %s tag", mesh_proto.ServiceTag)
+	}
+	// If there's no tags other than serviceName just return the serviceName
+	if len(identifyingTags) == 0 && len(t) == 1 {
+		return serviceName, nil
+	}
+
+	// If cluster is splitting the target service with selector tags,
+	// hash the tag names to generate a unique cluster name.
+	var keys []string
+	for k := range t {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	h := sha256.New()
+
+	// destination tags from route
+	for _, k := range keys {
+		h.Write([]byte(k))
+		h.Write([]byte(t[k]))
+	}
+
+	keys = []string{}
+	for k := range identifyingTags {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// identifyingTags contains listener, meshGateway and Dataplane tags
+	for _, k := range keys {
+		h.Write([]byte(k))
+		h.Write([]byte(identifyingTags[k]))
+	}
+
+	// The qualifier is 16 hex digits. Unscientifically balancing the length
+	// of the hex against the likelihood of collisions.
+	return fmt.Sprintf("%s-%x", serviceName, h.Sum(nil)[:8]), nil
+}
 
 func (t Tags) WithoutTags(tags ...string) Tags {
 	tagSet := map[string]bool{}

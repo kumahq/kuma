@@ -1,6 +1,8 @@
 package xds
 
 import (
+	"strings"
+
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_extensions_filters_http_local_ratelimit_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
@@ -11,36 +13,51 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	rate_limit "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 )
 
 func RateLimitConfigurationFromPolicy(rl *api.LocalHTTP) *rate_limit.RateLimitConfiguration {
-	headers := []*rate_limit.Headers{}
+	if pointer.Deref(rl.Disabled) || rl.RequestRate == nil {
+		return nil
+	}
+
+	onRateLimit := &rate_limit.OnRateLimit{}
 	if rl.OnRateLimit != nil {
-		for _, h := range rl.OnRateLimit.Headers {
-			header := &rate_limit.Headers{
-				Key:   h.Key,
-				Value: h.Value,
-			}
-			if h.Append != nil {
-				header.Append = *h.Append
-			}
-			headers = append(headers, header)
+		for _, h := range pointer.Deref(rl.OnRateLimit.Headers).Add {
+			onRateLimit.Headers = append(onRateLimit.Headers, &rate_limit.Headers{
+				Key:    string(h.Name),
+				Value:  string(h.Value),
+				Append: true,
+			})
 		}
+		for _, header := range pointer.Deref(rl.OnRateLimit.Headers).Set {
+			for _, val := range strings.Split(string(header.Value), ",") {
+				onRateLimit.Headers = append(onRateLimit.Headers, &rate_limit.Headers{
+					Key:    string(header.Name),
+					Value:  val,
+					Append: true,
+				})
+			}
+		}
+		for _, header := range pointer.Deref(rl.OnRateLimit.Headers).Set {
+			for _, val := range strings.Split(string(header.Value), ",") {
+				onRateLimit.Headers = append(onRateLimit.Headers, &rate_limit.Headers{
+					Key:    string(header.Name),
+					Value:  val,
+					Append: false,
+				})
+			}
+		}
+		onRateLimit.Status = pointer.Deref(rl.OnRateLimit.Status)
 	}
-	var status uint32
-	if rl.OnRateLimit != nil && rl.OnRateLimit.Status != nil {
-		status = *rl.OnRateLimit.Status
-	}
+
 	return &rate_limit.RateLimitConfiguration{
-		Interval: rl.Interval.Duration,
-		Requests: rl.Requests,
-		OnRateLimit: &rate_limit.OnRateLimit{
-			Status:  status,
-			Headers: headers,
-		},
+		Interval:    rl.RequestRate.Interval.Duration,
+		Requests:    rl.RequestRate.Num,
+		OnRateLimit: onRateLimit,
 	}
 }
 
@@ -67,23 +84,39 @@ func (c *Configurer) ConfigureRoute(route *envoy_route.RouteConfiguration) error
 	if route == nil {
 		return nil
 	}
-	rateLimit, err := rate_limit.NewRateLimitConfiguration(RateLimitConfigurationFromPolicy(c.Http))
+
+	rlConf := RateLimitConfigurationFromPolicy(c.Http)
+	if rlConf == nil {
+		return nil
+	}
+
+	rateLimit, err := rate_limit.NewRateLimitConfiguration(rlConf)
 	if err != nil {
 		return err
 	}
+
 	for _, vh := range route.VirtualHosts {
 		for _, r := range vh.Routes {
 			c.addRateLimitToRoute(r, rateLimit)
 		}
 	}
+
 	return nil
 }
 
 func (c *Configurer) configureHttpListener(filterChain *envoy_listener.FilterChain) error {
-	rateLimit, err := rate_limit.NewRateLimitConfiguration(RateLimitConfigurationFromPolicy(c.Http))
+	rlConf := RateLimitConfigurationFromPolicy(c.Http)
+	if rlConf == nil {
+		// MeshRateLimit policy is matched for the DPP, but rate limit either disabled
+		// or not configured. Potentially we can return errors that bubble up to GUI from here.
+		return nil
+	}
+
+	rateLimit, err := rate_limit.NewRateLimitConfiguration(rlConf)
 	if err != nil {
 		return err
 	}
+
 	listenerConfig := &envoy_extensions_filters_http_local_ratelimit_v3.LocalRateLimit{
 		StatPrefix: "rate_limit",
 	}
@@ -134,12 +167,18 @@ func (c *Configurer) configureHttpListener(filterChain *envoy_listener.FilterCha
 }
 
 func (c *Configurer) configureTcpListener(filterChain *envoy_listener.FilterChain) error {
+	if pointer.Deref(c.Tcp.Disabled) || c.Tcp.ConnectionRate == nil {
+		// MeshRateLimit policy is matched for the DPP, but rate limit either disabled
+		// or not configured. Potentially we can return errors that bubble up to GUI from here.
+		return nil
+	}
+
 	config := &envoy_extensions_filters_network_local_ratelimit_v3.LocalRateLimit{
 		StatPrefix: "tcp_rate_limit",
 		TokenBucket: &envoy_type_v3.TokenBucket{
-			MaxTokens:     c.Tcp.Connections,
-			TokensPerFill: proto.UInt32(c.Tcp.Connections),
-			FillInterval:  proto.Duration(c.Tcp.Interval.Duration),
+			MaxTokens:     c.Tcp.ConnectionRate.Num,
+			TokensPerFill: proto.UInt32(c.Tcp.ConnectionRate.Num),
+			FillInterval:  proto.Duration(c.Tcp.ConnectionRate.Interval.Duration),
 		},
 	}
 	pbst, err := proto.MarshalAnyDeterministic(config)

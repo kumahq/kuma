@@ -21,6 +21,7 @@ import (
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/pkg/test/xds"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -62,15 +63,13 @@ var _ = Describe("MeshHTTPRoute", func() {
 								TargetRef: builders.TargetRefService("backend"),
 								Rules: []api.Rule{{
 									Matches: []api.Match{{
-										Path: api.PathMatch{
-											Prefix: "/v1",
+										Path: &api.PathMatch{
+											Type:  api.Prefix,
+											Value: "/v1",
 										},
 									}},
 									Default: api.RuleConf{
-										BackendRefs: &[]api.BackendRef{{
-											TargetRef: builders.TargetRefService("backend"),
-											Weight:    100,
-										}},
+										Filters: &[]api.Filter{{}},
 									},
 								}},
 							}},
@@ -86,13 +85,27 @@ var _ = Describe("MeshHTTPRoute", func() {
 								TargetRef: builders.TargetRefService("backend"),
 								Rules: []api.Rule{{
 									Matches: []api.Match{{
-										Path: api.PathMatch{
-											Prefix: "/v1",
+										Path: &api.PathMatch{
+											Type:  api.Prefix,
+											Value: "/v1",
 										},
 									}},
 									Default: api.RuleConf{
 										BackendRefs: &[]api.BackendRef{{
-											TargetRef: builders.TargetRefService("backend"),
+											TargetRef: builders.TargetRefServiceSubset("backend", "version", "v1"),
+											Weight:    100,
+										}},
+									},
+								}, {
+									Matches: []api.Match{{
+										Path: &api.PathMatch{
+											Type:  api.Prefix,
+											Value: "/v2",
+										},
+									}},
+									Default: api.RuleConf{
+										BackendRefs: &[]api.BackendRef{{
+											TargetRef: builders.TargetRefServiceSubset("backend", "version", "v2"),
 											Weight:    100,
 										}},
 									},
@@ -108,34 +121,34 @@ var _ = Describe("MeshHTTPRoute", func() {
 				{
 					Subset: core_xds.MeshService("backend"),
 					Conf: api.PolicyDefault{
-						AppendRules: []api.Rule{
-							{
-								Matches: []api.Match{{
-									Path: api.PathMatch{
-										Prefix: "/v1",
-									},
-								}},
-								Default: api.RuleConf{
-									BackendRefs: &[]api.BackendRef{{
-										TargetRef: builders.TargetRefService("backend"),
-										Weight:    100,
-									}},
+						Rules: []api.Rule{{
+							Matches: []api.Match{{
+								Path: &api.PathMatch{
+									Type:  api.Prefix,
+									Value: "/v1",
 								},
-							},
-							{
-								Matches: []api.Match{{
-									Path: api.PathMatch{
-										Prefix: "/v1",
-									},
+							}},
+							Default: api.RuleConf{
+								Filters: &[]api.Filter{{}},
+								BackendRefs: &[]api.BackendRef{{
+									TargetRef: builders.TargetRefServiceSubset("backend", "version", "v1"),
+									Weight:    100,
 								}},
-								Default: api.RuleConf{
-									BackendRefs: &[]api.BackendRef{{
-										TargetRef: builders.TargetRefService("backend"),
-										Weight:    100,
-									}},
-								},
 							},
-						},
+						}, {
+							Matches: []api.Match{{
+								Path: &api.PathMatch{
+									Type:  api.Prefix,
+									Value: "/v2",
+								},
+							}},
+							Default: api.RuleConf{
+								BackendRefs: &[]api.BackendRef{{
+									TargetRef: builders.TargetRefServiceSubset("backend", "version", "v2"),
+									Weight:    100,
+								}},
+							},
+						}},
 					},
 					Origin: []core_model.ResourceMeta{
 						&test_model.ResourceMeta{
@@ -152,116 +165,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 		},
 	}),
 	)
-	type routesTestCase struct {
-		rules          []plugin.ToRouteRule
-		serviceName    string
-		expectedRoutes []plugin.Route
-	}
-	DescribeTable("FindRoutes", func(given routesTestCase) {
-		routes := plugin.FindRoutes(given.rules, given.serviceName)
-		Expect(routes).To(Equal(given.expectedRoutes))
-	}, Entry("basic", routesTestCase{
-		rules: []plugin.ToRouteRule{{
-			Subset: core_xds.MeshService("backend"),
-			Rules: []api.Rule{{
-				Matches: []api.Match{{
-					Path: api.PathMatch{
-						Prefix: "/v1",
-					},
-				}},
-				Default: api.RuleConf{
-					BackendRefs: &[]api.BackendRef{{
-						TargetRef: builders.TargetRefService("backend"),
-						Weight:    100,
-					}},
-				},
-			}},
-		}, {
-			Subset: core_xds.MeshService("backend"),
-			Rules: []api.Rule{{
-				Matches: []api.Match{{
-					Path: api.PathMatch{
-						Prefix: "/v2",
-					},
-				}},
-				Default: api.RuleConf{
-					BackendRefs: &[]api.BackendRef{{
-						TargetRef: builders.TargetRefService("backend"),
-						Weight:    100,
-					}},
-				},
-			}},
-		}},
-		serviceName: "backend",
-		expectedRoutes: []plugin.Route{{
-			Matches: []api.Match{{
-				Path: api.PathMatch{
-					Prefix: "/",
-				},
-			}},
-			BackendRefs: []api.BackendRef{
-				{
-					TargetRef: builders.TargetRefService("backend"),
-					Weight:    100,
-				},
-			},
-		}, {
-			Matches: []api.Match{{
-				Path: api.PathMatch{
-					Prefix: "/v1",
-				},
-			}},
-			BackendRefs: []api.BackendRef{
-				{
-					TargetRef: builders.TargetRefService("backend"),
-					Weight:    100,
-				},
-			},
-		}, {
-			Matches: []api.Match{{
-				Path: api.PathMatch{
-					Prefix: "/v2",
-				},
-			}},
-			BackendRefs: []api.BackendRef{
-				{
-					TargetRef: builders.TargetRefService("backend"),
-					Weight:    100,
-				},
-			},
-		}},
-	}), Entry("overwrite-passthrough-rule", routesTestCase{
-		rules: []plugin.ToRouteRule{{
-			Subset: core_xds.MeshService("backend"),
-			Rules: []api.Rule{{
-				Matches: []api.Match{{
-					Path: api.PathMatch{
-						Prefix: "/",
-					},
-				}},
-				Default: api.RuleConf{
-					BackendRefs: &[]api.BackendRef{{
-						TargetRef: builders.TargetRefService("other-service"),
-						Weight:    100,
-					}},
-				},
-			}},
-		}},
-		serviceName: "backend",
-		expectedRoutes: []plugin.Route{{
-			Matches: []api.Match{{
-				Path: api.PathMatch{
-					Prefix: "/",
-				},
-			}},
-			BackendRefs: []api.BackendRef{
-				{
-					TargetRef: builders.TargetRefService("other-service"),
-					Weight:    100,
-				},
-			},
-		}},
-	}))
 	type outboundsTestCase struct {
 		proxy      core_xds.Proxy
 		xdsContext xds_context.Context
@@ -309,6 +212,21 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Routing: core_xds.Routing{
 					OutboundTargets: outboundTargets,
 				},
+				// This is a policy that doesn't apply to these services on
+				// purpose, so that the plugin is activated
+				// TODO: remove this when the plugin runs by default
+				Policies: core_xds.MatchedPolicies{
+					Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
+						api.MeshHTTPRouteType: {
+							ToRules: core_xds.ToRules{
+								Rules: core_xds.Rules{{
+									Subset: core_xds.MeshService("some-nonexistent-service"),
+									Conf:   api.PolicyDefault{},
+								}},
+							},
+						},
+					},
+				},
 			},
 		}
 	}()), Entry("basic", func() outboundsTestCase {
@@ -331,7 +249,91 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Secrets: &xds.TestSecrets{},
 				},
 				Mesh: xds_context.MeshContext{
-					Resource:    builders.Mesh().WithName("default").Build(),
+					Resource:    samples.MeshDefault(),
+					EndpointMap: outboundTargets,
+				},
+			},
+			proxy: core_xds.Proxy{
+				APIVersion: xds_envoy.APIV3,
+				Dataplane:  samples.DataplaneWeb(),
+				Routing: core_xds.Routing{
+					OutboundTargets: outboundTargets,
+				},
+				Policies: core_xds.MatchedPolicies{
+					Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
+						api.MeshHTTPRouteType: {
+							ToRules: core_xds.ToRules{
+								Rules: core_xds.Rules{{
+									Conf: api.PolicyDefault{
+										Rules: []api.Rule{{
+											Matches: []api.Match{{
+												Path: &api.PathMatch{
+													Type:  api.Prefix,
+													Value: "/v1",
+												},
+											}},
+											Default: api.RuleConf{
+												BackendRefs: &[]api.BackendRef{{
+													TargetRef: builders.TargetRefService("backend"),
+													Weight:    100,
+												}},
+											},
+										}, {
+											Matches: []api.Match{{
+												Path: &api.PathMatch{
+													Type:  api.Prefix,
+													Value: "/v2",
+												},
+											}, {
+												Path: &api.PathMatch{
+													Type:  api.Prefix,
+													Value: "/v3",
+												},
+											}},
+											Default: api.RuleConf{
+												BackendRefs: &[]api.BackendRef{{
+													TargetRef: builders.TargetRefServiceSubset("backend", "region", "us"),
+													Weight:    100,
+												}},
+											},
+										}, {
+											Matches: []api.Match{{
+												QueryParams: []api.QueryParamsMatch{{
+													Type:  api.ExactQueryMatch,
+													Name:  "v1",
+													Value: "true",
+												}},
+											}},
+											Default: api.RuleConf{
+												BackendRefs: &[]api.BackendRef{{
+													TargetRef: builders.TargetRefService("backend"),
+													Weight:    100,
+												}},
+											},
+										}}},
+								}},
+							},
+						},
+					},
+				},
+			},
+		}
+	}()), Entry("header-modifiers", func() outboundsTestCase {
+		outboundTargets := core_xds.EndpointMap{
+			"backend": []core_xds.Endpoint{{
+				Target: "192.168.0.4",
+				Port:   8084,
+				Tags:   map[string]string{"kuma.io/service": "backend", "kuma.io/protocol": "http", "region": "us"},
+				Weight: 1,
+			}},
+		}
+		return outboundsTestCase{
+			xdsContext: xds_context.Context{
+				ControlPlane: &xds_context.ControlPlaneContext{
+					Secrets: &xds.TestSecrets{},
+				},
+				Mesh: xds_context.MeshContext{
+					Resource:    samples.MeshDefault(),
 					EndpointMap: outboundTargets,
 				},
 			},
@@ -347,32 +349,117 @@ var _ = Describe("MeshHTTPRoute", func() {
 							ToRules: core_xds.ToRules{
 								Rules: core_xds.Rules{{
 									Subset: core_xds.MeshService("backend"),
-									Conf: []api.Rule{{
-										Matches: []api.Match{{
-											Path: api.PathMatch{
-												Prefix: "/v1",
+									Conf: api.PolicyDefault{
+										Rules: []api.Rule{{
+											Matches: []api.Match{{
+												Path: &api.PathMatch{
+													Type:  api.Prefix,
+													Value: "/v1",
+												},
+											}},
+											Default: api.RuleConf{
+												Filters: &[]api.Filter{{
+													Type: api.RequestHeaderModifierType,
+													RequestHeaderModifier: &api.HeaderModifier{
+														Add: []api.HeaderKeyValue{{
+															Name:  "request-add-header",
+															Value: "add-value",
+														}},
+														Set: []api.HeaderKeyValue{{
+															Name:  "request-set-header",
+															Value: "set-value",
+														}, {
+															Name:  "request-set-header-multiple",
+															Value: "one-value,second-value",
+														}},
+														Remove: []string{
+															"request-header-to-remove",
+														},
+													},
+												}, {
+													Type: api.ResponseHeaderModifierType,
+													ResponseHeaderModifier: &api.HeaderModifier{
+														Add: []api.HeaderKeyValue{{
+															Name:  "response-add-header",
+															Value: "add-value",
+														}},
+														Set: []api.HeaderKeyValue{{
+															Name:  "response-set-header",
+															Value: "set-value",
+														}},
+														Remove: []string{
+															"response-header-to-remove",
+														},
+													},
+												}, {
+													Type: api.RequestRedirectType,
+													RequestRedirect: &api.RequestRedirect{
+														Scheme: pointer.To("other"),
+													},
+												}},
 											},
 										}},
-										Default: api.RuleConf{
-											BackendRefs: &[]api.BackendRef{{
-												TargetRef: builders.TargetRefService("backend"),
-												Weight:    100,
-											}},
-										},
-									}, {
-										Matches: []api.Match{{
-											Path: api.PathMatch{
-												Prefix: "/v2",
-											},
-										}},
-										Default: api.RuleConf{
-											BackendRefs: &[]api.BackendRef{{
-												TargetRef: builders.TargetRefServiceSubset("backend", "region", "us"),
-												Weight:    100,
-											}},
-										},
 									}},
-								}},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+	}()), Entry("url-rewrite", func() outboundsTestCase {
+		outboundTargets := core_xds.EndpointMap{
+			"backend": []core_xds.Endpoint{{
+				Target: "192.168.0.4",
+				Port:   8084,
+				Tags:   map[string]string{"kuma.io/service": "backend", "kuma.io/protocol": "http", "region": "us"},
+				Weight: 1,
+			}},
+		}
+		return outboundsTestCase{
+			xdsContext: xds_context.Context{
+				ControlPlane: &xds_context.ControlPlaneContext{
+					Secrets: &xds.TestSecrets{},
+				},
+				Mesh: xds_context.MeshContext{
+					Resource:    samples.MeshDefault(),
+					EndpointMap: outboundTargets,
+				},
+			},
+			proxy: core_xds.Proxy{
+				APIVersion: xds_envoy.APIV3,
+				Dataplane:  samples.DataplaneWeb(),
+				Routing: core_xds.Routing{
+					OutboundTargets: outboundTargets,
+				},
+				Policies: core_xds.MatchedPolicies{
+					Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
+						api.MeshHTTPRouteType: {
+							ToRules: core_xds.ToRules{
+								Rules: core_xds.Rules{{
+									Subset: core_xds.MeshService("backend"),
+									Conf: api.PolicyDefault{
+										Rules: []api.Rule{{
+											Matches: []api.Match{{
+												Path: &api.PathMatch{
+													Type:  api.Prefix,
+													Value: "/v1",
+												},
+											}},
+											Default: api.RuleConf{
+												Filters: &[]api.Filter{{
+													Type: api.URLRewriteType,
+													URLRewrite: &api.URLRewrite{
+														Path: &api.PathRewrite{
+															Type:               api.ReplacePrefixMatchType,
+															ReplacePrefixMatch: pointer.To("/v2"),
+														},
+													},
+												}},
+											},
+										}},
+									}},
+								},
 							},
 						},
 					},

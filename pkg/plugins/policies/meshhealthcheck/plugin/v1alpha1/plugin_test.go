@@ -4,6 +4,7 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -17,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -136,33 +138,38 @@ var _ = Describe("MeshHealthCheck", func() {
 					{
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
-							Interval:                     *test.ParseDuration("10s"),
-							Timeout:                      *test.ParseDuration("2s"),
-							UnhealthyThreshold:           3,
-							HealthyThreshold:             1,
+							Interval:                     test.ParseDuration("10s"),
+							Timeout:                      test.ParseDuration("2s"),
+							UnhealthyThreshold:           pointer.To[int32](3),
+							HealthyThreshold:             pointer.To[int32](1),
 							InitialJitter:                test.ParseDuration("13s"),
 							IntervalJitter:               test.ParseDuration("15s"),
-							IntervalJitterPercent:        policies_xds.PointerOf[int32](10),
-							HealthyPanicThreshold:        policies_xds.PointerOf[int32](11),
-							FailTrafficOnPanic:           policies_xds.PointerOf[bool](true),
-							EventLogPath:                 policies_xds.PointerOf[string]("/tmp/log.txt"),
-							AlwaysLogHealthCheckFailures: policies_xds.PointerOf[bool](false),
+							IntervalJitterPercent:        pointer.To[int32](10),
+							HealthyPanicThreshold:        pointer.To[intstr.IntOrString](intstr.FromString("62.9")),
+							FailTrafficOnPanic:           pointer.To(true),
+							EventLogPath:                 pointer.To("/tmp/log.txt"),
+							AlwaysLogHealthCheckFailures: pointer.To(false),
 							NoTrafficInterval:            test.ParseDuration("16s"),
 							Http: &api.HttpHealthCheck{
-								Disabled: false,
-								Path:     "/health",
-								RequestHeadersToAdd: &[]api.HeaderValueOption{
-									{
-										Header: &api.HeaderValue{
-											Key:   "x-some-header",
+								Disabled: pointer.To(false),
+								Path:     pointer.To("/health"),
+								RequestHeadersToAdd: &api.HeaderModifier{
+									Add: []api.HeaderKeyValue{
+										{
+											Name:  "x-some-header",
 											Value: "value",
 										},
-										Append: policies_xds.PointerOf[bool](true),
+									},
+									Set: []api.HeaderKeyValue{
+										{
+											Name:  "x-some-other-header",
+											Value: "value",
+										},
 									},
 								},
 								ExpectedStatuses: &[]int32{200, 201},
 							},
-							ReuseConnection: policies_xds.PointerOf[bool](true),
+							ReuseConnection: pointer.To(true),
 						},
 					},
 				}},
@@ -170,7 +177,7 @@ var _ = Describe("MeshHealthCheck", func() {
 name: echo-http
 commonLbConfig:
   healthyPanicThreshold:
-    value: 11
+    value: 62.9
   zoneAwareLbConfig:
     failTrafficOnPanic: true
 healthChecks:
@@ -184,9 +191,16 @@ healthChecks:
         start: "201"
     path: /health
     requestHeadersToAdd:
+      - header:
+          key: x-kuma-tags
+          value: '&kuma.io/service=backend&'
       - append: true
         header:
           key: x-some-header
+          value: value
+      - append: false
+        header:
+          key: x-some-other-header
           value: value
   initialJitter: 13s
   interval: 10s
@@ -205,13 +219,13 @@ healthChecks:
 					{
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
-							Interval:           *test.ParseDuration("10s"),
-							Timeout:            *test.ParseDuration("2s"),
-							UnhealthyThreshold: 3,
-							HealthyThreshold:   1,
+							Interval:           test.ParseDuration("10s"),
+							Timeout:            test.ParseDuration("2s"),
+							UnhealthyThreshold: pointer.To[int32](3),
+							HealthyThreshold:   pointer.To[int32](1),
 							Tcp: &api.TcpHealthCheck{
-								Disabled: false,
-								Send:     policies_xds.PointerOf[string]("cGluZwo="),
+								Disabled: pointer.To(false),
+								Send:     pointer.To("cGluZwo="),
 								Receive:  &[]string{"cG9uZwo="},
 							},
 						},
@@ -239,13 +253,13 @@ healthChecks:
 					{
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
-							Interval:           *test.ParseDuration("10s"),
-							Timeout:            *test.ParseDuration("2s"),
-							UnhealthyThreshold: 3,
-							HealthyThreshold:   1,
+							Interval:           test.ParseDuration("10s"),
+							Timeout:            test.ParseDuration("2s"),
+							UnhealthyThreshold: pointer.To[int32](3),
+							HealthyThreshold:   pointer.To[int32](1),
 							Grpc: &api.GrpcHealthCheck{
-								ServiceName: "grpc-client",
-								Authority:   "grpc-client.default.svc.cluster.local",
+								ServiceName: pointer.To("grpc-client"),
+								Authority:   pointer.To("grpc-client.default.svc.cluster.local"),
 							},
 						},
 					},

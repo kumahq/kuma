@@ -66,10 +66,20 @@ commands:
           }
           EOF
           sudo service docker restart
+  skip_on_branch:
+    description: "Skip the job on the branch"
+    steps:
+    - run:
+        name: "Skip the job on the branch"
+        command: |
+          if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* && $(./tools/ci/has_label.sh ci/run-full-matrix) != "true" ]]; then
+            circleci-agent step halt
+            exit 0
+          fi
 
 executors:
   golang:
-    resource_class: large
+    resource_class: xlarge
     docker:
     - image: *golang_image
     environment:
@@ -216,6 +226,10 @@ jobs:
       name: vm-<< parameters.arch >>
     steps:
     - checkout
+    - when:
+        condition: {equal: [arm64, << parameters.arch >>]}
+        steps:
+          - skip_on_branch
     - run:
         # Label based skip-test runs
         name: "Check if skip"
@@ -343,25 +357,38 @@ jobs:
               circleci-agent step halt
               exit 0
             }
+
+            # Handle skip tests on labels
             if [[ $(./tools/ci/has_label.sh ci/skip-test) == "true" ]]; then
               skip "Not running tests as the PR has label: ci/skip-test"
             fi
             if [[ $(./tools/ci/has_label.sh ci/skip-e2e-test) == "true" ]]; then
               skip "Not running tests as the PR has label: ci/skip-e2e-test"
             fi
+            
+            # Handle invalid test combinations
             if [[ "<< parameters.k8sVersion >>" == "kind" && "<< parameters.target >>" != "test/e2e-universal" ]]; then
               skip "kind should only be used when testing ipv6 or with test/e2e-universal"
             fi
             if [[ "<< parameters.k8sVersion >>" != kind* && "<< parameters.target >>" == "test/e2e-universal" ]]; then
               skip "universal only runs on kind"
             fi
-            if [[ ! $(./tools/ci/has_label.sh ci/run-full-matrix) == "true" ]]; then
-              if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* ]]; then
-                if [[ "<< parameters.cniNetworkPlugin >>" == "calico" || "<< parameters.k8sVersion >>" == "kindIpv6" || "<< parameters.k8sVersion >>" == "v1.19.16-k3s1" || "<< parameters.arch >>" == "arm64" ]]; then
+            
+            # Handle force run tests on labels
+            if [[ $(./tools/ci/has_label.sh ci/run-full-matrix) == "true" ]]; then
+              exit 0
+            fi
+            
+            # Handle legacy tests on branch
+            if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* ]]; then
+              if [[ "<< parameters.target >>" == "test/e2e" ]]; then
+                skip "we do not run legacy E2E on branch by default. To run them add ci/run-e2e-legacy label"
+              fi
+              if [[ "<< parameters.cniNetworkPlugin >>" == "calico" || "<< parameters.k8sVersion >>" == "kindIpv6" || "<< parameters.k8sVersion >>" == "v1.19.16-k3s1" || "<< parameters.arch >>" == "arm64" ]]; then
                   skip "Not running tests on PRs with kindIpv6, oldK8s, calico and arm64"
-                fi
               fi
             fi
+
             echo "Continuing tests"
       - install_build_tools:
           go_arch: << parameters.arch >>
@@ -436,9 +463,13 @@ jobs:
     executor: # we are using linux/arm64 and linux/amd64 vm's for build
       name: vm-<< parameters.arch >>
     steps:
+    - checkout
+    - when:
+        condition: {equal: [arm64, << parameters.arch >>]}
+        steps:
+          - skip_on_branch
     - install_build_tools:
         go_arch: <<parameters.arch>>
-    - checkout
     - restore_cache:
         keys:
         # prefer the exact match
@@ -543,7 +574,7 @@ workflows:
             parameters:
               k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
               arch: [ amd64, arm64 ]
-          parallelism: 5
+          parallelism: 3
           target: test/e2e
           requires: [ build-<< matrix.arch >>, check ]
       - e2e:

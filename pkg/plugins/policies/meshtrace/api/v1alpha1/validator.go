@@ -1,18 +1,18 @@
 package v1alpha1
 
 import (
-	"fmt"
 	"math"
 	net_url "net/url"
 	"strconv"
-	"strings"
 
 	"github.com/asaskevich/govalidator"
-	"golang.org/x/exp/slices"
+	"github.com/shopspring/decimal"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (r *MeshTraceResource) validate() error {
@@ -22,6 +22,7 @@ func (r *MeshTraceResource) validate() error {
 	verr.AddErrorAt(path.Field("default"), validateDefault(r.Spec.Default))
 	return verr.OrNil()
 }
+
 func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
@@ -43,7 +44,7 @@ func validateDefault(conf Conf) validators.ValidationError {
 		verr.AddViolationAt(backendsPath, validators.MustBeDefined)
 	}
 
-	switch len(conf.Backends) {
+	switch len(pointer.Deref(conf.Backends)) {
 	case 0:
 		break
 	case 1:
@@ -52,25 +53,27 @@ func validateDefault(conf Conf) validators.ValidationError {
 		verr.AddViolationAt(backendsPath, "must have zero or one backend defined")
 	}
 
-	for tagIndex, tag := range conf.Tags {
+	for tagIndex, tag := range pointer.Deref(conf.Tags) {
 		path := validators.RootedAt("tags").Index(tagIndex)
 		if tag.Name == "" {
 			verr.AddViolationAt(path.Field("name"), validators.MustNotBeEmpty)
 		}
 
-		if (tag.Header != nil) == (tag.Literal != "") {
+		if (tag.Header != nil) == (tag.Literal != nil) {
 			verr.AddViolationAt(path, validators.MustHaveOnlyOne("tag", "header", "literal"))
 		}
 	}
 
-	if client := conf.Sampling.Client; client != nil {
-		verr.AddErrorAt(validators.RootedAt("sampling").Field("client"), validateSampling(*client))
-	}
-	if random := conf.Sampling.Random; random != nil {
-		verr.AddErrorAt(validators.RootedAt("sampling").Field("random"), validateSampling(*random))
-	}
-	if overall := conf.Sampling.Overall; overall != nil {
-		verr.AddErrorAt(validators.RootedAt("sampling").Field("overall"), validateSampling(*overall))
+	if conf.Sampling != nil {
+		if client := conf.Sampling.Client; client != nil {
+			verr.AddErrorAt(validators.RootedAt("sampling").Field("client"), validateSampling(*client))
+		}
+		if random := conf.Sampling.Random; random != nil {
+			verr.AddErrorAt(validators.RootedAt("sampling").Field("random"), validateSampling(*random))
+		}
+		if overall := conf.Sampling.Overall; overall != nil {
+			verr.AddErrorAt(validators.RootedAt("sampling").Field("overall"), validateSampling(*overall))
+		}
 	}
 
 	return verr
@@ -78,7 +81,7 @@ func validateDefault(conf Conf) validators.ValidationError {
 
 func validateBackend(conf Conf, backendsPath validators.PathBuilder) validators.ValidationError {
 	var verr validators.ValidationError
-	backend := conf.Backends[0]
+	backend := pointer.Deref(conf.Backends)[0]
 	firstBackendPath := backendsPath.Index(0)
 	if (backend.Datadog != nil) == (backend.Zipkin != nil) {
 		verr.AddViolationAt(firstBackendPath, validators.MustHaveOnlyOne("backend", "datadog", "zipkin"))
@@ -136,22 +139,20 @@ func validateBackend(conf Conf, backendsPath validators.PathBuilder) validators.
 		} else if !govalidator.IsURL(zipkinBackend.Url) {
 			verr.AddViolationAt(zipkinPath.Field("url"), "must be a valid url")
 		}
-
-		if zipkinBackend.ApiVersion != "" {
-			validZipkinApiVersions := []string{"httpJson", "httpProto"}
-			if !slices.Contains(validZipkinApiVersions, zipkinBackend.ApiVersion) {
-				verr.AddViolationAt(zipkinPath.Field("apiVersion"), fmt.Sprintf("must be one of %s", strings.Join(validZipkinApiVersions, ", ")))
-			}
-		}
 	}
 
 	return verr
 }
 
-func validateSampling(sampling uint32) validators.ValidationError {
+func validateSampling(sampling intstr.IntOrString) validators.ValidationError {
 	var verr validators.ValidationError
 
-	if sampling > 100 {
+	dec, err := common_api.NewDecimalFromIntOrString(sampling)
+	if err != nil {
+		verr.AddViolation("", "string is not a number")
+	}
+
+	if dec.LessThan(decimal.Zero) || dec.GreaterThan(decimal.NewFromInt(100)) {
 		verr.AddViolation("", "must be between 0 and 100")
 	}
 

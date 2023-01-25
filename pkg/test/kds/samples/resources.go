@@ -381,7 +381,7 @@ var (
 					Kind: "Mesh",
 				},
 				Default: meshtrafficpermissions.Conf{
-					Action: "ALLOW",
+					Action: "Allow",
 				},
 			},
 		},

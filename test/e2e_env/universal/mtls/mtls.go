@@ -8,19 +8,19 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func Policy() {
 	var meshName = "mtls-test"
 	E2EAfterEach(func() {
-		Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 	curlAddr := func(addr string, opts ...string) (string, string, error) {
 		cmd := append([]string{"curl", "-v", addr}, opts...)
-		return env.Cluster.Exec("", "", "demo-client", cmd...)
+		return universal.Cluster.Exec("", "", "demo-client", cmd...)
 	}
 	trafficAllowed := func(addr string, opts ...string) {
 		expectation := func(g Gomega) {
@@ -43,7 +43,7 @@ func Policy() {
 	// Added Flake because: https://github.com/kumahq/kuma/issues/4700
 	Describe("should support mode", FlakeAttempts(3), func() {
 		publicAddress := func() string {
-			return net.JoinHostPort(env.Cluster.GetApp("test-server").GetIP(), "80")
+			return net.JoinHostPort(universal.Cluster.GetApp("test-server").GetIP(), "80")
 		}
 		setupTest := func(mode string) {
 			meshYaml := fmt.Sprintf(
@@ -60,7 +60,7 @@ mtls:
 				Install(YamlUniversal(meshYaml)).
 				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}))).
 				Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
-				Setup(env.Cluster)
+				Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		}
 		It("PERMISSIVE server without TLS", func() {
@@ -86,7 +86,7 @@ mtls:
 
 			By("Check outside-mesh communication")
 			// we're using curl with '--resolve' flag to verify certificate Common Name 'test-server.mesh'
-			host := env.Cluster.GetApp("test-server").GetIP()
+			host := universal.Cluster.GetApp("test-server").GetIP()
 			trafficAllowed(publicAddress(), "--cacert", "/kuma/server.crt", "--resolve", fmt.Sprintf("test-server.mesh:80:[%s]", host))
 		})
 		It("STRICT server with TLS", func() {
@@ -96,23 +96,23 @@ mtls:
 
 			By("Check outside-mesh communication")
 			// we're using curl with '--resolve' flag to verify certificate Common Name 'test-server.mesh'
-			host := env.Cluster.GetApp("test-server").GetIP()
+			host := universal.Cluster.GetApp("test-server").GetIP()
 			trafficBlocked(publicAddress(), "--cacert", "/kuma/server.crt", "--resolve", fmt.Sprintf("test-server.mesh:80:[%s]", host))
 		})
 	})
 	It("enabling PERMISSIVE with no failed requests", func() {
-		Expect(env.Cluster.Install(MeshUniversal(meshName))).To(Succeed())
+		Expect(universal.Cluster.Install(MeshUniversal(meshName))).To(Succeed())
 
 		// Disable retries so that we see every failed request
-		kumactl := env.Cluster.GetKumactlOptions()
+		kumactl := universal.Cluster.GetKumactlOptions()
 		Expect(kumactl.KumactlDelete("retry", fmt.Sprintf("retry-all-%s", meshName), meshName)).To(Succeed())
 
 		// We must start client before server to test this properly. The client
 		// should get XDS refreshes first to trigger the race condition fixed by
 		// kumahq/kuma#3019
-		Expect(env.Cluster.Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))))
+		Expect(universal.Cluster.Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))))
 
-		Expect(env.Cluster.Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}))))
+		Expect(universal.Cluster.Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}))))
 
 		By("Check inside-mesh communication")
 		trafficAllowed("test-server.mesh")
@@ -128,7 +128,7 @@ mtls:
   - name: ca-1
     type: builtin
     mode: PERMISSIVE`, meshName)
-		Expect(env.Cluster.Install(YamlUniversal(meshYaml)))
+		Expect(universal.Cluster.Install(YamlUniversal(meshYaml)))
 
 		By("inside-mesh communication never fails")
 		Consistently(func(g Gomega) {
@@ -144,24 +144,24 @@ mtls:
 				Install(MeshUniversal(meshName)).
 				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}))).
 				Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
-				Setup(env.Cluster)
+				Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 			By("Remove default traffic-permission")
 			// Default default traffic-permission
 			var items []string
 			Eventually(func(g Gomega) {
-				items, err = env.Cluster.GetKumactlOptions().KumactlList("traffic-permissions", meshName)
+				items, err = universal.Cluster.GetKumactlOptions().KumactlList("traffic-permissions", meshName)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(items).To(HaveLen(1))
 			}).Should(Succeed())
-			err = env.Cluster.GetKumactlOptions().KumactlDelete("traffic-permission", items[0], meshName)
+			err = universal.Cluster.GetKumactlOptions().KumactlDelete("traffic-permission", items[0], meshName)
 			Expect(err).ToNot(HaveOccurred())
 
 			By("Can access test-server")
 			trafficAllowed("test-server.mesh")
 
 			By("When adding mTLS mesh")
-			Expect(env.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
+			Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
 
 			By("Can't access test-server")
 			trafficBlocked("test-server.mesh", "--fail")
@@ -178,7 +178,7 @@ destinations:
   - match:
       kuma.io/service: test-server
 `, meshName)
-			Expect(env.Cluster.Install(YamlUniversal(perm))).To(Succeed())
+			Expect(universal.Cluster.Install(YamlUniversal(perm))).To(Succeed())
 
 			By("Can access test-server again")
 			trafficAllowed("test-server.mesh")

@@ -47,14 +47,14 @@ func validateTo(to []To) validators.ValidationError {
 func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
 	path := validators.RootedAt("default")
-	verr.Add(validators.ValidateDurationGreaterThanZero(path.Field("interval"), conf.Interval))
-	verr.Add(validators.ValidateDurationGreaterThanZero(path.Field("timeout"), conf.Timeout))
-	verr.Add(validators.ValidateValueGreaterThanZero(path.Field("unhealthyThreshold"), conf.UnhealthyThreshold))
-	verr.Add(validators.ValidateValueGreaterThanZero(path.Field("healthyThreshold"), conf.HealthyThreshold))
+	verr.Add(validators.ValidateDurationGreaterThanZeroOrNil(path.Field("interval"), conf.Interval))
+	verr.Add(validators.ValidateDurationGreaterThanZeroOrNil(path.Field("timeout"), conf.Timeout))
+	verr.Add(validators.ValidateValueGreaterThanZeroOrNil(path.Field("unhealthyThreshold"), conf.UnhealthyThreshold))
+	verr.Add(validators.ValidateValueGreaterThanZeroOrNil(path.Field("healthyThreshold"), conf.HealthyThreshold))
 	verr.Add(validators.ValidateDurationGreaterThanZeroOrNil(path.Field("initialJitter"), conf.InitialJitter))
 	verr.Add(validators.ValidateDurationGreaterThanZeroOrNil(path.Field("intervalJitter"), conf.IntervalJitter))
 	verr.Add(validators.ValidateIntPercentageOrNil(path.Field("intervalJitterPercent"), conf.IntervalJitterPercent))
-	verr.Add(validators.ValidateIntPercentageOrNil(path.Field("healthyPanicThreshold"), conf.HealthyPanicThreshold))
+	verr.Add(validators.ValidatePercentageOrNil(path.Field("healthyPanicThreshold"), conf.HealthyPanicThreshold))
 	verr.Add(validators.ValidateDurationGreaterThanZeroOrNil(path.Field("noTrafficInterval"), conf.NoTrafficInterval))
 	verr.Add(validators.ValidatePathOrNil(path.Field("eventLogPath"), conf.EventLogPath))
 	if conf.Http != nil {
@@ -69,9 +69,10 @@ func validateDefault(conf Conf) validators.ValidationError {
 
 func validateConfHttp(path validators.PathBuilder, http *HttpHealthCheck) validators.ValidationError {
 	var err validators.ValidationError
-	err.Add(validators.ValidateStringDefined(path.Field("path"), http.Path))
+	if http.Path != nil {
+		err.Add(validators.ValidateStringDefined(path.Field("path"), *http.Path))
+	}
 	err.Add(validateConfHttpExpectedStatuses(path.Field("expectedStatuses"), http.ExpectedStatuses))
-	err.Add(validateConfHttpRequestHeadersToAdd(path.Field("requestHeadersToAdd"), http.RequestHeadersToAdd))
 	return err
 }
 
@@ -80,29 +81,6 @@ func validateConfHttpExpectedStatuses(path validators.PathBuilder, expectedStatu
 	if expectedStatuses != nil {
 		for i, status := range *expectedStatuses {
 			err.Add(validators.ValidateStatusCode(path.Index(i), status))
-		}
-	}
-
-	return err
-}
-
-func validateConfHttpRequestHeadersToAdd(path validators.PathBuilder, requestHeadersToAdd *[]HeaderValueOption) validators.ValidationError {
-	var err validators.ValidationError
-	if requestHeadersToAdd != nil {
-		for i, header := range *requestHeadersToAdd {
-			path := path.Index(i).Field("header")
-
-			if header.Header == nil {
-				err.AddViolationAt(path, validators.MustBeDefined)
-				continue
-			}
-
-			if header.Header.Key == "" {
-				err.AddViolationAt(path.Field("key"), validators.MustNotBeEmpty)
-			}
-			if header.Header.Value == "" {
-				err.AddViolationAt(path.Field("value"), validators.MustNotBeEmpty)
-			}
 		}
 	}
 

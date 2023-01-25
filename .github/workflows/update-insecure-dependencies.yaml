@@ -1,0 +1,80 @@
+name: "Update insecure dependencies"
+
+on:
+  workflow_dispatch: { }
+  schedule:
+    - cron: 0 8 * * *
+env:
+  IGNORE_PACKAGES: "github.com/aws/aws-sdk-go"
+jobs:
+  update-insecure-dependencies:
+    strategy:
+      fail-fast: false
+      matrix:
+        branch:
+          - "release-2.0"
+          - "release-1.8"
+          - "release-1.7"
+          - "release-1.6"
+          - "release-1.5"
+          - "master"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub app token
+        id: github-app-token
+        uses: tibdex/github-app-token@021a2405c7f990db57f5eae5397423dcc554159c # v1.7.0
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+      - name: "Clone Kuma"
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ matrix.branch }}
+      - uses: actions/setup-go@v3
+        with:
+          go-version: "~1.18.9"
+      - name: "Install tools"
+        run: |
+          go install github.com/google/osv-scanner/cmd/osv-scanner@v1
+      - name: "Prepare commit body - before"
+        id: prepare_commit_body_before
+        run: |
+          SCAN_OUTPUT_BEFORE=$(osv-scanner --lockfile=go.mod | tr "+" "|" | awk 'NR>3 {print last} {last=$0}' || true)
+          echo "SCAN_OUTPUT_BEFORE<<EOF" >> $GITHUB_ENV
+          echo "$SCAN_OUTPUT_BEFORE" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+      - name: "Update dependencies"
+        id: update
+        run: |
+          osv-scanner --lockfile=go.mod --json | jq '.results[].packages[].package.name' | grep -Ev ${{ env.IGNORE_PACKAGES }} | xargs -I {} go get -u {}
+          go mod tidy
+      - name: "Prepare commit body - after"
+        id: prepare_commit_body_after
+        run: |
+          SCAN_OUTPUT_AFTER=$(osv-scanner --lockfile=go.mod | tr "+" "|" | awk 'NR>3 {print last} {last=$0}' || true)
+          echo "SCAN_OUTPUT_AFTER<<EOF" >> $GITHUB_ENV
+          echo "$SCAN_OUTPUT_AFTER" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+      - name: "Create Pull Request"
+        uses: peter-evans/create-pull-request@v4
+        with:
+          commit-message: "chore(deps): security update"
+          signoff: true
+          branch: chore/security-updates-${{ matrix.branch }}
+          body: |
+            Scan output:
+
+            Before update:
+            ${{ env.SCAN_OUTPUT_BEFORE }}
+
+            After update:
+            ${{ env.SCAN_OUTPUT_AFTER }}
+            
+            If a package is showing up in the scan but the script is not trying to update it then it might be in env.IGNORE_PACKAGES regex
+          delete-branch: true
+          title: "chore(deps): security update"
+          draft: false
+          labels: dependencies,${{ matrix.branch }}
+          token: ${{ steps.github-app-token.outputs.token }}
+          committer: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>
+          author: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>

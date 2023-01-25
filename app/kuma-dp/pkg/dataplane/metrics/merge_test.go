@@ -11,8 +11,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	envoy "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 func toLines(r io.Reader) []string {
@@ -92,17 +92,12 @@ var _ = Describe("Detect mergable clusters", func() {
 	})
 
 	It("should crack gateway cluster names", func() {
-		clusterName, err := route.DestinationClusterName(
-			&route.Destination{
-				Destination: map[string]string{
-					mesh_proto.ServiceTag: "foo-service",
-					mesh_proto.ZoneTag:    "foo-zone",
-				},
-			},
-			map[string]string{
-				"custom": "tag",
-			},
-		)
+		clusterName, err := envoy.Tags(map[string]string{
+			mesh_proto.ServiceTag: "foo-service",
+			mesh_proto.ZoneTag:    "foo-zone",
+		}).DestinationClusterName(map[string]string{
+			"custom": "tag",
+		})
 		Expect(err).To(Succeed())
 		Expect(clusterName).ToNot(BeEmpty())
 

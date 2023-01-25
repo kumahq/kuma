@@ -12,7 +12,7 @@ build_info_ld_flags := $(foreach entry,$(build_info_fields), -X github.com/kumah
 
 LD_FLAGS := -ldflags="-s -w $(build_info_ld_flags) $(EXTRA_LD_FLAGS)"
 CGO_ENABLED := 0
-GOFLAGS :=
+GOFLAGS := -trimpath $(EXTRA_GOFLAGS)
 
 TOP := $(shell pwd)
 BUILD_DIR ?= $(TOP)/build

@@ -1,7 +1,10 @@
 package xds
 
 import (
+	"strings"
+
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -16,30 +19,162 @@ type RoutesConfigurer struct {
 }
 
 func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
-	envoyRoute := &envoy_route.Route{
-		Match: c.routeMatch(c.Matches),
-		Action: &envoy_route.Route_Route{
-			Route: c.routeAction(c.Clusters, c.Filters),
-		},
-		TypedPerFilterConfig: map[string]*anypb.Any{},
+	matches := c.routeMatch(c.Matches)
+
+	for _, match := range matches {
+		r := &envoy_route.Route{
+			Match: match.routeMatch,
+			Action: &envoy_route.Route_Route{
+				Route: c.routeAction(c.Clusters),
+			},
+			TypedPerFilterConfig: map[string]*anypb.Any{},
+		}
+
+		// We pass the information about whether this match was created from
+		// a prefix match along to the filters because it's no longer
+		// possible to know for sure with just an envoy_route.Route
+		for _, filter := range c.Filters {
+			routeFilter(filter, r, match.prefixMatch)
+		}
+
+		virtualHost.Routes = append(virtualHost.Routes, r)
 	}
 
-	virtualHost.Routes = append(virtualHost.Routes, envoyRoute)
 	return nil
 }
 
-func (c RoutesConfigurer) routeMatch(matches []api.Match) *envoy_route.RouteMatch {
-	envoyMatch := &envoy_route.RouteMatch{}
+type routeMatch struct {
+	routeMatch  *envoy_route.RouteMatch
+	prefixMatch bool
+}
+
+// routeMatch returns a list of RouteMatches given a list of MeshHTTPRoute matches
+// Note that some MeshHTTPRoute matches result in multiple Envoy matches because
+// of prefix + rewrite handling. That's why we return the wrapper type as well.
+func (c RoutesConfigurer) routeMatch(matches []api.Match) []routeMatch {
+	var allEnvoyMatches []routeMatch
 
 	for _, match := range matches {
-		if match.Path.Prefix != "" {
-			envoyMatch.PathSpecifier = &envoy_route.RouteMatch_Prefix{
-				Prefix: match.Path.Prefix,
+		var envoyMatches []*envoy_route.RouteMatch
+
+		if match.Path != nil {
+			envoyMatches = c.routePathMatch(*match.Path)
+		} else {
+			envoyMatches = []*envoy_route.RouteMatch{{}}
+		}
+
+		for _, envoyMatch := range envoyMatches {
+			if match.Method != nil {
+				c.routeMethodMatch(envoyMatch, *match.Method)
+			}
+			if match.QueryParams != nil {
+				routeQueryParamsMatch(envoyMatch, match.QueryParams)
+			}
+			if match.Path != nil && match.Path.Type == api.Prefix {
+				allEnvoyMatches = append(allEnvoyMatches, routeMatch{envoyMatch, true})
+			} else {
+				allEnvoyMatches = append(allEnvoyMatches, routeMatch{envoyMatch, false})
 			}
 		}
 	}
 
-	return envoyMatch
+	return allEnvoyMatches
+}
+
+// Not every API match maps cleanly to a single envoy match
+func (c RoutesConfigurer) routePathMatch(match api.PathMatch) []*envoy_route.RouteMatch {
+	switch match.Type {
+	case api.Exact:
+		return []*envoy_route.RouteMatch{{
+			PathSpecifier: &envoy_route.RouteMatch_Path{
+				Path: match.Value,
+			},
+		}}
+	case api.Prefix:
+		if match.Value == "/" {
+			return []*envoy_route.RouteMatch{{
+				PathSpecifier: &envoy_route.RouteMatch_Prefix{
+					Prefix: match.Value,
+				},
+			}}
+		}
+		// This case forces us to create two different envoy matches to
+		// replicate the "path-separated prefixes only" semantics
+		trimmed := strings.TrimSuffix(match.Value, "/")
+		return []*envoy_route.RouteMatch{{
+			PathSpecifier: &envoy_route.RouteMatch_Path{
+				Path: trimmed,
+			},
+		}, {
+			PathSpecifier: &envoy_route.RouteMatch_Prefix{
+				Prefix: trimmed + "/",
+			},
+		}}
+	case api.RegularExpression:
+		return []*envoy_route.RouteMatch{{
+			PathSpecifier: &envoy_route.RouteMatch_SafeRegex{
+				SafeRegex: regexMatcher(match.Value),
+			},
+		}}
+	default:
+		panic("impossible")
+	}
+}
+
+func (c RoutesConfigurer) routeMethodMatch(envoyMatch *envoy_route.RouteMatch, method api.Method) {
+	matcher := envoy_type_matcher.StringMatcher{
+		MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+			Exact: string(method),
+		},
+	}
+	envoyMatch.Headers = append(envoyMatch.Headers,
+		&envoy_route.HeaderMatcher{
+			Name: ":method",
+			HeaderMatchSpecifier: &envoy_route.HeaderMatcher_StringMatch{
+				StringMatch: &matcher,
+			},
+		},
+	)
+}
+
+func routeQueryParamsMatch(envoyMatch *envoy_route.RouteMatch, matches []api.QueryParamsMatch) {
+	// We ignore multiple matchers for the same name, though this is also
+	// validated
+	matchedNames := map[string]struct{}{}
+
+	for _, match := range matches {
+		if _, ok := matchedNames[match.Name]; ok {
+			continue
+		}
+		matchedNames[match.Name] = struct{}{}
+
+		var matcher envoy_type_matcher.StringMatcher
+		switch match.Type {
+		case api.ExactQueryMatch:
+			matcher = envoy_type_matcher.StringMatcher{
+				MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+					Exact: match.Value,
+				},
+			}
+		case api.RegularExpressionQueryMatch:
+			matcher = envoy_type_matcher.StringMatcher{
+				MatchPattern: &envoy_type_matcher.StringMatcher_SafeRegex{
+					SafeRegex: regexMatcher(match.Value),
+				},
+			}
+		default:
+			panic("impossible")
+		}
+
+		envoyMatch.QueryParameters = append(envoyMatch.QueryParameters,
+			&envoy_route.QueryParameterMatcher{
+				Name: match.Name,
+				QueryParameterMatchSpecifier: &envoy_route.QueryParameterMatcher_StringMatch{
+					StringMatch: &matcher,
+				},
+			},
+		)
+	}
 }
 
 func (c RoutesConfigurer) hasExternal(clusters []envoy_common.Cluster) bool {
@@ -51,7 +186,7 @@ func (c RoutesConfigurer) hasExternal(clusters []envoy_common.Cluster) bool {
 	return false
 }
 
-func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster, _ []api.Filter) *envoy_route.RouteAction {
+func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster) *envoy_route.RouteAction {
 	routeAction := &envoy_route.RouteAction{}
 	if len(clusters) != 0 {
 		routeAction.Timeout = util_proto.Duration(clusters[0].Timeout().GetHttp().GetRequestTimeout().AsDuration())

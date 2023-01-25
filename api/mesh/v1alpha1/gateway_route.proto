@@ -101,6 +101,8 @@ message MeshGatewayRoute {
         enum MatchType {
           EXACT = 0;
           REGEX = 1;
+          ABSENT = 2;
+          PRESENT = 3;
         }
 
         MatchType match = 1;

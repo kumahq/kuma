@@ -8,8 +8,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
 func API() {
@@ -18,21 +18,21 @@ func API() {
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MeshKubernetes(meshName)).
-			Setup(env.Cluster)
+			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterEach(func() {
-		Expect(DeleteMeshResources(env.Cluster, meshName, v1alpha1.MeshRateLimitResourceTypeDescriptor)).To(Succeed())
+		Expect(DeleteMeshResources(kubernetes.Cluster, meshName, v1alpha1.MeshRateLimitResourceTypeDescriptor)).To(Succeed())
 	})
 
 	E2EAfterAll(func() {
-		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should create MeshRateLimit policy", func() {
 		// given no MeshRateLimit
-		mrls, err := env.Cluster.GetKumactlOptions().KumactlList("meshratelimits", meshName)
+		mrls, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("meshratelimits", meshName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(mrls).To(HaveLen(0))
 
@@ -55,32 +55,37 @@ spec:
       default:
         local:
           http:
-            requests: 1
-            interval: 10s
+            requestRate:
+              num: 1
+              interval: 10s
             onRateLimit:
               status: 429
               headers:
-                - key: "x-kuma-rate-limited"
+                add:
+                - name: "x-kuma-rate-limited"
                   value: "true"
     - targetRef:
         kind: Mesh
       default:
         local:
           http:
-            requests: 1
-            interval: 10s
+            requestRate:
+              num: 1
+              interval: 10s
             onRateLimit:
               status: 429
               headers:
-                - key: "x-kuma-rate-limited"
+                add:
+                - name: "x-kuma-rate-limited"
                   value: "true"
           tcp:
-            connections: 100
-            interval: 10s
-`, Config.KumaNamespace, meshName))(env.Cluster)).To(Succeed())
+            connectionRate:
+              num: 100
+              interval: 10s
+`, Config.KumaNamespace, meshName))(kubernetes.Cluster)).To(Succeed())
 
 		// then
-		mrls, err = env.Cluster.GetKumactlOptions().KumactlList("meshratelimits", meshName)
+		mrls, err = kubernetes.Cluster.GetKumactlOptions().KumactlList("meshratelimits", meshName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(mrls).To(HaveLen(1))
 		Expect(mrls[0]).To(Equal(fmt.Sprintf("mesh-rate-limit.%s", Config.KumaNamespace)))
@@ -88,14 +93,14 @@ spec:
 
 	It("should deny creating policy in the non-system namespace", func() {
 		// given no MeshRateLimit
-		mrls, err := env.Cluster.GetKumactlOptions().KumactlList("meshratelimits", meshName)
+		mrls, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("meshratelimits", meshName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(mrls).To(HaveLen(0))
 
 		// when
 		err = k8s.KubectlApplyFromStringE(
-			env.Cluster.GetTesting(),
-			env.Cluster.GetKubectlOptions(), fmt.Sprintf(`
+			kubernetes.Cluster.GetTesting(),
+			kubernetes.Cluster.GetKubectlOptions(), fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshRateLimit
 metadata:
@@ -113,28 +118,33 @@ spec:
       default:
         local:
           http:
-            requests: 1
-            interval: 10s
+            requestRate:
+              num: 1
+              interval: 10s
             onRateLimit:
               status: 429
               headers:
-                - key: "x-kuma-rate-limited"
+                add:
+                - name: "x-kuma-rate-limited"
                   value: "true"
     - targetRef:
         kind: Mesh
       default:
         local:
           http:
-            requests: 1
-            interval: 10s
+            requestRate:
+              num: 1
+              interval: 10s
             onRateLimit:
               status: 429
               headers:
-                - key: "x-kuma-rate-limited"
+                add:
+                - name: "x-kuma-rate-limited"
                   value: "true"
           tcp:
-            connections: 100
-            interval: 10s
+            connectionRate:
+              num: 100
+              interval: 10s
 `, meshName))
 
 		Expect(err).To(HaveOccurred())

@@ -2,11 +2,28 @@ package validators
 
 import (
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/asaskevich/govalidator"
+	"github.com/shopspring/decimal"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
+
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 )
+
+func ValidateDurationNotNegative(path PathBuilder, duration *k8s.Duration) ValidationError {
+	var err ValidationError
+	if duration == nil {
+		err.AddViolationAt(path, MustBeDefined)
+		return err
+	}
+	if duration.Duration < 0 {
+		err.AddViolationAt(path, WhenDefinedHasToBeNonNegative)
+	}
+	return err
+}
 
 func ValidateDurationNotNegativeOrNil(path PathBuilder, duration *k8s.Duration) ValidationError {
 	var err ValidationError
@@ -50,6 +67,17 @@ func ValidateValueGreaterThanZero(path PathBuilder, value int32) ValidationError
 	return err
 }
 
+func ValidateValueGreaterThanZeroOrNil(path PathBuilder, value *int32) ValidationError {
+	var err ValidationError
+	if value == nil {
+		return err
+	}
+	if *value <= 0 {
+		err.AddViolationAt(path, MustBeDefinedAndGreaterThanZero)
+	}
+	return err
+}
+
 func ValidateIntPercentageOrNil(path PathBuilder, percentage *int32) ValidationError {
 	var err ValidationError
 	if percentage == nil {
@@ -61,6 +89,41 @@ func ValidateIntPercentageOrNil(path PathBuilder, percentage *int32) ValidationE
 	}
 
 	return err
+}
+
+func ValidatePercentage(path PathBuilder, percentage *intstr.IntOrString) ValidationError {
+	var verr ValidationError
+	if percentage == nil {
+		verr.AddViolationAt(path, MustBeDefined)
+		return verr
+	}
+
+	dec, err := common_api.NewDecimalFromIntOrString(*percentage)
+	if err != nil {
+		verr.AddViolationAt(path, StringHasToBeValidNumber)
+	}
+
+	if dec.LessThan(decimal.Zero) || dec.GreaterThan(decimal.NewFromInt(100)) {
+		verr.AddViolationAt(path, HasToBeInPercentageRange)
+	}
+	return verr
+}
+
+func ValidatePercentageOrNil(path PathBuilder, percentage *intstr.IntOrString) ValidationError {
+	var verr ValidationError
+	if percentage == nil {
+		return verr
+	}
+
+	dec, err := common_api.NewDecimalFromIntOrString(*percentage)
+	if err != nil {
+		verr.AddViolationAt(path, StringHasToBeValidNumber)
+	}
+
+	if dec.LessThan(decimal.Zero) || dec.GreaterThan(decimal.NewFromInt(100)) {
+		verr.AddViolationAt(path, HasToBeInPercentageRange)
+	}
+	return verr
 }
 
 func ValidateUInt32PercentageOrNil(path PathBuilder, percentage *uint32) ValidationError {
@@ -137,5 +200,17 @@ func ValidateIntegerGreaterThan(path PathBuilder, value uint32, minValue uint32)
 		err.AddViolationAt(path, fmt.Sprintf("%s %d", HasToBeGreaterThan, minValue))
 	}
 
+	return err
+}
+
+func ValidateBandwidth(path PathBuilder, value string) ValidationError {
+	var err ValidationError
+	if value == "" {
+		err.AddViolationAt(path, MustBeDefined)
+		return err
+	}
+	if matched, _ := regexp.MatchString(`\d*\s?[gmk]bps`, value); !matched {
+		err.AddViolationAt(path, "has to be in kbps/mbps/gbps units")
+	}
 	return err
 }

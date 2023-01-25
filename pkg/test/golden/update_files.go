@@ -1,7 +1,9 @@
 package golden
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
 )
 
 func UpdateGoldenFiles() bool {
@@ -9,4 +11,10 @@ func UpdateGoldenFiles() bool {
 	return found && value == "true"
 }
 
-const RerunMsg = "Rerun the test with UPDATE_GOLDEN_FILES=true flag. Example: make test UPDATE_GOLDEN_FILES=true"
+func RerunMsg(path string) string {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		absPath = path + " Failed to retrieve cwd"
+	}
+	return fmt.Sprintf("Rerun the test with UPDATE_GOLDEN_FILES=true flag to update file: %s. Example: make test UPDATE_GOLDEN_FILES=true", absPath)
+}
