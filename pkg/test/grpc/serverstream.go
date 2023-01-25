@@ -2,11 +2,12 @@ package grpc
 
 import (
 	"context"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"io"
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"google.golang.org/grpc"
+
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 )
 
 type MockServerStream struct {
