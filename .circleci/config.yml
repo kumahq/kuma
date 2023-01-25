@@ -315,7 +315,7 @@ jobs:
               if [[ "<< parameters.target >>" == "test/e2e" ]]; then
                 skip "we do not run legacy E2E on branch by default. To run them add ci/run-e2e-legacy label"
               fi
-              if [[ "<< parameters.cniNetworkPlugin >>" == "calico" || "<< parameters.k8sVersion >>" == "kindIpv6" || "<< parameters.k8sVersion >>" == "v1.19.16-k3s1" || "<< parameters.arch >>" == "arm64" ]]; then
+              if [[ "<< parameters.cniNetworkPlugin >>" == "calico" || "<< parameters.k8sVersion >>" == "kindIpv6" || "<< parameters.k8sVersion >>" == "v1.20.15-k3s1" || "<< parameters.arch >>" == "arm64" ]]; then
                   skip "Not running tests on PRs with kindIpv6, oldK8s, calico and arm64"
               fi
             fi
@@ -475,7 +475,7 @@ workflows:
           matrix:
             alias: dev
             parameters:
-              executor: [ linux, darwin]
+              executor: [ linux, darwin ]
       - go_cache:
           name: go_cache-<< matrix.executor >>
           matrix:
@@ -503,7 +503,7 @@ workflows:
           matrix:
             alias: test/e2e-legacy
             parameters:
-              k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
+              k8sVersion: [ v1.20.15-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
               arch: [ amd64, arm64 ]
           parallelism: 3
           target: test/e2e
@@ -513,7 +513,7 @@ workflows:
           matrix:
             alias: test/e2e
             parameters:
-              k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
+              k8sVersion: [ v1.20.15-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
               target: [ test/e2e-kubernetes, test/e2e-universal, test/e2e-multizone ]
               arch: [ amd64, arm64 ]
           parallelism: 1
