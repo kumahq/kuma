@@ -1,0 +1,1 @@
+const c=2,t=[{type:"TrafficTrace",mesh:"default",name:"tt-1",selectors:[{match:{service:"*"}}],conf:{backend:"my-zipkin"}},{type:"TrafficTrace",mesh:"default",name:"traffic-trace-02",selectors:[{match:{service:"*"}}],conf:{backend:"my-zipkin"}}],e=null,a={total:2,items:t,next:e};export{a as default,t as items,e as next,c as total};

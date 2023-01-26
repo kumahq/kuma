@@ -1,0 +1,1 @@
+const e=1,t=[{type:"TrafficPermission",mesh:"default",name:"tp-4",sources:[{match:{service:"backend"}}],destinations:[{match:{service:"redis"}}]}],s="http://localhost:5681/meshes/default/traffic-permissions?offset=24&size=12",a={total:1,items:t,next:s};export{a as default,t as items,s as next,e as total};
