@@ -88,3 +88,8 @@ dev/sync-demo:
 	curl -s --fail https://raw.githubusercontent.com/kumahq/kuma-counter-demo/master/gateway.yaml | \
 		sed 's/\([^/]\)kuma-demo/\1{{ .Namespace }}/g' \
 		> app/kumactl/data/install/k8s/demo/gateway.yaml
+
+CIRCLECI_BADGE ?= "[![CircleCI {{branch}}](https://img.shields.io/circleci/build/github/kumahq/kuma/{{branch}}?label={{branch}})](https://circleci.com/gh/kumahq/kuma/tree/{{branch}})"
+.PHONY: dev/repo-health
+dev/repo-health:
+	go run $(TOOLS_DIR)/dev/repo-health.go -action README -circleci-badge $(CIRCLECI_BADGE)
