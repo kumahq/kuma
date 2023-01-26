@@ -54,7 +54,6 @@ func validateTo(to []To) validators.ValidationError {
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshService,
-				common_api.MeshGatewayRoute,
 			},
 		}))
 
