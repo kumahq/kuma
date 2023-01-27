@@ -35,23 +35,25 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, _ xds_context.Context, proxy *co
 
 	clusters := policies_xds.GatherClusters(rs)
 
-	if err := applyToOutbounds(policies.ToRules, clusters.Outbound, proxy.Dataplane, proxy.Routing); err != nil {
+	if err := applyToOutbounds(policies.ToRules, clusters.Outbound, clusters.OutboundSplit, proxy.Dataplane, proxy.Routing); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func applyToOutbounds(rules core_xds.ToRules, outboundClusters map[string]*envoy_cluster.Cluster, dataplane *core_mesh.DataplaneResource, routing core_xds.Routing) error {
+func applyToOutbounds(rules core_xds.ToRules, outboundClusters map[string]*envoy_cluster.Cluster, outboundSplitClusters map[string][]*envoy_cluster.Cluster, dataplane *core_mesh.DataplaneResource, routing core_xds.Routing) error {
 	targetedClusters := map[*envoy_cluster.Cluster]string{}
 	for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
 		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
-		cluster, ok := outboundClusters[serviceName]
-		if !ok {
-			continue
+		for _, splitCluster := range outboundSplitClusters[serviceName] {
+			targetedClusters[splitCluster] = serviceName
 		}
 
-		targetedClusters[cluster] = serviceName
+		cluster, ok := outboundClusters[serviceName]
+		if ok {
+			targetedClusters[cluster] = serviceName
+		}
 	}
 
 	for cluster, serviceName := range targetedClusters {

@@ -47,7 +47,7 @@ func (p plugin) Apply(
 		return err
 	}
 
-	if err := applyToOutbounds(policies.ToRules, clusters.Outbound, proxy.Dataplane); err != nil {
+	if err := applyToOutbounds(policies.ToRules, clusters.Outbound, clusters.OutboundSplit, proxy.Dataplane); err != nil {
 		return err
 	}
 
@@ -88,17 +88,20 @@ func applyToInbounds(
 func applyToOutbounds(
 	rules core_xds.ToRules,
 	outboundClusters map[string]*envoy_cluster.Cluster,
+	outboundSplitClusters map[string][]*envoy_cluster.Cluster,
 	dataplane *core_mesh.DataplaneResource,
 ) error {
 	targetedClusters := map[*envoy_cluster.Cluster]string{}
 	for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
 		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
-		cluster, ok := outboundClusters[serviceName]
-		if !ok {
-			continue
+		for _, splitCluster := range outboundSplitClusters[serviceName] {
+			targetedClusters[splitCluster] = serviceName
 		}
 
-		targetedClusters[cluster] = serviceName
+		cluster, ok := outboundClusters[serviceName]
+		if ok {
+			targetedClusters[cluster] = serviceName
+		}
 	}
 
 	for cluster, serviceName := range targetedClusters {

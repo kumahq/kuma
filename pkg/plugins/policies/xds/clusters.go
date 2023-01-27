@@ -1,6 +1,8 @@
 package xds
 
 import (
+	"regexp"
+
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
@@ -12,24 +14,37 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/generator"
 )
 
+var (
+	splitClusterRegex = regexp.MustCompile("(.*)(-_[0-9+]_$)")
+)
+
 type Clusters struct {
-	Inbound  map[string]*envoy_cluster.Cluster
-	Outbound map[string]*envoy_cluster.Cluster
-	Gateway  map[string]*envoy_cluster.Cluster
+	Inbound       map[string]*envoy_cluster.Cluster
+	Outbound      map[string]*envoy_cluster.Cluster
+	OutboundSplit map[string][]*envoy_cluster.Cluster
+	Gateway       map[string]*envoy_cluster.Cluster
 }
 
 func GatherClusters(rs *xds.ResourceSet) Clusters {
 	clusters := Clusters{
-		Inbound:  map[string]*envoy_cluster.Cluster{},
-		Outbound: map[string]*envoy_cluster.Cluster{},
-		Gateway:  map[string]*envoy_cluster.Cluster{},
+		Inbound:       map[string]*envoy_cluster.Cluster{},
+		Outbound:      map[string]*envoy_cluster.Cluster{},
+		OutboundSplit: map[string][]*envoy_cluster.Cluster{},
+		Gateway:       map[string]*envoy_cluster.Cluster{},
 	}
 	for _, res := range rs.Resources(envoy_resource.ClusterType) {
 		cluster := res.Resource.(*envoy_cluster.Cluster)
 
 		switch res.Origin {
 		case generator.OriginOutbound:
-			clusters.Outbound[cluster.Name] = cluster
+			matchedGroups := splitClusterRegex.FindStringSubmatch(cluster.Name)
+			if len(matchedGroups) == 3 {
+				serviceName := matchedGroups[1]
+				// first group is service name and second split number
+				clusters.OutboundSplit[serviceName] = append(clusters.OutboundSplit[serviceName], cluster)
+			} else {
+				clusters.Outbound[cluster.Name] = cluster
+			}
 		case generator.OriginInbound:
 			clusters.Inbound[cluster.Name] = cluster
 		case metadata.OriginGateway:
