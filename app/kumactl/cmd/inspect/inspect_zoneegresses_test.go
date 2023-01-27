@@ -40,7 +40,7 @@ func (c *testZoneEgressOverviewClient) List(_ context.Context) (*core_mesh.ZoneE
 var _ resources.ZoneEgressOverviewClient = &testZoneEgressOverviewClient{}
 
 var _ = Describe("kumactl inspect zoneegresses", func() {
-
+	time.Local = time.UTC
 	var now, t1, t2 time.Time
 	var sampleZoneEgressOverview []*core_mesh.ZoneEgressOverviewResource
 
@@ -48,7 +48,6 @@ var _ = Describe("kumactl inspect zoneegresses", func() {
 		now, _ = time.Parse(time.RFC3339, "2019-07-17T18:08:41+00:00")
 		t1, _ = time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 		t2, _ = time.Parse(time.RFC3339, "2019-07-17T16:05:36.995+00:00")
-		time.Local = time.UTC
 
 		sampleZoneEgressOverview = []*core_mesh.ZoneEgressOverviewResource{
 			{

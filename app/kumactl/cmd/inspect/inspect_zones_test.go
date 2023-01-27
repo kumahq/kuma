@@ -40,7 +40,7 @@ func (c *testZoneOverviewClient) List(_ context.Context) (*system_core.ZoneOverv
 var _ resources.ZoneOverviewClient = &testZoneOverviewClient{}
 
 var _ = Describe("kumactl inspect zones", func() {
-
+	time.Local = time.UTC
 	var now, t1, t2 time.Time
 	var sampleZoneOverview []*system_core.ZoneOverviewResource
 
@@ -48,7 +48,6 @@ var _ = Describe("kumactl inspect zones", func() {
 		now, _ = time.Parse(time.RFC3339, "2019-07-17T18:08:41+00:00")
 		t1, _ = time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 		t2, _ = time.Parse(time.RFC3339, "2019-07-17T16:05:36.995+00:00")
-		time.Local = time.UTC
 
 		sampleZoneOverview = []*system_core.ZoneOverviewResource{
 			{
