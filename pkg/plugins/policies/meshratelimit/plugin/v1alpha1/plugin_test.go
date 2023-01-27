@@ -139,6 +139,12 @@ var _ = Describe("MeshRateLimit", func() {
 													Value: "other-value",
 												},
 											},
+											Set: []api.HeaderKeyValue{
+												{
+													Name:  "x-kuma-rate-limit-header-set",
+													Value: "test-value",
+												},
+											},
 										},
 									},
 								},
