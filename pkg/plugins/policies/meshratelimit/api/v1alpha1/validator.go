@@ -15,20 +15,17 @@ func (r *MeshRateLimitResource) validate() error {
 	if len(r.Spec.From) == 0 {
 		verr.AddViolationAt(path.Field("from"), "needs at least one item")
 	}
-	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef, hasTcpConfiguration(r.Spec.From)))
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
 	verr.AddErrorAt(path, validateFrom(r.Spec.From))
 	return verr.OrNil()
 }
 
-func validateTop(targetRef common_api.TargetRef, hasTcpConfig bool) validators.ValidationError {
+func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 	supportedKinds := []common_api.TargetRefKind{
 		common_api.Mesh,
 		common_api.MeshSubset,
 		common_api.MeshService,
 		common_api.MeshServiceSubset,
-	}
-	if !hasTcpConfig {
-		supportedKinds = append(supportedKinds, common_api.MeshGatewayRoute)
 	}
 	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
 		SupportedKinds: supportedKinds,
@@ -108,15 +105,6 @@ func validateRate(path validators.PathBuilder, rate *Rate) validators.Validation
 	verr.Add(validators.ValidateIntegerGreaterThan(path.Field("num"), rate.Num, 0))
 	verr.Add(validators.ValidateDurationGreaterThan(path.Field("interval"), &rate.Interval, 50*time.Millisecond))
 	return verr
-}
-
-func hasTcpConfiguration(from []From) bool {
-	for _, fromItem := range from {
-		if isTcp(fromItem.Default) {
-			return true
-		}
-	}
-	return false
 }
 
 func isTcp(conf Conf) bool {
