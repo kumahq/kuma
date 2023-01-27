@@ -13,7 +13,7 @@ jobs:
   lifecycle:
     uses: kumahq/.github/.github/workflows/wfc_lifecycle.yml@main
   refresh-active-releases:
-    if: github.event_name == "schedule" || github.event_name == "workflow_dispatch"
+    if: contains(fromJSON('["schedule", "workflow_dispatch"]'), github.event_name)
     runs-on: ubuntu-latest
     steps:
       - name: Generate GitHub app token
