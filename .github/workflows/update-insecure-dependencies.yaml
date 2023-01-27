@@ -10,7 +10,7 @@ jobs:
   build-matrix:
     runs-on: ubuntu-latest
     outputs:
-      branches: ${{ steps.generate-matrix.outputs.branches }}
+      branches: ${{ toJSON(steps.generate-matrix.outputs.branches) }}
     steps:
       - name: generate-matrix
         run: |
