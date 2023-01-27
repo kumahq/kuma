@@ -222,6 +222,75 @@ var _ = Describe("MeshTimeout", func() {
 			expectedCluster:  "outbound_with_defaults_cluster.golden.yaml",
 			expectedListener: "outbound_with_defaults_listener.golden.yaml",
 		}),
+		Entry("default inbound conf when no from section specified", sidecarTestCase{
+			resources: []core_xds.Resource{
+				{
+					Name:     "outbound",
+					Origin:   generator.OriginOutbound,
+					Resource: httpOutboundListenerWith(10001),
+				},
+				{
+					Name:     "outbound",
+					Origin:   generator.OriginOutbound,
+					Resource: test_xds.ClusterWithName("other-service"),
+				},
+			},
+			toRules: core_xds.ToRules{
+				Rules: []*core_xds.Rule{
+					{
+						Subset: core_xds.Subset{
+							{
+								Key:   mesh_proto.ServiceTag,
+								Value: "other-service",
+							},
+						},
+						Conf: api.Conf{
+							ConnectionTimeout: test.ParseDuration("10s"),
+							IdleTimeout:       test.ParseDuration("1h"),
+						},
+					},
+				},
+			},
+			expectedCluster:  "default_outbound_cluster.golden.yaml",
+			expectedListener: "default_outbound_listener.golden.yaml",
+		}),
+		Entry("default outbound conf when no to section specified", sidecarTestCase{
+			resources: []core_xds.Resource{
+				{
+					Name:     "inbound",
+					Origin:   generator.OriginInbound,
+					Resource: httpInboundListenerWith(80),
+				},
+				{
+					Name:     "inbound",
+					Origin:   generator.OriginInbound,
+					Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundServicePort)),
+				},
+			},
+			fromRules: core_xds.FromRules{
+				Rules: map[core_xds.InboundListener]core_xds.Rules{
+					{
+						Address: "127.0.0.1",
+						Port:    80,
+					}: []*core_xds.Rule{
+						{
+							Subset: core_xds.Subset{},
+							Conf: api.Conf{
+								ConnectionTimeout: test.ParseDuration("10s"),
+								IdleTimeout:       test.ParseDuration("1h"),
+								Http: &api.Http{
+									RequestTimeout:        test.ParseDuration("5s"),
+									StreamIdleTimeout:     test.ParseDuration("1s"),
+									MaxStreamDuration:     test.ParseDuration("10m"),
+									MaxConnectionDuration: test.ParseDuration("10m"),
+								},
+							},
+						},
+					}},
+			},
+			expectedCluster:  "default_inbound_cluster.golden.yaml",
+			expectedListener: "default_inbound_listener.golden.yaml",
+		}),
 	)
 
 	It("should generate proper Envoy config for MeshGateway Dataplanes", func() {
