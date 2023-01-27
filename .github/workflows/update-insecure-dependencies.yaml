@@ -11,20 +11,13 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       branches: ${{ steps.generate-matrix.outputs.branches }}
-      token: ${{ steps.github-app-token.outputs.token }}
     steps:
-      - name: Generate GitHub app token
-        id: github-app-token
-        uses: tibdex/github-app-token@021a2405c7f990db57f5eae5397423dcc554159c # v1.7.0
-        with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: generate-matrix
         run: |
           ACTIVE_BRANCHES=`gh api /repos/${{ github.repository }}/contents/active-branches.json --jq '.content | @base64d'`
           echo "branches=${ACTIVE_BRANCHES}" >> $GITHUB_OUTPUT
         env:
-          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
+          GITHUB_TOKEN: ${{ github.token }}
 
   update-insecure-dependencies:
     needs:
@@ -35,6 +28,12 @@ jobs:
         branch: ${{ fromJSON(needs.build-matrix.outputs.branches) }}
     runs-on: ubuntu-latest
     steps:
+      - name: Generate GitHub app token
+        id: github-app-token
+        uses: tibdex/github-app-token@021a2405c7f990db57f5eae5397423dcc554159c # v1.7.0
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: "Clone Kuma"
         uses: actions/checkout@v3
         with:
@@ -84,6 +83,6 @@ jobs:
           title: "chore(deps): security update"
           draft: false
           labels: dependencies,${{ matrix.branch }}
-          token: ${{ needs.build-matrix.outputs.token }}
+          token: ${{ steps.github-app-token.outputs.token }}
           committer: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>
           author: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>
