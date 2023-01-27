@@ -3,6 +3,8 @@ name: "Update changelog"
 on:
   workflow_dispatch: {}
   release: {}
+env:
+  KUMA_DIR: "."
 jobs:
   update-changelog:
     runs-on: ubuntu-latest
@@ -13,8 +15,7 @@ jobs:
         with:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
-      - name: "Clone Kuma"
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           ref: "master"
       - uses: actions/setup-go@v3
@@ -23,7 +24,7 @@ jobs:
       - env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
         run: |
-          go run ./tools/releases/changelog/... changelog.md > CHANGELOG.md
+          go run ${{ env.KUMA_DIR }}/tools/releases/changelog/... changelog.md -repo ${{ github.repository }} > CHANGELOG.md
       - name: "Create Pull Request"
         uses: peter-evans/create-pull-request@v4
         with:
