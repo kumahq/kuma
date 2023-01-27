@@ -1,0 +1,10 @@
+import{a as y,D as g}from"./kongponents.es-3df60cd6.js";import{d as l,o as a,h as s,t as r,f as n,g as t,a as i,w as _,v as P,e as f,B as D,u as d,F as b}from"./runtime-dom.esm-bundler-91b41870.js";import{I as O,j as h,l as C,m as N}from"./store-d8acb7be.js";const E=l({__name:"WarningDefault",props:{payload:{type:[String,Object],required:!0}},setup(e){return(o,u)=>(a(),s("span",null,r(e.payload),1))}}),I=l({__name:"WarningEnvoyIncompatible",props:{payload:{type:Object,required:!0}},setup(e){return(o,u)=>(a(),s("span",null,[n(`
+    Envoy (`),t("strong",null,r(e.payload.envoy),1),n(") is unsupported by the current version of Kuma DP ("),t("strong",null,r(e.payload.kumaDp),1),n(") [Requirements: "),t("strong",null,r(e.payload.requirements),1),n(`].
+  `)]))}}),A=l({__name:"WarningZoneAndKumaDPVersionsIncompatible",props:{payload:{type:Object,required:!0}},setup(e){return(o,u)=>(a(),s("span",null,[n(`
+    There is a mismatch between versions of Kuma DP (`),t("strong",null,r(e.payload.kumaDp),1),n(`) and the Zone CP.
+  `)]))}}),B=l({__name:"WarningUnsupportedKumaDPVersion",props:{payload:{type:Object,required:!0}},setup(e){return(o,u)=>(a(),s("span",null,[n(`
+    Unsupported version of Kuma DP (`),t("strong",null,r(e.payload.kumaDp),1),n(`)
+  `)]))}}),V=l({__name:"WarningZoneAndGlobalCPSVersionsIncompatible",props:{payload:{type:Object,required:!0}},setup(e){return(o,u)=>(a(),s("span",null,[n(`
+    There is mismatch between versions of Zone CP (`),t("strong",null,r(e.payload.zoneCpVersion),1),n(`)
+    and the Global CP (`),t("strong",null,r(e.payload.globalCpVersion),1),n(`)
+  `)]))}}),T=l({__name:"WarningsWidget",props:{warnings:{type:Array,required:!0}},setup(e){const o=e;function u(c=""){switch(c){case N:return I;case C:return B;case h:return A;case O:return V;default:return E}}return(c,v)=>(a(),i(d(g),{"border-variant":"noBorder"},{body:_(()=>[t("ul",null,[(a(!0),s(b,null,P(o.warnings,(p,m)=>(a(),s("li",{key:`${p.kind}/${m}`,class:"mb-1"},[f(d(y),{appearance:"warning"},{alertMessage:_(()=>[(a(),i(D(u(p.kind)),{payload:p.payload},null,8,["payload"]))]),_:2},1024)]))),128))])]),_:1}))}});export{T as _};
