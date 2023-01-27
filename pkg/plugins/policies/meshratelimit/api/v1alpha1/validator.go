@@ -6,7 +6,6 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (r *MeshRateLimitResource) validate() error {
@@ -105,8 +104,4 @@ func validateRate(path validators.PathBuilder, rate *Rate) validators.Validation
 	verr.Add(validators.ValidateIntegerGreaterThan(path.Field("num"), rate.Num, 0))
 	verr.Add(validators.ValidateDurationGreaterThan(path.Field("interval"), &rate.Interval, 50*time.Millisecond))
 	return verr
-}
-
-func isTcp(conf Conf) bool {
-	return pointer.Deref(conf.Local).TCP != nil
 }
