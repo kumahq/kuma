@@ -154,7 +154,9 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		if err != nil {
 			return err
 		}
-		pod.Spec.InitContainers = append(pod.Spec.InitContainers, patchedIc)
+
+		// inject kuma init container as first
+		pod.Spec.InitContainers = append([]kube_core.Container{patchedIc}, pod.Spec.InitContainers...)
 	}
 
 	if err := i.overrideHTTPProbes(pod); err != nil {
