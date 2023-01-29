@@ -195,6 +195,8 @@ func clearAppendSlices(val reflect.Value) {
 					valField.Elem().Set(reflect.Zero(valField.Elem().Type()))
 				}
 			}
+		default:
+			// we do not care about other types
 		}
 	}
 }
@@ -231,6 +233,8 @@ func appendSlices(dst reflect.Value, src reflect.Value) {
 					dstField.Elem().Set(s)
 				}
 			}
+		default:
+			// we do not care about other types
 		}
 	}
 }

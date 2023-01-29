@@ -163,7 +163,8 @@ func validateMeshGatewayConf(path validators.PathBuilder, conf *mesh_proto.MeshG
 		case mesh_proto.MeshGateway_Listener_NONE:
 			err.AddViolationAt(path.Index(i).Field("protocol"), "cannot be empty")
 		case mesh_proto.MeshGateway_Listener_UDP,
-			mesh_proto.MeshGateway_Listener_TLS:
+			mesh_proto.MeshGateway_Listener_TLS,
+			mesh_proto.MeshGateway_Listener_TCP:
 			err.AddViolationAt(path.Index(i).Field("protocol"), "protocol type is not supported")
 		case mesh_proto.MeshGateway_Listener_HTTPS:
 			if l.GetCrossMesh() {
@@ -171,6 +172,8 @@ func validateMeshGatewayConf(path validators.PathBuilder, conf *mesh_proto.MeshG
 			} else if l.GetTls() == nil {
 				err.AddViolationAt(path.Index(i).Field("tls"), "cannot be empty")
 			}
+		case mesh_proto.MeshGateway_Listener_HTTP:
+			// supported
 		}
 
 		if tls := l.GetTls(); tls != nil && !l.GetCrossMesh() {

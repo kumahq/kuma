@@ -144,6 +144,8 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 			case attachment.NoHostnameIntersection:
 				reason = string(gatewayapi.RouteReasonNoMatchingListenerHostname)
 				message = ""
+			default:
+				// we do not care about other states
 			}
 
 			conditions[ref] = []kube_meta.Condition{

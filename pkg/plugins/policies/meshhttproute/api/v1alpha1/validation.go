@@ -145,6 +145,10 @@ func validateFilters(filters *[]Filter) validators.ValidationError {
 			if filter.RequestRedirect == nil {
 				errs.AddViolationAt(path.Field("requestRedirect"), validators.MustBeDefined)
 			}
+		case URLRewriteType:
+			if filter.URLRewrite == nil {
+				errs.AddViolationAt(path.Field("urlRewrite"), validators.MustBeDefined)
+			}
 		}
 	}
 

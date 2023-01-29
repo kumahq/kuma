@@ -140,6 +140,7 @@ func mergeDuplicates(typ *io_prometheus_client.MetricType, metrics []*io_prometh
 			merged.Summary = mergeSummary(dups)
 		case io_prometheus_client.MetricType_UNTYPED:
 			merged.Untyped = mergeUntyped(dups)
+		case io_prometheus_client.MetricType_GAUGE_HISTOGRAM:
 		case io_prometheus_client.MetricType_HISTOGRAM:
 			merged.Histogram = mergeHistogram(dups)
 		}

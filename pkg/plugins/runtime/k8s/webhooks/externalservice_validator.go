@@ -40,8 +40,9 @@ func (h *ExternalServiceValidator) Handle(ctx context.Context, req admission.Req
 		return h.ValidateCreate(ctx, req)
 	case v1.Update:
 		return h.ValidateUpdate(ctx, req)
+	default:
+		return admission.Allowed("")
 	}
-	return admission.Allowed("")
 }
 
 func (h *ExternalServiceValidator) ValidateDelete(ctx context.Context, req admission.Request) admission.Response {

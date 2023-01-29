@@ -40,8 +40,9 @@ func (h *RateLimitValidator) Handle(ctx context.Context, req admission.Request) 
 		return h.ValidateCreate(ctx, req)
 	case v1.Update:
 		return h.ValidateUpdate(ctx, req)
+	default:
+		return admission.Allowed("")
 	}
-	return admission.Allowed("")
 }
 
 func (h *RateLimitValidator) ValidateDelete(ctx context.Context, req admission.Request) admission.Response {

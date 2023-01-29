@@ -34,8 +34,9 @@ func (v *SecretValidator) Handle(ctx context.Context, req admission.Request) adm
 		fallthrough
 	case admissionv1.Update:
 		return v.handleUpdate(ctx, req)
+	default:
+		return admission.Allowed("")
 	}
-	return admission.Allowed("")
 }
 
 func (v *SecretValidator) handleUpdate(ctx context.Context, req admission.Request) admission.Response {
@@ -96,6 +97,8 @@ func (v *SecretValidator) validate(ctx context.Context, secret *kube_core.Secret
 		}
 	case common_k8s.GlobalSecretType:
 		v.validateGlobalSecret(verr, secret)
+	default:
+		// we only care about these two
 	}
 
 	return verr.OrNil()

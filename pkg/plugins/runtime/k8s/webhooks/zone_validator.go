@@ -32,8 +32,9 @@ func (z *ZoneValidator) Handle(ctx context.Context, req admission.Request) admis
 	switch req.Operation {
 	case v1.Delete:
 		return z.ValidateDelete(ctx, req)
+	default:
+		return admission.Allowed("")
 	}
-	return admission.Allowed("")
 }
 
 func (z *ZoneValidator) ValidateDelete(ctx context.Context, req admission.Request) admission.Response {

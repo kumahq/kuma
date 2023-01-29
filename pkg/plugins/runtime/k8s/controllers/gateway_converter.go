@@ -76,6 +76,8 @@ func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Contex
 	case kube_controllerutil.OperationResultUpdated:
 		log.Info("Dataplane updated")
 		r.EventRecorder.Eventf(pod, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Updated Kuma Dataplane: %s", dataplane.Name)
+	default:
+		// we do not care about other results
 	}
 	return nil
 }

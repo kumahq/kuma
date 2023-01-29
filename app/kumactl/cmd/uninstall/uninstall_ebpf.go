@@ -282,6 +282,8 @@ func (r *CleanupJob) Watch(ctx context.Context, watcher watch.Interface) {
 				} else {
 					continue
 				}
+			default:
+				// we do not care about other phases
 			}
 			job.phase = pod.Status.Phase
 		}

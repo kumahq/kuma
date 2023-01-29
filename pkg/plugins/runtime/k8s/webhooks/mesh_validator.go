@@ -46,8 +46,9 @@ func (h *MeshValidator) Handle(ctx context.Context, req admission.Request) admis
 		return h.ValidateCreate(ctx, req)
 	case v1.Update:
 		return h.ValidateUpdate(ctx, req)
+	default:
+		return admission.Allowed("")
 	}
-	return admission.Allowed("")
 }
 
 func (h *MeshValidator) ValidateDelete(ctx context.Context, req admission.Request) admission.Response {

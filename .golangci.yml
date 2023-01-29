@@ -19,6 +19,7 @@ linters:
     - nonamedreturns
     - staticcheck
     - unused
+    - exhaustive
 
 run:
   skip-files:
@@ -87,6 +88,11 @@ linters-settings:
     report-error-in-defer: false
   gofmt:
     simplify: true
+  exhaustive:
+    check:
+      - switch
+      - map
+    default-signifies-exhaustive: true # maybe switch to false in next PR
 
 issues:
   fix: true

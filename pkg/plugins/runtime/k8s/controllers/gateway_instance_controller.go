@@ -341,6 +341,8 @@ func getCombinedReadiness(svc *kube_core.Service, deployment *kube_apps.Deployme
 		if len(svc.Status.LoadBalancer.Ingress) > 0 {
 			return kube_meta.ConditionTrue, mesh_k8s.GatewayInstanceReady
 		}
+	case kube_core.ServiceTypeExternalName:
+		// we do not care about this service type
 	}
 
 	return kube_meta.ConditionFalse, mesh_k8s.GatewayInstanceAddressNotReady

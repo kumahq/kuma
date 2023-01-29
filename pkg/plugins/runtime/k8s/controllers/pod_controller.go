@@ -290,6 +290,8 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	case kube_controllerutil.OperationResultUpdated:
 		log.Info("Dataplane updated")
 		r.EventRecorder.Eventf(pod, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Updated Kuma Dataplane: %s", pod.Name)
+	default:
+		// we do not care about other results
 	}
 	return nil
 }
@@ -324,6 +326,8 @@ func (r *PodReconciler) createOrUpdateIngress(ctx context.Context, pod *kube_cor
 	case kube_controllerutil.OperationResultUpdated:
 		log.Info("ZoneIngress updated")
 		r.EventRecorder.Eventf(pod, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Updated Kuma Ingress: %s", pod.Name)
+	default:
+		// we do not care about other results
 	}
 	return nil
 }
@@ -358,6 +362,8 @@ func (r *PodReconciler) createOrUpdateEgress(ctx context.Context, pod *kube_core
 	case kube_controllerutil.OperationResultUpdated:
 		log.Info("ZoneEgress updated")
 		r.EventRecorder.Eventf(pod, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Updated Kuma Egress: %s", pod.Name)
+	default:
+		// we do not care about other results
 	}
 	return nil
 }
