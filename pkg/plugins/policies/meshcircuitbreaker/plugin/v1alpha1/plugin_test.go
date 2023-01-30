@@ -33,7 +33,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		resources       []*core_xds.Resource
 		toRules         core_xds.ToRules
 		fromRules       core_xds.FromRules
-		expectedCluster string
+		expectedCluster []string
 	}
 
 	genConnectionLimits := func() *api.ConnectionLimits {
@@ -115,8 +115,10 @@ var _ = Describe("MeshCircuitBreaker", func() {
 
 			Expect(plugin.Apply(resourceSet, context, &proxy)).To(Succeed())
 
-			Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ClusterType)[0].Resource)).
-				To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", given.expectedCluster)))
+			for idx, expected := range given.expectedCluster {
+				Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ClusterType)[idx].Resource)).
+					To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", expected)))
+			}
 		},
 		Entry("basic outbound cluster with connection limits", sidecarTestCase{
 			resources: []*core_xds.Resource{
@@ -139,7 +141,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 					},
 				},
 			},
-			expectedCluster: "outbound_cluster_connection_limits.golden.yaml",
+			expectedCluster: []string{"outbound_cluster_connection_limits.golden.yaml"},
 		}),
 		Entry("basic outbound cluster with outlier detection", sidecarTestCase{
 			resources: []*core_xds.Resource{
@@ -162,7 +164,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 					},
 				},
 			},
-			expectedCluster: "outbound_cluster_outlier_detection.golden.yaml",
+			expectedCluster: []string{"outbound_cluster_outlier_detection.golden.yaml"},
 		}),
 		Entry("basic outbound cluster with outlier detection and disabled=true", sidecarTestCase{
 			resources: []*core_xds.Resource{
@@ -185,7 +187,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 					},
 				},
 			},
-			expectedCluster: "outbound_cluster_outlier_detection_disabled.golden.yaml",
+			expectedCluster: []string{"outbound_cluster_outlier_detection_disabled.golden.yaml"},
 		}),
 		Entry("basic outbound cluster with connection limits and outlier detection", sidecarTestCase{
 			resources: []*core_xds.Resource{
@@ -209,7 +211,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 					},
 				},
 			},
-			expectedCluster: "outbound_cluster_connection_limits_outlier_detection.golden.yaml",
+			expectedCluster: []string{"outbound_cluster_connection_limits_outlier_detection.golden.yaml"},
 		}),
 		Entry("basic outbound cluster with connection limits, outlier detection and disabled=true", sidecarTestCase{
 			resources: []*core_xds.Resource{
@@ -233,7 +235,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 					},
 				},
 			},
-			expectedCluster: "outbound_cluster_connection_limits_outlier_detection_disabled.golden.yaml",
+			expectedCluster: []string{"outbound_cluster_connection_limits_outlier_detection_disabled.golden.yaml"},
 		}),
 		Entry("basic inbound cluster with connection limits", sidecarTestCase{
 			resources: []*core_xds.Resource{
@@ -258,7 +260,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 					},
 				},
 			},
-			expectedCluster: "inbound_cluster_connection_limits.golden.yaml",
+			expectedCluster: []string{"inbound_cluster_connection_limits.golden.yaml"},
 		}),
 		Entry("basic inbound cluster with outlier detection", sidecarTestCase{
 			resources: []*core_xds.Resource{
@@ -283,7 +285,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 					},
 				},
 			},
-			expectedCluster: "inbound_cluster_outlier_detection.golden.yaml",
+			expectedCluster: []string{"inbound_cluster_outlier_detection.golden.yaml"},
 		}),
 		Entry("basic inbound cluster with outlier detection and disabled=true", sidecarTestCase{
 			resources: []*core_xds.Resource{
@@ -308,7 +310,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 					},
 				},
 			},
-			expectedCluster: "inbound_cluster_outlier_detection_disabled.golden.yaml",
+			expectedCluster: []string{"inbound_cluster_outlier_detection_disabled.golden.yaml"},
 		}),
 		Entry("basic inbound cluster with connection limits and outlier detection", sidecarTestCase{
 			resources: []*core_xds.Resource{
@@ -334,9 +336,9 @@ var _ = Describe("MeshCircuitBreaker", func() {
 					},
 				},
 			},
-			expectedCluster: "inbound_cluster_connection_limits_outlier_detection.golden.yaml",
+			expectedCluster: []string{"inbound_cluster_connection_limits_outlier_detection.golden.yaml"},
 		}),
-		Entry("basic outbound cluster with connection limits, outlier detection and disabled=true", sidecarTestCase{
+		Entry("basic inbound cluster with connection limits, outlier detection and disabled=true", sidecarTestCase{
 			resources: []*core_xds.Resource{
 				{
 					Name:     "inbound",
@@ -360,7 +362,39 @@ var _ = Describe("MeshCircuitBreaker", func() {
 					},
 				},
 			},
-			expectedCluster: "inbound_cluster_connection_limits_outlier_detection_disabled.golden.yaml",
+			expectedCluster: []string{"inbound_cluster_connection_limits_outlier_detection_disabled.golden.yaml"},
+		}),
+		Entry("split outbound cluster with connection limits and outlier detection", sidecarTestCase{
+			resources: []*core_xds.Resource{
+				{
+					Name:     "other-service",
+					Origin:   generator.OriginOutbound,
+					Resource: test_xds.ClusterWithName("other-service"),
+				},
+				{
+					Name:     "other-service-_0_",
+					Origin:   generator.OriginOutbound,
+					Resource: test_xds.ClusterWithName("other-service-_0_"),
+				},
+			},
+			toRules: core_xds.ToRules{
+				Rules: []*core_xds.Rule{
+					{
+						Subset: core_xds.Subset{core_xds.Tag{
+							Key:   mesh_proto.ServiceTag,
+							Value: "other-service",
+						}},
+						Conf: api.Conf{
+							ConnectionLimits: genConnectionLimits(),
+							OutlierDetection: genOutlierDetection(false),
+						},
+					},
+				},
+			},
+			expectedCluster: []string{
+				"outbound_split_cluster_connection_limits_outlier_detection.golden.yaml",
+				"outbound_split_cluster_0_connection_limits_outlier_detection.golden.yaml",
+			},
 		}),
 	)
 })
