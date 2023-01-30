@@ -9,7 +9,7 @@ reusable:
     - &golang_image "cimg/go:1.18.9"
 
   vm_images:
-    - &ubuntu_vm_image "ubuntu-2004:202111-01"
+    - &ubuntu_vm_image "ubuntu-2204:2022.10.2"
 
 # See https://circleci.com/docs/2.0/configuration-reference/#commands-requires-version-21.
 commands:
