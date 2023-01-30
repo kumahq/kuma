@@ -12,3 +12,49 @@ on:
 jobs:
   lifecycle:
     uses: kumahq/.github/.github/workflows/wfc_lifecycle.yml@main
+  refresh-active-releases:
+    if: contains(fromJSON('["schedule", "workflow_dispatch"]'), github.event_name)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub app token
+        id: github-app-token
+        uses: tibdex/github-app-token@021a2405c7f990db57f5eae5397423dcc554159c # v1.7.0
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: master
+        env:
+          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
+      - uses: actions/setup-go@v3
+        with:
+          go-version: "~1.18.9"
+      - name: refresh-active-branches
+        run: |
+          REPO="${{ github.repository }}"
+          # Grab the first release X.Y.0 released less than a year ago (it's our support policy length)
+          EARLIEST_RELEASE=$(gh api /repos/${REPO}/releases --jq '[.[] | select(.name | endswith(".0")) | select(.published_at | fromdateiso8601 > (now - 3600 * 24 * 365)) | .name] | last')
+          EARLIEST_BRANCH="release-$(echo ${EARLIEST_RELEASE} | cut -d '.' -f -2)"
+          ACTIVE_BRANCHES=$(gh api /repos/${REPO}/branches  | jq --arg earliestBranch ${EARLIEST_BRANCH} '[.[] | .name | select(. == "master" or (startswith("release-") and . >= $earliestBranch))]')
+          echo ${ACTIVE_BRANCHES} > active-branches.json
+        env:
+          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
+      - name: update-readme
+        run: |
+          make dev/repo-health
+      - name: "Create Pull Request"
+        uses: peter-evans/create-pull-request@v4
+        with:
+          commit-message: "chore: updating README"
+          signoff: true
+          branch: chore/update-health
+          delete-branch: true
+          title: "chore: updating README"
+          draft: false
+          labels: ci/auto-merge,ci/skip-test
+          token: ${{ steps.github-app-token.outputs.token }}
+          committer: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>
+          author: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>
