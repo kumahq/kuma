@@ -61,7 +61,7 @@ func GatherTargetedClusters(
 	outbounds []*mesh_proto.Dataplane_Networking_Outbound,
 	outboundSplitClusters map[string][]*envoy_cluster.Cluster,
 	outboundClusters map[string]*envoy_cluster.Cluster,
-) *map[*envoy_cluster.Cluster]string {
+) map[*envoy_cluster.Cluster]string {
 	targetedClusters := map[*envoy_cluster.Cluster]string{}
 	for _, outbound := range outbounds {
 		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
@@ -75,7 +75,7 @@ func GatherTargetedClusters(
 		}
 	}
 
-	return &targetedClusters
+	return targetedClusters
 }
 
 func InferProtocol(routing core_xds.Routing, serviceName string) core_mesh.Protocol {

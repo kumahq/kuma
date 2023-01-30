@@ -92,7 +92,7 @@ func applyToOutbounds(
 ) error {
 	targetedClusters := policies_xds.GatherTargetedClusters(dataplane.Spec.Networking.GetOutbound(), outboundSplitClusters, outboundClusters)
 
-	for cluster, serviceName := range *targetedClusters {
+	for cluster, serviceName := range targetedClusters {
 		if err := configure(rules.Rules, core_xds.MeshService(serviceName), cluster); err != nil {
 			return err
 		}
