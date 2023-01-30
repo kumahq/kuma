@@ -317,7 +317,7 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port except ports exc
 	DescribeTable("should be redirected to outbound port",
 		func(serverPort, excludedPort uint16) {
 			// given
-			dnsUserUid := uintptr(4201) // see /.github/workflows/tests.yaml:76
+			dnsUserUid := uintptr(4201) // see /.github/workflows/blackbox-tests.yaml:76
 
 			tproxyConfig := config.Config{
 				Redirect: config.Redirect{
@@ -887,7 +887,7 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port except ports exc
 	DescribeTable("should be redirected to outbound port",
 		func(serverPort, excludedPort uint16) {
 			// given
-			dnsUserUid := uintptr(4201) // see /.github/workflows/tests.yaml:76
+			dnsUserUid := uintptr(4201) // see /.github/workflows/blackbox-tests.yaml:76
 
 			tproxyConfig := config.Config{
 				Redirect: config.Redirect{

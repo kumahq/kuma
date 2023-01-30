@@ -111,7 +111,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53", func() {
 
 	DescribeTable("should be redirected to provided port except for traffic excluded by uid",
 		func(randomPort uint16) {
-			dnsUserUid := uintptr(4201) // see /.github/workflows/tests.yaml:76
+			dnsUserUid := uintptr(4201) // see /.github/workflows/blackbox-tests.yaml:76
 			// given
 			tproxyConfig := config.Config{
 				Redirect: config.Redirect{
@@ -201,7 +201,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53", func() {
 	DescribeTable("should be redirected to provided port except for traffic excluded by uid",
 		func(randomPort uint16) {
 			// given
-			dnsUserUid := uintptr(4201) // see /.github/workflows/tests.yaml:76
+			dnsUserUid := uintptr(4201) // see /.github/workflows/blackbox-tests.yaml:76
 			address := udp.GenRandomAddressIPv6(consts.DNSPort)
 			tproxyConfig := config.Config{
 				Redirect: config.Redirect{
