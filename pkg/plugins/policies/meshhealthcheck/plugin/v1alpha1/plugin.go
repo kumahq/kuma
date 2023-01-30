@@ -3,7 +3,6 @@ package v1alpha1
 import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -43,20 +42,9 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, _ xds_context.Context, proxy *co
 }
 
 func applyToOutbounds(rules core_xds.ToRules, outboundClusters map[string]*envoy_cluster.Cluster, outboundSplitClusters map[string][]*envoy_cluster.Cluster, dataplane *core_mesh.DataplaneResource, routing core_xds.Routing) error {
-	targetedClusters := map[*envoy_cluster.Cluster]string{}
-	for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
-		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
-		for _, splitCluster := range outboundSplitClusters[serviceName] {
-			targetedClusters[splitCluster] = serviceName
-		}
+	targetedClusters := policies_xds.GatherTargetedClusters(dataplane.Spec.Networking.GetOutbound(), outboundSplitClusters, outboundClusters)
 
-		cluster, ok := outboundClusters[serviceName]
-		if ok {
-			targetedClusters[cluster] = serviceName
-		}
-	}
-
-	for cluster, serviceName := range targetedClusters {
+	for cluster, serviceName := range *targetedClusters {
 		protocol := policies_xds.InferProtocol(routing, serviceName)
 
 		if err := configure(dataplane, rules.Rules, core_xds.MeshService(serviceName), protocol, cluster); err != nil {

@@ -6,6 +6,7 @@ import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -54,6 +55,27 @@ func GatherClusters(rs *xds.ResourceSet) Clusters {
 		}
 	}
 	return clusters
+}
+
+func GatherTargetedClusters(
+	outbounds []*mesh_proto.Dataplane_Networking_Outbound,
+	outboundSplitClusters map[string][]*envoy_cluster.Cluster,
+	outboundClusters map[string]*envoy_cluster.Cluster,
+) *map[*envoy_cluster.Cluster]string {
+	targetedClusters := map[*envoy_cluster.Cluster]string{}
+	for _, outbound := range outbounds {
+		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
+		for _, splitCluster := range outboundSplitClusters[serviceName] {
+			targetedClusters[splitCluster] = serviceName
+		}
+
+		cluster, ok := outboundClusters[serviceName]
+		if ok {
+			targetedClusters[cluster] = serviceName
+		}
+	}
+
+	return &targetedClusters
 }
 
 func InferProtocol(routing core_xds.Routing, serviceName string) core_mesh.Protocol {
