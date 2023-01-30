@@ -66,6 +66,14 @@ commands:
           }
           EOF
           sudo service docker restart
+    - run:
+        name: "Update runc"
+        # See https://github.com/rancher/k3d/issues/807 (runc's default version on the instance fails k3d)
+        command: |
+          if [[ `uname -s` == "Linux" ]]; then
+            sudo sh -c 'curl -s --fail --location https://github.com/opencontainers/runc/releases/download/v1.1.0/runc.<<parameters.go_arch>> > /usr/bin/runc'
+            sudo chown root:root /usr/bin/runc ; sudo chmod o+x /usr/bin/runc
+          fi
   skip_on_branch:
     description: "Skip the job on the branch"
     steps:
