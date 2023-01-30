@@ -65,7 +65,6 @@ func replaceInFile(fileName string, marker string, content string) error {
 	}
 	endMarkerIdx += startMarkerIdx + 1
 	out.WriteString(strings.Join(lines[endMarkerIdx:], "\n"))
-	out.WriteString("\n")
 
 	return os.WriteFile(fileName, out.Bytes(), os.ModePerm)
 }
