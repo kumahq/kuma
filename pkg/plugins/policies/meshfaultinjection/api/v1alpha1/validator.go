@@ -4,6 +4,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (r *MeshFaultInjectionResource) validate() error {
@@ -47,7 +48,7 @@ func validateFrom(from []From) validators.ValidationError {
 func validateDefault(path validators.PathBuilder, conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
 	path = path.Field("http")
-	for idx, fault := range conf.Http {
+	for idx, fault := range pointer.Deref(conf.Http) {
 		if fault.Abort != nil {
 			path := path.Field("abort").Index(idx)
 			verr.Add(validators.ValidateStatusCode(path.Field("httpStatus"), fault.Abort.HttpStatus))

@@ -449,10 +449,6 @@ spec:
               value: "kuma-system"
             - name: KUMA_STORE_TYPE
               value: "kubernetes"
-            - name: POD_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
             - name: KUMA_INTER_CP_CATALOG_INSTANCE_ADDRESS
               valueFrom:
                 fieldRef:
