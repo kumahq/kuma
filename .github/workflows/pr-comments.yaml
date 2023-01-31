@@ -13,14 +13,14 @@ jobs:
     steps:
       - name: Generate GitHub app token
         id: github-app-token
-        uses: tibdex/github-app-token@021a2405c7f990db57f5eae5397423dcc554159c # v1.7.0
+        uses: tibdex/github-app-token@b62528385c34dbc9f38e5f4225ac829252d1ea92 # v1.8.0
         with:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: check-maintainer
         run:  |
           # Ensure the commenter is a maintainer
-          if [[ `gh api  /repos/kumahq/kuma/collaborators --jq '.[] | select (.permissions.maintain == true) | .login' | grep ${{ github.event.comment.user.login }}` ]]; then
+          if [[ `gh api  /repos/${{ github.repository }}/collaborators --jq '.[] | select (.permissions.maintain == true) | .login' | grep ${{ github.event.comment.user.login }}` ]]; then
             gh api --method POST -f content='+1' ${{ github.event.comment.url }}/reactions
           else
             gh api --method POST -f content='-1' ${{ github.event.comment.url }}/reactions
@@ -44,7 +44,7 @@ jobs:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
       - uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: "~1.18.9"
       - uses: actions/cache@v3
         with:
           path: |
@@ -55,7 +55,6 @@ jobs:
             ${{ runner.os }}-go-
       - run: |
           make dev/tools
-          git checkout go.mod go.sum # This is because of some weirdness in `make dev/tools`
       - name: format
         if: contains(github.event.comment.body, '/format')   # check the comment if it contains the keywords
         run: |
