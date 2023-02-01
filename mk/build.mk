@@ -33,7 +33,7 @@ EBPF_GIT_BRANCH ?= main
 EBPF_TMP_DIRECTORY ?= $(BUILD_DIR)/ebpf
 
 # List of binaries that we have release build rules for.
-BUILD_RELEASE_BINARIES := ebpf/copy-for-kumactl kuma-cp kuma-dp kumactl coredns envoy kuma-cni install-cni
+BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl coredns envoy kuma-cni install-cni
 
 # List of binaries that we have test build roles for.
 BUILD_TEST_BINARIES := test-server
