@@ -38,15 +38,6 @@ func RateLimitConfigurationFromPolicy(rl *api.LocalHTTP) *rate_limit.RateLimitCo
 				onRateLimit.Headers = append(onRateLimit.Headers, &rate_limit.Headers{
 					Key:    string(header.Name),
 					Value:  val,
-					Append: true,
-				})
-			}
-		}
-		for _, header := range pointer.Deref(rl.OnRateLimit.Headers).Set {
-			for _, val := range strings.Split(string(header.Value), ",") {
-				onRateLimit.Headers = append(onRateLimit.Headers, &rate_limit.Headers{
-					Key:    string(header.Name),
-					Value:  val,
 					Append: false,
 				})
 			}

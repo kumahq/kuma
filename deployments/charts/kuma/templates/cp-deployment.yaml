@@ -92,10 +92,6 @@ spec:
                   name: {{ $element.Secret }}
                   key: {{ $element.Key }}
           {{- end }}
-            - name: POD_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
             - name: KUMA_INTER_CP_CATALOG_INSTANCE_ADDRESS
               valueFrom:
                 fieldRef:

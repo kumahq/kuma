@@ -83,7 +83,13 @@ type GQLClient struct {
 	Token string
 }
 
-func (c GQLClient) releaseGraphQL(owner, name string) ([]GQLRelease, error) {
+func splitRepo(repo string) (string, string) {
+	r := strings.Split(repo, "/")
+	return r[0], r[1]
+}
+
+func (c GQLClient) releaseGraphQL(repo string) ([]GQLRelease, error) {
+	owner, name := splitRepo(repo)
 	res, err := c.graphqlQuery(`
 query($name: String!, $owner: String!) {
   repository(owner: $owner, name: $name) {
@@ -105,7 +111,8 @@ query($name: String!, $owner: String!) {
 	return res.Data.Repository.Releases.Nodes, nil
 }
 
-func (c GQLClient) historyGraphQl(owner, name, branch, commitLimit string) ([]GQLCommit, error) {
+func (c GQLClient) historyGraphQl(repo, branch, commitLimit string) ([]GQLCommit, error) {
+	owner, name := splitRepo(repo)
 	var out []GQLCommit
 	var err error
 	var res GQLOutput
@@ -159,7 +166,8 @@ query($name: String!, $owner: String!, $branch: String!) {
 	}
 }
 
-func (c GQLClient) commitByRef(owner, name, tag string) (string, error) {
+func (c GQLClient) commitByRef(repo, tag string) (string, error) {
+	owner, name := splitRepo(repo)
 	res, err := c.graphqlQuery(`
 query ($owner: String!, $name: String!, $ref: String!) {
   repository(name: $name, owner: $owner) {

@@ -14,7 +14,6 @@ import (
 
 var config struct {
 	branch     string
-	owner      string
 	repo       string
 	fromTag    string
 	fromCommit string
@@ -52,7 +51,7 @@ var autoChangelog = &cobra.Command{
 			}
 		}
 		gqlClient := GQLClient{Token: token}
-		res, err := gqlClient.releaseGraphQL(config.owner, config.repo)
+		res, err := gqlClient.releaseGraphQL(config.repo)
 		if err != nil {
 			return err
 		}
@@ -102,7 +101,7 @@ It will then output a changelog with all PRs with the same changelog grouped tog
 		// Retrieve data from github
 		commitLimit := config.fromCommit
 		if config.fromTag != "" {
-			res, err := gqlClient.commitByRef(config.owner, config.repo, config.fromTag)
+			res, err := gqlClient.commitByRef(config.repo, config.fromTag)
 			if err != nil {
 				return err
 			}
@@ -110,7 +109,7 @@ It will then output a changelog with all PRs with the same changelog grouped tog
 		}
 		byChangelog := map[string][]*CommitInfo{}
 		// Deal with pagination
-		res, err := gqlClient.historyGraphQl(config.owner, config.repo, config.branch, commitLimit)
+		res, err := gqlClient.historyGraphQl(config.repo, config.branch, commitLimit)
 		if err != nil {
 			return err
 		}
@@ -185,7 +184,7 @@ type Changelog struct {
 func (c Changelog) String() string {
 	var prLinks []string
 	for _, n := range c.PullRequests {
-		prLinks = append(prLinks, fmt.Sprintf("[#%d](https://github.com/%s/%s/pull/%d)", n, config.owner, config.repo, n))
+		prLinks = append(prLinks, fmt.Sprintf("[#%d](https://github.com/%s/pull/%d)", n, config.repo, n))
 	}
 	seen := map[string]struct{}{}
 	var authors []string
@@ -258,10 +257,8 @@ func NewCommitInfo(commit GQLCommit) *CommitInfo {
 }
 
 func init() {
-	github.Flags().StringVar(&config.owner, "owner", "kumahq", "The owner org to query")
-	github.Flags().StringVar(&config.repo, "name", "kuma", "The repository to query")
-	autoChangelog.Flags().StringVar(&config.owner, "owner", "kumahq", "The owner org to query")
-	autoChangelog.Flags().StringVar(&config.repo, "name", "kuma", "The repository to query")
+	github.Flags().StringVar(&config.repo, "repo", "kumahq/kuma", "The repository to query")
+	autoChangelog.Flags().StringVar(&config.repo, "repo", "kumahq/kuma", "The repository to query")
 	github.Flags().StringVar(&config.branch, "branch", "master", "The branch to look for the start on")
 	github.Flags().StringVar(&config.fromCommit, "from-commit", "", "If set only show commits after this commit sha")
 	github.Flags().StringVar(&config.fromTag, "from-tag", "", "If set only show commits after this tag (must be on the same branch)")

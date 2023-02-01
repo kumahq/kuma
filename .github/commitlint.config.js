@@ -9,7 +9,8 @@ module.exports = {
     "header-max-length": [0],
     // Disable some common mistyped scopes and some that should be used
     "scope-enum": [2, "never", [
-      "kumacp", "kumadp", "kumacni", "kumainit", "*", "madr", "test", "ci", "perf"
-    ]]
+      "kumacp", "kumadp", "kumacni", "kumainit", "*", "madr", "test", "ci", "perf", "policies"
+    ]],
+    "scope-empty": [2, "never"]
   },
 };

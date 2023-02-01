@@ -212,9 +212,18 @@ it is at your discretion, but here are some of the most frequent ones:
 - **kuma-dp**: A change that affects the data-plane
 - **kumactl**: A change to the kumactl
 - **deps**: When updating dependencies (to be used with the `chore` prefix)
+- **api-server**: When changing to admin api
+- **xds**: When changing something related to xds
+- **kds**: When change something related to kds
+- **MeshRetry**: When changing a specific policy
+- **policy**: When changing something that affects all policies
 - **conf**: Configuration-related changes (new values, improvements...)
-- `*`: When the change affects too many parts of the codebase at once (this
-  should be rare and avoided)
+
+The usual casing for scope is to use singular kebab-case except if it's a public api in which
+case use whatever the public name is (which usually is PascalCase).
+This is why you can have `feat(api-server)` but `fix(MeshRetry)`.
+
+Missing or `*` scope is not allowed. There's usually always something you can put
 
 ##### Subject
 

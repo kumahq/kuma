@@ -7,27 +7,36 @@ on:
 env:
   IGNORE_PACKAGES: "github.com/aws/aws-sdk-go"
 jobs:
+  build-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      branches: ${{ steps.generate-matrix.outputs.branches }}
+    steps:
+      - id: generate-matrix
+        run: |
+          # The head -1 is because GITHUB_OUTPUT is easier to work with single line output and this file is created with automation in `lifecycle.yaml` 
+          ACTIVE_BRANCHES=`gh api /repos/${{ github.repository }}/contents/active-branches.json --jq '.content | @base64d' | head -1`
+          echo "branches=${ACTIVE_BRANCHES}" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
   update-insecure-dependencies:
+    needs:
+      - build-matrix
     strategy:
       fail-fast: false
       matrix:
-        branch:
-          - "release-2.0"
-          - "release-1.8"
-          - "release-1.7"
-          - "release-1.6"
-          - "release-1.5"
-          - "master"
+        branch: ${{ fromJSON(needs.build-matrix.outputs.branches) }}
     runs-on: ubuntu-latest
     steps:
       - name: Generate GitHub app token
         id: github-app-token
-        uses: tibdex/github-app-token@021a2405c7f990db57f5eae5397423dcc554159c # v1.7.0
+        uses: tibdex/github-app-token@b62528385c34dbc9f38e5f4225ac829252d1ea92 # v1.8.0
         with:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: "Clone Kuma"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: ${{ matrix.branch }}
       - uses: actions/setup-go@v3

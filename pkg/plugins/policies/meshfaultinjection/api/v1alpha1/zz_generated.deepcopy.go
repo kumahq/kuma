@@ -28,9 +28,13 @@ func (in *Conf) DeepCopyInto(out *Conf) {
 	*out = *in
 	if in.Http != nil {
 		in, out := &in.Http, &out.Http
-		*out = make([]FaultInjectionConf, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		*out = new([]FaultInjectionConf)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]FaultInjectionConf, len(*in))
+			for i := range *in {
+				(*in)[i].DeepCopyInto(&(*out)[i])
+			}
 		}
 	}
 }

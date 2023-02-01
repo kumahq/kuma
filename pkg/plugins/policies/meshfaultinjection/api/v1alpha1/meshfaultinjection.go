@@ -30,7 +30,7 @@ type From struct {
 
 type Conf struct {
 	// Http allows to define list of Http faults between dataplanes.
-	Http []FaultInjectionConf `json:"http,omitempty"`
+	Http *[]FaultInjectionConf `json:"http,omitempty"`
 }
 
 // FaultInjection defines the configuration of faults between dataplanes.
