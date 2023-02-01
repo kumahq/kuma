@@ -31,6 +31,8 @@ type KdsServerConfig struct {
 	// MsgSendTimeout defines a timeout on sending a single KDS message.
 	// KDS stream between control planes is terminated if the control plane hits this timeout.
 	MsgSendTimeout config_types.Duration `json:"msgSendTimeout" envconfig:"kuma_multizone_global_kds_msg_send_timeout"`
+	// Backoff that is executed when the global control plane is sending the response that was previously rejected by zone control plane.
+	NackBackoff config_types.Duration `json:"nackBackoff" envconfig:"kuma_multizone_global_kds_nack_backoff"`
 }
 
 var _ config.Config = &KdsServerConfig{}
@@ -78,6 +80,8 @@ type KdsClientConfig struct {
 	// MsgSendTimeout defines a timeout on sending a single KDS message.
 	// KDS stream between control planes is terminated if the control plane hits this timeout.
 	MsgSendTimeout config_types.Duration `json:"msgSendTimeout" envconfig:"kuma_multizone_zone_kds_msg_send_timeout"`
+	// Backoff that is executed when the zone control plane is sending the response that was previously rejected by global control plane.
+	NackBackoff config_types.Duration `json:"nackBackoff" envconfig:"kuma_multizone_zone_kds_nack_backoff"`
 }
 
 var _ config.Config = &KdsClientConfig{}

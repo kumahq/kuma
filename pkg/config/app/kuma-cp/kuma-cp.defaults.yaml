@@ -411,6 +411,8 @@ multizone:
       # MsgSendTimeout defines a timeout on sending a single KDS message.
       # KDS stream between control planes is terminated if the control plane hits this timeout.
       msgSendTimeout: 60s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_MSG_SEND_TIMEOUT
+      # Backoff that is executed when the global control plane is sending the response that was previously rejected by zone control plane
+      nackBackoff: 5s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_NACK_BACKOFF
   zone:
     # Kuma Zone name used to mark the zone dataplane resources
     name: "" # ENV: KUMA_MULTIZONE_ZONE_NAME
@@ -427,6 +429,8 @@ multizone:
       # MsgSendTimeout defines a timeout on sending a single KDS message.
       # KDS stream between control planes is terminated if the control plane hits this timeout.
       msgSendTimeout: 60s # ENV: KUMA_MULTIZONE_ZONE_KDS_MSG_SEND_TIMEOUT
+      # Backoff that is executed when the zone control plane is sending the response that was previously rejected by global control plane
+      nackBackoff: 5s # ENV: KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF
 
 # Diagnostics configuration
 diagnostics:
