@@ -6,6 +6,8 @@ import (
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"google.golang.org/grpc"
+
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 )
 
 type MockServerStream struct {
@@ -64,7 +66,7 @@ func (stream *MockServerStream) ClientStream(stopCh chan struct{}) *MockClientSt
 func NewMockServerStream() *MockServerStream {
 	return &MockServerStream{
 		Ctx:    context.Background(),
-		SentCh: make(chan *envoy_sd.DiscoveryResponse, 10),
-		RecvCh: make(chan *envoy_sd.DiscoveryRequest, 10),
+		SentCh: make(chan *envoy_sd.DiscoveryResponse, len(registry.Global().ObjectTypes())),
+		RecvCh: make(chan *envoy_sd.DiscoveryRequest, len(registry.Global().ObjectTypes())),
 	}
 }

@@ -37,9 +37,17 @@ func Setup(rt core_runtime.Runtime) error {
 	zone := rt.Config().Multizone.Zone.Name
 	reg := registry.Global()
 	kdsCtx := rt.KDSContext()
-	kdsServer, err := kds_server.New(kdsZoneLog, rt, reg.ObjectTypes(model.HasKDSFlag(model.ProvidedByZone)),
-		zone, rt.Config().Multizone.Zone.KDS.RefreshInterval.Duration,
-		kdsCtx.ZoneProvidedFilter, kdsCtx.ZoneResourceMapper, false)
+	kdsServer, err := kds_server.New(
+		kdsZoneLog,
+		rt,
+		reg.ObjectTypes(model.HasKDSFlag(model.ProvidedByZone)),
+		zone,
+		rt.Config().Multizone.Zone.KDS.RefreshInterval.Duration,
+		kdsCtx.ZoneProvidedFilter,
+		kdsCtx.ZoneResourceMapper,
+		false,
+		rt.Config().Multizone.Zone.KDS.NackBackoff.Duration,
+	)
 	if err != nil {
 		return err
 	}

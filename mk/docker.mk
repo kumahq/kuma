@@ -11,7 +11,7 @@ define build_image
 $(DOCKER_REGISTRY)/$(1):$(BUILD_INFO_VERSION)$(if $(IMAGE_ARCH_TAG_ENABLED),-${GOARCH},)
 endef
 
-export KUMA_BASE_IMAGE ?= kumahq/base-debian11:no-push
+export KUMA_BASE_IMAGE ?= kumahq/base-nossl-debian11:no-push
 export KUMA_BASE_ROOT_IMAGE ?= kumahq/base-root-debian11:no-push
 export KUMA_STATIC_IMAGE ?= kumahq/static-debian11:no-push
 export KUMA_ENVOY_IMAGE ?= kumahq/envoy:no-push

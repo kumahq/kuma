@@ -33,9 +33,7 @@ func validateTo(to []To) validators.ValidationError {
 		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(toItem.TargetRef, &matcher_validators.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
-				common_api.MeshSubset,
 				common_api.MeshService,
-				common_api.MeshServiceSubset,
 			},
 		}))
 

@@ -204,19 +204,19 @@ var _ = Describe("ConvertPercentage", func() {
 		}),
 		Entry("fractional input with 1 digit after dot", testCase{
 			input:    util_proto.Double(50.1),
-			expected: &envoy_type.FractionalPercent{Numerator: 501000, Denominator: envoy_type.FractionalPercent_TEN_THOUSAND},
+			expected: &envoy_type.FractionalPercent{Numerator: 5010, Denominator: envoy_type.FractionalPercent_TEN_THOUSAND},
 		}),
 		Entry("fractional input with 5 digit after dot", testCase{
 			input:    util_proto.Double(50.12345),
-			expected: &envoy_type.FractionalPercent{Numerator: 50123450, Denominator: envoy_type.FractionalPercent_MILLION},
+			expected: &envoy_type.FractionalPercent{Numerator: 501235, Denominator: envoy_type.FractionalPercent_MILLION},
 		}),
 		Entry("fractional input with 7 digit after dot, last digit less than 5", testCase{
 			input:    util_proto.Double(50.1234561),
-			expected: &envoy_type.FractionalPercent{Numerator: 50123456, Denominator: envoy_type.FractionalPercent_MILLION},
+			expected: &envoy_type.FractionalPercent{Numerator: 501235, Denominator: envoy_type.FractionalPercent_MILLION},
 		}),
 		Entry("fractional input with 7 digit after dot, last digit more than 5", testCase{
 			input:    util_proto.Double(50.1234567),
-			expected: &envoy_type.FractionalPercent{Numerator: 50123457, Denominator: envoy_type.FractionalPercent_MILLION},
+			expected: &envoy_type.FractionalPercent{Numerator: 501235, Denominator: envoy_type.FractionalPercent_MILLION},
 		}),
 	)
 })
