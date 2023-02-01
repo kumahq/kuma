@@ -3,7 +3,8 @@ package socket
 import (
 	"math"
 	"math/rand"
-	"time"
+
+	"github.com/onsi/ginkgo/v2"
 )
 
 func GenerateRandomPortsSlice(num uint, restrictedPort ...uint16) []uint16 {
@@ -17,7 +18,7 @@ func GenerateRandomPortsSlice(num uint, restrictedPort ...uint16) []uint16 {
 }
 
 func GenerateRandomPorts(num uint, restrictedPort ...uint16) map[uint16]struct{} {
-	rand.Seed(time.Now().UnixNano())
+	rand.Seed(ginkgo.GinkgoRandomSeed())
 	randomPorts := map[uint16]struct{}{}
 	restrictedPorts := map[uint16]struct{}{}
 
