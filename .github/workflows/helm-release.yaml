@@ -29,6 +29,7 @@ env:
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
   GH_OWNER: ${{ github.repository_owner }}
   GITHUB_APP: "true"
+  KUMA_DIR: "."
 
 jobs:
   package:
@@ -46,8 +47,8 @@ jobs:
           curl -L "https://github.com/helm/chart-releaser/releases/download/v${CR_VERSION}/chart-releaser_${CR_VERSION}_linux_amd64.tar.gz" | sudo tar xvz --directory /usr/bin cr
 
           make dev/tools
-          git checkout go.*
       - name: Update chart versions
+        id: update-chart-version
         run: |
           git config user.name "${GH_USER}"
           git config user.email "${GH_EMAIL}"
@@ -56,19 +57,19 @@ jobs:
           if [[ ${{ github.event_name }} == "push" ]]; then
             args="${args} --dev"
           fi
-
-          ./tools/releases/helm.sh ${args}
-
+          ${{ env.KUMA_DIR }}/tools/releases/helm.sh ${args}
+      - name: Commit chart versions
+        run: |
           git add -u deployments/charts
           # This commit never ends up in the repo
-          git commit -m "ci(helm): update versions"
+          git commit --allow-empty -m "ci(helm): update versions"
       - name: Package chart
         id: package
         run: |
-          ./tools/releases/helm.sh --package
+          ${{ env.KUMA_DIR }}/tools/releases/helm.sh --package
 
           PKG_FILENAME=$(find .cr-release-packages -type f -printf "%f\n")
-          echo "::set-output name=filename::${PKG_FILENAME}"
+          echo "filename=${PKG_FILENAME}" >> $GITHUB_OUTPUT
       - name: Upload packaged chart
         uses: actions/upload-artifact@v3
         with:
