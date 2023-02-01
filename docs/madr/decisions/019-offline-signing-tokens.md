@@ -27,7 +27,9 @@ Chosen option: "CP configuration and kumactl improvements".
 
 ## Pros and Cons of the Options
 
-### User token configuration
+### User token
+
+#### CP configuration
 
 ```yaml
 apiServer:
@@ -110,7 +112,14 @@ apiServer:
             key: ...
 ```
 
-### Dataplane Token configuration
+#### Claims
+
+* `name (string)` - name of the user.
+* `groups ([]string)` - list of groups
+
+### Dataplane Token
+
+#### CP configuration
 
 ```yaml
 dpServer:
@@ -135,9 +144,18 @@ dpServer:
   auth:
     type: "" # ENV: KUMA_DP_SERVER_AUTH_TYPE
 ```
+
 Because it's common for both data plane proxies and zone proxies. Since both uses different way of auth, it should be separate.
 
-### Zone token configuration
+#### Claims
+
+* `name (string)` - name of the DPP.
+* `mesh (string)` - name of the mesh.
+* `tags (map[string][]string)` - tags of the DPP.
+
+### Zone token
+
+#### CP configuration
 
 ```yaml
 dpServer:
@@ -153,6 +171,10 @@ dpServer:
               key: ...
 ```
 
+#### Claims
+
+* `zone (string)` - name of the zone of zone proxy.
+* `scope ([]string)` - `ingress`, `egress`. So you can reuse token for all zone proxies if you want.
 
 ### Observability
 
