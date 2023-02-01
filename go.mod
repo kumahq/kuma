@@ -9,7 +9,7 @@ require (
 	github.com/Nordix/simple-ipam v1.0.0
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/cncf/xds/go v0.0.0-20220314180256-7f1daf1720fc
-	github.com/containerd/cgroups v1.0.4
+	github.com/containerd/cgroups v1.1.0
 	github.com/containernetworking/cni v1.1.2
 	github.com/containernetworking/plugins v1.2.0
 	github.com/emicklei/go-restful/v3 v3.10.1
@@ -56,7 +56,7 @@ require (
 	golang.org/x/text v0.6.0
 	golang.org/x/time v0.3.0
 	google.golang.org/genproto v0.0.0-20221227171554-f9683d7f8bef
-	google.golang.org/grpc v1.52.0
+	google.golang.org/grpc v1.52.3
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	helm.sh/helm/v3 v3.11.0
