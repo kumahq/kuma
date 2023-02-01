@@ -273,6 +273,8 @@ from:
           interval: 500ms`,
 				expected: `
 violations:
+  - field: spec.targetRef.kind
+    message: value is not supported
   - field: spec.from[0].targetRef.kind
     message: value is not supported`}),
 			Entry("empty default", testCase{
@@ -286,6 +288,8 @@ from:
   default: {}`,
 				expected: `
 violations:
+  - field: spec.targetRef.kind
+    message: value is not supported
   - field: spec.from[0].default.local
     message: must be defined`}),
 			Entry("neither tcp or http defined", testCase{
@@ -300,6 +304,8 @@ from:
     local: {}`,
 				expected: `
 violations:
+  - field: spec.targetRef.kind
+    message: value is not supported
   - field: spec.from[0].default.local
     message: 'must have at least one defined: tcp, http'`}),
 			Entry("empty tcp", testCase{

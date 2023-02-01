@@ -154,7 +154,7 @@ Routes:
             - cluster: echo-mirror-90205ae37cc0294e
               runtimeFraction:
                 defaultValue:
-                  denominator: TEN_THOUSAND
+                  denominator: MILLION
                   numerator: 10
             retryPolicy:
               numRetries: 5

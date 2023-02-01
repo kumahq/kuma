@@ -1,4 +1,4 @@
-FROM kumahq/base-debian11:no-push
+FROM kumahq/base-nossl-debian11:no-push
 ARG ARCH
 
 # override NOTICE
