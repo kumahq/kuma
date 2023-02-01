@@ -1,0 +1,11 @@
+healthChecks:
+- healthyThreshold: 1
+  interval: 10s
+  tcpHealthCheck:
+    receive:
+    - text: 634739755a776f3d
+    send:
+      text: 63476c755a776f3d
+  timeout: 2s
+  unhealthyThreshold: 3
+name: echo-tcp

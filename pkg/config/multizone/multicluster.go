@@ -39,6 +39,7 @@ func DefaultGlobalConfig() *GlobalConfig {
 			MsgSendTimeout:           config_types.Duration{Duration: 60 * time.Second},
 			TlsMinVersion:            "TLSv1_2",
 			TlsCipherSuites:          []string{},
+			NackBackoff:              config_types.Duration{Duration: 5 * time.Second},
 		},
 	}
 }
@@ -99,6 +100,7 @@ func DefaultZoneConfig() *ZoneConfig {
 			RefreshInterval: config_types.Duration{Duration: 1 * time.Second},
 			MaxMsgSize:      10 * 1024 * 1024,
 			MsgSendTimeout:  config_types.Duration{Duration: 60 * time.Second},
+			NackBackoff:     config_types.Duration{Duration: 5 * time.Second},
 		},
 	}
 }

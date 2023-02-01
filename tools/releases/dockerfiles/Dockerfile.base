@@ -1,4 +1,4 @@
-FROM gcr.io/distroless/base-debian11:debug-nonroot
+FROM gcr.io/distroless/base-nossl-debian11:debug-nonroot
 
 COPY /tools/releases/templates/LICENSE \
     /tools/releases/templates/README \
