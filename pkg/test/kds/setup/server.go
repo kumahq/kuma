@@ -50,5 +50,5 @@ func StartServer(store store.ResourceStore, clusterID string, providedTypes []mo
 		cfg:     kuma_cp.Config{},
 		metrics: metrics,
 	}
-	return kds_server.New(core.Log.WithName("kds").WithName(clusterID), rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, providedMapper, false)
+	return kds_server.New(core.Log.WithName("kds").WithName(clusterID), rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, providedMapper, false, 1*time.Second)
 }
