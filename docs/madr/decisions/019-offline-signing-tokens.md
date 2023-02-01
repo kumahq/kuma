@@ -42,6 +42,7 @@ apiServer:
         useSecrets: true
         publicKeys:
         - kid: 123
+          keyFile: /tmp/key.pem # either keyFile or key can be defined
           key: |
             -----BEGIN RSA PUBLIC KEY-----
             MIIEogIBAAKCAQEAy0KtfI7O0TJ00............
