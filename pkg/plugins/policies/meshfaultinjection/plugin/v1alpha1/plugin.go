@@ -14,6 +14,7 @@ import (
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/plugin/xds"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
@@ -133,7 +134,7 @@ func configure(
 			from := rule.Subset
 
 			configurer := plugin_xds.Configurer{
-				FaultInjections: conf.Http,
+				FaultInjections: pointer.Deref(conf.Http),
 				From:            from,
 			}
 

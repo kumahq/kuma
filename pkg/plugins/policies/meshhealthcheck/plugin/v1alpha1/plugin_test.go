@@ -1,6 +1,8 @@
 package v1alpha1_test
 
 import (
+	"path/filepath"
+
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -16,9 +18,11 @@ import (
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/plugin/v1alpha1"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	"github.com/kumahq/kuma/pkg/test"
+	test_matchers "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -27,6 +31,7 @@ import (
 
 var _ = Describe("MeshHealthCheck", func() {
 	httpServiceTag := "echo-http"
+	splitHttpServiceTag := "echo-http-_0_"
 	tcpServiceTag := "echo-tcp"
 	grpcServiceTag := "echo-grpc"
 	type testCase struct {
@@ -34,12 +39,19 @@ var _ = Describe("MeshHealthCheck", func() {
 		toRules          core_xds.ToRules
 		expectedClusters []string
 	}
-	httpCluster := []core_xds.Resource{
+	httpClusters := []core_xds.Resource{
 		{
 			Name:   "cluster-echo-http",
 			Origin: generator.OriginOutbound,
 			Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
 				Configure(policies_xds.WithName(httpServiceTag)).
+				MustBuild(),
+		},
+		{
+			Name:   "cluster-echo-http-_0_",
+			Origin: generator.OriginOutbound,
+			Resource: clusters.NewClusterBuilder(envoy_common.APIV3).
+				Configure(policies_xds.WithName(splitHttpServiceTag)).
 				MustBuild(),
 		},
 	}
@@ -97,6 +109,12 @@ var _ = Describe("MeshHealthCheck", func() {
 							mesh_proto.ProtocolTag: "grpc",
 						}),
 					).
+					AddOutbound(
+						builders.Outbound().WithAddress("127.0.0.1").WithPort(27780).WithTags(map[string]string{
+							mesh_proto.ServiceTag:  splitHttpServiceTag,
+							mesh_proto.ProtocolTag: "http",
+						}),
+					).
 					Build(),
 				Policies: xds.MatchedPolicies{
 					Dynamic: map[core_model.ResourceType]xds.TypedMatchingPolicies{
@@ -109,6 +127,11 @@ var _ = Describe("MeshHealthCheck", func() {
 				Routing: xds.Routing{
 					OutboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
 						httpServiceTag: {
+							{
+								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
+							},
+						},
+						splitHttpServiceTag: {
 							{
 								Tags: map[string]string{mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP},
 							},
@@ -129,10 +152,14 @@ var _ = Describe("MeshHealthCheck", func() {
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
 			Expect(plugin.Apply(resources, context, &proxy)).To(Succeed())
-			policies_xds.ResourceArrayShouldEqual(resources.ListOf(envoy_resource.ClusterType), given.expectedClusters)
+
+			for idx, expected := range given.expectedClusters {
+				Expect(util_proto.ToYAML(resources.ListOf(envoy_resource.ClusterType)[idx].Resource)).
+					To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", expected)))
+			}
 		},
 		Entry("HTTP HealthCheck", testCase{
-			resources: httpCluster,
+			resources: httpClusters,
 			toRules: core_xds.ToRules{
 				Rules: []*core_xds.Rule{
 					{
@@ -173,44 +200,10 @@ var _ = Describe("MeshHealthCheck", func() {
 						},
 					},
 				}},
-			expectedClusters: []string{`
-name: echo-http
-commonLbConfig:
-  healthyPanicThreshold:
-    value: 62.9
-  zoneAwareLbConfig:
-    failTrafficOnPanic: true
-healthChecks:
-- eventLogPath: /tmp/log.txt
-  healthyThreshold: 1
-  httpHealthCheck:
-    expectedStatuses:
-      - end: "201"
-        start: "200"
-      - end: "202"
-        start: "201"
-    path: /health
-    requestHeadersToAdd:
-      - header:
-          key: x-kuma-tags
-          value: '&kuma.io/service=backend&'
-      - append: true
-        header:
-          key: x-some-header
-          value: value
-      - append: false
-        header:
-          key: x-some-other-header
-          value: value
-  initialJitter: 13s
-  interval: 10s
-  intervalJitter: 15s
-  intervalJitterPercent: 10
-  noTrafficInterval: 16s
-  reuseConnection: true
-  timeout: 2s
-  unhealthyThreshold: 3
-`},
+			expectedClusters: []string{
+				"basic_http_health_check_cluster.golden.yaml",
+				"basic_http_health_check_split_cluster.golden.yaml",
+			},
 		}),
 		Entry("TCP HealthCheck", testCase{
 			resources: tcpCluster,
@@ -231,19 +224,7 @@ healthChecks:
 						},
 					},
 				}},
-			expectedClusters: []string{`
-name: echo-tcp
-healthChecks:
-- healthyThreshold: 1
-  interval: 10s
-  timeout: 2s
-  unhealthyThreshold: 3
-  tcpHealthCheck:
-    send:
-        text: "63476c755a776f3d"
-    receive:
-        - text: "634739755a776f3d"
-`},
+			expectedClusters: []string{"basic_tcp_health_check_cluster.golden.yaml"},
 		}),
 
 		Entry("gRPC HealthCheck", testCase{
@@ -264,17 +245,7 @@ healthChecks:
 						},
 					},
 				}},
-			expectedClusters: []string{`
-name: echo-grpc
-healthChecks:
-- healthyThreshold: 1
-  interval: 10s
-  timeout: 2s
-  unhealthyThreshold: 3
-  grpcHealthCheck:
-    authority: grpc-client.default.svc.cluster.local
-    serviceName: grpc-client
-`},
+			expectedClusters: []string{"basic_grpc_health_check_cluster.golden.yaml"},
 		}),
 	)
 })

@@ -46,7 +46,7 @@ var _ = Describe("FaultInjectionConfigurer", func() {
 					},
 					Conf: &mesh_proto.FaultInjection_Conf{
 						Delay: &mesh_proto.FaultInjection_Conf_Delay{
-							Percentage: util_proto.Double(50),
+							Percentage: util_proto.Double(50.5),
 							Value:      util_proto.Duration(time.Second * 5),
 						},
 					},
@@ -65,7 +65,8 @@ var _ = Describe("FaultInjectionConfigurer", func() {
                     delay:
                       fixedDelay: 5s
                       percentage:
-                        numerator: 50
+                        denominator: TEN_THOUSAND
+                        numerator: 5050
                     headers:
                     - name: x-kuma-tags
                       safeRegexMatch:

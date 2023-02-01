@@ -56,7 +56,7 @@ func (c *Configurer) ConfigureListener(listener *envoy_listener.Listener) error 
 	}
 	for _, filterChain := range listener.FilterChains {
 		switch c.Protocol {
-		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
+		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
 			if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, httpTimeouts); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
 				return err
 			}

@@ -34,6 +34,10 @@ Make sure you are using a recent `kumactl` or that you use the right path if usi
 
 The sidecar container is always injected first (since [#5436](https://github.com/kumahq/kuma/pull/5436)). This should only impact you when modifying the sidecar container with a container-patch. If you do so, upgrade Kuma and then change your container patch to modify the right container.
 
+This version changes the leader election mechanism from leader for life to the more robust leader with lease.
+As the result, during the upgrade you may have two leaders in the cluster.
+This should not impact the system in any significant way other than logs like `resource was already updated`.
+
 ### Kumactl
 
 `--valid-for` must be set for all token types, before it was defaulting to 10 years.
