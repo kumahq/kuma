@@ -355,9 +355,8 @@ func (OutboundProxyGenerator) determineRoutes(
 	}
 
 	// Return internal, external
-	clustersFromSplit := func(splits []*mesh_proto.TrafficRoute_Split) ([]envoy_common.Cluster, []envoy_common.Cluster) {
-		var clustersInternal []envoy_common.Cluster
-		var clustersExternal []envoy_common.Cluster
+	clustersFromSplit := func(splits []*mesh_proto.TrafficRoute_Split) []envoy_common.Cluster {
+		var clusters []envoy_common.Cluster
 		for _, destination := range splits {
 			service := destination.Destination[mesh_proto.ServiceTag]
 			if destination.GetWeight().GetValue() == 0 {
@@ -410,13 +409,9 @@ func (OutboundProxyGenerator) determineRoutes(
 				clusterCache[allTags.String()] = cluster.Name()
 			}
 
-			if isExternalService {
-				clustersExternal = append(clustersExternal, cluster)
-			} else {
-				clustersInternal = append(clustersInternal, cluster)
-			}
+			clusters = append(clusters, cluster)
 		}
-		return clustersInternal, clustersExternal
+		return clusters
 	}
 
 	appendRoute := func(routes envoy_common.Routes, match *mesh_proto.TrafficRoute_Http_Match, modify *mesh_proto.TrafficRoute_Http_Modify,
@@ -447,15 +442,13 @@ func (OutboundProxyGenerator) determineRoutes(
 	}
 
 	for _, http := range route.Spec.GetConf().GetHttp() {
-		clustersInternal, clustersExternal := clustersFromSplit(http.GetSplitWithDestination())
-		routes = appendRoute(routes, http.Match, http.Modify, clustersInternal, nil)
-		routes = appendRoute(routes, http.Match, http.Modify, clustersExternal, proxy.Policies.RateLimitsOutbound[oface])
+		routes = appendRoute(routes, http.Match, http.Modify,
+			clustersFromSplit(http.GetSplitWithDestination()), proxy.Policies.RateLimitsOutbound[oface])
 	}
 
 	if defaultDestination := route.Spec.GetConf().GetSplitWithDestination(); len(defaultDestination) != 0 {
-		clustersInternal, clustersExternal := clustersFromSplit(defaultDestination)
-		routes = appendRoute(routes, nil, nil, clustersInternal, nil)
-		routes = appendRoute(routes, nil, nil, clustersExternal, proxy.Policies.RateLimitsOutbound[oface])
+		routes = appendRoute(routes, nil, nil,
+			clustersFromSplit(defaultDestination), proxy.Policies.RateLimitsOutbound[oface])
 	}
 
 	return routes
