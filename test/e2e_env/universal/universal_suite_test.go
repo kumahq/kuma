@@ -45,7 +45,7 @@ func TestE2E(t *testing.T) {
 	test.RunE2ESpecs(t, "E2E Universal Suite")
 }
 
-var _ = SynchronizedBeforeSuite(universal.SetupAndGetState, universal.RestoreState)
+var _ = SynchronizedBeforeSuite(func() []byte { return universal.SetupAndGetState() }, universal.RestoreState)
 
 var _ = Describe("User Auth", auth.UserAuth)
 var _ = Describe("DP Auth", auth.DpAuth, Ordered)

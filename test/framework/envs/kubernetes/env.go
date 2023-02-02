@@ -13,7 +13,7 @@ import (
 var Cluster *framework.K8sCluster
 
 // SetupAndGetState to be used with Ginkgo SynchronizedBeforeSuite
-func SetupAndGetState() []byte {
+func SetupAndGetState(opts ...framework.KumaDeploymentOption) []byte {
 	Cluster = framework.NewK8sCluster(framework.NewTestingT(), framework.Kuma1, framework.Verbose)
 	// The Gateway API webhook needs to start before we can create
 	// GatewayClasses
@@ -25,14 +25,17 @@ func SetupAndGetState() []byte {
 			framework.GatewayAPICRDs,
 		)).To(Succeed())
 	}
+	kumaOpts := append([]framework.KumaDeploymentOption{
+		framework.WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
+		framework.WithCtlOpts(map[string]string{
+			"--experimental-gatewayapi": gatewayAPI,
+		}),
+		framework.WithEgress(),
+	}, opts...)
 	Eventually(func() error {
 		return Cluster.Install(
 			framework.Kuma(core.Standalone,
-				framework.WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
-				framework.WithCtlOpts(map[string]string{
-					"--experimental-gatewayapi": gatewayAPI,
-				}),
-				framework.WithEgress(),
+				kumaOpts...,
 			))
 	}, "90s", "3s").Should(Succeed())
 	portFwd := Cluster.GetKuma().(*framework.K8sControlPlane).PortFwd()
