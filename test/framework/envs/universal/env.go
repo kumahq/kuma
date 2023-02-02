@@ -19,9 +19,7 @@ func SetupAndGetState(opts ...framework.KumaDeploymentOption) []byte {
 		framework.WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 		framework.WithEnv("KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL", "1s"), // speed up some tests by flushing stats quicker than default 10s
 	}, opts...)
-	Expect(Cluster.Install(framework.Kuma(core.Standalone,
-		kumaOpts...,
-	))).To(Succeed())
+	Expect(Cluster.Install(framework.Kuma(core.Standalone, kumaOpts...))).To(Succeed())
 	Expect(Cluster.Install(framework.EgressUniversal(func(zone string) (string, error) {
 		return Cluster.GetKuma().GenerateZoneEgressToken("")
 	}))).To(Succeed())

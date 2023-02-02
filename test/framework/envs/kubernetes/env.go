@@ -33,10 +33,7 @@ func SetupAndGetState(opts ...framework.KumaDeploymentOption) []byte {
 		framework.WithEgress(),
 	}, opts...)
 	Eventually(func() error {
-		return Cluster.Install(
-			framework.Kuma(core.Standalone,
-				kumaOpts...,
-			))
+		return Cluster.Install(framework.Kuma(core.Standalone, kumaOpts...))
 	}, "90s", "3s").Should(Succeed())
 	portFwd := Cluster.GetKuma().(*framework.K8sControlPlane).PortFwd()
 
