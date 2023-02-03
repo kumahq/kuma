@@ -837,6 +837,38 @@ _kumactl_generate_dataplane-token()
     noun_aliases=()
 }
 
+_kumactl_generate_public-key()
+{
+    last_command="kumactl_generate_public-key"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--signing-key-path=")
+    two_word_flags+=("--signing-key-path")
+    local_nonpersistent_flags+=("--signing-key-path")
+    local_nonpersistent_flags+=("--signing-key-path=")
+    flags+=("--api-timeout=")
+    two_word_flags+=("--api-timeout")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--no-config")
+
+    must_have_one_flag=()
+    must_have_one_flag+=("--signing-key-path=")
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _kumactl_generate_signing-key()
 {
     last_command="kumactl_generate_signing-key"
@@ -851,6 +883,10 @@ _kumactl_generate_signing-key()
     flags_with_completion=()
     flags_completion=()
 
+    flags+=("--format=")
+    two_word_flags+=("--format")
+    local_nonpersistent_flags+=("--format")
+    local_nonpersistent_flags+=("--format=")
     flags+=("--api-timeout=")
     two_word_flags+=("--api-timeout")
     flags+=("--config-file=")
@@ -1037,6 +1073,7 @@ _kumactl_generate()
 
     commands=()
     commands+=("dataplane-token")
+    commands+=("public-key")
     commands+=("signing-key")
     commands+=("tls-certificate")
     commands+=("user-token")
