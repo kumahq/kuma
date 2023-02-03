@@ -12,14 +12,20 @@ import (
 var Cluster *framework.UniversalCluster
 
 // SetupAndGetState to be used with Ginkgo SynchronizedBeforeSuite
-func SetupAndGetState(opts ...framework.KumaDeploymentOption) []byte {
+func SetupAndGetState() []byte {
 	Cluster = framework.NewUniversalCluster(framework.NewTestingT(), framework.Kuma3, framework.Silent)
 	framework.E2EDeferCleanup(Cluster.DismissCluster)
-	kumaOpts := append([]framework.KumaDeploymentOption{
+	kumaOptions := []framework.KumaDeploymentOption{
 		framework.WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 		framework.WithEnv("KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL", "1s"), // speed up some tests by flushing stats quicker than default 10s
-	}, opts...)
-	Expect(Cluster.Install(framework.Kuma(core.Standalone, kumaOpts...))).To(Succeed())
+	}
+	for key, value := range framework.Config.KumaCpConfig.Standalone.Universal.Envs {
+		kumaOptions = append(kumaOptions, framework.WithEnv(key, value))
+	}
+	if framework.Config.KumaCpConfig.Standalone.Universal.AdditionalYamlConfig != "" {
+		kumaOptions = append(kumaOptions, framework.WithYamlConfig(framework.Config.KumaCpConfig.Standalone.Universal.AdditionalYamlConfig))
+	}
+	Expect(Cluster.Install(framework.Kuma(core.Standalone, kumaOptions...))).To(Succeed())
 	Expect(Cluster.Install(framework.EgressUniversal(func(zone string) (string, error) {
 		return Cluster.GetKuma().GenerateZoneEgressToken("")
 	}))).To(Succeed())

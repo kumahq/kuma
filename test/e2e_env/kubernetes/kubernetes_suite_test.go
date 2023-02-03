@@ -37,7 +37,7 @@ func TestE2E(t *testing.T) {
 	test.RunE2ESpecs(t, "E2E Kubernetes Suite")
 }
 
-var _ = SynchronizedBeforeSuite(func() []byte { return kubernetes.SetupAndGetState() }, kubernetes.RestoreState)
+var _ = SynchronizedBeforeSuite(kubernetes.SetupAndGetState, kubernetes.RestoreState)
 
 // SynchronizedAfterSuite keeps the main process alive until all other processes finish.
 // Otherwise, we would close port-forward to the CP and remaining tests executed in different processes may fail.

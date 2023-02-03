@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/test/framework"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -34,7 +35,7 @@ func SetupAndGetState() []byte {
 	Global = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
 	E2EDeferCleanup(Global.DismissCluster) // clean up any containers if needed
 	Expect(Global.Install(Kuma(core.Global,
-		WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
+		getKumaDeploymentOptions(Config.KumaCpConfig.Multizone.Global, WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"))...,
 	))).To(Succeed())
 
 	wg := sync.WaitGroup{}
@@ -45,12 +46,15 @@ func SetupAndGetState() []byte {
 		defer GinkgoRecover()
 		defer wg.Done()
 		Expect(KubeZone1.Install(Kuma(core.Zone,
-			WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
-			WithIngress(),
-			WithIngressEnvoyAdminTunnel(),
-			WithEgress(),
-			WithEgressEnvoyAdminTunnel(),
-			WithGlobalAddress(Global.GetKuma().GetKDSServerAddress()),
+			getKumaDeploymentOptions(
+				Config.KumaCpConfig.Multizone.KubeZone1,
+				WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
+				WithIngress(),
+				WithIngressEnvoyAdminTunnel(),
+				WithEgress(),
+				WithEgressEnvoyAdminTunnel(),
+				WithGlobalAddress(Global.GetKuma().GetKDSServerAddress()),
+			)...,
 		))).To(Succeed())
 	}()
 
@@ -59,14 +63,17 @@ func SetupAndGetState() []byte {
 		defer GinkgoRecover()
 		defer wg.Done()
 		Expect(KubeZone2.Install(Kuma(core.Zone,
-			WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
-			WithEnv("KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS", "true"),
-			WithIngress(),
-			WithIngressEnvoyAdminTunnel(),
-			WithEgress(),
-			WithEgressEnvoyAdminTunnel(),
-			WithGlobalAddress(Global.GetKuma().GetKDSServerAddress()),
-			WithExperimentalCNI(),
+			getKumaDeploymentOptions(
+				Config.KumaCpConfig.Multizone.KubeZone2,
+				WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
+				WithEnv("KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS", "true"),
+				WithIngress(),
+				WithIngressEnvoyAdminTunnel(),
+				WithEgress(),
+				WithEgressEnvoyAdminTunnel(),
+				WithGlobalAddress(Global.GetKuma().GetKDSServerAddress()),
+				WithExperimentalCNI(),
+			)...,
 		))).To(Succeed())
 	}()
 
@@ -77,10 +84,13 @@ func SetupAndGetState() []byte {
 		defer wg.Done()
 		err := NewClusterSetup().
 			Install(Kuma(core.Zone,
-				WithGlobalAddress(Global.GetKuma().GetKDSServerAddress()),
-				WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
-				WithEgressEnvoyAdminTunnel(),
-				WithIngressEnvoyAdminTunnel(),
+				getKumaDeploymentOptions(
+					Config.KumaCpConfig.Multizone.UniZone1,
+					WithGlobalAddress(Global.GetKuma().GetKDSServerAddress()),
+					WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
+					WithEgressEnvoyAdminTunnel(),
+					WithIngressEnvoyAdminTunnel(),
+				)...,
 			)).
 			Install(IngressUniversal(Global.GetKuma().GenerateZoneIngressLegacyToken)).
 			Install(EgressUniversal(Global.GetKuma().GenerateZoneEgressToken)).
@@ -95,11 +105,14 @@ func SetupAndGetState() []byte {
 		defer wg.Done()
 		err := NewClusterSetup().
 			Install(Kuma(core.Zone,
-				WithGlobalAddress(Global.GetKuma().GetKDSServerAddress()),
-				WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
-				WithEnv("KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS", "true"),
-				WithEgressEnvoyAdminTunnel(),
-				WithIngressEnvoyAdminTunnel(),
+				getKumaDeploymentOptions(
+					Config.KumaCpConfig.Multizone.UniZone2,
+					WithGlobalAddress(Global.GetKuma().GetKDSServerAddress()),
+					WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
+					WithEnv("KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS", "true"),
+					WithEgressEnvoyAdminTunnel(),
+					WithIngressEnvoyAdminTunnel(),
+				)...,
 			)).
 			Install(IngressUniversal(Global.GetKuma().GenerateZoneIngressToken)).
 			Install(EgressUniversal(Global.GetKuma().GenerateZoneEgressToken)).
@@ -217,4 +230,15 @@ func RestoreState(bytes []byte) {
 	UniZone2.SetCp(cp)
 	Expect(UniZone2.AddNetworking(state.UniZone2.ZoneEgress, Config.ZoneEgressApp)).To(Succeed())
 	Expect(UniZone2.AddNetworking(state.UniZone2.ZoneIngress, Config.ZoneIngressApp)).To(Succeed())
+}
+
+func getKumaDeploymentOptions(config framework.ControlPlaneConfig, defaultOptions ...framework.KumaDeploymentOption) []framework.KumaDeploymentOption {
+	kumaOptions := append([]framework.KumaDeploymentOption{}, defaultOptions...)
+	for key, value := range config.Envs {
+		kumaOptions = append(kumaOptions, framework.WithEnv(key, value))
+	}
+	if config.AdditionalYamlConfig != "" {
+		kumaOptions = append(kumaOptions, framework.WithYamlConfig(config.AdditionalYamlConfig))
+	}
+	return kumaOptions
 }

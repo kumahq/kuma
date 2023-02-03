@@ -49,6 +49,7 @@ type E2eConfig struct {
 	ZoneEgressApp                 string            `json:"zoneEgressApp,omitempty" envconfig:"KUMA_ZONE_EGRESS_APP"`
 	ZoneIngressApp                string            `json:"zoneIngressApp,omitempty" envconfig:"KUMA_ZONE_INGRESS_APP"`
 	Arch                          string            `json:"arch,omitempty" envconfig:"ARCH"`
+	KumaCpConfig                  KumaCpConfig      `json:"kumaCpConfig,omitempty" envconfig:"KUMA_CP_CONFIG"`
 
 	SuiteConfig SuiteConfig `json:"suites,omitempty"`
 }
@@ -64,6 +65,29 @@ type CompatibilitySuiteConfig struct {
 
 type HelmSuiteConfig struct {
 	Versions []string `json:"versions,omitempty"`
+}
+
+type KumaCpConfig struct {
+	Standalone StandaloneConfig `json:"standalone,omitempty"`
+	Multizone  MultizoneConfig  `json:"multizone,omitempty"`
+}
+
+type StandaloneConfig struct {
+	Kubernetes ControlPlaneConfig `json:"kubernetes,omitempty"`
+	Universal  ControlPlaneConfig `json:"universal,omitempty"`
+}
+
+type MultizoneConfig struct {
+	Global    ControlPlaneConfig `json:"global,omitempty"`
+	KubeZone1 ControlPlaneConfig `json:"kubeZone1,omitempty"`
+	KubeZone2 ControlPlaneConfig `json:"kubeZone2,omitempty"`
+	UniZone1  ControlPlaneConfig `json:"uniZone1,omitempty"`
+	UniZone2  ControlPlaneConfig `json:"uniZone2,omitempty"`
+}
+
+type ControlPlaneConfig struct {
+	Envs                 map[string]string `json:"envs,omitempty"`
+	AdditionalYamlConfig string            `json:"additionalYamlConfig,omitempty"`
 }
 
 func (c E2eConfig) Sanitize() {
@@ -186,7 +210,40 @@ var defaultConf = E2eConfig{
 	K8sType:                      KindK8sType,
 	DefaultClusterStartupRetries: 30,
 	DefaultClusterStartupTimeout: time.Second * 3,
-
+	KumaCpConfig: KumaCpConfig{
+		Standalone: StandaloneConfig{
+			Kubernetes: ControlPlaneConfig{
+				Envs:                 map[string]string{},
+				AdditionalYamlConfig: "",
+			},
+			Universal: ControlPlaneConfig{
+				Envs:                 map[string]string{},
+				AdditionalYamlConfig: "",
+			},
+		},
+		Multizone: MultizoneConfig{
+			Global: ControlPlaneConfig{
+				Envs:                 map[string]string{},
+				AdditionalYamlConfig: "",
+			},
+			KubeZone1: ControlPlaneConfig{
+				Envs:                 map[string]string{},
+				AdditionalYamlConfig: "",
+			},
+			KubeZone2: ControlPlaneConfig{
+				Envs:                 map[string]string{},
+				AdditionalYamlConfig: "",
+			},
+			UniZone1: ControlPlaneConfig{
+				Envs:                 map[string]string{},
+				AdditionalYamlConfig: "",
+			},
+			UniZone2: ControlPlaneConfig{
+				Envs:                 map[string]string{},
+				AdditionalYamlConfig: "",
+			},
+		},
+	},
 	ZoneEgressApp:  "kuma-egress",
 	ZoneIngressApp: "kuma-ingress",
 }
