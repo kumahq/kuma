@@ -216,6 +216,10 @@ var _ = Describe("kumactl install control-plane", func() {
 				"global",
 				"--set",
 				"controlPlane.environment=universal",
+				"--set",
+				"postgres.tls.mode=verifyFull",
+				"--set",
+				"postgres.tls.secretName=postgres-tls-secret-name",
 			},
 			goldenFile: "install-control-plane.global-universal-on-k8s.golden.yaml",
 		}),
@@ -319,7 +323,8 @@ controlPlane:
 				"--set",
 				"controlPlane.environment=universal",
 			},
-			errorMsg: "You can only run universal mode on kubernetes in a global mode",
+			errorMsg: "Currently you can only run universal mode on kubernetes in a global mode, " +
+				"this limitation might be lifted in the future",
 		}),
 		Entry("--kds-global-address is missing when installing zone", errTestCase{
 			extraArgs: []string{"--mode", "zone", "--zone", "zone-1"},

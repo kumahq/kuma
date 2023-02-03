@@ -74,9 +74,6 @@ spec:
       name: http-api-server
     - port: 5682
       name: https-api-server
-    - port: 443
-      name: https-admission-server
-      targetPort: 5443
   selector:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -158,6 +155,14 @@ spec:
               value: ""
             - name: KUMA_STORE_POSTGRES_PORT
               value: "5432"
+            - name: KUMA_STORE_POSTGRES_TLS_CERT_PATH
+              value: "/var/run/secrets/kuma.io/postgres-client-certs/tls.crt"
+            - name: KUMA_STORE_POSTGRES_TLS_KEY_PATH
+              value: "/var/run/secrets/kuma.io/postgres-client-certs/tls.key"
+            - name: KUMA_STORE_POSTGRES_TLS_MODE
+              value: "verifyFull"
+            - name: KUMA_STORE_POSTGRES_TLS_ROOT_CERT_PATH
+              value: "/var/run/secrets/kuma.io/postgres-client-certs/rootCA.crt"
             - name: KUMA_STORE_POSTGRES_USER
               value: ""
             - name: KUMA_STORE_TYPE
@@ -190,6 +195,14 @@ spec:
               value: ""
             - name: KUMA_STORE_POSTGRES_PORT
               value: "5432"
+            - name: KUMA_STORE_POSTGRES_TLS_CERT_PATH
+              value: "/var/run/secrets/kuma.io/postgres-client-certs/tls.crt"
+            - name: KUMA_STORE_POSTGRES_TLS_KEY_PATH
+              value: "/var/run/secrets/kuma.io/postgres-client-certs/tls.key"
+            - name: KUMA_STORE_POSTGRES_TLS_MODE
+              value: "verifyFull"
+            - name: KUMA_STORE_POSTGRES_TLS_ROOT_CERT_PATH
+              value: "/var/run/secrets/kuma.io/postgres-client-certs/rootCA.crt"
             - name: KUMA_STORE_POSTGRES_USER
               value: ""
             - name: KUMA_STORE_TYPE
@@ -228,7 +241,13 @@ spec:
             - name: kuma-control-plane-config
               mountPath: /etc/kuma.io/kuma-control-plane
               readOnly: true
+            - name: postgres-client-certs
+              mountPath: /var/run/secrets/kuma.io/postgres-client-certs
+              readOnly: true
       volumes:
+        - name: postgres-client-certs
+          secret:
+            secretName: postgres-tls-secret-name
         - name: kuma-control-plane-config
           configMap:
             name: kuma-control-plane-config

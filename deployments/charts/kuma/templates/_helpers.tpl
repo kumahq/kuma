@@ -174,7 +174,7 @@ returns: formatted image string
 
 {{- define "kuma.defaultEnv" -}}
 {{ if (and (eq .Values.controlPlane.environment "universal") (not (eq .Values.controlPlane.mode "global"))) }}
-  {{ fail "You can only run universal mode on kubernetes in a global mode" }}
+  {{ fail "Currently you can only run universal mode on kubernetes in a global mode, this limitation might be lifted in the future" }}
 {{ end }}
 {{ if not (or (eq .Values.controlPlane.mode "zone") (eq .Values.controlPlane.mode "global") (eq .Values.controlPlane.mode "standalone")) }}
   {{ $msg := printf "controlPlane.mode invalid got:'%s' supported values: global,zone,standalone" .Values.controlPlane.mode }}
@@ -332,6 +332,23 @@ env:
   value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.crt
 - name: KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE
   value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.key
+{{- end }}
+{{- if ne .Values.postgres.tls.mode "disable" }}
+{{- if empty .Values.postgres.tls.secretName }}
+{{ fail "if mode is not 'disable' then you must provide .Values.postgres.tls.secretName" }}
+{{- end }}
+- name: KUMA_STORE_POSTGRES_TLS_CERT_PATH
+  value: /var/run/secrets/kuma.io/postgres-client-certs/tls.crt
+- name: KUMA_STORE_POSTGRES_TLS_KEY_PATH
+  value: /var/run/secrets/kuma.io/postgres-client-certs/tls.key
+- name: KUMA_STORE_POSTGRES_TLS_ROOT_CERT_PATH
+  value: /var/run/secrets/kuma.io/postgres-client-certs/rootCA.crt
+{{- end }}
+- name: KUMA_STORE_POSTGRES_TLS_MODE
+  value: {{ .Values.postgres.tls.mode }}
+{{- if .Values.postgres.tls.disableSSLSNI }}
+- name: KUMA_STORE_POSTGRES_TLS_DISABLE_SSLSNI
+  value: {{ .Values.postgres.tls.disableSSLSNI }}
 {{- end }}
 {{- end }}
 
