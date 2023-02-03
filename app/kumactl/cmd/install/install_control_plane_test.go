@@ -210,6 +210,15 @@ var _ = Describe("kumactl install control-plane", func() {
 			},
 			goldenFile: "install-control-plane.global.golden.yaml",
 		}),
+		Entry("should generate Kubernetes resources for Global Universal mode", testCase{
+			extraArgs: []string{
+				"--mode",
+				"global",
+				"--set",
+				"controlPlane.environment=universal",
+			},
+			goldenFile: "install-control-plane.global-universal-on-k8s.golden.yaml",
+		}),
 		Entry("should generate Kubernetes resources for Zone", testCase{
 			extraArgs: []string{
 				"--mode", "zone",
@@ -302,6 +311,15 @@ controlPlane:
 		Entry("--mode is unknown", errTestCase{
 			extraArgs: []string{"--mode", "test"},
 			errorMsg:  "controlPlane.mode invalid got:'test'",
+		}),
+		Entry("--mode is not global and environment is universal", errTestCase{
+			extraArgs: []string{
+				"--mode",
+				"zone",
+				"--set",
+				"controlPlane.environment=universal",
+			},
+			errorMsg: "You can only run universal mode on kubernetes in a global mode",
 		}),
 		Entry("--kds-global-address is missing when installing zone", errTestCase{
 			extraArgs: []string{"--mode", "zone", "--zone", "zone-1"},

@@ -362,7 +362,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 3a137bbfcbbe6ba5a3997b30b1b047b2b080a9f912520a5fa683f11c4c6b6f3c
-        checksum/tls-secrets: 8a9271939e6d57f2bb36203bc56f90fa6470e3f28bf83282388cecf989796f47
+        checksum/tls-secrets: ba895f4977303b7854df32eafbb81e1afb7978e416aeb05b1f65978bf5ca48f3
       labels: 
         app: kuma-control-plane
         "foo": "baz"

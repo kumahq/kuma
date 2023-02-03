@@ -18,6 +18,9 @@ installCrdsOnUpgrade:
   imagePullSecrets: []
 
 controlPlane:
+  # -- Environment that control plane is run in, useful when running universal global control plane on k8s
+  environment: "kubernetes"
+
   # -- Labels to add to resources in addition to default labels
   extraLabels: {}
 
@@ -698,6 +701,17 @@ experimental:
     tcAttachIface: ""
     # -- Path where compiled eBPF programs which will be installed can be found
     programsSourcePath: /kuma/ebpf
+
+# -- Postgres settings for universal control plane on k8s
+postgres:
+  # -- Postgres hostname
+  host:
+  # -- Postgres port
+  port: "5432"
+  # -- Postgres user
+  user:
+  # -- Postgres database
+  db:
 
 # @ignored for helm-docs
 plugins:
