@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/test/framework"
-	client "github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/kic"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
@@ -78,7 +78,7 @@ func KICKubernetes() {
 
 	It("should route to service using Kube DNS", func() {
 		ingress := `
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   namespace: kic
@@ -117,7 +117,7 @@ spec:
   type: ExternalName
   externalName: test-server.kic.svc.80.mesh
 ---
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   namespace: kic
