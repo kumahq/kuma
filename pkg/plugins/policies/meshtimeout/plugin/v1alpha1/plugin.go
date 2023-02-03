@@ -38,6 +38,9 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if !ok {
 		return nil
 	}
+	if len(policies.ToRules.Rules) == 0 && len(policies.FromRules.Rules) == 0 {
+		return nil
+	}
 
 	listeners := policies_xds.GatherListeners(rs)
 	clusters := policies_xds.GatherClusters(rs)
@@ -69,10 +72,7 @@ func applyToInbounds(fromRules core_xds.FromRules, inboundListeners map[core_xds
 			continue
 		}
 
-		rules, ok := fromRules.Rules[listenerKey]
-		if !ok {
-			continue
-		}
+		rules := fromRules.Rules[listenerKey]
 
 		cluster, ok := inboundClusters[createInboundClusterName(inbound.ServicePort, listenerKey.Port)]
 		if !ok {
@@ -185,10 +185,14 @@ func applyToGateway(
 
 func configure(rules core_xds.Rules, subset core_xds.Subset, protocol core_mesh.Protocol, listener *envoy_listener.Listener, cluster *envoy_cluster.Cluster, routeActions []*envoy_route.RouteAction) error {
 	var conf api.Conf
-	if computed := rules.Compute(subset); computed != nil {
-		conf = computed.Conf.(api.Conf)
+	if rules == nil {
+		conf = api.Conf{}
 	} else {
-		return nil
+		if computed := rules.Compute(subset); computed != nil {
+			conf = computed.Conf.(api.Conf)
+		} else {
+			return nil
+		}
 	}
 
 	configurer := plugin_xds.Configurer{
