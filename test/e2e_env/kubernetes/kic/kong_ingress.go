@@ -91,8 +91,10 @@ spec:
       paths:
       - path: /test-server
         backend:
-          serviceName: test-server
-          servicePort: 80
+          service:
+            name: test-server
+            port:
+              number: 80
 `
 		Expect(kubernetes.Cluster.Install(YamlK8s(ingress))).To(Succeed())
 
@@ -130,8 +132,10 @@ spec:
       paths:
       - path: /dot-mesh
         backend:
-          serviceName: test-server-externalname
-          servicePort: 80
+          service:
+            name: test-server-externalname
+            port:
+              number: 80
 `
 
 		Expect(kubernetes.Cluster.Install(YamlK8s(ingressMeshDNS))).To(Succeed())
