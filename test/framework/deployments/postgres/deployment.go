@@ -37,18 +37,28 @@ type PostgresDeployment interface {
 	Deployment
 }
 
+type deployOptions struct {
+	namespace      string
+	deploymentName string
+}
+type deployOptionsFunc func(*deployOptions)
+
 func From(cluster Cluster, name string) Postgres {
 	return cluster.Deployment(AppPostgres + name).(Postgres)
 }
 
-func Install(name string) InstallFunc {
+func Install(name string, optFns ...deployOptionsFunc) InstallFunc {
+	opts := &deployOptions{deploymentName: name, namespace: Config.DefaultPostgresNamespace}
+	for _, optFn := range optFns {
+		optFn(opts)
+	}
 	return func(cluster Cluster) error {
 		var deployment PostgresDeployment
 		switch cluster.(type) {
 		case *UniversalCluster:
 			deployment = NewUniversalDeployment(cluster, name)
 		case *K8sCluster:
-			return errors.New("kubernetes cluster not supported for postgres deployment")
+			deployment = NewK8SDeployment(opts)
 		default:
 			return errors.New("invalid cluster")
 		}

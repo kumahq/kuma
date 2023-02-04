@@ -31,6 +31,7 @@ type E2eConfig struct {
 	KumaK8sCtlFlags               map[string]string `json:"k8sCtlFlags,omitempty"`
 	KumaZoneK8sCtlFlags           map[string]string `json:"k8sZoneCtlFlags,omitempty"`
 	DefaultObservabilityNamespace string            `json:"observabilityNamespace,omitempty"`
+	DefaultPostgresNamespace      string            `json:"postgresNamespace,omitempty"`
 	DefaultGatewayNamespace       string            `json:"gatewayNamespace,omitempty"`
 	KumactlImageRepo              string            `json:"ctlImageRepo,omitempty" envconfig:"KUMACTL_IMAGE_REPOSITORY"`
 	KumaCPImageRepo               string            `json:"cpImageRepo,omitempty" envconfig:"KUMA_CP_IMAGE_REPOSITORY"`
@@ -158,6 +159,7 @@ var defaultConf = E2eConfig{
 	KumaServiceName:               "kuma-control-plane",
 	KumaGlobalZoneSyncServiceName: "kuma-global-zone-sync",
 	DefaultObservabilityNamespace: "mesh-observability",
+	DefaultPostgresNamespace:      "kuma-postgres",
 	DefaultGatewayNamespace:       "kuma-gateway",
 	CNIApp:                        "kuma-cni",
 	CNINamespace:                  "kube-system",
