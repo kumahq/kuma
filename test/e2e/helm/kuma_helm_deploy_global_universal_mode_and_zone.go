@@ -46,8 +46,6 @@ func ZoneAndGlobalInUniversalModeWithHelmChart() {
 				// otherwise this fails because there is no namespace
 				postgres.WithSkipNamespaceCleanup(true),
 			)).
-			// Install(WaitService(Config.KumaNamespace, "postgres-release-postgresql")). // this does not seem to work
-			// control plane crashes twice waiting for postgres to come up
 			Install(YamlK8s(`
 apiVersion: v1
 kind: Secret
@@ -60,6 +58,7 @@ stringData:
 `)).
 			Setup(globalCluster)
 		Expect(err).ToNot(HaveOccurred())
+		Expect(WaitPodsAvailableWithLabel(Config.KumaNamespace, "app.kubernetes.io/name", "postgresql")(globalCluster)).To(Succeed())
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Global,
