@@ -20,6 +20,7 @@ type UniversalClusters struct {
 
 var _ Clusters = &UniversalClusters{}
 
+// NewUniversalClusters is deprecated use NewUniversalCluster
 func NewUniversalClusters(clusterNames []string, verbose bool) (Clusters, error) {
 	if len(clusterNames) < 1 || len(clusterNames) > maxClusters {
 		return nil, errors.Errorf("Invalid cluster number. Should be in the range [1,3], but it is %d", len(clusterNames))
