@@ -257,7 +257,7 @@ func WaitNumPods(namespace string, num int, app string) InstallFunc {
 }
 
 func WaitPodsAvailable(namespace, app string) InstallFunc {
-	return WaitPodsAvailableWithLabel(namespace, app, "app")
+	return WaitPodsAvailableWithLabel(namespace, "app", app)
 }
 
 func WaitPodsAvailableWithLabel(namespace, labelKey, labelValue string) InstallFunc {
