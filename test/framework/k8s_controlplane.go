@@ -186,7 +186,7 @@ func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return ExtractTokenStringFromResponse(body)
+		return ExtractSecretDataFromResponse(body)
 	}
 
 	return retry.DoWithRetryE(c.t, "generating DP token", DefaultRetries, DefaultTimeout, func() (string, error) {

@@ -135,7 +135,7 @@ func (c *UniversalControlPlane) retrieveAdminToken() (string, error) {
 			if sshApp.Err() != "" {
 				return "", errors.New(sshApp.Err())
 			}
-			return ExtractTokenStringFromResponse(sshApp.Out())
+			return ExtractSecretDataFromResponse(sshApp.Out())
 		},
 	)
 }

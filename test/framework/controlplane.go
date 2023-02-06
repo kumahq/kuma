@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 )
 
-func ExtractTokenStringFromResponse(output string) (string, error) {
+func ExtractSecretDataFromResponse(output string) (string, error) {
 	var secret map[string]string
 	if err := json.Unmarshal([]byte(output), &secret); err != nil {
 		return "", err

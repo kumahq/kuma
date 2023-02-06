@@ -14,6 +14,6 @@ func TestE2E(t *testing.T) {
 }
 
 var _ = Describe("Test Zone and Global with Helm chart", Label("job-2"), Label("arm-not-supported"), helm.ZoneAndGlobalWithHelmChart, Ordered)
-var _ = Describe("Test Zone and Global universal mode with Helm chart", Label("job-2"), Label("arm-not-supported"), helm.ZoneAndGlobalInUniversalModeWithHelmChart, Ordered)
+var _ = Describe("Test Zone and Global universal mode with Helm chart", Label("job-0"), Label("arm-not-supported"), helm.ZoneAndGlobalInUniversalModeWithHelmChart, Ordered)
 var _ = Describe("Test App deployment with Helm chart", Label("job-2"), Label("arm-not-supported"), helm.AppDeploymentWithHelmChart)
 var _ = Describe("Test upgrading with Helm chart", Label("job-2"), Label("arm-not-supported"), helm.UpgradingWithHelmChart)
