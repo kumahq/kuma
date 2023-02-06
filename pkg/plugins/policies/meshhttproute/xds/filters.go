@@ -20,7 +20,7 @@ func routeFilter(filter api.Filter, route *envoy_route.Route, matchesPrefix bool
 	case api.ResponseHeaderModifierType:
 		responseHeaderModifier(*filter.ResponseHeaderModifier, route)
 	case api.RequestRedirectType:
-		requestRedirect(*filter.RequestRedirect, route)
+		requestRedirect(*filter.RequestRedirect, route, matchesPrefix)
 	case api.URLRewriteType:
 		urlRewrite(*filter.URLRewrite, route, matchesPrefix)
 	}
@@ -75,7 +75,7 @@ func responseHeaderModifier(mod api.HeaderModifier, envoyRoute *envoy_route.Rout
 	envoyRoute.ResponseHeadersToRemove = append(envoyRoute.ResponseHeadersToRemove, removes...)
 }
 
-func requestRedirect(redirect api.RequestRedirect, envoyRoute *envoy_route.Route) {
+func requestRedirect(redirect api.RequestRedirect, envoyRoute *envoy_route.Route, withPrefixMatch bool) {
 	envoyRedirect := &envoy_route.RedirectAction{}
 	if redirect.Hostname != nil {
 		envoyRedirect.HostRedirect = string(*redirect.Hostname)
@@ -86,6 +86,44 @@ func requestRedirect(redirect api.RequestRedirect, envoyRoute *envoy_route.Route
 	if redirect.Scheme != nil {
 		envoyRedirect.SchemeRewriteSpecifier = &envoy_route.RedirectAction_SchemeRedirect{
 			SchemeRedirect: *redirect.Scheme,
+		}
+	}
+	if redirect.Path != nil {
+		switch redirect.Path.Type {
+		case api.ReplaceFullPathType:
+			envoyRedirect.PathRewriteSpecifier = &envoy_route.RedirectAction_RegexRewrite{
+				RegexRewrite: &envoy_type_matcher.RegexMatchAndSubstitute{
+					Pattern: &envoy_type_matcher.RegexMatcher{
+						EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
+							GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
+						},
+						Regex: `.*`,
+					},
+					Substitution: *redirect.Path.ReplaceFullPath,
+				},
+			}
+		case api.ReplacePrefixMatchType:
+			if withPrefixMatch {
+				if envoyRoute.Match.GetPath() != "" {
+					// We have the "exact /prefix" match case
+					envoyRedirect.PathRewriteSpecifier = &envoy_route.RedirectAction_RegexRewrite{
+						RegexRewrite: &envoy_type_matcher.RegexMatchAndSubstitute{
+							Pattern: &envoy_type_matcher.RegexMatcher{
+								EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
+									GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
+								},
+								Regex: `.*`,
+							},
+							Substitution: *redirect.Path.ReplacePrefixMatch,
+						},
+					}
+				} else if envoyRoute.Match.GetPrefix() != "" {
+					// We have the "prefix /prefix/" match case
+					envoyRedirect.PathRewriteSpecifier = &envoy_route.RedirectAction_PrefixRewrite{
+						PrefixRewrite: *redirect.Path.ReplacePrefixMatch,
+					}
+				}
+			}
 		}
 	}
 
