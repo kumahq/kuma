@@ -258,3 +258,14 @@ func init() {
 		panic(err)
 	}
 }
+
+func KumaDeploymentOptionsFromConfig(config ControlPlaneConfig) []KumaDeploymentOption {
+	kumaOptions := []KumaDeploymentOption{}
+	for key, value := range config.Envs {
+		kumaOptions = append(kumaOptions, WithEnv(key, value))
+	}
+	if config.AdditionalYamlConfig != "" {
+		kumaOptions = append(kumaOptions, WithYamlConfig(config.AdditionalYamlConfig))
+	}
+	return kumaOptions
+}

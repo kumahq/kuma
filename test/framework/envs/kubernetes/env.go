@@ -25,19 +25,13 @@ func SetupAndGetState() []byte {
 			framework.GatewayAPICRDs,
 		)).To(Succeed())
 	}
-	kumaOptions := []framework.KumaDeploymentOption{
+	kumaOptions := append([]framework.KumaDeploymentOption{
 		framework.WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 		framework.WithCtlOpts(map[string]string{
 			"--experimental-gatewayapi": gatewayAPI,
 		}),
 		framework.WithEgress(),
-	}
-	for key, value := range framework.Config.KumaCpConfig.Standalone.Kubernetes.Envs {
-		kumaOptions = append(kumaOptions, framework.WithEnv(key, value))
-	}
-	if framework.Config.KumaCpConfig.Standalone.Kubernetes.AdditionalYamlConfig != "" {
-		kumaOptions = append(kumaOptions, framework.WithYamlConfig(framework.Config.KumaCpConfig.Standalone.Kubernetes.AdditionalYamlConfig))
-	}
+	}, framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Kubernetes)...)
 	Eventually(func() error {
 		return Cluster.Install(framework.Kuma(core.Standalone, kumaOptions...))
 	}, "90s", "3s").Should(Succeed())
