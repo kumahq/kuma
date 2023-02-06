@@ -20,7 +20,7 @@ import (
 
 var clusterName = Kuma1
 var minNodePort = 30080
-var maxNodePort = 30089
+var maxNodePort = 30099
 
 // TestConformance runs as a `testing` test and not Ginkgo so we have to use an
 // explicit `g` to use Gomega.
