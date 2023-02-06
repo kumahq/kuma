@@ -3,8 +3,6 @@ package framework
 import (
 	"bytes"
 	"crypto/tls"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -176,19 +174,6 @@ func (c *K8sControlPlane) FinalizeAddWithPortFwd(portFwd PortFwd) error {
 	return c.kumactl.KumactlConfigControlPlanesAdd(c.name, c.GetAPIServerAddress(), token)
 }
 
-func getTokenStringFromResponse(output string) (string, error) {
-	var secret map[string]string
-	if err := json.Unmarshal([]byte(output), &secret); err != nil {
-		return "", err
-	}
-	data := secret["data"]
-	token, err := base64.StdEncoding.DecodeString(data)
-	if err != nil {
-		return "", err
-	}
-	return string(token), nil
-}
-
 func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
 	if c.cluster.opts.helmOpts["controlPlane.environment"] == "universal" {
 		body, err := http_helper.HTTPDoWithRetryWithOptionsE(c.t, http_helper.HttpDoOptions{
@@ -201,7 +186,7 @@ func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return getTokenStringFromResponse(body)
+		return ExtractTokenStringFromResponse(body)
 	}
 
 	return retry.DoWithRetryE(c.t, "generating DP token", DefaultRetries, DefaultTimeout, func() (string, error) {

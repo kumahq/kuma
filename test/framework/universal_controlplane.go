@@ -1,8 +1,6 @@
 package framework
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net"
 
@@ -137,16 +135,7 @@ func (c *UniversalControlPlane) retrieveAdminToken() (string, error) {
 			if sshApp.Err() != "" {
 				return "", errors.New(sshApp.Err())
 			}
-			var secret map[string]string
-			if err := json.Unmarshal([]byte(sshApp.Out()), &secret); err != nil {
-				return "", err
-			}
-			data := secret["data"]
-			token, err := base64.StdEncoding.DecodeString(data)
-			if err != nil {
-				return "", err
-			}
-			return string(token), nil
+			return ExtractTokenStringFromResponse(sshApp.Out())
 		},
 	)
 }
