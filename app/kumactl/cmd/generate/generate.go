@@ -28,6 +28,7 @@ func NewGenerateCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	generateCmd.AddCommand(NewGenerateZoneTokenCmd(pctx))
 	generateCmd.AddCommand(NewGenerateCertificateCmd(pctx))
 	generateCmd.AddCommand(NewGenerateSigningKeyCmd(pctx))
+	generateCmd.AddCommand(NewGeneratePublicKeyCmd(pctx))
 	generateCmd.AddCommand(generate.NewGenerateUserTokenCmd(pctx))
 	return generateCmd
 }

@@ -25,6 +25,7 @@ Generate resources, tokens, etc.
 
 * [kumactl](kumactl.md)	 - Management tool for Kuma
 * [kumactl generate dataplane-token](kumactl_generate_dataplane-token.md)	 - Generate Dataplane Token
+* [kumactl generate public-key](kumactl_generate_public-key.md)	 - Generate public key out of signing key
 * [kumactl generate signing-key](kumactl_generate_signing-key.md)	 - Generate signing keys
 * [kumactl generate tls-certificate](kumactl_generate_tls-certificate.md)	 - Generate a TLS certificate
 * [kumactl generate user-token](kumactl_generate_user-token.md)	 - Generate User Token
