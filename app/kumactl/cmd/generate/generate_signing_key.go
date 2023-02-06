@@ -2,6 +2,7 @@ package generate
 
 import (
 	"encoding/base64"
+	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -9,7 +10,17 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 )
 
+type generateSigningKeyArgs struct {
+	format string
+}
+
+const SigningKeyFormatPEM = "pem"
+const SigningKeyFormatPEMBase64 = "pem-base64"
+
 func NewGenerateSigningKeyCmd(ctx *cmd.RootContext) *cobra.Command {
+	args := generateSigningKeyArgs{
+		format: SigningKeyFormatPEMBase64,
+	}
 	cmd := &cobra.Command{
 		Use:   "signing-key",
 		Short: "Generate signing keys",
@@ -20,10 +31,10 @@ $ echo "
 type: GlobalSecret
 name: user-token-signing-key-0002
 data: {{ key }}
-" | kumactl apply --var key=$(kumactl generate signing-key) -f -
+" | kumactl apply --var key=$(kumactl generate signing-key --format=pem-base64) -f -
 
 Generate a new signing key to rotate tokens (for example user-token) on Kubernetes.
-$ TOKEN="$(kumactl generate signing-key)" && echo "
+$ TOKEN="$(kumactl generate signing-key --format=pem-base64)" && echo "
 apiVersion: v1
 data:
   value: $TOKEN
@@ -40,9 +51,19 @@ type: system.kuma.io/global-secret
 			if err != nil {
 				return errors.Wrap(err, "could not generate signing key")
 			}
-			_, err = cmd.OutOrStdout().Write([]byte(base64.StdEncoding.EncodeToString(key)))
+			var out []byte
+			switch args.format {
+			case SigningKeyFormatPEM:
+				out = key
+			case SigningKeyFormatPEMBase64:
+				out = []byte(base64.StdEncoding.EncodeToString(key))
+			default:
+				return errors.New("invalid format")
+			}
+			_, err = cmd.OutOrStdout().Write(out)
 			return err
 		},
 	}
+	cmd.Flags().StringVar(&args.format, "format", args.format, fmt.Sprintf("format of signing key. Available values :%s, %s", SigningKeyFormatPEMBase64, SigningKeyFormatPEM))
 	return cmd
 }
