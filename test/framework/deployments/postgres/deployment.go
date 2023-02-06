@@ -38,12 +38,12 @@ type PostgresDeployment interface {
 }
 
 type deployOptions struct {
-	namespace            string
-	deploymentName       string
-	username             string
-	password             string
-	database             string
-	primaryName          string
+	namespace      string
+	deploymentName string
+	username       string
+	password       string
+	database       string
+	primaryName    string
 }
 type DeployOptionsFunc func(*deployOptions)
 
