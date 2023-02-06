@@ -18,6 +18,9 @@ installCrdsOnUpgrade:
   imagePullSecrets: []
 
 controlPlane:
+  # -- Environment that control plane is run in, useful when running universal global control plane on k8s
+  environment: "kubernetes"
+
   # -- Labels to add to resources in addition to default labels
   extraLabels: {}
 
@@ -698,6 +701,32 @@ experimental:
     tcAttachIface: ""
     # -- Path where compiled eBPF programs which will be installed can be found
     programsSourcePath: /kuma/ebpf
+
+# Postgres' settings for universal control plane on k8s
+postgres:
+  # -- Postgres hostname
+  host:
+  # -- Postgres port
+  port: "5432"
+  # -- Postgres user, password should be provided as a secret reference in "controlPlane.secrets"
+  # with the Env value "KUMA_STORE_POSTGRES_PASSWORD".
+  # Example:
+  # controlPlane:
+  #   secrets:
+  #     - Secret: postgres-postgresql
+  #       Key: postgresql-password
+  #       Env: KUMA_STORE_POSTGRES_PASSWORD
+  user:
+  # -- Postgres database to use
+  db:
+  # TLS settings
+  tls:
+    # -- Mode of TLS connection. Available values are: "disable", "verifyNone", "verifyCa", "verifyFull"
+    mode: disable # ENV: KUMA_STORE_POSTGRES_TLS_MODE
+    # -- Whether to disable SNI the postgres `sslsni` option.
+    disableSSLSNI: false # ENV: KUMA_STORE_POSTGRES_TLS_DISABLE_SSLSNI
+    # -- Secret that contains tls.crt, tls.key, rootCA.crt
+    secretName:
 
 # @ignored for helm-docs
 plugins:

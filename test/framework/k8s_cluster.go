@@ -912,10 +912,13 @@ func (c *K8sCluster) deleteKumaViaHelm() error {
 		errs = multierr.Append(errs, err)
 	}
 
-	// HELM does not remove CRDs therefore we need to do it manually.
-	// It's important to remove CRDs to get rid of all "instances" of CRDs like default Mesh etc.
-	if err := c.deleteCRDs(); err != nil {
-		errs = multierr.Append(errs, err)
+	// there is no CRDs in universal env
+	if c.opts.helmOpts["controlPlane.environment"] != "universal" {
+		// HELM does not remove CRDs therefore we need to do it manually.
+		// It's important to remove CRDs to get rid of all "instances" of CRDs like default Mesh etc.
+		if err := c.deleteCRDs(); err != nil {
+			errs = multierr.Append(errs, err)
+		}
 	}
 
 	return errs
