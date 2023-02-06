@@ -3,7 +3,6 @@ package helm
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kumahq/kuma/test/framework/deployments/postgres"
 	"net/http"
 	"strings"
 	"time"
@@ -17,6 +16,7 @@ import (
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/deployments/postgres"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
@@ -49,12 +49,12 @@ func ZoneAndGlobalInUniversalModeWithHelmChart() {
 			Install(postgres.Install(Kuma1,
 				postgres.WithK8sNamespace("kuma-system"),
 				postgres.WithUsername("mesh"),
-			postgres.WithPassword("mesh"),
-			postgres.WithDatabase("mesh"),
-			postgres.WithPrimaryName("postgres"),
-			// we deploy postgres in "kuma-system" so it's deleted with CP teardown
-			// otherwise this fails because there is no namespace
-			postgres.WithSkipNamespaceCleanup(true),
+				postgres.WithPassword("mesh"),
+				postgres.WithDatabase("mesh"),
+				postgres.WithPrimaryName("postgres"),
+				// we deploy postgres in "kuma-system" so it's deleted with CP teardown
+				// otherwise this fails because there is no namespace
+				postgres.WithSkipNamespaceCleanup(true),
 			)).
 			// Install(WaitService("kuma-system", "postgres-release-postgresql")). // this does not seem to work
 			// control plane crashes twice waiting for postgres to come up

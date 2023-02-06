@@ -38,12 +38,12 @@ type PostgresDeployment interface {
 }
 
 type deployOptions struct {
-	namespace      string
-	deploymentName string
-	username        string
-	password        string
-	database        string
-	primaryName     string
+	namespace            string
+	deploymentName       string
+	username             string
+	password             string
+	database             string
+	primaryName          string
 	skipNamespaceCleanup bool
 }
 type DeployOptionsFunc func(*deployOptions)
@@ -102,9 +102,8 @@ func WithPrimaryName(primaryName string) DeployOptionsFunc {
 	}
 }
 
-func WithSkipNamespaceCleanup (skipNamespaceCleanup bool) DeployOptionsFunc {
+func WithSkipNamespaceCleanup(skipNamespaceCleanup bool) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.skipNamespaceCleanup = skipNamespaceCleanup
 	}
 }
-
