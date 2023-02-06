@@ -110,7 +110,10 @@ func requestRedirect(redirect api.RequestRedirect, envoyRoute *envoy_route.Route
 }
 
 func urlRewrite(rewrite api.URLRewrite, envoyRoute *envoy_route.Route, withPrefixMatch bool) {
-	action := &envoy_route.RouteAction{}
+	action := &envoy_route.RouteAction{
+		ClusterSpecifier: envoyRoute.Action.(*envoy_route.Route_Route).Route.ClusterSpecifier,
+	}
+
 	if rewrite.Hostname != nil {
 		action.HostRewriteSpecifier = &envoy_route.RouteAction_HostRewriteLiteral{
 			HostRewriteLiteral: string(*rewrite.Hostname),

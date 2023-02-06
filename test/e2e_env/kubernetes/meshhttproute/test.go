@@ -151,4 +151,48 @@ spec:
 			g.Expect(response.Instance).To(HavePrefix("external-service"))
 		}, "30s", "1s").Should(Succeed())
 	})
+
+	It("should configure URLRewrite", func() {
+		// when
+		Expect(YamlK8s(fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: route-3
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: MeshService
+    name: test-client_%s_svc_80
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server_meshhttproute_svc_80
+      rules: 
+        - matches:
+            - path: 
+                type: Prefix
+                value: /prefix
+          default:
+            filters:
+              - type: URLRewrite
+                urlRewrite:
+                  path:
+                    type: ReplacePrefixMatch
+                    replacePrefixMatch: /hello/
+            backendRefs:
+              - kind: MeshService
+                name: test-server_meshhttproute_svc_80
+                weight: 1
+`, Config.KumaNamespace, meshName, meshName))(kubernetes.Cluster)).To(Succeed())
+
+		// then receive redirect response
+		Eventually(func(g Gomega) {
+			resp, err := client.CollectResponse(kubernetes.Cluster, "test-client", "test-server_meshhttproute_svc_80.mesh/prefix/world", client.FromKubernetesPod(namespace, "test-client"))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(resp.Received.Path).To(Equal("/hello/world"))
+		}, "30s", "1s").Should(Succeed())
+	})
 }
