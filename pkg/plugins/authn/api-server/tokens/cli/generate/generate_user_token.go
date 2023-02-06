@@ -20,7 +20,7 @@ type generateUserTokenCmd struct {
 	groups   []string
 	validFor time.Duration
 
-	kid            int
+	kid            string
 	signingKeyPath string
 }
 
@@ -46,7 +46,7 @@ $ kumactl generate user-token --name john.doe@example.com --group users --valid-
 			var token string
 
 			if args.signingKeyPath != "" {
-				if args.kid == 0 {
+				if args.kid == "" {
 					return errors.New("--kid is required when --signing-key-path is used")
 				}
 				tokenIssuer := tokens.NewTokenIssuer(tokens.NewFileSigningKeyManager(args.signingKeyPath, args.kid))
@@ -60,7 +60,7 @@ $ kumactl generate user-token --name john.doe@example.com --group users --valid-
 					return err
 				}
 			} else {
-				if args.kid != 0 {
+				if args.kid != "" {
 					return errors.New("--kid cannot be used when --signing-key-path is used")
 				}
 				tokenClient := NewHTTPUserTokenClient(client)
@@ -79,7 +79,7 @@ $ kumactl generate user-token --name john.doe@example.com --group users --valid-
 	cmd.Flags().StringSliceVar(&args.groups, "group", nil, "group of the user")
 	cmd.Flags().DurationVar(&args.validFor, "valid-for", 0, `how long the token will be valid (for example "24h")`)
 	cmd.Flags().StringVar(&args.signingKeyPath, "signing-key-path", "", "path to a file that contains private signing key. When specified, control plane won't be used to issue the token.")
-	cmd.Flags().IntVar(&args.kid, "kid", 0, "ID of the key that is used to issue a token. Required when --signing-key-path is used.")
+	cmd.Flags().StringVar(&args.kid, "kid", "", "ID of the key that is used to issue a token. Required when --signing-key-path is used.")
 	_ = cmd.MarkFlagRequired("valid-for")
 	return cmd
 }
