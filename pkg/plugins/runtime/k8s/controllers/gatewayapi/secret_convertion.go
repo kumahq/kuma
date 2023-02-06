@@ -2,7 +2,6 @@ package gatewayapi
 
 import (
 	"context"
-	"encoding/pem"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -63,16 +62,7 @@ func convertSecret(secret *kube_core.Secret) ([]byte, error) {
 		return nil, errors.Errorf("only secrets of type %q are supported", kube_core.SecretTypeTLS)
 	}
 
-	privatePEM := pem.EncodeToMemory(&pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: secret.Data["tls.key"],
-	})
-	publicPEM := pem.EncodeToMemory(&pem.Block{
-		Type:  "CERTIFICATE",
-		Bytes: secret.Data["tls.crt"],
-	})
-
-	data := append(privatePEM, publicPEM...)
+	data := append(secret.Data["tls.key"], secret.Data["tls.crt"]...)
 
 	if _, _, err := gateway.NewServerSecret(data); err != nil {
 		// Don't return the exact error
