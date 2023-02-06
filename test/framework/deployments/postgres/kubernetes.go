@@ -43,10 +43,8 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 }
 
 func (t *k8SDeployment) Delete(cluster framework.Cluster) error {
-	helmOpts := &helm.Options{
-		KubectlOptions: cluster.GetKubectlOptions(t.options.namespace),
-	}
-	return helm.DeleteE(cluster.GetTesting(), helmOpts, releaseName, true)
+	// we delete the namespace anyway and helm.DeleteE is flaky here
+	return nil
 }
 
 func NewK8SDeployment(opts *deployOptions) *k8SDeployment {
