@@ -43,7 +43,10 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 }
 
 func (t *k8SDeployment) Delete(cluster framework.Cluster) error {
-	return helm.DeleteE(cluster.GetTesting(), &helm.Options{}, releaseName, true)
+	helmOpts := &helm.Options{
+		KubectlOptions: cluster.GetKubectlOptions(t.options.namespace),
+	}
+	return helm.DeleteE(cluster.GetTesting(), helmOpts, releaseName, true)
 }
 
 func NewK8SDeployment(opts *deployOptions) *k8SDeployment {
