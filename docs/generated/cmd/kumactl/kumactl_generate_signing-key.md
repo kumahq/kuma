@@ -19,10 +19,10 @@ $ echo "
 type: GlobalSecret
 name: user-token-signing-key-0002
 data: {{ key }}
-" | kumactl apply --var key=$(kumactl generate signing-key) -f -
+" | kumactl apply --var key=$(kumactl generate signing-key --format=pem-base64) -f -
 
 Generate a new signing key to rotate tokens (for example user-token) on Kubernetes.
-$ TOKEN="$(kumactl generate signing-key)" && echo "
+$ TOKEN="$(kumactl generate signing-key --format=pem-base64)" && echo "
 apiVersion: v1
 data:
   value: $TOKEN
@@ -38,7 +38,8 @@ type: system.kuma.io/global-secret
 ### Options
 
 ```
-  -h, --help   help for signing-key
+      --format string   format of signing key. Available values :pem-base64, pem (default "pem-base64")
+  -h, --help            help for signing-key
 ```
 
 ### Options inherited from parent commands
