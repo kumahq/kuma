@@ -62,7 +62,7 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 
 			r, err = c.generateExternalCluster(ctx, xdsCtx.Mesh, info, matched, dest, hostInfo.Host.Tags)
 		} else {
-			log.Info("generating mesh cluster resource",
+			log.V(1).Info("generating mesh cluster resource",
 				"service", service,
 			)
 

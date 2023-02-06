@@ -38,6 +38,9 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if !ok {
 		return nil
 	}
+	if len(policies.ToRules.Rules) == 0 && len(policies.FromRules.Rules) == 0 {
+		return nil
+	}
 
 	listeners := policies_xds.GatherListeners(rs)
 	clusters := policies_xds.GatherClusters(rs)
@@ -46,7 +49,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, clusters.Inbound, proxy.Dataplane); err != nil {
 		return err
 	}
-	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, clusters.Outbound, proxy.Dataplane, proxy.Routing); err != nil {
+	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, clusters.Outbound, clusters.OutboundSplit, proxy.Dataplane, proxy.Routing); err != nil {
 		return err
 	}
 	if err := applyToGateway(policies.ToRules, clusters.Gateway, routes.Gateway, ctx, proxy); err != nil {
@@ -69,10 +72,7 @@ func applyToInbounds(fromRules core_xds.FromRules, inboundListeners map[core_xds
 			continue
 		}
 
-		rules, ok := fromRules.Rules[listenerKey]
-		if !ok {
-			continue
-		}
+		rules := fromRules.Rules[listenerKey]
 
 		cluster, ok := inboundClusters[createInboundClusterName(inbound.ServicePort, listenerKey.Port)]
 		if !ok {
@@ -87,7 +87,14 @@ func applyToInbounds(fromRules core_xds.FromRules, inboundListeners map[core_xds
 	return nil
 }
 
-func applyToOutbounds(rules core_xds.ToRules, outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener, outboundClusters map[string]*envoy_cluster.Cluster, dataplane *core_mesh.DataplaneResource, routing core_xds.Routing) error {
+func applyToOutbounds(
+	rules core_xds.ToRules,
+	outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener,
+	outboundClusters map[string]*envoy_cluster.Cluster,
+	outboundSplitClusters map[string][]*envoy_cluster.Cluster,
+	dataplane *core_mesh.DataplaneResource,
+	routing core_xds.Routing,
+) error {
 	for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
 		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound)
 
@@ -96,15 +103,26 @@ func applyToOutbounds(rules core_xds.ToRules, outboundListeners map[mesh_proto.O
 			continue
 		}
 
+		clustersToConfigure := []*envoy_cluster.Cluster{}
 		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
+		splitCluster, ok := outboundSplitClusters[serviceName]
+		if ok {
+			clustersToConfigure = append(clustersToConfigure, splitCluster...)
+		}
 		cluster, ok := outboundClusters[serviceName]
-		if !ok {
+		if ok {
+			clustersToConfigure = append(clustersToConfigure, cluster)
+		}
+
+		if len(clustersToConfigure) == 0 {
 			continue
 		}
 
 		protocol := policies_xds.InferProtocol(routing, serviceName)
-		if err := configure(rules.Rules, core_xds.MeshService(serviceName), protocol, listener, cluster, nil); err != nil {
-			return err
+		for _, cluster := range clustersToConfigure {
+			if err := configure(rules.Rules, core_xds.MeshService(serviceName), protocol, listener, cluster, nil); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -167,10 +185,14 @@ func applyToGateway(
 
 func configure(rules core_xds.Rules, subset core_xds.Subset, protocol core_mesh.Protocol, listener *envoy_listener.Listener, cluster *envoy_cluster.Cluster, routeActions []*envoy_route.RouteAction) error {
 	var conf api.Conf
-	if computed := rules.Compute(subset); computed != nil {
-		conf = computed.Conf.(api.Conf)
+	if rules == nil {
+		conf = api.Conf{}
 	} else {
-		return nil
+		if computed := rules.Compute(subset); computed != nil {
+			conf = computed.Conf.(api.Conf)
+		} else {
+			return nil
+		}
 	}
 
 	configurer := plugin_xds.Configurer{

@@ -123,7 +123,7 @@ var _ = Describe("MeshFaultInjection", func() {
 							},
 						},
 						Conf: api.Conf{
-							Http: []api.FaultInjectionConf{
+							Http: &[]api.FaultInjectionConf{
 								{
 									Abort: &api.AbortConf{
 										HttpStatus: int32(444),
@@ -144,7 +144,7 @@ var _ = Describe("MeshFaultInjection", func() {
 					{Address: "127.0.0.1", Port: 17778}: {{
 						Subset: core_xds.Subset{},
 						Conf: api.Conf{
-							Http: []api.FaultInjectionConf{
+							Http: &[]api.FaultInjectionConf{
 								{
 									Abort: &api.AbortConf{
 										HttpStatus: int32(444),
@@ -175,7 +175,7 @@ var _ = Describe("MeshFaultInjection", func() {
 				{Address: "192.168.0.1", Port: 8080}: {{
 					Subset: core_xds.Subset{},
 					Conf: api.Conf{
-						Http: []api.FaultInjectionConf{
+						Http: &[]api.FaultInjectionConf{
 							{
 								Abort: &api.AbortConf{
 									HttpStatus: int32(444),

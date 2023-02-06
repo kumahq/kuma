@@ -81,8 +81,8 @@ func NewUnexpectedFilterConfigTypeError(actual, expected proto.Message) error {
 }
 
 func ConvertPercentage(percentage *wrapperspb.DoubleValue) *envoy_type.FractionalPercent {
-	const tenThousand = 10000
-	const million = 1000000
+	const tenThousand = 10_000
+	const hundred = 100
 
 	isInteger := func(f float64) bool {
 		return math.Floor(f) == f
@@ -96,16 +96,16 @@ func ConvertPercentage(percentage *wrapperspb.DoubleValue) *envoy_type.Fractiona
 		}
 	}
 
-	tenThousandTimes := tenThousand * value
-	if isInteger(tenThousandTimes) {
+	hundredTime := hundred * value
+	if isInteger(hundredTime) {
 		return &envoy_type.FractionalPercent{
-			Numerator:   uint32(tenThousandTimes),
+			Numerator:   uint32(hundredTime),
 			Denominator: envoy_type.FractionalPercent_TEN_THOUSAND,
 		}
 	}
 
 	return &envoy_type.FractionalPercent{
-		Numerator:   uint32(math.Round(million * value)),
+		Numerator:   uint32(math.Round(tenThousand * value)),
 		Denominator: envoy_type.FractionalPercent_MILLION,
 	}
 }

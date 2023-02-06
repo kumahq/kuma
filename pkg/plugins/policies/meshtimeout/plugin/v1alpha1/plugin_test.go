@@ -30,11 +30,11 @@ import (
 
 var _ = Describe("MeshTimeout", func() {
 	type sidecarTestCase struct {
-		resources        []core_xds.Resource
-		toRules          core_xds.ToRules
-		fromRules        core_xds.FromRules
-		expectedListener string
-		expectedCluster  string
+		resources         []core_xds.Resource
+		toRules           core_xds.ToRules
+		fromRules         core_xds.FromRules
+		expectedListeners []string
+		expectedClusters  []string
 	}
 	DescribeTable("should generate proper Envoy config", func(given sidecarTestCase) {
 		// given
@@ -69,6 +69,11 @@ var _ = Describe("MeshTimeout", func() {
 							"kuma.io/protocol": "http",
 						},
 					}},
+					"other-service-_0_": []core_xds.Endpoint{{
+						Tags: map[string]string{
+							"kuma.io/protocol": "http",
+						},
+					}},
 					"second-service": []core_xds.Endpoint{{
 						Tags: map[string]string{
 							"kuma.io/protocol": "tcp",
@@ -83,20 +88,31 @@ var _ = Describe("MeshTimeout", func() {
 		Expect(plugin.Apply(resourceSet, context, &proxy)).To(Succeed())
 
 		// then
-		Expect(getResourceYaml(resourceSet.ListOf(envoy_resource.ListenerType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", given.expectedListener)))
-		Expect(getResourceYaml(resourceSet.ListOf(envoy_resource.ClusterType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", given.expectedCluster)))
+		for i, expectedListener := range given.expectedListeners {
+			Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ListenerType)[i].Resource)).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", expectedListener)))
+		}
+		for i, expectedCluster := range given.expectedClusters {
+			Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ClusterType)[i].Resource)).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", expectedCluster)))
+		}
 	},
 		Entry("http outbound route", sidecarTestCase{
-			resources: []core_xds.Resource{{
-				Name:     "outbound",
-				Origin:   generator.OriginOutbound,
-				Resource: httpOutboundListenerWith(10001),
-			},
+			resources: []core_xds.Resource{
+				{
+					Name:     "outbound",
+					Origin:   generator.OriginOutbound,
+					Resource: httpOutboundListener(),
+				},
 				{
 					Name:     "outbound",
 					Origin:   generator.OriginOutbound,
 					Resource: test_xds.ClusterWithName("other-service"),
-				}},
+				},
+				{
+					Name:     "outbound-split",
+					Origin:   generator.OriginOutbound,
+					Resource: test_xds.ClusterWithName("other-service-_0_"),
+				},
+			},
 			toRules: core_xds.ToRules{
 				Rules: []*core_xds.Rule{
 					{
@@ -114,8 +130,11 @@ var _ = Describe("MeshTimeout", func() {
 					},
 				},
 			},
-			expectedListener: "http_outbound_listener.golden.yaml",
-			expectedCluster:  "http_outbound_cluster.golden.yaml",
+			expectedListeners: []string{"http_outbound_listener.golden.yaml"},
+			expectedClusters: []string{
+				"http_outbound_cluster.golden.yaml",
+				"http_outbound_split_cluster.golden.yaml",
+			},
 		}),
 		Entry("tcp outbound route", sidecarTestCase{
 			resources: []core_xds.Resource{{
@@ -153,14 +172,14 @@ var _ = Describe("MeshTimeout", func() {
 					},
 				},
 			},
-			expectedCluster:  "basic_tcp_cluster.golden.yaml",
-			expectedListener: "basic_tcp_listener.golden.yaml",
+			expectedClusters:  []string{"basic_tcp_cluster.golden.yaml"},
+			expectedListeners: []string{"basic_tcp_listener.golden.yaml"},
 		}),
 		Entry("basic inbound route", sidecarTestCase{
 			resources: []core_xds.Resource{{
 				Name:     "inbound",
 				Origin:   generator.OriginInbound,
-				Resource: httpInboundListenerWith(80),
+				Resource: httpInboundListenerWith(),
 			},
 				{
 					Name:     "inbound",
@@ -188,14 +207,14 @@ var _ = Describe("MeshTimeout", func() {
 						},
 					}},
 			},
-			expectedCluster:  "basic_inbound_cluster.golden.yaml",
-			expectedListener: "basic_inbound_listener.golden.yaml",
+			expectedClusters:  []string{"basic_inbound_cluster.golden.yaml"},
+			expectedListeners: []string{"basic_inbound_listener.golden.yaml"},
 		}),
 		Entry("outbound with defaults when http conf missing", sidecarTestCase{
 			resources: []core_xds.Resource{{
 				Name:     "outbound",
 				Origin:   generator.OriginOutbound,
-				Resource: httpOutboundListenerWith(10001),
+				Resource: httpOutboundListener(),
 			},
 				{
 					Name:     "outbound",
@@ -219,8 +238,123 @@ var _ = Describe("MeshTimeout", func() {
 					},
 				},
 			},
-			expectedCluster:  "outbound_with_defaults_cluster.golden.yaml",
-			expectedListener: "outbound_with_defaults_listener.golden.yaml",
+			expectedClusters:  []string{"outbound_with_defaults_cluster.golden.yaml"},
+			expectedListeners: []string{"outbound_with_defaults_listener.golden.yaml"},
+		}),
+		Entry("default inbound conf when no from section specified", sidecarTestCase{
+			resources: []core_xds.Resource{
+				{
+					Name:     "inbound",
+					Origin:   generator.OriginInbound,
+					Resource: httpInboundListenerWith(),
+				},
+				{
+					Name:     "inbound",
+					Origin:   generator.OriginInbound,
+					Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundServicePort)),
+				},
+				{
+					Name:     "outbound",
+					Origin:   generator.OriginOutbound,
+					Resource: httpOutboundListener(),
+				},
+				{
+					Name:     "outbound",
+					Origin:   generator.OriginOutbound,
+					Resource: test_xds.ClusterWithName("other-service"),
+				},
+			},
+			toRules: core_xds.ToRules{
+				Rules: []*core_xds.Rule{
+					{
+						Subset: core_xds.Subset{
+							{
+								Key:   mesh_proto.ServiceTag,
+								Value: "other-service",
+							},
+						},
+						Conf: api.Conf{
+							ConnectionTimeout: test.ParseDuration("10s"),
+							IdleTimeout:       test.ParseDuration("1h"),
+						},
+					},
+				},
+			},
+			expectedClusters:  []string{"default_inbound_cluster.golden.yaml", "modified_outbound_cluster.golden.yaml"},
+			expectedListeners: []string{"default_inbound_listener.golden.yaml", "modified_outbound_listener.golden.yaml"},
+		}),
+		Entry("default outbound conf when no to section specified", sidecarTestCase{
+			resources: []core_xds.Resource{
+				{
+					Name:     "inbound",
+					Origin:   generator.OriginInbound,
+					Resource: httpInboundListenerWith(),
+				},
+				{
+					Name:     "inbound",
+					Origin:   generator.OriginInbound,
+					Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundServicePort)),
+				},
+				{
+					Name:     "outbound",
+					Origin:   generator.OriginOutbound,
+					Resource: httpOutboundListener(),
+				},
+				{
+					Name:     "outbound",
+					Origin:   generator.OriginOutbound,
+					Resource: test_xds.ClusterWithName("other-service"),
+				},
+			},
+			fromRules: core_xds.FromRules{
+				Rules: map[core_xds.InboundListener]core_xds.Rules{
+					{
+						Address: "127.0.0.1",
+						Port:    80,
+					}: []*core_xds.Rule{
+						{
+							Subset: core_xds.Subset{},
+							Conf: api.Conf{
+								ConnectionTimeout: test.ParseDuration("10s"),
+								IdleTimeout:       test.ParseDuration("1h"),
+								Http: &api.Http{
+									RequestTimeout:        test.ParseDuration("5s"),
+									StreamIdleTimeout:     test.ParseDuration("1s"),
+									MaxStreamDuration:     test.ParseDuration("10m"),
+									MaxConnectionDuration: test.ParseDuration("10m"),
+								},
+							},
+						},
+					}},
+			},
+			expectedClusters:  []string{"modified_inbound_cluster.golden.yaml", "default_outbound_cluster.golden.yaml"},
+			expectedListeners: []string{"modified_inbound_listener.golden.yaml", "default_outbound_listener.golden.yaml"},
+		}),
+		Entry("default outbound conf when no to section specified", sidecarTestCase{
+			resources: []core_xds.Resource{
+				{
+					Name:     "inbound",
+					Origin:   generator.OriginInbound,
+					Resource: httpInboundListenerWith(),
+				},
+				{
+					Name:     "inbound",
+					Origin:   generator.OriginInbound,
+					Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundServicePort)),
+				},
+				{
+					Name:     "outbound",
+					Origin:   generator.OriginOutbound,
+					Resource: httpOutboundListener(),
+				},
+				{
+					Name:     "outbound",
+					Origin:   generator.OriginOutbound,
+					Resource: test_xds.ClusterWithName("other-service"),
+				},
+			},
+			expectedClusters:  []string{"original_inbound_cluster.golden.yaml", "original_outbound_cluster.golden.yaml"},
+			expectedListeners: []string{"original_inbound_listener.golden.yaml", "original_outbound_listener.golden.yaml"},
 		}),
 	)
 
@@ -281,9 +415,9 @@ var _ = Describe("MeshTimeout", func() {
 })
 
 func getResourceYaml(list core_xds.ResourceList) []byte {
-	actualListener, err := util_proto.ToYAML(list[0].Resource)
+	actualResource, err := util_proto.ToYAML(list[0].Resource)
 	Expect(err).ToNot(HaveOccurred())
-	return actualListener
+	return actualResource
 }
 
 func gatewayGenerator() gateway_plugin.Generator {
@@ -301,10 +435,10 @@ func gatewayGenerator() gateway_plugin.Generator {
 	}
 }
 
-func httpOutboundListenerWith(port uint32) envoy_common.NamedResource {
+func httpOutboundListener() envoy_common.NamedResource {
 	return createListener(
-		port,
-		OutboundListener(fmt.Sprintf("outbound:127.0.0.1:%d", port), "127.0.0.1", port, core_xds.SocketAddressProtocolTCP),
+		10001,
+		OutboundListener("outbound:127.0.0.1:10001", "127.0.0.1", 10001, core_xds.SocketAddressProtocolTCP),
 		HttpOutboundRoute(
 			"backend",
 			envoy_common.Routes{{
@@ -323,10 +457,10 @@ func httpOutboundListenerWith(port uint32) envoy_common.NamedResource {
 	)
 }
 
-func httpInboundListenerWith(port uint32) envoy_common.NamedResource {
+func httpInboundListenerWith() envoy_common.NamedResource {
 	return createListener(
-		port,
-		InboundListener(fmt.Sprintf("inbound:127.0.0.1:%d", port), "127.0.0.1", port, core_xds.SocketAddressProtocolTCP),
+		80,
+		InboundListener("inbound:127.0.0.1:80", "127.0.0.1", 80, core_xds.SocketAddressProtocolTCP),
 		HttpInboundRoutes(
 			"backend",
 			envoy_common.Routes{{

@@ -228,12 +228,14 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Global.KDS.TlsKeyFile).To(Equal("/key"))
 			Expect(cfg.Multizone.Global.KDS.MaxMsgSize).To(Equal(uint32(1)))
 			Expect(cfg.Multizone.Global.KDS.MsgSendTimeout.Duration).To(Equal(10 * time.Second))
+			Expect(cfg.Multizone.Global.KDS.NackBackoff.Duration).To(Equal(11 * time.Second))
 			Expect(cfg.Multizone.Zone.GlobalAddress).To(Equal("grpc://1.1.1.1:5685"))
 			Expect(cfg.Multizone.Zone.Name).To(Equal("zone-1"))
 			Expect(cfg.Multizone.Zone.KDS.RootCAFile).To(Equal("/rootCa"))
 			Expect(cfg.Multizone.Zone.KDS.RefreshInterval.Duration).To(Equal(9 * time.Second))
 			Expect(cfg.Multizone.Zone.KDS.MaxMsgSize).To(Equal(uint32(2)))
 			Expect(cfg.Multizone.Zone.KDS.MsgSendTimeout.Duration).To(Equal(20 * time.Second))
+			Expect(cfg.Multizone.Zone.KDS.NackBackoff.Duration).To(Equal(21 * time.Second))
 
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
 			Expect(cfg.Defaults.EnableLocalhostInboundClusters).To(BeTrue())
@@ -489,6 +491,7 @@ multizone:
       tlsCipherSuites: ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"]
       maxMsgSize: 1
       msgSendTimeout: 10s
+      nackBackoff: 11s
   zone:
     globalAddress: "grpc://1.1.1.1:5685"
     name: "zone-1"
@@ -497,6 +500,7 @@ multizone:
       rootCaFile: /rootCa
       maxMsgSize: 2
       msgSendTimeout: 20s
+      nackBackoff: 21s
 dnsServer:
   domain: test-domain
   CIDR: 127.1.0.0/16
@@ -725,12 +729,14 @@ proxy:
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_CIPHER_SUITES":                                              "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384",
 				"KUMA_MULTIZONE_GLOBAL_KDS_MAX_MSG_SIZE":                                                   "1",
 				"KUMA_MULTIZONE_GLOBAL_KDS_MSG_SEND_TIMEOUT":                                               "10s",
+				"KUMA_MULTIZONE_GLOBAL_KDS_NACK_BACKOFF":                                                   "11s",
 				"KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS":                                                       "grpc://1.1.1.1:5685",
 				"KUMA_MULTIZONE_ZONE_NAME":                                                                 "zone-1",
 				"KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE":                                                     "/rootCa",
 				"KUMA_MULTIZONE_ZONE_KDS_REFRESH_INTERVAL":                                                 "9s",
 				"KUMA_MULTIZONE_ZONE_KDS_MAX_MSG_SIZE":                                                     "2",
 				"KUMA_MULTIZONE_ZONE_KDS_MSG_SEND_TIMEOUT":                                                 "20s",
+				"KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF":                                                     "21s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL":                                    "5s",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",
 				"KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS":                                          "true",
