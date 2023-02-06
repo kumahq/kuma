@@ -354,10 +354,10 @@ func (OutboundProxyGenerator) determineRoutes(
 		timeoutConf = timeout.Spec.GetConf()
 	}
 
-	// Return internal, external
-	clustersFromSplit := func(splits []*mesh_proto.TrafficRoute_Split) ([]envoy_common.Cluster, []envoy_common.Cluster) {
-		var clustersInternal []envoy_common.Cluster
-		var clustersExternal []envoy_common.Cluster
+	rateLimit := proxy.Policies.RateLimitsOutbound[oface]
+
+	clustersFromSplit := func(splits []*mesh_proto.TrafficRoute_Split) []envoy_common.Cluster {
+		var clusters []envoy_common.Cluster
 		for _, destination := range splits {
 			service := destination.Destination[mesh_proto.ServiceTag]
 			if destination.GetWeight().GetValue() == 0 {
@@ -410,52 +410,44 @@ func (OutboundProxyGenerator) determineRoutes(
 				clusterCache[allTags.String()] = cluster.Name()
 			}
 
-			if isExternalService {
-				clustersExternal = append(clustersExternal, cluster)
-			} else {
-				clustersInternal = append(clustersInternal, cluster)
-			}
+			clusters = append(clusters, cluster)
 		}
-		return clustersInternal, clustersExternal
+		return clusters
 	}
 
 	appendRoute := func(routes envoy_common.Routes, match *mesh_proto.TrafficRoute_Http_Match, modify *mesh_proto.TrafficRoute_Http_Modify,
-		clusters []envoy_common.Cluster, rateLimit *core_mesh.RateLimitResource) envoy_common.Routes {
+		clusters []envoy_common.Cluster) envoy_common.Routes {
 		if len(clusters) == 0 {
 			return routes
 		}
 
-		// backwards compatibility to support RateLimit for ExternalServices without ZoneEgress
-		if hasEgress {
-			return append(routes, envoy_common.Route{
-				Match:    match,
-				Modify:   modify,
-				Clusters: clusters,
-			})
-		} else {
-			var rlSpec *mesh_proto.RateLimit
-			if rateLimit != nil {
-				rlSpec = rateLimit.Spec
+		hasExternal := false
+		for _, cluster := range clusters {
+			if cluster.IsExternalService() {
+				hasExternal = true
+				break
 			}
-			return append(routes, envoy_common.Route{
-				Match:     match,
-				Modify:    modify,
-				RateLimit: rlSpec,
-				Clusters:  clusters,
-			})
 		}
+
+		var rlSpec *mesh_proto.RateLimit
+		if hasExternal && !hasEgress && rateLimit != nil {
+			rlSpec = rateLimit.Spec
+		} // otherwise rate limit is applied on the inbound side
+
+		return append(routes, envoy_common.Route{
+			Match:     match,
+			Modify:    modify,
+			RateLimit: rlSpec,
+			Clusters:  clusters,
+		})
 	}
 
 	for _, http := range route.Spec.GetConf().GetHttp() {
-		clustersInternal, clustersExternal := clustersFromSplit(http.GetSplitWithDestination())
-		routes = appendRoute(routes, http.Match, http.Modify, clustersInternal, nil)
-		routes = appendRoute(routes, http.Match, http.Modify, clustersExternal, proxy.Policies.RateLimitsOutbound[oface])
+		routes = appendRoute(routes, http.Match, http.Modify, clustersFromSplit(http.GetSplitWithDestination()))
 	}
 
 	if defaultDestination := route.Spec.GetConf().GetSplitWithDestination(); len(defaultDestination) != 0 {
-		clustersInternal, clustersExternal := clustersFromSplit(defaultDestination)
-		routes = appendRoute(routes, nil, nil, clustersInternal, nil)
-		routes = appendRoute(routes, nil, nil, clustersExternal, proxy.Policies.RateLimitsOutbound[oface])
+		routes = appendRoute(routes, nil, nil, clustersFromSplit(defaultDestination))
 	}
 
 	return routes
