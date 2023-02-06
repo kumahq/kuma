@@ -3,7 +3,7 @@ package udp
 import (
 	"net"
 
-	"github.com/kumahq/kuma/test/framework/kuma-net/ip"
+	"github.com/kumahq/kuma/test/framework/network/ip"
 )
 
 // GenRandomAddressIPv4 will generate random *net.UDPAddr (IPv4) with provided port

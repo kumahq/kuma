@@ -7,8 +7,8 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 
-	"github.com/kumahq/kuma/test/framework/kuma-net/netns"
-	"github.com/kumahq/kuma/test/framework/kuma-net/tcp/socket_options"
+	"github.com/kumahq/kuma/test/framework/network/netns"
+	"github.com/kumahq/kuma/test/framework/network/tcp/socket_options"
 )
 
 // CloseConn will run Close member function on provided as a parameter *net.TCPConn

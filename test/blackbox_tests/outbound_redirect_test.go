@@ -14,11 +14,11 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/builder"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 	"github.com/kumahq/kuma/test/blackbox_tests"
-	"github.com/kumahq/kuma/test/framework/kuma-net/ip"
-	"github.com/kumahq/kuma/test/framework/kuma-net/netns"
-	"github.com/kumahq/kuma/test/framework/kuma-net/socket"
-	"github.com/kumahq/kuma/test/framework/kuma-net/syscall"
-	"github.com/kumahq/kuma/test/framework/kuma-net/tcp"
+	"github.com/kumahq/kuma/test/framework/network/ip"
+	"github.com/kumahq/kuma/test/framework/network/netns"
+	"github.com/kumahq/kuma/test/framework/network/socket"
+	"github.com/kumahq/kuma/test/framework/network/syscall"
+	"github.com/kumahq/kuma/test/framework/network/tcp"
 )
 
 var _ = Describe("Outbound IPv4 TCP traffic to any address:port", func() {

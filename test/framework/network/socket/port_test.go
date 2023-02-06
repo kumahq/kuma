@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/pkg/test/matchers"
-	"github.com/kumahq/kuma/test/framework/kuma-net/socket"
+	"github.com/kumahq/kuma/test/framework/network/socket"
 )
 
 var _ = Describe("GenerateRandomPorts", func() {

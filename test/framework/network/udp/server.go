@@ -7,7 +7,7 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 
-	"github.com/kumahq/kuma/test/framework/kuma-net/netns"
+	"github.com/kumahq/kuma/test/framework/network/netns"
 )
 
 // UnsafeStartUDPServer will start TCP server in provided *netns.NesNS.
