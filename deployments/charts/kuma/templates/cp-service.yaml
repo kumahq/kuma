@@ -20,9 +20,11 @@ spec:
       name: http-api-server
     - port: 5682
       name: https-api-server
+    {{- if ne .Values.controlPlane.environment "universal" }}
     - port: 443
       name: https-admission-server
       targetPort: 5443
+    {{- end }}
     {{- if ne .Values.controlPlane.mode "global" }}
     - port: 5676
       name: mads-server
