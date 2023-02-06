@@ -9,7 +9,6 @@ import (
 	"time"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -47,7 +46,18 @@ func ZoneAndGlobalInUniversalModeWithHelmChart() {
 
 		err = NewClusterSetup().
 			Install(Namespace("kuma-system")).
-			Install(postgres.Install(Kuma1)).
+			Install(postgres.Install(Kuma1,
+				postgres.WithK8sNamespace("kuma-system"),
+				postgres.WithUsername("mesh"),
+			postgres.WithPassword("mesh"),
+			postgres.WithDatabase("mesh"),
+			postgres.WithPrimaryName("postgres"),
+			// we deploy postgres in "kuma-system" so it's deleted with CP teardown
+			// otherwise this fails because there is no namespace
+			postgres.WithSkipNamespaceCleanup(true),
+			)).
+			// Install(WaitService("kuma-system", "postgres-release-postgresql")). // this does not seem to work
+			// control plane crashes twice waiting for postgres to come up
 			Install(YamlK8s(`
 apiVersion: v1
 kind: Secret
@@ -60,8 +70,6 @@ stringData:
 `)).
 			Setup(c1)
 		Expect(err).ToNot(HaveOccurred())
-
-
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Global,
@@ -84,6 +92,7 @@ interCp:
     writerInterval: 3s
 `),
 			)).
+			Install(MeshUniversal("default")).
 			Setup(c1)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -92,6 +101,7 @@ interCp:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone,
+				WithSkipDefaultMesh(true),
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
 				WithGlobalAddress(global.GetKDSServerAddress()),
@@ -142,7 +152,7 @@ interCp:
 
 		// and dataplanes are synced to global
 		Eventually(func() string {
-			output, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions("default"), "get", "dataplanes")
+			output, err := c1.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes")
 			Expect(err).ToNot(HaveOccurred())
 			return output
 		}, "5s", "500ms").Should(ContainSubstring("kuma-2-zone.demo-client"))

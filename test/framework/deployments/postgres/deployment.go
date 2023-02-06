@@ -40,15 +40,20 @@ type PostgresDeployment interface {
 type deployOptions struct {
 	namespace      string
 	deploymentName string
+	username        string
+	password        string
+	database        string
+	primaryName     string
+	skipNamespaceCleanup bool
 }
-type deployOptionsFunc func(*deployOptions)
+type DeployOptionsFunc func(*deployOptions)
 
 func From(cluster Cluster, name string) Postgres {
 	return cluster.Deployment(AppPostgres + name).(Postgres)
 }
 
-func Install(name string, optFns ...deployOptionsFunc) InstallFunc {
-	opts := &deployOptions{deploymentName: name, namespace: Config.DefaultPostgresNamespace}
+func Install(name string, optFns ...DeployOptionsFunc) InstallFunc {
+	opts := &deployOptions{deploymentName: name, namespace: Config.KumaNamespace}
 	for _, optFn := range optFns {
 		optFn(opts)
 	}
@@ -66,3 +71,40 @@ func Install(name string, optFns ...deployOptionsFunc) InstallFunc {
 		return cluster.Deploy(deployment)
 	}
 }
+
+func WithK8sNamespace(namespace string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.namespace = namespace
+	}
+}
+
+func WithUsername(username string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.username = username
+	}
+}
+
+func WithPassword(password string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.password = password
+	}
+}
+
+func WithDatabase(database string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.database = database
+	}
+}
+
+func WithPrimaryName(primaryName string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.primaryName = primaryName
+	}
+}
+
+func WithSkipNamespaceCleanup (skipNamespaceCleanup bool) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.skipNamespaceCleanup = skipNamespaceCleanup
+	}
+}
+
