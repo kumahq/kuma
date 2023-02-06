@@ -1,4 +1,4 @@
-package blackbox_tests
+package blackbox_network_tests
 
 const TestCasesAmount = 25
 const DNSConntrackZoneSplittingStressCallsAmount = uint(1000)

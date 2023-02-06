@@ -1,4 +1,4 @@
-package blackbox_tests_test
+package blackbox_network_tests_test
 
 import (
 	"testing"
@@ -9,5 +9,5 @@ import (
 
 func TestTransparentProxy(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Blackbox tests Suite")
+	RunSpecs(t, "Blackbox network tests Suite")
 }

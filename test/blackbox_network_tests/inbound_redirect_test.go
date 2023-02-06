@@ -1,4 +1,4 @@
-package blackbox_tests_test
+package blackbox_network_tests_test
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/builder"
-	"github.com/kumahq/kuma/test/blackbox_tests"
+	"github.com/kumahq/kuma/test/blackbox_network_tests"
 	"github.com/kumahq/kuma/test/framework/network/netns"
 	"github.com/kumahq/kuma/test/framework/network/socket"
 	"github.com/kumahq/kuma/test/framework/network/tcp"
@@ -75,7 +75,7 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports", func() {
 			var entries []TableEntry
 			var lockedPorts []uint16
 
-			for i := 0; i < blackbox_tests.TestCasesAmount; i++ {
+			for i := 0; i < blackbox_network_tests.TestCasesAmount; i++ {
 				randomPorts := socket.GenerateRandomPortsSlice(2, lockedPorts...)
 				// This gives us more entropy as all generated ports will be
 				// different from each other
@@ -154,7 +154,7 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports", func() {
 			var entries []TableEntry
 			var lockedPorts []uint16
 
-			for i := 0; i < blackbox_tests.TestCasesAmount; i++ {
+			for i := 0; i < blackbox_network_tests.TestCasesAmount; i++ {
 				randomPorts := socket.GenerateRandomPortsSlice(2, lockedPorts...)
 				// This gives us more entropy as all generated ports will be
 				// different from each other
@@ -242,7 +242,7 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports except excluded ones",
 			var entries []TableEntry
 			var lockedPorts []uint16
 
-			for i := 0; i < blackbox_tests.TestCasesAmount; i++ {
+			for i := 0; i < blackbox_network_tests.TestCasesAmount; i++ {
 				randomPorts := socket.GenerateRandomPortsSlice(3, lockedPorts...)
 				// This gives us more entropy as all generated ports will be
 				// different from each other
@@ -332,7 +332,7 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports except excluded ones",
 			var entries []TableEntry
 			var lockedPorts []uint16
 
-			for i := 0; i < blackbox_tests.TestCasesAmount; i++ {
+			for i := 0; i < blackbox_network_tests.TestCasesAmount; i++ {
 				randomPorts := socket.GenerateRandomPortsSlice(3, lockedPorts...)
 				// This gives us more entropy as all generated ports will be
 				// different from each other
@@ -423,7 +423,7 @@ var _ = Describe("Inbound IPv4 TCP traffic only from included ports", func() {
 			var entries []TableEntry
 			var lockedPorts []uint16
 
-			for i := 0; i < blackbox_tests.TestCasesAmount; i++ {
+			for i := 0; i < blackbox_network_tests.TestCasesAmount; i++ {
 				randomPorts := socket.GenerateRandomPortsSlice(3, lockedPorts...)
 				// This gives us more entropy as all generated ports will be
 				// different from each other
@@ -515,7 +515,7 @@ var _ = Describe("Inbound IPv6 TCP traffic only from included ports", func() {
 			var entries []TableEntry
 			var lockedPorts []uint16
 
-			for i := 0; i < blackbox_tests.TestCasesAmount; i++ {
+			for i := 0; i < blackbox_network_tests.TestCasesAmount; i++ {
 				randomPorts := socket.GenerateRandomPortsSlice(3, lockedPorts...)
 				// This gives us more entropy as all generated ports will be
 				// different from each other
@@ -591,7 +591,7 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports", func() {
 			var entries []TableEntry
 			var lockedPorts []uint16
 
-			for i := 0; i < blackbox_tests.TestCasesAmount; i++ {
+			for i := 0; i < blackbox_network_tests.TestCasesAmount; i++ {
 				randomPorts := socket.GenerateRandomPortsSlice(2, lockedPorts...)
 				// This gives us more entropy as all generated ports will be
 				// different from each other
@@ -667,7 +667,7 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports", func() {
 			var entries []TableEntry
 			var lockedPorts []uint16
 
-			for i := 0; i < blackbox_tests.TestCasesAmount; i++ {
+			for i := 0; i < blackbox_network_tests.TestCasesAmount; i++ {
 				randomPorts := socket.GenerateRandomPortsSlice(2, lockedPorts...)
 				// This gives us more entropy as all generated ports will be
 				// different from each other

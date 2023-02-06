@@ -1,4 +1,4 @@
-package blackbox_tests_test
+package blackbox_network_tests_test
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/builder"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
-	"github.com/kumahq/kuma/test/blackbox_tests"
+	"github.com/kumahq/kuma/test/blackbox_network_tests"
 	"github.com/kumahq/kuma/test/framework/network/netns"
 	"github.com/kumahq/kuma/test/framework/network/socket"
 	"github.com/kumahq/kuma/test/framework/network/syscall"
@@ -81,7 +81,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53", func() {
 			var entries []TableEntry
 			lockedPorts := []uint16{consts.DNSPort}
 
-			for i := 0; i < blackbox_tests.TestCasesAmount; i++ {
+			for i := 0; i < blackbox_network_tests.TestCasesAmount; i++ {
 				randomPorts := socket.GenerateRandomPortsSlice(1, lockedPorts...)
 				// This gives us more entropy as all generated ports will be
 				// different from each other
@@ -170,7 +170,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53", func() {
 			var entries []TableEntry
 			lockedPorts := []uint16{consts.DNSPort}
 
-			for i := 0; i < blackbox_tests.TestCasesAmount; i++ {
+			for i := 0; i < blackbox_network_tests.TestCasesAmount; i++ {
 				randomPorts := socket.GenerateRandomPortsSlice(2, lockedPorts...)
 				// This gives us more entropy as all generated ports will be
 				// different from each other
@@ -261,7 +261,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53", func() {
 			var entries []TableEntry
 			lockedPorts := []uint16{consts.DNSPort}
 
-			for i := 0; i < blackbox_tests.TestCasesAmount; i++ {
+			for i := 0; i < blackbox_network_tests.TestCasesAmount; i++ {
 				randomPorts := socket.GenerateRandomPortsSlice(1, lockedPorts...)
 				// This gives us more entropy as all generated ports will be
 				// different from each other
@@ -338,7 +338,7 @@ var _ = Describe("Outbound IPv4 DNS/TCP traffic to port 53", func() {
 			var entries []TableEntry
 			lockedPorts := []uint16{consts.DNSPort}
 
-			for i := 0; i < blackbox_tests.TestCasesAmount; i++ {
+			for i := 0; i < blackbox_network_tests.TestCasesAmount; i++ {
 				// We are drawing two ports instead of one as the first one will be used
 				// to expose TCP server inside the namespace, which will be pretending
 				// a DNS server which should intercept all DNS traffic on port TCP#53,
@@ -421,7 +421,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53", func() {
 			var entries []TableEntry
 			lockedPorts := []uint16{consts.DNSPort}
 
-			for i := 0; i < blackbox_tests.TestCasesAmount; i++ {
+			for i := 0; i < blackbox_network_tests.TestCasesAmount; i++ {
 				randomPorts := socket.GenerateRandomPortsSlice(1, lockedPorts...)
 				// This gives us more entropy as all generated ports will be
 				// different from each other
@@ -499,7 +499,7 @@ var _ = Describe("Outbound IPv6 DNS/TCP traffic to port 53", func() {
 			var entries []TableEntry
 			lockedPorts := []uint16{consts.DNSPort}
 
-			for i := 0; i < blackbox_tests.TestCasesAmount; i++ {
+			for i := 0; i < blackbox_network_tests.TestCasesAmount; i++ {
 				// We are drawing two ports instead of one as the first one will be used
 				// to expose TCP server inside the namespace, which will be pretending
 				// a DNS server which should intercept all DNS traffic on port TCP#53,
@@ -564,8 +564,8 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting", func() {
 				RuntimeStdout: ioutil.Discard,
 			}
 			want := map[string]uint{
-				s1Address: blackbox_tests.DNSConntrackZoneSplittingStressCallsAmount,
-				s2Address: blackbox_tests.DNSConntrackZoneSplittingStressCallsAmount,
+				s1Address: blackbox_network_tests.DNSConntrackZoneSplittingStressCallsAmount,
+				s2Address: blackbox_network_tests.DNSConntrackZoneSplittingStressCallsAmount,
 			}
 
 			s1ReadyC, s1ErrC := udp.UnsafeStartUDPServer(
@@ -594,7 +594,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting", func() {
 			results := udp.NewResultMap()
 
 			exec1ErrC := ns.UnsafeExecInLoop(
-				blackbox_tests.DNSConntrackZoneSplittingStressCallsAmount,
+				blackbox_network_tests.DNSConntrackZoneSplittingStressCallsAmount,
 				time.Millisecond,
 				func() {
 					Expect(udp.DialAddrAndIncreaseResultMap(s1Address, results)).To(Succeed())
@@ -603,7 +603,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting", func() {
 			)
 
 			exec2ErrC := ns.UnsafeExecInLoop(
-				blackbox_tests.DNSConntrackZoneSplittingStressCallsAmount,
+				blackbox_network_tests.DNSConntrackZoneSplittingStressCallsAmount,
 				time.Millisecond,
 				func() {
 					Expect(udp.DialAddrAndIncreaseResultMap(s1Address, results)).To(Succeed())
@@ -612,9 +612,9 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting", func() {
 
 			Consistently(exec1ErrC).ShouldNot(Receive())
 			Consistently(exec2ErrC).ShouldNot(Receive())
-			Eventually(exec1ErrC, blackbox_tests.DNSConntrackZoneSplittingTestTimeout).
+			Eventually(exec1ErrC, blackbox_network_tests.DNSConntrackZoneSplittingTestTimeout).
 				Should(BeClosed())
-			Eventually(exec2ErrC, blackbox_tests.DNSConntrackZoneSplittingTestTimeout).
+			Eventually(exec2ErrC, blackbox_network_tests.DNSConntrackZoneSplittingTestTimeout).
 				Should(BeClosed())
 
 			Expect(results.GetFinalResults()).To(BeEquivalentTo(want))
@@ -623,7 +623,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting", func() {
 			var entries []TableEntry
 			lockedPorts := []uint16{consts.DNSPort}
 
-			for i := 0; i < blackbox_tests.TestCasesAmount; i++ {
+			for i := 0; i < blackbox_network_tests.TestCasesAmount; i++ {
 				ports := socket.GenerateRandomPortsSlice(1, lockedPorts...)
 				// This gives us more entropy as all generated ports will be
 				// different from each other
@@ -681,8 +681,8 @@ var _ = Describe("Outbound IPv6 DNS/UDP conntrack zone splitting", func() {
 				RuntimeStdout: ioutil.Discard,
 			}
 			want := map[string]uint{
-				s1Address: blackbox_tests.DNSConntrackZoneSplittingStressCallsAmount,
-				s2Address: blackbox_tests.DNSConntrackZoneSplittingStressCallsAmount,
+				s1Address: blackbox_network_tests.DNSConntrackZoneSplittingStressCallsAmount,
+				s2Address: blackbox_network_tests.DNSConntrackZoneSplittingStressCallsAmount,
 			}
 
 			s1ReadyC, s1ErrC := udp.UnsafeStartUDPServer(
@@ -711,7 +711,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP conntrack zone splitting", func() {
 			results := udp.NewResultMap()
 
 			exec1ErrC := ns.UnsafeExecInLoop(
-				blackbox_tests.DNSConntrackZoneSplittingStressCallsAmount,
+				blackbox_network_tests.DNSConntrackZoneSplittingStressCallsAmount,
 				time.Millisecond,
 				func() {
 					Expect(udp.DialAddrAndIncreaseResultMap(s1Address, results)).To(Succeed())
@@ -720,7 +720,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP conntrack zone splitting", func() {
 			)
 
 			exec2ErrC := ns.UnsafeExecInLoop(
-				blackbox_tests.DNSConntrackZoneSplittingStressCallsAmount,
+				blackbox_network_tests.DNSConntrackZoneSplittingStressCallsAmount,
 				time.Millisecond,
 				func() {
 					Expect(udp.DialAddrAndIncreaseResultMap(s1Address, results)).To(Succeed())
@@ -729,9 +729,9 @@ var _ = Describe("Outbound IPv6 DNS/UDP conntrack zone splitting", func() {
 
 			Consistently(exec1ErrC).ShouldNot(Receive())
 			Consistently(exec2ErrC).ShouldNot(Receive())
-			Eventually(exec1ErrC, blackbox_tests.DNSConntrackZoneSplittingTestTimeout).
+			Eventually(exec1ErrC, blackbox_network_tests.DNSConntrackZoneSplittingTestTimeout).
 				Should(BeClosed())
-			Eventually(exec2ErrC, blackbox_tests.DNSConntrackZoneSplittingTestTimeout).
+			Eventually(exec2ErrC, blackbox_network_tests.DNSConntrackZoneSplittingTestTimeout).
 				Should(BeClosed())
 
 			Expect(results.GetFinalResults()).To(BeEquivalentTo(want))
@@ -740,7 +740,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP conntrack zone splitting", func() {
 			var entries []TableEntry
 			lockedPorts := []uint16{consts.DNSPort}
 
-			for i := 0; i < blackbox_tests.TestCasesAmount; i++ {
+			for i := 0; i < blackbox_network_tests.TestCasesAmount; i++ {
 				ports := socket.GenerateRandomPortsSlice(1, lockedPorts...)
 				// This gives us more entropy as all generated ports will be
 				// different from each other
@@ -815,7 +815,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53 only for addresses in
 			var entries []TableEntry
 			lockedPorts := []uint16{consts.DNSPort}
 
-			for i := 0; i < blackbox_tests.TestCasesAmount; i++ {
+			for i := 0; i < blackbox_network_tests.TestCasesAmount; i++ {
 				randomPorts := socket.GenerateRandomPortsSlice(1, lockedPorts...)
 				// This gives us more entropy as all generated ports will be
 				// different from each other
@@ -891,7 +891,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53 only for addresses in
 			var entries []TableEntry
 			lockedPorts := []uint16{consts.DNSPort}
 
-			for i := 0; i < blackbox_tests.TestCasesAmount; i++ {
+			for i := 0; i < blackbox_network_tests.TestCasesAmount; i++ {
 				randomPorts := socket.GenerateRandomPortsSlice(1, lockedPorts...)
 				// This gives us more entropy as all generated ports will be
 				// different from each other
@@ -943,8 +943,8 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting with specific I
 				RuntimeStdout: ioutil.Discard,
 			}
 			want := map[string]uint{
-				s1Address: blackbox_tests.DNSConntrackZoneSplittingStressCallsAmount,
-				s2Address: blackbox_tests.DNSConntrackZoneSplittingStressCallsAmount,
+				s1Address: blackbox_network_tests.DNSConntrackZoneSplittingStressCallsAmount,
+				s2Address: blackbox_network_tests.DNSConntrackZoneSplittingStressCallsAmount,
 			}
 
 			s1ReadyC, s1ErrC := udp.UnsafeStartUDPServer(
@@ -973,7 +973,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting with specific I
 			results := udp.NewResultMap()
 
 			exec1ErrC := ns.UnsafeExecInLoop(
-				blackbox_tests.DNSConntrackZoneSplittingStressCallsAmount,
+				blackbox_network_tests.DNSConntrackZoneSplittingStressCallsAmount,
 				time.Millisecond,
 				func() {
 					Expect(udp.DialAddrAndIncreaseResultMap(s1Address, results)).To(Succeed())
@@ -982,7 +982,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting with specific I
 			)
 
 			exec2ErrC := ns.UnsafeExecInLoop(
-				blackbox_tests.DNSConntrackZoneSplittingStressCallsAmount,
+				blackbox_network_tests.DNSConntrackZoneSplittingStressCallsAmount,
 				time.Millisecond,
 				func() {
 					Expect(udp.DialAddrAndIncreaseResultMap(s1Address, results)).To(Succeed())
@@ -990,7 +990,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting with specific I
 			)
 
 			exec3ErrC := ns.UnsafeExecInLoop(
-				blackbox_tests.DNSConntrackZoneSplittingStressCallsAmount,
+				blackbox_network_tests.DNSConntrackZoneSplittingStressCallsAmount,
 				time.Millisecond,
 				func() {
 					Expect(udp.DialAddrAndIncreaseResultMap(notRedirected, results)).ToNot(Succeed())
@@ -1000,11 +1000,11 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting with specific I
 			Consistently(exec1ErrC).ShouldNot(Receive())
 			Consistently(exec2ErrC).ShouldNot(Receive())
 			Consistently(exec3ErrC).ShouldNot(Receive())
-			Eventually(exec1ErrC, blackbox_tests.DNSConntrackZoneSplittingTestTimeout).
+			Eventually(exec1ErrC, blackbox_network_tests.DNSConntrackZoneSplittingTestTimeout).
 				Should(BeClosed())
-			Eventually(exec2ErrC, blackbox_tests.DNSConntrackZoneSplittingTestTimeout).
+			Eventually(exec2ErrC, blackbox_network_tests.DNSConntrackZoneSplittingTestTimeout).
 				Should(BeClosed())
-			Eventually(exec3ErrC, blackbox_tests.DNSConntrackZoneSplittingTestTimeout).
+			Eventually(exec3ErrC, blackbox_network_tests.DNSConntrackZoneSplittingTestTimeout).
 				ShouldNot(BeClosed())
 
 			Expect(results.GetFinalResults()).To(BeEquivalentTo(want))
@@ -1013,7 +1013,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting with specific I
 			var entries []TableEntry
 			lockedPorts := []uint16{consts.DNSPort}
 
-			for i := 0; i < blackbox_tests.TestCasesAmount; i++ {
+			for i := 0; i < blackbox_network_tests.TestCasesAmount; i++ {
 				ports := socket.GenerateRandomPortsSlice(1, lockedPorts...)
 				// This gives us more entropy as all generated ports will be
 				// different from each other
@@ -1101,7 +1101,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53 from specific input i
 			var entries []TableEntry
 			lockedPorts := []uint16{consts.DNSPort}
 
-			for i := 0; i < blackbox_tests.TestCasesAmount; i++ {
+			for i := 0; i < blackbox_network_tests.TestCasesAmount; i++ {
 				randomPorts := socket.GenerateRandomPortsSlice(1, lockedPorts...)
 				// This gives us more entropy as all generated ports will be
 				// different from each other
@@ -1190,7 +1190,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53 from specific input i
 			var entries []TableEntry
 			lockedPorts := []uint16{consts.DNSPort}
 
-			for i := 0; i < blackbox_tests.TestCasesAmount; i++ {
+			for i := 0; i < blackbox_network_tests.TestCasesAmount; i++ {
 				randomPorts := socket.GenerateRandomPortsSlice(1, lockedPorts...)
 				// This gives us more entropy as all generated ports will be
 				// different from each other
