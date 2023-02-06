@@ -16,10 +16,9 @@ import (
 var NewHTTPUserTokenClient = client.NewHTTPUserTokenClient
 
 type generateUserTokenCmd struct {
-	name     string
-	groups   []string
-	validFor time.Duration
-
+	name           string
+	groups         []string
+	validFor       time.Duration
 	kid            string
 	signingKeyPath string
 }
@@ -49,12 +48,10 @@ $ kumactl generate user-token --name john.doe@example.com --group users --valid-
 				if args.kid == "" {
 					return errors.New("--kid is required when --signing-key-path is used")
 				}
-				tokenIssuer := tokens.NewTokenIssuer(tokens.NewFileSigningKeyManager(args.signingKeyPath, args.kid))
-				token, err = tokenIssuer.Generate(cmd.Context(), &issuer.UserClaims{
-					User: user.User{
-						Name:   args.name,
-						Groups: args.groups,
-					},
+				userTokenIssuer := issuer.NewUserTokenIssuer(tokens.NewTokenIssuer(tokens.NewFileSigningKeyManager(args.signingKeyPath, args.kid)))
+				token, err = userTokenIssuer.Generate(cmd.Context(), user.User{
+					Name:   args.name,
+					Groups: args.groups,
 				}, args.validFor)
 				if err != nil {
 					return err
