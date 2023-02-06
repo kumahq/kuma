@@ -103,8 +103,7 @@ func TestConformance(t *testing.T) {
 			tests.HTTPRouteInvalidCrossNamespaceBackendRef.ShortName, // The following fail due to #4597
 			tests.HTTPRouteInvalidBackendRefUnknownKind.ShortName,
 			tests.HTTPRouteInvalidNonExistentBackendRef.ShortName,
-			tests.HTTPRoutePartiallyInvalidViaInvalidReferenceGrant.ShortName,
-			tests.GatewayInvalidTLSConfiguration.ShortName: // not setting correct statuses
+			tests.HTTPRoutePartiallyInvalidViaInvalidReferenceGrant.ShortName:
 			continue
 		}
 		passingTests = append(passingTests, test)
