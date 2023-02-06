@@ -109,9 +109,6 @@ else
 	@echo "CoreDNS is already built. If you want to rebuild it, remove the binary: rm $(BUILD_ARTIFACTS_DIR)/coredns/coredns"
 endif
 
-foo:
-	echo $(shell uname)
-
 .PHONY: build/ebpf
 build/ebpf:
 ifeq ($(shell uname), Linux)
