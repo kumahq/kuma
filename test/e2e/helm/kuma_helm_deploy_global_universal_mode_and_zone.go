@@ -42,9 +42,6 @@ func ZoneAndGlobalInUniversalModeWithHelmChart() {
 				postgres.WithPassword("mesh"),
 				postgres.WithDatabase("mesh"),
 				postgres.WithPrimaryName("postgres"),
-				// we deploy postgres in Config.KumaNamespace so it's deleted with CP teardown
-				// otherwise this fails because there is no namespace
-				postgres.WithSkipNamespaceCleanup(true),
 			)).
 			Install(YamlK8s(`
 apiVersion: v1
@@ -62,6 +59,8 @@ stringData:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Global,
+				// it's required because we check if Kuma is ready,
+				// and we use "kubectl get mesh" which is not available in universal mode
 				WithSkipDefaultMesh(true),
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),

@@ -44,7 +44,6 @@ type deployOptions struct {
 	password             string
 	database             string
 	primaryName          string
-	skipNamespaceCleanup bool
 }
 type DeployOptionsFunc func(*deployOptions)
 
@@ -99,11 +98,5 @@ func WithDatabase(database string) DeployOptionsFunc {
 func WithPrimaryName(primaryName string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.primaryName = primaryName
-	}
-}
-
-func WithSkipNamespaceCleanup(skipNamespaceCleanup bool) DeployOptionsFunc {
-	return func(o *deployOptions) {
-		o.skipNamespaceCleanup = skipNamespaceCleanup
 	}
 }

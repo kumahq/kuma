@@ -11,6 +11,8 @@ type k8SDeployment struct {
 	options *deployOptions
 }
 
+const releaseName = "postgres-release"
+
 func (t *k8SDeployment) GetEnvVars() map[string]string {
 	return t.envVars
 }
@@ -22,7 +24,6 @@ func (t *k8SDeployment) Name() string {
 }
 
 func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
-	releaseName := "postgres-release"
 
 	helmOpts := &helm.Options{
 		SetValues: map[string]string{
@@ -43,10 +44,7 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 }
 
 func (t *k8SDeployment) Delete(cluster framework.Cluster) error {
-	if !t.options.skipNamespaceCleanup {
-		return cluster.DeleteNamespace(t.options.namespace)
-	}
-	return nil
+	return helm.DeleteE(cluster.GetTesting(), &helm.Options{}, releaseName, true)
 }
 
 func NewK8SDeployment(opts *deployOptions) *k8SDeployment {
