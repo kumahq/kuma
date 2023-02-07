@@ -11,6 +11,7 @@ import (
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -164,18 +165,18 @@ func configureRateLimitedRetryBackOff(rateLimitedBackOff *api.RateLimitedBackOff
 	return rateLimitedRetryBackoff
 }
 
-func headerMatcher(header api.HTTPHeaderMatch) *envoy_route.HeaderMatcher {
+func headerMatcher(header common_api.HeaderMatch) *envoy_route.HeaderMatcher {
 	matcher := &envoy_route.HeaderMatcher{
 		Name:        string(header.Name),
 		InvertMatch: false,
 	}
-	t := api.HeaderMatchExact
+	t := common_api.HeaderMatchExact
 	if header.Type != nil {
 		t = *header.Type
 	}
 
 	switch t {
-	case api.HeaderMatchRegularExpression:
+	case common_api.HeaderMatchRegularExpression:
 		matcher.HeaderMatchSpecifier = &envoy_route.HeaderMatcher_StringMatch{
 			StringMatch: &envoy_type_matcher.StringMatcher{
 				MatchPattern: &envoy_type_matcher.StringMatcher_SafeRegex{
@@ -188,7 +189,7 @@ func headerMatcher(header api.HTTPHeaderMatch) *envoy_route.HeaderMatcher {
 				},
 			},
 		}
-	case api.HeaderMatchPrefix:
+	case common_api.HeaderMatchPrefix:
 		matcher.HeaderMatchSpecifier = &envoy_route.HeaderMatcher_StringMatch{
 			StringMatch: &envoy_type_matcher.StringMatcher{
 				MatchPattern: &envoy_type_matcher.StringMatcher_Prefix{
@@ -196,7 +197,7 @@ func headerMatcher(header api.HTTPHeaderMatch) *envoy_route.HeaderMatcher {
 				},
 			},
 		}
-	case api.HeaderMatchExact:
+	case common_api.HeaderMatchExact:
 		matcher.HeaderMatchSpecifier = &envoy_route.HeaderMatcher_StringMatch{
 			StringMatch: &envoy_type_matcher.StringMatcher{
 				MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
@@ -204,11 +205,11 @@ func headerMatcher(header api.HTTPHeaderMatch) *envoy_route.HeaderMatcher {
 				},
 			},
 		}
-	case api.HeaderMatchPresent:
+	case common_api.HeaderMatchPresent:
 		matcher.HeaderMatchSpecifier = &envoy_route.HeaderMatcher_PresentMatch{
 			PresentMatch: true,
 		}
-	case api.HeaderMatchAbsent:
+	case common_api.HeaderMatchAbsent:
 		matcher.HeaderMatchSpecifier = &envoy_route.HeaderMatcher_PresentMatch{
 			PresentMatch: false,
 		}

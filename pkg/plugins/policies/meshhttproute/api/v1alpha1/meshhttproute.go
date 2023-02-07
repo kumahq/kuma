@@ -44,7 +44,8 @@ type Match struct {
 	Method *Method    `json:"method,omitempty"`
 	// QueryParams matches based on HTTP URL query parameters. Multiple matches
 	// are ANDed together such that all listed matches must succeed.
-	QueryParams []QueryParamsMatch `json:"queryParams,omitempty"`
+	QueryParams []QueryParamsMatch       `json:"queryParams,omitempty"`
+	Headers     []common_api.HeaderMatch `json:"headers,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Exact;Prefix;RegularExpression
