@@ -173,6 +173,9 @@ returns: formatted image string
 {{- end -}}
 
 {{- define "kuma.defaultEnv" -}}
+{{ if (and (eq .Values.controlPlane.environment "universal") (not (eq .Values.controlPlane.mode "global"))) }}
+  {{ fail "Currently you can only run universal mode on kubernetes in a global mode, this limitation might be lifted in the future" }}
+{{ end }}
 {{ if not (or (eq .Values.controlPlane.mode "zone") (eq .Values.controlPlane.mode "global") (eq .Values.controlPlane.mode "standalone")) }}
   {{ $msg := printf "controlPlane.mode invalid got:'%s' supported values: global,zone,standalone" .Values.controlPlane.mode }}
   {{ fail $msg }}
@@ -291,6 +294,61 @@ env:
   value: {{ .Values.experimental.ebpf.tcAttachIface }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH
   value: {{ .Values.experimental.ebpf.programsSourcePath }}
+{{- end }}
+{{- end }}
+
+{{- define "kuma.universal.defaultEnv" -}}
+env:
+- name: KUMA_GENERAL_WORK_DIR
+  value: "/tmp/kuma"
+- name: KUMA_ENVIRONMENT
+  value: "universal"
+- name: KUMA_STORE_TYPE
+  value: "postgres"
+- name: KUMA_STORE_POSTGRES_HOST
+  value: {{ .Values.postgres.host }}
+- name: KUMA_STORE_POSTGRES_PORT
+  value: "{{ .Values.postgres.port }}"
+- name: KUMA_STORE_POSTGRES_USER
+  value: "{{ .Values.postgres.user }}"
+- name: KUMA_STORE_POSTGRES_DB_NAME
+  value: "{{ .Values.postgres.db }}"
+- name: KUMA_DEFAULTS_SKIP_MESH_CREATION
+  value: {{ .Values.controlPlane.defaults.skipMeshCreation | quote }}
+- name: KUMA_MODE
+  value: "global"
+{{- if .Values.controlPlane.tls.apiServer.secretName }}
+- name: KUMA_API_SERVER_HTTPS_TLS_CERT_FILE
+  value: /var/run/secrets/kuma.io/api-server-tls-cert/tls.crt
+- name: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
+  value: /var/run/secrets/kuma.io/api-server-tls-cert/tls.key
+{{- end }}
+{{- if .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
+- name: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
+  value: /var/run/secrets/kuma.io/api-server-client-certs/
+{{- end }}
+{{- if .Values.controlPlane.tls.kdsGlobalServer.secretName }}
+- name: KUMA_MULTIZONE_GLOBAL_KDS_TLS_CERT_FILE
+  value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.crt
+- name: KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE
+  value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.key
+{{- end }}
+{{- if ne .Values.postgres.tls.mode "disable" }}
+{{- if empty .Values.postgres.tls.secretName }}
+{{ fail "if mode is not 'disable' then you must provide .Values.postgres.tls.secretName" }}
+{{- end }}
+- name: KUMA_STORE_POSTGRES_TLS_CERT_PATH
+  value: /var/run/secrets/kuma.io/postgres-client-certs/tls.crt
+- name: KUMA_STORE_POSTGRES_TLS_KEY_PATH
+  value: /var/run/secrets/kuma.io/postgres-client-certs/tls.key
+- name: KUMA_STORE_POSTGRES_TLS_ROOT_CERT_PATH
+  value: /var/run/secrets/kuma.io/postgres-client-certs/rootCA.crt
+{{- end }}
+- name: KUMA_STORE_POSTGRES_TLS_MODE
+  value: {{ .Values.postgres.tls.mode }}
+{{- if .Values.postgres.tls.disableSSLSNI }}
+- name: KUMA_STORE_POSTGRES_TLS_DISABLE_SSLSNI
+  value: {{ .Values.postgres.tls.disableSSLSNI }}
 {{- end }}
 {{- end }}
 

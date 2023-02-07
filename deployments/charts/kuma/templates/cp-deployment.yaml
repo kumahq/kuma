@@ -14,6 +14,18 @@
   {{ end }}
 {{ end }}
 
+{{- $defaultEnv := include "kuma.defaultEnv" . | fromYaml | pluck "env" | first }}
+{{- if eq .Values.controlPlane.environment "universal" }}
+{{- $defaultEnv = include "kuma.universal.defaultEnv" . | fromYaml | pluck "env" | first }}
+{{- end }}
+{{- $defaultEnvDict := dict }}
+{{- range $index, $item := $defaultEnv }}
+{{- $name := $item.name | upper }}
+{{- $defaultEnvDict := set $defaultEnvDict $name $item.value }}
+{{- end }}
+{{- $envVarsCopy := deepCopy .Values.controlPlane.envVars }}
+{{- $mergedEnv := merge $envVarsCopy $defaultEnvDict }}
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -64,6 +76,33 @@ spec:
       {{- end }}
       hostNetwork: {{ .Values.controlPlane.hostNetwork }}
       terminationGracePeriodSeconds: {{ .Values.controlPlane.terminationGracePeriodSeconds }}
+      {{- if (eq .Values.controlPlane.environment "universal") }}
+      initContainers:
+        - name: migration
+          image: {{ include "kuma.formatImage" (dict "image" .Values.controlPlane.image "root" $) | quote }}
+          imagePullPolicy: {{ .Values.controlPlane.image.pullPolicy }}
+          env:
+            {{- range $key, $value := $mergedEnv }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- range $element := .Values.controlPlane.secrets }}
+            - name: {{ $element.Env }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $element.Secret }}
+                  key: {{ $element.Key }}
+          {{- end }}
+          args:
+            - migrate
+            - up
+            - --log-level=info
+            - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
+          volumeMounts:
+            - name: {{ include "kuma.name" . }}-control-plane-config
+              mountPath: /etc/kuma.io/kuma-control-plane
+              readOnly: true
+      {{- end }}
       containers:
         - name: control-plane
           image: {{ include "kuma.formatImage" (dict "image" .Values.controlPlane.image "root" $) | quote }}
@@ -73,14 +112,6 @@ spec:
           {{ toYaml .Values.controlPlane.containerSecurityContext | trim | nindent 12 }}
           {{- end }}
           env:
-          {{-  $defaultEnv := include "kuma.defaultEnv" . | fromYaml | pluck "env" | first }}
-          {{- $defaultEnvDict := dict }}
-          {{- range $index, $item := $defaultEnv }}
-          {{- $name := $item.name | upper }}
-          {{- $defaultEnvDict := set $defaultEnvDict $name $item.value }}
-          {{- end }}
-          {{- $envVarsCopy := deepCopy .Values.controlPlane.envVars }}
-          {{- $mergedEnv := merge $envVarsCopy $defaultEnvDict }}
           {{- range $key, $value := $mergedEnv }}
             - name: {{ $key }}
               value: {{ $value | quote }}
@@ -141,11 +172,12 @@ spec:
           lifecycle: {{ . | toYaml | nindent 14 }}
           {{ end }}
           volumeMounts:
-            {{- if not .Values.controlPlane.automountServiceAccountToken }}
+          {{- if eq .Values.controlPlane.environment "kubernetes" }}
+          {{- if not .Values.controlPlane.automountServiceAccountToken }}
             - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
               name: serviceaccount-token
               readOnly: true
-            {{- end }}
+          {{- end }}
             - name: general-tls-cert
               mountPath: /var/run/secrets/kuma.io/tls-cert/tls.crt
               subPath: tls.crt
@@ -162,12 +194,18 @@ spec:
               mountPath: /var/run/secrets/kuma.io/tls-cert/ca.crt
               subPath: ca.crt
               readOnly: true
+          {{- end }}
             - name: {{ include "kuma.name" . }}-control-plane-config
               mountPath: /etc/kuma.io/kuma-control-plane
               readOnly: true
           {{- if .Values.controlPlane.tls.apiServer.secretName }}
             - name: api-server-tls-cert
               mountPath: /var/run/secrets/kuma.io/api-server-tls-cert
+              readOnly: true
+          {{- end }}
+          {{- if .Values.postgres.tls.secretName }}
+            - name: postgres-client-certs
+              mountPath: /var/run/secrets/kuma.io/postgres-client-certs
               readOnly: true
           {{- end }}
           {{- if .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
@@ -196,6 +234,7 @@ spec:
               readOnly: {{ $extraSecret.readOnly }}
           {{- end }}
       volumes:
+      {{- if eq .Values.controlPlane.environment "kubernetes" }}
         {{- if not .Values.controlPlane.automountServiceAccountToken }}
         - name: serviceaccount-token
           projected:
@@ -230,10 +269,16 @@ spec:
           secret:
             secretName: {{ .Values.controlPlane.tls.general.caSecretName }}
         {{- end }}
+      {{- end }}
         {{- if .Values.controlPlane.tls.apiServer.secretName }}
         - name: api-server-tls-cert
           secret:
             secretName: {{ .Values.controlPlane.tls.apiServer.secretName }}
+        {{- end }}
+        {{- if .Values.postgres.tls.secretName }}
+        - name: postgres-client-certs
+          secret:
+            secretName: {{ .Values.postgres.tls.secretName }}
         {{- end }}
         {{- if .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
         - name: api-server-client-certs

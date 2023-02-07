@@ -13,3 +13,6 @@ build/
 # Release artifacts
 .cr-release-packages
 *.test
+
+# to embed ebpf programs by using go:embed, we have to copy programs first
+pkg/transparentproxy/ebpf/programs

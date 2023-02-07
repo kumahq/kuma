@@ -1,4 +1,4 @@
-{{- if .Values.installCrdsOnUpgrade.enabled }}
+{{- if (and .Values.installCrdsOnUpgrade.enabled (eq .Values.controlPlane.environment "kubernetes")) }}
   {{ $hook := "pre-upgrade,pre-install" }}
   {{- $serviceAccountName := printf "%s-install-missing-crds" (include "kuma.name" .) }}
 apiVersion: v1
