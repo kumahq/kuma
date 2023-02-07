@@ -187,7 +187,7 @@ spec:
                                           description: Path defines parameters used
                                             to modify the path of the incoming request.
                                             The modified path is then used to construct
-                                            the Location header. When empty, the request
+                                            the location header. When empty, the request
                                             path is used as-is.
                                           properties:
                                             replaceFullPath:
@@ -290,7 +290,7 @@ spec:
                                       properties:
                                         hostname:
                                           description: Hostname is the value to be
-                                            used to replace the Host header value
+                                            used to replace the host header value
                                             during forwarding.
                                           maxLength: 253
                                           minLength: 1

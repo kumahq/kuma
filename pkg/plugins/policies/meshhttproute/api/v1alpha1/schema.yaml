@@ -136,7 +136,7 @@ properties:
                                   pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                                   type: string
                                 path:
-                                  description: Path defines parameters used to modify the path of the incoming request. The modified path is then used to construct the Location header. When empty, the request path is used as-is.
+                                  description: Path defines parameters used to modify the path of the incoming request. The modified path is then used to construct the location header. When empty, the request path is used as-is.
                                   properties:
                                     replaceFullPath:
                                       type: string
@@ -229,7 +229,7 @@ properties:
                             urlRewrite:
                               properties:
                                 hostname:
-                                  description: Hostname is the value to be used to replace the Host header value during forwarding.
+                                  description: Hostname is the value to be used to replace the host header value during forwarding.
                                   maxLength: 253
                                   minLength: 1
                                   pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
