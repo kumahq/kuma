@@ -142,7 +142,7 @@ type RequestRedirect struct {
 	Scheme   *string          `json:"scheme,omitempty"`
 	Hostname *PreciseHostname `json:"hostname,omitempty"`
 	// Path defines parameters used to modify the path of the incoming request.
-	// The modified path is then used to construct the Location header.
+	// The modified path is then used to construct the location header.
 	// When empty, the request path is used as-is.
 	Path *PathRewrite `json:"path,omitempty"`
 	// Port is the port to be used in the value of the `Location`
@@ -171,7 +171,7 @@ type PathRewrite struct {
 }
 
 type URLRewrite struct {
-	// Hostname is the value to be used to replace the Host header value during forwarding.
+	// Hostname is the value to be used to replace the host header value during forwarding.
 	Hostname *PreciseHostname `json:"hostname,omitempty"`
 	// Path defines a path rewrite.
 	Path *PathRewrite `json:"path,omitempty"`
