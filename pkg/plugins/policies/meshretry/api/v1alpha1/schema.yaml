@@ -150,7 +150,7 @@ properties:
                     retriableRequestHeaders:
                       description: RetriableRequestHeaders is an HTTP headers which must be present in the request for retries to be attempted.
                       items:
-                        description: HTTPHeaderMatch describes how to select a HTTP route by matching HTTP request headers.
+                        description: HeaderMatch describes how to select a HTTP route by matching HTTP request headers.
                         properties:
                           name:
                             description: Name is the name of the HTTP Header to be matched. Name MUST be lower case as they will be handled with case insensitivity (See https://tools.ietf.org/html/rfc7230#section-3.2).
@@ -179,7 +179,7 @@ properties:
                     retriableResponseHeaders:
                       description: RetriableResponseHeaders is an HTTP response headers that trigger a retry if present in the response. A retry will be triggered if any of the header matches match the upstream response headers.
                       items:
-                        description: HTTPHeaderMatch describes how to select a HTTP route by matching HTTP request headers.
+                        description: HeaderMatch describes how to select a HTTP route by matching HTTP request headers.
                         properties:
                           name:
                             description: Name is the name of the HTTP Header to be matched. Name MUST be lower case as they will be handled with case insensitivity (See https://tools.ietf.org/html/rfc7230#section-3.2).
