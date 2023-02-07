@@ -14,18 +14,23 @@ kumactl generate user-token [flags]
 
 ```
 
-Generate token
+Generate token using a control plane
 $ kumactl generate user-token --name john.doe@example.com --group users --valid-for 24h
+
+Generate token using offline signing key
+$ kumactl generate user-token --name john.doe@example.com --group users --valid-for 24h --signing-key-path /keys/key.pem --kid 1
 
 ```
 
 ### Options
 
 ```
-      --group strings        group of the user
-  -h, --help                 help for user-token
-      --name string          name of the user
-      --valid-for duration   how long the token will be valid (for example "24h")
+      --group strings             group of the user
+  -h, --help                      help for user-token
+      --kid string                ID of the key that is used to issue a token. Required when --signing-key-path is used.
+      --name string               name of the user
+      --signing-key-path string   path to a file that contains private signing key. When specified, control plane won't be used to issue the token.
+      --valid-for duration        how long the token will be valid (for example "24h")
 ```
 
 ### Options inherited from parent commands
