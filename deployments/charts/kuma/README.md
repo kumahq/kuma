@@ -71,10 +71,10 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.image.pullPolicy | string | `"IfNotPresent"` | Kuma CP ImagePullPolicy |
 | controlPlane.image.repository | string | `"kuma-cp"` | Kuma CP image repository |
 | controlPlane.image.tag | string | `nil` | Kuma CP Image tag. When not specified, the value is copied from global.tag |
-| controlPlane.secrets | list of { Env: string, Secret: string, Key: string } | `nil` | Secrets to add as environment variables, where `Env` is the name of the env variable, `Secret` is the name of the Secret, and `Key` is the key of the Secret value to use |
+| controlPlane.secrets | object with { Env: string, Secret: string, Key: string } | `nil` | Secrets to add as environment variables, where `Env` is the name of the env variable, `Secret` is the name of the Secret, and `Key` is the key of the Secret value to use |
 | controlPlane.envVars | object | `{}` | Additional environment variables that will be passed to the control plane |
 | controlPlane.extraConfigMaps | list | `[]` | Additional config maps to mount into the control plane, with optional inline values |
-| controlPlane.extraSecrets | list | `[]` | Additional secrets to mount into the control plane |
+| controlPlane.extraSecrets | object with { name: string, mountPath: string, readOnly: string } | `nil` | Additional secrets to mount into the control plane, where `Env` is the name of the env variable, `Secret` is the name of the Secret, and `Key` is the key of the Secret value to use |
 | controlPlane.webhooks.validator.additionalRules | string | `""` | Additional rules to apply on Kuma validator webhook. Useful when building custom policy on top of Kuma. |
 | controlPlane.webhooks.ownerReference.additionalRules | string | `""` | Additional rules to apply on Kuma owner reference webhook. Useful when building custom policy on top of Kuma. |
 | controlPlane.hostNetwork | bool | `false` | Specifies if the deployment should be started in hostNetwork mode. |

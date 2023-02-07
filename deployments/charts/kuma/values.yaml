@@ -231,11 +231,15 @@ controlPlane:
     # -- Kuma CP Image tag. When not specified, the value is copied from global.tag
     tag:
 
-  # -- (list of { Env: string, Secret: string, Key: string }) Secrets to add as environment variables,
+  # -- (object with { Env: string, Secret: string, Key: string }) Secrets to add as environment variables,
   # where `Env` is the name of the env variable,
   # `Secret` is the name of the Secret,
   # and `Key` is the key of the Secret value to use
   secrets:
+  #  someSecret:
+  #    Secret: some-secret
+  #    Key: secret_key
+  #    Env: SOME_SECRET
 
   # -- Additional environment variables that will be passed to the control plane
   envVars: { }
@@ -249,11 +253,15 @@ controlPlane:
 #        extra-config-key: |
 #          extra-config-value
 
-  # -- Additional secrets to mount into the control plane
-  extraSecrets: [ ]
-#    - name: extra-config
-#      mountPath: /etc/extra-config
-#      readOnly: true
+  # -- (object with { name: string, mountPath: string, readOnly: string }) Additional secrets to mount into the control plane,
+  # where `Env` is the name of the env variable,
+  # `Secret` is the name of the Secret,
+  # and `Key` is the key of the Secret value to use
+  extraSecrets:
+  #  extraConfig:
+  #    name: extra-config
+  #    mountPath: /etc/extra-config
+  #    readOnly: true
 
   webhooks:
     validator:
