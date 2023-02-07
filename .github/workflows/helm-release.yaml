@@ -81,7 +81,6 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     needs: package
-    environment: charts
     # https://github.com/actions/runner/issues/1483
     if: github.event.inputs.release == 'true'
     steps:
