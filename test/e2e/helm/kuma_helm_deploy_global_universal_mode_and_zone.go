@@ -43,16 +43,16 @@ func ZoneAndGlobalInUniversalModeWithHelmChart() {
 				postgres.WithDatabase("mesh"),
 				postgres.WithPrimaryName("postgres"),
 			)).
-			Install(YamlK8s(`
+			Install(YamlK8s(fmt.Sprintf(`
 apiVersion: v1
 kind: Secret
 metadata:
   name: postgres
-  namespace: kuma-system
+  namespace: %s
 type: Opaque
 stringData:
   password: "mesh"
-`)).
+`, Config.KumaNamespace))).
 			Setup(globalCluster)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitPodsAvailableWithLabel(Config.KumaNamespace, "app.kubernetes.io/name", "postgresql")(globalCluster)).To(Succeed())
