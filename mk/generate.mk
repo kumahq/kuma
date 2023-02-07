@@ -5,7 +5,7 @@ CONTROLLER_GEN := go run -mod=mod sigs.k8s.io/controller-tools/cmd/controller-ge
 RESOURCE_GEN := go run -mod=mod $(TOOLS_DIR)/resource-gen/main.go
 POLICY_GEN := go run -mod=mod $(TOOLS_DIR)/policy-gen/generator/main.go
 
-GENERATE_TARGET ?= clean/proto generate/api protoc/pkg/config/app/kumactl/v1alpha1 protoc/plugins resources/type generate/policies
+GENERATE_TARGET ?= build/ebpf clean/proto generate/api protoc/pkg/config/app/kumactl/v1alpha1 protoc/plugins resources/type generate/policies
 GO_MODULE ?= github.com/kumahq/kuma
 
 HELM_VALUES_FILE ?= "deployments/charts/kuma/values.yaml"

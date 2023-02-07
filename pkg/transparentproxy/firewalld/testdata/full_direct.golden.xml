@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<direct>
+  <chain ipv="ipv4" table="nat" chain="KUMA_MESH_INBOUND"></chain>
+  <chain ipv="ipv4" table="nat" chain="KUMA_MESH_OUTBOUND"></chain>
+  <chain ipv="ipv4" table="nat" chain="KUMA_MESH_INBOUND_REDIRECT"></chain>
+  <chain ipv="ipv4" table="nat" chain="KUMA_MESH_OUTBOUND_REDIRECT"></chain>
+  <rule ipv="ipv4" table="nat" chain="PREROUTING" priority="3">-p tcp -j KUMA_MESH_INBOUND</rule>
+  <rule ipv="ipv4" table="nat" chain="OUTPUT" priority="3">-p udp --dport 53 -m owner --uid-owner 5678 -j RETURN</rule>
+  <rule ipv="ipv4" table="nat" chain="OUTPUT" priority="3">-p udp --dport 53 -j REDIRECT --to-ports 15053</rule>
+  <rule ipv="ipv4" table="nat" chain="OUTPUT" priority="3">-p tcp -j KUMA_MESH_OUTBOUND</rule>
+  <rule ipv="ipv4" table="nat" chain="KUMA_MESH_INBOUND" priority="3">-p tcp -j KUMA_MESH_INBOUND_REDIRECT</rule>
+  <rule ipv="ipv4" table="nat" chain="KUMA_MESH_OUTBOUND" priority="3">-s 127.0.0.6/32 -o lo -j RETURN</rule>
+  <rule ipv="ipv4" table="nat" chain="KUMA_MESH_OUTBOUND" priority="3">-p tcp ! --dport 53 -o lo ! -d 127.0.0.1/32 -m owner --uid-owner 5678 -j KUMA_MESH_INBOUND_REDIRECT</rule>
+  <rule ipv="ipv4" table="nat" chain="KUMA_MESH_OUTBOUND" priority="3">-p tcp ! --dport 53 -o lo -m owner ! --uid-owner 5678 -j RETURN</rule>
+  <rule ipv="ipv4" table="nat" chain="KUMA_MESH_OUTBOUND" priority="3">-m owner --uid-owner 5678 -j RETURN</rule>
+  <rule ipv="ipv4" table="nat" chain="KUMA_MESH_OUTBOUND" priority="3">-p tcp --dport 53 -j REDIRECT --to-ports 15053</rule>
+  <rule ipv="ipv4" table="nat" chain="KUMA_MESH_OUTBOUND" priority="3">-d 127.0.0.1/32 -j RETURN</rule>
+  <rule ipv="ipv4" table="nat" chain="KUMA_MESH_OUTBOUND" priority="3">-j KUMA_MESH_OUTBOUND_REDIRECT</rule>
+  <rule ipv="ipv4" table="nat" chain="KUMA_MESH_INBOUND_REDIRECT" priority="3">-p tcp -j REDIRECT --to-ports 15006</rule>
+  <rule ipv="ipv4" table="nat" chain="KUMA_MESH_OUTBOUND_REDIRECT" priority="3">-p tcp -j REDIRECT --to-ports 15001</rule>
+</direct>

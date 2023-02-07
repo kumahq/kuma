@@ -11,10 +11,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma-net/firewalld"
-
 	"github.com/kumahq/kuma/pkg/transparentproxy"
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/pkg/transparentproxy/firewalld"
 )
 
 type transparentProxyArgs struct {
