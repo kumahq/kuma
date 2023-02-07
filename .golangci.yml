@@ -39,6 +39,7 @@ linters-settings:
     sections:
     - standard
     - default
+    - prefix(github.com/kumahq/kuma-net)
     - prefix(github.com/kumahq/kuma)
     custom-order: true
   importas:
