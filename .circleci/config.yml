@@ -9,7 +9,7 @@ reusable:
     - &golang_image "cimg/go:1.18.9"
 
   vm_images:
-    - &ubuntu_vm_image "ubuntu-2204:2022.10.2"
+    - &ubuntu_vm_image "ubuntu-2004:202111-01"
 
 # See https://circleci.com/docs/2.0/configuration-reference/#commands-requires-version-21.
 commands:
@@ -27,13 +27,10 @@ commands:
         default: *go_version
     steps:
     - run:
-        # `unzip`                            is necessary to install `protoc`
-        # `gcc`                              is necessary to run `go test -race`
-        # `git`                              is necessary because the CircleCI
-        #                                    version is different somehow ¯\_(ツ)_/¯
-        # `xz-utils`                         is necessary to decompress xz files
-        # `libelf-dev`, `clang, `pkg-config` are necessary for compiling ebpf
-        #                                    programs
+        # `unzip`    is necessary to install `protoc`
+        # `gcc`      is necessary to run `go test -race`
+        # `git`      is necessary because the CircleCI version is different somehow ¯\_(ツ)_/¯
+        # `xz-utils` is necessary to decompress xz files
         name: "Install basic tools"
         command: |
           if [ -r /etc/os-release ]; then source /etc/os-release; fi
@@ -45,8 +42,7 @@ commands:
             fi
 
             sudo apt update
-            sudo env DEBIAN_FRONTEND=noninteractive apt install -y curl git make unzip gcc xz-utils libelf-dev clang pkg-config
-            echo 'export EBPF_ENABLED=1' >> $BASH_ENV
+            sudo env DEBIAN_FRONTEND=noninteractive apt install -y curl git make unzip gcc xz-utils
             ;;
           esac
     - run:
@@ -56,17 +52,8 @@ commands:
           curl -s --fail --location https://dl.google.com/go/go<<parameters.go_version>>.<<parameters.go_os>>-<<parameters.go_arch>>.tar.gz | tar -xz -C $HOME
           echo 'export PATH=$HOME/go/bin:$PATH' >> $BASH_ENV
           # if GOPATH is not set, `golang-ci` fails with an obscure message
-          # "ERROR Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
+          # "ERRO Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
           echo 'export GOPATH=$HOME/go' >> $BASH_ENV
-    - run:
-        name: "Set DNS server for docker daemon"
-        command: |
-          cat \<<'EOF' | sudo tee /etc/docker/daemon.json
-          {
-            "dns": ["8.8.8.8", "1.1.1.1"]
-          }
-          EOF
-          sudo service docker restart
     - run:
         name: "Update runc"
         # See https://github.com/rancher/k3d/issues/807 (runc's default version on the instance fails k3d)
@@ -193,30 +180,6 @@ jobs:
         keys:
         # prefer the exact match
         - golang_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
-    - run:
-        # `git`                              is necessary because the CircleCI
-        #                                    version is different somehow ¯\_(ツ)_/¯
-        # `libelf-dev`, `clang, `pkg-config` are necessary for compiling ebpf
-        #                                    programs
-        name: "Install basic tools"
-        command: |
-          if [ -r /etc/os-release ]; then source /etc/os-release; fi
-          case "$ID" in
-          ubuntu)
-            if ! command -v sudo 2>&1 >/dev/null; then
-              apt update
-              apt install -y sudo
-            fi
-
-            sudo apt update
-            sudo env DEBIAN_FRONTEND=noninteractive apt install -y curl git make libelf-dev clang pkg-config
-            ;;
-          esac
-    - run:
-        name: "Create dummy eBPF programs"
-        command: |
-          mkdir -p ./pkg/transparentproxy/ebpf/programs
-          touch ./pkg/transparentproxy/ebpf/programs/mb_{connect,sockops,get_sockopts,sendmsg,recvmsg,redir,tc}
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: make check
@@ -352,7 +315,7 @@ jobs:
               if [[ "<< parameters.target >>" == "test/e2e" ]]; then
                 skip "we do not run legacy E2E on branch by default. To run them add ci/run-e2e-legacy label"
               fi
-              if [[ "<< parameters.cniNetworkPlugin >>" == "calico" || "<< parameters.k8sVersion >>" == "kindIpv6" || "<< parameters.k8sVersion >>" == "v1.20.15-k3s1" || "<< parameters.arch >>" == "arm64" ]]; then
+              if [[ "<< parameters.cniNetworkPlugin >>" == "calico" || "<< parameters.k8sVersion >>" == "kindIpv6" || "<< parameters.k8sVersion >>" == "v1.19.16-k3s1" || "<< parameters.arch >>" == "arm64" ]]; then
                   skip "Not running tests on PRs with kindIpv6, oldK8s, calico and arm64"
               fi
             fi
@@ -540,7 +503,7 @@ workflows:
           matrix:
             alias: test/e2e-legacy
             parameters:
-              k8sVersion: [ v1.20.15-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
+              k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
               arch: [ amd64, arm64 ]
           parallelism: 3
           target: test/e2e
@@ -550,7 +513,7 @@ workflows:
           matrix:
             alias: test/e2e
             parameters:
-              k8sVersion: [ v1.20.15-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
+              k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
               target: [ test/e2e-kubernetes, test/e2e-universal, test/e2e-multizone ]
               arch: [ amd64, arm64 ]
           parallelism: 1

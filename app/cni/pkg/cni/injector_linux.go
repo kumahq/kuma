@@ -10,8 +10,10 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
+	kumanet_tproxy "github.com/kumahq/kuma-net/transparent-proxy"
+	kumanet_config "github.com/kumahq/kuma-net/transparent-proxy/config"
+
 	"github.com/kumahq/kuma/pkg/transparentproxy"
-	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 )
 
 func convertToUint16(field string, value string) (uint16, error) {
@@ -52,7 +54,7 @@ func Inject(netns string, logger logr.Logger, intermediateConfig *IntermediateCo
 	defer namespace.Close()
 
 	return namespace.Do(func(_ ns.NetNS) error {
-		if _, err := transparentproxy.Setup(*cfg); err != nil {
+		if _, err := kumanet_tproxy.Setup(*cfg); err != nil {
 			return err
 		}
 
@@ -67,7 +69,7 @@ func Inject(netns string, logger logr.Logger, intermediateConfig *IntermediateCo
 	})
 }
 
-func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer) (*config.Config, error) {
+func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer) (*kumanet_config.Config, error) {
 	port, err := convertToUint16("inbound port", intermediateConfig.targetPort)
 	if err != nil {
 		return nil, err
@@ -76,13 +78,13 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 	if err != nil {
 		return nil, err
 	}
-	cfg := config.Config{
+	cfg := kumanet_config.Config{
 		RuntimeStdout: logWriter,
-		Owner: config.Owner{
+		Owner: kumanet_config.Owner{
 			UID: intermediateConfig.noRedirectUID,
 		},
-		Redirect: config.Redirect{
-			Outbound: config.TrafficFlow{
+		Redirect: kumanet_config.Redirect{
+			Outbound: kumanet_config.TrafficFlow{
 				Enabled:      true,
 				Port:         port,
 				ExcludePorts: excludePorts,
@@ -115,8 +117,7 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 		if err != nil {
 			return nil, err
 		}
-
-		cfg.Redirect.Inbound = config.TrafficFlow{
+		cfg.Redirect.Inbound = kumanet_config.TrafficFlow{
 			Enabled:      true,
 			Port:         inboundPort,
 			PortIPv6:     inboundPortV6,
@@ -133,7 +134,7 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 		if err != nil {
 			return nil, err
 		}
-		cfg.Redirect.DNS = config.DNS{
+		cfg.Redirect.DNS = kumanet_config.DNS{
 			Enabled:            true,
 			Port:               builtinDnsPort,
 			CaptureAll:         true,

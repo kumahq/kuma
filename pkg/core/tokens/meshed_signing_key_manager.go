@@ -32,10 +32,10 @@ type meshedSigningKeyManager struct {
 
 var _ SigningKeyManager = &meshedSigningKeyManager{}
 
-func (s *meshedSigningKeyManager) GetLatestSigningKey(ctx context.Context) (*rsa.PrivateKey, int, error) {
+func (s *meshedSigningKeyManager) GetLatestSigningKey(ctx context.Context) (*rsa.PrivateKey, string, error) {
 	resources := system.SecretResourceList{}
 	if err := s.manager.List(ctx, &resources, store.ListByMesh(s.mesh)); err != nil {
-		return nil, 0, errors.Wrap(err, "could not retrieve signing key from secret manager")
+		return nil, "", errors.Wrap(err, "could not retrieve signing key from secret manager")
 	}
 	return latestSigningKey(&resources, s.signingKeyPrefix, s.mesh)
 }

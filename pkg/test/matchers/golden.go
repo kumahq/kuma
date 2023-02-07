@@ -19,10 +19,6 @@ func MatchGoldenJSON(goldenFilePath ...string) types.GomegaMatcher {
 	return MatchGolden(gomega.MatchJSON, goldenFilePath...)
 }
 
-func MatchGoldenXML(goldenFilePath ...string) types.GomegaMatcher {
-	return MatchGolden(gomega.MatchXML, goldenFilePath...)
-}
-
 func MatchGoldenEqual(goldenFilePath ...string) types.GomegaMatcher {
 	return MatchGolden(func(expected interface{}) types.GomegaMatcher {
 		if expectedBytes, ok := expected.([]byte); ok {

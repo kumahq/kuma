@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
@@ -15,6 +17,7 @@ import (
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
 	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
@@ -77,6 +80,31 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 		}),
 	)
 
+	It("should issue token offline", func() {
+		// given
+		rootCmd.SetArgs([]string{"generate", "dataplane-token",
+			"--name", "dp-1",
+			"--mesh", "demo",
+			"--valid-for", "30s",
+			"--kid", "1",
+			"--signing-key-path", filepath.Join("..", "..", "..", "..", "test", "keys", "samplekey.pem"),
+		})
+
+		// when
+		err := rootCmd.Execute()
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buf.String()).ToNot(BeEmpty())
+
+		// and the token is valid
+		claims := &issuer.DataplaneClaims{}
+		_, _, err = new(jwt.Parser).ParseUnverified(buf.String(), claims)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(claims.Name).To(Equal("dp-1"))
+		Expect(claims.Mesh).To(Equal("demo"))
+	})
+
 	It("should write error when generating token fails", func() {
 		// setup
 		generator.err = errors.New("could not connect to API")
@@ -91,5 +119,39 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 		// and
 		Expect(buf.String()).To(Equal("Error: failed to generate a dataplane token: could not connect to API\n"))
 	})
+
+	type errTestCase struct {
+		args []string
+		err  string
+	}
+
+	DescribeTable("should trow an error",
+		func(given errTestCase) {
+			// given
+			rootCmd.SetArgs(given.args)
+
+			// when
+			err := rootCmd.Execute()
+
+			// then
+			Expect(err).To(MatchError(given.err))
+		},
+		Entry("when kid is specified for online signing", errTestCase{
+			args: []string{"generate", "dataplane-token",
+				"--name", "dp-1",
+				"--kid", "1",
+				"--valid-for", "30s",
+			},
+			err: "--kid cannot be used when --signing-key-path is used",
+		}),
+		Entry("when kid is not specified for offline signing", errTestCase{
+			args: []string{"generate", "user-token",
+				"--name", "dp-1",
+				"--valid-for", "30s",
+				"--signing-key-path", filepath.Join("..", "..", "..", "..", "..", "..", "..", "test", "keys", "samplekey.pem"),
+			},
+			err: "--kid is required when --signing-key-path is used",
+		}),
+	)
 
 })
