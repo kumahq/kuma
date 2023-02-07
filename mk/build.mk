@@ -20,6 +20,9 @@ BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts-${GOOS}-${GOARCH}
 BUILD_KUMACTL_DIR := ${BUILD_ARTIFACTS_DIR}/kumactl
 export PATH := $(BUILD_KUMACTL_DIR):$(PATH)
 
+ifdef EBPF_ENABLED
+	GOFLAGS += -tags ebpf
+endif
 GO_BUILD := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=${CGO_ENABLED} go build -v $(GOFLAGS) $(LD_FLAGS)
 GO_BUILD_COREDNS := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=${CGO_ENABLED} go build -v
 
@@ -31,6 +34,7 @@ COREDNS_PLUGIN_CFG_PATH ?= $(TOP)/tools/builds/coredns/templates/plugin.cfg
 EBPF_GIT_REPOSITORY ?= https://github.com/kumahq/merbridge.git
 EBPF_GIT_BRANCH ?= main
 EBPF_TMP_DIRECTORY ?= $(BUILD_DIR)/ebpf
+
 
 # List of binaries that we have release build rules for.
 BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl coredns envoy kuma-cni install-cni
@@ -111,6 +115,7 @@ endif
 
 .PHONY: build/ebpf
 build/ebpf:
+ifdef EBPF_ENABLED
 ifeq ($(shell uname), Linux)
 ifeq (,$(wildcard $(BUILD_ARTIFACTS_DIR)/ebpf))
 	rm -rf "$(EBPF_TMP_DIRECTORY)"
@@ -151,13 +156,16 @@ endif
 else
 	@echo "You can build ebpf programs only on Linux machine"
 endif
+endif
 
 .PHONY: build/ebpf/copy-for-kumactl
 build/ebpf/copy-for-kumactl: build/ebpf
 ifeq ($(shell uname), Linux)
+ifdef EBPF_ENABLED
 	mkdir -p $(KUMA_DIR)/pkg/transparentproxy/ebpf/programs
 
 	cp $(BUILD_ARTIFACTS_DIR)/ebpf/mb_* $(KUMA_DIR)/pkg/transparentproxy/ebpf/programs/
+endif
 endif
 
 .PHONY: build/test-server

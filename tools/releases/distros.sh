@@ -55,11 +55,16 @@ function get_ebpf_programs() {
 function create_kumactl_tarball() {
   local arch=$1
   local system=$2
+  local build_envs
+
+  if [[ "$system" == "linux" ]]; then
+    build_envs="EBPF_ENABLED=1"
+  fi
 
   msg ">>> Packaging ${RELEASE_NAME} static kumactl binary for $system-$arch..."
   msg
 
-  make GOOS="$system" GOARCH="$arch" build/kumactl
+  make GOOS="$system" GOARCH="$arch" $build_envs build/kumactl
 
   local dest_dir=build/$RELEASE_NAME-$arch
   local kuma_subdir="$RELEASE_NAME-$KUMA_VERSION"
@@ -86,11 +91,16 @@ function create_tarball() {
   local system=$2
   local distro=$3
   local envoy_distro=$4
+  local build_envs
+
+  if [[ "$system" == "linux" ]]; then
+    build_envs="EBPF_ENABLED=1"
+  fi
 
   msg ">>> Packaging ${RELEASE_NAME} for $distro ($system-$arch)..."
   msg
 
-  make GOOS="$system" GOARCH="$arch" ENVOY_DISTRO="$envoy_distro" build
+  make GOOS="$system" GOARCH="$arch" ENVOY_DISTRO="$envoy_distro" $build_envs build
 
   local dest_dir=build/$RELEASE_NAME-$distro-$arch
   local kuma_subdir="$RELEASE_NAME-$KUMA_VERSION"
