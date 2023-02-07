@@ -1,3 +1,5 @@
+# When updatinng image version, remember to update it in tools/releases/distros.sh and enterprise version
+FROM kumahq/kuma-net-ebpf:0.8.10 as ebpf
 # until there is a distroless iptables image we have to use something else
 FROM ubuntu:jammy
 ARG ARCH
@@ -14,6 +16,9 @@ COPY /tools/releases/templates/LICENSE \
     /kuma/
 
 COPY /tools/releases/templates/NOTICE-kumactl /kuma/NOTICE
+
+# ebpf
+COPY --from=ebpf /ebpf /kuma/ebpf
 
 RUN update-alternatives --set iptables /usr/sbin/iptables-legacy && \
     adduser --system --disabled-password --group kumactl --uid 5678
