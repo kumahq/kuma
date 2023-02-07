@@ -224,6 +224,11 @@ func (in *RequestRedirect) DeepCopyInto(out *RequestRedirect) {
 		*out = new(PreciseHostname)
 		**out = **in
 	}
+	if in.Path != nil {
+		in, out := &in.Path, &out.Path
+		*out = new(PathRewrite)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.Port != nil {
 		in, out := &in.Port, &out.Port
 		*out = new(PortNumber)

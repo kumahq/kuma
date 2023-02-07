@@ -141,10 +141,13 @@ type RequestRedirect struct {
 	// +kubebuilder:validation:Enum=http;https
 	Scheme   *string          `json:"scheme,omitempty"`
 	Hostname *PreciseHostname `json:"hostname,omitempty"`
+	// Path defines parameters used to modify the path of the incoming request.
+	// The modified path is then used to construct the location header.
+	// When empty, the request path is used as-is.
+	Path *PathRewrite `json:"path,omitempty"`
 	// Port is the port to be used in the value of the `Location`
 	// header in the response.
 	// When empty, port (if specified) of the request is used.
-	//
 	Port *PortNumber `json:"port,omitempty"`
 	// StatusCode is the HTTP status code to be used in response.
 	//
@@ -168,8 +171,10 @@ type PathRewrite struct {
 }
 
 type URLRewrite struct {
+	// Hostname is the value to be used to replace the host header value during forwarding.
 	Hostname *PreciseHostname `json:"hostname,omitempty"`
-	Path     *PathRewrite     `json:"path,omitempty"`
+	// Path defines a path rewrite.
+	Path *PathRewrite `json:"path,omitempty"`
 }
 
 type Filter struct {
@@ -178,7 +183,6 @@ type Filter struct {
 	ResponseHeaderModifier *HeaderModifier  `json:"responseHeaderModifier,omitempty"`
 	RequestRedirect        *RequestRedirect `json:"requestRedirect,omitempty"`
 	URLRewrite             *URLRewrite      `json:"urlRewrite,omitempty"`
-	// TODO: add path to redirect after adding URL rewrite
 }
 
 type BackendRef struct {
