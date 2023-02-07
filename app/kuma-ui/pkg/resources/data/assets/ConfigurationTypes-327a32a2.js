@@ -1,0 +1,9 @@
+import{f as u}from"./kongponents.es-c2485d1e.js";import{u as v}from"./store-0e68b516.js";import{f as y,g as V,h}from"./index-06e6cb34.js";import{O as x,a as C,b as G}from"./OnboardingPage-5db075ab.js";import{d as P,r as k,k as M,c as p,a as d,w as o,o as m,e as s,f as t,g as i,y as T,u as r}from"./runtime-dom.esm-bundler-32659b48.js";import{_ as N}from"./_plugin-vue_export-helper-c27b6911.js";import"./production-bc25f6aa.js";import"./index-4ce02cc3.js";import"./DoughnutChart-323eb437.js";import"./vue-router-d8e03a07.js";const O={class:"graph-list mb-6"},w={class:"radio-button-group"},B=P({__name:"ConfigurationTypes",setup(K){const g=y(),c=V(),f={postgres:h(),memory:c,kubernetes:g},l=v(),e=k("kubernetes");M(function(){e.value=l.getters["config/getConfigurationType"]});const _=p(()=>l.getters["config/getMulticlusterStatus"]?"onboarding-multi-zone":"onboarding-create-mesh"),b=p(()=>f[e.value]);return(U,n)=>(m(),d(x,{"with-image":""},{header:o(()=>[s(C,null,{title:o(()=>[t(`
+          Learn about configuration storage
+        `)]),_:1})]),content:o(()=>[i("div",O,[(m(),d(T(r(b))))]),t(),i("div",w,[s(r(u),{modelValue:e.value,"onUpdate:modelValue":n[0]||(n[0]=a=>e.value=a),name:"deployment","selected-value":"kubernetes"},{default:o(()=>[t(`
+          Kubernetes
+        `)]),_:1},8,["modelValue"]),t(),s(r(u),{modelValue:e.value,"onUpdate:modelValue":n[1]||(n[1]=a=>e.value=a),name:"deployment","selected-value":"postgres"},{default:o(()=>[t(`
+          Postgres
+        `)]),_:1},8,["modelValue"]),t(),s(r(u),{modelValue:e.value,"onUpdate:modelValue":n[2]||(n[2]=a=>e.value=a),name:"deployment","selected-value":"memory"},{default:o(()=>[t(`
+          Memory
+        `)]),_:1},8,["modelValue"])])]),navigation:o(()=>[s(G,{"next-step":r(_),"previous-step":"onboarding-deployment-types"},null,8,["next-step"])]),_:1}))}});const J=N(B,[["__scopeId","data-v-d1d08ebb"]]);export{J as default};

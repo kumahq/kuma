@@ -75,6 +75,9 @@ function package {
 }
 
 function release {
+  if [ -z "${GH_TOKEN}" ] || [ -z "${GH_USER}" ] || [ -z "${GH_EMAIL}" ]; then
+    msg_err "GH_TOKEN, GH_USER and GH_EMAIL required"
+  fi
   if [ -n "${GITHUB_APP}" ]; then
     [ -z "$GH_REPO_URL" ] && GH_REPO_URL="https://x-access-token:${GH_TOKEN}@github.com/${GH_OWNER}/${GH_REPO}.git"
   else
@@ -150,17 +153,9 @@ function main {
       package
       ;;
     update-version)
-      if ! command -v yq >/dev/null || ! [[ $(command yq --version) =~ "mikefarah" ]]; then
-        msg_err "mikefarah/yq not installed"
-      fi
-
       update_version "${dev}"
       ;;
     release)
-      if [ -z "${GH_TOKEN}" ] || [ -z "${GH_USER}" ] || [ -z "${GH_EMAIL}" ]; then
-        msg_err "GH_TOKEN, GH_USER and GH_EMAIL required"
-      fi
-
       release
       ;;
   esac

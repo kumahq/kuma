@@ -50,7 +50,8 @@ jobs:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+            ~/.kuma-dev
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
             ${{ runner.os }}-go-
       - run: |
