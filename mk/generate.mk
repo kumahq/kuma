@@ -58,7 +58,7 @@ cleanup/policy/%:
 
 generate/deep-copy/common:
 	for version in $(foreach dir,$(wildcard $(COMMON_DIR)/*),$(notdir $(dir))); do \
-		$(CONTROLLER_GEN) object paths={$(COMMON_DIR)/$$version/targetref.go,$(COMMON_DIR)/$$version/datasource.go}  ; \
+		$(CONTROLLER_GEN) object paths="./$(COMMON_DIR)/$$version/..."  ; \
 	done
 
 generate/policy/%: generate/schema/%
