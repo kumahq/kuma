@@ -305,14 +305,6 @@ env:
   value: "universal"
 - name: KUMA_STORE_TYPE
   value: "postgres"
-- name: KUMA_STORE_POSTGRES_HOST
-  value: {{ .Values.postgres.host }}
-- name: KUMA_STORE_POSTGRES_PORT
-  value: "{{ .Values.postgres.port }}"
-- name: KUMA_STORE_POSTGRES_USER
-  value: "{{ .Values.postgres.user }}"
-- name: KUMA_STORE_POSTGRES_DB_NAME
-  value: "{{ .Values.postgres.db }}"
 - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
   value: {{ .Values.controlPlane.defaults.skipMeshCreation | quote }}
 - name: KUMA_MODE

@@ -149,12 +149,6 @@ spec:
               value: "/tmp/kuma"
             - name: KUMA_MODE
               value: "global"
-            - name: KUMA_STORE_POSTGRES_DB_NAME
-              value: ""
-            - name: KUMA_STORE_POSTGRES_HOST
-              value: ""
-            - name: KUMA_STORE_POSTGRES_PORT
-              value: "5432"
             - name: KUMA_STORE_POSTGRES_TLS_CERT_PATH
               value: "/var/run/secrets/kuma.io/postgres-client-certs/tls.crt"
             - name: KUMA_STORE_POSTGRES_TLS_KEY_PATH
@@ -163,8 +157,6 @@ spec:
               value: "verifyFull"
             - name: KUMA_STORE_POSTGRES_TLS_ROOT_CERT_PATH
               value: "/var/run/secrets/kuma.io/postgres-client-certs/rootCA.crt"
-            - name: KUMA_STORE_POSTGRES_USER
-              value: ""
             - name: KUMA_STORE_TYPE
               value: "postgres"
           args:
@@ -189,12 +181,6 @@ spec:
               value: "/tmp/kuma"
             - name: KUMA_MODE
               value: "global"
-            - name: KUMA_STORE_POSTGRES_DB_NAME
-              value: ""
-            - name: KUMA_STORE_POSTGRES_HOST
-              value: ""
-            - name: KUMA_STORE_POSTGRES_PORT
-              value: "5432"
             - name: KUMA_STORE_POSTGRES_TLS_CERT_PATH
               value: "/var/run/secrets/kuma.io/postgres-client-certs/tls.crt"
             - name: KUMA_STORE_POSTGRES_TLS_KEY_PATH
@@ -203,8 +189,6 @@ spec:
               value: "verifyFull"
             - name: KUMA_STORE_POSTGRES_TLS_ROOT_CERT_PATH
               value: "/var/run/secrets/kuma.io/postgres-client-certs/rootCA.crt"
-            - name: KUMA_STORE_POSTGRES_USER
-              value: ""
             - name: KUMA_STORE_TYPE
               value: "postgres"
             - name: KUMA_INTER_CP_CATALOG_INSTANCE_ADDRESS
