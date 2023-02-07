@@ -108,4 +108,4 @@ jobs:
       - name: Release chart
         env:
           GH_TOKEN: ${{ steps.github-app-token.outputs.token }}
-        run: ./tools/releases/helm.sh --release
+        run: ${{ env.KUMA_DIR }}/tools/releases/helm.sh --release
