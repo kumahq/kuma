@@ -37,6 +37,8 @@ func hasLocalIPv6() (bool, error) {
 	return false, nil
 }
 
+// ShouldEnableIPv6 checks if system supports IPv6. The port has a value of
+// RedirectPortInBoundV6 and when equals 0 means that IPv6 was disabled by the user.
 func ShouldEnableIPv6(port uint16) (bool, error) {
 	if port == 0 {
 		return false, nil
