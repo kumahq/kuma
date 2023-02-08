@@ -58,7 +58,7 @@ require (
 	google.golang.org/genproto v0.0.0-20230124163310-31e0e69b6fc2
 	google.golang.org/grpc v1.52.3
 	google.golang.org/protobuf v1.28.1
-	gopkg.in/natefinch/lumberjack.v2 v2.0.0
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	helm.sh/helm/v3 v3.11.0
 	istio.io/pkg v0.0.0-20221115183735-2aabb09bf0bb
 	k8s.io/api v0.26.1
