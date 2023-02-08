@@ -244,7 +244,7 @@ properties:
                       properties:
                         headers:
                           items:
-                            description: HeaderMatch describes how to select a HTTP route by matching HTTP request headers.
+                            description: HeaderMatch describes how to select an HTTP route by matching HTTP request headers.
                             properties:
                               name:
                                 description: Name is the name of the HTTP Header to be matched. Name MUST be lower case as they will be handled with case insensitivity (See https://tools.ietf.org/html/rfc7230#section-3.2).
@@ -267,7 +267,6 @@ properties:
                                 type: string
                             required:
                               - name
-                              - value
                             type: object
                           type: array
                         method:

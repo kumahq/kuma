@@ -310,7 +310,7 @@ spec:
                                 headers:
                                   items:
                                     description: HeaderMatch describes how to select
-                                      a HTTP route by matching HTTP request headers.
+                                      an HTTP route by matching HTTP request headers.
                                     properties:
                                       name:
                                         description: Name is the name of the HTTP
@@ -338,7 +338,6 @@ spec:
                                         type: string
                                     required:
                                     - name
-                                    - value
                                     type: object
                                   type: array
                                 method:
