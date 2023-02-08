@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -30,8 +31,8 @@ var _ = Describe("CallbacksChain", func() {
 				calls = append(calls, methodCall{"1st", "OnStreamOpen()", []interface{}{ctx, streamID, typ}})
 				return fmt.Errorf("1st: OnStreamOpen()")
 			},
-			OnStreamClosedFunc: func(streamID int64) {
-				calls = append(calls, methodCall{"1st", "OnStreamClosed()", []interface{}{streamID}})
+			OnStreamClosedFunc: func(streamID int64, n *envoy_core.Node) {
+				calls = append(calls, methodCall{"1st", "OnStreamClosed()", []interface{}{streamID, n}})
 			},
 			OnStreamRequestFunc: func(streamID int64, req *envoy_sd.DiscoveryRequest) error {
 				calls = append(calls, methodCall{"1st", "OnStreamRequest()", []interface{}{streamID, req}})
@@ -46,8 +47,8 @@ var _ = Describe("CallbacksChain", func() {
 				calls = append(calls, methodCall{"2nd", "OnStreamOpen()", []interface{}{ctx, streamID, typ}})
 				return fmt.Errorf("2nd: OnStreamOpen()")
 			},
-			OnStreamClosedFunc: func(streamID int64) {
-				calls = append(calls, methodCall{"2nd", "OnStreamClosed()", []interface{}{streamID}})
+			OnStreamClosedFunc: func(streamID int64, n *envoy_core.Node) {
+				calls = append(calls, methodCall{"2nd", "OnStreamClosed()", []interface{}{streamID, n}})
 			},
 			OnStreamRequestFunc: func(streamID int64, req *envoy_sd.DiscoveryRequest) error {
 				calls = append(calls, methodCall{"2nd", "OnStreamRequest()", []interface{}{streamID, req}})
@@ -83,16 +84,17 @@ var _ = Describe("CallbacksChain", func() {
 		It("should be called in reverse order", func() {
 			// given
 			streamID := int64(1)
+			n := &envoy_core.Node{Id: "my-node"}
 			// setup
 			chain := util_xds_v3.CallbacksChain{first, second}
 
 			// when
-			chain.OnStreamClosed(streamID)
+			chain.OnStreamClosed(streamID, n)
 
 			// then
 			Expect(calls).To(Equal([]methodCall{
-				{"2nd", "OnStreamClosed()", []interface{}{streamID}},
-				{"1st", "OnStreamClosed()", []interface{}{streamID}},
+				{"2nd", "OnStreamClosed()", []interface{}{streamID, n}},
+				{"1st", "OnStreamClosed()", []interface{}{streamID, n}},
 			}))
 		})
 	})
@@ -141,7 +143,7 @@ var _ envoy_xds.Callbacks = CallbacksFuncs{}
 
 type CallbacksFuncs struct {
 	OnStreamOpenFunc   func(context.Context, int64, string) error
-	OnStreamClosedFunc func(int64)
+	OnStreamClosedFunc func(int64, *envoy_core.Node)
 
 	OnStreamRequestFunc  func(int64, *envoy_sd.DiscoveryRequest) error
 	OnStreamResponseFunc func(context.Context, int64, *envoy_sd.DiscoveryRequest, *envoy_sd.DiscoveryResponse)
@@ -156,9 +158,9 @@ func (f CallbacksFuncs) OnStreamOpen(ctx context.Context, streamID int64, typ st
 	}
 	return nil
 }
-func (f CallbacksFuncs) OnStreamClosed(streamID int64) {
+func (f CallbacksFuncs) OnStreamClosed(streamID int64, n *envoy_core.Node) {
 	if f.OnStreamClosedFunc != nil {
-		f.OnStreamClosedFunc(streamID)
+		f.OnStreamClosedFunc(streamID, n)
 	}
 }
 func (f CallbacksFuncs) OnStreamRequest(streamID int64, req *envoy_sd.DiscoveryRequest) error {
@@ -188,7 +190,7 @@ func (f CallbacksFuncs) OnDeltaStreamOpen(ctx context.Context, i int64, s string
 	return nil
 }
 
-func (f CallbacksFuncs) OnDeltaStreamClosed(i int64) {
+func (f CallbacksFuncs) OnDeltaStreamClosed(i int64, n *envoy_core.Node) {
 }
 
 func (f CallbacksFuncs) OnStreamDeltaRequest(i int64, request *envoy_sd.DeltaDiscoveryRequest) error {
