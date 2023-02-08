@@ -1511,7 +1511,7 @@ spec:
                                 headers:
                                   items:
                                     description: HeaderMatch describes how to select
-                                      a HTTP route by matching HTTP request headers.
+                                      an HTTP route by matching HTTP request headers.
                                     properties:
                                       name:
                                         description: Name is the name of the HTTP
@@ -1539,7 +1539,6 @@ spec:
                                         type: string
                                     required:
                                     - name
-                                    - value
                                     type: object
                                   type: array
                                 method:
@@ -2525,7 +2524,7 @@ spec:
                                 which must be present in the request for retries to
                                 be attempted.
                               items:
-                                description: HeaderMatch describes how to select a
+                                description: HeaderMatch describes how to select an
                                   HTTP route by matching HTTP request headers.
                                 properties:
                                   name:
@@ -2554,7 +2553,6 @@ spec:
                                     type: string
                                 required:
                                 - name
-                                - value
                                 type: object
                               type: array
                             retriableResponseHeaders:
@@ -2563,7 +2561,7 @@ spec:
                                 A retry will be triggered if any of the header matches
                                 match the upstream response headers.
                               items:
-                                description: HeaderMatch describes how to select a
+                                description: HeaderMatch describes how to select an
                                   HTTP route by matching HTTP request headers.
                                 properties:
                                   name:
@@ -2592,7 +2590,6 @@ spec:
                                     type: string
                                 required:
                                 - name
-                                - value
                                 type: object
                               type: array
                             retryOn:
