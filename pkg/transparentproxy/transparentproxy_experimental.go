@@ -15,6 +15,57 @@ var _ TransparentProxy = &ExperimentalTransparentProxy{}
 
 type ExperimentalTransparentProxy struct{}
 
+<<<<<<< HEAD
+=======
+func hasLocalIPv6() (bool, error) {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return false, err
+	}
+
+	for _, a := range addrs {
+		if ipnet, ok := a.(*net.IPNet); ok &&
+			!ipnet.IP.IsLoopback() &&
+			ipnet.IP.To4() == nil {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+// ShouldEnableIPv6 checks if system supports IPv6. The port has a value of
+// RedirectPortInBoundV6 and when equals 0 means that IPv6 was disabled by the user.
+func ShouldEnableIPv6(port uint16) (bool, error) {
+	if port == 0 {
+		return false, nil
+	}
+
+	hasIPv6Address, err := hasLocalIPv6()
+	if !hasIPv6Address || err != nil {
+		return false, err
+	}
+
+	// We are executing this command to work around the problem with COS_CONTAINERD
+	// image which is being used on GKE nodes. This image is missing "ip6tables_nat"
+	// kernel module which is adding `nat` table, so we are checking if this table
+	// exists and if so, we are assuming we can safely proceed with ip6tables
+	// ref. https://github.com/kumahq/kuma/issues/2046
+	err = exec.Command(constants.IP6TABLES, "-t", constants.NAT, "-L").Run()
+
+	return err == nil, nil
+}
+
+func parseUint16(port string) (uint16, error) {
+	parsedPort, err := strconv.ParseUint(port, 10, 16)
+	if err != nil {
+		return 0, fmt.Errorf("value %s, is not valid uint16", port)
+	}
+
+	return uint16(parsedPort), nil
+}
+
+>>>>>>> 134794214 (fix(tproxy): fix disabling ipv6 for tproxy (#5923))
 func splitPorts(ports string) ([]uint16, error) {
 	var result []uint16
 
@@ -74,7 +125,14 @@ func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyC
 		}
 	}
 
+<<<<<<< HEAD
 	defaultConfig := kumanet_config.DefaultConfig()
+=======
+	ipv6, err := ShouldEnableIPv6(redirectInboundPortIPv6)
+	if err != nil {
+		return "", errors.Wrap(err, "cannot verify if IPv6 should be enabled")
+	}
+>>>>>>> 134794214 (fix(tproxy): fix disabling ipv6 for tproxy (#5923))
 
 	cfg := &kumanet_config.Config{
 		Owner: &kumanet_config.Owner{
