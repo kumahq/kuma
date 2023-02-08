@@ -2540,6 +2540,39 @@ spec:
                           matches:
                             items:
                               properties:
+                                headers:
+                                  items:
+                                    description: HeaderMatch describes how to select
+                                      an HTTP route by matching HTTP request headers.
+                                    properties:
+                                      name:
+                                        description: Name is the name of the HTTP
+                                          Header to be matched. Name MUST be lower
+                                          case as they will be handled with case insensitivity
+                                          (See https://tools.ietf.org/html/rfc7230#section-3.2).
+                                        maxLength: 256
+                                        minLength: 1
+                                        pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                        type: string
+                                      type:
+                                        default: Exact
+                                        description: Type specifies how to match against
+                                          the value of the header.
+                                        enum:
+                                        - Exact
+                                        - Present
+                                        - RegularExpression
+                                        - Absent
+                                        - Prefix
+                                        type: string
+                                      value:
+                                        description: Value is the value of HTTP Header
+                                          to be matched.
+                                        type: string
+                                    required:
+                                    - name
+                                    type: object
+                                  type: array
                                 method:
                                   enum:
                                   - CONNECT
@@ -3478,8 +3511,8 @@ spec:
                                 which must be present in the request for retries to
                                 be attempted.
                               items:
-                                description: HTTPHeaderMatch describes how to select
-                                  a HTTP route by matching HTTP request headers.
+                                description: HeaderMatch describes how to select an
+                                  HTTP route by matching HTTP request headers.
                                 properties:
                                   name:
                                     description: Name is the name of the HTTP Header
@@ -3507,7 +3540,6 @@ spec:
                                     type: string
                                 required:
                                 - name
-                                - value
                                 type: object
                               type: array
                             retriableResponseHeaders:
@@ -3516,8 +3548,8 @@ spec:
                                 A retry will be triggered if any of the header matches
                                 match the upstream response headers.
                               items:
-                                description: HTTPHeaderMatch describes how to select
-                                  a HTTP route by matching HTTP request headers.
+                                description: HeaderMatch describes how to select an
+                                  HTTP route by matching HTTP request headers.
                                 properties:
                                   name:
                                     description: Name is the name of the HTTP Header
@@ -3545,7 +3577,6 @@ spec:
                                     type: string
                                 required:
                                 - name
-                                - value
                                 type: object
                               type: array
                             retryOn:
