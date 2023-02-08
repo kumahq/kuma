@@ -3,11 +3,11 @@ version: 2.1 # Adds support for executors, parameterized jobs, etc
 reusable:
 
   constants:
-    - &go_version "1.18.9"
+    - &go_version "1.18.10"
 
   docker_images:
-    - &golang_image "golang:1.18.9"
-    - &circleci_golang_image "cimg/go:1.18.9"
+    - &golang_image "golang:1.18.10"
+    - &circleci_golang_image "cimg/go:1.18.10"
 
   vm_images:
     - &ubuntu_vm_image "ubuntu-2004:202111-01"
