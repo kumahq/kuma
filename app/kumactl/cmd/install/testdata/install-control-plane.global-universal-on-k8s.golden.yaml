@@ -149,14 +149,16 @@ spec:
               value: "/tmp/kuma"
             - name: KUMA_MODE
               value: "global"
+            - name: KUMA_STORE_POSTGRES_PORT
+              value: "5432"
+            - name: KUMA_STORE_POSTGRES_TLS_CA_PATH
+              value: "/var/run/secrets/kuma.io/postgres-client-certs/postgres-tls-secret-name"
             - name: KUMA_STORE_POSTGRES_TLS_CERT_PATH
               value: "/var/run/secrets/kuma.io/postgres-client-certs/tls.crt"
             - name: KUMA_STORE_POSTGRES_TLS_KEY_PATH
               value: "/var/run/secrets/kuma.io/postgres-client-certs/tls.key"
             - name: KUMA_STORE_POSTGRES_TLS_MODE
               value: "verifyFull"
-            - name: KUMA_STORE_POSTGRES_TLS_ROOT_CERT_PATH
-              value: "/var/run/secrets/kuma.io/postgres-client-certs/rootCA.crt"
             - name: KUMA_STORE_TYPE
               value: "postgres"
           args:
@@ -165,6 +167,9 @@ spec:
             - --log-level=info
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
           volumeMounts:
+            - name: postgres-client-certs
+              mountPath: /var/run/secrets/kuma.io/postgres-client-certs
+              readOnly: true
             - name: kuma-control-plane-config
               mountPath: /etc/kuma.io/kuma-control-plane
               readOnly: true
@@ -181,14 +186,16 @@ spec:
               value: "/tmp/kuma"
             - name: KUMA_MODE
               value: "global"
+            - name: KUMA_STORE_POSTGRES_PORT
+              value: "5432"
+            - name: KUMA_STORE_POSTGRES_TLS_CA_PATH
+              value: "/var/run/secrets/kuma.io/postgres-client-certs/postgres-tls-secret-name"
             - name: KUMA_STORE_POSTGRES_TLS_CERT_PATH
               value: "/var/run/secrets/kuma.io/postgres-client-certs/tls.crt"
             - name: KUMA_STORE_POSTGRES_TLS_KEY_PATH
               value: "/var/run/secrets/kuma.io/postgres-client-certs/tls.key"
             - name: KUMA_STORE_POSTGRES_TLS_MODE
               value: "verifyFull"
-            - name: KUMA_STORE_POSTGRES_TLS_ROOT_CERT_PATH
-              value: "/var/run/secrets/kuma.io/postgres-client-certs/rootCA.crt"
             - name: KUMA_STORE_TYPE
               value: "postgres"
             - name: KUMA_INTER_CP_CATALOG_INSTANCE_ADDRESS

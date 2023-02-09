@@ -733,7 +733,7 @@ postgres:
     mode: disable # ENV: KUMA_STORE_POSTGRES_TLS_MODE
     # -- Whether to disable SNI the postgres `sslsni` option.
     disableSSLSNI: false # ENV: KUMA_STORE_POSTGRES_TLS_DISABLE_SSLSNI
-    # -- Secret name that contains the CA bundle
+    # -- Secret name that contains the CA tls.crt, tls.key and CA bundle
     secretName:
 
 # @ignored for helm-docs

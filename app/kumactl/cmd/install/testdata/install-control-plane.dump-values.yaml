@@ -236,10 +236,10 @@ controlPlane:
   # `Secret` is the name of the Secret,
   # and `Key` is the key of the Secret value to use
   secrets:
-  #  someConfig:
-  #    name: some-config
-  #    mountPath: /etc/some-config
-  #    readOnly: true
+  #  someSecret:
+  #    Secret: some-secret
+  #    Key: secret_key
+  #    Env: SOME_SECRET
 
   # -- Additional environment variables that will be passed to the control plane
   envVars: { }
@@ -253,7 +253,10 @@ controlPlane:
 #        extra-config-key: |
 #          extra-config-value
 
-  # -- Additional secrets to mount into the control plane
+  # -- (object with { name: string, mountPath: string, readOnly: string }) Additional secrets to mount into the control plane,
+  # where `Env` is the name of the env variable,
+  # `Secret` is the name of the Secret,
+  # and `Key` is the key of the Secret value to use
   extraSecrets:
   #  extraConfig:
   #    name: extra-config
@@ -730,7 +733,7 @@ postgres:
     mode: disable # ENV: KUMA_STORE_POSTGRES_TLS_MODE
     # -- Whether to disable SNI the postgres `sslsni` option.
     disableSSLSNI: false # ENV: KUMA_STORE_POSTGRES_TLS_DISABLE_SSLSNI
-    # -- Secret that contains tls.crt, tls.key, rootCA.crt
+    # -- Secret name that contains the CA tls.crt, tls.key and CA bundle
     secretName:
 
 # @ignored for helm-docs
