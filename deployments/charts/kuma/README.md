@@ -178,10 +178,7 @@ A Helm chart for the Kuma Control Plane
 | experimental.ebpf.cgroupPath | string | `"/sys/fs/cgroup"` | Host's cgroup2 path |
 | experimental.ebpf.tcAttachIface | string | `""` | Name of the network interface which TC programs should be attached to, we'll try to automatically determine it if empty |
 | experimental.ebpf.programsSourcePath | string | `"/kuma/ebpf"` | Path where compiled eBPF programs which will be installed can be found |
-| postgres.host | string | `nil` | Postgres hostname |
-| postgres.port | string | `"5432"` | Postgres port |
-| postgres.user | string | `nil` | Postgres user, password should be provided as a secret reference in "controlPlane.secrets" with the Env value "KUMA_STORE_POSTGRES_PASSWORD". Example: controlPlane:   secrets:     - Secret: postgres-postgresql       Key: postgresql-password       Env: KUMA_STORE_POSTGRES_PASSWORD |
-| postgres.db | string | `nil` | Postgres database to use |
+| postgres.port | string | `"5432"` | Postgres port, password should be provided as a secret reference in "controlPlane.secrets" with the Env value "KUMA_STORE_POSTGRES_PASSWORD". Example: controlPlane:   secrets:     - Secret: postgres-postgresql       Key: postgresql-password       Env: KUMA_STORE_POSTGRES_PASSWORD |
 | postgres.tls.mode | string | `"disable"` | Mode of TLS connection. Available values are: "disable", "verifyNone", "verifyCa", "verifyFull" |
 | postgres.tls.disableSSLSNI | bool | `false` | Whether to disable SNI the postgres `sslsni` option. |
 | postgres.tls.secretName | string | `nil` | Secret name that contains the CA tls.crt, tls.key and CA bundle |
