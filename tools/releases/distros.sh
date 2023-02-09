@@ -25,23 +25,12 @@ PULP_HOST="https://api.pulp.konnect-prod.konghq.com"
 PULP_PACKAGE_TYPE="mesh"
 PULP_DIST_NAME="alpine"
 [ -z "$RELEASE_NAME" ] && RELEASE_NAME="kuma"
-ENVOY_VERSION=$("${SCRIPT_DIR}/../envoy/version.sh")
+BUILD_INFO=$("${SCRIPT_DIR}/../releases/version.sh")
+ENVOY_VERSION=$(echo "$BUILD_INFO" | cut -d " " -f 5)
+KUMA_VERSION=$(echo "$BUILD_INFO" | cut -d " " -f 1)
 [ -z "$KUMA_CONFIG_PATH" ] && KUMA_CONFIG_PATH=pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
 CTL_NAME="kumactl"
 [ -z "$EBPF_PROGRAMS_IMAGE" ] && EBPF_PROGRAMS_IMAGE="kumahq/kuma-net-ebpf:0.8.6"
-
-function get_envoy() {
-  local distro=$1
-  local envoy_distro=$2
-  local arch=$3
-
-  local status
-  status=$(curl -L -o build/envoy-"$distro" \
-    --write-out '%{http_code}' --silent --output /dev/null \
-    "https://download.konghq.com/mesh-alpine/envoy-$ENVOY_VERSION-$envoy_distro-$arch")
-
-  if [ "$status" -ne "200" ]; then msg_err "Error: failed downloading Envoy"; fi
-}
 
 function get_ebpf_programs() {
   local arch=$1
@@ -101,7 +90,7 @@ function create_tarball() {
   msg ">>> Packaging ${RELEASE_NAME} for $distro ($system-$arch)..."
   msg
 
-  make GOOS="$system" GOARCH="$arch" build
+  make GOOS="$system" GOARCH="$arch" ENVOY_DISTRO="$envoy_distro" build
 
   local dest_dir=build/$RELEASE_NAME-$distro-$arch
   local kuma_subdir="$RELEASE_NAME-$KUMA_VERSION"
@@ -113,12 +102,10 @@ function create_tarball() {
   mkdir "$kuma_dir/bin"
   mkdir "$kuma_dir/conf"
 
-  get_envoy "$distro" "$envoy_distro" "$arch"
   get_ebpf_programs "$arch" "$system" "$kuma_dir"
-  chmod 755 build/envoy-"$distro"
 
   artifact_dir=$(artifact_dir "$arch" "$system")
-  cp -p "build/envoy-$distro" "$kuma_dir"/bin/envoy
+  cp -p "$artifact_dir/envoy/envoy-$ENVOY_VERSION-$envoy_distro" "$kuma_dir/bin"
   cp -p "$artifact_dir/kuma-cp/kuma-cp" "$kuma_dir/bin"
   cp -p "$artifact_dir/kuma-dp/kuma-dp" "$kuma_dir/bin"
   cp -p "$artifact_dir/kumactl/kumactl" "$kuma_dir/bin"
@@ -208,7 +195,6 @@ function usage() {
 }
 
 function main() {
-  KUMA_VERSION=$("${SCRIPT_DIR}/version.sh")
 
   while [[ $# -gt 0 ]]; do
     flag=$1
