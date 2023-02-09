@@ -194,6 +194,7 @@ type ZoneIngressProxy struct {
 	TrafficRouteList *core_mesh.TrafficRouteResourceList
 	GatewayRoutes    *core_mesh.MeshGatewayRouteResourceList
 	MeshGateways     *core_mesh.MeshGatewayResourceList
+	PolicyResources  map[core_model.ResourceType]core_model.ResourceList
 }
 
 type VIPDomains struct {
