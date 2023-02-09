@@ -99,6 +99,10 @@ type ApiServerHTTPSConfig struct {
 	TlsMaxVersion string `json:"tlsMaxVersion" envconfig:"kuma_api_server_https_tls_max_version"`
 	// TlsCipherSuites defines the list of ciphers to use
 	TlsCipherSuites []string `json:"tlsCipherSuites" envconfig:"kuma_api_server_https_tls_cipher_suites"`
+	// If true, then HTTPS connection will require client cert.
+	RequireClientCert bool `json:"requireClientCert" envconfig:"kuma_api_server_https_require_client_cert"`
+	// Path to the CA certificate which is used to sign client certificates. It is used only for verifying client certificates.
+	TlsCaFile string `json:"tlsCaFile" envconfig:"kuma_api_server_https_tls_ca_file"`
 }
 
 func (a *ApiServerHTTPSConfig) Validate() error {

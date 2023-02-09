@@ -126,9 +126,11 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.ApiServer.HTTPS.Port).To(Equal(uint32(15682)))
 			Expect(cfg.ApiServer.HTTPS.TlsCertFile).To(Equal("/cert"))
 			Expect(cfg.ApiServer.HTTPS.TlsKeyFile).To(Equal("/key"))
+			Expect(cfg.ApiServer.HTTPS.TlsCaFile).To(Equal("/ca"))
 			Expect(cfg.ApiServer.HTTPS.TlsMinVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.ApiServer.HTTPS.TlsMaxVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.ApiServer.HTTPS.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
+			Expect(cfg.ApiServer.HTTPS.RequireClientCert).To(BeTrue())
 			Expect(cfg.ApiServer.Auth.ClientCertsDir).To(Equal("/certs"))
 			Expect(cfg.ApiServer.Authn.LocalhostIsAdmin).To(Equal(false))
 			Expect(cfg.ApiServer.Authn.Type).To(Equal("custom-authn"))
@@ -360,9 +362,11 @@ apiServer:
     port: 15682 # ENV: KUMA_API_SERVER_HTTPS_PORT
     tlsCertFile: "/cert" # ENV: KUMA_API_SERVER_HTTPS_TLS_CERT_FILE
     tlsKeyFile: "/key" # ENV: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
+    tlsCaFile: "/ca"
     tlsMinVersion: TLSv1_3
     tlsMaxVersion: TLSv1_3
     tlsCipherSuites: ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"]
+    requireClientCert: true
   auth:
     clientCertsDir: "/certs" # ENV: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
   authn:
@@ -631,9 +635,11 @@ proxy:
 				"KUMA_API_SERVER_HTTPS_INTERFACE":                                                          "192.168.0.2",
 				"KUMA_API_SERVER_HTTPS_TLS_CERT_FILE":                                                      "/cert",
 				"KUMA_API_SERVER_HTTPS_TLS_KEY_FILE":                                                       "/key",
+				"KUMA_API_SERVER_HTTPS_TLS_CA_FILE":                                                        "/ca",
 				"KUMA_API_SERVER_HTTPS_TLS_MIN_VERSION":                                                    "TLSv1_3",
 				"KUMA_API_SERVER_HTTPS_TLS_MAX_VERSION":                                                    "TLSv1_3",
 				"KUMA_API_SERVER_HTTPS_TLS_CIPHER_SUITES":                                                  "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384",
+				"KUMA_API_SERVER_HTTPS_REQUIRE_CLIENT_CERT":                                                "true",
 				"KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR":                                                    "/certs",
 				"KUMA_API_SERVER_AUTHN_TYPE":                                                               "custom-authn",
 				"KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN":                                                 "false",
