@@ -14,6 +14,7 @@ import (
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/util/test"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
@@ -90,6 +91,36 @@ var _ = Describe("kumactl install control-plane", func() {
 		}
 		return res
 	}())
+	It("should dump config with --dump-values", func() {
+		rootCtx := kumactl_cmd.DefaultRootContext()
+		rootCtx.Runtime.NewAPIServerClient = test.GetMockNewAPIServerClient()
+		rootCtx.InstallCpContext.Args.ControlPlane_image_tag = "0.0.1"
+		rootCtx.InstallCpContext.Args.DataPlane_image_tag = "0.0.1"
+		rootCtx.InstallCpContext.Args.DataPlane_initImage_tag = "0.0.1"
+		args := []string{
+			"install",
+			"control-plane",
+			"--tls-general-secret", "general-tls-secret",
+			"--tls-general-ca-bundle", "XYZ",
+			"--without-kubernetes-connection",
+			"--dump-values",
+		}
+		rootCmd := cmd.NewRootCmd(rootCtx)
+		rootCmd.SetArgs(args)
+		rootCmd.SetOut(stdout)
+		rootCmd.SetErr(stderr)
+
+		// when
+		err := rootCmd.Execute()
+
+		// then command succeed
+		Expect(err).ToNot(HaveOccurred())
+		Expect(stderr.String()).To(BeEmpty())
+
+		// and output matches golden files
+		actual := stdout.Bytes()
+		Expect(actual).To(matchers.MatchGoldenEqual(filepath.Join("testdata", "install-control-plane.dump-values.yaml")))
+	})
 
 	type testCase struct {
 		stdin       string
@@ -269,12 +300,6 @@ var _ = Describe("kumactl install control-plane", func() {
 controlPlane:
   replicas: 2
 `,
-		}),
-		Entry("should dump config with --dump-values", testCase{
-			extraArgs: []string{
-				"--dump-values",
-			},
-			goldenFile: "install-control-plane.dump-values.yaml",
 		}),
 		Entry("should add GatewayClass if CRDs are present and enabled", testCase{
 			extraArgs: []string{
