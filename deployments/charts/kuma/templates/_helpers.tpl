@@ -305,6 +305,8 @@ env:
   value: "universal"
 - name: KUMA_STORE_TYPE
   value: "postgres"
+- name: KUMA_STORE_POSTGRES_PORT
+  value: "{{ .Values.postgres.port }}"
 - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
   value: {{ .Values.controlPlane.defaults.skipMeshCreation | quote }}
 - name: KUMA_MODE
@@ -333,8 +335,8 @@ env:
   value: /var/run/secrets/kuma.io/postgres-client-certs/tls.crt
 - name: KUMA_STORE_POSTGRES_TLS_KEY_PATH
   value: /var/run/secrets/kuma.io/postgres-client-certs/tls.key
-- name: KUMA_STORE_POSTGRES_TLS_ROOT_CERT_PATH
-  value: /var/run/secrets/kuma.io/postgres-client-certs/rootCA.crt
+- name: KUMA_STORE_POSTGRES_TLS_CA_PATH
+  value: /var/run/secrets/kuma.io/postgres-client-certs/{{ .Values.postgres.tls.secretName }}
 {{- end }}
 - name: KUMA_STORE_POSTGRES_TLS_MODE
   value: {{ .Values.postgres.tls.mode }}
