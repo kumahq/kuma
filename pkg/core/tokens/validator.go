@@ -4,7 +4,6 @@ import (
 	"context"
 	errors2 "errors"
 	"fmt"
-	"strconv"
 
 	"github.com/go-logr/logr"
 	"github.com/golang-jwt/jwt/v4"
@@ -38,26 +37,25 @@ var _ Validator = &jwtTokenValidator{}
 
 func (j *jwtTokenValidator) ParseWithValidation(ctx context.Context, rawToken Token, claims Claims) error {
 	token, err := jwt.ParseWithClaims(rawToken, claims, func(token *jwt.Token) (interface{}, error) {
-		serialNumberRaw, exists := token.Header[KeyIDHeader]
+		var keyID KeyID
+		kid, exists := token.Header[KeyIDHeader]
 		if !exists {
 			if _, ok := claims.(KeyIDFallback); ok {
 				// KID wasn't supported in the past, so we use a marker interface to indicate which tokens were allowed
 				// This will be removed with https://github.com/kumahq/kuma/issues/5519
 				j.log.Info("[WARNING] Using token with KID header, you should rotate this token as it will not be valid in future versions of Kuma", "claims", claims, KeyIDHeader, 0)
-				serialNumberRaw = "0"
+				keyID = KeyIDFallbackValue
 			} else {
 				return 0, fmt.Errorf("JWT token must have %s header", KeyIDHeader)
 			}
-		}
-		serialNumber, err := strconv.Atoi(serialNumberRaw.(string))
-		if err != nil {
-			return 0, errors.New("kid header is invalid. Expected string to be parseable as int.")
+		} else {
+			keyID = kid.(string)
 		}
 		switch token.Method.Alg() {
 		case jwt.SigningMethodHS256.Name:
-			return j.keyAccessor.GetLegacyKey(ctx, 0)
+			return j.keyAccessor.GetLegacyKey(ctx, KeyIDFallbackValue)
 		case jwt.SigningMethodRS256.Name:
-			return j.keyAccessor.GetPublicKey(ctx, serialNumber)
+			return j.keyAccessor.GetPublicKey(ctx, keyID)
 		default:
 			return nil, fmt.Errorf("unsupported token alg %s. Allowed algorithms are %s and %s", token.Method.Alg(), jwt.SigningMethodRS256.Name, jwt.SigningMethodHS256)
 		}

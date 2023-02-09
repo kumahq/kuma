@@ -27,8 +27,8 @@ func NewSigningKeyFromPublicKeyAccessor(resManager manager.ReadOnlyResourceManag
 	}
 }
 
-func (s *signingKeyFromPublicKeyAccessor) GetPublicKey(ctx context.Context, serialNumber int) (*rsa.PublicKey, error) {
-	keyBytes, err := s.getKeyBytes(ctx, serialNumber)
+func (s *signingKeyFromPublicKeyAccessor) GetPublicKey(ctx context.Context, keyID KeyID) (*rsa.PublicKey, error) {
+	keyBytes, err := s.getKeyBytes(ctx, keyID)
 	if err != nil {
 		return nil, err
 	}
@@ -36,12 +36,12 @@ func (s *signingKeyFromPublicKeyAccessor) GetPublicKey(ctx context.Context, seri
 	return keyBytesToRsaPublicKey(keyBytes)
 }
 
-func (s *signingKeyFromPublicKeyAccessor) getKeyBytes(ctx context.Context, serialNumber int) ([]byte, error) {
-	return getKeyBytes(ctx, s.resManager, s.signingKeyPrefix, serialNumber)
+func (s *signingKeyFromPublicKeyAccessor) getKeyBytes(ctx context.Context, keyID KeyID) ([]byte, error) {
+	return getKeyBytes(ctx, s.resManager, s.signingKeyPrefix, keyID)
 }
 
 // GetLegacyKey is not supported for this accessor as it's not used for signing
 // keys from pre 1.4.x version of Kuma, where we used symmetric HMAC256 method of signing DP keys.
-func (s *signingKeyFromPublicKeyAccessor) GetLegacyKey(_ context.Context, _ int) ([]byte, error) {
+func (s *signingKeyFromPublicKeyAccessor) GetLegacyKey(_ context.Context, _ string) ([]byte, error) {
 	return nil, errors.New("legacy key are not supported")
 }

@@ -7,17 +7,22 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/pkg/core/tokens"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 )
 
 type generateDataplaneTokenContext struct {
 	*kumactl_cmd.RootContext
 
 	args struct {
-		name      string
-		proxyType string
-		tags      map[string]string
-		validFor  time.Duration
+		name           string
+		proxyType      string
+		tags           map[string]string
+		validFor       time.Duration
+		kid            string
+		signingKeyPath string
 	}
 }
 
@@ -52,10 +57,35 @@ $ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api
 				tags[k] = strings.Split(v, ",")
 			}
 			name := ctx.args.name
-			token, err := client.Generate(name, pctx.CurrentMesh(), tags, ctx.args.proxyType, ctx.args.validFor)
-			if err != nil {
-				return errors.Wrap(err, "failed to generate a dataplane token")
+
+			var token string
+
+			if ctx.args.signingKeyPath != "" {
+				if ctx.args.kid == "" {
+					return errors.New("--kid is required when --signing-key-path is used")
+				}
+				dpTokenIssuer := issuer.NewDataplaneTokenIssuer(func(_ string) tokens.Issuer {
+					return tokens.NewTokenIssuer(tokens.NewFileSigningKeyManager(ctx.args.signingKeyPath, ctx.args.kid))
+				})
+				token, err = dpTokenIssuer.Generate(cmd.Context(), issuer.DataplaneIdentity{
+					Name: name,
+					Mesh: pctx.CurrentMesh(),
+					Tags: mesh_proto.MultiValueTagSetFrom(tags),
+					Type: mesh_proto.ProxyType(ctx.args.proxyType),
+				}, ctx.args.validFor)
+				if err != nil {
+					return err
+				}
+			} else {
+				if ctx.args.kid != "" {
+					return errors.New("--kid cannot be used when --signing-key-path is used")
+				}
+				token, err = client.Generate(name, pctx.CurrentMesh(), tags, ctx.args.proxyType, ctx.args.validFor)
+				if err != nil {
+					return errors.Wrap(err, "failed to generate a dataplane token")
+				}
 			}
+
 			_, err = cmd.OutOrStdout().Write([]byte(token))
 			return err
 		},
@@ -67,5 +97,7 @@ $ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api
 	cmd.Flags().StringVar(&ctx.args.proxyType, "proxy-type", "", `type of the Dataplane ("dataplane", "ingress")`)
 	cmd.Flags().StringToStringVar(&ctx.args.tags, "tag", nil, "required tag values for dataplane (split values by comma to provide multiple values)")
 	cmd.Flags().DurationVar(&ctx.args.validFor, "valid-for", 0, `how long the token will be valid (for example "24h")`)
+	cmd.Flags().StringVar(&ctx.args.signingKeyPath, "signing-key-path", "", "path to a file that contains private signing key. When specified, control plane won't be used to issue the token.")
+	cmd.Flags().StringVar(&ctx.args.kid, "kid", "", "ID of the key that is used to issue a token. Required when --signing-key-path is used.")
 	return cmd
 }
