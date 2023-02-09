@@ -146,12 +146,16 @@ apiServer:
     tlsCertFile: "" # ENV: KUMA_API_SERVER_HTTPS_TLS_CERT_FILE
     # Path to TLS key file. Autoconfigured from KUMA_GENERAL_TLS_KEY_FILE if empty
     tlsKeyFile: "" # ENV: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
+    # Path to the CA certificate which is used to sign client certificates. It is used only for verifying client certificates.
+    tlsCaFile: "" # ENV: KUMA_API_SERVER_HTTPS_CLIENT_CERTS_CA_FILE
     # TlsMinVersion the minimum version of TLS used across all the Kuma Servers.
     tlsMinVersion: "TLSv1_2" # ENV: KUMA_API_SERVER_HTTPS_TLS_MIN_VERSION
     # TlsMaxVersion the maximum version of TLS used across all the Kuma Servers.
     tlsMaxVersion: # ENV: KUMA_API_SERVER_HTTPS_TLS_MAX_VERSION
     # TlsCipherSuites the list of cipher suites to be used across all the Kuma Servers.
     tlsCipherSuites: [] # ENV: KUMA_API_SERVER_HTTPS_TLS_CIPHER_SUITES
+    # If true, then HTTPS connection will require client cert.
+    requireClientCert: false # ENV: KUMA_API_SERVER_HTTPS_REQUIRE_CLIENT_CERT
   # Authentication configuration for administrative endpoints like Dataplane Token or managing Secrets
   auth:
     # Directory of authorized client certificates (only validate in HTTPS)
