@@ -856,7 +856,7 @@ func newFakeServiceReader(services []*kube_core.Service) (fakeServiceReader, err
 
 var _ kube_client.Reader = fakeServiceReader{}
 
-func (r fakeServiceReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_client.Object) error {
+func (r fakeServiceReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_client.Object, _ ...kube_client.GetOption) error {
 	data, ok := r[fmt.Sprintf("%s/%s", key.Namespace, key.Name)]
 	if !ok {
 		return errors.New("not found")
@@ -870,7 +870,7 @@ func (f fakeServiceReader) List(ctx context.Context, list kube_client.ObjectList
 
 type fakeNodeReader string
 
-func (r fakeNodeReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_client.Object) error {
+func (r fakeNodeReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_client.Object, _ ...kube_client.GetOption) error {
 	return errors.New("not implemented")
 }
 
