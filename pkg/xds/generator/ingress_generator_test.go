@@ -6,9 +6,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -24,6 +27,7 @@ var _ = Describe("IngressGenerator", func() {
 		outboundTargets core_xds.EndpointMap
 		trafficRoutes   *core_mesh.TrafficRouteResourceList
 		meshGateways    *core_mesh.MeshGatewayResourceList
+		meshHTTPRoutes  []*v1alpha1.MeshHTTPRouteResource
 	}
 
 	DescribeTable("should generate Envoy xDS resources",
@@ -53,6 +57,11 @@ var _ = Describe("IngressGenerator", func() {
 					TrafficRouteList: given.trafficRoutes,
 					GatewayRoutes:    &core_mesh.MeshGatewayRouteResourceList{},
 					MeshGateways:     given.meshGateways,
+					PolicyResources: map[core_model.ResourceType]core_model.ResourceList{
+						v1alpha1.MeshHTTPRouteType: &v1alpha1.MeshHTTPRouteResourceList{
+							Items: given.meshHTTPRoutes,
+						},
+					},
 				},
 			}
 
@@ -572,6 +581,88 @@ var _ = Describe("IngressGenerator", func() {
 						},
 					},
 				}},
+			},
+		}),
+		Entry("with MeshHTTPRoute", testCase{
+			ingress: `
+            networking:
+              address: 10.0.0.1
+              port: 10001
+            availableServices:
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  version: v1
+                  region: eu
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  version: v2
+                  region: us
+`,
+			expected: "with-meshhttproute.envoy.golden.yaml",
+			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
+				"backend": {
+					{
+						Target: "192.168.0.1",
+						Port:   2521,
+						Tags: map[string]string{
+							"kuma.io/service": "backend",
+							"version":         "v1",
+							"region":          "eu",
+							"mesh":            "mesh1",
+						},
+						Weight: 1,
+					},
+					{
+						Target: "192.168.0.2",
+						Port:   2521,
+						Tags: map[string]string{
+							"kuma.io/service": "backend",
+							"version":         "v2",
+							"region":          "us",
+							"mesh":            "mesh1",
+						},
+						Weight: 1,
+					},
+				},
+			},
+			trafficRoutes: &core_mesh.TrafficRouteResourceList{},
+			meshHTTPRoutes: []*v1alpha1.MeshHTTPRouteResource{
+				{
+					Spec: &v1alpha1.MeshHTTPRoute{
+						TargetRef: common_api.TargetRef{
+							Kind: common_api.MeshService,
+							Name: "frontend",
+						},
+						To: []v1alpha1.To{{
+							TargetRef: common_api.TargetRef{
+								Kind: common_api.MeshService,
+								Name: "backend",
+							},
+							Rules: []v1alpha1.Rule{{
+								Matches: []v1alpha1.Match{{
+									Path: &v1alpha1.PathMatch{
+										Type:  v1alpha1.Prefix,
+										Value: "/v1",
+									},
+								}},
+								Default: v1alpha1.RuleConf{
+									BackendRefs: &[]v1alpha1.BackendRef{{
+										TargetRef: common_api.TargetRef{
+											Kind: common_api.MeshServiceSubset,
+											Name: "backend",
+											Tags: map[string]string{
+												"version": "v1",
+												"region":  "eu",
+											},
+										},
+									}},
+								},
+							}},
+						}},
+					},
+				},
 			},
 		}),
 	)
