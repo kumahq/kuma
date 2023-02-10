@@ -78,9 +78,15 @@ spec:
                   kuma.io/zone: kuma-5
 `, meshName))(multizone.Global)).To(Succeed())
 
-		Consistently(func(g Gomega) {
-			_, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
-			g.Expect(err).To(HaveOccurred())
+		Eventually(func(g Gomega) {
+			response, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response).To(
+				And(
+					Not(HaveKey(MatchRegexp(`.*zone1.*`))),
+					HaveKeyWithValue(MatchRegexp(`.*zone2.*`), Not(BeNil())),
+				),
+			)
 		}, "30s", "500ms").Should(Succeed())
 	})
 }
