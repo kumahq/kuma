@@ -329,6 +329,8 @@ resources:
               path: /var/log
           httpFilters:
           - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           routeConfig:
             name: outbound:api-http
             requestHeadersToAdd:
@@ -398,6 +400,8 @@ resources:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           httpFilters:
           - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           routeConfig:
             name: outbound:api-http2
             requestHeadersToAdd:
@@ -441,6 +445,8 @@ resources:
               emitFilterState: true
               statsForAllMethods: true
           - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           routeConfig:
             name: outbound:api-grpc
             requestHeadersToAdd:
