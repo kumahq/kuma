@@ -1,16 +1,15 @@
 package framework
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
 )
 
 func DeleteMeshResources(cluster Cluster, mesh string, descriptor ...core_model.ResourceTypeDescriptor) error {
@@ -52,22 +51,23 @@ func allResourcesOfType(kumactl KumactlOptions, descriptor core_model.ResourceTy
 
 func deleteMeshResourcesKubernetes(cluster Cluster, mesh string, resource core_model.ResourceTypeDescriptor) error {
 	args := []string{"delete", strings.ReplaceAll(strings.ToLower(resource.PluralDisplayName), " ", "")}
-	if resource.IsPluginOriginated {
-		// because all new policies have a mesh label, we can just delete by selecting a label
-		args = append(args, "--all-namespaces", "--selector", fmt.Sprintf("%s=%s", mesh_proto.MeshTag, mesh))
-		if err := k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), args...); err != nil {
-			return err
-		}
-	} else {
-		list, err := allResourcesOfType(*cluster.GetKumactlOptions(), resource, mesh)
-		if err != nil {
-			return err
-		}
-		for _, item := range list.GetItems() {
-			itemDelArgs := append(args, item.GetMeta().GetName())
-			if err := k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), itemDelArgs...); err != nil {
+	list, err := allResourcesOfType(*cluster.GetKumactlOptions(), resource, mesh)
+	if err != nil {
+		return err
+	}
+	for _, item := range list.GetItems() {
+		var itemDelArgs []string
+		if resource.IsPluginOriginated {
+			name, ns, err := util_k8s.CoreNameToK8sName(item.GetMeta().GetName())
+			if err != nil {
 				return err
 			}
+			itemDelArgs = append(args, "--namespace", ns, name)
+		} else {
+			itemDelArgs = append(args, item.GetMeta().GetName())
+		}
+		if err := k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), itemDelArgs...); err != nil {
+			return err
 		}
 	}
 	return nil
