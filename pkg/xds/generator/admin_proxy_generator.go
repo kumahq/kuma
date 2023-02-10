@@ -51,7 +51,7 @@ var HasCPValidationCtxInBootstrap = func(ver *mesh_proto.Version) (bool, error) 
 		return true, nil
 	}
 
-	if strings.HasPrefix(ver.GetKumaDp().GetVersion(), version.PreviewBuildPrefix){
+	if strings.HasPrefix(ver.GetKumaDp().GetVersion(), version.PreviewBuildPrefix) {
 		return true, nil
 	}
 
