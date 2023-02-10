@@ -587,7 +587,7 @@ spec:
             - name: KUMA_CONTROL_PLANE_URL
               value: "https://kuma-control-plane.kuma-system:5678"
             - name: KUMA_CONTROL_PLANE_CA_CERT_FILE
-              value: /var/run/secrets/kuma.io/tls-cert/ca.crt
+              value: /var/run/secrets/kuma.io/cp-ca/ca.crt
             - name: KUMA_DATAPLANE_NAME
               value: $(POD_NAME).$(POD_NAMESPACE)
             - name: KUMA_DATAPLANE_DRAIN_TIME
@@ -628,13 +628,16 @@ spec:
               memory: 64Mi
           
           volumeMounts:
-            - name: kuma-tls-cert
-              mountPath: /var/run/secrets/kuma.io/tls-cert
+            - name: control-plane-ca
+              mountPath: /var/run/secrets/kuma.io/cp-ca
               readOnly: true
       volumes:
-        - name: kuma-tls-cert
+        - name: control-plane-ca
           secret:
-            secretName: kuma-tls-cert
+            secretName: "kuma-tls-cert"
+            items:
+              - key: ca.crt
+                path: ca.crt
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress

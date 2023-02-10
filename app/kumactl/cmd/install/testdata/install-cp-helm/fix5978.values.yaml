@@ -1,0 +1,11 @@
+controlPlane:
+  mode: zone
+  zone: east
+  kdsGlobalAddress: "grpcs://foo.com:3456"
+  tls:
+    general:
+      caSecretName: my-custom-ca-name
+ingress:
+  enabled: true
+egress:
+  enabled: true
