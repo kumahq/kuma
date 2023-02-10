@@ -225,7 +225,7 @@ var _ = Describe("Dataplane_Networking_Outbound", func() {
 
 var _ = Describe("Dataplane_Networking_Inbound", func() {
 
-	DescribeTable("GetService()", func() {
+	Describe("GetService()", func() {
 
 		type testCase struct {
 			inbound  *Dataplane_Networking_Inbound
@@ -255,7 +255,7 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 		)
 	})
 
-	DescribeTable("GetProtocol()", func() {
+	Describe("GetProtocol()", func() {
 
 		type testCase struct {
 			inbound  *Dataplane_Networking_Inbound
