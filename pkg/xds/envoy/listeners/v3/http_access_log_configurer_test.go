@@ -89,6 +89,8 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
                   '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                   httpFilters:
                   - name: envoy.filters.http.router
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: backend
             trafficDirection: OUTBOUND
 `,
@@ -127,6 +129,8 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
                       path: /tmp/log
                   httpFilters:
                   - name: envoy.filters.http.router
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: backend
             name: outbound:127.0.0.1:27070
             trafficDirection: OUTBOUND`,
@@ -179,6 +183,8 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
                         transportApiVersion: V3
                   httpFilters:
                   - name: envoy.filters.http.router
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: backend
             name: outbound:127.0.0.1:27070
             trafficDirection: OUTBOUND`,

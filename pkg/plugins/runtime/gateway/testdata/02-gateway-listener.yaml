@@ -32,6 +32,8 @@ Resources:
               responseDirectionConfig:
                 disableOnEtagHeader: true
           - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           mergeSlashes: true
           normalizePath: true
           rds:
@@ -85,6 +87,8 @@ Resources:
               responseDirectionConfig:
                 disableOnEtagHeader: true
           - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           mergeSlashes: true
           normalizePath: true
           rds:
