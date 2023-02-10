@@ -296,6 +296,10 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 	// container that isn't fully configured, and we need it to be
 	// recorded so that DismissCluster can clean it up.
 	Logf("Started universal app %q in container %q", opts.name, app.container)
+
+	if _, ok := c.apps[opts.name]; ok {
+		return errors.Errorf("app %q already exists", opts.name)
+	}
 	c.apps[opts.name] = app
 
 	if !opts.omitDataplane {
