@@ -166,7 +166,7 @@ var _ = Describe("MeshTrace", func() {
                       overallSampling:
                           value: 10
                       provider:
-                          name: envoy.zipkin
+                          name: envoy.tracers.zipkin
                           typedConfig:
                               '@type': type.googleapis.com/envoy.config.trace.v3.ZipkinConfig
                               collectorCluster: meshtrace:zipkin
@@ -210,7 +210,7 @@ var _ = Describe("MeshTrace", func() {
                       overallSampling:
                           value: 10
                       provider:
-                          name: envoy.zipkin
+                          name: envoy.tracers.zipkin
                           typedConfig:
                               '@type': type.googleapis.com/envoy.config.trace.v3.ZipkinConfig
                               collectorCluster: meshtrace:zipkin
@@ -278,7 +278,7 @@ var _ = Describe("MeshTrace", func() {
                   statPrefix: "127_0_0_1_17777"
                   tracing:
                       provider:
-                          name: envoy.datadog
+                          name: envoy.tracers.datadog
                           typedConfig:
                               '@type': type.googleapis.com/envoy.config.trace.v3.DatadogConfig
                               collectorCluster: meshtrace:datadog
@@ -303,7 +303,7 @@ var _ = Describe("MeshTrace", func() {
                   statPrefix: "127_0_0_1_27777"
                   tracing:
                       provider:
-                          name: envoy.datadog
+                          name: envoy.tracers.datadog
                           typedConfig:
                               '@type': type.googleapis.com/envoy.config.trace.v3.DatadogConfig
                               collectorCluster: meshtrace:datadog
@@ -365,7 +365,7 @@ var _ = Describe("MeshTrace", func() {
                         statPrefix: "127_0_0_1_17777"
                         tracing:
                             provider:
-                                name: envoy.zipkin
+                                name: envoy.tracers.zipkin
                                 typedConfig:
                                     '@type': type.googleapis.com/envoy.config.trace.v3.ZipkinConfig
                                     collectorCluster: meshtrace:zipkin
@@ -393,7 +393,7 @@ var _ = Describe("MeshTrace", func() {
                         statPrefix: "127_0_0_1_27777"
                         tracing:
                             provider:
-                                name: envoy.zipkin
+                                name: envoy.tracers.zipkin
                                 typedConfig:
                                     '@type': type.googleapis.com/envoy.config.trace.v3.ZipkinConfig
                                     collectorCluster: meshtrace:zipkin
