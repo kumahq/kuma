@@ -109,6 +109,7 @@ function create_tarball() {
   cp -p "$artifact_dir/kuma-cp/kuma-cp" "$kuma_dir/bin"
   cp -p "$artifact_dir/kuma-dp/kuma-dp" "$kuma_dir/bin"
   cp -p "$artifact_dir/kumactl/kumactl" "$kuma_dir/bin"
+  cp -p "$artifact_dir/kuma-prometheus-sd/kuma-prometheus-sd" "$kuma_dir/bin"
   cp -p "$artifact_dir/coredns/coredns" "$kuma_dir/bin"
   cp -p "$KUMA_CONFIG_PATH" "$kuma_dir/conf/kuma-cp.conf.yml"
 
