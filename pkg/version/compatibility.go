@@ -69,6 +69,7 @@ var CompatibilityMatrix = Compatibility{
 }
 
 var DevVersionPrefix = "dev"
+var LocalBuildSuffix = "vlocal-build"
 var DevDataplaneCompatibility = DataplaneCompatibility{
 	Envoy: "~1.21.1",
 }

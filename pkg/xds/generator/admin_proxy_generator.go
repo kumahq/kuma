@@ -51,6 +51,10 @@ var HasCPValidationCtxInBootstrap = func(ver *mesh_proto.Version) (bool, error) 
 		return true, nil
 	}
 
+	if strings.HasSuffix(ver.GetKumaDp().GetVersion(), version.LocalBuildSuffix){
+		return true, nil
+	}
+
 	semverVer, err := semver.NewVersion(ver.KumaDp.GetVersion())
 	if err != nil {
 		return false, err
