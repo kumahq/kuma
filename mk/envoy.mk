@@ -1,6 +1,8 @@
 KUMA_DIR ?= .
 
 BUILD_ENVOY_FROM_SOURCES ?= false
+ENVOY_TAG ?= v1.22.7
+ENVOY_ARTIFACT_EXT ?=
 
 ENVOY_TAG ?= v1.21.3 # commit hash or git tag
 # Remember to update pkg/version/compatibility.go
@@ -41,8 +43,9 @@ ifeq ($(BUILD_ENVOY_FROM_SOURCES),true)
 	BAZEL_BUILD_EXTRA_OPTIONS=${BAZEL_BUILD_EXTRA_OPTIONS} \
 	BINARY_PATH=$@ ${KUMA_DIR}/tools/envoy/build_${ENVOY_DISTRO}.sh
 else
-	ENVOY_VERSION=${ENVOY_VERSION} \
+	ENVOY_TAG=$(ENVOY_TAG) \
 	ENVOY_DISTRO=${ENVOY_DISTRO} \
+	ENVOY_ARTIFACT_EXT=${ENVOY_ARTIFACT_EXT} \
 	BINARY_PATH=$@ ${KUMA_DIR}/tools/envoy/fetch.sh
 endif
 
