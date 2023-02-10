@@ -1,10 +1,9 @@
 KUMA_DIR ?= .
 
 BUILD_ENVOY_FROM_SOURCES ?= false
-ENVOY_TAG ?= v1.22.7
+ENVOY_TAG ?= v1.22.7 # commit hash or git tag
 ENVOY_ARTIFACT_EXT ?=
 
-ENVOY_TAG ?= v1.21.3 # commit hash or git tag
 # Remember to update pkg/version/compatibility.go
 ENVOY_VERSION = $(shell ${KUMA_DIR}/tools/envoy/version.sh ${ENVOY_TAG})
 
