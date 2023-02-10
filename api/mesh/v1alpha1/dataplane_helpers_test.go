@@ -225,7 +225,7 @@ var _ = Describe("Dataplane_Networking_Outbound", func() {
 
 var _ = Describe("Dataplane_Networking_Inbound", func() {
 
-	DescribeTable("GetService()", func() {
+	Describe("GetService()", func() {
 
 		type testCase struct {
 			inbound  *Dataplane_Networking_Inbound
@@ -255,7 +255,7 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 		)
 	})
 
-	DescribeTable("GetProtocol()", func() {
+	Context("GetProtocol()", func() {
 
 		type testCase struct {
 			inbound  *Dataplane_Networking_Inbound
@@ -277,7 +277,7 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 			Entry("inbound has `protocol` tag with a known value", testCase{
 				inbound: &Dataplane_Networking_Inbound{
 					Tags: map[string]string{
-						"protocol": "http",
+						"kuma.io/protocol": "http",
 					},
 				},
 				expected: "http",
@@ -285,7 +285,7 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 			Entry("inbound has `protocol` tag with an unknown value", testCase{
 				inbound: &Dataplane_Networking_Inbound{
 					Tags: map[string]string{
-						"protocol": "not-yet-supported-protocol",
+						"kuma.io/protocol": "not-yet-supported-protocol",
 					},
 				},
 				expected: "not-yet-supported-protocol",
