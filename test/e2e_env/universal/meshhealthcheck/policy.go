@@ -237,7 +237,7 @@ spec:
 				stdout, _, err := universal.Cluster.Exec("", "", "dp-demo-client-mtls", cmd...)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("response"))
-			})
+			}).Should(Succeed())
 
 			// update HealthCheck policy to check for another 'recv' line
 			Expect(YamlUniversal(healthCheck(meshName, "test-server-mtls", "foo", "baz"))(universal.Cluster)).To(Succeed())
