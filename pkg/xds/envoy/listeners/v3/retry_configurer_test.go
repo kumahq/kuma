@@ -96,6 +96,8 @@ var _ = Describe("RetryConfigurer", func() {
                   '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                   httpFilters:
                   - name: envoy.filters.http.router
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   routeConfig:
                     name: outbound:backend
                     validateClusters: false
@@ -172,6 +174,8 @@ var _ = Describe("RetryConfigurer", func() {
                   '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                   httpFilters:
                   - name: envoy.filters.http.router
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   routeConfig:
                     name: outbound:backend
                     validateClusters: false
@@ -244,6 +248,8 @@ var _ = Describe("RetryConfigurer", func() {
                   '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                   httpFilters:
                   - name: envoy.filters.http.router
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   routeConfig:
                     name: outbound:backend
                     validateClusters: false
@@ -318,6 +324,8 @@ var _ = Describe("RetryConfigurer", func() {
                   '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                   httpFilters:
                   - name: envoy.filters.http.router
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   routeConfig:
                     name: outbound:backend
                     validateClusters: false
