@@ -45,7 +45,7 @@ type CacheReader struct {
 }
 
 // Get checks the indexer for the object and writes a copy of it if found
-func (c *CacheReader) Get(_ context.Context, key client.ObjectKey, out client.Object) error {
+func (c *CacheReader) Get(_ context.Context, key client.ObjectKey, out client.Object, _ ...client.GetOption) error {
 	storeKey := objectKeyToStoreKey(key)
 
 	// Lookup the object from the indexer cache
