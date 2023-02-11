@@ -241,6 +241,140 @@ var _ = Describe("MeshTrace", func() {
             type: STRICT_DNS
 `},
 		}),
+		Entry("inbound/outbound for opentelemetry", testCase{
+			resources: inboundAndOutbound(),
+			singleItemRules: core_xds.SingleItemRules{
+				Rules: []*core_xds.Rule{
+					{
+						Subset: []core_xds.Tag{},
+						Conf: api.Conf{
+							Tags: &[]api.Tag{
+								{Name: "app", Literal: pointer.To("backend")},
+								{Name: "app_code", Header: &api.HeaderTag{Name: "app_code"}},
+								{Name: "client_id", Header: &api.HeaderTag{Name: "client_id", Default: pointer.To("none")}},
+							},
+							Sampling: &api.Sampling{
+								Overall: pointer.To(intstr.FromInt(10)),
+								Client:  pointer.To(intstr.FromInt(20)),
+								Random:  pointer.To(intstr.FromInt(50)),
+							},
+							Backends: &[]api.Backend{{
+								OpenTelemetry: &api.OpenTelemetryBackend{
+									Endpoint:               "jaeger-collector.mesh-observability:4317",
+								},
+							}},
+						},
+					},
+				}},
+			expectedListeners: []string{`
+            address:
+              socketAddress:
+                address: 127.0.0.1
+                portValue: 17777
+            enableReusePort: false
+            filterChains:
+            - filters:
+              - name: envoy.filters.network.http_connection_manager
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                  httpFilters:
+                  - name: envoy.filters.http.router
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                  statPrefix: "127_0_0_1_17777"
+                  tracing:
+                      clientSampling:
+                          value: 20
+                      customTags:
+                          - literal:
+                              value: backend
+                            tag: app
+                          - requestHeader:
+                              name: app_code
+                            tag: app_code
+                          - requestHeader:
+                              defaultValue: none
+                              name: client_id
+                            tag: client_id
+                      overallSampling:
+                          value: 10
+                      provider:
+                          name: envoy.tracers.opentelemetry
+                          typedConfig:
+                              '@type': type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
+                              grpcService: 
+                                  envoyGrpc:
+                                      clusterName: meshtrace:opentelemetry
+                              serviceName: backend
+                      randomSampling:
+                          value: 50
+            name: inbound:127.0.0.1:17777
+            trafficDirection: INBOUND`, `
+            address:
+              socketAddress:
+                address: 127.0.0.1
+                portValue: 27777
+            filterChains:
+            - filters:
+              - name: envoy.filters.network.http_connection_manager
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                  httpFilters:
+                  - name: envoy.filters.http.router
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                  statPrefix: "127_0_0_1_27777"
+                  tracing:
+                      clientSampling:
+                          value: 20
+                      customTags:
+                          - literal:
+                              value: backend
+                            tag: app
+                          - requestHeader:
+                              name: app_code
+                            tag: app_code
+                          - requestHeader:
+                              defaultValue: none
+                              name: client_id
+                            tag: client_id
+                      overallSampling:
+                          value: 10
+                      provider:
+                          name: envoy.tracers.opentelemetry
+                          typedConfig:
+                              '@type': type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
+                              grpcService: 
+                                  envoyGrpc:
+                                      clusterName: meshtrace:opentelemetry
+                              serviceName: backend
+                      randomSampling:
+                          value: 50
+            name: outbound:127.0.0.1:27777
+            trafficDirection: OUTBOUND
+`},
+			expectedClusters: []string{`
+            altStatName: meshtrace_opentelemetry
+            connectTimeout: 10s
+            dnsLookupFamily: V4_ONLY
+            loadAssignment:
+                clusterName: meshtrace:opentelemetry
+                endpoints:
+                    - lbEndpoints:
+                        - endpoint:
+                            address:
+                                socketAddress:
+                                    address: jaeger-collector.mesh-observability
+                                    portValue: 4317
+            name: meshtrace:opentelemetry
+            type: STRICT_DNS
+            typedExtensionProtocolOptions:
+                envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+                    '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+                    explicitHttpConfig:
+                        http2ProtocolOptions: {}
+`},
+		}),
 		Entry("inbound/outbound for datadog", testCase{
 			resources: inboundAndOutbound(),
 			singleItemRules: core_xds.SingleItemRules{
