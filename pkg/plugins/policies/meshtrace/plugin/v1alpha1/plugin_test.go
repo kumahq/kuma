@@ -260,7 +260,7 @@ var _ = Describe("MeshTrace", func() {
 							},
 							Backends: &[]api.Backend{{
 								OpenTelemetry: &api.OpenTelemetryBackend{
-									Endpoint:               "jaeger-collector.mesh-observability:4317",
+									Endpoint: "jaeger-collector.mesh-observability:4317",
 								},
 							}},
 						},
