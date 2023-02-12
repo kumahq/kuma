@@ -525,6 +525,11 @@ var _ = Describe("MeshAccessLog", func() {
                                     portValue: 4317
             name: meshaccesslog:opentelemetry:0
             type: STRICT_DNS
+            typedExtensionProtocolOptions:
+                envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+                    '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+                    explicitHttpConfig:
+                        http2ProtocolOptions: {}
             `, `
             altStatName: meshaccesslog_opentelemetry_1
             connectTimeout: 10s
@@ -540,6 +545,11 @@ var _ = Describe("MeshAccessLog", func() {
                                     portValue: 5317
             name: meshaccesslog:opentelemetry:1
             type: STRICT_DNS
+            typedExtensionProtocolOptions:
+                envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+                    '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+                    explicitHttpConfig:
+                        http2ProtocolOptions: {}
             `},
 			expectedListeners: []string{`
             address:
@@ -561,6 +571,7 @@ var _ = Describe("MeshAccessLog", func() {
                                         envoyGrpc:
                                             clusterName: meshaccesslog:opentelemetry:1
                                     logName: MeshAccessLog
+                                    transportApiVersion: V3
                         cluster: bar-service
                         statPrefix: "127_0_0_1_27779"
             name: outbound:127.0.0.1:27779
@@ -584,6 +595,7 @@ var _ = Describe("MeshAccessLog", func() {
                                         envoyGrpc:
                                             clusterName: meshaccesslog:opentelemetry:0
                                     logName: MeshAccessLog
+                                    transportApiVersion: V3
                         cluster: foo-service
                         statPrefix: "127_0_0_1_27778"
             name: outbound:127.0.0.1:27778
@@ -607,6 +619,7 @@ var _ = Describe("MeshAccessLog", func() {
                                         envoyGrpc:
                                             clusterName: meshaccesslog:opentelemetry:0
                                     logName: MeshAccessLog
+                                    transportApiVersion: V3
                         cluster: other-service
                         statPrefix: "127_0_0_1_27777"
             name: outbound:127.0.0.1:27777
