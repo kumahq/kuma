@@ -41,12 +41,14 @@ require (
 	github.com/prometheus/common v0.39.0
 	github.com/prometheus/prometheus v0.42.0
 	github.com/sethvargo/go-retry v0.2.4
+	github.com/shopspring/decimal v1.3.1
 	github.com/slok/go-http-metrics v0.10.0
 	github.com/soheilhy/cmux v0.1.5
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.15.0
 	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc
 	github.com/testcontainers/testcontainers-go v0.15.0
+	go.opentelemetry.io/proto/otlp v0.19.0
 	go.uber.org/multierr v1.9.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/exp v0.0.0-20230124195608-d38c7dcee874
@@ -74,8 +76,6 @@ require (
 	sigs.k8s.io/gateway-api v0.5.1
 	sigs.k8s.io/yaml v1.3.0
 )
-
-require github.com/shopspring/decimal v1.3.1
 
 require (
 	cloud.google.com/go v0.107.0 // indirect
