@@ -8,7 +8,9 @@ source "${SCRIPT_DIR}/../common.sh"
 KUMA_DOCKER_REPO="${KUMA_DOCKER_REPO:-docker.io}"
 KUMA_DOCKER_REPO_ORG="${KUMA_DOCKER_REPO_ORG:-${KUMA_DOCKER_REPO}/kumahq}"
 KUMA_COMPONENTS="${KUMA_COMPONENTS:-kuma-cp kuma-dp kumactl kuma-init kuma-cni}"
-ENVOY_VERSION=$("${SCRIPT_DIR}/../envoy/version.sh")
+BUILD_INFO=$("${SCRIPT_DIR}/../releases/version.sh")
+ENVOY_VERSION=$(echo "$BUILD_INFO" | cut -d " " -f 5)
+KUMA_VERSION=$(echo "$BUILD_INFO" | cut -d " " -f 1)
 BUILD_ARCH="${BUILD_ARCH:-amd64 arm64}"
 
 function build() {
@@ -33,6 +35,8 @@ function build() {
 }
 
 function docker_login() {
+  [ -z "$DOCKER_USERNAME" ] && msg_err "\$DOCKER_USERNAME required"
+  [ -z "$DOCKER_API_KEY" ] && msg_err "\$DOCKER_API_KEY required"
   docker login -u "$DOCKER_USERNAME" -p "$DOCKER_API_KEY" "$KUMA_DOCKER_REPO"
 }
 
@@ -80,8 +84,6 @@ function usage() {
 }
 
 function main() {
-  KUMA_VERSION=$("${SCRIPT_DIR}/version.sh")
-
   while [[ $# -gt 0 ]]; do
     flag=$1
     case $flag in
@@ -104,9 +106,6 @@ function main() {
     esac
     shift
   done
-
-  [ -z "$DOCKER_USERNAME" ] && msg_err "\$DOCKER_USERNAME required"
-  [ -z "$DOCKER_API_KEY" ] && msg_err "\$DOCKER_API_KEY required"
 
   case $op in
   build)
