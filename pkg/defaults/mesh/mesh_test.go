@@ -47,7 +47,7 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and Dataplane Token Signing Key for the mesh exists
-		err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(model.DefaultMesh), tokens.DefaultSerialNumber, model.DefaultMesh)))
+		err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(model.DefaultMesh), tokens.DefaultKeyID, model.DefaultMesh)))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -69,7 +69,7 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 		Expect(err).ToNot(HaveOccurred())
 		err = resManager.Get(context.Background(), core_mesh.NewRetryResource(), core_store.GetByKey("retry-all-default", model.DefaultMesh))
 		Expect(err).ToNot(HaveOccurred())
-		err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(model.DefaultMesh), tokens.DefaultSerialNumber, model.DefaultMesh)))
+		err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(model.DefaultMesh), tokens.DefaultKeyID, model.DefaultMesh)))
 		Expect(err).ToNot(HaveOccurred())
 	})
 })

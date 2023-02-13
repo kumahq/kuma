@@ -31,12 +31,14 @@ $ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api
 ### Options
 
 ```
-  -h, --help                 help for dataplane-token
-  -m, --mesh string          mesh to use (default "default")
-      --name string          name of the Dataplane
-      --proxy-type string    type of the Dataplane ("dataplane", "ingress")
-      --tag stringToString   required tag values for dataplane (split values by comma to provide multiple values) (default [])
-      --valid-for duration   how long the token will be valid (for example "24h")
+  -h, --help                      help for dataplane-token
+      --kid string                ID of the key that is used to issue a token. Required when --signing-key-path is used.
+  -m, --mesh string               mesh to use (default "default")
+      --name string               name of the Dataplane
+      --proxy-type string         type of the Dataplane ("dataplane", "ingress")
+      --signing-key-path string   path to a file that contains private signing key. When specified, control plane won't be used to issue the token.
+      --tag stringToString        required tag values for dataplane (split values by comma to provide multiple values) (default [])
+      --valid-for duration        how long the token will be valid (for example "24h")
 ```
 
 ### Options inherited from parent commands

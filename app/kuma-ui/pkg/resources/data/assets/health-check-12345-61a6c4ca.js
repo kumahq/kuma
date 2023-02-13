@@ -1,1 +1,0 @@
-const e="HealthCheck",t="default",s="health-check-12345",c=[{match:{service:"web"}}],h=[{match:{service:"backend"}}],n={activeChecks:{interval:"10s",timeout:"2s",unhealthyThreshold:3,healthyThreshold:4}},a={type:e,mesh:t,name:s,sources:c,destinations:h,conf:n};export{n as conf,a as default,h as destinations,t as mesh,s as name,c as sources,e as type};

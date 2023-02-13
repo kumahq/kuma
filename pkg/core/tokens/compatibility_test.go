@@ -91,7 +91,7 @@ var _ = Describe("Compatibility with old ASN.1 format", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when new PEM-encoded signing key is created
-		err = signingKeyManager.CreateSigningKey(ctx, 1)
+		err = signingKeyManager.CreateSigningKey(ctx, "1")
 		Expect(err).ToNot(HaveOccurred())
 
 		// then old token is valid

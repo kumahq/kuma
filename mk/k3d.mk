@@ -44,7 +44,7 @@ K3D_CLUSTER_CREATE_OPTS ?= -i rancher/k3s:$(CI_K3S_VERSION) \
 	--k3s-arg '--disable=traefik@server:0' \
 	--k3s-arg '--disable=metrics-server@server:0' \
 	--network kind \
-	--port "$(PORT_PREFIX)80-$(PORT_PREFIX)89:30080-30089@server:0" \
+	--port "$(PORT_PREFIX)80-$(PORT_PREFIX)99:30080-30099@server:0" \
 	--timeout 120s
 
 ifeq ($(K3D_NETWORK_CNI),calico)

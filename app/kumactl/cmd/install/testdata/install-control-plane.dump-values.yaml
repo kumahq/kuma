@@ -18,6 +18,9 @@ installCrdsOnUpgrade:
   imagePullSecrets: []
 
 controlPlane:
+  # -- Environment that control plane is run in, useful when running universal global control plane on k8s
+  environment: "kubernetes"
+
   # -- Labels to add to resources in addition to default labels
   extraLabels: {}
 
@@ -228,11 +231,15 @@ controlPlane:
     # -- Kuma CP Image tag. When not specified, the value is copied from global.tag
     tag:
 
-  # -- (list of { Env: string, Secret: string, Key: string }) Secrets to add as environment variables,
+  # -- (object with { Env: string, Secret: string, Key: string }) Secrets to add as environment variables,
   # where `Env` is the name of the env variable,
   # `Secret` is the name of the Secret,
   # and `Key` is the key of the Secret value to use
   secrets:
+  #  someSecret:
+  #    Secret: some-secret
+  #    Key: secret_key
+  #    Env: SOME_SECRET
 
   # -- Additional environment variables that will be passed to the control plane
   envVars: { }
@@ -246,11 +253,15 @@ controlPlane:
 #        extra-config-key: |
 #          extra-config-value
 
-  # -- Additional secrets to mount into the control plane
-  extraSecrets: [ ]
-#    - name: extra-config
-#      mountPath: /etc/extra-config
-#      readOnly: true
+  # -- (object with { name: string, mountPath: string, readOnly: string }) Additional secrets to mount into the control plane,
+  # where `Env` is the name of the env variable,
+  # `Secret` is the name of the Secret,
+  # and `Key` is the key of the Secret value to use
+  extraSecrets:
+  #  extraConfig:
+  #    name: extra-config
+  #    mountPath: /etc/extra-config
+  #    readOnly: true
 
   webhooks:
     validator:
@@ -698,6 +709,26 @@ experimental:
     tcAttachIface: ""
     # -- Path where compiled eBPF programs which will be installed can be found
     programsSourcePath: /kuma/ebpf
+
+# Postgres' settings for universal control plane on k8s
+postgres:
+  # -- Postgres port, password should be provided as a secret reference in "controlPlane.secrets"
+  # with the Env value "KUMA_STORE_POSTGRES_PASSWORD".
+  # Example:
+  # controlPlane:
+  #   secrets:
+  #     - Secret: postgres-postgresql
+  #       Key: postgresql-password
+  #       Env: KUMA_STORE_POSTGRES_PASSWORD
+  port: "5432"
+  # TLS settings
+  tls:
+    # -- Mode of TLS connection. Available values are: "disable", "verifyNone", "verifyCa", "verifyFull"
+    mode: disable # ENV: KUMA_STORE_POSTGRES_TLS_MODE
+    # -- Whether to disable SNI the postgres `sslsni` option.
+    disableSSLSNI: false # ENV: KUMA_STORE_POSTGRES_TLS_DISABLE_SSLSNI
+    # -- Secret name that contains the CA tls.crt, tls.key and CA bundle
+    secretName:
 
 # @ignored for helm-docs
 plugins:
