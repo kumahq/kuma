@@ -99,6 +99,8 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                     uri: true
                   httpFilters:
                   - name: envoy.filters.http.router
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   routeConfig:
                     name: inbound:backend
                     validateClusters: false
@@ -159,6 +161,8 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                     uri: true
                   httpFilters:
                   - name: envoy.filters.http.router
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   routeConfig:
                     name: inbound:backend
                     validateClusters: false
@@ -249,6 +253,8 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                     uri: true
                   httpFilters:
                   - name: envoy.filters.http.router
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   routeConfig:
                     name: inbound:backend
                     validateClusters: false

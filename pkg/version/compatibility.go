@@ -69,6 +69,7 @@ var CompatibilityMatrix = Compatibility{
 }
 
 var DevVersionPrefix = "dev"
+var PreviewBuildPrefix = "0.0.0-preview"
 var DevDataplaneCompatibility = DataplaneCompatibility{
 	Envoy: "~1.21.1",
 }

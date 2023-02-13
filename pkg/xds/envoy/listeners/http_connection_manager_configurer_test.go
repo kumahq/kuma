@@ -48,6 +48,8 @@ var _ = Describe("HttpConnectionManager Configurers", func() {
               '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
               httpFilters:
               - name: envoy.filters.http.router
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
               serverName: test-server
               statPrefix: test`,
 			}),
@@ -61,6 +63,8 @@ var _ = Describe("HttpConnectionManager Configurers", func() {
               '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
               httpFilters:
               - name: envoy.filters.http.router
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
               mergeSlashes: true
               normalizePath: true
               statPrefix: test`,
@@ -75,6 +79,8 @@ var _ = Describe("HttpConnectionManager Configurers", func() {
               '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
               httpFilters:
               - name: envoy.filters.http.router
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
               statPrefix: test
               stripAnyHostPort: true`,
 			}),
