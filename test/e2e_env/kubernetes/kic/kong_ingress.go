@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/test/framework"
