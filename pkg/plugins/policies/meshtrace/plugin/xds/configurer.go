@@ -119,7 +119,7 @@ func (c *Configurer) datadogConfig(clusterName string) (*envoy_trace.Tracing_Htt
 		return nil, err
 	}
 	tracingConfig := &envoy_trace.Tracing_Http{
-		Name: "envoy.datadog",
+		Name: "envoy.tracers.datadog",
 		ConfigType: &envoy_trace.Tracing_Http_TypedConfig{
 			TypedConfig: datadogConfigAny,
 		},
@@ -151,7 +151,7 @@ func (c *Configurer) zipkinConfig(clusterName string) (*envoy_trace.Tracing_Http
 		return nil, err
 	}
 	tracingConfig := &envoy_trace.Tracing_Http{
-		Name: "envoy.zipkin",
+		Name: "envoy.tracers.zipkin",
 		ConfigType: &envoy_trace.Tracing_Http_TypedConfig{
 			TypedConfig: zipkinConfigAny,
 		},
