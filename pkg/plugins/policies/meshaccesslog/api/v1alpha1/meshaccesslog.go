@@ -59,7 +59,7 @@ type TCPBackend struct {
 type OtelBackend struct {
 	// Attributes can contain placeholders available on
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
-	Attributes *[]JsonValue `json:"attributes,omitempty"`
+	Attributes []JsonValue `json:"attributes,omitempty"`
 	// Endpoint of OpenTelemetry collector. An empty port defaults to 4317.
 	// +kubebuilder:example="otel-collector:4317"
 	// +kubebuilder:validation:MinLength=1

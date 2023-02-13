@@ -267,7 +267,7 @@ func otelAccessLog(backend api.OtelBackend, clusterName endpointClusterName, log
 		Attributes: &otlp.KeyValueList{},
 	}
 
-	for _, kv := range pointer.Deref(backend.Attributes) {
+	for _, kv := range backend.Attributes {
 		log.Attributes.Values = append(log.Attributes.Values, &otlp.KeyValue{
 			Key: kv.Key,
 			Value: &otlp.AnyValue{

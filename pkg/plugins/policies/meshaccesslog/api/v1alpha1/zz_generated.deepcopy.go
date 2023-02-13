@@ -184,12 +184,8 @@ func (in *OtelBackend) DeepCopyInto(out *OtelBackend) {
 	*out = *in
 	if in.Attributes != nil {
 		in, out := &in.Attributes, &out.Attributes
-		*out = new([]JsonValue)
-		if **in != nil {
-			in, out := *in, *out
-			*out = make([]JsonValue, len(*in))
-			copy(*out, *in)
-		}
+		*out = make([]JsonValue, len(*in))
+		copy(*out, *in)
 	}
 }
 
