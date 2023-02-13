@@ -11,7 +11,44 @@ CHARTS_DIR="./deployments/charts"
 CHARTS_PACKAGE_PATH=".cr-release-packages"
 CHARTS_INDEX_FILE="index.yaml"
 GH_PAGES_BRANCH="gh-pages"
+<<<<<<< HEAD
 [ -z "$GH_REPO_URL" ] && GH_REPO_URL="git@github.com:${GH_OWNER}/${GH_REPO}.git"
+=======
+
+# This updates Chart.yaml with:
+#  appVersion equal to the kuma version
+#  version:
+#    using version.sh logic
+#  dependencies (with non-empty first argument):
+#    for any dependency $chart where charts/$chart exists, it deletes $chart from
+#    .dependencies so that the embedded $chart is used and not the one fetched
+#    from the repository. `cr` fetches explicit dependencies and they take
+#    precedence over embedded files.
+function update_version {
+  dev=${1}
+  for dir in "${CHARTS_DIR}"/*; do
+    if [ ! -d "${dir}" ]; then
+      continue
+    fi
+
+    # Fail if there are uncommitted changes
+    git diff --exit-code HEAD -- "${dir}"
+
+    kuma_version=$("${SCRIPT_DIR}/version.sh" | cut -d " " -f 1)
+    yq -i ".appVersion = \"${kuma_version}\"" "${dir}/Chart.yaml"
+    yq -i ".version = \"${kuma_version}\"" "${dir}/Chart.yaml"
+
+    if [ -n "${dev}" ]; then
+      for chart in $(yq e '.dependencies[].name' "${dir}/Chart.yaml"); do
+          if [ ! -d "${dir}/charts/${chart}" ]; then
+              continue
+          fi
+          yq -i e "del(.dependencies[] | select(.name == \"${chart}\"))" "${dir}/Chart.yaml"
+      done
+    fi
+  done
+}
+>>>>>>> 706f313f5 (chore: fix helm.sh script (#6011))
 
 function package {
   # First package all the charts
