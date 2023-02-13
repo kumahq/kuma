@@ -1,1 +1,0 @@
-const e="TrafficTrace",t="mesh-1",c="tt-1",o="2020-05-12T12:31:45.606217+02:00",n="2020-05-12T12:31:45.606217+02:00",s={backend:"my-zipkin"},i=[{match:{service:"*"}}],m={type:e,mesh:t,name:c,creationTime:o,modificationTime:n,conf:s,selectors:i};export{s as conf,o as creationTime,m as default,t as mesh,n as modificationTime,c as name,i as selectors,e as type};

@@ -1,1 +1,0 @@
-const t="Dataplane",e="default",n="dataplane-test-456",a="2020-06-02T09:33:09.208372-04:00",o="2020-06-02T09:33:09.208372-04:00",i={address:"192.168.64.8",inbound:[{port:10001}]},s={type:t,mesh:e,name:n,creationTime:a,modificationTime:o,networking:i};export{a as creationTime,s as default,e as mesh,o as modificationTime,n as name,i as networking,t as type};

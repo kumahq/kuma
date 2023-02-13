@@ -62,7 +62,7 @@ func EnsureDefaultMeshResources(ctx context.Context, resManager manager.Resource
 		return errors.Wrap(err, "could not create default Dataplane Token Signing Key")
 	}
 	if created {
-		resKey := tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(meshName), tokens.DefaultSerialNumber, meshName)
+		resKey := tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(meshName), tokens.DefaultKeyID, meshName)
 		log.Info("default Dataplane Token Signing Key created", "mesh", meshName, "name", resKey.Name)
 	} else {
 		log.Info("Dataplane Token Signing Key already exists", "mesh", meshName)
