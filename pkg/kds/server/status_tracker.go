@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/go-logr/logr"
@@ -87,7 +88,7 @@ func (c *statusTracker) OnStreamOpen(ctx context.Context, streamID int64, typ st
 }
 
 // OnStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
-func (c *statusTracker) OnStreamClosed(streamID int64) {
+func (c *statusTracker) OnStreamClosed(streamID int64, _ *envoy_core.Node) {
 	c.mu.Lock() // write access to the map of all ADS streams
 	defer c.mu.Unlock()
 

@@ -1,1 +1,0 @@
-const n=1,t=[{type:"ServiceInsight",serviceType:"internal",mesh:"hello-world",name:"frontend",creationTime:"2021-01-31T13:12:35.937706+01:00",modificationTime:"2021-02-02T06:45:23.759876+01:00",addressPort:"frontend.mesh:80",status:"partially_degraded",dataplanes:{total:100,online:59}}],e=null,s={total:1,items:t,next:e};export{s as default,t as items,e as next,n as total};

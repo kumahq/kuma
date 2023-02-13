@@ -70,6 +70,7 @@ func (c RoutesConfigurer) routeMatch(matches []api.Match) []routeMatch {
 			if match.QueryParams != nil {
 				routeQueryParamsMatch(envoyMatch, match.QueryParams)
 			}
+			routeHeadersMatch(envoyMatch, match.Headers)
 			if match.Path != nil && match.Path.Type == api.Prefix {
 				allEnvoyMatches = append(allEnvoyMatches, routeMatch{envoyMatch, true})
 			} else {

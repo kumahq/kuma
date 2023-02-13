@@ -1,5 +1,5 @@
 BUILD_ENVOY_FROM_SOURCES ?= false
-ENVOY_TAG ?= v1.22.1
+ENVOY_TAG ?= v1.22.7
 ENVOY_ARTIFACT_EXT ?=
 
 ifeq ($(GOOS),linux)

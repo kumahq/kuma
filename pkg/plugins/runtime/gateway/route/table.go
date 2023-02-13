@@ -91,7 +91,6 @@ type Redirection struct {
 	Scheme string // URL scheme (optional).
 	Host   string // URL host (optional).
 	Port   uint32 // URL port (optional).
-	Path   string // URL path (optional).
 
 	StripQuery bool // Whether to strip the query string.
 }

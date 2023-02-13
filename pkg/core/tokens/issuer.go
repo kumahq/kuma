@@ -32,7 +32,7 @@ func NewTokenIssuer(signingKeyAccessor SigningKeyManager) Issuer {
 var _ Issuer = &jwtTokenIssuer{}
 
 func (j *jwtTokenIssuer) Generate(ctx context.Context, claims Claims, validFor time.Duration) (Token, error) {
-	signingKey, serialNumber, err := j.signingKeyManager.GetLatestSigningKey(ctx)
+	signingKey, keyID, err := j.signingKeyManager.GetLatestSigningKey(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -46,7 +46,7 @@ func (j *jwtTokenIssuer) Generate(ctx context.Context, claims Claims, validFor t
 	})
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	token.Header[KeyIDHeader] = serialNumber
+	token.Header[KeyIDHeader] = keyID
 	tokenString, err := token.SignedString(signingKey)
 	if err != nil {
 		return "", errors.Wrap(err, "could not sign a token")

@@ -68,6 +68,7 @@ func validateMatches(matches []Match) validators.ValidationError {
 		errs.AddErrorAt(path.Field("path"), validatePath(match.Path))
 		errs.AddErrorAt(path.Field("method"), validateMethod(match.Method))
 		errs.AddErrorAt(path.Field("queryParams"), validateQueryParams(match.QueryParams))
+		errs.AddErrorAt(path.Field("headers"), validateHeaders(match.Headers))
 	}
 
 	return errs
@@ -106,6 +107,32 @@ func validatePath(match *PathMatch) validators.ValidationError {
 
 func validateMethod(match *Method) validators.ValidationError {
 	return validators.ValidationError{}
+}
+
+func validateHeaders(headers []common_api.HeaderMatch) validators.ValidationError {
+	var errs validators.ValidationError
+	for i, header := range headers {
+		path := validators.Root().Index(i)
+		matchType := common_api.HeaderMatchExact
+		if header.Type != nil {
+			matchType = *header.Type
+		}
+
+		switch matchType {
+		case common_api.HeaderMatchExact:
+		case common_api.HeaderMatchPresent:
+			if header.Value != "" {
+				errs.AddViolationAt(path.Field("value"), validators.MustNotBeDefined)
+			}
+		case common_api.HeaderMatchRegularExpression:
+		case common_api.HeaderMatchAbsent:
+			if header.Value != "" {
+				errs.AddViolationAt(path.Field("value"), validators.MustNotBeDefined)
+			}
+		case common_api.HeaderMatchPrefix:
+		}
+	}
+	return errs
 }
 
 func validateQueryParams(matches []QueryParamsMatch) validators.ValidationError {

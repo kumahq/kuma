@@ -8,6 +8,12 @@ does not have any particular instructions.
 
 ## Upcoming release
 
+### Gateway API
+
+We now support version `v0.6.0` of the Gateway API. See the [upstream API
+changes](https://github.com/kubernetes-sigs/gateway-api/releases/tag/v0.6.0) for
+more info.
+
 ## Upgrade to `2.1.x`
 
 ### **Breaking changes**
@@ -25,10 +31,10 @@ This breaking change is required to provide correct naming. The previous behavio
 
 Action value have switched to PascalCase. ALLOW is Allow, DENY is Deny and ALLOW_WITH_SHADOW_DENY is AllowWithShadowDeny.
 
-### http api
+### HTTP api
 
-We've removed the endpoint `POST /tokens` which has been moved by `POST /tokens/dataplane` (same request and response) some time ago.
-Make sure you are using a recent `kumactl` or that you use the right path if using the api directly to upgrade with no issues.
+We've removed the deprecated endpoint `POST /tokens`, use the `POST /tokens/dataplane` endpoint instead (same request and response).
+Make sure you are using a recent `kumactl` or that you use the right path if using the API directly to upgrade with no issues.
 
 ### Kubernetes
 

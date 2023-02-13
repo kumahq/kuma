@@ -2,7 +2,6 @@ package gatewayapi
 
 import (
 	"context"
-	"encoding/pem"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -13,11 +12,13 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 )
 
 func (r *GatewayReconciler) createSecretIfMissing(
 	ctx context.Context,
 	key types.NamespacedName,
+	data []byte,
 	mesh string,
 ) (model.ResourceKey, error) {
 	resKey := model.ResourceKey{
@@ -42,16 +43,6 @@ func (r *GatewayReconciler) createSecretIfMissing(
 		return resKey, nil
 	}
 
-	secret := &kube_core.Secret{}
-	if err := r.Client.Get(ctx, key, secret); err != nil {
-		return resKey, err
-	}
-
-	data, err := convertSecret(secret)
-	if err != nil {
-		return model.ResourceKey{}, err
-	}
-
 	kumaSecret.Spec.Data = &wrapperspb.BytesValue{
 		Value: data,
 	}
@@ -64,21 +55,21 @@ func (r *GatewayReconciler) createSecretIfMissing(
 	return resKey, nil
 }
 
+// convertSecret returns the data to be stored as a Kuma secret or an error to
+// be displayed in a condition message.
 func convertSecret(secret *kube_core.Secret) ([]byte, error) {
 	if secret.Type != kube_core.SecretTypeTLS {
-		return nil, errors.Errorf("only secrets of type %q are supported", secret.Type)
+		return nil, errors.Errorf("only secrets of type %q are supported", kube_core.SecretTypeTLS)
 	}
 
-	privatePEM := pem.EncodeToMemory(&pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: secret.Data["tls.key"],
-	})
-	publicPEM := pem.EncodeToMemory(&pem.Block{
-		Type:  "CERTIFICATE",
-		Bytes: secret.Data["tls.crt"],
-	})
+	data := append(secret.Data["tls.key"], secret.Data["tls.crt"]...)
 
-	return append(privatePEM, publicPEM...), nil
+	if _, _, err := gateway.NewServerSecret(data); err != nil {
+		// Don't return the exact error
+		return nil, fmt.Errorf("malformed secret")
+	}
+
+	return data, nil
 }
 
 func gatewaySecretKeyName(key types.NamespacedName) string {

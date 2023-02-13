@@ -1,1 +1,0 @@
-const e="TrafficTrace",s="kong-mania-12",c="my-silly-mesh-name",n=[{match:{service:"*"}}],t={backend:"my-zipkin"},a={type:e,mesh:s,name:c,selectors:n,conf:t};export{t as conf,a as default,s as mesh,c as name,n as selectors,e as type};

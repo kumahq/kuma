@@ -1,1 +1,0 @@
-const e="TrafficTrace",t="hello-world",c="tt-123",s=[{match:{service:"*"}}],o={backend:"my-zipkin"},n={type:e,mesh:t,name:c,selectors:s,conf:o};export{o as conf,n as default,t as mesh,c as name,s as selectors,e as type};

@@ -25,9 +25,9 @@ func NewSigningKey() ([]byte, error) {
 	return util_rsa.FromPrivateKeyToPEMBytes(key)
 }
 
-func SigningKeyResourceKey(signingKeyPrefix string, serialNumber int, mesh string) model.ResourceKey {
-	name := fmt.Sprintf("%s-%d", signingKeyPrefix, serialNumber)
-	if serialNumber == 0 { // backwards compatibility with 1.3.x signing keys https://github.com/kumahq/kuma/issues/4006
+func SigningKeyResourceKey(signingKeyPrefix string, keyID KeyID, mesh string) model.ResourceKey {
+	name := fmt.Sprintf("%s-%s", signingKeyPrefix, keyID)
+	if keyID == KeyIDFallbackValue { // backwards compatibility with 1.3.x signing keys https://github.com/kumahq/kuma/issues/4006
 		name = signingKeyPrefix
 	}
 	return model.ResourceKey{
@@ -37,17 +37,17 @@ func SigningKeyResourceKey(signingKeyPrefix string, serialNumber int, mesh strin
 }
 
 type SigningKeyNotFound struct {
-	SerialNumber int
-	Prefix       string
-	Mesh         string
+	KeyID  KeyID
+	Prefix string
+	Mesh   string
 }
 
 func (s *SigningKeyNotFound) Error() string {
-	key := SigningKeyResourceKey(s.Prefix, s.SerialNumber, s.Mesh)
+	key := SigningKeyResourceKey(s.Prefix, s.KeyID, s.Mesh)
 	if s.Mesh == "" {
-		return fmt.Sprintf("there is no signing key with serial number %d. GlobalSecret of name %q is not found. If signing key was rotated, regenerate the token", s.SerialNumber, key.Name)
+		return fmt.Sprintf("there is no signing key with KID %s. GlobalSecret of name %q is not found. If signing key was rotated, regenerate the token", s.KeyID, key.Name)
 	} else {
-		return fmt.Sprintf("there is no signing key with serial number %d. Secret of name %q in mesh %q is not found. If signing key was rotated, regenerate the token", s.SerialNumber, key.Name, key.Mesh)
+		return fmt.Sprintf("there is no signing key with KID %s. Secret of name %q in mesh %q is not found. If signing key was rotated, regenerate the token", s.KeyID, key.Name, key.Mesh)
 	}
 }
 
@@ -103,14 +103,14 @@ func getKeyBytes(
 	ctx context.Context,
 	resManager manager.ReadOnlyResourceManager,
 	signingKeyPrefix string,
-	serialNumber int,
+	keyID KeyID,
 ) ([]byte, error) {
 	resource := system.NewGlobalSecretResource()
-	if err := resManager.Get(ctx, resource, store.GetBy(SigningKeyResourceKey(signingKeyPrefix, serialNumber, model.NoMesh))); err != nil {
+	if err := resManager.Get(ctx, resource, store.GetBy(SigningKeyResourceKey(signingKeyPrefix, keyID, model.NoMesh))); err != nil {
 		if store.IsResourceNotFound(err) {
 			return nil, &SigningKeyNotFound{
-				SerialNumber: serialNumber,
-				Prefix:       signingKeyPrefix,
+				KeyID:  keyID,
+				Prefix: signingKeyPrefix,
 			}
 		}
 

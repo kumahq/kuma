@@ -236,14 +236,6 @@ func validateMeshGatewayRouteHTTPFilter(
 	if r := conf.GetRedirect(); r != nil {
 		path := path.Field("redirect")
 
-		if r.GetScheme() == "" {
-			err.AddViolationAt(path.Field("scheme"), "cannot be empty")
-		}
-
-		if r.GetHostname() == "" {
-			err.AddViolationAt(path.Field("hostname"), "cannot be empty")
-		}
-
 		if r.GetPort() > 0 {
 			err.Add(ValidatePort(path.Field("port"), r.GetPort()))
 		}

@@ -106,6 +106,34 @@ to:
         filters:
           - type: RequestHeaderModifier
 `),
+		ErrorCases("non-empty value for header present/absent match",
+			[]validators.Violation{{
+				Field:   `spec.to[0].rules[0].matches[0].headers[0].value`,
+				Message: validators.MustNotBeDefined,
+			}, {
+				Field:   `spec.to[0].rules[0].matches[0].headers[1].value`,
+				Message: validators.MustNotBeDefined,
+			}}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: frontend
+to:
+- targetRef:
+    kind: MeshService
+    name: frontend
+  rules:
+    - matches:
+      - headers:
+        - type: Present
+          name: foo
+          value: x
+        - type: Absent
+          name: foo
+          value: x
+`),
 	)
 	DescribeValidCases(
 		api.NewMeshHTTPRouteResource,

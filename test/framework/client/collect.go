@@ -338,6 +338,7 @@ type FailureResponse struct {
 	ContentType  string `json:"content_type"`
 	URL          string `json:"url"`
 	EffectiveURL string `json:"url_effective"`
+	RedirectURL  string `json:"redirect_url"`
 }
 
 // CollectFailure runs Curl to fetch a URL that is expected to fail. The

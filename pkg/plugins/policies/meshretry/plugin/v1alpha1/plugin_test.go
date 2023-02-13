@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -135,21 +136,21 @@ var _ = Describe("MeshRetry", func() {
 									api.HttpMethodTrace,
 									"429",
 								},
-								RetriableResponseHeaders: &[]api.HTTPHeaderMatch{
+								RetriableResponseHeaders: &[]common_api.HeaderMatch{
 									{
-										Type:  pointer.To(api.HeaderMatchRegularExpression),
+										Type:  pointer.To(common_api.HeaderMatchRegularExpression),
 										Name:  "x-retry-regex",
 										Value: ".*",
 									},
 									{
-										Type:  pointer.To(api.HeaderMatchExact),
+										Type:  pointer.To(common_api.HeaderMatchExact),
 										Name:  "x-retry-exact",
 										Value: "exact-value",
 									},
 								},
-								RetriableRequestHeaders: &[]api.HTTPHeaderMatch{
+								RetriableRequestHeaders: &[]common_api.HeaderMatch{
 									{
-										Type:  pointer.To(api.HeaderMatchPrefix),
+										Type:  pointer.To(common_api.HeaderMatchPrefix),
 										Name:  "x-retry-prefix",
 										Value: "prefix-",
 									},

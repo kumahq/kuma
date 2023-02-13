@@ -66,7 +66,7 @@ var _ = Describe("ValidateListeners", func() {
 				"Reason": Equal(string(gatewayapi.ListenerReasonProtocolConflict)),
 			}),
 			MatchFields(IgnoreExtras, Fields{
-				"Type":   Equal(string(gatewayapi.ListenerConditionReady)),
+				"Type":   Equal(string(gatewayapi.ListenerConditionProgrammed)),
 				"Status": Equal(kube_meta.ConditionFalse),
 			}),
 		)
@@ -149,7 +149,7 @@ var _ = Describe("ValidateListeners", func() {
 				"Reason": Equal(string(gatewayapi.ListenerReasonUnsupportedProtocol)),
 			}),
 			MatchFields(IgnoreExtras, Fields{
-				"Type":   Equal(string(gatewayapi.ListenerConditionReady)),
+				"Type":   Equal(string(gatewayapi.ListenerConditionProgrammed)),
 				"Status": Equal(kube_meta.ConditionFalse),
 			}),
 		)
@@ -197,7 +197,7 @@ var _ = Describe("ValidateListeners", func() {
 				"Reason": Equal(string(gatewayapi.ListenerReasonHostnameConflict)),
 			}),
 			MatchFields(IgnoreExtras, Fields{
-				"Type":   Equal(string(gatewayapi.ListenerConditionReady)),
+				"Type":   Equal(string(gatewayapi.ListenerConditionProgrammed)),
 				"Status": Equal(kube_meta.ConditionFalse),
 			}),
 		)

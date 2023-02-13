@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -457,6 +458,69 @@ var _ = Describe("MeshHTTPRoute", func() {
 													},
 												}},
 											},
+										}},
+									}},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+	}()), Entry("headers-match", func() outboundsTestCase {
+		outboundTargets := core_xds.EndpointMap{
+			"backend": []core_xds.Endpoint{{
+				Target: "192.168.0.4",
+				Port:   8084,
+				Tags:   map[string]string{"kuma.io/service": "backend", "kuma.io/protocol": "http", "region": "us"},
+				Weight: 1,
+			}},
+		}
+		return outboundsTestCase{
+			xdsContext: xds_context.Context{
+				ControlPlane: &xds_context.ControlPlaneContext{
+					Secrets: &xds.TestSecrets{},
+				},
+				Mesh: xds_context.MeshContext{
+					Resource:    samples.MeshDefault(),
+					EndpointMap: outboundTargets,
+				},
+			},
+			proxy: core_xds.Proxy{
+				APIVersion: xds_envoy.APIV3,
+				Dataplane:  samples.DataplaneWeb(),
+				Routing: core_xds.Routing{
+					OutboundTargets: outboundTargets,
+				},
+				Policies: core_xds.MatchedPolicies{
+					Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
+						api.MeshHTTPRouteType: {
+							ToRules: core_xds.ToRules{
+								Rules: core_xds.Rules{{
+									Subset: core_xds.MeshService("backend"),
+									Conf: api.PolicyDefault{
+										Rules: []api.Rule{{
+											Matches: []api.Match{{
+												Headers: []common_api.HeaderMatch{{
+													Type:  pointer.To(common_api.HeaderMatchExact),
+													Name:  "foo-exact",
+													Value: "bar",
+												}, {
+													Type: pointer.To(common_api.HeaderMatchPresent),
+													Name: "foo-present",
+												}, {
+													Type:  pointer.To(common_api.HeaderMatchRegularExpression),
+													Name:  "foo-regex",
+													Value: "x.*y",
+												}, {
+													Type: pointer.To(common_api.HeaderMatchAbsent),
+													Name: "foo-absent",
+												}, {
+													Type:  pointer.To(common_api.HeaderMatchPrefix),
+													Name:  "foo-prefix",
+													Value: "x",
+												}},
+											}},
 										}},
 									}},
 								},

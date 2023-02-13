@@ -30,8 +30,8 @@ func NewMeshedSigningKeyAccessor(resManager manager.ReadOnlyResourceManager, sig
 	}
 }
 
-func (s *meshedSigningKeyAccessor) GetPublicKey(ctx context.Context, serialNumber int) (*rsa.PublicKey, error) {
-	keyBytes, err := s.getKeyBytes(ctx, serialNumber)
+func (s *meshedSigningKeyAccessor) GetPublicKey(ctx context.Context, keyID KeyID) (*rsa.PublicKey, error) {
+	keyBytes, err := s.getKeyBytes(ctx, keyID)
 	if err != nil {
 		return nil, err
 	}
@@ -42,14 +42,14 @@ func (s *meshedSigningKeyAccessor) GetPublicKey(ctx context.Context, serialNumbe
 	return &key.PublicKey, nil
 }
 
-func (s *meshedSigningKeyAccessor) getKeyBytes(ctx context.Context, serialNumber int) ([]byte, error) {
+func (s *meshedSigningKeyAccessor) getKeyBytes(ctx context.Context, keyID KeyID) ([]byte, error) {
 	resource := system.NewSecretResource()
-	if err := s.resManager.Get(ctx, resource, store.GetBy(SigningKeyResourceKey(s.signingKeyPrefix, serialNumber, s.mesh))); err != nil {
+	if err := s.resManager.Get(ctx, resource, store.GetBy(SigningKeyResourceKey(s.signingKeyPrefix, keyID, s.mesh))); err != nil {
 		if store.IsResourceNotFound(err) {
 			return nil, &SigningKeyNotFound{
-				SerialNumber: serialNumber,
-				Prefix:       s.signingKeyPrefix,
-				Mesh:         s.mesh,
+				KeyID:  keyID,
+				Prefix: s.signingKeyPrefix,
+				Mesh:   s.mesh,
 			}
 		}
 		return nil, errors.Wrap(err, "could not retrieve signing key")
@@ -57,6 +57,6 @@ func (s *meshedSigningKeyAccessor) getKeyBytes(ctx context.Context, serialNumber
 	return resource.Spec.GetData().GetValue(), nil
 }
 
-func (s *meshedSigningKeyAccessor) GetLegacyKey(ctx context.Context, serialNumber int) ([]byte, error) {
-	return s.getKeyBytes(ctx, serialNumber)
+func (s *meshedSigningKeyAccessor) GetLegacyKey(ctx context.Context, keyID KeyID) ([]byte, error) {
+	return s.getKeyBytes(ctx, keyID)
 }

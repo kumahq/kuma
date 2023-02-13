@@ -12,32 +12,32 @@ import (
 
 // fileSigningKeyManager is a key manager that only manages one key from specified file
 type fileSigningKeyManager struct {
-	path string
-	kid  string
+	path  string
+	keyID KeyID
 }
 
 var _ SigningKeyManager = &fileSigningKeyManager{}
 
-func NewFileSigningKeyManager(path string, kid string) SigningKeyManager {
+func NewFileSigningKeyManager(path string, keyID KeyID) SigningKeyManager {
 	return &fileSigningKeyManager{
-		path: path,
-		kid:  kid,
+		path:  path,
+		keyID: keyID,
 	}
 }
 
-func (f *fileSigningKeyManager) GetLatestSigningKey(_ context.Context) (*rsa.PrivateKey, string, error) {
+func (f *fileSigningKeyManager) GetLatestSigningKey(context.Context) (*rsa.PrivateKey, KeyID, error) {
 	content, err := os.ReadFile(f.path)
 	if err != nil {
 		return nil, "", err
 	}
 	key, err := util_rsa.FromPEMBytesToPrivateKey(content)
-	return key, f.kid, err
+	return key, f.keyID, err
 }
 
-func (f *fileSigningKeyManager) CreateDefaultSigningKey(ctx context.Context) error {
+func (f *fileSigningKeyManager) CreateDefaultSigningKey(context.Context) error {
 	return errors.New("it's not possible to create key when using file signing key manager")
 }
 
-func (f *fileSigningKeyManager) CreateSigningKey(ctx context.Context, serialNumber int) error {
+func (f *fileSigningKeyManager) CreateSigningKey(context.Context, KeyID) error {
 	return errors.New("it's not possible to create key when using file signing key manager")
 }

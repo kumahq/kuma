@@ -99,6 +99,11 @@ spec:
             - --log-level=info
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
           volumeMounts:
+          {{- if and .Values.postgres.tls.secretName (ne .Values.postgres.tls.mode "disable") }}
+            - name: postgres-client-certs
+              mountPath: /var/run/secrets/kuma.io/postgres-client-certs
+              readOnly: true
+          {{- end }}
             - name: {{ include "kuma.name" . }}-control-plane-config
               mountPath: /etc/kuma.io/kuma-control-plane
               readOnly: true
@@ -186,11 +191,7 @@ spec:
               mountPath: /var/run/secrets/kuma.io/tls-cert/tls.key
               subPath: tls.key
               readOnly: true
-          {{- if .Values.controlPlane.tls.general.caSecretName }}
-            - name: general-tls-cert-ca
-          {{- else}}
-            - name: general-tls-cert
-          {{- end }}
+            - name: general-tls-cert{{- if .Values.controlPlane.tls.general.caSecretName }}-ca{{- end }}
               mountPath: /var/run/secrets/kuma.io/tls-cert/ca.crt
               subPath: ca.crt
               readOnly: true
@@ -203,7 +204,7 @@ spec:
               mountPath: /var/run/secrets/kuma.io/api-server-tls-cert
               readOnly: true
           {{- end }}
-          {{- if .Values.postgres.tls.secretName }}
+          {{- if and .Values.postgres.tls.secretName (ne .Values.postgres.tls.mode "disable") }}
             - name: postgres-client-certs
               mountPath: /var/run/secrets/kuma.io/postgres-client-certs
               readOnly: true
@@ -275,7 +276,7 @@ spec:
           secret:
             secretName: {{ .Values.controlPlane.tls.apiServer.secretName }}
         {{- end }}
-        {{- if .Values.postgres.tls.secretName }}
+        {{- if and .Values.postgres.tls.secretName (ne .Values.postgres.tls.mode "disable") }}
         - name: postgres-client-certs
           secret:
             secretName: {{ .Values.postgres.tls.secretName }}

@@ -90,7 +90,7 @@ var _ = Describe("Mesh Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and Dataplane Token Signing Key for the mesh exists
-			key := tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(meshName), tokens.DefaultSerialNumber, meshName)
+			key := tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(meshName), tokens.DefaultKeyID, meshName)
 			err = secretManager.Get(context.Background(), system.NewSecretResource(), store.GetBy(key))
 			Expect(err).ToNot(HaveOccurred())
 		})

@@ -3,6 +3,7 @@ package v3
 import (
 	"context"
 
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -30,7 +31,7 @@ func (a *adapterCallbacks) OnStreamOpen(ctx context.Context, streamID int64, typ
 	return a.callbacks.OnStreamOpen(ctx, streamID, typeURL)
 }
 
-func (a *adapterCallbacks) OnStreamClosed(streamID int64) {
+func (a *adapterCallbacks) OnStreamClosed(streamID int64, _ *envoy_core.Node) {
 	a.callbacks.OnStreamClosed(streamID)
 }
 
@@ -90,7 +91,7 @@ func (a *adapterMultiCallbacks) OnStreamOpen(ctx context.Context, streamID int64
 	return a.callbacks.OnStreamOpen(ctx, streamID, typeURL)
 }
 
-func (a *adapterMultiCallbacks) OnStreamClosed(streamID int64) {
+func (a *adapterMultiCallbacks) OnStreamClosed(streamID int64, _ *envoy_core.Node) {
 	a.callbacks.OnStreamClosed(streamID)
 }
 

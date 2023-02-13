@@ -105,6 +105,42 @@ conf:
          port: 80
          status_code: 307
 `),
+		Entry("redirect filter with empty scheme", `
+type: MeshGatewayRoute
+name: route
+mesh: default
+selectors:
+- match:
+    kuma.io/service: gateway
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          value: /
+      filters:
+      - redirect:
+          hostname: example.com
+          status_code: 301
+`),
+		Entry("redirect filter with empty hostname", `
+type: MeshGatewayRoute
+name: route
+mesh: default
+selectors:
+- match:
+    kuma.io/service: gateway
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          value: /
+      filters:
+      - redirect:
+          scheme: https
+          status_code: 301
+`),
 	)
 
 	DescribeErrorCases(NewMeshGatewayRouteResource,
@@ -524,48 +560,6 @@ conf:
       - weight: 5
         destination:
           kuma.io/service: target-2
-`),
-		ErrorCase("redirect filter with empty scheme", validators.Violation{
-			Field:   "conf.http.rules[0].filters[0].redirect.scheme",
-			Message: "cannot be empty",
-		}, `
-type: MeshGatewayRoute
-name: route
-mesh: default
-selectors:
-- match:
-    kuma.io/service: gateway
-conf:
-  http:
-    rules:
-    - matches:
-      - path:
-          value: /
-      filters:
-      - redirect:
-          hostname: example.com
-          status_code: 301
-`),
-		ErrorCase("redirect filter with empty hostname", validators.Violation{
-			Field:   "conf.http.rules[0].filters[0].redirect.hostname",
-			Message: "cannot be empty",
-		}, `
-type: MeshGatewayRoute
-name: route
-mesh: default
-selectors:
-- match:
-    kuma.io/service: gateway
-conf:
-  http:
-    rules:
-    - matches:
-      - path:
-          value: /
-      filters:
-      - redirect:
-          scheme: https
-          status_code: 301
 `),
 		ErrorCase("redirect filter with invalid port", validators.Violation{
 			Field:   "conf.http.rules[0].filters[0].redirect.port",

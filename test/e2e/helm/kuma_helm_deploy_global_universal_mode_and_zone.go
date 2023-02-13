@@ -66,13 +66,13 @@ stringData:
 				WithHelmReleaseName(releaseName),
 				WithCPReplicas(2),
 				WithHelmOpt("controlPlane.environment", "universal"),
-				WithHelmOpt("postgres.host", "postgres-release-postgresql"),
-				WithHelmOpt("postgres.port", "5432"),
-				WithHelmOpt("postgres.user", "mesh"),
-				WithHelmOpt("postgres.db", "mesh"),
-				WithHelmOpt("controlPlane.secrets[0].Secret", "postgres"),
-				WithHelmOpt("controlPlane.secrets[0].Key", "password"),
-				WithHelmOpt("controlPlane.secrets[0].Env", "KUMA_STORE_POSTGRES_PASSWORD"),
+				WithHelmOpt("controlPlane.envVars.KUMA_STORE_POSTGRES_HOST", "postgres-release-postgresql"),
+				WithHelmOpt("controlPlane.envVars.KUMA_STORE_POSTGRES_PORT", "5432"),
+				WithHelmOpt("controlPlane.envVars.KUMA_STORE_POSTGRES_USER", "mesh"),
+				WithHelmOpt("controlPlane.envVars.KUMA_STORE_POSTGRES_DB_NAME", "mesh"),
+				WithHelmOpt("controlPlane.secrets.postgresPassword.Secret", "postgres"),
+				WithHelmOpt("controlPlane.secrets.postgresPassword.Key", "password"),
+				WithHelmOpt("controlPlane.secrets.postgresPassword.Env", "KUMA_STORE_POSTGRES_PASSWORD"),
 			)).
 			Install(MeshUniversal("default")).
 			Setup(globalCluster)
