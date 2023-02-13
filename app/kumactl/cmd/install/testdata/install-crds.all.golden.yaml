@@ -3933,7 +3933,8 @@ spec:
                       explained in MADR 009-tracing-policy this has to be a one element
                       array for now.
                     items:
-                      description: Only one of zipkin or datadog can be used.
+                      description: Only one of zipkin, datadog or openTelemetry can
+                        be used.
                       properties:
                         datadog:
                           description: Datadog backend configuration.
@@ -3953,6 +3954,17 @@ spec:
                               type: string
                           required:
                           - url
+                          type: object
+                        openTelemetry:
+                          description: OpenTelemetry backend configuration.
+                          properties:
+                            endpoint:
+                              description: Address of OpenTelemetry collector.
+                              example: otel-collector:4317
+                              minLength: 1
+                              type: string
+                          required:
+                          - endpoint
                           type: object
                         zipkin:
                           description: Zipkin backend configuration.
