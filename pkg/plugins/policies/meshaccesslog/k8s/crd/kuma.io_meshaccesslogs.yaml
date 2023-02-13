@@ -54,7 +54,7 @@ spec:
                                 properties:
                                   format:
                                     description: Format of access logs. Placeholders
-                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                     properties:
                                       json:
                                         items:
@@ -82,7 +82,7 @@ spec:
                                 properties:
                                   attributes:
                                     description: Attributes can contain placeholders
-                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                     items:
                                       properties:
                                         key:
@@ -108,7 +108,7 @@ spec:
                                     type: string
                                   format:
                                     description: Format of access logs. Placeholders
-                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                     properties:
                                       json:
                                         items:
@@ -210,7 +210,7 @@ spec:
                                 properties:
                                   format:
                                     description: Format of access logs. Placeholders
-                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                     properties:
                                       json:
                                         items:
@@ -238,7 +238,7 @@ spec:
                                 properties:
                                   attributes:
                                     description: Attributes can contain placeholders
-                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                     items:
                                       properties:
                                         key:
@@ -264,7 +264,7 @@ spec:
                                     type: string
                                   format:
                                     description: Format of access logs. Placeholders
-                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                     properties:
                                       json:
                                         items:
