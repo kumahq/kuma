@@ -79,7 +79,6 @@ func AppDeploymentWithHelmChart() {
 				g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 			}).Should(Succeed())
 		},
-		Entry("with default cni", WithCNI()),
 		Entry("with new cni (experimental)", WithExperimentalCNI()),
 	)
 }
