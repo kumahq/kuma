@@ -45,12 +45,7 @@ TOOLS_DEPS_LOCK_FILE=mk/dependencies/deps.lock
 # it's important that everything lands in $(CI_TOOLS_DIR) to be able to cache this folder in CI and speed up the build.
 .PHONY: dev/tools
 dev/tools: ## Bootstrap: Install all development tools
-	@mkdir -p $(CI_TOOLS_BIN_DIR) $(CI_TOOLS_DIR)/protos
-	# Also compute a hash to use for caching
-	FILES=`find $(TOOLS_DEPS_DIRS) -name '*.sh' | sort`; \
-		for i in $${FILES}; do OS=$(GOOS) ARCH=$(GOARCH) $$i ${CI_TOOLS_DIR}; done; \
-		for i in $${FILES}; do echo "---$${i}"; cat $${i}; done | git hash-object --stdin > $(TOOLS_DEPS_LOCK_FILE)
-	@echo "All non code dependencies installed, if you use these tools outside of make add $(CI_TOOLS_BIN_DIR) to your PATH"
+	$(TOOLS_DIR)/dev/install-dev-tools.sh $(CI_TOOLS_BIN_DIR) $(CI_TOOLS_DIR) "$(TOOLS_DEPS_DIRS)" $(TOOLS_DEPS_LOCK_FILE) $(GOOS) $(GOARCH)
 
 .PHONY: dev/tools/clean
 dev/tools/clean: ## Bootstrap: Remove all development tools
