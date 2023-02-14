@@ -19,7 +19,7 @@ jobs:
       - name: "Send repository dispatch event"
         uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.NOTIFY_GH_TOKEN }}
+          github-token: ${{ secrets.NOTIFY_BOT_PAT_TOKEN }}
           script: |
             let branch, pr;
             if (context.eventName == "pull_request_target") {
