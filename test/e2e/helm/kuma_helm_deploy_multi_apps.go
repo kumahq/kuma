@@ -53,12 +53,11 @@ func AppDeploymentWithHelmChart() {
 	}
 
 	E2EAfterEach(func() {
-		if skip {
-			return
+		if !skip {
+			Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
+			Expect(cluster.DeleteKuma()).To(Succeed())
 		}
 
-		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
-		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
