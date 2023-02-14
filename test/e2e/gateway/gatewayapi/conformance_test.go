@@ -86,7 +86,7 @@ func TestConformance(t *testing.T) {
 		SupportedFeatures: map[suite.SupportedFeature]bool{
 			suite.SupportHTTPRouteQueryParamMatching:        true,
 			suite.SupportHTTPRouteMethodMatching:            true,
-			suite.SupportHTTPResponseHeaderModification:     false, // supported in MeshGatewayRoute not yet HTTPRoute
+			suite.SupportHTTPResponseHeaderModification:     true,
 			suite.SupportHTTPRoutePortRedirect:              true,
 			suite.SupportHTTPRouteSchemeRedirect:            true,
 			suite.SupportHTTPRoutePathRedirect:              false, // not yet supported
