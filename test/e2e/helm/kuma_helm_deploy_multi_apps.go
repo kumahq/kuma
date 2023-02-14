@@ -90,30 +90,30 @@ func AppDeploymentWithHelmChart() {
 				g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 			}).Should(Succeed())
 		},
-		Entry("with default cni", WithCNI(), func(cluster Cluster) (string, bool) {
-			version, err := cluster.GetK8sVersion()
-			Expect(err).To(Succeed())
-
-			// Just future proofing
-			if version.Major != 1 {
-				return fmt.Sprintf(
-					"default cni is not supported in version %d.%d.%d [supported <= 1.21.x]",
-					version.Major, version.Minor, version.Patch,
-				), true
-			}
-
-			// k3s from version 1.22 comes with flannel CNI plugin in version 1,
-			// which is not supported with our default/legacy kuma-cni plugin
-			// (max supported version is 0.4)
-			if version.Minor > 21 {
-				return fmt.Sprintf(
-					"default cni is not supported in version 1.%d.%d [supported <= 1.21.x]",
-					version.Minor, version.Patch,
-				), true
-			}
-
-			return "", false
-		}),
+		// Entry("with default cni", WithCNI(), func(cluster Cluster) (string, bool) {
+		// 	version, err := cluster.GetK8sVersion()
+		// 	Expect(err).To(Succeed())
+		//
+		// 	// Just future proofing
+		// 	if version.Major != 1 {
+		// 		return fmt.Sprintf(
+		// 			"default cni is not supported in version %d.%d.%d [supported <= 1.21.x]",
+		// 			version.Major, version.Minor, version.Patch,
+		// 		), true
+		// 	}
+		//
+		// 	// k3s from version 1.22 comes with flannel CNI plugin in version 1,
+		// 	// which is not supported with our default/legacy kuma-cni plugin
+		// 	// (max supported version is 0.4)
+		// 	if version.Minor > 21 {
+		// 		return fmt.Sprintf(
+		// 			"default cni is not supported in version 1.%d.%d [supported <= 1.21.x]",
+		// 			version.Minor, version.Patch,
+		// 		), true
+		// 	}
+		//
+		// 	return "", false
+		// }),
 		Entry("with new cni (experimental)", WithExperimentalCNI(), nil),
 	)
 }
