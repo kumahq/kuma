@@ -27,7 +27,7 @@ jobs:
               pr = context.payload.pull_request.number;
             } else if (context.eventName == "push") {
               const versionRegex = /v?(\d+)\.(\d+)\.\d+/;
-              const versionMatch = context.github.ref_name.match(versionRegex);
+              const versionMatch = process.env.GITHUB_REF_NAME.match(versionRegex);
               if (!versionMatch) {
                 return;
               }
