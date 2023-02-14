@@ -163,7 +163,8 @@ func (c RoutesConfigurer) hasExternal(clusters []envoy_common.Cluster) bool {
 func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster, modify *mesh_proto.TrafficRoute_Http_Modify) *envoy_route.RouteAction {
 	routeAction := &envoy_route.RouteAction{}
 	if len(clusters) != 0 {
-		routeAction.Timeout = util_proto.Duration(clusters[0].Timeout().GetHttp().GetRequestTimeout().AsDuration())
+		cluster := clusters[0].(*envoy_common.ClusterImpl)
+		routeAction.Timeout = util_proto.Duration(cluster.Timeout().GetHttp().GetRequestTimeout().AsDuration())
 	}
 	if len(clusters) == 1 {
 		routeAction.ClusterSpecifier = &envoy_route.RouteAction_Cluster{
@@ -172,7 +173,8 @@ func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster, modify *m
 	} else {
 		var weightedClusters []*envoy_route.WeightedCluster_ClusterWeight
 		var totalWeight uint32
-		for _, cluster := range clusters {
+		for _, c := range clusters {
+			cluster := c.(*envoy_common.ClusterImpl)
 			weightedClusters = append(weightedClusters, &envoy_route.WeightedCluster_ClusterWeight{
 				Name:   cluster.Name(),
 				Weight: util_proto.UInt32(cluster.Weight()),

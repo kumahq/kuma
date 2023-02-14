@@ -78,6 +78,8 @@ func GatherTargetedClusters(
 	return targetedClusters
 }
 
+// InferProtocol infers protocol for the destination listener.
+// It will only return HTTP when all endpoints are tagged with HTTP.
 func InferProtocol(routing core_xds.Routing, serviceName string) core_mesh.Protocol {
 	var allEndpoints []core_xds.Endpoint
 	outboundEndpoints := core_xds.EndpointList(routing.OutboundTargets[serviceName])
@@ -86,4 +88,20 @@ func InferProtocol(routing core_xds.Routing, serviceName string) core_mesh.Proto
 	allEndpoints = append(allEndpoints, externalEndpoints...)
 
 	return envoy_common.InferServiceProtocol(allEndpoints)
+}
+
+func HasExternalService(routing core_xds.Routing, serviceName string) bool {
+	// We assume that all the targets are either ExternalServices or not
+	// therefore we check only the first one
+	if endpoints := routing.OutboundTargets[serviceName]; len(endpoints) > 0 {
+		if endpoints[0].IsExternalService() {
+			return true
+		}
+	}
+
+	if endpoints := routing.ExternalServiceOutboundTargets[serviceName]; len(endpoints) > 0 {
+		return true
+	}
+
+	return false
 }
