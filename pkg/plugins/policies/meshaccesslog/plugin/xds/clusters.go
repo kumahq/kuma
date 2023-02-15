@@ -1,8 +1,6 @@
 package xds
 
 import (
-	"fmt"
-
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 )
@@ -23,7 +21,6 @@ func xdsEndpoint(endpoint LoggingEndpoint) core_xds.Endpoint {
 
 func HandleClusters(backendEndpoints EndpointAccumulator, rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 	for backendEndpoint := range backendEndpoints.endpoints {
-		fmt.Println(backendEndpoint)
 		endpoint := xdsEndpoint(backendEndpoint)
 
 		clusterName := backendEndpoints.clusterForEndpoint(backendEndpoint)
