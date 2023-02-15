@@ -8,7 +8,9 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds/filters"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -22,22 +24,34 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 	matches := c.routeMatch(c.Matches)
 
 	for _, match := range matches {
-		r := &envoy_route.Route{
-			Match: match.routeMatch,
-			Action: &envoy_route.Route_Route{
+		rb := &route.RouteBuilder{}
+
+		rb.Configure(route.RouteMustConfigureFunc(func(envoyRoute *envoy_route.Route) {
+			// todo: create configurers for Match and Action
+			envoyRoute.Match = match.routeMatch
+			envoyRoute.Action = &envoy_route.Route_Route{
 				Route: c.routeAction(c.Split),
-			},
-			TypedPerFilterConfig: map[string]*anypb.Any{},
-		}
+			}
+			envoyRoute.TypedPerFilterConfig = map[string]*anypb.Any{}
+		}))
 
 		// We pass the information about whether this match was created from
 		// a prefix match along to the filters because it's no longer
 		// possible to know for sure with just an envoy_route.Route
 		for _, filter := range c.Filters {
-			routeFilter(filter, r, match.prefixMatch)
+			rb.
+				Configure(filters.NewRequestHeaderModifier(filter.RequestHeaderModifier)).
+				Configure(filters.NewResponseHeaderModifier(filter.ResponseHeaderModifier)).
+				Configure(filters.NewRequestRedirect(filter.RequestRedirect, match.prefixMatch)).
+				Configure(filters.NewURLRewrite(filter.URLRewrite, match.prefixMatch))
 		}
 
-		virtualHost.Routes = append(virtualHost.Routes, r)
+		r, err := rb.Build()
+		if err != nil {
+			return err
+		}
+
+		virtualHost.Routes = append(virtualHost.Routes, r.(*envoy_route.Route))
 	}
 
 	return nil
