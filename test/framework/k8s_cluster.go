@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -912,10 +913,13 @@ func (c *K8sCluster) deleteKumaViaHelm() error {
 		errs = multierr.Append(errs, err)
 	}
 
-	// HELM does not remove CRDs therefore we need to do it manually.
-	// It's important to remove CRDs to get rid of all "instances" of CRDs like default Mesh etc.
-	if err := c.deleteCRDs(); err != nil {
-		errs = multierr.Append(errs, err)
+	// there is no CRDs in universal env
+	if c.opts.helmOpts["controlPlane.environment"] != "universal" {
+		// HELM does not remove CRDs therefore we need to do it manually.
+		// It's important to remove CRDs to get rid of all "instances" of CRDs like default Mesh etc.
+		if err := c.deleteCRDs(); err != nil {
+			errs = multierr.Append(errs, err)
+		}
 	}
 
 	return errs
@@ -997,6 +1001,34 @@ func (c *K8sCluster) GetKubectlOptions(namespace ...string) *k8s.KubectlOptions 
 	}
 
 	return options
+}
+
+func (c *K8sCluster) GetK8sVersion() (ClusterK8sVersion, error) {
+	v, err := k8s.GetKubernetesClusterVersionWithOptionsE(c.GetTesting(), c.GetKubectlOptions())
+	if err != nil {
+		return ClusterK8sVersion{}, err
+	}
+
+	r := regexp.MustCompile(`^v?(?P<Major>\d+)\.(?P<Minor>\d+)\.(?P<Patch>\d+).*$`)
+	match := r.FindStringSubmatch(v)
+
+	paramsMap := make(map[string]uint64)
+	for i, name := range r.SubexpNames() {
+		if i > 0 && i <= len(match) {
+			u64, err := strconv.ParseUint(match[i], 10, 32)
+			if err != nil {
+				return ClusterK8sVersion{}, errors.Wrapf(err, "parsing version %s failed", name)
+			}
+
+			paramsMap[name] = u64
+		}
+	}
+
+	return ClusterK8sVersion{
+		Major: paramsMap["Major"],
+		Minor: paramsMap["Minor"],
+		Patch: paramsMap["Patch"],
+	}, nil
 }
 
 func (c *K8sCluster) CreateNamespace(namespace string) error {

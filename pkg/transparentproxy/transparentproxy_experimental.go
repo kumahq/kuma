@@ -34,7 +34,13 @@ func hasLocalIPv6() (bool, error) {
 	return false, nil
 }
 
-func ShouldEnableIPv6() (bool, error) {
+// ShouldEnableIPv6 checks if system supports IPv6. The port has a value of
+// RedirectPortInBoundV6 and when equals 0 means that IPv6 was disabled by the user.
+func ShouldEnableIPv6(port uint16) (bool, error) {
+	if port == 0 {
+		return false, nil
+	}
+
 	hasIPv6Address, err := hasLocalIPv6()
 	if !hasIPv6Address || err != nil {
 		return false, err
@@ -137,7 +143,7 @@ func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyC
 		}
 	}
 
-	ipv6, err := ShouldEnableIPv6()
+	ipv6, err := ShouldEnableIPv6(redirectInboundPortIPv6)
 	if err != nil {
 		return "", errors.Wrap(err, "cannot verify if IPv6 should be enabled")
 	}

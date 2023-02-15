@@ -34,12 +34,22 @@ type Conf struct {
 	Tags *[]Tag `json:"tags,omitempty"`
 }
 
-// Only one of zipkin or datadog can be used.
+// Only one of zipkin, datadog or openTelemetry can be used.
 type Backend struct {
 	// Zipkin backend configuration.
 	Zipkin *ZipkinBackend `json:"zipkin,omitempty"`
 	// Datadog backend configuration.
 	Datadog *DatadogBackend `json:"datadog,omitempty"`
+	// OpenTelemetry backend configuration.
+	OpenTelemetry *OpenTelemetryBackend `json:"openTelemetry,omitempty"`
+}
+
+// OpenTelemetry tracing backend configuration.
+type OpenTelemetryBackend struct {
+	// Address of OpenTelemetry collector.
+	// +kubebuilder:example="otel-collector:4317"
+	// +kubebuilder:validation:MinLength=1
+	Endpoint string `json:"endpoint"`
 }
 
 // Zipkin tracing backend configuration.

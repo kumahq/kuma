@@ -31,6 +31,7 @@ resources:
               - match:
                   path: /v1
                 route:
+                  cluster: backend
                   regexRewrite:
                     pattern:
                       googleRe2: {}
@@ -39,6 +40,7 @@ resources:
               - match:
                   prefix: /v1/
                 route:
+                  cluster: backend
                   prefixRewrite: /v2
               - match:
                   prefix: /

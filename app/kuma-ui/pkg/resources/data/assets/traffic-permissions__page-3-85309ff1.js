@@ -1,1 +1,0 @@
-const s=1,t=[{type:"TrafficPermission",mesh:"default",name:"tp-5",sources:[{match:{service:"backend"}}],destinations:[{match:{service:"redis"}}]}],e=null,a={total:1,items:t,next:e};export{a as default,t as items,e as next,s as total};

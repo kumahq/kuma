@@ -12,7 +12,6 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
-	gatewayapi_util "sigs.k8s.io/gateway-api/apis/v1beta1/util/translator"
 
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
@@ -155,8 +154,9 @@ func mergeGatewayListenerStatuses(
 
 		supportedKinds := []gatewayapi.RouteGroupKind{}
 		if len(listener.AllowedRoutes.Kinds) == 0 {
+			g := gatewayapi.Group(gatewayapi.GroupVersion.Group)
 			supportedKinds = append(supportedKinds,
-				gatewayapi.RouteGroupKind{Group: gatewayapi_util.GroupPtr(gatewayapi.GroupVersion.Group), Kind: common.HTTPRouteKind},
+				gatewayapi.RouteGroupKind{Group: &g, Kind: common.HTTPRouteKind},
 			)
 		}
 		for _, rgk := range listener.AllowedRoutes.Kinds {
@@ -219,17 +219,14 @@ func mergeGatewayStatus(
 
 	gateway.Status.Listeners = mergeGatewayListenerStatuses(gateway, listenerConditions, attachedListeners)
 
-	readinessStatus := kube_meta.ConditionFalse
-	readinessReason := gatewayapi.GatewayReasonListenersNotReady
+	programmedStatus := kube_meta.ConditionTrue
+	programmedReason := string(gatewayapi.GatewayReasonProgrammed)
 
-	// TODO(michaelbeaumont) it'd be nice to get more up to date info from the
-	// kuma-dp instance to tell whether listeners are _really_ ready
-	if len(gateway.Status.Addresses) == 0 {
-		readinessStatus = kube_meta.ConditionFalse
-		readinessReason = gatewayapi.GatewayReasonAddressNotAssigned
-	} else if kube_apimeta.IsStatusConditionTrue(instance.Status.Conditions, mesh_k8s.GatewayInstanceReady) {
-		readinessStatus = kube_meta.ConditionTrue
-		readinessReason = gatewayapi.GatewayReasonReady
+	for _, listener := range gateway.Status.Listeners {
+		if !kube_apimeta.IsStatusConditionTrue(listener.Conditions, string(gatewayapi.ListenerConditionProgrammed)) {
+			programmedStatus = kube_meta.ConditionFalse
+			programmedReason = string(gatewayapi.GatewayReasonInvalid)
+		}
 	}
 
 	conditions := []kube_meta.Condition{
@@ -239,9 +236,9 @@ func mergeGatewayStatus(
 			Reason: string(gatewayapi.GatewayReasonAccepted),
 		},
 		{
-			Type:   string(gatewayapi.GatewayConditionReady),
-			Status: readinessStatus,
-			Reason: string(readinessReason),
+			Type:   string(gatewayapi.GatewayConditionProgrammed),
+			Status: programmedStatus,
+			Reason: programmedReason,
 		},
 	}
 

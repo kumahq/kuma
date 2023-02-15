@@ -83,8 +83,19 @@ func validateBackend(conf Conf, backendsPath validators.PathBuilder) validators.
 	var verr validators.ValidationError
 	backend := pointer.Deref(conf.Backends)[0]
 	firstBackendPath := backendsPath.Index(0)
-	if (backend.Datadog != nil) == (backend.Zipkin != nil) {
-		verr.AddViolationAt(firstBackendPath, validators.MustHaveOnlyOne("backend", "datadog", "zipkin"))
+
+	var defined int
+	if backend.Datadog != nil {
+		defined++
+	}
+	if backend.Zipkin != nil {
+		defined++
+	}
+	if backend.OpenTelemetry != nil {
+		defined++
+	}
+	if defined != 1 {
+		verr.AddViolationAt(firstBackendPath, validators.MustHaveOnlyOne("backend", "datadog", "zipkin", "openTelemetry"))
 	}
 
 	if backend.Datadog != nil {

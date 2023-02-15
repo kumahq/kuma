@@ -106,6 +106,70 @@ to:
         filters:
           - type: RequestHeaderModifier
 `),
+		ErrorCases("prefix rewrite without prefix match",
+			[]validators.Violation{{
+				Field:   `spec.to[0].rules[0].filters[0].urlRewrite.path.replacePrefixMatch`,
+				Message: "can only appear if all matches match a path prefix",
+			}, {
+				Field:   `spec.to[0].rules[0].filters[1].requestRedirect.path.replacePrefixMatch`,
+				Message: "can only appear if all matches match a path prefix",
+			}}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: frontend
+to:
+- targetRef:
+    kind: MeshService
+    name: frontend
+  rules:
+    - matches:
+      - path:
+          value: /prefix
+          type: Exact
+      default:
+        filters:
+          - type: URLRewrite
+            urlRewrite:
+              path:
+                type: ReplacePrefixMatch
+                replacePrefixMatch: /other
+          - type: RequestRedirect
+            requestRedirect:
+              path:
+                type: ReplacePrefixMatch
+                replacePrefixMatch: /other
+`),
+		ErrorCases("non-empty value for header present/absent match",
+			[]validators.Violation{{
+				Field:   `spec.to[0].rules[0].matches[0].headers[0].value`,
+				Message: validators.MustNotBeDefined,
+			}, {
+				Field:   `spec.to[0].rules[0].matches[0].headers[1].value`,
+				Message: validators.MustNotBeDefined,
+			}}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: frontend
+to:
+- targetRef:
+    kind: MeshService
+    name: frontend
+  rules:
+    - matches:
+      - headers:
+        - type: Present
+          name: foo
+          value: x
+        - type: Absent
+          name: foo
+          value: x
+`),
 	)
 	DescribeValidCases(
 		api.NewMeshHTTPRouteResource,
@@ -117,6 +181,35 @@ targetRef:
   kind: MeshService
   name: frontend
 to: []
+`),
+		Entry("prefix rewrite with prefix match", `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: frontend
+to:
+- targetRef:
+    kind: MeshService
+    name: frontend
+  rules:
+    - matches:
+      - path:
+          value: /prefix
+          type: Prefix
+      default:
+        filters:
+          - type: URLRewrite
+            urlRewrite:
+              path:
+                type: ReplacePrefixMatch
+                replacePrefixMatch: /other
+          - type: RequestRedirect
+            requestRedirect:
+              path:
+                type: ReplacePrefixMatch
+                replacePrefixMatch: /other
 `),
 	)
 })
