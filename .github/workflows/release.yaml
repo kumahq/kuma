@@ -1,6 +1,7 @@
 name: "release"
 
 on:
+  release: {}
   workflow_dispatch:
     inputs:
       release:
@@ -18,6 +19,8 @@ env:
   BINARIES: "centos-amd64,darwin-amd64,darwin-arm64,debian-amd64,darwin-amd64,rhel-amd64,ubuntu-amd64,ubuntu-arm64"
   DOCKER_REPO: "kumahq"
   DOCKER_IMAGES: "kumactl,kuma-cp,kuma-dp,kuma-init,kuma-cni"
+  RELEASE: ${{ inputs.release || '0.0.0.0' }}
+  CHECK: ${{ inputs.check }}
 jobs:
   update-changelog:
     runs-on: ubuntu-latest
@@ -28,29 +31,29 @@ jobs:
           echo $(go env GOPATH)/bin >> $GITHUB_PATH
           go install github.com/kumahq/ci-tools/cmd/release-tool@v0.2.1
       - name: create-release
-        if: inputs.release != '0.0.0'
+        if: env.RELEASE != '0.0.0'
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          release-tool release changelog --repo ${{ github.repository }} --release ${{ inputs.release }}
+          release-tool release changelog --repo ${{ github.repository }} --release ${{ env.RELEASE }}
       - name: check-helm
-        if: inputs.check
+        if: env.CHECK
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          release-tool release helm-chart --repo ${{ github.repository }} --charts-repo ${{ env.CHARTS_REPO }} --release ${{ inputs.release }}
+          release-tool release helm-chart --repo ${{ github.repository }} --charts-repo ${{ env.CHARTS_REPO }} --release ${{ env.RELEASE }}
       - name: check-pulp
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        if: inputs.check
+        if: env.CHECK
         run: |
-          release-tool release pulp-binaries --repo ${{ github.repository }} --release ${{ inputs.release }} --binaries ${{ env.BINARIES }}
+          release-tool release pulp-binaries --repo ${{ github.repository }} --release ${{ env.RELEASE }} --binaries ${{ env.BINARIES }}
       - name: check-docker
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        if: inputs.check
+        if: env.CHECK
         run: |
-          release-tool release docker --repo ${{ github.repository }} --release ${{ inputs.release }} --docker-repo ${{env.DOCKER_REPO }} --images ${{ env.DOCKER_IMAGES }}
+          release-tool release docker --repo ${{ github.repository }} --release ${{ env.RELEASE }} --docker-repo ${{env.DOCKER_REPO }} --images ${{ env.DOCKER_IMAGES }}
       - name: Generate GitHub app token
         id: github-app-token
         uses: tibdex/github-app-token@b62528385c34dbc9f38e5f4225ac829252d1ea92 # v1.8.0
