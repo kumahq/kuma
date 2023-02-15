@@ -119,7 +119,7 @@ spec:
   - args:
     - -conf
     - /etc/coredns/Corefile
-    image: k8s.gcr.io/coredns:1.3.1
+    image: registry.k8s.io/coredns:1.3.1
     imagePullPolicy: IfNotPresent
     livenessProbe:
       failureThreshold: 5
