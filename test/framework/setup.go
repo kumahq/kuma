@@ -257,10 +257,14 @@ func WaitNumPods(namespace string, num int, app string) InstallFunc {
 }
 
 func WaitPodsAvailable(namespace, app string) InstallFunc {
+	return WaitPodsAvailableWithLabel(namespace, "app", app)
+}
+
+func WaitPodsAvailableWithLabel(namespace, labelKey, labelValue string) InstallFunc {
 	return func(c Cluster) error {
 		ck8s := c.(*K8sCluster)
 		pods, err := k8s.ListPodsE(c.GetTesting(), c.GetKubectlOptions(namespace),
-			metav1.ListOptions{LabelSelector: fmt.Sprintf("app=%s", app)})
+			metav1.ListOptions{LabelSelector: fmt.Sprintf("%s=%s", labelKey, labelValue)})
 		if err != nil {
 			return err
 		}

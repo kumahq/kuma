@@ -72,7 +72,7 @@ Listeners:
               overallSampling:
                 value: 100
               provider:
-                name: envoy.zipkin
+                name: envoy.tracers.zipkin
                 typedConfig:
                   '@type': type.googleapis.com/envoy.config.trace.v3.ZipkinConfig
                   collectorCluster: tracing:jaeger-collector

@@ -21,6 +21,7 @@ type K8sClusters struct {
 
 var _ Clusters = &K8sClusters{}
 
+// NewK8sClusters is deprecated use NewK8sCluster
 func NewK8sClusters(clusterNames []string, verbose bool) (Clusters, error) {
 	if len(clusterNames) < 1 || len(clusterNames) > maxClusters {
 		return nil, errors.Errorf("Invalid cluster number. Should be in the range [1,3], but it is %d", len(clusterNames))
@@ -148,6 +149,10 @@ func (cs *K8sClusters) DeleteKuma() error {
 }
 
 func (cs *K8sClusters) GetKubectlOptions(namespace ...string) *k8s.KubectlOptions {
+	panic("Not supported at this level.")
+}
+
+func (cs *K8sClusters) GetK8sVersion() (ClusterK8sVersion, error) {
 	panic("Not supported at this level.")
 }
 

@@ -175,6 +175,20 @@ func (c *K8sControlPlane) FinalizeAddWithPortFwd(portFwd PortFwd) error {
 }
 
 func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
+	if c.cluster.opts.helmOpts["controlPlane.environment"] == "universal" {
+		body, err := http_helper.HTTPDoWithRetryWithOptionsE(c.t, http_helper.HttpDoOptions{
+			Method:    "GET",
+			Url:       c.GetAPIServerAddress() + "/global-secrets/admin-user-token",
+			TlsConfig: &tls.Config{},
+			Body:      bytes.NewReader([]byte{}),
+		}, http.StatusOK, DefaultRetries, DefaultTimeout)
+
+		if err != nil {
+			return "", err
+		}
+		return ExtractSecretDataFromResponse(body)
+	}
+
 	return retry.DoWithRetryE(c.t, "generating DP token", DefaultRetries, DefaultTimeout, func() (string, error) {
 		sec, err := k8s.GetSecretE(c.t, c.GetKubectlOptions(Config.KumaNamespace), "admin-user-token")
 		if err != nil {

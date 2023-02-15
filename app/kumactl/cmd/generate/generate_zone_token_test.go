@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
@@ -14,6 +16,7 @@ import (
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
 	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
@@ -78,6 +81,29 @@ var _ = Describe("kumactl generate zone-token", func() {
 		}),
 	)
 
+	It("should issue token offline", func() {
+		// when
+		rootCmd.SetArgs([]string{
+			"generate", "zone-token",
+			"--zone=my-zone",
+			"--valid-for=24h",
+			"--kid", "1",
+			"--signing-key-path", filepath.Join("..", "..", "..", "..", "test", "keys", "samplekey.pem"),
+		})
+		err := rootCmd.Execute()
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buf.String()).ToNot(BeEmpty())
+
+		// and the token is valid
+		claims := &zone.ZoneClaims{}
+		_, _, err = new(jwt.Parser).ParseUnverified(buf.String(), claims)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(claims.Zone).To(Equal("my-zone"))
+		Expect(claims.Scope).To(Equal([]string{"ingress", "egress"}))
+	})
+
 	It("should write error when generating token fails", func() {
 		// setup
 		generator.err = errors.New("could not connect to API")
@@ -92,5 +118,43 @@ var _ = Describe("kumactl generate zone-token", func() {
 		// and
 		Expect(buf.String()).To(Equal("Error: failed to generate a zone token: could not connect to API\n"))
 	})
+
+	type errTestCase struct {
+		args []string
+		err  string
+	}
+
+	DescribeTable("should trow an error",
+		func(given errTestCase) {
+			// given
+			rootCmd.SetArgs(given.args)
+
+			// when
+			err := rootCmd.Execute()
+
+			// then
+			Expect(err).To(MatchError(given.err))
+		},
+		Entry("when zone is not specified", errTestCase{
+			args: []string{"generate", "zone-token"},
+			err:  `required flag(s) "valid-for", "zone" not set`,
+		}),
+		Entry("when kid is specified for online signing", errTestCase{
+			args: []string{"generate", "zone-token",
+				"--zone", "east",
+				"--valid-for", "30s",
+				"--kid", "1",
+			},
+			err: "--kid cannot be used when --signing-key-path is used",
+		}),
+		Entry("when kid is not specified for offline signing", errTestCase{
+			args: []string{"generate", "zone-token",
+				"--zone", "east",
+				"--valid-for", "30s",
+				"--signing-key-path", filepath.Join("..", "..", "..", "..", "..", "..", "..", "test", "keys", "samplekey.pem"),
+			},
+			err: "--kid is required when --signing-key-path is used",
+		}),
+	)
 
 })

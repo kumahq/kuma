@@ -325,36 +325,50 @@ func RoutePerFilterConfig(filterName string, filterConfig *anypb.Any) RouteConfi
 
 // RouteActionRedirect configures the route to automatically response
 // with a HTTP redirection. This replaces any previous action specification.
-func RouteActionRedirect(redirect *Redirection) RouteConfigurer {
+func RouteActionRedirect(redirect *Redirection, port uint32) RouteConfigurer {
 	if redirect == nil {
 		return RouteConfigureFunc(nil)
 	}
 
 	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
-		r.Action = &envoy_config_route.Route_Redirect{
-			Redirect: &envoy_config_route.RedirectAction{
-				SchemeRewriteSpecifier: &envoy_config_route.RedirectAction_SchemeRedirect{
-					SchemeRedirect: redirect.Scheme,
-				},
-				HostRedirect: redirect.Host,
-				PortRedirect: redirect.Port,
-				StripQuery:   redirect.StripQuery,
-			},
+		envoyRedirect := &envoy_config_route.RedirectAction{
+			StripQuery: redirect.StripQuery,
+		}
+		if redirect.Scheme != "" {
+			envoyRedirect.SchemeRewriteSpecifier = &envoy_config_route.RedirectAction_SchemeRedirect{
+				SchemeRedirect: redirect.Scheme,
+			}
+		}
+		if redirect.Host != "" {
+			envoyRedirect.HostRedirect = redirect.Host
+		}
+		if redirect.Port > 0 {
+			envoyRedirect.PortRedirect = redirect.Port
+		} else {
+			// Here explicitly set the port the listener is listening on
+			// because apparently strip_any_host_port actually changes the port
+			// of the request even for redirecting...
+			// Looks like https://github.com/envoyproxy/envoy/issues/19589
+			envoyRedirect.PortRedirect = port
 		}
 
 		switch redirect.Status {
 		case 301:
-			r.GetRedirect().ResponseCode = envoy_config_route.RedirectAction_MOVED_PERMANENTLY
+			envoyRedirect.ResponseCode = envoy_config_route.RedirectAction_MOVED_PERMANENTLY
 		case 302:
-			r.GetRedirect().ResponseCode = envoy_config_route.RedirectAction_FOUND
+			envoyRedirect.ResponseCode = envoy_config_route.RedirectAction_FOUND
 		case 303:
-			r.GetRedirect().ResponseCode = envoy_config_route.RedirectAction_SEE_OTHER
+			envoyRedirect.ResponseCode = envoy_config_route.RedirectAction_SEE_OTHER
 		case 307:
-			r.GetRedirect().ResponseCode = envoy_config_route.RedirectAction_TEMPORARY_REDIRECT
+			envoyRedirect.ResponseCode = envoy_config_route.RedirectAction_TEMPORARY_REDIRECT
 		case 308:
-			r.GetRedirect().ResponseCode = envoy_config_route.RedirectAction_PERMANENT_REDIRECT
+			envoyRedirect.ResponseCode = envoy_config_route.RedirectAction_PERMANENT_REDIRECT
 		default:
 			return errors.Errorf("redirect status code %d is not supported", redirect.Status)
+		}
+
+		r.Action = &envoy_config_route.Route_Redirect{
+			Redirect: envoyRedirect,
 		}
 
 		return nil

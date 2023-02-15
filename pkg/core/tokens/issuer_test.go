@@ -109,7 +109,7 @@ var _ = Describe("Token issuer", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when new signing key with higher serial number is created
-			err = signingKeyManager.CreateSigningKey(ctx, 2)
+			err = signingKeyManager.CreateSigningKey(ctx, "2")
 			Expect(err).ToNot(HaveOccurred())
 
 			// and a new token is generated
@@ -123,7 +123,7 @@ var _ = Describe("Token issuer", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when first signing key is deleted
-			err = store.Delete(ctx, system.NewGlobalSecretResource(), core_store.DeleteBy(tokens.SigningKeyResourceKey(TestTokenSigningKeyPrefix, tokens.DefaultSerialNumber, core_model.NoMesh)))
+			err = store.Delete(ctx, system.NewGlobalSecretResource(), core_store.DeleteBy(tokens.SigningKeyResourceKey(TestTokenSigningKeyPrefix, tokens.DefaultKeyID, core_model.NoMesh)))
 			Expect(err).ToNot(HaveOccurred())
 
 			// then old tokens are no longer valid
