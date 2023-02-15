@@ -1389,6 +1389,39 @@ spec:
                           matches:
                             items:
                               properties:
+                                headers:
+                                  items:
+                                    description: HeaderMatch describes how to select
+                                      an HTTP route by matching HTTP request headers.
+                                    properties:
+                                      name:
+                                        description: Name is the name of the HTTP
+                                          Header to be matched. Name MUST be lower
+                                          case as they will be handled with case insensitivity
+                                          (See https://tools.ietf.org/html/rfc7230#section-3.2).
+                                        maxLength: 256
+                                        minLength: 1
+                                        pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                        type: string
+                                      type:
+                                        default: Exact
+                                        description: Type specifies how to match against
+                                          the value of the header.
+                                        enum:
+                                        - Exact
+                                        - Present
+                                        - RegularExpression
+                                        - Absent
+                                        - Prefix
+                                        type: string
+                                      value:
+                                        description: Value is the value of HTTP Header
+                                          to be matched.
+                                        type: string
+                                    required:
+                                    - name
+                                    type: object
+                                  type: array
                                 method:
                                   enum:
                                   - CONNECT
@@ -2327,8 +2360,8 @@ spec:
                                 which must be present in the request for retries to
                                 be attempted.
                               items:
-                                description: HTTPHeaderMatch describes how to select
-                                  a HTTP route by matching HTTP request headers.
+                                description: HeaderMatch describes how to select an
+                                  HTTP route by matching HTTP request headers.
                                 properties:
                                   name:
                                     description: Name is the name of the HTTP Header
@@ -2356,7 +2389,6 @@ spec:
                                     type: string
                                 required:
                                 - name
-                                - value
                                 type: object
                               type: array
                             retriableResponseHeaders:
@@ -2365,8 +2397,8 @@ spec:
                                 A retry will be triggered if any of the header matches
                                 match the upstream response headers.
                               items:
-                                description: HTTPHeaderMatch describes how to select
-                                  a HTTP route by matching HTTP request headers.
+                                description: HeaderMatch describes how to select an
+                                  HTTP route by matching HTTP request headers.
                                 properties:
                                   name:
                                     description: Name is the name of the HTTP Header
@@ -2394,7 +2426,6 @@ spec:
                                     type: string
                                 required:
                                 - name
-                                - value
                                 type: object
                               type: array
                             retryOn:
@@ -2796,7 +2827,8 @@ spec:
                       explained in MADR 009-tracing-policy this has to be a one element
                       array for now.
                     items:
-                      description: Only one of zipkin or datadog can be used.
+                      description: Only one of zipkin, datadog or openTelemetry can
+                        be used.
                       properties:
                         datadog:
                           description: Datadog backend configuration.
@@ -2816,6 +2848,17 @@ spec:
                               type: string
                           required:
                           - url
+                          type: object
+                        openTelemetry:
+                          description: OpenTelemetry backend configuration.
+                          properties:
+                            endpoint:
+                              description: Address of OpenTelemetry collector.
+                              example: otel-collector:4317
+                              minLength: 1
+                              type: string
+                          required:
+                          - endpoint
                           type: object
                         zipkin:
                           description: Zipkin backend configuration.
@@ -5506,7 +5549,7 @@ spec:
             - name: KUMA_CONTROL_PLANE_URL
               value: "https://kuma-control-plane.kuma-system:5678"
             - name: KUMA_CONTROL_PLANE_CA_CERT_FILE
-              value: /var/run/secrets/kuma.io/tls-cert/ca.crt
+              value: /var/run/secrets/kuma.io/cp-ca/ca.crt
             - name: KUMA_DATAPLANE_NAME
               value: $(POD_NAME).$(POD_NAMESPACE)
             - name: KUMA_DATAPLANE_DRAIN_TIME
@@ -5546,13 +5589,16 @@ spec:
               cpu: 1000m
               memory: 512Mi
           volumeMounts:
-            - name: kuma-tls-cert
-              mountPath: /var/run/secrets/kuma.io/tls-cert
+            - name: control-plane-ca
+              mountPath: /var/run/secrets/kuma.io/cp-ca
               readOnly: true
       volumes:
-        - name: kuma-tls-cert
+        - name: control-plane-ca
           secret:
-            secretName: kuma-tls-cert
+            secretName: "kuma-tls-cert"
+            items:
+              - key: ca.crt
+                path: ca.crt
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -5624,7 +5670,7 @@ spec:
             - name: KUMA_CONTROL_PLANE_URL
               value: "https://kuma-control-plane.kuma-system:5678"
             - name: KUMA_CONTROL_PLANE_CA_CERT_FILE
-              value: /var/run/secrets/kuma.io/tls-cert/ca.crt
+              value: /var/run/secrets/kuma.io/cp-ca/ca.crt
             - name: KUMA_DATAPLANE_NAME
               value: $(POD_NAME).$(POD_NAMESPACE)
             - name: KUMA_DATAPLANE_DRAIN_TIME
@@ -5665,13 +5711,16 @@ spec:
               memory: 64Mi
           
           volumeMounts:
-            - name: kuma-tls-cert
-              mountPath: /var/run/secrets/kuma.io/tls-cert
+            - name: control-plane-ca
+              mountPath: /var/run/secrets/kuma.io/cp-ca
               readOnly: true
       volumes:
-        - name: kuma-tls-cert
+        - name: control-plane-ca
           secret:
-            secretName: kuma-tls-cert
+            secretName: "kuma-tls-cert"
+            items:
+              - key: ca.crt
+                path: ca.crt
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration

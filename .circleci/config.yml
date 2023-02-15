@@ -3,10 +3,10 @@ version: 2.1 # Adds support for executors, parameterized jobs, etc
 reusable:
 
   constants:
-    - &go_version "1.18.9"
+    - &go_version "1.18.10"
 
   docker_images:
-    - &golang_image "cimg/go:1.18.9"
+    - &golang_image "cimg/go:1.18.10"
 
   vm_images:
     - &ubuntu_vm_image "ubuntu-2004:202111-01"
@@ -102,34 +102,6 @@ executors:
       GO_VERSION: *go_version
 
 jobs:
-  dev:
-    executor: << parameters.executor >>
-    parameters:
-      executor:
-        description: The env in which we execute.
-        type: string
-        default: linux
-    steps:
-    - checkout
-    - install_build_tools:
-        go_os: << parameters.executor >>
-    - run:
-        name: "Install all development tools"
-        command: |
-          make dev/tools
-    - run:
-        name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
-        command: |
-          make check BUILD_INFO_VERSION=latest
-    - run:
-        name: "Build all binaries"
-        command: |
-          make build
-    - run:
-        name: "Run unit tests"
-        command: |
-          make test
-
   go_cache:
     executor: << parameters.executor >>
     parameters:
@@ -241,7 +213,7 @@ jobs:
       k8sVersion:
         description: version of k3s to use or "kind" and "kindIpv6"
         type: string
-        default: v1.21.7-k3s1
+        default: v1.26.1-k3s1
       parallelism:
         description: level of parallelisation
         type: integer
@@ -307,7 +279,7 @@ jobs:
               if [[ "<< parameters.target >>" == "test/e2e" ]]; then
                 skip "we do not run legacy E2E on branch by default. To run them add ci/run-e2e-legacy label"
               fi
-              if [[ "<< parameters.cniNetworkPlugin >>" == "calico" || "<< parameters.k8sVersion >>" == "kindIpv6" || "<< parameters.k8sVersion >>" == "v1.19.16-k3s1" || "<< parameters.arch >>" == "arm64" ]]; then
+              if [[ "<< parameters.cniNetworkPlugin >>" == "calico" || "<< parameters.k8sVersion >>" == "kindIpv6" || "<< parameters.k8sVersion >>" == "v1.20.15-k3s1" || "<< parameters.arch >>" == "arm64" ]]; then
                   skip "Not running tests on PRs with kindIpv6, oldK8s, calico and arm64"
               fi
             fi
@@ -454,20 +426,6 @@ workflows:
 
   kuma-commit:
     jobs:
-      - dev:
-          # Avoids running expensive workflow on PRs
-          filters: &expensive_workflow_filter # only run on tags, master and release-* branches
-            branches:
-              only:
-                - master
-                - /^release-.*/
-            tags:
-              only: /.*/
-          name: dev-<< matrix.executor >>
-          matrix:
-            alias: dev
-            parameters:
-              executor: [ linux, darwin]
       - go_cache:
           name: go_cache-<< matrix.executor >>
           matrix:
@@ -495,7 +453,7 @@ workflows:
           matrix:
             alias: test/e2e-legacy
             parameters:
-              k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
+              k8sVersion: [ v1.20.15-k3s1, v1.26.1-k3s1, kind, kindIpv6 ]
               arch: [ amd64, arm64 ]
           parallelism: 3
           target: test/e2e
@@ -505,7 +463,7 @@ workflows:
           matrix:
             alias: test/e2e
             parameters:
-              k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
+              k8sVersion: [ v1.20.15-k3s1, v1.26.1-k3s1, kind, kindIpv6 ]
               target: [ test/e2e-kubernetes, test/e2e-universal, test/e2e-multizone ]
               arch: [ amd64, arm64 ]
           parallelism: 1
@@ -515,7 +473,7 @@ workflows:
           matrix:
             alias: test/e2e-calico
             parameters:
-              k8sVersion: [ v1.21.7-k3s1 ]
+              k8sVersion: [ v1.26.1-k3s1 ]
               target: [ test/e2e-multizone ]
               arch: [ amd64 ]
               cniNetworkPlugin: [ calico ]
@@ -538,4 +496,4 @@ workflows:
               ignore: /.*/
             tags:
               only: /.*/
-          requires: [ dev, test, test/e2e, test/e2e-legacy ]
+          requires: [ test, test/e2e, test/e2e-legacy ]

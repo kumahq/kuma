@@ -35,8 +35,9 @@ type Configurer struct {
 var _ v3.FilterChainConfigurer = &Configurer{}
 
 const (
-	ZipkinProviderName  = "zipkin"
-	DatadogProviderName = "datadog"
+	ZipkinProviderName        = "zipkin"
+	DatadogProviderName       = "datadog"
+	OpenTelemetryProviderName = "opentelemetry"
 )
 
 func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
@@ -94,6 +95,14 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 			hcm.Tracing.Provider = tracing
 		}
 
+		if backend.OpenTelemetry != nil {
+			tracing, err := c.opentelemetryConfig(GetTracingClusterName(OpenTelemetryProviderName))
+			if err != nil {
+				return err
+			}
+			hcm.Tracing.Provider = tracing
+		}
+
 		return nil
 	})
 }
@@ -119,9 +128,33 @@ func (c *Configurer) datadogConfig(clusterName string) (*envoy_trace.Tracing_Htt
 		return nil, err
 	}
 	tracingConfig := &envoy_trace.Tracing_Http{
-		Name: "envoy.datadog",
+		Name: "envoy.tracers.datadog",
 		ConfigType: &envoy_trace.Tracing_Http_TypedConfig{
 			TypedConfig: datadogConfigAny,
+		},
+	}
+	return tracingConfig, nil
+}
+
+func (c *Configurer) opentelemetryConfig(clusterName string) (*envoy_trace.Tracing_Http, error) {
+	otelConfig := envoy_trace.OpenTelemetryConfig{
+		ServiceName: c.Service,
+		GrpcService: &envoy_core.GrpcService{
+			TargetSpecifier: &envoy_core.GrpcService_EnvoyGrpc_{
+				EnvoyGrpc: &envoy_core.GrpcService_EnvoyGrpc{
+					ClusterName: clusterName,
+				},
+			},
+		},
+	}
+	otelConfigAny, err := proto.MarshalAnyDeterministic(&otelConfig)
+	if err != nil {
+		return nil, err
+	}
+	tracingConfig := &envoy_trace.Tracing_Http{
+		Name: "envoy.tracers.opentelemetry",
+		ConfigType: &envoy_trace.Tracing_Http_TypedConfig{
+			TypedConfig: otelConfigAny,
 		},
 	}
 	return tracingConfig, nil
@@ -151,7 +184,7 @@ func (c *Configurer) zipkinConfig(clusterName string) (*envoy_trace.Tracing_Http
 		return nil, err
 	}
 	tracingConfig := &envoy_trace.Tracing_Http{
-		Name: "envoy.zipkin",
+		Name: "envoy.tracers.zipkin",
 		ConfigType: &envoy_trace.Tracing_Http_TypedConfig{
 			TypedConfig: zipkinConfigAny,
 		},

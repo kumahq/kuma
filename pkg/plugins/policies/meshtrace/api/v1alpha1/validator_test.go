@@ -49,6 +49,16 @@ default:
     random: "60.1"
     client: 40
 `),
+			Entry("with opentelemetry backend", `
+targetRef:
+  kind: MeshService
+  name: backend
+default:
+  backends:
+    - openTelemetry:
+        endpoint: otel-collector:4317
+`),
+
 			Entry("with empty backends", `
 targetRef:
   kind: MeshService
@@ -126,7 +136,7 @@ default:
 				expected: `
 violations:
   - field: spec.default.backends[0]
-    message: 'backend must have only one type defined: datadog, zipkin'`,
+    message: 'backend must have only one type defined: datadog, zipkin, openTelemetry'`,
 			}),
 			Entry("multiple backends", testCase{
 				inputYaml: `
