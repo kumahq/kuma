@@ -28,10 +28,6 @@ COREDNS_VERSION ?= v1.10.0
 COREDNS_TMP_DIRECTORY ?= $(BUILD_DIR)/coredns
 COREDNS_PLUGIN_CFG_PATH ?= $(TOOLS_DIR)/builds/coredns/templates/plugin.cfg
 
-EBPF_GIT_REPOSITORY ?= https://github.com/kumahq/merbridge.git
-EBPF_GIT_BRANCH ?= main
-EBPF_TMP_DIRECTORY ?= $(BUILD_DIR)/ebpf
-
 # List of binaries that we have release build rules for.
 BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl coredns envoy kuma-cni install-cni
 
