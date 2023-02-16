@@ -344,13 +344,6 @@ func (i *KumaInjector) NewSidecarContainer(
 
 	container.Name = k8s_util.KumaSidecarContainerName
 
-	// *EXPERIMENTAL* Hold application with a post-start hook to ensure dns is ready
-	enabled, _, _ := metadata.Annotations(pod.Labels).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
-	if enabled {
-		// container.Lifecycle.PostStart
-		// add post start hook
-	}
-
 	return container, nil
 }
 
@@ -470,7 +463,6 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 		metadata.KumaTransparentProxyingInboundPortAnnotation:   fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInbound),
 		metadata.KumaTransparentProxyingInboundPortAnnotationV6: fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInboundV6),
 		metadata.KumaTransparentProxyingOutboundPortAnnotation:  fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortOutbound),
-		metadata.KumaSidecarHoldApplicationAnnotation:           fmt.Sprintf("%t", i.cfg.SidecarContainer.HoldApplicationUntilProxyStarts),
 	}
 	if i.cfg.CNIEnabled {
 		annotations[metadata.CNCFNetworkAnnotation] = metadata.KumaCNI
