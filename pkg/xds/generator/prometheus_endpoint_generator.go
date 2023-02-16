@@ -2,6 +2,7 @@ package generator
 
 import (
 	"net"
+	"os"
 
 	"github.com/pkg/errors"
 
@@ -9,6 +10,7 @@ import (
 	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	util_tls "github.com/kumahq/kuma/pkg/tls"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -27,8 +29,7 @@ const OriginPrometheus = "prometheus"
 // a port that is already in use by the application or other Envoy listeners.
 // In the latter case we prefer not generate Prometheus endpoint at all
 // rather than introduce undeterministic behavior.
-type PrometheusEndpointGenerator struct {
-}
+type PrometheusEndpointGenerator struct{}
 
 func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	prometheusEndpoint, err := proxy.Dataplane.GetPrometheusConfig(ctx.Mesh.Resource)
@@ -118,6 +119,29 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 							},
 						}),
 				),
+			)).
+			Build()
+	} else if prometheusEndpoint.Tls.Enabled.GetValue() {
+		// TODO handle errors and move to better place
+		rootCAContent, _ := os.ReadFile(prometheusEndpoint.Tls.GetRootCaFile())
+		certFileContent, _ := os.ReadFile(prometheusEndpoint.Tls.GetCertFile())
+		keyFileContent, _ := os.ReadFile(prometheusEndpoint.Tls.GetKeyFile())
+
+		listener, err = envoy_listeners.NewListenerBuilder(proxy.APIVersion).
+			Configure(envoy_listeners.InboundListener(prometheusListenerName, prometheusEndpointAddress, prometheusEndpoint.Port, core_xds.SocketAddressProtocolTCP)).
+			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
+				Configure(
+					envoy_listeners.ServerTLS(rootCAContent, util_tls.KeyPair{
+						CertPEM: certFileContent,
+						KeyPEM:  keyFileContent,
+					}, prometheusEndpoint.Tls.GetMinVersion(), prometheusEndpoint.Tls.GetMaxVersion(), prometheusEndpoint.Tls.GetCipherSuites()),
+					envoy_listeners.StaticEndpoints(prometheusListenerName, []*envoy_common.StaticEndpointPath{
+						{
+							ClusterName: metricsHijackerClusterName,
+							Path:        prometheusEndpoint.Path,
+							RewritePath: statsPath,
+						},
+					})),
 			)).
 			Build()
 	} else {

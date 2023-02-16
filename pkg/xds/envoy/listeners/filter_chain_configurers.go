@@ -9,6 +9,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	util_tls "github.com/kumahq/kuma/pkg/tls"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
@@ -38,6 +39,20 @@ func StaticEndpoints(virtualHostName string, paths []*envoy_common.StaticEndpoin
 	return AddFilterChainConfigurer(&v3.StaticEndpointsConfigurer{
 		VirtualHostName: virtualHostName,
 		Paths:           paths,
+	})
+}
+
+func ServerTLS(caPEM        []byte,
+	serverPair   util_tls.KeyPair,
+	minVersion   string,
+	maxVersion   string,
+	cipherSuites []string) FilterChainBuilderOpt {
+	return AddFilterChainConfigurer(&v3.ServerTLSConfigurer{
+		CaPEM:           caPEM,
+		ServerPair: serverPair,
+		MinVersion: minVersion,
+		MaxVersion:   maxVersion,
+		CipherSuites: cipherSuites,
 	})
 }
 
