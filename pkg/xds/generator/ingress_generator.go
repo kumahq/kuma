@@ -164,9 +164,9 @@ func (_ IngressGenerator) destinations(
 			mesh_proto.ServiceTag: mesh_proto.MatchAllTag,
 		}
 		matchAllDestinations := destinations[mesh_proto.MatchAllTag]
-		foundAllServicesDestination := slices.IndexFunc(matchAllDestinations, func(tagsElem tags.Tags) bool {
+		foundAllServicesDestination := slices.ContainsFunc(matchAllDestinations, func(tagsElem tags.Tags) bool {
 			return reflect.DeepEqual(tagsElem, matchAllTags)
-		}) > -1
+		})
 		if !foundAllServicesDestination {
 			matchAllDestinations = append(matchAllDestinations, matchAllTags)
 		}
