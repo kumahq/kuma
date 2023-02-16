@@ -19,7 +19,7 @@ const (
 	// KumaSidecarInjectionAnnotation defines a Pod/Namespace annotation that
 	// gives users an ability to enable or disable sidecar-injection
 	KumaSidecarInjectionAnnotation = "kuma.io/sidecar-injection"
-	
+
 	// KumaGatewayAnnotation allows to mark Gateway pod,
 	// inbound listeners won't be generated in that case.
 	// It can be used to mark a pod as providing a builtin gateway.
