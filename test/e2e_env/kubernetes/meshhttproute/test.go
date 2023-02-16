@@ -79,7 +79,7 @@ spec:
         kind: MeshService
         name: nonexistent-service-that-activates-default
       rules: []
-`, Config.KumaNamespace, meshName, meshName))(kubernetes.Cluster)).To(Succeed())
+`, Config.KumaNamespace, meshName, namespace))(kubernetes.Cluster)).To(Succeed())
 
 		Eventually(func(g Gomega) {
 			response, err := client.CollectResponse(kubernetes.Cluster, "test-client", "test-server_meshhttproute_svc_80.mesh", client.FromKubernetesPod(namespace, "test-client"))
@@ -94,16 +94,15 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: ExternalService
 metadata:
-  name: external-service-1
-  namespace: %s
+  name: external-service-mhr
 mesh: %s
 spec:
   tags:
-    kuma.io/service: external-service
+    kuma.io/service: external-service-mhr
     kuma.io/protocol: http
   networking:
     address: external-service.%s.svc.cluster.local:80 # .svc.cluster.local is needed, otherwise Kubernetes will resolve this to the real IP
-`, Config.KumaNamespace, meshName, namespace)))).To(Succeed())
+`, meshName, namespace)))).To(Succeed())
 
 		// when
 		Expect(YamlK8s(fmt.Sprintf(`
@@ -133,7 +132,7 @@ spec:
                 name: test-server_meshhttproute_svc_80
                 weight: 50
               - kind: MeshService
-                name: external-service
+                name: external-service-mhr
                 weight: 50
 `, Config.KumaNamespace, meshName, meshName))(kubernetes.Cluster)).To(Succeed())
 

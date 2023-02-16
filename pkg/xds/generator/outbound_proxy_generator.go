@@ -206,7 +206,9 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 		protocol := InferProtocol(proxy, service.Clusters())
 		tlsReady := service.TLSReady()
 
-		for _, cluster := range service.Clusters() {
+		for _, c := range service.Clusters() {
+			cluster := c.(*envoy_common.ClusterImpl)
+
 			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
 				Configure(envoy_clusters.Timeout(cluster.Timeout(), protocol)).
 				Configure(envoy_clusters.CircuitBreaker(circuitBreaker)).
@@ -296,7 +298,8 @@ func (OutboundProxyGenerator) generateEDS(
 		// are specified in load assignment in DNS Cluster.
 		// We are not allowed to add endpoints with DNS names through EDS.
 		if !services[serviceName].HasExternalService() || ctx.Mesh.Resource.ZoneEgressEnabled() {
-			for _, cluster := range services[serviceName].Clusters() {
+			for _, c := range services[serviceName].Clusters() {
+				cluster := c.(*envoy_common.ClusterImpl)
 				var endpoints model.EndpointMap
 				if cluster.Mesh() != "" {
 					endpoints = ctx.Mesh.CrossMeshEndpoints[cluster.Mesh()]
@@ -321,6 +324,7 @@ func (OutboundProxyGenerator) generateEDS(
 }
 
 // InferProtocol infers protocol for the destination listener. It will only return HTTP when all endpoints are tagged with HTTP.
+// Deprecated: for new policies use InferProtocol from pkg/plugins/policies/xds/clusters.go
 func InferProtocol(proxy *model.Proxy, clusters []envoy_common.Cluster) core_mesh.Protocol {
 	var allEndpoints []model.Endpoint
 	for _, cluster := range clusters {
