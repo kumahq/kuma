@@ -228,6 +228,10 @@ func (c *UniversalCluster) GetKubectlOptions(namespace ...string) *k8s.KubectlOp
 	return nil
 }
 
+func (c *UniversalCluster) GetK8sVersion() (ClusterK8sVersion, error) {
+	return ClusterK8sVersion{}, nil
+}
+
 func (c *UniversalCluster) CreateNamespace(namespace string) error {
 	return nil
 }

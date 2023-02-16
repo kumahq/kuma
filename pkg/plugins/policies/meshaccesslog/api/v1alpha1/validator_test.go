@@ -256,7 +256,7 @@ from:
 				expected: `
 violations:
 - field: spec.from[0].default.backends[0]
-  message: 'backend must have only one type defined: tcp, file'`,
+  message: 'backend must have only one type defined: tcp, file, openTelemetry'`,
 			}),
 
 			Entry("'to' defined in MeshGatewayRoute", testCase{
