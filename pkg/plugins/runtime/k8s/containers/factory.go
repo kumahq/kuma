@@ -108,6 +108,17 @@ func (i *DataplaneProxyFactory) NewContainer(
 			"--concurrency="+strconv.FormatInt(cpuCount, 10))
 	}
 
+	lifecycle := kube_core.Lifecycle{}
+	if i.ContainerConfig.LifeCycle.SidecarInitTimeout > 0 {
+		lifecycle = kube_core.Lifecycle{
+			PostStart: &kube_core.LifecycleHandler{
+				Exec: &kube_core.ExecAction{
+					Command: []string{"command goes here"},
+				},
+			},
+		}
+	}
+
 	return kube_core.Container{
 		Image:           i.ContainerConfig.Image,
 		ImagePullPolicy: kube_core.PullIfNotPresent,
@@ -157,6 +168,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 				kube_core.ResourceMemory: kube_api.MustParse(i.ContainerConfig.Resources.Limits.Memory),
 			},
 		},
+		Lifecycle: &lifecycle,
 	}, nil
 }
 

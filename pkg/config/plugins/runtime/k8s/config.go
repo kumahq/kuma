@@ -57,6 +57,10 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 							Memory: "512Mi",
 						},
 					},
+					LifeCycle: LifeCycleEvents{
+						// Experimental feature, disabled by default
+						SidecarInitTimeout: -1,
+					},
 				},
 			},
 			ContainerPatches: []string{},
@@ -187,6 +191,8 @@ type DataplaneContainer struct {
 	ReadinessProbe SidecarReadinessProbe `json:"readinessProbe,omitempty"`
 	// Liveness probe.
 	LivenessProbe SidecarLivenessProbe `json:"livenessProbe,omitempty"`
+	// Lifecycle events
+	LifeCycle LifeCycleEvents `json:"lifCycle,omitempty"`
 	// Compute resource requirements.
 	Resources SidecarResources `json:"resources,omitempty"`
 	// EnvVars are additional environment variables that can be placed on Kuma DP sidecar
@@ -254,6 +260,12 @@ type SidecarResourceLimits struct {
 	CPU string `json:"cpu,omitempty" envconfig:"kuma_injector_sidecar_container_resources_limits_cpu"`
 	// Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
 	Memory string `json:"memory,omitempty" envconfig:"kuma_injector_sidecar_container_resources_limits_memory"`
+}
+
+// LifeCycleEvents defines postStart and preStop configurations
+type LifeCycleEvents struct {
+	// SidecarInitTimeout defines the amount of seconds to wait for Kuma to become available -1 to disable this feature
+	SidecarInitTimeout int32 `json:"sidecarInitTimeout,omitempty" envconfig:"kuma_injector_sidecar_init_timeout"`
 }
 
 // InitContainer defines configuration of the Kuma init container.
@@ -500,6 +512,19 @@ func (c *SidecarResourceLimits) Validate() error {
 	}
 	if _, err := kube_api.ParseQuantity(c.Memory); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".Memory is not valid"))
+	}
+	return errs
+}
+
+var _ config.Config = &LifeCycleEvents{}
+
+func (c *LifeCycleEvents) Sanitize() {
+}
+
+func (c *LifeCycleEvents) Validate() error {
+	var errs error
+	if c.SidecarInitTimeout < -1 || c.SidecarInitTimeout == 0 {
+		errs = multierr.Append(errs, errors.Errorf(".SidecarInitTimeout must be -1 (disabled) or > 1"))
 	}
 	return errs
 }
