@@ -41,7 +41,7 @@ jobs:
         run: |
           release-tool release changelog --repo ${{ github.repository }} --release ${{ env.RELEASE }}
       - name: check-helm
-        if: env.CHECK
+        if: fromJSON(env.CHECK)
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
@@ -49,13 +49,13 @@ jobs:
       - name: check-pulp
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        if: env.CHECK
+        if: fromJSON(env.CHECK)
         run: |
           release-tool release pulp-binaries --repo ${{ github.repository }} --release ${{ env.RELEASE }} --binaries ${{ env.BINARIES }}
       - name: check-docker
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        if: env.CHECK
+        if: fromJSON(env.CHECK)
         run: |
           release-tool release docker --repo ${{ github.repository }} --release ${{ env.RELEASE }} --docker-repo ${{env.DOCKER_REPO }} --images ${{ env.DOCKER_IMAGES }}
       - name: Generate GitHub app token
@@ -67,7 +67,6 @@ jobs:
       - uses: actions/checkout@v3
         with:
           ref: "master"
-      - uses: actions/setup-go@v3
       - name: update-CHANGELOG.md-in-master
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
