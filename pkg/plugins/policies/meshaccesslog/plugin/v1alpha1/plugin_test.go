@@ -36,9 +36,11 @@ var _ = Describe("MeshAccessLog", func() {
 
 	type sidecarTestCase struct {
 		resources         []core_xds.Resource
+		outbounds         []*mesh_proto.Dataplane_Networking_Outbound
 		toRules           core_xds.ToRules
 		fromRules         core_xds.FromRules
 		expectedListeners []string
+		expectedClusters  []string
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given sidecarTestCase) {
@@ -58,6 +60,7 @@ var _ = Describe("MeshAccessLog", func() {
 				},
 			}
 			proxy := xds.Proxy{
+				APIVersion: envoy_common.APIV3,
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Mesh: "default",
@@ -74,15 +77,16 @@ var _ = Describe("MeshAccessLog", func() {
 									Port:    17777,
 								},
 							},
-							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
+							Outbound: append([]*mesh_proto.Dataplane_Networking_Outbound{
 								{
 									Address: "127.0.0.1",
 									Port:    27777,
 									Tags: map[string]string{
 										mesh_proto.ServiceTag: "other-service",
 									},
-								},
-							},
+								}},
+								given.outbounds...,
+							),
 						},
 					},
 				},
@@ -100,6 +104,7 @@ var _ = Describe("MeshAccessLog", func() {
 
 			Expect(plugin.Apply(resourceSet, context, &proxy)).To(Succeed())
 			policies_xds.ResourceArrayShouldEqual(resourceSet.ListOf(envoy_resource.ListenerType), given.expectedListeners)
+			policies_xds.ResourceArrayShouldEqual(resourceSet.ListOf(envoy_resource.ClusterType), given.expectedClusters)
 		},
 		Entry("basic outbound route", sidecarTestCase{
 			resources: []core_xds.Resource{{
@@ -402,6 +407,220 @@ var _ = Describe("MeshAccessLog", func() {
                                             [%START_TIME%] %RESPONSE_FLAGS% default (backend)->%UPSTREAM_HOST%(other-service) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
                                 path: /tmp/kuma-al-backend-default.sock
                         cluster: backend
+                        statPrefix: "127_0_0_1_27777"
+            name: outbound:127.0.0.1:27777
+            trafficDirection: OUTBOUND`,
+			}}),
+		Entry("outbound tcpproxy with opentelemetry backend and plain format", sidecarTestCase{
+			resources: []core_xds.Resource{{
+				Name:   "other-service",
+				Origin: generator.OriginOutbound,
+				Resource: NewListenerBuilder(envoy_common.APIV3).
+					Configure(OutboundListener("outbound:127.0.0.1:27777", "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP)).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+						Configure(TcpProxy(
+							"127.0.0.1:27777",
+							envoy_common.NewCluster(
+								envoy_common.WithService("other-service"),
+								envoy_common.WithWeight(100),
+							),
+						)),
+					)).MustBuild(),
+			}, {
+				Name:   "foo",
+				Origin: generator.OriginOutbound,
+				Resource: NewListenerBuilder(envoy_common.APIV3).
+					Configure(OutboundListener("outbound:127.0.0.1:27778", "127.0.0.1", 27778, core_xds.SocketAddressProtocolTCP)).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+						Configure(TcpProxy(
+							"127.0.0.1:27778",
+							envoy_common.NewCluster(
+								envoy_common.WithService("foo-service"),
+								envoy_common.WithWeight(100),
+							),
+						)),
+					)).MustBuild(),
+			}, {
+				Name:   "bar",
+				Origin: generator.OriginOutbound,
+				Resource: NewListenerBuilder(envoy_common.APIV3).
+					Configure(OutboundListener("outbound:127.0.0.1:27779", "127.0.0.1", 27779, core_xds.SocketAddressProtocolTCP)).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+						Configure(TcpProxy(
+							"127.0.0.1:27779",
+							envoy_common.NewCluster(
+								envoy_common.WithService("bar-service"),
+								envoy_common.WithWeight(100),
+							),
+						)),
+					)).MustBuild(),
+			}},
+			outbounds: []*mesh_proto.Dataplane_Networking_Outbound{{
+				Address: "127.0.0.1",
+				Port:    27778,
+				Tags: map[string]string{
+					mesh_proto.ServiceTag: "foo-service",
+				},
+			}, {
+				Address: "127.0.0.1",
+				Port:    27779,
+				Tags: map[string]string{
+					mesh_proto.ServiceTag: "bar-service",
+				},
+			}},
+			toRules: core_xds.ToRules{
+				Rules: []*core_xds.Rule{
+					{
+						Subset: core_xds.Subset{{
+							Key:   mesh_proto.ServiceTag,
+							Value: "other-service",
+						}},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								OpenTelemetry: &api.OtelBackend{
+									Endpoint: "otel-collector",
+								},
+							}},
+						},
+					},
+					{
+						Subset: core_xds.Subset{{
+							Key:   mesh_proto.ServiceTag,
+							Value: "foo-service",
+						}},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								OpenTelemetry: &api.OtelBackend{
+									Endpoint: "otel-collector",
+								},
+							}},
+						},
+					},
+					{
+						Subset: core_xds.Subset{{
+							Key:   mesh_proto.ServiceTag,
+							Value: "bar-service",
+						}},
+						Conf: api.Conf{
+							Backends: &[]api.Backend{{
+								OpenTelemetry: &api.OtelBackend{
+									Endpoint: "other-otel-collector:5317",
+								},
+							}},
+						},
+					},
+				}},
+			expectedClusters: []string{`
+            altStatName: meshaccesslog_opentelemetry_0
+            connectTimeout: 10s
+            dnsLookupFamily: V4_ONLY
+            loadAssignment:
+                clusterName: meshaccesslog:opentelemetry:0
+                endpoints:
+                    - lbEndpoints:
+                        - endpoint:
+                            address:
+                                socketAddress:
+                                    address: otel-collector
+                                    portValue: 4317
+            name: meshaccesslog:opentelemetry:0
+            type: STRICT_DNS
+            typedExtensionProtocolOptions:
+                envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+                    '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+                    explicitHttpConfig:
+                        http2ProtocolOptions: {}
+            `, `
+            altStatName: meshaccesslog_opentelemetry_1
+            connectTimeout: 10s
+            dnsLookupFamily: V4_ONLY
+            loadAssignment:
+                clusterName: meshaccesslog:opentelemetry:1
+                endpoints:
+                    - lbEndpoints:
+                        - endpoint:
+                            address:
+                                socketAddress:
+                                    address: other-otel-collector
+                                    portValue: 5317
+            name: meshaccesslog:opentelemetry:1
+            type: STRICT_DNS
+            typedExtensionProtocolOptions:
+                envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+                    '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+                    explicitHttpConfig:
+                        http2ProtocolOptions: {}
+            `},
+			expectedListeners: []string{`
+            address:
+              socketAddress:
+                address: 127.0.0.1
+                portValue: 27779
+            filterChains:
+                - filters:
+                    - name: envoy.filters.network.tcp_proxy
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+                        accessLog:
+                            - name: envoy.access_loggers.open_telemetry
+                              typedConfig:
+                                '@type': type.googleapis.com/envoy.extensions.access_loggers.open_telemetry.v3.OpenTelemetryAccessLogConfig
+                                attributes: {}
+                                commonConfig:
+                                    grpcService:
+                                        envoyGrpc:
+                                            clusterName: meshaccesslog:opentelemetry:1
+                                    logName: MeshAccessLog
+                                    transportApiVersion: V3
+                        cluster: bar-service
+                        statPrefix: "127_0_0_1_27779"
+            name: outbound:127.0.0.1:27779
+            trafficDirection: OUTBOUND`, `
+            address:
+              socketAddress:
+                address: 127.0.0.1
+                portValue: 27778
+            filterChains:
+                - filters:
+                    - name: envoy.filters.network.tcp_proxy
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+                        accessLog:
+                            - name: envoy.access_loggers.open_telemetry
+                              typedConfig:
+                                '@type': type.googleapis.com/envoy.extensions.access_loggers.open_telemetry.v3.OpenTelemetryAccessLogConfig
+                                attributes: {}
+                                commonConfig:
+                                    grpcService:
+                                        envoyGrpc:
+                                            clusterName: meshaccesslog:opentelemetry:0
+                                    logName: MeshAccessLog
+                                    transportApiVersion: V3
+                        cluster: foo-service
+                        statPrefix: "127_0_0_1_27778"
+            name: outbound:127.0.0.1:27778
+            trafficDirection: OUTBOUND`, `
+            address:
+              socketAddress:
+                address: 127.0.0.1
+                portValue: 27777
+            filterChains:
+                - filters:
+                    - name: envoy.filters.network.tcp_proxy
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+                        accessLog:
+                            - name: envoy.access_loggers.open_telemetry
+                              typedConfig:
+                                '@type': type.googleapis.com/envoy.extensions.access_loggers.open_telemetry.v3.OpenTelemetryAccessLogConfig
+                                attributes: {}
+                                commonConfig:
+                                    grpcService:
+                                        envoyGrpc:
+                                            clusterName: meshaccesslog:opentelemetry:0
+                                    logName: MeshAccessLog
+                                    transportApiVersion: V3
+                        cluster: other-service
                         statPrefix: "127_0_0_1_27777"
             name: outbound:127.0.0.1:27777
             trafficDirection: OUTBOUND`,

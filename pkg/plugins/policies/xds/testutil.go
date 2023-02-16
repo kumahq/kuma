@@ -12,6 +12,8 @@ import (
 )
 
 func ResourceArrayShouldEqual(resources core_xds.ResourceList, expected []string) {
+	Expect(resources).To(HaveLen(len(expected)))
+
 	for i, r := range resources {
 		actual, err := util_proto.ToYAML(r.Resource)
 		Expect(err).ToNot(HaveOccurred())
