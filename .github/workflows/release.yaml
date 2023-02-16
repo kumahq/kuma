@@ -19,7 +19,7 @@ env:
   BINARIES: "centos-amd64,darwin-amd64,darwin-arm64,debian-amd64,darwin-amd64,rhel-amd64,ubuntu-amd64,ubuntu-arm64"
   DOCKER_REPO: "kumahq"
   DOCKER_IMAGES: "kumactl,kuma-cp,kuma-dp,kuma-init,kuma-cni"
-  RELEASE: ${{ inputs.release || '0.0.0.0' }}
+  RELEASE: ${{ inputs.release || '0.0.0' }}
   CHECK: ${{ inputs.check }}
 jobs:
   release:
@@ -30,6 +30,10 @@ jobs:
         run: |
           echo $(go env GOPATH)/bin >> $GITHUB_PATH
           go install github.com/kumahq/ci-tools/cmd/release-tool@v0.2.1
+      - name: remove-cni
+        # CNI was only introduced in 1.7 so versions before should remove
+        if: startsWith(env.RELEASE, '1.7') || startsWith(env.RELEASE, '1.6')
+        run: echo DOCKER_IMAGES=${{env.DOCKER_IMAGES}} | sed 's/,kuma-cni//g' >> $GITHUB_ENV
       - name: create-release
         if: env.RELEASE != '0.0.0'
         env:
