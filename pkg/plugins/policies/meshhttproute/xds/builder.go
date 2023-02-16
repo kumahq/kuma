@@ -5,6 +5,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
@@ -12,9 +13,9 @@ import (
 )
 
 type OutboundRoute struct {
-	Matches  []api.Match
-	Filters  []api.Filter
-	Clusters []envoy_common.Cluster
+	Matches []api.Match
+	Filters []api.Filter
+	Split   []*plugins_xds.Split
 }
 
 type HttpOutboundRouteConfigurer struct {
@@ -31,9 +32,9 @@ func (c *HttpOutboundRouteConfigurer) Configure(filterChain *envoy_listener.Filt
 	for _, route := range c.Routes {
 		route := envoy_routes.AddVirtualHostConfigurer(
 			&RoutesConfigurer{
-				Matches:  route.Matches,
-				Filters:  route.Filters,
-				Clusters: route.Clusters,
+				Matches: route.Matches,
+				Filters: route.Filters,
+				Split:   route.Split,
 			})
 		virtualHostBuilder = virtualHostBuilder.Configure(route)
 	}
