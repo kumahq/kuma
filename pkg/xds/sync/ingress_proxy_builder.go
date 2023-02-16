@@ -96,11 +96,11 @@ func (p *IngressProxyBuilder) buildZoneIngressProxy(ctx context.Context) (*core_
 	}
 
 	return &core_xds.ZoneIngressProxy{
-		TrafficRouteList: routes,
-		GatewayRoutes:    gatewayRoutes,
-		MeshGateways:     gateways,
+		GatewayRoutes: gatewayRoutes,
+		MeshGateways:  gateways,
 		PolicyResources: map[core_model.ResourceType]core_model.ResourceList{
 			meshhttproute_api.MeshHTTPRouteType: meshHTTPRoutes,
+			core_mesh.TrafficRouteType:          routes,
 		},
 	}, nil
 }

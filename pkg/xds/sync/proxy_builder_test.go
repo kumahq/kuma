@@ -199,7 +199,8 @@ var _ = Describe("Proxy Builder", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			Expect(proxy.ZoneIngressProxy.TrafficRouteList.GetItems()[0].GetSpec()).To(matchers.MatchProto(&mesh_proto.TrafficRoute{
+			routes := proxy.ZoneIngressProxy.PolicyResources[core_mesh.TrafficRouteType].GetItems()
+			Expect(routes[0].GetSpec()).To(matchers.MatchProto(&mesh_proto.TrafficRoute{
 				Sources: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{

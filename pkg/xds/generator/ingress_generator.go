@@ -144,7 +144,7 @@ func (_ IngressGenerator) destinations(
 	ingressProxy *core_xds.ZoneIngressProxy,
 ) map[string][]tags.Tags {
 	destinations := map[string][]tags.Tags{}
-	for _, tr := range ingressProxy.TrafficRouteList.Items {
+	for _, tr := range ingressProxy.PolicyResources[core_mesh.TrafficRouteType].(*core_mesh.TrafficRouteResourceList).Items {
 		for _, split := range tr.Spec.Conf.GetSplitWithDestination() {
 			service := split.Destination[mesh_proto.ServiceTag]
 			destinations[service] = append(destinations[service], split.Destination)
