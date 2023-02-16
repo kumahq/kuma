@@ -8,14 +8,14 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 type RoutesConfigurer struct {
-	Matches  []api.Match
-	Filters  []api.Filter
-	Clusters []envoy_common.Cluster
+	Matches []api.Match
+	Filters []api.Filter
+	Split   []*plugins_xds.Split
 }
 
 func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
@@ -25,7 +25,7 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 		r := &envoy_route.Route{
 			Match: match.routeMatch,
 			Action: &envoy_route.Route_Route{
-				Route: c.routeAction(c.Clusters),
+				Route: c.routeAction(c.Split),
 			},
 			TypedPerFilterConfig: map[string]*anypb.Any{},
 		}
@@ -178,42 +178,39 @@ func routeQueryParamsMatch(envoyMatch *envoy_route.RouteMatch, matches []api.Que
 	}
 }
 
-func (c RoutesConfigurer) hasExternal(clusters []envoy_common.Cluster) bool {
-	for _, cluster := range clusters {
-		if cluster.IsExternalService() {
+func (c RoutesConfigurer) hasExternal(split []*plugins_xds.Split) bool {
+	for _, s := range split {
+		if s.HasExternalService() {
 			return true
 		}
 	}
 	return false
 }
 
-func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster) *envoy_route.RouteAction {
-	routeAction := &envoy_route.RouteAction{}
-	if len(clusters) != 0 {
-		routeAction.Timeout = util_proto.Duration(clusters[0].Timeout().GetHttp().GetRequestTimeout().AsDuration())
+func (c RoutesConfigurer) routeAction(split []*plugins_xds.Split) *envoy_route.RouteAction {
+	routeAction := &envoy_route.RouteAction{
+		// this timeout should be updated by the MeshTimeout plugin
+		Timeout: util_proto.Duration(0),
 	}
-	if len(clusters) == 1 {
+	if len(split) == 1 {
 		routeAction.ClusterSpecifier = &envoy_route.RouteAction_Cluster{
-			Cluster: clusters[0].Name(),
+			Cluster: split[0].ClusterName(),
 		}
 	} else {
 		var weightedClusters []*envoy_route.WeightedCluster_ClusterWeight
-		var totalWeight uint32
-		for _, cluster := range clusters {
+		for _, s := range split {
 			weightedClusters = append(weightedClusters, &envoy_route.WeightedCluster_ClusterWeight{
-				Name:   cluster.Name(),
-				Weight: util_proto.UInt32(cluster.Weight()),
+				Name:   s.ClusterName(),
+				Weight: util_proto.UInt32(s.Weight()),
 			})
-			totalWeight += cluster.Weight()
 		}
 		routeAction.ClusterSpecifier = &envoy_route.RouteAction_WeightedClusters{
 			WeightedClusters: &envoy_route.WeightedCluster{
-				Clusters:    weightedClusters,
-				TotalWeight: util_proto.UInt32(totalWeight),
+				Clusters: weightedClusters,
 			},
 		}
 	}
-	if c.hasExternal(clusters) {
+	if c.hasExternal(split) {
 		routeAction.HostRewriteSpecifier = &envoy_route.RouteAction_AutoHostRewrite{
 			AutoHostRewrite: util_proto.Bool(true),
 		}
