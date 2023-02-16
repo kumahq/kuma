@@ -37,22 +37,66 @@ type PostgresDeployment interface {
 	Deployment
 }
 
+type deployOptions struct {
+	namespace      string
+	deploymentName string
+	username       string
+	password       string
+	database       string
+	primaryName    string
+}
+type DeployOptionsFunc func(*deployOptions)
+
 func From(cluster Cluster, name string) Postgres {
 	return cluster.Deployment(AppPostgres + name).(Postgres)
 }
 
-func Install(name string) InstallFunc {
+func Install(name string, optFns ...DeployOptionsFunc) InstallFunc {
+	opts := &deployOptions{deploymentName: name, namespace: Config.KumaNamespace}
+	for _, optFn := range optFns {
+		optFn(opts)
+	}
 	return func(cluster Cluster) error {
 		var deployment PostgresDeployment
 		switch cluster.(type) {
 		case *UniversalCluster:
 			deployment = NewUniversalDeployment(cluster, name)
 		case *K8sCluster:
-			return errors.New("kubernetes cluster not supported for postgres deployment")
+			deployment = NewK8SDeployment(opts)
 		default:
 			return errors.New("invalid cluster")
 		}
 
 		return cluster.Deploy(deployment)
+	}
+}
+
+func WithK8sNamespace(namespace string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.namespace = namespace
+	}
+}
+
+func WithUsername(username string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.username = username
+	}
+}
+
+func WithPassword(password string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.password = password
+	}
+}
+
+func WithDatabase(database string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.database = database
+	}
+}
+
+func WithPrimaryName(primaryName string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.primaryName = primaryName
 	}
 }

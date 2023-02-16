@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.11.2
+    controller-gen.kubebuilder.io/version: v0.11.3
   creationTimestamp: null
   name: meshaccesslogs.kuma.io
 spec:
@@ -54,7 +54,7 @@ spec:
                                 properties:
                                   format:
                                     description: Format of access logs. Placeholders
-                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                     properties:
                                       json:
                                         items:
@@ -77,6 +77,29 @@ spec:
                                 required:
                                 - path
                                 type: object
+                              openTelemetry:
+                                description: Defines an OpenTelemetry logging backend.
+                                properties:
+                                  attributes:
+                                    description: Attributes can contain placeholders
+                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                    items:
+                                      properties:
+                                        key:
+                                          type: string
+                                        value:
+                                          type: string
+                                      type: object
+                                    type: array
+                                  endpoint:
+                                    description: Endpoint of OpenTelemetry collector.
+                                      An empty port defaults to 4317.
+                                    example: otel-collector:4317
+                                    minLength: 1
+                                    type: string
+                                required:
+                                - endpoint
+                                type: object
                               tcp:
                                 description: TCPBackend defines a TCP logging backend.
                                 properties:
@@ -85,7 +108,7 @@ spec:
                                     type: string
                                   format:
                                     description: Format of access logs. Placeholders
-                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                     properties:
                                       json:
                                         items:
@@ -187,7 +210,7 @@ spec:
                                 properties:
                                   format:
                                     description: Format of access logs. Placeholders
-                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                     properties:
                                       json:
                                         items:
@@ -210,6 +233,29 @@ spec:
                                 required:
                                 - path
                                 type: object
+                              openTelemetry:
+                                description: Defines an OpenTelemetry logging backend.
+                                properties:
+                                  attributes:
+                                    description: Attributes can contain placeholders
+                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                    items:
+                                      properties:
+                                        key:
+                                          type: string
+                                        value:
+                                          type: string
+                                      type: object
+                                    type: array
+                                  endpoint:
+                                    description: Endpoint of OpenTelemetry collector.
+                                      An empty port defaults to 4317.
+                                    example: otel-collector:4317
+                                    minLength: 1
+                                    type: string
+                                required:
+                                - endpoint
+                                type: object
                               tcp:
                                 description: TCPBackend defines a TCP logging backend.
                                 properties:
@@ -218,7 +264,7 @@ spec:
                                     type: string
                                   format:
                                     description: Format of access logs. Placeholders
-                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                     properties:
                                       json:
                                         items:

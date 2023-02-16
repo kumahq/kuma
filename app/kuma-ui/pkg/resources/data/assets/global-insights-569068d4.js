@@ -1,1 +1,0 @@
-const t="GlobalInsights",e="2018-07-17T16:05:36.995Z",o={GlobalSecret:{total:0},Mesh:{total:3},Zone:{total:4},ZoneIngress:{total:1},ZoneEgress:{total:1}},s={type:t,creationTime:e,resources:o};export{e as creationTime,s as default,o as resources,t as type};

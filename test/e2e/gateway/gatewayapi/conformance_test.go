@@ -20,7 +20,7 @@ import (
 
 var clusterName = Kuma1
 var minNodePort = 30080
-var maxNodePort = 30089
+var maxNodePort = 30099
 
 // TestConformance runs as a `testing` test and not Ginkgo so we have to use an
 // explicit `g` to use Gomega.
@@ -83,9 +83,14 @@ func TestConformance(t *testing.T) {
 			metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationTrue,
 		},
 		ValidUniqueListenerPorts: validUniqueListenerPorts,
-		SupportedFeatures: []suite.SupportedFeature{
-			suite.SupportHTTPRouteQueryParamMatching,
-			suite.SupportHTTPRouteMethodMatching,
+		SupportedFeatures: map[suite.SupportedFeature]bool{
+			suite.SupportHTTPRouteQueryParamMatching:        true,
+			suite.SupportHTTPRouteMethodMatching:            true,
+			suite.SupportHTTPResponseHeaderModification:     true,
+			suite.SupportHTTPRoutePortRedirect:              true,
+			suite.SupportHTTPRouteSchemeRedirect:            true,
+			suite.SupportHTTPRoutePathRedirect:              false, // not yet supported
+			suite.SupportGatewayClassObservedGenerationBump: false, // not yet supported
 		},
 	})
 
@@ -98,7 +103,7 @@ func TestConformance(t *testing.T) {
 			tests.HTTPRouteInvalidCrossNamespaceBackendRef.ShortName, // The following fail due to #4597
 			tests.HTTPRouteInvalidBackendRefUnknownKind.ShortName,
 			tests.HTTPRouteInvalidNonExistentBackendRef.ShortName,
-			tests.HTTPRouteInvalidReferenceGrant.ShortName:
+			tests.HTTPRoutePartiallyInvalidViaInvalidReferenceGrant.ShortName:
 			continue
 		}
 		passingTests = append(passingTests, test)

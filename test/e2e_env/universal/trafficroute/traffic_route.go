@@ -2,12 +2,14 @@ package trafficroute
 
 import (
 	"fmt"
+	"net"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	. "github.com/kumahq/kuma/test/framework"
 	. "github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
@@ -15,6 +17,7 @@ import (
 
 func TrafficRoute() {
 	meshName := "trafficroute"
+	var esHttpHostPort string
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
@@ -39,8 +42,11 @@ func TrafficRoute() {
 				WithArgs([]string{"echo", "--instance", "another-test-server"}),
 				WithServiceName("another-test-server"),
 			)).
+			Install(TestServerExternalServiceUniversal("es-http", meshName, 80, false)).
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Setup(universal.Cluster)).To(Succeed())
+
+		esHttpHostPort = net.JoinHostPort(universal.Cluster.GetApp("es-http").GetContainerName(), "80")
 	})
 
 	E2EAfterAll(func() {
@@ -59,6 +65,7 @@ func TrafficRoute() {
 			err := universal.Cluster.GetKumactlOptions().KumactlDelete("traffic-route", item, meshName)
 			Expect(err).ToNot(HaveOccurred())
 		}
+		Expect(DeleteMeshResources(universal.Cluster, meshName, mesh.ExternalServiceResourceTypeDescriptor)).To(Succeed())
 	})
 
 	It("should access all instances of the service", func() {
@@ -171,6 +178,49 @@ conf:
 				HaveLen(2),
 				HaveKeyWithValue(Equal(`echo-v1`), BeNumerically("~", v1Weight, 1)),
 				HaveKeyWithValue(Equal(`echo-v2`), BeNumerically("~", v2Weight, 1)),
+			),
+		)
+	})
+
+	It("should split traffic between internal and external services", func() {
+		Expect(universal.Cluster.Install(YamlUniversal(`
+type: TrafficRoute
+name: route-internal-external
+mesh: trafficroute
+sources:
+  - match:
+      kuma.io/service: demo-client
+destinations:
+  - match:
+      kuma.io/service: test-server
+conf:
+  split:
+    - weight: 50
+      destination:
+        kuma.io/service: test-server
+        version: v1
+    - weight: 50
+      destination:
+        kuma.io/service: es-http
+`))).To(Succeed())
+		Expect(universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
+type: ExternalService
+name: es-http-1
+mesh: trafficroute
+networking:
+  address: %s
+tags:
+  kuma.io/service: es-http
+  kuma.io/protocol: http
+`, esHttpHostPort)))).To(Succeed())
+
+		Eventually(func() (map[string]int, error) {
+			return CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh")
+		}, "30s", "500ms").Should(
+			And(
+				HaveLen(2),
+				HaveKey(Equal(`echo-v1`)),
+				HaveKey(Equal(`es-http`)),
 			),
 		)
 	})
@@ -607,6 +657,55 @@ conf:
 				}
 				return nil
 			}, "30s", "500ms").Should(Succeed())
+		})
+
+		It("should split traffic between internal and external destinations", func() {
+			Expect(YamlUniversal(`
+type: TrafficRoute
+name: route-internal-external
+mesh: trafficroute
+sources:
+  - match:
+      kuma.io/service: demo-client
+destinations:
+  - match:
+      kuma.io/service: test-server
+conf:
+  http:
+  - match:
+      path:
+        prefix: /
+    split:
+    - weight: 50
+      destination:
+        kuma.io/service: test-server
+        version: v1
+    - weight: 50
+      destination:
+        kuma.io/service: es-http
+  destination:
+    kuma.io/service: test-server
+`)(universal.Cluster)).To(Succeed())
+			Expect(universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
+type: ExternalService
+name: es-http-1
+mesh: trafficroute
+networking:
+  address: %s
+tags:
+  kuma.io/service: es-http
+  kuma.io/protocol: http
+`, esHttpHostPort)))).To(Succeed())
+
+			Eventually(func() (map[string]int, error) {
+				return CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh")
+			}, "30s", "500ms").Should(
+				And(
+					HaveLen(2),
+					HaveKey(Equal(`echo-v1`)),
+					HaveKey(Equal(`es-http`)),
+				),
+			)
 		})
 	})
 }

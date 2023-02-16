@@ -103,6 +103,7 @@ Routes:
             path: /
           redirect:
             hostRedirect: example.com
+            portRedirect: 8080
             responseCode: FOUND
             schemeRedirect: https
             stripQuery: true

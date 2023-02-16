@@ -114,6 +114,9 @@ func (r *PodReconciler) reconcileDataplane(ctx context.Context, pod *kube_core.P
 	if pod.Status.PodIP == "" {
 		return r.deleteObjectIfExist(ctx, dp, "pod IP is empty", log)
 	}
+	if pod.Status.Reason == "Evicted" {
+		return r.deleteObjectIfExist(ctx, dp, "pod was evicted", log)
+	}
 
 	ns := kube_core.Namespace{}
 	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: pod.Namespace}, &ns); err != nil {

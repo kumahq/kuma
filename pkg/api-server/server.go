@@ -36,7 +36,6 @@ import (
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
 	util_prometheus "github.com/kumahq/kuma/pkg/util/prometheus"
@@ -347,11 +346,9 @@ func (a *ApiServer) startHttpsServer(errChan chan error) (*http.Server, error) {
 		return nil, err
 	}
 
-	if a.config.Authn.Type == certs.PluginName {
-		err = configureMTLS(tlsConfig, a.config.Auth.ClientCertsDir)
-		if err != nil {
-			return nil, err
-		}
+	err = configureMTLS(tlsConfig, a.config)
+	if err != nil {
+		return nil, err
 	}
 
 	server := &http.Server{
@@ -376,11 +373,11 @@ func (a *ApiServer) startHttpsServer(errChan chan error) (*http.Server, error) {
 	return server, nil
 }
 
-func configureMTLS(tlsConfig *tls.Config, certsDir string) error {
-	if certsDir != "" {
+func configureMTLS(tlsConfig *tls.Config, cfg api_server.ApiServerConfig) error {
+	clientCertPool := x509.NewCertPool()
+	if cfg.Auth.ClientCertsDir != "" {
 		log.Info("loading client certificates")
-		clientCertPool := x509.NewCertPool()
-		files, err := os.ReadDir(certsDir)
+		files, err := os.ReadDir(cfg.Auth.ClientCertsDir)
 		if err != nil {
 			return err
 		}
@@ -393,7 +390,7 @@ func configureMTLS(tlsConfig *tls.Config, certsDir string) error {
 				continue
 			}
 			log.Info("adding client certificate", "file", file.Name())
-			path := filepath.Join(certsDir, file.Name())
+			path := filepath.Join(cfg.Auth.ClientCertsDir, file.Name())
 			caCert, err := os.ReadFile(path)
 			if err != nil {
 				return errors.Wrapf(err, "could not read certificate %q", path)
@@ -402,9 +399,23 @@ func configureMTLS(tlsConfig *tls.Config, certsDir string) error {
 				return errors.Errorf("failed to load PEM client certificate from %q", path)
 			}
 		}
-		tlsConfig.ClientCAs = clientCertPool
 	}
-	tlsConfig.ClientAuth = tls.VerifyClientCertIfGiven // client certs are required only for some endpoints
+	if cfg.HTTPS.TlsCaFile != "" {
+		file, err := os.ReadFile(cfg.HTTPS.TlsCaFile)
+		if err != nil {
+			return err
+		}
+		if !clientCertPool.AppendCertsFromPEM(file) {
+			return errors.Errorf("failed to load PEM client certificate from %q", cfg.HTTPS.TlsCaFile)
+		}
+	}
+
+	tlsConfig.ClientCAs = clientCertPool
+	if cfg.HTTPS.RequireClientCert {
+		tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
+	} else {
+		tlsConfig.ClientAuth = tls.VerifyClientCertIfGiven // client certs are required only for some endpoints
+	}
 	return nil
 }
 

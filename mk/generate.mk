@@ -1,5 +1,5 @@
 ENVOY_IMPORTS := ./pkg/xds/envoy/imports.go
-PROTO_DIRS := ./pkg/config ./api
+PROTO_DIRS ?= ./pkg/config ./api
 
 CONTROLLER_GEN := go run -mod=mod sigs.k8s.io/controller-tools/cmd/controller-gen
 RESOURCE_GEN := go run -mod=mod $(TOOLS_DIR)/resource-gen/main.go
@@ -58,7 +58,7 @@ cleanup/policy/%:
 
 generate/deep-copy/common:
 	for version in $(foreach dir,$(wildcard $(COMMON_DIR)/*),$(notdir $(dir))); do \
-		$(CONTROLLER_GEN) object paths={$(COMMON_DIR)/$$version/targetref.go,$(COMMON_DIR)/$$version/datasource.go}  ; \
+		$(CONTROLLER_GEN) object paths="./$(COMMON_DIR)/$$version/..."  ; \
 	done
 
 generate/policy/%: generate/schema/%

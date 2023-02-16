@@ -12,10 +12,10 @@ import (
 // In that case, we could provide only public key to the CP via static configuration.
 // So we can easily do this by providing separate implementation for this interface.
 type SigningKeyAccessor interface {
-	GetPublicKey(ctx context.Context, serialNumber int) (*rsa.PublicKey, error)
+	GetPublicKey(context.Context, KeyID) (*rsa.PublicKey, error)
 	// GetLegacyKey returns legacy key. In pre 1.4.x version of Kuma, we used symmetric HMAC256 method of signing DP keys.
 	// In that case, we have to retrieve private key even for verification.
-	GetLegacyKey(ctx context.Context, serialNumber int) ([]byte, error)
+	GetLegacyKey(context.Context, KeyID) ([]byte, error)
 }
 
 type signingKeyAccessor struct {
@@ -32,8 +32,8 @@ func NewSigningKeyAccessor(resManager manager.ReadOnlyResourceManager, signingKe
 	}
 }
 
-func (s *signingKeyAccessor) GetPublicKey(ctx context.Context, serialNumber int) (*rsa.PublicKey, error) {
-	keyBytes, err := getKeyBytes(ctx, s.resManager, s.signingKeyPrefix, serialNumber)
+func (s *signingKeyAccessor) GetPublicKey(ctx context.Context, keyID KeyID) (*rsa.PublicKey, error) {
+	keyBytes, err := getKeyBytes(ctx, s.resManager, s.signingKeyPrefix, keyID)
 	if err != nil {
 		return nil, err
 	}
@@ -45,6 +45,6 @@ func (s *signingKeyAccessor) GetPublicKey(ctx context.Context, serialNumber int)
 	return &key.PublicKey, nil
 }
 
-func (s *signingKeyAccessor) GetLegacyKey(ctx context.Context, serialNumber int) ([]byte, error) {
-	return getKeyBytes(ctx, s.resManager, s.signingKeyPrefix, serialNumber)
+func (s *signingKeyAccessor) GetLegacyKey(ctx context.Context, keyID KeyID) ([]byte, error) {
+	return getKeyBytes(ctx, s.resManager, s.signingKeyPrefix, keyID)
 }

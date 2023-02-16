@@ -68,7 +68,7 @@ var _ = Describe("TracingConfigurer", func() {
                     overallSampling:
                       value: 30.5
                     provider:
-                      name: envoy.zipkin
+                      name: envoy.tracers.zipkin
                       typedConfig:
                         '@type': type.googleapis.com/envoy.config.trace.v3.ZipkinConfig
                         collectorCluster: tracing:zipkin
@@ -104,7 +104,7 @@ var _ = Describe("TracingConfigurer", func() {
                   statPrefix: localhost_8080
                   tracing:
                     provider:
-                      name: envoy.zipkin
+                      name: envoy.tracers.zipkin
                       typedConfig:
                         '@type': type.googleapis.com/envoy.config.trace.v3.ZipkinConfig
                         collectorCluster: tracing:zipkin
@@ -142,7 +142,7 @@ var _ = Describe("TracingConfigurer", func() {
               statPrefix: localhost_8080
               tracing:
                 provider:
-                  name: envoy.datadog
+                  name: envoy.tracers.datadog
                   typedConfig:
                     '@type': type.googleapis.com/envoy.config.trace.v3.DatadogConfig
                     collectorCluster: tracing:datadog
@@ -179,7 +179,7 @@ var _ = Describe("TracingConfigurer", func() {
               statPrefix: localhost_8080
               tracing:
                 provider:
-                  name: envoy.datadog
+                  name: envoy.tracers.datadog
                   typedConfig:
                     '@type': type.googleapis.com/envoy.config.trace.v3.DatadogConfig
                     collectorCluster: tracing:datadog
@@ -217,7 +217,7 @@ var _ = Describe("TracingConfigurer", func() {
               statPrefix: localhost_8080
               tracing:
                 provider:
-                  name: envoy.datadog
+                  name: envoy.tracers.datadog
                   typedConfig:
                     '@type': type.googleapis.com/envoy.config.trace.v3.DatadogConfig
                     collectorCluster: tracing:datadog

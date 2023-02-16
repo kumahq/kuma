@@ -207,7 +207,7 @@ func (g *HTTPSFilterChainGenerator) generateCertificateSecret(
 		return nil, err
 	}
 
-	tlsSecret, ktype, err := newServerSecret(data)
+	tlsSecret, ktype, err := NewServerSecret(data)
 	if err != nil {
 		return nil, err
 	}
@@ -325,10 +325,10 @@ func newFilterChain(ctx xds_context.MeshContext, info GatewayListenerInfo) *envo
 	return builder
 }
 
-// newServerSecret parses a blob that contains one or more PEM object
+// NewServerSecret parses a blob that contains one or more PEM object
 // to create a single Envoy TLS certificate secret. The resulting secret
 // must have exactly one private key, and at least one certificate.
-func newServerSecret(data []byte) (*envoy_extensions_transport_sockets_tls_v3.Secret, keyType, error) {
+func NewServerSecret(data []byte) (*envoy_extensions_transport_sockets_tls_v3.Secret, keyType, error) {
 	var certificates []*pem.Block
 	var key *pem.Block
 	var ktype keyType
