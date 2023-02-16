@@ -210,13 +210,17 @@ func makeHTTPSplit(
 			WithExternalService(isExternalService).
 			Build())
 
-		servicesAcc.Add(plugins_xds.NewClusterBuilder().
+		clusterBuilder := plugins_xds.NewClusterBuilder().
 			WithService(service).
 			WithName(clusterName).
-			WithMesh(ref.Tags[mesh_proto.MeshTag]).
 			WithTags(allTags.WithoutTags(mesh_proto.MeshTag)).
-			WithExternalService(isExternalService).
-			Build())
+			WithExternalService(isExternalService)
+
+		if mesh, ok := ref.Tags[mesh_proto.MeshTag]; ok {
+			clusterBuilder.WithMesh(mesh)
+		}
+
+		servicesAcc.Add(clusterBuilder.Build())
 	}
 
 	return split
