@@ -183,10 +183,9 @@ func (_ IngressGenerator) destinations(
 				continue
 			}
 
-			service := toTags[mesh_proto.ServiceTag]
-
 			for _, rule := range to.Rules {
 				if rule.Default.BackendRefs == nil {
+					service := toTags[mesh_proto.ServiceTag]
 					destinations[service] = append(destinations[service], toTags)
 				}
 				for _, backendRef := range pointer.Deref(rule.Default.BackendRefs) {
@@ -194,6 +193,7 @@ func (_ IngressGenerator) destinations(
 					if !ok {
 						continue
 					}
+					service := backendTags[mesh_proto.ServiceTag]
 					destinations[service] = append(destinations[service], backendTags)
 				}
 			}
