@@ -22,7 +22,7 @@ env:
   RELEASE: ${{ inputs.release || '0.0.0.0' }}
   CHECK: ${{ inputs.check }}
 jobs:
-  update-changelog:
+  release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-go@v3
@@ -64,10 +64,11 @@ jobs:
         with:
           ref: "master"
       - uses: actions/setup-go@v3
-      - env:
+      - name: update-CHANGELOG.md-in-master
+        env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
         run: |
-          release-tool release pulp-binaries --repo ${{ github.repository }} > CHANGELOG.md
+          release-tool changelog.md --repo ${{ github.repository }} > CHANGELOG.md
       - name: "Create Pull Request"
         uses: peter-evans/create-pull-request@v4
         with:
