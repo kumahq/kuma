@@ -3,8 +3,10 @@ package bootstrap_test
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -53,8 +55,14 @@ var _ = Describe("Bootstrap Server", func() {
 	  }
 	}`
 
+	ca := x509.NewCertPool()
+	cert, err := ioutil.ReadFile(filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"))
+	if err != nil {
+		panic(err)
+	}
+	ca.AppendCertsFromPEM(cert)
 	httpClient := &http.Client{
-		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
+		Transport: &http.Transport{TLSClientConfig: &tls.Config{RootCAs: ca, MinVersion: tls.VersionTLS12}},
 	}
 
 	BeforeEach(func() {

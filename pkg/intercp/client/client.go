@@ -34,7 +34,7 @@ func New(serverURL string, tlsCfg *TLSConfig) (Conn, error) {
 	case "grpc": // not used in production
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	case "grpcs":
-		tlsConfig := &tls.Config{}
+		tlsConfig := &tls.Config{MinVersion: tls.VersionTLS12}
 		if tlsCfg != nil {
 			cp := x509.NewCertPool()
 			cp.AddCert(&tlsCfg.CaCert)
