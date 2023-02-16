@@ -7,6 +7,9 @@ PROGRAMS = $(KUMA_DIR)/pkg/transparentproxy/ebpf/programs/mb_*
 .PHONY: build/ebpf
 build/ebpf: $(PROGRAMS)
 
+# It's worth noting that changing MERBRIDGE_RELEASE_TAG won't re-trigger fetch
+# if ebpf programs are already fetched. Remember to call `make clean/ebpf`
+# after changing MERBRIDGE_RELEASE_TAG
 $(PROGRAMS):
 	MERBRIDGE_TAG=$(MERBRIDGE_RELEASE_TAG) \
 	OUTPUT_PATH=$(@D) \

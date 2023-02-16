@@ -12,7 +12,7 @@ E2E_ENV_VARS ?=
 
 ifdef CI
 # In circleCI all this was built from previous targets let's reuse them!
-E2E_DEPS_TARGETS+= build/ebpf docker/load
+E2E_DEPS_TARGETS+= docker/load
 else
 E2E_DEPS_TARGETS+= build/kumactl images
 endif

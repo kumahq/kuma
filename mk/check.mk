@@ -52,7 +52,7 @@ hadolint:
 	find ./tools/releases/dockerfiles/ -type f -iname "Dockerfile*" | grep -v dockerignore | xargs -I {} $(HADOLINT) {}
 
 .PHONY: check
-check: build/ebpf format helm-lint golangci-lint shellcheck kube-lint hadolint ## Dev: Run code checks (go fmt, go vet, ...)
+check: format helm-lint golangci-lint shellcheck kube-lint hadolint ## Dev: Run code checks (go fmt, go vet, ...)
 	# fail if Git working tree is dirty or there are untracked files
 	git diff --quiet || \
 	git ls-files --other --directory --exclude-standard --no-empty-directory | wc -l | read UNTRACKED_FILES; if [ "$$UNTRACKED_FILES" != "0" ]; then false; fi || \

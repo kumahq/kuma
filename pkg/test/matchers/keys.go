@@ -18,6 +18,8 @@ type allKeysMatcher struct {
 	failures   []error
 }
 
+// AllKeys allows you to specify a matcher which all map's keys needs to fulfill
+// to make the test statement successful
 func AllKeys(matcher types.GomegaMatcher) types.GomegaMatcher {
 	return &allKeysMatcher{
 		keyMatcher: matcher,

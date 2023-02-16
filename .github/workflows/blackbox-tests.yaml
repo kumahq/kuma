@@ -31,7 +31,6 @@ jobs:
     - name: "Install dependencies"
       run: |
         go mod tidy
-        go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo
 
     - name: "Setup user to test user id port exclusion"
       run: |
