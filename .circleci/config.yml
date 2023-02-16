@@ -27,13 +27,10 @@ commands:
         default: *go_version
     steps:
     - run:
-        # `unzip`                            is necessary to install `protoc`
-        # `gcc`                              is necessary to run `go test -race`
-        # `git`                              is necessary because the CircleCI
-        #                                    version is different somehow ¯\_(ツ)_/¯
-        # `xz-utils`                         is necessary to decompress xz files
-        # `libelf-dev`, `clang, `pkg-config` are necessary for compiling ebpf
-        #                                    programs
+        # `unzip`    is necessary to install `protoc`
+        # `gcc`      is necessary to run `go test -race`
+        # `git`      is necessary because the CircleCI version is different somehow ¯\_(ツ)_/¯
+        # `xz-utils` is necessary to decompress xz files
         name: "Install basic tools"
         command: |
           if [ -r /etc/os-release ]; then source /etc/os-release; fi
@@ -45,7 +42,7 @@ commands:
             fi
 
             sudo apt update
-            sudo env DEBIAN_FRONTEND=noninteractive apt install -y curl git make unzip gcc xz-utils libelf-dev clang pkg-config
+            sudo env DEBIAN_FRONTEND=noninteractive apt install -y curl git make unzip gcc xz-utils
             ;;
           esac
     - run:
@@ -164,30 +161,6 @@ jobs:
         keys:
         # prefer the exact match
         - golang_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
-    - run:
-        # `git`                              is necessary because the CircleCI
-        #                                    version is different somehow ¯\_(ツ)_/¯
-        # `libelf-dev`, `clang, `pkg-config` are necessary for compiling ebpf
-        #                                    programs
-        name: "Install basic tools"
-        command: |
-          if [ -r /etc/os-release ]; then source /etc/os-release; fi
-          case "$ID" in
-          ubuntu)
-            if ! command -v sudo 2>&1 >/dev/null; then
-              apt update
-              apt install -y sudo
-            fi
-
-            sudo apt update
-            sudo env DEBIAN_FRONTEND=noninteractive apt install -y curl git make libelf-dev clang pkg-config
-            ;;
-          esac
-    - run:
-        name: "Create dummy eBPF programs"
-        command: |
-          mkdir -p ./pkg/transparentproxy/ebpf/programs
-          touch ./pkg/transparentproxy/ebpf/programs/mb_{connect,sockops,get_sockopts,sendmsg,recvmsg,redir,tc}
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: make check
