@@ -15,9 +15,10 @@ import (
 )
 
 type RoutesConfigurer struct {
-	Matches []api.Match
-	Filters []api.Filter
-	Split   []*plugins_xds.Split
+	Matches                 []api.Match
+	Filters                 []api.Filter
+	Split                   []*plugins_xds.Split
+	BackendRefToClusterName map[string]string
 }
 
 func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
@@ -43,7 +44,8 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 				Configure(filters.NewRequestHeaderModifier(filter.RequestHeaderModifier)).
 				Configure(filters.NewResponseHeaderModifier(filter.ResponseHeaderModifier)).
 				Configure(filters.NewRequestRedirect(filter.RequestRedirect, match.prefixMatch)).
-				Configure(filters.NewURLRewrite(filter.URLRewrite, match.prefixMatch))
+				Configure(filters.NewURLRewrite(filter.URLRewrite, match.prefixMatch)).
+				Configure(filters.NewRequestMirror(filter.RequestMirror, c.BackendRefToClusterName))
 		}
 
 		r, err := rb.Build()

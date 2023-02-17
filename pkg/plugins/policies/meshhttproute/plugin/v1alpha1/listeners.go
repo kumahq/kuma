@@ -56,10 +56,21 @@ func generateListeners(
 			if split == nil {
 				continue
 			}
+			for _, filter := range route.Filters {
+				if filter.Type == api.RequestMirrorType {
+					// we need to create a split for the mirror backend
+					_ = makeHTTPSplit(proxy, clusterCache, splitCounter, servicesAcc,
+						[]api.BackendRef{{
+							TargetRef: filter.RequestMirror.BackendRef,
+							Weight:    1, // any non-zero value
+						}})
+				}
+			}
 			routes = append(routes, xds.OutboundRoute{
-				Matches: route.Matches,
-				Filters: route.Filters,
-				Split:   split,
+				Matches:                 route.Matches,
+				Filters:                 route.Filters,
+				Split:                   split,
+				BackendRefToClusterName: clusterCache,
 			})
 		}
 
@@ -190,9 +201,9 @@ func makeHTTPSplit(
 
 		clusterName := getClusterName(ref, sc)
 		isExternalService := plugins_xds.HasExternalService(proxy.Routing, service)
-		allTags := envoy_tags.Tags(ref.Tags).WithTags(mesh_proto.ServiceTag, ref.Name)
+		refHash := ref.TargetRef.Hash()
 
-		if existingClusterName, ok := clusterCache[allTags.String()]; ok {
+		if existingClusterName, ok := clusterCache[refHash]; ok {
 			// cluster already exists, so adding only split
 			split = append(split, plugins_xds.NewSplitBuilder().
 				WithClusterName(existingClusterName).
@@ -202,7 +213,7 @@ func makeHTTPSplit(
 			continue
 		}
 
-		clusterCache[allTags.String()] = clusterName
+		clusterCache[refHash] = clusterName
 
 		split = append(split, plugins_xds.NewSplitBuilder().
 			WithClusterName(clusterName).
@@ -213,7 +224,9 @@ func makeHTTPSplit(
 		clusterBuilder := plugins_xds.NewClusterBuilder().
 			WithService(service).
 			WithName(clusterName).
-			WithTags(allTags.WithoutTags(mesh_proto.MeshTag)).
+			WithTags(envoy_tags.Tags(ref.Tags).
+				WithTags(mesh_proto.ServiceTag, ref.Name).
+				WithoutTags(mesh_proto.MeshTag)).
 			WithExternalService(isExternalService)
 
 		if mesh, ok := ref.Tags[mesh_proto.MeshTag]; ok {
