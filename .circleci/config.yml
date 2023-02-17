@@ -55,18 +55,6 @@ commands:
           # "ERROR Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
           echo 'export GOPATH=$HOME/go' >> $BASH_ENV
     - run:
-        # Without specifying default dns resolvers, iptables-nft interfere with
-        # our transparent proxy on the last dns hop, which makes the whole DNS
-        # query to fail
-        name: "Set DNS server for docker daemon"
-        command: |
-          cat \<<'EOF' | sudo tee /etc/docker/daemon.json
-          {
-            "dns": ["8.8.8.8", "1.1.1.1"]
-          }
-          EOF
-          sudo service docker restart
-    - run:
         name: "Update runc"
         # See https://github.com/rancher/k3d/issues/807 (runc's default version on the instance fails k3d)
         command: |
