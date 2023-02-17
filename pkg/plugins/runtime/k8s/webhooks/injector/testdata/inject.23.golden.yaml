@@ -3,6 +3,7 @@ kind: Pod
 metadata:
   annotations:
     docs: Documentation
+    kubectl.kubernetes.io/default-container: busybox
     kuma.io/builtin-dns: enabled
     kuma.io/builtin-dns-port: "25053"
     kuma.io/builtindns: enabled
