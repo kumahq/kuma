@@ -61,7 +61,6 @@ func generateClusters(
 			} else {
 				edsClusterBuilder.
 					Configure(envoy_clusters.EdsCluster(clusterName)).
-					Configure(envoy_clusters.LB(cluster.LB())).
 					Configure(envoy_clusters.Http2())
 
 				if upstreamMeshName := cluster.Mesh(); upstreamMeshName != "" {
