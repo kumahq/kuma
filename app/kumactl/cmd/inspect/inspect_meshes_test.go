@@ -76,7 +76,7 @@ var _ = Describe("kumactl inspect meshes", func() {
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
-		rootTime, _ := time.Parse(time.RFC3339, "2008-04-27T16:05:36.995Z")
+		rootTime, _ := time.ParseInLocation(time.RFC3339, "2008-04-27T16:05:36.995Z", time.UTC)
 
 		BeforeEach(func() {
 			store = memory_resources.NewStore()
