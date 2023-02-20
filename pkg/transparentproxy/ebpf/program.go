@@ -3,6 +3,7 @@
 package ebpf
 
 import (
+	"embed"
 	"fmt"
 	"io"
 	"os"
@@ -30,17 +31,17 @@ type FlagGenerator = func(
 type Program struct {
 	Name    string
 	Flags   FlagGenerator
-	Program []byte
 	Cleanup func(cfg config.Config) error
 }
 
-func (p Program) LoadAndAttach(
-	cfg config.Config,
-	cgroup string,
-	bpffs string,
-) error {
+func (p Program) LoadAndAttach(cfg config.Config, programs embed.FS, cgroup string, bpffs string) error {
+	programBytes, err := programs.ReadFile(p.Name)
+	if err != nil {
+		return fmt.Errorf("reading ebpf program bytes failed: %s", err)
+	}
+
 	programPath := path.Join(cfg.Ebpf.ProgramsSourcePath, p.Name)
-	if err := os.WriteFile(programPath, p.Program, 0744); err != nil {
+	if err := os.WriteFile(programPath, programBytes, 0744); err != nil {
 		return fmt.Errorf("writing program bytes to file failed with error: %s", err)
 	}
 

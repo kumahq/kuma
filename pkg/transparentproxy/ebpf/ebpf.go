@@ -3,7 +3,6 @@
 package ebpf
 
 import (
-	_ "embed"
 	"fmt"
 	"net"
 	"os"
@@ -12,6 +11,7 @@ import (
 	"unsafe"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
+	ebpf_programs "github.com/kumahq/kuma/pkg/transparentproxy/ebpf/programs"
 )
 
 const (
@@ -49,27 +49,9 @@ const (
 	MapRelativePathSockPairMap   = "/sock_pair_map"
 )
 
-var (
-	//go:embed programs/mb_connect
-	mbConnect []byte
-	//go:embed programs/mb_sockops
-	mbSockops []byte
-	//go:embed programs/mb_get_sockopts
-	mbGetSockopts []byte
-	//go:embed programs/mb_sendmsg
-	mbSendmsg []byte
-	//go:embed programs/mb_recvmsg
-	mbRecvmsg []byte
-	//go:embed programs/mb_redir
-	mbRedir []byte
-	//go:embed programs/mb_tc
-	mbTc []byte
-)
-
 var programs = []*Program{
 	{
 		Name:    "mb_connect",
-		Program: mbConnect,
 		Flags: func(
 			cfg config.Config,
 			cgroup string,
@@ -93,7 +75,6 @@ var programs = []*Program{
 	},
 	{
 		Name:    "mb_sockops",
-		Program: mbSockops,
 		Flags: func(
 			cfg config.Config,
 			cgroup string,
@@ -115,7 +96,6 @@ var programs = []*Program{
 	},
 	{
 		Name:    "mb_get_sockopts",
-		Program: mbGetSockopts,
 		Flags:   CgroupFlags,
 		Cleanup: CleanPathsRelativeToBPFFS(
 			"get_sockopts",
@@ -124,7 +104,6 @@ var programs = []*Program{
 	},
 	{
 		Name:    "mb_sendmsg",
-		Program: mbSendmsg,
 		Flags: func(
 			cfg config.Config,
 			cgroup string,
@@ -144,7 +123,6 @@ var programs = []*Program{
 	},
 	{
 		Name:    "mb_recvmsg",
-		Program: mbRecvmsg,
 		Flags: func(
 			cfg config.Config,
 			cgroup string,
@@ -163,7 +141,6 @@ var programs = []*Program{
 	},
 	{
 		Name:    "mb_redir",
-		Program: mbRedir,
 		Flags:   Flags(nil),
 		Cleanup: CleanPathsRelativeToBPFFS(
 			"redir",
@@ -172,7 +149,6 @@ var programs = []*Program{
 	},
 	{
 		Name:    "mb_tc",
-		Program: mbTc,
 		Flags: func(
 			cfg config.Config,
 			cgroup string,
@@ -249,7 +225,7 @@ func LoadAndAttachEbpfPrograms(programs []*Program, cfg config.Config) error {
 	}
 
 	for _, p := range programs {
-		if err := p.LoadAndAttach(cfg, cgroup, bpffs); err != nil {
+		if err := p.LoadAndAttach(cfg, ebpf_programs.Programs, cgroup, bpffs); err != nil {
 			errs = append(errs, err.Error())
 		}
 	}
