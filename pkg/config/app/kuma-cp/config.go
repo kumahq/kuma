@@ -209,7 +209,7 @@ var DefaultConfig = func() Config {
 		Access:      access.DefaultAccessConfig(),
 		Experimental: ExperimentalConfig{
 			GatewayAPI:          false,
-			KubeOutboundsAsVIPs: false,
+			KubeOutboundsAsVIPs: true,
 		},
 		Proxy:   xds.DefaultProxyConfig(),
 		InterCp: intercp.DefaultInterCpConfig(),

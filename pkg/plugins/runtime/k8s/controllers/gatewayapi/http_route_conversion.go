@@ -426,6 +426,26 @@ func (r *HTTPRouteReconciler) gapiToKumaFilters(
 			filter := pathRewriteToKuma(*p)
 			kumaFilters = append(kumaFilters, &filter)
 		}
+	case gatewayapi.HTTPRouteFilterResponseHeaderModifier:
+		filter := filter.ResponseHeaderModifier
+
+		var headerFilter mesh_proto.MeshGatewayRoute_HttpRoute_Filter_HeaderFilter
+
+		for _, set := range filter.Set {
+			headerFilter.Set = append(headerFilter.Set, k8sToKumaHeader(set))
+		}
+
+		for _, add := range filter.Add {
+			headerFilter.Add = append(headerFilter.Add, k8sToKumaHeader(add))
+		}
+
+		headerFilter.Remove = filter.Remove
+
+		kumaFilters = append(kumaFilters, &mesh_proto.MeshGatewayRoute_HttpRoute_Filter{
+			Filter: &mesh_proto.MeshGatewayRoute_HttpRoute_Filter_ResponseHeader{
+				ResponseHeader: &headerFilter,
+			},
+		})
 	default:
 		return nil, nil, fmt.Errorf("unsupported filter type %q", filter.Type)
 	}

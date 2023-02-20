@@ -42,7 +42,7 @@ var _ = Describe("kumactl inspect services", func() {
 
 	var rootCmd *cobra.Command
 	var buf *bytes.Buffer
-	rootTime, _ := time.Parse(time.RFC3339, "2008-04-27T16:05:36.995Z")
+	rootTime, _ := time.ParseInLocation(time.RFC3339, "2008-04-27T16:05:36.995Z", time.UTC)
 
 	serviceOverviewResources := []*core_mesh.ServiceOverviewResource{
 		{

@@ -28,7 +28,7 @@ properties:
                         description: FileBackend defines configuration for file based access logs
                         properties:
                           format:
-                            description: Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                            description: Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                             properties:
                               json:
                                 items:
@@ -50,6 +50,27 @@ properties:
                         required:
                           - path
                         type: object
+                      openTelemetry:
+                        description: Defines an OpenTelemetry logging backend.
+                        properties:
+                          attributes:
+                            description: Attributes can contain placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                            items:
+                              properties:
+                                key:
+                                  type: string
+                                value:
+                                  type: string
+                              type: object
+                            type: array
+                          endpoint:
+                            description: Endpoint of OpenTelemetry collector. An empty port defaults to 4317.
+                            example: otel-collector:4317
+                            minLength: 1
+                            type: string
+                        required:
+                          - endpoint
+                        type: object
                       tcp:
                         description: TCPBackend defines a TCP logging backend.
                         properties:
@@ -57,7 +78,7 @@ properties:
                             description: Address of the TCP logging backend
                             type: string
                           format:
-                            description: Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                            description: Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                             properties:
                               json:
                                 items:
@@ -145,7 +166,7 @@ properties:
                         description: FileBackend defines configuration for file based access logs
                         properties:
                           format:
-                            description: Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                            description: Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                             properties:
                               json:
                                 items:
@@ -167,6 +188,27 @@ properties:
                         required:
                           - path
                         type: object
+                      openTelemetry:
+                        description: Defines an OpenTelemetry logging backend.
+                        properties:
+                          attributes:
+                            description: Attributes can contain placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                            items:
+                              properties:
+                                key:
+                                  type: string
+                                value:
+                                  type: string
+                              type: object
+                            type: array
+                          endpoint:
+                            description: Endpoint of OpenTelemetry collector. An empty port defaults to 4317.
+                            example: otel-collector:4317
+                            minLength: 1
+                            type: string
+                        required:
+                          - endpoint
+                        type: object
                       tcp:
                         description: TCPBackend defines a TCP logging backend.
                         properties:
@@ -174,7 +216,7 @@ properties:
                             description: Address of the TCP logging backend
                             type: string
                           format:
-                            description: Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                            description: Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                             properties:
                               json:
                                 items:

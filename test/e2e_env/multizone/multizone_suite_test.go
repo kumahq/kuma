@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/multizone/inbound_communication"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/inspect"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/localityawarelb"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/meshhttproute"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/ownership"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/resilience"
@@ -37,6 +38,7 @@ var _ = Describe("Healthcheck", healthcheck.ApplicationOnUniversalClientOnK8s, O
 var _ = Describe("Inspect", inspect.Inspect, Ordered)
 var _ = Describe("TrafficPermission", trafficpermission.TrafficPermission, Ordered)
 var _ = Describe("TrafficRoute", trafficroute.TrafficRoute, Ordered)
+var _ = Describe("MeshHTTPRoute", meshhttproute.Test, Ordered)
 var _ = Describe("InboundPassthrough", inbound_communication.InboundPassthrough, Ordered)
 var _ = Describe("InboundPassthroughDisabled", inbound_communication.InboundPassthroughDisabled, Ordered)
 var _ = Describe("ZoneEgress Internal Services", zoneegress.InternalServices, Ordered)

@@ -81,8 +81,18 @@ func validateDefault(conf Conf) validators.ValidationError {
 func validateBackend(backend Backend) validators.ValidationError {
 	var verr validators.ValidationError
 
-	if (backend.File != nil) == (backend.Tcp != nil) {
-		verr.AddViolation("", validators.MustHaveOnlyOne("backend", "tcp", "file"))
+	var defined int
+	if backend.File != nil {
+		defined++
+	}
+	if backend.Tcp != nil {
+		defined++
+	}
+	if backend.OpenTelemetry != nil {
+		defined++
+	}
+	if defined != 1 {
+		verr.AddViolation("", validators.MustHaveOnlyOne("backend", "tcp", "file", "openTelemetry"))
 	}
 
 	switch {

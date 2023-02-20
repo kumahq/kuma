@@ -514,6 +514,12 @@ type Deployment interface {
 	Delete(cluster Cluster) error
 }
 
+type ClusterK8sVersion struct {
+	Major uint64
+	Minor uint64
+	Patch uint64
+}
+
 type Cluster interface {
 	// Cluster
 	Name() string
@@ -537,6 +543,7 @@ type Cluster interface {
 
 	// K8s
 	GetKubectlOptions(namespace ...string) *k8s.KubectlOptions
+	GetK8sVersion() (ClusterK8sVersion, error)
 	CreateNamespace(namespace string) error
 	DeleteNamespace(namespace string) error
 	DeployApp(fs ...AppDeploymentOption) error

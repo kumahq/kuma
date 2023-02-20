@@ -237,7 +237,7 @@ spec:
 				stdout, _, err := universal.Cluster.Exec("", "", "dp-demo-client-mtls", cmd...)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("response"))
-			})
+			}).Should(Succeed())
 
 			// update HealthCheck policy to check for another 'recv' line
 			Expect(YamlUniversal(healthCheck(meshName, "test-server-mtls", "foo", "baz"))(universal.Cluster)).To(Succeed())
@@ -257,7 +257,7 @@ spec:
 				// there is no real attempt to setup a connection with test-server, but Envoy may return either
 				// empty response with EXIT_CODE = 0, or  'Ncat: Connection reset by peer.' with EXIT_CODE = 1
 				g.Expect(stdout).To(Or(BeEmpty(), ContainSubstring("Ncat: Connection reset by peer.")))
-			})
+			}).Should(Succeed())
 		})
 	}, Ordered)
 
@@ -417,8 +417,8 @@ spec:
 				Install(DemoClientUniversal("dp-demo-client", meshName,
 					WithTransparentProxy(true)),
 				).
-				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(mesh.ProtocolHTTP), WithServiceVersion("v1"))).
-				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(mesh.ProtocolHTTP), WithServiceVersion("v2"))).
+				Install(TestServerUniversal("test-server-1", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(mesh.ProtocolHTTP), WithServiceVersion("v1"))).
+				Install(TestServerUniversal("test-server-2", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(mesh.ProtocolHTTP), WithServiceVersion("v2"))).
 				Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -446,9 +446,17 @@ spec:
 			// update HealthCheck policy to check for another status code
 			Expect(YamlUniversal(healthCheck(meshName, "are-you-healthy", "500"))(universal.Cluster)).To(Succeed())
 
-			// wait cluster 'test-server' to be marked as unhealthy
+			// wait cluster 'test-server-_0_' to be marked as unhealthy
 			Eventually(func(g Gomega) {
-				cmd := []string{"/bin/bash", "-c", "\"curl localhost:9901/clusters | grep test-server\""}
+				cmd := []string{"/bin/bash", "-c", "\"curl localhost:9901/clusters | grep test-server-_0_\""}
+				stdout, _, err := universal.Cluster.Exec("", "", "dp-demo-client", cmd...)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stdout).To(ContainSubstring("health_flags::/failed_active_hc"))
+			}, "30s", "500ms").Should(Succeed())
+
+			// wait cluster 'test-server-_1_' to be marked as unhealthy
+			Eventually(func(g Gomega) {
+				cmd := []string{"/bin/bash", "-c", "\"curl localhost:9901/clusters | grep test-server-_1_\""}
 				stdout, _, err := universal.Cluster.Exec("", "", "dp-demo-client", cmd...)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("health_flags::/failed_active_hc"))

@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	xds_cache "github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	"github.com/kumahq/kuma/pkg/xds/ingress"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
@@ -89,10 +90,18 @@ func (p *IngressProxyBuilder) buildZoneIngressProxy(ctx context.Context) (*core_
 		return nil, err
 	}
 
+	meshHTTPRoutes := &meshhttproute_api.MeshHTTPRouteResourceList{}
+	if err := p.ReadOnlyResManager.List(ctx, meshHTTPRoutes); err != nil {
+		return nil, err
+	}
+
 	return &core_xds.ZoneIngressProxy{
-		TrafficRouteList: routes,
-		GatewayRoutes:    gatewayRoutes,
-		MeshGateways:     gateways,
+		GatewayRoutes: gatewayRoutes,
+		MeshGateways:  gateways,
+		PolicyResources: map[core_model.ResourceType]core_model.ResourceList{
+			meshhttproute_api.MeshHTTPRouteType: meshHTTPRoutes,
+			core_mesh.TrafficRouteType:          routes,
+		},
 	}, nil
 }
 

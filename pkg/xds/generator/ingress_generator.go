@@ -1,11 +1,17 @@
 package generator
 
 import (
+	"reflect"
 	"sort"
 
+	"golang.org/x/exp/slices"
+
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -112,11 +118,33 @@ func (i IngressGenerator) generateLDS(
 	return inboundListenerBuilder.Build()
 }
 
+func tagsFromTargetRef(targetRef common_api.TargetRef) (tags.Tags, bool) {
+	var service string
+	var tags tags.Tags
+
+	switch targetRef.Kind {
+	case common_api.MeshService:
+		service = targetRef.Name
+	case common_api.MeshServiceSubset:
+		service = targetRef.Name
+		tags = targetRef.Tags
+	case common_api.Mesh:
+		service = mesh_proto.MatchAllTag
+	case common_api.MeshSubset:
+		service = mesh_proto.MatchAllTag
+		tags = targetRef.Tags
+	default:
+		return nil, false
+	}
+
+	return tags.WithTags(mesh_proto.ServiceTag, service), true
+}
+
 func (_ IngressGenerator) destinations(
 	ingressProxy *core_xds.ZoneIngressProxy,
 ) map[string][]tags.Tags {
 	destinations := map[string][]tags.Tags{}
-	for _, tr := range ingressProxy.TrafficRouteList.Items {
+	for _, tr := range ingressProxy.PolicyResources[core_mesh.TrafficRouteType].(*core_mesh.TrafficRouteResourceList).Items {
 		for _, split := range tr.Spec.Conf.GetSplitWithDestination() {
 			service := split.Destination[mesh_proto.ServiceTag]
 			destinations[service] = append(destinations[service], split.Destination)
@@ -125,6 +153,49 @@ func (_ IngressGenerator) destinations(
 			for _, split := range http.GetSplitWithDestination() {
 				service := split.Destination[mesh_proto.ServiceTag]
 				destinations[service] = append(destinations[service], split.Destination)
+			}
+		}
+	}
+
+	if len(ingressProxy.PolicyResources[meshhttproute_api.MeshHTTPRouteType].GetItems()) > 0 {
+		// We need to add a destination to route any service to any instance of
+		// that service
+		matchAllTags := tags.Tags{
+			mesh_proto.ServiceTag: mesh_proto.MatchAllTag,
+		}
+		matchAllDestinations := destinations[mesh_proto.MatchAllTag]
+		foundAllServicesDestination := slices.ContainsFunc(matchAllDestinations, func(tagsElem tags.Tags) bool {
+			return reflect.DeepEqual(tagsElem, matchAllTags)
+		})
+		if !foundAllServicesDestination {
+			matchAllDestinations = append(matchAllDestinations, matchAllTags)
+		}
+		destinations[mesh_proto.MatchAllTag] = matchAllDestinations
+	}
+
+	// Note that we're not merging these resources, but that's OK because the
+	// set of destinations after merging is a subset of the set we get here by
+	// iterating through them.
+	for _, route := range ingressProxy.PolicyResources[meshhttproute_api.MeshHTTPRouteType].(*meshhttproute_api.MeshHTTPRouteResourceList).Items {
+		for _, to := range route.Spec.To {
+			toTags, ok := tagsFromTargetRef(to.TargetRef)
+			if !ok {
+				continue
+			}
+
+			for _, rule := range to.Rules {
+				if rule.Default.BackendRefs == nil {
+					service := toTags[mesh_proto.ServiceTag]
+					destinations[service] = append(destinations[service], toTags)
+				}
+				for _, backendRef := range pointer.Deref(rule.Default.BackendRefs) {
+					backendTags, ok := tagsFromTargetRef(backendRef.TargetRef)
+					if !ok {
+						continue
+					}
+					service := backendTags[mesh_proto.ServiceTag]
+					destinations[service] = append(destinations[service], backendTags)
+				}
 			}
 		}
 	}

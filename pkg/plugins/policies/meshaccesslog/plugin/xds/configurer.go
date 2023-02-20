@@ -1,15 +1,21 @@
-package v1alpha1
+package xds
 
 import (
+	"fmt"
 	"net"
+	"strconv"
+	"strings"
 
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	access_loggers_file "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
+	access_loggers_grpc "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
+	access_loggers_otel "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/open_telemetry/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	"github.com/pkg/errors"
+	otlp "go.opentelemetry.io/proto/otlp/common/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -36,6 +42,27 @@ type Configurer struct {
 	Dataplane          *core_mesh.DataplaneResource
 }
 
+type EndpointAccumulator struct {
+	endpoints map[LoggingEndpoint]int
+	latest    int
+}
+
+type endpointClusterName string
+
+func (acc *EndpointAccumulator) clusterForEndpoint(endpoint LoggingEndpoint) endpointClusterName {
+	ind, found := acc.endpoints[endpoint]
+	if !found {
+		ind = acc.latest
+		if acc.endpoints == nil {
+			acc.endpoints = map[LoggingEndpoint]int{}
+		}
+		acc.endpoints[endpoint] = ind
+		acc.latest += 1
+	}
+
+	return endpointClusterName(fmt.Sprintf("meshaccesslog:opentelemetry:%d", ind))
+}
+
 func (c *Configurer) interpolateKumaVariables(formatString string) (*accesslog.AccessLogFormat, error) {
 	envoyFormat, err := accesslog.ParseFormat(formatString)
 	if err != nil {
@@ -59,14 +86,36 @@ func (c *Configurer) interpolateKumaVariables(formatString string) (*accesslog.A
 	return envoyFormat, nil
 }
 
-func (c *Configurer) envoyAccessLog(defaultFormat string) (*envoy_accesslog.AccessLog, error) {
+const defaultOpenTelemetryGRPCPort uint32 = 4317
+
+func endpointForOtel(endpoint string) LoggingEndpoint {
+	target := strings.Split(endpoint, ":")
+	port := defaultOpenTelemetryGRPCPort
+	if len(target) > 1 {
+		val, _ := strconv.ParseInt(target[1], 10, 32)
+		port = uint32(val)
+	}
+
+	return LoggingEndpoint{
+		Address: target[0],
+		Port:    port,
+	}
+}
+
+func (c *Configurer) envoyAccessLog(endpoints *EndpointAccumulator, defaultFormat string) (*envoy_accesslog.AccessLog, error) {
 	switch {
 	case c.Backend.Tcp != nil:
 		return c.tcpBackend(c.Backend.Tcp, defaultFormat)
 	case c.Backend.File != nil:
 		return c.fileBackend(c.Backend.File, defaultFormat)
+	case c.Backend.OpenTelemetry != nil:
+		backend := *c.Backend.OpenTelemetry
+
+		clusterName := endpoints.clusterForEndpoint(endpointForOtel(backend.Endpoint))
+
+		return otelAccessLog(backend, clusterName, "MeshAccessLog")
 	default:
-		return nil, errors.New(validators.MustHaveOnlyOne("backend", "tcp", "file"))
+		return nil, errors.New(validators.MustHaveOnlyOne("backend", "tcp", "file", "openTelemetry"))
 	}
 }
 
@@ -202,9 +251,46 @@ func fileAccessLog(logFormat *envoy_core.SubstitutionFormatString, path string) 
 	}, nil
 }
 
-func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
+func otelAccessLog(backend api.OtelBackend, clusterName endpointClusterName, logName string) (*envoy_accesslog.AccessLog, error) {
+	log := &access_loggers_otel.OpenTelemetryAccessLogConfig{
+		CommonConfig: &access_loggers_grpc.CommonGrpcAccessLogConfig{
+			LogName:             logName,
+			TransportApiVersion: envoy_core.ApiVersion_V3,
+			GrpcService: &envoy_core.GrpcService{
+				TargetSpecifier: &envoy_core.GrpcService_EnvoyGrpc_{
+					EnvoyGrpc: &envoy_core.GrpcService_EnvoyGrpc{
+						ClusterName: string(clusterName),
+					},
+				},
+			},
+		},
+		Attributes: &otlp.KeyValueList{},
+	}
+
+	for _, kv := range backend.Attributes {
+		log.Attributes.Values = append(log.Attributes.Values, &otlp.KeyValue{
+			Key: kv.Key,
+			Value: &otlp.AnyValue{
+				Value: &otlp.AnyValue_StringValue{StringValue: kv.Value},
+			},
+		})
+	}
+
+	marshaled, err := util_proto.MarshalAnyDeterministic(log)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not marshall %T", log)
+	}
+	return &envoy_accesslog.AccessLog{
+		Name: "envoy.access_loggers.open_telemetry",
+		ConfigType: &envoy_accesslog.AccessLog_TypedConfig{
+			TypedConfig: marshaled,
+		},
+	}, nil
+}
+
+func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain, endpoints *EndpointAccumulator) error {
 	httpAccessLog := func(hcm *envoy_hcm.HttpConnectionManager) error {
-		accessLog, err := c.envoyAccessLog(defaultHttpAccessLogFormat)
+		accessLog, err := c.envoyAccessLog(endpoints, defaultHttpAccessLogFormat)
 		if err != nil {
 			return err
 		}
@@ -212,7 +298,7 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 		return nil
 	}
 	tcpAccessLog := func(tcpProxy *envoy_tcp.TcpProxy) error {
-		accessLog, err := c.envoyAccessLog(defaultNetworkAccessLogFormat)
+		accessLog, err := c.envoyAccessLog(endpoints, defaultNetworkAccessLogFormat)
 		if err != nil {
 			return err
 		}

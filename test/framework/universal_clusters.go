@@ -137,6 +137,10 @@ func (cs *UniversalClusters) GetKubectlOptions(namespace ...string) *k8s.Kubectl
 	panic("Not supported at this level.")
 }
 
+func (cs *UniversalClusters) GetK8sVersion() (ClusterK8sVersion, error) {
+	panic("Not supported at this level.")
+}
+
 func (cs *UniversalClusters) CreateNamespace(namespace string) error {
 	for name, c := range cs.clusters {
 		if err := c.CreateNamespace(namespace); err != nil {

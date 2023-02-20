@@ -45,10 +45,9 @@ var _ = Describe("kumactl inspect zones", func() {
 	var sampleZoneOverview []*system_core.ZoneOverviewResource
 
 	BeforeEach(func() {
-		now, _ = time.Parse(time.RFC3339, "2019-07-17T18:08:41+00:00")
-		t1, _ = time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
-		t2, _ = time.Parse(time.RFC3339, "2019-07-17T16:05:36.995+00:00")
-		time.Local = time.UTC
+		now, _ = time.ParseInLocation(time.RFC3339, "2019-07-17T18:08:41+00:00", time.UTC)
+		t1, _ = time.ParseInLocation(time.RFC3339, "2018-07-17T16:05:36.995+00:00", time.UTC)
+		t2, _ = time.ParseInLocation(time.RFC3339, "2019-07-17T16:05:36.995+00:00", time.UTC)
 
 		sampleZoneOverview = []*system_core.ZoneOverviewResource{
 			{

@@ -426,7 +426,7 @@ ingress:
 
   # -- Number of seconds to wait before force killing the pod. Make sure to
   # update this if you add a preStop hook.
-  terminationGracePeriodSeconds: 30
+  terminationGracePeriodSeconds: 40
 
   # Horizontal Pod Autoscaling configuration
   autoscaling:

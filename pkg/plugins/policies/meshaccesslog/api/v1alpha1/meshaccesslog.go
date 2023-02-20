@@ -41,23 +41,35 @@ type Conf struct {
 }
 
 type Backend struct {
-	Tcp  *TCPBackend  `json:"tcp,omitempty"`
-	File *FileBackend `json:"file,omitempty"`
+	Tcp           *TCPBackend  `json:"tcp,omitempty"`
+	File          *FileBackend `json:"file,omitempty"`
+	OpenTelemetry *OtelBackend `json:"openTelemetry,omitempty"`
 }
 
 // TCPBackend defines a TCP logging backend.
 type TCPBackend struct {
 	// Format of access logs. Placeholders available on
-	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
 	Format *Format `json:"format,omitempty"`
 	// Address of the TCP logging backend
 	Address string `json:"address"`
 }
 
+// Defines an OpenTelemetry logging backend.
+type OtelBackend struct {
+	// Attributes can contain placeholders available on
+	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+	Attributes []JsonValue `json:"attributes,omitempty"`
+	// Endpoint of OpenTelemetry collector. An empty port defaults to 4317.
+	// +kubebuilder:example="otel-collector:4317"
+	// +kubebuilder:validation:MinLength=1
+	Endpoint string `json:"endpoint"`
+}
+
 // FileBackend defines configuration for file based access logs
 type FileBackend struct {
 	// Format of access logs. Placeholders available on
-	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
 	Format *Format `json:"format,omitempty"`
 	// Path to a file that logs will be written to
 	Path string `json:"path"`

@@ -14,7 +14,17 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
-type Cluster struct {
+type Cluster interface {
+	Service() string
+	Name() string
+	Mesh() string
+	Tags() tags.Tags
+	Hash() string
+	IsExternalService() bool
+}
+
+// Deprecated: for new policies use pkg/plugins/policies/xds/cluster.go
+type ClusterImpl struct {
 	service           string
 	name              string
 	weight            uint32
@@ -25,41 +35,42 @@ type Cluster struct {
 	timeout           *mesh_proto.Timeout_Conf
 }
 
-func (c *Cluster) Service() string { return c.service }
-func (c *Cluster) Name() string    { return c.name }
-func (c *Cluster) Weight() uint32  { return c.weight }
-func (c *Cluster) Tags() tags.Tags { return c.tags }
+func (c *ClusterImpl) Service() string { return c.service }
+func (c *ClusterImpl) Name() string    { return c.name }
+func (c *ClusterImpl) Weight() uint32  { return c.weight }
+func (c *ClusterImpl) Tags() tags.Tags { return c.tags }
 
 // Mesh returns a non-empty string only if the cluster is in a different mesh
 // from the context.
-func (c *Cluster) Mesh() string                              { return c.mesh }
-func (c *Cluster) IsExternalService() bool                   { return c.isExternalService }
-func (c *Cluster) LB() *mesh_proto.TrafficRoute_LoadBalancer { return c.lb }
-func (c *Cluster) Timeout() *mesh_proto.Timeout_Conf         { return c.timeout }
-func (c *Cluster) Hash() string                              { return fmt.Sprintf("%s-%s", c.name, c.tags.String()) }
+func (c *ClusterImpl) Mesh() string                              { return c.mesh }
+func (c *ClusterImpl) IsExternalService() bool                   { return c.isExternalService }
+func (c *ClusterImpl) LB() *mesh_proto.TrafficRoute_LoadBalancer { return c.lb }
+func (c *ClusterImpl) Timeout() *mesh_proto.Timeout_Conf         { return c.timeout }
+func (c *ClusterImpl) Hash() string                              { return fmt.Sprintf("%s-%s", c.name, c.tags.String()) }
 
-func (c *Cluster) SetName(name string) {
+func (c *ClusterImpl) SetName(name string) {
 	c.name = name
 }
 
-func (c *Cluster) SetMesh(mesh string) {
+func (c *ClusterImpl) SetMesh(mesh string) {
 	c.mesh = mesh
 }
 
 type NewClusterOpt interface {
-	apply(cluster *Cluster)
+	apply(cluster *ClusterImpl)
 }
 
-type newClusterOptFunc func(cluster *Cluster)
+type newClusterOptFunc func(cluster *ClusterImpl)
 
-func (f newClusterOptFunc) apply(cluster *Cluster) {
+func (f newClusterOptFunc) apply(cluster *ClusterImpl) {
 	f(cluster)
 }
 
-func NewCluster(opts ...NewClusterOpt) Cluster {
-	c := Cluster{}
+// Deprecated: for new policies use pkg/plugins/policies/xds/cluster.go
+func NewCluster(opts ...NewClusterOpt) *ClusterImpl {
+	c := &ClusterImpl{}
 	for _, opt := range opts {
-		opt.apply(&c)
+		opt.apply(c)
 	}
 	if err := c.validate(); err != nil {
 		panic(err)
@@ -67,7 +78,7 @@ func NewCluster(opts ...NewClusterOpt) Cluster {
 	return c
 }
 
-func (c *Cluster) validate() error {
+func (c *ClusterImpl) validate() error {
 	if c.service == "" || c.name == "" {
 		return errors.New("either WithService() or WithName() should be called")
 	}
@@ -75,7 +86,7 @@ func (c *Cluster) validate() error {
 }
 
 func WithService(service string) NewClusterOpt {
-	return newClusterOptFunc(func(cluster *Cluster) {
+	return newClusterOptFunc(func(cluster *ClusterImpl) {
 		cluster.service = service
 		if len(cluster.name) == 0 {
 			cluster.name = service
@@ -84,7 +95,7 @@ func WithService(service string) NewClusterOpt {
 }
 
 func WithName(name string) NewClusterOpt {
-	return newClusterOptFunc(func(cluster *Cluster) {
+	return newClusterOptFunc(func(cluster *ClusterImpl) {
 		cluster.name = name
 		if len(cluster.service) == 0 {
 			cluster.service = name
@@ -93,31 +104,31 @@ func WithName(name string) NewClusterOpt {
 }
 
 func WithWeight(weight uint32) NewClusterOpt {
-	return newClusterOptFunc(func(cluster *Cluster) {
+	return newClusterOptFunc(func(cluster *ClusterImpl) {
 		cluster.weight = weight
 	})
 }
 
 func WithTags(tags tags.Tags) NewClusterOpt {
-	return newClusterOptFunc(func(cluster *Cluster) {
+	return newClusterOptFunc(func(cluster *ClusterImpl) {
 		cluster.tags = tags
 	})
 }
 
 func WithTimeout(timeout *mesh_proto.Timeout_Conf) NewClusterOpt {
-	return newClusterOptFunc(func(cluster *Cluster) {
+	return newClusterOptFunc(func(cluster *ClusterImpl) {
 		cluster.timeout = timeout
 	})
 }
 
 func WithLB(lb *mesh_proto.TrafficRoute_LoadBalancer) NewClusterOpt {
-	return newClusterOptFunc(func(cluster *Cluster) {
+	return newClusterOptFunc(func(cluster *ClusterImpl) {
 		cluster.lb = lb
 	})
 }
 
 func WithExternalService(isExternalService bool) NewClusterOpt {
-	return newClusterOptFunc(func(cluster *Cluster) {
+	return newClusterOptFunc(func(cluster *ClusterImpl) {
 		cluster.isExternalService = isExternalService
 	})
 }

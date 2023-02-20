@@ -113,7 +113,7 @@ A Helm chart for the Kuma Control Plane
 | ingress.replicas | int | `1` | Number of replicas of the Ingress. Ignored when autoscaling is enabled. |
 | ingress.resources | object | `{"limits":{"cpu":"1000m","memory":"512Mi"},"requests":{"cpu":"50m","memory":"64Mi"}}` | Define the resources to allocate to mesh ingress |
 | ingress.lifecycle | object | `{}` | Pod lifecycle settings (useful for adding a preStop hook, when using AWS ALB or NLB) |
-| ingress.terminationGracePeriodSeconds | int | `30` | Number of seconds to wait before force killing the pod. Make sure to update this if you add a preStop hook. |
+| ingress.terminationGracePeriodSeconds | int | `40` | Number of seconds to wait before force killing the pod. Make sure to update this if you add a preStop hook. |
 | ingress.autoscaling.enabled | bool | `false` | Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster |
 | ingress.autoscaling.minReplicas | int | `2` | The minimum CP pods to allow |
 | ingress.autoscaling.maxReplicas | int | `5` | The max CP pods to scale to |

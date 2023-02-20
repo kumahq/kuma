@@ -3,6 +3,7 @@ kind: Pod
 metadata:
   annotations:
     docs: Documentation
+    kubectl.kubernetes.io/default-container: busybox
     kuma.io/envoy-admin-port: "9901"
     kuma.io/mesh: default
     kuma.io/sidecar-injected: "true"
@@ -117,13 +118,6 @@ spec:
       name: default-token-w7dxf
       readOnly: true
   initContainers:
-  - command:
-    - sh
-    - -c
-    - sleep 5
-    image: busybox
-    name: init
-    resources: {}
   - args:
     - --redirect-outbound-port
     - "15001"
@@ -161,6 +155,13 @@ spec:
         - NET_RAW
       runAsGroup: 0
       runAsUser: 0
+  - command:
+    - sh
+    - -c
+    - sleep 5
+    image: busybox
+    name: init
+    resources: {}
   volumes:
   - name: default-token-w7dxf
     secret:

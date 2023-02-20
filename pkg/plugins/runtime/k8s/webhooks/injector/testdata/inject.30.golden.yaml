@@ -3,6 +3,7 @@ kind: Pod
 metadata:
   annotations:
     ignore-check.kube-linter.io/privileged-container: ebpf requires privileged-container
+    kubectl.kubernetes.io/default-container: busybox
     kuma.io/envoy-admin-port: "9901"
     kuma.io/mesh: default
     kuma.io/sidecar-injected: "true"

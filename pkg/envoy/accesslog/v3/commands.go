@@ -76,11 +76,11 @@ const (
 
 // CommandOperatorDescriptor represents a descriptor of an Envoy access log command operator.
 //
-// See https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log#command-operators
+// See https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
 type CommandOperatorDescriptor string
 
 // String returns the reference name of an Envoy access log command operator
-// as it appears on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log#command-operators
+// as it appears on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
 func (o CommandOperatorDescriptor) String() string {
 	switch string(o) {
 	case CMD_REQ:

@@ -94,7 +94,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 									Default: api.RuleConf{
 										BackendRefs: &[]api.BackendRef{{
 											TargetRef: builders.TargetRefServiceSubset("backend", "version", "v1"),
-											Weight:    100,
+											Weight:    pointer.To(uint(100)),
 										}},
 									},
 								}, {
@@ -107,7 +107,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 									Default: api.RuleConf{
 										BackendRefs: &[]api.BackendRef{{
 											TargetRef: builders.TargetRefServiceSubset("backend", "version", "v2"),
-											Weight:    100,
+											Weight:    pointer.To(uint(100)),
 										}},
 									},
 								}},
@@ -133,7 +133,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 								Filters: &[]api.Filter{{}},
 								BackendRefs: &[]api.BackendRef{{
 									TargetRef: builders.TargetRefServiceSubset("backend", "version", "v1"),
-									Weight:    100,
+									Weight:    pointer.To(uint(100)),
 								}},
 							},
 						}, {
@@ -146,7 +146,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 							Default: api.RuleConf{
 								BackendRefs: &[]api.BackendRef{{
 									TargetRef: builders.TargetRefServiceSubset("backend", "version", "v2"),
-									Weight:    100,
+									Weight:    pointer.To(uint(100)),
 								}},
 							},
 						}},
@@ -276,7 +276,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											Default: api.RuleConf{
 												BackendRefs: &[]api.BackendRef{{
 													TargetRef: builders.TargetRefService("backend"),
-													Weight:    100,
+													Weight:    pointer.To(uint(100)),
 												}},
 											},
 										}, {
@@ -294,7 +294,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											Default: api.RuleConf{
 												BackendRefs: &[]api.BackendRef{{
 													TargetRef: builders.TargetRefServiceSubset("backend", "region", "us"),
-													Weight:    100,
+													Weight:    pointer.To(uint(100)),
 												}},
 											},
 										}, {
@@ -308,7 +308,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											Default: api.RuleConf{
 												BackendRefs: &[]api.BackendRef{{
 													TargetRef: builders.TargetRefService("backend"),
-													Weight:    100,
+													Weight:    pointer.To(uint(100)),
 												}},
 											},
 										}}},

@@ -55,7 +55,13 @@ spec:
 
 		// when it's evicted
 		Eventually(func(g Gomega) {
-			out, err := k8s.RunKubectlAndGetOutputE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(nsName), "get", "pods")
+			out, err := k8s.RunKubectlAndGetOutputE(
+				kubernetes.Cluster.GetTesting(),
+				kubernetes.Cluster.GetKubectlOptions(nsName),
+				"get",
+				"pod", "to-be-evicted",
+				"-o", "go-template=\"{{.status.reason}}\"",
+			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(out).To(ContainSubstring("Evicted"))
 		}, "60s", "1s").Should(Succeed())

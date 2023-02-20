@@ -74,7 +74,7 @@ func datadogConfig(cfgStr *structpb.Struct, backendName string, serviceName stri
 		return nil, err
 	}
 	tracingConfig := &envoy_trace.Tracing_Http{
-		Name: "envoy.datadog",
+		Name: "envoy.tracers.datadog",
 		ConfigType: &envoy_trace.Tracing_Http_TypedConfig{
 			TypedConfig: datadogConfigAny,
 		},
@@ -105,7 +105,7 @@ func zipkinConfig(cfgStr *structpb.Struct, backendName string) (*envoy_trace.Tra
 		return nil, err
 	}
 	tracingConfig := &envoy_trace.Tracing_Http{
-		Name: "envoy.zipkin",
+		Name: "envoy.tracers.zipkin",
 		ConfigType: &envoy_trace.Tracing_Http_TypedConfig{
 			TypedConfig: zipkinConfigAny,
 		},

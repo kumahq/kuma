@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -38,22 +39,28 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
+	endpoints := &plugin_xds.EndpointAccumulator{}
+
 	listeners := policies_xds.GatherListeners(rs)
 
-	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy.Dataplane); err != nil {
+	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy.Dataplane, endpoints); err != nil {
 		return err
 	}
-	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Dataplane); err != nil {
+	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Dataplane, endpoints); err != nil {
 		return err
 	}
-	if err := applyToTransparentProxyListeners(policies, listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, proxy.Dataplane); err != nil {
+	if err := applyToTransparentProxyListeners(policies, listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, proxy.Dataplane, endpoints); err != nil {
 		return err
 	}
-	if err := applyToDirectAccess(policies.ToRules, listeners.DirectAccess, proxy.Dataplane); err != nil {
+	if err := applyToDirectAccess(policies.ToRules, listeners.DirectAccess, proxy.Dataplane, endpoints); err != nil {
 		return err
 	}
-	if err := applyToGateway(policies.ToRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy.Dataplane); err != nil {
+	if err := applyToGateway(policies.ToRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy.Dataplane, endpoints); err != nil {
 		return err
+	}
+
+	if err := plugin_xds.HandleClusters(*endpoints, rs, proxy); err != nil {
+		return errors.Wrap(err, "unable to handle clusters for policy")
 	}
 
 	return nil
@@ -61,6 +68,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 func applyToInbounds(
 	rules xds.FromRules, inboundListeners map[xds.InboundListener]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
+	backends *plugin_xds.EndpointAccumulator,
 ) error {
 	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
 		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
@@ -74,7 +82,7 @@ func applyToInbounds(
 			continue
 		}
 
-		if err := configureInbound(rules.Rules[listenerKey], dataplane, listener); err != nil {
+		if err := configureInbound(rules.Rules[listenerKey], dataplane, listener, backends); err != nil {
 			return err
 		}
 	}
@@ -83,6 +91,7 @@ func applyToInbounds(
 
 func applyToOutbounds(
 	rules xds.ToRules, outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
+	backends *plugin_xds.EndpointAccumulator,
 ) error {
 	for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
 		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound)
@@ -94,7 +103,7 @@ func applyToOutbounds(
 
 		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
 
-		if err := configureOutbound(rules, dataplane, xds.MeshService(serviceName), serviceName, listener); err != nil {
+		if err := configureOutbound(rules, dataplane, xds.MeshService(serviceName), serviceName, listener, backends); err != nil {
 			return err
 		}
 	}
@@ -104,6 +113,7 @@ func applyToOutbounds(
 
 func applyToTransparentProxyListeners(
 	policies xds.TypedMatchingPolicies, ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
+	backends *plugin_xds.EndpointAccumulator,
 ) error {
 	if ipv4 != nil {
 		if err := configureOutbound(
@@ -112,6 +122,7 @@ func applyToTransparentProxyListeners(
 			xds.MeshService(core_mesh.PassThroughService),
 			"external",
 			ipv4,
+			backends,
 		); err != nil {
 			return err
 		}
@@ -124,6 +135,7 @@ func applyToTransparentProxyListeners(
 			xds.MeshService(core_mesh.PassThroughService),
 			"external",
 			ipv6,
+			backends,
 		)
 	}
 
@@ -132,6 +144,7 @@ func applyToTransparentProxyListeners(
 
 func applyToDirectAccess(
 	rules xds.ToRules, directAccess map[generator.Endpoint]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
+	backends *plugin_xds.EndpointAccumulator,
 ) error {
 	for endpoint, listener := range directAccess {
 		name := generator.DirectAccessEndpointName(endpoint)
@@ -141,6 +154,7 @@ func applyToDirectAccess(
 			xds.MeshService(core_mesh.PassThroughService),
 			name,
 			listener,
+			backends,
 		)
 	}
 
@@ -149,6 +163,7 @@ func applyToDirectAccess(
 
 func applyToGateway(
 	rules xds.ToRules, gatewayListeners map[xds.InboundListener]*envoy_listener.Listener, resources xds_context.ResourceMap, dataplane *core_mesh.DataplaneResource,
+	backends *plugin_xds.EndpointAccumulator,
 ) error {
 	var gateways *core_mesh.MeshGatewayResourceList
 	if rawList := resources[core_mesh.MeshGatewayType]; rawList != nil {
@@ -179,6 +194,7 @@ func applyToGateway(
 			xds.Subset{},
 			mesh_proto.MatchAllTag,
 			listener,
+			backends,
 		); err != nil {
 			return err
 		}
@@ -191,6 +207,7 @@ func configureInbound(
 	fromRules xds.Rules,
 	dataplane *core_mesh.DataplaneResource,
 	listener *envoy_listener.Listener,
+	backendsAcc *plugin_xds.EndpointAccumulator,
 ) error {
 	serviceName := dataplane.Spec.GetIdentifyingService()
 
@@ -213,7 +230,7 @@ func configureInbound(
 		}
 
 		for _, chain := range listener.FilterChains {
-			if err := configurer.Configure(chain); err != nil {
+			if err := configurer.Configure(chain, backendsAcc); err != nil {
 				return err
 			}
 		}
@@ -228,6 +245,7 @@ func configureOutbound(
 	subset xds.Subset,
 	destinationServiceName string,
 	listener *envoy_listener.Listener,
+	backendsAcc *plugin_xds.EndpointAccumulator,
 ) error {
 	sourceService := dataplane.Spec.GetIdentifyingService()
 
@@ -249,7 +267,7 @@ func configureOutbound(
 		}
 
 		for _, chain := range listener.FilterChains {
-			if err := configurer.Configure(chain); err != nil {
+			if err := configurer.Configure(chain, backendsAcc); err != nil {
 				return err
 			}
 		}

@@ -1157,6 +1157,7 @@ spec:
                                         `MeshSubset` and `MeshServiceSubset`
                                       type: object
                                     weight:
+                                      default: 1
                                       minimum: 0
                                       type: integer
                                   type: object
@@ -2807,7 +2808,8 @@ spec:
                       explained in MADR 009-tracing-policy this has to be a one element
                       array for now.
                     items:
-                      description: Only one of zipkin or datadog can be used.
+                      description: Only one of zipkin, datadog or openTelemetry can
+                        be used.
                       properties:
                         datadog:
                           description: Datadog backend configuration.
@@ -2827,6 +2829,17 @@ spec:
                               type: string
                           required:
                           - url
+                          type: object
+                        openTelemetry:
+                          description: OpenTelemetry backend configuration.
+                          properties:
+                            endpoint:
+                              description: Address of OpenTelemetry collector.
+                              example: otel-collector:4317
+                              minLength: 1
+                              type: string
+                          required:
+                          - endpoint
                           type: object
                         zipkin:
                           description: Zipkin backend configuration.
@@ -4042,7 +4055,7 @@ spec:
                                 properties:
                                   format:
                                     description: Format of access logs. Placeholders
-                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                     properties:
                                       json:
                                         items:
@@ -4065,6 +4078,29 @@ spec:
                                 required:
                                 - path
                                 type: object
+                              openTelemetry:
+                                description: Defines an OpenTelemetry logging backend.
+                                properties:
+                                  attributes:
+                                    description: Attributes can contain placeholders
+                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                    items:
+                                      properties:
+                                        key:
+                                          type: string
+                                        value:
+                                          type: string
+                                      type: object
+                                    type: array
+                                  endpoint:
+                                    description: Endpoint of OpenTelemetry collector.
+                                      An empty port defaults to 4317.
+                                    example: otel-collector:4317
+                                    minLength: 1
+                                    type: string
+                                required:
+                                - endpoint
+                                type: object
                               tcp:
                                 description: TCPBackend defines a TCP logging backend.
                                 properties:
@@ -4073,7 +4109,7 @@ spec:
                                     type: string
                                   format:
                                     description: Format of access logs. Placeholders
-                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                     properties:
                                       json:
                                         items:
@@ -4175,7 +4211,7 @@ spec:
                                 properties:
                                   format:
                                     description: Format of access logs. Placeholders
-                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                     properties:
                                       json:
                                         items:
@@ -4198,6 +4234,29 @@ spec:
                                 required:
                                 - path
                                 type: object
+                              openTelemetry:
+                                description: Defines an OpenTelemetry logging backend.
+                                properties:
+                                  attributes:
+                                    description: Attributes can contain placeholders
+                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                    items:
+                                      properties:
+                                        key:
+                                          type: string
+                                        value:
+                                          type: string
+                                      type: object
+                                    type: array
+                                  endpoint:
+                                    description: Endpoint of OpenTelemetry collector.
+                                      An empty port defaults to 4317.
+                                    example: otel-collector:4317
+                                    minLength: 1
+                                    type: string
+                                required:
+                                - endpoint
+                                type: object
                               tcp:
                                 description: TCPBackend defines a TCP logging backend.
                                 properties:
@@ -4206,7 +4265,7 @@ spec:
                                     type: string
                                   format:
                                     description: Format of access logs. Placeholders
-                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                                      available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                     properties:
                                       json:
                                         items:

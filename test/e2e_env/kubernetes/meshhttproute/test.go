@@ -79,7 +79,7 @@ spec:
         kind: MeshService
         name: nonexistent-service-that-activates-default
       rules: []
-`, Config.KumaNamespace, meshName, meshName))(kubernetes.Cluster)).To(Succeed())
+`, Config.KumaNamespace, meshName, namespace))(kubernetes.Cluster)).To(Succeed())
 
 		Eventually(func(g Gomega) {
 			response, err := client.CollectResponse(kubernetes.Cluster, "test-client", "test-server_meshhttproute_svc_80.mesh", client.FromKubernetesPod(namespace, "test-client"))
@@ -94,16 +94,15 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: ExternalService
 metadata:
-  name: external-service-1
-  namespace: %s
+  name: external-service-mhr
 mesh: %s
 spec:
   tags:
-    kuma.io/service: external-service
+    kuma.io/service: external-service-mhr
     kuma.io/protocol: http
   networking:
     address: external-service.%s.svc.cluster.local:80 # .svc.cluster.local is needed, otherwise Kubernetes will resolve this to the real IP
-`, Config.KumaNamespace, meshName, namespace)))).To(Succeed())
+`, meshName, namespace)))).To(Succeed())
 
 		// when
 		Expect(YamlK8s(fmt.Sprintf(`
@@ -133,7 +132,7 @@ spec:
                 name: test-server_meshhttproute_svc_80
                 weight: 50
               - kind: MeshService
-                name: external-service
+                name: external-service-mhr
                 weight: 50
 `, Config.KumaNamespace, meshName, meshName))(kubernetes.Cluster)).To(Succeed())
 
@@ -195,6 +194,50 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(failure.ResponseCode).To(Equal(307))
 			g.Expect(failure.RedirectURL).To(Equal("http://test-server_meshhttproute_svc_80.mesh/new-path"))
+		}, "30s", "1s").Should(Succeed())
+	})
+
+	It("should configure URLRewrite", func() {
+		// when
+		Expect(YamlK8s(fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: route-3
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: MeshService
+    name: test-client_%s_svc_80
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server_meshhttproute_svc_80
+      rules: 
+        - matches:
+            - path: 
+                type: Prefix
+                value: /prefix
+          default:
+            filters:
+              - type: URLRewrite
+                urlRewrite:
+                  path:
+                    type: ReplacePrefixMatch
+                    replacePrefixMatch: /hello/
+            backendRefs:
+              - kind: MeshService
+                name: test-server_meshhttproute_svc_80
+                weight: 1
+`, Config.KumaNamespace, meshName, meshName))(kubernetes.Cluster)).To(Succeed())
+
+		// then receive redirect response
+		Eventually(func(g Gomega) {
+			resp, err := client.CollectResponse(kubernetes.Cluster, "test-client", "test-server_meshhttproute_svc_80.mesh/prefix/world", client.FromKubernetesPod(namespace, "test-client"))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(resp.Received.Path).To(Equal("/hello/world"))
 		}, "30s", "1s").Should(Succeed())
 	})
 }

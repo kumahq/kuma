@@ -711,7 +711,7 @@ spec:
       nodeSelector:
       
         kubernetes.io/os: linux
-      terminationGracePeriodSeconds: 30
+      terminationGracePeriodSeconds: 40
       containers:
         - name: ingress
           image: "docker.io/kumahq/kuma-dp:0.0.1"

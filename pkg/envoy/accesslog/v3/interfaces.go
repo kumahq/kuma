@@ -8,7 +8,7 @@ import (
 // AccessLogFragment represents a fragment of an Envoy access log format string,
 // such as a command operator or a span of plain text.
 //
-// See https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log#command-operators
+// See https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
 type AccessLogFragment interface {
 	HttpLogEntryFormatter
 	TcpLogEntryFormatter

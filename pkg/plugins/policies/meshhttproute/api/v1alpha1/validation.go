@@ -54,7 +54,7 @@ func validateRules(rules []Rule) validators.ValidationError {
 	for i, rule := range rules {
 		path := validators.Root().Index(i)
 		errs.AddErrorAt(path.Field("matches"), validateMatches(rule.Matches))
-		errs.AddErrorAt(path.Field("filters"), validateFilters(rule.Default.Filters))
+		errs.AddErrorAt(path.Field("filters"), validateFilters(rule.Default.Filters, rule.Matches))
 	}
 
 	return errs
@@ -150,7 +150,18 @@ func validateQueryParams(matches []QueryParamsMatch) validators.ValidationError 
 	return errs
 }
 
-func validateFilters(filters *[]Filter) validators.ValidationError {
+func hasAnyMatchesWithoutPrefix(matches []Match) bool {
+	for _, match := range matches {
+		if match.Path == nil || match.Path.Type != Prefix {
+			return true
+		}
+	}
+
+	// No matches means a default / prefix
+	return false
+}
+
+func validateFilters(filters *[]Filter, matches []Match) validators.ValidationError {
 	var errs validators.ValidationError
 
 	if filters == nil {
@@ -171,6 +182,18 @@ func validateFilters(filters *[]Filter) validators.ValidationError {
 		case RequestRedirectType:
 			if filter.RequestRedirect == nil {
 				errs.AddViolationAt(path.Field("requestRedirect"), validators.MustBeDefined)
+				continue
+			}
+			if filter.RequestRedirect.Path != nil &&
+				filter.RequestRedirect.Path.ReplacePrefixMatch != nil &&
+				hasAnyMatchesWithoutPrefix(matches) {
+				errs.AddViolationAt(path.Field("requestRedirect").Field("path").Field("replacePrefixMatch"), "can only appear if all matches match a path prefix")
+			}
+		case URLRewriteType:
+			if filter.URLRewrite.Path != nil &&
+				filter.URLRewrite.Path.ReplacePrefixMatch != nil &&
+				hasAnyMatchesWithoutPrefix(matches) {
+				errs.AddViolationAt(path.Field("urlRewrite").Field("path").Field("replacePrefixMatch"), "can only appear if all matches match a path prefix")
 			}
 		}
 	}

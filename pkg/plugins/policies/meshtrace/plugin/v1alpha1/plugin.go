@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	net_url "net/url"
 	"strconv"
+	"strings"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
@@ -165,19 +166,23 @@ func applyToClusters(rules xds.SingleItemRules, rs *xds.ResourceSet, proxy *xds.
 	var endpoint *xds.Endpoint
 	var provider string
 
-	if backend.Zipkin != nil {
+	builder := clusters.NewClusterBuilder(proxy.APIVersion)
+	switch {
+	case backend.Zipkin != nil:
 		endpoint = endpointForZipkin(backend.Zipkin)
 		provider = plugin_xds.ZipkinProviderName
-	} else {
+	case backend.Datadog != nil:
 		endpoint = endpointForDatadog(backend.Datadog)
 		provider = plugin_xds.DatadogProviderName
+	case backend.OpenTelemetry != nil:
+		endpoint = endpointForOpenTelemetry(backend.OpenTelemetry)
+		provider = plugin_xds.OpenTelemetryProviderName
+		builder.Configure(clusters.Http2())
 	}
 
-	res, err := clusters.NewClusterBuilder(proxy.APIVersion).
-		Configure(clusters.ProvidedEndpointCluster(plugin_xds.GetTracingClusterName(provider), proxy.Dataplane.IsIPv6(), *endpoint)).
+	res, err := builder.Configure(clusters.ProvidedEndpointCluster(plugin_xds.GetTracingClusterName(provider), proxy.Dataplane.IsIPv6(), *endpoint)).
 		Configure(clusters.ClientSideTLS([]xds.Endpoint{*endpoint})).
-		Configure(clusters.DefaultTimeout()).
-		Build()
+		Configure(clusters.DefaultTimeout()).Build()
 	if err != nil {
 		return err
 	}
@@ -197,6 +202,19 @@ func endpointForZipkin(cfg *api.ZipkinBackend) *xds.Endpoint {
 			TLSEnabled:         url.Scheme == "https",
 			AllowRenegotiation: true,
 		},
+	}
+}
+
+func endpointForOpenTelemetry(cfg *api.OpenTelemetryBackend) *xds.Endpoint {
+	target := strings.Split(cfg.Endpoint, ":")
+	port := uint32(4317) // default gRPC port
+	if len(target) > 1 {
+		val, _ := strconv.ParseInt(target[1], 10, 32)
+		port = uint32(val)
+	}
+	return &xds.Endpoint{
+		Target: target[0],
+		Port:   port,
 	}
 }
 
