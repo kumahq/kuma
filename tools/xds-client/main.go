@@ -57,7 +57,7 @@ func newRunCmd() *cobra.Command {
 		Short: "Start xDS client(s) that simulate Envoy",
 		Long:  `Start xDS client(s) that simulate Envoy.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			ipRand := rand.Uint32()
+			ipRand := rand.Uint32() // #nosec G404 -- that's just a test tool
 			log.Info("going to start xDS clients (Envoy simulators)", "dps", args.dps)
 			errCh := make(chan error, 1)
 			for i := 0; i < args.dps; i++ {
@@ -76,7 +76,7 @@ func newRunCmd() *cobra.Command {
 						},
 					}
 					for j := 0; j < args.inbounds; j++ {
-						service := fmt.Sprintf("service-%d", rand.Int()%args.services)
+						service := fmt.Sprintf("service-%d", rand.Int()%args.services) // #nosec G404 -- that's just a test tool
 						dpSpec.Networking.Inbound = append(dpSpec.Networking.Inbound, &v1alpha1.Dataplane_Networking_Inbound{
 							Port: uint32(8080 + j),
 							Tags: map[string]string{
@@ -86,7 +86,7 @@ func newRunCmd() *cobra.Command {
 						})
 					}
 					for j := 0; j < args.outbounds; j++ {
-						service := fmt.Sprintf("service-%d", rand.Int()%args.services)
+						service := fmt.Sprintf("service-%d", rand.Int()%args.services) // #nosec G404 -- that's just a test tool
 						dpSpec.Networking.Outbound = append(dpSpec.Networking.Outbound, &v1alpha1.Dataplane_Networking_Outbound{
 							Port: uint32(10080 + j), Tags: map[string]string{"kuma.io/service": service},
 						})
@@ -98,7 +98,7 @@ func newRunCmd() *cobra.Command {
 					}
 
 					// add some jitter
-					delay := time.Duration(int64(float64(args.rampUpPeriod.Nanoseconds()) * rand.Float64()))
+					delay := time.Duration(int64(float64(args.rampUpPeriod.Nanoseconds()) * rand.Float64())) // #nosec G404 -- that's just a test tool
 					// wait
 					<-time.After(delay)
 					// proceed

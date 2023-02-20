@@ -65,7 +65,8 @@ func (b *remoteBootstrap) Generate(ctx context.Context, url string, cfg kuma_dp.
 			}
 			b.client.Transport = &http.Transport{
 				TLSClientConfig: &tls.Config{
-					RootCAs: certPool,
+					MinVersion: tls.VersionTLS12,
+					RootCAs:    certPool,
 				},
 			}
 		} else {

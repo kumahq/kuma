@@ -154,7 +154,8 @@ func gatewayToClassMapper(l logr.Logger, client kube_client.Client) kube_handler
 			}
 
 			var req []kube_reconcile.Request
-			for _, class := range classes.Items {
+			for i := range classes.Items {
+				class := classes.Items[i]
 				if class.Spec.ControllerName != common.ControllerName {
 					continue
 				}
@@ -200,7 +201,8 @@ func gatewayClassesForConfig(l logr.Logger, client kube_client.Client) kube_hand
 
 		var requests []kube_reconcile.Request
 
-		for _, class := range classes.Items {
+		for i := range classes.Items {
+			class := classes.Items[i]
 			requests = append(requests, kube_reconcile.Request{
 				NamespacedName: kube_client.ObjectKeyFromObject(&class),
 			})

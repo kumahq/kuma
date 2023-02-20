@@ -13,7 +13,6 @@ import (
 	kumanet_config "github.com/kumahq/kuma-net/transparent-proxy/config"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
-	"github.com/kumahq/kuma/pkg/transparentproxy/istio/tools/istio-iptables/pkg/constants"
 )
 
 var _ TransparentProxy = &ExperimentalTransparentProxy{}
@@ -54,7 +53,7 @@ func ShouldEnableIPv6(port uint16) (bool, error) {
 	// kernel module which is adding `nat` table, so we are checking if this table
 	// exists and if so, we are assuming we can safely proceed with ip6tables
 	// ref. https://github.com/kumahq/kuma/issues/2046
-	err = exec.Command(constants.IP6TABLES, "-t", constants.NAT, "-L").Run()
+	err = exec.Command("ip6tables", "-t", "nat", "-L").Run()
 
 	return err == nil, nil
 }

@@ -128,7 +128,7 @@ func (c *K8sControlPlane) VerifyKumaREST() error {
 	return http_helper.HttpGetWithRetryWithCustomValidationE(
 		c.t,
 		c.GetGlobalStatusAPI(),
-		&tls.Config{},
+		&tls.Config{MinVersion: tls.VersionTLS12},
 		DefaultRetries,
 		DefaultTimeout,
 		func(statusCode int, body string) bool {
@@ -145,7 +145,7 @@ func (c *K8sControlPlane) VerifyKumaGUI() error {
 	return http_helper.HttpGetWithRetryWithCustomValidationE(
 		c.t,
 		c.GetAPIServerAddress()+"/gui",
-		&tls.Config{},
+		&tls.Config{MinVersion: tls.VersionTLS12},
 		3,
 		DefaultTimeout,
 		func(statusCode int, body string) bool {
@@ -179,7 +179,7 @@ func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
 		body, err := http_helper.HTTPDoWithRetryWithOptionsE(c.t, http_helper.HttpDoOptions{
 			Method:    "GET",
 			Url:       c.GetAPIServerAddress() + "/global-secrets/admin-user-token",
-			TlsConfig: &tls.Config{},
+			TlsConfig: &tls.Config{MinVersion: tls.VersionTLS12},
 			Body:      bytes.NewReader([]byte{}),
 		}, http.StatusOK, DefaultRetries, DefaultTimeout)
 
@@ -266,7 +266,7 @@ func (c *K8sControlPlane) generateToken(
 		200,
 		DefaultRetries,
 		DefaultTimeout,
-		&tls.Config{},
+		&tls.Config{MinVersion: tls.VersionTLS12},
 	)
 }
 

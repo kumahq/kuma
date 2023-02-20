@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"crypto/tls"
 	"net/http"
 	"path/filepath"
 	"runtime"
@@ -56,8 +55,7 @@ func DefaultRootContext() *RootContext {
 	return &RootContext{
 		ComponentManager: component.NewManager(leader_memory.NewNeverLeaderElector()),
 		BootstrapGenerator: envoy.NewRemoteBootstrapGenerator(&http.Client{
-			Timeout:   10 * time.Second,
-			Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
+			Timeout: 10 * time.Second,
 		}, runtime.GOOS, features),
 		Config:                   &config,
 		BootstrapDynamicMetadata: map[string]string{},

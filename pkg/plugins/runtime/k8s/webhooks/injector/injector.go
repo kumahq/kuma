@@ -29,7 +29,7 @@ import (
 
 const (
 	// serviceAccountTokenMountPath is a well-known location where Kubernetes mounts a ServiceAccount token.
-	serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
+	serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount" // #nosec G101 -- this isn't a secret
 )
 
 var log = core.Log.WithName("injector")
