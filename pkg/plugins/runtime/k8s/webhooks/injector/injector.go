@@ -15,6 +15,7 @@ import (
 	kube_errors "k8s.io/apimachinery/pkg/api/errors"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
 	kube_types "k8s.io/apimachinery/pkg/types"
+	kube_podcmd "k8s.io/kubectl/pkg/cmd/util/podcmd"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
@@ -110,13 +111,17 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		return err
 	}
 
-	// inject sidecar as first container
-	pod.Spec.Containers = append([]kube_core.Container{patchedContainer}, pod.Spec.Containers...)
-
 	// annotations
 	if pod.Annotations == nil {
 		pod.Annotations = map[string]string{}
 	}
+
+	if _, hasDefaultContainer := pod.Annotations[kube_podcmd.DefaultContainerAnnotationName]; len(pod.Spec.Containers) == 1 && !hasDefaultContainer {
+		pod.Annotations[kube_podcmd.DefaultContainerAnnotationName] = pod.Spec.Containers[0].Name
+	}
+
+	// inject sidecar as first container
+	pod.Spec.Containers = append([]kube_core.Container{patchedContainer}, pod.Spec.Containers...)
 
 	annotations, err := i.NewAnnotations(pod, meshName, logger)
 	if err != nil {

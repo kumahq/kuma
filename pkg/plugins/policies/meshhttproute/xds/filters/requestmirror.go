@@ -12,11 +12,11 @@ import (
 )
 
 type RequestMirrorConfigurer struct {
-	requestMirror           *api.RequestMirror
+	requestMirror           api.RequestMirror
 	backendRefToClusterName map[string]string
 }
 
-func NewRequestMirror(requestMirror *api.RequestMirror, backendRefToClusterName map[string]string) *RequestMirrorConfigurer {
+func NewRequestMirror(requestMirror api.RequestMirror, backendRefToClusterName map[string]string) *RequestMirrorConfigurer {
 	return &RequestMirrorConfigurer{
 		requestMirror:           requestMirror,
 		backendRefToClusterName: backendRefToClusterName,
@@ -24,10 +24,6 @@ func NewRequestMirror(requestMirror *api.RequestMirror, backendRefToClusterName 
 }
 
 func (f *RequestMirrorConfigurer) Configure(envoyRoute *envoy_route.Route) error {
-	if f.requestMirror == nil {
-		return nil
-	}
-
 	return UpdateRouteAction(envoyRoute, func(action *envoy_route.RouteAction) error {
 		clusterName, found := f.backendRefToClusterName[f.requestMirror.BackendRef.Hash()]
 		if !found {

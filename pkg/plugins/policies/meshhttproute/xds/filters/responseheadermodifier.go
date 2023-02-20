@@ -7,21 +7,17 @@ import (
 )
 
 type ResponseHeaderModifierConfigurer struct {
-	headerModifier *api.HeaderModifier
+	headerModifier api.HeaderModifier
 }
 
-func NewResponseHeaderModifier(modifier *api.HeaderModifier) *ResponseHeaderModifierConfigurer {
+func NewResponseHeaderModifier(modifier api.HeaderModifier) *ResponseHeaderModifierConfigurer {
 	return &ResponseHeaderModifierConfigurer{
 		headerModifier: modifier,
 	}
 }
 
 func (f *ResponseHeaderModifierConfigurer) Configure(envoyRoute *envoy_route.Route) error {
-	if f.headerModifier == nil {
-		return nil
-	}
-
-	options, removes := headerModifiers(*f.headerModifier)
+	options, removes := headerModifiers(f.headerModifier)
 
 	envoyRoute.ResponseHeadersToAdd = append(envoyRoute.ResponseHeadersToAdd, options...)
 	envoyRoute.ResponseHeadersToRemove = append(envoyRoute.ResponseHeadersToRemove, removes...)

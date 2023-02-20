@@ -111,6 +111,9 @@ func printDataplaneOverviews(now time.Time, dataplaneOverviews *core_mesh.Datapl
 				var certExpiration *time.Time
 				if dataplaneInsight.GetMTLS().GetCertificateExpirationTime() != nil {
 					certExpiration = util_proto.MustTimestampFromProto(dataplaneInsight.GetMTLS().GetCertificateExpirationTime())
+					// don't use time.Local so we don't have to override it in tests. Instead, use location of current clock (that can be overridden in tests)
+					inLocation := certExpiration.In(now.Location())
+					certExpiration = &inLocation
 				}
 				var lastCertGeneration *time.Time
 				if dataplaneInsight.GetMTLS().GetLastCertificateRegeneration() != nil {
