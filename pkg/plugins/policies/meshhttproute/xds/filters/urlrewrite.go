@@ -7,11 +7,11 @@ import (
 )
 
 type URLRewriteConfigurer struct {
-	urlRewrite      *api.URLRewrite
+	urlRewrite      api.URLRewrite
 	withPrefixMatch bool
 }
 
-func NewURLRewrite(rewrite *api.URLRewrite, withPrefixMatch bool) *URLRewriteConfigurer {
+func NewURLRewrite(rewrite api.URLRewrite, withPrefixMatch bool) *URLRewriteConfigurer {
 	return &URLRewriteConfigurer{
 		urlRewrite:      rewrite,
 		withPrefixMatch: withPrefixMatch,
@@ -19,11 +19,7 @@ func NewURLRewrite(rewrite *api.URLRewrite, withPrefixMatch bool) *URLRewriteCon
 }
 
 func (f *URLRewriteConfigurer) Configure(envoyRoute *envoy_route.Route) error {
-	if f.urlRewrite == nil {
-		return nil
-	}
-
-	rewrite := *f.urlRewrite
+	rewrite := f.urlRewrite
 
 	return UpdateRouteAction(envoyRoute, func(action *envoy_route.RouteAction) error {
 		if rewrite.Hostname != nil {

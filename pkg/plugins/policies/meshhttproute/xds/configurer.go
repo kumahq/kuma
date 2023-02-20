@@ -39,11 +39,16 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 		// a prefix match along to the filters because it's no longer
 		// possible to know for sure with just an envoy_route.Route
 		for _, filter := range c.Filters {
-			rb.
-				Configure(filters.NewRequestHeaderModifier(filter.RequestHeaderModifier)).
-				Configure(filters.NewResponseHeaderModifier(filter.ResponseHeaderModifier)).
-				Configure(filters.NewRequestRedirect(filter.RequestRedirect, match.prefixMatch)).
-				Configure(filters.NewURLRewrite(filter.URLRewrite, match.prefixMatch))
+			switch filter.Type {
+			case api.RequestHeaderModifierType:
+				rb.Configure(filters.NewRequestHeaderModifier(*filter.RequestHeaderModifier))
+			case api.ResponseHeaderModifierType:
+				rb.Configure(filters.NewResponseHeaderModifier(*filter.ResponseHeaderModifier))
+			case api.RequestRedirectType:
+				rb.Configure(filters.NewRequestRedirect(*filter.RequestRedirect, match.prefixMatch))
+			case api.URLRewriteType:
+				rb.Configure(filters.NewURLRewrite(*filter.URLRewrite, match.prefixMatch))
+			}
 		}
 
 		r, err := rb.Build()

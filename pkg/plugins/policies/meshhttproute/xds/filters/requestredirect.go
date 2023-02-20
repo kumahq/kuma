@@ -9,11 +9,11 @@ import (
 )
 
 type RequestRedirectConfigurer struct {
-	requestRedirect *api.RequestRedirect
+	requestRedirect api.RequestRedirect
 	withPrefixMatch bool
 }
 
-func NewRequestRedirect(redirect *api.RequestRedirect, withPrefixMatch bool) *RequestRedirectConfigurer {
+func NewRequestRedirect(redirect api.RequestRedirect, withPrefixMatch bool) *RequestRedirectConfigurer {
 	return &RequestRedirectConfigurer{
 		requestRedirect: redirect,
 		withPrefixMatch: withPrefixMatch,
@@ -21,10 +21,6 @@ func NewRequestRedirect(redirect *api.RequestRedirect, withPrefixMatch bool) *Re
 }
 
 func (f *RequestRedirectConfigurer) Configure(envoyRoute *envoy_route.Route) error {
-	if f.requestRedirect == nil {
-		return nil
-	}
-
 	redirect := f.requestRedirect
 
 	envoyRedirect := &envoy_route.RedirectAction{}

@@ -12,21 +12,17 @@ import (
 )
 
 type RequestHeaderModifierConfigurer struct {
-	headerModifier *api.HeaderModifier
+	headerModifier api.HeaderModifier
 }
 
-func NewRequestHeaderModifier(modifier *api.HeaderModifier) *RequestHeaderModifierConfigurer {
+func NewRequestHeaderModifier(modifier api.HeaderModifier) *RequestHeaderModifierConfigurer {
 	return &RequestHeaderModifierConfigurer{
 		headerModifier: modifier,
 	}
 }
 
 func (f *RequestHeaderModifierConfigurer) Configure(envoyRoute *envoy_route.Route) error {
-	if f.headerModifier == nil {
-		return nil
-	}
-
-	options, removes := headerModifiers(*f.headerModifier)
+	options, removes := headerModifiers(f.headerModifier)
 
 	envoyRoute.RequestHeadersToAdd = append(envoyRoute.RequestHeadersToAdd, options...)
 	envoyRoute.RequestHeadersToRemove = append(envoyRoute.RequestHeadersToRemove, removes...)
