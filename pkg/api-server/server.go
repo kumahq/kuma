@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/emicklei/go-restful/v3"
 	"github.com/pkg/errors"
@@ -314,8 +315,9 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 
 func (a *ApiServer) startHttpServer(errChan chan error) *http.Server {
 	server := &http.Server{
-		Addr:    net.JoinHostPort(a.config.HTTP.Interface, strconv.FormatUint(uint64(a.config.HTTP.Port), 10)),
-		Handler: a.mux,
+		ReadHeaderTimeout: time.Second,
+		Addr:              net.JoinHostPort(a.config.HTTP.Interface, strconv.FormatUint(uint64(a.config.HTTP.Port), 10)),
+		Handler:           a.mux,
 	}
 
 	go func() {
@@ -335,7 +337,9 @@ func (a *ApiServer) startHttpServer(errChan chan error) *http.Server {
 }
 
 func (a *ApiServer) startHttpsServer(errChan chan error) (*http.Server, error) {
-	tlsConfig := &tls.Config{}
+	tlsConfig := &tls.Config{
+		MinVersion: tls.VersionTLS12, // to pass gosec (in practice it's always set after.
+	}
 	var err error
 	tlsConfig.MinVersion, err = config_types.TLSVersion(a.config.HTTPS.TlsMinVersion)
 	if err != nil {
@@ -352,9 +356,10 @@ func (a *ApiServer) startHttpsServer(errChan chan error) (*http.Server, error) {
 	}
 
 	server := &http.Server{
-		Addr:      net.JoinHostPort(a.config.HTTPS.Interface, strconv.FormatUint(uint64(a.config.HTTPS.Port), 10)),
-		Handler:   a.mux,
-		TLSConfig: tlsConfig,
+		ReadHeaderTimeout: time.Second,
+		Addr:              net.JoinHostPort(a.config.HTTPS.Interface, strconv.FormatUint(uint64(a.config.HTTPS.Port), 10)),
+		Handler:           a.mux,
+		TLSConfig:         tlsConfig,
 	}
 
 	go func() {

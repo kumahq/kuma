@@ -210,7 +210,7 @@ func (b *reportsBuffer) dispatch(rt core_runtime.Runtime, host string, port int,
 		return err
 	}
 
-	conf := &tls.Config{}
+	conf := &tls.Config{MinVersion: tls.VersionTLS12}
 	conn, err := tls.Dial("tcp", net.JoinHostPort(host,
 		strconv.FormatUint(uint64(port), 10)), conf)
 	if err != nil {

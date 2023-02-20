@@ -61,6 +61,7 @@ func (a *envoyAdminClient) buildHTTPClient(ctx context.Context) (*http.Client, e
 			}).DialContext,
 			TLSHandshakeTimeout: 3 * time.Second,
 			TLSClientConfig: &tls.Config{
+				MinVersion:   tls.VersionTLS12,
 				RootCAs:      &caCertPool,
 				Certificates: []tls.Certificate{clientCert},
 			},
