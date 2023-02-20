@@ -394,6 +394,7 @@ jobs:
         paths:
         - docker-images-<<parameters.arch>>
         - artifacts-linux-<<parameters.arch>>
+        - ebpf-<<parameters.arch>>
 
   release:
     executor: vm-amd64

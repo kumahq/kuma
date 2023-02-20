@@ -23,7 +23,7 @@ TARBALL_URL ?= $(RELEASE_REPO)/releases/download/$(RELEASE_TAG)/$(TARBALL_NAME)
 # by mistake remove $(RELEASE_TAG) from the path, it may result in situation
 # where without realizing, ebpf programs are not re-fetched when $(RELEASE_TAG)
 # changes
-BUILD_OUTPUT ?= ./build/ebpf
+BUILD_OUTPUT ?= $(BUILD_DIR)/ebpf-$(GOARCH)
 BUILD_OUTPUT_WITH_TAG = $(BUILD_OUTPUT)/$(RELEASE_TAG)
 # Path where ebpf programs should be placed, to be compiled in when building
 # kumactl
