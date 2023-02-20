@@ -13,6 +13,7 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	xds "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
@@ -62,7 +63,7 @@ func generateListeners(
 					_ = makeHTTPSplit(proxy, clusterCache, splitCounter, servicesAcc,
 						[]api.BackendRef{{
 							TargetRef: filter.RequestMirror.BackendRef,
-							Weight:    1, // any non-zero value
+							Weight:    pointer.To[uint](1), // any non-zero value
 						}})
 				}
 			}
@@ -146,7 +147,7 @@ func prepareRoutes(
 					Kind: common_api.MeshService,
 					Name: serviceName,
 				},
-				Weight: 100,
+				Weight: pointer.To(uint(100)),
 			}}
 		}
 		if rule.Default.Filters != nil {
@@ -188,7 +189,7 @@ func makeHTTPSplit(
 		}
 
 		service := ref.Name
-		if ref.Weight == 0 {
+		if pointer.DerefOr(ref.Weight, 1) == 0 {
 			continue
 		}
 
@@ -207,7 +208,7 @@ func makeHTTPSplit(
 			// cluster already exists, so adding only split
 			split = append(split, plugins_xds.NewSplitBuilder().
 				WithClusterName(existingClusterName).
-				WithWeight(uint32(ref.Weight)).
+				WithWeight(uint32(pointer.DerefOr(ref.Weight, 1))).
 				WithExternalService(isExternalService).
 				Build())
 			continue
@@ -217,7 +218,7 @@ func makeHTTPSplit(
 
 		split = append(split, plugins_xds.NewSplitBuilder().
 			WithClusterName(clusterName).
-			WithWeight(uint32(ref.Weight)).
+			WithWeight(uint32(pointer.DerefOr(ref.Weight, 1))).
 			WithExternalService(isExternalService).
 			Build())
 

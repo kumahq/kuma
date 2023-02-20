@@ -73,6 +73,7 @@ properties:
                               description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                               type: object
                             weight:
+                              default: 1
                               minimum: 0
                               type: integer
                           type: object

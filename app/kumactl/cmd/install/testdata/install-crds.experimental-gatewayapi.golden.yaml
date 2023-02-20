@@ -2526,6 +2526,7 @@ spec:
                                         `MeshSubset` and `MeshServiceSubset`
                                       type: object
                                     weight:
+                                      default: 1
                                       minimum: 0
                                       type: integer
                                   type: object
