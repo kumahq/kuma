@@ -15,9 +15,10 @@ import (
 )
 
 type RoutesConfigurer struct {
-	Matches []api.Match
-	Filters []api.Filter
-	Split   []*plugins_xds.Split
+	Matches                 []api.Match
+	Filters                 []api.Filter
+	Split                   []*plugins_xds.Split
+	BackendRefToClusterName map[string]string
 }
 
 func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
@@ -48,6 +49,8 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 				rb.Configure(filters.NewRequestRedirect(*filter.RequestRedirect, match.prefixMatch))
 			case api.URLRewriteType:
 				rb.Configure(filters.NewURLRewrite(*filter.URLRewrite, match.prefixMatch))
+			case api.RequestMirrorType:
+				rb.Configure(filters.NewRequestMirror(*filter.RequestMirror, c.BackendRefToClusterName))
 			}
 		}
 

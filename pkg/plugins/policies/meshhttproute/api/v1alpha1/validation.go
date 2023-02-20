@@ -190,11 +190,29 @@ func validateFilters(filters *[]Filter, matches []Match) validators.ValidationEr
 				errs.AddViolationAt(path.Field("requestRedirect").Field("path").Field("replacePrefixMatch"), "can only appear if all matches match a path prefix")
 			}
 		case URLRewriteType:
+			if filter.URLRewrite == nil {
+				errs.AddViolationAt(path.Field("urlRewrite"), validators.MustBeDefined)
+				continue
+			}
 			if filter.URLRewrite.Path != nil &&
 				filter.URLRewrite.Path.ReplacePrefixMatch != nil &&
 				hasAnyMatchesWithoutPrefix(matches) {
 				errs.AddViolationAt(path.Field("urlRewrite").Field("path").Field("replacePrefixMatch"), "can only appear if all matches match a path prefix")
 			}
+		case RequestMirrorType:
+			if filter.RequestMirror == nil {
+				errs.AddViolationAt(path.Field("requestMirror"), validators.MustBeDefined)
+				continue
+			}
+			errs.AddErrorAt(
+				path.Field("requestMirror").Field("backendRef"),
+				matcher_validators.ValidateTargetRef(filter.RequestMirror.BackendRef, &matcher_validators.ValidateTargetRefOpts{
+					SupportedKinds: []common_api.TargetRefKind{
+						common_api.MeshService,
+						common_api.MeshServiceSubset,
+					},
+				}),
+			)
 		}
 	}
 
