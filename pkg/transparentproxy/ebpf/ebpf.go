@@ -51,7 +51,7 @@ const (
 
 var programs = []*Program{
 	{
-		Name:    "mb_connect",
+		Name: "mb_connect",
 		Flags: func(
 			cfg config.Config,
 			cgroup string,
@@ -74,7 +74,7 @@ var programs = []*Program{
 		),
 	},
 	{
-		Name:    "mb_sockops",
+		Name: "mb_sockops",
 		Flags: func(
 			cfg config.Config,
 			cgroup string,
@@ -95,15 +95,15 @@ var programs = []*Program{
 		),
 	},
 	{
-		Name:    "mb_get_sockopts",
-		Flags:   CgroupFlags,
+		Name:  "mb_get_sockopts",
+		Flags: CgroupFlags,
 		Cleanup: CleanPathsRelativeToBPFFS(
 			"get_sockopts",
 			MapRelativePathPairOrigDst,
 		),
 	},
 	{
-		Name:    "mb_sendmsg",
+		Name: "mb_sendmsg",
 		Flags: func(
 			cfg config.Config,
 			cgroup string,
@@ -122,7 +122,7 @@ var programs = []*Program{
 		),
 	},
 	{
-		Name:    "mb_recvmsg",
+		Name: "mb_recvmsg",
 		Flags: func(
 			cfg config.Config,
 			cgroup string,
@@ -140,15 +140,15 @@ var programs = []*Program{
 		),
 	},
 	{
-		Name:    "mb_redir",
-		Flags:   Flags(nil),
+		Name:  "mb_redir",
+		Flags: Flags(nil),
 		Cleanup: CleanPathsRelativeToBPFFS(
 			"redir",
 			MapRelativePathSockPairMap,
 		),
 	},
 	{
-		Name:    "mb_tc",
+		Name: "mb_tc",
 		Flags: func(
 			cfg config.Config,
 			cgroup string,
