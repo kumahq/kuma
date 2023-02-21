@@ -113,6 +113,7 @@ func createRulesFile(ipv6 bool) (*os.File, error) {
 }
 
 func runRestoreCmd(cmdName string, f *os.File) (string, error) {
+	// #nosec G204
 	cmd := exec.Command(cmdName, "--noflush", f.Name())
 	output, err := cmd.CombinedOutput()
 	if err != nil {
