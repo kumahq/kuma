@@ -19,10 +19,10 @@ const (
 	K8sMeshDefaultsGenerated = "k8s.kuma.io/mesh-defaults-generated"
 
 	// Kubernetes secret type to differentiate Kuma System secrets. Secret is bound to a mesh
-	MeshSecretType = "system.kuma.io/secret" // #nosec G101 -- This is the name not the value
+	MeshSecretType = "system.kuma.io/secret"
 
 	// Kubernetes secret type to differentiate Kuma System secrets. Secret is bound to a control plane
-	GlobalSecretType = "system.kuma.io/global-secret" // #nosec G101 -- This is the name not the value
+	GlobalSecretType = "system.kuma.io/global-secret"
 )
 
 func ResourceNameExtensions(namespace, name string) core_model.ResourceNameExtensions {

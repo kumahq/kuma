@@ -32,7 +32,7 @@ func NewK8sEnvoyAdminTunnel(
 func (t *K8sTunnel) GetStats(name string) (*stats.Stats, error) {
 	url := fmt.Sprintf("http://%s/stats?format=json&filter=%s", t.endpoint, name)
 
-	response, err := http.Post(url, "application/json", nil) // #nosec G107 -- make the url configurable is intended
+	response, err := http.Post(url, "application/json", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (t *K8sTunnel) GetStats(name string) (*stats.Stats, error) {
 func (t *K8sTunnel) ResetCounters() error {
 	url := fmt.Sprintf("http://%s/reset_counters", t.endpoint)
 
-	response, err := http.Post(url, "text", nil) // #nosec G107 -- make the url configurable is intended
+	response, err := http.Post(url, "text", nil)
 	if err != nil {
 		return err
 	}

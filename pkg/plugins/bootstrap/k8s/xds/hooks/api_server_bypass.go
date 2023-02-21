@@ -13,7 +13,7 @@ import (
 
 const (
 	OriginApiServerBypass            = "apiServerBypass"
-	apiServerBypassHookResourcesName = "plugins:bootstrap:k8s:hooks:apiServerBypass" // #nosec G101 -- no idea why gosec things this is a secret
+	apiServerBypassHookResourcesName = "plugins:bootstrap:k8s:hooks:apiServerBypass"
 )
 
 type ApiServerBypass struct {

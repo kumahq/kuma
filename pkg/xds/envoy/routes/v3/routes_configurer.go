@@ -18,8 +18,7 @@ type RoutesConfigurer struct {
 }
 
 func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
-	for i := range c.Routes {
-		route := c.Routes[i]
+	for _, route := range c.Routes {
 		envoyRoute := &envoy_route.Route{
 			Match: c.routeMatch(route.Match),
 			Action: &envoy_route.Route_Route{

@@ -306,7 +306,7 @@ func createUnstructuredListWatch(gvk schema.GroupVersionKind, ip *specificInform
 func resyncPeriod(resync time.Duration) func() time.Duration {
 	return func() time.Duration {
 		// the factor will fall into [0.9, 1.1)
-		factor := rand.Float64()/5.0 + 0.9 // #nosec G404 -- it's safe to use a non crypto rand here as it's just adding jitter
+		factor := rand.Float64()/5.0 + 0.9
 		return time.Duration(float64(resync.Nanoseconds()) * factor)
 	}
 }

@@ -61,8 +61,7 @@ var rootCmd = &cobra.Command{
 		if err := generatePlugin(cfg); err != nil {
 			return err
 		}
-		path := fmt.Sprintf("generate/policy/%s", cfg.lowercase())
-		if err := exec.Command("make", path).Run(); err != nil {
+		if err := exec.Command("make", "generate/policy/"+cfg.lowercase()).Run(); err != nil {
 			return err
 		}
 		_, _ = cmd.OutOrStdout().Write([]byte(fmt.Sprintf(`

@@ -11,9 +11,7 @@ import (
 
 func ConfigureMTLS(httpClient *http.Client, caCert string, clientCert string, clientKey string) error {
 	transport := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			MinVersion: tls.VersionTLS12,
-		},
+		TLSClientConfig: &tls.Config{},
 	}
 
 	if caCert == "" {

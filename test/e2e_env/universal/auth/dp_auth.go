@@ -111,7 +111,7 @@ destinations:
 conf:
   http:
     numRetries: %d
-`, rand.Int()%100+1) // #nosec G404 -- this is for tests no need to use secure rand
+`, rand.Int()%100+1)
 			g.Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
 
 			online, _, err := IsDataplaneOnline(universal.Cluster, meshName, serviceName)

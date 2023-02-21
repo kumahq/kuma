@@ -27,8 +27,7 @@ type InboundConverter struct {
 
 func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Service) []*mesh_proto.Dataplane_Networking_Inbound {
 	var ifaces []*mesh_proto.Dataplane_Networking_Inbound
-	for i := range service.Spec.Ports {
-		svcPort := service.Spec.Ports[i]
+	for _, svcPort := range service.Spec.Ports {
 		if svcPort.Protocol != "" && svcPort.Protocol != kube_core.ProtocolTCP {
 			// ignore non-TCP ports
 			continue

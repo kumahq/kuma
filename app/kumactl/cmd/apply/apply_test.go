@@ -228,7 +228,7 @@ var _ = Describe("kumactl apply", func() {
 
 		// then
 		Eventually(func() bool {
-			resp, err := http.Get(testurl) // #nosec G107 -- reused in different places
+			resp, err := http.Get(testurl)
 			if err != nil {
 				return false
 			}

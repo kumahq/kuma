@@ -47,9 +47,9 @@ func MergeConfs(confs []interface{}) (interface{}, error) {
 	valueResult := reflect.ValueOf(result)
 	// clear appendable slices, so we won't duplicate values of the last conf
 	clearAppendSlices(valueResult)
-	for i := range confs {
+	for _, conf := range confs {
 		// call .Elem() to unwrap interface{}
-		appendSlices(valueResult, reflect.ValueOf(&confs[i]).Elem())
+		appendSlices(valueResult, reflect.ValueOf(&conf).Elem())
 	}
 
 	if err := handleMergeByKeyFields(valueResult); err != nil {

@@ -18,7 +18,7 @@ func GoTemplate(tmpl *template.Template, data any, outPath string) error {
 		return err
 	}
 
-	return os.WriteFile(outPath, out, 0600)
+	return os.WriteFile(outPath, out, 0644)
 }
 
 func PlainTemplate(tmpl *template.Template, data any, outPath string) error {
@@ -27,5 +27,5 @@ func PlainTemplate(tmpl *template.Template, data any, outPath string) error {
 		return err
 	}
 
-	return os.WriteFile(outPath, outBuf.Bytes(), 0600)
+	return os.WriteFile(outPath, outBuf.Bytes(), 0644)
 }

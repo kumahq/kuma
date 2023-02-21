@@ -121,7 +121,7 @@ func (s *muxServer) Start(stop <-chan struct{}) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to load TLS certificate")
 		}
-		tlsConfig := &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12} // To make gosec happy
+		tlsConfig := &tls.Config{Certificates: []tls.Certificate{cert}}
 		if tlsConfig.MinVersion, err = config_types.TLSVersion(s.config.TlsMinVersion); err != nil {
 			return err
 		}
@@ -156,8 +156,7 @@ func (s *muxServer) Start(stop <-chan struct{}) error {
 
 	httpL := m.Match(cmux.Any())
 	httpS := &http.Server{
-		ReadHeaderTimeout: time.Second,
-		Handler:           s.createHttpServicesHandler(),
+		Handler: s.createHttpServicesHandler(),
 	}
 	errChanHttp := make(chan error)
 	go func() {

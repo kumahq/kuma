@@ -57,7 +57,6 @@ func New(
 		Certificates: []tls.Certificate{certificate},
 		ClientAuth:   tls.RequireAndVerifyClientCert,
 		ClientCAs:    caPool,
-		MinVersion:   tls.VersionTLS12, // there to make gosec happy this is always set after.
 	}
 	var err error
 	if tlsCfg.MinVersion, err = config_types.TLSVersion(config.TlsMinVersion); err != nil {
