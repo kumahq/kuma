@@ -47,15 +47,13 @@ func Setup(rt core_runtime.Runtime) error {
 }
 
 func DefaultCallbacks(rt core_runtime.Runtime, cache util_xds_v3.SnapshotCache) (hds_callbacks.Callbacks, error) {
-	authenticator := rt.XDSAuthenticator()
-
 	metrics, err := hds_metrics.NewMetrics(rt.Metrics())
 	if err != nil {
 		return nil, err
 	}
 
 	return hds_callbacks.Chain{
-		authn.NewCallbacks(rt.ResourceManager(), authenticator, authn.DPNotFoundRetry{
+		authn.NewCallbacks(rt.ResourceManager(), rt.XDS().DpProxyAuthenticator, authn.DPNotFoundRetry{
 			// Usually the difference between DP is created from ADS and HDS is initiated is less than 1 second, but just in case we set this higher.
 			Backoff:  1 * time.Second,
 			MaxTimes: 30,
