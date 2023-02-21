@@ -61,9 +61,10 @@ func (ns *NetNS) Unset() error {
 // info in warning below)
 //
 // WARNING!:
-//  Don't spawn new goroutines inside callback functions as the one inside UnsafeExec
-//  function have exclusive access to the current network namespace, and you should
-//  assume, that any new goroutine will be placed in the different namespace
+//
+//	Don't spawn new goroutines inside callback functions as the one inside UnsafeExec
+//	function have exclusive access to the current network namespace, and you should
+//	assume, that any new goroutine will be placed in the different namespace
 func (ns *NetNS) UnsafeExec(callback func(), beforeCallbackFuncs ...func() error) <-chan error {
 	return ns.UnsafeExecInLoop(1, 0, callback, beforeCallbackFuncs...)
 }
@@ -74,9 +75,10 @@ func (ns *NetNS) UnsafeExec(callback func(), beforeCallbackFuncs ...func() error
 // inside provided callback (more info in warning below)
 //
 // WARNING!:
-//  Don't spawn new goroutines inside callback functions as the one inside UnsafeExecInLoop
-//  function have exclusive access to the current network namespace, and you should
-//  assume, that any new goroutine will be placed in the different namespace
+//
+//	Don't spawn new goroutines inside callback functions as the one inside UnsafeExecInLoop
+//	function have exclusive access to the current network namespace, and you should
+//	assume, that any new goroutine will be placed in the different namespace
 func (ns *NetNS) UnsafeExecInLoop(
 	numOfIterations uint,
 	delay time.Duration,

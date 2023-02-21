@@ -60,10 +60,11 @@ func ReplyWith(msg string) func(conn *net.TCPConn) {
 // inside provided callbacks (more info in warning below)
 //
 // WARNING!:
-//  Don't spawn new goroutines inside callback functions as the goroutine inside
-//  UnsafeStartTCPServer function have exclusive access to the current network
-//  namespace, and you should assume, that any new goroutine will be placed
-//  in a different namespace
+//
+//	Don't spawn new goroutines inside callback functions as the goroutine inside
+//	UnsafeStartTCPServer function have exclusive access to the current network
+//	namespace, and you should assume, that any new goroutine will be placed
+//	in a different namespace
 func UnsafeStartTCPServer(
 	ns *netns.NetNS,
 	address string,

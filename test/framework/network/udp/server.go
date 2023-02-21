@@ -17,10 +17,11 @@ import (
 // inside provided callbacks (more info in warning below)
 //
 // WARNING!:
-//  Don't spawn new goroutines inside callback functions as the goroutine inside
-//  UnsafeStartUDPServer function have exclusive access to the current network
-//  namespace, and you should assume, that any new goroutine will be placed
-//  in a different namespace
+//
+//	Don't spawn new goroutines inside callback functions as the goroutine inside
+//	UnsafeStartUDPServer function have exclusive access to the current network
+//	namespace, and you should assume, that any new goroutine will be placed
+//	in a different namespace
 func UnsafeStartUDPServer(
 	ns *netns.NetNS,
 	address string,

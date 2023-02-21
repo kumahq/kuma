@@ -92,13 +92,14 @@ func (b *Builder) WithBeforeExecFuncs(fns ...func() error) *Builder {
 // within the range we are interested in and ignore suffixes in this range
 // Example of names regarding generated suffixes:
 // suffixes: 123, 254
-// 	netns name:			kmesh-123254
-// 	veth main name:		kmesh-main-123254
-// 	veth peer name:		kmesh-peer-123254
-// 	veth main address:	10.123.254.1
-// 	veth main cidr:		10.123.254.1/24
-// 	veth peer address:	10.123.254.2
-// 	veth peer cidr:		10.123.254.2/24
+//
+//	netns name:			kmesh-123254
+//	veth main name:		kmesh-main-123254
+//	veth peer name:		kmesh-peer-123254
+//	veth main address:	10.123.254.1
+//	veth main cidr:		10.123.254.1/24
+//	veth peer address:	10.123.254.2
+//	veth peer cidr:		10.123.254.2/24
 func genSuffixes() (uint8, uint8, error) {
 	ifaceAddresses, err := getIfaceAddresses()
 	if err != nil {
