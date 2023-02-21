@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// #nosec G404 -- used just for tests
 var r = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 // ref. https://www.iana.org/assignments/iana-ipv4-special-registry/iana-ipv4-special-registry.xhtml

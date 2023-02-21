@@ -28,6 +28,7 @@ func GenerateRandomPorts(num uint, restrictedPort ...uint16) map[uint16]struct{}
 
 	for len(randomPorts) < int(num) {
 		// Draw a port in the range of <1,65535>
+		// #nosec G404 -- used just for tests
 		drawn := uint16(rand.Intn(math.MaxUint16-1) + 1)
 
 		if _, ok := restrictedPorts[drawn]; ok {

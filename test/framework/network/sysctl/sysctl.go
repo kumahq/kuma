@@ -7,7 +7,7 @@ import (
 )
 
 func set(path, value string) error {
-	return os.WriteFile(path, []byte(value+"\n"), 0o644)
+	return os.WriteFile(path, []byte(value+"\n"), 0o600)
 }
 
 // SetLocalPortRange will change the range of local ports available for udp/tcp

@@ -17,6 +17,7 @@ var _ = Describe("GenerateRandomPorts", func() {
 		rand.Seed(time.Now().UnixNano())
 
 		for i := 0; i < 10; i++ {
+			// #nosec G404 -- this is just a test
 			r := rand.Intn(30) + 5
 			ports := socket.GenerateRandomPorts(uint(r))
 
