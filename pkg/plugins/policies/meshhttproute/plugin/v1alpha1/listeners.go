@@ -13,6 +13,7 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	xds "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
@@ -56,10 +57,21 @@ func generateListeners(
 			if split == nil {
 				continue
 			}
+			for _, filter := range route.Filters {
+				if filter.Type == api.RequestMirrorType {
+					// we need to create a split for the mirror backend
+					_ = makeHTTPSplit(proxy, clusterCache, splitCounter, servicesAcc,
+						[]api.BackendRef{{
+							TargetRef: filter.RequestMirror.BackendRef,
+							Weight:    pointer.To[uint](1), // any non-zero value
+						}})
+				}
+			}
 			routes = append(routes, xds.OutboundRoute{
-				Matches: route.Matches,
-				Filters: route.Filters,
-				Split:   split,
+				Matches:                 route.Matches,
+				Filters:                 route.Filters,
+				Split:                   split,
+				BackendRefToClusterName: clusterCache,
 			})
 		}
 
@@ -135,7 +147,7 @@ func prepareRoutes(
 					Kind: common_api.MeshService,
 					Name: serviceName,
 				},
-				Weight: 100,
+				Weight: pointer.To(uint(100)),
 			}}
 		}
 		if rule.Default.Filters != nil {
@@ -177,7 +189,7 @@ func makeHTTPSplit(
 		}
 
 		service := ref.Name
-		if ref.Weight == 0 {
+		if pointer.DerefOr(ref.Weight, 1) == 0 {
 			continue
 		}
 
@@ -190,30 +202,32 @@ func makeHTTPSplit(
 
 		clusterName := getClusterName(ref, sc)
 		isExternalService := plugins_xds.HasExternalService(proxy.Routing, service)
-		allTags := envoy_tags.Tags(ref.Tags).WithTags(mesh_proto.ServiceTag, ref.Name)
+		refHash := ref.TargetRef.Hash()
 
-		if existingClusterName, ok := clusterCache[allTags.String()]; ok {
+		if existingClusterName, ok := clusterCache[refHash]; ok {
 			// cluster already exists, so adding only split
 			split = append(split, plugins_xds.NewSplitBuilder().
 				WithClusterName(existingClusterName).
-				WithWeight(uint32(ref.Weight)).
+				WithWeight(uint32(pointer.DerefOr(ref.Weight, 1))).
 				WithExternalService(isExternalService).
 				Build())
 			continue
 		}
 
-		clusterCache[allTags.String()] = clusterName
+		clusterCache[refHash] = clusterName
 
 		split = append(split, plugins_xds.NewSplitBuilder().
 			WithClusterName(clusterName).
-			WithWeight(uint32(ref.Weight)).
+			WithWeight(uint32(pointer.DerefOr(ref.Weight, 1))).
 			WithExternalService(isExternalService).
 			Build())
 
 		clusterBuilder := plugins_xds.NewClusterBuilder().
 			WithService(service).
 			WithName(clusterName).
-			WithTags(allTags.WithoutTags(mesh_proto.MeshTag)).
+			WithTags(envoy_tags.Tags(ref.Tags).
+				WithTags(mesh_proto.ServiceTag, ref.Name).
+				WithoutTags(mesh_proto.MeshTag)).
 			WithExternalService(isExternalService)
 
 		if mesh, ok := ref.Tags[mesh_proto.MeshTag]; ok {

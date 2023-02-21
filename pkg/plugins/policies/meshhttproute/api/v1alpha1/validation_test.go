@@ -170,6 +170,35 @@ to:
           name: foo
           value: x
 `),
+		ErrorCases("invalid backendRef in requestMirror",
+			[]validators.Violation{{
+				Field:   `spec.to[0].rules[0].filters[0].requestMirror.backendRef.name`,
+				Message: "must be set with kind MeshServiceSubset",
+			}}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: frontend
+to:
+- targetRef:
+    kind: MeshService
+    name: frontend
+  rules:
+    - matches:
+      - path:
+          type: Prefix
+          value: /
+      default:
+        filters:
+          - type: RequestMirror
+            requestMirror:
+              backendRef:
+                kind: MeshServiceSubset
+                tags:
+                  version: v1
+`),
 	)
 	DescribeValidCases(
 		api.NewMeshHTTPRouteResource,
