@@ -60,6 +60,25 @@ func autoconfigureDpServerAuth(cfg *kuma_cp.Config) {
 			cfg.DpServer.Auth.Type = dp_server.DpServerAuthDpToken
 		}
 	}
+	if cfg.DpServer.Authn.DpProxy.Type == "" {
+		switch cfg.Environment {
+		case config_core.KubernetesEnvironment:
+			cfg.DpServer.Authn.DpProxy.Type = dp_server.DpServerAuthServiceAccountToken
+		case config_core.UniversalEnvironment:
+			cfg.DpServer.Authn.DpProxy.Type = dp_server.DpServerAuthDpToken
+		}
+	}
+	if cfg.DpServer.Authn.ZoneProxy.Type == "" {
+		switch cfg.Environment {
+		case config_core.KubernetesEnvironment:
+			cfg.DpServer.Authn.ZoneProxy.Type = dp_server.DpServerAuthServiceAccountToken
+		case config_core.UniversalEnvironment:
+			cfg.DpServer.Authn.ZoneProxy.Type = dp_server.DpServerAuthZoneToken
+		}
+	}
+	if cfg.DpServer.Auth.UseTokenPath {
+		cfg.DpServer.Authn.EnableReloadableTokens = cfg.DpServer.Auth.UseTokenPath
+	}
 }
 
 func autoconfigureServersTLS(cfg *kuma_cp.Config) {

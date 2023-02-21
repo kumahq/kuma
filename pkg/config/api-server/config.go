@@ -136,7 +136,7 @@ type ApiServerAuth struct {
 
 // Api Server Authentication configuration
 type ApiServerAuthn struct {
-	// Type of authentication mechanism (available values: "clientCerts")
+	// Type of authentication mechanism (available values: "clientCerts", "tokens")
 	Type string `json:"type" envconfig:"kuma_api_server_authn_type"`
 	// Localhost is authenticated as a user admin of group admin
 	LocalhostIsAdmin bool `json:"localhostIsAdmin" envconfig:"kuma_api_server_authn_localhost_is_admin"`
@@ -144,9 +144,45 @@ type ApiServerAuthn struct {
 	Tokens ApiServerAuthnTokens `json:"tokens"`
 }
 
+func (a ApiServerAuthn) Validate() error {
+	if a.Type == "tokens" {
+		if err := a.Tokens.Validate(); err != nil {
+			return errors.Wrap(err, ".Tokens is not valid")
+		}
+	}
+	return nil
+}
+
 type ApiServerAuthnTokens struct {
 	// If true then User Token with name admin and group admin will be created and placed as admin-user-token Kuma Global Secret
 	BootstrapAdminToken bool `json:"bootstrapAdminToken" envconfig:"kuma_api_server_authn_tokens_bootstrap_admin_token"`
+	// If true the control plane token issuer is enabled. It's recommended to set it to false when all the tokens are issued offline.
+	EnableIssuer bool `json:"enableIssuer" envconfig:"kuma_api_server_authn_tokens_enable_issuer"`
+	// Token validator configuration
+	Validator TokensValidator `json:"validator"`
+}
+
+func (a ApiServerAuthnTokens) Validate() error {
+	if err := a.Validator.Validate(); err != nil {
+		return errors.Wrap(err, ".Validator is not valid")
+	}
+	return nil
+}
+
+type TokensValidator struct {
+	// If true then Kuma secrets with prefix "user-token-signing-key" are considered as signing keys.
+	UseSecrets bool `json:"useSecrets" envconfig:"kuma_api_server_authn_tokens_validator_use_secrets"`
+	// List of public keys used to validate the token.
+	PublicKeys []config_types.PublicKey `json:"publicKeys"`
+}
+
+func (t TokensValidator) Validate() error {
+	for i, key := range t.PublicKeys {
+		if err := key.Validate(); err != nil {
+			return errors.Wrapf(err, ".PublicKeys[%d] is not valid", i)
+		}
+	}
+	return nil
 }
 
 func (a *ApiServerConfig) Sanitize() {
@@ -173,6 +209,9 @@ func (a *ApiServerConfig) Validate() error {
 		if err != nil {
 			errs = multierr.Append(errs, errors.New("BaseGuiPath is not a valid url"))
 		}
+	}
+	if err := a.Authn.Validate(); err != nil {
+		errs = multierr.Append(err, errors.Wrap(err, ".Authn is not valid"))
 	}
 	return errs
 }
@@ -204,6 +243,11 @@ func DefaultApiServerConfig() *ApiServerConfig {
 			LocalhostIsAdmin: true,
 			Tokens: ApiServerAuthnTokens{
 				BootstrapAdminToken: true,
+				EnableIssuer:        true,
+				Validator: TokensValidator{
+					UseSecrets: true,
+					PublicKeys: []config_types.PublicKey{},
+				},
 			},
 		},
 		GUI: ApiServerGUI{
