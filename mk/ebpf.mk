@@ -12,9 +12,9 @@
 #   equal "dir". This value will be equal "." if $(@) does not contain a slash.
 # ref. https://www.gnu.org/software/make/manual/html_node/Automatic-Variables.html#Automatic-Variables
 
-RELEASE_TAG ?= main-20aa4b03cf256a261d1ebfa3af9f390186bec3ae
+RELEASE_TAG ?= main-dd8b1946a31a8ce03009a2743b18ebcc716cda61
 RELEASE_REPO ?= https://github.com/kumahq/merbridge
-TARBALL_NAME ?= all.tar.gz
+TARBALL_NAME ?= all-$(GOARCH).tar.gz
 # You can provide your own url if the tarball with all ebpf programs should be
 # fetched from somewhere else
 TARBALL_URL ?= $(RELEASE_REPO)/releases/download/$(RELEASE_TAG)/$(TARBALL_NAME)
