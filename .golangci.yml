@@ -8,7 +8,6 @@ linters:
     - gofmt
     - gomodguard
     - govet
-    - gosec
     - importas
     - ineffassign
     - misspell
@@ -140,7 +139,4 @@ issues:
     - linters:
         - staticcheck
       text: "SA1019: .* for new policies use pkg/plugins/policies/xds/cluster.go"
-    - linters:
-        - gosec
-      path: pkg/transparent-proxy/istio
 

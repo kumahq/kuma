@@ -96,8 +96,7 @@ var _ = Describe("ServiceToConfigMapMapper", func() {
 			Expect(k8sClient.Create(ctx, &givenNamespace)).To(Succeed())
 			givenService.Namespace = givenNamespace.Name
 			Expect(k8sClient.Create(ctx, &givenService)).To(Succeed())
-			for i := range givenPods {
-				pod := givenPods[i]
+			for _, pod := range givenPods {
 				pod.Namespace = givenNamespace.Name
 				Expect(k8sClient.Create(ctx, &pod)).To(Succeed())
 			}

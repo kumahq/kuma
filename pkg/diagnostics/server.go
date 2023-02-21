@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	pprof "net/http/pprof"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -53,17 +52,14 @@ func (s *diagnosticsServer) Start(stop <-chan struct{}) error {
 		mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 	}
 
-	httpServer := &http.Server{Addr: fmt.Sprintf(":%d", s.config.ServerPort), Handler: mux, ReadHeaderTimeout: time.Second}
+	httpServer := &http.Server{Addr: fmt.Sprintf(":%d", s.config.ServerPort), Handler: mux}
 
 	if s.config.TlsEnabled {
 		cert, err := tls.LoadX509KeyPair(s.config.TlsCertFile, s.config.TlsKeyFile)
 		if err != nil {
 			return errors.Wrap(err, "failed to load TLS certificate")
 		}
-		tlsConfig := &tls.Config{
-			Certificates: []tls.Certificate{cert},
-			MinVersion:   tls.VersionTLS12, // Make gosec pass, (In practice it's always set after).
-		}
+		tlsConfig := &tls.Config{Certificates: []tls.Certificate{cert}}
 		if tlsConfig.MinVersion, err = config_types.TLSVersion(s.config.TlsMinVersion); err != nil {
 			return err
 		}

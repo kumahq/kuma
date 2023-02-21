@@ -216,9 +216,9 @@ func gatewaysForClass(l logr.Logger, client kube_client.Client) kube_handler.Map
 		}
 
 		var requests []kube_reconcile.Request
-		for i := range gateways.Items {
+		for _, gateway := range gateways.Items {
 			requests = append(requests, kube_reconcile.Request{
-				NamespacedName: kube_client.ObjectKeyFromObject(&gateways.Items[i]),
+				NamespacedName: kube_client.ObjectKeyFromObject(&gateway),
 			})
 		}
 
@@ -256,9 +256,9 @@ func gatewaysForConfig(l logr.Logger, client kube_client.Client) kube_handler.Ma
 				l.Error(err, "unexpected error listing Gateways")
 				return nil
 			}
-			for i := range gateways.Items {
+			for _, gateway := range gateways.Items {
 				requests = append(requests, kube_reconcile.Request{
-					NamespacedName: kube_client.ObjectKeyFromObject(&gateways.Items[i]),
+					NamespacedName: kube_client.ObjectKeyFromObject(&gateway),
 				})
 			}
 		}
@@ -295,9 +295,9 @@ func gatewaysForGrant(l logr.Logger, client kube_client.Client) kube_handler.Map
 				return nil
 			}
 
-			for i := range gateways.Items {
+			for _, gateway := range gateways.Items {
 				requests = append(requests, kube_reconcile.Request{
-					NamespacedName: kube_client.ObjectKeyFromObject(&gateways.Items[i]),
+					NamespacedName: kube_client.ObjectKeyFromObject(&gateway),
 				})
 			}
 		}

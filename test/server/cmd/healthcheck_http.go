@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -28,7 +27,7 @@ func newHealthCheckHTTP() *cobra.Command {
 					http.Error(writer, err.Error(), http.StatusInternalServerError)
 				}
 			})
-			return (&http.Server{Addr: fmt.Sprintf(":%d", args.port), ReadHeaderTimeout: time.Second}).ListenAndServe()
+			return http.ListenAndServe(fmt.Sprintf(":%d", args.port), nil)
 		},
 	}
 	cmd.PersistentFlags().Uint32Var(&args.port, "port", 10011, "port server is listening on")

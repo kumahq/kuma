@@ -204,8 +204,7 @@ func routesForGateway(l logr.Logger, client kube_client.Client) kube_handler.Map
 		}
 
 		var requests []kube_reconcile.Request
-		for i := range routes.Items {
-			route := routes.Items[i]
+		for _, route := range routes.Items {
 			for _, parentRef := range route.Spec.ParentRefs {
 				if common.ParentRefMatchesGateway(route.Namespace, parentRef, gateway) {
 					requests = append(requests, kube_reconcile.Request{
@@ -247,9 +246,9 @@ func routesForGrant(l logr.Logger, client kube_client.Client) kube_handler.MapFu
 				return nil
 			}
 
-			for i := range routes.Items {
+			for _, gateway := range routes.Items {
 				requests = append(requests, kube_reconcile.Request{
-					NamespacedName: kube_client.ObjectKeyFromObject(&routes.Items[i]),
+					NamespacedName: kube_client.ObjectKeyFromObject(&gateway),
 				})
 			}
 		}

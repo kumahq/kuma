@@ -75,7 +75,7 @@ func newUninstallTransparentProxy() *cobra.Command {
 				}
 
 				if !args.DryRun {
-					err = os.WriteFile("/etc/resolv.conf", content, 0600)
+					err = os.WriteFile("/etc/resolv.conf", content, 0644)
 					if err != nil {
 						return errors.Wrap(err, "unable to write /etc/resolv.conf")
 					}

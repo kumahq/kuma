@@ -81,7 +81,7 @@ func NewGenerateCertificateCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			if ctx.args.cert == "-" {
 				_, err = cmd.OutOrStdout().Write(keyPair.CertPEM)
 			} else {
-				err = os.WriteFile(ctx.args.cert, keyPair.CertPEM, 0600)
+				err = os.WriteFile(ctx.args.cert, keyPair.CertPEM, 0644)
 			}
 			if err != nil {
 				return errors.Wrap(err, "could not write the cert file")

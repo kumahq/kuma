@@ -11,7 +11,7 @@ const (
 	EnvStorePostgresHost     = "KUMA_STORE_POSTGRES_HOST"
 	EnvStorePostgresPort     = "KUMA_STORE_POSTGRES_PORT"
 	EnvStorePostgresUser     = "KUMA_STORE_POSTGRES_USER"
-	EnvStorePostgresPassword = "KUMA_STORE_POSTGRES_PASSWORD" // #nosec G101 -- That's the env var not the pwd
+	EnvStorePostgresPassword = "KUMA_STORE_POSTGRES_PASSWORD"
 	EnvStorePostgresDBName   = "KUMA_STORE_POSTGRES_DB_NAME"
 
 	DefaultPostgresPort     = uint32(5432)
@@ -22,7 +22,7 @@ const (
 	PostgresImage = "postgres"
 
 	PostgresEnvVarUser     = "POSTGRES_USER"
-	PostgresEnvVarPassword = "POSTGRES_PASSWORD" // #nosec G101 -- Env var not actual password
+	PostgresEnvVarPassword = "POSTGRES_PASSWORD"
 	PostgresEnvVarDB       = "POSTGRES_DB"
 
 	AppPostgres = "postgres"

@@ -270,9 +270,9 @@ func (c *SimpleConverter) ToCoreList(in *kube_core.SecretList, out core_model.Re
 	case secret_model.SecretType:
 		secOut := out.(*secret_model.SecretResourceList)
 		secOut.Items = make([]*secret_model.SecretResource, len(in.Items))
-		for i := range in.Items {
+		for i, secret := range in.Items {
 			r := secret_model.NewSecretResource()
-			if err := c.ToCoreResource(&in.Items[i], r); err != nil {
+			if err := c.ToCoreResource(&secret, r); err != nil {
 				return err
 			}
 			secOut.Items[i] = r
@@ -280,9 +280,9 @@ func (c *SimpleConverter) ToCoreList(in *kube_core.SecretList, out core_model.Re
 	case secret_model.GlobalSecretType:
 		secOut := out.(*secret_model.GlobalSecretResourceList)
 		secOut.Items = make([]*secret_model.GlobalSecretResource, len(in.Items))
-		for i := range in.Items {
+		for i, secret := range in.Items {
 			r := secret_model.NewGlobalSecretResource()
-			if err := c.ToCoreResource(&in.Items[i], r); err != nil {
+			if err := c.ToCoreResource(&secret, r); err != nil {
 				return err
 			}
 			secOut.Items[i] = r

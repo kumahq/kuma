@@ -74,8 +74,7 @@ func New(opts *Opts) (*DNSServer, error) {
 }
 
 func (s *DNSServer) GetVersion() (string, error) {
-	path := s.path
-	command := exec.Command(path, "--version")
+	command := exec.Command(s.path, "--version")
 	output, err := command.Output()
 	if err != nil {
 		return "", err
