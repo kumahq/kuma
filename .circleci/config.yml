@@ -9,7 +9,7 @@ reusable:
     - &golang_image "cimg/go:1.18.10"
 
   vm_images:
-    - &ubuntu_vm_image "ubuntu-2004:202111-01"
+    - &ubuntu_vm_image "ubuntu-2204:2022.10.2"
 
 # See https://circleci.com/docs/2.0/configuration-reference/#commands-requires-version-21.
 commands:
@@ -52,7 +52,7 @@ commands:
           curl -s --fail --location https://dl.google.com/go/go<<parameters.go_version>>.<<parameters.go_os>>-<<parameters.go_arch>>.tar.gz | tar -xz -C $HOME
           echo 'export PATH=$HOME/go/bin:$PATH' >> $BASH_ENV
           # if GOPATH is not set, `golang-ci` fails with an obscure message
-          # "ERRO Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
+          # "ERROR Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
           echo 'export GOPATH=$HOME/go' >> $BASH_ENV
     - run:
         name: "Update runc"
@@ -394,6 +394,7 @@ jobs:
         paths:
         - docker-images-<<parameters.arch>>
         - artifacts-linux-<<parameters.arch>>
+        - ebpf-<<parameters.arch>>
 
   release:
     executor: vm-amd64
