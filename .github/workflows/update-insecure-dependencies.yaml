@@ -4,8 +4,6 @@ on:
   workflow_dispatch: { }
   schedule:
     - cron: 0 8 * * *
-env:
-  IGNORE_PACKAGES: "github.com/aws/aws-sdk-go"
 jobs:
   build-matrix:
     runs-on: ubuntu-latest
@@ -14,7 +12,7 @@ jobs:
     steps:
       - id: generate-matrix
         run: |
-          # The head -1 is because GITHUB_OUTPUT is easier to work with single line output and this file is created with automation in `lifecycle.yaml` 
+          # The head -1 is because GITHUB_OUTPUT is easier to work with single line output and this file is created with automation in `lifecycle.yaml`
           ACTIVE_BRANCHES=`gh api /repos/${{ github.repository }}/contents/active-branches.json --jq '.content | @base64d' | head -1`
           echo "branches=${ACTIVE_BRANCHES}" >> $GITHUB_OUTPUT
         env:
@@ -55,7 +53,22 @@ jobs:
       - name: "Update dependencies"
         id: update
         run: |
-          osv-scanner --lockfile=go.mod --json | jq '.results[].packages[].package.name' | grep -Ev ${{ env.IGNORE_PACKAGES }} | xargs -I {} go get -u {}
+          for dep in $(osv-scanner --lockfile=go.mod --json | jq -c '.results[].packages[] | .package.name as $vulnerablePackage | {
+            name: $vulnerablePackage,
+            current: .package.version,
+            fixedVersions: [.vulnerabilities[].affected[] | select(.package.name == $vulnerablePackage) | .ranges[].events[] | select(.fixed != null) | .fixed] | unique
+          } | select(.fixedVersions | length > 0)'); do
+            IFS=. read -r currentMajor currentMinor currentPatch <<< "$(jq -r .current <<< "$dep")"
+            # Update to the first version that's greater than our current version
+            for version in $(jq -cr .fixedVersions[] <<< "$dep" | sort -V); do # sort supports semver sort
+              IFS=. read -r fixMajor fixMinor fixPatch <<< "$version"
+              if ((currentMajor <= fixMajor)) && ((currentMinor <= fixMinor)) && ((currentPatch <= fixPatch)); then
+                package=$(jq -r .name <<< "$dep")
+                go get -u "$package"@v"$version"
+                break
+              fi
+            done
+          done
           go mod tidy
       - name: "Prepare commit body - after"
         id: prepare_commit_body_after
@@ -78,8 +91,8 @@ jobs:
 
             After update:
             ${{ env.SCAN_OUTPUT_AFTER }}
-            
-            If a package is showing up in the scan but the script is not trying to update it then it might be in env.IGNORE_PACKAGES regex
+
+            If a package is showing up in the scan but the script is not trying to update it then it might be because there is no fixed version yet.
           delete-branch: true
           title: "chore(deps): security update"
           draft: false
