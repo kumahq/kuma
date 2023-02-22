@@ -471,8 +471,9 @@ func WithTransparentProxy(transparent bool) AppDeploymentOption {
 	})
 }
 
-func WithTransparentProxyV1() AppDeploymentOption {
+func WithTransparentProxyV1(transparent bool) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.transparent = &transparent
 		o.transparentProxyV1 = true
 	})
 }

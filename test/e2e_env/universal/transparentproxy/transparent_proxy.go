@@ -20,7 +20,7 @@ func TransparentProxy() {
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
 				WithServiceName("test-server"),
 			)).
-			Install(DemoClientUniversal("tp-client", mesh, WithTransparentProxy(true))).
+			Install(DemoClientUniversal("tp-client", mesh, WithTransparentProxyV1(true))).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
