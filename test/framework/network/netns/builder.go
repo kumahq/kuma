@@ -269,7 +269,7 @@ func (b *Builder) Build() (*NetNS, error) {
 		// for the neighbor information for our veth-related addresses.
 		if err := netlink.NeighAdd(&netlink.Neigh{
 			LinkIndex:    mainLink.Attrs().Index,
-			State:        netlink.NUD_REACHABLE,
+			State:        NUD_REACHABLE,
 			IP:           peerAddr.IP,
 			HardwareAddr: peerLink.Attrs().HardwareAddr,
 		}); err != nil {
@@ -286,7 +286,7 @@ func (b *Builder) Build() (*NetNS, error) {
 		// netns.NewNamed calls unix.Unshare(CLONE_NEWNET) which requires CAP_SYS_ADMIN
 		// capability (ref. https://man7.org/linux/man-pages/man2/unshare.2.html)
 		nsName := genNetNSName(b.nameSeed, suffixA, suffixB)
-		newNS, err := netns.NewNamed(nsName)
+		newNS, err := netNsNewNamed(nsName)
 		if err != nil {
 			done <- fmt.Errorf("cannot create new network namespace: %s", err)
 		}
@@ -346,7 +346,7 @@ func (b *Builder) Build() (*NetNS, error) {
 		// for the neighbor information for our veth-related addresses.
 		if err := netlink.NeighAdd(&netlink.Neigh{
 			LinkIndex:    peerLink.Attrs().Index,
-			State:        netlink.NUD_REACHABLE,
+			State:        NUD_REACHABLE,
 			IP:           mainAddr.IP,
 			HardwareAddr: mainLink.Attrs().HardwareAddr,
 		}); err != nil {
