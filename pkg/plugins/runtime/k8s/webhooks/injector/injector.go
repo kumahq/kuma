@@ -524,19 +524,16 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 			annotations[metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName] = value
 		}
 
-		// ebpf works only with experimental transparent proxy engine, so instead of
-		// failing when no annotation enabling it is present (bad user experience)
-		// we implicitly add it and set to true
-		enabled, exists, err := podAnnotations.GetEnabled(metadata.KumaTransparentProxyingExperimentalEngine)
-		if err != nil {
-			return nil, errors.Wrapf(err, "getting %s annotation failed", metadata.KumaTransparentProxyingExperimentalEngine)
-		}
-		if !exists || !enabled {
-			logger.V(1).Info(fmt.Sprintf("missing %s annotation which has to be %s for ebpf to work. The annotation will be implicitly added",
-				metadata.KumaTransparentProxyingExperimentalEngine, metadata.AnnotationEnabled),
-				"annotation", metadata.KumaTransparentProxyingExperimentalEngine)
-
-			annotations[metadata.KumaTransparentProxyingExperimentalEngine] = metadata.AnnotationEnabled
+		// ebpf works only with transparent proxy engine v2
+		if enabled, _, err := podAnnotations.GetEnabled(metadata.KumaTransparentProxyingEngineV1); err != nil {
+			return nil, errors.Wrapf(err, "getting %s annotation failed", metadata.KumaTransparentProxyingEngineV1)
+		} else if enabled {
+			return nil, errors.Wrapf(
+				err,
+				"%s is unsupported with %s",
+				metadata.KumaTransparentProxyingEngineV1,
+				metadata.KumaTransparentProxyingEbpf,
+			)
 		}
 	}
 

@@ -103,7 +103,7 @@ func NewPodRedirectForPod(transparentProxyV1 bool, pod *kube_core.Pod) (*PodRedi
 
 	podRedirect.UseTransparentProxyEngineV1, _, err = metadata.Annotations(pod.Annotations).GetEnabledWithDefault(
 		transparentProxyV1,
-		metadata.KumaTransparentProxyingExperimentalEngine,
+		metadata.KumaTransparentProxyingEngineV1,
 	)
 	if err != nil {
 		return nil, err
