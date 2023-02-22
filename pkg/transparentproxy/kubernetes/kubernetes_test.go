@@ -28,13 +28,13 @@ import (
 
 var _ = Describe("kubernetes", func() {
 	type testCaseKumactl struct {
-		transparentProxyV2 bool
+		transparentProxyV1 bool
 		pod                *kube_core.Pod
 		commandLine        []string
 	}
 
 	DescribeTable("should generate kumactl command line", func(given testCaseKumactl) {
-		podRedirect, err := kubernetes.NewPodRedirectForPod(given.transparentProxyV2, given.pod)
+		podRedirect, err := kubernetes.NewPodRedirectForPod(given.transparentProxyV1, given.pod)
 		Expect(err).ToNot(HaveOccurred())
 
 		commandLine := podRedirect.AsKumactlCommandLine()
@@ -157,7 +157,7 @@ var _ = Describe("kubernetes", func() {
 			},
 		}),
 		Entry("should generate experimental engine if enabled even without annotation", testCaseKumactl{
-			transparentProxyV2: true,
+			transparentProxyV1: true,
 			pod: &kube_core.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
