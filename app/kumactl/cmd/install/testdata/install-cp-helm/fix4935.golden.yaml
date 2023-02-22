@@ -291,6 +291,18 @@ rules:
       - get
       - list
       - watch
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - update
+  - apiGroups:
+      - "pods"
+    resources:
+      - pods
+    verbs:
+      - list
   # validate k8s token before issuing mTLS cert
   - apiGroups:
       - authentication.k8s.io
@@ -529,10 +541,16 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
         - name: install-cni
-          image: "docker.io/kumahq/install-cni:0.0.10"
+          image: "docker.io/kumahq/kuma-cni:0.0.1"
           imagePullPolicy: IfNotPresent
-          command: [ "/bin/sh", "-c", "--" ]
-          args: [ "sleep 0 && exec /install-cni.sh" ]
+          readinessProbe:
+            initialDelaySeconds: 0
+            exec:
+              command:
+                - cat
+                - /tmp/ready
+          command: [ "sh", "-c", "--" ]
+          args: [ "sleep 0 && exec /install-cni" ]
           env:
             # Name of the CNI config file to create.
             - name: CNI_CONF_NAME
@@ -662,6 +680,10 @@ spec:
               value: "true"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
               value: "docker.io/kumahq/kuma-dp:0.0.1"
+            - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_APP
+              value: "kuma-cni"
+            - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_ENABLED
+              value: "true"
             - name: KUMA_RUNTIME_KUBERNETES_SERVICE_ACCOUNT_NAME
               value: "system:serviceaccount:kuma-system:kuma-control-plane"
             - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
