@@ -37,11 +37,13 @@ resources:
                       googleRe2: {}
                       regex: .*
                     substitution: /v2
+                  timeout: 0s
               - match:
                   prefix: /v1/
                 route:
                   cluster: backend
                   prefixRewrite: /v2
+                  timeout: 0s
               - match:
                   prefix: /
                 route:

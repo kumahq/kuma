@@ -21,11 +21,11 @@ GINKGO_UNIT_TEST_FLAGS ?= \
 GINKGO_TEST:=$(GINKGO) $(GOFLAGS) $(LD_FLAGS) $(GINKGO_TEST_FLAGS)
 
 .PHONY: test
-test:
-	KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) TMPDIR=/tmp UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) go test $(GOFLAGS) $(LD_FLAGS) -race $$(go list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "pkg/transparentproxy/istio/tools")
+test: build/ebpf
+	KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) TMPDIR=/tmp UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) go test $(GOFLAGS) $(LD_FLAGS) -race $$(go list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "test/blackbox_tests" | grep -E -v "pkg/transparentproxy/istio/tools")
 
 .PHONY: test-with-reports
-test-with-reports: ${COVERAGE_PROFILE} ## Dev: Run tests for all modules
+test-with-reports: build/ebpf ${COVERAGE_PROFILE} ## Dev: Run tests for all modules
 	KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) TMPDIR=/tmp UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) $(GINKGO_TEST) $(GINKGO_UNIT_TEST_FLAGS) $(TEST_PKG_LIST)
 	$(MAKE) coverage
 

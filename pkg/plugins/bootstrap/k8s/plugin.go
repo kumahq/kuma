@@ -147,7 +147,7 @@ func (p *plugin) AfterBootstrap(b *core_runtime.Builder, _ core_plugins.PluginCo
 		return errors.Wrapf(err, "could not parse KUBERNETES_SERVICE_PORT environment variable")
 	}
 
-	b.XDSHooks().AddResourceSetHook(hooks.NewApiServerBypass(apiServerAddress, uint32(apiServerPort)))
+	b.XDS().Hooks.AddResourceSetHook(hooks.NewApiServerBypass(apiServerAddress, uint32(apiServerPort)))
 
 	return nil
 }

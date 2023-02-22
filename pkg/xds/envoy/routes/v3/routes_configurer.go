@@ -18,7 +18,8 @@ type RoutesConfigurer struct {
 }
 
 func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
-	for _, route := range c.Routes {
+	for i := range c.Routes {
+		route := c.Routes[i]
 		envoyRoute := &envoy_route.Route{
 			Match: c.routeMatch(route.Match),
 			Action: &envoy_route.Route_Route{
@@ -163,7 +164,10 @@ func (c RoutesConfigurer) hasExternal(clusters []envoy_common.Cluster) bool {
 func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster, modify *mesh_proto.TrafficRoute_Http_Modify) *envoy_route.RouteAction {
 	routeAction := &envoy_route.RouteAction{}
 	if len(clusters) != 0 {
-		routeAction.Timeout = util_proto.Duration(clusters[0].Timeout().GetHttp().GetRequestTimeout().AsDuration())
+		// Timeout can be configured only per outbound listener. So all clusters in the split
+		// must have the same timeout. That's why we can take the timeout from the first cluster.
+		cluster := clusters[0].(*envoy_common.ClusterImpl)
+		routeAction.Timeout = util_proto.Duration(cluster.Timeout().GetHttp().GetRequestTimeout().AsDuration())
 	}
 	if len(clusters) == 1 {
 		routeAction.ClusterSpecifier = &envoy_route.RouteAction_Cluster{
@@ -172,7 +176,8 @@ func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster, modify *m
 	} else {
 		var weightedClusters []*envoy_route.WeightedCluster_ClusterWeight
 		var totalWeight uint32
-		for _, cluster := range clusters {
+		for _, c := range clusters {
+			cluster := c.(*envoy_common.ClusterImpl)
 			weightedClusters = append(weightedClusters, &envoy_route.WeightedCluster_ClusterWeight{
 				Name:   cluster.Name(),
 				Weight: util_proto.UInt32(cluster.Weight()),

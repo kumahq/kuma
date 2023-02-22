@@ -51,10 +51,9 @@ import (
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
-	xds_auth_components "github.com/kumahq/kuma/pkg/xds/auth/components"
 	mesh_cache "github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
+	xds_runtime "github.com/kumahq/kuma/pkg/xds/runtime"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 	xds_server "github.com/kumahq/kuma/pkg/xds/server"
 )
@@ -115,7 +114,6 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 
 	builder.WithLookupIP(lookup.CachedLookupIP(net.LookupIP, cfg.General.DNSCacheTTL.Duration))
 	builder.WithAPIManager(customization.NewAPIList())
-	builder.WithXDSHooks(&xds_hooks.Hooks{})
 	caProvider, err := secrets.NewCaProvider(builder.CaManagers(), builder.Metrics())
 	if err != nil {
 		return nil, err
@@ -146,14 +144,11 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		))
 	}
 
-	if builder.XDSAuthenticator() == nil {
-		authenticator, err := xds_auth_components.DefaultAuthenticator(builder) //nolint:contextcheck
-		if err != nil {
-			return nil, err
-		}
-
-		builder.WithXDSAuthenticator(authenticator)
+	xdsCtx, err := xds_runtime.Default(builder) //nolint:contextcheck
+	if err != nil {
+		return nil, err
 	}
+	builder.WithXDS(xdsCtx)
 
 	// The setting should be removed, and there is no easy way to set it without breaking most of the code
 	mesh_proto.EnableLocalhostInboundClusters = builder.Config().Defaults.EnableLocalhostInboundClusters

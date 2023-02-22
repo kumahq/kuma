@@ -8,7 +8,7 @@ import (
 	"github.com/onsi/gomega/types"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/test/golden"
+	"github.com/kumahq/kuma/pkg/test/matchers/golden"
 )
 
 func MatchGoldenYAML(goldenFilePath ...string) types.GomegaMatcher {
@@ -17,6 +17,10 @@ func MatchGoldenYAML(goldenFilePath ...string) types.GomegaMatcher {
 
 func MatchGoldenJSON(goldenFilePath ...string) types.GomegaMatcher {
 	return MatchGolden(gomega.MatchJSON, goldenFilePath...)
+}
+
+func MatchGoldenXML(goldenFilePath ...string) types.GomegaMatcher {
+	return MatchGolden(gomega.MatchXML, goldenFilePath...)
 }
 
 func MatchGoldenEqual(goldenFilePath ...string) types.GomegaMatcher {
@@ -55,7 +59,7 @@ func (g *GoldenMatcher) Match(actual interface{}) (bool, error) {
 		if len(actualContent) > 0 && actualContent[len(actualContent)-1] != '\n' {
 			actualContent += "\n"
 		}
-		err := os.WriteFile(g.GoldenFilePath, []byte(actualContent), 0644)
+		err := os.WriteFile(g.GoldenFilePath, []byte(actualContent), 0600)
 		if err != nil {
 			return false, errors.Wrap(err, "could not update golden file")
 		}

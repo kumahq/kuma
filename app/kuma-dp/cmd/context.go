@@ -1,11 +1,8 @@
 package cmd
 
 import (
-	"crypto/tls"
-	"net/http"
 	"path/filepath"
 	"runtime"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -54,11 +51,8 @@ func defaultDataplaneTokenGenerator(cfg *kumadp.Config) error {
 func DefaultRootContext() *RootContext {
 	config := kumadp.DefaultConfig()
 	return &RootContext{
-		ComponentManager: component.NewManager(leader_memory.NewNeverLeaderElector()),
-		BootstrapGenerator: envoy.NewRemoteBootstrapGenerator(&http.Client{
-			Timeout:   10 * time.Second,
-			Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
-		}, runtime.GOOS, features),
+		ComponentManager:         component.NewManager(leader_memory.NewNeverLeaderElector()),
+		BootstrapGenerator:       envoy.NewRemoteBootstrapGenerator(runtime.GOOS, features),
 		Config:                   &config,
 		BootstrapDynamicMetadata: map[string]string{},
 		DataplaneTokenGenerator:  defaultDataplaneTokenGenerator,

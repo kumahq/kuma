@@ -1,0 +1,87 @@
+name: "release"
+
+on:
+  release: {}
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "the version to publish, if you just want to regen the changelog.md set 0.0.0"
+        required: true
+        type: string
+      check:
+        required: false
+        type: boolean
+        default: false
+        description: "check that everything is published correctly"
+
+env:
+  CHARTS_REPO: "kumahq/charts"
+  BINARIES: "centos-amd64,darwin-amd64,darwin-arm64,debian-amd64,darwin-amd64,rhel-amd64,ubuntu-amd64,ubuntu-arm64"
+  DOCKER_REPO: "kumahq"
+  DOCKER_IMAGES: "kumactl,kuma-cp,kuma-dp,kuma-init,kuma-cni"
+  RELEASE: ${{ inputs.release || '0.0.0' }}
+  CHECK: ${{ inputs.check }}
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v3
+      - name: install-kuma-ci-tools
+        run: |
+          echo $(go env GOPATH)/bin >> $GITHUB_PATH
+          go install github.com/kumahq/ci-tools/cmd/release-tool@v0.2.1
+      - name: remove-cni
+        # CNI was only introduced in 1.7 so versions before should remove
+        if: startsWith(env.RELEASE, '1.7') || startsWith(env.RELEASE, '1.6')
+        run: echo DOCKER_IMAGES=${{env.DOCKER_IMAGES}} | sed 's/,kuma-cni//g' >> $GITHUB_ENV
+      - name: create-release
+        if: env.RELEASE != '0.0.0'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          release-tool release changelog --repo ${{ github.repository }} --release ${{ env.RELEASE }}
+      - name: check-helm
+        if: fromJSON(env.CHECK)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          release-tool release helm-chart --repo ${{ github.repository }} --charts-repo ${{ env.CHARTS_REPO }} --release ${{ env.RELEASE }}
+      - name: check-pulp
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        if: fromJSON(env.CHECK)
+        run: |
+          release-tool release pulp-binaries --repo ${{ github.repository }} --release ${{ env.RELEASE }} --binaries ${{ env.BINARIES }}
+      - name: check-docker
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        if: fromJSON(env.CHECK)
+        run: |
+          release-tool release docker --repo ${{ github.repository }} --release ${{ env.RELEASE }} --docker-repo ${{env.DOCKER_REPO }} --images ${{ env.DOCKER_IMAGES }}
+      - name: Generate GitHub app token
+        id: github-app-token
+        uses: tibdex/github-app-token@b62528385c34dbc9f38e5f4225ac829252d1ea92 # v1.8.0
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v3
+        with:
+          ref: "master"
+      - name: update-CHANGELOG.md-in-master
+        env:
+          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
+        run: |
+          release-tool changelog.md --repo ${{ github.repository }} > CHANGELOG.md
+      - name: "Create Pull Request"
+        uses: peter-evans/create-pull-request@v4
+        with:
+          commit-message: "docs(CHANGELOG.md): updating changelog"
+          signoff: true
+          branch: chore/update-changelog
+          delete-branch: true
+          title: "docs(CHANGELOG.md): updating changelog"
+          draft: false
+          labels: ci/auto-merge,ci/skip-test
+          token: ${{ steps.github-app-token.outputs.token }}
+          committer: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>
+          author: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>

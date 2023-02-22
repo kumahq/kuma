@@ -3,6 +3,7 @@ kind: Pod
 metadata:
   annotations:
     docs: Documentation
+    kubectl.kubernetes.io/default-container: busybox
     kuma.io/builtin-dns: enabled
     kuma.io/builtin-dns-port: "25053"
     kuma.io/builtindns: enabled
@@ -132,13 +133,6 @@ spec:
       name: default-token-w7dxf
       readOnly: true
   initContainers:
-  - command:
-    - sh
-    - -c
-    - sleep 5
-    image: busybox
-    name: init
-    resources: {}
   - args:
     - --redirect-outbound-port
     - "15001"
@@ -179,6 +173,13 @@ spec:
         - NET_RAW
       runAsGroup: 0
       runAsUser: 0
+  - command:
+    - sh
+    - -c
+    - sleep 5
+    image: busybox
+    name: init
+    resources: {}
   volumes:
   - name: default-token-w7dxf
     secret:

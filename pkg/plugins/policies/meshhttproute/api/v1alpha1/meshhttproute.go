@@ -2,6 +2,8 @@
 package v1alpha1
 
 import (
+	"k8s.io/apimachinery/pkg/util/intstr"
+
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 )
 
@@ -88,7 +90,7 @@ type RuleConf struct {
 	BackendRefs *[]BackendRef `json:"backendRefs,omitempty"`
 }
 
-// +kubebuilder:validation:Enum=RequestHeaderModifier;ResponseHeaderModifier;RequestRedirect;URLRewrite
+// +kubebuilder:validation:Enum=RequestHeaderModifier;ResponseHeaderModifier;RequestRedirect;URLRewrite;RequestMirror
 type FilterType string
 
 const (
@@ -96,6 +98,7 @@ const (
 	ResponseHeaderModifierType FilterType = "ResponseHeaderModifier"
 	RequestRedirectType        FilterType = "RequestRedirect"
 	URLRewriteType             FilterType = "URLRewrite"
+	RequestMirrorType          FilterType = "RequestMirror"
 )
 
 type HeaderKeyValue struct {
@@ -178,16 +181,25 @@ type URLRewrite struct {
 	Path *PathRewrite `json:"path,omitempty"`
 }
 
+type RequestMirror struct {
+	// Percentage of requests to mirror. If not specified, all requests
+	// to the target cluster will be mirrored.
+	Percentage *intstr.IntOrString  `json:"percentage,omitempty"`
+	BackendRef common_api.TargetRef `json:"backendRef"`
+}
+
 type Filter struct {
 	Type                   FilterType       `json:"type"`
 	RequestHeaderModifier  *HeaderModifier  `json:"requestHeaderModifier,omitempty"`
 	ResponseHeaderModifier *HeaderModifier  `json:"responseHeaderModifier,omitempty"`
 	RequestRedirect        *RequestRedirect `json:"requestRedirect,omitempty"`
 	URLRewrite             *URLRewrite      `json:"urlRewrite,omitempty"`
+	RequestMirror          *RequestMirror   `json:"requestMirror,omitempty"`
 }
 
 type BackendRef struct {
 	common_api.TargetRef `json:",omitempty"`
 	// +kubebuilder:validation:Minimum=0
-	Weight uint `json:"weight,omitempty"`
+	// +kubebuilder:default=1
+	Weight *uint `json:"weight,omitempty"`
 }

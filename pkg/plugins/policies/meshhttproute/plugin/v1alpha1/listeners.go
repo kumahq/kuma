@@ -12,7 +12,8 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	xds "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
+	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
@@ -28,7 +29,7 @@ func generateListeners(
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 	splitCounter := &splitCounter{}
-	// ClusterCache (cluster hash -> cluster name) protects us from creating excessive amount of caches.
+	// ClusterCache (cluster hash -> cluster name) protects us from creating excessive amount of clusters.
 	// For one outbound we pick one traffic route so LB and Timeout are the same.
 	// If we have same split in many HTTP matches we can use the same cluster with different weight
 	clusterCache := map[string]string{}
@@ -52,20 +53,25 @@ func generateListeners(
 
 		var routes []xds.OutboundRoute
 		for _, route := range prepareRoutes(rules, serviceName) {
-			clusters := makeClusters(proxy, clusterCache, splitCounter, route.BackendRefs)
-			protocol := generator.InferProtocol(proxy, clusters)
-			switch protocol {
-			case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
-			default:
+			split := makeHTTPSplit(proxy, clusterCache, splitCounter, servicesAcc, route.BackendRefs)
+			if split == nil {
 				continue
 			}
-
-			servicesAcc.Add(clusters...)
-
+			for _, filter := range route.Filters {
+				if filter.Type == api.RequestMirrorType {
+					// we need to create a split for the mirror backend
+					_ = makeHTTPSplit(proxy, clusterCache, splitCounter, servicesAcc,
+						[]api.BackendRef{{
+							TargetRef: filter.RequestMirror.BackendRef,
+							Weight:    pointer.To[uint](1), // any non-zero value
+						}})
+				}
+			}
 			routes = append(routes, xds.OutboundRoute{
-				Matches:  route.Matches,
-				Filters:  route.Filters,
-				Clusters: clusters,
+				Matches:                 route.Matches,
+				Filters:                 route.Filters,
+				Split:                   split,
+				BackendRefToClusterName: clusterCache,
 			})
 		}
 
@@ -141,7 +147,7 @@ func prepareRoutes(
 					Kind: common_api.MeshService,
 					Name: serviceName,
 				},
-				Weight: 100,
+				Weight: pointer.To(uint(100)),
 			}}
 		}
 		if rule.Default.Filters != nil {
@@ -166,13 +172,14 @@ func (s *splitCounter) getAndIncrement() int {
 	return counter
 }
 
-func makeClusters(
+func makeHTTPSplit(
 	proxy *core_xds.Proxy,
 	clusterCache map[string]string,
-	splitCounter *splitCounter,
+	sc *splitCounter,
+	servicesAcc envoy_common.ServicesAccumulator,
 	refs []api.BackendRef,
-) []envoy.Cluster {
-	var clusters []envoy.Cluster
+) []*plugins_xds.Split {
+	var split []*plugins_xds.Split
 
 	for _, ref := range refs {
 		switch ref.Kind {
@@ -182,55 +189,71 @@ func makeClusters(
 		}
 
 		service := ref.Name
-		if ref.Weight == 0 {
+		if pointer.DerefOr(ref.Weight, 1) == 0 {
 			continue
 		}
 
-		name := service
-
-		if len(ref.Tags) > 0 {
-			name = envoy_names.GetSplitClusterName(service, splitCounter.getAndIncrement())
+		switch plugins_xds.InferProtocol(proxy.Routing, service) {
+		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
+		default:
+			// We don't support splitting if at least one of the backendRefs is not HTTP
+			return nil
 		}
 
-		// The mesh tag is present here if this destination is generated
-		// from a cross-mesh MeshGateway listener virtual outbound.
-		// It is not part of the service tags.
+		clusterName := getClusterName(ref, sc)
+		isExternalService := plugins_xds.HasExternalService(proxy.Routing, service)
+		refHash := ref.TargetRef.Hash()
+
+		if existingClusterName, ok := clusterCache[refHash]; ok {
+			// cluster already exists, so adding only split
+			split = append(split, plugins_xds.NewSplitBuilder().
+				WithClusterName(existingClusterName).
+				WithWeight(uint32(pointer.DerefOr(ref.Weight, 1))).
+				WithExternalService(isExternalService).
+				Build())
+			continue
+		}
+
+		clusterCache[refHash] = clusterName
+
+		split = append(split, plugins_xds.NewSplitBuilder().
+			WithClusterName(clusterName).
+			WithWeight(uint32(pointer.DerefOr(ref.Weight, 1))).
+			WithExternalService(isExternalService).
+			Build())
+
+		clusterBuilder := plugins_xds.NewClusterBuilder().
+			WithService(service).
+			WithName(clusterName).
+			WithTags(envoy_tags.Tags(ref.Tags).
+				WithTags(mesh_proto.ServiceTag, ref.Name).
+				WithoutTags(mesh_proto.MeshTag)).
+			WithExternalService(isExternalService)
+
 		if mesh, ok := ref.Tags[mesh_proto.MeshTag]; ok {
-			// The name should be distinct to the service & mesh combination
-			name = fmt.Sprintf("%s_%s", name, mesh)
+			clusterBuilder.WithMesh(mesh)
 		}
 
-		// We assume that all the targets are either ExternalServices or not
-		// therefore we check only the first one
-		var isExternalService bool
-		if endpoints := proxy.Routing.OutboundTargets[service]; len(endpoints) > 0 {
-			isExternalService = endpoints[0].IsExternalService()
-		}
-		if endpoints := proxy.Routing.ExternalServiceOutboundTargets[service]; len(endpoints) > 0 {
-			isExternalService = true
-		}
-
-		allTags := envoy_tags.Tags(ref.Tags).WithTags(mesh_proto.ServiceTag, ref.Name)
-		cluster := envoy_common.NewCluster(
-			envoy_common.WithService(service),
-			envoy_common.WithName(name),
-			envoy_common.WithWeight(uint32(ref.Weight)),
-			envoy_common.WithTags(allTags.WithoutTags(mesh_proto.MeshTag)),
-			envoy_common.WithExternalService(isExternalService),
-		)
-
-		if mesh, ok := ref.Tags[mesh_proto.MeshTag]; ok {
-			cluster.SetMesh(mesh)
-		}
-
-		if name, ok := clusterCache[allTags.String()]; ok {
-			cluster.SetName(name)
-		} else {
-			clusterCache[allTags.String()] = cluster.Name()
-		}
-
-		clusters = append(clusters, cluster)
+		servicesAcc.Add(clusterBuilder.Build())
 	}
 
-	return clusters
+	return split
+}
+
+func getClusterName(ref api.BackendRef, sc *splitCounter) string {
+	name := ref.Name
+
+	if len(ref.Tags) > 0 {
+		name = envoy_names.GetSplitClusterName(name, sc.getAndIncrement())
+	}
+
+	// The mesh tag is present here if this destination is generated
+	// from a cross-mesh MeshGateway listener virtual outbound.
+	// It is not part of the service tags.
+	if mesh, ok := ref.Tags[mesh_proto.MeshTag]; ok {
+		// The name should be distinct to the service & mesh combination
+		name = fmt.Sprintf("%s_%s", name, mesh)
+	}
+
+	return name
 }
