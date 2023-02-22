@@ -1,21 +1,19 @@
 \* nat
--N KUMA_MESH_INBOUND
--N KUMA_MESH_OUTBOUND
--N KUMA_MESH_INBOUND_REDIRECT
--N KUMA_MESH_OUTBOUND_REDIRECT
--A PREROUTING -p tcp -j KUMA_MESH_INBOUND
+-N (.*)_INBOUND
+-N (.*)_OUTBOUND
+-N (.*)_INBOUND_REDIRECT
+-N (.*)_OUTBOUND_REDIRECT
+-A PREROUTING -p tcp -j (.*)_INBOUND
 -I OUTPUT 1 -p tcp --dport 1900,1902,1000-2000 -m owner --uid-owner 103,104,106-108 -j RETURN
 -I OUTPUT 2 -p tcp --dport 2900,2902,3000-5000 -m owner --uid-owner 203,204,206-208 -j RETURN
 -I OUTPUT 3 -p udp --dport 3900,3902,4000-6000 -m owner --uid-owner 303,304,306-308 -j RETURN
--A OUTPUT -p tcp -j KUMA_MESH_OUTBOUND
--A KUMA_MESH_INBOUND -p tcp -j KUMA_MESH_INBOUND_REDIRECT
--A KUMA_MESH_OUTBOUND -s (.*) -o (.*) -j RETURN
--A KUMA_MESH_OUTBOUND -p tcp -o (.*) ! -d (.*) -m owner --uid-owner 0 -j KUMA_MESH_INBOUND_REDIRECT
--A KUMA_MESH_OUTBOUND -p tcp -o (.*) -m owner ! --uid-owner 0 -j RETURN
--A KUMA_MESH_OUTBOUND -m owner --uid-owner 0 -j RETURN
--A KUMA_MESH_OUTBOUND -d (.*) -j RETURN
--A KUMA_MESH_OUTBOUND -j KUMA_MESH_OUTBOUND_REDIRECT
--A KUMA_MESH_INBOUND_REDIRECT -p tcp -j REDIRECT --to-ports (15006|15010)
--A KUMA_MESH_OUTBOUND_REDIRECT -p tcp -j REDIRECT --to-ports 15001
-COMMIT
-Transparent proxy set up successfully
+-A OUTPUT -p tcp -j (.*)_OUTBOUND
+-A (.*)_INBOUND -p tcp -j (.*)_INBOUND_REDIRECT
+-A (.*)_OUTBOUND -s (.*) -o (.*) -j RETURN
+-A (.*)_OUTBOUND -p tcp -o (.*) ! -d (.*) -m owner --uid-owner 0 -j (.*)_INBOUND_REDIRECT
+-A (.*)_OUTBOUND -p tcp -o (.*) -m owner ! --uid-owner 0 -j RETURN
+-A (.*)_OUTBOUND -m owner --uid-owner 0 -j RETURN
+-A (.*)_OUTBOUND -d (.*) -j RETURN
+-A (.*)_OUTBOUND -j (.*)_OUTBOUND_REDIRECT
+-A (.*)_INBOUND_REDIRECT -p tcp -j REDIRECT --to-ports (15006|15010)
+-A (.*)_OUTBOUND_REDIRECT -p tcp -j REDIRECT --to-ports 15001
