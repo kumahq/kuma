@@ -10,6 +10,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
@@ -40,7 +41,7 @@ import (
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	mesh_cache "github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
+	xds_runtime "github.com/kumahq/kuma/pkg/xds/runtime"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 	xds_server "github.com/kumahq/kuma/pkg/xds/server"
 )
@@ -70,6 +71,9 @@ func (i *TestRuntimeInfo) GetStartTime() time.Time {
 }
 
 func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Builder, error) {
+	if cfg.DpServer.Auth.Type == "" { // for test, autoconfigure to dp token
+		cfg.DpServer.Auth.Type = dp_server.DpServerAuthDpToken
+	}
 	builder, err := core_runtime.BuilderFor(appCtx, cfg)
 	if err != nil {
 		return nil, err
@@ -100,7 +104,11 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 	builder.WithEnvoyAdminClient(&DummyEnvoyAdminClient{})
 	builder.WithEventReaderFactory(events.NewEventBus())
 	builder.WithAPIManager(customization.NewAPIList())
-	builder.WithXDSHooks(&xds_hooks.Hooks{})
+	xdsCtx, err := xds_runtime.Default(builder) //nolint:contextcheck
+	if err != nil {
+		return nil, err
+	}
+	builder.WithXDS(xdsCtx)
 	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, metrics))
 	builder.WithKDSContext(kds_context.DefaultContext(appCtx, builder.ResourceManager(), cfg.Multizone.Zone.Name))
 	caProvider, err := secrets.NewCaProvider(builder.CaManagers(), metrics)

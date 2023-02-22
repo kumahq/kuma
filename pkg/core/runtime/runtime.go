@@ -29,10 +29,8 @@ import (
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
-	xds_auth "github.com/kumahq/kuma/pkg/xds/auth"
 	mesh "github.com/kumahq/kuma/pkg/xds/cache/mesh"
-	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
+	xds_runtime "github.com/kumahq/kuma/pkg/xds/runtime"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
 
@@ -67,11 +65,7 @@ type RuntimeContext interface {
 	Metrics() metrics.Metrics
 	EventReaderFactory() events.ListenerFactory
 	APIInstaller() api_server.APIInstaller
-	// XDSAuthenticator is used for any server that communicates via xDS
-	XDSAuthenticator() xds_auth.Authenticator
-	// XDSServerCallbacks is used for callbacks for the Envoy xDS server
-	XDSServerCallbacks() util_xds.Callbacks
-	XDSHooks() *xds_hooks.Hooks
+	XDS() xds_runtime.XDSRuntimeContext
 	CAProvider() secrets.CaProvider
 	DpServer() *dp_server.DpServer
 	KDSContext() *kds_context.Context
@@ -157,9 +151,7 @@ type runtimeContext struct {
 	metrics        metrics.Metrics
 	erf            events.ListenerFactory
 	apim           api_server.APIInstaller
-	xdsauth        xds_auth.Authenticator
-	xdsCallbacks   util_xds.Callbacks
-	xdsh           *xds_hooks.Hooks
+	xds            xds_runtime.XDSRuntimeContext
 	cap            secrets.CaProvider
 	dps            *dp_server.DpServer
 	kdsctx         *kds_context.Context
@@ -244,16 +236,8 @@ func (rc *runtimeContext) CAProvider() secrets.CaProvider {
 	return rc.cap
 }
 
-func (rc *runtimeContext) XDSAuthenticator() xds_auth.Authenticator {
-	return rc.xdsauth
-}
-
-func (rc *runtimeContext) XDSServerCallbacks() util_xds.Callbacks {
-	return rc.xdsCallbacks
-}
-
-func (rc *runtimeContext) XDSHooks() *xds_hooks.Hooks {
-	return rc.xdsh
+func (rc *runtimeContext) XDS() xds_runtime.XDSRuntimeContext {
+	return rc.xds
 }
 
 func (rc *runtimeContext) KDSContext() *kds_context.Context {

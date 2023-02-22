@@ -8,6 +8,7 @@ linters:
     - gofmt
     - gomodguard
     - govet
+    - gosec
     - importas
     - ineffassign
     - misspell
@@ -39,7 +40,6 @@ linters-settings:
     sections:
     - standard
     - default
-    - prefix(github.com/kumahq/kuma-net)
     - prefix(github.com/kumahq/kuma)
     custom-order: true
   importas:
@@ -139,4 +139,7 @@ issues:
     - linters:
         - staticcheck
       text: "SA1019: .* for new policies use pkg/plugins/policies/xds/cluster.go"
+    - linters:
+        - gosec
+      path: pkg/transparent-proxy/istio
 

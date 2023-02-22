@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
-	"github.com/kumahq/kuma/pkg/test/golden"
+	"github.com/kumahq/kuma/pkg/test/matchers/golden"
 )
 
 func ExpectMatchesGoldenFiles(actual []byte, goldenFilePath string) {
@@ -16,7 +16,7 @@ func ExpectMatchesGoldenFiles(actual []byte, goldenFilePath string) {
 		if actual[len(actual)-1] != '\n' {
 			actual = append(actual, '\n')
 		}
-		err := os.WriteFile(goldenFilePath, actual, 0664)
+		err := os.WriteFile(goldenFilePath, actual, 0600)
 		Expect(err).ToNot(HaveOccurred())
 	}
 	expected, err := os.ReadFile(goldenFilePath)

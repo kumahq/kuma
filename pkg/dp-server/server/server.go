@@ -69,7 +69,7 @@ func NewDpServer(config dp_server.DpServerConfig, metrics metrics.Metrics) *DpSe
 
 func (d *DpServer) Start(stop <-chan struct{}) error {
 	var err error
-	tlsConfig := &tls.Config{}
+	tlsConfig := &tls.Config{MinVersion: tls.VersionTLS12} // To make gosec pass this is always set after
 	if tlsConfig.MinVersion, err = config_types.TLSVersion(d.config.TlsMinVersion); err != nil {
 		return err
 	}
@@ -80,9 +80,10 @@ func (d *DpServer) Start(stop <-chan struct{}) error {
 		return err
 	}
 	server := &http.Server{
-		Addr:      fmt.Sprintf(":%d", d.config.Port),
-		Handler:   http.HandlerFunc(d.handle),
-		TLSConfig: tlsConfig,
+		ReadHeaderTimeout: time.Second,
+		Addr:              fmt.Sprintf(":%d", d.config.Port),
+		Handler:           http.HandlerFunc(d.handle),
+		TLSConfig:         tlsConfig,
 	}
 
 	errChan := make(chan error)

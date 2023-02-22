@@ -1,0 +1,25 @@
+* nat
+
+# Custom Chains:
+--new-chain KUMA_MESH_INBOUND
+--new-chain KUMA_MESH_OUTBOUND
+--new-chain KUMA_MESH_INBOUND_REDIRECT
+--new-chain KUMA_MESH_OUTBOUND_REDIRECT
+
+# Rules:
+--append PREROUTING --protocol tcp --jump KUMA_MESH_INBOUND
+--append OUTPUT --protocol udp --destination-port 53 --match owner --uid-owner 5678 --jump RETURN
+--append OUTPUT --protocol udp --destination-port 53 --jump REDIRECT --to-ports 15053
+--append OUTPUT --protocol tcp --jump KUMA_MESH_OUTBOUND
+--append KUMA_MESH_INBOUND --protocol tcp --jump KUMA_MESH_INBOUND_REDIRECT
+--append KUMA_MESH_OUTBOUND --source 127.0.0.6/32 --out-interface lo --jump RETURN
+--append KUMA_MESH_OUTBOUND --protocol tcp ! --destination-port 53 --out-interface lo ! --destination 127.0.0.1/32 --match owner --uid-owner 5678 --jump KUMA_MESH_INBOUND_REDIRECT
+--append KUMA_MESH_OUTBOUND --protocol tcp ! --destination-port 53 --out-interface lo --match owner ! --uid-owner 5678 --jump RETURN
+--append KUMA_MESH_OUTBOUND --match owner --uid-owner 5678 --jump RETURN
+--append KUMA_MESH_OUTBOUND --protocol tcp --destination-port 53 --jump REDIRECT --to-ports 15053
+--append KUMA_MESH_OUTBOUND --destination 127.0.0.1/32 --jump RETURN
+--append KUMA_MESH_OUTBOUND --jump KUMA_MESH_OUTBOUND_REDIRECT
+--append KUMA_MESH_INBOUND_REDIRECT --protocol tcp --jump REDIRECT --to-ports 15006
+--append KUMA_MESH_OUTBOUND_REDIRECT --protocol tcp --jump REDIRECT --to-ports 15001
+
+COMMIT

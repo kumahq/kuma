@@ -79,7 +79,7 @@ build/kuma-dp: ## Dev: Build `kuma-dp` binary
 	$(Build_Go_Application) ./app/$(notdir $@)
 
 .PHONY: build/kumactl
-build/kumactl: ## Dev: Build `kumactl` binary
+build/kumactl: build/ebpf ## Dev: Build `kumactl` binary
 	$(Build_Go_Application) ./app/$(notdir $@)
 
 .PHONY: build/kuma-cni
@@ -169,5 +169,5 @@ build/test-server/linux-arm64:
 clean: clean/build ## Dev: Clean
 
 .PHONY: clean/build
-clean/build: ## Dev: Remove build/ dir
+clean/build: clean/ebpf ## Dev: Remove build/ dir
 	rm -rf "$(BUILD_DIR)"

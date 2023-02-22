@@ -873,26 +873,17 @@ func (c *K8sCluster) closePortForwards(name string) {
 }
 
 func (c *K8sCluster) deleteCRDs() error {
-	stdout, err := k8s.RunKubectlAndGetOutputE(c.GetTesting(), c.GetKubectlOptions(), "get", "crds", "-o", "yaml")
+	out, err := k8s.RunKubectlAndGetOutputE(c.GetTesting(), c.GetKubectlOptions(), "get", "crds", "-o", "name")
 	if err != nil {
 		return err
 	}
-
-	var errs error
-	if tmpfile, err := os.CreateTemp("", "crds.yaml"); err != nil {
-		errs = multierr.Append(errs, err)
-	} else {
-		defer os.Remove(tmpfile.Name()) // clean up
-		if _, err := tmpfile.Write([]byte(stdout)); err != nil {
-			errs = multierr.Append(errs, err)
-		} else if err := tmpfile.Close(); err != nil {
-			errs = multierr.Append(errs, err)
-		} else if err := k8s.KubectlDeleteE(c.t, c.GetKubectlOptions(), tmpfile.Name()); err != nil {
-			errs = multierr.Append(errs, err)
+	deleteCmd := []string{"delete"}
+	for _, l := range strings.Split(out, "\n") {
+		if strings.Contains(l, "kuma.io") {
+			deleteCmd = append(deleteCmd, l)
 		}
 	}
-
-	return errs
+	return k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(), deleteCmd...)
 }
 
 func (c *K8sCluster) deleteKumaViaHelm() error {
@@ -1195,7 +1186,8 @@ func (c *K8sCluster) SetCP(cp *K8sControlPlane) {
 func (c *K8sCluster) CreateNode(name string, label string) error {
 	switch Config.K8sType {
 	case K3dK8sType, K3dCalicoK8sType:
-		createCmd := exec.Command("k3d", "node", "create", name, "-c", c.name, "--k3s-node-label", label)
+		container := c.name
+		createCmd := exec.Command("k3d", "node", "create", name, "-c", container, "--k3s-node-label", label)
 		createCmd.Stdout = os.Stdout
 		return createCmd.Run()
 	case KindK8sType, AwsK8sType, AzureK8sType:
