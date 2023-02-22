@@ -116,6 +116,6 @@ func AppDeploymentWithHelmChart() {
 
 			return "", false
 		}),
-		Entry("with new cni (experimental)", WithExperimentalCNI(), dontSkip),
+		Entry("with cni v1 (legacy)", WithCNIV1(), dontSkip),
 	)
 }

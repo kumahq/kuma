@@ -45,13 +45,13 @@ type kumaDeploymentOptions struct {
 	zoneIngressEnvoyAdminTunnel  bool
 	zoneEgress                   bool
 	zoneEgressEnvoyAdminTunnel   bool
-	cni                          bool
-	cniExperimental              bool
-	cpReplicas                   int
+	cni        bool
+	cniV1      bool
+	cpReplicas int
 	hdsDisabled                  bool
 	runPostgresMigration         bool
-	yamlConfig                   string
-	experimentalTransparentProxy bool
+	yamlConfig         string
+	transparentProxyV1 bool
 
 	// Functions to apply to each mesh after the control plane
 	// is provisioned.
@@ -64,7 +64,7 @@ func (k *kumaDeploymentOptions) apply(opts ...KumaDeploymentOption) {
 	k.installationMode = KumactlInstallationMode
 	k.env = map[string]string{}
 	k.meshUpdateFuncs = map[string][]func(*mesh_proto.Mesh) *mesh_proto.Mesh{}
-	k.experimentalTransparentProxy = true
+	k.transparentProxyV1 = true
 
 	// Apply options.
 	for _, o := range opts {
@@ -112,8 +112,8 @@ type appDeploymentOptions struct {
 	reachableServices            []string
 	appendDataplaneConfig        string
 	boundToContainerIp           bool
-	serviceAddress               string
-	experimentalTransparentProxy bool
+	serviceAddress     string
+	transparentProxyV1 bool
 
 	dockerVolumes       []string
 	dockerContainerName string
@@ -305,10 +305,10 @@ func WithCNI() KumaDeploymentOption {
 	})
 }
 
-func WithExperimentalCNI() KumaDeploymentOption {
+func WithCNIV1() KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.cni = true
-		o.cniExperimental = true
+		o.cniV1 = true
 	})
 }
 
@@ -468,13 +468,12 @@ func WithToken(token string) AppDeploymentOption {
 func WithTransparentProxy(transparent bool) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.transparent = &transparent
-		o.experimentalTransparentProxy = true
 	})
 }
 
-func WithoutExperimentalTransparentProxy() AppDeploymentOption {
+func WithTransparentProxyV1() AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
-		o.experimentalTransparentProxy = false
+		o.transparentProxyV1 = true
 	})
 }
 
