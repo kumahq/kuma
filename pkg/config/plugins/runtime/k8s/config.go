@@ -58,7 +58,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 					},
 					LifeCycle: LifeCycleEvents{
 						// Experimental feature, disabled by default
-						SidecarInitTimeout: -1,
+						SidecarInitTimeout: 0,
 					},
 				},
 			},
@@ -261,7 +261,7 @@ type SidecarResourceLimits struct {
 
 // LifeCycleEvents defines postStart and preStop configurations
 type LifeCycleEvents struct {
-	// SidecarInitTimeout defines the amount of seconds to wait for Kuma to become available -1 to disable this feature
+	// SidecarInitTimeout defines the amount of seconds to wait for Kuma to become available 0 to disable this feature
 	SidecarInitTimeout int32 `json:"sidecarInitTimeout,omitempty" envconfig:"kuma_injector_sidecar_init_timeout"`
 }
 
@@ -520,8 +520,8 @@ func (c *LifeCycleEvents) Sanitize() {
 
 func (c *LifeCycleEvents) Validate() error {
 	var errs error
-	if c.SidecarInitTimeout < -1 || c.SidecarInitTimeout == 0 {
-		errs = multierr.Append(errs, errors.Errorf(".SidecarInitTimeout must be -1 (disabled) or > 1"))
+	if c.SidecarInitTimeout < 0 {
+		errs = multierr.Append(errs, errors.Errorf(".SidecarInitTimeout must be 0 (disabled) or > 1"))
 	}
 	return errs
 }
