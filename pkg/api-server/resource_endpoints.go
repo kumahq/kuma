@@ -9,16 +9,13 @@ import (
 	"github.com/emicklei/go-restful/v3"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
-	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/access"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/pkg/core/user"
@@ -36,13 +33,11 @@ const (
 )
 
 type resourceEndpoints struct {
-	mode            config_core.CpMode
-	store           config_store.StoreType
-	systemNamespace string
-	zoneName        string
-	resManager      manager.ResourceManager
-	descriptor      model.ResourceTypeDescriptor
-	resourceAccess  access.ResourceAccess
+	mode           config_core.CpMode
+	zoneName       string
+	resManager     manager.ResourceManager
+	descriptor     model.ResourceTypeDescriptor
+	resourceAccess access.ResourceAccess
 }
 
 func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix string) {
@@ -268,7 +263,7 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 	if name != resourceMeta.Name {
 		err.AddViolation("name", "name from the URL has to be the same as in body")
 	}
-	if r.mode == config_core.Zone && r.doesLengthFitsGlobal(resourceMeta) {
+	if r.mode == config_core.Zone && !r.doesNameLengthFitsGlobal(name) {
 		err.AddViolation("name", "the length of the name must be shorter")
 	}
 	if string(r.descriptor.Name) != resourceMeta.Type {
@@ -285,23 +280,10 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 // (if the K8s store is used in the global control-plane) when it is synchronized
 // to global control-plane. It is important to notice that the zone is unaware
 // of the type of the store used by the global control-plane, so we must prepare
-// for the worst-case scenario. Additionally, depending on the resource, it may be
-// stored in a different namespace, so we must check both possibilities.
-func (r *resourceEndpoints) doesLengthFitsGlobal(resourceMeta rest_v1alpha1.ResourceMeta) bool {
-	desc, err := registry.Global().DescriptorFor(core_model.ResourceType(resourceMeta.Type))
-	var isPluginOriginated bool
-	if err != nil {
-		isPluginOriginated = false
-	} else {
-		isPluginOriginated = desc.IsPluginOriginated
-	}
-	if len(r.zoneName)+len(resourceMeta.Name)+len("default") > 253 {
-		return false
-	}
-	if isPluginOriginated && len(r.zoneName)+len(resourceMeta.Name)+len(r.systemNamespace) > 253 {
-		return false
-	}
-	return true
+// for the worst-case scenario. We don't have to check other plugabble policies
+// because zone doesn't allow to create policies on the zone.
+func (r *resourceEndpoints) doesNameLengthFitsGlobal(name string) bool {
+	return len(r.zoneName)+len(name)+len("default") < 253
 }
 
 func (r *resourceEndpoints) meshFromRequest(request *restful.Request) string {
