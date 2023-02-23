@@ -60,8 +60,9 @@ spec:
       {{- with .Values.controlPlane.topologySpreadConstraints }}
       topologySpreadConstraints: {{ tpl (toYaml . | nindent 8) $ }}
       {{- end }}
-      {{- if .Values.controlPlane.podSecurityContext }}
       securityContext:
+        runAsNonRoot: true
+      {{- if .Values.controlPlane.podSecurityContext }}
       {{ toYaml .Values.controlPlane.podSecurityContext | trim | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "kuma.name" . }}-control-plane
@@ -112,8 +113,9 @@ spec:
         - name: control-plane
           image: {{ include "kuma.formatImage" (dict "image" .Values.controlPlane.image "root" $) | quote }}
           imagePullPolicy: {{ .Values.controlPlane.image.pullPolicy }}
-          {{- if .Values.controlPlane.containerSecurityContext }}
           securityContext:
+            readOnlyRootFilesystem: true
+          {{- if .Values.controlPlane.containerSecurityContext }}
           {{ toYaml .Values.controlPlane.containerSecurityContext | trim | nindent 12 }}
           {{- end }}
           env:
