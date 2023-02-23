@@ -129,6 +129,8 @@ spec:
                   - 'kuma-control-plane'
               topologyKey: kubernetes.io/hostname
             weight: 100
+      securityContext:
+        runAsNonRoot: true
       serviceAccountName: kuma-control-plane
       automountServiceAccountToken: true
       nodeSelector:
@@ -177,6 +179,8 @@ spec:
         - name: control-plane
           image: "docker.io/kumahq/kuma-cp:0.0.1"
           imagePullPolicy: IfNotPresent
+          securityContext:
+            readOnlyRootFilesystem: true
           env:
             - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
               value: "false"
