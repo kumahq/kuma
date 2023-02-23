@@ -340,6 +340,14 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		values["cni.confName"] = Config.CNIConf.ConfName
 	}
 
+<<<<<<< HEAD
+=======
+	if c.opts.cniExperimental {
+		values["experimental.cni"] = "true"
+		values["cni.experimental.image.repository"] = Config.KumaCNIImageRepo
+	}
+
+>>>>>>> 3cc67b709 (test(e2e/framework): allow to set CNI image in e2e conf (#6105))
 	if Config.CIDR != "" {
 		values["controlPlane.envVars.KUMA_DNS_SERVER_CIDR"] = Config.CIDR
 	}
