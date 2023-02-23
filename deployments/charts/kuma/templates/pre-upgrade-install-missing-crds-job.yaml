@@ -5,6 +5,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: {{ $serviceAccountName }}
+  namespace: {{ .Release.Namespace }}
   annotations:
     "helm.sh/hook": "{{ $hook }}"
     "helm.sh/hook-weight": "-1"
@@ -113,15 +114,18 @@ spec:
       {{ toYaml . | nindent 8 }}
       {{- end }}
       restartPolicy: OnFailure
-      {{- if .Values.hooks.podSecurityContext }}
       securityContext:
+        runAsNonRoot: true
+      {{- if .Values.hooks.podSecurityContext }}
       {{ toYaml .Values.hooks.podSecurityContext | trim | nindent 8 }}
       {{- end }}
       containers:
         - name: pre-upgrade-job
           image: {{ include "kubectl.formatImage" (dict "image" .Values.kubectl.image "root" $) | quote }}
-          {{- if .Values.hooks.containerSecurityContext }}
           securityContext:
+            runAsUser: 65534 # the nobody user in the default image
+            readOnlyRootFilesystem: true
+          {{- if .Values.hooks.containerSecurityContext }}
           {{ toYaml .Values.hooks.containerSecurityContext | trim | nindent 12 }}
           {{- end }}
           resources:
@@ -143,8 +147,9 @@ spec:
       initContainers:
         - name: pre-upgrade-job-init
           image: {{ include "kuma.formatImage" (dict "image" .Values.kumactl.image "root" $) | quote }}
-          {{- if .Values.hooks.containerSecurityContext }}
           securityContext:
+            readOnlyRootFilesystem: true
+          {{- if .Values.hooks.containerSecurityContext }}
           {{ toYaml .Values.hooks.containerSecurityContext | trim | nindent 12 }}
           {{- end }}
           resources:
