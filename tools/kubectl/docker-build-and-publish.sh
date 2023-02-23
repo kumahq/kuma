@@ -1,6 +1,8 @@
 #!/bin/sh
 
-: "${KUBERNETES_RELEASE:=v1.20.15}"
+set -e
+
+: "${KUBERNETES_RELEASE:?must be set!}"
 
 build_docker_image(){
     docker build --build-arg ARCH="${1?required}" \
