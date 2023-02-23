@@ -102,7 +102,7 @@ service GlobalKDSService {
 
 In the first iteration, we can introduce only `ZoneToGlobalSync` with delta xDS, and in the future, we could introduce `GlobalToZoneSync` and also use delta xDS. In the code, I've noticed that we are using our copy of the Snapshot cache and the code is a bit outdated. As a part of that task, we should check if we can change to use `go-control-plane` cache implementation or copy and update our current implementation. 
 
-Maybe not in the first step but 
+Maybe not in the first step but we could consider if we can benefit from using different cache implementation `LinearCache` or `MuxCache` for snapshot generation.
 
 ### Prioritize operational informations
 
