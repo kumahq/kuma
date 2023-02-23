@@ -36,7 +36,7 @@ func TransparentProxy() {
 	// the second installation have been just ignored.
 	//
 	// When mechanism to uninstall tproxy will be implemented (ref.
-	// https://github.com/kumahq/kuma-net/issues/20), we will adapt this test
+	// https://github.com/kumahq/kuma/issues/6093), we will adapt this test
 	// to run the uninstaller step in between.
 	XIt("should be able to re-install transparent proxy", func() {
 		// given
@@ -49,7 +49,7 @@ func TransparentProxy() {
 
 		// This logic is currently non-existent
 		// TODO: remove above comment after implementing uninstaller logic
-		//       (ref. https://github.com/kumahq/kuma-net/issues/20)
+		//       (ref. https://github.com/kumahq/kuma/issues/6093)
 		Eventually(func(g Gomega) {
 			stdout, _, err := universal.Cluster.Exec("", "", "tp-client",
 				"/usr/bin/kumactl", "uninstall", "transparent-proxy",
