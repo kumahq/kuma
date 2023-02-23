@@ -26,6 +26,7 @@ import (
 	api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
+	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/core"
 	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
@@ -237,9 +238,16 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 		}
 		endpoints := resourceEndpoints{
 			mode:           cfg.Mode,
+			store:          cfg.Store.Type,
 			resManager:     resManager,
 			descriptor:     definition,
 			resourceAccess: resourceAccess,
+		}
+		if cfg.Mode == config_core.Zone && cfg.Multizone != nil && cfg.Multizone.Zone != nil {
+			endpoints.zoneName = cfg.Multizone.Zone.Name
+		}
+		if cfg.Store.Type == config_store.KubernetesStore {
+			endpoints.systemNamespace = cfg.Store.Kubernetes.SystemNamespace
 		}
 		switch defType {
 		case mesh.ServiceInsightType:
