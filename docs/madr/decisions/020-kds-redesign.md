@@ -11,6 +11,7 @@ The current implementation of KDS is quite complex, and there may be some bugs, 
 * creating resources on the zone and syncing them to the global,
 * creating separate gRPC services for synchronization between the zone and global,
 * supporting multiple control plane tenants,
+* prioritizing sync of operational over informational resources,
 * and sending only changes instead of the state of the world when synchronizing data from the zone to the global.
 
 ## Considered Options
@@ -90,16 +91,22 @@ but might have scalability issues for synchronization Zone to Global with large 
 ```proto
 service GlobalKDSService {
  ...
- rpc ZoneToGlobalStream(stream envoy.service.discovery.v3.DeltaDiscoveryRequest)
+ rpc ZoneToGlobalSync(stream envoy.service.discovery.v3.DeltaDiscoveryRequest)
      returns (stream envoy.service.discovery.v3.DeltaDiscoveryResponse);
 
- rpc GlobeToZoneStream(stream envoy.service.discovery.v3.DeltaDiscoveryRequest)
+ rpc GlobalToZoneSync(stream envoy.service.discovery.v3.DeltaDiscoveryRequest)
      returns (stream envoy.service.discovery.v3.DeltaDiscoveryRequest);
 }
 
 ```
 
-In the first iteration, we can introduce only `ZoneToGlobalStream` with delta xDS, and in the future, we could introduce `GlobeToZoneStream` and also use delta xDS. In the code, I've noticed that we are using our copy of the Snapshot cache and the code is a bit outdated. As a part of that task, we should check if we can change to use `go-control-plane` cache implementation or copy and update our current implementation.
+In the first iteration, we can introduce only `ZoneToGlobalSync` with delta xDS, and in the future, we could introduce `GlobalToZoneSync` and also use delta xDS. In the code, I've noticed that we are using our copy of the Snapshot cache and the code is a bit outdated. As a part of that task, we should check if we can change to use `go-control-plane` cache implementation or copy and update our current implementation. 
+
+Maybe not in the first step but 
+
+### Prioritize operational informations
+
+Certain resources require more frequent synchronization than others. For example, Policies, ZoneIngress, and ZoneEgress must be updated immediately, whereas Insights and Dataplanes objects may be delayed and can be aggregated. To address this, we could consider implementing an option to specify the interval at which the snapshot for specific resources is recalculated. To avoid recalculating changes for all synchronized resources, we may also need to establish a cache per resource type. In addition, we could set up an RPC service to monitor changes for all resources on separate streams, allowing changes to be processed independently.
 
 ### Handshake
 
@@ -136,6 +143,8 @@ To link multitenant control-planes with a global one, it's necessary to establis
 
 ### Create resources on the zone
 
+**That feature needs to be cover in a separate MADR**
+
 We intend to introduce a new feature that enables the creation of resources at the zone level. These resources will be exclusively applicable to the specific zone, and we will synchronize them to the global level as read-only. To distinguish the zone resources from global ones, we will prefix them with the name of the zone.
 
 ```
@@ -143,22 +152,8 @@ zone-1.example-timeout
 ```
 
 ### Resources
+Only policies that supports targetRef are going to be allowed.
 The following resources are the ones we should permit creation in the zone:
-* CircuitBreaker
-* ExternalService
-* FaultInjection
-* HealthCheck
-* MeshGateway
-* MeshGatewayRoute
-* ProxyTemplate
-* RateLimit
-* Retry
-* Timeout
-* TrafficLog
-* TrafficPermission
-* TrafficRoute
-* TrafficTrace
-* VirtualOutbound
 * MeshAccessLog
 * MeshCircuitBreaker
 * MeshFaultInjection
@@ -215,16 +210,24 @@ spec:
        connectionTimeout: 2s
 ```
 
-The policy `timeout-zone` is going to be applied to all dataplanes in the default mesh in the zone.
+The policy `timeout-zone` is going to be applied to all dataplanes in the default mesh in the zone. Also, worth adding that global control-plane added `kuma.io/zone: zone-name` to the resource when is synced.
 
 ### Incremental xDS
 
-Incremental xDS in the `DeltaDiscoveryRequest` has a field `resource_names_subscribe` which requires information about resources that we want to subscribe to e.g. policy with name `timeout-1`. If you send `resource_names_subscribe:  "*"` in a `DeltaDiscoveryRequest`, the control plane should respond with all resources of the specified type, not just the ones that have changed since the last update. This is because the `resource_names_subscribe` field is used to filter which resources the control plane should send, and if it is set to `*`, it effectively disables filtering and requests all resources of the specified type.
+Incremental xDS in the `DeltaDiscoveryRequest` has a field `resource_names_subscribe` which requires information about resources that we want to subscribe to e.g. policy with name `timeout-1`. If you send `resource_names_subscribe:  "*"` in a `DeltaDiscoveryRequest`, the control plane should respond with all resources of the specified type, not just the ones that have changed since the last update. This is because the `resource_names_subscribe` field is used to filter which resources the control plane should send, and if it is set to `*`, it effectively disables filtering and requests all resources of the specified type. Looks like go-control-plane has no implementation of the client, so it might requires us to implement one.
 
 xDS Specification
 * https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#how-the-client-specifies-what-resources-to-return
 * https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#incremental-xds
 * https://github.com/envoyproxy/go-control-plane/blob/main/pkg/cache/v3/delta.go#L31
+
+### Measure performance of current KDS solution
+
+As a part of a task we could consider mesuring performance of the KDS to compare it with the new solution.
+We should take a look at:
+* control-planes CPU and Memory usage
+* Latency
+* bandwidth usage 
 
 ## How we can split the work
 
@@ -232,7 +235,8 @@ We can split the implementation and introduce features independently.
 
 ### Stages
 
-1. Introduce `ZoneToGlobalStream` with incremental xDS
-2. Introduce `GlobalToZoneStream` with incremental xDS
-3. Introduce handshake (if required)
-4. Enable the creation of resources on the zone
+1. Introduce `ZoneToGlobalSync` with incremental xDS
+2. Introduce `GlobalToZoneSync` with incremental xDS
+3. Prioritize resource synchronization
+4. Introduce handshake (if required)
+5. Enable the creation of resources on the zone - separate MADR
