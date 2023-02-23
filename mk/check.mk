@@ -65,3 +65,7 @@ check: generate fmt docs helm-lint golangci-lint shellcheck tidy helm-docs ginkg
 		git ls-files --other --directory --exclude-standard --no-empty-directory && \
 		false \
 	)
+
+.PHONY: update-vulnerable-dependencies
+update-vulnerable-dependencies:
+	@./tools/ci/update-vulnerable-dependencies.sh
