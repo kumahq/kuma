@@ -49,6 +49,7 @@ type E2eConfig struct {
 	ZoneEgressApp                 string            `yaml:"zoneEgressApp,omitempty" envconfig:"KUMA_ZONE_EGRESS_APP"`
 	ZoneIngressApp                string            `yaml:"zoneIngressApp,omitempty" envconfig:"KUMA_ZONE_INGRESS_APP"`
 	Arch                          string            `yaml:"arch,omitempty" envconfig:"ARCH"`
+	KumaCNIImageRepo              string            `yaml:"cniImageRepo,omitempty" envconfig:"KUMA_CNI_IMAGE_REPOSITORY"`
 
 	SuiteConfig SuiteConfig `yaml:"suites,omitempty"`
 }
@@ -169,6 +170,7 @@ var defaultConf = E2eConfig{
 	KumaDPImageRepo:        "kuma-dp",
 	KumaInitImageRepo:      "kuma-init",
 	KumactlImageRepo:       "kumactl",
+	KumaCNIImageRepo:       "kuma-cni",
 
 	KumaUniversalEnvVars: map[string]string{},
 	KumaK8sCtlFlags:      map[string]string{},
