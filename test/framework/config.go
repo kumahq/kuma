@@ -36,6 +36,7 @@ type E2eConfig struct {
 	KumaCPImageRepo               string            `json:"cpImageRepo,omitempty" envconfig:"KUMA_CP_IMAGE_REPOSITORY"`
 	KumaDPImageRepo               string            `json:"dpImageRepo,omitempty" envconfig:"KUMA_DP_IMAGE_REPOSITORY"`
 	KumaInitImageRepo             string            `json:"initImageRepo,omitempty" envconfig:"KUMA_INIT_IMAGE_REPOSITORY"`
+	KumaCNIImageRepo              string            `json:"cniImageRepo,omitempty" envconfig:"KUMA_CNI_IMAGE_REPOSITORY"`
 	KumaUniversalImageRepo        string            `json:"universalImageRepo,omitempty"`
 	XDSApiVersion                 string            `json:"xdsVersion,omitempty" envconfig:"API_VERSION"`
 	K8sType                       K8sType           `json:"k8sType,omitempty" envconfig:"KUMA_K8S_TYPE"`
@@ -169,6 +170,7 @@ var defaultConf = E2eConfig{
 	KumaDPImageRepo:        "kuma-dp",
 	KumaInitImageRepo:      "kuma-init",
 	KumactlImageRepo:       "kumactl",
+	KumaCNIImageRepo:       "kuma-cni",
 
 	KumaUniversalEnvVars: map[string]string{},
 	KumaK8sCtlFlags:      map[string]string{},
