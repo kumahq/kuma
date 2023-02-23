@@ -92,7 +92,7 @@ func AppDeploymentWithHelmChart() {
 				g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 			}).Should(Succeed())
 		},
-		Entry("with default cni", WithCNI(), func(cluster Cluster) (string, bool) {
+		Entry("with cni v1 (legacy)", WithCNIV1(), func(cluster Cluster) (string, bool) {
 			version, err := cluster.GetK8sVersion()
 			Expect(err).To(Succeed())
 
@@ -116,6 +116,6 @@ func AppDeploymentWithHelmChart() {
 
 			return "", false
 		}),
-		Entry("with cni v1 (legacy)", WithCNIV1(), dontSkip),
+		Entry("with cni v2 (default)", WithCNI(), dontSkip),
 	)
 }
