@@ -283,7 +283,7 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 // for the worst-case scenario. We don't have to check other plugabble policies
 // because zone doesn't allow to create policies on the zone.
 func (r *resourceEndpoints) doesNameLengthFitsGlobal(name string) bool {
-	return len(r.zoneName)+len(name)+len("default") < 253
+	return len(fmt.Sprintf("%s.%s.%s", r.zoneName, name, "default")) < 253
 }
 
 func (r *resourceEndpoints) meshFromRequest(request *restful.Request) string {
