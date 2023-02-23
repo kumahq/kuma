@@ -421,6 +421,7 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 	}
 
 	if c.opts.cni {
+		values["cni.image.repository"] = Config.KumaCNIImageRepo
 		values["cni.enabled"] = "true"
 		values["cni.chained"] = "true"
 		values["cni.netDir"] = Config.CNIConf.NetDir

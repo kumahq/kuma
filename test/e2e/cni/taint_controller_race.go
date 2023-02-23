@@ -69,8 +69,11 @@ metadata:
 			err := k8sCluster.CreateNode(nodeName, "second=true")
 			Expect(err).ToNot(HaveOccurred())
 
-			err = k8sCluster.LoadImages("kuma-dp", "kuma-cni", "kuma-universal")
-			Expect(err).ToNot(HaveOccurred())
+			Expect(k8sCluster.LoadImages(
+				Config.KumaDPImageRepo,
+				Config.KumaCNIImageRepo,
+				Config.KumaUniversalImageRepo,
+			)).ToNot(HaveOccurred())
 
 			err = NewClusterSetup().
 				Install(NamespaceWithSidecarInjection(TestNamespace)).
