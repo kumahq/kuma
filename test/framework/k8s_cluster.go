@@ -425,6 +425,7 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 
 	if c.opts.cniExperimental {
 		values["experimental.cni"] = "true"
+		values["cni.experimental.image.repository"] = Config.KumaCNIImageRepo
 	}
 
 	if Config.CIDR != "" {

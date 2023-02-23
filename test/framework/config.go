@@ -13,6 +13,7 @@ import (
 )
 
 type E2eConfig struct {
+<<<<<<< HEAD
 	KumaImageRegistry             string            `yaml:"imageRegistry,omitempty" envconfig:"KUMA_GLOBAL_IMAGE_REGISTRY"`
 	KumaImageTag                  string            `yaml:"imageTag,omitempty" envconfig:"KUMA_GLOBAL_IMAGE_TAG"`
 	KumaNamespace                 string            `yaml:"namespace,omitempty"`
@@ -49,6 +50,46 @@ type E2eConfig struct {
 	ZoneEgressApp                 string            `yaml:"zoneEgressApp,omitempty" envconfig:"KUMA_ZONE_EGRESS_APP"`
 	ZoneIngressApp                string            `yaml:"zoneIngressApp,omitempty" envconfig:"KUMA_ZONE_INGRESS_APP"`
 	Arch                          string            `yaml:"arch,omitempty" envconfig:"ARCH"`
+=======
+	KumaImageRegistry             string            `json:"imageRegistry,omitempty" envconfig:"KUMA_GLOBAL_IMAGE_REGISTRY"`
+	KumaImageTag                  string            `json:"imageTag,omitempty" envconfig:"KUMA_GLOBAL_IMAGE_TAG"`
+	KumaNamespace                 string            `json:"namespace,omitempty"`
+	KumaServiceName               string            `json:"serviceName,omitempty"`
+	HelmChartPath                 string            `json:"helmChartPath,omitempty"`
+	HelmSubChartPrefix            string            `json:"helmSubChartPrefix,omitempty"`
+	HelmChartName                 string            `json:"helmChartName,omitempty"`
+	HelmRepoUrl                   string            `json:"helmRepoUrl,omitempty"`
+	HelmGlobalExtraYaml           string            `json:"HelmGlobalExtraYaml,omitempty"`
+	CNIApp                        string            `json:"CNIApp,omitempty"`
+	CNINamespace                  string            `json:"CNINamespace,omitempty"`
+	CNIConf                       CniConf           `json:"CNIConf,omitempty"`
+	KumaGlobalZoneSyncServiceName string            `json:"globalZoneSyncServiceName,omitempty"`
+	KumaUniversalEnvVars          map[string]string `json:"universalEnvVars,omitempty"`
+	KumaZoneUniversalEnvVars      map[string]string `json:"universalZoneEnvVars,omitempty"`
+	KumaK8sCtlFlags               map[string]string `json:"k8sCtlFlags,omitempty"`
+	KumaZoneK8sCtlFlags           map[string]string `json:"k8sZoneCtlFlags,omitempty"`
+	DefaultObservabilityNamespace string            `json:"observabilityNamespace,omitempty"`
+	DefaultGatewayNamespace       string            `json:"gatewayNamespace,omitempty"`
+	KumactlImageRepo              string            `json:"ctlImageRepo,omitempty" envconfig:"KUMACTL_IMAGE_REPOSITORY"`
+	KumaCPImageRepo               string            `json:"cpImageRepo,omitempty" envconfig:"KUMA_CP_IMAGE_REPOSITORY"`
+	KumaDPImageRepo               string            `json:"dpImageRepo,omitempty" envconfig:"KUMA_DP_IMAGE_REPOSITORY"`
+	KumaInitImageRepo             string            `json:"initImageRepo,omitempty" envconfig:"KUMA_INIT_IMAGE_REPOSITORY"`
+	KumaCNIImageRepo              string            `json:"cniImageRepo,omitempty" envconfig:"KUMA_CNI_IMAGE_REPOSITORY"`
+	KumaUniversalImageRepo        string            `json:"universalImageRepo,omitempty"`
+	XDSApiVersion                 string            `json:"xdsVersion,omitempty" envconfig:"API_VERSION"`
+	K8sType                       K8sType           `json:"k8sType,omitempty" envconfig:"KUMA_K8S_TYPE"`
+	IPV6                          bool              `json:"ipv6,omitempty" envconfig:"IPV6"`
+	UseHostnameInsteadOfIP        bool              `json:"useHostnameInsteadOfIP,omitempty" envconfig:"KUMA_USE_HOSTNAME_INSTEAD_OF_ID"`
+	UseLoadBalancer               bool              `json:"useLoadBalancer,omitempty" envconfig:"KUMA_USE_LOAD_BALANCER"`
+	CIDR                          string            `json:"kumaCidr,omitempty"`
+	DefaultClusterStartupRetries  int               `json:"defaultClusterStartupRetries,omitempty" envconfig:"KUMA_DEFAULT_RETRIES"`
+	DefaultClusterStartupTimeout  time.Duration     `json:"defaultClusterStartupTimeout,omitempty" envconfig:"KUMA_DEFAULT_TIMEOUT"`
+	KumactlBin                    string            `json:"kumactlBin,omitempty" envconfig:"KUMACTLBIN"`
+	ZoneEgressApp                 string            `json:"zoneEgressApp,omitempty" envconfig:"KUMA_ZONE_EGRESS_APP"`
+	ZoneIngressApp                string            `json:"zoneIngressApp,omitempty" envconfig:"KUMA_ZONE_INGRESS_APP"`
+	Arch                          string            `json:"arch,omitempty" envconfig:"ARCH"`
+	KumaCpConfig                  KumaCpConfig      `json:"kumaCpConfig,omitempty" envconfig:"KUMA_CP_CONFIG"`
+>>>>>>> 3cc67b709 (test(e2e/framework): allow to set CNI image in e2e conf (#6105))
 
 	SuiteConfig SuiteConfig `yaml:"suites,omitempty"`
 }
@@ -169,6 +210,7 @@ var defaultConf = E2eConfig{
 	KumaDPImageRepo:        "kuma-dp",
 	KumaInitImageRepo:      "kuma-init",
 	KumactlImageRepo:       "kumactl",
+	KumaCNIImageRepo:       "kuma-cni",
 
 	KumaUniversalEnvVars: map[string]string{},
 	KumaK8sCtlFlags:      map[string]string{},
