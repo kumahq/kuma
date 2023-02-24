@@ -40,11 +40,17 @@ to:
     kind: BlahBlah
     name: frontend
 `),
-		ErrorCase("empty path match",
-			validators.Violation{
+		ErrorCases("incorrect path match value",
+			[]validators.Violation{{
 				Field:   `spec.to[0].rules[0].matches[0].path.value`,
 				Message: `must be an absolute path`,
-			}, `
+			}, {
+				Field:   `spec.to[0].rules[0].matches[1].path.value`,
+				Message: "does not need a trailing slash because only a `/`-separated prefix or an entire path is matched",
+			}, {
+				Field:   `spec.to[0].rules[0].matches[2].path.value`,
+				Message: `must be an absolute path`,
+			}}, `
 type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
@@ -60,6 +66,12 @@ to:
       - path:
           value: "relative"
           type: Exact
+      - path:
+          value: "/trailing/slash/"
+          type: Prefix
+      - path:
+          value: "relative"
+          type: Prefix
 `),
 		ErrorCase("repeated match query param names",
 			validators.Violation{
@@ -86,11 +98,23 @@ to:
           name: foo
           value: baz
 `),
-		ErrorCase("invalid filter",
-			validators.Violation{
-				Field:   `spec.to[0].rules[0].filters[0].requestHeaderModifier`,
+		ErrorCases("empty filter",
+			[]validators.Violation{{
+				Field:   `spec.to[0].rules[0].default.filters[0].requestHeaderModifier`,
 				Message: validators.MustBeDefined,
-			}, `
+			}, {
+				Field:   `spec.to[0].rules[0].default.filters[1].responseHeaderModifier`,
+				Message: validators.MustBeDefined,
+			}, {
+				Field:   `spec.to[0].rules[0].default.filters[2].requestRedirect`,
+				Message: validators.MustBeDefined,
+			}, {
+				Field:   `spec.to[0].rules[0].default.filters[3].requestMirror`,
+				Message: validators.MustBeDefined,
+			}, {
+				Field:   `spec.to[0].rules[0].default.filters[4].urlRewrite`,
+				Message: validators.MustBeDefined,
+			}}, `
 type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
@@ -105,13 +129,62 @@ to:
     - default:
         filters:
           - type: RequestHeaderModifier
+          - type: ResponseHeaderModifier
+          - type: RequestRedirect
+          - type: RequestMirror
+          - type: URLRewrite
+`),
+		ErrorCases("invalid HeaderModifier filter",
+			[]validators.Violation{{
+				Field:   `spec.to[0].rules[0].default.filters[0].requestHeaderModifier`,
+				Message: `headerModifier must have only one type defined: set, add, remove`,
+			}, {
+				Field:   `spec.to[0].rules[0].default.filters[1].responseHeaderModifier`,
+				Message: `headerModifier must have only one type defined: set, add, remove`,
+			}, {
+				Field:   `spec.to[0].rules[0].default.filters[2].responseHeaderModifier`,
+				Message: `headerModifier must have only one type defined: set, add, remove`,
+			}}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: frontend
+to:
+- targetRef:
+    kind: MeshService
+    name: frontend
+  rules:
+    - default:
+        filters:
+          - type: RequestHeaderModifier
+            requestHeaderModifier:
+              set:
+                - name: foo
+                  value: bar
+              add:
+                - name: foo
+                  value: bar
+          - type: ResponseHeaderModifier
+            responseHeaderModifier: {}
+          - type: ResponseHeaderModifier
+            responseHeaderModifier: 
+              set:
+                - name: foo
+                  value: bar
+              add:
+                - name: foo
+                  value: bar
+              remove:
+                - foo
 `),
 		ErrorCases("prefix rewrite without prefix match",
 			[]validators.Violation{{
-				Field:   `spec.to[0].rules[0].filters[0].urlRewrite.path.replacePrefixMatch`,
+				Field:   `spec.to[0].rules[0].default.filters[0].urlRewrite.path.replacePrefixMatch`,
 				Message: "can only appear if all matches match a path prefix",
 			}, {
-				Field:   `spec.to[0].rules[0].filters[1].requestRedirect.path.replacePrefixMatch`,
+				Field:   `spec.to[0].rules[0].default.filters[1].requestRedirect.path.replacePrefixMatch`,
 				Message: "can only appear if all matches match a path prefix",
 			}}, `
 type: MeshHTTPRoute
@@ -170,9 +243,36 @@ to:
           name: foo
           value: x
 `),
+		ErrorCases("invalid backendRefs",
+			[]validators.Violation{{
+				Field:   `spec.to[0].rules[0].default.backendRefs[0].name`,
+				Message: "must be set with kind MeshServiceSubset",
+			}}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: frontend
+to:
+- targetRef:
+    kind: MeshService
+    name: frontend
+  rules:
+    - matches:
+      - path:
+          type: Prefix
+          value: /
+      default:
+        backendRefs:
+          - kind: MeshServiceSubset
+            tags:
+              version: v1
+
+`),
 		ErrorCases("invalid backendRef in requestMirror",
 			[]validators.Violation{{
-				Field:   `spec.to[0].rules[0].filters[0].requestMirror.backendRef.name`,
+				Field:   `spec.to[0].rules[0].default.filters[0].requestMirror.backendRef.name`,
 				Message: "must be set with kind MeshServiceSubset",
 			}}, `
 type: MeshHTTPRoute

@@ -54,7 +54,8 @@ func validateRules(rules []Rule) validators.ValidationError {
 	for i, rule := range rules {
 		path := validators.Root().Index(i)
 		errs.AddErrorAt(path.Field("matches"), validateMatches(rule.Matches))
-		errs.AddErrorAt(path.Field("filters"), validateFilters(rule.Default.Filters, rule.Matches))
+		errs.AddErrorAt(path.Field("default").Field("filters"), validateFilters(rule.Default.Filters, rule.Matches))
+		errs.AddErrorAt(path.Field("default").Field("backendRefs"), validateBackendRefs(rule.Default.BackendRefs))
 	}
 
 	return errs
@@ -66,7 +67,6 @@ func validateMatches(matches []Match) validators.ValidationError {
 	for i, match := range matches {
 		path := validators.Root().Index(i)
 		errs.AddErrorAt(path.Field("path"), validatePath(match.Path))
-		errs.AddErrorAt(path.Field("method"), validateMethod(match.Method))
 		errs.AddErrorAt(path.Field("queryParams"), validateQueryParams(match.QueryParams))
 		errs.AddErrorAt(path.Field("headers"), validateHeaders(match.Headers))
 	}
@@ -103,10 +103,6 @@ func validatePath(match *PathMatch) validators.ValidationError {
 	}
 
 	return errs
-}
-
-func validateMethod(match *Method) validators.ValidationError {
-	return validators.ValidationError{}
 }
 
 func validateHeaders(headers []common_api.HeaderMatch) validators.ValidationError {
@@ -172,12 +168,18 @@ func validateFilters(filters *[]Filter, matches []Match) validators.ValidationEr
 		path := validators.Root().Index(i)
 		switch filter.Type {
 		case RequestHeaderModifierType:
+			field := path.Field("requestHeaderModifier")
 			if filter.RequestHeaderModifier == nil {
-				errs.AddViolationAt(path.Field("requestHeaderModifier"), validators.MustBeDefined)
+				errs.AddViolationAt(field, validators.MustBeDefined)
+			} else {
+				errs.AddErrorAt(field, validateHeaderModifier(filter.RequestHeaderModifier))
 			}
 		case ResponseHeaderModifierType:
+			field := path.Field("responseHeaderModifier")
 			if filter.ResponseHeaderModifier == nil {
-				errs.AddViolationAt(path.Field("responseHeaderModifier"), validators.MustBeDefined)
+				errs.AddViolationAt(field, validators.MustBeDefined)
+			} else {
+				errs.AddErrorAt(field, validateHeaderModifier(filter.ResponseHeaderModifier))
 			}
 		case RequestRedirectType:
 			if filter.RequestRedirect == nil {
@@ -214,6 +216,49 @@ func validateFilters(filters *[]Filter, matches []Match) validators.ValidationEr
 				}),
 			)
 		}
+	}
+
+	return errs
+}
+
+func validateHeaderModifier(modifier *HeaderModifier) validators.ValidationError {
+	var errs validators.ValidationError
+
+	counter := 0
+	if modifier.Set != nil {
+		counter++
+	}
+	if modifier.Add != nil {
+		counter++
+	}
+	if modifier.Remove != nil {
+		counter++
+	}
+
+	if counter != 1 {
+		errs.AddViolationAt(validators.Root(), validators.MustHaveOnlyOne("headerModifier", "set", "add", "remove"))
+	}
+
+	return errs
+}
+
+func validateBackendRefs(backendRefs *[]BackendRef) validators.ValidationError {
+	var errs validators.ValidationError
+
+	if backendRefs == nil {
+		return errs
+	}
+
+	for i, backendRef := range *backendRefs {
+		errs.AddErrorAt(
+			validators.Root().Index(i),
+			matcher_validators.ValidateTargetRef(backendRef.TargetRef, &matcher_validators.ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshService,
+					common_api.MeshServiceSubset,
+				},
+			}),
+		)
 	}
 
 	return errs
