@@ -2,7 +2,7 @@
 fmt: fmt/go fmt/proto ## Dev: Run various format tools
 
 .PHONY: fmt/go
-fmt/go: ## Dev: Run go fmt
+fmt/go: golangci-lint-fmt ## Dev: Run go fmt
 	go fmt ./...
 
 .PHONY: fmt/proto
@@ -23,6 +23,12 @@ shellcheck:
 .PHONY: golangci-lint
 golangci-lint: ## Dev: Runs golangci-lint linter
 	GOMEMLIMIT=7GiB $(GOLANGCI_LINT) run --timeout=10m -v
+
+.PHONY: golangci-lint-fmt
+golangci-lint-fmt:
+	GOMEMLIMIT=7GiB $(GOLANGCI_LINT) run --timeout=10m -v \
+		--disable-all \
+		--enable gofmt \
 
 .PHONY: helm-lint
 helm-lint:
