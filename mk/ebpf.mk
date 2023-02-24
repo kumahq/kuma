@@ -14,39 +14,41 @@
 
 RELEASE_TAG ?= main-dd8b1946a31a8ce03009a2743b18ebcc716cda61
 RELEASE_REPO ?= https://github.com/kumahq/merbridge
-TARBALL_NAME ?= all-$(GOARCH).tar.gz
 # You can provide your own url if the tarball with all ebpf programs should be
 # fetched from somewhere else
-TARBALL_URL ?= $(RELEASE_REPO)/releases/download/$(RELEASE_TAG)/$(TARBALL_NAME)
+TARBALL_URL ?= $(RELEASE_REPO)/releases/download/$(RELEASE_TAG)
 # Where should be placed directory with $(RELEASE_TAG) as name placed. We don't
-# allow to overwrite the final $(BUILD_OUTPUT_WITH_TAG) variable, as if someone
-# by mistake remove $(RELEASE_TAG) from the path, it may result in situation
-# where without realizing, ebpf programs are not re-fetched when $(RELEASE_TAG)
-# changes
-BUILD_OUTPUT ?= $(BUILD_DIR)/ebpf-$(GOARCH)
-BUILD_OUTPUT_WITH_TAG = $(BUILD_OUTPUT)/$(RELEASE_TAG)
-# Path where ebpf programs should be placed, to be compiled in when building
-# kumactl
+# allow to overwrite the final $(BUILD_OUTPUT) variable,  because without $(RELEASE_TAG) and $(GOARCH), it may result in situation
+# where without realizing, ebpf programs are not re-fetched when $(RELEASE_TAG) or $(GOARCH) changes
+BASE_BUILD_OUTPUT = build/ebpf/$(RELEASE_TAG)
+# Path where ebpf programs should be placed, to be compiled in when building kumactl
 COMPILE_IN_PATH ?= ./pkg/transparentproxy/ebpf/programs
 
 # We are placing ebpf programs inside $(BUILD_OUTPUT_WITH_TAG) directory first,
 # as by default it contains $(RELEASE_TAG) in the path, which means
 # if the tag changes, we will re-fetch programs
-.PHONY: build/ebpf
-build/ebpf: $(BUILD_OUTPUT_WITH_TAG)/mb_* $(COMPILE_IN_PATH)/mb_*
 
-$(BUILD_OUTPUT_WITH_TAG)/mb_*: | $(BUILD_OUTPUT_WITH_TAG)
-	curl --progress-bar --location $(TARBALL_URL) | tar -C $(@D) -xz
+define make_ebpf_targets
+$(1)/mb_*: | $(1)
+	curl --progress-bar --location $(TARBALL_URL)/all-$(3).tar.gz | tar -C $$(@D) -xz
 
-$(COMPILE_IN_PATH)/mb_*: | $(COMPILE_IN_PATH)
-	cp $(BUILD_OUTPUT_WITH_TAG)/mb_* $(COMPILE_IN_PATH)
+$(2)/mb_*: | $(2) $(1)/mb_*
+	cp $(1)/mb_* $(2)
 
-# Make $(COMPILE_IN_PATH) $(BUILD_OUTPUT_WITH_TAG) directories if they don't
+# Make $(2) $(1) directories if they don't
 # exist
-$(COMPILE_IN_PATH) $(BUILD_OUTPUT_WITH_TAG):
-	mkdir -p $@
+$(1) $(2):
+	mkdir -p $$@
+endef
+
+EBF_ARCH:=amd64 arm64
+$(foreach elt,$(EBF_ARCH),$(eval $(call make_ebpf_targets,$(BASE_BUILD_OUTPUT)/$(elt),$(COMPILE_IN_PATH)/$(elt),$(elt))))
+
+EBF_TARGETS:=$(foreach elt,$(EBF_ARCH),$(BASE_BUILD_OUTPUT)/$(elt)/mb_* $(COMPILE_IN_PATH)/$(elt)/mb_*)
+.PHONY: build/ebpf
+build/ebpf: $(EBF_TARGETS)
 
 .PHONY: clean/ebpf
 clean/ebpf :
-	-rm -rf $(BUILD_OUTPUT_WITH_TAG) $(COMPILE_IN_PATH)/mb_*
-
+	-rm -rf $(BUILD_DIR)/ebpf
+	find $(COMPILE_IN_PATH) -type f -name 'mb_*' -exec rm {} \;
