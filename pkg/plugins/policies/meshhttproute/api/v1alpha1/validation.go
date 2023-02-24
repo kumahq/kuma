@@ -224,19 +224,32 @@ func validateFilters(filters *[]Filter, matches []Match) validators.ValidationEr
 func validateHeaderModifier(modifier *HeaderModifier) validators.ValidationError {
 	var errs validators.ValidationError
 
-	counter := 0
-	if modifier.Set != nil {
-		counter++
-	}
-	if modifier.Add != nil {
-		counter++
-	}
-	if modifier.Remove != nil {
-		counter++
+	if modifier.Set == nil && modifier.Add == nil && modifier.Remove == nil {
+		errs.AddViolationAt(validators.Root(), validators.MustHaveAtLeastOne("set", "add", "remove"))
+		return errs
 	}
 
-	if counter != 1 {
-		errs.AddViolationAt(validators.Root(), validators.MustHaveOnlyOne("headerModifier", "set", "add", "remove"))
+	headerSet := map[common_api.HeaderName]struct{}{}
+
+	add := func(header common_api.HeaderName) validators.ValidationError {
+		var verrs validators.ValidationError
+		if _, ok := headerSet[header]; ok {
+			verrs.AddViolation("name", "duplicate header name")
+		}
+		headerSet[header] = struct{}{}
+		return verrs
+	}
+
+	for i, hm := range modifier.Set {
+		errs.AddErrorAt(validators.Root().Field("set").Index(i), add(hm.Name))
+	}
+
+	for i, hm := range modifier.Add {
+		errs.AddErrorAt(validators.Root().Field("add").Index(i), add(hm.Name))
+	}
+
+	for i, name := range modifier.Remove {
+		errs.AddErrorAt(validators.Root().Field("remove").Index(i), add(common_api.HeaderName(name)))
 	}
 
 	return errs
