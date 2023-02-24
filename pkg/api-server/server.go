@@ -150,6 +150,7 @@ func NewApiServer(
 	if err := addIndexWsEndpoints(ws, getInstanceId, getClusterId, enableGUI, guiUrl); err != nil {
 		return nil, errors.Wrap(err, "could not create index webservice")
 	}
+	addWhoamiEndpoints(ws)
 	container.Add(ws)
 
 	path := cfg.ApiServer.BasePath
