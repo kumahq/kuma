@@ -134,14 +134,6 @@ func (g *HTTPSFilterChainGenerator) Generate(
 				)
 			}
 
-		case mesh_proto.MeshGateway_TLS_PASSTHROUGH:
-			builder.Configure(
-				envoy_listeners.MatchServerNames(host.Hostname),
-			)
-
-			// TODO(jpeach) add support for PASSTHROUGH mode.
-			return nil, nil, errors.Errorf("unsupported TLS mode %q", host.TLS.GetMode())
-
 		case mesh_proto.MeshGateway_TLS_NONE:
 			if !info.Listener.CrossMesh {
 				return nil, nil, errors.Errorf("unsupported TLS mode %q", mode)
