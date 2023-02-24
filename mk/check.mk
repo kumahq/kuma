@@ -2,8 +2,7 @@
 fmt: fmt/go fmt/proto ## Dev: Run various format tools
 
 .PHONY: fmt/go
-fmt/go: golangci-lint-fmt ## Dev: Run go fmt
-	go fmt ./...
+fmt/go: golangci-lint-fmt
 
 .PHONY: fmt/proto
 fmt/proto: ## Dev: Run clang-format on .proto files
