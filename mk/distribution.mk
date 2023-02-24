@@ -1,7 +1,6 @@
 DISTRIBUTION_NAME ?= kuma
 DISTRIBUTION_LICENSE_PATH ?= tools/releases/templates
 DISTRIBUTION_CONFIG_PATH ?= pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
-DISTRIBUTION_TARGET_NAME = $(DISTRIBUTION_NAME)-$(BUILD_INFO_VERSION)
 # A list of all distributions
 # OS:ARCH:coredns:ENVOY_FLAVOUR:ENVOY_FLAVOUR
 # The second ENVOY_FLAVOUR is optional
@@ -10,7 +9,7 @@ DISTRIBUTION_LIST ?= linux:amd64:coredns:alpine-opt:centos-opt linux:arm64:cored
 
 PULP_HOST ?= "https://api.pulp.konnect-prod.konghq.com"
 PULP_PACKAGE_TYPE ?= mesh
-PULP_DIST_NAME ?= alpine
+PULP_DIST_NAME ?= $(DISTRIBUTION_NAME)-$(shell echo $(BUILD_INFO_VERSION) | awk -F '.' '{ print $$1"."$$2"."$$3 }')
 
 # This function dynamically builds targets for building distribution packages and uploading them to pulp with a set of parameters
 define make_distributions_target
@@ -51,6 +50,7 @@ build/distributions/out/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2).tar.gz: build/dist
 	mkdir -p build/distributions/out
 	tar --strip-components 3 --numeric-owner -czvf $$@ $$<
 	shasum -a 256 $$@ > $$@.sha256
+	echo $(PULP_DIST_NAME)
 
 .PHONY: publish/pulp/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2)
 publish/pulp/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2):
