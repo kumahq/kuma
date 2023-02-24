@@ -63,3 +63,4 @@ build/envoy/$(GOOS)-$(GOARCH)/%/envoy:
 clean/envoy:
 	rm -rf ${SOURCE_DIR}
 	rm -rf build/artifacts-${GOOS}-${GOARCH}/envoy/
+	rm -rf build/envoy/

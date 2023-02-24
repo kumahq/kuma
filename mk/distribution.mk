@@ -49,7 +49,7 @@ endif
 
 build/distributions/out/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2).tar.gz: build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME)
 	mkdir -p build/distributions/out
-	tar --strip-components 3 -czvf $$@ $$<
+	tar --strip-components 3 --numeric-owner -czvf $$@ $$<
 	shasum -a 256 $$@ > $$@.sha256
 
 .PHONY: publish/pulp/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2)

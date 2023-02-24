@@ -35,9 +35,9 @@ function download_envoy() {
         msg_err "Error: failed downloading Envoy: ${status} error"
     fi
 
-    tar -C "$bin_dir" -xzvf "${tar_path}" envoy-"${ENVOY_DISTRO}"
+    tar -C "$bin_dir" -xzvf "${tar_path}"
     rm "$tar_path"
-    mv -f "${bin_dir}/envoy-${ENVOY_DISTRO}" "${BINARY_PATH}"
+    mv "${bin_dir}/envoy-${ENVOY_DISTRO}" "${BINARY_PATH}"
 
     [ -f "${BINARY_PATH}" ] && chmod +x "${BINARY_PATH}"
 }
