@@ -19,7 +19,6 @@ import (
 )
 
 var _ = Describe("Stats callbacks", func() {
-
 	const streamId = int64(1)
 
 	var statsCallbacks util_xds.StatsCallbacks
@@ -47,7 +46,6 @@ var _ = Describe("Stats callbacks", func() {
 	})
 
 	It("should track active streams", func() {
-
 		// when
 		err := statsCallbacks.OnStreamOpen(context.Background(), streamId, "")
 

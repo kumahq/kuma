@@ -278,5 +278,4 @@ var _ = Describe("Authentication flow", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})
-
 })

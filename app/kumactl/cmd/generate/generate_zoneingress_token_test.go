@@ -31,7 +31,6 @@ func (s *staticZoneIngressTokenGenerator) Generate(zone string, validFor time.Du
 }
 
 var _ = Describe("kumactl generate zone-ingress-token", func() {
-
 	var rootCmd *cobra.Command
 	var buf *bytes.Buffer
 	var generator *staticZoneIngressTokenGenerator
@@ -91,5 +90,4 @@ var _ = Describe("kumactl generate zone-ingress-token", func() {
 		// and
 		Expect(buf.String()).To(Equal("Error: failed to generate a zone ingress token: could not connect to API\n"))
 	})
-
 })

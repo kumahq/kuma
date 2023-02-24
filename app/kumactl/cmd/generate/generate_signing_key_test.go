@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("Generate Signing Key", func() {
-
 	It("should generate signing key", func() {
 		// setup
 		ctx := cmd.DefaultRootContext()

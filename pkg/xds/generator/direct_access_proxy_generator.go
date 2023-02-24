@@ -26,8 +26,7 @@ const OriginDirectAccess = "direct-access"
 //
 // Second approach to consider was to use FilterChainMatch on catch_all listener with list of all direct access endpoints
 // instead of generating outbound listener, but it seemed to not work with Listener#UseOriginalDst
-type DirectAccessProxyGenerator struct {
-}
+type DirectAccessProxyGenerator struct{}
 
 func DirectAccessEndpointName(endpoint Endpoint) string {
 	return fmt.Sprintf("direct_access_%s:%d", endpoint.Address, endpoint.Port)

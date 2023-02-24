@@ -40,7 +40,6 @@ func (c *testZoneIngressOverviewClient) List(_ context.Context) (*core_mesh.Zone
 var _ resources.ZoneIngressOverviewClient = &testZoneIngressOverviewClient{}
 
 var _ = Describe("kumactl inspect zone-ingresses", func() {
-
 	var now, t1, t2 time.Time
 	var sampleZoneIngressOverview []*core_mesh.ZoneIngressOverviewResource
 
@@ -236,7 +235,6 @@ var _ = Describe("kumactl inspect zone-ingresses", func() {
 	})
 
 	Describe("InspectZoneIngressesCmd", func() {
-
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 
@@ -271,7 +269,8 @@ var _ = Describe("kumactl inspect zone-ingresses", func() {
 				// given
 				rootCmd.SetArgs(append([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"inspect", "zone-ingresses"}, given.outputFormat))
+					"inspect", "zone-ingresses",
+				}, given.outputFormat))
 
 				// when
 				err := rootCmd.Execute()

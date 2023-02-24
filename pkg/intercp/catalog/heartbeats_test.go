@@ -8,7 +8,6 @@ import (
 )
 
 var _ = Describe("Heartbeats", func() {
-
 	var heartbeats *catalog.Heartbeats
 
 	BeforeEach(func() {
@@ -35,5 +34,4 @@ var _ = Describe("Heartbeats", func() {
 		// then
 		Expect(instances).To(BeEmpty())
 	})
-
 })

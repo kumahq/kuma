@@ -155,7 +155,7 @@ func (t *IptablesTranslator) store(direct *Direct) (string, error) {
 
 	if !t.dryRun {
 		// -rw-r--r--.  1 root root  191 Mar 18 07:58 direct.xml
-		if err := os.WriteFile(t.directFilePath, direct.Bytes(), 0600); err != nil {
+		if err := os.WriteFile(t.directFilePath, direct.Bytes(), 0o600); err != nil {
 			return direct.String(), err
 		}
 

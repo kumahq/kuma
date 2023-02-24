@@ -56,7 +56,6 @@ func TokenRevocationsSecretKey(mesh string) core_model.ResourceKey {
 }
 
 var _ = Describe("Token issuer", func() {
-
 	var issuer tokens.Issuer
 	var validator tokens.Validator
 	var store core_store.ResourceStore

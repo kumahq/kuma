@@ -81,6 +81,7 @@ func (s *server) Clusters(ctx context.Context, req *mesh_proto.ClustersRequest) 
 		},
 	}, nil
 }
+
 func (s *server) resWithAddress(ctx context.Context, typ, name, mesh string) (model.ResourceWithAddress, error) {
 	obj, err := registry.Global().NewObject(model.ResourceType(typ))
 	if err != nil {

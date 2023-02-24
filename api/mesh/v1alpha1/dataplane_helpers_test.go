@@ -8,7 +8,6 @@ import (
 )
 
 var _ = Describe("MultiValueTagSet", func() {
-
 	Describe("HostnameEntries()", func() {
 		type testCase struct {
 			value    MultiValueTagSet
@@ -33,7 +32,6 @@ var _ = Describe("MultiValueTagSet", func() {
 })
 
 var _ = Describe("Dataplane_Networking", func() {
-
 	Describe("GetOutboundInterfaces()", func() {
 		Context("valid input values", func() {
 			type testCase struct {
@@ -95,7 +93,6 @@ var _ = Describe("Dataplane_Networking", func() {
 	})
 
 	Describe("GetInboundInterfaces()", func() {
-
 		Context("valid input values", func() {
 			type testCase struct {
 				input    *Dataplane_Networking
@@ -142,7 +139,6 @@ var _ = Describe("Dataplane_Networking", func() {
 	})
 
 	Describe("GetHealthyInbounds()", func() {
-
 		It("should return only healty inbounds", func() {
 			networking := &Dataplane_Networking{
 				Inbound: []*Dataplane_Networking_Inbound{
@@ -181,9 +177,7 @@ var _ = Describe("Dataplane_Networking", func() {
 })
 
 var _ = Describe("Dataplane_Networking_Inbound", func() {
-
 	Describe("GetService()", func() {
-
 		type testCase struct {
 			inbound  *Dataplane_Networking_Inbound
 			expected string
@@ -213,7 +207,6 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 	})
 
 	Describe("GetProtocol()", func() {
-
 		type testCase struct {
 			inbound  *Dataplane_Networking_Inbound
 			expected string
@@ -361,7 +354,6 @@ var _ = Describe("Dataplane with gateway", func() {
 })
 
 var _ = Describe("TagSelector", func() {
-
 	Describe("Matches()", func() {
 		type testCase struct {
 			tags  map[string]string
@@ -488,7 +480,6 @@ var _ = Describe("Tags", func() {
 })
 
 var _ = Describe("TagSelectorRank", func() {
-
 	Describe("CompareTo()", func() {
 		type testCase struct {
 			rank1    TagSelectorRank

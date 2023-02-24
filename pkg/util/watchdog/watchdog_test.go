@@ -12,7 +12,6 @@ import (
 )
 
 var _ = Describe("SimpleWatchdog", func() {
-
 	var timeTicks chan time.Time
 	var onTickCalls chan struct{}
 	var onErrorCalls chan error

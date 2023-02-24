@@ -37,5 +37,4 @@ var _ = Describe("firewalld", func() {
 			goldenFile: "no_duplicates_direct.golden.xml",
 		}),
 	)
-
 })

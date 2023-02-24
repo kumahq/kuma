@@ -10,7 +10,6 @@ import (
 )
 
 var _ = Describe("Dataplane", func() {
-
 	DescribeTable("should pass validation",
 		func(dpYAML string) {
 			// given
@@ -207,5 +206,4 @@ var _ = Describe("Dataplane", func() {
                   message: must differ from port`,
 		}),
 	)
-
 })

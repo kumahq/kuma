@@ -40,7 +40,6 @@ func (c *testZoneOverviewClient) List(_ context.Context) (*system_core.ZoneOverv
 var _ resources.ZoneOverviewClient = &testZoneOverviewClient{}
 
 var _ = Describe("kumactl inspect zones", func() {
-
 	var now, t1, t2 time.Time
 	var sampleZoneOverview []*system_core.ZoneOverviewResource
 
@@ -210,7 +209,6 @@ var _ = Describe("kumactl inspect zones", func() {
 	})
 
 	Describe("InspectZonesCmd", func() {
-
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 
@@ -244,7 +242,8 @@ var _ = Describe("kumactl inspect zones", func() {
 				// given
 				rootCmd.SetArgs(append([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"inspect", "zones"}, given.outputFormat))
+					"inspect", "zones",
+				}, given.outputFormat))
 
 				// when
 				err := rootCmd.Execute()

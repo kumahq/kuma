@@ -120,8 +120,7 @@ func newKDSContext(log logr.Logger) (envoy_cache.NodeHash, util_xds_v3.SnapshotC
 	return hasher, util_xds_v3.NewSnapshotCache(false, hasher, logger)
 }
 
-type hasher struct {
-}
+type hasher struct{}
 
 func (_ hasher) ID(node *envoy_core.Node) string {
 	return node.Id

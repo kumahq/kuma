@@ -37,7 +37,6 @@ func (t *testDataplaneInspectClient) InspectConfigDump(ctx context.Context, mesh
 var _ resources.DataplaneInspectClient = &testDataplaneInspectClient{}
 
 var _ = Describe("kumactl inspect dataplane", func() {
-
 	var rootCmd *cobra.Command
 	var buf *bytes.Buffer
 
@@ -73,7 +72,8 @@ var _ = Describe("kumactl inspect dataplane", func() {
 			// given
 			rootCmd.SetArgs([]string{
 				"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-				"inspect", "dataplane", "backend-1"})
+				"inspect", "dataplane", "backend-1",
+			})
 
 			// when
 			err = rootCmd.Execute()

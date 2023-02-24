@@ -14,8 +14,10 @@ type generateSigningKeyArgs struct {
 	format string
 }
 
-const SigningKeyFormatPEM = "pem"
-const SigningKeyFormatPEMBase64 = "pem-base64"
+const (
+	SigningKeyFormatPEM       = "pem"
+	SigningKeyFormatPEMBase64 = "pem-base64"
+)
 
 func NewGenerateSigningKeyCmd(ctx *cmd.RootContext) *cobra.Command {
 	args := generateSigningKeyArgs{

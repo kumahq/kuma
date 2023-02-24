@@ -19,7 +19,6 @@ import (
 )
 
 var _ = Describe("ExternalService Manager", func() {
-
 	var resStore store.ResourceStore
 	var rateLimitManager manager.ResourceManager
 	var externalServiceManager manager.ResourceManager
@@ -348,7 +347,5 @@ var _ = Describe("ExternalService Manager", func() {
 				},
 			}))
 		})
-
 	})
-
 })

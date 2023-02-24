@@ -13,7 +13,6 @@ import (
 )
 
 var _ = Describe("Noop Authenticator", func() {
-
 	var authenticator auth.Authenticator
 
 	BeforeEach(func() {

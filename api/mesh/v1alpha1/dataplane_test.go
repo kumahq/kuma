@@ -12,7 +12,6 @@ import (
 )
 
 var _ = Describe("Dataplane", func() {
-
 	It("should be possible to unmarshal from YAML", func() {
 		// given
 		input := `
@@ -54,7 +53,6 @@ var _ = Describe("Dataplane", func() {
 	})
 
 	Describe("json.Marshal()", func() {
-
 		type testCase struct {
 			input    string
 			expected string

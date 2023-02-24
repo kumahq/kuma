@@ -30,9 +30,11 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 )
 
-var k8sClient client.Client
-var testEnv *envtest.Environment
-var k8sClientScheme *runtime.Scheme
+var (
+	k8sClient       client.Client
+	testEnv         *envtest.Environment
+	k8sClientScheme *runtime.Scheme
+)
 
 func TestKubernetes(t *testing.T) {
 	test.RunSpecs(t, "Kubernetes Secrets Suite")

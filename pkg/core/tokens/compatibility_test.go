@@ -23,7 +23,6 @@ import (
 )
 
 var _ = Describe("Compatibility with old ASN.1 format", func() {
-
 	var issuer tokens.Issuer
 	var validator tokens.Validator
 	var signingKeyManager tokens.SigningKeyManager

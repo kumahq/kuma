@@ -315,7 +315,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 														Weight:    pointer.To(uint(100)),
 													}},
 												},
-											}}},
+											}},
+										},
 									}},
 								},
 							},
@@ -353,59 +354,61 @@ var _ = Describe("MeshHTTPRoute", func() {
 						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 							api.MeshHTTPRouteType: {
 								ToRules: core_xds.ToRules{
-									Rules: core_xds.Rules{{
-										Subset: core_xds.MeshService("backend"),
-										Conf: api.PolicyDefault{
-											Rules: []api.Rule{{
-												Matches: []api.Match{{
-													Path: &api.PathMatch{
-														Type:  api.Prefix,
-														Value: "/v1",
-													},
-												}},
-												Default: api.RuleConf{
-													Filters: &[]api.Filter{{
-														Type: api.RequestHeaderModifierType,
-														RequestHeaderModifier: &api.HeaderModifier{
-															Add: []api.HeaderKeyValue{{
-																Name:  "request-add-header",
-																Value: "add-value",
-															}},
-															Set: []api.HeaderKeyValue{{
-																Name:  "request-set-header",
-																Value: "set-value",
-															}, {
-																Name:  "request-set-header-multiple",
-																Value: "one-value,second-value",
-															}},
-															Remove: []string{
-																"request-header-to-remove",
-															},
-														},
-													}, {
-														Type: api.ResponseHeaderModifierType,
-														ResponseHeaderModifier: &api.HeaderModifier{
-															Add: []api.HeaderKeyValue{{
-																Name:  "response-add-header",
-																Value: "add-value",
-															}},
-															Set: []api.HeaderKeyValue{{
-																Name:  "response-set-header",
-																Value: "set-value",
-															}},
-															Remove: []string{
-																"response-header-to-remove",
-															},
-														},
-													}, {
-														Type: api.RequestRedirectType,
-														RequestRedirect: &api.RequestRedirect{
-															Scheme: pointer.To("other"),
+									Rules: core_xds.Rules{
+										{
+											Subset: core_xds.MeshService("backend"),
+											Conf: api.PolicyDefault{
+												Rules: []api.Rule{{
+													Matches: []api.Match{{
+														Path: &api.PathMatch{
+															Type:  api.Prefix,
+															Value: "/v1",
 														},
 													}},
-												},
-											}},
-										}},
+													Default: api.RuleConf{
+														Filters: &[]api.Filter{{
+															Type: api.RequestHeaderModifierType,
+															RequestHeaderModifier: &api.HeaderModifier{
+																Add: []api.HeaderKeyValue{{
+																	Name:  "request-add-header",
+																	Value: "add-value",
+																}},
+																Set: []api.HeaderKeyValue{{
+																	Name:  "request-set-header",
+																	Value: "set-value",
+																}, {
+																	Name:  "request-set-header-multiple",
+																	Value: "one-value,second-value",
+																}},
+																Remove: []string{
+																	"request-header-to-remove",
+																},
+															},
+														}, {
+															Type: api.ResponseHeaderModifierType,
+															ResponseHeaderModifier: &api.HeaderModifier{
+																Add: []api.HeaderKeyValue{{
+																	Name:  "response-add-header",
+																	Value: "add-value",
+																}},
+																Set: []api.HeaderKeyValue{{
+																	Name:  "response-set-header",
+																	Value: "set-value",
+																}},
+																Remove: []string{
+																	"response-header-to-remove",
+																},
+															},
+														}, {
+															Type: api.RequestRedirectType,
+															RequestRedirect: &api.RequestRedirect{
+																Scheme: pointer.To("other"),
+															},
+														}},
+													},
+												}},
+											},
+										},
 									},
 								},
 							},
@@ -443,29 +446,31 @@ var _ = Describe("MeshHTTPRoute", func() {
 						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 							api.MeshHTTPRouteType: {
 								ToRules: core_xds.ToRules{
-									Rules: core_xds.Rules{{
-										Subset: core_xds.MeshService("backend"),
-										Conf: api.PolicyDefault{
-											Rules: []api.Rule{{
-												Matches: []api.Match{{
-													Path: &api.PathMatch{
-														Type:  api.Prefix,
-														Value: "/v1",
-													},
-												}},
-												Default: api.RuleConf{
-													Filters: &[]api.Filter{{
-														Type: api.URLRewriteType,
-														URLRewrite: &api.URLRewrite{
-															Path: &api.PathRewrite{
-																Type:               api.ReplacePrefixMatchType,
-																ReplacePrefixMatch: pointer.To("/v2"),
-															},
+									Rules: core_xds.Rules{
+										{
+											Subset: core_xds.MeshService("backend"),
+											Conf: api.PolicyDefault{
+												Rules: []api.Rule{{
+													Matches: []api.Match{{
+														Path: &api.PathMatch{
+															Type:  api.Prefix,
+															Value: "/v1",
 														},
 													}},
-												},
-											}},
-										}},
+													Default: api.RuleConf{
+														Filters: &[]api.Filter{{
+															Type: api.URLRewriteType,
+															URLRewrite: &api.URLRewrite{
+																Path: &api.PathRewrite{
+																	Type:               api.ReplacePrefixMatchType,
+																	ReplacePrefixMatch: pointer.To("/v2"),
+																},
+															},
+														}},
+													},
+												}},
+											},
+										},
 									},
 								},
 							},
@@ -503,33 +508,35 @@ var _ = Describe("MeshHTTPRoute", func() {
 						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 							api.MeshHTTPRouteType: {
 								ToRules: core_xds.ToRules{
-									Rules: core_xds.Rules{{
-										Subset: core_xds.MeshService("backend"),
-										Conf: api.PolicyDefault{
-											Rules: []api.Rule{{
-												Matches: []api.Match{{
-													Headers: []common_api.HeaderMatch{{
-														Type:  pointer.To(common_api.HeaderMatchExact),
-														Name:  "foo-exact",
-														Value: "bar",
-													}, {
-														Type: pointer.To(common_api.HeaderMatchPresent),
-														Name: "foo-present",
-													}, {
-														Type:  pointer.To(common_api.HeaderMatchRegularExpression),
-														Name:  "foo-regex",
-														Value: "x.*y",
-													}, {
-														Type: pointer.To(common_api.HeaderMatchAbsent),
-														Name: "foo-absent",
-													}, {
-														Type:  pointer.To(common_api.HeaderMatchPrefix),
-														Name:  "foo-prefix",
-														Value: "x",
+									Rules: core_xds.Rules{
+										{
+											Subset: core_xds.MeshService("backend"),
+											Conf: api.PolicyDefault{
+												Rules: []api.Rule{{
+													Matches: []api.Match{{
+														Headers: []common_api.HeaderMatch{{
+															Type:  pointer.To(common_api.HeaderMatchExact),
+															Name:  "foo-exact",
+															Value: "bar",
+														}, {
+															Type: pointer.To(common_api.HeaderMatchPresent),
+															Name: "foo-present",
+														}, {
+															Type:  pointer.To(common_api.HeaderMatchRegularExpression),
+															Name:  "foo-regex",
+															Value: "x.*y",
+														}, {
+															Type: pointer.To(common_api.HeaderMatchAbsent),
+															Name: "foo-absent",
+														}, {
+															Type:  pointer.To(common_api.HeaderMatchPrefix),
+															Name:  "foo-prefix",
+															Value: "x",
+														}},
 													}},
 												}},
-											}},
-										}},
+											},
+										},
 									},
 								},
 							},
@@ -573,46 +580,48 @@ var _ = Describe("MeshHTTPRoute", func() {
 						Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
 							api.MeshHTTPRouteType: {
 								ToRules: core_xds.ToRules{
-									Rules: core_xds.Rules{{
-										Subset: core_xds.MeshService("backend"),
-										Conf: api.PolicyDefault{
-											Rules: []api.Rule{{
-												Matches: []api.Match{{
-													Path: &api.PathMatch{
-														Type:  api.Prefix,
-														Value: "/v1",
-													},
-												}},
-												Default: api.RuleConf{
-													Filters: &[]api.Filter{
-														{
-															Type: api.RequestMirrorType,
-															RequestMirror: &api.RequestMirror{
-																Percentage: pointer.To(intstr.FromString("99.9")),
-																BackendRef: common_api.TargetRef{
-																	Kind: common_api.MeshServiceSubset,
-																	Name: "payments",
-																	Tags: map[string]string{
-																		"version": "v1",
-																		"region":  "us",
-																		"env":     "dev",
+									Rules: core_xds.Rules{
+										{
+											Subset: core_xds.MeshService("backend"),
+											Conf: api.PolicyDefault{
+												Rules: []api.Rule{{
+													Matches: []api.Match{{
+														Path: &api.PathMatch{
+															Type:  api.Prefix,
+															Value: "/v1",
+														},
+													}},
+													Default: api.RuleConf{
+														Filters: &[]api.Filter{
+															{
+																Type: api.RequestMirrorType,
+																RequestMirror: &api.RequestMirror{
+																	Percentage: pointer.To(intstr.FromString("99.9")),
+																	BackendRef: common_api.TargetRef{
+																		Kind: common_api.MeshServiceSubset,
+																		Name: "payments",
+																		Tags: map[string]string{
+																			"version": "v1",
+																			"region":  "us",
+																			"env":     "dev",
+																		},
+																	},
+																},
+															},
+															{
+																Type: api.RequestMirrorType,
+																RequestMirror: &api.RequestMirror{
+																	BackendRef: common_api.TargetRef{
+																		Kind: common_api.MeshService,
+																		Name: "backend",
 																	},
 																},
 															},
 														},
-														{
-															Type: api.RequestMirrorType,
-															RequestMirror: &api.RequestMirror{
-																BackendRef: common_api.TargetRef{
-																	Kind: common_api.MeshService,
-																	Name: "backend",
-																},
-															},
-														},
 													},
-												},
-											}},
-										}},
+												}},
+											},
+										},
 									},
 								},
 							},

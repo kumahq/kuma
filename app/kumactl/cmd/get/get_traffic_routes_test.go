@@ -22,7 +22,6 @@ import (
 )
 
 var _ = Describe("kumactl get traffic-routes", func() {
-
 	var sampleTrafficRoutes []*core_mesh.TrafficRouteResource
 
 	BeforeEach(func() {
@@ -52,7 +51,6 @@ var _ = Describe("kumactl get traffic-routes", func() {
 	})
 
 	Describe("GetTrafficRoutesCmd", func() {
-
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore

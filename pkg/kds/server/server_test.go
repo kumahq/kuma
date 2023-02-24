@@ -25,19 +25,16 @@ import (
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 )
 
-var (
-	node = &envoy_core.Node{
-		Id:      "test-id",
-		Cluster: "test-cluster",
-	}
-)
+var node = &envoy_core.Node{
+	Id:      "test-id",
+	Cluster: "test-cluster",
+}
 
 const (
 	defaultTimeout = 3 * time.Second
 )
 
 var _ = Describe("KDS Server", func() {
-
 	var tc kds_verifier.TestContext
 	BeforeEach(func() {
 		s := memory.NewStore()

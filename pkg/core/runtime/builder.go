@@ -362,84 +362,111 @@ func (b *Builder) Build() (Runtime, error) {
 func (b *Builder) ComponentManager() component.Manager {
 	return b.cm
 }
+
 func (b *Builder) ResourceStore() core_store.ResourceStore {
 	return b.rs
 }
+
 func (b *Builder) SecretStore() store.SecretStore {
 	return b.ss
 }
+
 func (b *Builder) ConfigStore() core_store.ResourceStore {
 	return b.cs
 }
+
 func (b *Builder) ResourceManager() core_manager.CustomizableResourceManager {
 	return b.rm
 }
+
 func (b *Builder) ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager {
 	return b.rom
 }
+
 func (b *Builder) CaManagers() core_ca.Managers {
 	return b.cam
 }
+
 func (b *Builder) Config() kuma_cp.Config {
 	return b.cfg
 }
+
 func (b *Builder) DataSourceLoader() datasource.Loader {
 	return b.dsl
 }
+
 func (b *Builder) Extensions() context.Context {
 	return b.ext
 }
+
 func (b *Builder) ConfigManager() config_manager.ConfigManager {
 	return b.configm
 }
+
 func (b *Builder) LeaderInfo() component.LeaderInfo {
 	return b.leadInfo
 }
+
 func (b *Builder) LookupIP() lookup.LookupIPFunc {
 	return b.lif
 }
+
 func (b *Builder) Metrics() metrics.Metrics {
 	return b.metrics
 }
+
 func (b *Builder) EventReaderFactory() events.ListenerFactory {
 	return b.erf
 }
+
 func (b *Builder) APIManager() api_server.APIManager {
 	return b.apim
 }
+
 func (b *Builder) CAProvider() secrets.CaProvider {
 	return b.cap
 }
+
 func (b *Builder) DpServer() *dp_server.DpServer {
 	return b.dps
 }
+
 func (b *Builder) KDSContext() *kds_context.Context {
 	return b.kdsctx
 }
+
 func (b *Builder) ResourceValidators() ResourceValidators {
 	return b.rv
 }
+
 func (b *Builder) APIServerAuthenticator() authn.Authenticator {
 	return b.au
 }
+
 func (b *Builder) Access() Access {
 	return b.acc
 }
+
 func (b *Builder) AppCtx() context.Context {
 	return b.appCtx
 }
+
 func (b *Builder) ExtraReportsFn() ExtraReportsFn {
 	return b.extraReportsFn
 }
+
 func (b *Builder) TokenIssuers() builtin.TokenIssuers {
 	return b.tokenIssuers
 }
+
 func (b *Builder) EnvoyAdminClient() admin.EnvoyAdminClient {
 	return b.eac
 }
+
 func (b *Builder) MeshCache() *mesh.Cache {
 	return b.meshCache
 }
+
 func (b *Builder) InterCPClientPool() *client.Pool {
 	return b.interCpPool
 }

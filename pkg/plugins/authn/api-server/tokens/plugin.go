@@ -15,11 +15,12 @@ import (
 
 const PluginName = "tokens"
 
-type plugin struct {
-}
+type plugin struct{}
 
-var _ plugins.AuthnAPIServerPlugin = plugin{}
-var _ plugins.BootstrapPlugin = plugin{}
+var (
+	_ plugins.AuthnAPIServerPlugin = plugin{}
+	_ plugins.BootstrapPlugin      = plugin{}
+)
 
 // We declare AccessStrategies and not into Runtime because it's a plugin.
 var AccessStrategies = map[string]func(*plugins.MutablePluginContext) access.GenerateUserTokenAccess{

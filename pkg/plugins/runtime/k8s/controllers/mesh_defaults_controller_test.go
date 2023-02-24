@@ -26,7 +26,6 @@ import (
 )
 
 var _ = Describe("MeshDefaultsReconciler", func() {
-
 	var kubeClient kube_client.Client
 	var resourceManager resources_manager.ResourceManager
 	var reconciler kube_reconcile.Reconciler

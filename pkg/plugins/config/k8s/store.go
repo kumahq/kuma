@@ -77,6 +77,7 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	r.SetMeta(&KubernetesMetaAdapter{cm.ObjectMeta})
 	return nil
 }
+
 func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs ...core_store.UpdateOptionsFunc) error {
 	configRes, ok := r.(*config_model.ConfigResource)
 	if !ok {
@@ -102,6 +103,7 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 	r.SetMeta(&KubernetesMetaAdapter{cm.ObjectMeta})
 	return nil
 }
+
 func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs ...core_store.DeleteOptionsFunc) error {
 	configRes, ok := r.(*config_model.ConfigResource)
 	if !ok {
@@ -124,6 +126,7 @@ func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs 
 	}
 	return s.client.Delete(ctx, cm)
 }
+
 func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...core_store.GetOptionsFunc) error {
 	configRes, ok := r.(*config_model.ConfigResource)
 	if !ok {
@@ -141,6 +144,7 @@ func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...
 	r.SetMeta(&KubernetesMetaAdapter{cm.ObjectMeta})
 	return nil
 }
+
 func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, fs ...core_store.ListOptionsFunc) error {
 	configRes, ok := rs.(*config_model.ConfigResourceList)
 	if !ok {

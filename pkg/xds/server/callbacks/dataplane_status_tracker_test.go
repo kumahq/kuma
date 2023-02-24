@@ -22,11 +22,10 @@ import (
 )
 
 var _ = Describe("DataplaneStatusTracker", func() {
-
 	var tracker DataplaneStatusTracker
 	var callbacks envoy_server.Callbacks
 
-	var runtimeInfo = test_runtime.TestRuntimeInfo{InstanceId: "test"}
+	runtimeInfo := test_runtime.TestRuntimeInfo{InstanceId: "test"}
 	var ctx context.Context
 
 	BeforeEach(func() {

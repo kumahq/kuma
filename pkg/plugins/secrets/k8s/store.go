@@ -67,6 +67,7 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	}
 	return nil
 }
+
 func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs ...core_store.UpdateOptionsFunc) error {
 	secret, err := s.converter.ToKubernetesObject(r)
 	if err != nil {
@@ -85,6 +86,7 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 	}
 	return nil
 }
+
 func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs ...core_store.DeleteOptionsFunc) error {
 	opts := core_store.NewDeleteOptions(fs...)
 	if err := s.Get(ctx, r, core_store.GetByKey(opts.Name, opts.Mesh)); err != nil {
@@ -103,6 +105,7 @@ func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs 
 	}
 	return nil
 }
+
 func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...core_store.GetOptionsFunc) error {
 	opts := core_store.NewGetOptions(fs...)
 	secret := &kube_core.Secret{}
@@ -217,8 +220,7 @@ func DefaultConverter() Converter {
 
 var _ Converter = &SimpleConverter{}
 
-type SimpleConverter struct {
-}
+type SimpleConverter struct{}
 
 func (c *SimpleConverter) ToKubernetesObject(r core_model.Resource) (*kube_core.Secret, error) {
 	secret := &kube_core.Secret{}

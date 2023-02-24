@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("VIPOutbounds", func() {
-
 	type outboundTestCase struct {
 		whenOutbounds map[vips.HostnameEntry]vips.VirtualOutbound
 		thenVips      []xds.VIPDomains

@@ -14,9 +14,7 @@ import (
 	model "github.com/kumahq/kuma/pkg/core/xds"
 )
 
-var (
-	templateResolverLog = core.Log.WithName("proxy-template-resolver")
-)
+var templateResolverLog = core.Log.WithName("proxy-template-resolver")
 
 type ProxyTemplateResolver interface {
 	GetTemplate(proxy *model.Proxy) *mesh_proto.ProxyTemplate

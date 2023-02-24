@@ -12,7 +12,6 @@ import (
 )
 
 var _ = Describe("ServerSideStaticMTLS", func() {
-
 	It("should generate proper Envoy config", func() {
 		// given
 		certs := core_xds.ServerSideMTLSCerts{

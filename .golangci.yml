@@ -6,20 +6,21 @@ linters:
     - gci
     - gocritic
     - gofmt
+    - gofumpt
     - gomodguard
+    - gosimple
     - govet
     - gosec
     - importas
     - ineffassign
     - misspell
+    - nonamedreturns
+    - staticcheck
     - typecheck
     - unconvert
     - unparam
-    - whitespace
-    - gosimple
-    - nonamedreturns
-    - staticcheck
     - unused
+    - whitespace
 
 run:
   skip-files:

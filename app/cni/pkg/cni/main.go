@@ -34,9 +34,7 @@ const (
 	defaultLogName         = "kuma-cni"
 )
 
-var (
-	log = core.NewLoggerWithRotation(defaultLogLevel, defaultLogLocation, 100, 0, 0).WithName(defaultLogName)
-)
+var log = core.NewLoggerWithRotation(defaultLogLevel, defaultLogLocation, 100, 0, 0).WithName(defaultLogName)
 
 // Kubernetes a K8s specific struct to hold config
 type Kubernetes struct {

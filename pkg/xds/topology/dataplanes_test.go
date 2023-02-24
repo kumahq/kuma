@@ -41,8 +41,10 @@ var _ = Describe("Resolve Dataplane address", func() {
 	Context("ResolveAddress", func() {
 		It("should resolve if networking.address is domain name", func() {
 			// given
-			dp := &mesh.DataplaneResource{Spec: &mesh_proto.Dataplane{
-				Networking: &mesh_proto.Dataplane_Networking{Address: "example.com", AdvertisedAddress: "advertise.example.com"}},
+			dp := &mesh.DataplaneResource{
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{Address: "example.com", AdvertisedAddress: "advertise.example.com"},
+				},
 			}
 
 			// when

@@ -82,7 +82,8 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 
 	It("should issue token offline", func() {
 		// given
-		rootCmd.SetArgs([]string{"generate", "dataplane-token",
+		rootCmd.SetArgs([]string{
+			"generate", "dataplane-token",
 			"--name", "dp-1",
 			"--mesh", "demo",
 			"--valid-for", "30s",
@@ -137,7 +138,8 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 			Expect(err).To(MatchError(given.err))
 		},
 		Entry("when kid is specified for online signing", errTestCase{
-			args: []string{"generate", "dataplane-token",
+			args: []string{
+				"generate", "dataplane-token",
 				"--name", "dp-1",
 				"--kid", "1",
 				"--valid-for", "30s",
@@ -145,7 +147,8 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 			err: "--kid cannot be used when --signing-key-path is used",
 		}),
 		Entry("when kid is not specified for offline signing", errTestCase{
-			args: []string{"generate", "user-token",
+			args: []string{
+				"generate", "user-token",
 				"--name", "dp-1",
 				"--valid-for", "30s",
 				"--signing-key-path", filepath.Join("..", "..", "..", "..", "..", "..", "..", "test", "keys", "samplekey.pem"),
@@ -153,5 +156,4 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 			err: "--kid is required when --signing-key-path is used",
 		}),
 	)
-
 })

@@ -24,7 +24,6 @@ import (
 )
 
 var _ = Describe("OutboundProxyGenerator", func() {
-
 	meta := &test_model.ResourceMeta{
 		Name: "mesh1",
 	}
@@ -140,7 +139,8 @@ var _ = Describe("OutboundProxyGenerator", func() {
 							},
 							Meta: mesh2Meta,
 						}},
-					}},
+					},
+				},
 				CrossMeshResources: map[string]xds_context.ResourceMap{
 					"mesh-2": {
 						core_mesh.MeshGatewayType: &core_mesh.MeshGatewayResourceList{
@@ -177,7 +177,8 @@ var _ = Describe("OutboundProxyGenerator", func() {
 								},
 							}},
 						},
-					}},
+					},
+				},
 			},
 			CrossMeshEndpoints: map[model.MeshName]model.EndpointMap{
 				"mesh2": {
@@ -807,7 +808,8 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						Spec: &mesh_proto.TrafficRoute{
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "version": "3.2.0"},
-							}},
+							},
+						},
 					},
 				},
 				OutboundTargets: outboundTargets,

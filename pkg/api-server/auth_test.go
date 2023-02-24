@@ -19,12 +19,11 @@ import (
 )
 
 var _ = Describe("Auth test", func() {
-
 	var httpsClient *http.Client
 	var httpsClientWithoutCerts *http.Client
 	var httpPort uint32
 	var httpsPort uint32
-	var stop = func() {}
+	stop := func() {}
 	var externalIP string
 
 	BeforeEach(func() {
@@ -126,9 +125,9 @@ func createCertsForIP(ip string) (string, string) {
 	Expect(err).ToNot(HaveOccurred())
 	certPath := dir + "/cert.pem"
 	keyPath := dir + "/cert.key"
-	err = os.WriteFile(certPath, keyPair.CertPEM, 0600)
+	err = os.WriteFile(certPath, keyPair.CertPEM, 0o600)
 	Expect(err).ToNot(HaveOccurred())
-	err = os.WriteFile(keyPath, keyPair.KeyPEM, 0600)
+	err = os.WriteFile(keyPath, keyPair.KeyPEM, 0o600)
 	Expect(err).ToNot(HaveOccurred())
 	return certPath, keyPath
 }

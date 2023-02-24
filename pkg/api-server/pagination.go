@@ -9,8 +9,10 @@ import (
 	"github.com/kumahq/kuma/pkg/api-server/types"
 )
 
-const maxPageSize = 1000
-const defaultPageSize = 100
+const (
+	maxPageSize     = 1000
+	defaultPageSize = 100
+)
 
 type page struct {
 	size   int

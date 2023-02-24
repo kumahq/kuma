@@ -23,9 +23,7 @@ const (
 	OriginEgress = "egress"
 )
 
-var (
-	log = core.Log.WithName("xds").WithName("generator").WithName("egress")
-)
+var log = core.Log.WithName("xds").WithName("generator").WithName("egress")
 
 // ZoneEgressGenerator is responsible for generating xDS resources for
 // a single ZoneEgress.

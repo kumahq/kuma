@@ -142,7 +142,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 			return err
 		}
 		path = filepath.Join(path, "kuma-cp.conf")
-		if err := os.WriteFile(path, []byte(c.opts.yamlConfig), 0600); err != nil {
+		if err := os.WriteFile(path, []byte(c.opts.yamlConfig), 0o600); err != nil {
 			return err
 		}
 		dockerVolumes = append(dockerVolumes, path+":/kuma/kuma-cp.conf")

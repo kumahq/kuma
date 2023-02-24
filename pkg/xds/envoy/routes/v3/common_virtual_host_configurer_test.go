@@ -10,7 +10,6 @@ import (
 )
 
 var _ = Describe("CommonVirtualHostConfigurer", func() {
-
 	type testCase struct {
 		virtualHostName string
 		expected        string

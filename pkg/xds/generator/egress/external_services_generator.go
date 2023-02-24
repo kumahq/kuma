@@ -13,8 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
-type ExternalServicesGenerator struct {
-}
+type ExternalServicesGenerator struct{}
 
 // Generate will generate envoy resources for one mesh (when mTLS enabled)
 func (g *ExternalServicesGenerator) Generate(

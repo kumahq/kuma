@@ -18,7 +18,6 @@ import (
 )
 
 var _ = Describe("EnsureDefaultMeshResources", func() {
-
 	var resManager manager.ResourceManager
 
 	BeforeEach(func() {

@@ -29,7 +29,6 @@ func (f *fakeResourceManager) Update(context.Context, model.Resource, ...store.U
 }
 
 var _ = Describe("Ingress Dataplane", func() {
-
 	type testCase struct {
 		dataplanes map[string][]string
 		expected   string

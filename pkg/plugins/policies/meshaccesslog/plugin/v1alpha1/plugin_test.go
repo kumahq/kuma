@@ -27,7 +27,6 @@ import (
 )
 
 var _ = Describe("MeshAccessLog", func() {
-
 	BeforeEach(func() {
 		core.TempDir = func() string {
 			return "/tmp"
@@ -84,7 +83,8 @@ var _ = Describe("MeshAccessLog", func() {
 									Tags: map[string]string{
 										mesh_proto.ServiceTag: "other-service",
 									},
-								}},
+								},
+							},
 								given.outbounds...,
 							),
 						},
@@ -144,8 +144,10 @@ var _ = Describe("MeshAccessLog", func() {
 							}},
 						},
 					},
-				}},
-			expectedListeners: []string{`
+				},
+			},
+			expectedListeners: []string{
+				`
             address:
               socketAddress:
                 address: 127.0.0.1
@@ -188,7 +190,8 @@ var _ = Describe("MeshAccessLog", func() {
                   statPrefix: "127_0_0_1_27777"
             name: outbound:127.0.0.1:27777
             trafficDirection: OUTBOUND`,
-			}}),
+			},
+		}),
 		Entry("outbound tcpproxy with file backend and default format", sidecarTestCase{
 			resources: []core_xds.Resource{{
 				Name:   "outbound",
@@ -217,8 +220,10 @@ var _ = Describe("MeshAccessLog", func() {
 							}},
 						},
 					},
-				}},
-			expectedListeners: []string{`
+				},
+			},
+			expectedListeners: []string{
+				`
             address:
               socketAddress:
                 address: 127.0.0.1
@@ -241,7 +246,8 @@ var _ = Describe("MeshAccessLog", func() {
                         statPrefix: "127_0_0_1_27777"
             name: outbound:127.0.0.1:27777
             trafficDirection: OUTBOUND`,
-			}}),
+			},
+		}),
 		Entry("outbound tcpproxy with file backend and plain format", sidecarTestCase{
 			resources: []core_xds.Resource{{
 				Name:   "outbound",
@@ -273,8 +279,10 @@ var _ = Describe("MeshAccessLog", func() {
 							}},
 						},
 					},
-				}},
-			expectedListeners: []string{`
+				},
+			},
+			expectedListeners: []string{
+				`
             address:
               socketAddress:
                 address: 127.0.0.1
@@ -297,7 +305,8 @@ var _ = Describe("MeshAccessLog", func() {
                         statPrefix: "127_0_0_1_27777"
             name: outbound:127.0.0.1:27777
             trafficDirection: OUTBOUND`,
-			}}),
+			},
+		}),
 		Entry("outbound tcpproxy with file backend and json format", sidecarTestCase{
 			resources: []core_xds.Resource{{
 				Name:   "outbound",
@@ -332,8 +341,10 @@ var _ = Describe("MeshAccessLog", func() {
 							}},
 						},
 					},
-				}},
-			expectedListeners: []string{`
+				},
+			},
+			expectedListeners: []string{
+				`
             address:
               socketAddress:
                 address: 127.0.0.1
@@ -356,7 +367,8 @@ var _ = Describe("MeshAccessLog", func() {
                         statPrefix: "127_0_0_1_27777"
             name: outbound:127.0.0.1:27777
             trafficDirection: OUTBOUND`,
-			}}),
+			},
+		}),
 		Entry("outbound tcpproxy with tcp backend and default format", sidecarTestCase{
 			resources: []core_xds.Resource{{
 				Name:   "outbound",
@@ -385,8 +397,10 @@ var _ = Describe("MeshAccessLog", func() {
 							}},
 						},
 					},
-				}},
-			expectedListeners: []string{`
+				},
+			},
+			expectedListeners: []string{
+				`
             address:
               socketAddress:
                 address: 127.0.0.1
@@ -410,7 +424,8 @@ var _ = Describe("MeshAccessLog", func() {
                         statPrefix: "127_0_0_1_27777"
             name: outbound:127.0.0.1:27777
             trafficDirection: OUTBOUND`,
-			}}),
+			},
+		}),
 		Entry("outbound tcpproxy with opentelemetry backend and plain format", sidecarTestCase{
 			resources: []core_xds.Resource{{
 				Name:   "other-service",
@@ -509,7 +524,8 @@ var _ = Describe("MeshAccessLog", func() {
 							}},
 						},
 					},
-				}},
+				},
+			},
 			expectedClusters: []string{`
             altStatName: meshaccesslog_opentelemetry_0
             connectTimeout: 10s
@@ -551,7 +567,8 @@ var _ = Describe("MeshAccessLog", func() {
                     explicitHttpConfig:
                         http2ProtocolOptions: {}
             `},
-			expectedListeners: []string{`
+			expectedListeners: []string{
+				`
             address:
               socketAddress:
                 address: 127.0.0.1
@@ -624,7 +641,8 @@ var _ = Describe("MeshAccessLog", func() {
                         statPrefix: "127_0_0_1_27777"
             name: outbound:127.0.0.1:27777
             trafficDirection: OUTBOUND`,
-			}}),
+			},
+		}),
 		Entry("outbound tcpproxy with tcp backend and plain format", sidecarTestCase{
 			resources: []core_xds.Resource{{
 				Name:   "outbound",
@@ -656,8 +674,10 @@ var _ = Describe("MeshAccessLog", func() {
 							}},
 						},
 					},
-				}},
-			expectedListeners: []string{`
+				},
+			},
+			expectedListeners: []string{
+				`
             address:
               socketAddress:
                 address: 127.0.0.1
@@ -681,7 +701,8 @@ var _ = Describe("MeshAccessLog", func() {
                         statPrefix: "127_0_0_1_27777"
             name: outbound:127.0.0.1:27777
             trafficDirection: OUTBOUND`,
-			}}),
+			},
+		}),
 		Entry("outbound tcpproxy with tcp backend and json format", sidecarTestCase{
 			resources: []core_xds.Resource{{
 				Name:   "outbound",
@@ -716,8 +737,10 @@ var _ = Describe("MeshAccessLog", func() {
 							}},
 						},
 					},
-				}},
-			expectedListeners: []string{`
+				},
+			},
+			expectedListeners: []string{
+				`
             address:
               socketAddress:
                 address: 127.0.0.1
@@ -742,7 +765,8 @@ var _ = Describe("MeshAccessLog", func() {
                         statPrefix: "127_0_0_1_27777"
             name: outbound:127.0.0.1:27777
             trafficDirection: OUTBOUND`,
-			}}),
+			},
+		}),
 		Entry("basic outbound route without match", sidecarTestCase{
 			resources: []core_xds.Resource{{
 				Name:   "outbound",
@@ -786,8 +810,10 @@ var _ = Describe("MeshAccessLog", func() {
 							}},
 						},
 					},
-				}},
-			expectedListeners: []string{`
+				},
+			},
+			expectedListeners: []string{
+				`
             address:
               socketAddress:
                 address: 127.0.0.1
@@ -821,7 +847,8 @@ var _ = Describe("MeshAccessLog", func() {
                   statPrefix: "127_0_0_1_27777"
             name: outbound:127.0.0.1:27777
             trafficDirection: OUTBOUND`,
-			}}),
+			},
+		}),
 		Entry("basic inbound route", sidecarTestCase{
 			resources: []core_xds.Resource{{
 				Name:   "inbound",
@@ -857,8 +884,10 @@ var _ = Describe("MeshAccessLog", func() {
 							}},
 						},
 					}},
-				}},
-			expectedListeners: []string{`
+				},
+			},
+			expectedListeners: []string{
+				`
             address:
               socketAddress:
                 address: 127.0.0.1
@@ -900,7 +929,8 @@ var _ = Describe("MeshAccessLog", func() {
                   statPrefix: "127_0_0_1_17777"
             name: inbound:127.0.0.1:17777
             trafficDirection: INBOUND`,
-			}}),
+			},
+		}),
 	)
 	type gatewayTestCase struct {
 		resources         []core_xds.Resource
@@ -919,10 +949,12 @@ var _ = Describe("MeshAccessLog", func() {
 				Items: []*core_mesh.MeshGatewayResource{{
 					Meta: &test_model.ResourceMeta{Name: "gateway", Mesh: "default"},
 					Spec: &mesh_proto.MeshGateway{
-						Selectors: []*mesh_proto.Selector{{
-							Match: map[string]string{
-								mesh_proto.ServiceTag: "gateway",
-							}},
+						Selectors: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									mesh_proto.ServiceTag: "gateway",
+								},
+							},
 						},
 						Conf: &mesh_proto.MeshGateway_Conf{
 							Listeners: []*mesh_proto.MeshGateway_Listener{
@@ -1017,8 +1049,10 @@ var _ = Describe("MeshAccessLog", func() {
 							}},
 						},
 					},
-				}},
-			expectedListeners: []string{`
+				},
+			},
+			expectedListeners: []string{
+				`
             address:
               socketAddress:
                 address: 127.0.0.1
@@ -1050,6 +1084,7 @@ var _ = Describe("MeshAccessLog", func() {
                 '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
             name: gateway:HTTP:8080
             trafficDirection: INBOUND`,
-			}}),
+			},
+		}),
 	)
 })

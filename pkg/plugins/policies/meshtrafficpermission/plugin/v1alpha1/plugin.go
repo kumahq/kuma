@@ -15,11 +15,12 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
-var _ core_plugins.PolicyPlugin = &plugin{}
-var log = core.Log.WithName("MeshTrafficPermission")
+var (
+	_   core_plugins.PolicyPlugin = &plugin{}
+	log                           = core.Log.WithName("MeshTrafficPermission")
+)
 
-type plugin struct {
-}
+type plugin struct{}
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}

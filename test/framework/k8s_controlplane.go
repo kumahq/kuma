@@ -182,7 +182,6 @@ func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
 			TlsConfig: &tls.Config{MinVersion: tls.VersionTLS12},
 			Body:      bytes.NewReader([]byte{}),
 		}, http.StatusOK, DefaultRetries, DefaultTimeout)
-
 		if err != nil {
 			return "", err
 		}

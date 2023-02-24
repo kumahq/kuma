@@ -21,8 +21,7 @@ import (
 // OriginInbound is a marker to indicate by which ProxyGenerator resources were generated.
 const OriginInbound = "inbound"
 
-type InboundProxyGenerator struct {
-}
+type InboundProxyGenerator struct{}
 
 func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()

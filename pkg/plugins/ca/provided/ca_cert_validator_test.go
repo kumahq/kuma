@@ -18,7 +18,6 @@ import (
 )
 
 var _ = Describe("ValidateCaCert()", func() {
-
 	It("should accept proper CA certificates", func() {
 		// when
 		cert, err := os.ReadFile(filepath.Join("testdata", "ca.pem"))

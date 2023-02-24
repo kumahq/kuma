@@ -34,9 +34,7 @@ const (
 	grpcKeepAliveTime        = 15 * time.Second
 )
 
-var (
-	log = core.Log.WithName("mads-server")
-)
+var log = core.Log.WithName("mads-server")
 
 // muxServer is a runtime component.Component that
 // multiplexes all MADs resources over HTTP and gRPC
@@ -56,9 +54,7 @@ type GrpcService interface {
 	RegisterWithGrpcServer(server *grpc.Server)
 }
 
-var (
-	_ component.Component = &muxServer{}
-)
+var _ component.Component = &muxServer{}
 
 func (s *muxServer) createGRPCServer() *grpc.Server {
 	grpcOptions := []grpc.ServerOption{

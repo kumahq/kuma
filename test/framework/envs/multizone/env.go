@@ -12,11 +12,13 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-var Global *UniversalCluster
-var KubeZone1 *K8sCluster
-var KubeZone2 *K8sCluster
-var UniZone1 *UniversalCluster
-var UniZone2 *UniversalCluster
+var (
+	Global    *UniversalCluster
+	KubeZone1 *K8sCluster
+	KubeZone2 *K8sCluster
+	UniZone1  *UniversalCluster
+	UniZone2  *UniversalCluster
+)
 
 func Zones() []Cluster {
 	return []Cluster{KubeZone1, KubeZone2, UniZone1, UniZone2}

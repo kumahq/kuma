@@ -199,7 +199,8 @@ var _ = Describe("MeshHealthCheck", func() {
 							ReuseConnection: pointer.To(true),
 						},
 					},
-				}},
+				},
+			},
 			expectedClusters: []string{
 				"basic_http_health_check_cluster.golden.yaml",
 				"basic_http_health_check_split_cluster.golden.yaml",
@@ -223,7 +224,8 @@ var _ = Describe("MeshHealthCheck", func() {
 							},
 						},
 					},
-				}},
+				},
+			},
 			expectedClusters: []string{"basic_tcp_health_check_cluster.golden.yaml"},
 		}),
 
@@ -244,7 +246,8 @@ var _ = Describe("MeshHealthCheck", func() {
 							},
 						},
 					},
-				}},
+				},
+			},
 			expectedClusters: []string{"basic_grpc_health_check_cluster.golden.yaml"},
 		}),
 	)

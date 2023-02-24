@@ -358,7 +358,6 @@ var _ = Describe("Remote Bootstrap", func() {
 			Port:    12345,
 			Path:    "/stats/2",
 		}))
-
 	})
 
 	It("should retry when DP is not found", func() {

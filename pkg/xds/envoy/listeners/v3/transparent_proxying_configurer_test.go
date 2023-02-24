@@ -12,7 +12,6 @@ import (
 )
 
 var _ = Describe("TransparentProxyingConfigurer", func() {
-
 	type testCase struct {
 		listenerName        string
 		listenerProtocol    xds.SocketAddressProtocol

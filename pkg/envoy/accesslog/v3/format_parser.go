@@ -41,7 +41,7 @@ func ParseFormat(format string) (*AccessLogFormat, error) {
 type formatParser struct{}
 
 func (p formatParser) Parse(format string) (*AccessLogFormat, error) {
-	var textLiteralStart = -1
+	textLiteralStart := -1
 	var fragments []AccessLogFragment
 
 	for pos := 0; pos < len(format); pos++ {

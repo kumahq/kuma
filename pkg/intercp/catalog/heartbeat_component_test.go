@@ -17,7 +17,6 @@ import (
 )
 
 var _ = Describe("Heartbeats", func() {
-
 	var heartbeatComponent component.Component
 	var stopCh chan struct{}
 

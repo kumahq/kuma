@@ -31,9 +31,7 @@ const (
 	pingPort     = 61832
 )
 
-var (
-	log = core.Log.WithName("core").WithName("reports")
-)
+var log = core.Log.WithName("core").WithName("reports")
 
 /*
   - buffer initialized upon Init call

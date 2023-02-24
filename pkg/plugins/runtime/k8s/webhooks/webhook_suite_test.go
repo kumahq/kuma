@@ -22,11 +22,13 @@ func TestWebhook(t *testing.T) {
 	test.RunSpecs(t, "Webhooks Suite")
 }
 
-var decoder *kube_admission.Decoder
-var testEnv *envtest.Environment
-var k8sClient client.Client
-var scheme *kube_runtime.Scheme
-var defaultMesh *mesh_k8s.Mesh
+var (
+	decoder     *kube_admission.Decoder
+	testEnv     *envtest.Environment
+	k8sClient   client.Client
+	scheme      *kube_runtime.Scheme
+	defaultMesh *mesh_k8s.Mesh
+)
 
 var _ = BeforeSuite(func() {
 	// setup K8S with Kuma CRDs

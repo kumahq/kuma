@@ -10,7 +10,8 @@ import (
 )
 
 func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds_v3.SnapshotCache,
-	generator util_xds_v3.SnapshotGenerator, versioner util_xds_v3.SnapshotVersioner) Reconciler {
+	generator util_xds_v3.SnapshotGenerator, versioner util_xds_v3.SnapshotVersioner,
+) Reconciler {
 	return &reconciler{
 		hasher:    hasher,
 		cache:     cache,

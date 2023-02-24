@@ -372,6 +372,7 @@ func (i *KumaInjector) NewSidecarContainer(
 
 	return container, nil
 }
+
 func (i *KumaInjector) NewVolumeMounts(pod *kube_core.Pod) ([]kube_core.VolumeMount, error) {
 	// If the user specifies a volume containing a service account token, we will mount and use that.
 	if volumeName, exists := metadata.Annotations(pod.Annotations).GetString(metadata.KumaSidecarTokenVolumeAnnotation); exists {

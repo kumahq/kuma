@@ -10,11 +10,12 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
-var _ core_plugins.PolicyPlugin = &plugin{}
-var log = core.Log.WithName("DoNothingPolicy")
+var (
+	_   core_plugins.PolicyPlugin = &plugin{}
+	log                           = core.Log.WithName("DoNothingPolicy")
+)
 
-type plugin struct {
-}
+type plugin struct{}
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}

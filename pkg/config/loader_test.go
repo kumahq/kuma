@@ -17,7 +17,6 @@ import (
 )
 
 var _ = Describe("Config loader", func() {
-
 	var configFile *os.File
 
 	BeforeEach(func() {

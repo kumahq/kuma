@@ -218,5 +218,7 @@ func (c componentRunnableAdaptor) NeedLeaderElection() bool {
 	return c.Component.NeedLeaderElection()
 }
 
-var _ kube_manager.LeaderElectionRunnable = &componentRunnableAdaptor{}
-var _ kube_manager.Runnable = &componentRunnableAdaptor{}
+var (
+	_ kube_manager.LeaderElectionRunnable = &componentRunnableAdaptor{}
+	_ kube_manager.Runnable               = &componentRunnableAdaptor{}
+)

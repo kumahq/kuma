@@ -125,8 +125,7 @@ func init() {
 	RegisterProfile(gateway_metadata.ProfileGatewayProxy, NewFailingProfile())
 }
 
-type FailingResourceGenerator struct {
-}
+type FailingResourceGenerator struct{}
 
 func (c FailingResourceGenerator) Generate(xds_context.Context, *model.Proxy) (*model.ResourceSet, error) {
 	panic("generator for this resource should not be called")

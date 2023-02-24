@@ -17,7 +17,7 @@ func SetupAndGetState() []byte {
 	Cluster = framework.NewK8sCluster(framework.NewTestingT(), framework.Kuma1, framework.Verbose)
 	// The Gateway API webhook needs to start before we can create
 	// GatewayClasses
-	var gatewayAPI = "false"
+	gatewayAPI := "false"
 	// There's no arm64 webhook image yet
 	if runtime.GOARCH == "amd64" {
 		gatewayAPI = "true"

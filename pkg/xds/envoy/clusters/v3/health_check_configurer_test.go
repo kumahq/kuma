@@ -15,7 +15,6 @@ import (
 )
 
 var _ = Describe("HealthCheckConfigurer", func() {
-
 	type testCase struct {
 		clusterName string
 		healthCheck *core_mesh.HealthCheckResource

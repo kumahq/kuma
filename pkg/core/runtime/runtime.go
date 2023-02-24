@@ -228,6 +228,7 @@ func (rc *runtimeContext) EnvoyAdminClient() admin.EnvoyAdminClient {
 func (rc *runtimeContext) APIInstaller() api_server.APIInstaller {
 	return rc.apim
 }
+
 func (rc *runtimeContext) DpServer() *dp_server.DpServer {
 	return rc.dps
 }

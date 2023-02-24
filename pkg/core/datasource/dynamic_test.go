@@ -20,7 +20,6 @@ import (
 )
 
 var _ = Describe("DataSource Loader", func() {
-
 	var secretManager manager.ResourceManager
 	var dataSourceLoader datasource.Loader
 

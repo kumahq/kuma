@@ -46,7 +46,8 @@ func newSpecificInformersMap(config *rest.Config,
 	mapper meta.RESTMapper,
 	resync time.Duration,
 	namespace string,
-	createListWatcher createListWatcherFunc) *specificInformersMap {
+	createListWatcher createListWatcherFunc,
+) *specificInformersMap {
 	ip := &specificInformersMap{
 		config:            config,
 		Scheme:            scheme,

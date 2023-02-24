@@ -133,7 +133,6 @@ func (c *K8sCluster) Exec(namespace, podName, containerName string, cmd ...strin
 		CaptureStderr:      true,
 		PreserveWhitespace: false,
 	})
-
 	if err != nil {
 		logger.TestingT.Logf(c.t, "%s returned an error: %s.", desc, err.Error())
 	}
@@ -141,8 +140,7 @@ func (c *K8sCluster) Exec(namespace, podName, containerName string, cmd ...strin
 	return stdout, stderr, err
 }
 
-type BlockingReader struct {
-}
+type BlockingReader struct{}
 
 func (*BlockingReader) Read([]byte) (int, error) {
 	select {}

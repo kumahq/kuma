@@ -26,7 +26,7 @@ var _ = Describe("Resource Endpoints", func() {
 	var apiServer *api_server.ApiServer
 	var resourceStore store.ResourceStore
 	var client resourceApiClient
-	var stop = func() {}
+	stop := func() {}
 	var metrics core_metrics.Metrics
 
 	const mesh = "default"
