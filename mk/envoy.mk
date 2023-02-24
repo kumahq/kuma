@@ -1,5 +1,5 @@
 BUILD_ENVOY_FROM_SOURCES ?= false
-ENVOY_TAG ?= v1.22.7
+ENVOY_TAG ?= v$(ENVOY_VERSION)
 ENVOY_ARTIFACT_EXT ?=
 
 ifeq ($(GOOS),linux)
@@ -51,6 +51,13 @@ else
 	ENVOY_ARTIFACT_EXT=${ENVOY_ARTIFACT_EXT} \
 	BINARY_PATH=$@ ${KUMA_DIR}/tools/envoy/fetch.sh
 endif
+
+build/envoy/$(GOOS)-$(GOARCH)/%/envoy:
+	GOOS=$(GOOS) \
+	GOARCH=$(GOARCH) \
+	ENVOY_TARGET=$* \
+	ENVOY_TAG=$(ENVOY_TAG) \
+	BINARY_PATH=$@ ${KUMA_DIR}/tools/envoy/fetch.sh
 
 .PHONY: clean/envoy
 clean/envoy:

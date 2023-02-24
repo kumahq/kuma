@@ -388,6 +388,26 @@ jobs:
         - artifacts-linux-<<parameters.arch>>
         - ebpf-<<parameters.arch>>
 
+  distributions:
+    parameters:
+      publish:
+        description: Whether or not to publish packages
+        type: boolean
+        default: false
+    executor: vm-amd64
+    steps:
+      - install_build_tools
+      - checkout
+      - run:
+          name: Build distributions
+          command: make build/distributions
+      - when:
+          condition: <<parameters.publish>>
+          steps:
+            - run:
+                name: Publish distributions to Pulp
+                command: make publish/pulp
+
   release:
     executor: vm-amd64
     steps:
@@ -480,6 +500,8 @@ workflows:
               cniNetworkPlugin: [ calico ]
           parallelism: 1
           requires: [ build-<< matrix.arch >>, check ]
+      - distributions:
+          requires: [ build ]
       - release:
           # publish artifacts speculatively for normal commits
           filters: # only on master and release-* branches (never on PRs and tags)

@@ -14,6 +14,7 @@ set -o nounset
 
 source "$(dirname -- "${BASH_SOURCE[0]}")/../common.sh"
 
+ENVOY_TARGET=${ENVOY_TARGET:-}
 function download_envoy() {
     local binary_name=$1
     local bin_dir
@@ -34,13 +35,19 @@ function download_envoy() {
         msg_err "Error: failed downloading Envoy: ${status} error"
     fi
 
-    tar -C "$bin_dir" -xzvf "${tar_path}"
+    tar -C "$bin_dir" -xzvf "${tar_path}" envoy-"${ENVOY_DISTRO}"
     rm "$tar_path"
-    mv "${bin_dir}/envoy-${ENVOY_DISTRO}" "${BINARY_PATH}"
+    mv -f "${bin_dir}/envoy-${ENVOY_DISTRO}" "${BINARY_PATH}"
 
     [ -f "${BINARY_PATH}" ] && chmod +x "${BINARY_PATH}"
 }
 
+if [[ -n "${ENVOY_TARGET}" ]]; then
+  BINARY_NAME="envoy-${GOOS}-${GOARCH}-${ENVOY_TAG}-${ENVOY_TARGET}"
+  ENVOY_DISTRO=$(echo "${ENVOY_TARGET}" | awk -F'-' '{ print $1 }')
+  download_envoy "${BINARY_NAME}"
+  exit 0
+fi
 if [[ -n "${ENVOY_TAG}" ]]; then
   BINARY_NAME="envoy-${GOOS}-${GOARCH}-${ENVOY_TAG}-${ENVOY_DISTRO}-opt${ENVOY_ARTIFACT_EXT}"
   download_envoy "${BINARY_NAME}"
