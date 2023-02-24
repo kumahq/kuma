@@ -67,7 +67,7 @@ var _ = Describe("Resource Endpoints Zone", func() {
 						Address:           "192.168.1.1",
 						AdvertisedAddress: "192.168.1.1",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-							&mesh_proto.Dataplane_Networking_Inbound{
+							{
 								Port:        8000,
 								ServicePort: 8080,
 								Tags: map[string]string{
@@ -102,7 +102,7 @@ var _ = Describe("Resource Endpoints Zone", func() {
 						Address:           "192.168.1.1",
 						AdvertisedAddress: "192.168.1.1",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-							&mesh_proto.Dataplane_Networking_Inbound{
+							{
 								Port:        8000,
 								ServicePort: 8080,
 								Tags: map[string]string{
