@@ -503,8 +503,6 @@ workflows:
               cniNetworkPlugin: [ calico ]
           parallelism: 1
           requires: [ build-<< matrix.arch >>, check ]
-      - distributions:
-          requires: [ build ]
       - release:
           # publish artifacts speculatively for normal commits
           filters: # only on master and release-* branches (never on PRs and tags)
@@ -523,3 +521,18 @@ workflows:
             tags:
               only: /.*/
           requires: [ test, test/e2e, test/e2e-legacy ]
+      # TMP job to try on branch
+      - distributions:
+          publish: true
+          requires: [ build ]
+      - distributions:
+          publish: true
+          filters: # only on tags
+            branches:
+              only:
+                - master
+                - /^release-.*/
+            tags:
+              only: /.*/
+          requires: [ test, test/e2e, test/e2e-legacy ]
+

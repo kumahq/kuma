@@ -50,7 +50,6 @@ build/distributions/out/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2).tar.gz: build/dist
 	mkdir -p build/distributions/out
 	tar --strip-components 3 --numeric-owner -czvf $$@ $$<
 	shasum -a 256 $$@ > $$@.sha256
-	echo $(PULP_DIST_NAME)
 
 .PHONY: publish/pulp/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2)
 publish/pulp/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2):
