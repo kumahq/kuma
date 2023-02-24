@@ -58,7 +58,7 @@ publish/pulp/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2):
 	  -e PULP_HOST=$(PULP_HOST) \
 	  -v $(TOP)/build/distributions/out:/files:ro -it kong/release-script \
 	  --file /files/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2).tar.gz \
-	  --package-type $(PULP_PACKAGE_TYPE) --dist-name $(PULP_DIST_NAME) --publish
+	  --package-type $(PULP_PACKAGE_TYPE) --dist-name src --dist-version $(PULP_DIST_NAME) --publish
 endef
 
 # Call make_distribution_target with each combination
