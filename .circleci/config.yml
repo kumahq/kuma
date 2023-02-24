@@ -401,7 +401,7 @@ jobs:
       - run:
           name: Build distributions
           command: make build/distributions
-      - run: or i in build/distributions/out/*.tar.gz; do echo $i; tar -tvf $i; done
+      - run: for i in build/distributions/out/*.tar.gz; do echo $i; tar -tvf $i; done
       - when:
           condition: <<parameters.publish>>
           steps:
