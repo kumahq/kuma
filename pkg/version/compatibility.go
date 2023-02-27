@@ -13,12 +13,16 @@ var log = core.Log.WithName("version").WithName("compatibility")
 
 var PreviewVersionPrefix = "preview"
 
+func IsPreviewVersion(version string) bool {
+	return strings.Contains(version, PreviewVersionPrefix)
+}
+
 // DeploymentVersionCompatible returns true if the given component version
 // is compatible with the installed version of Kuma CP.
 // For all binaries which share a common version (Kuma DP, CP, Zone CP...), we
 // support backwards compatibility of at most two prior minor versions.
-func DeploymentVersionCompatible(kumaVersionStr string, componentVersionStr string) bool {
-	if strings.Contains(kumaVersionStr, PreviewVersionPrefix) || strings.Contains(componentVersionStr, PreviewVersionPrefix) {
+func DeploymentVersionCompatible(kumaVersionStr, componentVersionStr string) bool {
+	if IsPreviewVersion(kumaVersionStr) || IsPreviewVersion(componentVersionStr) {
 		return true
 	}
 
