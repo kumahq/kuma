@@ -349,13 +349,13 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		argsMap["--cni-bin-dir"] = Config.CNIConf.BinDir
 		argsMap["--cni-conf-name"] = Config.CNIConf.ConfName
 
-		if c.opts.cniExperimental {
-			argsMap["--set"] = "experimental.cni=true"
+		if c.opts.cniV1 {
+			argsMap["--set"] = "legacy.cni.enabled=true"
 		}
 	}
 
-	if !c.opts.cni && c.opts.experimentalTransparentProxy {
-		argsMap["--set"] = "experimental.transparentProxy=true"
+	if !c.opts.cni && c.opts.transparentProxyV1 {
+		argsMap["--set"] = "legacy.transparentProxy=true"
 	}
 
 	if Config.XDSApiVersion != "" {
@@ -421,6 +421,7 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 	}
 
 	if c.opts.cni {
+		values["cni.image.repository"] = Config.KumaCNIImageRepo
 		values["cni.enabled"] = "true"
 		values["cni.chained"] = "true"
 		values["cni.netDir"] = Config.CNIConf.NetDir
@@ -428,8 +429,8 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		values["cni.confName"] = Config.CNIConf.ConfName
 	}
 
-	if c.opts.cniExperimental {
-		values["experimental.cni"] = "true"
+	if c.opts.cniV1 {
+		values["legacy.cni.enabled"] = "true"
 	}
 
 	if Config.CIDR != "" {
@@ -873,26 +874,17 @@ func (c *K8sCluster) closePortForwards(name string) {
 }
 
 func (c *K8sCluster) deleteCRDs() error {
-	stdout, err := k8s.RunKubectlAndGetOutputE(c.GetTesting(), c.GetKubectlOptions(), "get", "crds", "-o", "yaml")
+	out, err := k8s.RunKubectlAndGetOutputE(c.GetTesting(), c.GetKubectlOptions(), "get", "crds", "-o", "name")
 	if err != nil {
 		return err
 	}
-
-	var errs error
-	if tmpfile, err := os.CreateTemp("", "crds.yaml"); err != nil {
-		errs = multierr.Append(errs, err)
-	} else {
-		defer os.Remove(tmpfile.Name()) // clean up
-		if _, err := tmpfile.Write([]byte(stdout)); err != nil {
-			errs = multierr.Append(errs, err)
-		} else if err := tmpfile.Close(); err != nil {
-			errs = multierr.Append(errs, err)
-		} else if err := k8s.KubectlDeleteE(c.t, c.GetKubectlOptions(), tmpfile.Name()); err != nil {
-			errs = multierr.Append(errs, err)
+	deleteCmd := []string{"delete"}
+	for _, l := range strings.Split(out, "\n") {
+		if strings.Contains(l, "kuma.io") {
+			deleteCmd = append(deleteCmd, l)
 		}
 	}
-
-	return errs
+	return k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(), deleteCmd...)
 }
 
 func (c *K8sCluster) deleteKumaViaHelm() error {

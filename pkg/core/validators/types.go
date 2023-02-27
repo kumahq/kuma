@@ -127,7 +127,11 @@ func Root() PathBuilder {
 }
 
 func (p PathBuilder) Field(name string) PathBuilder {
-	return append(p, fmt.Sprintf(".%s", name))
+	element := name
+	if len(p) > 0 {
+		element = fmt.Sprintf(".%s", element)
+	}
+	return append(p, element)
 }
 
 func (p PathBuilder) Index(index int) PathBuilder {

@@ -33,17 +33,17 @@ type InstallControlPlaneArgs struct {
 	DataPlane_initImage_tag                      string            `helm:"dataPlane.initImage.tag"`
 	ControlPlane_kdsGlobalAddress                string            `helm:"controlPlane.kdsGlobalAddress"`
 	Cni_enabled                                  bool              `helm:"cni.enabled"`
-	Cni_experimental                             bool              `helm:"experimental.cni"`
 	Cni_chained                                  bool              `helm:"cni.chained"`
 	Cni_net_dir                                  string            `helm:"cni.netDir"`
 	Cni_bin_dir                                  string            `helm:"cni.binDir"`
 	Cni_conf_name                                string            `helm:"cni.confName"`
-	Cni_image_registry                           string            `helm:"cni.image.registry,omitempty"`
-	Cni_image_repository                         string            `helm:"cni.image.repository"`
-	Cni_image_tag                                string            `helm:"cni.image.tag"`
-	Cni_experimental_image_registry              string            `helm:"cni.experimental.image.registry"`
-	Cni_experimental_image_repository            string            `helm:"cni.experimental.image.repository"`
-	Cni_experimental_image_tag                   string            `helm:"cni.experimental.image.tag"`
+	Cni_v1                                       bool              `helm:"legacy.cni.enabled"`
+	Cni_v1_image_registry                        string            `helm:"legacy.cni.image.registry,omitempty"`
+	Cni_v1_image_repository                      string            `helm:"legacy.cni.image.repository"`
+	Cni_v1_image_tag                             string            `helm:"legacy.cni.image.tag"`
+	Cni_v2_image_registry                        string            `helm:"cni.image.registry"`
+	Cni_v2_image_repository                      string            `helm:"cni.image.repository"`
+	Cni_v2_image_tag                             string            `helm:"cni.image.tag"`
 	Cni_nodeSelector                             map[string]string `helm:"cni.nodeSelector"`
 	ControlPlane_mode                            string            `helm:"controlPlane.mode"`
 	ControlPlane_zone                            string            `helm:"controlPlane.zone"`
@@ -103,17 +103,17 @@ func DefaultInstallCpContext() InstallCpContext {
 			DataPlane_initImage_repository:          "kuma-init",
 			DataPlane_initImage_tag:                 kuma_version.Build.Version,
 			Cni_enabled:                             false,
-			Cni_experimental:                        false,
 			Cni_chained:                             false,
 			Cni_net_dir:                             "/etc/cni/multus/net.d",
 			Cni_bin_dir:                             "/var/lib/cni/bin",
 			Cni_conf_name:                           "kuma-cni.conf",
-			Cni_image_registry:                      "",
-			Cni_image_repository:                    "install-cni",
-			Cni_image_tag:                           "0.0.10",
-			Cni_experimental_image_registry:         "",
-			Cni_experimental_image_repository:       "kuma-cni",
-			Cni_experimental_image_tag:              kuma_version.Build.Version,
+			Cni_v1:                                  false,
+			Cni_v1_image_registry:                   "",
+			Cni_v1_image_repository:                 "install-cni",
+			Cni_v1_image_tag:                        "0.0.10",
+			Cni_v2_image_registry:                   "",
+			Cni_v2_image_repository:                 "kuma-cni",
+			Cni_v2_image_tag:                        kuma_version.Build.Version,
 			ControlPlane_mode:                       core.Standalone,
 			ControlPlane_zone:                       "",
 			ControlPlane_globalZoneSyncService_type: "LoadBalancer",

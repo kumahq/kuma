@@ -1,5 +1,5 @@
 .PHONY: fmt
-fmt: fmt/go fmt/proto ## Dev: Run various format tools
+fmt: golangci-lint-fmt fmt/proto ## Dev: Run various format tools
 
 .PHONY: fmt/go
 fmt/go: ## Dev: Run go fmt
@@ -24,6 +24,12 @@ shellcheck:
 golangci-lint: ## Dev: Runs golangci-lint linter
 	GOMEMLIMIT=7GiB $(GOLANGCI_LINT) run --timeout=10m -v
 
+.PHONY: golangci-lint-fmt
+golangci-lint-fmt:
+	GOMEMLIMIT=7GiB $(GOLANGCI_LINT) run --timeout=10m -v \
+		--disable-all \
+		--enable gofmt
+
 .PHONY: helm-lint
 helm-lint:
 	for c in ./deployments/charts/*; do \
@@ -40,8 +46,11 @@ ginkgo/unfocus:
 ginkgo/lint:
 	go run $(TOOLS_DIR)/ci/check_test_files.go
 
+.PHONY: format/common
+format/common: generate docs tidy ginkgo/unfocus ginkgo/lint
+
 .PHONY: format
-format: fmt generate docs tidy ginkgo/unfocus ginkgo/lint
+format: fmt format/common
 
 .PHONY: kube-lint
 kube-lint:
@@ -52,7 +61,7 @@ hadolint:
 	find ./tools/releases/dockerfiles/ -type f -iname "Dockerfile*" | grep -v dockerignore | xargs -I {} $(HADOLINT) {}
 
 .PHONY: check
-check: format helm-lint golangci-lint shellcheck kube-lint hadolint ## Dev: Run code checks (go fmt, go vet, ...)
+check: format/common helm-lint golangci-lint shellcheck kube-lint hadolint ## Dev: Run code checks (go fmt, go vet, ...)
 	# fail if Git working tree is dirty or there are untracked files
 	git diff --quiet || \
 	git ls-files --other --directory --exclude-standard --no-empty-directory | wc -l | read UNTRACKED_FILES; if [ "$$UNTRACKED_FILES" != "0" ]; then false; fi || \
@@ -64,3 +73,7 @@ check: format helm-lint golangci-lint shellcheck kube-lint hadolint ## Dev: Run 
 		git ls-files --other --directory --exclude-standard --no-empty-directory && \
 		false \
 	)
+
+.PHONY: update-vulnerable-dependencies
+update-vulnerable-dependencies:
+	@./tools/ci/update-vulnerable-dependencies.sh

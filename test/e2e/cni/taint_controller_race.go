@@ -46,7 +46,7 @@ metadata:
 				WithHelmReleaseName(releaseName),
 				WithSkipDefaultMesh(true), // it's common case for HELM deployments that Mesh is also managed by HELM therefore it's not created by default
 				WithHelmOpt("cni.delayStartupSeconds", "40"),
-				WithExperimentalCNI(),
+				WithCNI(),
 			)).
 			Install(YamlK8s(defaultMesh)).
 			Setup(cluster)
@@ -69,8 +69,11 @@ metadata:
 			err := k8sCluster.CreateNode(nodeName, "second=true")
 			Expect(err).ToNot(HaveOccurred())
 
-			err = k8sCluster.LoadImages("kuma-dp", "kuma-cni", "kuma-universal")
-			Expect(err).ToNot(HaveOccurred())
+			Expect(k8sCluster.LoadImages(
+				Config.KumaDPImageRepo,
+				Config.KumaCNIImageRepo,
+				Config.KumaUniversalImageRepo,
+			)).ToNot(HaveOccurred())
 
 			err = NewClusterSetup().
 				Install(NamespaceWithSidecarInjection(TestNamespace)).

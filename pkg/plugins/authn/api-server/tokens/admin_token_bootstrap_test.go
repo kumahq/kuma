@@ -28,7 +28,9 @@ var _ = Describe("Admin Token Bootstrap", func() {
 		tokenValidator := issuer.NewUserTokenValidator(
 			core_tokens.NewValidator(
 				core.Log.WithName("test"),
-				core_tokens.NewSigningKeyAccessor(resManager, issuer.UserTokenSigningKeyPrefix),
+				[]core_tokens.SigningKeyAccessor{
+					core_tokens.NewSigningKeyAccessor(resManager, issuer.UserTokenSigningKeyPrefix),
+				},
 				core_tokens.NewRevocations(resManager, issuer.UserTokenRevocationsGlobalSecretKey),
 				store_config.MemoryStore,
 			),

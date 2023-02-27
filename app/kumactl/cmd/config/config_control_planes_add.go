@@ -99,14 +99,9 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 }
 
 func validateArgs(args controlPlaneAddArgs, plugins map[string]plugins.AuthnPlugin) error {
-	url, err := net_url.ParseRequestURI(args.apiServerURL)
+	_, err := net_url.ParseRequestURI(args.apiServerURL)
 	if err != nil {
 		return errors.Wrap(err, "API Server URL is invalid")
-	}
-	if url.Scheme == "https" {
-		if args.caCertFile == "" && !args.skipVerify {
-			return errors.New("HTTPS is used. You need to specify either --ca-cert-file so kumactl can verify authenticity of the Control Plane or --skip-verify to skip verification")
-		}
 	}
 	if (args.clientKeyFile != "" && args.clientCertFile == "") || (args.clientKeyFile == "" && args.clientCertFile != "") {
 		return errors.New("Both --client-cert-file and --client-key-file needs to be specified")
