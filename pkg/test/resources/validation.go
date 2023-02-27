@@ -64,8 +64,10 @@ func DescribeErrorCases[T core_model.Resource](generator func() T, cases ...Tabl
 			}
 
 			// then
-			err := core_model.Validate(resource).(*validators.ValidationError)
-			Expect(err.Violations).To(ConsistOf(expected.Violations))
+			err := core_model.Validate(resource)
+			Expect(err).To(HaveOccurred())
+			verr := err.(*validators.ValidationError)
+			Expect(verr.Violations).To(ConsistOf(expected.Violations))
 		},
 		cases,
 	)

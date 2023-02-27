@@ -72,7 +72,8 @@ func (i *TestRuntimeInfo) GetStartTime() time.Time {
 
 func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Builder, error) {
 	if cfg.DpServer.Auth.Type == "" { // for test, autoconfigure to dp token
-		cfg.DpServer.Auth.Type = dp_server.DpServerAuthDpToken
+		cfg.DpServer.Authn.DpProxy.Type = dp_server.DpServerAuthDpToken
+		cfg.DpServer.Authn.ZoneProxy.Type = dp_server.DpServerAuthZoneToken
 	}
 	builder, err := core_runtime.BuilderFor(appCtx, cfg)
 	if err != nil {

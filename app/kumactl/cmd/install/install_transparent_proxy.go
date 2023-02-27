@@ -17,61 +17,61 @@ import (
 )
 
 type transparentProxyArgs struct {
-	DryRun                             bool
-	Verbose                            bool
-	RedirectPortOutBound               string
-	RedirectInbound                    bool
-	RedirectPortInBound                string
-	RedirectPortInBoundV6              string
-	ExcludeInboundPorts                string
-	ExcludeOutboundPorts               string
-	ExcludeOutboundTCPPortsForUIDs     []string
-	ExcludeOutboundUDPPortsForUIDs     []string
-	UID                                string
-	User                               string
-	RedirectDNS                        bool
-	RedirectAllDNSTraffic              bool
-	AgentDNSListenerPort               string
-	DNSUpstreamTargetChain             string
-	StoreFirewalld                     bool
-	SkipDNSConntrackZoneSplit          bool
-	ExperimentalTransparentProxyEngine bool
-	EbpfEnabled                        bool
-	EbpfProgramsSourcePath             string
-	EbpfInstanceIP                     string
-	EbpfBPFFSPath                      string
-	EbpfCgroupPath                     string
-	EbpfTCAttachIface                  string
-	VnetNetworks                       []string
+	DryRun                         bool
+	Verbose                        bool
+	RedirectPortOutBound           string
+	RedirectInbound                bool
+	RedirectPortInBound            string
+	RedirectPortInBoundV6          string
+	ExcludeInboundPorts            string
+	ExcludeOutboundPorts           string
+	ExcludeOutboundTCPPortsForUIDs []string
+	ExcludeOutboundUDPPortsForUIDs []string
+	UID                            string
+	User                           string
+	RedirectDNS                    bool
+	RedirectAllDNSTraffic          bool
+	AgentDNSListenerPort           string
+	DNSUpstreamTargetChain         string
+	StoreFirewalld                 bool
+	SkipDNSConntrackZoneSplit      bool
+	UseTransparentProxyEngineV1    bool
+	EbpfEnabled                    bool
+	EbpfProgramsSourcePath         string
+	EbpfInstanceIP                 string
+	EbpfBPFFSPath                  string
+	EbpfCgroupPath                 string
+	EbpfTCAttachIface              string
+	VnetNetworks                   []string
 }
 
 func newInstallTransparentProxy() *cobra.Command {
 	args := transparentProxyArgs{
-		DryRun:                             false,
-		Verbose:                            false,
-		RedirectPortOutBound:               "15001",
-		RedirectInbound:                    true,
-		RedirectPortInBound:                "15006",
-		RedirectPortInBoundV6:              "15010",
-		ExcludeInboundPorts:                "",
-		ExcludeOutboundPorts:               "",
-		ExcludeOutboundTCPPortsForUIDs:     []string{},
-		ExcludeOutboundUDPPortsForUIDs:     []string{},
-		UID:                                "",
-		User:                               "",
-		RedirectDNS:                        false,
-		RedirectAllDNSTraffic:              false,
-		AgentDNSListenerPort:               "15053",
-		DNSUpstreamTargetChain:             "RETURN",
-		StoreFirewalld:                     false,
-		SkipDNSConntrackZoneSplit:          false,
-		ExperimentalTransparentProxyEngine: false,
-		EbpfEnabled:                        false,
-		EbpfProgramsSourcePath:             "/kuma/ebpf",
-		EbpfBPFFSPath:                      "/sys/fs/bpf",
-		EbpfCgroupPath:                     "/sys/fs/cgroup",
-		EbpfTCAttachIface:                  "",
-		VnetNetworks:                       []string{},
+		DryRun:                         false,
+		Verbose:                        false,
+		RedirectPortOutBound:           "15001",
+		RedirectInbound:                true,
+		RedirectPortInBound:            "15006",
+		RedirectPortInBoundV6:          "15010",
+		ExcludeInboundPorts:            "",
+		ExcludeOutboundPorts:           "",
+		ExcludeOutboundTCPPortsForUIDs: []string{},
+		ExcludeOutboundUDPPortsForUIDs: []string{},
+		UID:                            "",
+		User:                           "",
+		RedirectDNS:                    false,
+		RedirectAllDNSTraffic:          false,
+		AgentDNSListenerPort:           "15053",
+		DNSUpstreamTargetChain:         "RETURN",
+		StoreFirewalld:                 false,
+		SkipDNSConntrackZoneSplit:      false,
+		UseTransparentProxyEngineV1:    false,
+		EbpfEnabled:                    false,
+		EbpfProgramsSourcePath:         "/kuma/ebpf",
+		EbpfBPFFSPath:                  "/sys/fs/bpf",
+		EbpfCgroupPath:                 "/sys/fs/cgroup",
+		EbpfTCAttachIface:              "",
+		VnetNetworks:                   []string{},
 	}
 	cmd := &cobra.Command{
 		Use:   "transparent-proxy",
@@ -150,8 +150,8 @@ runuser -u kuma-dp -- \
 					return errors.Errorf("--ebpf-instance-ip flag has to be specified --ebpf-enabled is provided")
 				}
 
-				if !args.ExperimentalTransparentProxyEngine {
-					return errors.Errorf("--experimental-transparent-proxy-engine flag has to be specified when --ebpf-enabled is provided")
+				if args.UseTransparentProxyEngineV1 {
+					return errors.Errorf("--use-transparent-proxy-engine-v1 flag cannot be specified when --ebpf-enabled is provided")
 				}
 
 				if args.StoreFirewalld {
@@ -194,7 +194,7 @@ runuser -u kuma-dp -- \
 	_ = cmd.Flags().IP("kuma-cp-ip", net.IPv4(0, 0, 0, 0), "[Deprecated]")
 	_ = cmd.Flags().MarkDeprecated("kuma-cp-ip", "Running a DNS inside the CP is not possible anymore")
 	cmd.Flags().BoolVar(&args.SkipDNSConntrackZoneSplit, "skip-dns-conntrack-zone-split", args.SkipDNSConntrackZoneSplit, "skip applying conntrack zone splitting iptables rules")
-	cmd.Flags().BoolVar(&args.ExperimentalTransparentProxyEngine, "experimental-transparent-proxy-engine", args.ExperimentalTransparentProxyEngine, "use experimental transparent proxy engine")
+	cmd.Flags().BoolVar(&args.UseTransparentProxyEngineV1, "use-transparent-proxy-engine-v1", args.UseTransparentProxyEngineV1, "use legacy transparent proxy engine v1")
 
 	// ebpf
 	cmd.Flags().BoolVar(&args.EbpfEnabled, "ebpf-enabled", args.EbpfEnabled, "use ebpf instead of iptables to install transparent proxy")
@@ -268,8 +268,8 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 		Stderr:                         cmd.OutOrStderr(),
 	}
 
-	if !args.ExperimentalTransparentProxyEngine {
-		tp = transparentproxy.DefaultTransparentProxy()
+	if args.UseTransparentProxyEngineV1 {
+		tp = transparentproxy.V1()
 
 		// best effort cleanup before we apply the rules (again?)
 		_, err := tp.Cleanup(cfg)
@@ -277,7 +277,7 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 			return errors.Wrapf(err, "unable to invoke cleanup")
 		}
 	} else {
-		tp = &transparentproxy.ExperimentalTransparentProxy{}
+		tp = transparentproxy.V2()
 	}
 
 	output, err := tp.Setup(cfg)
