@@ -12,7 +12,7 @@ does not have any particular instructions.
 
 We now support version `v0.6.0` of the Gateway API. See the [upstream API
 changes](https://github.com/kubernetes-sigs/gateway-api/releases/tag/v0.6.0) for
-more info.
+more info. We also no longer support v1alpha2 of Gateway API.
 
 ### Auth configuration of DP server in Kuma CP
 
