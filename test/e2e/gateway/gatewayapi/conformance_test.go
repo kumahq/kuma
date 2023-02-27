@@ -8,7 +8,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	apis_gatewayapi_alpha "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	apis_gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 	"sigs.k8s.io/gateway-api/conformance/tests"
 	"sigs.k8s.io/gateway-api/conformance/utils/suite"
@@ -66,7 +65,6 @@ func TestConformance(t *testing.T) {
 	client, err := client.New(clientConfig, client.Options{})
 	g.Expect(err).ToNot(HaveOccurred())
 
-	g.Expect(apis_gatewayapi_alpha.AddToScheme(client.Scheme())).To(Succeed())
 	g.Expect(apis_gatewayapi.AddToScheme(client.Scheme())).To(Succeed())
 
 	var validUniqueListenerPorts []apis_gatewayapi.PortNumber

@@ -8,7 +8,6 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
-	gatewayapi_alpha "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
@@ -30,20 +29,20 @@ const (
 )
 
 var (
-	simplePolicy = gatewayapi_alpha.ReferenceGrant{
+	simplePolicy = gatewayapi.ReferenceGrant{
 		ObjectMeta: kube_meta.ObjectMeta{
 			Name:      "basic",
 			Namespace: otherNs,
 		},
-		Spec: gatewayapi_alpha.ReferenceGrantSpec{
-			From: []gatewayapi_alpha.ReferenceGrantFrom{
+		Spec: gatewayapi.ReferenceGrantSpec{
+			From: []gatewayapi.ReferenceGrantFrom{
 				{
 					Group:     gatewayapi.GroupName,
 					Kind:      "HTTPRoute",
 					Namespace: defaultNs,
 				},
 			},
-			To: []gatewayapi_alpha.ReferenceGrantTo{
+			To: []gatewayapi.ReferenceGrantTo{
 				{
 					Group: "",
 					Kind:  "Service",
@@ -129,9 +128,9 @@ var _ = Describe("ReferenceGrant support", func() {
 		})
 		It("checks names in .from", func() {
 			policyWithName := simplePolicy.DeepCopy()
-			permittedToExtSvcName := gatewayapi_alpha.ObjectName("specific-permitted-ext-svc")
+			permittedToExtSvcName := gatewayapi.ObjectName("specific-permitted-ext-svc")
 			policyWithName.Spec.To = append(policyWithName.Spec.To,
-				gatewayapi_alpha.ReferenceGrantTo{
+				gatewayapi.ReferenceGrantTo{
 					Group: kumaGroup,
 					Kind:  externalSvcKind,
 					Name:  &permittedToExtSvcName,

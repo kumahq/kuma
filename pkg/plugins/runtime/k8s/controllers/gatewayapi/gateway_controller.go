@@ -17,7 +17,6 @@ import (
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
-	gatewayapi_alpha "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -273,15 +272,15 @@ func gatewaysForGrant(l logr.Logger, client kube_client.Client) kube_handler.Map
 	l = l.WithName("gatewaysForGrant")
 
 	return func(obj kube_client.Object) []kube_reconcile.Request {
-		grant, ok := obj.(*gatewayapi_alpha.ReferenceGrant)
+		grant, ok := obj.(*gatewayapi.ReferenceGrant)
 		if !ok {
 			l.Error(nil, "unexpected error converting to be mapped %T object to GatewayGrant", obj)
 			return nil
 		}
 
-		var namespaces []gatewayapi_alpha.Namespace
+		var namespaces []gatewayapi.Namespace
 		for _, from := range grant.Spec.From {
-			if from.Group == gatewayapi_alpha.Group(gatewayapi.GroupVersion.Group) && from.Kind == "Gateway" {
+			if from.Group == gatewayapi.Group(gatewayapi.GroupVersion.Group) && from.Kind == "Gateway" {
 				namespaces = append(namespaces, from.Namespace)
 			}
 		}
@@ -348,7 +347,7 @@ func (r *GatewayReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 			kube_handler.EnqueueRequestsFromMapFunc(gatewaysForConfig(r.Log, r.Client)),
 		).
 		Watches(
-			&kube_source.Kind{Type: &gatewayapi_alpha.ReferenceGrant{}},
+			&kube_source.Kind{Type: &gatewayapi.ReferenceGrant{}},
 			kube_handler.EnqueueRequestsFromMapFunc(gatewaysForGrant(r.Log, r.Client)),
 		).
 		Complete(r)
