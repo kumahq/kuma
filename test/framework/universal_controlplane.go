@@ -62,7 +62,7 @@ func (c *UniversalControlPlane) GetKDSServerAddress() string {
 
 func (c *UniversalControlPlane) getKDSServerAddress(secure bool) string {
 	var protocol = "grpcs"
-	if secure == false {
+	if !secure {
 		protocol = "grpc"
 	}
 

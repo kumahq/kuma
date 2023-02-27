@@ -219,7 +219,7 @@ func (c *K8sControlPlane) GetKDSServerAddress() string {
 // A naive implementation to find the URL where Zone CP exposes its API
 func (c *K8sControlPlane) getKDSServerAddress(secure bool) string {
 	var protocol = "grpcs"
-	if secure == false {
+	if !secure {
 		protocol = "grpc"
 	}
 
