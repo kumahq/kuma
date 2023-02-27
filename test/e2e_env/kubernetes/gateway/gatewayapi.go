@@ -82,7 +82,7 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(out).ToNot(BeEmpty())
 			ip = out
-		}, "60s", "1s").Should(Succeed(), "could not get a LoadBalancer IP of the Gateway")
+		}, "120s", "1s").Should(Succeed(), "could not get a LoadBalancer IP of the Gateway")
 		return ip
 	}
 

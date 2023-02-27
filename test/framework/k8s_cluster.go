@@ -349,13 +349,13 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		argsMap["--cni-bin-dir"] = Config.CNIConf.BinDir
 		argsMap["--cni-conf-name"] = Config.CNIConf.ConfName
 
-		if c.opts.cniExperimental {
-			argsMap["--set"] = "experimental.cni=true"
+		if c.opts.cniV1 {
+			argsMap["--set"] = "legacy.cni.enabled=true"
 		}
 	}
 
-	if !c.opts.cni && c.opts.experimentalTransparentProxy {
-		argsMap["--set"] = "experimental.transparentProxy=true"
+	if !c.opts.cni && c.opts.transparentProxyV1 {
+		argsMap["--set"] = "legacy.transparentProxy=true"
 	}
 
 	if Config.XDSApiVersion != "" {
@@ -421,6 +421,7 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 	}
 
 	if c.opts.cni {
+		values["cni.image.repository"] = Config.KumaCNIImageRepo
 		values["cni.enabled"] = "true"
 		values["cni.chained"] = "true"
 		values["cni.netDir"] = Config.CNIConf.NetDir
@@ -428,8 +429,8 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		values["cni.confName"] = Config.CNIConf.ConfName
 	}
 
-	if c.opts.cniExperimental {
-		values["experimental.cni"] = "true"
+	if c.opts.cniV1 {
+		values["legacy.cni.enabled"] = "true"
 	}
 
 	if Config.CIDR != "" {

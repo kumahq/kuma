@@ -12,9 +12,13 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 )
 
-var _ TransparentProxy = &ExperimentalTransparentProxy{}
+var _ TransparentProxy = &TransparentProxyV2{}
 
-type ExperimentalTransparentProxy struct{}
+type TransparentProxyV2 struct{}
+
+func V2() TransparentProxy {
+	return &TransparentProxyV2{}
+}
 
 func hasLocalIPv6() (bool, error) {
 	addrs, err := net.InterfaceAddrs()
@@ -84,7 +88,7 @@ func splitPorts(ports string) ([]uint16, error) {
 	return result, nil
 }
 
-func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyConfig) (string, error) {
+func (tp *TransparentProxyV2) Setup(tpConfig *config.TransparentProxyConfig) (string, error) {
 	redirectInboundPort, err := parseUint16(tpConfig.RedirectPortInBound)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing inbound redirect port failed")
@@ -247,7 +251,7 @@ func validateUintValueOrRange(valueOrRange string) error {
 	return nil
 }
 
-func (tp *ExperimentalTransparentProxy) Cleanup(tpConfig *config.TransparentProxyConfig) (string, error) {
+func (tp *TransparentProxyV2) Cleanup(tpConfig *config.TransparentProxyConfig) (string, error) {
 	return Cleanup(config.Config{
 		Ebpf: config.Ebpf{
 			Enabled:   tpConfig.EbpfEnabled,

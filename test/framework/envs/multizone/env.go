@@ -70,7 +70,7 @@ func SetupAndGetState() []byte {
 			WithEgress(),
 			WithEgressEnvoyAdminTunnel(),
 			WithGlobalAddress(Global.GetKuma().GetKDSServerAddress()),
-			WithExperimentalCNI(),
+			WithCNI(),
 		},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.KubeZone2)...,
 	)
