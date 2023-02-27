@@ -1,7 +1,8 @@
 KUMA_DIR ?= .
 ENVOY_VERSION = $(word 5, $(shell ${KUMA_DIR}/tools/releases/version.sh))
+CI_TOOLS_VERSION = dev
 
-CI_TOOLS_DIR ?= ${HOME}/.kuma-dev
+CI_TOOLS_DIR ?= ${HOME}/.kuma-dev/${CI_TOOLS_VERSION}
 ifdef XDG_DATA_HOME
 	CI_TOOLS_DIR := ${XDG_DATA_HOME}/kuma-dev
 endif
