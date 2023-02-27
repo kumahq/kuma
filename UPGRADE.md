@@ -14,6 +14,60 @@ We now support version `v0.6.0` of the Gateway API. See the [upstream API
 changes](https://github.com/kubernetes-sigs/gateway-api/releases/tag/v0.6.0) for
 more info.
 
+### Transparent Proxy Engine v2 and CNI v2 as default
+
+As they matured, in the upcoming release Kuma will by default use transparent
+proxy engine v2 and CNI v2.
+
+If you want to still use v1 versions of these components, you will have to install 
+Kuma with provided `legacy.transparentProxy=true` or `legacy.cni.enabled=true`
+options.
+
+#### Examples
+
+##### CNI
+
+*Helm*
+
+```sh
+helm upgrade --install --create-namespace --namespace kuma-system \
+  --set "legacy.cni.enabled=true" \
+  --set "cni.enabled=true" \
+  --set "cni.chained=true" \
+  --set "cni.netDir=/etc/cni/net.d" \
+  --set "cni.binDir=/opt/cni/bin" \
+  --set "cni.confName=10-calico.conflist"
+  kuma kuma/kuma
+```
+
+*kumactl*
+
+```sh
+kumactl install control-plane \
+  --set "legacy.cni.enabled=true" \
+  --set "cni.enabled=true" \
+  --set "cni.chained=true" \
+  --set "cni.netDir=/etc/cni/net.d" \
+  --set "cni.binDir=/opt/cni/bin" \
+  --set "cni.confName=10-calico.conflist" \
+  | kubectl apply -f-
+```
+
+##### Transparent Proxy Engine
+
+*Helm*
+
+```sh
+helm upgrade --install --create-namespace --namespace kuma-system \
+  --set "legacy.transparentProxy=true" kuma kuma/kuma
+```
+
+*kumactl*
+
+```sh
+kumactl install control-plane --set "legacy.transparentProxy=true" | kubectl apply -f-
+```
+
 ## Upgrade to `2.1.x`
 
 ### **Breaking changes**
