@@ -52,8 +52,21 @@ func (c *UniversalControlPlane) GetName() string {
 	return c.name
 }
 
+func (c *UniversalControlPlane) GetKDSInsecureServerAddress() string {
+	return c.getKDSServerAddress(false)
+}
+
 func (c *UniversalControlPlane) GetKDSServerAddress() string {
-	return "grpcs://" + net.JoinHostPort(c.cpNetworking.IP, "5685")
+	return c.getKDSServerAddress(true)
+}
+
+func (c *UniversalControlPlane) getKDSServerAddress(secure bool) string {
+	var protocol = "grpcs"
+	if secure == false {
+		protocol = "grpc"
+	}
+
+	return protocol + "://" + net.JoinHostPort(c.cpNetworking.IP, "5685")
 }
 
 func (c *UniversalControlPlane) GetGlobalStatusAPI() string {

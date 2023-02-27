@@ -15,6 +15,8 @@ type KdsServerConfig struct {
 	RefreshInterval config_types.Duration `json:"refreshInterval" envconfig:"kuma_multizone_global_kds_refresh_interval"`
 	// Interval for flushing Zone Insights (stats of multi-zone communication)
 	ZoneInsightFlushInterval config_types.Duration `json:"zoneInsightFlushInterval" envconfig:"kuma_multizone_global_kds_zone_insight_flush_interval"`
+	// TlsDisable turns off TLS for KDS
+	TlsDisable bool `json:"tlsDisable" envconfig:"kuma_multizone_global_kds_tls_disable"`
 	// TlsCertFile defines a path to a file with PEM-encoded TLS cert.
 	TlsCertFile string `json:"tlsCertFile" envconfig:"kuma_multizone_global_kds_tls_cert_file"`
 	// TlsKeyFile defines a path to a file with PEM-encoded TLS key.

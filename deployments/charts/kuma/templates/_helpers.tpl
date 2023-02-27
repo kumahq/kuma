@@ -188,7 +188,7 @@ returns: formatted image string
     {{ fail "controlPlane.kdsGlobalAddress can't be empty when controlPlane.mode=='zone', needs to be the global control-plane address" }}
   {{ else }}
     {{ $url := urlParse .Values.controlPlane.kdsGlobalAddress }}
-    {{ if not (eq $url.scheme "grpcs") }}
+    {{ if not (or (eq $url.scheme "grpcs") (eq $url.scheme "grpc")) }}
       {{ $msg := printf "controlPlane.kdsGlobalAddress must be a url with scheme grpcs:// got:'%s'" .Values.controlPlane.kdsGlobalAddress }}
       {{ fail $msg }}
     {{ end }}

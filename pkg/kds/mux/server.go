@@ -88,7 +88,7 @@ func (s *server) Start(stop <-chan struct{}) error {
 		grpc.MaxSendMsgSize(int(s.config.MaxMsgSize)),
 	}
 	grpcOptions = append(grpcOptions, s.metrics.GRPCServerInterceptors()...)
-	if s.config.TlsCertFile != "" {
+	if s.config.TlsCertFile != "" && s.config.TlsDisable == false {
 		cert, err := tls.LoadX509KeyPair(s.config.TlsCertFile, s.config.TlsKeyFile)
 		if err != nil {
 			return errors.Wrap(err, "failed to load TLS certificate")
