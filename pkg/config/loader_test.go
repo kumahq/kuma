@@ -228,7 +228,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Global.KDS.TlsMinVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.Multizone.Global.KDS.TlsMaxVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.Multizone.Global.KDS.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
-			Expect(cfg.Multizone.Global.KDS.TlsDisable).To(Equal("true"))
+			Expect(cfg.Multizone.Global.KDS.TlsDisable).To(Equal(true))
 			Expect(cfg.Multizone.Global.KDS.TlsCertFile).To(Equal("/cert"))
 			Expect(cfg.Multizone.Global.KDS.TlsKeyFile).To(Equal("/key"))
 			Expect(cfg.Multizone.Global.KDS.MaxMsgSize).To(Equal(uint32(1)))
