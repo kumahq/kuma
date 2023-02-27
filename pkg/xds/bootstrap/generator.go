@@ -35,8 +35,8 @@ func NewDefaultBootstrapGenerator(
 	serverConfig *bootstrap_config.BootstrapServerConfig,
 	proxyConfig xds_config.Proxy,
 	dpServerCertFile string,
-	dpAuthEnabled bool,
-	dpUseTokenPath bool,
+	authEnabledForProxyType map[string]bool,
+	enableReloadableTokens bool,
 	hdsEnabled bool,
 	defaultAdminPort uint32,
 	enableLocalhostInboundCluster bool,
@@ -53,8 +53,8 @@ func NewDefaultBootstrapGenerator(
 		config:                        serverConfig,
 		proxyConfig:                   proxyConfig,
 		xdsCertFile:                   dpServerCertFile,
-		dpAuthEnabled:                 dpAuthEnabled,
-		dpUseTokenPath:                dpUseTokenPath,
+		authEnabledForProxyType:       authEnabledForProxyType,
+		enableReloadableTokens:        enableReloadableTokens,
 		hostsAndIps:                   hostsAndIps,
 		hdsEnabled:                    hdsEnabled,
 		defaultAdminPort:              defaultAdminPort,
@@ -66,8 +66,8 @@ type bootstrapGenerator struct {
 	resManager                    core_manager.ResourceManager
 	config                        *bootstrap_config.BootstrapServerConfig
 	proxyConfig                   xds_config.Proxy
-	dpAuthEnabled                 bool
-	dpUseTokenPath                bool
+	authEnabledForProxyType       map[string]bool
+	enableReloadableTokens        bool
 	xdsCertFile                   string
 	hostsAndIps                   SANSet
 	hdsEnabled                    bool
@@ -76,6 +76,9 @@ type bootstrapGenerator struct {
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, KumaDpBootstrap, error) {
+	if request.ProxyType == "" {
+		request.ProxyType = string(mesh_proto.DataplaneProxyType)
+	}
 	kumaDpBootstrap := KumaDpBootstrap{}
 	if err := b.validateRequest(request); err != nil {
 		return nil, kumaDpBootstrap, err
@@ -106,9 +109,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		ProxyType:             request.ProxyType,
 		Features:              request.Features,
 		Resources:             request.Resources,
-	}
-	if params.ProxyType == "" {
-		params.ProxyType = string(mesh_proto.DataplaneProxyType)
 	}
 
 	setAdminPort := func(adminPortFromResource uint32) {
@@ -162,7 +162,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		return nil, kumaDpBootstrap, err
 	}
 
-	config, err := genConfig(params, b.proxyConfig, b.dpUseTokenPath)
+	config, err := genConfig(params, b.proxyConfig, b.enableReloadableTokens)
 	if err != nil {
 		return nil, kumaDpBootstrap, errors.Wrap(err, "failed creating bootstrap conf")
 	}
@@ -242,7 +242,7 @@ func (b *bootstrapGenerator) getMetricsAddress(
 }
 
 func (b *bootstrapGenerator) validateRequest(request types.BootstrapRequest) error {
-	if b.dpAuthEnabled && request.DataplaneToken == "" && request.DataplaneTokenPath == "" {
+	if b.authEnabledForProxyType[request.ProxyType] && request.DataplaneToken == "" && request.DataplaneTokenPath == "" {
 		return DpTokenRequired
 	}
 	if b.config.Params.XdsHost == "" { // XdsHost takes precedence over Host in the request, so validate only when it is not set

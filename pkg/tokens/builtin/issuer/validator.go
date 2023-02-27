@@ -12,12 +12,12 @@ type Validator interface {
 }
 
 type jwtValidator struct {
-	validators func(string) core_tokens.Validator
+	validators func(string) (core_tokens.Validator, error)
 }
 
 var _ Validator = &jwtValidator{}
 
-func NewValidator(validators func(string) core_tokens.Validator) Validator {
+func NewValidator(validators func(string) (core_tokens.Validator, error)) Validator {
 	return &jwtValidator{
 		validators: validators,
 	}
@@ -25,7 +25,11 @@ func NewValidator(validators func(string) core_tokens.Validator) Validator {
 
 func (j *jwtValidator) Validate(ctx context.Context, token core_tokens.Token, meshName string) (DataplaneIdentity, error) {
 	claims := &DataplaneClaims{}
-	if err := j.validators(meshName).ParseWithValidation(ctx, token, claims); err != nil {
+	validators, err := j.validators(meshName)
+	if err != nil {
+		return DataplaneIdentity{}, err
+	}
+	if err := validators.ParseWithValidation(ctx, token, claims); err != nil {
 		return DataplaneIdentity{}, err
 	}
 	return DataplaneIdentity{

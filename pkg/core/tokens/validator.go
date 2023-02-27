@@ -2,6 +2,7 @@ package tokens
 
 import (
 	"context"
+	"crypto/rsa"
 	errors2 "errors"
 	"fmt"
 
@@ -18,18 +19,18 @@ type Validator interface {
 }
 
 type jwtTokenValidator struct {
-	keyAccessor SigningKeyAccessor
-	revocations Revocations
-	storeType   store_config.StoreType
-	log         logr.Logger
+	keyAccessors []SigningKeyAccessor
+	revocations  Revocations
+	storeType    store_config.StoreType
+	log          logr.Logger
 }
 
-func NewValidator(log logr.Logger, keyAccessor SigningKeyAccessor, revocations Revocations, storeType store_config.StoreType) Validator {
+func NewValidator(log logr.Logger, keyAccessors []SigningKeyAccessor, revocations Revocations, storeType store_config.StoreType) Validator {
 	return &jwtTokenValidator{
-		log:         log,
-		keyAccessor: keyAccessor,
-		revocations: revocations,
-		storeType:   storeType,
+		log:          log,
+		keyAccessors: keyAccessors,
+		revocations:  revocations,
+		storeType:    storeType,
 	}
 }
 
@@ -53,9 +54,25 @@ func (j *jwtTokenValidator) ParseWithValidation(ctx context.Context, rawToken To
 		}
 		switch token.Method.Alg() {
 		case jwt.SigningMethodHS256.Name:
-			return j.keyAccessor.GetLegacyKey(ctx, KeyIDFallbackValue)
+			var key []byte
+			var err error
+			for _, keyAccessor := range j.keyAccessors {
+				key, err = keyAccessor.GetLegacyKey(ctx, KeyIDFallbackValue)
+				if err == nil {
+					return key, nil
+				}
+			}
+			return nil, err
 		case jwt.SigningMethodRS256.Name:
-			return j.keyAccessor.GetPublicKey(ctx, keyID)
+			var key *rsa.PublicKey
+			var err error
+			for _, keyAccessor := range j.keyAccessors {
+				key, err = keyAccessor.GetPublicKey(ctx, keyID)
+				if err == nil {
+					return key, nil
+				}
+			}
+			return nil, err
 		default:
 			return nil, fmt.Errorf("unsupported token alg %s. Allowed algorithms are %s and %s", token.Method.Alg(), jwt.SigningMethodRS256.Name, jwt.SigningMethodHS256)
 		}

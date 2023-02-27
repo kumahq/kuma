@@ -49,9 +49,19 @@ func HandleError(response *restful.Response, err error, title string) {
 		var unauthenticated *Unauthenticated
 		errors.As(err, &err)
 		handleUnauthenticated(unauthenticated, title, response)
+	case err == tokens.IssuerDisabled:
+		handleIssuerDisabled(err, title, response)
 	default:
 		handleUnknownError(err, title, response)
 	}
+}
+
+func handleIssuerDisabled(err error, title string, response *restful.Response) {
+	kumaErr := types.Error{
+		Title:   title,
+		Details: err.Error(),
+	}
+	WriteError(response, 400, kumaErr)
 }
 
 func handleInvalidPageSize(title string, response *restful.Response) {
