@@ -228,6 +228,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Global.KDS.TlsMinVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.Multizone.Global.KDS.TlsMaxVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.Multizone.Global.KDS.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
+			Expect(cfg.Multizone.Global.KDS.TlsDisable).To(Equal("true"))
 			Expect(cfg.Multizone.Global.KDS.TlsCertFile).To(Equal("/cert"))
 			Expect(cfg.Multizone.Global.KDS.TlsKeyFile).To(Equal("/key"))
 			Expect(cfg.Multizone.Global.KDS.MaxMsgSize).To(Equal(uint32(1)))
@@ -500,6 +501,7 @@ multizone:
       grpcPort: 1234
       refreshInterval: 2s
       zoneInsightFlushInterval: 5s
+      tlsDisable: true
       tlsCertFile: /cert
       tlsKeyFile: /key
       tlsMinVersion: TLSv1_3
@@ -756,6 +758,7 @@ proxy:
 				"KUMA_MODE":                                                                                "zone",
 				"KUMA_MULTIZONE_GLOBAL_KDS_GRPC_PORT":                                                      "1234",
 				"KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL":                                               "2s",
+				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_DISABLE":                                                    "true",
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_CERT_FILE":                                                  "/cert",
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE":                                                   "/key",
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_MIN_VERSION":                                                "TLSv1_3",
