@@ -25,8 +25,9 @@ var maxNodePort = 30099
 // TestConformance runs as a `testing` test and not Ginkgo so we have to use an
 // explicit `g` to use Gomega.
 func TestConformance(t *testing.T) {
-	if os.Getenv("CIRCLE_NODE_INDEX") != "" && os.Getenv("CIRCLE_NODE_INDEX") != "4" {
-		t.Skip("Conformance tests are only run on job 4")
+	// this is like job-0
+	if os.Getenv("CIRCLE_NODE_INDEX") != "" && os.Getenv("CIRCLE_NODE_INDEX") != "0" {
+		t.Skip("Conformance tests are only run on job 0")
 	}
 	if Config.IPV6 {
 		t.Skip("On IPv6 we run on kind which doesn't support load balancers")
