@@ -116,6 +116,23 @@ var _ = Describe("Validation Error", func() {
 				},
 			}))
 		})
+
+		It("doesn't properly concatenate paths with Root().Field()", func() {
+			// given
+			path := validators.RootedAt("thing.spec")
+			err := validators.ValidationError{}
+			subErr := validators.ValidationError{}
+			subErr.AddViolationAt(validators.Root().Field("field"), "something bad")
+
+			// when
+			err.AddErrorAt(path, subErr)
+			// then
+			Expect(err).To(Equal(validators.ValidationError{
+				Violations: []validators.Violation{
+					{Field: "thing.spec..field", Message: "something bad"},
+				},
+			}))
+		})
 	})
 
 	Describe("Transform()", func() {
@@ -210,5 +227,10 @@ var _ = Describe("PathBuilder", func() {
 
 	It("should produce valid array index", func() {
 		Expect(validators.RootedAt("spec").Field("sources").Index(0).Field("match").Key("service").String()).To(Equal(`spec.sources[0].match["service"]`))
+	})
+
+	It("Root().Field() and RootedAt() produce different output", func() {
+		Expect(validators.Root().Field("field").String()).To(Equal(".field"))
+		Expect(validators.RootedAt("field").String()).To(Equal("field"))
 	})
 })
