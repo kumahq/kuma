@@ -1,6 +1,7 @@
 KUMA_DIR ?= .
 ENVOY_VERSION = $(word 5, $(shell ${KUMA_DIR}/tools/releases/version.sh))
 CI_TOOLS_VERSION = dev
+KUMA_CHARTS_URL = https://kumahq.github.io/charts
 
 CI_TOOLS_DIR ?= ${HOME}/.kuma-dev/${CI_TOOLS_VERSION}
 ifdef XDG_DATA_HOME
@@ -94,3 +95,7 @@ CIRCLECI_BADGE ?= [![CircleCI {{branch}}](https://img.shields.io/circleci/build/
 .PHONY: dev/repo-health
 dev/repo-health:
 	go run $(TOOLS_DIR)/dev/repo-health.go -action README -circleci-badge '$(CIRCLECI_BADGE)'
+
+.PHONY: dev/set-kuma-helm-repo
+dev/set-kuma-helm-repo:
+	${CI_TOOLS_BIN_DIR}/helm repo add kuma ${KUMA_CHARTS_URL}
