@@ -3,7 +3,7 @@ module github.com/kumahq/kuma
 go 1.18
 
 require (
-	cirello.io/pglock v1.10.0
+	cirello.io/pglock v1.11.0
 	github.com/Masterminds/semver/v3 v3.2.0
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/Nordix/simple-ipam v1.0.0
@@ -180,7 +180,7 @@ require (
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
-	golang.org/x/crypto v0.5.0 // indirect
+	golang.org/x/crypto v0.6.0 // indirect
 	golang.org/x/mod v0.8.0 // indirect
 	golang.org/x/oauth2 v0.4.0 // indirect
 	golang.org/x/term v0.5.0 // indirect
