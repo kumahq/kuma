@@ -362,7 +362,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 3a137bbfcbbe6ba5a3997b30b1b047b2b080a9f912520a5fa683f11c4c6b6f3c
-        checksum/tls-secrets: 96f27a141c6eeb1a0fa942d203dab03a5676acd724e05b39ab89fa6c30b18904
+        checksum/tls-secrets: 21a5bace63b1c95d7e656d0bc795976c19be030f3b5adeb65af66938586014cb
       labels: 
         app: kuma-control-plane
         "foo": "baz"
@@ -774,7 +774,6 @@ webhooks:
       - apiGroups:
           - "gateway.networking.k8s.io"
         apiVersions:
-          - v1alpha2
           - v1beta1
         operations:
           - CREATE
