@@ -12,6 +12,7 @@ The current implementation of KDS is quite complex, and there may be some bugs, 
 * creating separate gRPC services for synchronization between the zone and global,
 * supporting multiple control plane tenants,
 * prioritizing sync of operational over informational resources,
+* changing `default` namespace for sync to global to system one (`kuma-system`), 
 * and sending only changes instead of the state of the world when synchronizing data from the zone to the global.
 
 ## Considered Options
@@ -106,7 +107,11 @@ Maybe not in the first step but we could consider if we can benefit from using d
 
 ### Prioritize operational informations
 
-Certain resources require more frequent synchronization than others. For example, Policies, ZoneIngress, and ZoneEgress must be updated immediately, whereas Insights and Dataplanes objects may be delayed and can be aggregated. To address this, we could consider implementing an option to specify the interval at which the snapshot for specific resources is recalculated. To avoid recalculating changes for all synchronized resources, we may also need to establish a cache per resource type. In addition, we could set up an RPC service to monitor changes for all resources on separate streams, allowing changes to be processed independently.
+Certain resources require more frequent synchronization than others. For example, Policies, ZoneIngress, and ZoneEgress must be updated immediately, whereas Insights and Dataplanes objects may be delayed and can be aggregated. To address this, we could consider implementing an option to specify the interval at which the snapshot for specific resources is recalculated. To avoid recalculating changes for all synchronized resources, we need a cache per resource type, which `SimpleCache` should allows us to achieve. In addition, we could set up an RPC service to monitor changes for all resources on separate streams, allowing changes to be processed independently.
+
+### Change the namespace of synchronized resources from `default` to `kuma-system`
+
+Resources synchronized from Zone to Global are created by default in a `default` namespace and we should change it in the new version. This is a breaking change because upgrade won't be able to find resources and needs to duplicate them from zone and store them in the `kuma-system` namespace.
 
 ### Handshake
 
@@ -139,7 +144,7 @@ How would a handshake work?
 
 ### Multitenant
 
-To link multitenant control-planes with a global one, it's necessary to establish a method of recognition. One approach to accomplish this is by extracting tenant specifics from an authentication token. These details can then be transmitted along with a request to indicate the specific tenant and retrieve solely their deployment information. Another option is to supply this information via a header. It appears that accommodating multitenancy doesn't require additional exertion.
+Global control-plane should support multitenant, that means we want to achieve that one global control-plane can handle many different zone control-planes that are different tenant. One approach to accomplish this is by extracting tenant specifics from an authentication token. These details can then be transmitted along with a request to indicate the specific tenant and retrieve solely their deployment information. Another option is to supply this information via a header. It appears that accommodating multitenancy doesn't require additional work on the KDS side.
 
 ### Create resources on the zone
 
