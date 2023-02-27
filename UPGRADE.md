@@ -16,8 +16,8 @@ more info.
 
 ### Auth configuration of DP server in Kuma CP
 
-`dpServer.auth` configuration of Kuma CP was deprecated. You can still set config in this branch, but it will be removed in the future.
-It's recommended to migrate to `dpServer.authn` if you explicitly set any of the configuration in this config branch.
+`dpServer.auth` configuration of Kuma CP was deprecated. You can still set config in this section, but it will be removed in the future.
+It's recommended to migrate to `dpServer.authn` if you explicitly set any of the configuration in this config section.
 * `dpServer.auth.type` is now split into two: `dpServer.authn.dpProxy.type` and `dpServer.authn.zoneProxy.type` and is still autoconfigured based on the environment.
 * `dpServer.auth.useTokenPath` is now `dpServer.authn.enableReloadableTokens`
 

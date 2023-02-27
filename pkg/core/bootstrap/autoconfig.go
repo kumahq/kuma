@@ -76,6 +76,7 @@ func autoconfigureDpServerAuth(cfg *kuma_cp.Config) {
 			cfg.DpServer.Authn.ZoneProxy.Type = dp_server.DpServerAuthZoneToken
 		}
 	}
+	// backwards compatibility https://github.com/kumahq/kuma/issues/6138
 	if cfg.DpServer.Auth.UseTokenPath {
 		cfg.DpServer.Authn.EnableReloadableTokens = cfg.DpServer.Auth.UseTokenPath
 	}
