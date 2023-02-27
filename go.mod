@@ -8,6 +8,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/Nordix/simple-ipam v1.0.0
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
+	github.com/cilium/ebpf v0.9.1
 	github.com/cncf/xds/go v0.0.0-20230105202645-06c439db220b
 	github.com/containerd/cgroups v1.1.0
 	github.com/containernetworking/cni v1.1.2
@@ -30,6 +31,7 @@ require (
 	github.com/kumahq/protoc-gen-kumadoc v0.3.1
 	github.com/lib/pq v1.10.7
 	github.com/miekg/dns v1.1.50
+	github.com/moby/sys/mountinfo v0.6.2
 	github.com/natefinch/atomic v1.0.1
 	github.com/onsi/ginkgo/v2 v2.8.3
 	github.com/onsi/gomega v1.27.1
@@ -47,6 +49,8 @@ require (
 	github.com/spf13/viper v1.15.0
 	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc
 	github.com/testcontainers/testcontainers-go v0.18.0
+	github.com/vishvananda/netlink v1.2.1-beta.2
+	github.com/vishvananda/netns v0.0.4
 	go.opentelemetry.io/proto/otlp v0.19.0
 	go.uber.org/multierr v1.9.0
 	go.uber.org/zap v1.24.0
@@ -75,13 +79,6 @@ require (
 	// When updating this also update version in: `test/e2e_env/kubernetes/gateway/utils.go`
 	sigs.k8s.io/gateway-api v0.5.1
 	sigs.k8s.io/yaml v1.3.0
-)
-
-require (
-	github.com/cilium/ebpf v0.9.1
-	github.com/moby/sys/mountinfo v0.6.2
-	github.com/vishvananda/netlink v1.2.1-beta.2
-	github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74
 )
 
 require (

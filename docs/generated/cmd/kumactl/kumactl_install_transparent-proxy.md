@@ -71,7 +71,6 @@ kumactl install transparent-proxy [flags]
       --exclude-outbound-ports string                                                   a comma separated list of outbound ports to exclude from redirect to Envoy
       --exclude-outbound-tcp-ports-for-uids stringArray                                 tcp outbound ports to exclude for specific UIDs in a format of ports:uids where both ports and uids can be a single value, a list, a range or a combination of all, e.g. 3000-5000:103,104,106-108 would mean exclude ports from 3000 to 5000 for UIDs 103, 104, 106, 107, 108
       --exclude-outbound-udp-ports-for-uids stringArray                                 udp outbound ports to exclude for specific UIDs in a format of ports:uids where both ports and uids can be a single value, a list, a range or a combination of all, e.g. 3000-5000:103,104,106-108 would mean exclude ports from 3000 to 5000 for UIDs 103, 104, 106, 107, 108
-      --experimental-transparent-proxy-engine                                           use experimental transparent proxy engine
   -h, --help                                                                            help for transparent-proxy
       --kuma-dp-uid string                                                              the UID of the user that will run kuma-dp
       --kuma-dp-user string                                                             the user that will run kuma-dp
@@ -85,6 +84,7 @@ kumactl install transparent-proxy [flags]
       --redirect-outbound-port networking.transparentProxying.redirectPortOutbound      outbound port redirected to Envoy, as specified in dataplane's networking.transparentProxying.redirectPortOutbound (default "15001")
       --skip-dns-conntrack-zone-split                                                   skip applying conntrack zone splitting iptables rules
       --store-firewalld                                                                 store the iptables changes with firewalld
+      --use-transparent-proxy-engine-v1                                                 use legacy transparent proxy engine v1
       --verbose                                                                         verbose
       --vnet stringArray                                                                virtual networks in a format of interfaceNameRegex:CIDR split by ':' where interface name doesn't have to be exact name e.g. docker0:172.17.0.0/16, br+:172.18.0.0/16, iface:::1/64
 ```

@@ -35,11 +35,11 @@ func (cv *componentVersion) String() string {
 
 func (cv *componentVersion) Set(v string) error {
 	cv.version = v
-	cv.args.Cni_image_tag = v
 	cv.args.ControlPlane_image_tag = v
 	cv.args.DataPlane_image_tag = v
 	cv.args.DataPlane_initImage_tag = v
-	cv.args.Cni_experimental_image_tag = v
+	cv.args.Cni_v1_image_tag = v
+	cv.args.Cni_v2_image_tag = v
 	return nil
 }
 
@@ -282,9 +282,9 @@ This command requires that the KUBECONFIG environment is set`,
 	cmd.Flags().StringVar(&args.Cni_net_dir, "cni-net-dir", args.Cni_net_dir, "set the CNI install directory")
 	cmd.Flags().StringVar(&args.Cni_bin_dir, "cni-bin-dir", args.Cni_bin_dir, "set the CNI binary directory")
 	cmd.Flags().StringVar(&args.Cni_conf_name, "cni-conf-name", args.Cni_conf_name, "set the CNI configuration name")
-	cmd.Flags().StringVar(&args.Cni_image_registry, "cni-registry", args.Cni_image_registry, "registry for the image of the Kuma CNI component")
-	cmd.Flags().StringVar(&args.Cni_image_repository, "cni-repository", args.Cni_image_repository, "repository for the image of the Kuma CNI component")
-	cmd.Flags().StringVar(&args.Cni_image_tag, "cni-version", args.Cni_image_tag, "version of the image of the Kuma CNI component")
+	cmd.Flags().StringVar(&args.Cni_v1_image_registry, "cni-registry", args.Cni_v1_image_registry, "(deprecated) registry for the image of the Kuma CNI component v1")
+	cmd.Flags().StringVar(&args.Cni_v1_image_repository, "cni-repository", args.Cni_v1_image_repository, "(deprecated) repository for the image of the Kuma CNI component v1")
+	cmd.Flags().StringVar(&args.Cni_v1_image_tag, "cni-version", args.Cni_v1_image_tag, "(deprecated) version of the image of the Kuma CNI component v1")
 	cmd.Flags().StringToStringVar(&args.Cni_nodeSelector, "cni-node-selector", args.Cni_nodeSelector, "node selector for CNI deployment")
 	cmd.Flags().StringVar(&args.ControlPlane_mode, "mode", args.ControlPlane_mode, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "zone", "global"))
 	cmd.Flags().StringVar(&args.ControlPlane_zone, "zone", args.ControlPlane_zone, "set the Kuma zone name")

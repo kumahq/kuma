@@ -140,7 +140,7 @@ func (ns *NetNS) Cleanup() error {
 			}
 		}
 
-		if err := netns.DeleteNamed(ns.Name()); err != nil {
+		if err := netNsDeleteNamed(ns.Name()); err != nil {
 			errs = append(errs, fmt.Sprintf("cannot delete network namespace: %s", err))
 		}
 

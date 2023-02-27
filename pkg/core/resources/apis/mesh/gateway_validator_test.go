@@ -102,11 +102,14 @@ conf:
 
 	DescribeErrorCases(
 		NewMeshGatewayResource,
-		ErrorCase("doesn't have any selectors",
-			validators.Violation{
+		ErrorCases("doesn't have any selectors",
+			[]validators.Violation{{
 				Field:   `selectors`,
 				Message: `must have at least one element`,
-			}, `
+			}, {
+				Field:   "conf.listeners[0].tls.certificates",
+				Message: "cannot be empty in TLS termination mode",
+			}}, `
 type: MeshGateway
 name: gateway
 mesh: default
@@ -118,7 +121,7 @@ conf:
   - port: 443
     protocol: HTTPS
     tls:
-      mode: PASSTHROUGH
+      mode: TERMINATE
     tags:
       name: https
 `),
@@ -222,31 +225,6 @@ conf:
       name: https
     tls:
       options:
-`),
-
-		ErrorCase("has a passthrough TLS secret",
-			validators.Violation{
-				Field:   "conf.listeners[0].tls.certificates",
-				Message: "must be empty in TLS passthrough mode",
-			}, `
-type: MeshGateway
-name: gateway
-mesh: default
-selectors:
-  - match:
-      kuma.io/service: gateway
-tags:
-  product: edge
-conf:
-  listeners:
-  - protocol: HTTPS
-    port: 99
-    tags:
-      name: https
-    tls:
-      mode: PASSTHROUGH
-      certificates:
-      - secret: foo
 `),
 
 		ErrorCase("is missing a TLS termination secret",
@@ -367,6 +345,9 @@ conf:
 			}, {
 				Field:   "conf.listeners[1]",
 				Message: "protocol conflicts with other listeners on this port",
+			}, {
+				Field:   "conf.listeners[1].tls.certificates",
+				Message: "cannot be empty in TLS termination mode",
 			}}, `
 type: MeshGateway
 name: gateway
@@ -383,7 +364,7 @@ conf:
     port: 443
     protocol: HTTPS
     tls:
-      mode: PASSTHROUGH
+      mode: TERMINATE
 `),
 
 		ErrorCases("hostname conflict",
@@ -424,6 +405,9 @@ conf:
 				Field:   "conf.listeners[1]",
 				Message: "multiple listeners for hostname on this port",
 			}, {
+				Field:   "conf.listeners[1].tls.certificates",
+				Message: "cannot be empty in TLS termination mode",
+			}, {
 				Field:   "conf.listeners[0].resources.connectionLimit",
 				Message: "conflicting values for this port",
 			}, {
@@ -447,7 +431,7 @@ conf:
     port: 443
     protocol: HTTPS
     tls:
-      mode: PASSTHROUGH
+      mode: TERMINATE
     resources:
       connectionLimit: 1
 `),
