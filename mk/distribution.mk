@@ -8,7 +8,7 @@ DISTRIBUTION_CONFIG_PATH ?= pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
 DISTRIBUTION_LIST ?= linux:amd64:coredns:alpine-opt:centos-opt linux:arm64:coredns:alpine-opt darwin:amd64:coredns:darwin-opt darwin:arm64:coredns:darwin-opt
 
 PULP_HOST ?= "https://api.pulp.konnect-prod.konghq.com"
-PULP_PACKAGE_TYPE ?= mesh
+PULP_PACKAGE_TYPE ?= kuma
 PULP_DIST_NAME ?= $(DISTRIBUTION_NAME)-$(shell echo $(BUILD_INFO_VERSION) | awk -F '.' '{ print $$1"."$$2"."$$3 }')
 
 # This function dynamically builds targets for building distribution packages and uploading them to pulp with a set of parameters
@@ -58,8 +58,9 @@ publish/pulp/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2):
 	  -e PULP_HOST=$(PULP_HOST) \
 	  -v $(TOP)/build/distributions/out:/files:ro -it kong/release-script \
 	  --file /files/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2).tar.gz \
-	  --package-type $(PULP_PACKAGE_TYPE) --dist-name src --dist-version $(PULP_DIST_NAME) --publish
+	  --package-type $(PULP_PACKAGE_TYPE) --dist-name alpine
 endef
+# Removed --publish to see if internal publication works :)
 
 # Call make_distribution_target with each combination
 $(foreach elt,$(DISTRIBUTION_LIST),$(eval $(call make_distributions_target,$(word 1, $(subst :, ,$(elt))),$(word 2, $(subst :, ,$(elt))),$(word 3, $(subst :, ,$(elt))),$(word 4, $(subst :, ,$(elt))),$(word 5, $(subst :, ,$(elt))))))
