@@ -19,7 +19,7 @@ This means we need a new policy for load balancing configuration.
 
 Secondly, current way to toggle "locality-aware load balancing" is a
 mesh-scoped [flag](https://kuma.io/docs/2.1.x/policies/locality-aware/#locality-aware-load-balancing).
-This is not ideal, because there are situation when different services require different LB strategies.
+This is not ideal, because there are situations when different services require different LB strategies.
 That's why the new load balancing policy should contain functionality to enable "locality-aware load balancing".
 
 ## Considered Options
