@@ -151,7 +151,7 @@ func (p PathBuilder) concat(other PathBuilder) PathBuilder {
 	}
 
 	firstOther := other[0]
-	if !strings.HasPrefix(firstOther, "[") {
+	if !strings.HasPrefix(firstOther, "[") && !strings.HasPrefix(firstOther, ".") {
 		firstOther = "." + firstOther
 	}
 
