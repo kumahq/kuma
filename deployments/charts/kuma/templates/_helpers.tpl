@@ -271,7 +271,7 @@ env:
 - name: KUMA_EXPERIMENTAL_GATEWAY_API
   value: "true"
 {{- end }}
-{{- if not .Values.legacy.cni.enabled }}
+{{- if and .Values.cni.enabled (not .Values.legacy.cni.enabled) }}
 - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_ENABLED
   value: "true"
 - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_APP
