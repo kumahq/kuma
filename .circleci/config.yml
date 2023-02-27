@@ -131,7 +131,7 @@ jobs:
           go mod download -x
     # since execution of go commands might change contents of "go.sum", we have to save cache immediately
     - save_cache:
-        key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}
+        key: << parameters.executor >>_go.mod_{{ checksum "go.sum" }}_{{ checksum "mk/dependencies/deps.lock" }}_{{ checksum ".circleci/config.yml" }}_{{ checksum "mk/dev.mk" }}
         paths:
         - "/home/circleci/go/pkg/mod"
         - "/home/circleci/.kuma-dev"
