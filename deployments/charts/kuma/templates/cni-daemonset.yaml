@@ -56,8 +56,8 @@ spec:
       {{- end }}
       containers:
         - name: install-cni
-          {{- if .Values.experimental.cni }}
-          image: {{ include "kuma.formatImage" (dict "image" .Values.cni.experimental.image "root" $) | quote }}
+          {{- if not .Values.legacy.cni.enabled }}
+          image: {{ include "kuma.formatImage" (dict "image" .Values.cni.image "root" $) | quote }}
           imagePullPolicy: {{ .Values.cni.image.imagePullPolicy }}
           readinessProbe:
             initialDelaySeconds: {{ .Values.cni.delayStartupSeconds }}
@@ -88,7 +88,7 @@ spec:
                 - --keep-going
                 - clean
           {{- else }}
-          image: {{ include "kuma.formatImage" (dict "image" .Values.cni.image "root" $) | quote }}
+          image: {{ include "kuma.formatImage" (dict "image" .Values.legacy.cni.image "root" $) | quote }}
           imagePullPolicy: {{ .Values.cni.image.imagePullPolicy }}
           command: [ "/bin/sh", "-c", "--" ]
           args: [ "sleep {{.Values.cni.delayStartupSeconds}} && exec /install-cni.sh" ]

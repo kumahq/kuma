@@ -14,7 +14,6 @@ metadata:
     kuma.io/transparent-proxying-ebpf-cgroup-path: /sys/fs/cgroup
     kuma.io/transparent-proxying-ebpf-programs-source-path: /kuma/ebpf
     kuma.io/transparent-proxying-ebpf-tc-attach-iface: eth0
-    kuma.io/transparent-proxying-experimental-engine: enabled
     kuma.io/transparent-proxying-inbound-port: "15006"
     kuma.io/transparent-proxying-inbound-v6-port: "15010"
     kuma.io/transparent-proxying-outbound-port: "15001"
@@ -131,7 +130,6 @@ spec:
     - ""
     - --verbose
     - --skip-resolv-conf
-    - --experimental-transparent-proxy-engine
     - --ebpf-enabled
     - --ebpf-instance-ip
     - $(INSTANCE_IP)
