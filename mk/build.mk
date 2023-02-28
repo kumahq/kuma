@@ -1,5 +1,6 @@
 build_info := $(shell $(TOOLS_DIR)/releases/version.sh)
 BUILD_INFO_VERSION ?= $(word 1, $(build_info))
+PROJECT_NAME = kuma
 
 build_info_fields := \
 	version=$(BUILD_INFO_VERSION) \
