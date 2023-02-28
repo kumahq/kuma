@@ -361,7 +361,7 @@ controlPlane:
 		}),
 		Entry("--kds-global-address has no grpcs/grpc scheme", errTestCase{
 			extraArgs: []string{"--kds-global-address", "http://192.168.0.1:1234", "--mode", "zone", "--zone", "zone-1"},
-			errorMsg:  "controlPlane.kdsGlobalAddress must be a url with scheme grpcs:// got:'http://192.168.0.1:1234'",
+			errorMsg:  "controlPlane.kdsGlobalAddress must be a url with scheme grpcs:// or grpc:// got:'http://192.168.0.1:1234'",
 		}),
 		Entry("--kds-global-address is used with standalone", errTestCase{
 			extraArgs: []string{"--kds-global-address", "192.168.0.1:1234", "--mode", "standalone"},

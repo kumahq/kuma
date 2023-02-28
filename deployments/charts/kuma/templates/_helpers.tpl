@@ -189,7 +189,7 @@ returns: formatted image string
   {{ else }}
     {{ $url := urlParse .Values.controlPlane.kdsGlobalAddress }}
     {{ if not (or (eq $url.scheme "grpcs") (eq $url.scheme "grpc")) }}
-      {{ $msg := printf "controlPlane.kdsGlobalAddress must be a url with scheme grpcs:// got:'%s'" .Values.controlPlane.kdsGlobalAddress }}
+      {{ $msg := printf "controlPlane.kdsGlobalAddress must be a url with scheme grpcs:// or grpc:// got:'%s'" .Values.controlPlane.kdsGlobalAddress }}
       {{ fail $msg }}
     {{ end }}
   {{ end }}
