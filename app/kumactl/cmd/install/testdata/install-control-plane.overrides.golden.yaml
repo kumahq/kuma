@@ -413,7 +413,7 @@ spec:
             - name: KUMA_MODE
               value: "zone"
             - name: KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS
-              value: "grpcs://192.168.0.1:5685"
+              value: "grpc://192.168.0.1:5685"
             - name: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
               value: "/var/run/secrets/kuma.io/kds-client-tls-cert/ca.crt"
             - name: KUMA_MULTIZONE_ZONE_NAME
