@@ -43,7 +43,7 @@ function tools_version() {
     echo "${currentBranch}"
   # Extract first 3 character from the tag e.g.: 2.1
   else
-    echo "release-${describe::3}"
+    echo ${describe} awk -F '.' '{ print "release-"$1"."$2" }'
   fi
 
   set +o errexit
