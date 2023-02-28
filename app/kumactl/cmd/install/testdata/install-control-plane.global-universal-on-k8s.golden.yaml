@@ -243,6 +243,8 @@ spec:
             - name: postgres-client-certs
               mountPath: /var/run/secrets/kuma.io/postgres-client-certs
               readOnly: true
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: postgres-client-certs
           secret:
@@ -250,3 +252,5 @@ spec:
         - name: kuma-control-plane-config
           configMap:
             name: kuma-control-plane-config
+        - name: tmp
+          emptyDir: {}
