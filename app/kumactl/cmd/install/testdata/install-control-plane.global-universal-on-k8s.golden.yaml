@@ -46,6 +46,7 @@ spec:
   type: LoadBalancer
   ports:
     - port: 5685
+      appProtocol: grpc
       name: global-zone-sync
   selector:
     app: kuma-control-plane
@@ -70,10 +71,13 @@ spec:
   ports:
     - port: 5680
       name: diagnostics
+      appProtocol: http
     - port: 5681
       name: http-api-server
+      appProtocol: http
     - port: 5682
       name: https-api-server
+      appProtocol: http
   selector:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma

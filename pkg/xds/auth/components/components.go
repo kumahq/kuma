@@ -33,23 +33,29 @@ func NewKubeAuthenticator(rt Context) (auth.Authenticator, error) {
 func NewUniversalAuthenticator(rt Context) (auth.Authenticator, error) {
 	config := rt.Config()
 
-	dataplaneValidator := builtin.NewDataplaneTokenValidator(rt.ReadOnlyResourceManager(), config.Store.Type)
+	dataplaneValidator, err := builtin.NewDataplaneTokenValidator(rt.ReadOnlyResourceManager(), config.Store.Type, config.DpServer.Authn.DpProxy.DpToken.Validator)
+	if err != nil {
+		return nil, err
+	}
 	zoneIngressValidator := builtin.NewZoneIngressTokenValidator(rt.ReadOnlyResourceManager(), config.Store.Type)
-	zoneTokenValidator := builtin.NewZoneTokenValidator(rt.ReadOnlyResourceManager(), config.Mode, config.Store.Type)
+	zoneTokenValidator, err := builtin.NewZoneTokenValidator(rt.ReadOnlyResourceManager(), config.Mode, config.Store.Type, config.DpServer.Authn.ZoneProxy.ZoneToken.Validator)
+	if err != nil {
+		return nil, err
+	}
 	adaptedValidator := zoneingress.NewZoneValidatorAdapter(zoneIngressValidator, zoneTokenValidator)
 
 	return universal_auth.NewAuthenticator(dataplaneValidator, adaptedValidator, config.Multizone.Zone.Name), nil
 }
 
-func DefaultAuthenticator(rt Context) (auth.Authenticator, error) {
-	switch rt.Config().DpServer.Auth.Type {
+func DefaultAuthenticator(rt Context, typ string) (auth.Authenticator, error) {
+	switch typ {
 	case dp_server.DpServerAuthServiceAccountToken:
 		return NewKubeAuthenticator(rt)
-	case dp_server.DpServerAuthDpToken:
+	case dp_server.DpServerAuthDpToken, dp_server.DpServerAuthZoneToken:
 		return NewUniversalAuthenticator(rt)
 	case dp_server.DpServerAuthNone:
 		return universal_auth.NewNoopAuthenticator(), nil
 	default:
-		return nil, errors.Errorf("unable to choose authenticator of %q", rt.Config().DpServer.Auth.Type)
+		return nil, errors.Errorf("unable to choose authenticator of %q", typ)
 	}
 }

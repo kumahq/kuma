@@ -40,3 +40,12 @@ func (j *jwtTokenIssuer) Generate(ctx context.Context, identity Identity, validF
 
 	return j.issuer.Generate(ctx, claims, validFor)
 }
+
+type DisabledIssuer struct {
+}
+
+var _ TokenIssuer = &DisabledIssuer{}
+
+func (d DisabledIssuer) Generate(context.Context, Identity, time.Duration) (tokens.Token, error) {
+	return "", tokens.IssuerDisabled
+}
