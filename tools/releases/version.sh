@@ -8,8 +8,13 @@ function envoy_version() {
   # - if ENVOY_TAG is a real git tag like 'v1.20.0' then the version is equal to '1.20.0' (without the first letter 'v').
   # - if ENVOY_TAG is a commit hash then the version will look like '1.20.1-dev-b16d390f'
 
-  ENVOY_TAG=${ENVOY_TAG:-"v1.22.7"}
-  ENVOY_VERSION=$(curl --silent --location "https://raw.githubusercontent.com/envoyproxy/envoy/${ENVOY_TAG}/VERSION.txt")
+# Note: this format must be changed carefully, other scripts depend on it
+exactTag=$(git describe --exact-match --tags 2> /dev/null)
+# We only support tags of the format: "v?X.Y.Z(-<alphaNumericName>)?" all other tags will just be ignored and use the regular versioning scheme
+if [[ ${exactTag} =~ ^v?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
+  echo "${exactTag/^v//}"
+  exit 0
+fi
 
   # for envoy versions older than v1.22.0 file 'VERSION.txt' used to be called 'VERSION'
   if [[ "${ENVOY_VERSION}" == "404: Not Found" ]]; then
@@ -32,18 +37,19 @@ function tools_version() {
   set -o nounset
   # The command finds the most recent tag that is reachable from a commit
   describe=$(git describe --tags 2>/dev/null || echo "none")
+  highestMinorVersionTag=$(git tag -l --sort -version:refname | head -n 1  | awk -F'.' '{print $1"."$2}')
   currentBranch=$(git rev-parse --abbrev-ref HEAD 2> /dev/null || echo "no-branch")
   # On master the closest tag is 2.0.0 so we are setting dev for master
-  if [[ ${describe} =~ ^[1-9]*\.[0-9]*\.0 ]]
+  if [[ ${describe} =~ ^[1-9]*\.[0-9]*\.0 && ${describe} =~ ^${highestMinorVersionTag} ]]
   then
     echo "dev"
   # If we are on the release branch use the branch name
   elif [[ ${currentBranch} == release-* ]]
   then
     echo "${currentBranch}"
-  # Extract first 3 character from the tag e.g.: 2.1
+  # Extract first 2 elements from the string
   else
-    echo "${describe}" awk -F '.' "{ print \"release-\"$1\".\"$2 }"
+    echo "${describe}" | awk -F'.' '{ print "release-"$1"."$2 }'
   fi
 
   set +o errexit
@@ -114,7 +120,6 @@ function version_info() {
       version="0.0.0-preview.v${shortHash}"
     fi
   fi
-
   echo "${version} ${describedTag} ${longHash} ${versionDate} ${envoyVersion} ${toolsVersion}"
 }
 
