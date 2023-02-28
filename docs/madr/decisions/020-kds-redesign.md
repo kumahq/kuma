@@ -144,7 +144,7 @@ How would a handshake work?
 
 ### Multitenant
 
-Global control-plane should support multitenant, that means we want to achieve that one global control-plane can handle many different zone control-planes that are different tenant. One approach to accomplish this is by extracting tenant specifics from an authentication token. These details can then be transmitted along with a request to indicate the specific tenant and retrieve solely their deployment information. Another option is to supply this information via a header. It appears that accommodating multitenancy doesn't require additional work on the KDS side.
+Global control-plane should support multitenant, that means we want to achieve that one global control-plane can handle many independent zone control-planes. One approach to accomplish this is by extracting tenant specifics from an authentication token. These details can then be transmitted along with a request to indicate the specific tenant and retrieve solely their deployment information. Another option is to supply this information via a header. It appears that accommodating multitenancy doesn't require additional work on the KDS side.
 
 ### Create resources on the zone
 
