@@ -316,6 +316,14 @@ controlPlane:
 			includeCRDs: true,
 			goldenFile:  "install-control-plane.gateway-api-present-not-enabled.yaml",
 		}),
+		Entry("should work with --set", testCase{
+			extraArgs: []string{
+				"--set",
+				"controlPlane.podSecurityContext.runAsUser=65000,controlPlane.podSecurityContext.runAsNonRoot=false",
+			},
+			includeCRDs: true,
+			goldenFile:  "install-control-plane.with-pod-security.yaml",
+		}),
 	)
 
 	type errTestCase struct {
