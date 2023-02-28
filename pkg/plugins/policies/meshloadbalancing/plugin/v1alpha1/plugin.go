@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	"github.com/kumahq/kuma/pkg/core"
-
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"

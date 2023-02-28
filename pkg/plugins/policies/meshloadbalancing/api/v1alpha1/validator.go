@@ -115,10 +115,8 @@ func validateHashPolicies(conf *[]HashPolicy) validators.ValidationError {
 		case CookieType:
 			if policy.Cookie == nil {
 				verr.AddViolationAt(path.Field("cookie"), validators.MustBeDefined)
-			} else {
-				if policy.Cookie.Path != nil && !strings.HasPrefix(*policy.Cookie.Path, "/") {
-					verr.AddViolationAt(path.Field("cookie").Field("path"), "must be an absolute path")
-				}
+			} else if policy.Cookie.Path != nil && !strings.HasPrefix(*policy.Cookie.Path, "/") {
+				verr.AddViolationAt(path.Field("cookie").Field("path"), "must be an absolute path")
 			}
 		case QueryParameterType:
 			if policy.QueryParameter == nil {
