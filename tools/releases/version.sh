@@ -34,7 +34,7 @@ function tools_version() {
   describe=$(git describe --tags 2>/dev/null || echo "none")
   currentBranch=$(git rev-parse --abbrev-ref HEAD 2> /dev/null || echo "no-branch")
   # On master the closest tag is 2.0.0 so we are setting dev for master
-  if [[ ${describe} == "2.0.0"* ]]
+  if [[ ${describe} =~ ^[1-9]*\.[0-9]*\.0 ]]
   then
     echo "dev"
   # If we are on the release branch use the branch name
@@ -43,7 +43,7 @@ function tools_version() {
     echo "${currentBranch}"
   # Extract first 3 character from the tag e.g.: 2.1
   else
-    echo ${describe} awk -F '.' '{ print "release-"$1"."$2" }'
+    echo "${describe}" awk -F '.' "{ print \"release-\"$1\".\"$2 }"
   fi
 
   set +o errexit
