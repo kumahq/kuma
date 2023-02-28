@@ -86,10 +86,8 @@ spec:
       {{ toYaml . | nindent 8 }}
       {{- end }}
       restartPolicy: OnFailure
-      {{- if .Values.hooks.podSecurityContext }}
       securityContext:
-      {{ toYaml .Values.hooks.podSecurityContext | trim | nindent 8 }}
-      {{- end }}
+      {{- toYaml (mergeOverwrite (dict "runAsNonRoot" true) .Values.hooks.podSecurityContext) | trim | nindent 8 }}
       containers:
         - name: pre-delete-job
           image: {{ include "kubectl.formatImage" (dict "image" .Values.kubectl.image "root" $) | quote }}
@@ -98,10 +96,8 @@ spec:
             - 'delete'
             - 'ValidatingWebhookConfiguration'
             - {{ include "kuma.name" . }}-validating-webhook-configuration
-          {{- if .Values.hooks.containerSecurityContext }}
           securityContext:
-          {{ toYaml .Values.hooks.containerSecurityContext | trim | nindent 12 }}
-          {{- end }}
+          {{- toYaml (mergeOverwrite (dict "runAsUser" 65534 "readOnlyRootFilesystem" true) .Values.hooks.containerSecurityContext) | trim | nindent 12 }}
           resources:
              requests:
                cpu: "100m"

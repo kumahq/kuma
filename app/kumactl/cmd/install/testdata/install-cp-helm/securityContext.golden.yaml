@@ -373,7 +373,8 @@ spec:
               topologyKey: kubernetes.io/hostname
             weight: 100
       securityContext:
-        runAsNonRoot: true
+        runAsNonRoot: false
+        runAsUser: 65000
       serviceAccountName: kuma-control-plane
       automountServiceAccountToken: true
       nodeSelector:

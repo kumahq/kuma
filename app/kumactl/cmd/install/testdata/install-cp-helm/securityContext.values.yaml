@@ -1,0 +1,4 @@
+controlPlane:
+  podSecurityContext:
+    runAsUser: 65000
+    runAsNonRoot: false
