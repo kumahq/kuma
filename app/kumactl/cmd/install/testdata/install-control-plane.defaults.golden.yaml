@@ -5339,17 +5339,23 @@ spec:
   ports:
     - port: 5680
       name: diagnostics
+      appProtocol: http
     - port: 5681
       name: http-api-server
+      appProtocol: http
     - port: 5682
       name: https-api-server
+      appProtocol: http
     - port: 443
       name: https-admission-server
       targetPort: 5443
+      appProtocol: http
     - port: 5676
       name: mads-server
+      appProtocol: http
     - port: 5678
       name: dp-server
+      appProtocol: http
   selector:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
