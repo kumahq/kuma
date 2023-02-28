@@ -14,6 +14,11 @@ We now support version `v0.6.0` of the Gateway API. See the [upstream API
 changes](https://github.com/kubernetes-sigs/gateway-api/releases/tag/v0.6.0) for
 more info.
 
+### Longer name of the resource in postgres
+
+Kuma now permits the creation of a resource with a name of up to 253 characters, which is an increase from the previous limit of 100 characters. This adjustment brings our system in line with the naming convention supported by Kubernetes.
+This change requires to run `kuma-cp migrate up` to apply changes to the postgres database.
+
 ### Auth configuration of DP server in Kuma CP
 
 `dpServer.auth` configuration of Kuma CP was deprecated. You can still set config in this section, but it will be removed in the future.

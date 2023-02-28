@@ -339,6 +339,9 @@ func (rc *RootContext) CheckServerVersionCompatibility() error {
 	if kumaBuildVersion == nil {
 		return errors.New("WARNING: Unable to confirm the server supports this kumactl version")
 	}
+	if kuma_version.IsPreviewVersion(kumaBuildVersion.Version) {
+		return nil
+	}
 
 	if kumaBuildVersion.Version != kuma_version.Build.Version || kumaBuildVersion.Tagline != kuma_version.Product {
 		return errors.New("WARNING: You are using kumactl version " + kuma_version.Build.Version + " for " + kuma_version.Product + ", but the server returned version: " + kumaBuildVersion.Tagline + " " + kumaBuildVersion.Version)
