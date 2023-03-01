@@ -19,9 +19,7 @@ import (
 )
 
 var _ = Describe("Rules", func() {
-
 	Describe("SubsetIter", func() {
-
 		It("should return all possible subsets for the given set of tags", func() {
 			// given
 			tags := []xds.Tag{
@@ -144,7 +142,6 @@ var _ = Describe("Rules", func() {
 	})
 
 	Describe("BuildRules", func() {
-
 		type testCase struct {
 			policyFile string
 			goldenFile string
@@ -279,7 +276,6 @@ var _ = Describe("Rules", func() {
 	})
 
 	Describe("Eval", func() {
-
 		type testCase struct {
 			rules    xds.Rules
 			subset   xds.Subset

@@ -16,6 +16,7 @@ func (r *MeshTrafficPermissionResource) validate() error {
 	verr.AddErrorAt(path, validateFrom(r.Spec.From))
 	return verr.OrNil()
 }
+
 func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
@@ -28,6 +29,7 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 	})
 	return targetRefErr
 }
+
 func validateFrom(from []From) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, fromItem := range from {

@@ -2,8 +2,7 @@ package xds
 
 import "context"
 
-type NoopCallbacks struct {
-}
+type NoopCallbacks struct{}
 
 func (n *NoopCallbacks) OnStreamOpen(context.Context, int64, string) error {
 	return nil

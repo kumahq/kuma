@@ -23,7 +23,6 @@ import (
 )
 
 var _ = Describe("kumactl get fault-injections", func() {
-
 	faultInjectionResources := []*mesh.FaultInjectionResource{
 		{
 			Spec: &v1alpha1.FaultInjection{
@@ -102,7 +101,6 @@ var _ = Describe("kumactl get fault-injections", func() {
 	}
 
 	Describe("GetFaultInjectionCmd", func() {
-
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore

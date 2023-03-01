@@ -15,7 +15,6 @@ import (
 )
 
 var _ = Describe("Dataplane Manager", func() {
-
 	It("should create a new dataplane with inbound zone tag", func() {
 		// setup
 		s := memory.NewStore()

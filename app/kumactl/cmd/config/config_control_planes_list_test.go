@@ -13,7 +13,6 @@ import (
 )
 
 var _ = Describe("kumactl config control-planes list", func() {
-
 	It("should display Control Planes from a given configuration file", func() {
 		// setup
 		rootCmd := test.DefaultTestingRootCmd()
@@ -23,7 +22,8 @@ var _ = Describe("kumactl config control-planes list", func() {
 		// given
 		rootCmd.SetArgs([]string{
 			"--config-file", filepath.Join("testdata", "config-control-planes-list.config.yaml"),
-			"config", "control-planes", "list"})
+			"config", "control-planes", "list",
+		})
 
 		// when
 		err := rootCmd.Execute()

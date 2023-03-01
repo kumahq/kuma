@@ -23,7 +23,6 @@ import (
 )
 
 var _ = Describe("kumactl get secrets", func() {
-
 	var sampleSecrets []*system.SecretResource
 
 	BeforeEach(func() {
@@ -50,7 +49,6 @@ var _ = Describe("kumactl get secrets", func() {
 	})
 
 	Describe("GetSecretsCmd", func() {
-
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore

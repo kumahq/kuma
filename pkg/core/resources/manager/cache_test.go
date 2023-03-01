@@ -44,7 +44,6 @@ func (c *countingResourcesManager) List(ctx context.Context, list core_model.Res
 var _ core_manager.ReadOnlyResourceManager = &countingResourcesManager{}
 
 var _ = Describe("Cached Resource Manager", func() {
-
 	var store core_store.ResourceStore
 	var cachedManager core_manager.ReadOnlyResourceManager
 	var countingManager *countingResourcesManager

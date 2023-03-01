@@ -18,7 +18,6 @@ import (
 )
 
 var _ = Describe("ApiServerBypass", func() {
-
 	It("should generate configuration for API Server bypass", func() {
 		// given
 		hook := hooks.NewApiServerBypass("1.1.1.1", 9090)

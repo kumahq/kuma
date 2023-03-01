@@ -135,19 +135,20 @@ to:
           - type: URLRewrite
 `),
 		ErrorCases("invalid HeaderModifier filter",
-			[]validators.Violation{{
-				Field:   `spec.to[0].rules[0].default.filters[0].requestHeaderModifier.set[1].name`,
-				Message: `duplicate header name`,
-			}, {
-				Field:   `spec.to[0].rules[0].default.filters[1].responseHeaderModifier`,
-				Message: `must have at least one defined: set, add, remove`,
-			}, {
-				Field:   `spec.to[0].rules[0].default.filters[2].responseHeaderModifier.add[0].name`,
-				Message: `duplicate header name`,
-			}, {
-				Field:   `spec.to[0].rules[0].default.filters[2].responseHeaderModifier.remove[0].name`,
-				Message: `duplicate header name`,
-			},
+			[]validators.Violation{
+				{
+					Field:   `spec.to[0].rules[0].default.filters[0].requestHeaderModifier.set[1].name`,
+					Message: `duplicate header name`,
+				}, {
+					Field:   `spec.to[0].rules[0].default.filters[1].responseHeaderModifier`,
+					Message: `must have at least one defined: set, add, remove`,
+				}, {
+					Field:   `spec.to[0].rules[0].default.filters[2].responseHeaderModifier.add[0].name`,
+					Message: `duplicate header name`,
+				}, {
+					Field:   `spec.to[0].rules[0].default.filters[2].responseHeaderModifier.remove[0].name`,
+					Message: `duplicate header name`,
+				},
 			}, `
 type: MeshHTTPRoute
 mesh: mesh-1

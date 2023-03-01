@@ -118,10 +118,12 @@ var (
 			AdvertisedAddress: "192.168.0.1",
 			AdvertisedPort:    10001,
 		},
-		AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{{
-			Tags: map[string]string{
-				mesh_proto.ServiceTag: "backend",
-			}},
+		AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
+			{
+				Tags: map[string]string{
+					mesh_proto.ServiceTag: "backend",
+				},
+			},
 		},
 	}
 	ZoneIngressInsight = &mesh_proto.ZoneIngressInsight{

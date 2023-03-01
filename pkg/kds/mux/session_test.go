@@ -89,7 +89,6 @@ func (t *testMultiplexStream) CheckInvariants() error {
 }
 
 var _ = Describe("Multiplex Session", func() {
-
 	const msgBufferSize = uint32(50)
 
 	Context("basic Send/Recv operations", func() {
@@ -177,7 +176,6 @@ var _ = Describe("Multiplex Session", func() {
 	}))
 
 	Context("concurrent operations", func() {
-
 		Context("Recv", func() {
 			var clientSession mux.Session
 			var serverSession mux.Session

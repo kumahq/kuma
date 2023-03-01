@@ -415,6 +415,8 @@ multizone:
       refreshInterval: 1s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL
       # Interval for flushing Zone Insights (stats of multi-zone communication)
       zoneInsightFlushInterval: 10s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL
+      # TlsEnabled turns on TLS for KDS
+      tlsEnabled: true # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_ENABLED
       # TlsCertFile defines a path to a file with PEM-encoded TLS cert.
       tlsCertFile: # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_CERT_FILE
       # TlsKeyFile defines a path to a file with PEM-encoded TLS key.

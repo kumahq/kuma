@@ -40,7 +40,6 @@ var defaultVersion = types.Version{
 }
 
 var _ = Describe("bootstrapGenerator", func() {
-
 	var resManager core_manager.ResourceManager
 
 	authEnabled := map[string]bool{

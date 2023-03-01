@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("global view", func() {
-
 	It("should fail when no more ips", func() {
 		// given
 		gv, err := vips.NewGlobalView("192.168.0.1/32")

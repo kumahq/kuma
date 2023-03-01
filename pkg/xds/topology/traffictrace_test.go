@@ -17,7 +17,6 @@ import (
 )
 
 var _ = Describe("GetTrafficTrace", func() {
-
 	dataplane := core_mesh.DataplaneResource{
 		Meta: &test_model.ResourceMeta{
 			Name: "dp1",

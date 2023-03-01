@@ -22,7 +22,6 @@ import (
 )
 
 var _ = Describe("kumactl get external-services", func() {
-
 	var externalServices []*core_mesh.ExternalServiceResource
 	BeforeEach(func() {
 		// setup
@@ -61,7 +60,6 @@ var _ = Describe("kumactl get external-services", func() {
 	})
 
 	Describe("GetExternalServicesCmd", func() {
-
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore

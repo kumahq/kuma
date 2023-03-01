@@ -13,9 +13,7 @@ import (
 )
 
 var _ = Describe("DataplaneHelpers", func() {
-
 	Describe("DataplaneInsight", func() {
-
 		var status *DataplaneInsight
 		var t1, t2, t3 time.Time
 
@@ -27,7 +25,6 @@ var _ = Describe("DataplaneHelpers", func() {
 		})
 
 		Describe("UpdateSubscription()", func() {
-
 			It("should add new subscriptions", func() {
 				// given
 				subscription := &DiscoverySubscription{
@@ -153,7 +150,6 @@ var _ = Describe("DataplaneHelpers", func() {
 		})
 
 		Describe("GetLastSubscription()", func() {
-
 			It("should return `nil` when there are no subscriptions", func() {
 				// given
 				status.Subscriptions = nil
@@ -192,7 +188,6 @@ var _ = Describe("DataplaneHelpers", func() {
 		})
 
 		Describe("Sum()", func() {
-
 			It("should return `0` when there are no subscriptions", func() {
 				// given
 				status.Subscriptions = nil
@@ -239,7 +234,6 @@ var _ = Describe("DataplaneHelpers", func() {
 	})
 
 	Describe("DiscoverySubscriptionStatus", func() {
-
 		var status *DiscoverySubscriptionStatus
 
 		BeforeEach(func() {
@@ -247,9 +241,7 @@ var _ = Describe("DataplaneHelpers", func() {
 		})
 
 		Describe("StatsOf()", func() {
-
 			It("should support CDS", func() {
-
 				// when
 				status.StatsOf(envoy_resource.ClusterType).ResponsesSent = 1
 
@@ -265,7 +257,6 @@ var _ = Describe("DataplaneHelpers", func() {
 			})
 
 			It("should support EDS", func() {
-
 				// when
 				status.StatsOf(envoy_resource.EndpointType).ResponsesSent = 1
 
@@ -281,7 +272,6 @@ var _ = Describe("DataplaneHelpers", func() {
 			})
 
 			It("should support LDS", func() {
-
 				// when
 				status.StatsOf(envoy_resource.ListenerType).ResponsesSent = 1
 
@@ -297,7 +287,6 @@ var _ = Describe("DataplaneHelpers", func() {
 			})
 
 			It("should support RDS", func() {
-
 				// when
 				status.StatsOf(envoy_resource.RouteType).ResponsesSent = 1
 

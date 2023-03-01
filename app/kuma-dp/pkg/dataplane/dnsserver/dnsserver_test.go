@@ -20,7 +20,6 @@ import (
 )
 
 var _ = Describe("DNS Server", func() {
-
 	var configDir string
 
 	BeforeEach(func() {

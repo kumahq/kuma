@@ -2,8 +2,7 @@ package access
 
 import "github.com/kumahq/kuma/pkg/core/user"
 
-type NoopEnvoyAdminAccess struct {
-}
+type NoopEnvoyAdminAccess struct{}
 
 var _ EnvoyAdminAccess = NoopEnvoyAdminAccess{}
 

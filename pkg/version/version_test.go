@@ -32,5 +32,4 @@ var _ = Describe("Verify build flags are set", func() {
 	It("Should set envoy version", func() {
 		Expect(version.Envoy).ToNot(And(BeEmpty(), Equal("unknown")))
 	})
-
 }, test.LabelBuildCheck)

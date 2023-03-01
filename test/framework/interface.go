@@ -146,8 +146,10 @@ type GenericOption struct {
 	App  AppOptionFunc
 }
 
-var _ KumaDeploymentOption = &GenericOption{}
-var _ AppDeploymentOption = &GenericOption{}
+var (
+	_ KumaDeploymentOption = &GenericOption{}
+	_ AppDeploymentOption  = &GenericOption{}
+)
 
 func (o *GenericOption) ApplyApp(opts *appDeploymentOptions) {
 	o.App(opts)
@@ -557,6 +559,7 @@ type ControlPlane interface {
 	GetName() string
 	GetMetrics() (string, error)
 	GetKDSServerAddress() string
+	GetKDSInsecureServerAddress() string
 	GetGlobalStatusAPI() string
 	GetAPIServerAddress() string
 	GenerateDpToken(mesh, serviceName string) (string, error)

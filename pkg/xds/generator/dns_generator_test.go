@@ -19,7 +19,6 @@ import (
 )
 
 var _ = Describe("DNSGenerator", func() {
-
 	type testCase struct {
 		dataplaneFile string
 		expected      string

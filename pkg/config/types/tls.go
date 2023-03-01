@@ -39,11 +39,14 @@ var versions = map[string]uint16{
 	"TLSv1_2": tls.VersionTLS12,
 	"TLSv1_3": tls.VersionTLS13,
 }
-var versionNames []string
-var secureCiphers map[string]uint16
-var secureCiphersNames []string
-var insecureCiphers map[string]uint16
-var insecureCiphersNames []string
+
+var (
+	versionNames         []string
+	secureCiphers        map[string]uint16
+	secureCiphersNames   []string
+	insecureCiphers      map[string]uint16
+	insecureCiphersNames []string
+)
 
 func init() {
 	secureCiphers = map[string]uint16{}

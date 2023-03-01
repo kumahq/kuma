@@ -40,7 +40,6 @@ func Parse[T any](values []string) ([]T, error) {
 }
 
 var _ = Describe("PodToDataplane(..)", func() {
-
 	pod := `
     metadata:
       namespace: demo
@@ -487,7 +486,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 })
 
 var _ = Describe("InboundTagsForService(..)", func() {
-
 	type testCase struct {
 		isGateway      bool
 		zone           string
@@ -670,7 +668,6 @@ var _ = Describe("InboundTagsForService(..)", func() {
 })
 
 var _ = Describe("MetricsAggregateFor(..)", func() {
-
 	type testCase struct {
 		annotations map[string]string
 		expected    []*mesh_proto.PrometheusAggregateMetricsConfig
@@ -756,7 +753,6 @@ var _ = Describe("MetricsAggregateFor(..)", func() {
 })
 
 var _ = Describe("MetricsAggregateFor(..)", func() {
-
 	type testCase struct {
 		annotations map[string]string
 		expected    string
@@ -794,7 +790,6 @@ var _ = Describe("MetricsAggregateFor(..)", func() {
 })
 
 var _ = Describe("ProtocolTagFor(..)", func() {
-
 	type testCase struct {
 		appProtocol *string
 		annotations map[string]string

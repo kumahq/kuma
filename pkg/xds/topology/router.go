@@ -22,18 +22,23 @@ type pseudoMeta struct {
 func (m *pseudoMeta) GetMesh() string {
 	return ""
 }
+
 func (m *pseudoMeta) GetName() string {
 	return m.Name
 }
+
 func (m *pseudoMeta) GetNameExtensions() core_model.ResourceNameExtensions {
 	return core_model.ResourceNameExtensionsUnsupported
 }
+
 func (m *pseudoMeta) GetVersion() string {
 	return ""
 }
+
 func (m *pseudoMeta) GetCreationTime() time.Time {
 	return time.Now()
 }
+
 func (m *pseudoMeta) GetModificationTime() time.Time {
 	return time.Now()
 }

@@ -107,9 +107,11 @@ func (t Tags) String() string {
 	return strings.Join(pairs, ",")
 }
 
-type TagsSlice []Tags
-type TagKeys []string
-type TagKeysSlice []TagKeys
+type (
+	TagsSlice    []Tags
+	TagKeys      []string
+	TagKeysSlice []TagKeys
+)
 
 func (t TagsSlice) ToTagKeysSlice() TagKeysSlice {
 	out := []TagKeys{}

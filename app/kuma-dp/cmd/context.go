@@ -32,7 +32,7 @@ var features = []string{core_xds.FeatureTCPAccessLogViaNamedPipe}
 func defaultDataplaneTokenGenerator(cfg *kumadp.Config) error {
 	if cfg.DataplaneRuntime.Token != "" {
 		path := filepath.Join(cfg.DataplaneRuntime.ConfigDir, cfg.Dataplane.Name)
-		if err := writeFile(path, []byte(cfg.DataplaneRuntime.Token), 0600); err != nil {
+		if err := writeFile(path, []byte(cfg.DataplaneRuntime.Token), 0o600); err != nil {
 			runLog.Error(err, "unable to create file with dataplane token")
 			return err
 		}

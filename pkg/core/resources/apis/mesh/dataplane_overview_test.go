@@ -13,7 +13,6 @@ import (
 )
 
 var _ = Describe("DataplaneOverview", func() {
-
 	Describe("NewDataplaneOverviews", func() {
 		It("should create overviews from dataplanes and insights", func() {
 			dataplanes := DataplaneResourceList{Items: []*DataplaneResource{

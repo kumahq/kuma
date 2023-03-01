@@ -14,7 +14,6 @@ import (
 )
 
 var _ = Describe("kumactl install observability", func() {
-
 	var stdout *bytes.Buffer
 	var stderr *bytes.Buffer
 

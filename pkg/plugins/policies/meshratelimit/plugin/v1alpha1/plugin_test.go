@@ -207,7 +207,8 @@ var _ = Describe("MeshRateLimit", func() {
 								),
 							),
 						)).MustBuild(),
-				}},
+				},
+			},
 			fromRules: core_xds.FromRules{
 				Rules: map[core_xds.InboundListener]core_xds.Rules{
 					{Address: "127.0.0.1", Port: 17777}: {{
@@ -492,7 +493,8 @@ func gatewayGenerator() gateway_plugin.Generator {
 				mesh_proto.MeshGateway_Listener_HTTP:  &gateway_plugin.HTTPFilterChainGenerator{},
 				mesh_proto.MeshGateway_Listener_HTTPS: &gateway_plugin.HTTPSFilterChainGenerator{},
 				mesh_proto.MeshGateway_Listener_TCP:   &gateway_plugin.TCPFilterChainGenerator{},
-			}},
+			},
+		},
 		ClusterGenerator: gateway_plugin.ClusterGenerator{
 			Zone: "test-zone",
 		},

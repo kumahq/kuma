@@ -13,7 +13,6 @@ import (
 )
 
 var _ = Describe("Dataplane Metadata Tracker", func() {
-
 	tracker := NewDataplaneMetadataTracker()
 	callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 

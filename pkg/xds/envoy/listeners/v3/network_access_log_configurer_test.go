@@ -14,7 +14,6 @@ import (
 )
 
 var _ = Describe("NetworkAccessLogConfigurer", func() {
-
 	type testCase struct {
 		listenerName     string
 		listenerAddress  string

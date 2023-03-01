@@ -252,7 +252,8 @@ func (r *GatewayClassReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		// When something changes with Gateways, we want to reconcile
 		// GatewayClasses
 		Watches(&kube_source.Kind{
-			Type: &gatewayapi.Gateway{}},
+			Type: &gatewayapi.Gateway{},
+		},
 			kube_handler.EnqueueRequestsFromMapFunc(gatewayToClassMapper(r.Log, r.Client)),
 		).
 		Watches(

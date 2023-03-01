@@ -107,8 +107,7 @@ type MeshGatewayConfigSpec struct {
 
 // MeshGatewayConfigStatus holds information about the status of the gateway
 // instance.
-type MeshGatewayConfigStatus struct {
-}
+type MeshGatewayConfigStatus struct{}
 
 // MeshGatewayConfigList contains a list of MeshGatewayConfigs.
 //

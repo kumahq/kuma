@@ -16,11 +16,9 @@ import (
 )
 
 var _ = Describe("GUI Server", func() {
-
 	var baseUrl string
 
 	Describe("enabled", func() {
-
 		type testCase struct {
 			urlPath      string
 			expectedFile string
@@ -157,5 +155,4 @@ var _ = Describe("GUI Server", func() {
 				}),
 			)
 		})
-
 })

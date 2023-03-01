@@ -259,7 +259,8 @@ targetRef:
 				expected: `
 violations:
   - field: spec
-    message: at least one of 'from', 'to' has to be defined`}),
+    message: at least one of 'from', 'to' has to be defined`,
+			}),
 			Entry("unsupported kind in from selector", testCase{
 				inputYaml: `
 targetRef:
@@ -273,7 +274,8 @@ from:
 				expected: `
 violations:
   - field: spec.from[0].targetRef.kind
-    message: value is not supported`}),
+    message: value is not supported`,
+			}),
 			Entry("unsupported kind in to selector", testCase{
 				inputYaml: `
 targetRef:
@@ -287,7 +289,8 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].targetRef.kind
-    message: value is not supported`}),
+    message: value is not supported`,
+			}),
 			Entry("missing configuration", testCase{
 				inputYaml: `
 targetRef:
@@ -300,7 +303,8 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].default
-    message: 'at least one of: ''connectionLimits'' or ''outlierDetection'' should be configured'`}),
+    message: 'at least one of: ''connectionLimits'' or ''outlierDetection'' should be configured'`,
+			}),
 			Entry("limits cannot be be equal 0 when specified", testCase{
 				inputYaml: `
 targetRef:
@@ -328,7 +332,8 @@ violations:
   - field: spec.to[0].default.connectionLimits.maxRetries
     message: must be greater than 0
   - field: spec.to[0].default.connectionLimits.maxRequests
-    message: must be greater than 0`}),
+    message: must be greater than 0`,
+			}),
 			Entry("any outlierDetection's numeric property cannot be be 0 when specified", testCase{
 				inputYaml: `
 targetRef:
@@ -379,7 +384,8 @@ violations:
   - field: spec.to[0].default.outlierDetection.detectors.failurePercentage.minimumHosts
     message: must be greater than 0
   - field: spec.to[0].default.outlierDetection.detectors.failurePercentage.requestVolume
-    message: must be greater than 0`}),
+    message: must be greater than 0`,
+			}),
 			Entry("any outlierDetection's percentage property cannot be be greater than 100 when specified", testCase{
 				inputYaml: `
 targetRef:
@@ -400,7 +406,8 @@ violations:
   - field: spec.to[0].default.outlierDetection.maxEjectionPercent
     message: has to be in [0 - 100] range
   - field: spec.to[0].default.outlierDetection.detectors.failurePercentage.threshold
-    message: has to be in [0 - 100] range`}),
+    message: has to be in [0 - 100] range`,
+			}),
 			Entry("detectors are not defined", testCase{
 				inputYaml: `
 targetRef:
@@ -416,7 +423,8 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].default.outlierDetection.detectors
-    message: must be defined`}),
+    message: must be defined`,
+			}),
 			Entry("detector is empty", testCase{
 				inputYaml: `
 targetRef:
@@ -433,7 +441,8 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].default.outlierDetection.detectors
-    message: 'must have at least one defined: totalFailures, gatewayFailures, localOriginFailures, successRate, failurePercentage'`}),
+    message: 'must have at least one defined: totalFailures, gatewayFailures, localOriginFailures, successRate, failurePercentage'`,
+			}),
 			Entry("detector is empty", testCase{
 				inputYaml: `
 targetRef:
@@ -451,7 +460,8 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].default.outlierDetection.detectors.successRate.standardDeviationFactor
-    message: 'invalid number'`}),
+    message: 'invalid number'`,
+			}),
 		)
 	})
 })

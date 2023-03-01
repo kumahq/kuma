@@ -156,5 +156,4 @@ var _ = Describe("Match Destination Policy", func() {
 		Expect(policy).ToNot(BeNil())
 		Expect(policy.GetMeta().GetName()).To(Equal("bar-policy"))
 	})
-
 })

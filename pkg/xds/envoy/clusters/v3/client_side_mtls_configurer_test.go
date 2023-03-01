@@ -14,7 +14,6 @@ import (
 )
 
 var _ = Describe("EdsClusterConfigurer", func() {
-
 	type testCase struct {
 		clusterName   string
 		clientService string

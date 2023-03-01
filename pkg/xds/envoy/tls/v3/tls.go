@@ -108,7 +108,7 @@ func UpstreamTlsContextOutsideMesh(ca, cert, key []byte, allowRenegotiation bool
 			tlsContext.CommonTlsContext = &envoy_tls.CommonTlsContext{}
 		}
 		var matchNames []*envoy_tls.SubjectAltNameMatcher
-		var subjectAltNameMatch = hostname
+		subjectAltNameMatch := hostname
 		if len(sni) > 0 {
 			subjectAltNameMatch = sni
 		}

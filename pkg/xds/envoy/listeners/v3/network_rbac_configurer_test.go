@@ -14,7 +14,6 @@ import (
 )
 
 var _ = Describe("NetworkRbacConfigurer", func() {
-
 	type testCase struct {
 		listenerName     string
 		listenerProtocol xds.SocketAddressProtocol

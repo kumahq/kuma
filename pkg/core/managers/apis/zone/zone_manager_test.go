@@ -17,7 +17,6 @@ import (
 )
 
 var _ = Describe("Zone Manager", func() {
-
 	var validator zone.Validator
 	var resStore store.ResourceStore
 

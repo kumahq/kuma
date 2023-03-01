@@ -20,7 +20,6 @@ import (
 )
 
 var _ = Describe("PrometheusEndpointGenerator", func() {
-
 	BeforeEach(func() {
 		core.TempDir = func() string {
 			return "/tmp"
@@ -596,7 +595,6 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 	)
 
 	Describe("should not generate Envoy xDS resources if Prometheus endpoint would otherwise overshadow a port that is already in use by the application or other Envoy listeners", func() {
-
 		type testCase struct {
 			dataplane string
 		}

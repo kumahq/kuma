@@ -98,8 +98,10 @@ func binaryUnmarshaler(field reflect.Value) encoding.BinaryUnmarshaler {
 	return interfaceFrom[encoding.BinaryUnmarshaler](field)
 }
 
-var gatherRegexp = regexp.MustCompile("([^A-Z]+|[A-Z]+[^A-Z]+|[A-Z]+)")
-var acronymRegexp = regexp.MustCompile("([A-Z]+)([A-Z][^A-Z]+)")
+var (
+	gatherRegexp  = regexp.MustCompile("([^A-Z]+|[A-Z]+[^A-Z]+|[A-Z]+)")
+	acronymRegexp = regexp.MustCompile("([A-Z]+)([A-Z][^A-Z]+)")
+)
 
 // GatherInfo gathers information about the specified struct
 func GatherInfo(prefix string, spec interface{}) ([]varInfo, error) {

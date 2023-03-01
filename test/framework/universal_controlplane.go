@@ -52,8 +52,21 @@ func (c *UniversalControlPlane) GetName() string {
 	return c.name
 }
 
+func (c *UniversalControlPlane) GetKDSInsecureServerAddress() string {
+	return c.getKDSServerAddress(false)
+}
+
 func (c *UniversalControlPlane) GetKDSServerAddress() string {
-	return "grpcs://" + net.JoinHostPort(c.cpNetworking.IP, "5685")
+	return c.getKDSServerAddress(true)
+}
+
+func (c *UniversalControlPlane) getKDSServerAddress(secure bool) string {
+	protocol := "grpcs"
+	if !secure {
+		protocol = "grpc"
+	}
+
+	return protocol + "://" + net.JoinHostPort(c.cpNetworking.IP, "5685")
 }
 
 func (c *UniversalControlPlane) GetGlobalStatusAPI() string {
@@ -66,9 +79,11 @@ func (c *UniversalControlPlane) GetAPIServerAddress() string {
 
 func (c *UniversalControlPlane) GetMetrics() (string, error) {
 	return retry.DoWithRetryE(c.t, "fetching CP metrics", DefaultRetries, DefaultTimeout, func() (string, error) {
-		sshApp := ssh.NewApp(c.name, c.verbose, c.cpNetworking.SshPort, nil, []string{"curl",
+		sshApp := ssh.NewApp(c.name, c.verbose, c.cpNetworking.SshPort, nil, []string{
+			"curl",
 			"--fail", "--show-error",
-			"http://localhost:5680/metrics"})
+			"http://localhost:5680/metrics",
+		})
 		if err := sshApp.Run(); err != nil {
 			return "", err
 		}
@@ -96,11 +111,13 @@ func (c *UniversalControlPlane) generateToken(
 				c.verbose,
 				c.cpNetworking.SshPort,
 				nil,
-				[]string{"curl",
+				[]string{
+					"curl",
 					"--fail", "--show-error",
 					"-H", "\"Content-Type: application/json\"",
 					"--data", data,
-					"http://localhost:5681/tokens" + tokenPath},
+					"http://localhost:5681/tokens" + tokenPath,
+				},
 			)
 
 			if err := sshApp.Run(); err != nil {

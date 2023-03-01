@@ -14,7 +14,6 @@ import (
 )
 
 var _ = Describe("DataSource Loader", func() {
-
 	var dataSourceLoader datasource.Loader
 
 	BeforeEach(func() {

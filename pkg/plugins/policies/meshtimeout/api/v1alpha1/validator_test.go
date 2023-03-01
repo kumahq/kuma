@@ -109,7 +109,8 @@ targetRef:
 				expected: `
 violations:
   - field: spec
-    message: at least one of 'from', 'to' has to be defined`}),
+    message: at least one of 'from', 'to' has to be defined`,
+			}),
 			Entry("unsupported kind in from selector", testCase{
 				inputYaml: `
 targetRef:
@@ -124,7 +125,8 @@ from:
 				expected: `
 violations:
   - field: spec.from[0].targetRef.kind
-    message: value is not supported`}),
+    message: value is not supported`,
+			}),
 			Entry("unsupported kind in to selector", testCase{
 				inputYaml: `
 targetRef:
@@ -139,7 +141,8 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].targetRef.kind
-    message: value is not supported`}),
+    message: value is not supported`,
+			}),
 			Entry("missing timeout configuration", testCase{
 				inputYaml: `
 targetRef:
@@ -152,7 +155,8 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].default
-    message: at least one timeout should be configured`}),
+    message: at least one timeout should be configured`,
+			}),
 			Entry("timeout cannot be negative", testCase{
 				inputYaml: `
 targetRef:
@@ -167,7 +171,8 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].default.idleTimeout
-    message: must not be negative when defined`}),
+    message: must not be negative when defined`,
+			}),
 			Entry("multiple timeout cannot be negative", testCase{
 				inputYaml: `
 targetRef:
@@ -186,7 +191,8 @@ violations:
   - field: spec.to[0].default.connectionTimeout
     message: must be greater than zero when defined
   - field: spec.to[0].default.http.requestTimeout
-    message: must not be negative when defined`}),
+    message: must not be negative when defined`,
+			}),
 			Entry("multiple timeout cannot be negative", testCase{
 				inputYaml: `
 targetRef:
@@ -201,7 +207,8 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].default.http
-    message: at least one timeout in this section should be configured`}),
+    message: at least one timeout in this section should be configured`,
+			}),
 		)
 	})
 })

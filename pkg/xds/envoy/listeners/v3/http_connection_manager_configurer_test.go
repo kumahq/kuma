@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("HttpConnectionManagerConfigurer", func() {
-
 	type testCase struct {
 		listenerName     string
 		listenerProtocol xds.SocketAddressProtocol

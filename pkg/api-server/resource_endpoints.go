@@ -34,6 +34,7 @@ const (
 
 type resourceEndpoints struct {
 	mode           config_core.CpMode
+	zoneName       string
 	resManager     manager.ResourceManager
 	descriptor     model.ResourceTypeDescriptor
 	resourceAccess access.ResourceAccess
@@ -259,9 +260,11 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 	var err validators.ValidationError
 	name := request.PathParameter("name")
 	meshName := r.meshFromRequest(request)
-
 	if name != resourceMeta.Name {
 		err.AddViolation("name", "name from the URL has to be the same as in body")
+	}
+	if r.mode == config_core.Zone && !r.doesNameLengthFitsGlobal(name) {
+		err.AddViolation("name", "the length of the name must be shorter")
 	}
 	if string(r.descriptor.Name) != resourceMeta.Type {
 		err.AddViolation("type", "type from the URL has to be the same as in body")
@@ -271,6 +274,16 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 	}
 	err.AddError("", mesh.ValidateMeta(name, meshName, r.descriptor.Scope))
 	return err.OrNil()
+}
+
+// The resource is prefixed with the zone name and suffixed with the namespace
+// (if the K8s store is used in the global control-plane) when it is synchronized
+// to global control-plane. It is important to notice that the zone is unaware
+// of the type of the store used by the global control-plane, so we must prepare
+// for the worst-case scenario. We don't have to check other plugabble policies
+// because zone doesn't allow to create policies on the zone.
+func (r *resourceEndpoints) doesNameLengthFitsGlobal(name string) bool {
+	return len(fmt.Sprintf("%s.%s.%s", r.zoneName, name, "default")) < 253
 }
 
 func (r *resourceEndpoints) meshFromRequest(request *restful.Request) string {

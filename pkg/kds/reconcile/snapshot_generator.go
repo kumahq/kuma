@@ -15,8 +15,10 @@ import (
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
-type ResourceFilter func(ctx context.Context, clusterID string, features kds.Features, r model.Resource) bool
-type ResourceMapper func(r model.Resource) (model.Resource, error)
+type (
+	ResourceFilter func(ctx context.Context, clusterID string, features kds.Features, r model.Resource) bool
+	ResourceMapper func(r model.Resource) (model.Resource, error)
+)
 
 func NoopResourceMapper(r model.Resource) (model.Resource, error) {
 	return r, nil

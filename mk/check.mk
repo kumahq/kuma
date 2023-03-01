@@ -28,7 +28,7 @@ golangci-lint: ## Dev: Runs golangci-lint linter
 golangci-lint-fmt:
 	GOMEMLIMIT=7GiB $(GOLANGCI_LINT) run --timeout=10m -v \
 		--disable-all \
-		--enable gofmt
+		--enable gofumpt
 
 .PHONY: helm-lint
 helm-lint:

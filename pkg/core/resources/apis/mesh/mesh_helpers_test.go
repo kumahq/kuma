@@ -15,9 +15,7 @@ import (
 )
 
 var _ = Describe("MeshResource", func() {
-
 	Describe("HasPrometheusMetricsEnabled", func() {
-
 		type testCase struct {
 			mesh     *MeshResource
 			expected bool
@@ -63,7 +61,6 @@ var _ = Describe("MeshResource", func() {
 	})
 
 	Describe("GetTracingBackend", func() {
-
 		type testCase struct {
 			mesh     *MeshResource
 			name     string
@@ -254,7 +251,6 @@ var _ = Describe("MeshResource", func() {
 		})
 	})
 	Describe("ParseDuration", func() {
-
 		type testCase struct {
 			input  string
 			output time.Duration

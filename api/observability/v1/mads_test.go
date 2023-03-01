@@ -9,9 +9,7 @@ import (
 )
 
 var _ = Describe("Monitoring Assignment Discovery Service", func() {
-
 	Describe("MonitoringAssignment", func() {
-
 		type testCase struct {
 			input string
 		}

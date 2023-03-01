@@ -22,7 +22,6 @@ import (
 )
 
 var _ = Describe("Defaulter", func() {
-
 	var converter k8s_common.Converter
 
 	BeforeEach(func() {

@@ -22,7 +22,6 @@ import (
 )
 
 var _ = Describe("kumactl get traffic-permissions", func() {
-
 	trafficPermissionResources := []*mesh.TrafficPermissionResource{
 		{
 			Spec: &v1alpha1.TrafficPermission{
@@ -75,7 +74,6 @@ var _ = Describe("kumactl get traffic-permissions", func() {
 	}
 
 	Describe("GetTrafficPermissionsCmd", func() {
-
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
@@ -142,5 +140,4 @@ var _ = Describe("kumactl get traffic-permissions", func() {
 			}),
 		)
 	})
-
 })

@@ -10,9 +10,7 @@ import (
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 )
 
-var (
-	dataplaneSyncTrackerLog = core.Log.WithName("xds-server").WithName("dataplane-sync-tracker")
-)
+var dataplaneSyncTrackerLog = core.Log.WithName("xds-server").WithName("dataplane-sync-tracker")
 
 type NewDataplaneWatchdogFunc func(key core_model.ResourceKey) util_watchdog.Watchdog
 

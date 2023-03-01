@@ -29,7 +29,8 @@ func NewZoneInsightSink(
 	generationTicker func() *time.Ticker,
 	flushBackoff time.Duration,
 	store ZoneInsightStore,
-	log logr.Logger) ZoneInsightSink {
+	log logr.Logger,
+) ZoneInsightSink {
 	return &zoneInsightSink{
 		flushTicker:      flushTicker,
 		generationTicker: generationTicker,

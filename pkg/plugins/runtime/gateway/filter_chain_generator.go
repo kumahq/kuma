@@ -46,23 +46,28 @@ import (
 const DefaultConcurrentStreams = 100
 
 // Window size defaults.
-const DefaultInitialStreamWindowSize = 64 * 1024
-const DefaultInitialConnectionWindowSize = 1024 * 1024
+const (
+	DefaultInitialStreamWindowSize     = 64 * 1024
+	DefaultInitialConnectionWindowSize = 1024 * 1024
+)
 
 // Timeout defaults.
-const DefaultRequestHeadersTimeout = 500 * time.Millisecond
-const DefaultStreamIdleTimeout = 5 * time.Second
-const DefaultIdleTimeout = 5 * time.Minute
+const (
+	DefaultRequestHeadersTimeout = 500 * time.Millisecond
+	DefaultStreamIdleTimeout     = 5 * time.Second
+	DefaultIdleTimeout           = 5 * time.Minute
+)
 
 type keyType string
 
-const keyTypeNone = keyType("")
-const keyTypeECDSA = keyType("ecdsa")
-const keyTypeRSA = keyType("rsa")
+const (
+	keyTypeNone  = keyType("")
+	keyTypeECDSA = keyType("ecdsa")
+	keyTypeRSA   = keyType("rsa")
+)
 
 // HTTPFilterChainGenerator generates a filter chain for a HTTP listener.
-type HTTPFilterChainGenerator struct {
-}
+type HTTPFilterChainGenerator struct{}
 
 func (g *HTTPFilterChainGenerator) Generate(
 	ctx xds_context.Context, info GatewayListenerInfo, _ []GatewayHost,
@@ -77,8 +82,7 @@ func (g *HTTPFilterChainGenerator) Generate(
 }
 
 // HTTPSFilterChainGenerator generates a filter chain for an HTTPS listener.
-type HTTPSFilterChainGenerator struct {
-}
+type HTTPSFilterChainGenerator struct{}
 
 func (g *HTTPSFilterChainGenerator) Generate(
 	ctx xds_context.Context, info GatewayListenerInfo, hosts []GatewayHost,
@@ -381,8 +385,7 @@ func newSecretError(i int, msg string) error {
 }
 
 // TCPFilterChainGenerator generates a filter chain for a TCP listener.
-type TCPFilterChainGenerator struct {
-}
+type TCPFilterChainGenerator struct{}
 
 func (g *TCPFilterChainGenerator) Generate(
 	ctx xds_context.Context, info GatewayListenerInfo, hosts []GatewayHost,

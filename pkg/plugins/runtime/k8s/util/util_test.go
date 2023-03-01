@@ -67,7 +67,7 @@ var _ = Describe("Util", func() {
 		})
 	})
 
-	exampleTime := time.Date(2020, 01, 01, 01, 12, 00, 00, time.UTC)
+	exampleTime := time.Date(2020, 0o1, 0o1, 0o1, 12, 0o0, 0o0, time.UTC)
 	DescribeTable("FindServices",
 		func(pod *kube_core.Pod, svcs *kube_core.ServiceList, matchSvcNames []string) {
 			// when
@@ -184,7 +184,6 @@ var _ = Describe("Util", func() {
 	)
 
 	Describe("MeshOf(..)", func() {
-
 		type testCase struct {
 			podAnnotations map[string]string
 			nsAnnotations  map[string]string
@@ -236,7 +235,6 @@ var _ = Describe("Util", func() {
 		)
 	})
 	Describe("MeshOfByLabelOrAnnotation(..)", func() {
-
 		type testCase struct {
 			podLabels      map[string]string
 			podAnnotations map[string]string

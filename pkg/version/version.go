@@ -41,9 +41,7 @@ func (b BuildInfo) FormatDetailedProductInfo() string {
 	)
 }
 
-var (
-	Build BuildInfo
-)
+var Build BuildInfo
 
 func init() {
 	Build = BuildInfo{

@@ -16,7 +16,7 @@ func ExpectMatchesGoldenFiles(actual []byte, goldenFilePath string) {
 		if actual[len(actual)-1] != '\n' {
 			actual = append(actual, '\n')
 		}
-		err := os.WriteFile(goldenFilePath, actual, 0600)
+		err := os.WriteFile(goldenFilePath, actual, 0o600)
 		Expect(err).ToNot(HaveOccurred())
 	}
 	expected, err := os.ReadFile(goldenFilePath)

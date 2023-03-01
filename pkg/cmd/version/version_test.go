@@ -13,7 +13,6 @@ import (
 )
 
 var _ = Describe("version", func() {
-
 	var backupBuildInfo kuma_version.BuildInfo
 	BeforeEach(func() {
 		backupBuildInfo = kuma_version.Build

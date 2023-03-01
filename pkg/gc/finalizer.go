@@ -15,9 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/user"
 )
 
-var (
-	finalizerLog = core.Log.WithName("finalizer")
-)
+var finalizerLog = core.Log.WithName("finalizer")
 
 // Every Insight has a statusSink that periodically increments the 'generation' counter while Kuma CP <-> DPP
 // connection is active. This updates happens every <KumaCP.Config>.Metrics.Dataplane.IdleTimeout / 2.

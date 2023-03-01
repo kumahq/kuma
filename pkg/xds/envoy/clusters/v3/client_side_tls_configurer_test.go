@@ -12,7 +12,6 @@ import (
 )
 
 var _ = Describe("ClientSideTLSConfigurer", func() {
-
 	type testCase struct {
 		clusterName string
 		endpoints   []xds.Endpoint
@@ -65,7 +64,8 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
               '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
               sni: httpbin.org
         type: EDS
-`}),
+`,
+		}),
 		Entry("cluster with mTLS and empty SNI because target is an IP address", testCase{
 			clusterName: "testCluster",
 			endpoints: []xds.Endpoint{
@@ -95,7 +95,8 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         type: EDS
-`}),
+`,
+		}),
 		Entry("cluster with mTLS and certs", testCase{
 			clusterName: "testCluster",
 			endpoints: []xds.Endpoint{
@@ -148,6 +149,7 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
                         inlineBytes: Y2FjZXJ0
                   sni: custom
             type: EDS
-`}),
+`,
+		}),
 	)
 })

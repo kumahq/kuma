@@ -12,9 +12,7 @@ import (
 )
 
 var _ = Describe("FieldOperator", func() {
-
 	Describe("FormatHttpLogEntry()", func() {
-
 		type testCase struct {
 			field    string
 			entry    *accesslog_data.HTTPAccessLogEntry
@@ -204,7 +202,6 @@ var _ = Describe("FieldOperator", func() {
 	})
 
 	Describe("FormatTcpLogEntry()", func() {
-
 		type testCase struct {
 			field    string
 			entry    *accesslog_data.TCPAccessLogEntry
@@ -322,7 +319,6 @@ var _ = Describe("FieldOperator", func() {
 	})
 
 	Describe("FormatHttpLogEntry() and FormatTcpLogEntry()", func() {
-
 		type testCase struct {
 			field            string
 			commonProperties *accesslog_data.AccessLogCommon
@@ -919,7 +915,6 @@ var _ = Describe("FieldOperator", func() {
 				actual := fragment.String()
 				// then
 				Expect(actual).To(Equal(given.expected))
-
 			},
 			Entry("%BYTES_RECEIVED%", testCase{
 				field:    "BYTES_RECEIVED",

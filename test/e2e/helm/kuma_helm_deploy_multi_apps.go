@@ -25,7 +25,7 @@ func AppDeploymentWithHelmChart() {
 
 	minReplicas := 3
 
-	var setup = func(withCni KumaDeploymentOption, shouldSkip func(cluster Cluster) (string, bool)) {
+	setup := func(withCni KumaDeploymentOption, shouldSkip func(cluster Cluster) (string, bool)) {
 		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent).
 			WithTimeout(6 * time.Second).
 			WithRetries(60)

@@ -182,7 +182,6 @@ func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
 			TlsConfig: &tls.Config{MinVersion: tls.VersionTLS12},
 			Body:      bytes.NewReader([]byte{}),
 		}, http.StatusOK, DefaultRetries, DefaultTimeout)
-
 		if err != nil {
 			return "", err
 		}
@@ -208,8 +207,21 @@ func (c *K8sControlPlane) InstallCP(args ...string) (string, error) {
 	return c.kumactl.KumactlInstallCP(c.mode, args...)
 }
 
-// A naive implementation to find the URL where Zone CP exposes its API
+func (c *K8sControlPlane) GetKDSInsecureServerAddress() string {
+	return c.getKDSServerAddress(false)
+}
+
 func (c *K8sControlPlane) GetKDSServerAddress() string {
+	return c.getKDSServerAddress(true)
+}
+
+// A naive implementation to find the URL where Zone CP exposes its API
+func (c *K8sControlPlane) getKDSServerAddress(secure bool) string {
+	protocol := "grpcs"
+	if !secure {
+		protocol = "grpc"
+	}
+
 	// As EKS and AWS generally returns dns records of load balancers instead of
 	//  IP addresses, accessing this data (hostname) was only tested there,
 	//  so the env var was created for that purpose
@@ -222,11 +234,11 @@ func (c *K8sControlPlane) GetKDSServerAddress() string {
 			address = svc.Status.LoadBalancer.Ingress[0].Hostname
 		}
 
-		return "grpcs://" + address + ":" + strconv.FormatUint(loadBalancerKdsPort, 10)
+		return protocol + "://" + address + ":" + strconv.FormatUint(loadBalancerKdsPort, 10)
 	}
 
 	pod := c.GetKumaCPPods()[0]
-	return "grpcs://" + net.JoinHostPort(
+	return protocol + "://" + net.JoinHostPort(
 		pod.Status.HostIP, strconv.FormatUint(uint64(kdsPort), 10))
 }
 

@@ -31,7 +31,6 @@ var _ = Describe("XdsServerConfig", func() {
 	})
 
 	Context("with modified environment variables", func() {
-
 		var backupEnvVars []string
 
 		BeforeEach(func() {

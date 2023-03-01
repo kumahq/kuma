@@ -76,12 +76,15 @@ func (st *secretsTracker) RequestAllInOneCa() core_xds.CaRequest {
 		meshNames: st.allMeshes,
 	}
 }
+
 func (st *secretsTracker) UsedIdentity() bool {
 	return st.identity
 }
+
 func (st *secretsTracker) UsedCas() map[string]struct{} {
 	return st.meshes
 }
+
 func (st *secretsTracker) UsedAllInOne() bool {
 	return st.allInOne
 }

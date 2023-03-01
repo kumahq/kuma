@@ -26,9 +26,7 @@ import (
 	"github.com/kumahq/kuma/pkg/metrics"
 )
 
-var (
-	muxClientLog = core.Log.WithName("kds-mux-client")
-)
+var muxClientLog = core.Log.WithName("kds-mux-client")
 
 type client struct {
 	callbacks           Callbacks

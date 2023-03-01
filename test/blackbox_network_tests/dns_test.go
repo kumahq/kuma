@@ -661,7 +661,6 @@ var _ = Describe("Outbound IPv6 DNS/UDP conntrack zone splitting", func() {
 			s1Address := fmt.Sprintf("%s:%d", consts.LocalhostIPv6, consts.DNSPort)
 			s2Address := fmt.Sprintf("%s:%d", consts.LocalhostIPv6, port)
 			tproxyConfig := config.Config{
-
 				Redirect: config.Redirect{
 					DNS: config.DNS{
 						Enabled:            true,

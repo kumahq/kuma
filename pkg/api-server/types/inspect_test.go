@@ -23,7 +23,7 @@ var _ = Describe("DataplaneInspectEntry", func() {
 		input      *types.DataplaneInspectEntry
 		goldenFile string
 	}
-	var _ = DescribeTable("Marshal/Unmarshal",
+	_ = DescribeTable("Marshal/Unmarshal",
 		func(given testCase) {
 			actual, err := json.MarshalIndent(given.input, "", "  ")
 			Expect(err).ToNot(HaveOccurred())
@@ -34,7 +34,6 @@ var _ = Describe("DataplaneInspectEntry", func() {
 			err = json.Unmarshal(actual, expected)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(expected).To(Equal(given.input))
-
 		},
 		Entry("empty", testCase{
 			input:      &types.DataplaneInspectEntry{},

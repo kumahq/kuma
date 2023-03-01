@@ -5,21 +5,21 @@ linters:
     - errcheck
     - gci
     - gocritic
-    - gofmt
+    - gofumpt
     - gomodguard
+    - gosimple
     - govet
     - gosec
     - importas
     - ineffassign
     - misspell
+    - nonamedreturns
+    - staticcheck
     - typecheck
     - unconvert
     - unparam
-    - whitespace
-    - gosimple
-    - nonamedreturns
-    - staticcheck
     - unused
+    - whitespace
 
 run:
   skip-files:
@@ -85,8 +85,6 @@ linters-settings:
     - cancelled # US English should be "canceled", but this is in the Retry API, so we can't change it.
   nonamedreturns:
     report-error-in-defer: false
-  gofmt:
-    simplify: true
 
 issues:
   fix: true

@@ -137,27 +137,29 @@ var _ = Describe("MeshTimeout", func() {
 			},
 		}),
 		Entry("tcp outbound route", sidecarTestCase{
-			resources: []core_xds.Resource{{
-				Name:   "outbound",
-				Origin: generator.OriginOutbound,
-				Resource: NewListenerBuilder(envoy_common.APIV3).
-					Configure(OutboundListener("outbound:127.0.0.1:10002", "127.0.0.1", 10002, core_xds.SocketAddressProtocolTCP)).
-					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-						Configure(TcpProxy(
-							"127.0.0.1:10002",
-							envoy_common.NewCluster(
-								envoy_common.WithService("backend"),
-								envoy_common.WithWeight(100),
-							),
-						)),
-					)).
-					MustBuild(),
-			},
+			resources: []core_xds.Resource{
+				{
+					Name:   "outbound",
+					Origin: generator.OriginOutbound,
+					Resource: NewListenerBuilder(envoy_common.APIV3).
+						Configure(OutboundListener("outbound:127.0.0.1:10002", "127.0.0.1", 10002, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+							Configure(TcpProxy(
+								"127.0.0.1:10002",
+								envoy_common.NewCluster(
+									envoy_common.WithService("backend"),
+									envoy_common.WithWeight(100),
+								),
+							)),
+						)).
+						MustBuild(),
+				},
 				{
 					Name:     "outbound",
 					Origin:   generator.OriginOutbound,
 					Resource: test_xds.ClusterWithName("second-service"),
-				}},
+				},
+			},
 			toRules: core_xds.ToRules{
 				Rules: []*core_xds.Rule{
 					{
@@ -176,16 +178,18 @@ var _ = Describe("MeshTimeout", func() {
 			expectedListeners: []string{"basic_tcp_listener.golden.yaml"},
 		}),
 		Entry("basic inbound route", sidecarTestCase{
-			resources: []core_xds.Resource{{
-				Name:     "inbound",
-				Origin:   generator.OriginInbound,
-				Resource: httpInboundListenerWith(),
-			},
+			resources: []core_xds.Resource{
+				{
+					Name:     "inbound",
+					Origin:   generator.OriginInbound,
+					Resource: httpInboundListenerWith(),
+				},
 				{
 					Name:     "inbound",
 					Origin:   generator.OriginInbound,
 					Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundServicePort)),
-				}},
+				},
+			},
 			fromRules: core_xds.FromRules{
 				Rules: map[core_xds.InboundListener]core_xds.Rules{
 					{
@@ -205,17 +209,19 @@ var _ = Describe("MeshTimeout", func() {
 								},
 							},
 						},
-					}},
+					},
+				},
 			},
 			expectedClusters:  []string{"basic_inbound_cluster.golden.yaml"},
 			expectedListeners: []string{"basic_inbound_listener.golden.yaml"},
 		}),
 		Entry("outbound with defaults when http conf missing", sidecarTestCase{
-			resources: []core_xds.Resource{{
-				Name:     "outbound",
-				Origin:   generator.OriginOutbound,
-				Resource: httpOutboundListener(),
-			},
+			resources: []core_xds.Resource{
+				{
+					Name:     "outbound",
+					Origin:   generator.OriginOutbound,
+					Resource: httpOutboundListener(),
+				},
 				{
 					Name:     "outbound",
 					Origin:   generator.OriginOutbound,
@@ -325,7 +331,8 @@ var _ = Describe("MeshTimeout", func() {
 								},
 							},
 						},
-					}},
+					},
+				},
 			},
 			expectedClusters:  []string{"modified_inbound_cluster.golden.yaml", "default_outbound_cluster.golden.yaml"},
 			expectedListeners: []string{"modified_inbound_listener.golden.yaml", "default_outbound_listener.golden.yaml"},
@@ -427,7 +434,8 @@ func gatewayGenerator() gateway_plugin.Generator {
 				mesh_proto.MeshGateway_Listener_HTTP:  &gateway_plugin.HTTPFilterChainGenerator{},
 				mesh_proto.MeshGateway_Listener_HTTPS: &gateway_plugin.HTTPSFilterChainGenerator{},
 				mesh_proto.MeshGateway_Listener_TCP:   &gateway_plugin.TCPFilterChainGenerator{},
-			}},
+			},
+		},
 		ClusterGenerator: gateway_plugin.ClusterGenerator{
 			Zone: "test-zone",
 		},

@@ -12,7 +12,6 @@ import (
 )
 
 var _ = Describe("ProvidedEndpointClusterConfigurer", func() {
-
 	It("should generate proper Envoy config", func() {
 		// given
 		clusterName := "test:cluster"

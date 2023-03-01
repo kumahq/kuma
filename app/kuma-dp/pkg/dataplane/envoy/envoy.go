@@ -25,9 +25,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
-var (
-	runLog = core.Log.WithName("kuma-dp").WithName("run").WithName("envoy")
-)
+var runLog = core.Log.WithName("kuma-dp").WithName("run").WithName("envoy")
 
 type BootstrapParams struct {
 	Dataplane       rest.Resource

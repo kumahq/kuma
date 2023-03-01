@@ -16,7 +16,6 @@ import (
 )
 
 var _ = Describe("Sanitize ConfigDump", func() {
-
 	type testCase struct {
 		configFile string
 		goldenFile string

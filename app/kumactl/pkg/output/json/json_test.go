@@ -18,7 +18,6 @@ import (
 )
 
 var _ = Describe("printer", func() {
-
 	var printer output.Printer
 	var buf *bytes.Buffer
 	t1, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")

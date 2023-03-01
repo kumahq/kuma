@@ -1038,7 +1038,6 @@ var _ = Describe("Outbound IPv4 TCP traffic from specific interface to other ip 
 
 			// then
 			Eventually(tcpErrC).Should(BeClosed())
-
 		},
 		func() []TableEntry {
 			var entries []TableEntry

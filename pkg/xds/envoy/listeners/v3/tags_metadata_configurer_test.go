@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("TagsMetadataConfigurer", func() {
-
 	type testCase struct {
 		listenerName     string
 		listenerProtocol xds.SocketAddressProtocol
@@ -58,5 +57,4 @@ var _ = Describe("TagsMetadataConfigurer", func() {
             trafficDirection: INBOUND`,
 		}),
 	)
-
 })

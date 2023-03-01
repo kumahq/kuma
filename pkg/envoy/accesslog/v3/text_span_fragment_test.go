@@ -9,7 +9,6 @@ import (
 )
 
 var _ = Describe("TextSpan", func() {
-
 	Describe("FormatHttpLogEntry() and FormatTcpLogEntry()", func() {
 		type testCase struct {
 			text     string
@@ -61,7 +60,6 @@ var _ = Describe("TextSpan", func() {
 				actual := fragment.String()
 				// then
 				Expect(actual).To(Equal(given.expected))
-
 			},
 			Entry("", testCase{
 				text:     "",

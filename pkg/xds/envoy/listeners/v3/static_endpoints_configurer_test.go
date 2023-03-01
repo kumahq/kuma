@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("StaticEndpointsConfigurer", func() {
-
 	type testCase struct {
 		listenerName     string
 		listenerProtocol xds.SocketAddressProtocol
@@ -85,5 +84,4 @@ var _ = Describe("StaticEndpointsConfigurer", func() {
 `,
 		}),
 	)
-
 })

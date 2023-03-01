@@ -22,7 +22,6 @@ import (
 )
 
 var _ = Describe("kumactl get zoneegresses", func() {
-
 	zoneEgresses := []*core_mesh.ZoneEgressResource{
 		{
 			Spec: &mesh_proto.ZoneEgress{
@@ -50,7 +49,6 @@ var _ = Describe("kumactl get zoneegresses", func() {
 	}
 
 	Describe("GetZoneEgressCmd", func() {
-
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore

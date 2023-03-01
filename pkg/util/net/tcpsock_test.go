@@ -58,7 +58,6 @@ var _ = Describe("ReserveTCPAddr()", func() {
 })
 
 var _ = Describe("PickTCPPort()", func() {
-
 	It("should be able to pick the 1st port in the range", func() {
 		// given
 		loopback := "127.0.0.1"
@@ -76,7 +75,6 @@ var _ = Describe("PickTCPPort()", func() {
 	})
 
 	Describe("should be able to pick the Nth port in the range", func() {
-
 		// given
 		loopback := "127.0.0.1"
 

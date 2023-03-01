@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("TargetRef Validator", func() {
-
 	type testCase struct {
 		inputYaml string
 		opts      *matcher_validators.ValidateTargetRefOpts

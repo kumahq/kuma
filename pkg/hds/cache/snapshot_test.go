@@ -13,7 +13,6 @@ import (
 )
 
 var _ = Describe("Snapshot", func() {
-
 	expectedType := "envoy.service.health.v3.HealthCheckSpecifier"
 
 	Describe("GetSupportedTypes()", func() {

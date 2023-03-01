@@ -23,7 +23,6 @@ import (
 )
 
 var _ = Describe("kumactl get circuit-breakers", func() {
-
 	circuitBreakerResources := []*mesh.CircuitBreakerResource{
 		{
 			Spec: &mesh_proto.CircuitBreaker{
@@ -108,7 +107,6 @@ var _ = Describe("kumactl get circuit-breakers", func() {
 	}
 
 	Describe("GetCircuitBreakerCmd", func() {
-
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore

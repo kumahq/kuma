@@ -22,7 +22,6 @@ import (
 )
 
 var _ = Describe("kumactl get rate-limits", func() {
-
 	rateLimitResources := []*mesh.RateLimitResource{
 		{
 			Spec: &v1alpha1.RateLimit{
@@ -75,7 +74,6 @@ var _ = Describe("kumactl get rate-limits", func() {
 	}
 
 	Describe("GetRateLimitsCmd", func() {
-
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
@@ -142,5 +140,4 @@ var _ = Describe("kumactl get rate-limits", func() {
 			}),
 		)
 	})
-
 })

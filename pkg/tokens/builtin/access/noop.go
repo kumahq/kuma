@@ -2,8 +2,7 @@ package access
 
 import "github.com/kumahq/kuma/pkg/core/user"
 
-type NoopDpTokenAccess struct {
-}
+type NoopDpTokenAccess struct{}
 
 var _ DataplaneTokenAccess = NoopDpTokenAccess{}
 

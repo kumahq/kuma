@@ -142,7 +142,8 @@ targetRef:
 				expected: `
 violations:
   - field: spec.from
-    message: needs at least one item`}),
+    message: needs at least one item`,
+			}),
 			Entry("unsupported kind in from selector", testCase{
 				inputYaml: `
 targetRef:
@@ -160,7 +161,8 @@ from:
 				expected: `
 violations:
   - field: spec.from[0].targetRef.kind
-    message: value is not supported`}),
+    message: value is not supported`,
+			}),
 			Entry("not allow invalid values", testCase{
 				inputYaml: `
 targetRef:
@@ -188,7 +190,8 @@ violations:
   - field: spec.from[0].default.local.tcp.connectionRate.num
     message: must be greater than 0
   - field: spec.from[0].default.local.tcp.connectionRate.interval
-    message: 'must be greater than: 50ms'`}),
+    message: 'must be greater than: 50ms'`,
+			}),
 			Entry("not allow from to be MeshService for tcp", testCase{
 				inputYaml: `
 targetRef:
@@ -207,7 +210,8 @@ from:
 				expected: `
 violations:
   - field: spec.from[0].targetRef.kind
-    message: value is not supported`}),
+    message: value is not supported`,
+			}),
 			Entry("not allow from to be MeshService when http and tcp set", testCase{
 				inputYaml: `
 targetRef:
@@ -230,7 +234,8 @@ from:
 				expected: `
 violations:
   - field: spec.from[0].targetRef.kind
-    message: value is not supported`}),
+    message: value is not supported`,
+			}),
 			Entry("not allow targetRef to be MeshGatewayRoute when http and tcp set", testCase{
 				inputYaml: `
 targetRef:
@@ -255,7 +260,8 @@ violations:
   - field: spec.targetRef.kind
     message: value is not supported
   - field: spec.from[0].targetRef.kind
-    message: value is not supported`}),
+    message: value is not supported`,
+			}),
 			Entry("not allow from to be MeshService", testCase{
 				inputYaml: `
 targetRef:
@@ -276,7 +282,8 @@ violations:
   - field: spec.targetRef.kind
     message: value is not supported
   - field: spec.from[0].targetRef.kind
-    message: value is not supported`}),
+    message: value is not supported`,
+			}),
 			Entry("empty default", testCase{
 				inputYaml: `
 targetRef:
@@ -291,7 +298,8 @@ violations:
   - field: spec.targetRef.kind
     message: value is not supported
   - field: spec.from[0].default.local
-    message: must be defined`}),
+    message: must be defined`,
+			}),
 			Entry("neither tcp or http defined", testCase{
 				inputYaml: `
 targetRef:
@@ -307,7 +315,8 @@ violations:
   - field: spec.targetRef.kind
     message: value is not supported
   - field: spec.from[0].default.local
-    message: 'must have at least one defined: tcp, http'`}),
+    message: 'must have at least one defined: tcp, http'`,
+			}),
 			Entry("empty tcp", testCase{
 				inputYaml: `
 targetRef:
@@ -322,7 +331,8 @@ from:
 				expected: `
 violations:
   - field: spec.from[0].default.local.tcp
-    message: 'must have at least one defined: disabled, connectionRate'`}),
+    message: 'must have at least one defined: disabled, connectionRate'`,
+			}),
 			Entry("empty http", testCase{
 				inputYaml: `
 targetRef:
@@ -337,7 +347,8 @@ from:
 				expected: `
 violations:
   - field: spec.from[0].default.local.http
-    message: 'must have at least one defined: disabled, requestRate, onRateLimit'`}),
+    message: 'must have at least one defined: disabled, requestRate, onRateLimit'`,
+			}),
 		)
 	})
 })

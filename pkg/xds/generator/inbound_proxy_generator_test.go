@@ -21,7 +21,6 @@ import (
 )
 
 var _ = Describe("InboundProxyGenerator", func() {
-
 	type testCase struct {
 		dataplaneFile string
 		expected      string
@@ -72,7 +71,6 @@ var _ = Describe("InboundProxyGenerator", func() {
 				SecretsTracker: envoy_common.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), []string{ctx.Mesh.Resource.Meta.GetName()}),
 				APIVersion:     envoy_common.APIV3,
 				Policies: model.MatchedPolicies{
-
 					TrafficPermissions: model.TrafficPermissionMap{
 						mesh_proto.InboundInterface{
 							DataplaneAdvertisedIP: "192.168.0.1",

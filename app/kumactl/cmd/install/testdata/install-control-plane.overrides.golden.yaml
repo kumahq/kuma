@@ -167,7 +167,6 @@ rules:
       - meshfaultinjections
       - meshhealthchecks
       - meshhttproutes
-      - meshloadbalancings
       - meshproxypatches
       - meshratelimits
       - meshretries
@@ -303,17 +302,23 @@ spec:
   ports:
     - port: 5680
       name: diagnostics
+      appProtocol: http
     - port: 5681
       name: http-api-server
+      appProtocol: http
     - port: 5682
       name: https-api-server
+      appProtocol: http
     - port: 443
       name: https-admission-server
       targetPort: 5443
+      appProtocol: http
     - port: 5676
       name: mads-server
+      appProtocol: http
     - port: 5678
       name: dp-server
+      appProtocol: http
   selector:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -343,7 +348,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 154c47a95fc93687dd1e825cea7f843d0fe8c450f82014d27cd7eb1a49f3bd35
-        checksum/tls-secrets: 7fef599b44fd811e68fccebc2b3d89c6d2b7700b75d36ec9af5b2a38f169652e
+        checksum/tls-secrets: 1cbb376e84f2135fb4ecb2ca398ad32f9a9a41d5cda0801647643aee6114ec69
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -369,6 +374,8 @@ spec:
                   - 'kuma-control-plane'
               topologyKey: kubernetes.io/hostname
             weight: 100
+      securityContext:
+        runAsNonRoot: true
       serviceAccountName: kuma-control-plane
       automountServiceAccountToken: true
       nodeSelector:
@@ -380,6 +387,8 @@ spec:
         - name: control-plane
           image: "kuma-ci/kuma-cp:greatest"
           imagePullPolicy: Never
+          securityContext:
+            readOnlyRootFilesystem: true
           env:
             - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
               value: "false"
@@ -408,7 +417,7 @@ spec:
             - name: KUMA_MODE
               value: "zone"
             - name: KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS
-              value: "grpcs://192.168.0.1:5685"
+              value: "grpc://192.168.0.1:5685"
             - name: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
               value: "/var/run/secrets/kuma.io/kds-client-tls-cert/ca.crt"
             - name: KUMA_MULTIZONE_ZONE_NAME
@@ -425,10 +434,6 @@ spec:
               value: "false"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
               value: "kuma-ci/kuma-dp:greatest"
-            - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_APP
-              value: "kuma-cni"
-            - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_ENABLED
-              value: "true"
             - name: KUMA_RUNTIME_KUBERNETES_SERVICE_ACCOUNT_NAME
               value: "system:serviceaccount:kuma:kuma-control-plane"
             - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
@@ -491,6 +496,8 @@ spec:
             - name: kds-client-tls-cert
               mountPath: /var/run/secrets/kuma.io/kds-client-tls-cert
               readOnly: true
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: general-tls-cert
           secret:
@@ -510,6 +517,8 @@ spec:
         - name: kuma-control-plane-config
           configMap:
             name: kuma-control-plane-config
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
@@ -545,7 +554,6 @@ webhooks:
           - meshfaultinjections
           - meshhealthchecks
           - meshhttproutes
-          - meshloadbalancings
           - meshproxypatches
           - meshratelimits
           - meshretries
@@ -590,7 +598,6 @@ webhooks:
           - meshfaultinjections
           - meshhealthchecks
           - meshhttproutes
-          - meshloadbalancings
           - meshproxypatches
           - meshratelimits
           - meshretries
@@ -717,7 +724,6 @@ webhooks:
           - meshfaultinjections
           - meshhealthchecks
           - meshhttproutes
-          - meshloadbalancings
           - meshproxypatches
           - meshratelimits
           - meshretries
@@ -784,7 +790,6 @@ webhooks:
       - apiGroups:
           - "gateway.networking.k8s.io"
         apiVersions:
-          - v1alpha2
           - v1beta1
         operations:
           - CREATE

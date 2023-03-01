@@ -27,8 +27,7 @@ const OriginPrometheus = "prometheus"
 // a port that is already in use by the application or other Envoy listeners.
 // In the latter case we prefer not generate Prometheus endpoint at all
 // rather than introduce undeterministic behavior.
-type PrometheusEndpointGenerator struct {
-}
+type PrometheusEndpointGenerator struct{}
 
 func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	prometheusEndpoint, err := proxy.Dataplane.GetPrometheusConfig(ctx.Mesh.Resource)

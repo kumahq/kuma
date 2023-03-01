@@ -13,8 +13,7 @@ import (
 )
 
 var _ = Describe("Whoami Endpoint", func() {
-
-	var stop = func() {}
+	stop := func() {}
 	var apiServer *api_server.ApiServer
 	BeforeEach(func() {
 		apiServer, _, stop = StartApiServer(NewTestApiServerConfigurer())

@@ -26,8 +26,10 @@ type Catalog interface {
 	ReplaceLeader(context.Context, Instance) error
 }
 
-var ErrNoLeader = errors.New("leader not found")
-var ErrInstanceNotFound = errors.New("instance not found")
+var (
+	ErrNoLeader         = errors.New("leader not found")
+	ErrInstanceNotFound = errors.New("instance not found")
+)
 
 func Leader(ctx context.Context, catalog Catalog) (Instance, error) {
 	instances, err := catalog.Instances(ctx)

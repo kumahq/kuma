@@ -23,7 +23,6 @@ import (
 )
 
 var _ = Describe("Apply", func() {
-
 	It("should enrich matching listener with RBAC filter", func() {
 		// given
 		rs := core_xds.NewResourceSet()

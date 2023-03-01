@@ -31,7 +31,6 @@ import (
 )
 
 var _ = Describe("Mesh Manager", func() {
-
 	var resManager manager.ResourceManager
 	var unsafeDeleteResManager manager.ResourceManager
 	var secretManager manager.ResourceManager
@@ -96,7 +95,6 @@ var _ = Describe("Mesh Manager", func() {
 		})
 
 		Describe("should set default values for Prometheus settings", func() {
-
 			type testCase struct {
 				input    string
 				expected string
@@ -295,7 +293,6 @@ var _ = Describe("Mesh Manager", func() {
 		})
 
 		Describe("should set default values for Prometheus settings", func() {
-
 			type testCase struct {
 				initial  string
 				updated  string
