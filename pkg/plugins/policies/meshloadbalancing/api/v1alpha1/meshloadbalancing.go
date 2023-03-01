@@ -44,8 +44,7 @@ type LocalityAwareness struct {
 type LoadBalancerType string
 
 const (
-	RoundRobinType LoadBalancerType = "RoundRobin"
-
+	RoundRobinType   LoadBalancerType = "RoundRobin"
 	LeastRequestType LoadBalancerType = "LeastRequest"
 	RingHashType     LoadBalancerType = "RingHash"
 	RandomType       LoadBalancerType = "Random"
