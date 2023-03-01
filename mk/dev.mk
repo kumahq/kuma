@@ -1,9 +1,9 @@
 KUMA_DIR ?= .
 ENVOY_VERSION = $(word 5, $(shell ${KUMA_DIR}/tools/releases/version.sh))
 CI_TOOLS_VERSION = $(word 6, $(shell ${KUMA_DIR}/tools/releases/version.sh))
-KUMA_CHARTS_URL = https://kumahq.github.io/charts
-CHART_REPO_NAME = kuma
-PROJECT_NAME = kuma
+KUMA_CHARTS_URL ?= https://kumahq.github.io/charts
+CHART_REPO_NAME ?= kuma
+PROJECT_NAME ?= kuma
 
 CI_TOOLS_DIR ?= ${HOME}/.kuma-dev/${PROJECT_NAME}-${CI_TOOLS_VERSION}
 ifdef XDG_DATA_HOME
