@@ -164,8 +164,8 @@ A Helm chart for the Kuma Control Plane
 | kubectl.image.tag | string | `"v1.20.15"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
 | hooks.tolerations | list | `[]` | Tolerations for the HELM hooks |
-| hooks.podSecurityContext | object | `{}` | Security context at the pod level for crd/webhook/ns |
-| hooks.containerSecurityContext | object | `{}` | Security context at the container level for crd/webhook/ns |
+| hooks.podSecurityContext | object | `{"runAsNonRoot":true}` | Security context at the pod level for crd/webhook/ns |
+| hooks.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for crd/webhook/ns |
 | experimental.gatewayAPI | bool | `false` | If true, it installs experimental Gateway API support |
 | experimental.ebpf.enabled | bool | `false` | If true, ebpf will be used instead of using iptables to install/configure transparent proxy |
 | experimental.ebpf.instanceIPEnvVarName | string | `"INSTANCE_IP"` | Name of the environmental variable which will contain the IP address of a pod |
