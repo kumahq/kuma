@@ -133,7 +133,7 @@ func (MeshGateway_Listener_Protocol) EnumDescriptor() ([]byte, []int) {
 // Each builtin dataplane instance can host exactly one Gateway
 // proxy configuration.
 //
-// Gateway aligns with the Kubernetes Gateway API v1alpha2. See that
+// Gateway aligns with the Kubernetes Gateway API. See that
 // spec for detailed documentation.
 type MeshGateway struct {
 	state         protoimpl.MessageState

@@ -348,7 +348,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 154c47a95fc93687dd1e825cea7f843d0fe8c450f82014d27cd7eb1a49f3bd35
-        checksum/tls-secrets: b81442fde20dcbd13bae4f77b63b947df494925fbc1bc658abeb2427957de26e
+        checksum/tls-secrets: 1cbb376e84f2135fb4ecb2ca398ad32f9a9a41d5cda0801647643aee6114ec69
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -790,7 +790,6 @@ webhooks:
       - apiGroups:
           - "gateway.networking.k8s.io"
         apiVersions:
-          - v1alpha2
           - v1beta1
         operations:
           - CREATE

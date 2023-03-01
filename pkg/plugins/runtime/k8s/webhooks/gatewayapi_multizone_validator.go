@@ -8,7 +8,6 @@ import (
 	admission "k8s.io/api/admission/v1"
 	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-	gatewayapi_alpha "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -43,12 +42,7 @@ func (g *GatewayAPIMultizoneValidator) Handle(_ context.Context, req kube_admiss
 
 		gatewayClass := &gatewayapi.GatewayClass{}
 		if err := g.Decoder.Decode(req, gatewayClass); err != nil {
-			gatewayClassAlpha := &gatewayapi_alpha.GatewayClass{}
-			if err := g.Decoder.Decode(req, gatewayClassAlpha); err != nil {
-				return kube_admission.Errored(http.StatusBadRequest, err)
-			}
-
-			controllerName = string(gatewayClassAlpha.Spec.ControllerName)
+			return kube_admission.Errored(http.StatusBadRequest, err)
 		} else {
 			controllerName = string(gatewayClass.Spec.ControllerName)
 		}
