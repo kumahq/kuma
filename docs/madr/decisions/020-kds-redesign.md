@@ -8,7 +8,6 @@ Technical Story: https://github.com/kumahq/kuma/issues/4354
 
 The current implementation of KDS is quite complex, and there may be some bugs, such as the one found at https://github.com/kumahq/kuma/pull/5373, which was very difficult to identify and resolve. The use of a bi-directional stream for configuration exchange between the zone and the global can also be challenging to implement. Additionally, KDS operates as a State of The World, meaning that whenever an item in the resource type changes, the entire state is sent. While this doesn't appear to be a problem when synchronizing data from Global to Zone, it may be less efficient when there are many Dataplane changes. There are several improvements we want to make in the future such as:
 * working with different older versions of the control plane on the zone,
-* creating resources on the zone and syncing them to the global,
 * creating separate gRPC services for synchronization between the zone and global,
 * supporting multiple control plane tenants,
 * prioritizing sync of operational over informational resources,
@@ -92,12 +91,11 @@ but might have scalability issues for synchronization Zone to Global with large 
 ```proto
 service GlobalKDSService {
  ...
- rpc ZoneToGlobalSync(stream envoy.service.discovery.v3.DeltaDiscoveryRequest)
-     returns (stream envoy.service.discovery.v3.DeltaDiscoveryResponse);
+ rpc ZoneToGlobalSync(stream envoy.service.discovery.v3.DeltaDiscoveryResponse)
+     returns (stream envoy.service.discovery.v3.DeltaDiscoveryRequest);
 
  rpc GlobalToZoneSync(stream envoy.service.discovery.v3.DeltaDiscoveryRequest)
-     returns (stream envoy.service.discovery.v3.DeltaDiscoveryRequest);
-}
+     returns (stream envoy.service.discovery.v3.DeltaDiscoveryResponse);
 
 ```
 
@@ -111,7 +109,13 @@ Certain resources require more frequent synchronization than others. For example
 
 ### Change the namespace of synchronized resources from `default` to `kuma-system`
 
-Resources synchronized from Zone to Global are created by default in a `default` namespace and we should change it in the new version. This is a breaking change because upgrade won't be able to find resources and needs to duplicate them from zone and store them in the `kuma-system` namespace.
+Resources synchronized from Zone to Global are created by default in a `default` namespace and we should change it in the new version. It seems that namespace current sync mechanism checks if resources synchronized from upstream are in the store, and in case the namespace is differnet it removes the old ones and create the new one in the new namespace. There should be no cleanup required, we need only to keep current sync mechanism to work with incremental xDS.
+
+Tried:
+- upgrade path
+- rollback
+
+It looks that state returns to the previous one and nothing breaks.
 
 ### Handshake
 
@@ -146,77 +150,6 @@ How would a handshake work?
 
 Global control-plane should support multitenant, that means we want to achieve that one global control-plane can handle many independent zone control-planes. One approach to accomplish this is by extracting tenant specifics from an authentication token. These details can then be transmitted along with a request to indicate the specific tenant and retrieve solely their deployment information. Another option is to supply this information via a header. It appears that accommodating multitenancy doesn't require additional work on the KDS side.
 
-### Create resources on the zone
-
-**That feature needs to be cover in a separate MADR**
-
-We intend to introduce a new feature that enables the creation of resources at the zone level. These resources will be exclusively applicable to the specific zone, and we will synchronize them to the global level as read-only. To distinguish the zone resources from global ones, we will prefix them with the name of the zone.
-
-```
-zone-1.example-timeout
-```
-
-### Resources
-Only policies that supports targetRef are going to be allowed.
-The following resources are the ones we should permit creation in the zone:
-* MeshAccessLog
-* MeshCircuitBreaker
-* MeshFaultInjection
-* MeshHealthCheck
-* MeshHttpRoute
-* MeshProxyPatch
-* MeshRateLimit
-* MeshRetry
-* MeshTimeout
-* MeshTrace
-* MeshTrafficPermission
-
-When there are two policies, one at the zone level and another at the global level, that impact the same dataplanes, the more specific policy takes precedence. In this scenario, the Zone policy would be the one utilized.
-
-Global policy:
-
-```yaml
-apiVersion: kuma.io/v1alpha1
-kind: MeshTimeout
-metadata:
- name: timeout-global
- namespace: kuma-system
- labels:
-   kuma.io/mesh: default
-spec:
- targetRef:
-   kind: Mesh
- to:
-   - targetRef:
-       kind: Mesh
-     default:
-       idleTimeout: 20s
-       connectionTimeout: 2s
-```
-
-Zone policy:
-
-```yaml
-apiVersion: kuma.io/v1alpha1
-kind: MeshTimeout
-metadata:
- name: timeout-zone
- namespace: kuma-system
- labels:
-   kuma.io/mesh: default
-spec:
- targetRef:
-   kind: Mesh
- to:
-   - targetRef:
-       kind: Mesh
-     default:
-       idleTimeout: 10s
-       connectionTimeout: 2s
-```
-
-The policy `timeout-zone` is going to be applied to all dataplanes in the default mesh in the zone. Also, worth adding that global control-plane added `kuma.io/zone: zone-name` to the resource when is synced.
-
 ### Incremental xDS
 
 Incremental xDS in the `DeltaDiscoveryRequest` has a field `resource_names_subscribe` which requires information about resources that we want to subscribe to e.g. policy with name `timeout-1`. If you send `resource_names_subscribe:  "*"` in a `DeltaDiscoveryRequest`, the control plane should respond with all resources of the specified type, not just the ones that have changed since the last update. This is because the `resource_names_subscribe` field is used to filter which resources the control plane should send, and if it is set to `*`, it effectively disables filtering and requests all resources of the specified type. Looks like go-control-plane has no implementation of the client, so it might requires us to implement one.
@@ -244,4 +177,3 @@ We can split the implementation and introduce features independently.
 2. Introduce `GlobalToZoneSync` with incremental xDS
 3. Prioritize resource synchronization
 4. Introduce handshake (if required)
-5. Enable the creation of resources on the zone - separate MADR
