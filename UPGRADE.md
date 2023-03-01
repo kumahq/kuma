@@ -8,6 +8,10 @@ does not have any particular instructions.
 
 ## Upcoming release
 
+### Helm
+
+There are new default values for `*.podSecurityContext` and `*.containerSecurityContext`, see `values.yaml`.
+
 ### Gateway API
 
 We now support version `v0.6.0` of the Gateway API. See the [upstream API
