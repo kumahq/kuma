@@ -302,11 +302,7 @@ jobs:
       - run:
           name: "Setup Helm"
           command: |
-<<<<<<< HEAD
-            helm repo add kuma https://kumahq.github.io/charts
-=======
             make dev/set-kuma-helm-repo
->>>>>>> 87233aaba (chore(tools): introduce separate folder for tools specific for version (#6154))
       - when: # CircleCI's DNS on IPV6 prevents resolving inside Kind. When change to 8.8.8.8 and remove "search" section (. removes it), resolving works again
           condition:
             equal: [<< parameters.k8sVersion >>, "kindIpv6"]
