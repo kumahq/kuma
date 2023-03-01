@@ -276,14 +276,13 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 	return err.OrNil()
 }
 
-// The resource is prefixed with the zone name and suffixed with the namespace
-// (if the K8s store is used in the global control-plane) when it is synchronized
+// The resource is prefixed with the zone name when it is synchronized
 // to global control-plane. It is important to notice that the zone is unaware
 // of the type of the store used by the global control-plane, so we must prepare
 // for the worst-case scenario. We don't have to check other plugabble policies
 // because zone doesn't allow to create policies on the zone.
 func (r *resourceEndpoints) doesNameLengthFitsGlobal(name string) bool {
-	return len(fmt.Sprintf("%s.%s.%s", r.zoneName, name, "default")) < 253
+	return len(fmt.Sprintf("%s.%s", r.zoneName, name)) < 253
 }
 
 func (r *resourceEndpoints) meshFromRequest(request *restful.Request) string {
