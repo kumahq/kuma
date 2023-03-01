@@ -3,7 +3,6 @@ package socket_test
 import (
 	"math"
 	"math/rand"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -14,11 +13,11 @@ import (
 
 var _ = Describe("GenerateRandomPorts", func() {
 	It("should generate random ports when no restricted ports provided", func() {
-		rand.Seed(time.Now().UnixNano())
+		// #nosec G404 -- this is just a test
+		r := rand.New(rand.NewSource(GinkgoRandomSeed()))
 
 		for i := 0; i < 10; i++ {
-			// #nosec G404 -- this is just a test
-			r := rand.Intn(30) + 5
+			r := r.Intn(30) + 5
 			ports := socket.GenerateRandomPorts(uint(r))
 
 			Expect(ports).To(HaveLen(r))
