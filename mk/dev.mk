@@ -1,13 +1,8 @@
 KUMA_DIR ?= .
-<<<<<<< HEAD
-ENVOY_VERSION = $(shell ${KUMA_DIR}/tools/envoy/version.sh)
-=======
-ENVOY_VERSION = $(word 5, $(shell ${KUMA_DIR}/tools/releases/version.sh))
 CI_TOOLS_VERSION = $(word 6, $(shell ${KUMA_DIR}/tools/releases/version.sh))
 KUMA_CHARTS_URL ?= https://kumahq.github.io/charts
 CHART_REPO_NAME ?= kuma
 PROJECT_NAME ?= kuma
->>>>>>> 87233aaba (chore(tools): introduce separate folder for tools specific for version (#6154))
 
 CI_TOOLS_DIR ?= ${HOME}/.kuma-dev/${PROJECT_NAME}-${CI_TOOLS_VERSION}
 ifdef XDG_DATA_HOME
@@ -96,15 +91,7 @@ dev/sync-demo:
 	curl -s --fail https://raw.githubusercontent.com/kumahq/kuma-counter-demo/master/gateway.yaml | \
 		sed 's/\([^/]\)kuma-demo/\1{{ .Namespace }}/g' \
 		> app/kumactl/data/install/k8s/demo/gateway.yaml
-<<<<<<< HEAD
-=======
-
-CIRCLECI_BADGE ?= [![CircleCI {{branch}}](https://img.shields.io/circleci/build/github/kumahq/kuma/{{branch}}?label={{branch}})](https://circleci.com/gh/kumahq/kuma/tree/{{branch}})
-.PHONY: dev/repo-health
-dev/repo-health:
-	go run $(TOOLS_DIR)/dev/repo-health.go -action README -circleci-badge '$(CIRCLECI_BADGE)'
 
 .PHONY: dev/set-kuma-helm-repo
 dev/set-kuma-helm-repo:
 	${CI_TOOLS_BIN_DIR}/helm repo add ${CHART_REPO_NAME} ${KUMA_CHARTS_URL}
->>>>>>> 87233aaba (chore(tools): introduce separate folder for tools specific for version (#6154))
