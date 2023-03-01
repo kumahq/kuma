@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 GINKGO_VERSION := v2.1.3
 GOLANGCI_LINT_VERSION := v1.49.0
 GOLANG_PROTOBUF_VERSION := v1.5.2
@@ -14,6 +15,20 @@ YQ_VERSION := v4.24.2
 
 CI_KUBEBUILDER_VERSION ?= 2.3.2
 CI_KUBECTL_VERSION ?= v1.18.14
+=======
+KUMA_DIR ?= .
+ENVOY_VERSION = $(word 5, $(shell ${KUMA_DIR}/tools/releases/version.sh))
+CI_TOOLS_VERSION = $(word 6, $(shell ${KUMA_DIR}/tools/releases/version.sh))
+KUMA_CHARTS_URL ?= https://kumahq.github.io/charts
+CHART_REPO_NAME ?= kuma
+PROJECT_NAME ?= kuma
+
+CI_TOOLS_DIR ?= ${HOME}/.kuma-dev/${PROJECT_NAME}-${CI_TOOLS_VERSION}
+ifdef XDG_DATA_HOME
+	CI_TOOLS_DIR := ${XDG_DATA_HOME}/kuma-dev
+endif
+CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
+>>>>>>> 87233aaba (chore(tools): introduce separate folder for tools specific for version (#6154))
 
 CI_TOOLS_DIR ?= $(HOME)/bin
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
@@ -38,6 +53,7 @@ SHELLCHECK_PATH := $(CI_TOOLS_DIR)/shellcheck
 
 TOOLS_DIR ?= $(shell pwd)/tools
 
+<<<<<<< HEAD
 PROTOC_OS=unknown
 PROTOC_ARCH=$(shell uname -m)
 
@@ -61,9 +77,19 @@ endif
 
 CURL_PATH ?= curl
 CURL_DOWNLOAD := $(CURL_PATH) --location --fail --progress-bar
+=======
+TOOLS_DEPS_DIRS=$(KUMA_DIR)/mk/dependencies
+TOOLS_DEPS_LOCK_FILE=mk/dependencies/deps.lock
+TOOLS_MAKEFILE=$(KUMA_DIR)/mk/dev.mk
+>>>>>>> 87233aaba (chore(tools): introduce separate folder for tools specific for version (#6154))
 
 .PHONY: dev/tools
+<<<<<<< HEAD
 dev/tools: dev/tools/all ## Bootstrap: Install all development tools
+=======
+dev/tools: ## Bootstrap: Install all development tools
+	$(TOOLS_DIR)/dev/install-dev-tools.sh $(CI_TOOLS_BIN_DIR) $(CI_TOOLS_DIR) "$(TOOLS_DEPS_DIRS)" $(TOOLS_DEPS_LOCK_FILE) $(GOOS) $(GOARCH) $(TOOLS_MAKEFILE)
+>>>>>>> 87233aaba (chore(tools): introduce separate folder for tools specific for version (#6154))
 
 .PHONY: dev/tools/all
 dev/tools/all: dev/install/protoc dev/install/protobuf-wellknown-types \
@@ -294,3 +320,26 @@ dev/envrc: $(KUBECONFIG_DIR)/kind-kuma-current ## Generate .envrc
 	done >> .envrc
 	@echo 'export KUBEBUILDER_ASSETS=$${CI_TOOLS_DIR}' >> .envrc
 	@direnv allow
+<<<<<<< HEAD
+=======
+
+.PHONY: dev/sync-demo
+dev/sync-demo:
+	rm app/kumactl/data/install/k8s/demo/*.yaml
+	curl -s --fail https://raw.githubusercontent.com/kumahq/kuma-counter-demo/master/demo.yaml | \
+		sed 's/"local"/"{{ .Zone }}"/g' | \
+		sed 's/\([^/]\)kuma-demo/\1{{ .Namespace }}/g' \
+		> app/kumactl/data/install/k8s/demo/demo.yaml
+	curl -s --fail https://raw.githubusercontent.com/kumahq/kuma-counter-demo/master/gateway.yaml | \
+		sed 's/\([^/]\)kuma-demo/\1{{ .Namespace }}/g' \
+		> app/kumactl/data/install/k8s/demo/gateway.yaml
+
+CIRCLECI_BADGE ?= [![CircleCI {{branch}}](https://img.shields.io/circleci/build/github/kumahq/kuma/{{branch}}?label={{branch}})](https://circleci.com/gh/kumahq/kuma/tree/{{branch}})
+.PHONY: dev/repo-health
+dev/repo-health:
+	go run $(TOOLS_DIR)/dev/repo-health.go -action README -circleci-badge '$(CIRCLECI_BADGE)'
+
+.PHONY: dev/set-kuma-helm-repo
+dev/set-kuma-helm-repo:
+	${CI_TOOLS_BIN_DIR}/helm repo add ${CHART_REPO_NAME} ${KUMA_CHARTS_URL}
+>>>>>>> 87233aaba (chore(tools): introduce separate folder for tools specific for version (#6154))
