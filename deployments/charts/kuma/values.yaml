@@ -657,28 +657,12 @@ hooks:
   # -- Tolerations for the HELM hooks
   tolerations: []
   # -- Security context at the pod level for crd/webhook/ns
-  podSecurityContext: {}
-#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
-#    runAsNonRoot: true
-#    runAsUser: 1000
-#    runAsGroup: 3000
-#    fsGroup: 2000
-#    fsGroupChangePolicy:
-#    # to support additional pod level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#podsecuritycontext-v1-core
+  podSecurityContext:
+    runAsNonRoot: true
 
   # -- Security context at the container level for crd/webhook/ns
-  containerSecurityContext: {} # for overlapping securityContext between pod and container, the container's value take precedence
-#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
-#    allowPrivilegeEscalation: false
-#    capabilities:
-#      drop:
-#        - all
-#    readOnlyRootFilesystem: true
-#    privileged: false
-#    runAsNonRoot: true
-#    runAsUser: 1000
-#    runAsGroup: 3000
-#    # to support additional container level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#securitycontext-v1-core
+  containerSecurityContext:
+    readOnlyRootFilesystem: true
 
 experimental:
   # -- If true, it installs experimental Gateway API support
