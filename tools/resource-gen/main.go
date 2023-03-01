@@ -124,7 +124,7 @@ func (cb *{{.ResourceType}}) SetSpec(spec core_model.ResourceSpec) {
 	if spec == nil {
 {{- if eq .ResourceType "DataplaneInsight" }}
 		cb.Status = nil
-{{ else }}
+{{- else }}
 		cb.Spec = nil
 {{- end }}
 		return
@@ -137,7 +137,7 @@ func (cb *{{.ResourceType}}) SetSpec(spec core_model.ResourceSpec) {
 
 {{ if eq .ResourceType "DataplaneInsight" }}
 	cb.Status = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
-{{ else}}
+{{- else}}
 	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 {{- end}}
 }
