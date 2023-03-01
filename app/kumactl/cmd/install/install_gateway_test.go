@@ -12,7 +12,6 @@ import (
 )
 
 var _ = Describe("kumactl install gateway", func() {
-
 	var stdout *bytes.Buffer
 	var stderr *bytes.Buffer
 

@@ -10,7 +10,6 @@ import (
 )
 
 var _ = Describe("ResetTagsHeaderConfigurer", func() {
-
 	It("should generate proper Envoy config", func() {
 		// when
 		routeConfiguration, err := routes.NewRouteConfigurationBuilder(envoy.APIV3).

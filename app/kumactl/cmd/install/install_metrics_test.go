@@ -14,7 +14,6 @@ import (
 )
 
 var _ = Describe("kumactl install metrics", func() {
-
 	var stdout *bytes.Buffer
 	var stderr *bytes.Buffer
 

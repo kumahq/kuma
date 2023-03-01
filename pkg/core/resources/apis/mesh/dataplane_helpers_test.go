@@ -14,9 +14,7 @@ import (
 )
 
 var _ = Describe("Dataplane", func() {
-
 	Describe("UsesInterface()", func() {
-
 		type testCase struct {
 			dataplane string
 			address   string
@@ -250,7 +248,6 @@ var _ = Describe("Dataplane", func() {
 	})
 
 	Describe("GetPrometheusConfig()", func() {
-
 		type testCase struct {
 			dataplaneName string
 			dataplaneMesh string
@@ -427,7 +424,6 @@ var _ = Describe("Dataplane", func() {
 	})
 
 	Describe("GetIP()", func() {
-
 		type testCase struct {
 			dataplane string
 			expected  string
@@ -484,7 +480,6 @@ var _ = Describe("Dataplane", func() {
 	})
 
 	Describe("IsIPv6()", func() {
-
 		type testCase struct {
 			dataplane string
 			expected  bool
@@ -620,8 +615,7 @@ var _ = Describe("Dataplane", func() {
 		)
 	})
 
-	var _ = Describe("ParseProtocol()", func() {
-
+	_ = Describe("ParseProtocol()", func() {
 		type testCase struct {
 			tag      string
 			expected Protocol

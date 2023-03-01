@@ -27,10 +27,8 @@ import (
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
-	xds_auth "github.com/kumahq/kuma/pkg/xds/auth"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
-	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
+	xds_runtime "github.com/kumahq/kuma/pkg/xds/runtime"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
 
@@ -49,7 +47,6 @@ type BuilderContext interface {
 	Metrics() metrics.Metrics
 	EventReaderFactory() events.ListenerFactory
 	APIManager() api_server.APIManager
-	XDSHooks() *xds_hooks.Hooks
 	CAProvider() secrets.CaProvider
 	DpServer() *dp_server.DpServer
 	ResourceValidators() ResourceValidators
@@ -82,9 +79,7 @@ type Builder struct {
 	metrics        metrics.Metrics
 	erf            events.ListenerFactory
 	apim           api_server.APIManager
-	xdsauth        xds_auth.Authenticator
-	xdsCallbacks   util_xds.Callbacks
-	xdsh           *xds_hooks.Hooks
+	xds            xds_runtime.XDSRuntimeContext
 	cap            secrets.CaProvider
 	dps            *dp_server.DpServer
 	kdsctx         *kds_context.Context
@@ -207,21 +202,6 @@ func (b *Builder) WithAPIManager(apim api_server.APIManager) *Builder {
 	return b
 }
 
-func (b *Builder) WithXDSAuthenticator(xdsauth xds_auth.Authenticator) *Builder {
-	b.xdsauth = xdsauth
-	return b
-}
-
-func (b *Builder) WithXDSServerCallbacks(xdsCallbacks util_xds.Callbacks) *Builder {
-	b.xdsCallbacks = xdsCallbacks
-	return b
-}
-
-func (b *Builder) WithXDSHooks(xdsh *xds_hooks.Hooks) *Builder {
-	b.xdsh = xdsh
-	return b
-}
-
 func (b *Builder) WithCAProvider(cap secrets.CaProvider) *Builder {
 	b.cap = cap
 	return b
@@ -239,6 +219,11 @@ func (b *Builder) WithResourceValidators(rv ResourceValidators) *Builder {
 
 func (b *Builder) WithKDSContext(kdsctx *kds_context.Context) *Builder {
 	b.kdsctx = kdsctx
+	return b
+}
+
+func (b *Builder) WithXDS(xds xds_runtime.XDSRuntimeContext) *Builder {
+	b.xds = xds
 	return b
 }
 
@@ -309,8 +294,8 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.apim == nil {
 		return nil, errors.Errorf("APIManager has not been configured")
 	}
-	if b.xdsh == nil {
-		return nil, errors.Errorf("XDSHooks has not been configured")
+	if b.xds == (xds_runtime.XDSRuntimeContext{}) {
+		return nil, errors.New("xds is not configured")
 	}
 	if b.cap == nil {
 		return nil, errors.Errorf("CAProvider has not been configured")
@@ -357,9 +342,7 @@ func (b *Builder) Build() (Runtime, error) {
 			metrics:        b.metrics,
 			erf:            b.erf,
 			apim:           b.apim,
-			xdsauth:        b.xdsauth,
-			xdsCallbacks:   b.xdsCallbacks,
-			xdsh:           b.xdsh,
+			xds:            b.xds,
 			cap:            b.cap,
 			dps:            b.dps,
 			kdsctx:         b.kdsctx,
@@ -379,90 +362,115 @@ func (b *Builder) Build() (Runtime, error) {
 func (b *Builder) ComponentManager() component.Manager {
 	return b.cm
 }
+
 func (b *Builder) ResourceStore() core_store.ResourceStore {
 	return b.rs
 }
+
 func (b *Builder) SecretStore() store.SecretStore {
 	return b.ss
 }
+
 func (b *Builder) ConfigStore() core_store.ResourceStore {
 	return b.cs
 }
+
 func (b *Builder) ResourceManager() core_manager.CustomizableResourceManager {
 	return b.rm
 }
+
 func (b *Builder) ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager {
 	return b.rom
 }
+
 func (b *Builder) CaManagers() core_ca.Managers {
 	return b.cam
 }
+
 func (b *Builder) Config() kuma_cp.Config {
 	return b.cfg
 }
+
 func (b *Builder) DataSourceLoader() datasource.Loader {
 	return b.dsl
 }
+
 func (b *Builder) Extensions() context.Context {
 	return b.ext
 }
+
 func (b *Builder) ConfigManager() config_manager.ConfigManager {
 	return b.configm
 }
+
 func (b *Builder) LeaderInfo() component.LeaderInfo {
 	return b.leadInfo
 }
+
 func (b *Builder) LookupIP() lookup.LookupIPFunc {
 	return b.lif
 }
+
 func (b *Builder) Metrics() metrics.Metrics {
 	return b.metrics
 }
+
 func (b *Builder) EventReaderFactory() events.ListenerFactory {
 	return b.erf
 }
+
 func (b *Builder) APIManager() api_server.APIManager {
 	return b.apim
 }
-func (b *Builder) XDSAuthenticator() xds_auth.Authenticator {
-	return b.xdsauth
-}
-func (b *Builder) XDSHooks() *xds_hooks.Hooks {
-	return b.xdsh
-}
+
 func (b *Builder) CAProvider() secrets.CaProvider {
 	return b.cap
 }
+
 func (b *Builder) DpServer() *dp_server.DpServer {
 	return b.dps
 }
+
 func (b *Builder) KDSContext() *kds_context.Context {
 	return b.kdsctx
 }
+
 func (b *Builder) ResourceValidators() ResourceValidators {
 	return b.rv
 }
+
 func (b *Builder) APIServerAuthenticator() authn.Authenticator {
 	return b.au
 }
+
 func (b *Builder) Access() Access {
 	return b.acc
 }
+
 func (b *Builder) AppCtx() context.Context {
 	return b.appCtx
 }
+
 func (b *Builder) ExtraReportsFn() ExtraReportsFn {
 	return b.extraReportsFn
 }
+
 func (b *Builder) TokenIssuers() builtin.TokenIssuers {
 	return b.tokenIssuers
 }
+
 func (b *Builder) EnvoyAdminClient() admin.EnvoyAdminClient {
 	return b.eac
 }
+
 func (b *Builder) MeshCache() *mesh.Cache {
 	return b.meshCache
 }
+
 func (b *Builder) InterCPClientPool() *client.Pool {
 	return b.interCpPool
+}
+
+func (b *Builder) XDS() xds_runtime.XDSRuntimeContext {
+	return b.xds
 }

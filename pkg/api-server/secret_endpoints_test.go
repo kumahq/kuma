@@ -23,7 +23,7 @@ var _ = Describe("Secret Endpoints", func() {
 	var apiServer *api_server.ApiServer
 	var resourceStore store.ResourceStore
 	var client resourceApiClient
-	var stop = func() {}
+	stop := func() {}
 
 	BeforeEach(func() {
 		core.Now = func() time.Time {
@@ -51,7 +51,6 @@ var _ = Describe("Secret Endpoints", func() {
 	})
 
 	Describe("PUT => GET", func() {
-
 		given := `
         type: Secret
         name: sec-1

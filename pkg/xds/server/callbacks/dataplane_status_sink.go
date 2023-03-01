@@ -36,7 +36,8 @@ func NewDataplaneInsightSink(
 	newTicker func() *time.Ticker,
 	generationTicker func() *time.Ticker,
 	flushBackoff time.Duration,
-	store DataplaneInsightStore) DataplaneInsightSink {
+	store DataplaneInsightStore,
+) DataplaneInsightSink {
 	return &dataplaneInsightSink{
 		flushTicker:      newTicker,
 		generationTicker: generationTicker,

@@ -46,12 +46,12 @@ func disableAutogen(cmd *cobra.Command) *cobra.Command {
 }
 
 func markdown(path string, cmd *cobra.Command) {
-	must(os.MkdirAll(path, 0755))
+	must(os.MkdirAll(path, 0o755))
 	must(doc.GenMarkdownTree(cmd, path))
 }
 
 func man(path string, header *doc.GenManHeader, cmd *cobra.Command) {
-	must(os.MkdirAll(path, 0755))
+	must(os.MkdirAll(path, 0o755))
 	must(doc.GenManTree(cmd, header, path))
 }
 

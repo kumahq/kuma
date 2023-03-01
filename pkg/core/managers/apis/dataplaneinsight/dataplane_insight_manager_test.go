@@ -16,7 +16,6 @@ import (
 )
 
 var _ = Describe("DataplaneInsight Manager", func() {
-
 	It("should limit the number of subscription", func() {
 		// setup
 		s := memory.NewStore()

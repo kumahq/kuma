@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/emicklei/go-restful/v3"
 	"github.com/pkg/errors"
@@ -44,9 +45,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/server"
 )
 
-var (
-	log = core.Log.WithName("api-server")
-)
+var log = core.Log.WithName("api-server")
 
 type ApiServer struct {
 	mux    *http.ServeMux
@@ -149,6 +148,7 @@ func NewApiServer(
 	if err := addIndexWsEndpoints(ws, getInstanceId, getClusterId, enableGUI, guiUrl); err != nil {
 		return nil, errors.Wrap(err, "could not create index webservice")
 	}
+	addWhoamiEndpoints(ws)
 	container.Add(ws)
 
 	path := cfg.ApiServer.BasePath
@@ -177,7 +177,8 @@ func NewApiServer(
 	}
 	basePath = strings.TrimSuffix(basePath, "/")
 	guiHandler, err := NewGuiHandler(guiPath, enableGUI, GuiConfig{
-		BaseGuiPath: basePath, ApiUrl: apiUrl, Version: version.Build.Version, Product: version.Product, BasedOnKuma: version.Build.BasedOnKuma})
+		BaseGuiPath: basePath, ApiUrl: apiUrl, Version: version.Build.Version, Product: version.Product, BasedOnKuma: version.Build.BasedOnKuma,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -239,6 +240,9 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 			resManager:     resManager,
 			descriptor:     definition,
 			resourceAccess: resourceAccess,
+		}
+		if cfg.Mode == config_core.Zone && cfg.Multizone != nil && cfg.Multizone.Zone != nil {
+			endpoints.zoneName = cfg.Multizone.Zone.Name
 		}
 		switch defType {
 		case mesh.ServiceInsightType:
@@ -314,8 +318,9 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 
 func (a *ApiServer) startHttpServer(errChan chan error) *http.Server {
 	server := &http.Server{
-		Addr:    net.JoinHostPort(a.config.HTTP.Interface, strconv.FormatUint(uint64(a.config.HTTP.Port), 10)),
-		Handler: a.mux,
+		ReadHeaderTimeout: time.Second,
+		Addr:              net.JoinHostPort(a.config.HTTP.Interface, strconv.FormatUint(uint64(a.config.HTTP.Port), 10)),
+		Handler:           a.mux,
 	}
 
 	go func() {
@@ -335,7 +340,9 @@ func (a *ApiServer) startHttpServer(errChan chan error) *http.Server {
 }
 
 func (a *ApiServer) startHttpsServer(errChan chan error) (*http.Server, error) {
-	tlsConfig := &tls.Config{}
+	tlsConfig := &tls.Config{
+		MinVersion: tls.VersionTLS12, // to pass gosec (in practice it's always set after.
+	}
 	var err error
 	tlsConfig.MinVersion, err = config_types.TLSVersion(a.config.HTTPS.TlsMinVersion)
 	if err != nil {
@@ -352,9 +359,10 @@ func (a *ApiServer) startHttpsServer(errChan chan error) (*http.Server, error) {
 	}
 
 	server := &http.Server{
-		Addr:      net.JoinHostPort(a.config.HTTPS.Interface, strconv.FormatUint(uint64(a.config.HTTPS.Port), 10)),
-		Handler:   a.mux,
-		TLSConfig: tlsConfig,
+		ReadHeaderTimeout: time.Second,
+		Addr:              net.JoinHostPort(a.config.HTTPS.Interface, strconv.FormatUint(uint64(a.config.HTTPS.Port), 10)),
+		Handler:           a.mux,
+		TLSConfig:         tlsConfig,
 	}
 
 	go func() {

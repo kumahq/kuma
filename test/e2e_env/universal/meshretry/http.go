@@ -86,7 +86,6 @@ spec:
 		for i := 0; i < 50; i++ {
 			time.Sleep(time.Millisecond * 100)
 			_, _, err := universal.Cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "test-server.mesh")
-
 			if err != nil {
 				errs = append(errs, err)
 			}

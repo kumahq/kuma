@@ -24,7 +24,6 @@ import (
 )
 
 var _ = Describe("run", func() {
-
 	var cancel func()
 	var ctx context.Context
 	opts := kuma_cmd.RunCmdOpts{
@@ -333,5 +332,4 @@ var _ = Describe("run", func() {
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("invalid proxy type"))
 	})
-
 }, Ordered)

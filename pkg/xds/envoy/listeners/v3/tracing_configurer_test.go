@@ -13,7 +13,6 @@ import (
 )
 
 var _ = Describe("TracingConfigurer", func() {
-
 	type testCase struct {
 		backend     *mesh_proto.TracingBackend
 		direction   envoy_common.TrafficDirection

@@ -18,7 +18,6 @@ import (
 )
 
 var _ = Describe("UpdateFilterConfig()", func() {
-
 	Context("happy path", func() {
 		type testCase struct {
 			filterChain *envoy_listener.FilterChain
@@ -115,7 +114,6 @@ var _ = Describe("UpdateFilterConfig()", func() {
 	})
 
 	Context("error path", func() {
-
 		type testCase struct {
 			filterChain *envoy_listener.FilterChain
 			filterName  string
@@ -164,7 +162,6 @@ var _ = Describe("UpdateFilterConfig()", func() {
 })
 
 var _ = Describe("NewUnexpectedFilterConfigTypeError()", func() {
-
 	type testCase struct {
 		inputActual   proto.Message
 		inputExpected proto.Message

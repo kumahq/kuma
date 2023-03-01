@@ -10,7 +10,6 @@ import (
 )
 
 var _ = Describe("global TypeRegistry", func() {
-
 	Context("object types", func() {
 		type testCase struct {
 			inputType    registry.ResourceType

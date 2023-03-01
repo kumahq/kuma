@@ -17,8 +17,7 @@ import (
 )
 
 var _ = Describe("Index Endpoints", func() {
-
-	var stop = func() {}
+	stop := func() {}
 	var backupBuildInfo kuma_version.BuildInfo
 	var apiServer *api_server.ApiServer
 	BeforeEach(func() {

@@ -26,7 +26,6 @@ import (
 )
 
 var _ = Describe("Global Sync", func() {
-
 	var zoneStores []store.ResourceStore
 	var globalStore store.ResourceStore
 	var globalSyncer sync_store.ResourceSyncer
@@ -197,5 +196,4 @@ var _ = Describe("Global Sync", func() {
 		actualProvidedTypes = append(actualProvidedTypes, extraTypes...)
 		Expect(actualProvidedTypes).To(ConsistOf(registry.Global().ObjectTypes(model.HasKDSFlag(model.ProvidedByGlobal))))
 	})
-
 })

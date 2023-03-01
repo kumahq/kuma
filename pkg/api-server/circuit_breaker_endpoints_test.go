@@ -24,7 +24,7 @@ var _ = Describe("CircuitBreaker Endpoints", func() {
 	var resourceStore store.ResourceStore
 	var client resourceApiClient
 
-	var stop = func() {}
+	stop := func() {}
 	BeforeEach(func() {
 		core.Now = func() time.Time {
 			now, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
@@ -51,7 +51,6 @@ var _ = Describe("CircuitBreaker Endpoints", func() {
 	})
 
 	Describe("PUT => GET", func() {
-
 		given := `
         type: CircuitBreaker
         name: web-to-backend
@@ -118,5 +117,4 @@ var _ = Describe("CircuitBreaker Endpoints", func() {
 			Expect(actual).To(MatchYAML(given))
 		})
 	})
-
 })

@@ -22,7 +22,6 @@ import (
 )
 
 var _ = Describe("ProxyTemplateProfileSource", func() {
-
 	type testCase struct {
 		mesh      string
 		dataplane string

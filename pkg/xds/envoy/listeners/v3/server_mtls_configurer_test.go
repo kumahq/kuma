@@ -14,7 +14,6 @@ import (
 )
 
 var _ = Describe("ServerMtlsConfigurer", func() {
-
 	type testCase struct {
 		listenerName     string
 		listenerProtocol core_xds.SocketAddressProtocol

@@ -8,7 +8,6 @@ import (
 )
 
 var _ = Describe("Ingress Dataplane", func() {
-
 	type testCase struct {
 		tags         envoy.TagKeysSlice
 		transformers []envoy.TagKeyTransformer

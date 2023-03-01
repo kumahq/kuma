@@ -37,7 +37,6 @@ type voMatchTestCase struct {
 
 var _ = DescribeTable("virtual-outbound match",
 	func(tc voMatchTestCase) {
-
 		// When
 		res := dns.Match(tc.givenVos, tc.whenTags)
 

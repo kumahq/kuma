@@ -50,11 +50,12 @@ import (
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
+	zone2 "github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
-	xds_auth_components "github.com/kumahq/kuma/pkg/xds/auth/components"
 	mesh_cache "github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
+	xds_runtime "github.com/kumahq/kuma/pkg/xds/runtime"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 	xds_server "github.com/kumahq/kuma/pkg/xds/server"
 )
@@ -115,7 +116,6 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 
 	builder.WithLookupIP(lookup.CachedLookupIP(net.LookupIP, cfg.General.DNSCacheTTL.Duration))
 	builder.WithAPIManager(customization.NewAPIList())
-	builder.WithXDSHooks(&xds_hooks.Hooks{})
 	caProvider, err := secrets.NewCaProvider(builder.CaManagers(), builder.Metrics())
 	if err != nil {
 		return nil, err
@@ -146,14 +146,11 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		))
 	}
 
-	if builder.XDSAuthenticator() == nil {
-		authenticator, err := xds_auth_components.DefaultAuthenticator(builder) //nolint:contextcheck
-		if err != nil {
-			return nil, err
-		}
-
-		builder.WithXDSAuthenticator(authenticator)
+	xdsCtx, err := xds_runtime.Default(builder) //nolint:contextcheck
+	if err != nil {
+		return nil, err
 	}
+	builder.WithXDS(xdsCtx)
 
 	// The setting should be removed, and there is no easy way to set it without breaking most of the code
 	mesh_proto.EnableLocalhostInboundClusters = builder.Config().Defaults.EnableLocalhostInboundClusters
@@ -173,11 +170,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		return nil, err
 	}
 
-	builder.WithTokenIssuers(builtin.TokenIssuers{
-		DataplaneToken:   builtin.NewDataplaneTokenIssuer(builder.ResourceManager()),
-		ZoneIngressToken: builtin.NewZoneIngressTokenIssuer(builder.ResourceManager()),
-		ZoneToken:        builtin.NewZoneTokenIssuer(builder.ResourceManager()),
-	})
+	initializeTokenIssuers(builder)
 
 	if err := initializeMeshCache(builder); err != nil {
 		return nil, err
@@ -495,4 +488,21 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 
 	builder.WithMeshCache(meshSnapshotCache)
 	return nil
+}
+
+func initializeTokenIssuers(builder *core_runtime.Builder) {
+	issuers := builtin.TokenIssuers{
+		ZoneIngressToken: builtin.NewZoneIngressTokenIssuer(builder.ResourceManager()),
+	}
+	if builder.Config().DpServer.Authn.DpProxy.DpToken.EnableIssuer {
+		issuers.DataplaneToken = builtin.NewDataplaneTokenIssuer(builder.ResourceManager())
+	} else {
+		issuers.DataplaneToken = issuer.DisabledIssuer{}
+	}
+	if builder.Config().DpServer.Authn.ZoneProxy.ZoneToken.EnableIssuer {
+		issuers.ZoneToken = builtin.NewZoneTokenIssuer(builder.ResourceManager())
+	} else {
+		issuers.ZoneToken = zone2.DisabledIssuer{}
+	}
+	builder.WithTokenIssuers(issuers)
 }

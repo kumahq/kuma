@@ -176,7 +176,6 @@ func (k *KumactlOptions) KumactlConfigControlPlanesAdd(name, address, token stri
 				)
 			}
 			err := k.RunKumactl(args...)
-
 			if err != nil {
 				return "Unable to register Kuma CP. Try again.", err
 			}

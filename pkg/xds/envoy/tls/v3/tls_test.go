@@ -33,7 +33,6 @@ func (r *identityRequest) Name() string {
 
 var _ = Describe("CreateDownstreamTlsContext()", func() {
 	Context("when mTLS is enabled on a given Mesh", func() {
-
 		type testCase struct {
 			expected string
 		}
@@ -98,9 +97,7 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 })
 
 var _ = Describe("CreateUpstreamTlsContext()", func() {
-
 	Context("when mTLS is enabled on a given Mesh", func() {
-
 		type testCase struct {
 			upstreamService string
 			expected        string

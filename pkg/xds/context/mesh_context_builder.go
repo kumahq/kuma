@@ -349,7 +349,8 @@ func (m *meshContextBuilder) hashResource(r core_model.Resource) string {
 	// after resolving. That's why it is important to include address into hash.
 	case *core_mesh.DataplaneResource:
 		return strings.Join(
-			[]string{string(v.Descriptor().Name),
+			[]string{
+				string(v.Descriptor().Name),
 				v.GetMeta().GetMesh(),
 				v.GetMeta().GetName(),
 				v.GetMeta().GetVersion(),
@@ -358,7 +359,8 @@ func (m *meshContextBuilder) hashResource(r core_model.Resource) string {
 			}, ":")
 	case *core_mesh.ZoneIngressResource:
 		return strings.Join(
-			[]string{string(v.Descriptor().Name),
+			[]string{
+				string(v.Descriptor().Name),
 				v.GetMeta().GetMesh(),
 				v.GetMeta().GetName(),
 				v.GetMeta().GetVersion(),
@@ -367,7 +369,8 @@ func (m *meshContextBuilder) hashResource(r core_model.Resource) string {
 			}, ":")
 	case *core_mesh.ZoneEgressResource:
 		return strings.Join(
-			[]string{string(v.Descriptor().Name),
+			[]string{
+				string(v.Descriptor().Name),
 				v.GetMeta().GetMesh(),
 				v.GetMeta().GetName(),
 				v.GetMeta().GetVersion(),
@@ -375,10 +378,12 @@ func (m *meshContextBuilder) hashResource(r core_model.Resource) string {
 			}, ":")
 	default:
 		return strings.Join(
-			[]string{string(v.Descriptor().Name),
+			[]string{
+				string(v.Descriptor().Name),
 				v.GetMeta().GetMesh(),
 				v.GetMeta().GetName(),
-				v.GetMeta().GetVersion()}, ":")
+				v.GetMeta().GetVersion(),
+			}, ":")
 	}
 }
 

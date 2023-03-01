@@ -8,7 +8,6 @@ import (
 )
 
 var _ = Describe("FilterStateOperator", func() {
-
 	Describe("String()", func() {
 		type testCase struct {
 			key       string
@@ -25,7 +24,6 @@ var _ = Describe("FilterStateOperator", func() {
 				actual := fragment.String()
 				// then
 				Expect(actual).To(Equal(given.expected))
-
 			},
 			Entry("%FILTER_STATE()%", testCase{
 				expected: `%FILTER_STATE()%`,

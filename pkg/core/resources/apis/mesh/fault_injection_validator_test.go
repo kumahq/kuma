@@ -114,7 +114,8 @@ var _ = Describe("FaultInjection", func() {
                - field: destinations
                  message: must have at least one element
                - field: conf
-                 message: must have at least one of the faults configured`}),
+                 message: must have at least one of the faults configured`,
+			}),
 			Entry("conf.*: empty", testCase{
 				faultInjection: `
                 sources:
@@ -133,7 +134,8 @@ var _ = Describe("FaultInjection", func() {
 				expected: `
                violations:
                - field: conf
-                 message: must have at least one of the faults configured`}),
+                 message: must have at least one of the faults configured`,
+			}),
 			Entry("conf.*.percentage: empty", testCase{
 				faultInjection: `
                 sources:
@@ -159,7 +161,8 @@ var _ = Describe("FaultInjection", func() {
                - field: conf.abort.percentage
                  message: cannot be empty
                - field: conf.responseBandwidth.percentage
-                 message: cannot be empty`}),
+                 message: cannot be empty`,
+			}),
 			Entry("conf.* main value: empty", testCase{
 				faultInjection: `
                 sources:
@@ -185,7 +188,8 @@ var _ = Describe("FaultInjection", func() {
                - field: conf.abort.httpStatus
                  message: cannot be empty
                - field: conf.responseBandwidth.limit
-                 message: cannot be empty`}),
+                 message: cannot be empty`,
+			}),
 			Entry("conf.abort: wrong format", testCase{
 				faultInjection: `
                 sources:
@@ -204,7 +208,8 @@ var _ = Describe("FaultInjection", func() {
 				expected: `
                violations:
                - field: conf.abort.httpStatus
-                 message: http status code is incorrect`}),
+                 message: http status code is incorrect`,
+			}),
 			Entry("conf.responseBandwidth: wrong format", testCase{
 				faultInjection: `
                 sources:
@@ -225,7 +230,8 @@ var _ = Describe("FaultInjection", func() {
                - field: conf.responseBandwidth.percentage
                  message: has to be in [0.0 - 100.0] range
                - field: conf.responseBandwidth.limit
-                 message: has to be in kbps/mbps/gbps units`}),
+                 message: has to be in kbps/mbps/gbps units`,
+			}),
 			Entry("kuma.io/protocol: not specified", testCase{
 				faultInjection: `
                 sources:
@@ -242,7 +248,8 @@ var _ = Describe("FaultInjection", func() {
 				expected: `
                violations:
                - field: destinations[0].match
-                 message: protocol must be specified`}),
+                 message: protocol must be specified`,
+			}),
 			Entry("kuma.io/protocol: wrong protocol", testCase{
 				faultInjection: `
                 sources:
@@ -260,7 +267,8 @@ var _ = Describe("FaultInjection", func() {
 				expected: `
                violations:
                - field: destinations[0].match["kuma.io/protocol"]
-                 message: must be one of the [http, http2, grpc]`}),
+                 message: must be one of the [http, http2, grpc]`,
+			}),
 			Entry("tag value: invalid character set", testCase{
 				faultInjection: `
                 sources:
@@ -282,7 +290,8 @@ var _ = Describe("FaultInjection", func() {
                - field: sources[0].match["invalidTag"]
                  message: tag value must consist of alphanumeric characters, dots, dashes, slashes and underscores or be "*"
                - field: destinations[0].match["invalidTag"]
-                 message: tag value must consist of alphanumeric characters, dots, dashes, slashes and underscores or be "*"`}),
+                 message: tag value must consist of alphanumeric characters, dots, dashes, slashes and underscores or be "*"`,
+			}),
 			Entry("tag name: invalid character set", testCase{
 				faultInjection: `
                 sources:
@@ -304,7 +313,8 @@ var _ = Describe("FaultInjection", func() {
                - field: sources[0].match["inv@lidT@g#"]
                  message: tag name must consist of alphanumeric characters, dots, dashes, slashes and underscores
                - field: destinations[0].match["inv@lidT@g#"]
-                 message: tag name must consist of alphanumeric characters, dots, dashes, slashes and underscores`}),
+                 message: tag name must consist of alphanumeric characters, dots, dashes, slashes and underscores`,
+			}),
 		)
 	})
 })

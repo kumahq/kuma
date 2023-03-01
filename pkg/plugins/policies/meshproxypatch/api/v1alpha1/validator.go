@@ -16,8 +16,10 @@ import (
 	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
 )
 
-const NameFilterBeforeErr = "must be defined. You need to pick a filter before which this one will be added"
-const NameFilterAfterErr = "must be defined. You need to pick a filter after which this one will be added"
+const (
+	NameFilterBeforeErr = "must be defined. You need to pick a filter before which this one will be added"
+	NameFilterAfterErr  = "must be defined. You need to pick a filter after which this one will be added"
+)
 
 func (r *MeshProxyPatchResource) validate() error {
 	var verr validators.ValidationError
@@ -127,6 +129,7 @@ func validateVirtualHostMod(mod VirtualHostMod) validators.ValidationError {
 	}
 	return verr
 }
+
 func validateHTTPFilterMod(mod HTTPFilterMod) validators.ValidationError {
 	verr := validators.ValidationError{}
 	path := validators.RootedAt("httpFilter")

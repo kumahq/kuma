@@ -14,7 +14,6 @@ import (
 )
 
 var _ = Describe("CallbacksChain", func() {
-
 	var first, second CallbacksFuncs
 
 	type methodCall struct {
@@ -158,28 +157,33 @@ func (f CallbacksFuncs) OnStreamOpen(ctx context.Context, streamID int64, typ st
 	}
 	return nil
 }
+
 func (f CallbacksFuncs) OnStreamClosed(streamID int64, n *envoy_core.Node) {
 	if f.OnStreamClosedFunc != nil {
 		f.OnStreamClosedFunc(streamID, n)
 	}
 }
+
 func (f CallbacksFuncs) OnStreamRequest(streamID int64, req *envoy_sd.DiscoveryRequest) error {
 	if f.OnStreamRequestFunc != nil {
 		return f.OnStreamRequestFunc(streamID, req)
 	}
 	return nil
 }
+
 func (f CallbacksFuncs) OnStreamResponse(ctx context.Context, streamID int64, req *envoy_sd.DiscoveryRequest, resp *envoy_sd.DiscoveryResponse) {
 	if f.OnStreamResponseFunc != nil {
 		f.OnStreamResponseFunc(ctx, streamID, req, resp)
 	}
 }
+
 func (f CallbacksFuncs) OnFetchRequest(ctx context.Context, req *envoy_sd.DiscoveryRequest) error {
 	if f.OnFetchRequestFunc != nil {
 		return f.OnFetchRequestFunc(ctx, req)
 	}
 	return nil
 }
+
 func (f CallbacksFuncs) OnFetchResponse(req *envoy_sd.DiscoveryRequest, resp *envoy_sd.DiscoveryResponse) {
 	if f.OnFetchResponseFunc != nil {
 		f.OnFetchResponseFunc(req, resp)

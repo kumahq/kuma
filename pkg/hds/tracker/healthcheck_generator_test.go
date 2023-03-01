@@ -21,7 +21,6 @@ import (
 )
 
 var _ = Describe("HDS Snapshot generator", func() {
-
 	var resourceManager manager.ResourceManager
 
 	BeforeEach(func() {
@@ -29,7 +28,6 @@ var _ = Describe("HDS Snapshot generator", func() {
 
 		err := resourceManager.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
-
 	})
 
 	type testCase struct {

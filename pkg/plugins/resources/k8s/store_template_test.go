@@ -13,7 +13,6 @@ import (
 )
 
 var _ = Describe("KubernetesStore template", func() {
-
 	test_store.ExecuteStoreTests(func() store.ResourceStore {
 		kubeTypes := k8s_registry.NewTypeRegistry()
 

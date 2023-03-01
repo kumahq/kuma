@@ -32,9 +32,11 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 )
 
-var cfg *rest.Config
-var k8sClient client.Client
-var testEnv *envtest.Environment
+var (
+	cfg       *rest.Config
+	k8sClient client.Client
+	testEnv   *envtest.Environment
+)
 
 func TestAPIs(t *testing.T) {
 	test.RunSpecs(t, "v1alpha1 Suite")

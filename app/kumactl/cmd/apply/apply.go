@@ -2,7 +2,6 @@ package apply
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"
@@ -75,8 +74,7 @@ $ kumactl apply -f https://example.com/resource.yaml
 			} else {
 				if strings.HasPrefix(ctx.args.file, "http://") || strings.HasPrefix(ctx.args.file, "https://") {
 					client := &http.Client{
-						Timeout:   timeout,
-						Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
+						Timeout: timeout,
 					}
 					req, err := http.NewRequest("GET", ctx.args.file, nil)
 					if err != nil {

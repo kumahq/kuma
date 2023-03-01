@@ -50,7 +50,6 @@ func newInstallDemoCmd(ctx *install_context.InstallDemoContext) *cobra.Command {
 			}
 
 			renderedFiles, err := renderFilesWithFilter(templateFiles, templateArgs, simpleTemplateRenderer, filter)
-
 			if err != nil {
 				return errors.Wrap(err, "Failed to render template files")
 			}

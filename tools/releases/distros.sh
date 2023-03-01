@@ -3,6 +3,7 @@
 set -e
 
 SCRIPT_DIR="$(dirname -- "${BASH_SOURCE[0]}")"
+# shellcheck source=./../common.sh
 source "${SCRIPT_DIR}/../common.sh"
 
 # first component is the system - must map to valid $GOOS values
@@ -30,26 +31,6 @@ ENVOY_VERSION=$(echo "$BUILD_INFO" | cut -d " " -f 5)
 KUMA_VERSION=$(echo "$BUILD_INFO" | cut -d " " -f 1)
 [ -z "$KUMA_CONFIG_PATH" ] && KUMA_CONFIG_PATH=pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
 CTL_NAME="kumactl"
-[ -z "$EBPF_PROGRAMS_IMAGE" ] && EBPF_PROGRAMS_IMAGE="kumahq/kuma-net-ebpf:0.8.10"
-
-function get_ebpf_programs() {
-  local arch=$1
-  local system=$2
-  local kuma_dir=$3
-  local container
-
-  if [[ "$system" != "linux" ]]; then
-    return
-  fi
-
-  if [[ "$arch" != "amd64" ]] && [[ "$arch" != "arm64" ]]; then
-    return
-  fi
-
-  container=$(DOCKER_DEFAULT_PLATFORM=$system/$arch docker create "$EBPF_PROGRAMS_IMAGE" copy)
-  docker cp "$container:/ebpf" "$kuma_dir"
-  docker rm -v "$container"
-}
 
 # create_kumactl_tarball packages only kumactl
 function create_kumactl_tarball() {
@@ -101,8 +82,6 @@ function create_tarball() {
   mkdir "$kuma_dir"
   mkdir "$kuma_dir/bin"
   mkdir "$kuma_dir/conf"
-
-  get_ebpf_programs "$arch" "$system" "$kuma_dir"
 
   artifact_dir=$(artifact_dir "$arch" "$system")
   cp -p "$artifact_dir/envoy/envoy-$ENVOY_VERSION-$envoy_distro" "$kuma_dir/bin"

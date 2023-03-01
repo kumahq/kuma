@@ -16,6 +16,7 @@ spec:
   {{- end }}
   ports:
     - port: {{ .Values.controlPlane.globalZoneSyncService.port }}
+      appProtocol: grpc
   {{- if eq .Values.controlPlane.globalZoneSyncService.type "NodePort" }}
       nodePort: 30685
   {{- end }}

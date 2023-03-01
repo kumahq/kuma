@@ -108,8 +108,7 @@ func WithoutProbes() DeploymentOptsFn {
 	}
 }
 
-type TestServer interface {
-}
+type TestServer interface{}
 
 type Deployment interface {
 	framework.Deployment

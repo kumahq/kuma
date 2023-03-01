@@ -6,8 +6,7 @@ import (
 	envoy_upstream_http "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 )
 
-type HttpConfigurer struct {
-}
+type HttpConfigurer struct{}
 
 var _ ClusterConfigurer = &HttpConfigurer{}
 

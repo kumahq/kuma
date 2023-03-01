@@ -12,7 +12,6 @@ import (
 )
 
 var _ = Describe("Catalog", func() {
-
 	var c catalog.Catalog
 
 	BeforeEach(func() {

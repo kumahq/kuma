@@ -18,8 +18,7 @@ const (
 	listenerName = "probe:listener"
 )
 
-type ProbeProxyGenerator struct {
-}
+type ProbeProxyGenerator struct{}
 
 func (g ProbeProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	probes := proxy.Dataplane.Spec.Probes

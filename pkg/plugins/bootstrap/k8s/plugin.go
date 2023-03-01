@@ -147,7 +147,7 @@ func (p *plugin) AfterBootstrap(b *core_runtime.Builder, _ core_plugins.PluginCo
 		return errors.Wrapf(err, "could not parse KUBERNETES_SERVICE_PORT environment variable")
 	}
 
-	b.XDSHooks().AddResourceSetHook(hooks.NewApiServerBypass(apiServerAddress, uint32(apiServerPort)))
+	b.XDS().Hooks.AddResourceSetHook(hooks.NewApiServerBypass(apiServerAddress, uint32(apiServerPort)))
 
 	return nil
 }
@@ -218,5 +218,7 @@ func (c componentRunnableAdaptor) NeedLeaderElection() bool {
 	return c.Component.NeedLeaderElection()
 }
 
-var _ kube_manager.LeaderElectionRunnable = &componentRunnableAdaptor{}
-var _ kube_manager.Runnable = &componentRunnableAdaptor{}
+var (
+	_ kube_manager.LeaderElectionRunnable = &componentRunnableAdaptor{}
+	_ kube_manager.Runnable               = &componentRunnableAdaptor{}
+)

@@ -101,14 +101,16 @@ func attachedRoutesForListeners(
 
 	attachedRoutes := AttachedRoutesForListeners{}
 
-	for _, route := range routes.Items {
+	for i := range routes.Items {
+		route := routes.Items[i]
 		for _, parentRef := range route.Spec.ParentRefs {
 			sectionName := everyListener
 			if parentRef.SectionName != nil {
 				sectionName = *parentRef.SectionName
 			}
 
-			for _, refStatus := range route.Status.Parents {
+			for i := range route.Status.Parents {
+				refStatus := route.Status.Parents[i]
 				if reflect.DeepEqual(refStatus.ParentRef, parentRef) {
 					attached := attachedRoutes[sectionName]
 					attached.num++

@@ -20,7 +20,7 @@ var _ = Describe("Read only Resource Endpoints", func() {
 	var apiServer *api_server.ApiServer
 	var resourceStore store.ResourceStore
 	var client resourceApiClient
-	var stop = func() {}
+	stop := func() {}
 
 	const resourceName = "tr-1"
 	const mesh = "default-mesh"

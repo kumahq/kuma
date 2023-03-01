@@ -7,8 +7,10 @@ import (
 	core_tokens "github.com/kumahq/kuma/pkg/core/tokens"
 )
 
-const SigningKeyPrefix = "zone-token-signing-key"
-const SigningPublicKeyPrefix = "zone-token-signing-public-key"
+const (
+	SigningKeyPrefix       = "zone-token-signing-key"
+	SigningPublicKeyPrefix = "zone-token-signing-public-key"
+)
 
 var TokenRevocationsGlobalSecretKey = core_model.ResourceKey{
 	Name: "zone-token-revocations",

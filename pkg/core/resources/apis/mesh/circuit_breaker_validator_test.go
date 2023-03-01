@@ -118,7 +118,8 @@ var _ = Describe("CircuitBreaker", func() {
                - field: destinations
                  message: must have at least one element
                - field: conf
-                 message: must have at least one of the detector or threshold configured`}),
+                 message: must have at least one of the detector or threshold configured`,
+			}),
 			Entry("wrong format", testCase{
 				circuitBreaker: `
                 sources:
@@ -143,7 +144,8 @@ var _ = Describe("CircuitBreaker", func() {
                - field: conf.maxEjectionPercent
                  message: has to be in [0.0 - 100.0] range
                - field: conf.detectors.failure.threshold
-                 message: has to be in [0.0 - 100.0] range`}),
+                 message: has to be in [0.0 - 100.0] range`,
+			}),
 			Entry("empty thresholds section", testCase{
 				circuitBreaker: `
                 sources:
@@ -161,7 +163,8 @@ var _ = Describe("CircuitBreaker", func() {
 				expected: `
                violations:
                - field: conf.thresholds
-                 message: can't be empty`}),
+                 message: can't be empty`,
+			}),
 			Entry("empty detectors section", testCase{
 				circuitBreaker: `
                 sources:
@@ -178,7 +181,8 @@ var _ = Describe("CircuitBreaker", func() {
 				expected: `
                violations:
                - field: conf.detectors
-                 message: can't be empty`}),
+                 message: can't be empty`,
+			}),
 			Entry("empty detectors and thresholds section", testCase{
 				circuitBreaker: `
                 sources:
@@ -194,7 +198,8 @@ var _ = Describe("CircuitBreaker", func() {
 				expected: `
                violations:
                - field: conf
-                 message: must have at least one of the detector or threshold configured`}),
+                 message: must have at least one of the detector or threshold configured`,
+			}),
 		)
 	})
 })

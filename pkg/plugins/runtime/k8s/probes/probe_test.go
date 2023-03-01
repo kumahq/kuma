@@ -10,7 +10,6 @@ import (
 )
 
 var _ = Describe("KumaProbe", func() {
-
 	Context("ToInbound", func() {
 		It("should convert virtual probe to inbound probe", func() {
 			podProbeYaml := `

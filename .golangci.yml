@@ -5,20 +5,21 @@ linters:
     - errcheck
     - gci
     - gocritic
-    - gofmt
+    - gofumpt
     - gomodguard
+    - gosimple
     - govet
+    - gosec
     - importas
     - ineffassign
     - misspell
+    - nonamedreturns
+    - staticcheck
     - typecheck
     - unconvert
     - unparam
-    - whitespace
-    - gosimple
-    - nonamedreturns
-    - staticcheck
     - unused
+    - whitespace
 
 run:
   skip-files:
@@ -39,7 +40,6 @@ linters-settings:
     sections:
     - standard
     - default
-    - prefix(github.com/kumahq/kuma-net)
     - prefix(github.com/kumahq/kuma)
     custom-order: true
   importas:
@@ -85,8 +85,6 @@ linters-settings:
     - cancelled # US English should be "canceled", but this is in the Retry API, so we can't change it.
   nonamedreturns:
     report-error-in-defer: false
-  gofmt:
-    simplify: true
 
 issues:
   fix: true
@@ -139,4 +137,7 @@ issues:
     - linters:
         - staticcheck
       text: "SA1019: .* for new policies use pkg/plugins/policies/xds/cluster.go"
+    - linters:
+        - gosec
+      path: pkg/transparent-proxy/istio
 

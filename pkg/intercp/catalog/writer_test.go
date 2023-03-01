@@ -13,7 +13,6 @@ import (
 )
 
 var _ = Describe("Writer", func() {
-
 	var c catalog.Catalog
 	var closeCh chan struct{}
 	var heartbeatCancelFunc context.CancelFunc

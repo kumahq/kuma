@@ -44,8 +44,10 @@ networking:
 
 const defaultMesh = "default"
 
-var global, zone1 Cluster
-var zone4 *UniversalCluster
+var (
+	global, zone1 Cluster
+	zone4         *UniversalCluster
+)
 
 func InstallExternalService(name string) InstallFunc {
 	return func(cluster Cluster) error {

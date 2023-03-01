@@ -11,8 +11,7 @@ import (
 // OriginDNS is a marker to indicate by which ProxyGenerator resources were generated.
 const OriginDNS = "dns"
 
-type DNSGenerator struct {
-}
+type DNSGenerator struct{}
 
 func (g DNSGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	dnsPort := proxy.Metadata.GetDNSPort()

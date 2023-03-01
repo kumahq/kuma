@@ -8,7 +8,6 @@ import (
 )
 
 var _ = Describe("FaultInjectionHelper", func() {
-
 	Describe("SourceTags", func() {
 		type testCase struct {
 			input    *FaultInjection

@@ -10,8 +10,7 @@ const PluginName = "adminClientCerts"
 
 var log = core.Log.WithName("plugins").WithName("authn").WithName("api-server").WithName("certs")
 
-type plugin struct {
-}
+type plugin struct{}
 
 func init() {
 	plugins.Register(PluginName, &plugin{})

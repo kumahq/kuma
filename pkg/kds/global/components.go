@@ -30,9 +30,7 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-var (
-	kdsGlobalLog = core.Log.WithName("kds-global")
-)
+var kdsGlobalLog = core.Log.WithName("kds-global")
 
 func Setup(rt runtime.Runtime) error {
 	var err error

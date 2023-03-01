@@ -24,7 +24,6 @@ import (
 )
 
 var _ = Describe("Validation", func() {
-
 	var converter k8s_common.Converter
 
 	BeforeEach(func() {

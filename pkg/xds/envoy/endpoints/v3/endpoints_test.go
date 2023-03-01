@@ -10,7 +10,6 @@ import (
 )
 
 var _ = Describe("Endpoints", func() {
-
 	Describe("ClusterLoadAssignment()", func() {
 		type testCase struct {
 			cluster   string

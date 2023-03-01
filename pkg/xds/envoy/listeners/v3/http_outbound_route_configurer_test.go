@@ -12,7 +12,6 @@ import (
 )
 
 var _ = Describe("HttpOutboundRouteConfigurer", func() {
-
 	type testCase struct {
 		listenerName     string
 		listenerAddress  string

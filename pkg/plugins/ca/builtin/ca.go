@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/spiffe/go-spiffe/spiffe"
+	"github.com/spiffe/go-spiffe/v2/spiffeid"
 
 	"github.com/kumahq/kuma/pkg/core"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
@@ -48,10 +48,6 @@ func newRootCa(mesh string, rsaBits int, certOpts ...certOptsFn) (*core_ca.KeyPa
 }
 
 func newCACert(signer crypto.Signer, trustDomain string, certOpts ...certOptsFn) ([]byte, error) {
-	spiffeID := &url.URL{
-		Scheme: "spiffe",
-		Host:   trustDomain,
-	}
 	subject := pkix.Name{
 		Organization:       []string{"Kuma"},
 		OrganizationalUnit: []string{"Mesh"},
@@ -61,7 +57,7 @@ func newCACert(signer crypto.Signer, trustDomain string, certOpts ...certOptsFn)
 	notBefore := now.Add(-DefaultAllowedClockSkew)
 	notAfter := now.Add(DefaultCACertValidityPeriod)
 
-	template, err := caTemplate(spiffeID.String(), trustDomain, subject, signer.Public(), notBefore, notAfter, big.NewInt(0))
+	template, err := caTemplate(trustDomain, subject, signer.Public(), notBefore, notAfter, big.NewInt(0))
 	if err != nil {
 		return nil, err
 	}
@@ -72,15 +68,19 @@ func newCACert(signer crypto.Signer, trustDomain string, certOpts ...certOptsFn)
 	return x509.CreateCertificate(rand.Reader, template, template, signer.Public(), signer)
 }
 
-func caTemplate(spiffeID string, trustDomain string, subject pkix.Name, publicKey crypto.PublicKey, notBefore, notAfter time.Time, serialNumber *big.Int) (*x509.Certificate, error) {
-	uri, err := spiffe.ParseID(spiffeID, spiffe.AllowTrustDomain(trustDomain))
+func caTemplate(trustDomain string, subject pkix.Name, publicKey crypto.PublicKey, notBefore, notAfter time.Time, serialNumber *big.Int) (*x509.Certificate, error) {
+	domain, err := spiffeid.TrustDomainFromString(trustDomain)
+	if err != nil {
+		return nil, err
+	}
+	uri, err := spiffeid.FromSegments(domain)
 	if err != nil {
 		return nil, err
 	}
 	return &x509.Certificate{
 		SerialNumber: serialNumber,
 		Subject:      subject,
-		URIs:         []*url.URL{uri},
+		URIs:         []*url.URL{uri.URL()},
 		NotBefore:    notBefore,
 		NotAfter:     notAfter,
 		KeyUsage: x509.KeyUsageCertSign |

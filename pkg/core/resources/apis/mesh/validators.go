@@ -15,9 +15,11 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-type TagsValidatorFunc func(path validators.PathBuilder, selector map[string]string) validators.ValidationError
-type TagKeyValidatorFunc func(path validators.PathBuilder, key string) validators.ValidationError
-type TagValueValidatorFunc func(path validators.PathBuilder, key, value string) validators.ValidationError
+type (
+	TagsValidatorFunc     func(path validators.PathBuilder, selector map[string]string) validators.ValidationError
+	TagKeyValidatorFunc   func(path validators.PathBuilder, key string) validators.ValidationError
+	TagValueValidatorFunc func(path validators.PathBuilder, key, value string) validators.ValidationError
+)
 
 type ValidateTagsOpts struct {
 	RequireAtLeastOneTag    bool
@@ -33,9 +35,11 @@ type ValidateSelectorsOpts struct {
 	RequireAtLeastOneSelector bool
 }
 
-var tagNameCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9\.\-_:/]*$`)
-var tagValueCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9\.\-_:]*$`)
-var selectorCharacterSet = regexp.MustCompile(`^([a-zA-Z0-9\.\-_:/]*|\*)$`)
+var (
+	tagNameCharacterSet  = regexp.MustCompile(`^[a-zA-Z0-9\.\-_:/]*$`)
+	tagValueCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9\.\-_:]*$`)
+	selectorCharacterSet = regexp.MustCompile(`^([a-zA-Z0-9\.\-_:/]*|\*)$`)
+)
 
 func ValidateSelectors(path validators.PathBuilder, sources []*mesh_proto.Selector, opts ValidateSelectorsOpts) validators.ValidationError {
 	var err validators.ValidationError

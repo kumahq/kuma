@@ -23,7 +23,6 @@ import (
 )
 
 var _ = Describe("kumactl inspect meshes", func() {
-
 	meshInsightResources := []*mesh.MeshInsightResource{
 		{
 			Meta: &model.ResourceMeta{Name: "default"},
@@ -72,7 +71,6 @@ var _ = Describe("kumactl inspect meshes", func() {
 	}
 
 	Describe("InspectMeshesCmd", func() {
-
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
@@ -104,7 +102,8 @@ var _ = Describe("kumactl inspect meshes", func() {
 				// given
 				rootCmd.SetArgs(append([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"inspect", "meshes"}, given.outputFormat))
+					"inspect", "meshes",
+				}, given.outputFormat))
 
 				// when
 				err := rootCmd.Execute()

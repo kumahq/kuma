@@ -30,8 +30,10 @@ func (r *Resource) GetSpec() core_model.ResourceSpec {
 	return r.Spec
 }
 
-var _ json.Marshaler = &Resource{}
-var _ json.Unmarshaler = &Resource{}
+var (
+	_ json.Marshaler   = &Resource{}
+	_ json.Unmarshaler = &Resource{}
+)
 
 func (r *Resource) MarshalJSON() ([]byte, error) {
 	var specBytes []byte

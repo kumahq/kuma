@@ -24,8 +24,7 @@ const (
 	inPassThroughIPv6 = "::6"
 )
 
-type TransparentProxyGenerator struct {
-}
+type TransparentProxyGenerator struct{}
 
 func (tpg TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
@@ -55,7 +54,8 @@ func (tpg TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mo
 
 func (_ TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *model.Proxy,
 	outboundName, inboundName, allIP, inPassThroughIP string,
-	redirectPortOutbound, redirectPortInbound uint32) (*model.ResourceSet, error) {
+	redirectPortOutbound, redirectPortInbound uint32,
+) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
 
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()

@@ -28,8 +28,7 @@ var staticTlsEndpointPaths = []*envoy_common.StaticEndpointPath{
 
 // AdminProxyGenerator generates resources to expose some endpoints of Admin API on public interface.
 // By default, Admin API is exposed only on loopback interface because of security reasons.
-type AdminProxyGenerator struct {
-}
+type AdminProxyGenerator struct{}
 
 func (g AdminProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	if proxy.Metadata.GetAdminPort() == 0 {

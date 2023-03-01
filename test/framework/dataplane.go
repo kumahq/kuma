@@ -4,6 +4,7 @@ import (
 	"strings"
 )
 
+// IsDataplaneOnline returns online, found, error
 func IsDataplaneOnline(cluster Cluster, mesh, name string) (bool, bool, error) {
 	out, err := cluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplanes", "--mesh", mesh)
 	if err != nil {

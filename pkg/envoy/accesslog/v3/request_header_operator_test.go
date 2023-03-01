@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("RequestHeaderOperator", func() {
-
 	Describe("FormatHttpLogEntry()", func() {
 		example := &accesslog_data.HTTPAccessLogEntry{
 			Request: &accesslog_data.HTTPRequestProperties{
@@ -44,7 +43,8 @@ var _ = Describe("RequestHeaderOperator", func() {
 			func(given testCase) {
 				// setup
 				fragment := &RequestHeaderOperator{HeaderFormatter{
-					Header: given.header, AltHeader: given.altHeader, MaxLength: given.maxLength}}
+					Header: given.header, AltHeader: given.altHeader, MaxLength: given.maxLength,
+				}}
 				// when
 				actual, err := fragment.FormatHttpLogEntry(given.entry)
 				// then
@@ -156,7 +156,8 @@ var _ = Describe("RequestHeaderOperator", func() {
 		It("should always return an empty string", func() {
 			// setup
 			fragment := &RequestHeaderOperator{HeaderFormatter{
-				Header: ":path", AltHeader: "x-envoy-original-path", MaxLength: 123}}
+				Header: ":path", AltHeader: "x-envoy-original-path", MaxLength: 123,
+			}}
 			// when
 			actual, err := fragment.FormatTcpLogEntry(&accesslog_data.TCPAccessLogEntry{})
 			// then
@@ -167,7 +168,6 @@ var _ = Describe("RequestHeaderOperator", func() {
 	})
 
 	Describe("ConfigureHttpLog()", func() {
-
 		type testCase struct {
 			header    string
 			altHeader string
@@ -179,7 +179,8 @@ var _ = Describe("RequestHeaderOperator", func() {
 			func(given testCase) {
 				// setup
 				fragment := &RequestHeaderOperator{HeaderFormatter{
-					Header: given.header, AltHeader: given.altHeader}}
+					Header: given.header, AltHeader: given.altHeader,
+				}}
 				// when
 				err := fragment.ConfigureHttpLog(given.config)
 				// then
@@ -338,13 +339,13 @@ var _ = Describe("RequestHeaderOperator", func() {
 			func(given testCase) {
 				// setup
 				fragment := &RequestHeaderOperator{HeaderFormatter{
-					Header: given.header, AltHeader: given.altHeader, MaxLength: given.maxLength}}
+					Header: given.header, AltHeader: given.altHeader, MaxLength: given.maxLength,
+				}}
 
 				// when
 				actual := fragment.String()
 				// then
 				Expect(actual).To(Equal(given.expected))
-
 			},
 			Entry("%REQ()%", testCase{
 				expected: `%REQ()%`,

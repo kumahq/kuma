@@ -15,9 +15,7 @@ import (
 )
 
 var _ = Describe("ProxyTemplateRawSource", func() {
-
 	Context("Manually-defined xDS resources are not valid", func() {
-
 		type testCase struct {
 			proxy *model.Proxy
 			raw   []*mesh_proto.ProxyTemplateRawResource
@@ -212,7 +210,6 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 	})
 
 	Context("Manually-defined xDS resources are valid", func() {
-
 		type testCase struct {
 			proxy    *model.Proxy
 			raw      []*mesh_proto.ProxyTemplateRawResource

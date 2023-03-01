@@ -12,7 +12,6 @@ import (
 )
 
 var _ = Describe("Rest Resource", func() {
-
 	var t1, t2 time.Time
 
 	BeforeEach(func() {

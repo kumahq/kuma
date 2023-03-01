@@ -6,8 +6,7 @@ import (
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
-type AltStatNameConfigurer struct {
-}
+type AltStatNameConfigurer struct{}
 
 var _ ClusterConfigurer = &AltStatNameConfigurer{}
 

@@ -56,7 +56,8 @@ func NewLoggerWithRotation(level LogLevel, outputPath string, maxSize int, maxBa
 		Filename:   outputPath,
 		MaxSize:    maxSize,
 		MaxBackups: maxBackups,
-		MaxAge:     maxAge}, level)
+		MaxAge:     maxAge,
+	}, level)
 }
 
 func NewLoggerTo(destWriter io.Writer, level LogLevel) logr.Logger {

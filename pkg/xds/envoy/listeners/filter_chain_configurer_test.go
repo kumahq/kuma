@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("ListenerFilterChainConfigurer", func() {
-
 	type testCase struct {
 		listenerName     string
 		listenerProtocol xds.SocketAddressProtocol

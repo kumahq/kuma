@@ -18,8 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/http"
 )
 
-type fakeUserTokenClient struct {
-}
+type fakeUserTokenClient struct{}
 
 func (f *fakeUserTokenClient) Generate(name string, groups []string, validFor time.Duration) (string, error) {
 	return "token-" + name + "-" + strings.Join(groups, ",") + "-" + validFor.String(), nil
@@ -28,7 +27,6 @@ func (f *fakeUserTokenClient) Generate(name string, groups []string, validFor ti
 var _ client.UserTokenClient = &fakeUserTokenClient{}
 
 var _ = Describe("Generate User Token", func() {
-
 	It("should generate control plane token", func() {
 		// setup
 		rootCmd := cmd.NewRootCmd(kumactl_cmd.DefaultRootContext())
@@ -39,7 +37,8 @@ var _ = Describe("Generate User Token", func() {
 		rootCmd.SetOut(buf)
 
 		// given
-		rootCmd.SetArgs([]string{"generate", "user-token",
+		rootCmd.SetArgs([]string{
+			"generate", "user-token",
 			"--name", "john",
 			"--group", "team-a",
 			"--group", "team-b",
@@ -60,7 +59,8 @@ var _ = Describe("Generate User Token", func() {
 		rootCmd.SetOut(buf)
 
 		// given
-		rootCmd.SetArgs([]string{"generate", "user-token",
+		rootCmd.SetArgs([]string{
+			"generate", "user-token",
 			"--name", "john",
 			"--group", "team-a",
 			"--group", "team-b",
@@ -113,7 +113,8 @@ var _ = Describe("Generate User Token", func() {
 			err:  `required flag(s) "name", "valid-for" not set`,
 		}),
 		Entry("when kid is specified for online signing", errTestCase{
-			args: []string{"generate", "user-token",
+			args: []string{
+				"generate", "user-token",
 				"--name", "john",
 				"--group", "team-a",
 				"--group", "team-b",
@@ -123,7 +124,8 @@ var _ = Describe("Generate User Token", func() {
 			err: "--kid cannot be used when --signing-key-path is used",
 		}),
 		Entry("when kid is not specified for offline signing", errTestCase{
-			args: []string{"generate", "user-token",
+			args: []string{
+				"generate", "user-token",
 				"--name", "john",
 				"--group", "team-a",
 				"--group", "team-b",

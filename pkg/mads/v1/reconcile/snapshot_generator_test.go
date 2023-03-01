@@ -24,9 +24,7 @@ import (
 )
 
 var _ = Describe("snapshotGenerator", func() {
-
 	Describe("GenerateSnapshot()", func() {
-
 		var resourceManager core_manager.ResourceManager
 		var store core_store.ResourceStore
 

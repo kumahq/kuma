@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("TLSPostgresStoreConfig", func() {
-
 	type testCase struct {
 		config postgres.TLSPostgresStoreConfig
 		error  string

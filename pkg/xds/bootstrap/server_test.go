@@ -3,8 +3,10 @@ package bootstrap_test
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -33,11 +35,16 @@ import (
 )
 
 var _ = Describe("Bootstrap Server", func() {
-
 	var stop chan struct{}
 	var resManager manager.ResourceManager
 	var baseURL string
 	var metrics core_metrics.Metrics
+
+	authEnabled := map[string]bool{
+		string(mesh_proto.DataplaneProxyType): true,
+		string(mesh_proto.IngressProxyType):   true,
+		string(mesh_proto.EgressProxyType):    true,
+	}
 
 	version := `
 	"version": {
@@ -53,8 +60,14 @@ var _ = Describe("Bootstrap Server", func() {
 	  }
 	}`
 
+	ca := x509.NewCertPool()
+	cert, err := ioutil.ReadFile(filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"))
+	if err != nil {
+		panic(err)
+	}
+	ca.AppendCertsFromPEM(cert)
 	httpClient := &http.Client{
-		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
+		Transport: &http.Transport{TLSClientConfig: &tls.Config{RootCAs: ca, MinVersion: tls.VersionTLS12}},
 	}
 
 	BeforeEach(func() {
@@ -78,7 +91,7 @@ var _ = Describe("Bootstrap Server", func() {
 
 		proxyConfig := xds_config.DefaultProxyConfig()
 
-		generator, err := bootstrap.NewDefaultBootstrapGenerator(resManager, config, proxyConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true, false, true, 0, false)
+		generator, err := bootstrap.NewDefaultBootstrapGenerator(resManager, config, proxyConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, true, 0, false)
 		Expect(err).ToNot(HaveOccurred())
 		bootstrapHandler := bootstrap.BootstrapHandler{
 			Generator: generator,
@@ -278,7 +291,6 @@ var _ = Describe("Bootstrap Server", func() {
 		Expect(resp.Body.Close()).To(Succeed())
 		Expect(resp.StatusCode).To(Equal(422))
 		Expect(string(bytes)).To(Equal("Dataplane Token is required. Generate token using 'kumactl generate dataplane-token > /path/file' and provide it via --dataplane-token-file=/path/file argument to Kuma DP"))
-
 	})
 
 	It("should publish metrics", func() {

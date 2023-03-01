@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("PKI", func() {
-
 	var caCert tls.Certificate
 
 	BeforeAll(func() {

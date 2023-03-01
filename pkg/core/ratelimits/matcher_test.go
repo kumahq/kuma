@@ -174,7 +174,10 @@ var _ = Describe("Match", func() {
 									},
 								},
 							}),
-					}}}}),
+					},
+				},
+			},
+		}),
 
 		Entry("1 outbound dataplane, 2 policies", testCase{
 			dataplane: dataplaneWithOutboundsFunc([]*mesh_proto.Dataplane_Networking_Outbound{
@@ -469,7 +472,10 @@ var _ = Describe("Match", func() {
 									},
 								},
 							}),
-					}}}}),
+					},
+				},
+			},
+		}),
 
 		Entry("match 2 policies on outbound", testCase{
 			dataplane: dataplaneWithOutboundsFunc([]*mesh_proto.Dataplane_Networking_Outbound{
@@ -682,7 +688,10 @@ var _ = Describe("Match", func() {
 									},
 								},
 							}),
-					}}}}),
+					},
+				},
+			},
+		}),
 
 		Entry("match and sort 3 policies outbound", testCase{
 			dataplane: dataplaneWithOutboundsFunc([]*mesh_proto.Dataplane_Networking_Outbound{

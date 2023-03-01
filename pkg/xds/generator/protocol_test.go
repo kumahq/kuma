@@ -10,7 +10,6 @@ import (
 )
 
 var _ = Describe("InferServiceProtocol()", func() {
-
 	type testCase struct {
 		endpoints []core_xds.Endpoint
 		expected  core_mesh.Protocol

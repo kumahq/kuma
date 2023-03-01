@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("ValidateTokenPath", func() {
-
 	It("should pass validation for empty path", func() {
 		// when
 		err := config.ValidateTokenPath("")
@@ -76,6 +75,5 @@ var _ = Describe("ValidateTokenPath", func() {
 				expectedError: "Token shouldn't contain line breaks within the token, only at the start or end",
 			}),
 		)
-
 	})
 })

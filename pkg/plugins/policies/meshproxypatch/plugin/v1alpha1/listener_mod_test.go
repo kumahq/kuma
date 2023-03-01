@@ -14,7 +14,6 @@ import (
 )
 
 var _ = Describe("Listener modifications", func() {
-
 	type testCase struct {
 		listeners     []string
 		modifications []string
@@ -56,7 +55,8 @@ var _ = Describe("Listener modifications", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("should add listener", testCase{
-			modifications: []string{`
+			modifications: []string{
+				`
                 listener:
                    operation: Add
                    value: |

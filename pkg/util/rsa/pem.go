@@ -9,8 +9,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-const rsaPrivateBlockType = "RSA PRIVATE KEY"
-const rsaPublicBlockType = "RSA PUBLIC KEY"
+const (
+	rsaPrivateBlockType = "RSA PRIVATE KEY"
+	rsaPublicBlockType  = "RSA PUBLIC KEY"
+)
 
 func FromPrivateKeyToPEMBytes(key *rsa.PrivateKey) ([]byte, error) {
 	block := pem.Block{

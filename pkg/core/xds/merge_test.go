@@ -8,7 +8,6 @@ import (
 )
 
 var _ = Describe("MergeConfs", func() {
-
 	type subPolicy struct {
 		Ints       []int
 		AppendInts []int
@@ -281,5 +280,4 @@ var _ = Describe("MergeConfs", func() {
 			expected: testPolicy{},
 		}),
 	)
-
 })

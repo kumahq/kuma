@@ -24,8 +24,7 @@ import (
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
-type fakeLoader struct {
-}
+type fakeLoader struct{}
 
 func (f *fakeLoader) Load(
 	_ context.Context,

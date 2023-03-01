@@ -22,8 +22,7 @@ import (
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
-type testApiServerClient struct {
-}
+type testApiServerClient struct{}
 
 func (c *testApiServerClient) GetVersion(_ context.Context) (*types.IndexResponse, error) {
 	return &types.IndexResponse{
@@ -75,7 +74,8 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 		func(resource string) {
 			// given
 			rootCmd.SetArgs([]string{
-				"get", resource})
+				"get", resource,
+			})
 
 			// when
 			err := rootCmd.Execute()
@@ -92,7 +92,8 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 		func(resource string) {
 			// given
 			rootCmd.SetArgs([]string{
-				"get", resource, "unknown-resource"})
+				"get", resource, "unknown-resource",
+			})
 
 			// when
 			err := rootCmd.Execute()

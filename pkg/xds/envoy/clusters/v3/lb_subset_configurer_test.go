@@ -12,7 +12,6 @@ import (
 )
 
 var _ = Describe("LbSubset", func() {
-
 	type testCase struct {
 		clusterName string
 		tags        tags.TagKeysSlice

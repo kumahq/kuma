@@ -23,6 +23,7 @@ kumactl config control-planes add [flags]
   -h, --help                       help for add
       --name string                reference name for the Control Plane (required)
       --overwrite                  overwrite existing Control Plane with the same reference name
+      --skip-check                 skip checking if we can connect to the CP
       --skip-verify                skip CA verification
 ```
 

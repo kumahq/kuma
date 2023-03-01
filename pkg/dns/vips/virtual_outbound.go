@@ -30,8 +30,10 @@ const (
 	OriginKube    = "kubernetes"
 )
 
-var OriginVirtualOutbound = func(name string) string { return "virtual-outbound:" + name }
-var OriginHost = func(name string) string { return "external-service:" + name }
+var (
+	OriginVirtualOutbound = func(name string) string { return "virtual-outbound:" + name }
+	OriginHost            = func(name string) string { return "external-service:" + name }
+)
 
 type OutboundEntry struct {
 	Port   uint32

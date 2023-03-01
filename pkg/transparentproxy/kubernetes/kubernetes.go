@@ -36,7 +36,7 @@ type PodRedirect struct {
 	RedirectPortInbound                      uint32
 	RedirectPortInboundV6                    uint32
 	UID                                      string
-	ExperimentalTransparentProxyEngine       bool
+	UseTransparentProxyEngineV1              bool
 	TransparentProxyEnableEbpf               bool
 	TransparentProxyEbpfBPFFSPath            string
 	TransparentProxyEbpfCgroupPath           string
@@ -47,7 +47,7 @@ type PodRedirect struct {
 	ExcludeOutboundUDPPortsForUIDs           []string
 }
 
-func NewPodRedirectForPod(transparentProxyV2 bool, pod *kube_core.Pod) (*PodRedirect, error) {
+func NewPodRedirectForPod(transparentProxyV1 bool, pod *kube_core.Pod) (*PodRedirect, error) {
 	var err error
 	podRedirect := &PodRedirect{}
 
@@ -101,9 +101,9 @@ func NewPodRedirectForPod(transparentProxyV2 bool, pod *kube_core.Pod) (*PodRedi
 
 	podRedirect.UID, _ = metadata.Annotations(pod.Annotations).GetString(metadata.KumaSidecarUID)
 
-	podRedirect.ExperimentalTransparentProxyEngine, _, err = metadata.Annotations(pod.Annotations).GetEnabledWithDefault(
-		transparentProxyV2,
-		metadata.KumaTransparentProxyingExperimentalEngine,
+	podRedirect.UseTransparentProxyEngineV1, _, err = metadata.Annotations(pod.Annotations).GetEnabledWithDefault(
+		transparentProxyV1,
+		metadata.KumaTransparentProxyingEngineV1,
 	)
 	if err != nil {
 		return nil, err
@@ -179,8 +179,8 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 		)
 	}
 
-	if pr.ExperimentalTransparentProxyEngine {
-		result = append(result, "--experimental-transparent-proxy-engine")
+	if pr.UseTransparentProxyEngineV1 {
+		result = append(result, "--use-transparent-proxy-engine-v1")
 	}
 
 	if pr.TransparentProxyEnableEbpf {

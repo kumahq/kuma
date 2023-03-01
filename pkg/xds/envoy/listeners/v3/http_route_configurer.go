@@ -62,8 +62,7 @@ func (c *HttpDynamicRouteConfigurer) Configure(filterChain *envoy_listener.Filte
 
 // HttpScopedRouteConfigurer configures a set of scoped routes into the
 // HttpConnectionManager in the filter chain.
-type HttpScopedRouteConfigurer struct {
-}
+type HttpScopedRouteConfigurer struct{}
 
 var _ FilterChainConfigurer = &HttpScopedRouteConfigurer{}
 

@@ -23,7 +23,6 @@ import (
 )
 
 var _ = Describe("HealthCheck", func() {
-
 	var ctx context.Context
 	var rm core_manager.ResourceManager
 
@@ -33,7 +32,6 @@ var _ = Describe("HealthCheck", func() {
 	})
 
 	Describe("GetHealthChecks()", func() {
-
 		It("should pick the best matching HealthCheck for each destination service", func() {
 			// given
 			mesh := &core_mesh.MeshResource{ // mesh that is relevant to this test case
@@ -557,5 +555,4 @@ var _ = Describe("HealthCheck", func() {
 			}),
 		)
 	})
-
 })

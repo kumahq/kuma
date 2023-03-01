@@ -9,9 +9,7 @@ import (
 )
 
 var _ = Describe("MeshResource", func() {
-
 	Describe("Default()", func() {
-
 		type testCase struct {
 			input    string
 			expected string

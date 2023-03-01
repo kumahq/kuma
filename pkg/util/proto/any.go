@@ -53,7 +53,6 @@ func MergeAnys(dst *anypb.Any, src *anypb.Any) (*anypb.Any, error) {
 
 	msgTypeName := strings.ReplaceAll(dst.TypeUrl, googleApis, "") // TypeURL in Any contains type.googleapis.com/ prefix, but in Proto registry it does not have this prefix.
 	msgType, err := protoregistry.GlobalTypes.FindMessageByName(protoreflect.FullName(msgTypeName))
-
 	if err != nil {
 		return nil, err
 	}

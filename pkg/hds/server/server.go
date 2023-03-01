@@ -117,7 +117,7 @@ func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.H
 	}
 
 	responseChan := make(chan envoy_cache.Response, 1)
-	var node = &envoy_core.Node{}
+	node := &envoy_core.Node{}
 	for {
 		select {
 		case <-s.ctx.Done():

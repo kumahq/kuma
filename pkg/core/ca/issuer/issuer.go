@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/spiffe/go-spiffe/spiffe"
+	"github.com/spiffe/go-spiffe/v2/spiffeid"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -57,11 +57,15 @@ func NewWorkloadCert(ca util_tls.KeyPair, mesh string, tags mesh_proto.MultiValu
 func newWorkloadTemplate(trustDomain string, tags mesh_proto.MultiValueTagSet, publicKey crypto.PublicKey, certOpts ...CertOptsFn) (*x509.Certificate, error) {
 	var uris []*url.URL
 	for _, service := range tags.Values(mesh_proto.ServiceTag) {
-		uri, err := spiffe.ParseID(fmt.Sprintf("spiffe://%s/%s", trustDomain, service), spiffe.AllowTrustDomainWorkload(trustDomain))
+		domain, err := spiffeid.TrustDomainFromString(trustDomain)
 		if err != nil {
 			return nil, err
 		}
-		uris = append(uris, uri)
+		uri, err := spiffeid.FromSegments(domain, service)
+		if err != nil {
+			return nil, err
+		}
+		uris = append(uris, uri.URL())
 	}
 	for _, tag := range tags.Keys() {
 		for _, value := range tags.UniqueValues(tag) {

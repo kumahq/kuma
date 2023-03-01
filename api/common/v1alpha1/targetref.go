@@ -1,6 +1,14 @@
 // +kubebuilder:object:generate=true
 package v1alpha1
 
+import (
+	"fmt"
+	"sort"
+	"strings"
+
+	"golang.org/x/exp/maps"
+)
+
 type TargetRefKind string
 
 var (
@@ -36,4 +44,15 @@ type TargetRef struct {
 	Tags map[string]string `json:"tags,omitempty"`
 	// Mesh is reserved for future use to identify cross mesh resources.
 	Mesh string `json:"mesh,omitempty"`
+}
+
+// Hash returns a hash of the TargetRef
+func (in *TargetRef) Hash() string {
+	keys := maps.Keys(in.Tags)
+	sort.Strings(keys)
+	orderedTags := make([]string, len(keys))
+	for _, k := range keys {
+		orderedTags = append(orderedTags, fmt.Sprintf("%s=%s", k, in.Tags[k]))
+	}
+	return fmt.Sprintf("%s/%s/%s/%s", in.Kind, in.Name, strings.Join(orderedTags, "/"), in.Mesh)
 }

@@ -79,7 +79,8 @@ var _ = Describe("Timeouts", func() {
                - field: destinations
                  message: must have at least one element
                - field: conf
-                 message: has to be defined`}),
+                 message: has to be defined`,
+			}),
 			Entry("conf.*: empty", testCase{
 				timeout: `
                 sources:
@@ -101,7 +102,8 @@ var _ = Describe("Timeouts", func() {
                - field: conf.http
                  message: at least one timeout in section has to be defined
                - field: conf.grpc
-                 message: at least one timeout in section has to be defined`}),
+                 message: at least one timeout in section has to be defined`,
+			}),
 		)
 	})
 })

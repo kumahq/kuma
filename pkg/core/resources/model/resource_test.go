@@ -10,7 +10,6 @@ import (
 )
 
 var _ = Describe("Resource", func() {
-
 	It("should return a new resource object", func() {
 		// given
 		desc := policies_api.MeshAccessLogResourceTypeDescriptor

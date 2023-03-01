@@ -15,7 +15,6 @@ import (
 )
 
 var _ = Describe("Resource Manager", func() {
-
 	var resStore store.ResourceStore
 	var resManager manager.ResourceManager
 
@@ -129,7 +128,6 @@ var _ = Describe("Resource Manager", func() {
 			res2 := core_mesh.NewTrafficRouteResource()
 			err = resManager.Get(context.Background(), res2, store.GetByKey("tr-1", "mesh-2"))
 			Expect(err).ToNot(HaveOccurred())
-
 		})
 	})
 })

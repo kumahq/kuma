@@ -8,7 +8,6 @@ import (
 )
 
 var _ = Describe("TlsCipherSuite", func() {
-
 	Describe("String()", func() {
 		type testCase struct {
 			cipherID TlsCipherSuite

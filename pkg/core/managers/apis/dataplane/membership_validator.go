@@ -9,8 +9,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
-type membershipValidator struct {
-}
+type membershipValidator struct{}
 
 var _ Validator = &membershipValidator{}
 

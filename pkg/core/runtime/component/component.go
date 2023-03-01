@@ -57,7 +57,6 @@ func (f LeaderComponentFunc) Start(stop <-chan struct{}) error {
 }
 
 type Manager interface {
-
 	// Add registers a component, i.e. gRPC Server, HTTP server, reconciliation loop.
 	Add(...Component) error
 

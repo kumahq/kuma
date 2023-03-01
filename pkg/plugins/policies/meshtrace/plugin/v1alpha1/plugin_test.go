@@ -132,8 +132,10 @@ var _ = Describe("MeshTrace", func() {
 							}},
 						},
 					},
-				}},
-			expectedListeners: []string{`
+				},
+			},
+			expectedListeners: []string{
+				`
             address:
               socketAddress:
                 address: 127.0.0.1
@@ -265,7 +267,8 @@ var _ = Describe("MeshTrace", func() {
 							}},
 						},
 					},
-				}},
+				},
+			},
 			expectedListeners: []string{`
             address:
               socketAddress:
@@ -393,8 +396,10 @@ var _ = Describe("MeshTrace", func() {
 							}},
 						},
 					},
-				}},
-			expectedListeners: []string{`
+				},
+			},
+			expectedListeners: []string{
+				`
             address:
               socketAddress:
                 address: 127.0.0.1
@@ -480,8 +485,10 @@ var _ = Describe("MeshTrace", func() {
 							}},
 						},
 					},
-				}},
-			expectedListeners: []string{`
+				},
+			},
+			expectedListeners: []string{
+				`
             address:
                 socketAddress:
                     address: 127.0.0.1
@@ -537,7 +544,8 @@ var _ = Describe("MeshTrace", func() {
                                     sharedSpanContext: true
                                     traceId128bit: true
             name: outbound:127.0.0.1:27777
-            trafficDirection: OUTBOUND`},
+            trafficDirection: OUTBOUND`,
+			},
 			expectedClusters: []string{`
             altStatName: meshtrace_zipkin
             connectTimeout: 10s
@@ -565,7 +573,8 @@ var _ = Describe("MeshTrace", func() {
 							Backends: &[]api.Backend{},
 						},
 					},
-				}},
+				},
+			},
 			expectedListeners: []string{`
             address:
                 socketAddress:

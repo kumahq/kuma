@@ -22,7 +22,6 @@ import (
 )
 
 var _ = Describe("kumactl get healthchecks", func() {
-
 	var sampleHealthChecks []*core_mesh.HealthCheckResource
 	BeforeEach(func() {
 		sampleHealthChecks = []*core_mesh.HealthCheckResource{
@@ -51,7 +50,6 @@ var _ = Describe("kumactl get healthchecks", func() {
 	})
 
 	Describe("GetHealthChecksCmd", func() {
-
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore

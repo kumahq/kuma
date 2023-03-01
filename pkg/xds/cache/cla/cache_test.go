@@ -131,5 +131,4 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		expectedCla = envoy_endpoints.CreateClusterLoadAssignment("backend", []xds.Endpoint{endpointMap["backend"][1]})
 		Expect(claV2).To(matchers.MatchProto(expectedCla))
 	})
-
 })

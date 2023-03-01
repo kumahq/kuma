@@ -14,8 +14,7 @@ import (
 // OriginSecrets is a marker to indicate by which ProxyGenerator resources were generated.
 const OriginSecrets = "secrets"
 
-type Generator struct {
-}
+type Generator struct{}
 
 var _ generator_core.ResourceGenerator = Generator{}
 
@@ -109,7 +108,6 @@ func (g Generator) Generate(
 	if usedIdentity || len(usedCas) > 0 {
 		otherMeshes := ctx.Mesh.Resources.OtherMeshes().Items
 		identity, meshCas, err := ctx.ControlPlane.Secrets.GetForDataPlane(proxy.Dataplane, ctx.Mesh.Resource, otherMeshes)
-
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to generate dataplane identity cert and CAs")
 		}

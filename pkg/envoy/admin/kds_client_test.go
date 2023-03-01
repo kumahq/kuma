@@ -16,9 +16,7 @@ import (
 )
 
 var _ = Describe("KDS client", func() {
-
 	Context("Universal", func() {
-
 		rpcs := service.NewEnvoyAdminRPCs()
 		client := admin.NewKDSEnvoyAdminClient(rpcs, false)
 
@@ -135,7 +133,6 @@ var _ = Describe("KDS client", func() {
 	})
 
 	Context("Kubernetes", func() {
-
 		streams := service.NewEnvoyAdminRPCs()
 		client := admin.NewKDSEnvoyAdminClient(streams, true)
 

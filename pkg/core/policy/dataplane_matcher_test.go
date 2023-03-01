@@ -16,9 +16,7 @@ import (
 )
 
 var _ = Describe("Dataplane matcher", func() {
-
 	Describe("DataplanePolicyByName", func() {
-
 		type testCase struct {
 			input    []policy.DataplanePolicy
 			expected []policy.DataplanePolicy
@@ -65,7 +63,6 @@ var _ = Describe("Dataplane matcher", func() {
 	})
 
 	Describe("SelectDataplanePolicy()", func() {
-
 		type testCase struct {
 			proxy    *model.Proxy
 			policies []policy.DataplanePolicy

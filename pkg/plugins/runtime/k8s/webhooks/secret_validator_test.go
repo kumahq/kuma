@@ -19,7 +19,6 @@ import (
 )
 
 var _ = Describe("ServiceValidator", func() {
-
 	type testCase struct {
 		request      string
 		unsafeDelete bool
@@ -502,8 +501,7 @@ var _ = Describe("ServiceValidator", func() {
 	)
 })
 
-type testSecretValidator struct {
-}
+type testSecretValidator struct{}
 
 func (t *testSecretValidator) ValidateDelete(ctx context.Context, secretName string, secretMesh string) error {
 	var verr core_validators.ValidationError

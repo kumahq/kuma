@@ -27,7 +27,6 @@ import (
 )
 
 var _ = Describe("Secret Validator", func() {
-
 	var validator secrets_manager.SecretValidator
 	var resManager core_manager.ResourceManager
 	var caManagers core_ca.Managers

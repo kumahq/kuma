@@ -93,7 +93,8 @@ connectTimeout: 100s
 					},
 				},
 			},
-			expectedClusters: []string{`
+			expectedClusters: []string{
+				`
 name: echo-http
 connectTimeout: 100s
 `,

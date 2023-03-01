@@ -10,7 +10,6 @@ import (
 )
 
 var _ = Describe("Dataplane", func() {
-
 	DescribeTable("should pass validation",
 		func(dpYAML string) {
 			// given
@@ -1142,5 +1141,4 @@ var _ = Describe("Dataplane", func() {
                   message: 'unknown backend type. Available backends: "prometheus"'`,
 		}),
 	)
-
 })

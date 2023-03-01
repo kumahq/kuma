@@ -11,9 +11,11 @@ import (
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
-var FirstInboundPort = uint32(80)
-var FirstInboundServicePort = uint32(8080)
-var FirstOutboundPort = uint32(10001)
+var (
+	FirstInboundPort        = uint32(80)
+	FirstInboundServicePort = uint32(8080)
+	FirstOutboundPort       = uint32(10001)
+)
 
 type DataplaneBuilder struct {
 	res *core_mesh.DataplaneResource

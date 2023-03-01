@@ -14,7 +14,6 @@ import (
 )
 
 var _ = Describe("HTTP Filter modifications", func() {
-
 	type testCase struct {
 		listeners     []string
 		modifications []string
@@ -73,7 +72,8 @@ var _ = Describe("HTTP Filter modifications", func() {
                       httpFilters:
                       - name: envoy.filters.http.router`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 httpFilter:
                    operation: AddLast
                    value: |
@@ -119,7 +119,8 @@ var _ = Describe("HTTP Filter modifications", func() {
                       httpFilters:
                       - name: envoy.filters.http.router`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 httpFilter:
                    operation: AddFirst
                    value: |
@@ -166,7 +167,8 @@ var _ = Describe("HTTP Filter modifications", func() {
                 name: inbound:192.168.0.1:8080
                 trafficDirection: INBOUND`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 httpFilter:
                    operation: Remove
 `,
@@ -208,7 +210,8 @@ var _ = Describe("HTTP Filter modifications", func() {
                 name: inbound:192.168.0.1:8080
                 trafficDirection: INBOUND`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 httpFilter:
                    operation: Remove
                    match:
@@ -268,7 +271,8 @@ var _ = Describe("HTTP Filter modifications", func() {
                 name: inbound:192.168.0.1:8081
                 trafficDirection: INBOUND`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 httpFilter:
                    operation: Remove
                    match:
@@ -346,7 +350,8 @@ var _ = Describe("HTTP Filter modifications", func() {
                 name: inbound:192.168.0.1:8081
                 trafficDirection: INBOUND`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 httpFilter:
                    operation: Remove
                    match:
@@ -409,7 +414,8 @@ var _ = Describe("HTTP Filter modifications", func() {
                 name: inbound:192.168.0.1:8080
                 trafficDirection: INBOUND`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 httpFilter:
                    operation: AddAfter
                    match:
@@ -458,7 +464,8 @@ var _ = Describe("HTTP Filter modifications", func() {
                 name: inbound:192.168.0.1:8080
                 trafficDirection: INBOUND`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 httpFilter:
                    operation: AddAfter
                    match:
@@ -506,7 +513,8 @@ var _ = Describe("HTTP Filter modifications", func() {
                 name: inbound:192.168.0.1:8080
                 trafficDirection: INBOUND`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 httpFilter:
                    operation: AddBefore
                    match:
@@ -559,7 +567,8 @@ var _ = Describe("HTTP Filter modifications", func() {
                 name: inbound:192.168.0.1:8080
                 trafficDirection: INBOUND`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 httpFilter:
                    operation: Patch
                    match:
@@ -621,7 +630,8 @@ var _ = Describe("HTTP Filter modifications", func() {
                 name: inbound:192.168.0.1:8080
                 trafficDirection: INBOUND`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 httpFilter:
                    operation: Patch
                    match:
@@ -689,7 +699,8 @@ var _ = Describe("HTTP Filter modifications", func() {
                 name: inbound:192.168.0.1:8080
                 trafficDirection: INBOUND`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 httpFilter:
                    operation: Patch
                    match:

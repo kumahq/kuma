@@ -13,9 +13,10 @@ import (
 )
 
 type OutboundRoute struct {
-	Matches []api.Match
-	Filters []api.Filter
-	Split   []*plugins_xds.Split
+	Matches                 []api.Match
+	Filters                 []api.Filter
+	Split                   []*plugins_xds.Split
+	BackendRefToClusterName map[string]string
 }
 
 type HttpOutboundRouteConfigurer struct {
@@ -32,9 +33,10 @@ func (c *HttpOutboundRouteConfigurer) Configure(filterChain *envoy_listener.Filt
 	for _, route := range c.Routes {
 		route := envoy_routes.AddVirtualHostConfigurer(
 			&RoutesConfigurer{
-				Matches: route.Matches,
-				Filters: route.Filters,
-				Split:   route.Split,
+				Matches:                 route.Matches,
+				Filters:                 route.Filters,
+				Split:                   route.Split,
+				BackendRefToClusterName: route.BackendRefToClusterName,
 			})
 		virtualHostBuilder = virtualHostBuilder.Configure(route)
 	}

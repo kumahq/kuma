@@ -22,7 +22,6 @@ import (
 )
 
 var _ = Describe("kumactl get zones", func() {
-
 	zoneResources := []*system.ZoneResource{
 		{
 			Spec: &v1alpha1.Zone{},
@@ -39,7 +38,6 @@ var _ = Describe("kumactl get zones", func() {
 	}
 
 	Describe("GetZoneCmd", func() {
-
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore

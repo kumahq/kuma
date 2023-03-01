@@ -23,7 +23,6 @@ import (
 )
 
 var _ = Describe("Compatibility with old ASN.1 format", func() {
-
 	var issuer tokens.Issuer
 	var validator tokens.Validator
 	var signingKeyManager tokens.SigningKeyManager
@@ -39,7 +38,9 @@ var _ = Describe("Compatibility with old ASN.1 format", func() {
 		issuer = tokens.NewTokenIssuer(signingKeyManager)
 		validator = tokens.NewValidator(
 			core.Log.WithName("test"),
-			tokens.NewMeshedSigningKeyAccessor(resManager, TestTokenSigningKeyPrefix, model.DefaultMesh),
+			[]tokens.SigningKeyAccessor{
+				tokens.NewMeshedSigningKeyAccessor(resManager, TestTokenSigningKeyPrefix, model.DefaultMesh),
+			},
 			tokens.NewRevocations(resManager, TokenRevocationsGlobalSecretKey),
 			store_config.MemoryStore,
 		)

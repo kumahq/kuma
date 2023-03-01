@@ -48,11 +48,15 @@ type PolicyKey struct {
 
 type PoliciesByResourceType map[core_model.ResourceType][]core_model.Resource
 
-type AttachmentList []Attachment
-type Attachments map[Attachment][]core_model.Resource
+type (
+	AttachmentList []Attachment
+	Attachments    map[Attachment][]core_model.Resource
+)
 
-type AttachmentMap map[Attachment]PoliciesByResourceType
-type AttachmentsByPolicy map[PolicyKey]AttachmentList
+type (
+	AttachmentMap       map[Attachment]PoliciesByResourceType
+	AttachmentsByPolicy map[PolicyKey]AttachmentList
+)
 
 func (abp AttachmentsByPolicy) Merge(other AttachmentsByPolicy) {
 	for k, v := range other {

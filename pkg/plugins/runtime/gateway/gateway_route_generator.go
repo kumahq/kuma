@@ -63,11 +63,9 @@ func GenerateEnvoyRouteEntries(host GatewayHost) []route.Entry {
 
 				switch {
 				case routeEntry.Match.ExactPath != "":
-					exactEntries[routeEntry.Match.ExactPath] =
-						append(exactEntries[routeEntry.Match.ExactPath], routeEntry)
+					exactEntries[routeEntry.Match.ExactPath] = append(exactEntries[routeEntry.Match.ExactPath], routeEntry)
 				case routeEntry.Match.PrefixPath != "":
-					prefixEntries[routeEntry.Match.PrefixPath] =
-						append(prefixEntries[routeEntry.Match.PrefixPath], routeEntry)
+					prefixEntries[routeEntry.Match.PrefixPath] = append(prefixEntries[routeEntry.Match.PrefixPath], routeEntry)
 				default:
 					entries = append(entries, routeEntry)
 				}

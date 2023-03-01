@@ -10,7 +10,6 @@ import (
 )
 
 var _ = Describe("ZoneEgress", func() {
-
 	DescribeTable("should pass validation",
 		func(yaml string) {
 			// given

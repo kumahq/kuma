@@ -17,7 +17,6 @@ import (
 )
 
 var _ = Describe("ZoneIngressInsight Manager", func() {
-
 	It("should limit the number of subscription", func() {
 		// setup
 		s := memory.NewStore()

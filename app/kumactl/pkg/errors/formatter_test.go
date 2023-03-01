@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("Formatter test", func() {
-
 	type testCase struct {
 		err error
 		msg string
@@ -75,5 +74,4 @@ var _ = Describe("Formatter test", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 	})
-
 })

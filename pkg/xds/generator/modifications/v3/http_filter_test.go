@@ -13,7 +13,6 @@ import (
 )
 
 var _ = Describe("HTTP Filter modifications", func() {
-
 	type testCase struct {
 		listeners     []string
 		modifications []string
@@ -72,7 +71,8 @@ var _ = Describe("HTTP Filter modifications", func() {
                       httpFilters:
                       - name: envoy.filters.http.router`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 httpFilter:
                    operation: addLast
                    value: |
@@ -119,7 +119,8 @@ var _ = Describe("HTTP Filter modifications", func() {
                 name: inbound:192.168.0.1:8080
                 trafficDirection: INBOUND`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 httpFilter:
                    operation: remove
 `,
@@ -161,7 +162,8 @@ var _ = Describe("HTTP Filter modifications", func() {
                 name: inbound:192.168.0.1:8080
                 trafficDirection: INBOUND`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 httpFilter:
                    operation: remove
                    match:
@@ -221,7 +223,8 @@ var _ = Describe("HTTP Filter modifications", func() {
                 name: inbound:192.168.0.1:8081
                 trafficDirection: INBOUND`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 httpFilter:
                    operation: remove
                    match:
@@ -299,7 +302,8 @@ var _ = Describe("HTTP Filter modifications", func() {
                 name: inbound:192.168.0.1:8081
                 trafficDirection: INBOUND`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 httpFilter:
                    operation: remove
                    match:
@@ -362,7 +366,8 @@ var _ = Describe("HTTP Filter modifications", func() {
                 name: inbound:192.168.0.1:8080
                 trafficDirection: INBOUND`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 httpFilter:
                    operation: addAfter
                    match:
@@ -411,7 +416,8 @@ var _ = Describe("HTTP Filter modifications", func() {
                 name: inbound:192.168.0.1:8080
                 trafficDirection: INBOUND`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 httpFilter:
                    operation: addAfter
                    match:
@@ -459,7 +465,8 @@ var _ = Describe("HTTP Filter modifications", func() {
                 name: inbound:192.168.0.1:8080
                 trafficDirection: INBOUND`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 httpFilter:
                    operation: addBefore
                    match:
@@ -512,7 +519,8 @@ var _ = Describe("HTTP Filter modifications", func() {
                 name: inbound:192.168.0.1:8080
                 trafficDirection: INBOUND`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 httpFilter:
                    operation: patch
                    match:
@@ -574,7 +582,8 @@ var _ = Describe("HTTP Filter modifications", func() {
                 name: inbound:192.168.0.1:8080
                 trafficDirection: INBOUND`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 httpFilter:
                    operation: patch
                    match:
@@ -642,7 +651,8 @@ var _ = Describe("HTTP Filter modifications", func() {
                 name: inbound:192.168.0.1:8080
                 trafficDirection: INBOUND`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 httpFilter:
                    operation: patch
                    match:

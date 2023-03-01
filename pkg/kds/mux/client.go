@@ -26,9 +26,7 @@ import (
 	"github.com/kumahq/kuma/pkg/metrics"
 )
 
-var (
-	muxClientLog = core.Log.WithName("kds-mux-client")
-)
+var muxClientLog = core.Log.WithName("kds-mux-client")
 
 type client struct {
 	callbacks           Callbacks
@@ -250,6 +248,7 @@ func (c *client) NeedLeaderElection() bool {
 
 func tlsConfig(rootCaFile string) (*tls.Config, error) {
 	if rootCaFile == "" {
+		// #nosec G402 -- we allow this when not specifying a CA
 		return &tls.Config{
 			InsecureSkipVerify: true,
 		}, nil
@@ -263,5 +262,5 @@ func tlsConfig(rootCaFile string) (*tls.Config, error) {
 	if !ok {
 		return nil, errors.New("failed to parse root certificate")
 	}
-	return &tls.Config{RootCAs: roots}, nil
+	return &tls.Config{RootCAs: roots, MinVersion: tls.VersionTLS12}, nil
 }

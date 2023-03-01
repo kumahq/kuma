@@ -21,7 +21,6 @@ import (
 )
 
 var _ = Describe("OwnerReferenceMutator", func() {
-
 	createWebhook := func() webhook.AdmissionHandler {
 		return &webhooks.OwnerReferenceMutator{
 			Client:       k8sClient,
@@ -179,5 +178,4 @@ var _ = Describe("OwnerReferenceMutator", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(string(patch)).To(MatchJSON(expectedPatch))
 	})
-
 })

@@ -23,7 +23,6 @@ func newInstallGatewayKongCmd(ctx *install_context.InstallGatewayKongContext) *c
 			}
 
 			renderedFiles, err := renderFiles(templateFiles, args, simpleTemplateRenderer)
-
 			if err != nil {
 				return errors.Wrap(err, "Failed to render template files")
 			}

@@ -3,7 +3,6 @@
 **Builds**
 <!--CIBADGES-->
 [![CircleCI master](https://img.shields.io/circleci/build/github/kumahq/kuma/master?label=master)](https://circleci.com/gh/kumahq/kuma/tree/master)
-[![CircleCI release-1.5](https://img.shields.io/circleci/build/github/kumahq/kuma/release-1.5?label=release-1.5)](https://circleci.com/gh/kumahq/kuma/tree/release-1.5)
 [![CircleCI release-1.6](https://img.shields.io/circleci/build/github/kumahq/kuma/release-1.6?label=release-1.6)](https://circleci.com/gh/kumahq/kuma/tree/release-1.6)
 [![CircleCI release-1.7](https://img.shields.io/circleci/build/github/kumahq/kuma/release-1.7?label=release-1.7)](https://circleci.com/gh/kumahq/kuma/tree/release-1.7)
 [![CircleCI release-1.8](https://img.shields.io/circleci/build/github/kumahq/kuma/release-1.8?label=release-1.8)](https://circleci.com/gh/kumahq/kuma/tree/release-1.8)

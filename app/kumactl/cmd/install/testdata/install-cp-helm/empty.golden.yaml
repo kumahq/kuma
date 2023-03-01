@@ -300,17 +300,23 @@ spec:
   ports:
     - port: 5680
       name: diagnostics
+      appProtocol: http
     - port: 5681
       name: http-api-server
+      appProtocol: http
     - port: 5682
       name: https-api-server
+      appProtocol: http
     - port: 443
       name: https-admission-server
       targetPort: 5443
+      appProtocol: http
     - port: 5676
       name: mads-server
+      appProtocol: http
     - port: 5678
       name: dp-server
+      appProtocol: http
   selector:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -340,7 +346,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: 8fc117aa00b995fc1ec633b9f8f2be15e7f7c325460ce6c06bed414fd4bdc8e4
+        checksum/tls-secrets: aec0f89f48f1852775a87cd695d5a7033d774b4940ded38f1f380108e4b6633a
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -366,6 +372,8 @@ spec:
                   - 'kuma-control-plane'
               topologyKey: kubernetes.io/hostname
             weight: 100
+      securityContext:
+        runAsNonRoot: true
       serviceAccountName: kuma-control-plane
       automountServiceAccountToken: true
       nodeSelector:
@@ -377,6 +385,8 @@ spec:
         - name: control-plane
           image: "docker.io/kumahq/kuma-cp:0.0.1"
           imagePullPolicy: IfNotPresent
+          securityContext:
+            readOnlyRootFilesystem: true
           env:
             - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
               value: "false"
@@ -461,6 +471,8 @@ spec:
             - name: kuma-control-plane-config
               mountPath: /etc/kuma.io/kuma-control-plane
               readOnly: true
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: general-tls-cert
           secret:
@@ -468,6 +480,8 @@ spec:
         - name: kuma-control-plane-config
           configMap:
             name: kuma-control-plane-config
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
@@ -739,7 +753,6 @@ webhooks:
       - apiGroups:
           - "gateway.networking.k8s.io"
         apiVersions:
-          - v1alpha2
           - v1beta1
         operations:
           - CREATE

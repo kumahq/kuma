@@ -13,7 +13,6 @@ import (
 )
 
 var _ = Describe("TLS", func() {
-
 	var ch chan struct{}
 	var defaults intercp_tls.DefaultsComponent
 	var resManager manager.ResourceManager

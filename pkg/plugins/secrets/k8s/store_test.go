@@ -22,13 +22,12 @@ import (
 )
 
 var _ = Describe("KubernetesStore", func() {
-
 	var s secret_store.SecretStore
 	var ns string // each test should run in a dedicated k8s namespace
 	const name = "demo"
 	const noMesh = ""
 
-	var backend = struct {
+	backend := struct {
 		ParseYAML       func(yaml string) client.Object
 		Create          func(obj client.Object)
 		Get             func(obj client.Object, ns, name string)
@@ -756,6 +755,5 @@ var _ = Describe("KubernetesStore", func() {
 				Expect(string(secrets.Items[0].Spec.Data.Value)).To(Equal("four"))
 			})
 		})
-
 	})
 })

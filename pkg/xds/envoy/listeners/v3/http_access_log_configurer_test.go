@@ -14,7 +14,6 @@ import (
 )
 
 var _ = Describe("HttpAccessLogConfigurer", func() {
-
 	type testCase struct {
 		listenerName       string
 		listenerAddress    string

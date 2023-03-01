@@ -102,7 +102,6 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 	})
 
 	Context("Happy case", func() {
-
 		type testCase struct {
 			dataplane         string
 			proxyTemplateFile string
@@ -210,6 +209,5 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 				expected:          "2-envoy-config.golden.yaml",
 			}),
 		)
-
 	})
 })

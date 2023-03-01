@@ -126,7 +126,6 @@ var _ = Describe("AllowedRoutes support", func() {
 			defaultRouteNs,
 			otherRouteNs,
 		).Build()
-
 	})
 	Context("default AllowedRoutes", func() {
 		var simpleRef gatewayapi.ParentReference

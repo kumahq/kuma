@@ -81,7 +81,6 @@ func (s *shuffleStore) List(ctx context.Context, rl core_model.ResourceList, opt
 var _ xds_hooks.ResourceSetHook = &staticClusterAddHook{}
 
 var _ = Describe("GenerateSnapshot", func() {
-
 	var store core_store.ResourceStore
 	var gen *v3.TemplateSnapshotGenerator
 	var proxyBuilder *sync.DataplaneProxyBuilder
@@ -90,7 +89,6 @@ var _ = Describe("GenerateSnapshot", func() {
 	rand.Seed(GinkgoRandomSeed())
 
 	BeforeEach(func() {
-
 		store = &shuffleStore{memory.NewStore()}
 		store = core_store.NewPaginationStore(store)
 

@@ -13,7 +13,6 @@ import (
 )
 
 var _ = Describe("StartTimeOperator", func() {
-
 	Describe("FormatHttpLogEntry() and FormatTcpLogEntry()", func() {
 		type testCase struct {
 			timeFormat       string
@@ -107,7 +106,6 @@ var _ = Describe("StartTimeOperator", func() {
 				actual := fragment.String()
 				// then
 				Expect(actual).To(Equal(given.expected))
-
 			},
 			Entry("%START_TIME%", testCase{
 				timeFormat: "", // default time format

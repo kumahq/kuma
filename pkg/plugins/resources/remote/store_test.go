@@ -28,7 +28,6 @@ import (
 )
 
 var _ = Describe("RemoteStore", func() {
-
 	creationTime, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995Z")
 	modificationTime, _ := time.Parse(time.RFC3339, "2019-07-17T16:05:36.995Z")
 	type RequestAssertion = func(req *http.Request)
@@ -621,7 +620,6 @@ var _ = Describe("RemoteStore", func() {
 			}))
 		})
 	})
-
 })
 
 type RoundTripperFunc func(*http.Request) (*http.Response, error)

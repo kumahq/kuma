@@ -17,7 +17,6 @@ import (
 )
 
 var _ = Describe("kumactl generate tls-certificate", func() {
-
 	var backupNewSelfSignedCert func(string, tls.CertType, tls.KeyType, ...string) (tls.KeyPair, error)
 	BeforeEach(func() {
 		backupNewSelfSignedCert = generate.NewSelfSignedCert
@@ -90,7 +89,8 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 		It("should generate client certificate", func() {
 			// given
 			rootCmd := test.DefaultTestingRootCmd()
-			rootCmd.SetArgs([]string{"generate", "tls-certificate",
+			rootCmd.SetArgs([]string{
+				"generate", "tls-certificate",
 				"--key-file", keyFile.Name(),
 				"--cert-file", certFile.Name(),
 				"--type", "client",
@@ -105,7 +105,8 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 		It("should generate server certificate", func() {
 			// given
 			rootCmd := test.DefaultTestingRootCmd()
-			rootCmd.SetArgs([]string{"generate", "tls-certificate",
+			rootCmd.SetArgs([]string{
+				"generate", "tls-certificate",
 				"--key-file", keyFile.Name(),
 				"--cert-file", certFile.Name(),
 				"--type", "server",
@@ -116,7 +117,6 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 			// then
 			Do(rootCmd)
 		})
-
 	})
 
 	Context("client certificate", func() {
@@ -136,7 +136,8 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 		It("should generate client certificate", func() {
 			// given
 			rootCmd := test.DefaultTestingRootCmd()
-			rootCmd.SetArgs([]string{"generate", "tls-certificate",
+			rootCmd.SetArgs([]string{
+				"generate", "tls-certificate",
 				"--key-file", keyFile.Name(),
 				"--cert-file", certFile.Name(),
 				"--type", "client",
@@ -149,7 +150,8 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 		It("should validate that --hostname is present", func() {
 			// given
 			rootCmd := test.DefaultTestingRootCmd()
-			rootCmd.SetArgs([]string{"generate", "tls-certificate",
+			rootCmd.SetArgs([]string{
+				"generate", "tls-certificate",
 				"--key-file", keyFile.Name(),
 				"--cert-file", certFile.Name(),
 				"--type", "client",
@@ -163,7 +165,6 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 			// then
 			Expect(err).To(MatchError("required flag(s) \"hostname\" not set"))
 		})
-
 	})
 
 	Context("server certificate", func() {
@@ -182,7 +183,8 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 		It("should generate server certificate", func() {
 			// given
 			rootCmd := test.DefaultTestingRootCmd()
-			rootCmd.SetArgs([]string{"generate", "tls-certificate",
+			rootCmd.SetArgs([]string{
+				"generate", "tls-certificate",
 				"--key-file", keyFile.Name(),
 				"--cert-file", certFile.Name(),
 				"--type", "server",
@@ -197,7 +199,8 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 		It("should generate an ECDSA server certificate", func() {
 			// given
 			rootCmd := test.DefaultTestingRootCmd()
-			rootCmd.SetArgs([]string{"generate", "tls-certificate",
+			rootCmd.SetArgs([]string{
+				"generate", "tls-certificate",
 				"--key-file", keyFile.Name(),
 				"--cert-file", certFile.Name(),
 				"--type", "server",
@@ -213,7 +216,8 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 		It("should validate that --hostname is present", func() {
 			// given
 			rootCmd := test.DefaultTestingRootCmd()
-			rootCmd.SetArgs([]string{"generate", "tls-certificate",
+			rootCmd.SetArgs([]string{
+				"generate", "tls-certificate",
 				"--key-file", keyFile.Name(),
 				"--cert-file", certFile.Name(),
 				"--type", "server",
@@ -231,7 +235,8 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 		It("should validate that --key-type is checked", func() {
 			// given
 			rootCmd := test.DefaultTestingRootCmd()
-			rootCmd.SetArgs([]string{"generate", "tls-certificate",
+			rootCmd.SetArgs([]string{
+				"generate", "tls-certificate",
 				"--key-file", keyFile.Name(),
 				"--cert-file", certFile.Name(),
 				"--type", "server",
@@ -247,6 +252,5 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 			// then
 			Expect(err).To(MatchError(`invalid key type "phoney"`))
 		})
-
 	})
 })

@@ -13,7 +13,6 @@ import (
 )
 
 var _ = Describe("Config", func() {
-
 	It("should be loadable from configuration file", func() {
 		// given
 		cfg := runtime_k8s.KubernetesRuntimeConfig{}

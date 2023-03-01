@@ -13,8 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
-type InternalServicesGenerator struct {
-}
+type InternalServicesGenerator struct{}
 
 // Generate will generate envoy resources for one mesh (when mTLS enabled)
 func (g *InternalServicesGenerator) Generate(
@@ -108,7 +107,6 @@ func (*InternalServicesGenerator) generateCDS(
 			Configure(envoy_clusters.LbSubset(tagKeySlice)).
 			Configure(envoy_clusters.DefaultTimeout()).
 			Build()
-
 		if err != nil {
 			return nil, err
 		}

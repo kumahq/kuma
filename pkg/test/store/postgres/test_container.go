@@ -31,7 +31,7 @@ func resourceDir() string {
 		dir = path.Dir(dir)
 	}
 	rDir := path.Join(path.Dir(dir), "tools/postgres")
-	err := os.Chmod(path.Join(rDir, "certs/postgres.client.key"), 0600)
+	err := os.Chmod(path.Join(rDir, "certs/postgres.client.key"), 0o600)
 	if err != nil {
 		panic(err)
 	}

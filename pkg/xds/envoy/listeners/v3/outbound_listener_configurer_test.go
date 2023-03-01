@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("OutboundListenerConfigurer", func() {
-
 	type testCase struct {
 		listenerName     string
 		listenerAddress  string

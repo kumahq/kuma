@@ -19,7 +19,6 @@ import (
 )
 
 var _ = Describe("Unmarshal ResourceList", func() {
-
 	Describe("old unversioned resources", func() {
 		It("it should be possible to unmarshal JSON response from Kuma API Server", func() {
 			// given

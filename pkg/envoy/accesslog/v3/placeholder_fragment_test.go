@@ -9,7 +9,6 @@ import (
 )
 
 var _ = Describe("Placeholder", func() {
-
 	Describe("FormatHttpLogEntry() and FormatTcpLogEntry()", func() {
 		type testCase struct {
 			variable string
@@ -110,7 +109,6 @@ var _ = Describe("Placeholder", func() {
 				actual := fragment.String()
 				// then
 				Expect(actual).To(Equal(given.expected))
-
 			},
 			Entry("KUMA_SOURCE_ADDRESS", testCase{
 				variable: "KUMA_SOURCE_ADDRESS",

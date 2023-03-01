@@ -10,7 +10,7 @@ func TryWriteToDir(dir string) error {
 	file, err := os.CreateTemp(dir, "write-access-check")
 	if err != nil {
 		if os.IsNotExist(err) {
-			if err := os.MkdirAll(dir, os.ModeDir|0755); err != nil {
+			if err := os.MkdirAll(dir, os.ModeDir|0o755); err != nil {
 				return errors.Wrapf(err, "unable to create a directory %q", dir)
 			}
 			file, err = os.CreateTemp(dir, "write-access-check")

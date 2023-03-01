@@ -17,11 +17,9 @@ const (
 	NoMesh = ""
 )
 
-var (
-	// ResourceNameExtensionsUnsupported is a convenience constant
-	// that is meant to make source code more readable.
-	ResourceNameExtensionsUnsupported = ResourceNameExtensions(nil)
-)
+// ResourceNameExtensionsUnsupported is a convenience constant
+// that is meant to make source code more readable.
+var ResourceNameExtensionsUnsupported = ResourceNameExtensions(nil)
 
 func WithMesh(mesh string, name string) ResourceKey {
 	return ResourceKey{Mesh: mesh, Name: name}

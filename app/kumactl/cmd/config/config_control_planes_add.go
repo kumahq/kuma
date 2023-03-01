@@ -24,6 +24,7 @@ type controlPlaneAddArgs struct {
 	headers        map[string]string
 	authType       string
 	authConf       map[string]string
+	skipCheck      bool
 }
 
 func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
@@ -60,8 +61,10 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 				cp.Coordinates.ApiServer.Headers = append(cp.Coordinates.ApiServer.Headers, header)
 			}
 			cfg := pctx.Config()
-			if err := config.ValidateCpCoordinates(cp, pctx.Args.ApiTimeout); err != nil {
-				return err
+			if !args.skipCheck {
+				if err := config.ValidateCpCoordinates(cp, pctx.Args.ApiTimeout); err != nil {
+					return err
+				}
 			}
 			if !cfg.AddControlPlane(cp, args.overwrite) {
 				return errors.Errorf("Control Plane with name %q already exists. Use --overwrite to replace an existing one.", cp.Name)
@@ -95,18 +98,14 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 	cmd.Flags().StringToStringVar(&args.headers, "headers", args.headers, "add these headers while communicating to control plane, format key=value")
 	cmd.Flags().StringVar(&args.authType, "auth-type", args.authType, `authentication type (for example: "tokens")`)
 	cmd.Flags().StringToStringVar(&args.authConf, "auth-conf", args.authConf, "authentication configuration for defined authentication type format key=value")
+	cmd.Flags().BoolVar(&args.skipCheck, "skip-check", false, "skip checking if we can connect to the CP")
 	return cmd
 }
 
 func validateArgs(args controlPlaneAddArgs, plugins map[string]plugins.AuthnPlugin) error {
-	url, err := net_url.ParseRequestURI(args.apiServerURL)
+	_, err := net_url.ParseRequestURI(args.apiServerURL)
 	if err != nil {
 		return errors.Wrap(err, "API Server URL is invalid")
-	}
-	if url.Scheme == "https" {
-		if args.caCertFile == "" && !args.skipVerify {
-			return errors.New("HTTPS is used. You need to specify either --ca-cert-file so kumactl can verify authenticity of the Control Plane or --skip-verify to skip verification")
-		}
 	}
 	if (args.clientKeyFile != "" && args.clientCertFile == "") || (args.clientKeyFile == "" && args.clientCertFile != "") {
 		return errors.New("Both --client-cert-file and --client-key-file needs to be specified")

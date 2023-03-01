@@ -14,9 +14,7 @@ import (
 
 var _ = Describe("Store", func() {
 	Describe("NewResourceStore(..)", func() {
-
 		Context("should support Control Plane installed anywhere", func() {
-
 			It("should succeed if configuration is valid", func() {
 				// given
 				config := `
@@ -37,7 +35,6 @@ var _ = Describe("Store", func() {
 		})
 
 		Context("should fail gracefully when Control Plane url is unparsable", func() {
-
 			It("should fail otherwise", func() {
 				// given
 				cp := config_proto.ControlPlane{

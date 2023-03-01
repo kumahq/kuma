@@ -57,7 +57,6 @@ func (t *testAuthenticator) Authenticate(_ context.Context, resource core_model.
 }
 
 var _ = Describe("Auth Callbacks", func() {
-
 	var testAuth *testAuthenticator
 	var resManager core_manager.ResourceManager
 	var callbacks envoy_server.Callbacks

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<direct>
+  <chain ipv="ipv4" table="nat" chain="KUMA_MESH_INBOUND"></chain>
+  <chain ipv="ipv4" table="nat" chain="KUMA_MESH_OUTBOUND"></chain>
+  <chain ipv="ipv4" table="nat" chain="KUMA_MESH_INBOUND_REDIRECT"></chain>
+  <chain ipv="ipv4" table="nat" chain="KUMA_MESH_OUTBOUND_REDIRECT"></chain>
+  <rule ipv="ipv4" table="nat" chain="PREROUTING" priority="3">--protocol tcp --jump KUMA_MESH_INBOUND</rule>
+  <rule ipv="ipv4" table="nat" chain="OUTPUT" priority="3">--protocol udp --destination-port 53 --match owner --uid-owner 5678 --jump RETURN</rule>
+  <rule ipv="ipv4" table="nat" chain="OUTPUT" priority="3">--protocol udp --destination-port 53 --jump REDIRECT --to-ports 15053</rule>
+  <rule ipv="ipv4" table="nat" chain="OUTPUT" priority="3">--protocol tcp --jump KUMA_MESH_OUTBOUND</rule>
+  <rule ipv="ipv4" table="nat" chain="KUMA_MESH_INBOUND" priority="3">--protocol tcp --jump KUMA_MESH_INBOUND_REDIRECT</rule>
+  <rule ipv="ipv4" table="nat" chain="KUMA_MESH_OUTBOUND" priority="3">--source 127.0.0.6/32 --out-interface lo --jump RETURN</rule>
+  <rule ipv="ipv4" table="nat" chain="KUMA_MESH_OUTBOUND" priority="3">--protocol tcp ! --destination-port 53 --out-interface lo ! --destination 127.0.0.1/32 --match owner --uid-owner 5678 --jump KUMA_MESH_INBOUND_REDIRECT</rule>
+  <rule ipv="ipv4" table="nat" chain="KUMA_MESH_OUTBOUND" priority="3">--protocol tcp ! --destination-port 53 --out-interface lo --match owner ! --uid-owner 5678 --jump RETURN</rule>
+  <rule ipv="ipv4" table="nat" chain="KUMA_MESH_OUTBOUND" priority="3">--match owner --uid-owner 5678 --jump RETURN</rule>
+  <rule ipv="ipv4" table="nat" chain="KUMA_MESH_OUTBOUND" priority="3">--protocol tcp --destination-port 53 --jump REDIRECT --to-ports 15053</rule>
+  <rule ipv="ipv4" table="nat" chain="KUMA_MESH_OUTBOUND" priority="3">--destination 127.0.0.1/32 --jump RETURN</rule>
+  <rule ipv="ipv4" table="nat" chain="KUMA_MESH_OUTBOUND" priority="3">--jump KUMA_MESH_OUTBOUND_REDIRECT</rule>
+  <rule ipv="ipv4" table="nat" chain="KUMA_MESH_INBOUND_REDIRECT" priority="3">--protocol tcp --jump REDIRECT --to-ports 15006</rule>
+  <rule ipv="ipv4" table="nat" chain="KUMA_MESH_OUTBOUND_REDIRECT" priority="3">--protocol tcp --jump REDIRECT --to-ports 15001</rule>
+</direct>

@@ -14,7 +14,6 @@ import (
 )
 
 var _ = Describe("Cluster modifications", func() {
-
 	type testCase struct {
 		clusters      []string
 		modifications []string
@@ -56,7 +55,8 @@ var _ = Describe("Cluster modifications", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("should add cluster", testCase{
-			modifications: []string{`
+			modifications: []string{
+				`
                 cluster:
                    operation: Add
                    value: |

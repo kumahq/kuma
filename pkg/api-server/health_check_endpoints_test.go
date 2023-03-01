@@ -23,7 +23,7 @@ var _ = Describe("HealthCheck Endpoints", func() {
 	var apiServer *api_server.ApiServer
 	var resourceStore store.ResourceStore
 	var client resourceApiClient
-	var stop = func() {}
+	stop := func() {}
 
 	BeforeEach(func() {
 		core.Now = func() time.Time {
@@ -52,7 +52,6 @@ var _ = Describe("HealthCheck Endpoints", func() {
 	})
 
 	Describe("PUT => GET", func() {
-
 		given := `
         type: HealthCheck
         name: web-to-backend

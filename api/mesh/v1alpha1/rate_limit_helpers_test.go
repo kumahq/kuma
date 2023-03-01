@@ -8,7 +8,6 @@ import (
 )
 
 var _ = Describe("RateLimitHelper", func() {
-
 	Describe("SourceTags", func() {
 		type testCase struct {
 			input    *RateLimit

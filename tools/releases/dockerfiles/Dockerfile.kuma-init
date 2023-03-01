@@ -1,5 +1,3 @@
-# When updatinng image version, remember to update it in tools/releases/distros.sh and enterprise version
-FROM kumahq/kuma-net-ebpf:0.8.10 as ebpf
 FROM gcr.io/k8s-staging-build-image/distroless-iptables:v0.1.2
 ARG ARCH
 
@@ -11,9 +9,6 @@ COPY /tools/releases/templates/LICENSE \
     /kuma/
 
 COPY /tools/releases/templates/NOTICE-kumactl /kuma/NOTICE
-
-# ebpf
-COPY --from=ebpf /ebpf /kuma/ebpf
 
 ENTRYPOINT ["/usr/bin/kumactl"]
 CMD ["install", "transparent-proxy"]

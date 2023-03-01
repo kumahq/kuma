@@ -35,7 +35,7 @@ func RegisterXDS(
 ) error {
 	xdsContext := NewXdsContext()
 
-	authenticator := rt.XDSAuthenticator()
+	authenticator := rt.XDS().PerProxyTypeAuthenticator()
 	authCallbacks := auth.NewCallbacks(rt.ReadOnlyResourceManager(), authenticator, auth.DPNotFoundRetry{}) // no need to retry on DP Not Found because we are creating DP in DataplaneLifecycle callback
 
 	metadataTracker := xds_callbacks.NewDataplaneMetadataTracker()
@@ -61,7 +61,7 @@ func RegisterXDS(
 		newResourceWarmingForcer(xdsContext.Cache(), xdsContext.Hasher()),
 	}
 
-	if cb := rt.XDSServerCallbacks(); cb != nil {
+	if cb := rt.XDS().ServerCallbacks; cb != nil {
 		callbacks = append(callbacks, util_xds_v3.AdaptCallbacks(cb))
 	}
 
@@ -86,7 +86,7 @@ func DefaultReconciler(
 
 	return &reconciler{
 		generator: &TemplateSnapshotGenerator{
-			ResourceSetHooks:      rt.XDSHooks().ResourceSetHooks(),
+			ResourceSetHooks:      rt.XDS().Hooks.ResourceSetHooks(),
 			ProxyTemplateResolver: resolver,
 		},
 		cacher:         &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
@@ -111,7 +111,7 @@ func DefaultIngressReconciler(
 
 	return &reconciler{
 		generator: &TemplateSnapshotGenerator{
-			ResourceSetHooks:      rt.XDSHooks().ResourceSetHooks(),
+			ResourceSetHooks:      rt.XDS().Hooks.ResourceSetHooks(),
 			ProxyTemplateResolver: resolver,
 		},
 		cacher:         &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
@@ -136,7 +136,7 @@ func DefaultEgressReconciler(
 
 	return &reconciler{
 		generator: &TemplateSnapshotGenerator{
-			ResourceSetHooks:      rt.XDSHooks().ResourceSetHooks(),
+			ResourceSetHooks:      rt.XDS().Hooks.ResourceSetHooks(),
 			ProxyTemplateResolver: resolver,
 		},
 		cacher:         &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},

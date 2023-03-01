@@ -2,7 +2,6 @@ package transparentproxy
 
 import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
-	"github.com/kumahq/kuma/pkg/transparentproxy/istio"
 )
 
 type IptablesTranslator interface {
@@ -21,8 +20,4 @@ type TransparentProxy interface {
 	// Cleanup returns the stdout and stderr as string and an error if such
 	// has occurred
 	Cleanup(cfg *config.TransparentProxyConfig) (string, error)
-}
-
-func DefaultTransparentProxy() TransparentProxy {
-	return &istio.IstioTransparentProxy{}
 }

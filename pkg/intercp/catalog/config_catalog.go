@@ -55,7 +55,7 @@ func (c *ConfigCatalog) Replace(ctx context.Context, instances []Instance) (bool
 	if err != nil {
 		return false, nil
 	}
-	var newConfig = string(bytes)
+	newConfig := string(bytes)
 	var updated bool
 	err = manager.Upsert(ctx, c.resManager, CatalogKey, system.NewConfigResource(), func(resource model.Resource) error {
 		if resource.(*system.ConfigResource).Spec.GetConfig() != newConfig {

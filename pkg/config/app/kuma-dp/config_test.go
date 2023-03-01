@@ -31,7 +31,6 @@ var _ = Describe("Config", func() {
 	})
 
 	Context("with modified environment variables", func() {
-
 		var backupEnvVars []string
 
 		BeforeEach(func() {
@@ -142,7 +141,6 @@ var _ = Describe("Config", func() {
 
 			// then
 			Expect(cfg.Validate()).ShouldNot(Succeed())
-
 		},
 		Entry("unsupported proxy type", func(cfg *kuma_dp.Config) {
 			cfg.Dataplane.ProxyType = "gateway"
@@ -151,5 +149,4 @@ var _ = Describe("Config", func() {
 			cfg.ControlPlane.URL = ":333"
 		}),
 	)
-
 })

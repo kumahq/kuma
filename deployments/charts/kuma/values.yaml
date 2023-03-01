@@ -331,26 +331,18 @@ cni:
   podAnnotations: { }
 
   image:
-    # -- CNI image registry
-    registry: "docker.io/kumahq"
     # -- CNI image repository
-    repository: "install-cni"
-    # -- CNI image tag
-    tag: "0.0.10"
+    repository: "kuma-cni"
+    # -- CNI image tag - defaults to .Chart.AppVersion
+    tag:
     # -- CNI image pull policy
     imagePullPolicy: IfNotPresent
 
   # -- it's only useful in tests to trigger a possible race condition
   delayStartupSeconds: 0
 
-  # -- use new CNI image (experimental)
+  # -- use new CNI (experimental)
   experimental:
-    image:
-      # -- CNI experimental image repository
-      repository: "kuma-cni"
-      # -- CNI experimental image tag - defaults to .Chart.AppVersion
-      tag:
-
     imageEbpf:
       # -- CNI experimental eBPF image registry
       registry: "docker.io/kumahq"
@@ -691,10 +683,6 @@ hooks:
 experimental:
   # -- If true, it installs experimental Gateway API support
   gatewayAPI: false
-  # -- If true, it installs experimental new version of the CNI
-  cni: false
-  # -- If true, use the new transparent proxy engine
-  transparentProxy: false
   # Configuration for the experimental ebpf mode for transparent proxy
   ebpf:
     # -- If true, ebpf will be used instead of using iptables to install/configure transparent proxy
@@ -709,6 +697,20 @@ experimental:
     tcAttachIface: ""
     # -- Path where compiled eBPF programs which will be installed can be found
     programsSourcePath: /kuma/ebpf
+
+legacy:
+  # -- If true, use the legacy transparent proxy engine
+  transparentProxy: false
+  cni:
+    # -- If true, it installs legacy version of the CNI
+    enabled: false
+    image:
+      # -- CNI v1 image registry
+      registry: "docker.io/kumahq"
+      # -- CNI v1 image repository
+      repository: "install-cni"
+      # -- CNI v1 image tag
+      tag: "0.0.10"
 
 # Postgres' settings for universal control plane on k8s
 postgres:

@@ -53,3 +53,5 @@ func (j *jwtTokenIssuer) Generate(ctx context.Context, claims Claims, validFor t
 	}
 	return tokenString, nil
 }
+
+var IssuerDisabled = errors.New("issuing tokens using the control plane is disabled.")

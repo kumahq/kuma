@@ -50,7 +50,7 @@ func NewApp(appName string, verbose bool, port string, envMap map[string]string,
 		panic(errors.Wrap(err, "could not create /tmp/e2e"))
 	}
 	logFileName := logDirName + "/" + appName
-	app.logFile, err = os.OpenFile(logFileName, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0660)
+	app.logFile, err = os.OpenFile(logFileName, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0o660)
 	if err != nil {
 		panic(errors.Wrap(err, "could not create "+logFileName))
 	}

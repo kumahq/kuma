@@ -14,8 +14,10 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/bootstrap"
 )
 
-const EnvoyClusterLabelName = "envoy_cluster_name"
-const EnvoyHttpConnManagerPrefixLabelName = "envoy_http_conn_manager_prefix"
+const (
+	EnvoyClusterLabelName               = "envoy_cluster_name"
+	EnvoyHttpConnManagerPrefixLabelName = "envoy_http_conn_manager_prefix"
+)
 
 const MeshTrafficLabelName = "kuma_io_mesh_traffic"
 

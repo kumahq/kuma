@@ -8,7 +8,6 @@ import (
 )
 
 var _ = Describe("Auto configuration", func() {
-
 	It("should autoconfigure xds params", func() {
 		// given
 		cfg := kuma_cp.DefaultConfig()

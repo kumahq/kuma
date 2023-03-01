@@ -38,7 +38,6 @@ func (c *countingDpCallbacks) OnProxyDisconnected(ctx context.Context, streamID 
 var _ DataplaneCallbacks = &countingDpCallbacks{}
 
 var _ = Describe("Dataplane Callbacks", func() {
-
 	countingCallbacks := &countingDpCallbacks{}
 	callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(countingCallbacks))
 

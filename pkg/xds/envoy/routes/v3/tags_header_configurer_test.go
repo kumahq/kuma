@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("TagsHeaderConfigurer", func() {
-
 	type testCase struct {
 		tags     mesh_proto.MultiValueTagSet
 		expected string

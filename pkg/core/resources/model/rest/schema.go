@@ -18,7 +18,7 @@ func (u *unmarshaler) rawSchemaValidation(bytes []byte, schema *spec.Schema) err
 	}
 
 	var rootSchema *spec.Schema = nil
-	var root = ""
+	root := ""
 	validator := validate.NewSchemaValidator(schema, rootSchema, root, strfmt.Default)
 
 	res := validator.Validate(rawObj)

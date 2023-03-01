@@ -31,7 +31,7 @@ func newK8sResource(rootArgs *args) *cobra.Command {
 			pconfig.GoModule = rootArgs.goModule
 
 			k8sPath := filepath.Join(rootArgs.pluginDir, "k8s", rootArgs.version)
-			if err := os.MkdirAll(k8sPath, 0755); err != nil {
+			if err := os.MkdirAll(k8sPath, 0o755); err != nil {
 				return err
 			}
 

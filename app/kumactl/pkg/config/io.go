@@ -43,11 +43,11 @@ func Save(file string, cfg *config_proto.Configuration) error {
 	}
 	dir := filepath.Dir(configFile)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		if err := os.MkdirAll(dir, os.ModeDir|0755); err != nil {
+		if err := os.MkdirAll(dir, os.ModeDir|0o755); err != nil {
 			return errors.Wrapf(err, "Failed to create a directory %q", dir)
 		}
 	}
-	if err := os.WriteFile(configFile, contents, 0600); err != nil {
+	if err := os.WriteFile(configFile, contents, 0o600); err != nil {
 		return errors.Wrapf(err, "Failed to write configuration into file %q", configFile)
 	}
 	return nil

@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("InboundListenerConfigurer", func() {
-
 	type testCase struct {
 		listenerName     string
 		listenerProtocol xds.SocketAddressProtocol

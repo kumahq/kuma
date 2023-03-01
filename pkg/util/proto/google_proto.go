@@ -43,10 +43,12 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 )
 
-type MergeFunction func(dst, src protoreflect.Message)
-type mergeOptions struct {
-	customMergeFn map[protoreflect.FullName]MergeFunction
-}
+type (
+	MergeFunction func(dst, src protoreflect.Message)
+	mergeOptions  struct {
+		customMergeFn map[protoreflect.FullName]MergeFunction
+	}
+)
 type OptionFn func(options mergeOptions) mergeOptions
 
 func MergeFunctionOptionFn(name protoreflect.FullName, function MergeFunction) OptionFn {

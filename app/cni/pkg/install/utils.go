@@ -35,7 +35,6 @@ func CreateNewLogger(name string, logLevel kuma_log.LogLevel) logr.Logger {
 
 func SetLogLevel(logger *logr.Logger, level string, name string) error {
 	logLevel, err := kuma_log.ParseLogLevel(level)
-
 	if err != nil {
 		return err
 	}

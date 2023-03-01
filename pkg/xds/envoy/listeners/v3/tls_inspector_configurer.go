@@ -7,8 +7,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
-type TLSInspectorConfigurer struct {
-}
+type TLSInspectorConfigurer struct{}
 
 var _ ListenerConfigurer = &TLSInspectorConfigurer{}
 

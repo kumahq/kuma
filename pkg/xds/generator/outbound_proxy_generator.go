@@ -25,8 +25,7 @@ var outboundLog = core.Log.WithName("outbound-proxy-generator")
 // OriginOutbound is a marker to indicate by which ProxyGenerator resources were generated.
 const OriginOutbound = "outbound"
 
-type OutboundProxyGenerator struct {
-}
+type OutboundProxyGenerator struct{}
 
 // Whenever `split` is specified in the TrafficRoute which has more than kuma.io/service tag
 // We generate a separate Envoy cluster with _X_ suffix. SplitCounter ensures that we have different X for every split in one Dataplane
@@ -420,7 +419,8 @@ func (OutboundProxyGenerator) determineRoutes(
 	}
 
 	appendRoute := func(routes envoy_common.Routes, match *mesh_proto.TrafficRoute_Http_Match, modify *mesh_proto.TrafficRoute_Http_Modify,
-		clusters []envoy_common.Cluster) envoy_common.Routes {
+		clusters []envoy_common.Cluster,
+	) envoy_common.Routes {
 		if len(clusters) == 0 {
 			return routes
 		}

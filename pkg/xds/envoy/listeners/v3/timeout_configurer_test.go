@@ -16,7 +16,6 @@ import (
 )
 
 var _ = Describe("TimeoutConfigurer", func() {
-
 	userTimeout := &mesh_proto.Timeout_Conf{
 		ConnectTimeout: util_proto.Duration(100 * time.Second),
 		Tcp: &mesh_proto.Timeout_Conf_Tcp{

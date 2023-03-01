@@ -13,9 +13,7 @@ import (
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 )
 
-var (
-	dataplaneLog = core.Log.WithName("kuma-dp")
-)
+var dataplaneLog = core.Log.WithName("kuma-dp")
 
 // NewRootCmd represents the base command when called without any subcommands.
 func NewRootCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {

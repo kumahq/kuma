@@ -22,7 +22,6 @@ import (
 )
 
 var _ = Describe("kumactl get global-secrets", func() {
-
 	var sampleSecrets []*system.GlobalSecretResource
 
 	BeforeEach(func() {
@@ -49,7 +48,6 @@ var _ = Describe("kumactl get global-secrets", func() {
 	})
 
 	Describe("GetGlobalSecretsCmd", func() {
-
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore

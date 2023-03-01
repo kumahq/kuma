@@ -10,9 +10,11 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
-const ClientRuleAttachmentType = "ClientSubset"
-const DestinationRuleAttachmentType = "DestinationSubset"
-const SingleItemRuleAttachmentType = "SingleItem"
+const (
+	ClientRuleAttachmentType      = "ClientSubset"
+	DestinationRuleAttachmentType = "DestinationSubset"
+	SingleItemRuleAttachmentType  = "SingleItem"
+)
 
 type RuleAttachment struct {
 	Type       string

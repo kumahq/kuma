@@ -21,11 +21,10 @@ import (
 )
 
 var _ = Describe("KubernetesStore", func() {
-
 	var s core_store.ResourceStore
 	var ns string
 
-	var backend = struct {
+	backend := struct {
 		ParseYAML       func(yaml string) client.Object
 		Create          func(obj client.Object)
 		Get             func(obj client.Object, ns, name string)
@@ -202,5 +201,4 @@ var _ = Describe("KubernetesStore", func() {
 			Expect(err).To(HaveOccurred())
 		})
 	})
-
 })

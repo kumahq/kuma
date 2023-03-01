@@ -13,8 +13,7 @@ import (
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
-type ResourceBuilder interface {
-}
+type ResourceBuilder interface{}
 
 type SnapshotBuilder interface {
 	With(typ string, resources []envoy_types.Resource) SnapshotBuilder

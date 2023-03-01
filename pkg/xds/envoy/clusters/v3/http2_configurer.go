@@ -9,8 +9,10 @@ import (
 )
 
 // Window size defaults.
-const DefaultInitialStreamWindowSize = 64 * 1024
-const DefaultInitialConnectionWindowSize = 1024 * 1024
+const (
+	DefaultInitialStreamWindowSize     = 64 * 1024
+	DefaultInitialConnectionWindowSize = 1024 * 1024
+)
 
 type Http2Configurer struct {
 	EdgeProxyWindowSizes bool

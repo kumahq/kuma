@@ -513,6 +513,7 @@ func TestServerExternalServiceUniversal(name string, mesh string, port int, tls 
 		return cluster.DeployApp(opt...)
 	}
 }
+
 func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) InstallFunc {
 	return func(cluster Cluster) error {
 		var opts appDeploymentOptions
@@ -554,8 +555,7 @@ func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 
 		serviceProbe := ""
 		if opts.serviceProbe {
-			serviceProbe =
-				`    serviceProbe:
+			serviceProbe = `    serviceProbe:
       tcp: {}`
 		}
 

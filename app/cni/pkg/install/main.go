@@ -27,9 +27,7 @@ const (
 	defaultLogName     = "install-cni"
 )
 
-var (
-	log = CreateNewLogger(defaultLogName, kuma_log.DebugLevel)
-)
+var log = CreateNewLogger(defaultLogName, kuma_log.DebugLevel)
 
 func removeBinFiles() error {
 	return os.Remove("/host/opt/cni/bin/kuma-cni")
@@ -189,7 +187,7 @@ func tryWritingToDir(dir string) error {
 		return errors.Wrap(err, "can't atomically write kuma-cni file")
 	}
 
-	err = os.Chmod(destination, stat.Mode()|0111)
+	err = os.Chmod(destination, stat.Mode()|0o111)
 	if err != nil {
 		return errors.Wrap(err, "can't chmod kuma-cni file")
 	}

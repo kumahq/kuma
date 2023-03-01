@@ -9,7 +9,6 @@ import (
 )
 
 var _ = Describe("AllowedValuesHint()", func() {
-
 	type testCase struct {
 		values   []string
 		expected string
@@ -39,7 +38,6 @@ var _ = Describe("AllowedValuesHint()", func() {
 })
 
 var _ = Describe("selector tag keys", func() {
-
 	type testCase struct {
 		tags      map[string]string
 		validator TagKeyValidatorFunc

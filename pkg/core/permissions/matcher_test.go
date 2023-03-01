@@ -18,7 +18,6 @@ import (
 )
 
 var _ = Describe("Match", func() {
-
 	type testCase struct {
 		dataplane *core_mesh.DataplaneResource
 		mesh      *core_mesh.MeshResource

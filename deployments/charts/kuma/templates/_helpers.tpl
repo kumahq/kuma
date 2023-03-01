@@ -188,8 +188,8 @@ returns: formatted image string
     {{ fail "controlPlane.kdsGlobalAddress can't be empty when controlPlane.mode=='zone', needs to be the global control-plane address" }}
   {{ else }}
     {{ $url := urlParse .Values.controlPlane.kdsGlobalAddress }}
-    {{ if not (eq $url.scheme "grpcs") }}
-      {{ $msg := printf "controlPlane.kdsGlobalAddress must be a url with scheme grpcs:// got:'%s'" .Values.controlPlane.kdsGlobalAddress }}
+    {{ if not (or (eq $url.scheme "grpcs") (eq $url.scheme "grpc")) }}
+      {{ $msg := printf "controlPlane.kdsGlobalAddress must be a url with scheme grpcs:// or grpc:// got:'%s'" .Values.controlPlane.kdsGlobalAddress }}
       {{ fail $msg }}
     {{ end }}
   {{ end }}
@@ -271,14 +271,14 @@ env:
 - name: KUMA_EXPERIMENTAL_GATEWAY_API
   value: "true"
 {{- end }}
-{{- if .Values.experimental.cni }}
+{{- if and .Values.cni.enabled (not .Values.legacy.cni.enabled) }}
 - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_ENABLED
   value: "true"
 - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_APP
   value: "{{ include "kuma.name" . }}-cni"
 {{- end }}
-{{- if .Values.experimental.transparentProxy }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_V2
+{{- if .Values.legacy.transparentProxy }}
+- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_V1
   value: "true"
 {{- end }}
 {{- if .Values.experimental.ebpf.enabled }}

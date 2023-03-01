@@ -116,6 +116,7 @@ func validateDuration_GreaterThan0(
 
 	return err
 }
+
 func validateDuration_GreaterThan0OrNil(
 	path validators.PathBuilder,
 	duration *durationpb.Duration,
@@ -188,8 +189,7 @@ func validateConfHttp(
 		return err
 	}
 
-	numRetries, perTryTimeout, backOff, retriableStatusCodes, retriableMethods, retryOn :=
-		conf.NumRetries, conf.PerTryTimeout, conf.BackOff,
+	numRetries, perTryTimeout, backOff, retriableStatusCodes, retriableMethods, retryOn := conf.NumRetries, conf.PerTryTimeout, conf.BackOff,
 		conf.RetriableStatusCodes, conf.RetriableMethods, conf.RetryOn
 
 	if numRetries == nil && perTryTimeout == nil && backOff == nil &&
@@ -233,8 +233,7 @@ func validateConfGrpc(
 		return err
 	}
 
-	numRetries, perTryTimeout, backOff, retryOn :=
-		conf.NumRetries, conf.PerTryTimeout, conf.BackOff, conf.RetryOn
+	numRetries, perTryTimeout, backOff, retryOn := conf.NumRetries, conf.PerTryTimeout, conf.BackOff, conf.RetryOn
 
 	if numRetries == nil && perTryTimeout == nil && backOff == nil &&
 		retryOn == nil {

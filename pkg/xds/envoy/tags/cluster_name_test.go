@@ -9,7 +9,6 @@ import (
 
 var _ = Describe("Cluster name", func() {
 	NameOf := func(kv ...string) string {
-
 		// Tags have to come in pairs.
 		Expect(len(kv) % 2).To(BeZero())
 

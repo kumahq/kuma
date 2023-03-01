@@ -27,9 +27,7 @@ const (
 	grpcKeepAliveTime        = 15 * time.Second
 )
 
-var (
-	muxServerLog = core.Log.WithName("kds-mux-server")
-)
+var muxServerLog = core.Log.WithName("kds-mux-server")
 
 type Filter interface {
 	InterceptSession(session Session) error
@@ -53,9 +51,7 @@ type server struct {
 	mesh_proto.UnimplementedMultiplexServiceServer
 }
 
-var (
-	_ component.Component = &server{}
-)
+var _ component.Component = &server{}
 
 func NewServer(
 	callbacks Callbacks,
@@ -88,12 +84,12 @@ func (s *server) Start(stop <-chan struct{}) error {
 		grpc.MaxSendMsgSize(int(s.config.MaxMsgSize)),
 	}
 	grpcOptions = append(grpcOptions, s.metrics.GRPCServerInterceptors()...)
-	if s.config.TlsCertFile != "" {
+	if s.config.TlsCertFile != "" && s.config.TlsEnabled {
 		cert, err := tls.LoadX509KeyPair(s.config.TlsCertFile, s.config.TlsKeyFile)
 		if err != nil {
 			return errors.Wrap(err, "failed to load TLS certificate")
 		}
-		tlsCfg := &tls.Config{Certificates: []tls.Certificate{cert}}
+		tlsCfg := &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12}
 		if tlsCfg.MinVersion, err = config_types.TLSVersion(s.config.TlsMinVersion); err != nil {
 			return err
 		}

@@ -17,7 +17,6 @@ import (
 )
 
 var _ = Describe("Matcher", func() {
-
 	var manager core_manager.ResourceManager
 	var matcher logs.TrafficLogsMatcher
 	var dpRes core_mesh.DataplaneResource

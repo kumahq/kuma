@@ -19,7 +19,6 @@ import (
 )
 
 var _ = Describe("ServiceReconciler", func() {
-
 	var kubeClient kube_client.Client
 	var reconciler kube_reconcile.Reconciler
 

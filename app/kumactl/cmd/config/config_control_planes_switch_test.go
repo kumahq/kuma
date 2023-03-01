@@ -15,7 +15,6 @@ import (
 )
 
 var _ = Describe("kumactl config control-planes use", func() {
-
 	var configFile *os.File
 
 	BeforeEach(func() {
@@ -46,11 +45,12 @@ var _ = Describe("kumactl config control-planes use", func() {
 	})
 
 	Describe("error cases", func() {
-
 		It("should require name", func() {
 			// given
-			rootCmd.SetArgs([]string{"--config-file", configFile.Name(),
-				"config", "control-planes", "switch"})
+			rootCmd.SetArgs([]string{
+				"--config-file", configFile.Name(),
+				"config", "control-planes", "switch",
+			})
 			// when
 			err := rootCmd.Execute()
 			// then
@@ -61,9 +61,11 @@ var _ = Describe("kumactl config control-planes use", func() {
 
 		It("should fail to switch to unknown Control Plane", func() {
 			// given
-			rootCmd.SetArgs([]string{"--config-file", filepath.Join("testdata", "config-control-planes-use.01.initial.yaml"),
+			rootCmd.SetArgs([]string{
+				"--config-file", filepath.Join("testdata", "config-control-planes-use.01.initial.yaml"),
 				"config", "control-planes", "switch",
-				"--name", "example"})
+				"--name", "example",
+			})
 			// when
 			err := rootCmd.Execute()
 			// then
@@ -74,7 +76,6 @@ var _ = Describe("kumactl config control-planes use", func() {
 	})
 
 	Describe("happy path", func() {
-
 		type testCase struct {
 			configFile  string
 			goldenFile  string
@@ -86,13 +87,15 @@ var _ = Describe("kumactl config control-planes use", func() {
 				// setup
 				initial, err := os.ReadFile(filepath.Join("testdata", given.configFile))
 				Expect(err).ToNot(HaveOccurred())
-				err = os.WriteFile(configFile.Name(), initial, 0600)
+				err = os.WriteFile(configFile.Name(), initial, 0o600)
 				Expect(err).ToNot(HaveOccurred())
 
 				// given
-				rootCmd.SetArgs([]string{"--config-file", configFile.Name(),
+				rootCmd.SetArgs([]string{
+					"--config-file", configFile.Name(),
 					"config", "control-planes", "switch",
-					"--name", "example"})
+					"--name", "example",
+				})
 				// when
 				err = rootCmd.Execute()
 				// then

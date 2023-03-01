@@ -38,7 +38,6 @@ func (s *staticAuthenticator) Authenticate(ctx context.Context, resource core_mo
 var _ xds_auth.Authenticator = &staticAuthenticator{}
 
 var _ = Describe("Dataplane Lifecycle", func() {
-
 	const cpInstanceID = "xyz"
 
 	var authenticator *staticAuthenticator
@@ -350,7 +349,6 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		}
 
 		wg.Wait()
-
 	})
 
 	It("should not unregister proxy when it is connected to other instances", func() {

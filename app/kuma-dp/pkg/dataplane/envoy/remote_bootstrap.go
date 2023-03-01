@@ -11,6 +11,7 @@ import (
 	net_url "net/url"
 	"os"
 	"strings"
+	"time"
 
 	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	"github.com/pkg/errors"
@@ -24,14 +25,12 @@ import (
 )
 
 type remoteBootstrap struct {
-	client          *http.Client
 	operatingSystem string
 	features        []string
 }
 
-func NewRemoteBootstrapGenerator(client *http.Client, operatingSystem string, features []string) BootstrapConfigFactoryFunc {
+func NewRemoteBootstrapGenerator(operatingSystem string, features []string) BootstrapConfigFactoryFunc {
 	rb := remoteBootstrap{
-		client:          client,
 		operatingSystem: operatingSystem,
 		features:        features,
 	}
@@ -56,20 +55,24 @@ func (b *remoteBootstrap) Generate(ctx context.Context, url string, cfg kuma_dp.
 	if err != nil {
 		return nil, nil, err
 	}
+	client := &http.Client{Timeout: time.Second * 10}
 
 	if bootstrapUrl.Scheme == "https" {
+		tlsConfig := &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}
+		client.Transport = &http.Transport{
+			TLSClientConfig: tlsConfig,
+		}
 		if cfg.ControlPlane.CaCert != "" {
 			certPool := x509.NewCertPool()
 			if ok := certPool.AppendCertsFromPEM([]byte(cfg.ControlPlane.CaCert)); !ok {
 				return nil, nil, errors.New("could not add certificate")
 			}
-			b.client.Transport = &http.Transport{
-				TLSClientConfig: &tls.Config{
-					RootCAs: certPool,
-				},
-			}
+			tlsConfig.RootCAs = certPool
 		} else {
 			log.Info(`[WARNING] The data plane proxy cannot verify the identity of the control plane because you are not setting the "--ca-cert-file" argument or setting the KUMA_CONTROL_PLANE_CA_CERT environment variable.`)
+			tlsConfig.InsecureSkipVerify = true // #nosec G402 -- we have the warning above
 		}
 	}
 
@@ -77,7 +80,8 @@ func (b *remoteBootstrap) Generate(ctx context.Context, url string, cfg kuma_dp.
 	var respBytes []byte
 	err = retry.Do(ctx, backoff, func(ctx context.Context) error {
 		log.Info("trying to fetch bootstrap configuration from the Control Plane")
-		respBytes, err = b.requestForBootstrap(ctx, bootstrapUrl, cfg, params)
+		bootstrapUrl.Path = "/bootstrap"
+		respBytes, err = b.requestForBootstrap(ctx, client, bootstrapUrl, cfg, params)
 		if err == nil {
 			return nil
 		}
@@ -127,8 +131,7 @@ func (b *remoteBootstrap) resourceMetadata(cfg kuma_dp.DataplaneResources) types
 	return res
 }
 
-func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, url *net_url.URL, cfg kuma_dp.Config, params BootstrapParams) ([]byte, error) {
-	url.Path = "/bootstrap"
+func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, client *http.Client, url *net_url.URL, cfg kuma_dp.Config, params BootstrapParams) ([]byte, error) {
 	var dataplaneResource string
 	if params.Dataplane != nil {
 		dpJSON, err := json.Marshal(params.Dataplane)
@@ -191,7 +194,7 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, url *net_url.
 	}
 	req.Header.Set("accept", "application/json")
 	req.Header.Set("content-type", "application/json")
-	resp, err := b.client.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "request to bootstrap server failed")
 	}

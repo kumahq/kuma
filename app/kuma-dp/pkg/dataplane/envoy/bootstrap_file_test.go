@@ -13,7 +13,6 @@ import (
 
 var _ = Describe("Bootstrap File", func() {
 	Describe("GenerateBootstrapFile(..)", func() {
-
 		var configDir string
 
 		BeforeEach(func() {

@@ -23,8 +23,10 @@ type LeaderInfo interface {
 	IsLeader() bool
 }
 
-var _ LeaderInfo = &LeaderInfoComponent{}
-var _ Component = &LeaderInfoComponent{}
+var (
+	_ LeaderInfo = &LeaderInfoComponent{}
+	_ Component  = &LeaderInfoComponent{}
+)
 
 type LeaderInfoComponent struct {
 	leader int32
@@ -48,6 +50,7 @@ func (p *LeaderInfoComponent) setLeader(leader bool) {
 	}
 	atomic.StoreInt32(&p.leader, value)
 }
+
 func (p *LeaderInfoComponent) IsLeader() bool {
 	return atomic.LoadInt32(&(p.leader)) == 1
 }

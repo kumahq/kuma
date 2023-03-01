@@ -27,15 +27,13 @@ import (
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
-type noopGenerateUserTokenAccess struct {
-}
+type noopGenerateUserTokenAccess struct{}
 
 func (n *noopGenerateUserTokenAccess) ValidateGenerate(user.User) error {
 	return nil
 }
 
 var _ = Describe("Auth Tokens WS", func() {
-
 	var userTokenClient client.UserTokenClient
 	var userTokenValidator issuer.UserTokenValidator
 	var httpClient util_http.Client
@@ -47,7 +45,9 @@ var _ = Describe("Auth Tokens WS", func() {
 		userTokenValidator = issuer.NewUserTokenValidator(
 			core_tokens.NewValidator(
 				core.Log.WithName("test"),
-				core_tokens.NewSigningKeyAccessor(resManager, issuer.UserTokenSigningKeyPrefix),
+				[]core_tokens.SigningKeyAccessor{
+					core_tokens.NewSigningKeyAccessor(resManager, issuer.UserTokenSigningKeyPrefix),
+				},
 				core_tokens.NewRevocations(resManager, issuer.UserTokenRevocationsGlobalSecretKey),
 				store_config.MemoryStore,
 			),
@@ -145,5 +145,25 @@ var _ = Describe("Auth Tokens WS", func() {
 				},
 			},
 		}))
+	})
+
+	It("should throw an error when issuer is disabled", func() {
+		container := restful.NewContainer()
+		ws := server.NewWebService(issuer.DisabledIssuer{}, &noopGenerateUserTokenAccess{})
+		container.Add(ws)
+		srv := httptest.NewServer(container)
+
+		baseURL, err := url.Parse(srv.URL)
+		Expect(err).ToNot(HaveOccurred())
+		httpClient := util_http.ClientWithBaseURL(http.DefaultClient, baseURL, nil)
+		userTokenClient := client.NewHTTPUserTokenClient(httpClient)
+
+		Eventually(func(g Gomega) {
+			_, err := userTokenClient.Generate("john.doe@example.com", []string{"team-a"}, 1*time.Hour)
+			g.Expect(err).To(Equal(&error_types.Error{
+				Title:   "Could not issue a token",
+				Details: "issuing tokens using the control plane is disabled.",
+			}))
+		}, "10s", "100ms").Should(Succeed())
 	})
 })

@@ -41,7 +41,6 @@ var (
 )
 
 var _ = Describe("GroupByAttachment", func() {
-
 	type testCase struct {
 		matchedPolicies *core_xds.MatchedPolicies
 		dpNetworking    *mesh_proto.Dataplane_Networking
@@ -152,7 +151,8 @@ var _ = Describe("GroupByAttachment", func() {
 						&core_mesh.CircuitBreakerResource{Meta: meta4},
 					},
 				},
-			}}),
+			},
+		}),
 		Entry("group by outbounds", testCase{
 			dpNetworking: &mesh_proto.Dataplane_Networking{
 				Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
@@ -377,7 +377,6 @@ var _ = Describe("GroupByAttachment", func() {
 })
 
 var _ = Describe("GroupByPolicy", func() {
-
 	type testCase struct {
 		matchedPolicies *core_xds.MatchedPolicies
 		dpNetworking    *mesh_proto.Dataplane_Networking

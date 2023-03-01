@@ -20,7 +20,6 @@ import (
 )
 
 var _ = Describe("SecretsGenerator", func() {
-
 	type testCase struct {
 		ctx        xds_context.Context
 		proxy      *core_xds.Proxy
@@ -209,7 +208,8 @@ var _ = Describe("SecretsGenerator", func() {
 										Name: "mesh-2",
 									},
 								}},
-							}},
+							},
+						},
 						CrossMeshResources: map[string]xds_context.ResourceMap{
 							"mesh-2": {
 								core_mesh.MeshGatewayType: &core_mesh.MeshGatewayResourceList{
@@ -246,8 +246,10 @@ var _ = Describe("SecretsGenerator", func() {
 										},
 									}},
 								},
-							}},
-					}},
+							},
+						},
+					},
+				},
 			},
 			identity: true,
 			usedCas: map[string]struct{}{

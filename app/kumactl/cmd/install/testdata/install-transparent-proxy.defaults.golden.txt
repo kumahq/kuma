@@ -1,16 +1,16 @@
--A (.*)_INBOUND -p tcp --dport 15008 -j RETURN
--A (.*)_REDIRECT -p tcp -j REDIRECT --to-ports 15001
--A (.*)_IN_REDIRECT -p tcp -j REDIRECT --to-ports 15006
+\* nat
+-N (.*)_INBOUND
+-N (.*)_OUTBOUND
+-N (.*)_INBOUND_REDIRECT
+-N (.*)_OUTBOUND_REDIRECT
 -A PREROUTING -p tcp -j (.*)_INBOUND
--A (.*)_INBOUND -p tcp --dport 22 -j RETURN
--A (.*)_INBOUND -p tcp -j (.*)_IN_REDIRECT
--A OUTPUT -p tcp -j (.*)_OUTPUT
--A (.*)_OUTPUT -o lo -s 127.0.0.6/32 -j RETURN
--A (.*)_OUTPUT -o lo ! -d 127.0.0.1/32 -m owner --uid-owner 0 -j (.*)_IN_REDIRECT
--A (.*)_OUTPUT -o lo -m owner ! --uid-owner 0 -j RETURN
--A (.*)_OUTPUT -m owner --uid-owner 0 -j RETURN
--A (.*)_OUTPUT -o lo ! -d 127.0.0.1/32 -m owner --gid-owner 0 -j (.*)_IN_REDIRECT
--A (.*)_OUTPUT -o lo -m owner ! --gid-owner 0 -j RETURN
--A (.*)_OUTPUT -m owner --gid-owner 0 -j RETURN
--A (.*)_OUTPUT -d 127.0.0.1/32 -j RETURN
--A (.*)_OUTPUT -j (.*)_REDIRECT
+-A OUTPUT -p tcp -j (.*)_OUTBOUND
+-A (.*)_INBOUND -p tcp -j (.*)_INBOUND_REDIRECT
+-A (.*)_OUTBOUND -s (.*) -o (.*) -j RETURN
+-A (.*)_OUTBOUND -p tcp -o (.*) ! -d (.*) -m owner --uid-owner 0 -j (.*)_INBOUND_REDIRECT
+-A (.*)_OUTBOUND -p tcp -o (.*) -m owner ! --uid-owner 0 -j RETURN
+-A (.*)_OUTBOUND -m owner --uid-owner 0 -j RETURN
+-A (.*)_OUTBOUND -d (.*) -j RETURN
+-A (.*)_OUTBOUND -j (.*)_OUTBOUND_REDIRECT
+-A (.*)_INBOUND_REDIRECT -p tcp -j REDIRECT --to-ports (15006|15010)
+-A (.*)_OUTBOUND_REDIRECT -p tcp -j REDIRECT --to-ports 15001

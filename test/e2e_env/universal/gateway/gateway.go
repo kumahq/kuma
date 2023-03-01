@@ -21,7 +21,7 @@ import (
 )
 
 func Gateway() {
-	var mesh = "gateway"
+	mesh := "gateway"
 
 	const gatewayPort = 8080
 

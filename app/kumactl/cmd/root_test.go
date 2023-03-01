@@ -12,7 +12,6 @@ import (
 )
 
 var _ = Describe("kumactl root cmd", func() {
-
 	var backupDefaultConfigFile string
 
 	BeforeEach(func() {

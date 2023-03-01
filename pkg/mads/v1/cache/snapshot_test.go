@@ -10,7 +10,6 @@ import (
 )
 
 var _ = Describe("Snapshot", func() {
-
 	expectedType := "type.googleapis.com/kuma.observability.v1.MonitoringAssignment"
 
 	Describe("GetSupportedTypes()", func() {

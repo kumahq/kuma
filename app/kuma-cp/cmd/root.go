@@ -15,9 +15,7 @@ import (
 	_ "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
-var (
-	controlPlaneLog = core.Log.WithName("kuma-cp")
-)
+var controlPlaneLog = core.Log.WithName("kuma-cp")
 
 // newRootCmd represents the base command when called without any subcommands.
 func newRootCmd() *cobra.Command {

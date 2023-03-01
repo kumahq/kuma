@@ -129,6 +129,5 @@ var _ = Describe("Reconcile", func() {
 			// then
 			Expect(actual).To(BeNil())
 		})
-
 	})
 })

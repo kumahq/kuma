@@ -28,13 +28,13 @@ import (
 
 var _ = Describe("kubernetes", func() {
 	type testCaseKumactl struct {
-		transparentProxyV2 bool
+		transparentProxyV1 bool
 		pod                *kube_core.Pod
 		commandLine        []string
 	}
 
 	DescribeTable("should generate kumactl command line", func(given testCaseKumactl) {
-		podRedirect, err := kubernetes.NewPodRedirectForPod(given.transparentProxyV2, given.pod)
+		podRedirect, err := kubernetes.NewPodRedirectForPod(given.transparentProxyV1, given.pod)
 		Expect(err).ToNot(HaveOccurred())
 
 		commandLine := podRedirect.AsKumactlCommandLine()
@@ -124,7 +124,7 @@ var _ = Describe("kubernetes", func() {
 				"--skip-resolv-conf",
 			},
 		}),
-		Entry("should generate experimental engine", testCaseKumactl{
+		Entry("should generate engine v1", testCaseKumactl{
 			pod: &kube_core.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
@@ -134,7 +134,7 @@ var _ = Describe("kubernetes", func() {
 						metadata.KumaTransparentProxyingInboundPortAnnotation:   "25204",
 						metadata.KumaTransparentProxyingInboundPortAnnotationV6: "25206",
 						metadata.KumaSidecarUID:                                 "12345",
-						metadata.KumaTransparentProxyingExperimentalEngine:      metadata.AnnotationEnabled,
+						metadata.KumaTransparentProxyingEngineV1:                metadata.AnnotationEnabled,
 						metadata.KumaTrafficExcludeOutboundUDPPortsForUIDs:      "11001:1;11002:2",
 						metadata.KumaTrafficExcludeOutboundTCPPortsForUIDs:      "11003:3",
 					},
@@ -153,11 +153,11 @@ var _ = Describe("kubernetes", func() {
 				"--exclude-outbound-tcp-ports-for-uids", "11003:3",
 				"--exclude-outbound-udp-ports-for-uids", "11001:1",
 				"--exclude-outbound-udp-ports-for-uids", "11002:2",
-				"--experimental-transparent-proxy-engine",
+				"--use-transparent-proxy-engine-v1",
 			},
 		}),
-		Entry("should generate experimental engine if enabled even without annotation", testCaseKumactl{
-			transparentProxyV2: true,
+		Entry("should generate engine v1 if enabled even without annotation", testCaseKumactl{
+			transparentProxyV1: true,
 			pod: &kube_core.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
@@ -180,7 +180,7 @@ var _ = Describe("kubernetes", func() {
 				"--exclude-outbound-ports", "11000",
 				"--verbose",
 				"--skip-resolv-conf",
-				"--experimental-transparent-proxy-engine",
+				"--use-transparent-proxy-engine-v1",
 			},
 		}),
 		Entry("should generate for Gateway", testCaseKumactl{

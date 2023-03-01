@@ -321,17 +321,23 @@ spec:
   ports:
     - port: 5680
       name: diagnostics
+      appProtocol: http
     - port: 5681
       name: http-api-server
+      appProtocol: http
     - port: 5682
       name: https-api-server
+      appProtocol: http
     - port: 443
       name: https-admission-server
       targetPort: 5443
+      appProtocol: http
     - port: 5676
       name: mads-server
+      appProtocol: http
     - port: 5678
       name: dp-server
+      appProtocol: http
   selector:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -362,7 +368,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 3a137bbfcbbe6ba5a3997b30b1b047b2b080a9f912520a5fa683f11c4c6b6f3c
-        checksum/tls-secrets: 96f27a141c6eeb1a0fa942d203dab03a5676acd724e05b39ab89fa6c30b18904
+        checksum/tls-secrets: 21a5bace63b1c95d7e656d0bc795976c19be030f3b5adeb65af66938586014cb
       labels: 
         app: kuma-control-plane
         "foo": "baz"
@@ -389,6 +395,8 @@ spec:
                   - 'kuma-control-plane'
               topologyKey: kubernetes.io/hostname
             weight: 100
+      securityContext:
+        runAsNonRoot: true
       serviceAccountName: kuma-control-plane
       automountServiceAccountToken: true
       nodeSelector:
@@ -400,6 +408,8 @@ spec:
         - name: control-plane
           image: "docker.io/kumahq/kuma-cp:0.0.1"
           imagePullPolicy: IfNotPresent
+          securityContext:
+            readOnlyRootFilesystem: true
           env:
             - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
               value: "false"
@@ -487,6 +497,8 @@ spec:
             - name: extra-config
               mountPath: /etc/extra-config
               readOnly: true
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: general-tls-cert
           secret:
@@ -497,6 +509,8 @@ spec:
         - name: extra-config
           configMap:
             name: extra-config
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
@@ -770,7 +784,6 @@ webhooks:
       - apiGroups:
           - "gateway.networking.k8s.io"
         apiVersions:
-          - v1alpha2
           - v1beta1
         operations:
           - CREATE

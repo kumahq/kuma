@@ -24,7 +24,6 @@ import (
 )
 
 var _ = Describe("Secrets", func() {
-
 	var secrets Secrets
 	var metrics core_metrics.Metrics
 	var now time.Time

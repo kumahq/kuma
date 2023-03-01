@@ -52,7 +52,8 @@ var _ = Describe("kumactl delete ", func() {
 			// given
 			rootCmd.SetArgs([]string{
 				"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-				"delete"})
+				"delete",
+			})
 
 			// when
 			err := rootCmd.Execute()
@@ -69,7 +70,8 @@ var _ = Describe("kumactl delete ", func() {
 			// given
 			rootCmd.SetArgs([]string{
 				"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-				"delete", "some-type", "some-name"})
+				"delete", "some-type", "some-name",
+			})
 
 			// when
 			err := rootCmd.Execute()
@@ -83,7 +85,6 @@ var _ = Describe("kumactl delete ", func() {
 		})
 
 		Describe("kumactl delete TYPE NAME", func() {
-
 			type testCase struct {
 				typ             string // TYPE
 				name            string // NAME
@@ -110,7 +111,8 @@ var _ = Describe("kumactl delete ", func() {
 					// given
 					rootCmd.SetArgs([]string{
 						"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-						"delete", given.typ, given.name, "--mesh", "demo"})
+						"delete", given.typ, given.name, "--mesh", "demo",
+					})
 
 					// when
 					err := rootCmd.Execute()
@@ -239,7 +241,8 @@ var _ = Describe("kumactl delete ", func() {
 					// given
 					rootCmd.SetArgs([]string{
 						"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-						"delete", given.typ, given.name})
+						"delete", given.typ, given.name,
+					})
 
 					// when
 					err = rootCmd.Execute()
@@ -280,7 +283,8 @@ var _ = Describe("kumactl delete ", func() {
 					// given
 					rootCmd.SetArgs([]string{
 						"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-						"delete", given.typ, given.name})
+						"delete", given.typ, given.name,
+					})
 
 					// when
 					err := rootCmd.Execute()

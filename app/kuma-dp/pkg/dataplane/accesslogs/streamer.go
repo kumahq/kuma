@@ -52,7 +52,7 @@ func (s *accessLogStreamer) Start(stop <-chan struct{}) error {
 		return errors.Wrapf(err, "error removing existing fifo %s", s.address)
 	}
 	logger.Info("creating access log pipe", "file", s.address)
-	err = syscall.Mkfifo(s.address, 0666)
+	err = syscall.Mkfifo(s.address, 0o666)
 	if err != nil {
 		return errors.Wrapf(err, "error creating fifo %s", s.address)
 	}

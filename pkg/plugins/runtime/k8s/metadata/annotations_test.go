@@ -8,7 +8,6 @@ import (
 )
 
 var _ = Describe("Kubernetes Annotations", func() {
-
 	Describe("GetEnabled()", func() {
 		type testCase struct {
 			input    string

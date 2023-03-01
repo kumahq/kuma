@@ -413,7 +413,8 @@ func ExternalServiceToPodsMapper(l logr.Logger, client kube_client.Client) kube_
 		}
 
 		var req []kube_reconile.Request
-		for _, dataplane := range dataplanes.Items {
+		for i := range dataplanes.Items {
+			dataplane := dataplanes.Items[i]
 			// skip Dataplanes from other Meshes
 			if dataplane.Mesh != cause.Mesh {
 				continue
@@ -449,7 +450,8 @@ func ConfigMapToPodsMapper(l logr.Logger, ns string, client kube_client.Client) 
 		}
 
 		var req []kube_reconile.Request
-		for _, dataplane := range dataplanes.Items {
+		for i := range dataplanes.Items {
+			dataplane := dataplanes.Items[i]
 			// skip Dataplanes from other Meshes
 			if dataplane.Mesh != mesh {
 				continue

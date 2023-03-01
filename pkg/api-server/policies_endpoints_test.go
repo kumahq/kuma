@@ -14,8 +14,7 @@ import (
 )
 
 var _ = Describe("Policies Endpoints", func() {
-
-	var stop = func() {}
+	stop := func() {}
 	var apiServer *api_server.ApiServer
 	BeforeEach(func() {
 		apiServer, _, stop = StartApiServer(NewTestApiServerConfigurer())

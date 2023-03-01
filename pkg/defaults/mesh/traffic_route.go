@@ -23,5 +23,4 @@ var defaultTrafficRouteResource = func() model.Resource {
 			},
 		},
 	}
-
 }

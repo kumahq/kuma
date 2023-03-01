@@ -22,6 +22,7 @@ func (r *MeshAccessLogResource) validate() error {
 	verr.AddErrorAt(path, validateIncompatibleCombinations(r.Spec))
 	return verr.OrNil()
 }
+
 func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
@@ -34,6 +35,7 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 	})
 	return targetRefErr
 }
+
 func validateFrom(from []From) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, fromItem := range from {
@@ -49,6 +51,7 @@ func validateFrom(from []From) validators.ValidationError {
 	}
 	return verr
 }
+
 func validateTo(to []To) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {

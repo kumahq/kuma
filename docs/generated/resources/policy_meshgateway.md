@@ -45,10 +45,6 @@
         
             - `TCP`
         
-            - `UDP`
-        
-            - `TLS`
-        
             - `HTTP`
         
             - `HTTPS`    
@@ -66,9 +62,7 @@
             
                 - `NONE`
             
-                - `TERMINATE`
-            
-                - `PASSTHROUGH`    
+                - `TERMINATE`    
             
             - `certificates` (optional, repeated)
             

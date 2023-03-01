@@ -12,7 +12,6 @@ import (
 )
 
 var _ = Describe("Server", func() {
-
 	var heartbeats *catalog.Heartbeats
 	var leaderInfo *staticLeaderInfo
 	var server system_proto.InterCpPingServiceServer

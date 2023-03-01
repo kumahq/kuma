@@ -22,7 +22,6 @@ import (
 )
 
 var _ = Describe("kumactl delete mesh", func() {
-
 	sampleMeshes := []*mesh.MeshResource{
 		{
 			Meta: &test_model.ResourceMeta{
@@ -76,7 +75,8 @@ var _ = Describe("kumactl delete mesh", func() {
 			// given
 			rootCmd.SetArgs([]string{
 				"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-				"delete", "mesh"})
+				"delete", "mesh",
+			})
 
 			// when
 			err := rootCmd.Execute()
@@ -93,7 +93,8 @@ var _ = Describe("kumactl delete mesh", func() {
 			// given
 			rootCmd.SetArgs([]string{
 				"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-				"delete", "mesh", "some-non-existing-mesh"})
+				"delete", "mesh", "some-non-existing-mesh",
+			})
 
 			// when
 			err := rootCmd.Execute()
@@ -111,7 +112,8 @@ var _ = Describe("kumactl delete mesh", func() {
 			// given
 			rootCmd.SetArgs([]string{
 				"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-				"delete", "mesh", "mesh2"})
+				"delete", "mesh", "mesh2",
+			})
 
 			// when
 			err := rootCmd.Execute()

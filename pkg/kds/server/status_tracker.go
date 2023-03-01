@@ -34,7 +34,8 @@ type StatusAccessor interface {
 type ZoneInsightSinkFactoryFunc = func(StatusAccessor, logr.Logger) ZoneInsightSink
 
 func NewStatusTracker(runtimeInfo core_runtime.RuntimeInfo,
-	createStatusSink ZoneInsightSinkFactoryFunc, log logr.Logger) StatusTracker {
+	createStatusSink ZoneInsightSinkFactoryFunc, log logr.Logger,
+) StatusTracker {
 	return &statusTracker{
 		runtimeInfo:      runtimeInfo,
 		createStatusSink: createStatusSink,

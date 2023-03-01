@@ -12,7 +12,6 @@ import (
 )
 
 var _ = Describe("OutlierDetectionConfigurer", func() {
-
 	type testCase struct {
 		clusterName    string
 		circuitBreaker *core_mesh.CircuitBreakerResource

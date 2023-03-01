@@ -39,7 +39,6 @@ func (s *staticZoneTokenGenerator) Generate(
 }
 
 var _ = Describe("kumactl generate zone-token", func() {
-
 	var rootCmd *cobra.Command
 	var buf *bytes.Buffer
 	var generator *staticZoneTokenGenerator
@@ -140,7 +139,8 @@ var _ = Describe("kumactl generate zone-token", func() {
 			err:  `required flag(s) "valid-for", "zone" not set`,
 		}),
 		Entry("when kid is specified for online signing", errTestCase{
-			args: []string{"generate", "zone-token",
+			args: []string{
+				"generate", "zone-token",
 				"--zone", "east",
 				"--valid-for", "30s",
 				"--kid", "1",
@@ -148,7 +148,8 @@ var _ = Describe("kumactl generate zone-token", func() {
 			err: "--kid cannot be used when --signing-key-path is used",
 		}),
 		Entry("when kid is not specified for offline signing", errTestCase{
-			args: []string{"generate", "zone-token",
+			args: []string{
+				"generate", "zone-token",
 				"--zone", "east",
 				"--valid-for", "30s",
 				"--signing-key-path", filepath.Join("..", "..", "..", "..", "..", "..", "..", "test", "keys", "samplekey.pem"),
@@ -156,5 +157,4 @@ var _ = Describe("kumactl generate zone-token", func() {
 			err: "--kid is required when --signing-key-path is used",
 		}),
 	)
-
 })

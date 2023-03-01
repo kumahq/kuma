@@ -14,7 +14,6 @@ import (
 )
 
 var _ = Describe("RBACConfigurer", func() {
-
 	type testCase struct {
 		rules    core_xds.Rules
 		mesh     string

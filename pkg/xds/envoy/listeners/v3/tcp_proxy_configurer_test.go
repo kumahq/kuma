@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("TcpProxyConfigurer", func() {
-
 	type testCase struct {
 		listenerName     string
 		listenerProtocol xds.SocketAddressProtocol
@@ -177,7 +176,8 @@ var _ = Describe("TcpProxyConfigurer", func() {
 				envoy_common.NewCluster(
 					envoy_common.WithService("db-1"),
 					envoy_common.WithWeight(90),
-				)},
+				),
+			},
 			expected: `
             address:
               socketAddress:

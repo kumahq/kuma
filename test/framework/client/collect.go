@@ -290,6 +290,7 @@ func MakeDirectRequest(
 			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 				return dialer.Dial(network, u.Host)
 			},
+			// #nosec G402 -- Intentionally weak in tests
 			TLSClientConfig: &tls.Config{
 				ServerName:         req.Host,
 				InsecureSkipVerify: true,

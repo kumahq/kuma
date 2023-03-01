@@ -20,8 +20,7 @@ import (
 	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
 )
 
-type zoneStaticTokenIssuer struct {
-}
+type zoneStaticTokenIssuer struct{}
 
 var _ zone.TokenIssuer = &zoneStaticTokenIssuer{}
 
@@ -30,7 +29,6 @@ func (z *zoneStaticTokenIssuer) Generate(ctx context.Context, identity zone.Iden
 }
 
 var _ = Describe("Zone Egress Tokens Client", func() {
-
 	var server *httptest.Server
 
 	BeforeEach(func() {

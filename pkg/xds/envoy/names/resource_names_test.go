@@ -8,7 +8,6 @@ import (
 )
 
 var _ = Describe("ListenerFilterChainConfigurer", func() {
-
 	type testCase struct {
 		address  string
 		port     uint32
@@ -52,5 +51,4 @@ var _ = Describe("ListenerFilterChainConfigurer", func() {
 			expected: "outbound:[fd00::1]:8080",
 		}),
 	)
-
 })

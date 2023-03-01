@@ -11,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/common/expfmt"
@@ -21,11 +22,15 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
-var inPassThroughIPv4 = &net.TCPAddr{IP: net.ParseIP("127.0.0.6")}
-var inPassThroughIPv6 = &net.TCPAddr{IP: net.ParseIP("::6")}
+var (
+	inPassThroughIPv4 = &net.TCPAddr{IP: net.ParseIP("127.0.0.6")}
+	inPassThroughIPv6 = &net.TCPAddr{IP: net.ParseIP("::6")}
+)
 
-var prometheusRequestHeaders = []string{"accept", "accept-encoding", "user-agent", "x-prometheus-scrape-timeout-seconds"}
-var logger = core.Log.WithName("metrics-hijacker")
+var (
+	prometheusRequestHeaders = []string{"accept", "accept-encoding", "user-agent", "x-prometheus-scrape-timeout-seconds"}
+	logger                   = core.Log.WithName("metrics-hijacker")
+)
 
 var _ component.Component = &Hijacker{}
 
@@ -113,7 +118,8 @@ func (s *Hijacker) Start(stop <-chan struct{}) error {
 	)
 
 	server := &http.Server{
-		Handler: s,
+		ReadHeaderTimeout: time.Second,
+		Handler:           s,
 	}
 
 	errCh := make(chan error)

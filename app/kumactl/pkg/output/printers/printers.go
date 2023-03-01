@@ -11,9 +11,7 @@ import (
 
 type Table = table.Table
 
-var (
-	NewTablePrinter = table.NewPrinter
-)
+var NewTablePrinter = table.NewPrinter
 
 func NewGenericPrinter(format output.Format) (output.Printer, error) {
 	switch format {

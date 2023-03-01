@@ -12,7 +12,6 @@ import (
 )
 
 var _ = Describe("Cluster ID", func() {
-
 	var stop chan struct{}
 
 	AfterEach(func() {

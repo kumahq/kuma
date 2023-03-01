@@ -27,9 +27,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks/injector"
 )
 
-var (
-	log = core.Log.WithName("plugin").WithName("runtime").WithName("k8s")
-)
+var log = core.Log.WithName("plugin").WithName("runtime").WithName("k8s")
 
 var _ core_plugins.RuntimePlugin = &plugin{}
 
@@ -264,7 +262,8 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	}
 
 	composite.AddValidator(&k8s_webhooks.PolicyNamespaceValidator{
-		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace},
+		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
+	},
 	)
 
 	mgr.GetWebhookServer().Register("/validate-kuma-io-v1alpha1", composite.WebHook())

@@ -21,9 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/events"
 )
 
-var (
-	log = core.Log.WithName("mesh-insight-resyncer")
-)
+var log = core.Log.WithName("mesh-insight-resyncer")
 
 var resourcesAffectingServiceInsights = map[model.ResourceType]struct{}{
 	core_mesh.DataplaneType:        {},

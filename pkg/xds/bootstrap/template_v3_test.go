@@ -92,7 +92,6 @@ var _ = Describe("dnsLookupFamilyFromXdsHost", func() {
 		// then
 		Expect(result).To(Equal(envoy_cluster_v3.Cluster_AUTO))
 	})
-
 })
 
 var _ = Describe("genConfig", func() {

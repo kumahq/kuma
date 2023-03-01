@@ -101,7 +101,6 @@ func (tp *IstioTransparentProxy) Cleanup(cfg *config.TransparentProxyConfig) (st
 
 func (tp *IstioTransparentProxy) redirectStdOutStdErr() {
 	reader, writer, err := os.Pipe()
-
 	if err != nil {
 		panic(err)
 	}

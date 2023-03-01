@@ -13,9 +13,7 @@ import (
 )
 
 var _ = Describe("ParseFormat()", func() {
-
 	Context("valid format string", func() {
-
 		commonProperties := &accesslog_data.AccessLogCommon{
 			StartTime:                  util_proto.MustTimestampProto(time.Unix(1582062737, 987654321)),
 			TimeToLastRxByte:           util_proto.Duration(57000 * time.Microsecond),
@@ -604,7 +602,6 @@ UF,URX
 	})
 
 	Context("invalid format string", func() {
-
 		type testCase struct {
 			format      string
 			expectedErr string
@@ -745,7 +742,6 @@ UF,URX
 	})
 
 	Context("support ConfigureHttpLog() and ConfigureTcpLog()", func() {
-
 		type testCase struct {
 			format       string
 			expectedHTTP *accesslog_config.HttpGrpcAccessLogConfig // verify the entire config to make sure there are no unexpected changes

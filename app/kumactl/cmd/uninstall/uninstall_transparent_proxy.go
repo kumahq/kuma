@@ -48,10 +48,10 @@ func newUninstallTransparentProxy() *cobra.Command {
 				Stdout:        cmd.OutOrStdout(),
 			}
 
-			tp := transparentproxy.DefaultTransparentProxy()
+			tp := transparentproxy.V1()
 
 			if args.EbpfEnabled {
-				tp = &transparentproxy.ExperimentalTransparentProxy{}
+				tp = transparentproxy.V2()
 			}
 
 			output, err := tp.Cleanup(cfg)
@@ -75,7 +75,7 @@ func newUninstallTransparentProxy() *cobra.Command {
 				}
 
 				if !args.DryRun {
-					err = os.WriteFile("/etc/resolv.conf", content, 0644)
+					err = os.WriteFile("/etc/resolv.conf", content, 0o600)
 					if err != nil {
 						return errors.Wrap(err, "unable to write /etc/resolv.conf")
 					}

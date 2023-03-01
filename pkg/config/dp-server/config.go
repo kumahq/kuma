@@ -27,7 +27,10 @@ type DpServerConfig struct {
 	// TlsCipherSuites defines the list of ciphers to use
 	TlsCipherSuites []string `json:"tlsCipherSuites" envconfig:"kuma_dp_server_tls_cipher_suites"`
 	// Auth defines an authentication configuration for the DP Server
+	// Deprecated: use "authn" section.
 	Auth DpServerAuthConfig `json:"auth"`
+	// Authn defines authentication configuration for the DP Server.
+	Authn DpServerAuthnConfig `json:"authn"`
 	// Hds defines a Health Discovery Service configuration
 	Hds *HdsConfig `json:"hds"`
 }
@@ -37,6 +40,7 @@ type DpServerAuthType string
 const (
 	DpServerAuthServiceAccountToken = "serviceAccountToken"
 	DpServerAuthDpToken             = "dpToken"
+	DpServerAuthZoneToken           = "zoneToken"
 	DpServerAuthNone                = "none"
 )
 
@@ -67,6 +71,9 @@ func (a *DpServerConfig) Validate() error {
 	if err := a.Auth.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrap(err, ".Auth is invalid"))
 	}
+	if err := a.Authn.Validate(); err != nil {
+		errs = multierr.Append(errs, errors.Wrap(err, ".Auth is invalid"))
+	}
 	if _, err := config_types.TLSVersion(a.TlsMinVersion); err != nil {
 		errs = multierr.Append(errs, errors.New(".TlsMinVersion"+err.Error()))
 	}
@@ -79,12 +86,147 @@ func (a *DpServerConfig) Validate() error {
 	return errs
 }
 
+type DpServerAuthnConfig struct {
+	// Configuration for data plane proxy authentication.
+	DpProxy DpProxyAuthnConfig `json:"dpProxy"`
+	// Configuration for zone proxy authentication.
+	ZoneProxy ZoneProxyAuthnConfig `json:"zoneProxy"`
+	// If true then Envoy uses Google gRPC instead of Envoy gRPC which lets a proxy reload the auth data (service account token, dp token etc.) from path without proxy restart.
+	EnableReloadableTokens bool `json:"enableReloadableTokens" envconfig:"kuma_dp_server_authn_enable_reloadable_tokens"`
+}
+
+func (d DpServerAuthnConfig) Validate() error {
+	if err := d.DpProxy.Validate(); err != nil {
+		return errors.Wrap(err, ".DpProxy is not valid")
+	}
+	if err := d.ZoneProxy.Validate(); err != nil {
+		return errors.Wrap(err, ".ZoneProxy is not valid")
+	}
+	return nil
+}
+
+type ZoneTokenAuthnConfig struct {
+	// If true the control plane token issuer is enabled. It's recommended to set it to false when all the tokens are issued offline.
+	EnableIssuer bool `json:"enableIssuer" envconfig:"kuma_dp_server_authn_zone_proxy_zone_token_enable_issuer"`
+	// Zone Token validator configuration
+	Validator ZoneTokenValidatorConfig `json:"validator"`
+}
+
+func (c ZoneTokenAuthnConfig) Validate() error {
+	if err := c.Validator.Validate(); err != nil {
+		return errors.Wrap(err, ".Validator is not valida")
+	}
+	return nil
+}
+
+type ZoneProxyAuthnConfig struct {
+	// Type of authentication. Available values: "serviceAccountToken", "zoneToken", "none".
+	// If empty, autoconfigured based on the environment - "serviceAccountToken" on Kubernetes, "zoneToken" on Universal.
+	Type string `json:"type" envconfig:"kuma_dp_server_authn_zone_proxy_type"`
+	// Configuration for zoneToken authentication method.
+	ZoneToken ZoneTokenAuthnConfig `json:"zoneToken"`
+}
+
+func (c ZoneProxyAuthnConfig) Validate() error {
+	if c.Type == DpServerAuthZoneToken {
+		if err := c.ZoneToken.Validate(); err != nil {
+			return errors.Wrap(err, ".ZoneToken is not valid")
+		}
+	}
+	return nil
+}
+
+type ZoneTokenValidatorConfig struct {
+	// If true then Kuma secrets with prefix "zone-token-signing-key" are considered as signing keys.
+	UseSecrets bool `json:"useSecrets" envconfig:"kuma_dp_server_authn_zone_proxy_zone_token_validator_use_secrets"`
+	// List of public keys used to validate the token
+	PublicKeys []config_types.PublicKey `json:"publicKeys"`
+}
+
+func (z ZoneTokenValidatorConfig) Validate() error {
+	for i, key := range z.PublicKeys {
+		if err := key.Validate(); err != nil {
+			return errors.Wrapf(err, ".PublicKeys[%d] is not valid", i)
+		}
+	}
+	return nil
+}
+
+type DpProxyAuthnConfig struct {
+	// Type of authentication. Available values: "serviceAccountToken", "dpToken", "none".
+	// If empty, autoconfigured based on the environment - "serviceAccountToken" on Kubernetes, "dpToken" on Universal.
+	Type string `json:"type" envconfig:"kuma_dp_server_authn_dp_proxy_type"`
+	// Configuration of dpToken authentication method
+	DpToken DpTokenAuthnConfig `json:"dpToken"`
+}
+
+func (d DpProxyAuthnConfig) Validate() error {
+	if d.Type == DpServerAuthDpToken {
+		if err := d.DpToken.Validate(); err != nil {
+			return errors.Wrap(err, ".DpToken is not valid")
+		}
+	}
+	return nil
+}
+
+type DpTokenAuthnConfig struct {
+	// If true the control plane token issuer is enabled. It's recommended to set it to false when all the tokens are issued offline.
+	EnableIssuer bool `json:"enableIssuer" envconfig:"kuma_dp_server_authn_dp_proxy_dp_token_enable_issuer"`
+	// DP Token validator configuration
+	Validator DpTokenValidatorConfig `json:"validator"`
+}
+
+func (d DpTokenAuthnConfig) Validate() error {
+	if err := d.Validator.Validate(); err != nil {
+		return errors.Wrap(err, ".Validator is not valid")
+	}
+	return nil
+}
+
+type DpTokenValidatorConfig struct {
+	// If true then Kuma secrets with prefix "dataplane-token-signing-key-{mesh}" are considered as signing keys.
+	UseSecrets bool `json:"useSecrets" envconfig:"kuma_dp_server_authn_dp_proxy_dp_token_validator_use_secrets"`
+	// List of public keys used to validate the token
+	PublicKeys []config_types.MeshedPublicKey `json:"publicKeys"`
+}
+
+func (d DpTokenValidatorConfig) Validate() error {
+	for i, key := range d.PublicKeys {
+		if err := key.Validate(); err != nil {
+			return errors.Wrapf(err, ".PublicKeys[%d] is not valid", i)
+		}
+	}
+	return nil
+}
+
 func DefaultDpServerConfig() *DpServerConfig {
 	return &DpServerConfig{
 		Port: 5678,
 		Auth: DpServerAuthConfig{
 			Type:         "", // autoconfigured from the environment
 			UseTokenPath: false,
+		},
+		Authn: DpServerAuthnConfig{
+			DpProxy: DpProxyAuthnConfig{
+				Type: "", // autoconfigured from the environment
+				DpToken: DpTokenAuthnConfig{
+					EnableIssuer: true,
+					Validator: DpTokenValidatorConfig{
+						UseSecrets: true,
+						PublicKeys: []config_types.MeshedPublicKey{},
+					},
+				},
+			},
+			ZoneProxy: ZoneProxyAuthnConfig{
+				Type: "", // autoconfigured from the environment
+				ZoneToken: ZoneTokenAuthnConfig{
+					EnableIssuer: true,
+					Validator: ZoneTokenValidatorConfig{
+						UseSecrets: true,
+						PublicKeys: []config_types.PublicKey{},
+					},
+				},
+			},
 		},
 		Hds:             DefaultHdsConfig(),
 		TlsMinVersion:   "TLSv1_2",

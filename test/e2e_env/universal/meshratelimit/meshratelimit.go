@@ -13,8 +13,8 @@ import (
 )
 
 func Policy() {
-	var meshName = "mesh-rate-limit"
-	var rateLimitPolicy = fmt.Sprintf(`
+	meshName := "mesh-rate-limit"
+	rateLimitPolicy := fmt.Sprintf(`
 type: MeshRateLimit
 mesh: "%s"
 name: mesh-rate-limit-all-sources
@@ -37,7 +37,7 @@ spec:
                 add:
                 - name: "x-kuma-rate-limited"
                   value: "true"`, meshName)
-	var rateLimitPolicyTcp = fmt.Sprintf(`
+	rateLimitPolicyTcp := fmt.Sprintf(`
 type: MeshRateLimit
 mesh: "%s"
 name: mesh-rate-limit-tcp

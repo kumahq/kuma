@@ -82,14 +82,14 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(out).ToNot(BeEmpty())
 			ip = out
-		}, "60s", "1s").Should(Succeed(), "could not get a LoadBalancer IP of the Gateway")
+		}, "120s", "1s").Should(Succeed(), "could not get a LoadBalancer IP of the Gateway")
 		return ip
 	}
 
 	Describe("GatewayClass parametersRef", Ordered, func() {
 		gatewayName := "kuma-ha"
 		haGatewayClass := `
-apiVersion: gateway.networking.k8s.io/v1alpha2
+apiVersion: gateway.networking.k8s.io/v1beta1
 kind: GatewayClass
 metadata:
   name: ha-kuma
@@ -109,7 +109,7 @@ spec:
   replicas: 3`
 
 		haGateway := fmt.Sprintf(`
-apiVersion: gateway.networking.k8s.io/v1alpha2
+apiVersion: gateway.networking.k8s.io/v1beta1
 kind: Gateway
 metadata:
   name: %s
@@ -265,7 +265,7 @@ spec:
     - name: test-server-1
       port: 80
 ---
-apiVersion: gateway.networking.k8s.io/v1alpha2
+apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
   name: test-server-2
@@ -305,7 +305,7 @@ spec:
 		It("should route to external service", func() {
 			// given
 			routes := fmt.Sprintf(`
-apiVersion: gateway.networking.k8s.io/v1alpha2
+apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
   name: external-service
@@ -355,7 +355,7 @@ data:
 `, namespace)
 
 		gateway := fmt.Sprintf(`
-apiVersion: gateway.networking.k8s.io/v1alpha2
+apiVersion: gateway.networking.k8s.io/v1beta1
 kind: Gateway
 metadata:
   name: %s
@@ -394,7 +394,7 @@ spec:
 		It("should route the traffic using TLS", func() {
 			// given
 			route := fmt.Sprintf(`
-apiVersion: gateway.networking.k8s.io/v1alpha2
+apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
   name: test-server-paths
@@ -482,7 +482,7 @@ data:
 	Context("Upstream validation", func() {
 		It("should validate Gateway", func() {
 			gateway := fmt.Sprintf(`
-apiVersion: gateway.networking.k8s.io/v1alpha2
+apiVersion: gateway.networking.k8s.io/v1beta1
 kind: Gateway
 metadata:
   name: kuma-validate

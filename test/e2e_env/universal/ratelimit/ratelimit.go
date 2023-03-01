@@ -11,8 +11,8 @@ import (
 )
 
 func Policy() {
-	var meshName = "rate-limit"
-	var rateLimitPolicy = fmt.Sprintf(`
+	meshName := "rate-limit"
+	rateLimitPolicy := fmt.Sprintf(`
 type: RateLimit
 mesh: "%s"
 name: rate-limit-all-sources

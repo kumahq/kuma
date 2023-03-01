@@ -22,7 +22,6 @@ import (
 )
 
 var _ = Describe("PodStatusReconciler", func() {
-
 	var kubeClient kube_client.Client
 	var reconciler *PodStatusReconciler
 	var postQuitCalled int

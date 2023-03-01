@@ -18,9 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/files"
 )
 
-var (
-	runLog = core.Log.WithName("kuma-dp").WithName("run").WithName("dns-server")
-)
+var runLog = core.Log.WithName("kuma-dp").WithName("run").WithName("dns-server")
 
 type DNSServer struct {
 	opts *Opts
@@ -74,7 +72,8 @@ func New(opts *Opts) (*DNSServer, error) {
 }
 
 func (s *DNSServer) GetVersion() (string, error) {
-	command := exec.Command(s.path, "--version")
+	path := s.path
+	command := exec.Command(path, "--version")
 	output, err := command.Output()
 	if err != nil {
 		return "", err

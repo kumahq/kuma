@@ -17,9 +17,7 @@ func init() {
 	core_plugins.Register(metadata.PluginName, &plugin{})
 }
 
-var (
-	log = core.Log.WithName("plugin").WithName("runtime").WithName("gateway")
-)
+var log = core.Log.WithName("plugin").WithName("runtime").WithName("gateway")
 
 type plugin struct{}
 
@@ -74,7 +72,8 @@ func NewProxyProfile(zone string) generator_core.ResourceGenerator {
 					mesh_proto.MeshGateway_Listener_HTTP:  &HTTPFilterChainGenerator{},
 					mesh_proto.MeshGateway_Listener_HTTPS: &HTTPSFilterChainGenerator{},
 					mesh_proto.MeshGateway_Listener_TCP:   &TCPFilterChainGenerator{},
-				}},
+				},
+			},
 			ClusterGenerator: ClusterGenerator{
 				Zone: zone,
 			},

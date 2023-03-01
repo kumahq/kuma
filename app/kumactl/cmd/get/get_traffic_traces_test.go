@@ -22,7 +22,6 @@ import (
 )
 
 var _ = Describe("kumactl get traffic-traces", func() {
-
 	trafficTraceResources := []*mesh.TrafficTraceResource{
 		{
 			Spec: &v1alpha1.TrafficTrace{
@@ -65,7 +64,6 @@ var _ = Describe("kumactl get traffic-traces", func() {
 	}
 
 	Describe("GetTrafficTraceCmd", func() {
-
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
@@ -132,5 +130,4 @@ var _ = Describe("kumactl get traffic-traces", func() {
 			}),
 		)
 	})
-
 })

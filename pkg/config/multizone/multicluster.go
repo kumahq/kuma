@@ -35,6 +35,7 @@ func DefaultGlobalConfig() *GlobalConfig {
 			GrpcPort:                 5685,
 			RefreshInterval:          config_types.Duration{Duration: 1 * time.Second},
 			ZoneInsightFlushInterval: config_types.Duration{Duration: 10 * time.Second},
+			TlsEnabled:               true,
 			MaxMsgSize:               10 * 1024 * 1024,
 			MsgSendTimeout:           config_types.Duration{Duration: 60 * time.Second},
 			TlsMinVersion:            "TLSv1_2",

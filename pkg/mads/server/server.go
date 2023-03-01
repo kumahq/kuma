@@ -34,9 +34,7 @@ const (
 	grpcKeepAliveTime        = 15 * time.Second
 )
 
-var (
-	log = core.Log.WithName("mads-server")
-)
+var log = core.Log.WithName("mads-server")
 
 // muxServer is a runtime component.Component that
 // multiplexes all MADs resources over HTTP and gRPC
@@ -56,9 +54,7 @@ type GrpcService interface {
 	RegisterWithGrpcServer(server *grpc.Server)
 }
 
-var (
-	_ component.Component = &muxServer{}
-)
+var _ component.Component = &muxServer{}
 
 func (s *muxServer) createGRPCServer() *grpc.Server {
 	grpcOptions := []grpc.ServerOption{
@@ -121,7 +117,7 @@ func (s *muxServer) Start(stop <-chan struct{}) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to load TLS certificate")
 		}
-		tlsConfig := &tls.Config{Certificates: []tls.Certificate{cert}}
+		tlsConfig := &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12} // To make gosec happy
 		if tlsConfig.MinVersion, err = config_types.TLSVersion(s.config.TlsMinVersion); err != nil {
 			return err
 		}
@@ -156,7 +152,8 @@ func (s *muxServer) Start(stop <-chan struct{}) error {
 
 	httpL := m.Match(cmux.Any())
 	httpS := &http.Server{
-		Handler: s.createHttpServicesHandler(),
+		ReadHeaderTimeout: time.Second,
+		Handler:           s.createHttpServicesHandler(),
 	}
 	errChanHttp := make(chan error)
 	go func() {

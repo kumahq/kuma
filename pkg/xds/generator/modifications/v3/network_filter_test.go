@@ -13,7 +13,6 @@ import (
 )
 
 var _ = Describe("Network Filter modifications", func() {
-
 	type testCase struct {
 		listeners     []string
 		modifications []string
@@ -63,7 +62,8 @@ var _ = Describe("Network Filter modifications", func() {
                     address: 192.168.0.1
                     portValue: 8080`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 networkFilter:
                    operation: addFirst
                    value: |
@@ -96,7 +96,8 @@ var _ = Describe("Network Filter modifications", func() {
                       response:
                         inlineString: "xyz"`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 networkFilter:
                    operation: addFirst
                    value: |
@@ -148,7 +149,8 @@ var _ = Describe("Network Filter modifications", func() {
                       '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
                       cluster: backend`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 networkFilter:
                    operation: remove
 `,
@@ -192,7 +194,8 @@ var _ = Describe("Network Filter modifications", func() {
                       '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
                       cluster: backend`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 networkFilter:
                    operation: remove
                    match:
@@ -238,7 +241,8 @@ var _ = Describe("Network Filter modifications", func() {
                       '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
                       cluster: backend`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 networkFilter:
                    operation: remove
                    match:
@@ -288,7 +292,8 @@ var _ = Describe("Network Filter modifications", func() {
                       '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
                       cluster: backend`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 networkFilter:
                    operation: remove
                    match:
@@ -327,7 +332,8 @@ var _ = Describe("Network Filter modifications", func() {
                       response:
                         inlineString: "xyz"`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 networkFilter:
                    operation: addAfter
                    match:
@@ -374,7 +380,8 @@ var _ = Describe("Network Filter modifications", func() {
                        cluster: backend
 `,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 networkFilter:
                    operation: addAfter
                    match:
@@ -413,7 +420,8 @@ var _ = Describe("Network Filter modifications", func() {
                 filterChains:
                 - {}`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 networkFilter:
                    operation: addAfter
                    match:
@@ -446,7 +454,8 @@ var _ = Describe("Network Filter modifications", func() {
                       response:
                         inlineString: "xyz"`,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 networkFilter:
                    operation: addBefore
                    match:
@@ -493,7 +502,8 @@ var _ = Describe("Network Filter modifications", func() {
                        cluster: backend
 `,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                 networkFilter:
                    operation: addBefore
                    match:
@@ -543,7 +553,8 @@ var _ = Describe("Network Filter modifications", func() {
                       - name: router
 `,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                networkFilter:
                  operation: patch
                  match:
@@ -587,7 +598,8 @@ var _ = Describe("Network Filter modifications", func() {
                   - name: envoy.filters.network.http_connection_manager
 `,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                networkFilter:
                  operation: patch
                  match:
@@ -624,7 +636,8 @@ var _ = Describe("Network Filter modifications", func() {
                   - name: envoy.filters.network.http_connection_manager
 `,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                networkFilter:
                  operation: patch
                  match:
@@ -667,7 +680,8 @@ var _ = Describe("Network Filter modifications", func() {
                   - name: envoy.filters.network.http_connection_manager
 `,
 			},
-			modifications: []string{`
+			modifications: []string{
+				`
                networkFilter:
                  operation: patch
                  match:

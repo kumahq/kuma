@@ -95,7 +95,7 @@ func findKumaCniConfigIndex(pluginsArray []interface{}) (int, error) {
 }
 
 func revertConfigContents(configBytes []byte) ([]byte, error) {
-	var parsed, err = parseBytesToHashMap(configBytes)
+	parsed, err := parseBytesToHashMap(configBytes)
 	if err != nil {
 		return nil, err
 	}

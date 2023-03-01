@@ -15,11 +15,12 @@ import (
 
 const PluginName = "tokens"
 
-type plugin struct {
-}
+type plugin struct{}
 
-var _ plugins.AuthnAPIServerPlugin = plugin{}
-var _ plugins.BootstrapPlugin = plugin{}
+var (
+	_ plugins.AuthnAPIServerPlugin = plugin{}
+	_ plugins.BootstrapPlugin      = plugin{}
+)
 
 // We declare AccessStrategies and not into Runtime because it's a plugin.
 var AccessStrategies = map[string]func(*plugins.MutablePluginContext) access.GenerateUserTokenAccess{
@@ -37,10 +38,22 @@ func init() {
 }
 
 func (c plugin) NewAuthenticator(context plugins.PluginContext) (authn.Authenticator, error) {
+	publicKeys, err := core_tokens.PublicKeyFromConfig(context.Config().ApiServer.Authn.Tokens.Validator.PublicKeys)
+	if err != nil {
+		return nil, err
+	}
+	staticSigningKeyAccessor, err := core_tokens.NewStaticSigningKeyAccessor(publicKeys)
+	if err != nil {
+		return nil, err
+	}
+	accessors := []core_tokens.SigningKeyAccessor{staticSigningKeyAccessor}
+	if context.Config().ApiServer.Authn.Tokens.Validator.UseSecrets {
+		accessors = append(accessors, core_tokens.NewSigningKeyAccessor(context.ResourceManager(), issuer.UserTokenSigningKeyPrefix))
+	}
 	validator := issuer.NewUserTokenValidator(
 		core_tokens.NewValidator(
-			core.Log.WithName("test"),
-			core_tokens.NewSigningKeyAccessor(context.ResourceManager(), issuer.UserTokenSigningKeyPrefix),
+			core.Log.WithName("tokens"),
+			accessors,
 			core_tokens.NewRevocations(context.ResourceManager(), issuer.UserTokenRevocationsGlobalSecretKey),
 			context.Config().Store.Type,
 		),
@@ -63,6 +76,9 @@ func (c plugin) AfterBootstrap(context *plugins.MutablePluginContext, config plu
 		return errors.Errorf("no Access strategy for type %q", context.Config().Access.Type)
 	}
 	tokenIssuer := NewUserTokenIssuer(signingKeyManager)
+	if !context.Config().ApiServer.Authn.Tokens.EnableIssuer {
+		tokenIssuer = issuer.DisabledIssuer{}
+	}
 	if context.Config().ApiServer.Authn.Tokens.BootstrapAdminToken {
 		if err := context.ComponentManager().Add(NewAdminTokenBootstrap(tokenIssuer, context.ResourceManager(), context.Config())); err != nil {
 			return err

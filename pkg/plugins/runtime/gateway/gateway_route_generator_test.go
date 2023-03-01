@@ -1879,7 +1879,6 @@ conf:
 				// then
 				Expect(yaml.Marshal(MakeProtoSnapshot(snap))).
 					To(matchers.MatchGoldenYAML(path.Join("testdata", "https", goldenFileName)))
-
 			},
 			entries,
 		)
@@ -1904,7 +1903,6 @@ conf:
 				// then
 				Expect(yaml.Marshal(MakeProtoSnapshot(snap))).
 					To(matchers.MatchGoldenYAML(path.Join("testdata", "tcp", goldenFileName)))
-
 			},
 			tcpEntries,
 		)

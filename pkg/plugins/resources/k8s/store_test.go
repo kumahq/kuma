@@ -23,13 +23,12 @@ import (
 )
 
 var _ = Describe("KubernetesStore", func() {
-
 	var ks *k8s.KubernetesStore
 	var s store.ResourceStore
 	const name = "demo"
 	const mesh = "default"
 
-	var backend = struct {
+	backend := struct {
 		ParseYAML       func(yaml string) client.Object
 		Create          func(obj client.Object)
 		Get             func(obj client.Object, ns, name string)
@@ -439,7 +438,6 @@ var _ = Describe("KubernetesStore", func() {
 		})
 
 		It("should return an error if namespaced resource is not in the right format", func() {
-
 			// when
 			err := ks.Get(context.Background(), v1alpha1.NewMeshTraceResource(), store.GetByKey(name, mesh))
 
@@ -448,7 +446,6 @@ var _ = Describe("KubernetesStore", func() {
 		})
 
 		It("should return an error if resource name is empty", func() {
-
 			// when
 			err := ks.Get(context.Background(), v1alpha1.NewMeshTraceResource(), store.GetByKey("", mesh))
 
@@ -723,7 +720,6 @@ var _ = Describe("KubernetesStore", func() {
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			backend.AssertNotExists(&mesh_k8s.Mesh{}, "", "demo")
-
 		})
 
 		It("should return a list of matching Meshes", func() {

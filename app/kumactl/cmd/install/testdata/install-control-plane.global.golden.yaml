@@ -297,6 +297,7 @@ spec:
   type: LoadBalancer
   ports:
     - port: 5685
+      appProtocol: grpc
       name: global-zone-sync
   selector:
     app: kuma-control-plane
@@ -321,13 +322,17 @@ spec:
   ports:
     - port: 5680
       name: diagnostics
+      appProtocol: http
     - port: 5681
       name: http-api-server
+      appProtocol: http
     - port: 5682
       name: https-api-server
+      appProtocol: http
     - port: 443
       name: https-admission-server
       targetPort: 5443
+      appProtocol: http
   selector:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -357,7 +362,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: 6a8a5ebea10cd0614847f009070d60475d7e6ca0338412c019ac1fcd85b368f1
+        checksum/tls-secrets: 8480fdd3f15ffced730fc82e11ffbda9185b1136bc42e0f86fbe558561188ded
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -383,6 +388,8 @@ spec:
                   - 'kuma-control-plane'
               topologyKey: kubernetes.io/hostname
             weight: 100
+      securityContext:
+        runAsNonRoot: true
       serviceAccountName: kuma-control-plane
       automountServiceAccountToken: true
       nodeSelector:
@@ -394,6 +401,8 @@ spec:
         - name: control-plane
           image: "docker.io/kumahq/kuma-cp:0.0.1"
           imagePullPolicy: IfNotPresent
+          securityContext:
+            readOnlyRootFilesystem: true
           env:
             - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
               value: "false"
@@ -477,6 +486,8 @@ spec:
             - name: kuma-control-plane-config
               mountPath: /etc/kuma.io/kuma-control-plane
               readOnly: true
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: general-tls-cert
           secret:
@@ -484,6 +495,8 @@ spec:
         - name: kuma-control-plane-config
           configMap:
             name: kuma-control-plane-config
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
@@ -672,7 +685,6 @@ webhooks:
       - apiGroups:
           - "gateway.networking.k8s.io"
         apiVersions:
-          - v1alpha2
           - v1beta1
         operations:
           - CREATE

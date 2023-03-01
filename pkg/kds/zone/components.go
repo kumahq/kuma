@@ -25,9 +25,7 @@ import (
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 )
 
-var (
-	kdsZoneLog = core.Log.WithName("kds-zone")
-)
+var kdsZoneLog = core.Log.WithName("kds-zone")
 
 func Setup(rt core_runtime.Runtime) error {
 	if rt.Config().Mode != config_core.Zone {

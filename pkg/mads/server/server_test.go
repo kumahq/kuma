@@ -50,7 +50,6 @@ func (t *testRuntime) Metrics() metrics.Metrics {
 }
 
 var _ = Describe("MADS Server", func() {
-
 	var rt *testRuntime
 	var stopCh chan struct{}
 	var errCh chan error

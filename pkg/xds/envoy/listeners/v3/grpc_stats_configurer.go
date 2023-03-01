@@ -8,8 +8,7 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-type GrpcStatsConfigurer struct {
-}
+type GrpcStatsConfigurer struct{}
 
 var _ FilterChainConfigurer = &GrpcStatsConfigurer{}
 

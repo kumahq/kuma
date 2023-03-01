@@ -21,7 +21,6 @@ import (
 )
 
 var _ = Describe("NamespaceReconciler", func() {
-
 	var kubeClient kube_client.Client
 	var reconciler kube_reconcile.Reconciler
 
@@ -215,5 +214,4 @@ var _ = Describe("NamespaceReconciler", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(nads.Items).To(HaveLen(0))
 	})
-
 })

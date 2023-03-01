@@ -21,11 +21,9 @@ import (
 )
 
 var _ = Describe("DataplaneInsightSink", func() {
-
 	t0, _ := time.Parse(time.RFC3339, "2019-07-01T00:00:00+00:00")
 
 	Describe("DataplaneInsightSink", func() {
-
 		var recorder *DataplaneInsightStoreRecorder
 		var store callbacks.DataplaneInsightStore
 		var stop chan struct{}
@@ -146,7 +144,6 @@ var _ = Describe("DataplaneInsightSink", func() {
 	})
 
 	Describe("DataplaneInsightStore", func() {
-
 		var store core_store.ResourceStore
 
 		BeforeEach(func() {

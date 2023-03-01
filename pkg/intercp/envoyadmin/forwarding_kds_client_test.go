@@ -22,7 +22,6 @@ import (
 )
 
 var _ = Describe("Forwarding KDS Client", func() {
-
 	const thisInstanceID = "instance-1"
 	const otherInstanceID = "instance-2"
 
@@ -151,7 +150,6 @@ var _ = Describe("Forwarding KDS Client", func() {
 			executedRequests:  1,
 		}),
 	)
-
 })
 
 type countingForwardClient struct {

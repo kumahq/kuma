@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("kumactl completion", func() {
-
 	var stdout *bytes.Buffer
 	var stderr *bytes.Buffer
 

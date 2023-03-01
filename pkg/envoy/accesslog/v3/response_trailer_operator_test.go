@@ -10,7 +10,6 @@ import (
 )
 
 var _ = Describe("ResponseTrailerOperator", func() {
-
 	Describe("FormatHttpLogEntry()", func() {
 		example := &accesslog_data.HTTPAccessLogEntry{
 			Response: &accesslog_data.HTTPResponseProperties{
@@ -33,7 +32,8 @@ var _ = Describe("ResponseTrailerOperator", func() {
 			func(given testCase) {
 				// setup
 				fragment := &ResponseTrailerOperator{HeaderFormatter{
-					Header: given.header, AltHeader: given.altHeader, MaxLength: given.maxLength}}
+					Header: given.header, AltHeader: given.altHeader, MaxLength: given.maxLength,
+				}}
 				// when
 				actual, err := fragment.FormatHttpLogEntry(given.entry)
 				// then
@@ -90,7 +90,8 @@ var _ = Describe("ResponseTrailerOperator", func() {
 		It("should always return an empty string", func() {
 			// setup
 			fragment := &ResponseTrailerOperator{HeaderFormatter{
-				Header: "grpc-status", AltHeader: "grpc-message", MaxLength: 123}}
+				Header: "grpc-status", AltHeader: "grpc-message", MaxLength: 123,
+			}}
 			// when
 			actual, err := fragment.FormatTcpLogEntry(&accesslog_data.TCPAccessLogEntry{})
 			// then
@@ -101,7 +102,6 @@ var _ = Describe("ResponseTrailerOperator", func() {
 	})
 
 	Describe("ConfigureHttpLog()", func() {
-
 		type testCase struct {
 			header    string
 			altHeader string
@@ -113,7 +113,8 @@ var _ = Describe("ResponseTrailerOperator", func() {
 			func(given testCase) {
 				// setup
 				fragment := &ResponseTrailerOperator{HeaderFormatter{
-					Header: given.header, AltHeader: given.altHeader}}
+					Header: given.header, AltHeader: given.altHeader,
+				}}
 				// when
 				err := fragment.ConfigureHttpLog(given.config)
 				// then
@@ -206,13 +207,13 @@ var _ = Describe("ResponseTrailerOperator", func() {
 			func(given testCase) {
 				// setup
 				fragment := &ResponseTrailerOperator{HeaderFormatter{
-					Header: given.header, AltHeader: given.altHeader, MaxLength: given.maxLength}}
+					Header: given.header, AltHeader: given.altHeader, MaxLength: given.maxLength,
+				}}
 
 				// when
 				actual := fragment.String()
 				// then
 				Expect(actual).To(Equal(given.expected))
-
 			},
 			Entry("%TRAILER()%", testCase{
 				expected: `%TRAILER()%`,
