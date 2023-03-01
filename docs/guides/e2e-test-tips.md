@@ -100,11 +100,11 @@ make k3d/stop/all && docker stop $(docker ps -aq) # omit $ for fish
 ### Integration with direnv
 
 [direnv](https://direnv.net/) is a useful tool that can populate environment variables in your shell as you change directories.
-The Kuma build has an optional `dev/envrc` target that generates a `.envrc` file to set the `$CI_TOOLS_DIR` and `$KUBECONFIG` environment variables.
+The Kuma build has an optional `dev/envrc` target that generates a `.envrc` file to set the `$CI_TOOLS_BIN_DIR` and `$KUBECONFIG` environment variables.
 This is useful to keeping the Kuma CI tools installation tidy in your Kuma workspace, and for conveniently accessing the Kind clusters that are provisioned by the e2e tests.
 
 ```
 $ make dev/envrc
 direnv: loading ~/upstream/konghq/kuma/.envrc
-direnv: export +CI_TOOLS_DIR +KUBECONFIG
+direnv: export +CI_TOOLS_BIN_DIR +KUBECONFIG
 ```
